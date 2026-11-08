@@ -85,10 +85,29 @@ public sealed class ImageInfo
     /// <param name="size">The canvas size.</param>
     /// <returns>The copy.</returns>
     internal ImageInfo WithSize(Size size)
-        => new(Format, size, PixelFormat, ColorModel, BitsPerComponent, FrameCount, IsAnimated, HasPosterFrame, MayHaveTransparency, Animation, Metadata, IdentifyMode, CollectionEntryCount);
+        => new(Format, size, PixelFormat, ColorModel, BitsPerComponent, FrameCount, IsAnimated, HasPosterFrame, MayHaveTransparency, Animation, Metadata, IdentifyMode, CollectionEntryCount) { CustomFormatInfo = CustomFormatInfo };
 
-    /// <summary>Gets the detected encoded format.</summary>
+    /// <summary>Gets the detected encoded format: <see cref="ImageFormat.Custom"/> for a format read by a <see cref="CustomImageCodec"/>.</summary>
     public ImageFormat Format { get; }
+
+    /// <summary>
+    /// Gets the description of the detected format: the one of <see cref="ImageFormatInfo.Get(ImageFormat)"/> for a built-in
+    /// format, or the <see cref="CustomImageCodec.FormatInfo"/> of the codec that read the file.
+    /// </summary>
+    public ImageFormatInfo FormatInfo => CustomFormatInfo ?? ImageFormatInfo.Get(Format);
+
+    /// <summary>Gets the description of the format of a <see cref="CustomImageCodec"/>, or <see langword="null"/> for a built-in format.</summary>
+    internal ImageFormatInfo? CustomFormatInfo
+    {
+        get;
+        init
+        {
+            if ((value is null) != (Format != ImageFormat.Custom))
+                throw new ArgumentException("A custom format, and only a custom format, has the description of its codec.", nameof(value));
+
+            field = value;
+        }
+    }
 
     /// <summary>
     /// Gets the number of entries of a multi-entry container (the pages of a TIFF document, the representations of an

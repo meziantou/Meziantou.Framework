@@ -36,11 +36,15 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
   jixel (BSD-3-Clause), whose source the user allowed reading for that purpose, and each one was kept on measurements
   (see "Lossy JPEG XL quality tools"); they are listed in `THIRD-PARTY-NOTICES.md`. Reading the source of another codec
   needs the same explicit permission.
-- No public allocator, custom pixel type, codec plug-in or image-processor interface. Implementation types are `internal`
-  and live under `Internals/`.
+- The extension points are `CustomImageCodec`/`CustomImageEncoder` (formats registered in `ImageConfiguration.Codecs`),
+  `IPixelRowOperation<TPixel>`/`IPixelNeighborhoodOperation<TPixel>` (custom filters), `Image.WrapMemory` (caller-owned
+  pixel memory) and `ImageBufferPool` (the retention of the pool). No public allocator and no custom pixel type: the
+  pixel formats are a closed set that every kernel, converter and codec switches over. Implementation types are
+  `internal` and live under `Internals/`.
 - Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata`, `.Formats` (encoder settings), `.Drawing` (brushes,
   pens, paths, the canvas) and `.Typography` (fonts). The base types of the model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`,
-  `AutoCropAnalysis`, `Brush`, `GradientBrush`) cannot be derived outside the library.
+  `AutoCropAnalysis`, `Brush`, `GradientBrush`) cannot be derived outside the library; `CustomImageEncoder` is the one
+  public subclass of `ImageEncoder` with a protected constructor.
 - Every public member has XML documentation (`DisableDocumentationWarnings` is `false`).
 - `Meziantou.Framework.FullPath` is used by the tests, benchmarks and tools, never by the library.
 
@@ -175,7 +179,12 @@ reference white, values outside [0, 1] are meaningful (highlights, negative out-
 - Geometry changes go through `PixelStorageTransaction`: replacements are budgeted while the originals are live and are
   only swapped on commit.
 - Sequential readers and writers keep live storage independent of the frame count.
-- `SlabPool` retention is bounded per size class and in total bytes. When the total bound is reached, a returned buffer
+- A wrapped frame (`Image.WrapMemory`) has an external `PixelStorage` (`IsExternal`): one slab of caller memory at a
+  caller stride, not charged and not cleared, whose release calls the caller's callback. Pixel-only operations write it
+  in place; `ReplaceGeometry` replaces it with pooled storage and releases it. Code that reaches rows goes through
+  `GetRowSpanCore`, never through the slab arrays, so that external storage keeps working.
+- `SlabPool` retention is bounded per size class and in total bytes (`SlabPool.MaxRetainedBytes`, which
+  `ImageBufferPool.MaxRetainedBytes` sets on the shared pool at run time; lowering it releases buffers). When the total bound is reached, a returned buffer
   releases the buffers of the size classes that were not used recently (`SlabPoolOptions.StaleAfterOperations`), so that
   a change of image sizes or codecs does not leave the pool full of buffers nobody rents; the size classes in use are
   never released for one another.
@@ -200,6 +209,11 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 - Each format has a structure parser (container rules, written once and walked as header, full scan or decode), a pixel
   decoder that observes it, and an encoder codec. Decoders hand rows to a `DecodedFrameSink` in a lossless source layout;
   the sink converts to the requested pixel format and charges frames before allocating them.
+- Custom codecs (`CustomImageCodec`) go through `CustomImageCodecAdapter`, a random-access codec that buffers the whole
+  input and calls the public codec once; `ImageCodecRegistry.For(configuration)` puts them before the built-in codecs.
+  Their format is `ImageFormat.Custom` and `ImageInfo.CustomFormatInfo` names them. Sequential readers reject them;
+  `Image.Save`/`ImageFrame.Save` route `CustomImageEncoder` around `ImageWriterCore`, which rejects it
+  (`ImageOutputCapabilities`). A switch over `ImageFormat` must keep handling `Custom` (or reject it explicitly).
 - A new format always adds an `ImageFormat` member, its name in `ImageFormatNames`, an `ImageCodec` in
   `ImageCodecRegistry`, a default pixel format in `DefaultPixelFormats`, and a row in the support matrix and a section in
   the format reference of `readme.md`. A format that is also written adds an encoder codec in `ImageEncoderRegistry`, a

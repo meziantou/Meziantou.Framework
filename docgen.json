@@ -4,6 +4,7 @@
   "site": {
     "title": "Meziantou.Framework",
     "description": "Documentation of the Meziantou.Framework libraries.",
+    "homeTitle": "Introduction",
     "logo": "docs/logo.svg",
     "favicon": "docs/logo.svg",
     "headerLinks": [

@@ -9,7 +9,8 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 
 ## General
 
-- **No extension points.** There is no public allocator, custom pixel type, codec plug-in or custom image processor.
+- **No custom pixel types.** Images use the built-in pixel formats; the buffer pool has settings
+  ([ImageBufferPool](cref:Meziantou.Framework.Imaging.ImageBufferPool)) but cannot be replaced by an allocator of yours.
 - **No CMYK pixel format.** CMYK JPEG, TIFF and JPEG XL files are converted to RGB when they are loaded, with an explicit
   `CmykConversion` option; CMYK cannot be written. See [Color management](09-Color/03-ColorManagement.md).
 - **No floating-point grayscale.** [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) and [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) are the floating-point formats. OpenEXR and TIFF read and

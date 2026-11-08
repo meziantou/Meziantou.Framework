@@ -34,7 +34,8 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   labels, embedded files (`PdfDocument.EmbeddedFiles`, file attachment annotations), text boxes
   (`PdfContentBuilder.DrawTextBox`), pages moved, duplicated, removed and imported from other documents (merging), a
   page as a form XObject, the page boxes and display coordinates, text extraction (`PdfPage.ExtractText`), positioned
-  text (`PdfPage.ExtractTextLayout`: lines, words and glyphs with their bounding boxes), image extraction
+  text (`PdfPage.ExtractTextLayout`: lines, words and glyphs with their bounding boxes), the reading order of the
+  layout (`PdfTextReadingOrder.Layout`: columns and blocks found from the blank spaces of the page), image extraction
   (`PdfPage.GetImages`), interactive forms created, read, filled and flattened (`PdfDocument.Form`)
 - **Rendering** (`Meziantou.Framework.Pdf.Rendering`): the pages drawn to images on the canvas of
   `Meziantou.Framework.Imaging`: paths, clipping, optional content and annotation appearances; embedded TrueType, CFF,
@@ -530,7 +531,9 @@ var isValid = signature.IsValid && signature.CoversWholeDocument;
 ```
 <!-- endref -->
 
-The signature field is invisible, on the first page, unless `PdfSignatureOptions.Appearance` places it. The field name
+The signature field is invisible, on the first page, unless `PdfSignatureOptions.Appearance` places it: its `Draw`
+callback draws the appearance, or, without it, the library draws the name of the signer, the date, the reason, the
+location and an optional `Image`. The field name
 is unique: an existing signature field that is not signed yet is signed, another existing name throws.
 `PdfSignatureOptions` also sets the information of the signature dictionary (reason, location, contact, name, time),
 the other certificates of the chain to embed, the certification level and the field lock. A document certified with
@@ -578,8 +581,8 @@ specification says; a content stream that cannot be decoded throws when its data
   embedded. The save checks what the conformance levels require of the document as a whole; the
   content (the order of the structure, the colors of the annotations of PDF/A-1, the values of the numbers) follows
   the other rules of the level.
-- The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does
-  not detect columns. The predefined CMaps other than `Identity-H` and `Identity-V` split the codes and give their
+- The text extraction follows the order of the content, or finds the columns from the blank spaces of the page
+  (`PdfTextReadingOrder.Layout`, read from left to right). The predefined CMaps other than `Identity-H` and `Identity-V` split the codes and give their
   text, but not their CIDs: their glyphs get the default width of the font.
 - The fields of a saved document whose default appearance names an embedded font are filled with that font only when
   it is given again (`PdfInteractiveForm.AddFont`); otherwise their values are drawn with Helvetica. The text boxes

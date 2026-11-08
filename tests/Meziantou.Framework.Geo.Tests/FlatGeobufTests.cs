@@ -217,6 +217,27 @@ public sealed class FlatGeobufTests
     }
 
     [Fact]
+    public void WriteRead_Measures()
+    {
+        // The measures are the M values; a missing one is written as NaN, which reads back as no measure, and the times are not written
+        var features = new GeoFeatureCollection
+        {
+            new GeoFeature(new GeoLineString([new GeoPosition(0, 0) { Measure = 1 }, new GeoPosition(1, 1) { Time = DateTimeOffset.UnixEpoch }])),
+            new GeoFeature(new GeoPolygon([[new GeoPosition(0, 0, 5) { Measure = 1 }, new GeoPosition(1, 0, 5) { Measure = 2 }, new GeoPosition(1, 1, 5) { Measure = 3 }, new GeoPosition(0, 0, 5) { Measure = 1 }]])),
+            new GeoFeature(new GeoGeometryCollection([new GeoPoint(new GeoPosition(7, 7) { Measure = -7 })])),
+        };
+
+        var read = FlatGeobuf.Read(FlatGeobuf.Write(features, new FlatGeobufWriterOptions { IncludeSpatialIndex = false }));
+        Assert.Equal([new GeoPosition(0, 0, 0) { Measure = 1 }, new(1, 1, 0)], read[0].Geometry!.GetPositions());
+        Assert.Equal(features[1].Geometry!.GetPositions(), read[1].Geometry!.GetPositions());
+        Assert.Equal([new GeoPosition(7, 7, 0) { Measure = -7 }], read[2].Geometry!.GetPositions());
+
+        // Without measures, the file has no M values
+        var withoutMeasures = FlatGeobuf.Read(FlatGeobuf.Write([new GeoFeature(new GeoPoint(new(1, 2)))]));
+        Assert.Null(withoutMeasures[0].Geometry!.GetPositions().Single().Measure);
+    }
+
+    [Fact]
     public void Write_ColumnsInIndexOrder()
     {
         // The index reorders the features: the columns follow the written order, so writing what is read gives the same bytes

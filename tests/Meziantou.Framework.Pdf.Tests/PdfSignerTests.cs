@@ -3,7 +3,9 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Rendering;
 using Meziantou.Framework.Pdf.Signing;
 
 namespace Meziantou.Framework.Pdf.Tests;
@@ -582,6 +584,125 @@ public sealed class PdfSignerTests
 
         Assert.Throws<ArgumentException>(() => PdfSigner.Sign(CreateDocument(), new PdfSignatureOptions(certificate) { Appearance = new PdfSignatureAppearance(3, PdfRectangle.FromSize(0, 0, 10, 10)) }));
         Assert.Throws<ArgumentOutOfRangeException>(() => new PdfSignatureAppearance(0, new PdfRectangle(0, 0, 0, 10)));
+    }
+
+    [Fact]
+    public void Example_DefaultSignatureAppearance()
+    {
+        using var certificate = CreateCertificate("rsa");
+        var document = CreateDocument();
+        using var bitmap = Image.ImportPixelData<Rgba32>([new Rgba32(255, 0, 0, 255), new Rgba32(255, 0, 0, 255)], 2, 1);
+        var image = PdfImage.FromImage(bitmap);
+
+        #region PdfSigning_DefaultAppearance
+        // Without a drawing, the library draws the name of the signer, the date, the reason and the location, and the image at their left
+        var options = new PdfSignatureOptions(certificate)
+        {
+            Reason = "I approve this contract",
+            Location = "Paris",
+            SigningTime = new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero),
+            Appearance = new PdfSignatureAppearance(pageIndex: 0, PdfRectangle.FromSize(60, 60, 200, 50))
+            {
+                Image = image, // Such as PdfImage.Load("signature.png")
+            },
+        };
+        var signed = PdfSigner.Sign(document, options);
+        #endregion
+
+        var signature = PdfSignatureVerifier.Verify(signed).Single();
+        Assert.True(signature.IsValid, signature.Error);
+        Assert.True(signature.CoversWholeDocument);
+
+        var signedDocument = PdfDocument.Open(signed);
+        var widget = GetField(signedDocument, "Signature1");
+        Assert.Equal(new PdfRectangle(60, 60, 260, 110), PdfRectangle.TryRead(widget.Get<PdfArray>(PdfNames.Rect), out var rectangle) ? rectangle : default);
+        Assert.Equal(4, widget.Get<PdfInteger>(PdfName.Create("F"))!.Value & 4); // Print (12.5.3)
+        var annotations = signedDocument.Pages[0].Dictionary.Get<PdfArray>(PdfNames.Annots)!;
+        Assert.Contains(annotations, item => ReferenceEquals(PdfReference.ResolveIfReference(item), widget));
+
+        var appearance = widget.Get<PdfDictionary>(PdfName.Create("AP"))!.Get<PdfStream>(PdfNames.N)!;
+        Assert.Equal(new PdfRectangle(0, 0, 200, 50), PdfRectangle.TryRead(appearance.Dictionary.Get<PdfArray>(PdfName.Create("BBox")), out var box) ? box : default);
+        var content = Encoding.Latin1.GetString(appearance.GetDecodedData());
+        Assert.Contains("(Digitally signed by RSA signer)", content, StringComparison.Ordinal);
+        Assert.Contains("(Date: 2026-01-02 03:04:05 +00:00)", content, StringComparison.Ordinal);
+        Assert.Contains("(Reason: I approve this contract)", content, StringComparison.Ordinal);
+        Assert.Contains("(Location: Paris)", content, StringComparison.Ordinal);
+        Assert.Contains(" Do", content, StringComparison.Ordinal);
+
+        // The image fills the left 40% of the rectangle (2:1, centered vertically), the text is at its right
+        using var page = PdfRenderer.RenderPage(signedDocument.Pages[0], new PdfRenderOptions { Dpi = 72, UseSystemFonts = false });
+        var red = page.Frames[0][100, page.Height - 1 - 85];
+        Assert.True(red.R > 200 && red.G < 50 && red.B < 50, $"The pixel is ({red.R}, {red.G}, {red.B})");
+        Assert.True(CountDarkPixels(page, 145, 62, 258, 108) > 50);
+        Assert.Equal(0, CountDarkPixels(page, 270, 50, 400, 120));
+
+        static int CountDarkPixels(Image<Rgba32> image, int left, int bottom, int right, int top)
+        {
+            var count = 0;
+            for (var y = bottom; y < top; y++)
+            {
+                for (var x = left; x < right; x++)
+                {
+                    var pixel = image.Frames[0][x, image.Height - 1 - y];
+                    if (pixel.R < 128 && pixel.G < 128 && pixel.B < 128)
+                    {
+                        count++;
+                    }
+                }
+            }
+
+            return count;
+        }
+    }
+
+    [Fact]
+    public void DefaultSignatureAppearanceLayout()
+    {
+        using var certificate = CreateCertificate("rsa");
+
+        // The name of the options replaces the name of the certificate; the text shrinks to fit the rectangle
+        var small = GetAppearanceContent(PdfSigner.Sign(CreateDocument(), new PdfSignatureOptions(certificate)
+        {
+            SignerName = "Alice",
+            Reason = "A long reason that does not fit on one line of a small rectangle",
+            Appearance = new PdfSignatureAppearance(0, PdfRectangle.FromSize(10, 10, 80, 40)),
+        }));
+        Assert.Contains("(Digitally signed by", small, StringComparison.Ordinal);
+        Assert.Contains("Alice", small, StringComparison.Ordinal);
+        Assert.DoesNotContain("RSA signer", small, StringComparison.Ordinal);
+        Assert.DoesNotContain("Location", small, StringComparison.Ordinal);
+        Assert.DoesNotContain(" 10 Tf", small, StringComparison.Ordinal);
+
+        // A font size of the options; a rectangle taller than wide puts the image above the text
+        using var bitmap = Image.ImportPixelData<Rgba32>([new Rgba32(0, 0, 255, 255)], 1, 1);
+        var tall = GetAppearanceContent(PdfSigner.Sign(CreateDocument(), new PdfSignatureOptions(certificate)
+        {
+            Appearance = new PdfSignatureAppearance(0, PdfRectangle.FromSize(10, 10, 100, 200)) { FontSize = 7, Image = PdfImage.FromImage(bitmap) },
+        }));
+        Assert.Contains(" 7 Tf", tall, StringComparison.Ordinal);
+        Assert.Contains("76.8 0 0 76.8 11.6 119.2 cm", tall, StringComparison.Ordinal);
+
+        // A drawing that draws nothing is an empty appearance
+        Assert.Equal("", GetAppearanceContent(PdfSigner.Sign(CreateDocument(), new PdfSignatureOptions(certificate)
+        {
+            Appearance = new PdfSignatureAppearance(0, PdfRectangle.FromSize(10, 10, 100, 50)) { Draw = _ => { } },
+        })));
+
+        // Helvetica cannot show Cyrillic: the default layout needs a font that has the characters
+        var exception = Assert.Throws<ArgumentException>(() => PdfSigner.Sign(CreateDocument(), new PdfSignatureOptions(certificate)
+        {
+            SignerName = "\u0410\u043B\u0438\u0441\u0430",
+            Appearance = new PdfSignatureAppearance(0, PdfRectangle.FromSize(10, 10, 100, 50)),
+        }));
+        Assert.Contains(nameof(PdfSignatureAppearance.Font), exception.Message, StringComparison.Ordinal);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfSignatureAppearance(0, PdfRectangle.FromSize(0, 0, 10, 10)) { FontSize = -1 });
+
+        static string GetAppearanceContent(byte[] signed)
+        {
+            Assert.True(PdfSignatureVerifier.Verify(signed).Single().IsValid);
+            var widget = GetField(PdfDocument.Open(signed), "Signature1");
+            return Encoding.Latin1.GetString(widget.Get<PdfDictionary>(PdfName.Create("AP"))!.Get<PdfStream>(PdfNames.N)!.GetDecodedData());
+        }
     }
 
     [Fact]

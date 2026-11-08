@@ -12,7 +12,7 @@ namespace Meziantou.Framework.WebPlatform.Html;
 /// SVG-AAM (https://w3c.github.io/svg-aam/). The hidden elements are determined by the computed style when the document has a
 /// browsing context, and by the hidden and aria-hidden attributes otherwise.
 /// </summary>
-internal static class Accessibility
+internal static partial class Accessibility
 {
     // https://w3c.github.io/aria/#role_definitions (non-abstract roles), https://w3c.github.io/dpub-aria/, https://w3c.github.io/graphics-aria/
     private static readonly FrozenSet<string> Roles = FrozenSet.Create(StringComparer.Ordinal,
@@ -424,9 +424,11 @@ internal static class Accessibility
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>Returns the accessible name of the element, with its white space collapsed and trimmed.</summary>
-    public static string GetName(Element element)
+    public static string GetName(Element element) => GetName(element, new ComputationCache(element));
+
+    private static string GetName(Element element, ComputationCache cache)
     {
-        var computation = new NameComputation(element);
+        var computation = new NameComputation(element, cache);
         return Flatten(computation.Compute(element, new Traversal()));
     }
 
@@ -469,17 +471,12 @@ internal static class Accessibility
     /// <param name="InContent">Whether the node is a descendant reached by the name from content (the element whose name is computed is not part of its own name).</param>
     private readonly record struct Traversal(bool InLabelledBy = false, bool Recursion = false, bool InHiddenRoot = false, bool InNativeLabel = false, bool InContent = false);
 
-    private sealed class NameComputation(Element root)
+    private sealed class NameComputation(Element root, ComputationCache cache)
     {
         private int _depth;
 
         // The elements already part of the name: a node referenced twice (e.g. by aria-labelledby, then as content) is used once
         private readonly HashSet<Element> _visited = [];
-
-        private CssCounters? _counters;
-        private AriaOwns? _ariaOwns;
-
-        private AriaOwns Owns => _ariaOwns ??= AriaOwns.Compute(root);
 
         public string Compute(Node node, Traversal traversal)
         {
@@ -734,7 +731,7 @@ internal static class Accessibility
         /// The text of the content property of a pseudo-element (https://w3c.github.io/accname/#comp_name_from_content_pseudo_element):
         /// the strings and the counters, or the alternative text after the slash.
         /// </summary>
-        private string GetPseudoContent(Element element, string pseudoElement)
+        internal string GetPseudoContent(Element element, string pseudoElement)
         {
             if (!HasStyle(element))
                 return "";
@@ -786,12 +783,12 @@ internal static class Accessibility
             if (isCounters && separator is null)
                 return null;
 
-            _counters ??= CssCounters.Compute(root);
+            var counters = cache.Counters;
             var styleIndex = isCounters ? 2 : 1;
-            var counterStyle = (arguments.Count > styleIndex ? _counters.ResolveCounterStyle(arguments[styleIndex], style, "content") : null) ?? CounterStyle.Decimal;
+            var counterStyle = (arguments.Count > styleIndex ? counters.ResolveCounterStyle(arguments[styleIndex], style, "content") : null) ?? CounterStyle.Decimal;
             return isCounters
-                ? _counters.GetCounters(element, pseudoElement, name.Token.Value, separator!, counterStyle, style)
-                : _counters.GetCounter(element, pseudoElement, name.Token.Value, counterStyle, style);
+                ? counters.GetCounters(element, pseudoElement, name.Token.Value, separator!, counterStyle, style)
+                : counters.GetCounter(element, pseudoElement, name.Token.Value, counterStyle, style);
         }
 
         /// <summary>
@@ -827,8 +824,7 @@ internal static class Accessibility
                 return "";
 
             // The marker string: the space after a bullet is not part of the name (the marker is separated from the content)
-            _counters ??= CssCounters.Compute(root);
-            var marker = _counters.GetMarkerString(element, style) ?? "";
+            var marker = cache.Counters.GetMarkerString(element, style) ?? "";
             return listStyleType is "disc" or "circle" or "square" ? marker.TrimEnd(' ') : marker;
         }
 
@@ -850,7 +846,7 @@ internal static class Accessibility
             return null;
         }
 
-        private static bool IsInline(Element element)
+        internal static bool IsInline(Element element)
         {
             if (!HasStyle(element))
                 return !element.IsHtmlNamespace || element.TagId is not (TagId.Div or TagId.P or TagId.Li or TagId.Ul or TagId.Ol or TagId.Section or TagId.Article or TagId.H1 or TagId.H2 or TagId.H3 or TagId.H4 or TagId.H5 or TagId.H6 or TagId.Table or TagId.Tr or TagId.Td or TagId.Th or TagId.Br);
@@ -945,27 +941,9 @@ internal static class Accessibility
             return builder.ToString();
         }
 
-        /// <summary>The children of the element in the accessibility tree: its flat tree children, without the elements owned by another element, then the elements it owns (aria-owns).</summary>
-        private AccessibleChildren GetChildren(Element element) => new(element, HtmlElement.GetFlatTreeChildren(element), Owns.HasOwnedElements ? Owns : null);
+        private AccessibleChildren GetChildren(Element element) => cache.GetChildren(element);
 
-        /// <summary>Whether the element is hidden, its parent being its owner (aria-owns) when it is owned: an owned element is not hidden by the aria-hidden of its DOM ancestors.</summary>
-        private bool IsHiddenInTree(Element? element)
-        {
-            if (element is null)
-                return false;
-
-            if (!Owns.HasOwnedElements)
-                return IsHidden(element);
-
-            for (var ancestor = element; ancestor is not null; ancestor = Owns.GetOwner(ancestor) ?? HtmlElement.GetFlatTreeParent(ancestor) as Element)
-            {
-                if (IsAriaHidden(ancestor))
-                    return true;
-            }
-
-            return IsNotRendered(element);
-        }
-
+        private bool IsHiddenInTree(Element? element) => cache.IsHiddenInTree(element);
     }
 
     private static bool HasStyle(Element element) => ComputedStyleDeclarations.IsRendered(element);

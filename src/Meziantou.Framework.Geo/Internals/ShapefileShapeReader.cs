@@ -82,16 +82,17 @@ internal sealed class ShapefileShapeReader
         return shapeType switch
         {
             ShapefileShapeType.Null => null,
-            ShapefileShapeType.Point or ShapefileShapeType.PointM or ShapefileShapeType.PointZ => ParsePoint(content, shapeType is ShapefileShapeType.PointZ),
-            ShapefileShapeType.MultiPoint or ShapefileShapeType.MultiPointM or ShapefileShapeType.MultiPointZ => ParseMultiPoint(content, shapeType is ShapefileShapeType.MultiPointZ),
-            ShapefileShapeType.PolyLine or ShapefileShapeType.PolyLineM or ShapefileShapeType.PolyLineZ => ParsePolyLine(content, shapeType is ShapefileShapeType.PolyLineZ),
-            ShapefileShapeType.Polygon or ShapefileShapeType.PolygonM or ShapefileShapeType.PolygonZ => ParsePolygon(content, shapeType is ShapefileShapeType.PolygonZ),
+            ShapefileShapeType.Point or ShapefileShapeType.PointM or ShapefileShapeType.PointZ => ParsePoint(content, shapeType is ShapefileShapeType.PointZ, shapeType is not ShapefileShapeType.Point),
+            ShapefileShapeType.MultiPoint or ShapefileShapeType.MultiPointM or ShapefileShapeType.MultiPointZ => ParseMultiPoint(content, shapeType is ShapefileShapeType.MultiPointZ, shapeType is not ShapefileShapeType.MultiPoint),
+            ShapefileShapeType.PolyLine or ShapefileShapeType.PolyLineM or ShapefileShapeType.PolyLineZ => ParsePolyLine(content, shapeType is ShapefileShapeType.PolyLineZ, shapeType is not ShapefileShapeType.PolyLine),
+            ShapefileShapeType.Polygon or ShapefileShapeType.PolygonM or ShapefileShapeType.PolygonZ => ParsePolygon(content, shapeType is ShapefileShapeType.PolygonZ, shapeType is not ShapefileShapeType.Polygon),
             ShapefileShapeType.MultiPatch => ParseMultiPatch(content),
             _ => throw new FormatException($"The shape type {shapeType} is not a shapefile shape type."),
         };
     }
 
-    private static GeoPoint? ParsePoint(ReadOnlySpan<byte> content, bool hasZ)
+    // The M values are optional in the Z shapes: hasM tells the shape can have them, and they are read when the record holds them
+    private static GeoPoint? ParsePoint(ReadOnlySpan<byte> content, bool hasZ, bool hasM)
     {
         EnsureLength(content, hasZ ? 28 : 20);
         var x = ReadDouble(content, 4);
@@ -101,20 +102,22 @@ internal sealed class ShapefileShapeReader
         if (!double.IsFinite(x) || !double.IsFinite(y))
             return null;
 
-        return new GeoPoint(new GeoPosition(x, y, hasZ ? ReadDouble(content, 20) : null));
+        var mOffset = hasZ ? 28 : 20;
+        double? m = hasM && content.Length >= mOffset + 8 ? ToMeasure(ReadDouble(content, mOffset)) : null;
+        return new GeoPoint(new GeoPosition(x, y, hasZ ? ReadDouble(content, 20) : null) { Measure = m });
     }
 
-    private static GeoMultiPoint? ParseMultiPoint(ReadOnlySpan<byte> content, bool hasZ)
+    private static GeoMultiPoint? ParseMultiPoint(ReadOnlySpan<byte> content, bool hasZ, bool hasM)
     {
         EnsureLength(content, 40);
         var pointCount = ReadCount(content, 36);
-        var positions = ReadPositions(content, 40, pointCount, hasZ);
+        var positions = ReadPositions(content, 40, pointCount, hasZ, hasM);
         return positions.Length is 0 ? null : new GeoMultiPoint(positions);
     }
 
-    private static GeoGeometry? ParsePolyLine(ReadOnlySpan<byte> content, bool hasZ)
+    private static GeoGeometry? ParsePolyLine(ReadOnlySpan<byte> content, bool hasZ, bool hasM)
     {
-        var parts = ReadParts(content, hasZ, hasPartTypes: false, out _);
+        var parts = ReadParts(content, hasZ, hasM, hasPartTypes: false, out _);
         return parts.Count switch
         {
             0 => null,
@@ -123,9 +126,9 @@ internal sealed class ShapefileShapeReader
         };
     }
 
-    private static GeoGeometry? ParsePolygon(ReadOnlySpan<byte> content, bool hasZ)
+    private static GeoGeometry? ParsePolygon(ReadOnlySpan<byte> content, bool hasZ, bool hasM)
     {
-        var rings = ReadParts(content, hasZ, hasPartTypes: false, out _);
+        var rings = ReadParts(content, hasZ, hasM, hasPartTypes: false, out _);
         return ShapefileRings.Assemble(rings);
     }
 
@@ -133,7 +136,7 @@ internal sealed class ShapefileShapeReader
     // or a first ring starts a polygon, and the inner rings and the rings that follow it are its holes.
     private static GeoGeometry? ParseMultiPatch(ReadOnlySpan<byte> content)
     {
-        var parts = ReadParts(content, hasZ: true, hasPartTypes: true, out var partTypes);
+        var parts = ReadParts(content, hasZ: true, hasM: true, hasPartTypes: true, out var partTypes);
         var polygons = new List<GeoPolygon>();
         List<GeoPosition[]>? rings = null;
         for (var i = 0; i < parts.Count; i++)
@@ -188,7 +191,7 @@ internal sealed class ShapefileShapeReader
     }
 
     // The layout of a PolyLine, a Polygon and a MultiPatch: box, part count, point count, part starts, [part types], points, [Z range, Z values], [M range, M values]
-    private static List<GeoPosition[]> ReadParts(ReadOnlySpan<byte> content, bool hasZ, bool hasPartTypes, out int[] partTypes)
+    private static List<GeoPosition[]> ReadParts(ReadOnlySpan<byte> content, bool hasZ, bool hasM, bool hasPartTypes, out int[] partTypes)
     {
         EnsureLength(content, 44);
         var partCount = ReadCount(content, 36);
@@ -210,7 +213,7 @@ internal sealed class ShapefileShapeReader
             }
         }
 
-        var positions = ReadPositions(content, (int)(44 + partArraysLength), pointCount, hasZ);
+        var positions = ReadPositions(content, (int)(44 + partArraysLength), pointCount, hasZ, hasM);
         var parts = new List<GeoPosition[]>(partCount);
         var partTypesList = new List<int>(partCount);
         for (var i = 0; i < partCount; i++)
@@ -235,20 +238,28 @@ internal sealed class ShapefileShapeReader
         return parts;
     }
 
-    // The points (X, Y pairs) at an offset, then the Z range and the Z values when the shape has Z; the M values are ignored
-    private static GeoPosition[] ReadPositions(ReadOnlySpan<byte> content, int offset, int pointCount, bool hasZ)
+    // The points (X, Y pairs) at an offset, then the Z range and the Z values when the shape has Z, then the M range and
+    // the M values when the shape can have M and the record holds them
+    private static GeoPosition[] ReadPositions(ReadOnlySpan<byte> content, int offset, int pointCount, bool hasZ, bool hasM)
     {
         var zOffset = offset + (16L * pointCount) + 16;
-        EnsureLength(content, hasZ ? zOffset + (8L * pointCount) : offset + (16L * pointCount));
+        var end = hasZ ? zOffset + (8L * pointCount) : offset + (16L * pointCount);
+        EnsureLength(content, end);
+        var mOffset = end + 16;
+        hasM = hasM && pointCount > 0 && content.Length >= mOffset + (8L * pointCount);
         var positions = new GeoPosition[pointCount];
         for (var i = 0; i < pointCount; i++)
         {
             double? z = hasZ ? ReadDouble(content, (int)zOffset + (8 * i)) : null;
-            positions[i] = new GeoPosition(ReadDouble(content, offset + (16 * i)), ReadDouble(content, offset + (16 * i) + 8), z);
+            double? m = hasM ? ToMeasure(ReadDouble(content, (int)mOffset + (8 * i))) : null;
+            positions[i] = new GeoPosition(ReadDouble(content, offset + (16 * i)), ReadDouble(content, offset + (16 * i) + 8), z) { Measure = m };
         }
 
         return positions;
     }
+
+    // A measure smaller than -10^38 means "no data", and some writers use NaN
+    private static double? ToMeasure(double value) => value < ShapefileShapeType.NoDataThreshold || double.IsNaN(value) ? null : value;
 
     private static int ReadCount(ReadOnlySpan<byte> content, int offset)
     {

@@ -24,6 +24,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// otherwise; a value of at least <see cref="CompressionThreshold"/> bytes is compressed (<c>zTXt</c>, or a compressed
 /// <c>iTXt</c>) when the compression level is not <see cref="CompressionLevel.NoCompression"/> and compression makes it smaller.
 /// </description></item>
+/// <item><description>
+/// the raw chunks of <see cref="MetadataWritePlan.PngChunks"/> placed before the palette, in order; the encoder writes the
+/// ones placed before the image data after the palette (<see cref="WriteChunks"/>), and the ones placed after the image
+/// data before <c>IEND</c>.
+/// </description></item>
 /// </list>
 /// Each chunk is produced by one call (<see cref="Write"/>), so the encoder writes the metadata in bounded steps; sizes are
 /// checked on creation so that an unrepresentable payload fails before any output.
@@ -97,6 +102,16 @@ internal sealed class PngMetadataWriter
             EnsureFits(maxLength, string.Create(CultureInfo.InvariantCulture, $"text entry '{entry.Keyword}'"));
             _items.Add(new Item(ItemKind.Text, i));
         }
+
+        for (var i = 0; i < plan.PngChunks.Count; i++)
+        {
+            var chunk = plan.PngChunks[i];
+            EnsureFits(chunk.Data.Length, string.Create(CultureInfo.InvariantCulture, $"chunk '{chunk.Type}'"));
+            if (chunk.Position == PngChunkPosition.BeforePalette)
+            {
+                _items.Add(new Item(ItemKind.Chunk, i));
+            }
+        }
     }
 
     private enum ItemKind
@@ -109,6 +124,7 @@ internal sealed class PngMetadataWriter
         Exif,
         Xmp,
         Text,
+        Chunk,
     }
 
     /// <summary>Gets the number of chunks.</summary>
@@ -155,10 +171,39 @@ internal sealed class PngMetadataWriter
                 WriteInternationalText(output, XmpKeyword, languageTag: "", translatedKeyword: "", _plan.XmpProfile!.Data.Span, allowCompression: false);
                 break;
 
+            case ItemKind.Chunk:
+                WriteChunk(output, _plan.PngChunks[item.TextIndex]);
+                break;
+
             default:
                 WriteText(output, _plan.TextEntries[item.TextIndex]);
                 break;
         }
+    }
+
+    /// <summary>Writes the raw chunks placed after the palette (<see cref="PngChunkPosition.BeforeImageData"/>) or after the image data.</summary>
+    /// <param name="position">The position, <see cref="PngChunkPosition.BeforeImageData"/> or <see cref="PngChunkPosition.AfterImageData"/>.</param>
+    /// <param name="output">The output.</param>
+    public void WriteChunks(PngChunkPosition position, IBufferWriter<byte> output)
+    {
+        foreach (var chunk in _plan.PngChunks)
+        {
+            if (chunk.Position == position)
+            {
+                WriteChunk(output, chunk);
+            }
+        }
+    }
+
+    private static void WriteChunk(IBufferWriter<byte> output, PngChunk chunk)
+    {
+        Span<byte> type = stackalloc byte[4];
+        for (var i = 0; i < 4; i++)
+        {
+            type[i] = (byte)chunk.Type[i];
+        }
+
+        PngChunkWriter.Write(output, BinaryPrimitives.ReadUInt32BigEndian(type), chunk.Data.Span);
     }
 
     private static long GetMaxCompressedLength(long length) => length + (5 * ((length / 16_383) + 1)) + 6;

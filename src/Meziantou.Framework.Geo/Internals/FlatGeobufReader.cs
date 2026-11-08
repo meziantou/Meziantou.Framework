@@ -8,29 +8,27 @@ namespace Meziantou.Framework.Geo.Internals;
 /// <summary>Reads FlatGeobuf data: the signature, the header, the optional index, then the size-prefixed features.</summary>
 internal static class FlatGeobufReader
 {
+    public const int PrefixLength = 12;
+
+    // The reference implementation and GDAL refuse larger headers too
+    private const int MaxHeaderLength = 10 * 1024 * 1024;
+
     public static GeoFeatureCollection Read(ReadOnlySpan<byte> data, GeoBounds? bounds)
     {
         var span = data;
-        if (span.Length < 12 || span[0] != 'f' || span[1] != 'g' || span[2] != 'b' || span[4] != 'f' || span[5] != 'g' || span[6] != 'b')
+        if (span.Length < PrefixLength)
             throw new FormatException("The data is not FlatGeobuf: it does not start with the signature of the format.");
 
-        if (span[3] != FlatGeobufFormat.MajorVersion)
-            throw new FormatException($"The version {span[3]} of FlatGeobuf is not supported: only version {FlatGeobufFormat.MajorVersion} is.");
-
-        var headerSize = BinaryPrimitives.ReadUInt32LittleEndian(span[8..]);
-        if (headerSize > span.Length - 12)
+        var headerSize = ReadHeaderLength(span);
+        if (headerSize > span.Length - PrefixLength)
             throw new FormatException("The header of the FlatGeobuf data is truncated.");
 
-        var header = FlatBufferTable.GetRoot(data.Slice(12, (int)headerSize));
-        var geometryType = header.GetByte(FlatGeobufFormat.HeaderGeometryType);
-        var dimensions = new FlatGeobufDimensions(header.GetBool(FlatGeobufFormat.HeaderHasZ), header.GetBool(FlatGeobufFormat.HeaderHasM));
-        var columns = ReadColumns(header);
-        var count = header.GetUInt64(FlatGeobufFormat.HeaderFeaturesCount);
-        var nodeSize = header.GetUInt16(FlatGeobufFormat.HeaderIndexNodeSize, defaultValue: 16);
-
-        var position = 12L + headerSize;
+        var header = ReadHeader(data.Slice(PrefixLength, headerSize));
+        var count = header.FeatureCount;
+        var nodeSize = header.IndexNodeSize;
+        var position = (long)PrefixLength + headerSize;
         var index = ReadOnlySpan<byte>.Empty;
-        if (nodeSize > 0 && count > 0)
+        if (header.HasIndex)
         {
             var indexSize = PackedRTree.GetSize(count, nodeSize);
             if (indexSize > span.Length - position)
@@ -40,7 +38,7 @@ internal static class FlatGeobufReader
             position += indexSize;
         }
 
-        var features = new GeoFeatureCollection { Name = header.GetString(FlatGeobufFormat.HeaderName) };
+        var features = new GeoFeatureCollection { Name = header.Name };
         var dataStart = (int)position;
         if (bounds is { } box && !index.IsEmpty)
         {
@@ -49,7 +47,7 @@ internal static class FlatGeobufReader
                 if (offset < 0 || offset > span.Length - dataStart)
                     throw new FormatException("The index of the FlatGeobuf data refers to a feature outside of the data.");
 
-                features.Add(ReadFeature(data, dataStart + (int)offset, geometryType, dimensions, columns, out _));
+                features.Add(ReadFeature(data, dataStart + (int)offset, header, out _));
             }
 
             return features;
@@ -59,10 +57,10 @@ internal static class FlatGeobufReader
         var current = dataStart;
         while (current < span.Length && (count == 0 || read < count))
         {
-            var feature = ReadFeature(data, current, geometryType, dimensions, columns, out var next);
+            var feature = ReadFeature(data, current, header, out var next);
             current = next;
             read++;
-            if (bounds is { } filter && (feature.Geometry?.GetBounds() is not { } featureBounds || !Intersects(filter, featureBounds)))
+            if (bounds is { } filter && !Intersects(filter, feature))
                 continue;
 
             features.Add(feature);
@@ -74,9 +72,55 @@ internal static class FlatGeobufReader
         return features;
     }
 
-    private static bool Intersects(GeoBounds a, GeoBounds b) => b.West <= a.East && b.East >= a.West && b.South <= a.North && b.North >= a.South;
+    /// <summary>Checks the signature of the first 12 bytes of the data, and returns the length of the header that follows.</summary>
+    public static int ReadHeaderLength(ReadOnlySpan<byte> prefix)
+    {
+        if (prefix[0] != 'f' || prefix[1] != 'g' || prefix[2] != 'b' || prefix[4] != 'f' || prefix[5] != 'g' || prefix[6] != 'b')
+            throw new FormatException("The data is not FlatGeobuf: it does not start with the signature of the format.");
 
-    private static GeoFeature ReadFeature(ReadOnlySpan<byte> data, int position, byte geometryType, FlatGeobufDimensions dimensions, Column[] columns, out int next)
+        if (prefix[3] != FlatGeobufFormat.MajorVersion)
+            throw new FormatException($"The version {prefix[3]} of FlatGeobuf is not supported: only version {FlatGeobufFormat.MajorVersion} is.");
+
+        var headerSize = BinaryPrimitives.ReadUInt32LittleEndian(prefix[8..]);
+        if (headerSize > MaxHeaderLength)
+            throw new FormatException("The header of the FlatGeobuf data is too large.");
+
+        return (int)headerSize;
+    }
+
+    /// <summary>Reads the header, without its size prefix.</summary>
+    public static Header ReadHeader(ReadOnlySpan<byte> data)
+    {
+        var header = FlatBufferTable.GetRoot(data);
+        return new Header(
+            header.GetString(FlatGeobufFormat.HeaderName),
+            header.GetByte(FlatGeobufFormat.HeaderGeometryType),
+            new FlatGeobufDimensions(header.GetBool(FlatGeobufFormat.HeaderHasZ), header.GetBool(FlatGeobufFormat.HeaderHasM)),
+            ReadColumns(header),
+            header.GetUInt64(FlatGeobufFormat.HeaderFeaturesCount),
+            header.GetUInt16(FlatGeobufFormat.HeaderIndexNodeSize, defaultValue: 16));
+    }
+
+    /// <summary>Reads a feature, without its size prefix.</summary>
+    public static GeoFeature ReadFeature(ReadOnlySpan<byte> data, Header header)
+    {
+        var feature = FlatBufferTable.GetRoot(data);
+        var featureColumns = feature.Has(FlatGeobufFormat.FeatureColumns) ? ReadColumns(feature, FlatGeobufFormat.FeatureColumns) : header.Columns;
+        GeoGeometry? geometry = null;
+        if (feature.TryGetTable(FlatGeobufFormat.FeatureGeometry, out var table))
+        {
+            geometry = ReadGeometry(table, header.GeometryType, header.Dimensions, depth: 0);
+        }
+
+        var properties = ReadProperties(feature.GetVectorBytes(FlatGeobufFormat.FeatureProperties, elementSize: 1, out _), featureColumns);
+        return new GeoFeature(geometry, properties);
+    }
+
+    /// <summary>Gets a value that indicates whether the bounds of the geometry of a feature intersect a box.</summary>
+    public static bool Intersects(GeoBounds box, GeoFeature feature) =>
+        feature.Geometry?.GetBounds() is { } bounds && bounds.West <= box.East && bounds.East >= box.West && bounds.South <= box.North && bounds.North >= box.South;
+
+    private static GeoFeature ReadFeature(ReadOnlySpan<byte> data, int position, Header header, out int next)
     {
         var span = data;
         if (position > span.Length - 4)
@@ -87,16 +131,7 @@ internal static class FlatGeobufReader
             throw new FormatException("A feature of the FlatGeobuf data is truncated.");
 
         next = position + 4 + (int)size;
-        var feature = FlatBufferTable.GetRoot(data.Slice(position + 4, (int)size));
-        var featureColumns = feature.Has(FlatGeobufFormat.FeatureColumns) ? ReadColumns(feature, FlatGeobufFormat.FeatureColumns) : columns;
-        GeoGeometry? geometry = null;
-        if (feature.TryGetTable(FlatGeobufFormat.FeatureGeometry, out var table))
-        {
-            geometry = ReadGeometry(table, geometryType, dimensions, depth: 0);
-        }
-
-        var properties = ReadProperties(feature.GetVectorBytes(FlatGeobufFormat.FeatureProperties, elementSize: 1, out _), featureColumns);
-        return new GeoFeature(geometry, properties);
+        return ReadFeature(data.Slice(position + 4, (int)size), header);
     }
 
     private static Column[] ReadColumns(FlatBufferTable table, int field = FlatGeobufFormat.HeaderColumns)
@@ -306,5 +341,12 @@ internal static class FlatGeobufReader
         return parts;
     }
 
-    private readonly record struct Column(string Name, byte Type);
+    internal readonly record struct Column(string Name, byte Type);
+
+    /// <summary>The header of FlatGeobuf data: what the reader needs to read the features.</summary>
+    internal sealed record Header(string? Name, byte GeometryType, FlatGeobufDimensions Dimensions, Column[] Columns, ulong FeatureCount, ushort IndexNodeSize)
+    {
+        /// <summary>Gets a value that indicates whether the spatial index follows the header.</summary>
+        public bool HasIndex => IndexNodeSize > 0 && FeatureCount > 0;
+    }
 }

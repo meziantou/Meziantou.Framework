@@ -66,6 +66,33 @@ Assert.Contains("France", features.Select(feature => (string?)feature.Properties
 The features are kept whole: a country that crosses the edge of the box is not cut. Cut them with
 [Clip](cref:Meziantou.Framework.Geo.GeoGeometry.Clip), see [geometry operations](../06-GeometryOperations.md).
 
+## Read a large file
+
+[FlatGeobuf.ReadFeaturesAsync](cref:Meziantou.Framework.Geo.FlatGeobuf.ReadFeaturesAsync) returns the features one at a
+time, from a file or a stream, and keeps only the feature being read in memory. With
+[Bounds](cref:Meziantou.Framework.Geo.FlatGeobufReaderOptions.Bounds) and a spatial index, it reads only the nodes of
+the index that the search visits and the features it finds: a region of a large file is read without reading the rest
+of the file.
+
+<!-- ref:../../../tests/Meziantou.Framework.Geo.Tests/FlatGeobufTests.cs;region=Geo_FlatGeobufReadFeaturesAsync;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The features are read one at a time; with a box and a spatial index, only the nodes of the index that the
+// search visits and the features it finds are read from the file
+var europe = new GeoBounds(West: -10, South: 35, East: 30, North: 60);
+var names = new List<string?>();
+await foreach (var feature in FlatGeobuf.ReadFeaturesAsync("TestData/flatgeobuf/countries.fgb", new FlatGeobufReaderOptions { Bounds = europe }))
+{
+    names.Add((string?)feature.Properties["name"]);
+}
+
+Assert.Contains("France", names);
+Assert.DoesNotContain("Japan", names);
+```
+<!-- endref -->
+
+The search needs a stream that can seek, such as a file. A stream that cannot seek, such as the body of an HTTP
+response, is read to its end: the index is skipped, and the features outside of the box are read and dropped.
+
 ## The spatial index
 
 The writer adds the index by default. The index requires the features in its own order, along a Hilbert curve, so that

@@ -592,6 +592,29 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.CubeLut Parse(string text) => throw null;
     }
 
+    public abstract class CustomImageCodec
+    {
+        public Meziantou.Framework.Imaging.ImageFormatInfo FormatInfo { get => throw null; }
+        protected CustomImageCodec(Meziantou.Framework.Imaging.ImageFormatInfo formatInfo) { }
+        public virtual Meziantou.Framework.Imaging.Formats.CustomImageEncoder? CreateEncoder() => throw null;
+        protected Meziantou.Framework.Imaging.ImageInfo CreateImageInfo(Meziantou.Framework.Imaging.Image image) => throw null;
+        protected Meziantou.Framework.Imaging.ImageInfo CreateImageInfo(int width, int height, Meziantou.Framework.Imaging.PixelFormat pixelFormat, int? frameCount = 1, Meziantou.Framework.Imaging.Metadata.ImageMetadata? metadata = null) => throw null;
+        public abstract Meziantou.Framework.Imaging.Image Decode(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.CustomImageDecodeContext context);
+        public virtual Meziantou.Framework.Imaging.ImageInfo Identify(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.CustomImageDecodeContext context) => throw null;
+        public abstract bool IsMatch(System.ReadOnlySpan<byte> prefix);
+    }
+
+    public sealed class CustomImageDecodeContext
+    {
+        public System.Threading.CancellationToken CancellationToken { get => throw null; }
+        public Meziantou.Framework.Imaging.ImageConfiguration Configuration { get => throw null; }
+        public int? FrameLimit { get => throw null; }
+        public Meziantou.Framework.Imaging.ImageIdentifyMode? IdentifyMode { get => throw null; }
+        public Meziantou.Framework.Imaging.PixelFormat? RequestedPixelFormat { get => throw null; }
+        public Meziantou.Framework.Imaging.Image CreateImage(Meziantou.Framework.Imaging.PixelFormat pixelFormat, int width, int height) => throw null;
+        public Meziantou.Framework.Imaging.Image<TPixel> CreateImage<TPixel>(int width, int height) where TPixel : unmanaged => throw null;
+    }
+
     public enum DecodingStrictness
     {
         Strict = 0,
@@ -833,6 +856,16 @@ namespace Meziantou.Framework.Imaging
         public static bool operator !=(Meziantou.Framework.Imaging.Hwb left, Meziantou.Framework.Imaging.Hwb right) => throw null;
     }
 
+    public interface IPixelNeighborhoodOperation<TPixel> where TPixel : unmanaged
+    {
+        void Invoke(int y, Meziantou.Framework.Imaging.PixelRowSource<TPixel> source, System.Span<TPixel> destination);
+    }
+
+    public interface IPixelRowOperation<TPixel> where TPixel : unmanaged
+    {
+        void Invoke(int y, System.Span<TPixel> row);
+    }
+
     public sealed class IccColorTransform
     {
         public int DestinationChannelCount { get => throw null; }
@@ -876,6 +909,7 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.ImageWriter<TPixel> CreateWriter<TPixel>(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageWriterOptions options) where TPixel : unmanaged => throw null;
         public static Meziantou.Framework.Imaging.ImageWriter<TPixel> CreateWriter<TPixel>(string path, Meziantou.Framework.Imaging.ImageWriterOptions options) where TPixel : unmanaged => throw null;
         public static Meziantou.Framework.Imaging.ImageFormat DetectFormat(System.ReadOnlySpan<byte> prefix) => throw null;
+        public static Meziantou.Framework.Imaging.ImageFormatInfo? DetectFormatInfo(System.ReadOnlySpan<byte> prefix, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
         public void Dispose() { }
         public void Draw(Meziantou.Framework.Imaging.Drawing.DrawingAction action, System.Threading.CancellationToken cancellationToken = default) { }
         public void Draw<TState>(TState state, Meziantou.Framework.Imaging.Drawing.DrawingAction<TState> action, System.Threading.CancellationToken cancellationToken = default) where TState : allows ref struct { }
@@ -911,6 +945,18 @@ namespace Meziantou.Framework.Imaging
         public System.Threading.Tasks.Task SaveAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.Formats.ImageEncoder encoder, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task SaveAsync(string path, Meziantou.Framework.Imaging.Formats.ImageEncoder? encoder = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public abstract Meziantou.Framework.Imaging.ImageFrame SetPosterFrame(Meziantou.Framework.Imaging.ImageFrame source);
+        public static Meziantou.Framework.Imaging.Image WrapMemory(Meziantou.Framework.Imaging.PixelFormat pixelFormat, System.Memory<byte> memory, int width, int height, int strideInBytes = 0, System.Action? release = null, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+        public static unsafe Meziantou.Framework.Imaging.Image WrapMemory(Meziantou.Framework.Imaging.PixelFormat pixelFormat, void* address, int width, int height, int strideInBytes = 0, System.Action? release = null, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+        public static Meziantou.Framework.Imaging.Image<TPixel> WrapMemory<TPixel>(System.Memory<byte> memory, int width, int height, int strideInBytes = 0, System.Action? release = null, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) where TPixel : unmanaged => throw null;
+        public static unsafe Meziantou.Framework.Imaging.Image<TPixel> WrapMemory<TPixel>(void* address, int width, int height, int strideInBytes = 0, System.Action? release = null, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) where TPixel : unmanaged => throw null;
+    }
+
+    public static class ImageBufferPool
+    {
+        public const long DefaultMaxRetainedBytes = 33554432L;
+        public static long MaxRetainedBytes { get => throw null; set { } }
+        public static long RetainedBytes { get => throw null; }
+        public static void Trim() { }
     }
 
     public sealed class ImageCollection : System.IDisposable
@@ -975,6 +1021,7 @@ namespace Meziantou.Framework.Imaging
 
     public sealed class ImageConfiguration
     {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.CustomImageCodec> Codecs { get => throw null; init { } }
         public Meziantou.Framework.Imaging.DecodingStrictness DecodingStrictness { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.ImageConfiguration Default { get => throw null; }
         public Meziantou.Framework.Imaging.ImageResourceLimits Limits { get => throw null; init { } }
@@ -1020,6 +1067,7 @@ namespace Meziantou.Framework.Imaging
         Heic = 15,
         Jpeg2000 = 16,
         OpenExr = 17,
+        Custom = 1000,
     }
 
     public sealed class ImageFormatInfo
@@ -1031,6 +1079,7 @@ namespace Meziantou.Framework.Imaging
         public string MimeType { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> MimeTypes { get => throw null; }
         public string Name { get => throw null; }
+        public ImageFormatInfo(string name, System.Collections.Generic.IEnumerable<string> mimeTypes, System.Collections.Generic.IEnumerable<string> fileExtensions) { }
         public static Meziantou.Framework.Imaging.ImageFormatInfo Get(Meziantou.Framework.Imaging.ImageFormat format) => throw null;
         public override string ToString() => throw null;
         public static bool TryGetByFileExtension(System.ReadOnlySpan<char> extension, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Imaging.ImageFormatInfo? info) => throw null;
@@ -1130,6 +1179,7 @@ namespace Meziantou.Framework.Imaging
         public int? CollectionEntryCount { get => throw null; }
         public Meziantou.Framework.Imaging.ImageColorModel ColorModel { get => throw null; }
         public Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.ImageFormatInfo FormatInfo { get => throw null; }
         public int? FrameCount { get => throw null; }
         public bool? HasPosterFrame { get => throw null; }
         public int Height { get => throw null; }
@@ -1163,6 +1213,8 @@ namespace Meziantou.Framework.Imaging
         public static void ApplyColorMatrix(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ColorMatrix matrix, System.Threading.CancellationToken cancellationToken = default) { }
         public static void ApplyLut(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.CubeLut lut, Meziantou.Framework.Imaging.LutInterpolation interpolation = Meziantou.Framework.Imaging.LutInterpolation.Tetrahedral, System.Threading.CancellationToken cancellationToken = default) { }
         public static void ApplyLut(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.CubeLut lut, Meziantou.Framework.Imaging.LutInterpolation interpolation = Meziantou.Framework.Imaging.LutInterpolation.Tetrahedral, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void ApplyNeighborhoodOperation<TPixel, TOperation>(this Meziantou.Framework.Imaging.Image image, TOperation operation, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged where TOperation : Meziantou.Framework.Imaging.IPixelNeighborhoodOperation<TPixel> { }
+        public static void ApplyRowOperation<TPixel, TOperation>(this Meziantou.Framework.Imaging.Image image, TOperation operation, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged where TOperation : Meziantou.Framework.Imaging.IPixelRowOperation<TPixel> { }
         public static void ApplyToneCurve(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ToneCurve curve, System.Threading.CancellationToken cancellationToken = default) { }
         public static void ApplyToneCurve(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.ToneCurve curve, System.Threading.CancellationToken cancellationToken = default) { }
         public static void ApplyToneCurves(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ToneCurve red, Meziantou.Framework.Imaging.ToneCurve green, Meziantou.Framework.Imaging.ToneCurve blue, System.Threading.CancellationToken cancellationToken = default) { }
@@ -1610,6 +1662,14 @@ namespace Meziantou.Framework.Imaging
         public static bool IsFloatingPoint(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static bool IsGrayscale(Meziantou.Framework.Imaging.PixelFormat format) => throw null;
         public static bool IsSupported<TPixel>() where TPixel : unmanaged => throw null;
+    }
+
+    public ref struct PixelRowSource<TPixel> where TPixel : unmanaged
+    {
+        public int Height { get => throw null; }
+        public int Width { get => throw null; }
+        public System.ReadOnlySpan<TPixel> GetRow(int y) => throw null;
+        public System.ReadOnlySpan<TPixel> GetRowClamped(int y) => throw null;
     }
 
     public delegate void PixelRowsAction<TPixel>(Meziantou.Framework.Imaging.PixelAccessor<TPixel> pixels) where TPixel : unmanaged;
@@ -3041,6 +3101,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Formats.FrameDurationRounding DurationRounding { get => throw null; init { } }
         public int Effort { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.Formats.GainMap? GainMap { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Size? GridTileSize { get => throw null; init { } }
         public int KeyFrameInterval { get => throw null; init { } }
         public bool PremultiplyAlpha { get => throw null; init { } }
@@ -3094,10 +3155,26 @@ namespace Meziantou.Framework.Imaging.Formats
         TopDown = 1,
     }
 
+    public abstract class CustomImageEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
+    {
+        public sealed override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.ImageFormatInfo FormatInfo { get => throw null; }
+        protected CustomImageEncoder(Meziantou.Framework.Imaging.ImageFormatInfo formatInfo) { }
+        public abstract void Encode(Meziantou.Framework.Imaging.Image image, System.IO.Stream destination);
+        public virtual System.Threading.Tasks.ValueTask EncodeAsync(Meziantou.Framework.Imaging.Image image, System.IO.Stream destination, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
     public enum FrameDurationRounding
     {
         RequireExact = 0,
         RoundToNearest = 1,
+    }
+
+    public sealed class GainMap
+    {
+        public Meziantou.Framework.Imaging.Image Image { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.GainMapMetadata Metadata { get => throw null; }
+        public GainMap(Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Metadata.GainMapMetadata metadata) { }
     }
 
     public enum GifAlphaMode
@@ -3257,6 +3334,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling ChromaSubsampling { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.Formats.GainMap? GainMap { get => throw null; init { } }
         public bool OptimizeHuffmanTables { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.JpegEncodingProcess Process { get => throw null; init { } }
         public int Quality { get => throw null; init { } }
@@ -3335,6 +3413,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public bool OptimizeFrames { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.PngPixelLayout PixelLayout { get => throw null; init { } }
         public Meziantou.Framework.Imaging.QuantizeOptions Quantization { get => throw null; init { } }
+        public bool WriteUnsafeToCopyChunks { get => throw null; init { } }
     }
 
     public enum PngFilter
@@ -3607,6 +3686,7 @@ namespace Meziantou.Framework.Imaging.Metadata
         public Meziantou.Framework.Imaging.Metadata.OpenExrWindows? OpenExrWindows { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ExifOrientation Orientation { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.PixelAspectRatio? PixelAspectRatio { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.Imaging.Metadata.PngChunk> PngChunks { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.ImageResolution? Resolution { get => throw null; set { } }
         public Meziantou.Framework.Imaging.ImageFormat SourceFormat { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.Imaging.Metadata.ImageTextEntry> TextEntries { get => throw null; }
@@ -3697,6 +3777,27 @@ namespace Meziantou.Framework.Imaging.Metadata
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
+    }
+
+    public sealed class PngChunk : System.IEquatable<Meziantou.Framework.Imaging.Metadata.PngChunk>
+    {
+        public Meziantou.Framework.Imaging.Metadata.MetadataBlob Data { get => throw null; }
+        public bool IsPrivate { get => throw null; }
+        public bool IsSafeToCopy { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.PngChunkPosition Position { get => throw null; }
+        public string Type { get => throw null; }
+        public PngChunk(string type, Meziantou.Framework.Imaging.Metadata.MetadataBlob data, Meziantou.Framework.Imaging.Metadata.PngChunkPosition position = Meziantou.Framework.Imaging.Metadata.PngChunkPosition.BeforeImageData) { }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.PngChunk? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public enum PngChunkPosition
+    {
+        BeforePalette = 0,
+        BeforeImageData = 1,
+        AfterImageData = 2,
     }
 
     public sealed class XmpProfile

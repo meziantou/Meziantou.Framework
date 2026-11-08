@@ -13,6 +13,7 @@ nothing is ever reduced, unless you ask for a palette with color reduction.
 | Pixels | Every color type and bit depth (1 to 16 bits), palettes with transparency, Adam7 interlacing | Gray, gray and alpha, RGB and RGBA at 8 or 16 bits; palettes of 1, 2, 4 or 8 bits on request; Adam7 |
 | Animations | APNG animations and their poster frame, composited into full frames with exact delays | APNG with exact delays, play count and poster frame |
 | Metadata | ICC profile, color description (`cICP`), EXIF, XMP, text, resolution, HDR light levels | The same |
+| Other chunks | The ancillary chunks the library does not interpret, in [ImageMetadata.PngChunks](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.PngChunks) | The ones that are safe to copy, at their position |
 | Other | Apple CgBI files (the iOS-optimized PNG files of `xcrun pngcrush -iphone`) | Standard PNG only |
 
 By default, the layout follows the pixel format of the image: [Gray8](cref:Meziantou.Framework.Imaging.Gray8) and [Gray16](cref:Meziantou.Framework.Imaging.Gray16) become grayscale, [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) and [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48)
@@ -150,13 +151,45 @@ browsers tolerate are accepted:
 - An APNG with fewer frames than it declares (one at least) is the frames it has. Identifying its header still reports
   the declared count; a full scan reports the frames present.
 
+## Keep the chunks of other applications
+
+The ancillary chunks that the library does not interpret (private chunks of an application, and public chunks such as
+`gAMA`, `bKGD` or `tIME`) are kept in [ImageMetadata.PngChunks](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.PngChunks) with their type, their data and their position: before the
+palette, before the image data, or after it. The encoder writes them back at their position:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/FormatExamples.cs;region=Imaging_PngPrivateChunks;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static PngChunk SavePngWithPrivateChunk(string outputPath)
+{
+    using var image = new Image<Rgba32>(4, 4);
+
+    // A private chunk of an application (lowercase second letter) that is safe to copy (lowercase fourth letter): the
+    // PNG encoder writes it before the image data, and the decoder reads it back with its type, data and position
+    image.Metadata.PngChunks.Add(new PngChunk("myAp", new MetadataBlob("settings"u8)));
+    image.Save(outputPath, new PngEncoder());
+
+    using var loaded = Image.Load(outputPath);
+    return loaded.Metadata.PngChunks.Single(chunk => chunk.Type == "myAp");
+}
+```
+<!-- endref -->
+
+- The case of the letters of the type says what the chunk is: a lowercase first letter for an ancillary chunk (critical
+  chunks cannot be stored), a lowercase second letter for a private chunk, and a lowercase fourth letter for a chunk
+  that is safe to copy ([IsSafeToCopy](cref:Meziantou.Framework.Imaging.Metadata.PngChunk.IsSafeToCopy)).
+- The chunks are metadata: they count toward [MaxMetadataBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxMetadataBytes), [MetadataHandling.Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip) writes
+  none, and the other formats ignore them. Identifying the header of a file stops at the image data, before the chunks
+  that follow it.
+
 ## Pitfalls
 
 - PNG has no lossy mode: for photos, use a lossy format ([JPEG](04-Jpeg.md), [WebP](05-WebP.md), [AVIF](13-Avif.md) or
   [JPEG XL](15-JpegXl.md)).
 - `AnimationMode = Static` throws for an animated image instead of dropping its frames: save one frame with
   `image.Frames[i].Save` to write a still image.
-- Unknown critical chunks are rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException); unknown ancillary chunks are skipped
-  and not written back.
+- Unknown critical chunks are rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
+- A chunk that is not safe to copy (an uppercase fourth letter, such as `gAMA` or `tIME`) depends on the image data. The
+  encoder always encodes the image data again, so it does not write such chunks unless
+  [WriteUnsafeToCopyChunks](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.WriteUnsafeToCopyChunks) says they still describe the image.
 - Apple CgBI files store premultiplied colors: they are decoded, but the colors of nearly transparent pixels are lossy.
   They are never written.

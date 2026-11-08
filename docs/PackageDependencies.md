@@ -1,6 +1,7 @@
 ---
 title: Package dependencies
 description: See which Meziantou.Framework packages you also get when you install one.
+sortOrder: 1
 ---
 
 When you install a Meziantou.Framework package, NuGet also installs the packages it depends on. The graphs below

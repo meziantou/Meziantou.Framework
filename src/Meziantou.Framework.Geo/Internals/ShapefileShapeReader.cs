@@ -11,16 +11,22 @@ internal sealed class ShapefileShapeReader
     // The content of a record is read in chunks, so a hostile length does not allocate more than the data the stream has
     private const int ChunkLength = 1 << 20;
 
+    private const string HeaderTooShortMessage = "The .shp file is too short to have a header.";
+    private const string TruncatedMessage = "The .shp file is truncated.";
+
     private readonly Stream _stream;
     private readonly long _fileLength;
     private long _position;
     private byte[] _buffer = new byte[256];
 
     public ShapefileShapeReader(Stream stream)
+        : this(stream, ReadHeader(stream))
+    {
+    }
+
+    private ShapefileShapeReader(Stream stream, byte[] header)
     {
         _stream = stream;
-        var header = new byte[HeaderLength];
-        ReadExactly(header, "The .shp file is too short to have a header.");
         if (BinaryPrimitives.ReadInt32BigEndian(header) is not ShapefileShapeType.FileCode)
             throw new FormatException("The .shp file does not start with the file code 9994: it is not a shapefile.");
 
@@ -29,6 +35,14 @@ internal sealed class ShapefileShapeReader
             throw new FormatException("The file length in the header of the .shp file is invalid.");
 
         _position = HeaderLength;
+    }
+
+    /// <summary>Creates a reader, reading the header of the file asynchronously.</summary>
+    public static async ValueTask<ShapefileShapeReader> CreateAsync(Stream stream, CancellationToken cancellationToken)
+    {
+        var header = new byte[HeaderLength];
+        await ReadExactlyAsync(stream, header, HeaderTooShortMessage, cancellationToken).ConfigureAwait(false);
+        return new ShapefileShapeReader(stream, header);
     }
 
     /// <summary>Reads the next record.</summary>
@@ -40,39 +54,81 @@ internal sealed class ShapefileShapeReader
         if (_position + RecordHeaderLength > _fileLength)
             return false;
 
-        var recordHeader = _buffer.AsSpan(0, RecordHeaderLength);
-        ReadExactly(recordHeader, "The .shp file is truncated.");
-        var contentLength = BinaryPrimitives.ReadInt32BigEndian(recordHeader[4..]) * 2L;
-        _position += RecordHeaderLength;
-        if (contentLength < 4 || contentLength > Array.MaxLength || _position + contentLength > _fileLength)
-            throw new FormatException($"The record at offset {_position - RecordHeaderLength} of the .shp file has an invalid content length.");
+        ReadExactly(_stream, _buffer.AsSpan(0, RecordHeaderLength), TruncatedMessage);
+        var length = ReadContentLength();
+        var read = 0;
+        while (read < length)
+        {
+            var chunk = GetChunk(read, length);
+            ReadExactly(_stream, _buffer.AsSpan(read, chunk), TruncatedMessage);
+            read += chunk;
+        }
 
-        var length = (int)contentLength;
-        ReadContent(length);
         _position += length;
         geometry = ParseShape(_buffer.AsSpan(0, length));
         return true;
     }
 
-    private void ReadContent(int length)
+    /// <summary>Reads the next record asynchronously.</summary>
+    /// <returns>Whether a record was read (<see langword="false"/> at the end of the file), and its geometry, or <see langword="null"/> for a null shape or a shape without positions.</returns>
+    public async ValueTask<(bool HasRecord, GeoGeometry? Geometry)> TryReadAsync(CancellationToken cancellationToken)
     {
+        if (_position + RecordHeaderLength > _fileLength)
+            return (false, null);
+
+        await ReadExactlyAsync(_stream, _buffer.AsMemory(0, RecordHeaderLength), TruncatedMessage, cancellationToken).ConfigureAwait(false);
+        var length = ReadContentLength();
         var read = 0;
         while (read < length)
         {
-            var chunk = Math.Min(length - read, ChunkLength);
-            if (_buffer.Length < read + chunk)
-            {
-                Array.Resize(ref _buffer, (int)Math.Min(length, Math.Max(read + chunk, _buffer.Length * 2L)));
-            }
-
-            ReadExactly(_buffer.AsSpan(read, chunk), "The .shp file is truncated.");
+            var chunk = GetChunk(read, length);
+            await ReadExactlyAsync(_stream, _buffer.AsMemory(read, chunk), TruncatedMessage, cancellationToken).ConfigureAwait(false);
             read += chunk;
         }
+
+        _position += length;
+        return (true, ParseShape(_buffer.AsSpan(0, length)));
     }
 
-    private void ReadExactly(Span<byte> buffer, string message)
+    // Reads the content length of the record header at the start of the buffer
+    private int ReadContentLength()
     {
-        if (_stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false) < buffer.Length)
+        var contentLength = BinaryPrimitives.ReadInt32BigEndian(_buffer.AsSpan(4)) * 2L;
+        _position += RecordHeaderLength;
+        if (contentLength < 4 || contentLength > Array.MaxLength || _position + contentLength > _fileLength)
+            throw new FormatException($"The record at offset {_position - RecordHeaderLength} of the .shp file has an invalid content length.");
+
+        return (int)contentLength;
+    }
+
+    // Grows the buffer for the next chunk of the content of a record
+    private int GetChunk(int read, int length)
+    {
+        var chunk = Math.Min(length - read, ChunkLength);
+        if (_buffer.Length < read + chunk)
+        {
+            Array.Resize(ref _buffer, (int)Math.Min(length, Math.Max(read + chunk, _buffer.Length * 2L)));
+        }
+
+        return chunk;
+    }
+
+    private static byte[] ReadHeader(Stream stream)
+    {
+        var header = new byte[HeaderLength];
+        ReadExactly(stream, header, HeaderTooShortMessage);
+        return header;
+    }
+
+    private static void ReadExactly(Stream stream, Span<byte> buffer, string message)
+    {
+        if (stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false) < buffer.Length)
+            throw new FormatException(message);
+    }
+
+    private static async ValueTask ReadExactlyAsync(Stream stream, Memory<byte> buffer, string message, CancellationToken cancellationToken)
+    {
+        if (await stream.ReadAtLeastAsync(buffer, buffer.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false) < buffer.Length)
             throw new FormatException(message);
     }
 

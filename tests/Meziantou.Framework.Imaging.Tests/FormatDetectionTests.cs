@@ -216,7 +216,7 @@ public sealed class FormatDetectionTests
     [Fact]
     public void EveryFormatIsDescribedOnceAndEveryNameMapsToOneFormat()
     {
-        var formats = Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Unknown).ToArray();
+        var formats = Enum.GetValues<ImageFormat>().Where(format => format is not (ImageFormat.Unknown or ImageFormat.Custom)).ToArray();
         Assert.Equal(formats, ImageFormatInfo.All.Select(info => info.Format));
 
         var extensions = ImageFormatInfo.All.SelectMany(info => info.FileExtensions).ToArray();
@@ -244,7 +244,41 @@ public sealed class FormatDetectionTests
         }
 
         Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageFormatInfo.Get(ImageFormat.Unknown));
-        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageFormatInfo.Get((ImageFormat)1000));
+        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageFormatInfo.Get(ImageFormat.Custom));
+        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageFormatInfo.Get((ImageFormat)999));
+    }
+
+    [Fact]
+    public void CustomFormatsAreDescribedOutsideTheTable()
+    {
+        var info = new ImageFormatInfo("Farbfeld", ["Image/X-Farbfeld", "image/farbfeld"], ["FF", ".farbfeld"]);
+        Assert.Equal(ImageFormat.Custom, info.Format);
+        Assert.Equal("Farbfeld", info.Name);
+        Assert.Equal("Farbfeld", info.ToString());
+        Assert.Equal(["image/x-farbfeld", "image/farbfeld"], info.MimeTypes);
+        Assert.Equal("image/x-farbfeld", info.MimeType);
+        Assert.Equal([".ff", ".farbfeld"], info.FileExtensions);
+        Assert.Equal(".ff", info.DefaultFileExtension);
+        Assert.DoesNotContain(info, ImageFormatInfo.All);
+        Assert.False(ImageFormatInfo.TryGetByFileExtension(".ff", out _));
+        Assert.False(ImageFormatInfo.TryGetByMimeType("image/x-farbfeld", out _));
+
+        Assert.Throws<ArgumentNullException>("name", () => new ImageFormatInfo(null!, ["image/x"], [".x"]));
+        Assert.Throws<ArgumentException>("name", () => new ImageFormatInfo(" ", ["image/x"], [".x"]));
+        Assert.Throws<ArgumentNullException>("mimeTypes", () => new ImageFormatInfo("x", null!, [".x"]));
+        Assert.Throws<ArgumentNullException>("mimeTypes", () => new ImageFormatInfo("x", [null!], [".x"]));
+        Assert.Throws<ArgumentNullException>("fileExtensions", () => new ImageFormatInfo("x", ["image/x"], null!));
+        Assert.Throws<ArgumentException>("mimeTypes", () => new ImageFormatInfo("x", [], [".x"]));
+        Assert.Throws<ArgumentException>("fileExtensions", () => new ImageFormatInfo("x", ["image/x"], []));
+        foreach (var mimeType in new[] { "image", "image/", "/x", "image/x/y", "image/x; q=1", "image/é", "image /x" })
+        {
+            Assert.Throws<ArgumentException>("mimeTypes", () => new ImageFormatInfo("x", [mimeType], [".x"]));
+        }
+
+        foreach (var extension in new[] { "", ".", "..x", "x.y", "a/b", "é", "x " })
+        {
+            Assert.Throws<ArgumentException>("fileExtensions", () => new ImageFormatInfo("x", ["image/x"], [extension]));
+        }
     }
 
     [Theory]

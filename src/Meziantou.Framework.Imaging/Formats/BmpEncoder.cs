@@ -25,8 +25,10 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <see cref="UnsupportedImageFeatureException"/>; use <see cref="ImageFrame.Save(string, ImageEncoder?)"/> to save one frame explicitly.
 /// </para>
 /// <para>
-/// Metadata (subject to <see cref="ImageEncoder.MetadataHandling"/>): only the resolution
-/// (<c>biXPelsPerMeter</c>/<c>biYPelsPerMeter</c>). An ICC profile, EXIF, XMP, an orientation other than
+/// Metadata (subject to <see cref="ImageEncoder.MetadataHandling"/>): the resolution
+/// (<c>biXPelsPerMeter</c>/<c>biYPelsPerMeter</c>) and an RGB ICC profile, embedded after the pixel data with a
+/// <c>BITMAPV5HEADER</c> (<c>PROFILE_EMBEDDED</c>, perceptual intent), which then replaces the header of the layout (its
+/// masks are in the header). A gray profile cannot label the RGB samples of the file. EXIF, XMP, an orientation other than
 /// <see cref="Metadata.ExifOrientation.TopLeft"/> and text entries cannot be stored (rejected by default).
 /// </para>
 /// </remarks>

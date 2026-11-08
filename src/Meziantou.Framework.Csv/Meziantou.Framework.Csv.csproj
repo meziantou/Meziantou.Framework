@@ -5,7 +5,6 @@
     <Description>CSV reader and writer</Description>
     <PackageTags>csv, tsv, parser, reader, writer</PackageTags>
     <Version>5.0.3</Version>
-    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
 </Project>

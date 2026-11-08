@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
     <Version>2.0.24</Version>
     <Description>CLI to generate compilable C# public API stubs from .NET assemblies.</Description>
     <PackageTags>public-api, api-approval, api-diff, cli, dotnet-tool</PackageTags>

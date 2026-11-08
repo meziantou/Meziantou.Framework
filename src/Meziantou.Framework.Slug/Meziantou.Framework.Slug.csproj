@@ -6,7 +6,6 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>2.0.5</Version>
-    <IsTrimmable>true</IsTrimmable>
     <Description>Compute a slug from any string value</Description>
     <PackageTags>slug, slugify, url, text, normalization</PackageTags>
   </PropertyGroup>

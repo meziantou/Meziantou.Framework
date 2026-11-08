@@ -5,7 +5,6 @@
     <Description>CODEOWNERS file parser</Description>
     <PackageTags>codeowners, github, gitlab, git, parser</PackageTags>
     <Version>7.0.3</Version>
-    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup>

@@ -5,6 +5,9 @@
     <IsPackable>True</IsPackable>
     <EnablePackageValidation Condition="'$(EnablePackageValidation)' == ''">true</EnablePackageValidation>
 
+    <!-- The libraries support trimming unless they opt out with IsTrimmable=false. Directory.Build.targets turns it off for the target frameworks that do not support it -->
+    <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
+
     <PublicApiGeneratorGenerateOnBuild Condition="'$(GITHUB_ACTIONS)' == 'true' and '$(PublicApiGeneratorGenerateOnBuild)' == ''">false</PublicApiGeneratorGenerateOnBuild>
     <PublicApiGeneratorVerifyNoChangeOnBuild Condition="'$(GITHUB_ACTIONS)' == 'true' and '$(PublicApiGeneratorVerifyNoChangeOnBuild)' == ''">false</PublicApiGeneratorVerifyNoChangeOnBuild>
 

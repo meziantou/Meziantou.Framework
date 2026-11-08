@@ -4,7 +4,6 @@
     <!-- StringExtensions normalizes and compares strings linguistically, CultureInfoUtilities creates named cultures -->
     <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <IsTrimmable>true</IsTrimmable>
 
     <Description>A collection of utility types and extension methods for .NET: collections, strings, dates, reflection, IO, and more</Description>
     <PackageTags>utilities, extensions, helpers, collections, dotnet</PackageTags>

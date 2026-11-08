@@ -5,7 +5,6 @@
     <Description>An ECMAScript engine written in .NET: a parser, a bytecode compiler and an interpreter, validated by test262.</Description>
     <PackageTags>javascript, ecmascript, js, engine, interpreter</PackageTags>
     <Version>1.0.8</Version>
-    <IsTrimmable>true</IsTrimmable>
     <IsAotCompatible>true</IsAotCompatible>
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
   </PropertyGroup>

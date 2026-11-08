@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.HumanReadable</RootNamespace>
     <Description>One-way serializer to a human readable format</Description>
     <PackageTags>serializer, human-readable, snapshot-testing, diagnostics</PackageTags>

@@ -142,7 +142,6 @@ internal static class RepositoryProjects
         builder.Append("    <MapDataDate>").Append(dataDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append("</MapDataDate>\n");
         builder.Append("    <Version>").Append(Escape(version)).Append("</Version>\n");
         builder.Append("    <Description>").Append(Escape(description)).Append("</Description>\n");
-        builder.Append("    <IsTrimmable>true</IsTrimmable>\n");
         builder.Append("    <SkipAutoVersionUpdates>true</SkipAutoVersionUpdates>\n");
         builder.Append("    <IncludeInRepositoryReadme>false</IncludeInRepositoryReadme>\n");
         builder.Append("  </PropertyGroup>\n\n");

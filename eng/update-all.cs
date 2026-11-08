@@ -336,7 +336,8 @@ void RunUpdateTrimmableStep(FullPath rootPath)
     foreach (var csproj in Directory.EnumerateFiles(srcPath, "*.csproj", SearchOption.AllDirectories))
     {
         var doc = XDocument.Load(csproj);
-        var isTrimmable = doc.Root?.Descendants("IsTrimmable").Any(e => string.Equals(e.Value, "true", StringComparison.OrdinalIgnoreCase)) ?? false;
+        // src/Directory.Build.props sets IsTrimmable to true unless the project sets it to false
+        var isTrimmable = !(doc.Root?.Descendants("IsTrimmable").Any(e => string.Equals(e.Value, "false", StringComparison.OrdinalIgnoreCase)) ?? false);
         if (isTrimmable)
         {
             var skipValidation = doc.Root?.Descendants("SkipTrimmableValidation").Any(e => string.Equals(e.Value, "true", StringComparison.OrdinalIgnoreCase)) ?? false;

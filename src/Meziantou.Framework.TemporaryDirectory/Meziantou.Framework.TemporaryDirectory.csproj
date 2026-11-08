@@ -4,7 +4,6 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>3.0.15</Version>
-    <IsTrimmable>true</IsTrimmable>
     <Description>TemporaryDirectory and TemporaryFile allow to create a disposable directory or file to store temporary data</Description>
     <PackageTags>temporary-file, temporary-directory, io, disposable, testing</PackageTags>
   </PropertyGroup>

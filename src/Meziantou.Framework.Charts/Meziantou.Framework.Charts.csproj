@@ -4,7 +4,6 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Charts</RootNamespace>
     <Version>1.0.0</Version>
-    <IsTrimmable>true</IsTrimmable>
     <Description>Grammar-of-graphics chart library that renders deterministic SVG: bar, line, area, scatter, pie, radar, gauge, packed circles, treemap, sunburst, histogram, box plot, heatmap, waterfall, funnel, candlestick, choropleth maps and more, built from marks, scales, coordinates and transforms.</Description>
     <PackageTags>chart;charts;plot;svg;graph;visualization;grammar-of-graphics;bar-chart;line-chart;pie-chart;treemap;sunburst;histogram;map;choropleth;geojson</PackageTags>
 

@@ -1,7 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <IsTrimmable>true</IsTrimmable>
     <Version>1.0.0</Version>
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
     <Description>Strongly-typed access to Iconify icons (Material Design Icons, Lucide, Tabler, Fluent, and 200+ other icon sets), generated at build time from the IconifyJSON files, and a loader for icon sets at run time. Trimmable and NativeAOT ready.</Description>

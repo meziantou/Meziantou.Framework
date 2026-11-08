@@ -91,6 +91,19 @@ internal static class ParquetCompression
 
     private static byte[] DecompressStream(Stream stream, int decompressedLength)
     {
+        try
+        {
+            return DecompressStreamCore(stream, decompressedLength);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or InvalidOperationException or IOException)
+        {
+            // GZipStream reports invalid data with an InvalidDataException, BrotliStream with an InvalidOperationException
+            throw new FormatException("A compressed page of the Parquet file is not valid: " + ex.Message, ex);
+        }
+    }
+
+    private static byte[] DecompressStreamCore(Stream stream, int decompressedLength)
+    {
         using (stream)
         {
             var result = new byte[Math.Min(decompressedLength, StreamChunkLength)];

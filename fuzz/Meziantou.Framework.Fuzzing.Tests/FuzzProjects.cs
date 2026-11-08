@@ -18,6 +18,7 @@ internal static class FuzzProjects
         ("Meziantou.Framework.Fonts.Fuzz", Fonts.Fuzz.FontsFuzzTargets.All),
         ("Meziantou.Framework.Geo.Fuzz", Geo.Fuzz.GeoFuzzTargets.All),
         ("Meziantou.Framework.Geo.GeoPackage.Fuzz", GeoPackageFuzz.GeoPackageFuzzTargets.All),
+        ("Meziantou.Framework.Geo.GeoParquet.Fuzz", GeoParquetFuzz.GeoParquetFuzzTargets.All),
         ("Meziantou.Framework.Geo.Maps.Fuzz", Geo.Maps.Fuzz.GeoMapsFuzzTargets.All),
         ("Meziantou.Framework.Globbing.Fuzz", Globbing.Fuzz.GlobbingFuzzTargets.All),
         ("Meziantou.Framework.Hashing.Fuzz", Hashing.Fuzz.HashingFuzzTargets.All),

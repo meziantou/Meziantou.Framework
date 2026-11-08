@@ -99,7 +99,7 @@ internal sealed class ParquetColumn
         ValueKind.UInt8 => (byte)value,
         ValueKind.UInt16 => (ushort)value,
         ValueKind.UInt32 => (uint)value,
-        ValueKind.Date => DateOnly.FromDayNumber(checked(DateOnly.FromDateTime(UnixEpoch).DayNumber + value)),
+        ValueKind.Date => ToDate(value),
         ValueKind.TimeMillis => ToTime(value * TimeSpan.TicksPerMillisecond),
         ValueKind.Decimal => ToDecimal(value),
         _ => value,
@@ -138,6 +138,15 @@ internal sealed class ParquetColumn
         ValueKind.Uuid when value.Length is 16 => new Guid(value, bigEndian: true),
         _ => value.ToArray(),
     };
+
+    private static DateOnly ToDate(int daysSinceEpoch)
+    {
+        var dayNumber = (long)DateOnly.FromDateTime(UnixEpoch).DayNumber + daysSinceEpoch;
+        if (dayNumber < 0 || dayNumber > DateOnly.MaxValue.DayNumber)
+            throw new FormatException("A date of the Parquet file is out of range.");
+
+        return DateOnly.FromDayNumber((int)dayNumber);
+    }
 
     private static TimeOnly ToTime(long ticks) => ticks is >= 0 and < TimeSpan.TicksPerDay ? new TimeOnly(ticks) : throw new FormatException("A time of the Parquet file is out of range.");
 

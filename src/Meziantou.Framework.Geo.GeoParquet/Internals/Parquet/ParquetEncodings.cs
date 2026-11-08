@@ -45,6 +45,9 @@ internal static class ParquetEncodings
                 }
 
                 position += byteWidth;
+                if (bitWidth < 32 && (uint)value >= 1u << bitWidth)
+                    throw new FormatException("A repeated value of a page of the Parquet file does not fit in its bit width.");
+
                 var length = (int)Math.Min(runLength, (ulong)(count - written));
                 values.AsSpan(written, length).Fill(value);
                 written += length;
@@ -109,7 +112,7 @@ internal static class ParquetEncodings
         var miniblockCount = ReadVarint(data, ref position);
         var totalCount = ReadVarint(data, ref position);
         var value = ReadZigZag(data, ref position);
-        if (blockSize is 0 || blockSize % 128 is not 0 || miniblockCount is 0 || blockSize % miniblockCount is not 0 || blockSize > int.MaxValue)
+        if (blockSize is 0 || blockSize % 128 is not 0 || miniblockCount is 0 || blockSize % miniblockCount is not 0 || (blockSize / miniblockCount) % 32 is not 0 || blockSize > int.MaxValue)
             throw new FormatException("The header of a DELTA_BINARY_PACKED page of the Parquet file is not valid.");
 
         // A miniblock of bit width 0 takes no space: the count is checked against the page, not the data
@@ -140,11 +143,11 @@ internal static class ParquetEncodings
                 if (bitWidth > 64)
                     throw new FormatException("A bit width of a DELTA_BINARY_PACKED page of the Parquet file is not valid.");
 
-                var byteLength = valuesPerMiniblock / 8 * bitWidth;
+                var byteLength = (long)valuesPerMiniblock / 8 * bitWidth;
                 if (byteLength > data.Length - position)
                     throw Truncated();
 
-                var packed = data.Slice(position, byteLength);
+                var packed = data.Slice(position, (int)byteLength);
                 for (var i = 0; i < valuesPerMiniblock && count < values.Length; i++)
                 {
                     var delta = ReadBits(packed, (long)i * bitWidth, bitWidth);
@@ -152,7 +155,7 @@ internal static class ParquetEncodings
                     values[count++] = value;
                 }
 
-                position += byteLength;
+                position += (int)byteLength;
             }
         }
 

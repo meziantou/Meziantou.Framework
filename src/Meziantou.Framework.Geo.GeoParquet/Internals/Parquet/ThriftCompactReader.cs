@@ -59,7 +59,11 @@ internal ref struct ThriftCompactReader
             return false;
 
         var delta = header >> 4;
-        fieldId = delta is 0 ? checked((short)ReadZigZag32()) : checked((short)(fieldId + delta));
+        var id = delta is 0 ? ReadZigZag32() : fieldId + delta;
+        if (id is < short.MinValue or > short.MaxValue)
+            throw new FormatException("The identifier of a field of the metadata of the Parquet file is out of range.");
+
+        fieldId = (short)id;
         return true;
     }
 

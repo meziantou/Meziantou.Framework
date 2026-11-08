@@ -12,6 +12,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The fuzz targets call the decoders of the Parquet format directly -->
+    <InternalsVisibleTo Include="Meziantou.Framework.Geo.GeoParquet.Fuzz" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
   </ItemGroup>
 

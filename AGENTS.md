@@ -39,6 +39,13 @@ CI only runs the tests of a project in invariant globalization mode (`/p:Invaria
 
 New features MUST be documented in the `docs/` folder, in the same change: add or update the pages of the library's section (`docs/<Library>/`), and create the section when the library has none. When a change modifies the behavior of a library, update its pages too. Follow the instructions in [`docs/AGENTS.md`](/docs/AGENTS.md) for the layout, front matter, writing style, code examples and images.
 
+New code MUST be covered by fuzz tests, in the same change, unless there is nothing to fuzz (code that takes no input it does not control, such as constants or thin wrappers over the BCL). This matters most for code that reads input: parsers, decoders, readers, protocol handlers, query languages, file formats. Follow [`fuzz/README.md`](/fuzz/README.md):
+
+- Add targets to the library's SharpFuzz project, `fuzz/<Library>.Fuzz`, or create it when the library has none. A target catches the exceptions the library documents for invalid input and checks properties of the results with `FuzzAssert` (round trips, agreement between two code paths, bounds of reported positions, ...): not throwing is not enough when a property can be checked.
+- Seed the targets with the inputs of the unit tests, and give them a dictionary of the format's tokens.
+- For a new project, reference it from `fuzz/Meziantou.Framework.Fuzzing.Tests` (which replays every target's seeds and regressions in CI) and add a row to `FUZZ_PROJECTS` and an option to the `component` input in `.github/workflows/fuzz-sharpfuzz.yml`, on a night with the fewest campaigns.
+- Run `Meziantou.Framework.Fuzzing.Tests` to check that every seed of the new targets passes. When a fuzz failure is fixed, commit its input under `fuzz/<Library>.Fuzz/Regressions/<target>/`.
+
 Code examples in XML documentation (`<example>`, `<code>`) and in the `readme.md` files of the projects under `src/` MUST NOT be written by hand. They are copied from code that compiles, using [Meziantou.FileReferencer](https://github.com/meziantou/Meziantou.FileReferencer):
 
 - Write the example in a `#region <Type>_<Scenario>` of a test, in an existing test file of the library's test project. Replace `Console.WriteLine(x); // value` with assertions such as `Assert.Equal(value, x);`, so the documented behavior is tested. When the code cannot run in a test (Windows-only APIs, UI, network, user folders, etc.), put the region in a project under `samples/` instead: CI compiles these projects but does not run them. Reuse the library's sample project, or create `samples/<Library>.Samples`.

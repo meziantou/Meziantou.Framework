@@ -3,7 +3,9 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Rendering;
 using Meziantou.Framework.Pdf.Signing;
 
 namespace Meziantou.Framework.Pdf.Tests;
@@ -98,6 +100,26 @@ public sealed class PdfSignerTests
         Assert.Contains("1.2.840.113549.1.9.16.2.47", attributes);
         Assert.DoesNotContain("1.2.840.113549.1.9.5", attributes);
         Assert.Equal(hashAlgorithm switch { "SHA384" => "2.16.840.1.101.3.4.2.2", "SHA512" => "2.16.840.1.101.3.4.2.3", _ => "2.16.840.1.101.3.4.2.1" }, cms.SignerInfos[0].DigestAlgorithm.Value);
+    }
+
+    [Fact]
+    public void ASignatureFieldCreatedByTheFormIsSigned()
+    {
+        using var certificate = CreateCertificate("rsa");
+        var document = CreateDocument();
+        document.Form.AddTextField(document.Pages[0], "name", new PdfRectangle(60, 600, 260, 620), new PdfTextFieldOptions { Value = "Jane Doe" });
+        document.Form.AddSignatureField(document.Pages[0], "approval", new PdfRectangle(60, 500, 260, 560));
+        var data = document.ToByteArray();
+
+        var signed = PdfSigner.Sign(PdfDocument.Open(data), new PdfSignatureOptions(certificate) { FieldName = "approval" });
+
+        var signature = PdfSignatureVerifier.Verify(signed).Single();
+        Assert.True(signature.IsValid, signature.Error);
+        Assert.Equal("approval", signature.FieldName);
+        var read = PdfDocument.Open(signed);
+        Assert.Equal(["name", "approval"], read.Form.GetFields().Select(field => field.FullName));
+        Assert.True(((PdfSignatureField)read.Form.FindField("approval")!).IsSigned);
+        Assert.Single(read.Form.FindField("approval")!.Widgets);
     }
 
     [Fact]
@@ -565,6 +587,125 @@ public sealed class PdfSignerTests
     }
 
     [Fact]
+    public void Example_DefaultSignatureAppearance()
+    {
+        using var certificate = CreateCertificate("rsa");
+        var document = CreateDocument();
+        using var bitmap = Image.ImportPixelData<Rgba32>([new Rgba32(255, 0, 0, 255), new Rgba32(255, 0, 0, 255)], 2, 1);
+        var image = PdfImage.FromImage(bitmap);
+
+        #region PdfSigning_DefaultAppearance
+        // Without a drawing, the library draws the name of the signer, the date, the reason and the location, and the image at their left
+        var options = new PdfSignatureOptions(certificate)
+        {
+            Reason = "I approve this contract",
+            Location = "Paris",
+            SigningTime = new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero),
+            Appearance = new PdfSignatureAppearance(pageIndex: 0, PdfRectangle.FromSize(60, 60, 200, 50))
+            {
+                Image = image, // Such as PdfImage.Load("signature.png")
+            },
+        };
+        var signed = PdfSigner.Sign(document, options);
+        #endregion
+
+        var signature = PdfSignatureVerifier.Verify(signed).Single();
+        Assert.True(signature.IsValid, signature.Error);
+        Assert.True(signature.CoversWholeDocument);
+
+        var signedDocument = PdfDocument.Open(signed);
+        var widget = GetField(signedDocument, "Signature1");
+        Assert.Equal(new PdfRectangle(60, 60, 260, 110), PdfRectangle.TryRead(widget.Get<PdfArray>(PdfNames.Rect), out var rectangle) ? rectangle : default);
+        Assert.Equal(4, widget.Get<PdfInteger>(PdfName.Create("F"))!.Value & 4); // Print (12.5.3)
+        var annotations = signedDocument.Pages[0].Dictionary.Get<PdfArray>(PdfNames.Annots)!;
+        Assert.Contains(annotations, item => ReferenceEquals(PdfReference.ResolveIfReference(item), widget));
+
+        var appearance = widget.Get<PdfDictionary>(PdfName.Create("AP"))!.Get<PdfStream>(PdfNames.N)!;
+        Assert.Equal(new PdfRectangle(0, 0, 200, 50), PdfRectangle.TryRead(appearance.Dictionary.Get<PdfArray>(PdfName.Create("BBox")), out var box) ? box : default);
+        var content = Encoding.Latin1.GetString(appearance.GetDecodedData());
+        Assert.Contains("(Digitally signed by RSA signer)", content, StringComparison.Ordinal);
+        Assert.Contains("(Date: 2026-01-02 03:04:05 +00:00)", content, StringComparison.Ordinal);
+        Assert.Contains("(Reason: I approve this contract)", content, StringComparison.Ordinal);
+        Assert.Contains("(Location: Paris)", content, StringComparison.Ordinal);
+        Assert.Contains(" Do", content, StringComparison.Ordinal);
+
+        // The image fills the left 40% of the rectangle (2:1, centered vertically), the text is at its right
+        using var page = PdfRenderer.RenderPage(signedDocument.Pages[0], new PdfRenderOptions { Dpi = 72, UseSystemFonts = false });
+        var red = page.Frames[0][100, page.Height - 1 - 85];
+        Assert.True(red.R > 200 && red.G < 50 && red.B < 50, $"The pixel is ({red.R}, {red.G}, {red.B})");
+        Assert.True(CountDarkPixels(page, 145, 62, 258, 108) > 50);
+        Assert.Equal(0, CountDarkPixels(page, 270, 50, 400, 120));
+
+        static int CountDarkPixels(Image<Rgba32> image, int left, int bottom, int right, int top)
+        {
+            var count = 0;
+            for (var y = bottom; y < top; y++)
+            {
+                for (var x = left; x < right; x++)
+                {
+                    var pixel = image.Frames[0][x, image.Height - 1 - y];
+                    if (pixel.R < 128 && pixel.G < 128 && pixel.B < 128)
+                    {
+                        count++;
+                    }
+                }
+            }
+
+            return count;
+        }
+    }
+
+    [Fact]
+    public void DefaultSignatureAppearanceLayout()
+    {
+        using var certificate = CreateCertificate("rsa");
+
+        // The name of the options replaces the name of the certificate; the text shrinks to fit the rectangle
+        var small = GetAppearanceContent(PdfSigner.Sign(CreateDocument(), new PdfSignatureOptions(certificate)
+        {
+            SignerName = "Alice",
+            Reason = "A long reason that does not fit on one line of a small rectangle",
+            Appearance = new PdfSignatureAppearance(0, PdfRectangle.FromSize(10, 10, 80, 40)),
+        }));
+        Assert.Contains("(Digitally signed by", small, StringComparison.Ordinal);
+        Assert.Contains("Alice", small, StringComparison.Ordinal);
+        Assert.DoesNotContain("RSA signer", small, StringComparison.Ordinal);
+        Assert.DoesNotContain("Location", small, StringComparison.Ordinal);
+        Assert.DoesNotContain(" 10 Tf", small, StringComparison.Ordinal);
+
+        // A font size of the options; a rectangle taller than wide puts the image above the text
+        using var bitmap = Image.ImportPixelData<Rgba32>([new Rgba32(0, 0, 255, 255)], 1, 1);
+        var tall = GetAppearanceContent(PdfSigner.Sign(CreateDocument(), new PdfSignatureOptions(certificate)
+        {
+            Appearance = new PdfSignatureAppearance(0, PdfRectangle.FromSize(10, 10, 100, 200)) { FontSize = 7, Image = PdfImage.FromImage(bitmap) },
+        }));
+        Assert.Contains(" 7 Tf", tall, StringComparison.Ordinal);
+        Assert.Contains("76.8 0 0 76.8 11.6 119.2 cm", tall, StringComparison.Ordinal);
+
+        // A drawing that draws nothing is an empty appearance
+        Assert.Equal("", GetAppearanceContent(PdfSigner.Sign(CreateDocument(), new PdfSignatureOptions(certificate)
+        {
+            Appearance = new PdfSignatureAppearance(0, PdfRectangle.FromSize(10, 10, 100, 50)) { Draw = _ => { } },
+        })));
+
+        // Helvetica cannot show Cyrillic: the default layout needs a font that has the characters
+        var exception = Assert.Throws<ArgumentException>(() => PdfSigner.Sign(CreateDocument(), new PdfSignatureOptions(certificate)
+        {
+            SignerName = "\u0410\u043B\u0438\u0441\u0430",
+            Appearance = new PdfSignatureAppearance(0, PdfRectangle.FromSize(10, 10, 100, 50)),
+        }));
+        Assert.Contains(nameof(PdfSignatureAppearance.Font), exception.Message, StringComparison.Ordinal);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfSignatureAppearance(0, PdfRectangle.FromSize(0, 0, 10, 10)) { FontSize = -1 });
+
+        static string GetAppearanceContent(byte[] signed)
+        {
+            Assert.True(PdfSignatureVerifier.Verify(signed).Single().IsValid);
+            var widget = GetField(PdfDocument.Open(signed), "Signature1");
+            return Encoding.Latin1.GetString(widget.Get<PdfDictionary>(PdfName.Create("AP"))!.Get<PdfStream>(PdfNames.N)!.GetDecodedData());
+        }
+    }
+
+    [Fact]
     public async Task Example_DocumentTimestamp()
     {
         using var certificate = CreateCertificate("rsa");
@@ -607,6 +748,153 @@ public sealed class PdfSignerTests
         Assert.HasCount(data.Certificates.Count, PdfSignatureVerifier.GetValidationData(again).Certificates);
         Assert.Single(PdfSignatureVerifier.GetValidationData(again).CertificateRevocationLists);
     }
+
+    [Fact]
+    public async Task Example_DownloadValidationData()
+    {
+        using var pki = new TestCertificateAuthority();
+        using var authority = new TestTimestampAuthority(DateTimeOffset.UtcNow);
+        using var timestampClient = new HttpClient(authority);
+        var signedFile = await PdfSigner.SignAsync(CreateDocument(), new PdfSignatureOptions(pki.Signer)
+        {
+            TimestampAuthority = new Uri("http://timestamp.example.com/"),
+            HttpClient = timestampClient,
+        }, XunitCancellationToken);
+        var trustedRoot = pki.Root;
+        var httpClient = new HttpClient(pki, disposeHandler: false);
+
+        #region PdfSigning_DownloadValidationData
+        // PAdES B-LT: the chains of the signatures are completed, and the missing revocation evidence is downloaded
+        // from the addresses of the certificates (OCSP responders, revocation lists, issuers)
+        var options = new PdfValidationDataOptions
+        {
+            DownloadMissingData = true,
+            HttpClient = httpClient,
+            IncludeVri = true,
+        };
+        options.Certificates.Add(trustedRoot);
+        var withValidationData = await PdfSigner.AddValidationDataAsync(PdfDocument.Open(signedFile), options, XunitCancellationToken);
+        #endregion
+
+        httpClient.Dispose();
+        Assert.Equal(["GET " + TestCertificateAuthority.IntermediateUri, "POST " + TestCertificateAuthority.OcspUri, "GET " + TestCertificateAuthority.RootCrlUri], pki.Requests);
+
+        // The OCSP request identifies the signer by its serial number and by the digests of the name and of the key of its issuer (RFC 6960, 4.1.1)
+        var certificateId = pki.LastOcspCertificateId!.Value;
+        Assert.Equal("1.3.14.3.2.26", certificateId.HashAlgorithm);
+        Assert.Equal(Sha1(pki.Intermediate.SubjectName.RawData), certificateId.IssuerNameHash);
+        var publicKeyInfo = new AsnReader(pki.Intermediate.PublicKey.ExportSubjectPublicKeyInfo(), AsnEncodingRules.DER).ReadSequence();
+        publicKeyInfo.ReadEncodedValue();
+        Assert.Equal(Sha1(publicKeyInfo.ReadBitString(out _)), certificateId.IssuerKeyHash);
+        Assert.Equal(pki.Signer.SerialNumberBytes.ToArray(), certificateId.SerialNumber);
+
+        var data = PdfSignatureVerifier.GetValidationData(withValidationData);
+        Assert.Equal(
+            new[] { pki.Root, pki.Signer, authority.Certificate, pki.Intermediate, pki.Responder }.Select(certificate => certificate.Thumbprint).Order(StringComparer.Ordinal),
+            data.Certificates.Select(certificate => certificate.Thumbprint).Order(StringComparer.Ordinal));
+        Assert.Single(data.OcspResponses);
+        Assert.Equal([pki.RootCrl], data.CertificateRevocationLists);
+
+        // The VRI entry of the signature: the SHA-1 digest of its /Contents, in uppercase hexadecimal (ISO 32000-2, 12.8.4.4)
+        var document = PdfDocument.Open(withValidationData);
+        var store = document.Catalog.Get<PdfDictionary>(PdfName.Create("DSS"))!;
+        var signatureContents = GetSignatureDictionary(document).Get<PdfString>(PdfNames.Contents)!;
+        var vri = store.Get<PdfDictionary>(PdfName.Create("VRI"))!;
+        var entry = vri.Get<PdfDictionary>(PdfName.Create(Convert.ToHexString(Sha1(signatureContents.Span))))!;
+        Assert.HasCount(5, entry.Get<PdfArray>(PdfName.Create("Cert"))!);
+        Assert.Equal(store.Get<PdfArray>(PdfName.Create("OCSPs"))![0], entry.Get<PdfArray>(PdfName.Create("OCSP"))![0]);
+        Assert.Equal(store.Get<PdfArray>(PdfName.Create("CRLs"))![0], entry.Get<PdfArray>(PdfName.Create("CRL"))![0]);
+
+        // The chain of the signer is built offline from the store
+        using (var chain = new X509Chain())
+        {
+            chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+            chain.ChainPolicy.CustomTrustStore.Add(trustedRoot);
+            chain.ChainPolicy.ExtraStore.AddRange(data.Certificates);
+            chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+            chain.ChainPolicy.DisableCertificateDownloads = true;
+            Assert.True(chain.Build(PdfSignatureVerifier.Verify(withValidationData).Single().Certificate!));
+        }
+
+        // PAdES B-LTA, then the validation data of the document time stamp: the data the store has is not downloaded again
+        var timestamped = await PdfSigner.TimestampAsync(PdfDocument.Open(withValidationData), new PdfTimestampOptions(new Uri("http://timestamp.example.com/")) { HttpClient = timestampClient }, XunitCancellationToken);
+        using var secondClient = new HttpClient(pki, disposeHandler: false);
+        var secondOptions = new PdfValidationDataOptions { DownloadMissingData = true, HttpClient = secondClient, IncludeVri = true };
+        var extended = await PdfSigner.AddValidationDataAsync(PdfDocument.Open(timestamped), secondOptions, XunitCancellationToken);
+        Assert.HasCount(3, pki.Requests);
+        Assert.HasCount(2, PdfDocument.Open(extended).Catalog.Get<PdfDictionary>(PdfName.Create("DSS"))!.Get<PdfDictionary>(PdfName.Create("VRI"))!);
+        Assert.Single(PdfSignatureVerifier.GetValidationData(extended).OcspResponses);
+
+        var signatures = PdfSignatureVerifier.Verify(extended);
+        Assert.HasCount(2, signatures);
+        Assert.All(signatures, signature => Assert.True(signature.IsValid, signature.Error));
+        Assert.True(signatures[0].AreModificationsPermitted);
+        Assert.Equal([PdfModificationKind.ValidationData, PdfModificationKind.DocumentTimestamp], signatures[0].Modifications.Select(modification => modification.Kind).Distinct().Order());
+    }
+
+    [Fact]
+    public async Task RevocationListsAreDownloadedWhenTheResponderFails()
+    {
+        using var pki = new TestCertificateAuthority { FailOcsp = true };
+        using var httpClient = new HttpClient(pki, disposeHandler: false);
+        var signedFile = PdfSigner.Sign(CreateDocument(), new PdfSignatureOptions(pki.Signer));
+        var options = new PdfValidationDataOptions { DownloadMissingData = true, HttpClient = httpClient };
+        options.Certificates.Add(pki.Root);
+
+        var withValidationData = await PdfSigner.AddValidationDataAsync(PdfDocument.Open(signedFile), options, XunitCancellationToken);
+
+        var data = PdfSignatureVerifier.GetValidationData(withValidationData);
+        Assert.Empty(data.OcspResponses);
+        Assert.Equal([pki.IntermediateCrl, pki.RootCrl], data.CertificateRevocationLists);
+        Assert.Null(PdfDocument.Open(withValidationData).Catalog.Get<PdfDictionary>(PdfName.Create("DSS"))!.Get<PdfDictionary>(PdfName.Create("VRI")));
+
+        pki.FailCrls = true;
+        var exception = await Assert.ThrowsAsync<HttpRequestException>(() => PdfSigner.AddValidationDataAsync(PdfDocument.Open(signedFile), options, XunitCancellationToken));
+        Assert.Contains("Test signer", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ValidationDataIsAssociatedWithTheSignaturesWithoutDownload()
+    {
+        using var pki = new TestCertificateAuthority();
+        var options = new PdfSignatureOptions(pki.Signer);
+        options.Certificates.Add(pki.Intermediate);
+        var signedFile = PdfSigner.Sign(CreateDocument(), options);
+
+        var validationOptions = new PdfValidationDataOptions { IncludeVri = true };
+        validationOptions.Certificates.Add(pki.Root);
+        validationOptions.CertificateRevocationLists.Add(pki.IntermediateCrl);
+        validationOptions.CertificateRevocationLists.Add(pki.RootCrl);
+        validationOptions.CertificateRevocationLists.Add(CertificateRevocationList);
+        var withValidationData = PdfSigner.AddValidationData(PdfDocument.Open(signedFile), validationOptions);
+
+        Assert.Empty(pki.Requests);
+        var document = PdfDocument.Open(withValidationData);
+        var store = document.Catalog.Get<PdfDictionary>(PdfName.Create("DSS"))!;
+        Assert.HasCount(3, store.Get<PdfArray>(PdfName.Create("CRLs"))!);
+        var entry = (PdfDictionary)store.Get<PdfDictionary>(PdfName.Create("VRI"))!.Single().Value;
+        Assert.HasCount(3, entry.Get<PdfArray>(PdfName.Create("Cert"))!);
+
+        // The revocation lists of the issuers of the chain only, and no OCSP response
+        var crls = entry.Get<PdfArray>(PdfName.Create("CRL"))!.Select(item => ((PdfStream)PdfReference.ResolveIfReference(item)!).GetDecodedData()).ToList();
+        Assert.Equal([pki.IntermediateCrl, pki.RootCrl], crls);
+        Assert.Null(entry.Get<PdfArray>(PdfName.Create("OCSP")));
+
+        // The streams the store has are referenced, not added again
+        var again = PdfSigner.AddValidationData(document, validationOptions);
+        var againStore = PdfDocument.Open(again).Catalog.Get<PdfDictionary>(PdfName.Create("DSS"))!;
+        Assert.HasCount(3, againStore.Get<PdfArray>(PdfName.Create("CRLs"))!);
+        var againEntry = (PdfDictionary)againStore.Get<PdfDictionary>(PdfName.Create("VRI"))!.Single().Value;
+        Assert.Equal(entry.Get<PdfArray>(PdfName.Create("CRL"))!.Cast<PdfReference>().Select(item => item.ObjectNumber), againEntry.Get<PdfArray>(PdfName.Create("CRL"))!.Cast<PdfReference>().Select(item => item.ObjectNumber));
+
+        Assert.Throws<ArgumentException>(() => PdfSigner.AddValidationData(PdfDocument.Open(signedFile), new PdfValidationDataOptions { DownloadMissingData = true }));
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "OCSP certificate identifiers and VRI keys use SHA-1")]
+    private static byte[] Sha1(byte[] data) => SHA1.HashData(data);
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "VRI keys use SHA-1")]
+    private static byte[] Sha1(ReadOnlySpan<byte> data) => SHA1.HashData(data);
 
     private static readonly byte[] CertificateRevocationList = CreateCertificateRevocationList();
 

@@ -14,18 +14,24 @@ internal sealed class ShapefileShapeWriter
     private readonly Shape?[] _shapes;
     private readonly int _shapeType;
     private readonly bool _hasZ;
+    private readonly bool _hasM;
     private readonly GeoBounds? _bounds;
     private readonly double _zMin;
     private readonly double _zMax;
+    private readonly double _mMin;
+    private readonly double _mMax;
     private readonly long _shpLength;
 
-    private ShapefileShapeWriter(Shape?[] shapes, int shapeType, bool hasZ, string paramName)
+    private ShapefileShapeWriter(Shape?[] shapes, int shapeType, bool hasZ, bool hasM, string paramName)
     {
         _shapes = shapes;
         _shapeType = shapeType;
         _hasZ = hasZ;
+        _hasM = hasM;
         _zMin = double.PositiveInfinity;
         _zMax = double.NegativeInfinity;
+        _mMin = double.PositiveInfinity;
+        _mMax = double.NegativeInfinity;
         _shpLength = HeaderLength;
         foreach (var shape in shapes)
         {
@@ -42,6 +48,11 @@ internal sealed class ShapefileShapeWriter
                     var z = position.Altitude ?? 0;
                     _zMin = Math.Min(_zMin, z);
                     _zMax = Math.Max(_zMax, z);
+                    if (position.Measure is { } m)
+                    {
+                        _mMin = Math.Min(_mMin, m);
+                        _mMax = Math.Max(_mMax, m);
+                    }
                 }
             }
         }
@@ -50,6 +61,12 @@ internal sealed class ShapefileShapeWriter
         {
             _zMin = 0;
             _zMax = 0;
+        }
+
+        if (_mMin > _mMax)
+        {
+            _mMin = ShapefileShapeType.NoData;
+            _mMax = ShapefileShapeType.NoData;
         }
 
         // The lengths and the offsets are 32-bit counts of 16-bit words
@@ -64,6 +81,7 @@ internal sealed class ShapefileShapeWriter
         var family = Family.None;
         var multiPoint = false;
         var hasZ = false;
+        var hasM = false;
         foreach (var feature in features)
         {
             if (feature.Geometry is not { } geometry)
@@ -84,19 +102,25 @@ internal sealed class ShapefileShapeWriter
             family = geometryFamily;
             multiPoint |= geometry is GeoMultiPoint;
             hasZ |= geometry.GetPositions().Any(position => position.Altitude is not null);
+            hasM |= geometry.GetPositions().Any(position => position.Measure is not null);
         }
 
-        var shapeType = (family, multiPoint, hasZ) switch
+        // The Z shapes hold the M values too, so the M shapes are for the measures without altitudes
+        var shapeType = (family, multiPoint, hasZ, hasM) switch
         {
-            (Family.None, _, _) => ShapefileShapeType.Null,
-            (Family.Point, false, false) => ShapefileShapeType.Point,
-            (Family.Point, false, true) => ShapefileShapeType.PointZ,
-            (Family.Point, true, false) => ShapefileShapeType.MultiPoint,
-            (Family.Point, true, true) => ShapefileShapeType.MultiPointZ,
-            (Family.Line, _, false) => ShapefileShapeType.PolyLine,
-            (Family.Line, _, true) => ShapefileShapeType.PolyLineZ,
-            (_, _, false) => ShapefileShapeType.Polygon,
-            _ => ShapefileShapeType.PolygonZ,
+            (Family.None, _, _, _) => ShapefileShapeType.Null,
+            (Family.Point, false, true, _) => ShapefileShapeType.PointZ,
+            (Family.Point, false, false, true) => ShapefileShapeType.PointM,
+            (Family.Point, false, false, false) => ShapefileShapeType.Point,
+            (Family.Point, true, true, _) => ShapefileShapeType.MultiPointZ,
+            (Family.Point, true, false, true) => ShapefileShapeType.MultiPointM,
+            (Family.Point, true, false, false) => ShapefileShapeType.MultiPoint,
+            (Family.Line, _, true, _) => ShapefileShapeType.PolyLineZ,
+            (Family.Line, _, false, true) => ShapefileShapeType.PolyLineM,
+            (Family.Line, _, false, false) => ShapefileShapeType.PolyLine,
+            (_, _, true, _) => ShapefileShapeType.PolygonZ,
+            (_, _, false, true) => ShapefileShapeType.PolygonM,
+            _ => ShapefileShapeType.Polygon,
         };
 
         var shapes = new Shape?[features.Count];
@@ -105,7 +129,7 @@ internal sealed class ShapefileShapeWriter
             shapes[i] = CreateShape(features[i].Geometry);
         }
 
-        return new ShapefileShapeWriter(shapes, shapeType, hasZ, paramName);
+        return new ShapefileShapeWriter(shapes, shapeType, hasZ, hasM, paramName);
     }
 
     public void WriteShp(Stream stream)
@@ -161,6 +185,12 @@ internal sealed class ShapefileShapeWriter
             BinaryPrimitives.WriteDoubleLittleEndian(header.AsSpan(76), _zMax);
         }
 
+        if (_hasM)
+        {
+            BinaryPrimitives.WriteDoubleLittleEndian(header.AsSpan(84), _mMin);
+            BinaryPrimitives.WriteDoubleLittleEndian(header.AsSpan(92), _mMax);
+        }
+
         stream.Write(header);
     }
 
@@ -171,11 +201,12 @@ internal sealed class ShapefileShapeWriter
 
         long points = shape.Points.Length;
         var zLength = _hasZ ? 16 + (8 * points) : 0;
+        var mLength = _hasM ? 16 + (8 * points) : 0;
         return _shapeType switch
         {
-            ShapefileShapeType.Point or ShapefileShapeType.PointZ => 20 + (_hasZ ? 8 : 0),
-            ShapefileShapeType.MultiPoint or ShapefileShapeType.MultiPointZ => 40 + (16 * points) + zLength,
-            _ => 44 + (4L * shape.PartStarts.Length) + (16 * points) + zLength,
+            ShapefileShapeType.Point or ShapefileShapeType.PointZ or ShapefileShapeType.PointM => 20 + (_hasZ ? 8 : 0) + (_hasM ? 8 : 0),
+            ShapefileShapeType.MultiPoint or ShapefileShapeType.MultiPointZ or ShapefileShapeType.MultiPointM => 40 + (16 * points) + zLength + mLength,
+            _ => 44 + (4L * shape.PartStarts.Length) + (16 * points) + zLength + mLength,
         };
     }
 
@@ -189,7 +220,7 @@ internal sealed class ShapefileShapeWriter
 
         BinaryPrimitives.WriteInt32LittleEndian(content, _shapeType);
         var points = shape.Points;
-        if (_shapeType is ShapefileShapeType.Point or ShapefileShapeType.PointZ)
+        if (_shapeType is ShapefileShapeType.Point or ShapefileShapeType.PointZ or ShapefileShapeType.PointM)
         {
             BinaryPrimitives.WriteDoubleLittleEndian(content[4..], points[0].Longitude);
             BinaryPrimitives.WriteDoubleLittleEndian(content[12..], points[0].Latitude);
@@ -198,12 +229,17 @@ internal sealed class ShapefileShapeWriter
                 BinaryPrimitives.WriteDoubleLittleEndian(content[20..], points[0].Altitude ?? 0);
             }
 
+            if (_hasM)
+            {
+                BinaryPrimitives.WriteDoubleLittleEndian(content[(_hasZ ? 28 : 20)..], points[0].Measure ?? ShapefileShapeType.NoData);
+            }
+
             return;
         }
 
         WriteBounds(content[4..], shape.Bounds);
         int offset;
-        if (_shapeType is ShapefileShapeType.MultiPoint or ShapefileShapeType.MultiPointZ)
+        if (_shapeType is ShapefileShapeType.MultiPoint or ShapefileShapeType.MultiPointZ or ShapefileShapeType.MultiPointM)
         {
             BinaryPrimitives.WriteInt32LittleEndian(content[36..], points.Length);
             offset = 40;
@@ -237,6 +273,35 @@ internal sealed class ShapefileShapeWriter
             foreach (var position in points)
             {
                 BinaryPrimitives.WriteDoubleLittleEndian(content[offset..], position.Altitude ?? 0);
+                offset += 8;
+            }
+        }
+
+        if (_hasM)
+        {
+            var mMin = double.PositiveInfinity;
+            var mMax = double.NegativeInfinity;
+            foreach (var position in points)
+            {
+                if (position.Measure is { } m)
+                {
+                    mMin = Math.Min(mMin, m);
+                    mMax = Math.Max(mMax, m);
+                }
+            }
+
+            if (mMin > mMax)
+            {
+                mMin = ShapefileShapeType.NoData;
+                mMax = ShapefileShapeType.NoData;
+            }
+
+            BinaryPrimitives.WriteDoubleLittleEndian(content[offset..], mMin);
+            BinaryPrimitives.WriteDoubleLittleEndian(content[(offset + 8)..], mMax);
+            offset += 16;
+            foreach (var position in points)
+            {
+                BinaryPrimitives.WriteDoubleLittleEndian(content[offset..], position.Measure ?? ShapefileShapeType.NoData);
                 offset += 8;
             }
         }

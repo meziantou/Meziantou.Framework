@@ -1,3 +1,5 @@
+using Meziantou.Framework.Geo.Internals;
+
 namespace Meziantou.Framework.Geo;
 
 /// <summary>A polygon, such as a country or a lake: an exterior ring, then the rings of its holes, as in GeoJSON.</summary>
@@ -22,7 +24,8 @@ public sealed class GeoPolygon : GeoGeometry
     /// <returns><see langword="true"/> when the position is inside the polygon; otherwise, <see langword="false"/>.</returns>
     /// <remarks>
     /// The test is made on the longitudes and latitudes, as on an equirectangular map: the edges are straight in degrees,
-    /// not great circles. The result is unspecified for a position on an edge.
+    /// not great circles, as <see cref="GeoEdgeType.Planar"/> says. A polygon that crosses the 180th meridian must be split
+    /// along it first, with <see cref="GeoGeometry.SplitAtAntimeridian"/>. The result is unspecified for a position on an edge.
     /// </remarks>
     public bool Contains(GeoPosition position)
     {
@@ -45,8 +48,35 @@ public sealed class GeoPolygon : GeoGeometry
         return inside;
     }
 
+    /// <summary>Gets a value that indicates whether a position is inside the polygon and outside its holes, whose edges are drawn as an edge type says.</summary>
+    /// <param name="position">The position. The altitude is ignored.</param>
+    /// <param name="edgeType">How the edges are drawn.</param>
+    /// <returns><see langword="true"/> when the position is inside the polygon; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// With <see cref="GeoEdgeType.Geodesic"/>, each edge is the shortest great-circle arc between its ends, on a sphere:
+    /// a polygon may cross the 180th meridian without being split. The rings may turn in either direction: the polygon is
+    /// the side of its exterior ring that does not contain the poles, or, for a ring that goes around a pole, such as the
+    /// coast of Antarctica, the side that contains the pole it is nearest to.
+    /// </para>
+    /// <para>The result is unspecified for a position on an edge.</para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="edgeType"/> is not a value of <see cref="GeoEdgeType"/>.</exception>
+    public bool Contains(GeoPosition position, GeoEdgeType edgeType) => edgeType switch
+    {
+        GeoEdgeType.Planar => Contains(position),
+        GeoEdgeType.Geodesic => SphericalGeometry.Contains(Rings, position),
+        _ => throw new ArgumentOutOfRangeException(nameof(edgeType), edgeType, message: null),
+    };
+
     /// <inheritdoc />
     public override IEnumerable<GeoPosition> GetPositions() => Rings.SelectMany(ring => ring);
+
+    internal static void ValidateEdgeType(GeoEdgeType edgeType)
+    {
+        if (edgeType is not GeoEdgeType.Planar and not GeoEdgeType.Geodesic)
+            throw new ArgumentOutOfRangeException(nameof(edgeType), edgeType, message: null);
+    }
 
     /// <summary>The signed area of a ring in square degrees (shoelace formula) and its centroid, or a zero area and the mean of its positions when it is flat.</summary>
     internal static (double Area, GeoPosition Centroid) GetAreaAndCentroid(IReadOnlyList<GeoPosition> ring)

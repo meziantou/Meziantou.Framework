@@ -71,7 +71,13 @@ public sealed class KmlTests
         Assert.Equal(new GeoPosition(2.3320, 48.8600, 20), polygon.Rings[0][0]);
 
         Assert.HasCount(3, Assert.IsType<GeoLineString>(features[2].Geometry).Positions);
-        Assert.Equal([new GeoPosition(2.2945, 48.8584, 35), new(2.2960, 48.8590, 36.5), new(2.2975, 48.8597, 38)], Assert.IsType<GeoLineString>(features[3].Geometry).Positions);
+        Assert.Equal(
+            [
+                new GeoPosition(2.2945, 48.8584, 35) { Time = new DateTimeOffset(2024, 5, 1, 8, 0, 0, TimeSpan.Zero) },
+                new(2.2960, 48.8590, 36.5) { Time = new DateTimeOffset(2024, 5, 1, 8, 1, 0, TimeSpan.Zero) },
+                new(2.2975, 48.8597, 38) { Time = new DateTimeOffset(2024, 5, 1, 8, 2, 0, TimeSpan.Zero) },
+            ],
+            Assert.IsType<GeoLineString>(features[3].Geometry).Positions);
         var tracks = Assert.IsType<GeoMultiLineString>(features[4].Geometry);
         Assert.Equal([new GeoPosition(7, 8, 9), new(10, 11, 12)], tracks.LineStrings[1].Positions);
         Assert.HasCount(5, Assert.IsType<GeoLineString>(features[5].Geometry).Positions);
@@ -272,6 +278,46 @@ public sealed class KmlTests
         var copy = Kml.Parse(kml);
         Assert.Equal(new GeoPosition(0.1 + 0.2, -1e-7, 1234.5), Assert.IsType<GeoPoint>(copy[4].Geometry).Position);
         Assert.Equal([GeoGeometryType.MultiLineString, GeoGeometryType.GeometryCollection], Assert.IsType<GeoGeometryCollection>(copy[3].Geometry).Geometries.Select(geometry => geometry.Type));
+    }
+
+    [Fact]
+    public void Format_Tracks()
+    {
+        var time = new DateTimeOffset(2024, 5, 1, 10, 0, 0, TimeSpan.FromHours(2));
+        GeoFeatureCollection features =
+        [
+            new GeoFeature(new GeoLineString([new GeoPosition(1, 2, 3) { Time = time }, new GeoPosition(4, 5, 6) { Time = time.AddSeconds(30.5) }])),
+            new GeoFeature(new GeoMultiLineString([new GeoLineString([new GeoPosition(1, 2) { Time = time }]), new GeoLineString([new GeoPosition(3, 4) { Time = time.AddHours(1) }])])),
+
+            // A line whose positions do not all have a time is a LineString: the times are not written
+            new GeoFeature(new GeoLineString([new GeoPosition(1, 2) { Time = time }, new GeoPosition(3, 4)])),
+        ];
+
+        var kml = Kml.Format(features);
+        Assert.Contains("""<gx:Track xmlns:gx="http://www.google.com/kml/ext/2.2"><altitudeMode>absolute</altitudeMode><when>2024-05-01T10:00:00+02:00</when><when>2024-05-01T10:00:30.5+02:00</when><gx:coord>1 2 3</gx:coord><gx:coord>4 5 6</gx:coord></gx:Track>""", kml);
+        Assert.Contains("""<gx:MultiTrack xmlns:gx="http://www.google.com/kml/ext/2.2"><gx:Track><when>2024-05-01T10:00:00+02:00</when><gx:coord>1 2</gx:coord></gx:Track><gx:Track><when>2024-05-01T11:00:00+02:00</when><gx:coord>3 4</gx:coord></gx:Track></gx:MultiTrack>""", kml);
+        Assert.Contains("<LineString><coordinates>1,2 3,4</coordinates></LineString>", kml);
+
+        var copy = Kml.Parse(kml);
+        Assert.Equal(features[0].Geometry!.GetPositions(), Assert.IsType<GeoLineString>(copy[0].Geometry).GetPositions());
+        Assert.Equal(time.Offset, copy[0].Geometry!.GetPositions().First().Time!.Value.Offset);
+        Assert.Equal(features[1].Geometry!.GetPositions(), Assert.IsType<GeoMultiLineString>(copy[1].Geometry).GetPositions());
+        Assert.Equal([new GeoPosition(1, 2), new(3, 4)], copy[2].Geometry!.GetPositions());
+    }
+
+    [Fact]
+    public void Parse_TrackTimes()
+    {
+        // A when without a time of day is not a time, and the coordinates without a when get no time
+        var features = Kml.Parse("""
+            <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2"><Placemark><gx:Track>
+              <when>2024-05-01</when><when> 2024-05-01T08:00:00-05:00 </when>
+              <gx:coord>1 2</gx:coord><gx:coord>3 4</gx:coord><gx:coord>5 6</gx:coord>
+            </gx:Track></Placemark></kml>
+            """);
+        Assert.Equal(
+            [new GeoPosition(1, 2), new(3, 4) { Time = new DateTimeOffset(2024, 5, 1, 13, 0, 0, TimeSpan.Zero) }, new(5, 6)],
+            Assert.IsType<GeoLineString>(Assert.Single(features).Geometry).Positions);
     }
 
     [Fact]

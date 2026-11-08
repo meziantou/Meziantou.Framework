@@ -38,7 +38,7 @@ var isValid = signature.IsValid && signature.CoversWholeDocument;
 | [HashAlgorithm](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.HashAlgorithm) | SHA-256 | The digest algorithm: SHA-256, SHA-384 or SHA-512 |
 | [RsaSignaturePadding](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.RsaSignaturePadding) | PKCS #1 v1.5 | `RSASignaturePadding.Pss` for an RSASSA-PSS signature (RSA keys only) |
 | [FieldName](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.FieldName) | `Signature1`, `Signature2`... | The name of the signature field. An existing signature field that is not signed yet is signed; the name of any other field throws `ArgumentException` |
-| [Appearance](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.Appearance) | Invisible | The page, the rectangle and the drawing of a visible signature |
+| [Appearance](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.Appearance) | Invisible | The page and the rectangle of a visible signature, and its drawing or the options of the default layout |
 | [Certification](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.Certification), [FieldLock](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.FieldLock) | none | The changes a certification signature allows, and the fields the signature locks |
 | [TimestampAuthority](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.TimestampAuthority), [HttpClient](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.HttpClient) | none | The time stamp authority of a B-T signature, and the client to call it |
 | [ReservedSize](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.ReservedSize) | Computed | The bytes reserved for the signature in the file |
@@ -64,8 +64,39 @@ var signed = await PdfSigner.SignAsync(document, options, XunitCancellationToken
 
 ## Show the signature on a page
 
-By default the signature field is invisible. Set [Appearance](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.Appearance) to show it in a rectangle of a page; the drawing
-uses the coordinates of the rectangle, from (0, 0) at its bottom left:
+By default the signature field is invisible. Set [Appearance](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.Appearance) to show it in a rectangle of a page, given in the
+default user space of the page (points, from the bottom left of the page). The widget is printed with the page, and
+readers show it in the list of annotations of the page.
+
+Without a drawing, the library draws a default layout: the name of the signer ([SignerName](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.SignerName), or the name of the
+certificate), the date ([SigningTime](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.SigningTime), as `yyyy-MM-dd HH:mm:ss` and its offset), the reason and the location, with an
+optional image, such as a scan of a handwritten signature or a logo:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfSignerTests.cs;region=PdfSigning_DefaultAppearance;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Without a drawing, the library draws the name of the signer, the date, the reason and the location, and the image at their left
+var options = new PdfSignatureOptions(certificate)
+{
+    Reason = "I approve this contract",
+    Location = "Paris",
+    SigningTime = new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero),
+    Appearance = new PdfSignatureAppearance(pageIndex: 0, PdfRectangle.FromSize(60, 60, 200, 50))
+    {
+        Image = image, // Such as PdfImage.Load("signature.png")
+    },
+};
+var signed = PdfSigner.Sign(document, options);
+```
+<!-- endref -->
+
+| [PdfSignatureAppearance](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureAppearance) | Default | Sets |
+| --- | --- | --- |
+| [Image](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureAppearance.Image) | none | The image, scaled to fit the left 40% of the rectangle (the top 40% when the rectangle is taller than wide), keeping its proportions |
+| [Font](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureAppearance.Font) | Helvetica | The font of the text. Helvetica shows the characters of `WinAnsiEncoding`: use an embedded font ([PdfFont.Load](cref:Meziantou.Framework.Pdf.PdfFont.Load)) for the others, or [Sign](cref:Meziantou.Framework.Pdf.Signing.PdfSigner.Sign) throws `ArgumentException` |
+| [FontSize](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureAppearance.FontSize) | Fitted | The font size; by default the largest size, up to 10, at which the text fits in the rectangle |
+
+To draw the appearance yourself, set [Draw](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureAppearance.Draw): it receives the content builder of the appearance, whose coordinates are
+those of the rectangle, from (0, 0) at its bottom left. A drawing that draws nothing gives an empty appearance.
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfSignerTests.cs;region=PdfSigning_VisibleSignature;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -119,9 +150,41 @@ var timestamped = await PdfSigner.TimestampAsync(PdfDocument.Open(withValidation
 ```
 <!-- endref -->
 
-- The library does not download revocation evidence: get the CRLs (RFC 5280) and the OCSP responses (RFC 6960) of the
-  chains, DER encoded, with the HTTP client and the policy of the application.
-- The data the store already has is not added again. The store has no VRI dictionaries.
+- The data the store already has is not added again. This method writes no VRI dictionaries.
+
+[PdfSigner.AddValidationDataAsync](cref:Meziantou.Framework.Pdf.Signing.PdfSigner.AddValidationDataAsync) gathers the validation data itself: it builds the chains of the signers, of the
+time stamp authorities and of the document time stamps from the certificates the signatures embed, those of the store
+and those of [PdfValidationDataOptions](cref:Meziantou.Framework.Pdf.Signing.PdfValidationDataOptions), and finds the revocation evidence of each certificate of the chains that is
+not self-signed among the revocation lists and the OCSP responses of the options and of the store. With
+[DownloadMissingData](cref:Meziantou.Framework.Pdf.Signing.PdfValidationDataOptions.DownloadMissingData), it downloads what is missing with the HTTP client of the options: the issuers from the
+addresses of the certificates (`caIssuers`), then an OCSP response from the responder of each certificate, or else the
+revocation list of one of its distribution points. [IncludeVri](cref:Meziantou.Framework.Pdf.Signing.PdfValidationDataOptions.IncludeVri) adds a VRI dictionary for each signature, which lists
+the certificates and the revocation evidence of its chains.
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfSignerTests.cs;region=PdfSigning_DownloadValidationData;format=md-fenced-code-block;dedent=true -->
+```csharp
+// PAdES B-LT: the chains of the signatures are completed, and the missing revocation evidence is downloaded
+// from the addresses of the certificates (OCSP responders, revocation lists, issuers)
+var options = new PdfValidationDataOptions
+{
+    DownloadMissingData = true,
+    HttpClient = httpClient,
+    IncludeVri = true,
+};
+options.Certificates.Add(trustedRoot);
+var withValidationData = await PdfSigner.AddValidationDataAsync(PdfDocument.Open(signedFile), options, XunitCancellationToken);
+```
+<!-- endref -->
+
+- Nothing is downloaded unless [DownloadMissingData](cref:Meziantou.Framework.Pdf.Signing.PdfValidationDataOptions.DownloadMissingData) is set; [AddValidationData](cref:Meziantou.Framework.Pdf.Signing.PdfSigner.AddValidationData) with
+  [PdfValidationDataOptions](cref:Meziantou.Framework.Pdf.Signing.PdfValidationDataOptions) does the same work offline. Pass an `HttpClient` configured with the proxy and the
+  timeouts of the application.
+- Give the root certificates in [Certificates](cref:Meziantou.Framework.Pdf.Signing.PdfValidationDataOptions.Certificates): the chains end where no issuer is found.
+- The library does not check the downloaded data: a revocation list or an OCSP response is stored when it comes from
+  the issuer of the certificate, whatever its status. Validate the signatures with the trust policy of the
+  application. When no address of a certificate answers, the method throws an `HttpRequestException`.
+- The revocation evidence of the certificates of the OCSP responders is not downloaded: they usually have the
+  `id-pkix-ocsp-nocheck` extension (RFC 6960, 4.2.2.2.1).
 - [PdfSignatureVerifier.GetValidationData](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureVerifier.GetValidationData) reads the store back, for instance to build the chains offline with
   `X509ChainPolicy.ExtraStore`.
 

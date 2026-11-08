@@ -69,7 +69,46 @@ internal static class RawTdsClient
         return await ReadTdsMessageAsync(stream, cancellationTokenSource.Token);
     }
 
-    private static byte[] CreateTdsMessage(byte packetType, ReadOnlySpan<byte> payload)
+    /// <summary>
+    /// Logs in, sends each payload as a transaction manager request, and returns the responses. The connection is
+    /// closed when the method returns.
+    /// </summary>
+    public static async Task<List<byte[]>> SendTransactionManagerRequestsAsync(TdsServerOptions options, params byte[][] payloads)
+    {
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var client = new TcpClient();
+        await client.ConnectAsync(IPAddress.Loopback, port, cancellationTokenSource.Token);
+        using var stream = client.GetStream();
+
+        await stream.WriteAsync(CreateTdsMessage(0x12, [0x01, 0x00, 0x06, 0x00, 0x01, 0xFF, 0x02]), cancellationTokenSource.Token);
+        await ReadTdsMessageAsync(stream, cancellationTokenSource.Token);
+        await stream.WriteAsync(CreateTdsMessage(0x10, new byte[94]), cancellationTokenSource.Token);
+        await ReadTdsMessageAsync(stream, cancellationTokenSource.Token);
+
+        var responses = new List<byte[]>();
+        foreach (var payload in payloads)
+        {
+            await stream.WriteAsync(CreateTdsMessage(0x0E, payload), cancellationTokenSource.Token);
+            var (_, response) = await ReadTdsMessageAsync(stream, cancellationTokenSource.Token);
+            responses.Add(response);
+        }
+
+        // Keep the server running until it has seen the client go away: the server closes the connection when it
+        // reads the end of the stream. Windows refuses to read from a socket shut down in both directions.
+        client.Client.Shutdown(SocketShutdown.Send);
+        _ = await stream.ReadAsync(new byte[1], cancellationTokenSource.Token);
+        return responses;
+    }
+
+    public static byte[] CreateTdsMessage(byte packetType, ReadOnlySpan<byte> payload)
     {
         var message = new byte[8 + payload.Length];
         message[0] = packetType;
@@ -80,7 +119,7 @@ internal static class RawTdsClient
         return message;
     }
 
-    private static async Task<(byte PacketType, byte[] Payload)> ReadTdsMessageAsync(NetworkStream stream, CancellationToken cancellationToken)
+    public static async Task<(byte PacketType, byte[] Payload)> ReadTdsMessageAsync(Stream stream, CancellationToken cancellationToken)
     {
         var header = new byte[8];
         await stream.ReadExactlyAsync(header, cancellationToken);

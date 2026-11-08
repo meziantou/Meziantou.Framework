@@ -21,7 +21,7 @@ public sealed class GpxTests
         Assert.Null(features.Name);
         Assert.HasCount(4, features);
 
-        Assert.Equal(new GeoPosition(2.2945, 48.8584), Assert.IsType<GeoPoint>(features[0].Geometry).Position);
+        Assert.Equal(new GeoPosition(2.2945, 48.8584) { Time = new DateTimeOffset(2024, 5, 1, 10, 30, 0, TimeSpan.Zero) }, Assert.IsType<GeoPoint>(features[0].Geometry).Position);
         Assert.Equal(["gpxType", "time", "name", "desc", "sym"], features[0].Properties.Keys);
         Assert.Equal("wpt", features[0].Properties[Gpx.TypePropertyName]);
         Assert.Equal(new DateTimeOffset(2024, 5, 1, 10, 30, 0, TimeSpan.Zero), features[0].Properties["time"]);
@@ -51,20 +51,20 @@ public sealed class GpxTests
         Assert.HasCount(2, features);
 
         var waypoint = features[0];
-        Assert.Equal(new GeoPosition(5.7245, 45.1885, 212.4), Assert.IsType<GeoPoint>(waypoint.Geometry).Position);
+        Assert.Equal(new GeoPosition(5.7245, 45.1885, 212.4) { Time = new DateTimeOffset(2024, 6, 15, 6, 12, 3, TimeSpan.Zero) }, Assert.IsType<GeoPoint>(waypoint.Geometry).Position);
         Assert.Equal(["gpxType", "time", "name", "sym", "type"], waypoint.Properties.Keys);
         Assert.Equal(new DateTimeOffset(2024, 6, 15, 6, 12, 3, TimeSpan.Zero), waypoint.Properties["time"]);
         Assert.Equal("Flag, Green", waypoint.Properties["sym"]);
         Assert.Equal("user", waypoint.Properties["type"]);
 
-        // The extensions of the track and of its points (heart rate, cadence…) are ignored
+        // The extensions of the track and of its points (heart rate, cadence…) are ignored; the times of the points are kept
         var track = features[1];
         Assert.Equal(["gpxType", "name", "type"], track.Properties.Keys);
         Assert.Equal("cycling", track.Properties["type"]);
         var segments = Assert.IsType<GeoMultiLineString>(track.Geometry).LineStrings;
         Assert.Equal([3, 2], segments.Select(segment => segment.Positions.Count));
-        Assert.Equal(new GeoPosition(5.72449999954551458358764648437, 45.18850000016391277313232421875, 212.39999389648438), segments[0].Positions[0]);
-        Assert.Equal(new GeoPosition(5.7322, 45.1931, 221.8), segments[1].Positions[1]);
+        Assert.Equal(new GeoPosition(5.72449999954551458358764648437, 45.18850000016391277313232421875, 212.39999389648438) { Time = new DateTimeOffset(2024, 6, 15, 6, 12, 3, TimeSpan.Zero) }, segments[0].Positions[0]);
+        Assert.Equal(new GeoPosition(5.7322, 45.1931, 221.8) { Time = new DateTimeOffset(2024, 6, 15, 6, 20, 46, TimeSpan.Zero) }, segments[1].Positions[1]);
     }
 
     [Fact]
@@ -76,8 +76,9 @@ public sealed class GpxTests
         Assert.Equal("Lunch Run", track.Properties["name"]);
         Assert.Equal("9", track.Properties["type"]);
         var segment = Assert.Single(Assert.IsType<GeoMultiLineString>(track.Geometry).LineStrings);
-        Assert.Equal(new GeoPosition(-0.124625, 51.500729, 11.2), segment.Positions[0]);
+        Assert.Equal(new GeoPosition(-0.124625, 51.500729, 11.2) { Time = new DateTimeOffset(2024, 9, 1, 7, 0, 0, TimeSpan.Zero) }, segment.Positions[0]);
         Assert.HasCount(4, segment.Positions);
+        Assert.Equal(TimeSpan.FromSeconds(15), segment.Positions[^1].Time - segment.Positions[0].Time);
     }
 
     [Fact]
@@ -89,13 +90,15 @@ public sealed class GpxTests
         Assert.Equal("Boston Freedom Trail", features.Name);
         Assert.Equal(["wpt", "wpt", "rte", "trk"], features.Select(feature => feature.Properties[Gpx.TypePropertyName]));
         Assert.Equal(["gpxType", "time", "name", "cmt", "desc", "sym", "type"], features[0].Properties.Keys);
-        Assert.Equal(new GeoPosition(-71.063353, 42.355001, 12.192), Assert.IsType<GeoPoint>(features[0].Geometry).Position);
+        Assert.Equal(new GeoPosition(-71.063353, 42.355001, 12.192) { Time = new DateTimeOffset(2002, 2, 10, 21, 1, 29, TimeSpan.Zero) }, Assert.IsType<GeoPoint>(features[0].Geometry).Position);
         Assert.Equal("Park", features[0].Properties["sym"]);
         Assert.Equal(["gpxType", "name", "desc", "number"], features[2].Properties.Keys);
         Assert.Equal(1.0, features[2].Properties["number"]);
         Assert.Equal([new GeoPosition(-71.063353, 42.355001, 12.192), new(-71.0622, 42.3578, 16.764), new(-71.06027, 42.35834)], Assert.IsType<GeoLineString>(features[2].Geometry).Positions);
         Assert.Equal(2.0, features[3].Properties["number"]);
-        Assert.HasCount(2, Assert.Single(Assert.IsType<GeoMultiLineString>(features[3].Geometry).LineStrings).Positions);
+        Assert.Equal(
+            [new GeoPosition(-71.063353, 42.355001, 12.192) { Time = new DateTimeOffset(2002, 2, 27, 17, 18, 33, TimeSpan.Zero) }, new(-71.0622, 42.3578, 16.764) { Time = new DateTimeOffset(2002, 2, 27, 17, 25, 10, TimeSpan.Zero) }],
+            Assert.Single(Assert.IsType<GeoMultiLineString>(features[3].Geometry).LineStrings).Positions);
     }
 
     [Fact]
@@ -112,7 +115,7 @@ public sealed class GpxTests
             </gpx>
             """);
         Assert.HasCount(4, features);
-        Assert.Equal(new GeoPosition(180, -90), Assert.IsType<GeoPoint>(features[0].Geometry).Position);
+        Assert.Equal(new GeoPosition(180, -90) { Time = new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.Zero) }, Assert.IsType<GeoPoint>(features[0].Geometry).Position);
         Assert.Equal(new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.Zero), features[0].Properties["time"]);
         Assert.Equal("A & B", features[0].Properties["name"]);
         Assert.Equal(new GeoPosition(-0.5, 10), Assert.IsType<GeoPoint>(features[1].Geometry).Position);
@@ -248,6 +251,53 @@ public sealed class GpxTests
         Assert.Equal("Lunch Run", track.Properties["name"]);
         Assert.Equal(173, Math.Round(length, MidpointRounding.AwayFromZero));
         #endregion
+    }
+
+    [Fact]
+    public void TrackTimes_Example()
+    {
+        File.Copy(GetTestDataPath("strava.gpx"), "run.gpx", overwrite: true);
+
+        #region Geo_GpxTrackTimes
+        GeoFeatureCollection features;
+        using (var stream = File.OpenRead("run.gpx"))
+        {
+            features = Gpx.Read(stream);
+        }
+
+        // The time of each point of the track is the Time of its position
+        var segment = ((GeoMultiLineString)features[0].Geometry!).LineStrings[0];
+        var start = segment.Positions[0].Time!.Value;
+        var end = segment.Positions[^1].Time!.Value;
+        var speed = segment.GetLength() / (end - start).TotalSeconds; // meters per second
+
+        Assert.Equal(new DateTimeOffset(2024, 9, 1, 7, 0, 0, TimeSpan.Zero), start);
+        Assert.Equal(11.6, speed, 1);
+        #endregion
+    }
+
+    [Fact]
+    public void Format_Times()
+    {
+        var time = new DateTimeOffset(2024, 6, 15, 8, 12, 3, 500, TimeSpan.FromHours(2));
+        GeoFeatureCollection features =
+        [
+            new GeoFeature(new GeoPoint(new GeoPosition(1, 2, 3) { Time = time, Measure = 4 }), new Dictionary<string, object?>(StringComparer.Ordinal) { ["time"] = DateTimeOffset.UnixEpoch }),
+            new GeoFeature(new GeoLineString([new GeoPosition(1, 2) { Time = time }, new GeoPosition(3, 4)])),
+            new GeoFeature(new GeoMultiLineString([new GeoLineString([new GeoPosition(5, 6, 7) { Time = time.AddSeconds(1) }])])),
+        ];
+
+        // The time of a position is written in UTC, after the altitude, and wins over the time property of a waypoint; the measures are not written
+        var gpx = Gpx.Format(features);
+        Assert.Contains("""<wpt lat="2" lon="1"><ele>3</ele><time>2024-06-15T06:12:03.5Z</time></wpt>""", gpx);
+        Assert.Contains("""<rtept lat="2" lon="1"><time>2024-06-15T06:12:03.5Z</time></rtept><rtept lat="4" lon="3" />""", gpx);
+        Assert.Contains("""<trkpt lat="6" lon="5"><ele>7</ele><time>2024-06-15T06:12:04.5Z</time></trkpt>""", gpx);
+
+        var copy = Gpx.Parse(gpx);
+        Assert.Equal(new GeoPosition(1, 2, 3) { Time = time }, Assert.IsType<GeoPoint>(copy[0].Geometry).Position);
+        Assert.Equal(time, copy[0].Properties["time"]);
+        Assert.Equal([new GeoPosition(1, 2) { Time = time }, new(3, 4)], Assert.IsType<GeoLineString>(copy[1].Geometry).Positions);
+        Assert.Equal(new GeoPosition(5, 6, 7) { Time = time.AddSeconds(1) }, copy[2].Geometry!.GetPositions().Single());
     }
 
     [Fact]

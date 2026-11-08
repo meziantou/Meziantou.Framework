@@ -10,7 +10,8 @@ namespace Meziantou.Framework.Geo;
 /// <remarks>
 /// <para>
 /// The reader reads the points, lines, polygons, their multi-geometries and the geometry collections, with their altitudes
-/// (Z); the M, T and TM values are dropped, and the curves, surfaces and triangles throw a <see cref="FormatException"/>.
+/// (Z) and their measures (M, a NaN value being no measure); the T and TM values are dropped, as the format does not define
+/// their meaning, and the curves, surfaces and triangles throw a <see cref="FormatException"/>.
 /// The collection is named after the name of the header. The property values have the .NET type of their column: a
 /// <see cref="sbyte"/>, <see cref="byte"/>, <see cref="bool"/>, <see cref="short"/>, <see cref="ushort"/>, <see cref="int"/>,
 /// <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>, <see cref="float"/>, <see cref="double"/>, a
@@ -22,7 +23,8 @@ namespace Meziantou.Framework.Geo;
 /// <para>
 /// The writer writes the header with the name of the collection, its bounds, the coordinate system EPSG:4326 (WGS 84),
 /// one geometry type when every geometry has the same type (else each geometry gets its type), and Z values when a
-/// position has an altitude (the positions without altitude get 0). The columns are the property names in the order
+/// position has an altitude (the positions without altitude get 0), and M values when a position has a measure (the
+/// positions without measure get NaN). The times of the positions are not written. The columns are the property names in the order
 /// they are first seen; a column gets the type of its values, <see cref="long"/> for integers of different types,
 /// <see cref="double"/> for numbers of different types, and the text of the values for other mixes. A date, a
 /// <see cref="DateTime"/> or a <see cref="DateTimeOffset"/> is a date-time column in ISO 8601, to the millisecond (GDAL

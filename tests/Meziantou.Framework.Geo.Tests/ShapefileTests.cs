@@ -78,18 +78,19 @@ public sealed class ShapefileTests
     public void Read_ZAndM()
     {
         Assert.Equal(new GeoPosition(1, 2, 3), Assert.IsType<GeoPoint>(Assert.Single(Shapefile.Read(GetPath("pointz.shp"))).Geometry).Position);
-        Assert.Equal(new GeoPosition(1, 2), Assert.IsType<GeoPoint>(Assert.Single(Shapefile.Read(GetPath("pointm.shp"))).Geometry).Position);
+        Assert.Equal(new GeoPosition(1, 2) { Measure = 3 }, Assert.IsType<GeoPoint>(Assert.Single(Shapefile.Read(GetPath("pointm.shp"))).Geometry).Position);
 
         var lines = Assert.IsType<GeoMultiLineString>(Assert.Single(Shapefile.Read(GetPath("linem.shp"))).Geometry);
-        Assert.Equal([new GeoPosition(0, 0), new(1, 1)], lines.LineStrings[0].Positions);
-        Assert.Equal([new GeoPosition(2, 2), new(3, 3)], lines.LineStrings[1].Positions);
+        Assert.Equal([new GeoPosition(0, 0) { Measure = 1 }, new(1, 1) { Measure = 2 }], lines.LineStrings[0].Positions);
+        Assert.Equal([new GeoPosition(2, 2) { Measure = 3 }, new(3, 3) { Measure = 4 }], lines.LineStrings[1].Positions);
 
+        // The M values of a Z shape are optional: this polygon has none
         var polygon = Assert.IsType<GeoPolygon>(Assert.Single(Shapefile.Read(GetPath("polygonz.shp"))).Geometry);
         Assert.Equal([new GeoPosition(0, 0, 1), new(0, 10, 2), new(10, 10, 3), new(10, 0, 4), new(0, 0, 1)], polygon.Rings[0]);
         Assert.Equal([new GeoPosition(2, 2, 5), new(4, 2, 6), new(4, 4, 7), new(2, 4, 8), new(2, 2, 5)], polygon.Rings[1]);
 
         var multiPoint = Assert.IsType<GeoMultiPoint>(Assert.Single(Shapefile.Read(GetPath("multipointzm.shp"))).Geometry);
-        Assert.Equal([new GeoPosition(1, 2, 3), new(5, 6, 7)], multiPoint.Positions);
+        Assert.Equal([new GeoPosition(1, 2, 3) { Measure = 4 }, new(5, 6, 7) { Measure = 8 }], multiPoint.Positions);
     }
 
     [Fact]
@@ -358,6 +359,132 @@ public sealed class ShapefileTests
         }
     }
 
+    private const string Lambert93Prj = """PROJCS["RGF_1993_Lambert_93",GEOGCS["GCS_RGF_1993",DATUM["D_RGF_1993",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Lambert_Conformal_Conic"],PARAMETER["False_Easting",700000.0],PARAMETER["False_Northing",6600000.0],PARAMETER["Central_Meridian",3.0],PARAMETER["Standard_Parallel_1",49.0],PARAMETER["Standard_Parallel_2",44.0],PARAMETER["Latitude_Of_Origin",46.5],UNIT["Meter",1.0]]""";
+
+    [Fact]
+    public async Task Read_ProjectedCoordinateSystem()
+    {
+        var directory = Directory.CreateTempSubdirectory();
+        try
+        {
+            // A shapefile in Lambert 93, as the open data of France: the .prj file of the writer is replaced
+            var path = Path.Combine(directory.FullName, "communes.shp");
+            var polygon = new GeoPolygon([[new(652310.72, 6862414.64), new(652310.72, 6862514.64), new(652410.72, 6862414.64), new(652310.72, 6862414.64)]]);
+            Shapefile.Write([new GeoFeature(polygon, new Dictionary<string, object?> { ["name"] = "Paris" }), new GeoFeature(geometry: null)], path);
+            File.Delete(Path.Combine(directory.FullName, "communes.prj"));
+            File.WriteAllText(Path.Combine(directory.FullName, "communes.PRJ"), Lambert93Prj);
+
+            var features = Shapefile.Read(path);
+            var crs = Assert.IsType<ProjectedCoordinateSystem>(features.CoordinateReferenceSystem);
+            Assert.Equal("RGF_1993_Lambert_93", crs.Name);
+            Assert.Equal(polygon.Rings, ((GeoPolygon)features[0].Geometry!).Rings);
+
+            var converted = Shapefile.Read(path, new ShapefileReaderOptions { TransformToWgs84 = true });
+            Assert.Same(CoordinateReferenceSystem.Wgs84, converted.CoordinateReferenceSystem);
+            var position = ((GeoPolygon)converted[0].Geometry!).Rings[0][0];
+            Assert.Equal(2.35, position.Longitude, 1e-6);
+            Assert.Equal(48.86, position.Latitude, 1e-6);
+            Assert.Equal("Paris", converted[0].Properties["name"]);
+            Assert.Null(converted[1].Geometry);
+
+            // The streaming reader converts the positions the same way
+            var streamed = await Shapefile.ReadFeaturesAsync(path, new ShapefileReaderOptions { TransformToWgs84 = true }, TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken);
+            Assert.Equal(position, ((GeoPolygon)streamed[0].Geometry!).Rings[0][0]);
+            Assert.Null(streamed[1].Geometry);
+            var notConverted = await Shapefile.ReadFeaturesAsync(path, cancellationToken: TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken);
+            Assert.Equal(polygon.Rings, ((GeoPolygon)notConverted[0].Geometry!).Rings);
+
+            // The same files in a zip archive
+            using var zip = new MemoryStream();
+            using (var archive = new ZipArchive(zip, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                foreach (var file in directory.GetFiles())
+                {
+                    archive.CreateEntryFromFile(file.FullName, "data/" + file.Name);
+                }
+            }
+
+            zip.Position = 0;
+            var zipped = Shapefile.ReadZip(zip, new ShapefileReaderOptions { TransformToWgs84 = true });
+            Assert.Equal(position, ((GeoPolygon)zipped[0].Geometry!).Rings[0][0]);
+            zip.Position = 0;
+            var zippedStreamed = await Shapefile.ReadZipFeaturesAsync(zip, options: new ShapefileReaderOptions { TransformToWgs84 = true }, cancellationToken: TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken);
+            Assert.Equal(position, ((GeoPolygon)zippedStreamed[0].Geometry!).Rings[0][0]);
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Read_CoordinateSystemOfThePrjFile()
+    {
+        // The files of GDAL have a .prj file of WGS 84: the positions are not converted
+        var features = Shapefile.Read(GetPath("points.shp"), new ShapefileReaderOptions { TransformToWgs84 = true });
+        var crs = Assert.IsType<GeographicCoordinateSystem>(features.CoordinateReferenceSystem);
+        Assert.Equal(new GeoPosition(2.3522, 48.8566), ((GeoPoint)features[0].Geometry!).Position);
+        Assert.Equal(Ellipsoid.Wgs84.SemiMajorAxis, crs.Ellipsoid.SemiMajorAxis);
+
+        // Streams have no .prj file
+        using var shp = File.OpenRead(GetPath("points.shp"));
+        Assert.Null(Shapefile.Read(shp, dbf: null).CoordinateReferenceSystem);
+    }
+
+    [Fact]
+    public async Task Read_InvalidPrjFile()
+    {
+        var directory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var path = Path.Combine(directory.FullName, "points.shp");
+            Shapefile.Write([new GeoFeature(new GeoPoint(new GeoPosition(1, 2)))], path);
+
+            // Ignored unless the positions must be converted
+            File.WriteAllText(Path.Combine(directory.FullName, "points.prj"), "PROJCS[");
+            Assert.Null(Shapefile.Read(path).CoordinateReferenceSystem);
+            Assert.Throws<FormatException>(() => Shapefile.Read(path, new ShapefileReaderOptions { TransformToWgs84 = true }));
+
+            File.WriteAllText(Path.Combine(directory.FullName, "points.prj"), """PROJCS["Albers",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Albers_Conic_Equal_Area"],UNIT["metre",1]]""");
+            Assert.Null(Shapefile.Read(path).CoordinateReferenceSystem);
+            Assert.Throws<NotSupportedException>(() => Shapefile.Read(path, new ShapefileReaderOptions { TransformToWgs84 = true }));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await Shapefile.ReadFeaturesAsync(path, new ShapefileReaderOptions { TransformToWgs84 = true }, TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken));
+            Assert.Single(await Shapefile.ReadFeaturesAsync(path, cancellationToken: TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Documentation_ReadProjected()
+    {
+        var directory = Directory.CreateTempSubdirectory();
+        var path = Path.Combine(directory.FullName, "communes.shp");
+        Shapefile.Write([new GeoFeature(new GeoPoint(new GeoPosition(652310.72, 6862414.64)))], path);
+        File.WriteAllText(Path.ChangeExtension(path, ".prj"), Lambert93Prj);
+        try
+        {
+            #region Geo_ShapefileReadProjected
+            // The .prj file declares Lambert 93: the positions are converted to longitudes and latitudes
+            var features = Shapefile.Read(path, new ShapefileReaderOptions { TransformToWgs84 = true });
+            var position = ((GeoPoint)features[0].Geometry!).Position;
+            Assert.Equal(2.35, position.Longitude, 1e-6);
+            Assert.Equal(48.86, position.Latitude, 1e-6);
+
+            // Without the option, the positions are those of the file, and CoordinateReferenceSystem tells what they are
+            var projected = Shapefile.Read(path);
+            Assert.Equal("RGF_1993_Lambert_93", projected.CoordinateReferenceSystem!.Name);
+            Assert.False(projected.CoordinateReferenceSystem.IsGeographic);
+            #endregion
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
     [Fact]
     public void Write_RoundTrip()
     {
@@ -503,6 +630,59 @@ public sealed class ShapefileTests
         Assert.Equal(ShapefileShapeType.PolyLine, WriteAndGetShapeType([new(new GeoLineString([new(1, 2), new(3, 4)]))]));
         Assert.Equal(ShapefileShapeType.PolygonZ, WriteAndGetShapeType([new(new GeoPolygon([[new(0, 0, 1), new(1, 0, 1), new(1, 1, 1), new(0, 0, 1)]]))]));
         Assert.Equal(new GeoPosition(1, 2, 3), Assert.IsType<GeoPoint>(Assert.Single(RoundTrip([new(new GeoPoint(new GeoPosition(1, 2, 3)))])).Geometry).Position);
+    }
+
+    [Fact]
+    public void Write_Measures()
+    {
+        // Without altitudes, the measures need the M shapes; a position without measure gets the no-data value
+        var points = new GeoFeatureCollection { new(new GeoPoint(new GeoPosition(1, 2) { Measure = 3 })), new(new GeoPoint(new GeoPosition(4, 5))) };
+        Assert.Equal(ShapefileShapeType.PointM, WriteAndGetShapeType(points));
+        Assert.Equal([new GeoPosition(1, 2) { Measure = 3 }, new(4, 5)], RoundTrip(points).Select(feature => Assert.IsType<GeoPoint>(feature.Geometry).Position));
+
+        GeoPosition[] multiPoint = [new(1, 2) { Measure = -1.5 }, new(3, 4) { Measure = 0 }];
+        Assert.Equal(ShapefileShapeType.MultiPointM, WriteAndGetShapeType([new(new GeoMultiPoint(multiPoint))]));
+        Assert.Equal(multiPoint, Assert.IsType<GeoMultiPoint>(Assert.Single(RoundTrip([new(new GeoMultiPoint(multiPoint))])).Geometry).Positions);
+
+        GeoPosition[] line = [new(0, 0) { Measure = 0 }, new(1, 1), new(2, 2) { Measure = 20 }];
+        Assert.Equal(ShapefileShapeType.PolyLineM, WriteAndGetShapeType([new(new GeoLineString(line))]));
+        Assert.Equal(line, Assert.IsType<GeoLineString>(Assert.Single(RoundTrip([new(new GeoLineString(line))])).Geometry).Positions);
+
+        // The exterior ring is clockwise in a shapefile: the measures follow their positions when it is reversed
+        GeoPosition[] ring = [new(0, 0) { Measure = 1 }, new(0, 1) { Measure = 2 }, new(1, 1) { Measure = 3 }, new(0, 0) { Measure = 1 }];
+        Assert.Equal(ShapefileShapeType.PolygonM, WriteAndGetShapeType([new(new GeoPolygon([ring]))]));
+        Assert.Equal(ring, Assert.Single(Assert.IsType<GeoPolygon>(Assert.Single(RoundTrip([new(new GeoPolygon([ring]))])).Geometry).Rings));
+
+        // With altitudes, the Z shapes hold the measures
+        GeoPosition[] lineZ = [new(0, 0, 10) { Measure = 1 }, new(1, 1, 11) { Measure = 2 }];
+        Assert.Equal(ShapefileShapeType.PolyLineZ, WriteAndGetShapeType([new(new GeoLineString(lineZ))]));
+        Assert.Equal(lineZ, Assert.IsType<GeoLineString>(Assert.Single(RoundTrip([new(new GeoLineString(lineZ))])).Geometry).Positions);
+        var pointZ = new GeoPosition(1, 2, 3) { Measure = 4 };
+        Assert.Equal(pointZ, Assert.IsType<GeoPoint>(Assert.Single(RoundTrip([new(new GeoPoint(pointZ))])).Geometry).Position);
+
+        // The times are not written
+        Assert.Equal(new GeoPosition(1, 2), Assert.IsType<GeoPoint>(Assert.Single(RoundTrip([new(new GeoPoint(new GeoPosition(1, 2) { Time = DateTimeOffset.UnixEpoch }))])).Geometry).Position);
+    }
+
+    [Fact]
+    public void Write_MeasureRanges()
+    {
+        var features = new GeoFeatureCollection
+        {
+            new(new GeoLineString([new(0, 0) { Measure = 5 }, new(1, 1) { Measure = -2 }])),
+            new(new GeoLineString([new(2, 2), new(3, 3)])),
+        };
+
+        using var shp = new MemoryStream();
+        using var shx = new MemoryStream();
+        using var dbf = new MemoryStream();
+        Shapefile.Write(features, shp, shx, dbf);
+        var bytes = shp.ToArray();
+        Assert.Equal([-2.0, 5], Enumerable.Range(0, 2).Select(i => BinaryPrimitives.ReadDoubleLittleEndian(bytes.AsSpan(84 + (8 * i)))));
+
+        // The second line has no measure: its range is the no-data value. Its record is the last one: header, box, counts, part, points, M range, M values.
+        var mRange = bytes.Length - (8 * 2) - 16;
+        Assert.All(Enumerable.Range(0, 4).Select(i => BinaryPrimitives.ReadDoubleLittleEndian(bytes.AsSpan(mRange + (8 * i)))), value => Assert.True(value < -1e38));
     }
 
     [Fact]

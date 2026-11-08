@@ -36,8 +36,11 @@ public sealed class WellKnownBinaryTests
 
         if (columns[4] is not "-")
         {
-            Assert.Equal(text, WellKnownText.Format(WellKnownText.Parse(columns[4])));
-            Assert.Equal(columns[5], WellKnownBinary.FormatHex(geometry));
+            // The writers keep the M values, as GDAL's ISO WKB does; the last two columns are what GDAL writes without them
+            Assert.Equal(columns[1], WellKnownBinary.FormatHex(geometry));
+            var withoutMeasures = geometry.Transform(position => position with { Measure = null });
+            Assert.Equal(WellKnownText.Format(withoutMeasures), WellKnownText.Format(WellKnownText.Parse(columns[4])));
+            Assert.Equal(columns[5], WellKnownBinary.FormatHex(withoutMeasures));
         }
     }
 
@@ -53,14 +56,51 @@ public sealed class WellKnownBinaryTests
         Assert.Equal([new GeoPosition(0, 0, 0), new(1, 0, 0), new(1, 1, 0), new(0, 0, 0)], Assert.Single(Assert.Single(multiPolygon.Polygons).Rings));
         var collection = Assert.IsType<GeoGeometryCollection>(WellKnownBinary.ParseHex("01070000A0E6100000020000000101000080000000000000F03F00000000000000400000000000000000010200008002000000000000000000000000000000000000000000000000000000000000000000F03F000000000000F03F0000000000000000"));
         Assert.Equal([new GeoPosition(1, 2, 0), new(0, 0, 0), new(1, 1, 0)], collection.GetPositions());
+
+        WellKnownBinary.ParseHex("01070000A0E6100000020000000101000080000000000000F03F00000000000000400000000000000000010200008002000000000000000000000000000000000000000000000000000000000000000000F03F000000000000F03F0000000000000000", out var srid);
+        Assert.Equal(4326, srid);
+
+        // SRID 2154, big-endian
+        WellKnownBinary.Read(Convert.FromHexString("00200000010000086A3FF00000000000004000000000000000"), out srid);
+        Assert.Equal(2154, srid);
+
+        // Without the SRID flag, and with an SRID on a part only (the SRID of the root counts)
+        WellKnownBinary.ParseHex("0101000000000000000000F03F0000000000000040", out srid);
+        Assert.Null(srid);
+        WellKnownBinary.ParseHex("010400000001000000" + "0101000020E6100000000000000000F03F0000000000000040", out srid);
+        Assert.Null(srid);
     }
 
     [Fact]
     public void Read_ExtendedWkbWithMeasures()
     {
         // POINT M (1 2 4) and POINT ZM (1 2 3 4) with the EWKB flags, big-endian
-        Assert.Equal(new GeoPosition(1, 2), Assert.IsType<GeoPoint>(WellKnownBinary.ParseHex("00400000013FF000000000000040000000000000004010000000000000")).Position);
-        Assert.Equal(new GeoPosition(1, 2, 3), Assert.IsType<GeoPoint>(WellKnownBinary.ParseHex("00C00000013FF0000000000000400000000000000040080000000000004010000000000000")).Position);
+        Assert.Equal(new GeoPosition(1, 2) { Measure = 4 }, Assert.IsType<GeoPoint>(WellKnownBinary.ParseHex("00400000013FF000000000000040000000000000004010000000000000")).Position);
+        Assert.Equal(new GeoPosition(1, 2, 3) { Measure = 4 }, Assert.IsType<GeoPoint>(WellKnownBinary.ParseHex("00C00000013FF0000000000000400000000000000040080000000000004010000000000000")).Position);
+    }
+
+    [Fact]
+    public void Write_Measures()
+    {
+        // POINT M (1 2 3): type 2001; POINT ZM (1 2 3 4): type 3001
+        Assert.Equal("01D1070000000000000000F03F00000000000000400000000000000840", WellKnownBinary.FormatHex(new GeoPoint(new GeoPosition(1, 2) { Measure = 3 })));
+        Assert.Equal("01B90B0000000000000000F03F000000000000004000000000000008400000000000001040", WellKnownBinary.FormatHex(new GeoPoint(new GeoPosition(1, 2, 3) { Measure = 4 })));
+
+        // A missing measure is written as NaN, which reads back as no measure; the times are not written
+        GeoGeometry[] geometries =
+        [
+            new GeoLineString([new GeoPosition(0, 0) { Measure = 1 }, new GeoPosition(1, 1), new GeoPosition(2, 2, 3) { Measure = -4, Time = DateTimeOffset.UnixEpoch }]),
+            new GeoMultiPoint([new GeoPosition(1, 2) { Measure = 3 }, new GeoPosition(4, 5) { Measure = 6 }]),
+            new GeoMultiPolygon([new GeoPolygon([[new GeoPosition(0, 0) { Measure = 1 }, new GeoPosition(1, 0) { Measure = 2 }, new GeoPosition(1, 1) { Measure = 3 }, new GeoPosition(0, 0) { Measure = 1 }]])]),
+            new GeoGeometryCollection([new GeoPoint(new GeoPosition(1, 2) { Measure = 3 }), new GeoMultiLineString([new GeoLineString([new GeoPosition(0, 0) { Measure = 0 }, new GeoPosition(1, 1) { Measure = 1 }])])]),
+        ];
+
+        foreach (var geometry in geometries)
+        {
+            var copy = WellKnownBinary.Read(WellKnownBinary.Write(geometry));
+            Assert.Equal(geometry.Type, copy.Type);
+            Assert.Equal(geometry.GetPositions().Select(position => position with { Altitude = geometry.GetPositions().Any(p => p.Altitude is not null) ? position.Altitude ?? 0 : null, Time = null }), copy.GetPositions());
+        }
     }
 
     [Fact]

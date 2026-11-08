@@ -4,6 +4,8 @@ using Meziantou.Framework.Tds.Handler;
 
 namespace Meziantou.Framework.Tds.QueryEngine;
 
+[RequiresUnreferencedCode(TdsQueryEngine.RequiresUnreferencedCodeMessage)]
+[RequiresDynamicCode(TdsQueryEngine.RequiresDynamicCodeMessage)]
 internal static class TdsQueryResultBuilder
 {
     public static TdsQueryResult FromValue(object? value)
@@ -28,6 +30,11 @@ internal static class TdsQueryResultBuilder
 
     public static TdsQueryResult FromRows(IReadOnlyList<object?> rows, Type rowType)
     {
+        return CreateResult(CreateResultSet(rows, rowType));
+    }
+
+    public static TdsResultSet CreateResultSet(IReadOnlyList<object?> rows, Type rowType)
+    {
         ArgumentNullException.ThrowIfNull(rows);
         ArgumentNullException.ThrowIfNull(rowType);
 
@@ -40,7 +47,7 @@ internal static class TdsQueryResultBuilder
                 resultSet.Rows.Add([NormalizeDbNull(row)]);
             }
 
-            return CreateResult(resultSet);
+            return resultSet;
         }
 
         var members = GetMembers(rowType);
@@ -64,7 +71,7 @@ internal static class TdsQueryResultBuilder
             set.Rows.Add(values);
         }
 
-        return CreateResult(set);
+        return set;
     }
 
     private static TdsQueryResult FromScalar(object? value, Type type)

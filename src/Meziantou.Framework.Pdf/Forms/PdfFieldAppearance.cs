@@ -9,9 +9,11 @@ namespace Meziantou.Framework.Pdf;
 /// size and color of the default appearance (<c>/DA</c>), between <c>/Tx BMC</c> and <c>EMC</c>.
 /// </summary>
 /// <remarks>
-/// The text is drawn with the standard 14 font that matches the font of the default appearance (Helvetica, Times,
-/// Courier, their styles, Symbol, ZapfDingbats), Helvetica for another font: the characters that font cannot show are
-/// replaced with a question mark.
+/// The text is drawn with the embedded font of the default appearance when the form knows it
+/// (<see cref="PdfInteractiveForm.FindFont"/>), otherwise with the standard 14 font that matches it (Helvetica, Times,
+/// Courier, their styles, Symbol, ZapfDingbats), Helvetica for another font: the characters the font cannot show are
+/// replaced with a question mark. The check boxes and the radio buttons the form creates get the appearances of their
+/// states (<see cref="WriteButtonAppearances"/>).
 /// </remarks>
 internal static class PdfFieldAppearance
 {
@@ -25,6 +27,7 @@ internal static class PdfFieldAppearance
     private static readonly PdfName RName = PdfName.Create("R");
     private static readonly PdfName TIName = PdfName.Create("TI");
     private static readonly PdfName DRName = PdfName.Create("DR");
+    private static readonly PdfName CAName = PdfName.Create("CA");
 
     /// <summary>Gets the on states of the widgets of a button: the names of their normal appearances other than <c>Off</c>.</summary>
     public static IEnumerable<string> GetOnStates(PdfFormField field)
@@ -261,6 +264,9 @@ internal static class PdfFieldAppearance
         }
 
         var resources = widget.Get<PdfDictionary>(DRName) ?? field.Form.Dictionary?.Get<PdfDictionary>(DRName);
+        if (fontName is not null && resources?.Get<PdfDictionary>(PdfNames.Font)?[fontName] is { } entry && field.Form.FindFont(entry) is { } embedded)
+            return (embedded, size, color);
+
         var baseFont = fontName is null ? null : resources?.Get<PdfDictionary>(PdfNames.Font)?.Get<PdfDictionary>(fontName)?.GetName(PdfNames.BaseFont)?.Value;
         return (PdfFont.GetStandardFont(MatchStandardFont(baseFont ?? fontName?.Value ?? "")), size, color);
     }
@@ -306,6 +312,139 @@ internal static class PdfFieldAppearance
             (false, true) => PdfStandardFont.HelveticaOblique,
             _ => PdfStandardFont.Helvetica,
         };
+    }
+
+    /// <summary>
+    /// Writes the normal appearances of a widget of a check box or a radio button (12.7.5.2.3): its on state shows the
+    /// symbol of the style over the background and the border; its <c>Off</c> state shows the background and the border.
+    /// </summary>
+    /// <remarks>
+    /// The symbol is the glyph of ZapfDingbats that is the normal caption (<c>/MK /CA</c>), which viewers use to draw the
+    /// appearances again; the appearance draws it as a path, so that no font that is not embedded is needed to show it.
+    /// </remarks>
+    public static void WriteButtonAppearances(PdfDocument document, PdfDictionary widget, PdfName onState, PdfCheckBoxStyle style, bool round, double fontSize, PdfColor color)
+    {
+        // The codes of the glyphs of ZapfDingbats: a20, a71, a24, a78, a73 and a35 (9.6.2.2, Annex D.6)
+        var code = style switch
+        {
+            PdfCheckBoxStyle.Check => '4',
+            PdfCheckBoxStyle.Circle => 'l',
+            PdfCheckBoxStyle.Cross => '8',
+            PdfCheckBoxStyle.Diamond => 'u',
+            PdfCheckBoxStyle.Square => 'n',
+            PdfCheckBoxStyle.Star => 'H',
+            _ => throw new ArgumentOutOfRangeException(nameof(style), style, "Unknown style"),
+        };
+
+        var characteristics = widget.Get<PdfDictionary>(PdfFormField.MKName);
+        if (characteristics is null)
+        {
+            characteristics = new PdfDictionary();
+            widget[PdfFormField.MKName] = characteristics;
+        }
+
+        characteristics[CAName] = PdfString.FromBytes([(byte)code]);
+
+        var on = CreateFrame(document, widget, round, out var builder, out var inner);
+        if (inner.Width > 0 && inner.Height > 0)
+        {
+            // A font size of 0 fits the symbol in the widget
+            var size = Math.Min(inner.Width, inner.Height);
+            if (fontSize > 0)
+            {
+                size = Math.Min(size, fontSize);
+            }
+
+            DrawSymbol(builder.SetFillColor(color).SetStrokeColor(color), style, inner.Left + (inner.Width / 2), inner.Bottom + (inner.Height / 2), size);
+        }
+
+        builder.Complete();
+        var off = CreateFrame(document, widget, round, out builder, out _);
+        builder.Complete();
+        widget[PdfFormField.APName] = new PdfDictionary
+        {
+            [PdfNames.N] = new PdfDictionary { [onState] = on.Reference, [PdfFormField.OffName] = off.Reference },
+        };
+    }
+
+    /// <summary>Draws the symbol of a style in a square of a size around a center.</summary>
+    private static void DrawSymbol(PdfContentBuilder builder, PdfCheckBoxStyle style, double x, double y, double size)
+    {
+        var half = size / 2;
+        switch (style)
+        {
+            case PdfCheckBoxStyle.Check:
+                builder.SetLineWidth(size * 0.16).SetLineCap(PdfLineCap.Round).SetLineJoin(PdfLineJoin.Round)
+                    .MoveTo(x - (half * 0.75), y + (half * 0.05)).LineTo(x - (half * 0.25), y - (half * 0.6)).LineTo(x + (half * 0.75), y + (half * 0.7)).Stroke();
+                break;
+            case PdfCheckBoxStyle.Circle:
+                builder.Circle(x, y, half * 0.6).Fill();
+                break;
+            case PdfCheckBoxStyle.Cross:
+                builder.SetLineWidth(size * 0.16).SetLineCap(PdfLineCap.Round)
+                    .MoveTo(x - (half * 0.65), y - (half * 0.65)).LineTo(x + (half * 0.65), y + (half * 0.65))
+                    .MoveTo(x - (half * 0.65), y + (half * 0.65)).LineTo(x + (half * 0.65), y - (half * 0.65)).Stroke();
+                break;
+            case PdfCheckBoxStyle.Diamond:
+                builder.MoveTo(x, y + (half * 0.8)).LineTo(x + (half * 0.8), y).LineTo(x, y - (half * 0.8)).LineTo(x - (half * 0.8), y).ClosePath().Fill();
+                break;
+            case PdfCheckBoxStyle.Square:
+                builder.Rectangle(x - (half * 0.6), y - (half * 0.6), size * 0.6, size * 0.6).Fill();
+                break;
+            default:
+                // A star of five points, the first one up
+                for (var i = 0; i < 10; i++)
+                {
+                    var angle = (Math.PI / 2) + (i * Math.PI / 5);
+                    var radius = half * (i % 2 == 0 ? 0.85 : 0.35);
+                    var (px, py) = (x + (radius * Math.Cos(angle)), y + (radius * Math.Sin(angle)));
+                    _ = i == 0 ? builder.MoveTo(px, py) : builder.LineTo(px, py);
+                }
+
+                builder.ClosePath().Fill();
+                break;
+        }
+    }
+
+    /// <summary>Writes the normal appearance of a widget that shows its background and its border only, such as a signature field that is not signed.</summary>
+    public static void WriteEmptyAppearance(PdfDocument document, PdfDictionary widget)
+    {
+        var form = CreateFrame(document, widget, round: false, out var builder, out _);
+        builder.Complete();
+        widget[PdfFormField.APName] = new PdfDictionary { [PdfNames.N] = form.Reference };
+    }
+
+    /// <summary>Creates an appearance stream of the size of a widget, with the background and the border of its appearance characteristics (12.5.6.19); <paramref name="inner"/> is the box inside the border.</summary>
+    private static PdfForm CreateFrame(PdfDocument document, PdfDictionary widget, bool round, out PdfContentBuilder builder, out PdfRectangle inner)
+    {
+        PdfRectangle.TryRead(widget.Get<PdfArray>(PdfNames.Rect), out var rectangle);
+        var (width, height) = (Math.Max(rectangle.Width, 0), Math.Max(rectangle.Height, 0));
+        var form = document.CreateForm(new PdfRectangle(0, 0, width, height));
+        builder = form.CreateContentBuilder();
+        var characteristics = widget.Get<PdfDictionary>(PdfFormField.MKName);
+        var border = characteristics?.Get<PdfArray>(BCName) is { Count: > 0 } ? widget.Get<PdfDictionary>(BSName)?.GetNumber(WName, 1) ?? 1 : 0;
+        var radius = Math.Min(width, height) / 2;
+        if (ReadColor(characteristics?.Get<PdfArray>(BGName)) is { } background && width > 0 && height > 0)
+        {
+            builder.SetFillColor(background);
+            _ = round ? builder.Circle(width / 2, height / 2, radius) : builder.Rectangle(0, 0, width, height);
+            builder.Fill();
+        }
+
+        if (border > 0 && ReadColor(characteristics?.Get<PdfArray>(BCName)) is { } borderColor && width > border && height > border)
+        {
+            builder.SetStrokeColor(borderColor).SetLineWidth(border);
+            _ = round ? builder.Circle(width / 2, height / 2, radius - (border / 2)) : builder.Rectangle(border / 2, border / 2, width - border, height - border);
+            builder.Stroke();
+        }
+
+        // The symbol of a round button is inside the square inscribed in its circle
+        var padding = round ? radius - ((radius - border) / Math.Sqrt(2)) : border + 1;
+        var (centerX, centerY) = (width / 2, height / 2);
+        inner = round
+            ? new PdfRectangle(centerX - radius + padding, centerY - radius + padding, centerX + radius - padding, centerY + radius - padding)
+            : new PdfRectangle(Math.Min(padding, width / 2), Math.Min(padding, height / 2), Math.Max(width / 2, width - padding), Math.Max(height / 2, height - padding));
+        return form;
     }
 
     private static PdfColor? ReadColor(PdfArray? components)

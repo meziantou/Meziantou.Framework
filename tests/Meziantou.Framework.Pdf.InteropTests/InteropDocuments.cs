@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Pdf.InteropTests;
 /// <summary>The documents the interop tests give to the external tools: documents the library writes, and the fixtures.</summary>
 internal static class InteropDocuments
 {
-    public static readonly string[] WrittenNames = ["text", "graphics", "images", "navigation", "metadata", "fonts", "advanced-graphics", "attachments", "merged", "markup", "form", "flattened-form"];
+    public static readonly string[] WrittenNames = ["text", "graphics", "images", "navigation", "metadata", "fonts", "advanced-graphics", "attachments", "merged", "markup", "form", "flattened-form", "created-form", "flattened-created-form"];
 
     /// <summary>The content of the <c>data.csv</c> file of the "attachments" document.</summary>
     public static readonly byte[] AttachedCsv = "a,b\n1,2\n"u8.ToArray();
@@ -210,6 +210,18 @@ internal static class InteropDocuments
                     break;
                 }
 
+            case "created-form" or "flattened-created-form":
+                {
+                    CreateFormWithBuilders(document);
+                    if (name == "flattened-created-form")
+                    {
+                        document.Form.FindField("name")!.Value = "John";
+                        document.Form.Flatten();
+                    }
+
+                    break;
+                }
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown document");
         }
@@ -279,6 +291,22 @@ internal static class InteropDocuments
             [Objects.PdfName.Create("DA")] = Objects.PdfString.FromText("/Helv 0 Tf 0 g"),
             [Objects.PdfName.Create("DR")] = new Objects.PdfDictionary { [Objects.PdfName.Create("Font")] = new Objects.PdfDictionary { [Objects.PdfName.Create("Helv")] = helvetica } },
         };
+    }
+
+    /// <summary>Creates a form with the builders of the form: a field of each type, a text field and a combo box in an embedded font.</summary>
+    private static void CreateFormWithBuilders(PdfDocument document)
+    {
+        var page = document.Pages.Add(PdfSize.A5);
+        var font = PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");
+        var form = document.Form;
+        form.AddTextField(page, "name", new PdfRectangle(30, 500, 230, 520), new PdfTextFieldOptions { Value = "Jane Doe", Font = font });
+        form.AddTextField(page, "address.street", new PdfRectangle(30, 440, 230, 490), new PdfTextFieldOptions { IsMultiline = true, Value = "1 Main Street\nSpringfield" });
+        form.AddTextField(page, "address.zip", new PdfRectangle(240, 470, 330, 490), new PdfTextFieldOptions { MaxLength = 5, IsComb = true, Value = "12345" });
+        form.AddCheckBox(page, "agree", new PdfRectangle(30, 410, 45, 425), new PdfCheckBoxOptions { IsChecked = true });
+        form.AddRadioButtons("size", [new PdfRadioButton(page, new PdfRectangle(30, 380, 45, 395), "S"), new PdfRadioButton(page, new PdfRectangle(60, 380, 75, 395), "L")], new PdfRadioButtonOptions { Value = "S" });
+        form.AddComboBox(page, "country", new PdfRectangle(30, 340, 180, 360), [new PdfChoiceOption("fr", "France"), new PdfChoiceOption("de", "Germany")], new PdfChoiceFieldOptions { Font = font, SelectedValues = ["de"] });
+        form.AddListBox(page, "colors", new PdfRectangle(190, 300, 330, 360), [new PdfChoiceOption("red", "Red"), new PdfChoiceOption("blue", "Blue")], new PdfChoiceFieldOptions { IsMultiSelect = true, SelectedValues = ["red", "blue"] });
+        form.AddSignatureField(page, "signature", new PdfRectangle(30, 200, 230, 260));
     }
 
     /// <summary>The pages of the "advanced-graphics" document, 200 x 200 points each, and the colors expected at points of each page.</summary>

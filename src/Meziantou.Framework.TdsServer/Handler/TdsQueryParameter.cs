@@ -16,6 +16,12 @@ public sealed class TdsQueryParameter
     /// <summary>Gets or sets the decoded parameter column type.</summary>
     public required TdsColumnType Type { get; init; }
 
+    /// <summary>
+    /// Gets a value indicating whether the client declared the parameter as an output parameter (<c>Output</c> or
+    /// <c>InputOutput</c>). Send its value back with <see cref="TdsQueryResult.OutputParameters"/>.
+    /// </summary>
+    public bool IsOutput { get; init; }
+
     /// <summary>Gets a value indicating whether the parameter value is null.</summary>
     public bool IsNull => Value is null or DBNull;
 

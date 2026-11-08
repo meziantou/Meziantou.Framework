@@ -49,9 +49,9 @@ The features of `REQUIRES`:
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 26,228 | 29,691 | 2,105 | 95% |
-| [Tentative](#tentative-tests) | 1,370 | 3,074 | 692 | 58% |
+| [Tentative](#tentative-tests) | 1,374 | 3,074 | 692 | 58% |
 | [Reftests](#reftests) | 27,958 | 29,220 | 170 | 96% |
-| **All** | **55,556** | **61,985** | **2,967** | **94%** |
+| **All** | **55,560** | **61,985** | **2,967** | **94%** |
 
 ## Failure reasons
 
@@ -67,7 +67,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
   - `service-workers`: 1
   - `user-input`: 154
   - `workers`: 3
-- **TEST RUNNER**: 313
+- **TEST RUNNER**: 309
 - **OUT OF SCOPE**: 205
 - **FLAKY**: 17
 - **PERFORMANCE**: 7
@@ -570,7 +570,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`trusted-types`](trusted-types.md#tentative-tests) | 6 | 9 | 0 | 67% |
 | [`uievents`](uievents.md#tentative-tests) | 1 | 3 | 0 | 33% |
 | [`urlpattern`](urlpattern.md#tentative-tests) | 3 | 3 | 0 | 100% |
-| [`wai-aria`](wai-aria.md#tentative-tests) | 4 | 14 | 0 | 29% |
+| [`wai-aria`](wai-aria.md#tentative-tests) | 8 | 14 | 0 | 57% |
 | [`wasm`](wasm.md#tentative-tests) | 15 | 70 | 0 | 21% |
 | [`web-animations`](web-animations.md#tentative-tests) | 3 | 8 | 0 | 38% |
 | [`web-bundle`](web-bundle.md#tentative-tests) | 0 | 29 | 29 | – |
@@ -589,7 +589,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 1 | 8 | 0 | 13% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 0 | 2 | 2 | – |
-| **Total (164 sections)** | **1,370** | **3,074** | **692** | **58%** |
+| **Total (164 sections)** | **1,374** | **3,074** | **692** | **58%** |
 
 ## Reftests
 

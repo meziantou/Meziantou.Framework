@@ -16,8 +16,10 @@ the XML documentation and `readme.md` consistent in the same change.
   libraries (PDFsharp, PdfPig, PeachPDF, pdf.js, PDFium, Poppler, MuPDF, qpdf, PDFBox, ...): they are design references
   and test oracles only. Cite the clause in the comments of the code that implements it.
 - Fully managed, trimmable and NativeAOT-compatible (`IsTrimmable`): no reflection. The dependencies of the
-  repository are `Meziantou.Framework.Imaging` (the image codecs and the ICC profiles) and `Meziantou.Framework.Fonts`
-  (the fonts to embed: the reader, the shaper and the subsetter `FontSubsetter`, the AFM metrics of the standard fonts).
+  repository are `Meziantou.Framework.Imaging` (the image codecs and the ICC profiles), `Meziantou.Framework.Fonts`
+  (the fonts to embed: the reader, the shaper and the subsetter `FontSubsetter`, the AFM metrics of the standard fonts)
+  and `Meziantou.Framework.Unicode` (the line breaking and the hyphenation of the content builder, the normalization of
+  the passwords).
   The library uses their public API only, so it depends on them with normal (minimum) versions: never give it access to
   their internals again (`InternalsVisibleTo`); make a type public in Fonts or
   Imaging, or compile its source into this library, instead.
@@ -64,7 +66,10 @@ the XML documentation and `readme.md` consistent in the same change.
   imported. Removing a page removes the references of the document to it (destinations, named destinations, structure
   tree, form fields). The caches of the document model (annotations of a page, resource names of a builder) are
   invalidated by the `Version` of `PdfArray` and `PdfDictionary`, incremented by every change. The appearances the
-  library writes for form fields and markup annotations use the standard 14 fonts.
+  library writes for markup annotations use the standard 14 fonts; those of form fields use the font of their default
+  appearance when the form knows it (an embedded font of the document, or one given to `AddFont`), a standard 14 font
+  otherwise. The fields the form creates (`PdfInteractiveForm.Create.cs`) put their fonts in `/DR`, embedded whole
+  for the editable fields (`EmbeddedFontUsage.EmbedAllGlyphs`), and draw the symbols of the buttons as paths.
 - **Embedded fonts** (`Fonts/EmbeddedPdfFont.cs`, `Fonts/EmbeddedFontUsage.cs`): a `Type0` font with `Identity-H`
   codes that are the glyph identifiers (the subset keeps them: CID = GID), a `ToUnicode` CMap of the glyphs that show
   one cluster, and `/ActualText` around the texts whose glyphs cannot give them back. The content builder shapes the

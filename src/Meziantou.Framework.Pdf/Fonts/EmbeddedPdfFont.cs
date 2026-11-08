@@ -32,6 +32,7 @@ internal sealed class EmbeddedPdfFont : PdfFont
     private readonly double _scale;
     private readonly Lock _shapesLock = new();
     private readonly Dictionary<string, ShapedText> _shapes = new(StringComparer.Ordinal);
+    private Dictionary<int, string>? _characterTexts;
 
     public EmbeddedPdfFont(FontFace face)
     {
@@ -80,6 +81,31 @@ internal sealed class EmbeddedPdfFont : PdfFont
 
     /// <summary>Gets the width of a glyph in the <c>W</c> array of the font, in glyph space units.</summary>
     public double GetWidth(int glyph) => Math.Round(Face.GetAdvanceWidth(glyph) * _scale, 3, MidpointRounding.AwayFromZero);
+
+    /// <summary>Gets the text of each glyph of the character map of the font: the smallest code point mapped to it, control characters excepted.</summary>
+    /// <remarks>The result is shared: it must not be modified.</remarks>
+    public Dictionary<int, string> GetCharacterTexts()
+    {
+        if (Volatile.Read(ref _characterTexts) is { } cached)
+            return cached;
+
+        var result = new Dictionary<int, string>();
+        for (var codePoint = 0; codePoint <= 0x10FFFF; codePoint++)
+        {
+            // The surrogates are not characters; the control characters some fonts map to their space glyph are not its text
+            if (codePoint is < 0x20 or (>= 0x7F and <= 0x9F) or (>= 0xD800 and <= 0xDFFF))
+                continue;
+
+            var glyph = Face.MapCodePoint(codePoint);
+            if (glyph != 0)
+            {
+                result.TryAdd(glyph, char.ConvertFromUtf32(codePoint));
+            }
+        }
+
+        Interlocked.CompareExchange(ref _characterTexts, result, comparand: null);
+        return _characterTexts;
+    }
 
     /// <summary>Gets the font size units of a value of the font.</summary>
     public double Scale(int value) => value * _scale;

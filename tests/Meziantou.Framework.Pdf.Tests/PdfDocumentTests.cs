@@ -2251,6 +2251,34 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void Example_ExtractTextInReadingOrder()
+    {
+        // A page with two columns whose lines are painted from left to right across the gutter
+        var source = new PdfDocument();
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        var builder = source.Pages.Add(PdfSize.A4).CreateContentBuilder();
+        builder.DrawText("The first column starts here", font, 10, 50, 800).DrawText("The second column starts here", font, 10, 320, 800);
+        builder.DrawText("and goes on below.", font, 10, 50, 788).DrawText("and ends the page.", font, 10, 320, 788);
+        var file = source.ToByteArray();
+
+        #region Pdf_ExtractTextInReadingOrder
+        var document = PdfDocument.Open(file);
+        var options = new PdfTextExtractionOptions { ReadingOrder = PdfTextReadingOrder.Layout };
+        var layout = document.Pages[0].ExtractTextLayout(options);
+
+        // The blocks of the page (columns, paragraphs) in reading order, for example to index them separately
+        var chunks = new List<string>();
+        foreach (var block in layout.Blocks)
+        {
+            chunks.Add(block.Text);
+        }
+        #endregion
+
+        Assert.Equal(["The first column starts here\nand goes on below.", "The second column starts here\nand ends the page."], chunks);
+        Assert.Equal("The first column starts here The second column starts here\nand goes on below. and ends the page.", document.Pages[0].ExtractText());
+    }
+
+    [Fact]
     public void Example_ExpandLigatures()
     {
         // A font whose glyph "fi" is the ligature U+FB01

@@ -10,9 +10,9 @@ description: "The results of the web-platform-tests of wai-aria, and why the tes
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 20 | 21 | 0 | 95% |
-| [Tentative](#tentative-tests) | 4 | 14 | 0 | 29% |
+| [Tentative](#tentative-tests) | 8 | 14 | 0 | 57% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **24** | **35** | **0** | **69%** |
+| **All** | **28** | **35** | **0** | **80%** |
 
 ## Failure reasons
 
@@ -20,7 +20,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 5
-- **TEST RUNNER**: 4
 
 ## Stable tests
 
@@ -52,17 +51,17 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`accessibility_properties_basic.tentative.html`](https://wpt.fyi/results/wai-aria/accessibility_properties_basic.tentative.html) | Fail | 0 / 3 | TEST RUNNER | `test_driver.get_accessibility_properties_for_element()` is not supported |
+| [`accessibility_properties_basic.tentative.html`](https://wpt.fyi/results/wai-aria/accessibility_properties_basic.tentative.html) | Pass | 3 / 3 |  |  |
 | [`aria-actions/aria-actions-host-accname-excludes-target.tentative.html`](https://wpt.fyi/results/wai-aria/aria-actions/aria-actions-host-accname-excludes-target.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `aria-actions` attribute (its targets must be excluded from the host's accessible name) |
 | [`aria-actions/aria-actions-host-accname-multiple-targets.tentative.html`](https://wpt.fyi/results/wai-aria/aria-actions/aria-actions-host-accname-multiple-targets.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `aria-actions` attribute (its targets must be excluded from the host's accessible name) |
 | [`aria-actions/aria-actions-target-accname-from-aria-label.tentative.html`](https://wpt.fyi/results/wai-aria/aria-actions/aria-actions-target-accname-from-aria-label.tentative.html) | Fail | 1 / 2 | NOT IMPLEMENTED | the tentative `aria-actions` attribute (its targets must be excluded from the host's accessible name) |
 | [`aria-actions/idl-reflection.tentative.html`](https://wpt.fyi/results/wai-aria/aria-actions/idl-reflection.tentative.html) | Fail | 11 / 20 | NOT IMPLEMENTED | the tentative `ariaActionsElements` reflection of `aria-actions` on `Element` and `ElementInternals` |
-| [`checked/checked.tentative.html`](https://wpt.fyi/results/wai-aria/checked/checked.tentative.html) | Fail | 0 / 4 | TEST RUNNER | `test_driver.get_accessibility_properties_for_element()` is not supported |
+| [`checked/checked.tentative.html`](https://wpt.fyi/results/wai-aria/checked/checked.tentative.html) | Pass | 4 / 4 |  |  |
 | [`heading/invalid-nesting.tentative.html`](https://wpt.fyi/results/wai-aria/heading/invalid-nesting.tentative.html) | Fail | 0 / 8 | TEST BUG | the tentative test expects the `SPEC_AMBIGUOUS_LOG_VALUE` placeholder as the accessible name of the nested headings (the name of an invalidly nested heading is not specified) |
-| [`pressed/pressed.tentative.html`](https://wpt.fyi/results/wai-aria/pressed/pressed.tentative.html) | Fail | 0 / 4 | TEST RUNNER | `test_driver.get_accessibility_properties_for_element()` is not supported |
+| [`pressed/pressed.tentative.html`](https://wpt.fyi/results/wai-aria/pressed/pressed.tentative.html) | Pass | 4 / 4 |  |  |
 | [`role/contextual-roles.tentative.html`](https://wpt.fyi/results/wai-aria/role/contextual-roles.tentative.html) | Pass | 2 / 2 |  |  |
 | [`role/empty-container-roles.tentative.html`](https://wpt.fyi/results/wai-aria/role/empty-container-roles.tentative.html) | Pass | 4 / 4 |  |  |
 | [`role/role_none_conflict_resolution.tentative.html`](https://wpt.fyi/results/wai-aria/role/role_none_conflict_resolution.tentative.html) | Fail | 4 / 9 | TEST BUG | the tentative test expects the placeholder role `SPEC_AMBIGUOUS_LOG_VALUE` (an open spec ambiguity), which no engine returns |
 | [`role/role_none_conflict_resolution_spec_ambiguities.tentative.html`](https://wpt.fyi/results/wai-aria/role/role_none_conflict_resolution_spec_ambiguities.tentative.html) | Pass | 3 / 3 |  |  |
 | [`role/roles.tentative.html`](https://wpt.fyi/results/wai-aria/role/roles.tentative.html) | Pass | 2 / 2 |  |  |
-| [`subtree/tablist.tentative.html`](https://wpt.fyi/results/wai-aria/subtree/tablist.tentative.html) | Fail | 0 / 1 | TEST RUNNER | `test_driver.get_accessibility_properties_for_element()` is not supported |
+| [`subtree/tablist.tentative.html`](https://wpt.fyi/results/wai-aria/subtree/tablist.tentative.html) | Pass | 1 / 1 |  |  |

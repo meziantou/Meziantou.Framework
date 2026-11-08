@@ -88,6 +88,10 @@ internal sealed partial class WptTestRunner
     /// <summary>The states of the permissions set by test_driver.set_permission(), by name.</summary>
     private readonly Dictionary<string, string> _permissions = new(StringComparer.Ordinal);
 
+    // The ids of the accessibility nodes of test_driver.get_accessibility_properties_for_accessibility_node
+    private readonly Dictionary<Node, string> _accessibilityIds = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<string, Node> _accessibilityNodes = new(StringComparer.Ordinal);
+
     /// <summary>The permission store of the browsing contexts, whose states are set by test_driver.set_permission().</summary>
     private readonly PermissionStore _permissionStore = new();
 
@@ -1889,6 +1893,115 @@ internal sealed partial class WptTestRunner
         Define("__wpt_get_cookies", 1, (_, args) => adapter.FromString(GetWebDriverCookies(realm.Window.Document, args.Length > 0 && !adapter.IsUndefined(args[0]) ? adapter.ToString(args[0]) : null)));
         Define("__wpt_computed_role", 1, (_, args) => adapter.FromString(realm.ToInterface<Element>(args[0], "Element").ComputedRole));
         Define("__wpt_computed_label", 1, (_, args) => adapter.FromString(realm.ToInterface<Element>(args[0], "Element").ComputedName));
+
+        // The element of get_accessibility_properties_for_element, or the id of get_accessibility_properties_for_accessibility_node
+        Define("__wpt_accessibility_properties", 2, (_, args) =>
+        {
+            var target = adapter.IsNull(args[0]) ? _accessibilityNodes.GetValueOrDefault(adapter.ToString(args[1])) : realm.ToInterface<Element>(args[0], "Element");
+            return target is null ? adapter.Null : adapter.FromString(GetAccessibilityProperties(target));
+        });
+    }
+
+    /// <summary>
+    /// The properties of the accessibility node of a DOM node (Element.GetAccessibilityProperties and
+    /// Element.CaptureAccessibilityTree of the library), as the WebDriver accessibility properties of Chromium: the role, the
+    /// label, the states as strings, and the ids of the parent and the children in the accessibility tree of the document.
+    /// </summary>
+    private string GetAccessibilityProperties(Node target)
+    {
+        var node = FindAccessibilityNode(target.OwnerDocument?.DocumentElement?.CaptureAccessibilityTree(), target);
+        var properties = node?.Properties ?? ((Element)target).GetAccessibilityProperties();
+        var result = new System.Text.Json.Nodes.JsonObject
+        {
+            ["accessibilityId"] = GetAccessibilityId(target),
+            ["role"] = properties.Role,
+            ["label"] = properties.Name,
+        };
+
+        if (properties.Checked is { } isChecked)
+        {
+            result["checked"] = ToString(isChecked);
+        }
+
+        if (properties.Pressed is { } pressed)
+        {
+            result["pressed"] = ToString(pressed);
+        }
+
+        if (properties.Expanded is { } expanded)
+        {
+            result["expanded"] = expanded ? "true" : "false";
+        }
+
+        if (properties.Selected is { } selected)
+        {
+            result["selected"] = selected ? "true" : "false";
+        }
+
+        if (properties.Level is { } level)
+        {
+            result["level"] = level;
+        }
+
+        if (node is not null)
+        {
+            if (node.Parent is { } parent)
+            {
+                result["parent"] = GetAccessibilityId(parent.Node);
+            }
+
+            var children = new System.Text.Json.Nodes.JsonArray();
+            foreach (var child in node.Children)
+            {
+                children.Add(GetAccessibilityId(child.Node));
+            }
+
+            result["children"] = children;
+        }
+
+        return result.ToJsonString();
+
+        static string ToString(AccessibilityCheckedState state) => state switch
+        {
+            AccessibilityCheckedState.True => "true",
+            AccessibilityCheckedState.Mixed => "mixed",
+            _ => "false",
+        };
+    }
+
+    private string GetAccessibilityId(Node node)
+    {
+        if (!_accessibilityIds.TryGetValue(node, out var id))
+        {
+            id = "acc" + (_accessibilityIds.Count + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            _accessibilityIds[node] = id;
+            _accessibilityNodes[id] = node;
+        }
+
+        return id;
+    }
+
+    private static AccessibilityNode? FindAccessibilityNode(AccessibilityNode? root, Node target)
+    {
+        var stack = new Stack<AccessibilityNode>();
+        if (root is not null)
+        {
+            stack.Push(root);
+        }
+
+        while (stack.Count > 0)
+        {
+            var node = stack.Pop();
+            if (ReferenceEquals(node.Node, target))
+                return node;
+
+            foreach (var child in node.Children)
+            {
+                stack.Push(child);
+            }
+        }
+
+        return null;
     }
 
     /// <summary>The virtual sensor types (https://w3c.github.io/sensors/#virtual-sensor-type) of the sensors of the device.</summary>

@@ -13,7 +13,8 @@ namespace Meziantou.Framework.Geo;
 /// A <see cref="GeoPosition"/> holds the coordinates of any CRS in the GIS order: <see cref="GeoPosition.Longitude"/> is
 /// the longitude or the easting (x), and <see cref="GeoPosition.Latitude"/> is the latitude or the northing (y), whatever
 /// the order of the axes in the definition of the CRS. The altitude is kept by the projections, and changed by the datum
-/// shifts, as an ellipsoidal height.
+/// shifts, as an ellipsoidal height. The built-in systems keep the <see cref="GeoPosition.Measure"/> and the
+/// <see cref="GeoPosition.Time"/> of the positions.
 /// </para>
 /// <para>
 /// Derive from this class to plug a coordinate system that the library does not support: implement

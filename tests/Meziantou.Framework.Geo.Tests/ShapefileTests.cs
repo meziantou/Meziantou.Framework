@@ -78,18 +78,19 @@ public sealed class ShapefileTests
     public void Read_ZAndM()
     {
         Assert.Equal(new GeoPosition(1, 2, 3), Assert.IsType<GeoPoint>(Assert.Single(Shapefile.Read(GetPath("pointz.shp"))).Geometry).Position);
-        Assert.Equal(new GeoPosition(1, 2), Assert.IsType<GeoPoint>(Assert.Single(Shapefile.Read(GetPath("pointm.shp"))).Geometry).Position);
+        Assert.Equal(new GeoPosition(1, 2) { Measure = 3 }, Assert.IsType<GeoPoint>(Assert.Single(Shapefile.Read(GetPath("pointm.shp"))).Geometry).Position);
 
         var lines = Assert.IsType<GeoMultiLineString>(Assert.Single(Shapefile.Read(GetPath("linem.shp"))).Geometry);
-        Assert.Equal([new GeoPosition(0, 0), new(1, 1)], lines.LineStrings[0].Positions);
-        Assert.Equal([new GeoPosition(2, 2), new(3, 3)], lines.LineStrings[1].Positions);
+        Assert.Equal([new GeoPosition(0, 0) { Measure = 1 }, new(1, 1) { Measure = 2 }], lines.LineStrings[0].Positions);
+        Assert.Equal([new GeoPosition(2, 2) { Measure = 3 }, new(3, 3) { Measure = 4 }], lines.LineStrings[1].Positions);
 
+        // The M values of a Z shape are optional: this polygon has none
         var polygon = Assert.IsType<GeoPolygon>(Assert.Single(Shapefile.Read(GetPath("polygonz.shp"))).Geometry);
         Assert.Equal([new GeoPosition(0, 0, 1), new(0, 10, 2), new(10, 10, 3), new(10, 0, 4), new(0, 0, 1)], polygon.Rings[0]);
         Assert.Equal([new GeoPosition(2, 2, 5), new(4, 2, 6), new(4, 4, 7), new(2, 4, 8), new(2, 2, 5)], polygon.Rings[1]);
 
         var multiPoint = Assert.IsType<GeoMultiPoint>(Assert.Single(Shapefile.Read(GetPath("multipointzm.shp"))).Geometry);
-        Assert.Equal([new GeoPosition(1, 2, 3), new(5, 6, 7)], multiPoint.Positions);
+        Assert.Equal([new GeoPosition(1, 2, 3) { Measure = 4 }, new(5, 6, 7) { Measure = 8 }], multiPoint.Positions);
     }
 
     [Fact]
@@ -617,6 +618,59 @@ public sealed class ShapefileTests
         Assert.Equal(ShapefileShapeType.PolyLine, WriteAndGetShapeType([new(new GeoLineString([new(1, 2), new(3, 4)]))]));
         Assert.Equal(ShapefileShapeType.PolygonZ, WriteAndGetShapeType([new(new GeoPolygon([[new(0, 0, 1), new(1, 0, 1), new(1, 1, 1), new(0, 0, 1)]]))]));
         Assert.Equal(new GeoPosition(1, 2, 3), Assert.IsType<GeoPoint>(Assert.Single(RoundTrip([new(new GeoPoint(new GeoPosition(1, 2, 3)))])).Geometry).Position);
+    }
+
+    [Fact]
+    public void Write_Measures()
+    {
+        // Without altitudes, the measures need the M shapes; a position without measure gets the no-data value
+        var points = new GeoFeatureCollection { new(new GeoPoint(new GeoPosition(1, 2) { Measure = 3 })), new(new GeoPoint(new GeoPosition(4, 5))) };
+        Assert.Equal(ShapefileShapeType.PointM, WriteAndGetShapeType(points));
+        Assert.Equal([new GeoPosition(1, 2) { Measure = 3 }, new(4, 5)], RoundTrip(points).Select(feature => Assert.IsType<GeoPoint>(feature.Geometry).Position));
+
+        GeoPosition[] multiPoint = [new(1, 2) { Measure = -1.5 }, new(3, 4) { Measure = 0 }];
+        Assert.Equal(ShapefileShapeType.MultiPointM, WriteAndGetShapeType([new(new GeoMultiPoint(multiPoint))]));
+        Assert.Equal(multiPoint, Assert.IsType<GeoMultiPoint>(Assert.Single(RoundTrip([new(new GeoMultiPoint(multiPoint))])).Geometry).Positions);
+
+        GeoPosition[] line = [new(0, 0) { Measure = 0 }, new(1, 1), new(2, 2) { Measure = 20 }];
+        Assert.Equal(ShapefileShapeType.PolyLineM, WriteAndGetShapeType([new(new GeoLineString(line))]));
+        Assert.Equal(line, Assert.IsType<GeoLineString>(Assert.Single(RoundTrip([new(new GeoLineString(line))])).Geometry).Positions);
+
+        // The exterior ring is clockwise in a shapefile: the measures follow their positions when it is reversed
+        GeoPosition[] ring = [new(0, 0) { Measure = 1 }, new(0, 1) { Measure = 2 }, new(1, 1) { Measure = 3 }, new(0, 0) { Measure = 1 }];
+        Assert.Equal(ShapefileShapeType.PolygonM, WriteAndGetShapeType([new(new GeoPolygon([ring]))]));
+        Assert.Equal(ring, Assert.Single(Assert.IsType<GeoPolygon>(Assert.Single(RoundTrip([new(new GeoPolygon([ring]))])).Geometry).Rings));
+
+        // With altitudes, the Z shapes hold the measures
+        GeoPosition[] lineZ = [new(0, 0, 10) { Measure = 1 }, new(1, 1, 11) { Measure = 2 }];
+        Assert.Equal(ShapefileShapeType.PolyLineZ, WriteAndGetShapeType([new(new GeoLineString(lineZ))]));
+        Assert.Equal(lineZ, Assert.IsType<GeoLineString>(Assert.Single(RoundTrip([new(new GeoLineString(lineZ))])).Geometry).Positions);
+        var pointZ = new GeoPosition(1, 2, 3) { Measure = 4 };
+        Assert.Equal(pointZ, Assert.IsType<GeoPoint>(Assert.Single(RoundTrip([new(new GeoPoint(pointZ))])).Geometry).Position);
+
+        // The times are not written
+        Assert.Equal(new GeoPosition(1, 2), Assert.IsType<GeoPoint>(Assert.Single(RoundTrip([new(new GeoPoint(new GeoPosition(1, 2) { Time = DateTimeOffset.UnixEpoch }))])).Geometry).Position);
+    }
+
+    [Fact]
+    public void Write_MeasureRanges()
+    {
+        var features = new GeoFeatureCollection
+        {
+            new(new GeoLineString([new(0, 0) { Measure = 5 }, new(1, 1) { Measure = -2 }])),
+            new(new GeoLineString([new(2, 2), new(3, 3)])),
+        };
+
+        using var shp = new MemoryStream();
+        using var shx = new MemoryStream();
+        using var dbf = new MemoryStream();
+        Shapefile.Write(features, shp, shx, dbf);
+        var bytes = shp.ToArray();
+        Assert.Equal([-2.0, 5], Enumerable.Range(0, 2).Select(i => BinaryPrimitives.ReadDoubleLittleEndian(bytes.AsSpan(84 + (8 * i)))));
+
+        // The second line has no measure: its range is the no-data value. Its record is the last one: header, box, counts, part, points, M range, M values.
+        var mRange = bytes.Length - (8 * 2) - 16;
+        Assert.All(Enumerable.Range(0, 4).Select(i => BinaryPrimitives.ReadDoubleLittleEndian(bytes.AsSpan(mRange + (8 * i)))), value => Assert.True(value < -1e38));
     }
 
     [Fact]

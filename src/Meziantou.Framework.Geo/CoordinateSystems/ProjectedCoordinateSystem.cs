@@ -35,7 +35,7 @@ public sealed class ProjectedCoordinateSystem : CoordinateReferenceSystem
     public override GeoPosition ToWgs84(GeoPosition position)
     {
         var (lambda, phi) = Conversion.Unproject(position.Longitude * LinearUnit, position.Latitude * LinearUnit, GeographicCoordinateSystem.Ellipsoid);
-        return GeographicCoordinateSystem.ToWgs84Radians(lambda, phi, position.Altitude);
+        return GeographicCoordinateSystem.ToWgs84Radians(lambda, phi, position);
     }
 
     /// <inheritdoc />
@@ -43,6 +43,6 @@ public sealed class ProjectedCoordinateSystem : CoordinateReferenceSystem
     {
         var (lambda, phi, altitude) = GeographicCoordinateSystem.FromWgs84Radians(position);
         var (easting, northing) = Conversion.Project(lambda, phi, GeographicCoordinateSystem.Ellipsoid);
-        return new GeoPosition(easting / LinearUnit, northing / LinearUnit, altitude);
+        return position with { Longitude = easting / LinearUnit, Latitude = northing / LinearUnit, Altitude = altitude };
     }
 }

@@ -982,6 +982,14 @@ namespace Meziantou.Framework.Pdf
         Justify = 3,
     }
 
+    public sealed class PdfTextBlock
+    {
+        public Meziantou.Framework.Pdf.PdfRectangle Bounds { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfTextLine> Lines { get => throw null; }
+        public string Text { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
     public sealed class PdfTextBoxOptions
     {
         public Meziantou.Framework.Pdf.PdfTextAlignment Alignment { get => throw null; set { } }
@@ -992,6 +1000,7 @@ namespace Meziantou.Framework.Pdf
     {
         public static Meziantou.Framework.Pdf.PdfTextExtractionOptions Default { get => throw null; }
         public bool ExpandLigatures { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfTextReadingOrder ReadingOrder { get => throw null; init { } }
     }
 
     public sealed class PdfTextField : Meziantou.Framework.Pdf.PdfFormField
@@ -1018,6 +1027,7 @@ namespace Meziantou.Framework.Pdf
 
     public sealed class PdfTextLayout
     {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfTextBlock> Blocks { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfTextLine> Lines { get => throw null; }
         public string Text { get => throw null; }
         public override string ToString() => throw null;
@@ -1038,6 +1048,12 @@ namespace Meziantou.Framework.Pdf
         Underline = 1,
         Squiggly = 2,
         StrikeOut = 3,
+    }
+
+    public enum PdfTextReadingOrder
+    {
+        Content = 0,
+        Layout = 1,
     }
 
     public enum PdfTextRenderingMode
@@ -1421,6 +1437,9 @@ namespace Meziantou.Framework.Pdf.Signing
     public sealed class PdfSignatureAppearance
     {
         public System.Action<Meziantou.Framework.Pdf.PdfContentBuilder>? Draw { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfFont? Font { get => throw null; init { } }
+        public double FontSize { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfImage? Image { get => throw null; init { } }
         public int PageIndex { get => throw null; }
         public Meziantou.Framework.Pdf.PdfRectangle Rectangle { get => throw null; }
         public PdfSignatureAppearance(int pageIndex, Meziantou.Framework.Pdf.PdfRectangle rectangle) { }

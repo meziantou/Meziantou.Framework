@@ -14,10 +14,10 @@ public sealed class PdfTextLine
     /// <summary>Gets the text of the line, with a space where the glyphs are apart: the line of <see cref="PdfPage.ExtractText()"/>.</summary>
     public string Text { get; }
 
-    /// <summary>Gets the words of the line, in the order of the content.</summary>
+    /// <summary>Gets the words of the line, in the order of the content (from left to right in the reading order of the layout).</summary>
     public IReadOnlyList<PdfTextWord> Words { get; }
 
-    /// <summary>Gets the glyphs of the line, in the order of the content, spaces included.</summary>
+    /// <summary>Gets the glyphs of the line, in the order of the content (from left to right in the reading order of the layout), spaces included.</summary>
     public IReadOnlyList<PdfTextGlyph> Glyphs { get; }
 
     /// <summary>Gets the smallest rectangle that contains the bounds of the glyphs of the line.</summary>

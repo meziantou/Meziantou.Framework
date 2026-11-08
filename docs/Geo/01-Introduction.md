@@ -11,8 +11,8 @@ dependency outside .NET, and it supports trimming.
 - **Read and write the common formats**: GeoJSON, TopoJSON, Shapefile, KML and KMZ, GPX, WKT and WKB, encoded
   polylines, and FlatGeobuf. Every reader returns the same model, so converting a file is a read and a write. See
   [formats](04-Formats/01-Overview.md).
-- **Work with features and geometries**: points, lines, polygons and their collections, with their properties; get
-  their bounds, a position to label them, distances, and whether a position is inside an area. See
+- **Work with features and geometries**: points, lines, polygons and their collections, with their properties, and
+  positions with an optional altitude, measure and time, such as the points of a GPS track; get their bounds, a position to label them, distances, and whether a position is inside an area. See
   [features and geometries](03-FeaturesAndGeometries.md).
 - **Project positions** onto a plane to draw a map, with the equirectangular, Mercator, Equal Earth, Albers and
   azimuthal equidistant projections. See [projections](05-Projections.md).

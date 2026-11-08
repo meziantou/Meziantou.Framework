@@ -1,6 +1,6 @@
 ---
 title: Template syntax
-description: Write text, values, statements, members and directives in a template, control line breaks and change the delimiters.
+description: Write text, values, statements, members and directives in a template, control line breaks, write the delimiters as text and change them.
 ---
 
 A template is text with code blocks. By default, a code block starts with `<%` and ends with `%>`; the character after
@@ -13,6 +13,7 @@ A template is text with code blocks. By default, a code block starts with `<%` a
 | `<% statements %>` | Runs C# statements | `<% var x = 10; %>` |
 | `<%+ member %>` | Declares a member of the generated class | `<%+ private static int Get() => 42; %>` |
 | `<%@ name value %>` | A directive: imports a namespace, references an assembly, … | `<%@ using System.IO %>` |
+| `<%<%` | Writes `<%` | `<%<%= Name %>` |
 
 The code is C#, compiled with the latest version of the language that the compiler supports.
 
@@ -144,6 +145,44 @@ Assert.Equal("""
 A `<%` without a matching `%>` is not an error: the rest of the template, from the `<%`, is written as text. If a part of
 your template appears in the output verbatim, look for a missing `%>`.
 
+## Write a delimiter as text
+
+Write the start delimiter twice to write it once as text. The block that would start after it stays text:
+
+<!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_EscapeDelimiter;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var template = new Template();
+template.Load("<%<%= Name %> writes <%= 1 + 1 %>");
+
+var result = template.Run();
+Assert.Equal("<%= Name %> writes 2", result);
+```
+<!-- endref -->
+
+- Each pair writes one delimiter: `<%<%<%<%` writes `<%<%`. A delimiter that is not doubled starts a block, so
+  `<%<%<%= 1 %>` writes `<%1`.
+- The end delimiter needs no escape in text: `%>` outside a block is written as is.
+- Inside a block, the code ends at the first end delimiter, even in a string. Build the delimiter from two strings:
+  `<%= "%" + ">" %>`.
+
+The escape sequence is the start delimiter written twice, whatever the delimiters are: with `{{` and `}}`, `{{{{` writes
+`{{`:
+
+<!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_EscapeCustomDelimiter;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var template = new Template
+{
+    StartCodeBlockDelimiter = "{{",
+    EndCodeBlockDelimiter = "}}",
+};
+template.Load("{{{{Name}} is {{=Name}}");
+template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
+
+var result = template.Run("John");
+Assert.Equal("{{Name}} is John", result);
+```
+<!-- endref -->
+
 ## Change the delimiters
 
 When the default delimiters appear in the text of your template, choose other ones. Set them before calling [Load](cref:Meziantou.Framework.Templating.Template.Load):
@@ -162,6 +201,5 @@ Assert.Equal("Hello World!", result);
 ```
 <!-- endref -->
 
-The character that gives the kind of block (`=`, `+`, `@`) follows the start delimiter, whatever it is. There is no
-escape sequence: to write a delimiter as text, write it from an expression that builds it from two strings, or choose
-delimiters that the text does not contain.
+The character that gives the kind of block (`=`, `+`, `@`) follows the start delimiter, whatever it is. When the text
+contains the delimiters only a few times, [escape them](#write-a-delimiter-as-text) instead of changing them.

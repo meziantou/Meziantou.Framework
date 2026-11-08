@@ -55,17 +55,42 @@ public sealed class WellKnownTextTests
         Assert.Equal(new GeoPosition(1, 2, 3), Assert.IsType<GeoPoint>(WellKnownText.Parse("POINT Z (1 2 3)")).Position);
         Assert.Equal(new GeoPosition(1, 2, 3), Assert.IsType<GeoPoint>(WellKnownText.Parse("POINTZ(1 2 3)")).Position);
         Assert.Equal(new GeoPosition(1, 2, 3), Assert.IsType<GeoPoint>(WellKnownText.Parse("POINT (1 2 3)")).Position);
-        Assert.Equal(new GeoPosition(1, 2), Assert.IsType<GeoPoint>(WellKnownText.Parse("POINT M (1 2 4)")).Position);
-        Assert.Equal(new GeoPosition(1, 2), Assert.IsType<GeoPoint>(WellKnownText.Parse("POINTM(1 2 4)")).Position);
-        Assert.Equal(new GeoPosition(1, 2, 3), Assert.IsType<GeoPoint>(WellKnownText.Parse("POINT ZM (1 2 3 4)")).Position);
-        Assert.Equal(new GeoPosition(1, 2, 3), Assert.IsType<GeoPoint>(WellKnownText.Parse("pointzm (1 2 3 4)")).Position);
-        Assert.Equal(new GeoPosition(1, 2, 3), Assert.IsType<GeoPoint>(WellKnownText.Parse("POINT (1 2 3 4)")).Position);
-        Assert.Equal([new GeoPosition(0, 0), new(1, 1)], Assert.IsType<GeoLineString>(WellKnownText.Parse("LINESTRING M (0 0 5, 1 1 6)")).Positions);
+        Assert.Equal(new GeoPosition(1, 2) { Measure = 4 }, Assert.IsType<GeoPoint>(WellKnownText.Parse("POINT M (1 2 4)")).Position);
+        Assert.Equal(new GeoPosition(1, 2) { Measure = 4 }, Assert.IsType<GeoPoint>(WellKnownText.Parse("POINTM(1 2 4)")).Position);
+        Assert.Equal(new GeoPosition(1, 2, 3) { Measure = 4 }, Assert.IsType<GeoPoint>(WellKnownText.Parse("POINT ZM (1 2 3 4)")).Position);
+        Assert.Equal(new GeoPosition(1, 2, 3) { Measure = 4 }, Assert.IsType<GeoPoint>(WellKnownText.Parse("pointzm (1 2 3 4)")).Position);
+        Assert.Equal(new GeoPosition(1, 2, 3) { Measure = 4 }, Assert.IsType<GeoPoint>(WellKnownText.Parse("POINT (1 2 3 4)")).Position);
+        Assert.Equal([new GeoPosition(0, 0) { Measure = 5 }, new(1, 1) { Measure = 6 }], Assert.IsType<GeoLineString>(WellKnownText.Parse("LINESTRING M (0 0 5, 1 1 6)")).Positions);
 
         // The children of a tagged collection use its tag
         var collection = Assert.IsType<GeoGeometryCollection>(WellKnownText.Parse("GEOMETRYCOLLECTION M (POINT (1 2 3), POINT Z (4 5 6))"));
-        Assert.Equal([new GeoPosition(1, 2), new(4, 5, 6)], collection.GetPositions());
+        Assert.Equal([new GeoPosition(1, 2) { Measure = 3 }, new(4, 5, 6)], collection.GetPositions());
         Assert.Equal("LINESTRING EMPTY", WellKnownText.Format(WellKnownText.Parse("LINESTRING Z EMPTY")));
+    }
+
+    [Theory]
+    [InlineData("POINT M (1 2 3)")]
+    [InlineData("POINT ZM (1 2 3 4)")]
+    [InlineData("LINESTRING M (0 0 1.5, 1 1 -2)")]
+    [InlineData("POLYGON ZM ((0 0 1 0, 1 0 1 1, 1 1 1 2, 0 0 1 0))")]
+    [InlineData("MULTIPOINT M ((1 2 3), (4 5 6))")]
+    [InlineData("MULTILINESTRING ZM ((0 0 1 2, 1 1 3 4), (2 2 5 6, 3 3 7 8))")]
+    [InlineData("MULTIPOLYGON M (((0 0 1, 1 0 2, 1 1 3, 0 0 1)))")]
+    [InlineData("GEOMETRYCOLLECTION ZM (POINT ZM (1 2 3 4), LINESTRING ZM (0 0 0 0, 1 1 1 1))")]
+    public void Format_Measures_RoundTrip(string wkt)
+    {
+        var geometry = WellKnownText.Parse(wkt);
+        Assert.All(geometry.GetPositions(), position => Assert.NotNull(position.Measure));
+        Assert.Equal(wkt, WellKnownText.Format(geometry));
+        Assert.Equal(geometry.GetPositions(), WellKnownText.Parse(WellKnownText.Format(geometry)).GetPositions());
+    }
+
+    [Fact]
+    public void Format_Measures()
+    {
+        // As for the altitudes, a geometry has a single number of dimensions: a missing measure is written as 0, and the times are not written
+        var line = new GeoLineString([new GeoPosition(0, 0) { Measure = 5 }, new GeoPosition(1, 1, 2) { Time = DateTimeOffset.UnixEpoch }]);
+        Assert.Equal("LINESTRING ZM (0 0 0 5, 1 1 2 0)", WellKnownText.Format(line));
     }
 
     [Fact]

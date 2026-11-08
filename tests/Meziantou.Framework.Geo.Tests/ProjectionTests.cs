@@ -292,6 +292,18 @@ public sealed class ProjectionTests
 
         // The longitudes and the latitudes of a projected system keep their altitude
         Assert.Equal(25, CoordinateReferenceSystem.Lambert93.FromWgs84(new GeoPosition(2.35, 48.86, 25)).Altitude);
+
+        // The measures and the times are kept, through projections and datum shifts
+        var time = new DateTimeOffset(2026, 11, 8, 10, 0, 0, TimeSpan.FromHours(1));
+        var measured = new GeoPosition(2.35, 48.86, 25) { Measure = 42, Time = time };
+        foreach (var crs in new[] { CoordinateReferenceSystem.Lambert93, osgb36, CoordinateReferenceSystem.FromEpsg(27700)! })
+        {
+            var converted = crs.FromWgs84(measured);
+            Assert.Equal(42, converted.Measure);
+            Assert.Equal(time, converted.Time);
+            Assert.Equal(42, crs.ToWgs84(converted).Measure);
+            Assert.Equal(time, crs.ToWgs84(converted).Time);
+        }
     }
 
     [Fact]

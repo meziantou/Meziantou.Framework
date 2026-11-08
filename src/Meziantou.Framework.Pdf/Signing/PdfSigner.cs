@@ -85,13 +85,15 @@ public static class PdfSigner
         }
 
         var signature = CreateSignatureDictionary("Sig", "ETSI.CAdES.detached", reserved);
-        signature[PdfName.Create("M")] = PdfString.FromText(PdfDate.Format(options.SigningTime ?? DateTimeOffset.UtcNow));
+        var signingTime = options.SigningTime ?? DateTimeOffset.UtcNow;
+        signature[PdfName.Create("M")] = PdfString.FromText(PdfDate.Format(signingTime));
         SetText(signature, "Name", options.SignerName);
         SetText(signature, "Reason", options.Reason);
         SetText(signature, "Location", options.Location);
         SetText(signature, "ContactInfo", options.ContactInfo);
 
-        var field = AddSignatureField(signed, options.FieldName, options.Appearance, signature, nameof(options));
+        var drawAppearance = options.Appearance?.GetDrawing(options, signingTime, nameof(options));
+        var field = AddSignatureField(signed, options.FieldName, options.Appearance, drawAppearance, signature, nameof(options));
         var references = new PdfArray();
         if (options.Certification is { } level)
         {
@@ -155,7 +157,7 @@ public static class PdfSigner
         var (basisLength, signed) = OpenBasis(document);
         var reserved = options.ReservedSize == 0 ? DefaultTimestampReservedSize : options.ReservedSize;
         var signature = CreateSignatureDictionary("DocTimeStamp", "ETSI.RFC3161", reserved);
-        AddSignatureField(signed, options.FieldName, appearance: null, signature, nameof(options));
+        AddSignatureField(signed, options.FieldName, appearance: null, drawAppearance: null, signature, nameof(options));
 
         var file = SaveUpdate(signed, basisLength, reserved);
         var (contentsStart, contentsEnd) = FillByteRange(file, basisLength, reserved);
@@ -344,7 +346,7 @@ public static class PdfSigner
     /// its widget, invisible on the first page or visible where the appearance says (12.7.5.5).
     /// </summary>
     /// <returns>The field.</returns>
-    private static PdfDictionary AddSignatureField(PdfDocument document, string? fieldName, PdfSignatureAppearance? appearance, PdfDictionary signature, string parameterName)
+    private static PdfDictionary AddSignatureField(PdfDocument document, string? fieldName, PdfSignatureAppearance? appearance, Action<PdfContentBuilder>? drawAppearance, PdfDictionary signature, string parameterName)
     {
         if (document.Pages.Count == 0)
             throw new InvalidOperationException("A document without pages cannot be signed");
@@ -403,7 +405,7 @@ public static class PdfSigner
         {
             // The normal appearance (12.5.5): a form of the size of the rectangle
             var appearanceForm = document.CreateForm(new PdfRectangle(0, 0, appearance.Rectangle.Width, appearance.Rectangle.Height));
-            appearance.Draw?.Invoke(appearanceForm.CreateContentBuilder());
+            drawAppearance?.Invoke(appearanceForm.CreateContentBuilder());
             widget[PdfSignatureFields.AppearanceName] = new PdfDictionary { [PdfNames.N] = appearanceForm.Reference };
         }
 

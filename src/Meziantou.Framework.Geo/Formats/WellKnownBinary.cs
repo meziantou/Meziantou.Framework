@@ -10,15 +10,17 @@ namespace Meziantou.Framework.Geo;
 /// <para>
 /// The reader accepts both byte orders, for each nested geometry, the ISO type codes of the geometries with an altitude
 /// or a measure (1001 for a point with Z, 2001 with M, 3001 with Z and M), and the flags of EWKB (Z, M, and SRID
-/// followed by the SRID, which <see cref="Read(ReadOnlySpan{byte}, out int?)"/> returns). It keeps the Z values as <see cref="GeoPosition.Altitude"/>, a NaN Z value
-/// becoming no altitude, and drops the M values (measures). An empty point, written with NaN coordinates as GEOS and
+/// followed by the SRID, which <see cref="Read(ReadOnlySpan{byte}, out int?)"/> returns). It keeps the Z values as <see cref="GeoPosition.Altitude"/> and the M values
+/// as <see cref="GeoPosition.Measure"/>, a NaN value becoming no altitude or no measure. An empty point, written with NaN coordinates as GEOS and
 /// PostGIS do, becomes an empty <see cref="GeoMultiPoint"/>, as a <see cref="GeoPoint"/> always has a position, and the
 /// empty points of a multipoint are skipped. The other types are rejected, such as a circular string, a triangle or a TIN.
 /// </para>
 /// <para>
 /// The writer writes ISO WKB in little-endian order. A geometry has a single number of dimensions: when a position of
 /// the geometry has an altitude, every position is written with one (type codes 1001 to 1007), and a missing altitude
-/// is written as 0. PostGIS reads this WKB with <c>ST_GeomFromWKB</c>, and its hexadecimal text with a cast to
+/// is written as 0. Likewise, when a position has a measure, every position is written with one (type codes 2001 to 2007,
+/// or 3001 to 3007 with the altitudes), and a missing measure is written as NaN. The times of the positions are not
+/// written, as WKB has no place for them. PostGIS reads this WKB with <c>ST_GeomFromWKB</c>, and its hexadecimal text with a cast to
 /// <c>geometry</c>.
 /// </para>
 /// </remarks>
@@ -101,7 +103,8 @@ public static class WellKnownBinary
         ArgumentNullException.ThrowIfNull(writer);
         GeoValidation.EnsureFinite(geometry, nameof(geometry));
         var hasAltitude = geometry.GetPositions().Any(position => position.Altitude is not null);
-        WriteGeometry(writer, geometry, hasAltitude);
+        var hasMeasure = geometry.GetPositions().Any(position => position.Measure is not null);
+        WriteGeometry(writer, geometry, hasAltitude, hasMeasure);
     }
 
     /// <summary>Writes the hexadecimal text of the WKB of a geometry, in little-endian order and in uppercase, as PostGIS writes a <c>geometry</c> value.</summary>
@@ -110,73 +113,73 @@ public static class WellKnownBinary
     /// <exception cref="ArgumentException">A position is not finite.</exception>
     public static string FormatHex(GeoGeometry geometry) => Convert.ToHexString(Write(geometry));
 
-    private static void WriteGeometry(IBufferWriter<byte> writer, GeoGeometry geometry, bool hasAltitude)
+    private static void WriteGeometry(IBufferWriter<byte> writer, GeoGeometry geometry, bool hasAltitude, bool hasMeasure)
     {
         var header = writer.GetSpan(5);
         header[0] = 1; // Little-endian
-        BinaryPrimitives.WriteUInt32LittleEndian(header[1..], (uint)geometry.Type + (hasAltitude ? 1000u : 0u));
+        BinaryPrimitives.WriteUInt32LittleEndian(header[1..], (uint)geometry.Type + (hasAltitude ? 1000u : 0u) + (hasMeasure ? 2000u : 0u));
         writer.Advance(5);
         switch (geometry)
         {
             case GeoPoint point:
-                WritePosition(writer, point.Position, hasAltitude);
+                WritePosition(writer, point.Position, hasAltitude, hasMeasure);
                 break;
 
             case GeoLineString lineString:
-                WritePositions(writer, lineString.Positions, hasAltitude);
+                WritePositions(writer, lineString.Positions, hasAltitude, hasMeasure);
                 break;
 
             case GeoPolygon polygon:
-                WritePolygon(writer, polygon, hasAltitude);
+                WritePolygon(writer, polygon, hasAltitude, hasMeasure);
                 break;
 
             case GeoMultiPoint multiPoint:
                 WriteCount(writer, multiPoint.Positions.Count);
                 foreach (var position in multiPoint.Positions)
                 {
-                    WriteGeometry(writer, new GeoPoint(position), hasAltitude);
+                    WriteGeometry(writer, new GeoPoint(position), hasAltitude, hasMeasure);
                 }
 
                 break;
 
             case GeoMultiLineString multiLineString:
-                WriteParts(writer, multiLineString.LineStrings, hasAltitude);
+                WriteParts(writer, multiLineString.LineStrings, hasAltitude, hasMeasure);
                 break;
 
             case GeoMultiPolygon multiPolygon:
-                WriteParts(writer, multiPolygon.Polygons, hasAltitude);
+                WriteParts(writer, multiPolygon.Polygons, hasAltitude, hasMeasure);
                 break;
 
             case GeoGeometryCollection collection:
-                WriteParts(writer, collection.Geometries, hasAltitude);
+                WriteParts(writer, collection.Geometries, hasAltitude, hasMeasure);
                 break;
         }
     }
 
-    private static void WriteParts(IBufferWriter<byte> writer, IReadOnlyList<GeoGeometry> parts, bool hasAltitude)
+    private static void WriteParts(IBufferWriter<byte> writer, IReadOnlyList<GeoGeometry> parts, bool hasAltitude, bool hasMeasure)
     {
         WriteCount(writer, parts.Count);
         foreach (var part in parts)
         {
-            WriteGeometry(writer, part, hasAltitude);
+            WriteGeometry(writer, part, hasAltitude, hasMeasure);
         }
     }
 
-    private static void WritePolygon(IBufferWriter<byte> writer, GeoPolygon polygon, bool hasAltitude)
+    private static void WritePolygon(IBufferWriter<byte> writer, GeoPolygon polygon, bool hasAltitude, bool hasMeasure)
     {
         WriteCount(writer, polygon.Rings.Count);
         foreach (var ring in polygon.Rings)
         {
-            WritePositions(writer, ring, hasAltitude);
+            WritePositions(writer, ring, hasAltitude, hasMeasure);
         }
     }
 
-    private static void WritePositions(IBufferWriter<byte> writer, IReadOnlyList<GeoPosition> positions, bool hasAltitude)
+    private static void WritePositions(IBufferWriter<byte> writer, IReadOnlyList<GeoPosition> positions, bool hasAltitude, bool hasMeasure)
     {
         WriteCount(writer, positions.Count);
         foreach (var position in positions)
         {
-            WritePosition(writer, position, hasAltitude);
+            WritePosition(writer, position, hasAltitude, hasMeasure);
         }
     }
 
@@ -186,15 +189,20 @@ public static class WellKnownBinary
         writer.Advance(4);
     }
 
-    private static void WritePosition(IBufferWriter<byte> writer, GeoPosition position, bool hasAltitude)
+    private static void WritePosition(IBufferWriter<byte> writer, GeoPosition position, bool hasAltitude, bool hasMeasure)
     {
-        var size = hasAltitude ? 24 : 16;
+        var size = 16 + (hasAltitude ? 8 : 0) + (hasMeasure ? 8 : 0);
         var span = writer.GetSpan(size);
         BinaryPrimitives.WriteDoubleLittleEndian(span, position.Longitude);
         BinaryPrimitives.WriteDoubleLittleEndian(span[8..], position.Latitude);
         if (hasAltitude)
         {
             BinaryPrimitives.WriteDoubleLittleEndian(span[16..], position.Altitude ?? 0);
+        }
+
+        if (hasMeasure)
+        {
+            BinaryPrimitives.WriteDoubleLittleEndian(span[(size - 8)..], position.Measure ?? double.NaN);
         }
 
         writer.Advance(size);
@@ -368,12 +376,17 @@ public static class WellKnownBinary
                 }
             }
 
+            double? m = null;
             if (hasM)
             {
-                _ = ReadDouble();
+                var value = ReadDouble();
+                if (!double.IsNaN(value))
+                {
+                    m = value;
+                }
             }
 
-            return new GeoPosition(x, y, z);
+            return new GeoPosition(x, y, z) { Measure = m };
         }
 
         /// <summary>Reads a count, and checks the remaining data can hold that many items, so a hostile count does not allocate a huge array.</summary>

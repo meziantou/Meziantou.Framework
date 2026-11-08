@@ -42,7 +42,7 @@ public sealed class GeographicCoordinateSystem : CoordinateReferenceSystem
         if (IsWgs84Equivalent)
             return position;
 
-        return ToWgs84Radians(position.Longitude * AngularUnit, position.Latitude * AngularUnit, position.Altitude);
+        return ToWgs84Radians(position.Longitude * AngularUnit, position.Latitude * AngularUnit, position);
     }
 
     /// <inheritdoc />
@@ -52,12 +52,13 @@ public sealed class GeographicCoordinateSystem : CoordinateReferenceSystem
             return position;
 
         var (lambda, phi, altitude) = FromWgs84Radians(position);
-        return new GeoPosition(NormalizeLongitude(lambda) / AngularUnit, phi / AngularUnit, altitude);
+        return position with { Longitude = NormalizeLongitude(lambda) / AngularUnit, Latitude = phi / AngularUnit, Altitude = altitude };
     }
 
-    /// <summary>Converts a longitude from the prime meridian and a latitude, in radians, to WGS 84.</summary>
-    internal GeoPosition ToWgs84Radians(double lambda, double phi, double? altitude)
+    /// <summary>Converts a longitude from the prime meridian and a latitude, in radians, to WGS 84. The other values of the position, such as its measure and its time, are kept.</summary>
+    internal GeoPosition ToWgs84Radians(double lambda, double phi, GeoPosition position)
     {
+        var altitude = position.Altitude;
         lambda += PrimeMeridian * DegreesToRadians;
         if (ToWgs84Transformation is { } transformation)
         {
@@ -70,7 +71,7 @@ public sealed class GeographicCoordinateSystem : CoordinateReferenceSystem
             }
         }
 
-        return new GeoPosition(NormalizeLongitude(lambda) / DegreesToRadians, phi / DegreesToRadians, altitude);
+        return position with { Longitude = NormalizeLongitude(lambda) / DegreesToRadians, Latitude = phi / DegreesToRadians, Altitude = altitude };
     }
 
     /// <summary>Converts a position of WGS 84 to a longitude from the prime meridian and a latitude, in radians.</summary>

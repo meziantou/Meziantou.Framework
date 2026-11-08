@@ -65,6 +65,15 @@ public sealed class IsoJpegTool
         return ReferencePnm.Parse(await File.ReadAllBytesAsync(output, cancellationToken).ConfigureAwait(false));
     }
 
+    /// <summary>Decodes a JPEG file to a Netpbm file as the tool writes it: its maximum value is that of the precision of the file (for example 3 for 2-bit lossless samples).</summary>
+    /// <param name="inputPath">The JPEG file.</param>
+    /// <param name="outputPath">The Netpbm file to write.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A task that completes when the file is written.</returns>
+    /// <exception cref="InvalidOperationException">The tool rejected the file.</exception>
+    public Task DecodeToFileAsync(FullPath inputPath, FullPath outputPath, CancellationToken cancellationToken)
+        => ConvertAsync([inputPath, outputPath], outputPath, cancellationToken);
+
     private async Task ConvertAsync(string[] arguments, FullPath outputPath, CancellationToken cancellationToken)
     {
         File.Delete(outputPath);

@@ -47,6 +47,15 @@ internal static class JpegForwardDct
     /// <summary>Gets the largest quantized DC coefficient, so that every DC difference stays within category 11 (at most 2047).</summary>
     public const int MaxDc = 1023;
 
+    /// <summary>Gets the largest magnitude of a quantized AC coefficient of 12-bit samples (size category 14).</summary>
+    public const int MaxWideAcMagnitude = 16383;
+
+    /// <summary>Gets the smallest quantized DC coefficient of 12-bit samples (an all-black block at quantization value 1 is -16384).</summary>
+    public const int MinWideDc = -16384;
+
+    /// <summary>Gets the largest quantized DC coefficient of 12-bit samples, so that every DC difference stays within category 15.</summary>
+    public const int MaxWideDc = 16383;
+
     /// <summary>Gets the zig-zag position of each coefficient of the transposed order (<c>u * 8 + v</c>, for the natural index <c>v * 8 + u</c>).</summary>
     private static ReadOnlySpan<byte> TransposedZigZagPositions =>
     [
@@ -163,6 +172,16 @@ internal static class JpegForwardDct
 
     /// <summary>The scalar reference of <see cref="TransformAndQuantize"/>.</summary>
     internal static void TransformAndQuantizeScalar(ReadOnlySpan<float> samples, int stride, ReadOnlySpan<double> divisors, Span<double> scratch, Span<int> coefficients)
+        => TransformAndQuantizeClamped(samples, stride, divisors, scratch, coefficients, MinDc, MaxDc, MaxAcMagnitude);
+
+    /// <summary>
+    /// Transforms and quantizes one block of 12-bit samples (nominally -2048 to 2047.5) as <see cref="TransformAndQuantizeScalar"/>
+    /// does, whose coefficients have the ranges of <see cref="MinWideDc"/> to <see cref="MaxWideDc"/> and <see cref="MaxWideAcMagnitude"/>.
+    /// </summary>
+    internal static void TransformAndQuantizeWide(ReadOnlySpan<float> samples, int stride, ReadOnlySpan<double> divisors, Span<double> scratch, Span<int> coefficients)
+        => TransformAndQuantizeClamped(samples, stride, divisors, scratch, coefficients, MinWideDc, MaxWideDc, MaxWideAcMagnitude);
+
+    private static void TransformAndQuantizeClamped(ReadOnlySpan<float> samples, int stride, ReadOnlySpan<double> divisors, Span<double> scratch, Span<int> coefficients, int minDc, int maxDc, int maxAc)
     {
         samples = samples[..((7 * stride) + 8)];
         divisors = divisors[..64];
@@ -187,7 +206,7 @@ internal static class JpegForwardDct
             {
                 var index = (u * 8) + v;
                 var quantized = (int)Math.Round(line[u] / divisors[index], MidpointRounding.AwayFromZero);
-                coefficients[positions[index]] = index == 0 ? Math.Clamp(quantized, MinDc, MaxDc) : Math.Clamp(quantized, -MaxAcMagnitude, MaxAcMagnitude);
+                coefficients[positions[index]] = index == 0 ? Math.Clamp(quantized, minDc, maxDc) : Math.Clamp(quantized, -maxAc, maxAc);
             }
         }
     }

@@ -178,6 +178,9 @@ public sealed class JpegDecoderDifferentialTests
         Assert.Equal(feature, Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data)).Feature);
     }
 
+    /// <summary>Gets the tolerance of a layout ("gray", "rgb", "444", "422" or "420") and a precision against the reference decoder.</summary>
+    internal static (int Max, double Mean) GetTolerance(string layout, int precision) => Tolerances[(layout, precision)];
+
     /// <summary>Gets the samples of the first frame of an image, red, green and blue, at a precision of <paramref name="maxValue"/>.</summary>
     internal static int[] GetSamples(Image image, int maxValue)
     {

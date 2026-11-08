@@ -96,7 +96,7 @@ public sealed class JpegEncoderTests
         Assert.False(baselineReference.IsProgressive);
         Assert.Equal(["0,1,2: 0 63 0 0"], baselineReference.Scans.Select(Describe));
         Assert.Equal(["APP0", "DQT", "SOF0", "DHT", "SOS"], baselineReference.SegmentNames);
-        Assert.Throws<ArgumentOutOfRangeException>(() => new JpegEncoder { Process = (JpegEncodingProcess)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new JpegEncoder { Process = (JpegEncodingProcess)3 });
 
         static string Describe(ReferenceJpegScan scan)
             => string.Create(CultureInfo.InvariantCulture, $"{string.Join(',', scan.Components.Select(component => component.Index))}: {scan.SpectralStart} {scan.SpectralEnd} {scan.SuccessiveHigh} {scan.SuccessiveLow}");
@@ -1045,10 +1045,22 @@ public sealed class JpegEncoderTests
     {
         using var image = Rgb(JpegTestPatterns.PhotoLike(120, 90, seed: 2));
         image.Metadata.TextEntries.Add(new ImageTextEntry(ImageTextEntry.CommentKeyword, "value"));
-        foreach (var (asynchronous, process, optimize) in new[] { (false, JpegEncodingProcess.Baseline, false), (true, JpegEncodingProcess.Baseline, false), (false, JpegEncodingProcess.Progressive, false), (true, JpegEncodingProcess.Progressive, false), (false, JpegEncodingProcess.Baseline, true), (true, JpegEncodingProcess.Baseline, true) })
+        foreach (var (asynchronous, process, optimize, coding) in new[]
+        {
+            (false, JpegEncodingProcess.Baseline, false, JpegEntropyCoding.Huffman),
+            (true, JpegEncodingProcess.Baseline, false, JpegEntropyCoding.Huffman),
+            (false, JpegEncodingProcess.Progressive, false, JpegEntropyCoding.Huffman),
+            (true, JpegEncodingProcess.Progressive, false, JpegEntropyCoding.Huffman),
+            (false, JpegEncodingProcess.Baseline, true, JpegEntropyCoding.Huffman),
+            (true, JpegEncodingProcess.Baseline, true, JpegEntropyCoding.Huffman),
+            (false, JpegEncodingProcess.Baseline, true, JpegEntropyCoding.Arithmetic),
+            (true, JpegEncodingProcess.Progressive, false, JpegEntropyCoding.Arithmetic),
+            (false, JpegEncodingProcess.Lossless, false, JpegEntropyCoding.Huffman),
+            (true, JpegEncodingProcess.Lossless, false, JpegEntropyCoding.Arithmetic),
+        })
         {
             using var stream = new TestOutputStream { FailAtPosition = failAt };
-            var encoder = new JpegEncoder { Quality = 100, Process = process, OptimizeHuffmanTables = optimize, RestartInterval = optimize ? 3 : 0 };
+            var encoder = new JpegEncoder { Quality = 100, Process = process, OptimizeHuffmanTables = optimize, RestartInterval = optimize ? 3 : 0, EntropyCoding = coding };
             var writer = Image.CreateWriter<Rgb24>(stream, new ImageWriterOptions(120, 90) { Encoder = encoder, Metadata = image.Metadata });
             try
             {
@@ -1150,6 +1162,7 @@ public sealed class JpegEncoderTests
     [InlineData(JpegEncodingProcess.Progressive, 1)]
     [InlineData(JpegEncodingProcess.Baseline, 4)]
     [InlineData(JpegEncodingProcess.Progressive, 4)]
+    [InlineData(JpegEncodingProcess.Lossless, 1)]
     public async Task CancellationDuringEncodingFaultsTheWriter(JpegEncodingProcess process, int workers)
     {
         using var image = Rgb(JpegTestPatterns.PhotoLike(800, 600, seed: 2));
@@ -1397,6 +1410,224 @@ public sealed class JpegEncoderTests
         Assert.Contains("jpeg/progressive-gray-default", compared);
         Assert.Contains("jpeg/progressive-420-partial-mcu", read);
         Assert.Contains("jpeg/progressive-440-spectral-selection", read);
+    }
+
+    public static TheoryData<JpegEncodingProcess, JpegChromaSubsampling, PixelFormat> ArithmeticCases()
+    {
+        var data = new TheoryData<JpegEncodingProcess, JpegChromaSubsampling, PixelFormat>();
+        foreach (var process in AllProcesses)
+        {
+            foreach (var subsampling in new[] { JpegChromaSubsampling.Ratio444, JpegChromaSubsampling.Ratio422, JpegChromaSubsampling.Ratio420 })
+            {
+                data.Add(process, subsampling, PixelFormat.Rgb24);
+            }
+
+            data.Add(process, JpegChromaSubsampling.Auto, PixelFormat.Gray8);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(ArithmeticCases))]
+    public void ArithmeticOutputDecodesToThePixelsOfHuffmanOutput(JpegEncodingProcess process, JpegChromaSubsampling subsampling, PixelFormat format)
+    {
+        // Arithmetic coding codes the coefficients of Huffman coding (with restart intervals too): an SOF9 or SOF10 frame
+        // without Huffman or conditioning tables, which decodes to the same pixels
+        foreach (var (width, height) in new[] { (1, 1), (37, 23), (64, 48) })
+        {
+            var pixels = JpegTestPatterns.ToFormat(JpegTestPatterns.PhotoLike(width, height, seed: width), format, LowBits);
+            var huffman = Encode(pixels, format, new JpegEncoder { Quality = 80, ChromaSubsampling = subsampling, Process = process });
+            using var expected = Image.Load(huffman);
+            foreach (var restartInterval in new[] { 0, 1, 4 })
+            {
+                var jpeg = Encode(pixels, format, new JpegEncoder { Quality = 80, ChromaSubsampling = subsampling, Process = process, EntropyCoding = JpegEntropyCoding.Arithmetic, RestartInterval = restartInterval });
+                var markers = GetMarkers(jpeg);
+                Assert.Contains(process == JpegEncodingProcess.Progressive ? 0xCA : 0xC9, markers);
+                Assert.DoesNotContain(0xC4, markers);
+                Assert.DoesNotContain(0xCC, markers);
+                using var decoded = Image.Load(jpeg);
+                Assert.Equal(expected.PixelFormat, decoded.PixelFormat);
+                Assert.Equal(GetPixelBytes(expected), GetPixelBytes(decoded));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(JpegEncodingProcess.Baseline, JpegEntropyCoding.Huffman, 0xC1)]
+    [InlineData(JpegEncodingProcess.Progressive, JpegEntropyCoding.Huffman, 0xC2)]
+    [InlineData(JpegEncodingProcess.Baseline, JpegEntropyCoding.Arithmetic, 0xC9)]
+    [InlineData(JpegEncodingProcess.Progressive, JpegEntropyCoding.Arithmetic, 0xCA)]
+    public void TwelveBitOutputKeepsMorePrecisionThanEightBitOutput(JpegEncodingProcess process, JpegEntropyCoding coding, int frameMarker)
+    {
+        // 16-bit pixels whose low bits matter: 12-bit output is a frame of precision 12 that decodes to 16-bit pixels, the
+        // same for every process and entropy coding, much closer to the source than 8-bit output
+        foreach (var format in new[] { PixelFormat.Rgba64, PixelFormat.Gray16 })
+        {
+            var pixels = JpegTestPatterns.ToFormat(JpegTestPatterns.PhotoLike(45, 33, seed: 5), format, LowBits);
+            using var source = format == PixelFormat.Gray16 ? (Image)Image.ImportPixelBytes<Gray16>(RawImport.ToPixelBytes(pixels, format), 45, 33) : Image.ImportPixelBytes<Rgba64>(RawImport.ToPixelBytes(pixels, format), 45, 33);
+            var subsampling = JpegChromaSubsampling.Ratio444;
+            var jpeg = Encode(source, new JpegEncoder { Quality = 90, ChromaSubsampling = subsampling, Process = process, EntropyCoding = coding, BitDepth = 12 });
+            var frame = jpeg.AsSpan().IndexOf([(byte)0xFF, (byte)frameMarker]);
+            Assert.True(frame > 0, $"{format}: no frame marker 0x{frameMarker:X2}.");
+            Assert.Equal(12, jpeg[frame + 4]);
+            using var decoded = Image.Load(jpeg);
+            Assert.Equal(format == PixelFormat.Gray16 ? PixelFormat.Gray16 : PixelFormat.Rgb48, decoded.PixelFormat);
+            using var sequential = Image.Load(Encode(source, new JpegEncoder { Quality = 90, ChromaSubsampling = subsampling, BitDepth = 12 }));
+            Assert.Equal(GetPixelBytes(sequential), GetPixelBytes(decoded));
+            using var eightBit = Image.Load(Encode(source, new JpegEncoder { Quality = 90, ChromaSubsampling = subsampling, AllowBitDepthReduction = true }));
+            var twelveBitError = GetMeanError(source, decoded);
+            var eightBitError = GetMeanError(source, eightBit);
+            Assert.True(twelveBitError < eightBitError / 4, $"{format}: mean error {twelveBitError} with 12 bits, {eightBitError} with 8 bits.");
+        }
+    }
+
+    [Theory]
+    [InlineData(JpegEntropyCoding.Huffman)]
+    [InlineData(JpegEntropyCoding.Arithmetic)]
+    public void ExtendedOutputDoesNotDependOnTheWorkers(JpegEntropyCoding coding)
+    {
+        // 301x259 pixels: several workers transform the MCU rows of 12-bit and arithmetic-coded output
+        foreach (var format in new[] { PixelFormat.Rgb24, PixelFormat.Rgba64, PixelFormat.Gray8 })
+        {
+            var pixels = JpegTestPatterns.ToFormat(JpegTestPatterns.PhotoLike(301, 259, seed: 11), format, LowBits);
+            foreach (var (process, bitDepth) in new[] { (JpegEncodingProcess.Baseline, 12), (JpegEncodingProcess.Progressive, 12), (JpegEncodingProcess.Baseline, 8) })
+            {
+                var encoder = new JpegEncoder { Quality = 85, Process = process, EntropyCoding = coding, BitDepth = bitDepth, RestartInterval = 5 };
+                var expected = EncodeWithWorkers(pixels, format, encoder, workers: 1);
+                foreach (var workers in (int[])[2, 3, 16])
+                {
+                    Assert.Equal(expected, EncodeWithWorkers(pixels, format, encoder, workers));
+                }
+            }
+        }
+    }
+
+    public static TheoryData<PixelFormat, int?, JpegEntropyCoding> LosslessCases()
+    {
+        var data = new TheoryData<PixelFormat, int?, JpegEntropyCoding>();
+        foreach (var coding in new[] { JpegEntropyCoding.Huffman, JpegEntropyCoding.Arithmetic })
+        {
+            foreach (var (format, bitDepth) in new (PixelFormat, int?)[] { (PixelFormat.Gray8, null), (PixelFormat.Rgb24, null), (PixelFormat.Rgba32, null), (PixelFormat.Bgra32, null), (PixelFormat.Gray16, null), (PixelFormat.Rgba64, null), (PixelFormat.Gray16, 12), (PixelFormat.Rgba64, 10), (PixelFormat.Gray8, 2), (PixelFormat.Rgb24, 12) })
+            {
+                data.Add(format, bitDepth, coding);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(LosslessCases))]
+    public void LosslessOutputDecodesToTheEncodedSamples(PixelFormat format, int? bitDepth, JpegEntropyCoding coding)
+    {
+        // Every predictor, with restart intervals of one and two lines: the decoded samples are the samples reduced to the
+        // precision (exact by default: 8 bits for 8-bit pixel formats, 16 for the others)
+        var precision = bitDepth ?? (format is PixelFormat.Gray16 or PixelFormat.Rgba64 ? 16 : 8);
+        var gray = format is PixelFormat.Gray8 or PixelFormat.Gray16;
+        foreach (var (width, height) in new[] { (1, 1), (37, 23), (2, 40) })
+        {
+            int[] expected;
+            using (var original = EncoderSources.CreateImage(JpegTestPatterns.ToFormat(JpegTestPatterns.PhotoLike(width, height, seed: height), format, LowBits), format))
+            {
+                expected = GetSamples(original, precision);
+            }
+
+            using var source = EncoderSources.CreateImage(JpegTestPatterns.ToFormat(JpegTestPatterns.PhotoLike(width, height, seed: height), format, LowBits), format);
+            for (var predictor = 1; predictor <= 7; predictor++)
+            {
+                foreach (var restartInterval in new[] { 0, width, 2 * width })
+                {
+                    var encoder = new JpegEncoder { Process = JpegEncodingProcess.Lossless, BitDepth = bitDepth, LosslessPredictor = predictor, EntropyCoding = coding, RestartInterval = restartInterval };
+                    var jpeg = Encode(source, encoder);
+                    var markers = GetMarkers(jpeg);
+                    Assert.Contains(coding == JpegEntropyCoding.Huffman ? 0xC3 : 0xCB, markers);
+                    Assert.DoesNotContain(0xDB, markers);
+
+                    // Color is RGB: an Adobe segment with the transform 0 and no JFIF segment, which would mean YCbCr
+                    Assert.Equal(gray, markers.Contains(0xE0));
+                    Assert.Equal(!gray, markers.Contains(0xEE));
+                    using var decoded = Image.Load(jpeg);
+                    Assert.Equal(expected, GetSamples(decoded, precision));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void ExtendedSettingsAreValidated()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new JpegEncoder { BitDepth = 1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new JpegEncoder { BitDepth = 17 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new JpegEncoder { LosslessPredictor = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new JpegEncoder { LosslessPredictor = 8 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new JpegEncoder { EntropyCoding = (JpegEntropyCoding)2 });
+        Assert.Equal(1, new JpegEncoder().LosslessPredictor);
+        Assert.Null(new JpegEncoder().BitDepth);
+
+        using var rgb = Rgb(JpegTestPatterns.PhotoLike(37, 23, seed: 1));
+        Assert.Throws<ArgumentException>(() => rgb.Save(new ThrowingStream(), new JpegEncoder { BitDepth = 10 }));
+        Assert.Throws<ArgumentException>(() => rgb.Save(new ThrowingStream(), new JpegEncoder { Process = JpegEncodingProcess.Progressive, BitDepth = 16 }));
+
+        // A restart interval of a lossless scan is a whole number of lines
+        Assert.Throws<ArgumentException>(() => rgb.Save(new ThrowingStream(), new JpegEncoder { Process = JpegEncodingProcess.Lossless, RestartInterval = 5 }));
+
+        // 16-bit pixels: an explicit bit depth is the consent to reduce them; the lossless process keeps 16 bits by default
+        var deep = JpegTestPatterns.ToFormat(JpegTestPatterns.PhotoLike(12, 10, seed: 4), PixelFormat.Rgba64, LowBits);
+        using var image = EncoderSources.CreateImage(deep, PixelFormat.Rgba64);
+        Assert.Equal("Bit depth reduction", Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(new ThrowingStream(), new JpegEncoder { EntropyCoding = JpegEntropyCoding.Arithmetic })).Feature);
+        Assert.NotEmpty(Encode(image, new JpegEncoder { BitDepth = 12 }));
+        Assert.NotEmpty(Encode(image, new JpegEncoder { BitDepth = 8, Process = JpegEncodingProcess.Lossless }));
+        Assert.NotEmpty(Encode(image, new JpegEncoder { Process = JpegEncodingProcess.Lossless }));
+
+        // Alpha is never discarded silently
+        using var transparent = Image.ImportPixelBytes<Rgba32>(new byte[4 * 4], 2, 2);
+        Assert.Equal("Alpha removal", Assert.Throws<UnsupportedImageFeatureException>(() => transparent.Save(new ThrowingStream(), new JpegEncoder { Process = JpegEncodingProcess.Lossless })).Feature);
+    }
+
+    /// <summary>Gets the markers of the segments of a JPEG file before its first scan, and the frame and scan markers.</summary>
+    private static List<int> GetMarkers(byte[] jpeg)
+    {
+        var markers = new List<int>();
+        var offset = 2;
+        while (offset + 4 <= jpeg.Length && jpeg[offset] == 0xFF)
+        {
+            var marker = jpeg[offset + 1];
+            markers.Add(marker);
+            if (marker == 0xDA)
+                break;
+
+            offset += 2 + BinaryPrimitives.ReadUInt16BigEndian(jpeg.AsSpan(offset + 2));
+        }
+
+        return markers;
+    }
+
+    private static byte[] GetPixelBytes(Image image)
+    {
+        using var typed = image.CloneAs<Rgba64>();
+        var pixels = new Rgba64[image.Width * image.Height];
+        typed.Frames[0].CopyPixelDataTo(pixels);
+        return [.. System.Runtime.InteropServices.MemoryMarshal.AsBytes(pixels.AsSpan())];
+    }
+
+    /// <summary>Gets the red, green and blue (or gray) samples of an image reduced to a precision, with nearest rounding.</summary>
+    private static int[] GetSamples(Image image, int precision)
+    {
+        using var typed = image.CloneAs<Rgba64>();
+        var pixels = new Rgba64[image.Width * image.Height];
+        typed.Frames[0].CopyPixelDataTo(pixels);
+        var maximum = (1L << precision) - 1;
+        var gray = image.PixelFormat is PixelFormat.Gray8 or PixelFormat.Gray16;
+        return [.. pixels.SelectMany(pixel => gray ? new[] { pixel.R } : new[] { pixel.R, pixel.G, pixel.B }).Select(sample => (int)(((sample * maximum) + 32767) / 65535))];
+    }
+
+    /// <summary>Gets the mean absolute difference of the 16-bit red, green and blue samples of two images.</summary>
+    private static double GetMeanError(Image expected, Image actual)
+    {
+        var a = GetSamples(expected, 16);
+        var b = GetSamples(actual, 16);
+        return a.Zip(b, (x, y) => Math.Abs(x - y)).Average();
     }
 
     internal static void AssertMatchesModel(byte[] jpeg, RawPixelBuffer samples, JpegEncoder encoder, string context)

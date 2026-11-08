@@ -1,19 +1,19 @@
 ---
 title: JPEG
-description: Read every common JPEG file, write baseline or progressive JPEG files, and handle what JPEG cannot store.
+description: Read every common JPEG file, write baseline, progressive, 12-bit, arithmetic-coded or lossless JPEG files, and handle what JPEG cannot store.
 ---
 
-JPEG is the lossy format of photos. The library reads nearly every JPEG file, and writes 8-bit baseline or progressive
-files with [JpegEncoder](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder). JPEG stores one opaque picture with 8-bit samples: an animation, transparency or 16-bit samples
-need an explicit setting before they can be saved.
+JPEG is the lossy format of photos. The library reads nearly every JPEG file, and writes baseline or progressive files
+with [JpegEncoder](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder), with 8-bit or 12-bit samples and Huffman or arithmetic coding, and lossless files. JPEG stores one opaque
+picture: an animation, transparency or 16-bit samples in a lossy file need an explicit setting before they can be saved.
 
 ## What is read and written
 
 | | Reading | Writing |
 | --- | --- | --- |
-| Processes | Baseline, extended sequential and progressive, Huffman or arithmetic coded; lossless (Huffman coded) | Baseline (default) or progressive, Huffman coded |
-| Samples | 8 and 12 bits; 2 to 16 bits for lossless files | 8 bits |
-| Colors | Gray, YCbCr and RGB; CMYK and YCCK with a color conversion | Gray (for gray pixel formats) or YCbCr |
+| Processes | Baseline, extended sequential and progressive, Huffman or arithmetic coded; lossless (Huffman coded) | Baseline (default), extended sequential, progressive and lossless, Huffman or arithmetic coded |
+| Samples | 8 and 12 bits; 2 to 16 bits for lossless files | 8 and 12 bits; 2 to 16 bits for lossless files |
+| Colors | Gray, YCbCr and RGB; CMYK and YCCK with a color conversion | Gray (for gray pixel formats), YCbCr, or RGB for lossless files |
 | Chroma subsampling | Any integral sampling | 4:4:4, 4:2:2 or 4:2:0 |
 | Metadata | EXIF, XMP, ICC profile, resolution, comments | The same |
 | Reduced size | 1/2, 1/4 or 1/8 of the size, except lossless files | - |
@@ -83,21 +83,56 @@ public static void SaveOptimizedJpeg(string sourcePath, string jpegPath)
 - A file written with either option can still be recompressed to JPEG XL with
   [JpegXlTranscoder](cref:Meziantou.Framework.Imaging.JpegXlTranscoder) and rebuilt byte for byte.
 
+## Save a lossless, 12-bit or arithmetic-coded file
+
+[JpegEncodingProcess.Lossless](cref:Meziantou.Framework.Imaging.Formats.JpegEncodingProcess.Lossless) writes the samples exactly: the file decodes to the pixels of the image, with 8 bits for
+an 8-bit pixel format and 16 bits for a 16-bit one. Each sample is predicted from its decoded neighbors
+([LosslessPredictor](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.LosslessPredictor), 1 to 7) and the difference is coded:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveLosslessJpeg;format=md-fenced-code-block;dedent=true -->
+<!-- endref -->
+
+- Color pixel formats are written as RGB components, without chroma subsampling; the JFIF segment, and so the JFIF
+  resolution, is not written for them, since it would mean YCbCr.
+- [BitDepth](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.BitDepth) stores 2 to 16 bits per sample: the samples are rounded to it, and a value below the depth of a
+  16-bit pixel format is the consent to reduce it.
+- A restart interval of a lossless file is a whole number of rows: [RestartInterval](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.RestartInterval) must be a multiple of the width.
+- The file is several times larger than a lossy one. To store a photo losslessly in a smaller file, prefer PNG, WebP
+  lossless or JPEG XL.
+
+[BitDepth](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.BitDepth) set to 12 writes a lossy file of 12-bit samples, which keeps more of the precision of a 16-bit image,
+and [EntropyCoding](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.EntropyCoding) set to [Arithmetic](cref:Meziantou.Framework.Imaging.Formats.JpegEntropyCoding.Arithmetic) codes the same coefficients in fewer bytes, so
+the file decodes to the same pixels as the Huffman-coded one:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveTwelveBitJpeg;format=md-fenced-code-block;dedent=true -->
+<!-- endref -->
+
+- A 12-bit file uses the quantization tables of an 8-bit one, as libjpeg does, so its coefficients are quantized
+  more finely relative to the range of the samples, and it is larger.
+- The Huffman tables of a 12-bit or lossless file are always computed from the image, and arithmetic coding needs no
+  table: as with [OptimizeHuffmanTables](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.OptimizeHuffmanTables), the coefficients of the whole image stay in memory until the
+  scans are written.
+- Web browsers and many other decoders do not read 12-bit, arithmetic-coded or lossless files: keep the default
+  settings for files that are shared.
+
 ## Options
 
 | Option | What it does | Default |
 | --- | --- | --- |
 | [Quality](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.Quality) | 1 (smallest) to 100 (best); 100 is still lossy | 90 |
-| [Process](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.Process) | [Baseline](cref:Meziantou.Framework.Imaging.Formats.JpegEncodingProcess.Baseline) or [Progressive](cref:Meziantou.Framework.Imaging.Formats.JpegEncodingProcess.Progressive) | [Baseline](cref:Meziantou.Framework.Imaging.Formats.JpegEncodingProcess.Baseline) |
+| [Process](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.Process) | [Baseline](cref:Meziantou.Framework.Imaging.Formats.JpegEncodingProcess.Baseline), [Progressive](cref:Meziantou.Framework.Imaging.Formats.JpegEncodingProcess.Progressive) or [Lossless](cref:Meziantou.Framework.Imaging.Formats.JpegEncodingProcess.Lossless) | [Baseline](cref:Meziantou.Framework.Imaging.Formats.JpegEncodingProcess.Baseline) |
+| [EntropyCoding](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.EntropyCoding) | [Huffman](cref:Meziantou.Framework.Imaging.Formats.JpegEntropyCoding.Huffman) or [Arithmetic](cref:Meziantou.Framework.Imaging.Formats.JpegEntropyCoding.Arithmetic) (smaller, same pixels, read by fewer decoders) | [Huffman](cref:Meziantou.Framework.Imaging.Formats.JpegEntropyCoding.Huffman) |
+| [BitDepth](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.BitDepth) | The bits per sample: 8 or 12 for a lossy file, 2 to 16 for a lossless one | `null`: 8 bits, or the depth of the pixel format for a lossless file |
+| [LosslessPredictor](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.LosslessPredictor) | The predictor of a lossless file, 1 to 7 | 1 |
 | [ChromaSubsampling](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.ChromaSubsampling) | [Auto](cref:Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling.Auto) (4:2:0 for color images), [Ratio444](cref:Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling.Ratio444), [Ratio422](cref:Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling.Ratio422) or [Ratio420](cref:Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling.Ratio420); ignored for gray pixel formats | [Auto](cref:Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling.Auto) |
 | [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.BackgroundColor) | The opaque color that pixels that are not opaque are composited over; `null` rejects them | `null` |
 | [OptimizeHuffmanTables](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.OptimizeHuffmanTables) | Computes the Huffman tables of a baseline file from the image: smaller, same pixels, slower; no effect on progressive files, whose tables are always computed | `false` |
 | [RestartInterval](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.RestartInterval) | The number of MCUs between two restart markers, 0 to 65,535; 0 writes none | 0 |
-| [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.AllowBitDepthReduction) | Lets 16-bit pixel formats be rounded to 8 bits | `false` |
+| [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.AllowBitDepthReduction) | Lets 16-bit pixel formats be rounded to 8 bits when [BitDepth](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.BitDepth) is not set | `false` |
 | [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata JPEG cannot store | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
 The component layout follows the pixel format, never the pixel values: a gray pixel format writes one grayscale
-component, every other pixel format YCbCr, even when its pixels are gray.
+component, every other pixel format YCbCr (RGB in a lossless file), even when its pixels are gray.
 
 ## Save one frame of an animation
 
@@ -124,7 +159,8 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 
 - [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.BackgroundColor) is only needed when a pixel is not opaque: a GIF or PNG with transparency needs it, an opaque image
   never does.
-- [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.AllowBitDepthReduction) is needed for [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) and [Gray16](cref:Meziantou.Framework.Imaging.Gray16) images, from a 16-bit PNG for instance.
+- [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.AllowBitDepthReduction) is needed for [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) and [Gray16](cref:Meziantou.Framework.Imaging.Gray16) images, from a 16-bit PNG for instance, unless a
+  lossless file or [BitDepth](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.BitDepth) keeps their bits.
 - [MetadataHandling.DiscardUnsupported](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.DiscardUnsupported) drops the metadata JPEG cannot store, such as PNG text entries other than
   comments.
 
@@ -138,7 +174,7 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 - The EXIF orientation is reported in `Metadata.Orientation`, never applied: call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) to rotate the pixels. See
   [Metadata and orientation](../09-Color/02-MetadataAndOrientation.md).
 - An EXIF block is limited to 65,527 bytes and an XMP packet to 65,504 bytes; extended XMP is not supported.
-- The encoder writes no arithmetic-coded, lossless, 12-bit, RGB or CMYK files.
+- The encoder writes no CMYK files, and RGB components only in lossless files.
 - To store a JPEG file in a smaller file without any loss, recompress it to JPEG XL with [JpegXlTranscoder](cref:Meziantou.Framework.Imaging.JpegXlTranscoder): the original
   file can be rebuilt byte for byte. See [JPEG XL](15-JpegXl.md).
 - A progressive file can be shown while it is read, with [ReadFrameRefinementInto](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrameRefinementInto). See

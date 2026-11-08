@@ -19,10 +19,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class JpegArithmeticDecoder
 {
     /// <summary>The fixed estimate of one half: Qe = 0x5A1D, never adapted (T.81 F.1.4.4.2).</summary>
-    private const int FixedEstimate = 0x5A1D;
+    internal const int FixedEstimate = 0x5A1D;
 
     // Table D.3: the LPS probability estimate of each state
-    private static readonly ushort[] Estimates =
+    internal static readonly ushort[] Estimates =
     [
         0x5A1D, 0x2586, 0x1114, 0x080B, 0x03D8, 0x01DA, 0x00E5, 0x006F, 0x0036, 0x001A, 0x000D, 0x0006, 0x0003, 0x0001,
         0x5A7F, 0x3F25, 0x2CF2, 0x207C, 0x17B9, 0x1182, 0x0CEF, 0x09A1, 0x072F, 0x055C, 0x0406, 0x0303, 0x0240, 0x01B1,
@@ -36,7 +36,7 @@ internal sealed class JpegArithmeticDecoder
     ];
 
     // Table D.3: the next state after a less probable symbol
-    private static ReadOnlySpan<byte> NextAfterLps =>
+    internal static ReadOnlySpan<byte> NextAfterLps =>
     [
         1, 14, 16, 18, 20, 23, 25, 28, 30, 33, 35, 9, 10, 12,
         15, 36, 38, 39, 40, 42, 43, 45, 46, 48, 49, 51, 52, 54,
@@ -50,7 +50,7 @@ internal sealed class JpegArithmeticDecoder
     ];
 
     // Table D.3: the next state after a more probable symbol
-    private static ReadOnlySpan<byte> NextAfterMps =>
+    internal static ReadOnlySpan<byte> NextAfterMps =>
     [
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 13,
         15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
@@ -94,12 +94,14 @@ internal sealed class JpegArithmeticDecoder
                 return mps;
 
             default:
-                // In these states of table D.3, a less probable symbol exchanges the sense of the more probable one
-                var next = state is 0 or 14 or 36 or 64 or 80 or 88 or 95 or 105 or 110 or 112 ? mps ^ 1 : mps;
+                var next = SwitchesSense(state) ? mps ^ 1 : mps;
                 bin = (byte)(NextAfterLps[state] | (next << 7));
                 return mps ^ 1;
         }
     }
+
+    /// <summary>Gets a value indicating whether a less probable symbol in a state of table D.3 exchanges the sense of the more probable one.</summary>
+    internal static bool SwitchesSense(int state) => state is 0 or 14 or 36 or 64 or 80 or 88 or 95 or 105 or 110 or 112;
 
     /// <summary>Decodes one binary decision with the fixed estimate of one half, whose more probable symbol is 0.</summary>
     public int DecodeFixed() => DecodeDecision(FixedEstimate) == Symbol.LessProbable ? 1 : 0;

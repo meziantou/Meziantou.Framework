@@ -1,14 +1,20 @@
 namespace Meziantou.Framework.Imaging.Formats;
 
-/// <summary>Immutable settings for 8-bit JPEG encoding.</summary>
+/// <summary>Immutable settings for JPEG encoding.</summary>
 /// <remarks>
 /// <para>
-/// The output is a Huffman-coded JPEG (JFIF) whose quantization tables are those of ITU-T T.81 Annex K scaled by
+/// The output is a JPEG (JFIF) whose quantization tables are those of ITU-T T.81 Annex K scaled by
 /// <see cref="Quality"/>: by default a baseline sequential one (one interleaved scan, the typical Huffman tables of
 /// Annex K, or tables computed from the image with <see cref="OptimizeHuffmanTables"/>), or a progressive one
 /// (<see cref="Process"/>), with restart markers every <see cref="RestartInterval"/> MCUs if set. Gray pixel formats produce a single
 /// grayscale component; color pixel formats produce full-range YCbCr subsampled according to <see cref="ChromaSubsampling"/>.
 /// The component layout follows the pixel format, never the pixel values.
+/// </para>
+/// <para>
+/// <see cref="BitDepth"/> selects 12-bit samples (an extended sequential or progressive frame) and
+/// <see cref="EntropyCoding"/> arithmetic coding (SOF9 or SOF10 frames). <see cref="JpegEncodingProcess.Lossless"/> writes
+/// the samples exactly (SOF3, or SOF11 with arithmetic coding), with 2 to 16 bits and RGB components for color pixel
+/// formats.
 /// </para>
 /// <para>
 /// JPEG stores exactly one frame: animated images and images with a poster frame are rejected with an
@@ -153,6 +159,84 @@ public sealed class JpegEncoder : ImageEncoder
         }
     }
 
-    /// <summary>Gets a value indicating whether 16-bit pixel formats may be reduced to 8 bits per component (nearest rounding). Defaults to <see langword="false"/>.</summary>
+    /// <summary>
+    /// Gets the entropy coding of the output. Defaults to <see cref="JpegEntropyCoding.Huffman"/>.
+    /// </summary>
+    /// <remarks>
+    /// Arithmetic coding stores the coefficients (or, with <see cref="JpegEncodingProcess.Lossless"/>, the sample
+    /// differences) of Huffman coding with the default conditioning of T.81 (no DAC segment), so the output decodes to the
+    /// same pixels and is usually smaller. As with optimized Huffman tables, the coefficients of the whole image are kept
+    /// in memory until the scans are written (two bytes per coefficient).
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="JpegEntropyCoding"/>.</exception>
+    public JpegEntropyCoding EntropyCoding
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The entropy coding is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the sample precision of the output, or <see langword="null"/> (the default) for 8 bits with the DCT processes
+    /// and the depth of the pixel format (8 or 16 bits) with <see cref="JpegEncodingProcess.Lossless"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The DCT processes (<see cref="JpegEncodingProcess.Baseline"/> and <see cref="JpegEncodingProcess.Progressive"/>)
+    /// take 8 or 12 bits; the lossless process takes 2 to 16 bits. Samples are scaled to the precision with nearest
+    /// rounding (8-bit pixels are scaled up exactly). A value below the depth of a 16-bit pixel format is the consent to
+    /// reduce its samples (as <see cref="AllowBitDepthReduction"/> is for the default).
+    /// </para>
+    /// <para>
+    /// 12-bit output is an extended sequential (SOF1) or progressive frame with the same quantization tables as 8-bit
+    /// output (as libjpeg writes it), so its coefficients are quantized 16 times more finely relative to the sample range.
+    /// The Huffman tables of a 12-bit or lossless frame are always computed from the image (the typical tables of
+    /// Annex K do not cover their categories), and the coefficients of the whole image are kept in memory until the scan is
+    /// written. Some decoders (most web browsers among them) do not read 12-bit or lossless files.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not between 2 and 16.</exception>
+    public int? BitDepth
+    {
+        get;
+        init
+        {
+            if (value is < 2 or > 16)
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The bit depth must be between 2 and 16.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>Gets the predictor of <see cref="JpegEncodingProcess.Lossless"/> output, 1 to 7 (T.81 table H.1). Defaults to 1.</summary>
+    /// <remarks>
+    /// With <c>Ra</c> the sample on the left, <c>Rb</c> the one above and <c>Rc</c> the one above on the left, the predictors
+    /// are <c>Ra</c> (1), <c>Rb</c> (2), <c>Rc</c> (3), <c>Ra + Rb - Rc</c> (4), <c>Ra + ((Rb - Rc) &gt;&gt; 1)</c> (5),
+    /// <c>Rb + ((Ra - Rc) &gt;&gt; 1)</c> (6) and <c>(Ra + Rb) &gt;&gt; 1</c> (7). The first line uses <c>Ra</c> and the
+    /// first sample of the other lines <c>Rb</c>. The predictor that gives the smallest file depends on the image; every
+    /// predictor gives the same decoded samples. The point transform is always 0: every bit of the samples is kept.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not between 1 and 7.</exception>
+    public int LosslessPredictor
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 7);
+            field = value;
+        }
+    } = 1;
+
+    /// <summary>
+    /// Gets a value indicating whether pixel formats deeper than the precision of the output (16-bit pixel formats, unless
+    /// <see cref="BitDepth"/> is 16 with <see cref="JpegEncodingProcess.Lossless"/>) may be reduced to it (nearest
+    /// rounding) when <see cref="BitDepth"/> is not set. Defaults to <see langword="false"/>.
+    /// </summary>
     public bool AllowBitDepthReduction { get; init; }
 }

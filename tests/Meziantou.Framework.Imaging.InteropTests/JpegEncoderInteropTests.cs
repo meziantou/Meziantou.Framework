@@ -335,6 +335,216 @@ public sealed class JpegEncoderInteropTests
         Assert.True(error.Psnr > 45, error.Describe());
     }
 
+    /// <summary>
+    /// The largest mean difference of the reference decoding of the 37x23 deep source at quality 85 with the source, in
+    /// units of the precision: the measured values plus 25%. 12-bit output is several times more accurate than 8-bit
+    /// output relative to the sample range (the quantization tables are the same), up to the chroma subsampling.
+    /// </summary>
+    private static readonly Dictionary<(string Sampling, int Precision), double> MaximumSourceError = new()
+    {
+        [("gray", 8)] = 3.7,
+        [("gray", 12)] = 5.6,
+        [("444", 8)] = 5.6,
+        [("444", 12)] = 11.8,
+        [("422", 8)] = 5.9,
+        [("422", 12)] = 30.6,
+        [("420", 8)] = 7.2,
+        [("420", 12)] = 66,
+    };
+
+    public static TheoryData<string, JpegEncodingProcess, int> ExtendedDctCases()
+    {
+        var data = new TheoryData<string, JpegEncodingProcess, int>();
+        foreach (var precision in new[] { 8, 12 })
+        {
+            foreach (var process in new[] { JpegEncodingProcess.Baseline, JpegEncodingProcess.Progressive })
+            {
+                foreach (var sampling in new[] { "444", "422", "420", "gray" })
+                {
+                    data.Add(sampling, process, precision);
+                }
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(ExtendedDctCases))]
+    public async Task ArithmeticAndTwelveBitOutputDecodesWithTheIsoReferenceDecoder(string sampling, JpegEncodingProcess process, int precision)
+    {
+        // Arithmetic coding codes the coefficients of Huffman coding, and the progressive process those of the sequential
+        // one: the ISO reference decoder (its own arithmetic decoder and restart handling) and the library return exactly
+        // the pixels of the sequential Huffman output for every variant, with restart intervals of one MCU, of one MCU row
+        // and longer than the scan. The library then matches the reference decoder within the tolerances of its decoder tests
+        var isoJpeg = await RequiredTools.IsoJpegAsync();
+        var gray = sampling == "gray";
+        var maxValue = (1 << precision) - 1;
+        using var source = CreateDeepSource(37, 23, gray);
+        var name = string.Create(CultureInfo.InvariantCulture, $"extended-{sampling}-{process}-{precision}");
+        var sequentialPath = await EncodeImageToFileAsync(source, new JpegEncoder { Quality = 85, ChromaSubsampling = GetSubsampling(sampling), BitDepth = precision, AllowBitDepthReduction = true }, name + "-sequential");
+        var expected = JpegDecoderDifferentialTests.GetSamples(await isoJpeg.DecodeAsync(sequentialPath, XunitCancellationToken), maxValue);
+        var (_, sourceError, _) = JpegDecoderDifferentialTests.Compare(expected, JpegDecoderDifferentialTests.GetSamples(source, maxValue), maxValue);
+        Assert.True(sourceError <= MaximumSourceError[(sampling, precision)], string.Create(CultureInfo.InvariantCulture, $"{name}: mean error {sourceError:F3} against the source."));
+        using (var image = Image.Load(sequentialPath))
+        {
+            var (max, mean, excluded) = JpegDecoderDifferentialTests.Compare(JpegDecoderDifferentialTests.GetSamples(image, maxValue), expected, maxValue);
+            var (allowedMax, allowedMean) = JpegDecoderDifferentialTests.GetTolerance(sampling, precision);
+            Assert.True(max <= allowedMax && mean <= allowedMean && excluded <= 37 * 23 / 20, string.Create(CultureInfo.InvariantCulture, $"{name}: library vs reference decoder max {max}, mean {mean:F4}, {excluded} pixels left out."));
+        }
+
+        var mcusPerRow = sampling is "444" or "gray" ? 5 : 3;
+        foreach (var (coding, restartInterval) in new[] { (JpegEntropyCoding.Huffman, 0), (JpegEntropyCoding.Arithmetic, 0), (JpegEntropyCoding.Arithmetic, 1), (JpegEntropyCoding.Arithmetic, mcusPerRow), (JpegEntropyCoding.Arithmetic, 1000) })
+        {
+            var encoder = new JpegEncoder { Quality = 85, ChromaSubsampling = GetSubsampling(sampling), Process = process, EntropyCoding = coding, RestartInterval = restartInterval, BitDepth = precision, AllowBitDepthReduction = true };
+            var variant = string.Create(CultureInfo.InvariantCulture, $"{name}-{coding}-restart{restartInterval}");
+            var path = await EncodeImageToFileAsync(source, encoder, variant);
+            Assert.Equal(expected, JpegDecoderDifferentialTests.GetSamples(await isoJpeg.DecodeAsync(path, XunitCancellationToken), maxValue));
+            TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{variant}: {new FileInfo(path).Length} bytes, {new FileInfo(sequentialPath).Length} for the sequential Huffman output"));
+        }
+    }
+
+    public static TheoryData<PixelFormat, int, int, JpegEntropyCoding> LosslessCases()
+    {
+        var data = new TheoryData<PixelFormat, int, int, JpegEntropyCoding>();
+        foreach (var coding in new[] { JpegEntropyCoding.Huffman, JpegEntropyCoding.Arithmetic })
+        {
+            for (var predictor = 1; predictor <= 7; predictor++)
+            {
+                data.Add(PixelFormat.Rgb24, 8, predictor, coding);
+                data.Add(PixelFormat.Gray16, 16, predictor, coding);
+            }
+
+            foreach (var (format, precision) in new[] { (PixelFormat.Gray8, 8), (PixelFormat.Rgb48, 16), (PixelFormat.Gray16, 12), (PixelFormat.Rgb48, 10), (PixelFormat.Gray16, 2) })
+            {
+                data.Add(format, precision, 4, coding);
+                data.Add(format, precision, 7, coding);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(LosslessCases))]
+    public async Task LosslessOutputDecodesExactlyWithTheIsoReferenceDecoder(PixelFormat format, int precision, int predictor, JpegEntropyCoding coding)
+    {
+        // The ISO reference decoder returns the samples reduced to the precision exactly, with every predictor, without
+        // and with restart intervals (of one line and of three lines)
+        var isoJpeg = await RequiredTools.IsoJpegAsync();
+        var gray = format is PixelFormat.Gray8 or PixelFormat.Gray16;
+        using var deep = CreateDeepSource(37, 23, gray);
+        using var source = CloneAs(deep, format);
+        var expected = GetReducedSamples(source, precision);
+        foreach (var restartInterval in new[] { 0, 37, 3 * 37 })
+        {
+            var encoder = new JpegEncoder { Process = JpegEncodingProcess.Lossless, BitDepth = precision, LosslessPredictor = predictor, EntropyCoding = coding, RestartInterval = restartInterval };
+            var name = string.Create(CultureInfo.InvariantCulture, $"lossless-{format}-{precision}-p{predictor}-{coding}-restart{restartInterval}");
+            var path = await EncodeImageToFileAsync(source, encoder, name);
+            var output = path + ".pnm";
+            await isoJpeg.DecodeToFileAsync(path, output, XunitCancellationToken);
+            var (maxValue, samples) = ReadPnm(await File.ReadAllBytesAsync(output, XunitCancellationToken));
+            Assert.Equal((1 << precision) - 1, maxValue);
+            Assert.Equal(expected, samples);
+            TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{name}: {new FileInfo(path).Length} bytes"));
+        }
+    }
+
+    /// <summary>
+    /// Creates a 16-bit image whose samples use all their bits: the photo-like pattern scaled to 16 bits, with noise in the
+    /// low bits so that 12-bit and 16-bit output differ from 8-bit output.
+    /// </summary>
+    private static Image CreateDeepSource(int width, int height, bool gray)
+    {
+        var pattern = JpegTestPatterns.PhotoLike(width, height, seed: 7);
+        if (gray)
+        {
+            pattern = JpegTestPatterns.ToGray(pattern);
+        }
+
+        var channels = gray ? 1 : 3;
+        var bytes = pattern.Span;
+        var samples = new ushort[width * height * channels];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            samples[i] = (ushort)Math.Min(65535, (bytes[i] * 257) + (int)((uint)(i * 2654435761u) >> 24));
+        }
+
+        var data = System.Runtime.InteropServices.MemoryMarshal.AsBytes(samples.AsSpan());
+        return gray ? Image.ImportPixelBytes<Gray16>(data, width, height) : Image.ImportPixelBytes<Rgb48>(data, width, height);
+    }
+
+    private static Image CloneAs(Image image, PixelFormat format) => format switch
+    {
+        PixelFormat.Gray8 => image.CloneAs<Gray8>(),
+        PixelFormat.Gray16 => image.CloneAs<Gray16>(),
+        PixelFormat.Rgb24 => image.CloneAs<Rgb24>(),
+        _ => image.CloneAs<Rgb48>(),
+    };
+
+    /// <summary>Gets the samples of an image reduced to a precision with nearest rounding, as the encoder reduces them.</summary>
+    private static int[] GetReducedSamples(Image image, int precision)
+    {
+        ushort[] samples;
+        if (image.PixelFormat is PixelFormat.Gray8 or PixelFormat.Gray16)
+        {
+            using var gray = image.CloneAs<Gray16>();
+            var pixels = new Gray16[image.Width * image.Height];
+            gray.Frames[0].CopyPixelDataTo(pixels);
+            samples = [.. pixels.Select(pixel => pixel.Value)];
+        }
+        else
+        {
+            using var color = image.CloneAs<Rgb48>();
+            var pixels = new Rgb48[image.Width * image.Height];
+            color.Frames[0].CopyPixelDataTo(pixels);
+            samples = [.. pixels.SelectMany(pixel => new[] { pixel.R, pixel.G, pixel.B })];
+        }
+
+        var maximum = (1L << precision) - 1;
+        return [.. samples.Select(sample => (int)(((sample * maximum) + 32767) / 65535))];
+    }
+
+    /// <summary>Reads the samples of a binary PGM or PPM file as they are stored (big-endian above 8 bits).</summary>
+    private static (int MaxValue, int[] Samples) ReadPnm(byte[] data)
+    {
+        var offset = 0;
+        var tokens = new int[4];
+        for (var token = 0; token < 4; token++)
+        {
+            while (data[offset] is (byte)' ' or (byte)'\n' or (byte)'\r' or (byte)'\t')
+            {
+                offset++;
+            }
+
+            var start = offset;
+            while (data[offset] is not ((byte)' ' or (byte)'\n' or (byte)'\r' or (byte)'\t'))
+            {
+                offset++;
+            }
+
+            tokens[token] = token == 0 ? data[start + 1] - '0' : int.Parse(data.AsSpan(start, offset - start), CultureInfo.InvariantCulture);
+        }
+
+        offset++;
+        var channels = tokens[0] == 6 ? 3 : 1;
+        var maxValue = tokens[3];
+        var samples = new int[tokens[1] * tokens[2] * channels];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            samples[i] = maxValue > 255 ? (data[offset + (2 * i)] << 8) | data[offset + (2 * i) + 1] : data[offset + i];
+        }
+
+        return (maxValue, samples);
+    }
+
+    private static async Task<FullPath> EncodeImageToFileAsync(Image image, JpegEncoder encoder, string name)
+    {
+        var path = InteropSettings.GetArtifactsDirectory(nameof(JpegEncoderInteropTests)) / (name + ".jpg");
+        await image.SaveAsync(path, encoder, XunitCancellationToken);
+        return path;
+    }
+
     private static JpegChromaSubsampling GetSubsampling(string sampling) => sampling switch
     {
         "444" => JpegChromaSubsampling.Ratio444,

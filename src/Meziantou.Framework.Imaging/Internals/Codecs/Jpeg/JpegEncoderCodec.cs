@@ -10,13 +10,17 @@ using Meziantou.Framework.Imaging.Formats;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The JPEG encoder registration: 8-bit Huffman JPEG, baseline sequential (SOF0) or progressive (SOF2), grayscale or
-/// YCbCr, written by one streaming session.
+/// The JPEG encoder registration: DCT-based JPEG of 8-bit or 12-bit samples, sequential (SOF0, SOF1, or SOF9 with
+/// arithmetic coding) or progressive (SOF2, SOF10), grayscale or YCbCr, written by one streaming session; lossless JPEG
+/// (SOF3, SOF11) is written by <see cref="JpegLosslessEncoderSession"/>.
 /// </summary>
 internal sealed class JpegEncoderCodec : ImageEncoderCodec
 {
     /// <summary>The worst-case size of one entropy-coded block: DC (at most 11 + 11 bits) and 63 AC coefficients (at most 16 + 10 bits each), doubled for byte stuffing.</summary>
     internal const int MaxBlockBytes = 2 * ((22 + (63 * 26) + 7) / 8);
+
+    /// <summary>The worst-case size of one entropy-coded block of 12-bit samples: DC (at most 16 + 15 bits) and 63 AC coefficients (at most 16 + 14 bits each), doubled for byte stuffing.</summary>
+    internal const int MaxWideBlockBytes = 2 * ((31 + (63 * 30) + 7) / 8);
 
     public static JpegEncoderCodec Instance { get; } = new();
 
@@ -32,7 +36,36 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     public override ImageEncoderSession CreateSession(ImageEncoderSessionOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return new Session(options);
+        return ((JpegEncoder)options.Encoder).Process == JpegEncodingProcess.Lossless ? new JpegLosslessEncoderSession(options) : new Session(options);
+    }
+
+    /// <summary>
+    /// Gets the sample precision of an output, and checks that the pixels may be reduced to it: an explicit
+    /// <see cref="JpegEncoder.BitDepth"/>, or <see cref="JpegEncoder.AllowBitDepthReduction"/> for the default precision.
+    /// </summary>
+    /// <param name="encoder">The settings.</param>
+    /// <param name="pixelFormat">The pixel format of the frames.</param>
+    /// <param name="options">The name of the parameter of the session options, for the exceptions.</param>
+    /// <returns>The precision: 8 or 12 bits for the DCT processes, 2 to 16 bits for the lossless one.</returns>
+    /// <exception cref="ArgumentException">The precision is not one of the process.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixels are deeper than the default precision and no reduction is allowed.</exception>
+    internal static int GetPrecision(JpegEncoder encoder, PixelFormat pixelFormat, string options)
+    {
+        var sourceBits = PixelFormats.GetBitsPerComponent(pixelFormat);
+        var lossless = encoder.Process == JpegEncodingProcess.Lossless;
+        if (encoder.BitDepth is { } bitDepth)
+        {
+            if (!lossless && bitDepth is not (8 or 12))
+                throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"A JPEG DCT process stores 8-bit or 12-bit samples, not {bitDepth}-bit ones: set JpegEncoder.BitDepth to 8 or 12, or use JpegEncodingProcess.Lossless."), options);
+
+            return bitDepth;
+        }
+
+        var precision = lossless ? Math.Min(sourceBits, 16) : 8;
+        if (sourceBits > precision && !encoder.AllowBitDepthReduction)
+            throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"JPEG output stores {precision}-bit samples, so encoding {pixelFormat} pixels would discard precision. Set JpegEncoder.AllowBitDepthReduction to reduce the samples to {precision} bits (nearest rounding), set JpegEncoder.BitDepth, or convert the image explicitly with CloneAs."), ImageFormat.Jpeg, "Bit depth reduction");
+
+        return precision;
     }
 
     private static uint[] CreateValueBits()
@@ -1034,7 +1067,10 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         private const byte MarkerSoi = 0xD8;
         private const byte MarkerEoi = 0xD9;
         private const byte MarkerSof0 = 0xC0;
+        private const byte MarkerSof1 = 0xC1;
         private const byte MarkerSof2 = 0xC2;
+        private const byte MarkerSof9 = 0xC9;
+        private const byte MarkerSof10 = 0xCA;
         private const byte MarkerDht = 0xC4;
         private const byte MarkerDqt = 0xDB;
         private const byte MarkerSos = 0xDA;
@@ -1045,6 +1081,13 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         private const int MaxRestartBytes = 4;
 
         private readonly JpegEncoder _encoder;
+
+        // The sample precision (8 or 12 bits); 12-bit samples have wider coefficients, coded by the "wide" methods
+        private readonly int _precision;
+        private readonly bool _wide;
+        private readonly int _maxBlockBytes;
+        private readonly JpegArithmeticScanEncoder? _arithmetic;
+        private readonly bool _progressive;
         private readonly PixelFormat _sourceFormat;
         private readonly PixelFormat _workFormat;
         private readonly Rgba64? _background;
@@ -1115,15 +1158,18 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         {
             _encoder = (JpegEncoder)options.Encoder;
             _sourceFormat = options.PixelFormat;
-            if (PixelFormats.GetBitsPerComponent(_sourceFormat) > 8 && !_encoder.AllowBitDepthReduction)
-                throw new UnsupportedImageFeatureException($"JPEG output stores 8-bit samples, so encoding {_sourceFormat} pixels would discard precision. Set JpegEncoder.AllowBitDepthReduction to reduce the samples to 8 bits (nearest rounding), or convert the image explicitly with CloneAs.", ImageFormat.Jpeg, "Bit depth reduction");
+            _precision = GetPrecision(_encoder, _sourceFormat, nameof(options));
+            _wide = _precision > 8;
+            _maxBlockBytes = _wide ? MaxWideBlockBytes : MaxBlockBytes;
+            _arithmetic = _encoder.EntropyCoding == JpegEntropyCoding.Arithmetic ? new JpegArithmeticScanEncoder() : null;
 
             (_grayscale, _h, _v) = GetSampling(_sourceFormat, _encoder.ChromaSubsampling);
             _background = PixelFormats.HasAlpha(_sourceFormat) ? _encoder.BackgroundColor : null;
 
             // Without a background every pixel is opaque (ValidateFrame): RGBA and BGRA rows are read as they are stored,
-            // their alpha ignored, instead of being converted to RGB first
-            _workFormat = _grayscale ? PixelFormat.Gray8
+            // their alpha ignored, instead of being converted to RGB first. 12-bit samples are reduced from 16-bit rows
+            _workFormat = _wide ? (_grayscale ? PixelFormat.Gray16 : PixelFormat.Rgb48)
+                : _grayscale ? PixelFormat.Gray8
                 : _sourceFormat is PixelFormat.Rgba32 or PixelFormat.Bgra32 && _background is null ? _sourceFormat
                 : PixelFormat.Rgb24;
             _width = options.CanvasSize.Width;
@@ -1139,9 +1185,12 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
             // Optimized tables need the symbols of the whole scan before its DHT segment: the coefficients of the whole
             // image are kept, as for the progressive process
+            // (always with arithmetic coding, and for 12-bit samples, which the typical tables of Annex K do not cover)
             var progressive = _encoder.Process == JpegEncodingProcess.Progressive;
-            var keepCoefficients = progressive || _encoder.OptimizeHuffmanTables;
-            if (!progressive && _encoder.OptimizeHuffmanTables)
+            _progressive = progressive;
+            var optimize = _arithmetic is null && !progressive && (_encoder.OptimizeHuffmanTables || _wide);
+            var keepCoefficients = progressive || optimize || _arithmetic is not null;
+            if (optimize)
             {
                 _histograms = [new uint[256], new uint[256], new uint[256], new uint[256]];
             }
@@ -1193,7 +1242,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 if (keepCoefficients)
                 {
                     // The grid of a scan of one component alone only has the blocks that hold samples of the image
-                    _scanEncoder = progressive ? new JpegProgressiveScanEncoder() : null;
+                    _scanEncoder = progressive && _arithmetic is null ? new JpegProgressiveScanEncoder() : null;
                     _coefficientPlanes = new JpegCoefficientPlane?[_grayscale ? 1 : 3];
                     _coefficientPlanes[0] = new JpegCoefficientPlane(scope, _mcusX * _h, _mcusY * _v, (_width + 7) / 8, (_height + 7) / 8);
                     for (var c = 1; c < _coefficientPlanes.Length; c++)
@@ -1219,6 +1268,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             Transform,
             ProgressiveScans,
             OptimizedScan,
+            ArithmeticScans,
             Trailer,
         }
 
@@ -1300,7 +1350,13 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
                 case Step.Tables:
                     WriteQuantizationTables(output);
-                    WriteFrameHeader(output, _scanEncoder is not null ? MarkerSof2 : MarkerSof0);
+                    WriteFrameHeader(output, (_arithmetic is not null, _progressive) switch
+                    {
+                        (true, true) => MarkerSof10,
+                        (true, false) => MarkerSof9,
+                        (false, true) => MarkerSof2,
+                        _ => _wide ? MarkerSof1 : MarkerSof0,
+                    });
                     WriteRestartInterval(output);
                     if (_coefficientPlanes.Length > 0)
                     {
@@ -1324,8 +1380,16 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     _frame = null;
                     ReleaseSampleBuffers();
                     _mcuRow = 0;
-                    _step = _scanEncoder is not null ? Step.ProgressiveScans : Step.OptimizedScan;
+                    _step = _arithmetic is not null ? Step.ArithmeticScans : _scanEncoder is not null ? Step.ProgressiveScans : Step.OptimizedScan;
                     return false;
+
+                case Step.ArithmeticScans:
+                    if (!EncodeArithmeticScans(output))
+                        return false;
+
+                    _step = Step.None;
+                    ReleaseBuffers();
+                    return true;
 
                 case Step.ProgressiveScans:
                     if (!EncodeProgressiveScans(output))
@@ -1428,7 +1492,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             // Precision 8, height, width, components (identifiers 1, 2, 3 as JFIF requires; chroma 1x1, tables 1)
             var count = _grayscale ? 1 : 3;
             Span<byte> payload = stackalloc byte[6 + (3 * 3)];
-            payload[0] = 8;
+            payload[0] = (byte)_precision;
             BinaryPrimitives.WriteUInt16BigEndian(payload[1..], (ushort)_height);
             BinaryPrimitives.WriteUInt16BigEndian(payload[3..], (ushort)_width);
             payload[5] = (byte)count;
@@ -1600,6 +1664,14 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             var coefficients = worker.Coefficients.AsSpan();
             var samples = GetBlockSamples(worker, mcuX, block, out var stride);
             var divisors = block < _h * _v ? _luminanceDivisors : _chrominanceDivisors;
+            if (_wide)
+            {
+                // The vector transforms clamp the coefficients to the ranges of 8-bit samples
+                JpegForwardDct.TransformAndQuantizeWide(samples, stride, divisors, worker.Scratch, coefficients);
+                NarrowCoefficients(coefficients, destination);
+                return;
+            }
+
             if (JpegForwardDct.UsesAvx512)
             {
                 JpegForwardDct.TransformAndQuantizeAvx512(samples, stride, divisors, destination);
@@ -1775,6 +1847,100 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 ref position);
         }
 
+        /// <summary>
+        /// Writes the scans of an arithmetic-coded frame (SOF9: one interleaved scan of every coefficient; SOF10: the scans
+        /// of the progressive script) from the coefficients of the whole image, one MCU row per call: the scan header, then
+        /// the entropy-coded data of each row with its restart markers.
+        /// </summary>
+        /// <returns><see langword="true"/> when the last scan is written.</returns>
+        private bool EncodeArithmeticScans(ImageOutputBuffer output)
+        {
+            var arithmetic = _arithmetic!;
+            var scanCount = _progressive ? JpegProgressiveScanEncoder.GetScript(_grayscale).Length : 1;
+            var scan = _progressive
+                ? JpegProgressiveScanEncoder.GetScript(_grayscale)[_scanIndex]
+                : new JpegProgressiveScan(FirstComponent: 0, ComponentCount: (byte)(_grayscale ? 1 : 3), Ss: 0, Se: 63, Ah: 0, Al: 0);
+            if (_scanPass == ScanPass.None)
+            {
+                WriteScanHeader(output, scan.FirstComponent, scan.ComponentCount, dcTables: scan.Ss == 0 && scan.Ah == 0, acTables: scan.Se > 0, scan.Ss, scan.Se, (scan.Ah << 4) | scan.Al);
+                arithmetic.BeginScan();
+                _scanPass = ScanPass.Write;
+                _mcuRow = 0;
+                return false;
+            }
+
+            var interleaved = scan.ComponentCount > 1;
+            var rows = interleaved ? _mcusY : _coefficientPlanes[scan.FirstComponent]!.ScanBlockRows;
+            var columns = interleaved ? _mcusX : _coefficientPlanes[scan.FirstComponent]!.ScanBlocksPerLine;
+            for (var x = 0; x < columns; x++)
+            {
+                var index = (_mcuRow * columns) + x;
+                if (IsRestartDue(index))
+                {
+                    arithmetic.Restart(GetRestartNumber(index));
+                }
+
+                if (interleaved)
+                {
+                    for (var block = 0; block < _blocksPerMcu; block++)
+                    {
+                        var component = block < _h * _v ? 0 : block - (_h * _v) + 1;
+                        EncodeArithmeticBlock(arithmetic, scan, component, GetPlaneBlock(_mcuRow, x, block));
+                    }
+                }
+                else
+                {
+                    EncodeArithmeticBlock(arithmetic, scan, scan.FirstComponent, _coefficientPlanes[scan.FirstComponent]!.GetBlock(_mcuRow, x));
+                }
+            }
+
+            _mcuRow++;
+            var last = _mcuRow == rows;
+            if (last)
+            {
+                arithmetic.EndScan();
+            }
+
+            output.Write(arithmetic.Encoder.Output);
+            arithmetic.Encoder.ClearOutput();
+            CancellationToken.ThrowIfCancellationRequested();
+            if (!last)
+                return false;
+
+            _mcuRow = 0;
+            _scanPass = ScanPass.None;
+            _scanIndex++;
+            return _scanIndex == scanCount;
+        }
+
+        /// <summary>Codes the part of a block that belongs to an arithmetic-coded scan.</summary>
+        private static void EncodeArithmeticBlock(JpegArithmeticScanEncoder arithmetic, JpegProgressiveScan scan, int component, ReadOnlySpan<short> block)
+        {
+            if (scan.Ss == 0 && scan.Se == 63)
+            {
+                arithmetic.EncodeSequentialBlock(component, block);
+            }
+            else if (scan.Ss == 0)
+            {
+                if (scan.Ah == 0)
+                {
+                    arithmetic.EncodeDcFirst(component, block, scan.Al);
+                }
+                else
+                {
+                    arithmetic.EncodeDcRefinement(block, scan.Al);
+                }
+            }
+            else if (scan.Ah == 0)
+            {
+                arithmetic.EncodeAcFirst(JpegArithmeticScanEncoder.GetTableIndex(component), block, scan.Ss, scan.Se, scan.Al);
+            }
+            else
+            {
+                arithmetic.EncodeAcRefinement(JpegArithmeticScanEncoder.GetTableIndex(component), block, scan.Ss, scan.Se, scan.Al);
+            }
+        }
+
         /// <summary>Writes the DHT segment of the tables of a progressive scan: DC tables for a DC first scan, the AC table of the component otherwise.</summary>
         private void WriteProgressiveTables(ImageOutputBuffer output, JpegProgressiveScan scan)
         {
@@ -1870,7 +2036,14 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 var offset = r * _planeStride;
                 if (_grayscale)
                 {
-                    ConvertGrayRow(source, planeY.Slice(offset, _planeWidth));
+                    if (_wide)
+                    {
+                        ConvertWideGrayRow(source, planeY.Slice(offset, _planeWidth));
+                    }
+                    else
+                    {
+                        ConvertGrayRow(source, planeY.Slice(offset, _planeWidth));
+                    }
                 }
                 else if (_h == 1)
                 {
@@ -1893,6 +2066,40 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         /// <summary>Gets the distance between two rows of a plane: an odd number of 16 samples (64-byte cache lines).</summary>
         private static int GetPlaneStride(int width) => (((width + 15) / 16) | 1) * 16;
 
+        /// <summary>Converts a row of 16-bit gray samples to level-shifted 12-bit samples (<see cref="ReduceToTwelveBits"/>, minus 2048).</summary>
+        private void ConvertWideGrayRow(ReadOnlySpan<byte> source, Span<float> luma)
+        {
+            var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(source));
+            for (var x = 0; x < _width; x++)
+            {
+                luma[x] = ReduceToTwelveBits(samples[x]) - 2048f;
+            }
+
+            luma[_width..].Fill(luma[_width - 1]);
+        }
+
+        /// <summary>
+        /// Converts a row of 16-bit RGB samples, reduced to 12 bits (<see cref="ReduceToTwelveBits"/>), to level-shifted
+        /// JFIF 1.02 full-range YCbCr samples with the formula of the 8-bit samples (<see cref="ConvertColorRow"/>) and a
+        /// level shift of 2048, computed in double precision and stored unrounded (single precision).
+        /// </summary>
+        private void ConvertWideColorRow(ReadOnlySpan<ushort> source, Span<float> luma, Span<float> blue, Span<float> red)
+        {
+            for (var x = 0; x < _width; x++)
+            {
+                double r = ReduceToTwelveBits(source[3 * x]);
+                double g = ReduceToTwelveBits(source[(3 * x) + 1]);
+                double b = ReduceToTwelveBits(source[(3 * x) + 2]);
+                var y = (0.299 * r) + (0.587 * g) + (0.114 * b);
+                luma[x] = (float)(y - 2048);
+                blue[x] = (float)((b - y) * BlueScale);
+                red[x] = (float)((r - y) * RedScale);
+            }
+        }
+
+        /// <summary>Reduces a 16-bit sample to 12 bits, with nearest rounding: 8-bit samples scaled to 16 bits (times 257) give their exact 12-bit scaling.</summary>
+        private static int ReduceToTwelveBits(ushort value) => ((value * 4095) + 32767) / 65535;
+
         private void ConvertGrayRow(ReadOnlySpan<byte> source, Span<float> luma)
         {
             for (var x = 0; x < _width; x++)
@@ -1913,6 +2120,9 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         {
             switch (_workFormat)
             {
+                case PixelFormat.Rgb48:
+                    ConvertWideColorRow(unsafe(MemoryMarshal.Cast<byte, ushort>(source)), luma, blue, red);
+                    break;
                 case PixelFormat.Rgba32:
                     ConvertRgbToYCbCr<JpegRgbaLayout>(source, luma[.._width], blue[.._width], red[.._width]);
                     break;
@@ -1940,13 +2150,13 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         private int EncodeMcuRun(ImageOutputBuffer output, bool stored)
         {
             var index = (_mcuRow * _mcusX) + _mcuX;
-            var count = Math.Min(_mcusX - _mcuX, Math.Max(1, BaselineRunBytes / (_blocksPerMcu * MaxBlockBytes)));
+            var count = Math.Min(_mcusX - _mcuX, Math.Max(1, BaselineRunBytes / (_blocksPerMcu * _maxBlockBytes)));
             if (_restartInterval > 0)
             {
                 count = Math.Min(count, _restartInterval - (index % _restartInterval));
             }
 
-            var span = output.GetSpan((count * _blocksPerMcu * MaxBlockBytes) + MaxRestartBytes + JpegBlockBitWriter.SpeculativeBytes);
+            var span = output.GetSpan((count * _blocksPerMcu * _maxBlockBytes) + MaxRestartBytes + JpegBlockBitWriter.SpeculativeBytes);
             var position = 0;
             WriteRestartIfDue(index, span, ref position);
             var writer = new JpegBlockBitWriter(span, position, _bits);
@@ -2041,7 +2251,16 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             for (var block = 0; block < _blocksPerMcu; block++)
             {
                 var component = block < _h * _v ? 0 : block - (_h * _v) + 1;
-                EncodeBlock<short>(ref writer, GetStoredBlock(row, mcuX, block), component, component == 0 ? _luminanceDc : _chrominanceDc!, component == 0 ? _luminanceAc : _chrominanceAc!);
+                var dc = component == 0 ? _luminanceDc : _chrominanceDc!;
+                var ac = component == 0 ? _luminanceAc : _chrominanceAc!;
+                if (_wide)
+                {
+                    EncodeWideBlock(ref writer, GetStoredBlock(row, mcuX, block), component, dc, ac);
+                }
+                else
+                {
+                    EncodeBlock<short>(ref writer, GetStoredBlock(row, mcuX, block), component, dc, ac);
+                }
             }
         }
 
@@ -2074,7 +2293,15 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
                         for (var block = 0; block < _blocksPerMcu; block++)
                         {
-                            CountBlock(GetStoredBlock(_mcuRow, mcuX, block), block < _h * _v ? 0 : block - (_h * _v) + 1);
+                            var component = block < _h * _v ? 0 : block - (_h * _v) + 1;
+                            if (_wide)
+                            {
+                                CountWideBlock(GetStoredBlock(_mcuRow, mcuX, block), component);
+                            }
+                            else
+                            {
+                                CountBlock(GetStoredBlock(_mcuRow, mcuX, block), component);
+                            }
                         }
                     }
 
@@ -2159,6 +2386,87 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 ac[0x00]++;
             }
         }
+
+        /// <summary>Counts the symbols that <see cref="EncodeWideBlock"/> codes for a block of 12-bit samples.</summary>
+        private void CountWideBlock(ReadOnlySpan<short> coefficients, int component)
+        {
+            var dc = _histograms[component == 0 ? 0 : 2];
+            var ac = _histograms[component == 0 ? 1 : 3];
+            var difference = coefficients[0] - _predictions[component];
+            _predictions[component] = coefficients[0];
+            dc[GetWideSizeCategory(difference)]++;
+            var mask = GetNonZeroMask(coefficients) & ~1UL;
+            var previous = 0;
+            while (mask != 0)
+            {
+                var k = BitOperations.TrailingZeroCount(mask);
+                mask &= mask - 1;
+                var run = k - previous - 1;
+                while (run > 15)
+                {
+                    ac[0xF0]++;
+                    run -= 16;
+                }
+
+                ac[(run << 4) | GetWideSizeCategory(coefficients[k])]++;
+                previous = k;
+            }
+
+            if (previous < 63)
+            {
+                ac[0x00]++;
+            }
+        }
+
+        /// <summary>
+        /// Codes the quantized coefficients of a block of 12-bit samples (zig-zag order), as <see cref="EncodeBlock"/> does:
+        /// DC differences have up to 16 bits and AC coefficients up to 15, beyond the <see cref="ValueBits"/> table.
+        /// </summary>
+        private void EncodeWideBlock(ref JpegBlockBitWriter writer, ReadOnlySpan<short> coefficients, int component, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
+        {
+            var difference = coefficients[0] - _predictions[component];
+            _predictions[component] = coefficients[0];
+            WriteWideValue(ref writer, dc, symbolHigh: 0, difference);
+            var mask = GetNonZeroMask(coefficients) & ~1UL;
+            var previous = 0;
+            while (mask != 0)
+            {
+                var k = BitOperations.TrailingZeroCount(mask);
+                mask &= mask - 1;
+                var run = k - previous - 1;
+                while (run > 15)
+                {
+                    WriteSymbol(ref writer, ac, 0xF0);
+                    run -= 16;
+                }
+
+                WriteWideValue(ref writer, ac, run, coefficients[k]);
+                previous = k;
+            }
+
+            if (previous < 63)
+            {
+                WriteSymbol(ref writer, ac, 0x00);
+            }
+        }
+
+        /// <summary>Writes the symbol <c>(symbolHigh &lt;&lt; 4) | SSSS</c> for a value of any size up to 15 bits, then its SSSS additional bits (negative values as <c>value - 1</c>).</summary>
+        private static void WriteWideValue(ref JpegBlockBitWriter writer, JpegHuffmanEncoder table, int symbolHigh, int value)
+        {
+            var size = GetWideSizeCategory(value);
+            var symbol = (symbolHigh << 4) | size;
+            var code = table.GetPackedCode(symbol);
+            if (code == 0)
+                ThrowMissingCode(symbol);
+
+            var bits = (uint)(value < 0 ? value - 1 : value) & ((1u << size) - 1);
+
+            // At most 16 + 15 bits
+            writer.Write(((code >> 5) << size) | bits, (int)(code & 31) + size);
+        }
+
+        /// <summary>Gets the size category SSSS of any value: the number of bits of its magnitude (T.81 F.1.2.1.1).</summary>
+        private static int GetWideSizeCategory(int value) => 32 - BitOperations.LeadingZeroCount((uint)Math.Abs(value));
 
         /// <summary>Gets the size category SSSS of a value, -2047 to 2047: the number of bits of its magnitude (T.81 F.1.2.1.1).</summary>
         private static int GetSizeCategory(int value) => (int)(ValueBits[value + 2048] >> 16);

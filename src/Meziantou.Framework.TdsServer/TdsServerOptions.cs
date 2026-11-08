@@ -91,6 +91,15 @@ public sealed class TdsServerOptions
     /// <summary>Gets or sets the path to a PEM private key file used for TLS.</summary>
     public string? TlsPemPrivateKeyPath { get; set; }
 
+    /// <summary>Gets or sets the callback invoked when a client begins, commits or rolls back a transaction, or creates a savepoint.</summary>
+    /// <remarks>
+    /// The server accepts transaction requests without a handler, so <c>SqlConnection.BeginTransaction</c> works
+    /// even when nothing tracks transactions. Set it to observe the transactions, or to reject a request by
+    /// returning an error. When a connection closes with an active transaction, the handler is called with a
+    /// rollback request whose <see cref="Handler.TdsTransactionContext.IsConnectionClosing"/> is <see langword="true"/>.
+    /// </remarks>
+    public Handler.TdsTransactionDelegate? TransactionHandler { get; set; }
+
     /// <summary>Gets or sets the SQL Server Browser responder options, or <see langword="null"/> to disable the responder.</summary>
     /// <remarks>
     /// The responder answers the SQL Server Resolution Protocol on UDP, so clients can connect with an instance name

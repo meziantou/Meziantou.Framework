@@ -2824,6 +2824,453 @@ public sealed class TdsServerProtocolTests
     }
 
     [Fact]
+    public async Task Documentation_RecordsAffected()
+    {
+        #region TdsServer_RecordsAffected
+        TdsQueryDelegate query = (context, cancellationToken) =>
+        {
+            if (context.CommandText?.StartsWith("UPDATE", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return ValueTask.FromResult(new TdsQueryResult { RecordsAffected = 3 });
+            }
+
+            return ValueTask.FromResult(new TdsQueryResult());
+        };
+        #endregion
+
+        await using var connection = await OpenConnectionAsync(query);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE customers SET Name = 'Bob'";
+        Assert.Equal(3, await command.ExecuteNonQueryAsync());
+
+        command.CommandText = "DELETE FROM nothing";
+        Assert.Equal(-1, await command.ExecuteNonQueryAsync());
+    }
+
+    [Fact]
+    public async Task Documentation_OutputParameters()
+    {
+        #region TdsServer_OutputParameters
+        TdsQueryDelegate query = (context, cancellationToken) =>
+        {
+            if (context.RequestType == TdsQueryRequestType.Rpc && string.Equals(context.ProcedureName, "CreateCustomer", StringComparison.OrdinalIgnoreCase))
+            {
+                var result = new TdsQueryResult
+                {
+                    RecordsAffected = 1,
+                    ReturnValue = 0,
+                };
+
+                result.OutputParameters.Add(new TdsOutputParameter("@id", TdsColumnType.Int32, 42));
+                return ValueTask.FromResult(result);
+            }
+
+            return ValueTask.FromResult(new TdsQueryResult());
+        };
+        #endregion
+
+        await using var connection = await OpenConnectionAsync(query);
+
+        #region TdsServer_ReadOutputParameters
+        await using var command = connection.CreateCommand();
+        command.CommandType = CommandType.StoredProcedure;
+        command.CommandText = "CreateCustomer";
+        command.Parameters.Add(new SqlParameter("@name", SqlDbType.NVarChar, 100) { Value = "Alice" });
+        var id = command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Direction = ParameterDirection.Output });
+        var returnValue = command.Parameters.Add(new SqlParameter("@return", SqlDbType.Int) { Direction = ParameterDirection.ReturnValue });
+
+        var recordsAffected = await command.ExecuteNonQueryAsync();
+        Assert.Equal(1, recordsAffected);
+        Assert.Equal(42, id.Value);
+        Assert.Equal(0, returnValue.Value);
+        #endregion
+    }
+
+    [Fact]
+    public async Task SqlClient_ResultSet_RowsAreNotCountedAsRecordsAffected()
+    {
+        var statementCounts = new List<int>();
+        await using var connection = await OpenConnectionAsync((context, cancellationToken) =>
+        {
+            var resultSet = new TdsResultSet();
+            resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Int32));
+            resultSet.Rows.Add([1]);
+            resultSet.Rows.Add([2]);
+
+            var result = new TdsQueryResult();
+            result.ResultSets.Add(resultSet);
+            return ValueTask.FromResult(result);
+        });
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Value FROM numbers";
+        command.StatementCompleted += (sender, e) => statementCounts.Add(e.RecordCount);
+
+        await using (var reader = await command.ExecuteReaderAsync())
+        {
+            Assert.True(await reader.ReadAsync());
+            Assert.True(await reader.ReadAsync());
+            Assert.False(await reader.ReadAsync());
+            Assert.False(await reader.NextResultAsync());
+            Assert.Equal(-1, reader.RecordsAffected);
+        }
+
+        Assert.Equal(-1, await command.ExecuteNonQueryAsync());
+        Assert.Equal([2, 2], statementCounts);
+    }
+
+    [Fact]
+    public async Task SqlClient_ResultSetsFollowedByRecordsAffected_ReturnsBoth()
+    {
+        await using var connection = await OpenConnectionAsync((context, cancellationToken) =>
+        {
+            var result = new TdsQueryResult { RecordsAffected = 5 };
+            for (var i = 0; i < 2; i++)
+            {
+                var resultSet = new TdsResultSet();
+                resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Int32));
+                resultSet.Rows.Add([i]);
+                result.ResultSets.Add(resultSet);
+            }
+
+            return ValueTask.FromResult(result);
+        });
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "UPDATE numbers SET Value = 0 OUTPUT inserted.Value";
+        await using var reader = await command.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(0, reader.GetInt32(0));
+        Assert.True(await reader.NextResultAsync());
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal(1, reader.GetInt32(0));
+        Assert.False(await reader.NextResultAsync());
+        await reader.CloseAsync();
+        Assert.Equal(5, reader.RecordsAffected);
+    }
+
+    [Fact]
+    public async Task SqlClient_StoredProcedure_ResultSetAndOutputParameters()
+    {
+        TdsQueryContext? capturedContext = null;
+        var largeText = new string('x', 20_000);
+        await using var connection = await OpenConnectionAsync((context, cancellationToken) =>
+        {
+            capturedContext = context;
+            var resultSet = new TdsResultSet();
+            resultSet.Columns.Add(new TdsColumn("Name", TdsColumnType.NVarChar));
+            resultSet.Rows.Add(["Alice"]);
+
+            var result = new TdsQueryResult { ReturnValue = 7 };
+            result.ResultSets.Add(resultSet);
+            result.OutputParameters.Add(new TdsOutputParameter("count", TdsColumnType.Int64, 12L));
+            result.OutputParameters.Add(new TdsOutputParameter("@total", TdsColumnType.Decimal, 12.345m));
+            result.OutputParameters.Add(new TdsOutputParameter("@text", TdsColumnType.NVarChar, largeText));
+            result.OutputParameters.Add(new TdsOutputParameter("@missing", TdsColumnType.Guid, DBNull.Value));
+            result.OutputParameters.Add(new TdsOutputParameter("@unknown", TdsColumnType.Int32, 1));
+            return ValueTask.FromResult(result);
+        });
+
+        await using var command = connection.CreateCommand();
+        command.CommandType = CommandType.StoredProcedure;
+        command.CommandText = "GetCustomers";
+        var input = command.Parameters.Add(new SqlParameter("@filter", SqlDbType.NVarChar, 50) { Value = "A%" });
+        var count = command.Parameters.Add(new SqlParameter("@count", SqlDbType.BigInt) { Direction = ParameterDirection.InputOutput, Value = 1L });
+        var total = command.Parameters.Add(new SqlParameter("@total", SqlDbType.Decimal) { Direction = ParameterDirection.Output, Precision = 38, Scale = 3 });
+        var text = command.Parameters.Add(new SqlParameter("@text", SqlDbType.NVarChar, -1) { Direction = ParameterDirection.Output });
+        var missing = command.Parameters.Add(new SqlParameter("@missing", SqlDbType.UniqueIdentifier) { Direction = ParameterDirection.Output });
+        var returnValue = command.Parameters.Add(new SqlParameter("@return", SqlDbType.Int) { Direction = ParameterDirection.ReturnValue });
+
+        await using (var reader = await command.ExecuteReaderAsync())
+        {
+            Assert.True(await reader.ReadAsync());
+            Assert.Equal("Alice", reader.GetString(0));
+            Assert.False(await reader.ReadAsync());
+        }
+
+        Assert.Equal(12L, count.Value);
+        Assert.Equal(12.345m, total.Value);
+        Assert.Equal(largeText, text.Value);
+        Assert.Equal(DBNull.Value, missing.Value);
+        Assert.Equal(7, returnValue.Value);
+        Assert.Equal("A%", input.Value);
+
+        Assert.NotNull(capturedContext);
+        Assert.False(capturedContext.Parameters.Single(parameter => parameter.Name == "@filter").IsOutput);
+        Assert.True(capturedContext.Parameters.Single(parameter => parameter.Name == "@count").IsOutput);
+        Assert.True(capturedContext.Parameters.Single(parameter => parameter.Name == "@total").IsOutput);
+    }
+
+    [Fact]
+    public async Task SqlClient_ParameterizedQuery_OutputParameter()
+    {
+        await using var connection = await OpenConnectionAsync((context, cancellationToken) =>
+        {
+            var result = new TdsQueryResult { RecordsAffected = 1 };
+            if (context.Parameters.FirstOrDefault(parameter => parameter.Name == "@id") is { IsOutput: true })
+            {
+                result.OutputParameters.Add(new TdsOutputParameter("@id", TdsColumnType.Int32, 5));
+            }
+
+            return ValueTask.FromResult(result);
+        });
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "INSERT INTO customers (Name) VALUES (@name); SET @id = SCOPE_IDENTITY()";
+        command.Parameters.Add(new SqlParameter("@name", SqlDbType.NVarChar, 100) { Value = "Alice" });
+        var id = command.Parameters.Add(new SqlParameter("@id", SqlDbType.Int) { Direction = ParameterDirection.Output });
+
+        Assert.Equal(1, await command.ExecuteNonQueryAsync());
+        Assert.Equal(5, id.Value);
+    }
+
+    [Fact]
+    public async Task SqlClient_Transaction_WithoutHandler_CommitsAndRollsBack()
+    {
+        var transactionIds = new List<long?>();
+        await using var connection = await OpenConnectionAsync((context, cancellationToken) =>
+        {
+            transactionIds.Add(context.TransactionId);
+            return ValueTask.FromResult(new TdsQueryResult { RecordsAffected = 1 });
+        });
+
+        await using (var transaction = (SqlTransaction)await connection.BeginTransactionAsync())
+        {
+            await using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "UPDATE customers SET Name = 'Bob'";
+            Assert.Equal(1, await command.ExecuteNonQueryAsync());
+            await transaction.CommitAsync();
+        }
+
+        await using (var transaction = (SqlTransaction)await connection.BeginTransactionAsync(IsolationLevel.Serializable))
+        {
+            await using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = "UPDATE customers SET Name = 'Bob'";
+            Assert.Equal(1, await command.ExecuteNonQueryAsync());
+            await transaction.RollbackAsync();
+        }
+
+        await using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "UPDATE customers SET Name = 'Bob'";
+            Assert.Equal(1, await command.ExecuteNonQueryAsync());
+        }
+
+        Assert.Equal(ConnectionState.Open, connection.State);
+        Assert.HasCount(3, transactionIds);
+        Assert.NotNull(transactionIds[0]);
+        Assert.NotNull(transactionIds[1]);
+        Assert.NotEqual(transactionIds[0], transactionIds[1]);
+        Assert.Null(transactionIds[2]);
+    }
+
+    [Fact]
+    public async Task SqlClient_Mars_SessionsShareTheTransactionOfTheConnection()
+    {
+        var transactionIds = new ConcurrentQueue<long?>();
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            (context, cancellationToken) =>
+            {
+                transactionIds.Enqueue(context.TransactionId);
+                var resultSet = new TdsResultSet();
+                resultSet.Columns.Add(new TdsColumn("Value", TdsColumnType.Int32));
+                resultSet.Rows.Add([1]);
+                resultSet.Rows.Add([2]);
+
+                var result = new TdsQueryResult();
+                result.ResultSets.Add(resultSet);
+                return ValueTask.FromResult(result);
+            });
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, connectTimeout: 30) + ";MultipleActiveResultSets=True");
+        await connection.OpenAsync();
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
+
+        await using var first = connection.CreateCommand();
+        first.Transaction = transaction;
+        first.CommandText = "SELECT Value FROM first";
+        await using var second = connection.CreateCommand();
+        second.Transaction = transaction;
+        second.CommandText = "SELECT Value FROM second";
+
+        await using (var firstReader = await first.ExecuteReaderAsync())
+        await using (var secondReader = await second.ExecuteReaderAsync())
+        {
+            Assert.True(await firstReader.ReadAsync());
+            Assert.True(await secondReader.ReadAsync());
+        }
+
+        await transaction.CommitAsync();
+
+        var ids = transactionIds.ToArray();
+        Assert.HasCount(2, ids);
+        Assert.NotNull(ids[0]);
+        Assert.Equal(ids[0], ids[1]);
+    }
+
+    [Fact]
+    public async Task Documentation_Transactions()
+    {
+        #region TdsServer_Transactions
+        var events = new ConcurrentQueue<string>();
+        var options = new TdsServerOptions();
+        options.TransactionHandler = (context, cancellationToken) =>
+        {
+            events.Enqueue($"{context.RequestType} {context.SavepointName} {context.IsolationLevel}".TrimEnd());
+            if (context.RequestType is TdsTransactionRequestType.Begin && context.IsolationLevel is IsolationLevel.Snapshot)
+            {
+                return ValueTask.FromResult<TdsQueryError?>(new TdsQueryError
+                {
+                    Number = 3952,
+                    Message = "Snapshot isolation transaction failed accessing database 'master' because snapshot isolation is not allowed in this database.",
+                });
+            }
+
+            return ValueTask.FromResult<TdsQueryError?>(null);
+        };
+        #endregion
+
+        options.AddTcpListener(0, IPAddress.Loopback);
+        using var server = new TdsServer(options, (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()), (context, cancellationToken) => ValueTask.FromResult(new TdsQueryResult()));
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        await using var connection = new SqlConnection(CreateConnectionString(port, connectTimeout: 30));
+        await connection.OpenAsync();
+
+        var exception = await Assert.ThrowsAsync<SqlException>(async () => await connection.BeginTransactionAsync(IsolationLevel.Snapshot));
+        Assert.Equal(3952, exception.Number);
+        Assert.Equal(ConnectionState.Open, connection.State);
+
+        await using (var transaction = (SqlTransaction)await connection.BeginTransactionAsync(IsolationLevel.ReadCommitted))
+        {
+            transaction.Save("first");
+            transaction.Save("second");
+            transaction.Rollback("first");
+            transaction.Save("third");
+            Assert.Throws<SqlException>(() => transaction.Rollback("second"));
+            transaction.Commit();
+        }
+
+        Assert.Equal(
+            [
+                "Begin  Snapshot",
+                "Begin  ReadCommitted",
+                "Save first Unspecified",
+                "Save second Unspecified",
+                "Rollback first Unspecified",
+                "Save third Unspecified",
+                "Commit  Unspecified",
+            ],
+            events.ToArray());
+    }
+
+    [Fact]
+    public async Task RawClient_Transaction_RolledBackWhenTheConnectionCloses()
+    {
+        var events = new ConcurrentQueue<TdsTransactionContext>();
+        var closingRollback = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        options.TransactionHandler = (context, cancellationToken) =>
+        {
+            events.Enqueue(context);
+            if (context.IsConnectionClosing)
+            {
+                closingRollback.TrySetResult();
+            }
+
+            return ValueTask.FromResult<TdsQueryError?>(null);
+        };
+
+        var responses = await RawTdsClient.SendTransactionManagerRequestsAsync(options, CreateTransactionManagerPayload(5, [0x02, 0x00]));
+        await closingRollback.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        var response = Assert.Single(responses);
+        Assert.Equal(0xE3, response[0]); // ENVCHANGE
+        Assert.Equal(8, response[3]); // Begin Transaction
+        var transactionId = BinaryPrimitives.ReadInt64LittleEndian(response.AsSpan(5, 8));
+
+        var contexts = events.ToArray();
+        Assert.HasCount(2, contexts);
+        Assert.Equal(TdsTransactionRequestType.Begin, contexts[0].RequestType);
+        Assert.Equal(IsolationLevel.ReadCommitted, contexts[0].IsolationLevel);
+        Assert.Equal(transactionId, contexts[0].TransactionId);
+        Assert.False(contexts[0].IsConnectionClosing);
+        Assert.Equal(TdsTransactionRequestType.Rollback, contexts[1].RequestType);
+        Assert.Equal(transactionId, contexts[1].TransactionId);
+        Assert.True(contexts[1].IsConnectionClosing);
+    }
+
+    [Fact]
+    public async Task RawClient_TransactionManager_InvalidRequests_ReturnErrorsAndKeepTheConnectionOpen()
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        var responses = await RawTdsClient.SendTransactionManagerRequestsAsync(
+            options,
+            CreateTransactionManagerPayload(7, [0x00, 0x00]), // commit without a transaction
+            CreateTransactionManagerPayload(8, [0x00, 0x00]), // rollback without a transaction
+            CreateTransactionManagerPayload(9, [0x02, (byte)'s', 0x00]), // savepoint without a transaction
+            CreateTransactionManagerPayload(0, []), // TM_GET_DTC_ADDRESS
+            CreateTransactionManagerPayload(5, [0x02, 0x04, (byte)'t']), // truncated transaction name
+            CreateTransactionManagerPayload(5, [0x00, 0x00]), // begin
+            CreateTransactionManagerPayload(5, [0x00, 0x00]), // begin while a transaction is active
+            CreateTransactionManagerPayload(8, [0x04, (byte)'s', 0x00, (byte)'p', 0x00, 0x00])); // rollback to an unknown savepoint
+
+        Assert.Equal([3902u, 3903u, 628u, 50001u, 50001u, 0u, 50006u, 6401u], responses.Select(GetErrorNumber).ToArray());
+
+        static uint GetErrorNumber(byte[] response)
+        {
+            return response[0] is 0xAA ? BinaryPrimitives.ReadUInt32LittleEndian(response.AsSpan(3, 4)) : 0u;
+        }
+    }
+
+    private static byte[] CreateTransactionManagerPayload(ushort requestType, byte[] data)
+    {
+        // ALL_HEADERS with a transaction descriptor header, as SqlClient sends it.
+        var payload = new byte[22 + 2 + data.Length];
+        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0, 4), 22);
+        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(4, 4), 18);
+        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(8, 2), 2);
+        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(18, 4), 1);
+        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(22, 2), requestType);
+        data.CopyTo(payload.AsSpan(24));
+        return payload;
+    }
+
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The server is disposed with the connection.")]
+    private static async Task<SqlConnection> OpenConnectionAsync(TdsQueryDelegate query)
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+        var server = new TdsServer(options, (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()), query);
+        var connection = new SqlConnection();
+        connection.Disposed += (sender, e) => server.Dispose();
+        try
+        {
+            await server.StartAsync();
+            connection.ConnectionString = CreateConnectionString(Assert.Single(server.Ports), connectTimeout: 30);
+            await connection.OpenAsync();
+            return connection;
+        }
+        catch
+        {
+            await connection.DisposeAsync();
+            throw;
+        }
+    }
+
+    [Fact]
     public async Task Documentation_BulkLoad()
     {
         #region TdsServer_BulkLoad

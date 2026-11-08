@@ -49,6 +49,7 @@ internal sealed partial class TdsConnectionProcessor
         var writer = new TdsPacketWriter(output, _options.PacketSize);
         SslStream? sslStream = null;
         var usingTls = false;
+        TdsTransactionManager? transactions = null;
         TdsPreLoginNegotiationResult? negotiationResult;
         try
         {
@@ -194,13 +195,15 @@ internal sealed partial class TdsConnectionProcessor
 
             await writer.WriteAsync(TdsPacketType.TabularResult, CreateLoginSuccessResponse(authenticationResult), cancellationToken).ConfigureAwait(false);
 
+            // A transaction belongs to the connection, so the MARS sessions of a connection share it.
+            transactions = new TdsTransactionManager(_options.TransactionHandler, remoteEndPoint, authenticationResult.UserContext);
             if (TdsSmpConnection.IsMarsRequested(preLoginPacket.Payload))
             {
-                await ProcessMarsSessionsAsync(input, output, remoteEndPoint, authenticationResult, cancellationToken).ConfigureAwait(false);
+                await ProcessMarsSessionsAsync(input, output, remoteEndPoint, authenticationResult, transactions, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
-            await ProcessRequestsAsync(input, writer, remoteEndPoint, authenticationResult, cancellationToken).ConfigureAwait(false);
+            await ProcessRequestsAsync(input, writer, remoteEndPoint, authenticationResult, transactions, cancellationToken).ConfigureAwait(false);
         }
         catch (AuthenticationException ex)
         {
@@ -208,6 +211,8 @@ internal sealed partial class TdsConnectionProcessor
         }
         finally
         {
+            await AbortTransactionAsync(transactions).ConfigureAwait(false);
+            transactions?.Dispose();
             if (sslStream is not null)
             {
                 await sslStream.DisposeAsync().ConfigureAwait(false);
@@ -216,7 +221,7 @@ internal sealed partial class TdsConnectionProcessor
     }
 
     /// <summary>Serves the requests of one session: the connection, or one MARS session of the connection.</summary>
-    private async Task ProcessRequestsAsync(Stream input, TdsPacketWriter writer, EndPoint remoteEndPoint, TdsAuthenticationResult authenticationResult, CancellationToken cancellationToken)
+    private async Task ProcessRequestsAsync(Stream input, TdsPacketWriter writer, EndPoint remoteEndPoint, TdsAuthenticationResult authenticationResult, TdsTransactionManager transactions, CancellationToken cancellationToken)
     {
         Task<TdsPacket?>? pendingRead = null;
         var session = new TdsSessionState();
@@ -253,6 +258,12 @@ internal sealed partial class TdsConnectionProcessor
                     continue;
                 }
 
+                if (packet.Type == TdsPacketType.TransactionManager)
+                {
+                    await writer.WriteAsync(TdsPacketType.TabularResult, await ProcessTransactionRequestAsync(transactions, packet, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+
                 if (packet.Type != TdsPacketType.SqlBatch && packet.Type != TdsPacketType.Rpc && packet.Type != TdsPacketType.BulkLoad)
                 {
                     await writer.WriteAsync(TdsPacketType.TabularResult, TdsResponseSerializer.CreateProtocolError(50001, $"Unsupported packet type: {packet.Type}"), cancellationToken).ConfigureAwait(false);
@@ -265,7 +276,7 @@ internal sealed partial class TdsConnectionProcessor
                 var requestCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 try
                 {
-                    var executionTask = ExecuteRequestAsync(packet, remoteEndPoint, authenticationResult.UserContext, session, writer.PayloadSizePerPacket, requestCancellationTokenSource.Token);
+                    var executionTask = ExecuteRequestAsync(packet, remoteEndPoint, authenticationResult.UserContext, session, transactions.TransactionId, writer.PayloadSizePerPacket, requestCancellationTokenSource.Token);
                     var attentionReceived = false;
                     while (!executionTask.IsCompleted && !attentionReceived && bufferedPacket is null)
                     {
@@ -337,8 +348,41 @@ internal sealed partial class TdsConnectionProcessor
         }
     }
 
-    private async Task<byte[]> ExecuteRequestAsync(TdsPacket packet, EndPoint remoteEndPoint, ClaimsPrincipal? userContext, TdsSessionState session, int payloadSizePerPacket, CancellationToken cancellationToken)
+    private async Task<byte[]> ProcessTransactionRequestAsync(TdsTransactionManager transactions, TdsPacket packet, CancellationToken cancellationToken)
     {
+        try
+        {
+            return await transactions.ProcessAsync(packet.Payload, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogError(ex, "Unhandled exception in transaction handler");
+            return TdsResponseSerializer.CreateTransactionResponse(endedTransactionId: null, committed: false, begunTransactionId: null, new TdsQueryError
+            {
+                Number = 50002,
+                Message = "Unhandled transaction handler exception",
+            });
+        }
+    }
+
+    private async ValueTask AbortTransactionAsync(TdsTransactionManager? transactions)
+    {
+        if (transactions is null)
+            return;
+
+        try
+        {
+            await transactions.AbortAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled exception in transaction handler while rolling back the transaction of a closed connection");
+        }
+    }
+
+    private async Task<byte[]> ExecuteRequestAsync(TdsPacket packet, EndPoint remoteEndPoint, ClaimsPrincipal? userContext, TdsSessionState session, long? transactionId, int payloadSizePerPacket, CancellationToken cancellationToken)
+    {
+        var isRpc = packet.Type == TdsPacketType.Rpc;
         try
         {
             if (packet.Type == TdsPacketType.BulkLoad)
@@ -346,7 +390,7 @@ internal sealed partial class TdsConnectionProcessor
                 return await ExecuteBulkLoadAsync(packet, remoteEndPoint, userContext, session, payloadSizePerPacket, cancellationToken).ConfigureAwait(false);
             }
 
-            var queryContext = TdsQueryRequestParser.Parse(packet, remoteEndPoint, userContext);
+            var queryContext = TdsQueryRequestParser.Parse(packet, remoteEndPoint, userContext, transactionId);
             if (await TryExecuteBulkCopyCommandAsync(queryContext, session, payloadSizePerPacket, cancellationToken).ConfigureAwait(false) is { } bulkCopyResponse)
             {
                 return bulkCopyResponse;
@@ -355,7 +399,8 @@ internal sealed partial class TdsConnectionProcessor
             TdsQueryResult queryResult;
             try
             {
-                queryResult = await _queryHandler(queryContext, cancellationToken).ConfigureAwait(false);
+                queryResult = TryGetTransactionLevelQueryResult(queryContext)
+                    ?? await _queryHandler(queryContext, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -373,7 +418,7 @@ internal sealed partial class TdsConnectionProcessor
                 });
             }
 
-            return TdsResponseSerializer.CreateQueryResponse(queryResult, payloadSizePerPacket);
+            return TdsResponseSerializer.CreateQueryResponse(queryResult, payloadSizePerPacket, isRpc);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -390,6 +435,26 @@ internal sealed partial class TdsConnectionProcessor
                 }),
                 payloadSizePerPacket);
         }
+    }
+
+    /// <summary>
+    /// SqlClient reads <c>@@TRANCOUNT</c> with <c>set @out = @@trancount</c> before it creates a savepoint or rolls
+    /// back, and treats the transaction as gone when the value is not positive. The server answers it, since it is
+    /// the one tracking the transaction.
+    /// </summary>
+    private static TdsQueryResult? TryGetTransactionLevelQueryResult(TdsQueryContext context)
+    {
+        if (context.RequestType is not TdsQueryRequestType.Rpc
+            || !string.Equals(context.ProcedureName, "sp_executesql", StringComparison.OrdinalIgnoreCase)
+            || context.Parameters is not [var statement, _, { IsOutput: true } output]
+            || !string.Equals(statement.AsString()?.Trim(), $"set {output.Name} = @@trancount", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var result = new TdsQueryResult();
+        result.OutputParameters.Add(new TdsOutputParameter(output.Name, TdsColumnType.Int32, context.TransactionId is null ? 0 : 1));
+        return result;
     }
 
     /// <summary>

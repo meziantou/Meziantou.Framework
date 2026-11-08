@@ -752,7 +752,8 @@ public static partial class TdsServerFuzzTargets
                 }
                 else
                 {
-                    FuzzAssert.True(message.Length >= 13 && message[^13] == 0xFD, "A tabular result must end with a DONE token");
+                    // RPC responses end with DONEPROC, the others with DONE.
+                    FuzzAssert.True(message.Length >= 13 && message[^13] is 0xFD or 0xFE, "A tabular result must end with a DONE or DONEPROC token");
                     _ = TdsWire.ReadTabularResult(message, packetSize - 8);
                 }
 

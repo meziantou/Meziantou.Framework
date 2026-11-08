@@ -104,9 +104,10 @@ Assert.True(cost > 0);
 <!-- endref -->
 
 `IcuWordDictionary.CreateLineBreakDictionary()` creates a `LineBreakDictionary` of Meziantou.Framework.Unicode with the
-words of Thai, Lao, Khmer and Burmese, for `Unicode.EnumerateLineBreaks` or the `LineBreakDictionary` of the text layout
-options of Meziantou.Framework.Imaging. `LineBreakDictionary` segments a text with its own rule: its breaks are close to
-the ones of the engines of ICU, but not always the same.
+words of Thai, Lao, Khmer and Burmese, for `Unicode.EnumerateLineBreaks`. `LineBreakDictionary` segments a text with its
+own rule: its breaks are close to the ones of the engines of ICU, but not always the same. The text layout of
+Meziantou.Framework.Imaging uses the engines themselves: its lines of Thai, Lao, Khmer and Burmese break as the line
+break iterator of ICU breaks them.
 
 ## Licenses
 

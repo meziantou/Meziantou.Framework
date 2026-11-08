@@ -88,13 +88,24 @@ public sealed class TextLayoutOptions
 
     /// <summary>
     /// Gets the words of the languages that are written without spaces between words (Thai, Lao, Khmer, Burmese), or
-    /// <see langword="null"/> (the default).
+    /// <see langword="null"/> (the default) for the word lists of ICU.
     /// </summary>
     /// <remarks>
-    /// The Unicode line breaking algorithm leaves the text of these scripts to a dictionary: without one, a line of
-    /// such text is only broken at a space, or anywhere when <see cref="OverflowWrap"/> allows it. With one, a line can
-    /// also end before each word the dictionary finds, as <see cref="LineBreakDictionary"/> specifies. A dictionary
-    /// can hold the words of several languages. No word list is provided with the library.
+    /// <para>
+    /// The Unicode line breaking algorithm leaves the text of these scripts to a dictionary. By default, a line of such
+    /// text can end before each of its words, as the line break iterator of ICU finds them: the words of a run of the
+    /// letters of one of these scripts are those of the dictionary break engines of ICU and of its word lists
+    /// (<see cref="IcuDictionaryBreakEngine"/>, in Meziantou.Framework.Unicode.Dictionaries). The other scripts that
+    /// are written without spaces, such as Tai Tham, are only broken at a space, or anywhere when
+    /// <see cref="OverflowWrap"/> allows it.
+    /// </para>
+    /// <para>
+    /// A dictionary replaces the word lists of ICU: a line can then end before each word the dictionary finds, as
+    /// <see cref="LineBreakDictionary"/> specifies, and a dictionary without words, such as
+    /// <c>LineBreakDictionary.Parse("")</c>, only breaks such text at a space. A dictionary can hold the words of
+    /// several languages. With <see cref="TextWordBreak.BreakAll"/> or <see cref="TextLineBreak.Anywhere"/>, a line
+    /// already breaks between any two letters.
+    /// </para>
     /// </remarks>
     public LineBreakDictionary? LineBreakDictionary { get; init; }
 

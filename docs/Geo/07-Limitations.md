@@ -10,11 +10,13 @@ description: What the library does not do: coordinate systems, curved edges, buf
   [Transform](cref:Meziantou.Framework.Geo.GeoGeometry.Transform) applies a conversion you provide, such as the inverse
   of the Mercator projection for Web Mercator data; convert other projected data, such as a shapefile in Lambert 93 or
   UTM, with another tool first.
-- **Straight edges in degrees.** [GeoPolygon.Contains](cref:Meziantou.Framework.Geo.GeoPolygon.Contains),
-  [GetBounds](cref:Meziantou.Framework.Geo.GeoGeometry.GetBounds),
-  [LabelPosition](cref:Meziantou.Framework.Geo.GeoGeometry.LabelPosition) and the
-  [geometry operations](06-GeometryOperations.md) treat the edges as straight lines on an equirectangular map, not as
-  great circles, and do not handle the shapes that cross the 180th meridian.
+- **Straight edges for the geometry operations.** The [geometry operations](06-GeometryOperations.md) and
+  [LabelPosition](cref:Meziantou.Framework.Geo.GeoGeometry.LabelPosition) treat the edges as straight lines on an
+  equirectangular map. Only [GeoPolygon.Contains](cref:Meziantou.Framework.Geo.GeoPolygon.Contains) and
+  [GetBounds](cref:Meziantou.Framework.Geo.GeoGeometry.GetBounds) offer
+  [great-circle edges](03-FeaturesAndGeometries.md#great-circles), computed on a sphere, not on the ellipsoid. Split
+  the shapes that cross the 180th meridian with
+  [SplitAtAntimeridian](cref:Meziantou.Framework.Geo.GeoGeometry.SplitAtAntimeridian) before the operations.
 - **No buffers.** The [geometry operations](06-GeometryOperations.md) repair, clip, simplify and combine polygons,
   but do not compute buffers, distances between geometries or convex hulls.
 

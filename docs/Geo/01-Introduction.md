@@ -12,12 +12,13 @@ dependency outside .NET, and it supports trimming.
   polylines, and FlatGeobuf. Every reader returns the same model, so converting a file is a read and a write. See
   [formats](04-Formats/01-Overview.md).
 - **Work with features and geometries**: points, lines, polygons and their collections, with their properties; get
-  their bounds, a position to label them, distances, and whether a position is inside an area. See
+  their bounds, a position to label them, distances, and whether a position is inside an area, with straight or
+  great-circle edges and across the 180th meridian. See
   [features and geometries](03-FeaturesAndGeometries.md).
 - **Project positions** onto a plane to draw a map, with the equirectangular, Mercator, Equal Earth, Albers and
   azimuthal equidistant projections. See [projections](05-Projections.md).
-- **Transform geometries**: repair invalid polygons, clip to a box, simplify, combine polygons (union, intersection,
-  difference), and convert positions from another coordinate system. See
+- **Transform geometries**: repair invalid polygons, clip to a box, simplify, split along the 180th meridian, combine
+  polygons (union, intersection, difference), and convert positions from another coordinate system. See
   [geometry operations](06-GeometryOperations.md).
 - **Draw maps**: `Meziantou.Framework.Charts` draws the features as choropleths and points on maps. See
   [maps](../Charts/04-Gallery/09-Maps.md).

@@ -6,7 +6,6 @@
     <Description>Immutable XML syntax tree with diagnostics, editing helpers, and XPath navigation.</Description>
     <PackageTags>xml, syntax-tree, cst, parser, xpath</PackageTags>
     <Version>4.0.6</Version>
-    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,7 +6,6 @@
     <Description>A Roslyn-style immutable INI syntax tree: green and red nodes, trivia, diagnostics, annotations, and roundtrip-safe parsing.</Description>
     <PackageTags>ini, syntax-tree, cst, parser, diagnostics</PackageTags>
     <Version>1.0.5</Version>
-    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup>

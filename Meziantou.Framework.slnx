@@ -42,7 +42,6 @@
     <Project Path="samples/Meziantou.Framework.NodeJs.Samples/Meziantou.Framework.NodeJs.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.NtpClient.Samples/Meziantou.Framework.NtpClient.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.NuGetPackageValidation.Samples/Meziantou.Framework.NuGetPackageValidation.Samples.csproj" />
-    <Project Path="samples/Meziantou.Framework.PostgreSqlServer.Samples/Meziantou.Framework.PostgreSqlServer.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.ProcessWrapper.Samples/Meziantou.Framework.ProcessWrapper.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.PublicApiGenerator.Samples/Meziantou.Framework.PublicApiGenerator.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.Roslyn.Samples/Meziantou.Framework.Roslyn.Samples.csproj" />
@@ -429,7 +428,6 @@
     <Project Path="src/Meziantou.Framework.OpenTelemetryCollector/Meziantou.Framework.OpenTelemetryCollector.csproj" />
     <Project Path="src/Meziantou.Framework.Pdf/Meziantou.Framework.Pdf.csproj" />
     <Project Path="src/Meziantou.Framework.PooledMemoryStream/Meziantou.Framework.PooledMemoryStream.csproj" />
-    <Project Path="src/Meziantou.Framework.PostgreSqlServer/Meziantou.Framework.PostgreSqlServer.csproj" />
     <Project Path="src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
     <Project Path="src/Meziantou.Framework.PublicApiGenerator.MSBuild/Meziantou.Framework.PublicApiGenerator.MSBuild.csproj" />
     <Project Path="src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj" />
@@ -628,7 +626,6 @@
     <Project Path="tests/Meziantou.Framework.Pdf.TestHarness/Meziantou.Framework.Pdf.TestHarness.csproj" />
     <Project Path="tests/Meziantou.Framework.Pdf.Tests/Meziantou.Framework.Pdf.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.PooledMemoryStream.Tests/Meziantou.Framework.PooledMemoryStream.Tests.csproj" />
-    <Project Path="tests/Meziantou.Framework.PostgreSqlServer.Tests/Meziantou.Framework.PostgreSqlServer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.ProcessWrapper.Tests/Meziantou.Framework.ProcessWrapper.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests/Meziantou.Framework.PublicApiGenerator.MSBuild.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj" />
@@ -750,7 +747,6 @@
     <Project Path="fuzz/Meziantou.Framework.Markdown.Fuzz/Meziantou.Framework.Markdown.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.MediaTags.Fuzz/Meziantou.Framework.MediaTags.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Pdf.FuzzTests/Meziantou.Framework.Pdf.FuzzTests.csproj" />
-    <Project Path="fuzz/Meziantou.Framework.PostgreSqlServer.Fuzz/Meziantou.Framework.PostgreSqlServer.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.RobotsTxt.Fuzz/Meziantou.Framework.RobotsTxt.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Scheduling.Fuzz/Meziantou.Framework.Scheduling.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz.csproj" />

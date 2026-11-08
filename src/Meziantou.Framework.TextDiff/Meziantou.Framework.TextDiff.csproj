@@ -4,7 +4,6 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>3.0.5</Version>
-    <IsTrimmable>true</IsTrimmable>
     <Description>Text diffing library supporting line, word, and character-level comparison with configurable options</Description>
     <PackageTags>diff, text-diff, comparison, patch</PackageTags>
   </PropertyGroup>

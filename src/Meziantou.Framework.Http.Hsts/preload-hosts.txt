@@ -1,6 +1,6 @@
 # Chromium HSTS preload hosts compiled into this package. Generated; do not edit.
 # One host per line, sorted. A trailing tab and '+' marks include_subdomains.
-# Source: https://raw.githubusercontent.com/chromium/chromium/2e8c19f4f602c8756a42d6d5a5c5c37a69facfab/net/http/transport_security_state_static.json
+# Source: https://raw.githubusercontent.com/chromium/chromium/ae2874435a43aeef98ad724bcd90b06d07d1d8c8/net/http/transport_security_state_static.json
 amazon	+
 android	+
 app	+
@@ -86059,6 +86059,7 @@ youthrules.gov	+
 youthsadda.com	+
 youthtraining.pt	+
 youtube.com	+
+youtube.kz	+
 youtubekids.com	+
 youyouqiu.com	+
 youyuxs.com	+

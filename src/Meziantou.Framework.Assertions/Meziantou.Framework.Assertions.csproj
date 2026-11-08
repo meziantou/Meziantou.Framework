@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Assertions</RootNamespace>
     <Version>2.0.13</Version>
     <Description>Assertion helpers for .NET tests</Description>

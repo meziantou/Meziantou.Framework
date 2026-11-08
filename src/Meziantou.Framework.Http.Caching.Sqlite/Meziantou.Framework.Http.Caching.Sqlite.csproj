@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>2.0.12</Version>
-    <IsTrimmable>true</IsTrimmable>
     <Description>Provide SQLite persistence provider for Meziantou.Framework.Http.Caching</Description>
     <PackageTags>http, caching, sqlite, httpclient</PackageTags>
   </PropertyGroup>

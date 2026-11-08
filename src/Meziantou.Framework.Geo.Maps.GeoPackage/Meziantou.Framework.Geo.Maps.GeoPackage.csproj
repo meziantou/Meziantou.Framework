@@ -3,8 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Geo.Maps.GeoPackage</RootNamespace>
-    <Version>1.0.0</Version>
-    <IsTrimmable>true</IsTrimmable>
+    <Version>1.0.1</Version>
     <Description>Reads and writes the map bundles of Meziantou.Framework.Geo.Maps as GeoPackage files: one SQLite file per region, with a table and a spatial index per layer, that QGIS and GDAL open.</Description>
     <PackageTags>geo;gis;map;maps;offline;geopackage;gpkg;sqlite;openstreetmap;natural-earth</PackageTags>
 

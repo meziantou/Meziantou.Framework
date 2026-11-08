@@ -6,7 +6,6 @@
     <Description>A Roslyn-style immutable JSON syntax tree: green and red nodes, trivia, diagnostics, annotations, and editing that keeps the text you did not touch.</Description>
     <PackageTags>json, syntax-tree, cst, parser, diagnostics</PackageTags>
     <Version>4.0.8</Version>
-    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup>

@@ -54,6 +54,12 @@ Assert.Equal((345, 100), (image.Width, image.Height));
 ```
 <!-- endref -->
 
+Data Matrix, PDF417 and Aztec symbols ([Barcode2D](cref:Meziantou.Framework.Barcodes.Barcode2D)) have the same methods, with
+[Barcode2DDrawingOptions](cref:Meziantou.Framework.Imaging.Barcodes.Barcode2DDrawingOptions):
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_Barcode2DToImage;format=md-fenced-code-block;dedent=true -->
+<!-- endref -->
+
 Save the image like any other: see [Saving images](../Imaging/05-LoadingAndSaving/04-SavingImages.md).
 
 ## Paint with any brush

@@ -52,8 +52,9 @@ public static class BarcodesFuzzTargets
         "01095212345432131725010110ABC123", "10ABC\u001D21XY",
     ];
 
-    // Characters that switch the encodation modes: C40 and Text (uppercase, lowercase), X12 (*>\r), EDIFACT (@^_), Base 256
-    private static readonly string[] Barcode2DTokens = ["*", ">", "\r", "@", "^", "_", "ABC", "abc", "a1b2", "\u001D", "\u00e9", "\u0080", "\u00ff", "0000"];
+    // Characters that switch the encodation modes of Data Matrix: C40 and Text (uppercase, lowercase), X12 (*>\r), EDIFACT
+    // (@^_), Base 256; of PDF417: the text sub-modes, numeric runs of 13 digits; of Aztec: the punctuation pairs
+    private static readonly string[] Barcode2DTokens = ["*", ">", "\r", "@", "^", "_", "ABC", "abc", "a1b2", "\u001D", "\u00e9", "\u0080", "\u00ff", "0000", ". ", ", ", ": ", "\t", "\n", ";", "{", "|", "1234567890123"];
 
     private static readonly string[] Code39Alphabet = ["0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%"];
 

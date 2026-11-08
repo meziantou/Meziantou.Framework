@@ -90,6 +90,7 @@ public class DataMatrixTests
         DocumentationImages.AssertPng("DataMatrix", Barcode2D.CreateDataMatrix("https://www.meziantou.net").ToPng(options));
         DocumentationImages.AssertPng("DataMatrixRectangle", Barcode2D.CreateDataMatrix("ABC-12345", new DataMatrixOptions { Shape = DataMatrixShape.Rectangle }).ToPng(options));
         DocumentationImages.AssertPng("Aztec", Barcode2D.CreateAztec("https://www.meziantou.net").ToPng(options));
+        DocumentationImages.AssertPng("Pdf417", Barcode2D.CreatePdf417("https://www.meziantou.net").ToPng(new Barcode2DPngOptions { ModuleSize = 2, QuietZoneModules = 2 }));
     }
 
     [Fact]

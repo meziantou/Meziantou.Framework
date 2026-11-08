@@ -1,6 +1,6 @@
 # Meziantou.Framework.Barcodes
 
-QR and barcode generation library with SVG and PNG renderers, plus a console renderer for QR codes. Implements QR code specifications from scratch with support for standard QR, Micro QR, and Rectangular Micro QR (rMQR) codes, and supports Code 39 / Code 128 linear barcodes.
+QR and barcode generation library with SVG and PNG renderers, plus a console renderer for QR codes. Implements QR code specifications from scratch with support for standard QR, Micro QR, and Rectangular Micro QR (rMQR) codes, Data Matrix (including GS1 Data Matrix), PDF417 and Aztec codes, and linear barcodes from Code 39 to ITF.
 
 ## Supported QR Code Types
 
@@ -9,6 +9,15 @@ QR and barcode generation library with SVG and PNG renderers, plus a console ren
 | Standard QR | `QRCode.Create(...)` | 21x21 to 177x177 | ISO/IEC 18004, versions 1-40 |
 | Micro QR | `QRCode.CreateMicroQR(...)` | 11x11 to 17x17 | ISO/IEC 18004, versions M1-M4 |
 | rMQR | `QRCode.CreateRMQR(...)` | Rectangular (width > height) | ISO/IEC 23941 |
+
+## Supported 2D Barcode Types
+
+| Type | Method | Sizes | Description |
+|------|--------|-------|-------------|
+| Data Matrix | `Barcode2D.CreateDataMatrix(...)` | 10x10 to 144x144, rectangular 8x18 to 16x48 | ISO/IEC 16022 ECC 200, with automatic switching between the encodation schemes |
+| GS1 Data Matrix | `Barcode2D.CreateGs1DataMatrix(...)` | Same as Data Matrix | GS1 element strings, with the leading FNC1 and the FNC1 separators |
+| PDF417 | `Barcode2D.CreatePdf417(...)` | 3 to 90 rows, 1 to 30 columns | ISO/IEC 15438, error correction levels 0 to 8 |
+| Aztec | `Barcode2D.CreateAztec(...)` | 15x15 to 151x151 | ISO/IEC 24778, compact and full-range symbols |
 
 ## Supported Barcode Types
 
@@ -78,6 +87,17 @@ Assert.Equal("4006381333931", ean13.Text);
 Assert.Equal("036000291452 12", upcA.Text);
 Assert.Equal("A40156B", codabar.Text);
 ```
+<!-- endref -->
+
+### Generate 2D barcodes (Data Matrix, PDF417, Aztec)
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/DataMatrixTests.cs;region=Barcode2D_DataMatrix;format=md-fenced-code-block;dedent=true -->
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/Pdf417Tests.cs;region=Barcode2D_Pdf417;format=md-fenced-code-block;dedent=true -->
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/AztecTests.cs;region=Barcode2D_Aztec;format=md-fenced-code-block;dedent=true -->
 <!-- endref -->
 
 ### Render as SVG

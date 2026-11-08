@@ -17,9 +17,13 @@ namespace Meziantou.Framework.Barcodes;
 public sealed class AztecOptions
 {
     /// <summary>
-    /// Gets or sets the minimum percentage of the data codewords added as error correction codewords, from 5 to 95. The
-    /// default is 23, which ISO/IEC 24778 recommends (the symbol also gets 3 more codewords).
+    /// Gets or sets the minimum percentage of the codewords of the symbol that are error correction codewords, from 5 to 95.
+    /// The symbol also gets 3 more error correction codewords. The default is 23, which ISO/IEC 24778 recommends.
     /// </summary>
+    /// <remarks>
+    /// The percentage is of the capacity of the symbol, as in ISO/IEC 24778: with 50, at least half of the codewords and 3 more
+    /// codewords correct errors, so the data takes less than half of the symbol.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is less than 5 or greater than 95.</exception>
     public int ErrorCorrectionPercent
     {
@@ -42,7 +46,11 @@ public sealed class AztecOptions
     /// Gets or sets the exact number of layers, from 1 to 32 (1 to 4 for a compact symbol), or <see langword="null"/> for the
     /// smallest number that holds the data.
     /// </summary>
-    /// <remarks>The data must still fit with <see cref="ErrorCorrectionPercent"/>. The error correction codewords fill the space the data leaves, which can be more.</remarks>
+    /// <remarks>
+    /// The data must still fit with <see cref="ErrorCorrectionPercent"/>. The error correction codewords fill the space the
+    /// data leaves, which can be more. When <see cref="Compact"/> is <see langword="null"/>, a compact symbol is used for 1 to 4
+    /// layers when the data fits in it, a full-range symbol otherwise.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is less than 1 or greater than 32.</exception>
     public int? Layers
     {

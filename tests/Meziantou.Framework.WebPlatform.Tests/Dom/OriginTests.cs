@@ -18,6 +18,11 @@ public sealed class OriginTests
     [InlineData("a.b.ck", "b.ck", "a.b.ck")]
     [InlineData("www.example.com.", "com.", "example.com.")]
     [InlineData("xn--mlauted-m2a.example", "example", "xn--mlauted-m2a.example")]
+    [InlineData("a.b.kawasaki.jp", "b.kawasaki.jp", "a.b.kawasaki.jp")]
+    [InlineData("b.kawasaki.jp", "b.kawasaki.jp", null)]
+    [InlineData("www.city.kawasaki.jp", "kawasaki.jp", "city.kawasaki.jp")]
+    [InlineData("city.kawasaki.jp.", "kawasaki.jp.", "city.kawasaki.jp.")]
+    [InlineData("a.example.unknown-tld", "unknown-tld", "example.unknown-tld")]
     public void PublicSuffixAndRegistrableDomain(string host, string publicSuffix, string? registrableDomain)
     {
         var parsed = HostParser.Parse(host)!.Value;

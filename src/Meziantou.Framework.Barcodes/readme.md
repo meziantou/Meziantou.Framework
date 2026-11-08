@@ -92,12 +92,54 @@ Assert.Equal("A40156B", codabar.Text);
 ### Generate 2D barcodes (Data Matrix, PDF417, Aztec)
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/DataMatrixTests.cs;region=Barcode2D_DataMatrix;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The smallest square symbol that holds the data
+var dataMatrix = Barcode2D.CreateDataMatrix("https://www.meziantou.net");
+Assert.Equal((Barcode2DType.DataMatrix, 22, 22), (dataMatrix.Type, dataMatrix.Width, dataMatrix.Height));
+
+// A rectangular symbol, for a narrow space
+var rectangle = Barcode2D.CreateDataMatrix("ABC-12345", new DataMatrixOptions { Shape = DataMatrixShape.Rectangle });
+Assert.Equal((32, 8), (rectangle.Width, rectangle.Height));
+
+// A symbol of an exact size: the data is padded
+var fixedSize = Barcode2D.CreateDataMatrix("42", new DataMatrixOptions { Height = 24, Width = 24 });
+Assert.Equal((24, 24), (fixedSize.Width, fixedSize.Height));
+
+// Binary data
+var binary = Barcode2D.CreateDataMatrix([0x00, 0xFF, 0x10, 0x80]);
+Assert.Equal((14, 14), (binary.Width, binary.Height));
+```
 <!-- endref -->
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/Pdf417Tests.cs;region=Barcode2D_Pdf417;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new Pdf417Options
+{
+    Columns = 4,       // 4 data columns: 17 × (4 + 4) + 1 = 137 modules wide
+    SecurityLevel = 3, // 16 error correction codewords
+    RowHeight = 3,     // each row of the symbol is 3 modules high
+};
+var pdf417 = Barcode2D.CreatePdf417("Hello, PDF417!", options);
+
+Assert.Equal(Barcode2DType.Pdf417, pdf417.Type);
+Assert.Equal(137, pdf417.Width);
+Assert.Equal(21, pdf417.Height); // 7 rows of 3 modules
+string svg = pdf417.ToSvg();
+```
 <!-- endref -->
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/AztecTests.cs;region=Barcode2D_Aztec;format=md-fenced-code-block;dedent=true -->
+```csharp
+var barcode = Barcode2D.CreateAztec("Hello, World!", new AztecOptions
+{
+    ErrorCorrectionPercent = 50, // 50% of the symbol and 3 codewords are error correction
+    Compact = true, // 1 to 4 layers: 15 × 15 to 27 × 27 modules
+});
+
+Assert.Equal(Barcode2DType.Aztec, barcode.Type);
+Assert.Equal(19, barcode.Width);
+Assert.Equal(19, barcode.Height);
+```
 <!-- endref -->
 
 ### Render as SVG

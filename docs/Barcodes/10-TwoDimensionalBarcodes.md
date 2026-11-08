@@ -27,6 +27,23 @@ tells readers so. Each method also has an overload that takes bytes, encoded as 
 the encodation schemes of the standard (ASCII, C40, Text, X12, EDIFACT and Base 256) to keep the symbol small:
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/DataMatrixTests.cs;region=Barcode2D_DataMatrix;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The smallest square symbol that holds the data
+var dataMatrix = Barcode2D.CreateDataMatrix("https://www.meziantou.net");
+Assert.Equal((Barcode2DType.DataMatrix, 22, 22), (dataMatrix.Type, dataMatrix.Width, dataMatrix.Height));
+
+// A rectangular symbol, for a narrow space
+var rectangle = Barcode2D.CreateDataMatrix("ABC-12345", new DataMatrixOptions { Shape = DataMatrixShape.Rectangle });
+Assert.Equal((32, 8), (rectangle.Width, rectangle.Height));
+
+// A symbol of an exact size: the data is padded
+var fixedSize = Barcode2D.CreateDataMatrix("42", new DataMatrixOptions { Height = 24, Width = 24 });
+Assert.Equal((24, 24), (fixedSize.Width, fixedSize.Height));
+
+// Binary data
+var binary = Barcode2D.CreateDataMatrix([0x00, 0xFF, 0x10, 0x80]);
+Assert.Equal((14, 14), (binary.Width, binary.Height));
+```
 <!-- endref -->
 
 ![A square Data Matrix symbol, with a solid border on its left and bottom sides](images/DataMatrix.png)
@@ -48,6 +65,15 @@ Data that does not fit in the largest allowed size throws an `InvalidOperationEx
 with the FNC1 that identifies GS1 data, and a FNC1 separates an element of variable length from the next one:
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/DataMatrixTests.cs;region=Barcode2D_Gs1DataMatrix;format=md-fenced-code-block;dedent=true -->
+```csharp
+// GTIN, expiration date, batch and serial number: a FNC1 separates the batch, of variable length, from the serial number
+var gs1 = Barcode2D.CreateGs1DataMatrix(
+    new Gs1Element("01", "09521234543213"),
+    new Gs1Element("17", "250101"),
+    new Gs1Element("10", "ABC123"),
+    new Gs1Element("21", "XYZ"));
+Assert.Equal((Barcode2DType.DataMatrix, 22, 22), (gs1.Type, gs1.Width, gs1.Height));
+```
 <!-- endref -->
 
 A reader returns the data with the separators as the group separator character (U+001D), and the symbology identifier
@@ -59,6 +85,20 @@ A PDF417 symbol is a stack of rows. [Pdf417Options](cref:Meziantou.Framework.Bar
 and the height of the rows:
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/Pdf417Tests.cs;region=Barcode2D_Pdf417;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new Pdf417Options
+{
+    Columns = 4,       // 4 data columns: 17 × (4 + 4) + 1 = 137 modules wide
+    SecurityLevel = 3, // 16 error correction codewords
+    RowHeight = 3,     // each row of the symbol is 3 modules high
+};
+var pdf417 = Barcode2D.CreatePdf417("Hello, PDF417!", options);
+
+Assert.Equal(Barcode2DType.Pdf417, pdf417.Type);
+Assert.Equal(137, pdf417.Width);
+Assert.Equal(21, pdf417.Height); // 7 rows of 3 modules
+string svg = pdf417.ToSvg();
+```
 <!-- endref -->
 
 ![A PDF417 symbol: rows of bars between a start pattern and a stop pattern](images/Pdf417.png)
@@ -80,6 +120,17 @@ An Aztec symbol has a bullseye at its center, so it needs no quiet zone. [AztecO
 and the size:
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/AztecTests.cs;region=Barcode2D_Aztec;format=md-fenced-code-block;dedent=true -->
+```csharp
+var barcode = Barcode2D.CreateAztec("Hello, World!", new AztecOptions
+{
+    ErrorCorrectionPercent = 50, // 50% of the symbol and 3 codewords are error correction
+    Compact = true, // 1 to 4 layers: 15 × 15 to 27 × 27 modules
+});
+
+Assert.Equal(Barcode2DType.Aztec, barcode.Type);
+Assert.Equal(19, barcode.Width);
+Assert.Equal(19, barcode.Height);
+```
 <!-- endref -->
 
 ![An Aztec symbol, with a square bullseye at its center](images/Aztec.png)
@@ -98,6 +149,23 @@ With the default error correction, the largest symbol holds 3,832 digits, 3,067 
 a PNG file:
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/DataMatrixTests.cs;region=Barcode2D_Render;format=md-fenced-code-block;dedent=true -->
+```csharp
+var barcode = Barcode2D.CreateDataMatrix("https://www.meziantou.net");
+
+// SVG: a viewBox of (22 + 2 × 2) × 4 units, a rectangle of the light color and a path of the dark modules
+var svg = barcode.ToSvg(new Barcode2DSvgOptions { ModuleSize = 4, QuietZoneModules = 2 });
+Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 104 104\">", svg);
+
+// PNG: the bytes of a file, to save with File.WriteAllBytes("datamatrix.png", png)
+var png = barcode.ToPng(new Barcode2DPngOptions
+{
+    ModuleSize = 6,
+    QuietZoneModules = 2,
+    DarkColor = Color.FromRgb(0x1f, 0x29, 0x37),
+    LightColor = Color.White,
+});
+Assert.Equal([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], png[..8]);
+```
 <!-- endref -->
 
 - [ModuleSize](cref:Meziantou.Framework.Barcodes.Barcode2DPngOptions.ModuleSize) is 4 by default.

@@ -58,6 +58,20 @@ Data Matrix, PDF417 and Aztec symbols ([Barcode2D](cref:Meziantou.Framework.Barc
 [Barcode2DDrawingOptions](cref:Meziantou.Framework.Imaging.Barcodes.Barcode2DDrawingOptions):
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_Barcode2DToImage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var dataMatrix = Barcode2D.CreateDataMatrix("https://www.meziantou.net");
+
+// Default options: 4 pixels per module and a 2-module quiet zone
+using var image = dataMatrix.ToImage();
+Assert.Equal((104, 104), (image.Width, image.Height));
+
+// Draw a PDF417 symbol at the bottom of a ticket
+var pdf417 = Barcode2D.CreatePdf417("TICKET 0042", new Pdf417Options { Columns = 3 });
+var options = new Barcode2DDrawingOptions { ModuleSize = 2 };
+var size = Barcode2DImageRenderer.MeasureBarcode2D(pdf417, options);
+using var ticket = new Image<Rgba32>(400, 200, Colors.White);
+ticket.Draw(canvas => canvas.DrawBarcode2D(pdf417, new PointD((400 - size.Width) / 2, 200 - 16 - size.Height), options));
+```
 <!-- endref -->
 
 Save the image like any other: see [Saving images](../Imaging/05-LoadingAndSaving/04-SavingImages.md).

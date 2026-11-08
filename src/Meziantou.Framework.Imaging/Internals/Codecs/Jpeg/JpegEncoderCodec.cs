@@ -32,6 +32,17 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     public override ImageEncoderSession CreateSession(ImageEncoderSessionOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
+        if (options.Encoder is JpegEncoder { GainMap: { } gainMap } encoder)
+        {
+            // The gain map image keeps the metadata policy of the encoder: its ICC profile describes the alternate rendition
+            return GainMapEncoderSession.Create(
+                options,
+                gainMap,
+                encoder.MetadataHandling,
+                static options => new Session(options),
+                (output, primary, gainMapFile) => JpegGainMapAssembler.Write(output, primary.Span, gainMapFile, gainMap.Metadata));
+        }
+
         return new Session(options);
     }
 

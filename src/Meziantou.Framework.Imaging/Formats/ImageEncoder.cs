@@ -20,15 +20,17 @@ public abstract class ImageEncoder
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Formats.MetadataHandling"/>.</exception>
     public MetadataHandling MetadataHandling
     {
-        get;
+        get => _metadataHandling;
         init
         {
             if (!Enum.IsDefined(value))
                 throw new ArgumentOutOfRangeException(nameof(value), value, "The metadata handling is not valid.");
 
-            field = value;
+            _metadataHandling = value;
         }
     }
+
+    private MetadataHandling _metadataHandling;
 
     /// <summary>
     /// Gets the conversion that reduces floating-point pixels (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) to 16-bit
@@ -59,6 +61,25 @@ public abstract class ImageEncoder
     /// <see cref="FloatingPointConversion"/> is not used.
     /// </summary>
     internal virtual bool StoresFloatingPointSamples => false;
+
+    /// <summary>
+    /// Creates a copy of the settings that writes the image of a gain map: the same settings, without gain map, and with a
+    /// metadata policy of its own.
+    /// </summary>
+    /// <param name="metadataHandling">The metadata policy of the copy.</param>
+    /// <returns>The copy.</returns>
+    internal ImageEncoder CloneForGainMapImage(MetadataHandling metadataHandling)
+    {
+        var clone = (ImageEncoder)MemberwiseClone();
+        clone._metadataHandling = metadataHandling;
+        clone.PrepareGainMapImageSettings();
+        return clone;
+    }
+
+    /// <summary>Adapts a copy made by <see cref="CloneForGainMapImage"/>: removes its gain map, and the settings that only apply to the primary image.</summary>
+    private protected virtual void PrepareGainMapImageSettings()
+    {
+    }
 
     /// <summary>
     /// Gets a value indicating whether the output stores pixels of a format that widens (<see cref="PixelFormatWidening.IsWidened"/>:

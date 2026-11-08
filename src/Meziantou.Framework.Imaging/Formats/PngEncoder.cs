@@ -24,6 +24,13 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// The output is always a standard PNG file: Apple's CgBI variant (iOS-optimized PNG), which the decoder reads, is never
 /// written.
 /// </para>
+/// <para>
+/// Metadata (subject to <see cref="ImageEncoder.MetadataHandling"/>): the CICP color description, the mastering display
+/// color volume and the content light level (<c>cICP</c>, <c>mDCV</c>, <c>cLLI</c>), the ICC profile (<c>iCCP</c>), the
+/// resolution (<c>pHYs</c>), EXIF (<c>eXIf</c>), XMP and text entries (<c>tEXt</c>, <c>zTXt</c>, <c>iTXt</c>), and the raw
+/// chunks of <see cref="Metadata.ImageMetadata.PngChunks"/>, at their position, that are safe to copy
+/// (<see cref="WriteUnsafeToCopyChunks"/> for the others).
+/// </para>
 /// </remarks>
 public sealed class PngEncoder : ImageEncoder
 {
@@ -148,6 +155,18 @@ public sealed class PngEncoder : ImageEncoder
 
     /// <summary>Gets a value indicating whether Adam7 interlacing is used. Defaults to <see langword="false"/>.</summary>
     public bool Interlaced { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the chunks of <see cref="Metadata.ImageMetadata.PngChunks"/> that are not safe to copy
+    /// (<see cref="Metadata.PngChunk.IsSafeToCopy"/>) are written. Defaults to <see langword="false"/>.
+    /// </summary>
+    /// <remarks>
+    /// Such a chunk depends on the image data, which the encoder always writes again: the PNG specification (section 14.2)
+    /// forbids copying it to a file whose image data changed, so it is not written by default. Set the property when the
+    /// chunks still describe the image, for example when the pixels did not change or the chunks were made for them. The
+    /// chunks that are safe to copy are always written (subject to <see cref="ImageEncoder.MetadataHandling"/>).
+    /// </remarks>
+    public bool WriteUnsafeToCopyChunks { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether the frames of an animation after the first one are written as the region of the

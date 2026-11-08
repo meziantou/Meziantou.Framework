@@ -16,6 +16,7 @@ default**, which makes large files from photos: choose lossy compression for the
 | Alpha | Straight or premultiplied | Lossless, straight or premultiplied |
 | Geometry | Clean aperture applied; orientation reported | Clean aperture and orientation |
 | Metadata | ICC profile, EXIF, XMP, CICP color description, content light level, mastering display, pixel aspect ratio | The same |
+| Gain maps | Listed and rendered by [AuxiliaryImageCollection](cref:Meziantou.Framework.Imaging.AuxiliaryImageCollection) | With [GainMap](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.GainMap), next to a still image |
 
 8-bit files load as [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24), [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) with alpha, or [Gray8](cref:Meziantou.Framework.Imaging.Gray8); 10 and 12-bit files load as [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48), [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) or
 [Gray16](cref:Meziantou.Framework.Imaging.Gray16), their samples scaled to 16 bits exactly. Premultiplied colors are converted to straight alpha.
@@ -95,6 +96,7 @@ public static void SaveAvif(string photoPath, string avifPath, string losslessPa
 | [CleanAperture](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.CleanAperture) | The rectangle readers show; every pixel is still stored | `null` |
 | [KeyFrameInterval](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.KeyFrameInterval) | The number of images from a key frame to the next in a sequence; 0 makes the first image the only key frame | 0 |
 | [DurationRounding](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.DurationRounding) | [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) stores durations exactly or throws; [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) rounds them to microseconds when they need it | [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) |
+| [GainMap](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.GainMap) | Writes a gain map next to a still image, as a hidden item and a tone map item that derives the HDR rendition from the image and the gain map (see [Color management](../09-Color/03-ColorManagement.md)) | `null` |
 | [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata AVIF cannot store (text, resolution) | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
 ## Encoding time

@@ -13,4 +13,10 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Barcodes\Meziantou.Framework.Barcodes.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging.Barcodes\Meziantou.Framework.Imaging.Barcodes.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- The seeds of the GS1 targets: the unit tests of the reference linters, and the element strings of the unit tests -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Barcodes.Tests\Gs1\gs1-linter-tests.json" LogicalName="Seeds/gs1-linter-tests.json" Link="Seeds\gs1-linter-tests.json" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Barcodes.Tests\Gs1DictionaryTests.cs;..\..\tests\Meziantou.Framework.Barcodes.Tests\BarCode128Tests.cs" LogicalName="Seeds/%(FileName)%(Extension)" Link="Seeds\%(FileName)%(Extension)" />
+  </ItemGroup>
 </Project>

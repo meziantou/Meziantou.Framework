@@ -820,6 +820,20 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     with `opj_decompress -r` and `-d` (OpenJPEG rejects a region that has no sample at the reduced resolution). On
     2026-10-31, all the decodes of 127 files (the corpus and files of the library with 0 to 10 levels), at every scale,
     with 21 regions each and 1 or 16 workers, were the ones of the previous implementation, which transformed whole tiles.
+- **Region decoding** (`ImageDecodeRequest.Region`, `ImageCodec.SupportsRegionDecoding`, `ImageDecodeRequest.GetRegion`).
+  The contract of every format: the image holds the part of the area that is in the image, with the pixels of a full
+  decode there (`ARegionHasThePixelsOfTheFullDecodeInThatArea` of each codec compares every frame of several areas with a
+  crop of the full decode, 1 and 16 workers), an area outside the image is an `UnsupportedImageFeatureException`, and
+  what a region skips is not validated (`OnlyThe...ThatARegion...AreRead/Decoded`). TIFF (`TiffBlockWindow`): only the
+  strips or tiles of the window are read, by one worker or by `TiffBlockWorkers` (a batch is the next blocks of the
+  window), the band of tiles starts at the first column of tiles of the window, and `TiffRowExpander` expands rows of the
+  width of the area from the byte that holds its first pixel (8 pixels of packed samples are whole bytes); without a
+  region the path is the full decode. HEIF (`HeifGridWindow`, `HeifDecodeObserver.GetOutputArea`): the region is applied to
+  the clean aperture, and a grid decodes the tiles that the area meets widened by 2 pixels (the chroma upsampling reads
+  one chroma sample on each side), into planes that hold these tiles only; the converter is given the size of what they
+  cover, so its edge replication only touches pixels outside the area. The alpha plane shares the window only when it is
+  a grid of the same layout. Images that are not grids, derived images and sequences are decoded whole, and only the area
+  is converted. The HEIC band path (`DecodeGridByTileRows`) is not used for a region.
 - **TIFF** (`Internals/Codecs/Tiff`). `TiffPage` resolves and validates a directory without reading a pixel, so every
   rejection also comes from `Identify`, except the ones of the compressed data. `TiffBlockReader` turns a strip or a
   tile into rows of samples (fill order, compression, predictor, YCbCr data units) and `TiffRowExpander` turns the rows

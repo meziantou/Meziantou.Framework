@@ -123,6 +123,9 @@ a bit-rate or luma-sample-rate limit on playback.
 - Encoding a large image takes time: a lower [Effort](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.Effort) encodes faster. With [GridTileSize](cref:Meziantou.Framework.Imaging.Formats.HeicEncoder.GridTileSize) and
   [ImageConfiguration.MaxDegreeOfParallelism](cref:Meziantou.Framework.Imaging.ImageConfiguration.MaxDegreeOfParallelism) above 1, the tiles are coded concurrently, and the file is identical.
 - A side is at most 65,528 pixels, and a still image at most 4 GiB.
+- [ImageDecodeOptions.Region](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Region) skips the tiles of a grid that an area does not need, such as
+  most tiles of a phone photo for a crop; an image that is not a grid is decoded whole before the area is kept. See
+  [Decode an area](../05-LoadingAndSaving/02-LoadingImages.md#decode-an-area).
 - Premultiplied alpha, extended precision processing, inter pictures of more than 12 bits and the screen content,
   multilayer and 3D extensions of HEVC are rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Only the base layer of a layered stream is decoded.
 - HEVC is covered by patents in many countries: check the licensing terms that apply to what you distribute.

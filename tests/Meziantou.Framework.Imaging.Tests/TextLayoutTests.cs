@@ -68,11 +68,6 @@ public sealed class TextLayoutTests
             Assert.Equal(unhinted.Width, hinted.Width);
             Assert.Equal(unhinted.InkBounds, hinted.InkBounds);
         }
-
-        // A vertical layout is not hinted.
-        var vertical = new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, Hinting = TextHinting.Full };
-        var font = Font.Load(HintedFontPath("DroidSans"));
-        Assert.Equal(TextLayout.Create("Hello", new TextStyle(font, 13), new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft }).InkBounds, TextLayout.Create("Hello", new TextStyle(font, 13), vertical).InkBounds);
     }
 
     [Theory]
@@ -159,14 +154,56 @@ public sealed class TextLayoutTests
         Assert.True(full > none * 1.05);
     }
 
+    [Theory]
+    [InlineData("DroidSans", TextOrientation.Mixed)]
+    [InlineData("OpenSans-Regular", TextOrientation.Mixed)]
+    [InlineData("DroidSans", TextOrientation.Upright)]
+    [InlineData("Roboto-Regular", TextOrientation.Upright)]
+    public void VerticalTextIsHinted(string name, TextOrientation orientation)
+    {
+        // Latin letters are on their side in a mixed vertical line: the y axis of their outlines, which light hinting
+        // fits, is across the column, along the x axis of the image. Upright, it is down the column.
+        var font = Font.Load(HintedFontPath(name));
+        var isUpright = orientation == TextOrientation.Upright;
+        for (var size = 10; size <= 16; size++)
+        {
+            var unhinted = MeasureContrast(font, size, VerticalOptions(TextHinting.None), vertical: isUpright);
+            Assert.True(MeasureContrast(font, size, VerticalOptions(TextHinting.Light), vertical: isUpright) > unhinted * 1.02, $"{size} px");
+
+            // Light hinting does not move the glyphs along the column when they are on their side.
+            var none = TextLayout.Create("Hamburgefonstiv", new TextStyle(font, size), VerticalOptions(TextHinting.None));
+            var light = TextLayout.Create("Hamburgefonstiv", new TextStyle(font, size), VerticalOptions(TextHinting.Light));
+            Assert.Equal(none.Height, light.Height);
+            if (!isUpright)
+            {
+                Assert.Equal(none.InkBounds.Top, light.InkBounds.Top);
+            }
+
+            // With the instructions of the font, the advances are whole pixels down the column, and the column starts
+            // on a whole pixel: every caret is on the grid.
+            const string Text = "Hamburgefonstiv AVATAR 0123";
+            var full = TextLayout.Create(Text, new TextStyle(font, size), new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, Orientation = orientation, Hinting = TextHinting.Full, Alignment = TextAlignment.Center, MaxHeight = 333.3 });
+            for (var i = 0; i <= Text.Length; i++)
+            {
+                var caret = full.GetCaretRectangle(i);
+                Assert.Equal(Math.Round(caret.Y, MidpointRounding.AwayFromZero), caret.Y);
+            }
+        }
+
+        TextLayoutOptions VerticalOptions(TextHinting hinting) => new() { WritingMode = TextWritingMode.VerticalRightToLeft, Orientation = orientation, Hinting = hinting };
+    }
+
+    internal static double MeasureContrast(Font font, double size, TextHinting hinting, bool vertical)
+        => MeasureContrast(font, size, new TextLayoutOptions { Hinting = hinting }, vertical);
+
     /// <summary>
     /// Gets how sharp the edges of a text are along an axis: the sum of the differences between neighbor pixels across
     /// that axis, divided by the sum of the coverage. Edges across pixels are spread over two pixels of smaller
     /// differences; the coverage of the text hardly depends on hinting.
     /// </summary>
-    internal static double MeasureContrast(Font font, double size, TextHinting hinting, bool vertical)
+    internal static double MeasureContrast(Font font, double size, TextLayoutOptions options, bool vertical)
     {
-        var layout = TextLayout.Create("Hamburgefonstiv quickly jumps over 0123456789", new TextStyle(font, size), new TextLayoutOptions { Hinting = hinting });
+        var layout = TextLayout.Create("Hamburgefonstiv quickly jumps over 0123456789", new TextStyle(font, size), options);
         var width = (int)layout.Width + 4;
         var height = (int)layout.Height + 4;
         using var image = new Image<Gray8>(width, height, new Gray8(0));

@@ -132,7 +132,7 @@ internal sealed class TextLayoutEngine
         _fontLimits = primary.Data.Limits;
         _buffer = new GlyphBuffer(_fontLimits);
         _wraps = options.Wrapping == TextWrapping.Wrap && !double.IsPositiveInfinity(_maxWidth);
-        if (options.Hinting != TextHinting.None && !_isVertical)
+        if (options.Hinting != TextHinting.None)
         {
             _hinter = new TextGlyphHinter(options.Hinting);
         }
@@ -822,9 +822,13 @@ internal sealed class TextLayoutEngine
 
             // A glyph hinted with the instructions of its font advances by its hinted advance, a whole number of
             // pixels, plus what the positioning of the text adds, rounded; its offsets are rounded too.
+            // An upright glyph of a vertical line advances along the y axis of its outline, which the instructions do not
+            // hint: its advance is rounded to a whole number of pixels.
             if (_hinter is not null && _hinter.TryGetAdvance(item.Font, size, glyph.Glyph, out var hintedAdvance))
             {
-                glyph.Advance = hintedAdvance + Math.Round((positions[i].XAdvance - item.Font.Face.GetAdvanceWidth(glyph.Glyph)) * scale, MidpointRounding.AwayFromZero);
+                glyph.Advance = item.IsUpright
+                    ? Math.Round(glyph.Advance, MidpointRounding.AwayFromZero)
+                    : hintedAdvance + Math.Round((positions[i].XAdvance - item.Font.Face.GetAdvanceWidth(glyph.Glyph)) * scale, MidpointRounding.AwayFromZero);
                 glyph.XOffset = Math.Round(glyph.XOffset, MidpointRounding.AwayFromZero);
                 glyph.YOffset = Math.Round(glyph.YOffset, MidpointRounding.AwayFromZero);
             }
@@ -2345,9 +2349,30 @@ internal sealed class TextLayoutEngine
                     var across = baseline + glyph.BaselineShift - glyph.YOffset;
                     if (_isVertical)
                     {
+                        var imageX = lineRight - (across - line.Y);
+                        if (_hinter is not null)
+                        {
+                            // A hinted glyph is fitted along the y axis of its outline: the origin of an upright
+                            // glyph is on a whole pixel down the column, and the baseline of a glyph on its side on
+                            // a whole pixel across it. With the instructions of the font, the origin is on a whole
+                            // pixel along both axes.
+                            if (glyph.IsUpright || _options.Hinting == TextHinting.Full)
+                            {
+                                along = Math.Round(along, MidpointRounding.AwayFromZero);
+                            }
+
+                            if (!glyph.IsUpright || _options.Hinting == TextHinting.Full)
+                            {
+                                imageX = Math.Round(imageX, MidpointRounding.AwayFromZero);
+                                across = lineRight - imageX + line.Y;
+                            }
+
+                            _hinter.Add(_fonts[glyph.Font], glyph.Size, glyph.Glyph);
+                        }
+
                         linePositions.Add(along);
                         linePositions.Add(across);
-                        positions.Add(lineRight - (across - line.Y));
+                        positions.Add(imageX);
                         positions.Add(along);
                     }
                     else

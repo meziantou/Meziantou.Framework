@@ -420,8 +420,16 @@ public sealed class TextLayoutOptions
     /// </para>
     /// <para>
     /// The grid is the pixel grid of the layout: draw it at a whole-pixel origin, without a transform that scales or
-    /// rotates the canvas, for the edges to fall on the pixels of the image. Hinting applies to horizontal text; a
-    /// vertical layout (<see cref="WritingMode"/>) is not hinted.
+    /// rotates the canvas, for the edges to fall on the pixels of the image.
+    /// </para>
+    /// <para>
+    /// In a vertical layout (<see cref="WritingMode"/>), the outline of a glyph is fitted in its own orientation. An
+    /// upright glyph keeps its axes: with <see cref="TextHinting.Light"/>, its origin is on a whole pixel down the
+    /// column. A glyph on its side, such as a Latin letter of a mixed line, is fitted across the column: its
+    /// baseline is on a whole pixel along the x axis of the image, and its position down the column does not change.
+    /// With <see cref="TextHinting.Full"/>, each glyph starts on a whole pixel along both axes and advances by a whole
+    /// number of pixels down the column: the advance of an upright glyph, which the instructions do not hint, is
+    /// rounded.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a member of <see cref="TextHinting"/>.</exception>

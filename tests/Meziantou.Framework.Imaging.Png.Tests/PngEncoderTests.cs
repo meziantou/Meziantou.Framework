@@ -757,9 +757,8 @@ public sealed class PngEncoderTests
     }
 
     [Fact]
-    public void ReadmeExample_PngPrivateChunks()
+    public void PrivateChunksAreReadBackWithTheirPosition()
     {
-        #region Imaging_PngPrivateChunks
         using var image = new Image<Rgba32>(4, 4);
 
         // A private chunk of an application (lowercase second letter) that is safe to copy (lowercase fourth letter): the
@@ -773,7 +772,6 @@ public sealed class PngEncoderTests
         Assert.Equal("myAp", chunk.Type);
         Assert.True(chunk.IsSafeToCopy);
         Assert.Equal(PngChunkPosition.BeforeImageData, chunk.Position);
-        #endregion
     }
 
     [Fact]

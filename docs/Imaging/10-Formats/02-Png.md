@@ -157,21 +157,20 @@ The ancillary chunks that the library does not interpret (private chunks of an a
 `gAMA`, `bKGD` or `tIME`) are kept in [ImageMetadata.PngChunks](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.PngChunks) with their type, their data and their position: before the
 palette, before the image data, or after it. The encoder writes them back at their position:
 
-<!-- ref:../../../tests/Meziantou.Framework.Imaging.Png.Tests/PngEncoderTests.cs;region=Imaging_PngPrivateChunks;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/FormatExamples.cs;region=Imaging_PngPrivateChunks;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var image = new Image<Rgba32>(4, 4);
+public static PngChunk SavePngWithPrivateChunk(string outputPath)
+{
+    using var image = new Image<Rgba32>(4, 4);
 
-// A private chunk of an application (lowercase second letter) that is safe to copy (lowercase fourth letter): the
-// PNG encoder writes it before the image data, and the decoder reads it back with its position
-image.Metadata.PngChunks.Add(new PngChunk("myAp", new MetadataBlob("settings"u8)));
-using var stream = new MemoryStream();
-image.Save(stream, new PngEncoder());
+    // A private chunk of an application (lowercase second letter) that is safe to copy (lowercase fourth letter): the
+    // PNG encoder writes it before the image data, and the decoder reads it back with its type, data and position
+    image.Metadata.PngChunks.Add(new PngChunk("myAp", new MetadataBlob("settings"u8)));
+    image.Save(outputPath, new PngEncoder());
 
-using var loaded = Image.Load(stream.ToArray());
-var chunk = Assert.Single(loaded.Metadata.PngChunks);
-Assert.Equal("myAp", chunk.Type);
-Assert.True(chunk.IsSafeToCopy);
-Assert.Equal(PngChunkPosition.BeforeImageData, chunk.Position);
+    using var loaded = Image.Load(outputPath);
+    return loaded.Metadata.PngChunks.Single(chunk => chunk.Type == "myAp");
+}
 ```
 <!-- endref -->
 

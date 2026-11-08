@@ -4341,6 +4341,17 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SavePngWithPrivateChunkReadsTheChunkBack()
+    {
+        var chunk = FormatExamples.SavePngWithPrivateChunk(GetPath("private-chunk.png"));
+        Assert.Equal("myAp", chunk.Type);
+        Assert.True(chunk.IsSafeToCopy);
+        Assert.True(chunk.IsPrivate);
+        Assert.Equal(PngChunkPosition.BeforeImageData, chunk.Position);
+        Assert.Equal("settings"u8.ToArray(), chunk.Data.ToArray());
+    }
+
+    [Fact]
     public void SaveTgaWritesRunLengthPacketsDetectedFromTheHeader()
     {
         var (apngPath, _) = BuildAnimation();

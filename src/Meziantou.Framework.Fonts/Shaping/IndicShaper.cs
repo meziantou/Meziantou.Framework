@@ -717,14 +717,16 @@ internal sealed class IndicShaper
             // After the base, what changed places is one cluster with what it passed: the characters that took each
             // other's places, from the first to the last of them. The fonts of the first version of the
             // specifications had their halant moved: everything after the base is one cluster. Before the base, the
-            // clusters are merged by the last reordering.
+            // clusters are merged by the last reordering. A syllable without a base has nothing the last reordering
+            // merges from: what changed places is merged here, wherever it is.
+            var mergeStart = @base == end ? start : @base;
             if (_isOldSpecification || count > 127)
             {
-                buffer.MergeClusters(@base, end);
+                buffer.MergeClusters(mergeStart, end);
             }
             else
             {
-                for (var i = @base; i < end; i++)
+                for (var i = mergeStart; i < end; i++)
                 {
                     if (ranks[i - start] < 0)
                         continue;
@@ -741,7 +743,7 @@ internal sealed class IndicShaper
                         j = next;
                     }
 
-                    buffer.MergeClusters(Math.Max(@base, min), max + 1);
+                    buffer.MergeClusters(Math.Max(mergeStart, min), max + 1);
                 }
             }
         }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Infra;
@@ -102,6 +103,9 @@ internal sealed partial class HtmlTreeBuilder
     private bool _stopped;
     private bool _pausedForScript;
 
+    // The number of elements created, checked against MaxElementCount
+    private int _createdElementCount;
+
     // Pending table character tokens (in table text insertion mode)
     private readonly System.Text.StringBuilder _pendingTableCharacters = new();
     private bool _pendingTableCharactersContainNonWhitespace;
@@ -119,6 +123,9 @@ internal sealed partial class HtmlTreeBuilder
     {
         public bool IsMarker => Element is null;
     }
+
+    /// <summary>The maximum number of elements the parser creates (see <see cref="HtmlParserOptions.MaxElementCount"/>), or null for no limit.</summary>
+    public int? MaxElementCount { get; set; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/parsing.html#fragment-context-element</summary>
     public Element? ContextElement { get; private set; }
@@ -977,6 +984,9 @@ internal sealed partial class HtmlTreeBuilder
     /// <summary>https://html.spec.whatwg.org/multipage/parsing.html#create-an-element-for-the-token</summary>
     private Element CreateElementForToken(HtmlTagToken token, string @namespace, Node intendedParent)
     {
+        if (MaxElementCount is { } maxElementCount && ++_createdElementCount > maxElementCount)
+            throw new HtmlParserLimitExceededException($"The markup creates more than {maxElementCount.ToString(CultureInfo.InvariantCulture)} elements");
+
         // When streaming, the elements of the root are created in the node document of the node into which they are inserted,
         // as their descendants (https://whatpr.org/html/12758/parsing.html#create-an-element-for-the-token)
         if (IsStreaming && ReferenceEquals(intendedParent, _openElements[0]))

@@ -19,7 +19,7 @@ loads and saves an image, and it converts colors only when you ask for it.
 - `Metadata.TransferFunction` is [Linear](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.TransferFunction) for the linear-light samples of QOI and JPEG XL files, [Srgb](cref:Meziantou.Framework.Imaging.Metadata.ColorTransferFunction.Srgb) otherwise.
 - [Metadata.ContentLightLevel](cref:Meziantou.Framework.Imaging.Metadata.ContentLightLevel) and `Metadata.MasteringDisplay` describe how HDR samples were mastered.
 
-Only [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile), [IccColorTransform](cref:Meziantou.Framework.Imaging.IccColorTransform) and a load with [CmykConversionOptions](cref:Meziantou.Framework.Imaging.CmykConversionOptions) convert colors, and the pixels
+Only [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile), [IccColorTransform](cref:Meziantou.Framework.Imaging.IccColorTransform) and a load with [CmykConversionOptions](cref:Meziantou.Framework.Imaging.CmykConversionOptions) or [CieLabConversionOptions](cref:Meziantou.Framework.Imaging.CieLabConversionOptions) convert colors, and the pixels
 and their label always change together. To draw sRGB colors on an image of another color space, see
 [Drawing](../07-Drawing/01-Overview.md).
 
@@ -144,6 +144,24 @@ public static Image LoadCmykJpeg(string path)
 
 [ImageReaderOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageReaderOptions.CmykConversion) does the same for
 [streaming readers](../05-LoadingAndSaving/05-StreamingReadersAndWriters.md).
+
+## Load CIE L\*a\*b\* images
+
+No pixel format holds L\*a\*b\* samples either, so a TIFF page of L\*a\*b\* colors is only loaded with
+[ImageDecodeOptions.CieLabConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CieLabConversion): `new ImageDecodeOptions { CieLabConversion = CieLabConversionOptions.Default }` converts
+it to sRGB. Without it, [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException); [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) reports
+[ImageColorModel.CieLab](cref:Meziantou.Framework.Imaging.ImageColorModel.CieLab).
+
+| [CieLabConversionOptions](cref:Meziantou.Framework.Imaging.CieLabConversionOptions) | Default | What it does |
+| --- | --- | --- |
+| [DestinationProfile](cref:Meziantou.Framework.Imaging.CieLabConversionOptions.DestinationProfile) | [IccProfile.Srgb](cref:Meziantou.Framework.Imaging.Metadata.IccProfile.Srgb) | The RGB profile of the loaded pixels, which are labeled with it |
+| [Transform](cref:Meziantou.Framework.Imaging.CieLabConversionOptions.Transform) | [IccColorTransformOptions.Default](cref:Meziantou.Framework.Imaging.IccColorTransformOptions.Default) | The rendering intent, the black point compensation and the gamut mapping |
+
+- The colors are relative to the white point of the file, D50 when it declares none. They are adapted to the D50 white
+  of the ICC profile connection space with the linear Bradford transform, then converted to the destination profile.
+- L\*a\*b\* holds colors that no RGB profile can show: the colors outside the gamut of the destination are clipped,
+  or mapped as [IccColorTransformOptions.GamutMapping](cref:Meziantou.Framework.Imaging.IccColorTransformOptions.GamutMapping) says. A profile embedded in the file is not used.
+- The loaded image has [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) pixels, [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) with an alpha sample, and [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48) or [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) for 16-bit samples.
 
 ## Convert sample buffers
 

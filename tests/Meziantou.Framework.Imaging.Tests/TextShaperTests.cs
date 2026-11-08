@@ -234,6 +234,46 @@ public sealed class TextShaperTests
     }
 
     [Fact]
+    public void AnAatStateMachineThatNeverAdvancesIsRefused()
+    {
+        // A contextual subtable that replaces A by B and B by A without advancing would run without end (MORX-24 of the
+        // text-rendering-tests): its work is taken from the budget of the run.
+        var classes = new Dictionary<int, int> { [FontSamples.BoxA] = 4, [FontSamples.BoxB] = 5 };
+        int[] state = [0, 0, 0, 0, 1, 2];
+        int[][] entries = [[0, 0, 0xFFFF, 0xFFFF], [0, 0x4000, 0xFFFF, 0], [0, 0x4000, 0xFFFF, 1]];
+        var substitutions = FontAatWriter.WriteSubstitutionTables([new Dictionary<int, int> { [FontSamples.BoxA] = FontSamples.BoxB }, new Dictionary<int, int> { [FontSamples.BoxB] = FontSamples.BoxA }]);
+        var table = FontAatWriter.WriteStateTable(classes, 6, [state, state], entries, [substitutions]);
+        var font = LoadWithMorx(new FontMorxSubtable(0x20000001, 1, table));
+
+        Assert.Throws<InvalidFontException>(() => { _ = Shape(font, "AB"); });
+    }
+
+    [Fact]
+    public void AatInsertionsThatMultiplyTheGlyphsAreRefused()
+    {
+        // Nine subtables that each insert 31 glyphs after every A (MORX-34 of the text-rendering-tests, a billion laughs).
+        var classes = new Dictionary<int, int> { [FontSamples.BoxA] = 4 };
+        int[] state = [0, 0, 0, 0, 1];
+        int[][] entries = [[0, 0, 0xFFFF, 0xFFFF], [0, 31 << 5, 0, 0xFFFF]];
+        var table = FontAatWriter.WriteStateTable(classes, 5, [state, state], entries, [FontAatWriter.WriteUInt16Array(Enumerable.Repeat(FontSamples.BoxA, 31))]);
+        var font = LoadWithMorx([.. Enumerable.Repeat(new FontMorxSubtable(0x20000005, 1, table), 9)]);
+
+        Assert.Throws<InvalidFontException>(() => { _ = Shape(font, "A"); });
+    }
+
+    [Fact]
+    public void AMorxTableWhoseHeaderIsNotUnderstoodIsLeftOut()
+    {
+        var builder = FontSamples.Boxes();
+        builder.KerningPairs.Clear();
+        var morx = FontAatWriter.WriteMorx([new FontMorxChain(1, [], [new FontMorxSubtable(0x20000004, 1, FontAatWriter.WriteLookup(new Dictionary<int, int> { [FontSamples.BoxA] = FontSamples.BoxB }))])]);
+        morx[1] = 9;
+        builder.RawTables["morx"] = morx;
+
+        Assert.Equal("2=0+1024", Format(Shape(FontTestSupport.Load(builder), "A")));
+    }
+
+    [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void TheGlyphsOfABufferStayInOrderWhateverTheEditsAre()
     {
@@ -1509,6 +1549,14 @@ public sealed class TextShaperTests
         TextShaper.AddText(buffer, text);
         TextShaper.Shape(buffer, font.Face, script, languages: [], isRightToLeft: false, []);
         return string.Join(' ', buffer.Info.ToArray().Select(glyph => glyph.Glyph));
+    }
+
+    private static Font LoadWithMorx(params FontMorxSubtable[] subtables)
+    {
+        var builder = FontSamples.Boxes();
+        builder.KerningPairs.Clear();
+        builder.RawTables["morx"] = FontAatWriter.WriteMorx([new FontMorxChain(1, [], subtables)]);
+        return FontTestSupport.Load(builder);
     }
 
     private static GlyphBuffer Shape(Font font, string text, params ShapingFeature[] features)

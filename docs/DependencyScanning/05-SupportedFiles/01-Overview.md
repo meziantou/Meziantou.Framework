@@ -13,7 +13,7 @@ and the pages of this group give the details of each file format.
 | [DotNetTargetFramework](cref:Meziantou.Framework.DependencyScanning.DependencyType.DotNetTargetFramework) | MSBuild projects, file-based apps | [.NET](02-DotNet.md) |
 | [MSBuildProjectReference](cref:Meziantou.Framework.DependencyScanning.DependencyType.MSBuildProjectReference) | MSBuild projects, file-based apps | [.NET](02-DotNet.md) |
 | [DotNetAssemblyReference](cref:Meziantou.Framework.DependencyScanning.DependencyType.DotNetAssemblyReference) | File-based apps | [.NET](02-DotNet.md) |
-| [Npm](cref:Meziantou.Framework.DependencyScanning.DependencyType.Npm) | `package.json`, npm lock files, Azure Pipelines package resources, agent plugin marketplaces | [JavaScript](03-JavaScript.md) |
+| [Npm](cref:Meziantou.Framework.DependencyScanning.DependencyType.Npm) | `package.json`, npm, pnpm, Yarn and Bun lock files, Azure Pipelines package resources, agent plugin marketplaces | [JavaScript](03-JavaScript.md) |
 | [DockerImage](cref:Meziantou.Framework.DependencyScanning.DependencyType.DockerImage) | Dockerfiles, Docker Compose files, Kubernetes manifests, GitHub Actions, Azure Pipelines | [Containers](04-Containers.md) |
 | [HelmChart](cref:Meziantou.Framework.DependencyScanning.DependencyType.HelmChart) | `Chart.yaml`, `requirements.yaml` and their lock files | [Containers](04-Containers.md) |
 | [GitHubActions](cref:Meziantou.Framework.DependencyScanning.DependencyType.GitHubActions) | Workflows, action metadata files, `actions.lock` | [CI pipelines](05-Pipelines.md) |

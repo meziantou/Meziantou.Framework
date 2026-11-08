@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -296,6 +297,7 @@ internal sealed class PngOptimizedEncoderSession : ImageEncoderSession
 
                 // PLTE and tRNS follow every metadata chunk (iCCP must precede PLTE) and precede the first image
                 _layout!.WriteAncillaryChunks(output);
+                _metadata.WriteChunks(PngChunkPosition.BeforeImageData, output);
                 StartPlan();
                 return false;
 
@@ -347,6 +349,7 @@ internal sealed class PngOptimizedEncoderSession : ImageEncoderSession
                 return true;
 
             case Step.Trailer:
+                _metadata.WriteChunks(PngChunkPosition.AfterImageData, output);
                 PngChunkWriter.Write(output, PngChunkWriter.Iend, []);
                 _step = Step.None;
                 return true;

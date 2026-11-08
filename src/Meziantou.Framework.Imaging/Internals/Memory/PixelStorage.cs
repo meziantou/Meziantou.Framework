@@ -7,17 +7,29 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// exactly the visible bytes of that row.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Rows are only reachable through an exclusive <see cref="PixelLease"/> (<see cref="AcquireLease"/>), so the slabs cannot be
 /// returned to the pool while a caller can still see them.
+/// </para>
+/// <para>
+/// An external storage (<see cref="CreateExternal"/>) has no slab: its rows are in memory the caller owns
+/// (<see cref="Image.WrapMemory{TPixel}(Memory{byte}, int, int, int, Action?, ImageConfiguration?)"/>), at a caller stride,
+/// and releasing it calls the release callback of the caller instead of returning anything to the pool. It is not charged
+/// to the scope.
+/// </para>
 /// </remarks>
 internal sealed class PixelStorage
 {
     private static long s_nextId;
 
     private readonly PooledBuffer[] _slabs;
-    private readonly byte[][] _slabArrays;
+    private readonly byte[][]? _slabArrays;
     private readonly int _rowsPerSlab;
     private readonly int _stride;
+    private readonly Memory<byte> _externalMemory;
+    private readonly nint _externalPointer;
+    private readonly long _externalStride;
+    private readonly Action? _release;
     private bool _disposed;
     private long _leaseToken;
 
@@ -26,16 +38,32 @@ internal sealed class PixelStorage
         Owner = owner;
         Layout = layout;
         _slabs = slabs;
-        _slabArrays = new byte[slabs.Length][];
+        var slabArrays = new byte[slabs.Length][];
         for (var i = 0; i < slabs.Length; i++)
         {
-            _slabArrays[i] = slabs[i].RawBuffer;
+            slabArrays[i] = slabs[i].RawBuffer;
         }
+
+        _slabArrays = slabArrays;
 
         _rowsPerSlab = layout.RowsPerSlab;
         _stride = (int)Math.Min(layout.Stride, int.MaxValue); // only used when a slab holds several rows, where it fits
         RowLength = (int)layout.RowLength;
         CapacityBytes = capacity;
+        Id = Interlocked.Increment(ref s_nextId);
+    }
+
+    private PixelStorage(StorageOwner owner, PixelStorageLayout layout, Memory<byte> memory, nint pointer, Action? release)
+    {
+        Owner = owner;
+        Layout = layout;
+        _slabs = [];
+        _rowsPerSlab = layout.Height;
+        _externalMemory = memory;
+        _externalPointer = pointer;
+        _externalStride = layout.Stride;
+        _release = release;
+        RowLength = (int)layout.RowLength;
         Id = Interlocked.Increment(ref s_nextId);
     }
 
@@ -59,6 +87,9 @@ internal sealed class PixelStorage
     public long CapacityBytes { get; }
 
     public int SlabCount => _slabs.Length;
+
+    /// <summary>Gets a value indicating whether the rows are in memory the caller owns (<see cref="CreateExternal"/>).</summary>
+    public bool IsExternal => _slabArrays is null;
 
     public bool IsDisposed => Volatile.Read(ref _disposed);
 
@@ -103,9 +134,30 @@ internal sealed class PixelStorage
         if ((uint)y >= (uint)Layout.Height)
             ThrowRowOutOfRange(y);
 
+        if (_slabArrays is not { } slabArrays)
+            return GetExternalRow(y);
+
         var slab = y / _rowsPerSlab;
         var rowInSlab = y - (slab * _rowsPerSlab);
-        return new Span<byte>(_slabArrays[slab], rowInSlab * _stride, RowLength);
+        return new Span<byte>(slabArrays[slab], rowInSlab * _stride, RowLength);
+    }
+
+    /// <summary>Creates a storage over memory the caller owns. Nothing is charged, rented or cleared.</summary>
+    /// <param name="owner">The owner.</param>
+    /// <param name="layout">The geometry: one slab of every row, at the caller stride (<see cref="PixelStorageLayout.CreateExternal"/>).</param>
+    /// <param name="memory">The memory, validated against the layout, or empty when <paramref name="pointer"/> is set.</param>
+    /// <param name="pointer">The address of the first row, or 0 for <paramref name="memory"/>.</param>
+    /// <param name="release">The callback invoked once the storage is released, or <see langword="null"/>.</param>
+    internal static PixelStorage CreateExternal(StorageOwner owner, PixelStorageLayout layout, Memory<byte> memory, nint pointer, Action? release)
+        => new(owner, layout, memory, pointer, release);
+
+    private Span<byte> GetExternalRow(int y)
+    {
+        var offset = y * _externalStride;
+        if (_externalPointer != 0)
+            return unsafe(new Span<byte>((byte*)_externalPointer + offset, RowLength));
+
+        return _externalMemory.Span.Slice((int)offset, RowLength);
     }
 
     internal static PixelStorage Create(StorageOwner owner, PixelStorageLayout layout, AllocationKind kind, AllocationReservation? reservation)
@@ -160,6 +212,8 @@ internal sealed class PixelStorage
     /// <summary>Returns the slabs to the pool. Called once, after <see cref="MarkDisposed"/>, when no lease is active.</summary>
     internal void ReleaseSlabs()
     {
+        // The memory of an external storage goes back to the caller
+        _release?.Invoke();
         foreach (var slab in _slabs)
         {
             slab.Dispose();

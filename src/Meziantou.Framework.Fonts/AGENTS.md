@@ -1,9 +1,10 @@
 # Meziantou.Framework.Fonts
 
 The OpenType font reader and the text shaper shared by `Meziantou.Framework.Imaging` (which draws text),
-`Meziantou.Framework.WebPlatform` (which lays out HTML, SVG and MathML text) and `Meziantou.Framework.Pdf` (which
-embeds fonts): TrueType, CFF and CFF2 outlines, WOFF and WOFF2, variable fonts, color fonts (COLR, CPAL, sbix, CBDT),
-BASE baselines, the shaping of complex scripts, and the subsetting of TrueType and CFF outlines (`FontSubsetter`).
+`Meziantou.Framework.WebPlatform` (which lays out HTML, SVG and MathML text) and `Meziantou.Framework.Pdf` (which embeds
+fonts): TrueType, CFF and CFF2 outlines, WOFF and WOFF2, variable fonts, color fonts (COLR, CPAL, sbix, CBDT), BASE
+baselines, the shaping of complex scripts and of the fonts of Apple Advanced Typography, and the subsetting of TrueType
+and CFF outlines (`FontSubsetter`).
 
 These instructions complete the repository-level `AGENTS.md`.
 
@@ -39,7 +40,8 @@ These instructions complete the repository-level `AGENTS.md`.
   the types of the same names of WebPlatform. A change of behavior of the reader is checked with the tests of both
   libraries, and with the web-platform-tests of WebPlatform (`css/WOFF2`, `css/css-fonts`).
 - Write the code from the specifications (OpenType, WOFF 1.0 and 2.0, Adobe Technical Notes #5176 and #5177, Adobe
-  Technical Note #5004 for AFM files, the script development specifications of Microsoft, Unicode). Never copy or port code from font libraries (FreeType,
+  Technical Note #5004 for AFM files, the script development specifications of Microsoft, the Apple TrueType Reference
+  Manual, Unicode). Never copy or port code from font libraries (FreeType,
   HarfBuzz, the woff2 reference code, fontTools, ...): they are test oracles only, their source is never read to write
   ours.
 - Fully managed, trimmable and NativeAOT-compatible: no reflection.
@@ -325,6 +327,49 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`OpenType/`) applies t
   - `FallbackMarkPositioner`: the marks of a font without `GPOS`. No specification describes it: the places come from
     the combining classes of Unicode, and the distances and the two rules about marks a font already draws far
     enough were found by comparing with the reference shaper. Say so in the code when a rule is added.
+- **Apple Advanced Typography** (`Aat/`, `Shaping/AatShaping.cs`): `MorxTable` and `MorxProcessor` (the five subtable
+  types of `morx` versions 2 and 3), `KerxTable` and `KerxProcessor` (formats 0, 1, 2, 4 and 6 of `kerx` versions 2 to
+  4), `FeatTable`, `TrakTable`, and `AatLookup` and `AatStateTable` for the lookup tables and the extended state tables
+  they share. Written from the Apple TrueType Reference Manual (chapter 6 and the Font Feature Registry); the headers are
+  read when the face is created (a malformed one leaves the table out, `FontFace.ReadOptional`), the content when a
+  subtable is applied. Every visit of a state machine is charged to the budget of the buffer: the denials of service
+  of the text-rendering-tests (MORX-24, 34, 36) are an `InvalidFontException`, where the reference shaper gives up
+  silently (`TextShaperTests`).
+  - **Which tables** (`AatShaping`, found by shaping fonts that have the tables in every combination): `morx` replaces
+    `GSUB` whenever the font has it; `kerx` replaces `GPOS` when the font has no `GPOS`, is shaped with `morx`, or has
+    no `GSUB` table (one without script counts); the legacy `kern` table is not applied with `kerx`. A `morx` font is
+    shaped with the default model; the model of the script still decides what is done with the marks: without
+    positioning table they keep the advance the font gives them unless the model places them from the shapes of the
+    glyphs (`FallbackMarkPositioner`), which a font kerned with `kerx`, or whose `kern` table has cross-stream kerning
+    (`KernTable.HasCrossStreamSubtable`), does not get. The Thai private-use forms are not applied to a `morx` font.
+  - **Features** (`AatFeatures`): the OpenType features of the caller select settings of the registry, only for the
+    feature types the `feat` table lists; the features applied by default select nothing. The pairs of tags and
+    settings are the reference shaper's, read from a font with a chain per setting of every type: keep the table as it
+    is, and probe again before changing it.
+  - **CoreText semantics the fonts rely on** (from the descriptions and the results of the MORX tests): the mark of a
+    contextual or insertion subtable is on the first glyph until one is marked; at the end of the glyphs a contextual
+    entry acts only once a glyph was marked; an insertion uses the mark it had before the entry, and the mark an entry
+    sets is the place the glyph had before the insertions of that entry; a ligature action that pops more components
+    than the stack has, or that reads outside its tables, changes nothing; a rearrangement merges the clusters from the
+    start of the range to the current glyph. A glyph a subtable replaces stays the character it was for the hiding of
+    the characters without visible form.
+  - **`kerx` reads the glyphs in the order they are drawn** (the buffer is reversed for a right-to-left run); format 1
+    adds a value to the offset and the advance of the glyph it pops, a cross-stream value moves the glyph and every
+    glyph after it, and a pair splits its value between the two glyphs as the `kern` table does. Format 4 places the
+    current glyph when the action is applied, from the advances at that point.
+  - **Deliberate differences with the reference shaper**, each a `KnownDivergences` entry of the conformance tests:
+    it reads the class values of `kerx` format 2 as indexes of values, where the specification and the fonts of Apple
+    systems (row 0 and column 0 of zeros, left values that are multiples of the row width) make them byte offsets; it
+    ends a list of values of format 1 like the `kern` table does (a value whose low bit is set, 0xFFFF kerning the
+    next popped glyph by -2), where `kerx` says 0xFFFF ends it; it does not read the lookup tables of format 10 for a
+    substitution; it does not apply `kerx` to a vertical line. It also tracks only a font that has a `STAT` table
+    (the tracking font of the corpus has an empty one), and reads a value 0 of a lookup table of format 0 as glyph 0, where the specification says
+    that 0 makes no substitution: the fixtures give such glyphs as themselves.
+  - Tests: the fonts of the MORX tests of the text-rendering-tests and two fonts of the HarfBuzz tests (`fonts/trt-*`,
+    `fonts/hb-*`), and synthetic fonts built by `FontSamples.Aat.cs` with `FontAatWriter` and `FontLayoutWriter` (the
+    features, every lookup format, the orders of the glyphs, every `kerx` format, `trak`, the choice of the tables).
+    The fonts of macOS are the best source of random texts to compare (`hb-shape` on a copy whose tables are renamed
+    to hide them is how the rules above were found); they must not be committed.
 - **Normalization** follows the text: a character without marks is kept when the font has it and decomposed (as far
   as needed) when it does not; a character followed by marks is decomposed as far as the font allows, with its marks,
   then ordered and composed again. A run without any mark is neither ordered nor composed.

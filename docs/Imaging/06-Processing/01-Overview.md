@@ -21,6 +21,7 @@ original.
 | Make black and white | [Threshold](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Threshold) | [Binarization](09-Binarization.md) |
 | Measure how similar two images look, draw their differences | [ImageSimilarity](cref:Meziantou.Framework.Imaging.ImageSimilarity) | [Comparing images](10-ComparingImages.md) |
 | Erode, dilate, open, close, extract small bright or dark details | [Erode](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Erode), [Dilate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Dilate), [MorphologicalOpen](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.MorphologicalOpen), [MorphologicalClose](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.MorphologicalClose), [TopHat](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.TopHat), [BlackHat](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.BlackHat) | [Morphology](11-Morphology.md) |
+| Run a filter of your own on every frame, in parallel | [ApplyRowOperation](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyRowOperation), [ApplyNeighborhoodOperation](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyNeighborhoodOperation) | [Custom operations](12-CustomOperations.md) |
 
 Color profile conversions ([ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile)) are described in [Color management](../09-Color/03-ColorManagement.md).
 

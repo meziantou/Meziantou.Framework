@@ -41,7 +41,7 @@ public sealed class ShapingConformanceTests
         foreach (var testCase in vectors.Cases)
         {
             var text = testCase.Characters;
-            var key = id + ";" + testCase.Text + ";" + testCase.Features + (testCase.Variations is null ? "" : ";" + testCase.Variations) + (testCase.Language is null ? "" : ";" + testCase.Language) + (testCase.Direction is null ? "" : ";" + testCase.Direction);
+            var key = id + ";" + testCase.Text + ";" + testCase.Features + (testCase.Variations is null ? "" : ";" + testCase.Variations) + (testCase.Language is null ? "" : ";" + testCase.Language) + (testCase.Direction is null ? "" : ";" + testCase.Direction) + (testCase.PointSize is null ? "" : ";" + testCase.PointSize.Value.ToString(CultureInfo.InvariantCulture));
             var face = (testCase.Variations is null ? font : FontTestSupport.WithVariations(font, testCase.Variations)).Face;
             var expected = Format(testCase.Glyphs.Select(glyph => (glyph[0], glyph[1], glyph[2], glyph[3], glyph[4], glyph[5])));
 
@@ -63,7 +63,7 @@ public sealed class ShapingConformanceTests
             var isVertical = testCase.Direction is not null;
             var isRightToLeft = !isVertical && script is UnicodeScript.Arabic or UnicodeScript.Hebrew or UnicodeScript.Syriac or UnicodeScript.Nko or UnicodeScript.Adlam;
             using var scratch = new GlyphScratch(AllocationScope.Create(ImageConfiguration.Default, "ShapingConformanceTests"));
-            TextShaper.Shape(buffer, face, script, testCase.Language is null ? [] : OpenTypeLanguage.GetTags(testCase.Language), isRightToLeft, ParseFeatures(testCase.Features), isVertical, scratch);
+            TextShaper.Shape(buffer, face, script, testCase.Language is null ? [] : OpenTypeLanguage.GetTags(testCase.Language), isRightToLeft, ParseFeatures(testCase.Features), isVertical, scratch, pointSize: testCase.PointSize ?? 0);
             var glyphs = new List<(int, int, int, int, int, int)>();
             for (var i = 0; i < buffer.Length; i++)
             {
@@ -111,7 +111,7 @@ public sealed class ShapingConformanceTests
             {
                 var buffer = new GlyphBuffer(FontResourceLimits.Default);
                 TextShaper.AddText(buffer, testCase.Characters);
-                TextShaper.Shape(buffer, face, script, languages, isRightToLeft, features, isVertical, scratch, shapingCache);
+                TextShaper.Shape(buffer, face, script, languages, isRightToLeft, features, isVertical, scratch, shapingCache, pointSize: testCase.PointSize ?? 0);
                 var result = new StringBuilder();
                 for (var i = 0; i < buffer.Length; i++)
                 {
@@ -209,6 +209,21 @@ public sealed class ShapingConformanceTests
         // takes these six characters as symbols: a mark can follow one, but not a letter that takes a stacked
         // consonant or a reph before it, which it shows on a dotted circle of its own.
         ["fonts/noto-sans-newa;11460 2022 11436;"] = "the bullet is a generic base of the universal model",
+
+        // Apple TrueType Reference Manual, "The 'kerx' table", format 2: "The right-hand class values are stored
+        // pre-multiplied by the number of bytes in a single kerning value [...] The left-hand class values are stored
+        // pre-multiplied by the number of bytes in one row". The reference shaper reads them as indexes of values: it
+        // takes the values of other cells, which the fonts of Apple systems contradict (their row 0 and column 0,
+        // which have no kerning, would be read in the place of others).
+        ["fonts/synthetic-aat-kerning;0054 006F 0020 0054 0065 0020 0059 006F 0020 0059 0065 0020 0054 0059;"] = "the class values of a subtable of format 2 of kerx are offsets in bytes",
+
+        // Apple TrueType Reference Manual, "Lookup Tables": format 10 is a trimmed array whose values have 1, 2, 4 or 8
+        // bytes. The reference shaper does not read it in a non-contextual subtable, and leaves the glyph as it is.
+        ["fonts/synthetic-aat-morphing;0049;"] = "a lookup table of format 10 replaces the glyph",
+
+        // Apple TrueType Reference Manual, "The 'kerx' table": a subtable whose coverage has the bit 0x80000000 "has
+        // vertical kerning values". The reference shaper does not apply the kerx table to a vertical line.
+        ["fonts/synthetic-aat-kerning;0041 0056 0020 0056 0041;;ttb"] = "the vertical subtables of kerx kern a vertical line",
     };
 
     static ShapingConformanceTests()

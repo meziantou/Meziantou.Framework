@@ -105,6 +105,15 @@ internal static class BmpFormat
     /// <summary>The <c>bV5CSType</c> value <c>PROFILE_EMBEDDED</c> (<c>'MBED'</c>).</summary>
     public const uint ColorSpaceProfileEmbedded = 0x4D42_4544;
 
+    /// <summary>The offset of <c>bV5ProfileData</c> in a <c>BITMAPV5HEADER</c>: the offset of the profile from the start of the header.</summary>
+    public const int V5ProfileDataOffset = 112;
+
+    /// <summary>The offset of <c>bV5ProfileSize</c> in a <c>BITMAPV5HEADER</c>.</summary>
+    public const int V5ProfileSizeOffset = 116;
+
+    /// <summary>The <c>bV5Intent</c> value <c>LCS_GM_IMAGES</c> (the perceptual rendering intent).</summary>
+    public const uint IntentImages = 4;
+
     /// <summary>The <c>BM</c> signature of a standalone BMP file.</summary>
     public static ReadOnlySpan<byte> Magic => "BM"u8;
 

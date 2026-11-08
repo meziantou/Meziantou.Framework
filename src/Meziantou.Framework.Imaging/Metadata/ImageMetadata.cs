@@ -129,6 +129,17 @@ public sealed class ImageMetadata
     /// <summary>Gets the textual entries, in file order. <see langword="null"/> entries are rejected.</summary>
     public IList<ImageTextEntry> TextEntries { get; } = new NonNullCollection<ImageTextEntry>();
 
+    /// <summary>
+    /// Gets the ancillary chunks of a PNG file that the library does not interpret, in file order. <see langword="null"/>
+    /// entries are rejected.
+    /// </summary>
+    /// <remarks>
+    /// The PNG decoder fills it; <see cref="Formats.PngEncoder"/> writes the chunks that are safe to copy, and the others
+    /// with <see cref="Formats.PngEncoder.WriteUnsafeToCopyChunks"/>. The other encoders ignore it: the chunks only have a
+    /// meaning in a PNG file.
+    /// </remarks>
+    public IList<PngChunk> PngChunks { get; } = new NonNullCollection<PngChunk>();
+
     /// <summary>Creates an independent copy of this metadata.</summary>
     /// <returns>A new instance; mutable state is copied and immutable values are shared.</returns>
     public ImageMetadata Clone()
@@ -152,6 +163,11 @@ public sealed class ImageMetadata
         foreach (var entry in TextEntries)
         {
             result.TextEntries.Add(entry);
+        }
+
+        foreach (var chunk in PngChunks)
+        {
+            result.PngChunks.Add(chunk);
         }
 
         return result;

@@ -35,8 +35,9 @@ internal sealed class MetadataWritePlan
 
     private static readonly MetadataWritePlan Empty = new(null, null, null, [], null, ColorTransferFunction.Srgb);
 
-    private MetadataWritePlan(IccProfile? iccProfile, byte[]? exif, XmpProfile? xmpProfile, IReadOnlyList<ImageTextEntry> textEntries, ImageResolution? resolution, ColorTransferFunction transferFunction, ExifOrientation orientation = ExifOrientation.TopLeft, CicpColorDescription? cicp = null, ContentLightLevel? contentLightLevel = null, MasteringDisplayColorVolume? masteringDisplay = null, PixelAspectRatio? pixelAspectRatio = null)
+    private MetadataWritePlan(IccProfile? iccProfile, byte[]? exif, XmpProfile? xmpProfile, IReadOnlyList<ImageTextEntry> textEntries, ImageResolution? resolution, ColorTransferFunction transferFunction, ExifOrientation orientation = ExifOrientation.TopLeft, CicpColorDescription? cicp = null, ContentLightLevel? contentLightLevel = null, MasteringDisplayColorVolume? masteringDisplay = null, PixelAspectRatio? pixelAspectRatio = null, IReadOnlyList<PngChunk>? pngChunks = null)
     {
+        PngChunks = pngChunks ?? [];
         TransferFunction = transferFunction;
         Cicp = cicp;
         ContentLightLevel = contentLightLevel;
@@ -83,6 +84,12 @@ internal sealed class MetadataWritePlan
 
     /// <summary>Gets the text entries to write, in order.</summary>
     public IReadOnlyList<ImageTextEntry> TextEntries { get; }
+
+    /// <summary>
+    /// Gets the raw ancillary chunks to write, in order: for PNG only, the chunks of <see cref="ImageMetadata.PngChunks"/>
+    /// that are safe to copy, and the others with <see cref="PngEncoder.WriteUnsafeToCopyChunks"/>.
+    /// </summary>
+    public IReadOnlyList<PngChunk> PngChunks { get; }
 
     /// <summary>Gets the resolution to write, or <see langword="null"/>.</summary>
     public ImageResolution? Resolution { get; }
@@ -349,7 +356,17 @@ internal sealed class MetadataWritePlan
         }
 
         var orientation = capabilities.NativeOrientation ? metadata.Orientation : ExifOrientation.TopLeft;
-        return new MetadataWritePlan(icc, exif, xmp, text, resolution, transferFunction, orientation, storedCicp, contentLightLevel, masteringDisplay, pixelAspectRatio);
+
+        // The encoder writes the image data again: a chunk that depends on it is only copied when the caller says it still
+        // describes the image (PNG specification, section 14.2). The other formats have no raw chunks.
+        List<PngChunk>? pngChunks = null;
+        if (format == ImageFormat.Png && metadata.PngChunks.Count > 0)
+        {
+            var writeUnsafe = encoder is PngEncoder { WriteUnsafeToCopyChunks: true };
+            pngChunks = [.. metadata.PngChunks.Where(chunk => chunk.IsSafeToCopy || writeUnsafe)];
+        }
+
+        return new MetadataWritePlan(icc, exif, xmp, text, resolution, transferFunction, orientation, storedCicp, contentLightLevel, masteringDisplay, pixelAspectRatio, pngChunks);
     }
 
     private static bool ContainsKeyword(List<ImageTextEntry> entries, string keyword)

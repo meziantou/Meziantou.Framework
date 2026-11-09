@@ -1420,14 +1420,29 @@
   "css/css-contain/content-visibility/content-visibility-style-containment-001.html": {
     "total": 8
   },
+  "css/css-contain/content-visibility/content-visibility-svg-forced-layout.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-contain/content-visibility/content-visibility-svg-gradient-unlock.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-contain/content-visibility/content-visibility-svg-gradient.html": {
+    "reftest": "FAIL"
+  },
   "css/css-contain/content-visibility/content-visibility-svg-path.html": {
     "total": 9
   },
   "css/css-contain/content-visibility/content-visibility-svg-rect.html": {
     "total": 4
   },
+  "css/css-contain/content-visibility/content-visibility-svg-resources.html": {
+    "reftest": "FAIL"
+  },
   "css/css-contain/content-visibility/content-visibility-svg-text.html": {
     "total": 5
+  },
+  "css/css-contain/content-visibility/content-visibility-svg-textpath.html": {
+    "total": 2
   },
   "css/css-contain/content-visibility/content-visibility-svg.html": {
     "total": 1

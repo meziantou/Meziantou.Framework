@@ -2165,6 +2165,15 @@
   "css/css-grid/grid-definition/grid-auto-fit-collapsed-gutters-001.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/grid-definition/grid-auto-fit-collapsed-out-of-flow-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-definition/grid-auto-fit-collapsed-out-of-flow-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-definition/grid-auto-fit-collapsed-out-of-flow-003.html": {
+    "reftest": "PASS"
+  },
   "css/css-grid/grid-definition/grid-auto-fit-collapsed-rows-001.html": {
     "reftest": "PASS"
   },
@@ -2248,6 +2257,9 @@
   },
   "css/css-grid/grid-definition/grid-auto-repeat-positioned-container-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-grid/grid-definition/grid-auto-repeat-rows-dynamic-height-001.html": {
+    "total": 3
   },
   "css/css-grid/grid-definition/grid-change-auto-repeat-tracks.html": {
     "total": 16
@@ -2520,6 +2532,9 @@
   "css/css-grid/grid-items/aspect-ratio-grid-item-dynamic-container-shrink-001.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/grid-items/aspect-ratio-nonreplaced-max-content-contribution-002.html": {
+    "reftest": "PASS"
+  },
   "css/css-grid/grid-items/explicitly-sized-grid-item-as-table.html": {
     "reftest": "PASS"
   },
@@ -2711,6 +2726,9 @@
   },
   "css/css-grid/grid-items/grid-item-min-height-overrides-fixed-height-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-grid/grid-items/grid-item-min-max-width-contribution-001.html": {
+    "total": 2
   },
   "css/css-grid/grid-items/grid-item-min-size-auto-overflow-001.html": {
     "reftest": "PASS"
@@ -4779,6 +4797,36 @@
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/row/independent-formatting-context.html": {
     "reftest": "FAIL"
   },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-004.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-005.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-007.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-008.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-009.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-subgrid-with-different-borders-padding-and-gaps-001.html": {
+    "reftest": "FAIL"
+  },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-subgrid-with-row-standalone-axis-size-001.html": {
     "reftest": "PASS"
   },
@@ -4794,11 +4842,57 @@
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/grid-lanes-subgrid.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-004.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-005.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-007.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-008.html": {
+    "reftest": "FAIL"
+  },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-001.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-002.html": {
     "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-different-borders-padding-and-gaps-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-margin-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-scrollbar-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-scrollbar-002.html": {
+    "total": 2,
+    "failures": {
+      "Adding and removing a scrollbar updates explicit nested subgrids": "FAIL",
+      "Inherited rows refresh when scrollbar-only BSP changes back to zero": "FAIL"
+    }
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-scrollbar-003.html": {
+    "total": 1,
+    "failures": {
+      "Percentage gutter follows the inherited size as scrollbars appear and disappear": "FAIL"
+    }
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid/column/grid-lanes-subgrid-001a.html": {
     "reftest": "PASS"

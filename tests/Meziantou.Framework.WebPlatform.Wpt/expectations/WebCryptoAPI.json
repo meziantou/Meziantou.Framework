@@ -188,6 +188,12 @@
   "WebCryptoAPI/encrypt_decrypt/aes_cbc.https.any.js#dedicatedworker": {
     "total": 61
   },
+  "WebCryptoAPI/encrypt_decrypt/aes_cbc_invalid_length.https.any.js": {
+    "total": 21
+  },
+  "WebCryptoAPI/encrypt_decrypt/aes_cbc_invalid_length.https.any.js#dedicatedworker": {
+    "total": 21
+  },
   "WebCryptoAPI/encrypt_decrypt/aes_ctr.https.any.js": {
     "total": 52
   },

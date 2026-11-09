@@ -28,6 +28,15 @@
       "A document with a policy and a same-origin child frame without one are restored after a cross-site navigation": "FAIL"
     }
   },
+  "html/document-isolation-policy/back-forward-cache-same-origin-frames.tentative.https.html": {
+    "total": 4,
+    "failures": {
+      "A document with a policy and a same-origin document without one that replaces it can each have a same-origin child frame with the other's policy": "FAIL",
+      "A document without a policy and a same-origin document with one that replaces it can each have a same-origin child frame with the other's policy": "FAIL",
+      "A document without a policy can have a same-origin child frame with a policy after going back from a same-origin document with one that opened a popup": "FAIL",
+      "A document without a policy can have a same-origin child frame with a policy after going back past a same-origin document with one and a document of another site": "FAIL"
+    }
+  },
   "html/document-isolation-policy/back-forward-cache.tentative.https.html": {
     "total": 10,
     "failures": {
@@ -55,6 +64,9 @@
   "html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window.js?document": {
     "total": 4
   },
+  "html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window.js?document_with_service_worker": {
+    "total": 4
+  },
   "html/document-isolation-policy/credentialless-cache-storage-from-credentialless.https.tentative.window.js?service_worker": {
     "total": 4
   },
@@ -67,6 +79,9 @@
   "html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window.js?document": {
     "total": 7
   },
+  "html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window.js?document_with_service_worker": {
+    "total": 7
+  },
   "html/document-isolation-policy/credentialless-cache-storage-from-none.https.tentative.window.js?service_worker": {
     "total": 7
   },
@@ -77,6 +92,9 @@
     "total": 3
   },
   "html/document-isolation-policy/credentialless-cache-storage-from-require-corp.https.tentative.window.js?document": {
+    "total": 3
+  },
+  "html/document-isolation-policy/credentialless-cache-storage-from-require-corp.https.tentative.window.js?document_with_service_worker": {
     "total": 3
   },
   "html/document-isolation-policy/credentialless-cache-storage-from-require-corp.https.tentative.window.js?service_worker": {
@@ -111,13 +129,22 @@
     "total": 7
   },
   "html/document-isolation-policy/credentialless-service-worker.https.tentative.window.js": {
-    "total": 5
+    "total": 5,
+    "failures": {
+      "fetch cross-origin + credentialless worker": "FAIL"
+    }
   },
   "html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js?request_origin=cross_origin&worker_dip=credentialless&window_dip=credentialless": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "credentialless-shared-worker": "FAIL"
+    }
   },
   "html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js?request_origin=cross_origin&worker_dip=credentialless&window_dip=none": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "credentialless-shared-worker": "FAIL"
+    }
   },
   "html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js?request_origin=cross_origin&worker_dip=none&window_dip=credentialless": {
     "total": 1
@@ -215,6 +242,14 @@
       "policy ignored for [{\"percentEncoded\":\"isolate-and-require%FFcorp\"}]": "NOTRUN"
     }
   },
+  "html/document-isolation-policy/history-traversal-frames.tentative.https.html": {
+    "total": 5,
+    "failures": {
+      "A document without a policy and a cross-site child frame with one are loaded again after a cross-site navigation": "FAIL",
+      "A document without a policy and a same-origin child frame that navigated to a document with one are loaded again after a cross-site navigation": "FAIL",
+      "A document without a policy and a same-origin child frame with one are loaded again after a cross-site navigation": "FAIL"
+    }
+  },
   "html/document-isolation-policy/isolate-and-require-corp-load-from-cache-storage.tentative.https.html": {
     "total": 29
   },
@@ -263,7 +298,7 @@
   },
   "html/document-isolation-policy/reporting-cache-storage-corp.tentative.https.html": {
     "harness": "TIMEOUT",
-    "total": 12,
+    "total": 9,
     "failures": {
       "[dedicated worker] blocked due to DIP": "NOTRUN",
       "[dedicated worker] blocked during redirect": "NOTRUN",
@@ -272,10 +307,7 @@
       "[document with service worker] blocked during redirect": "NOTRUN",
       "[document with service worker] same-origin": "NOTRUN",
       "[document] blocked due to DIP": "TIMEOUT",
-      "[document] blocked during redirect": "NOTRUN",
-      "[shared worker] blocked due to DIP": "NOTRUN",
-      "[shared worker] blocked during redirect": "NOTRUN",
-      "[shared worker] same-origin": "NOTRUN"
+      "[document] blocked during redirect": "NOTRUN"
     }
   },
   "html/document-isolation-policy/reporting-cached-and-service-worker-responses.tentative.https.html": {
@@ -304,7 +336,7 @@
   },
   "html/document-isolation-policy/reporting-subresource-corp.tentative.https.html": {
     "harness": "TIMEOUT",
-    "total": 16,
+    "total": 12,
     "failures": {
       "[dedicated worker] blocked due to DIP": "NOTRUN",
       "[dedicated worker] blocked due to DIP (with fragment)": "NOTRUN",
@@ -316,11 +348,7 @@
       "[document with service worker] same-origin": "NOTRUN",
       "[document] blocked due to DIP": "TIMEOUT",
       "[document] blocked due to DIP (with fragment)": "NOTRUN",
-      "[document] blocked during redirect": "NOTRUN",
-      "[shared worker] blocked due to DIP": "NOTRUN",
-      "[shared worker] blocked due to DIP (with fragment)": "NOTRUN",
-      "[shared worker] blocked during redirect": "NOTRUN",
-      "[shared worker] same-origin": "NOTRUN"
+      "[document] blocked during redirect": "NOTRUN"
     }
   },
   "html/document-isolation-policy/reporting.tentative.https.html": {
@@ -349,9 +377,11 @@
     }
   },
   "html/document-isolation-policy/shared-workers.tentative.https.html": {
-    "total": 8,
+    "total": 9,
     "failures": {
-      "\"isolate-and-require-corp\" (derived from owner set due to use of local scheme - blob URL)": "FAIL"
+      "\"isolate-and-require-corp\" is not inherited from the blob URL creator": "FAIL",
+      "\"isolate-and-require-corp\" is not inherited from the owner - data URL": "FAIL",
+      "\"isolate-and-require-corp\" on the worker script is ignored": "FAIL"
     }
   },
   "html/document-isolation-policy/window-reuse.tentative.https.html": {

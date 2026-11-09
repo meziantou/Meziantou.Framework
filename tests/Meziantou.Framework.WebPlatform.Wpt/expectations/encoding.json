@@ -47,6 +47,15 @@
   "encoding/bom-handling.html": {
     "total": 1
   },
+  "encoding/encodeInto-tail-unmodified.any.js": {
+    "total": 1
+  },
+  "encoding/encodeInto-tail-unmodified.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "encoding/encodeInto-tail-unmodified.any.js#sharedworker": {
+    "total": 1
+  },
   "encoding/encodeInto.any.js": {
     "total": 111
   },

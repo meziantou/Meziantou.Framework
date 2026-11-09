@@ -24,10 +24,7 @@
     "total": 1
   },
   "document-policy/reporting/sync-xhr-reporting.html": {
-    "total": 1,
-    "failures": {
-      "Sync-xhr Report Format": "FAIL"
-    }
+    "total": 1
   },
   "document-policy/required-policy/document-policy.html": {
     "total": 3

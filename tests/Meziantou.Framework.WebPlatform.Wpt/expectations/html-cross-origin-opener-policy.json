@@ -257,6 +257,9 @@
   "html/cross-origin-opener-policy/non-secure-to-secure-context-navigation.https.html": {
     "total": 1
   },
+  "html/cross-origin-opener-policy/noopener-popup-cross-origin-isolation.https.html": {
+    "total": 4
+  },
   "html/cross-origin-opener-policy/popup-coop-by-sw.https.html?1-4": {
     "total": 4
   },

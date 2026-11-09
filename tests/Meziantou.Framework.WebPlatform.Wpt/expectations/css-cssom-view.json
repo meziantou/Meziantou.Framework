@@ -434,6 +434,23 @@
   "css/cssom-view/offsetTopLeft-empty-inline.html": {
     "total": 3
   },
+  "css/cssom-view/offsetTopLeft-inline-offsetParent.html": {
+    "total": 19,
+    "failures": {
+      "direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box at its static position": "FAIL",
+      "direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'left: 0'": "FAIL",
+      "direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'left: 0; top: 0'": "FAIL",
+      "direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'right: 0; bottom: 0'": "FAIL",
+      "direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'top: 0'": "FAIL",
+      "direction: ltr; inline box 'position: relative; border: 10px solid; padding: 5px'; in-flow inline-block": "FAIL",
+      "direction: rtl; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box at its static position": "FAIL",
+      "direction: rtl; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'left: 0'": "FAIL",
+      "direction: rtl; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'left: 0; top: 0'": "FAIL",
+      "direction: rtl; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'right: 0; bottom: 0'": "FAIL",
+      "direction: rtl; inline box 'position: relative; border: 10px solid; padding: 5px'; absolutely positioned box with 'top: 0'": "FAIL",
+      "direction: rtl; inline box 'position: relative; border: 10px solid; padding: 5px'; in-flow inline-block": "FAIL"
+    }
+  },
   "css/cssom-view/offsetTopLeft-inline.html": {
     "reftest": "PASS"
   },
@@ -553,6 +570,14 @@
   },
   "css/cssom-view/scroll-position-root-child-ib-split-insertion.html": {
     "total": 1
+  },
+  "css/cssom-view/scroll-target-into-view-fragment-in-same-origin-subframe.html": {
+    "total": 3,
+    "failures": {
+      "Scrolling to the fragment of an HTML document in an <embed> scrolls the parent document to the <embed>": "FAIL",
+      "Scrolling to the fragment of an HTML document in an <iframe> scrolls the parent document to the <iframe>": "FAIL",
+      "Scrolling to the fragment of an HTML document in an <object> scrolls the parent document to the <object>": "FAIL"
+    }
   },
   "css/cssom-view/scroll-width-with-over-constrained-block-in-inline.html": {
     "total": 2

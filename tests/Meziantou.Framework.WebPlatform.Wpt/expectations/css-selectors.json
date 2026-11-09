@@ -410,11 +410,20 @@
   "css/selectors/focus-within-shadow-006.html": {
     "reftest": "PASS"
   },
+  "css/selectors/focus-within-shadow-007.html": {
+    "reftest": "PASS"
+  },
+  "css/selectors/focus-within-shadow-008.html": {
+    "reftest": "PASS"
+  },
   "css/selectors/focus-within-toplayer-001.html": {
     "total": 3
   },
   "css/selectors/focus-within.html": {
     "total": 2
+  },
+  "css/selectors/forgiving-selector-list-comma-in-block.html": {
+    "total": 19
   },
   "css/selectors/has-argument-with-explicit-scope.html": {
     "total": 13
@@ -733,6 +742,9 @@
   },
   "css/selectors/invalidation/has-pseudoclass-only.html": {
     "total": 36
+  },
+  "css/selectors/invalidation/has-shared-argument-multiple-rules.html": {
+    "total": 2
   },
   "css/selectors/invalidation/has-sibling-insertion-removal.html": {
     "total": 28

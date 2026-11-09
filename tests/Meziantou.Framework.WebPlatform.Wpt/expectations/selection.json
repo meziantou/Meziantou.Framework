@@ -326,6 +326,114 @@
   "selection/selection-incremental-change-repaint.html": {
     "reftest": "PASS"
   },
+  "selection/selection-modify-across-minimum-table.html?granularity=character&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-minimum-table.html?granularity=character&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-minimum-table.html?granularity=line&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-minimum-table.html?granularity=line&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-minimum-table.html?granularity=word&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-minimum-table.html?granularity=word&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-caption.html?granularity=character&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-caption.html?granularity=character&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-caption.html?granularity=line&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-caption.html?granularity=line&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-caption.html?granularity=word&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-caption.html?granularity=word&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-col.html?granularity=character&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-col.html?granularity=character&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-col.html?granularity=line&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-col.html?granularity=line&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-col.html?granularity=word&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-col.html?granularity=word&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-tfoot-after-tbody.html?granularity=character&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-tfoot-after-tbody.html?granularity=character&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-tfoot-after-tbody.html?granularity=line&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-tfoot-after-tbody.html?granularity=line&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-tfoot-after-tbody.html?granularity=word&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-tfoot-after-tbody.html?granularity=word&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-tfoot-before-tbody.html?granularity=character&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-tfoot-before-tbody.html?granularity=character&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-tfoot-before-tbody.html?granularity=line&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-tfoot-before-tbody.html?granularity=line&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-tfoot-before-tbody.html?granularity=word&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-tfoot-before-tbody.html?granularity=word&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-thead.html?granularity=character&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-thead.html?granularity=character&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-thead.html?granularity=line&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-thead.html?granularity=line&editable=true": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-thead.html?granularity=word&editable=false": {
+    "total": 2
+  },
+  "selection/selection-modify-across-table-containing-thead.html?granularity=word&editable=true": {
+    "total": 2
+  },
   "selection/selection-modify-extend-word-generated-content.html": {
     "total": 2
   },

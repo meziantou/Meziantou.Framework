@@ -65,6 +65,14 @@
   "preload/link-preload-as-case-insensitive.html": {
     "total": 7
   },
+  "preload/link-url-encoding.html": {
+    "total": 3,
+    "failures": {
+      "windows-1252 favicon href": "FAIL",
+      "windows-1252 prefetch href": "FAIL",
+      "windows-1252 preload href": "FAIL"
+    }
+  },
   "preload/modulepreload-already-in-module-map.html": {
     "total": 5
   },
@@ -163,6 +171,9 @@
   },
   "preload/preload-imagesrcset-no-href.html": {
     "total": 3
+  },
+  "preload/preload-imagesrcset-selection.html": {
+    "total": 13
   },
   "preload/preload-in-data-doc.html": {
     "reftest": "PASS"

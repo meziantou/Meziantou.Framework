@@ -167,6 +167,9 @@
   "css/css-cascade/layer-media-toggle.html": {
     "reftest": "PASS"
   },
+  "css/css-cascade/layer-order-invalidation-shadow-dom.html": {
+    "total": 3
+  },
   "css/css-cascade/layer-property-override.html": {
     "total": 4
   },
@@ -401,6 +404,9 @@
   "css/css-cascade/scope-import-scope-start.html": {
     "total": 2
   },
+  "css/css-cascade/scope-insert-rule.html": {
+    "total": 5
+  },
   "css/css-cascade/scope-invalidation.html": {
     "total": 31
   },
@@ -436,6 +442,9 @@
   },
   "css/css-cascade/scope-shadow.html": {
     "total": 9
+  },
+  "css/css-cascade/scope-slotted.html": {
+    "reftest": "PASS"
   },
   "css/css-cascade/scope-specificity.html": {
     "total": 11

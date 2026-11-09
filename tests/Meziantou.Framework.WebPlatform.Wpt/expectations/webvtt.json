@@ -9,7 +9,7 @@
     "total": 5
   },
   "webvtt/api/VTTCue/getCueAsHTML.html": {
-    "total": 14
+    "total": 15
   },
   "webvtt/api/VTTCue/line.html": {
     "total": 2
@@ -967,6 +967,9 @@
   },
   "webvtt/rendering/cues-with-video/processing-model/size_50.html": {
     "reftest": "PASS"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/snap-to-line-wrap.html": {
+    "reftest": "FAIL"
   },
   "webvtt/rendering/cues-with-video/processing-model/snap-to-line.html": {
     "reftest": "PASS"

@@ -119,6 +119,18 @@
       "focusreset is not fired synchronously": "FAIL"
     }
   },
+  "html/interaction/focus/processing-model/focus-fixup-rule-disabled.tentative.html": {
+    "total": 7,
+    "failures": {
+      "#button": "FAIL",
+      "#date": "FAIL",
+      "#fieldset-button disabled via #fieldset": "FAIL",
+      "#input": "FAIL",
+      "#select": "FAIL",
+      "#textarea": "FAIL",
+      "Other focus fixup triggers still apply to disabled elements": "FAIL"
+    }
+  },
   "html/interaction/focus/processing-model/focus-fixup-rule-one-no-dialogs.html": {
     "total": 8
   },

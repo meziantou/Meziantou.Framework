@@ -11,6 +11,12 @@
   "css/css-viewport/zoom/animation-range.html": {
     "reftest": "PASS"
   },
+  "css/css-viewport/zoom/aspect-ratio-height-with-automatic-minimum-size-tall.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/aspect-ratio-height-with-automatic-minimum-size.html": {
+    "reftest": "PASS"
+  },
   "css/css-viewport/zoom/background-image.html": {
     "reftest": "PASS"
   },

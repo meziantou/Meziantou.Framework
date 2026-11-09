@@ -4835,6 +4835,12 @@
   "css/CSS2/floats/floated-table-wider-than-specified.html": {
     "reftest": "PASS"
   },
+  "css/CSS2/floats/floats-in-inline-content-intrinsic-size-001.html": {
+    "total": 16,
+    "failures": {
+      "Text sits next to the floats that come before the clearing float (textNextToFirstFloat, max-content)": "FAIL"
+    }
+  },
   "css/CSS2/floats/floats-in-table-caption-001.html": {
     "reftest": "PASS"
   },
@@ -7788,6 +7794,9 @@
     "reftest": "PASS"
   },
   "css/CSS2/margin-padding-clear/margin-collapse-min-height-002.xht": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/margin-padding-clear/margin-collapse-quirks-mode-001.html": {
     "reftest": "PASS"
   },
   "css/CSS2/margin-padding-clear/margin-em-inherit-001.xht": {

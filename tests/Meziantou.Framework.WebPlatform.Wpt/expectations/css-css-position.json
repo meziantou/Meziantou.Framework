@@ -137,6 +137,9 @@
   "css/css-position/nested-inline-abspos-child.html": {
     "reftest": "PASS"
   },
+  "css/css-position/out-of-flow-in-inline-content-intrinsic-size-001.html": {
+    "total": 17
+  },
   "css/css-position/overlay/animation/overlay-interpolation.html": {
     "total": 88
   },
@@ -452,8 +455,14 @@
   "css/css-position/position-absolute-in-inline-012.html": {
     "reftest": "PASS"
   },
+  "css/css-position/position-absolute-in-inline-dynamic.html": {
+    "total": 9
+  },
   "css/css-position/position-absolute-in-inline-margin-top.html": {
     "reftest": "PASS"
+  },
+  "css/css-position/position-absolute-in-inline-vertical-lr.html": {
+    "total": 16
   },
   "css/css-position/position-absolute-large-negative-inset.html": {
     "reftest": "PASS"

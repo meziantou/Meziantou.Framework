@@ -27,6 +27,15 @@
       "contain calc(0% + 100px) matches contain 100px at offset before range under CSS zoom": "FAIL"
     }
   },
+  "scroll-animations/animation-trigger/animation-trigger-cancel.tentative.html": {
+    "total": 4,
+    "failures": {
+      "A CSS animation that replaces a cancelled one is attached to the trigger": "FAIL",
+      "Changing animation-trigger doesn't attach a cancelled CSS animation to a trigger": "FAIL",
+      "Style changes don't attach a cancelled CSS animation to its trigger again": "FAIL",
+      "cancel() detaches a CSS animation from its trigger": "FAIL"
+    }
+  },
   "scroll-animations/animation-trigger/animation-trigger-disarmed-by-apis.tentative.html": {
     "total": 1,
     "failures": {
@@ -40,10 +49,9 @@
     "reftest": "FAIL"
   },
   "scroll-animations/animation-trigger/animation-trigger-late-attached-timeline.tentative.html": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "late-attached trigger timeline plays animation": "TIMEOUT"
+      "late-attached trigger timeline plays animation": "FAIL"
     }
   },
   "scroll-animations/animation-trigger/animation-trigger-multiple-animations.tentative.html": {
@@ -87,6 +95,14 @@
     "total": 1,
     "failures": {
       "Ranges of triggers created by script are read in CSS pixels": "FAIL"
+    }
+  },
+  "scroll-animations/animation-trigger/animation-trigger-removed-during-snapshot.tentative.html": {
+    "total": 3,
+    "failures": {
+      "Timeline snapshot update handles timeline trigger set shrinking during OnValidateSnapshot even when active trigger's animation map is unchanged": "FAIL",
+      "Timeline snapshot update handles trigger set and animation map shrinking during OnValidateSnapshot while performing all original trigger actions": "FAIL",
+      "Timeline snapshot update handles trigger set shrinking during TimelineTrigger::Update while performing all original trigger actions": "FAIL"
     }
   },
   "scroll-animations/animation-trigger/animation-trigger-repeat.tentative.html": {
@@ -585,6 +601,12 @@
   "scroll-animations/css/timeline-scope-computed.html": {
     "total": 12
   },
+  "scroll-animations/css/timeline-scope-on-pseudo.html": {
+    "total": 3,
+    "failures": {
+      "timeline-scope on ::before is honoured when the pseudo-element starts animating later": "FAIL"
+    }
+  },
   "scroll-animations/css/timeline-scope-parsing.html": {
     "total": 25
   },
@@ -751,6 +773,9 @@
   },
   "scroll-animations/scroll-timelines/play-animation.html": {
     "total": 16
+  },
+  "scroll-animations/scroll-timelines/play-state-unresolved-timeline.tentative.html": {
+    "total": 4
   },
   "scroll-animations/scroll-timelines/progress-based-effect-delay.tentative.html": {
     "reftest": "PASS"

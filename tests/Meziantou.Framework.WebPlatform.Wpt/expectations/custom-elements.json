@@ -191,6 +191,9 @@
   "custom-elements/form-associated/form-reset-callback.html": {
     "total": 3
   },
+  "custom-elements/form-associated/form-upgrade-reactions.html": {
+    "total": 6
+  },
   "custom-elements/form-associated/label-delegatesFocus.html": {
     "total": 2
   },
@@ -249,6 +252,9 @@
     "total": 10
   },
   "custom-elements/parser/serializing-html-fragments-customized-builtins.html": {
+    "total": 3
+  },
+  "custom-elements/parser/xml-fragment-parser-does-not-construct-synchronously.xhtml": {
     "total": 3
   },
   "custom-elements/parser/xml-parser-custom-element-reparents-during-construction.xhtml": {
@@ -533,7 +539,7 @@
     "total": 1
   },
   "custom-elements/registries/per-document.html": {
-    "total": 3
+    "total": 4
   },
   "custom-elements/registries/pseudo-class-defined.window.js": {
     "total": 3

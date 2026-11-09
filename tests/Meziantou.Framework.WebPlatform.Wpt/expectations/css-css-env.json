@@ -2,6 +2,17 @@
   "css/css-env/at-supports.tentative.html": {
     "total": 1
   },
+  "css/css-env/env-fallback-braces.html": {
+    "total": 6,
+    "failures": {
+      "Property color value 'env(missing-name, { rgb(1, 2, 3) })'": "FAIL",
+      "Property color value 'env(missing-name, {rgb(1, 2, 3)} )'": "FAIL",
+      "Property color value 'env(missing-name, {rgb(1, 2, 3)})'": "FAIL",
+      "Property font-family value 'env(missing-name, {Arial, sans-serif})'": "FAIL",
+      "e.style['color'] = \"env(missing-name, {rgb(1, 2, 3)} rgb(4, 5, 6))\" should not set the property value": "FAIL",
+      "e.style['font-family'] = \"env(missing-name, {Arial}, sans-serif)\" should not set the property value": "FAIL"
+    }
+  },
   "css/css-env/env-fallback-substitution.html": {
     "total": 11
   },
@@ -9,7 +20,14 @@
     "total": 2
   },
   "css/css-env/env-parsing.html": {
-    "total": 8
+    "total": 15,
+    "failures": {
+      "e.style['width'] = \"env(safe-area-inset-top () )\" should set the property value": "FAIL",
+      "e.style['width'] = \"env(safe-area-inset-top ())\" should set the property value": "FAIL",
+      "e.style['width'] = \"env(safe-area-inset-top (),)\" should set the property value": "FAIL",
+      "e.style['width'] = \"env(safe-area-inset-top() )\" should set the property value": "FAIL",
+      "e.style['width'] = \"env(safe-area-inset-top(),)\" should set the property value": "FAIL"
+    }
   },
   "css/css-env/env-revert-rule.html": {
     "total": 1
@@ -18,7 +36,13 @@
     "total": 1
   },
   "css/css-env/indexed-env.tentative.html": {
-    "total": 8
+    "total": 11,
+    "failures": {
+      "CSS Environment variable value \"env(test -1, green)\" must successfully parse and roundtrip": "FAIL",
+      "CSS Environment variable value \"env(test 0.1, green)\" must successfully parse and roundtrip": "FAIL",
+      "CSS Environment variable value \"env(test1 10 20 test2, green)\" must successfully parse and roundtrip": "FAIL",
+      "CSS Environment variable value \"env(test1 test2, green)\" must successfully parse and roundtrip": "FAIL"
+    }
   },
   "css/css-env/seralization-round-tripping.tentative.html": {
     "total": 1
@@ -27,7 +51,11 @@
     "total": 1
   },
   "css/css-env/syntax.tentative.html": {
-    "total": 18
+    "total": 25,
+    "failures": {
+      "background-color: env(10px) rgba(0, 0, 0, 0)": "FAIL",
+      "background-color: env(env(test)) rgba(0, 0, 0, 0)": "FAIL"
+    }
   },
   "css/css-env/unknown-env-names-override-previous.tentative.html": {
     "total": 1

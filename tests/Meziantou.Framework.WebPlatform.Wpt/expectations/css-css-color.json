@@ -75,7 +75,10 @@
     "total": 17
   },
   "css/css-color/canvas-srgb-gamut-mapping.html": {
-    "total": 14
+    "total": 20,
+    "failures": {
+      "oklch(0.0001220703125 0.4 19.75) painted on an sRGB canvas": "FAIL"
+    }
   },
   "css/css-color/clip-opacity-out-of-flow.html": {
     "reftest": "PASS"
@@ -310,6 +313,15 @@
   },
   "css/css-color/hsl-008.html": {
     "reftest": "PASS"
+  },
+  "css/css-color/hsl-009.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-color/hsl-010.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-color/hsl-011.html": {
+    "reftest": "FAIL"
   },
   "css/css-color/hsl-clamp-negative-saturation.html": {
     "reftest": "PASS"
@@ -561,7 +573,7 @@
     "total": 468
   },
   "css/css-color/parsing/color-computed-color-mix-function.html": {
-    "total": 977
+    "total": 983
   },
   "css/css-color/parsing/color-computed-contrast-color-function.html": {
     "total": 17
@@ -650,7 +662,7 @@
     "total": 170
   },
   "css/css-color/parsing/color-valid-color-mix-function.html": {
-    "total": 677
+    "total": 683
   },
   "css/css-color/parsing/color-valid-contrast-color-function.html": {
     "total": 17

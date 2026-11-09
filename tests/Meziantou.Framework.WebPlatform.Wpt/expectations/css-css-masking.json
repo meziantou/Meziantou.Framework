@@ -966,7 +966,7 @@
     "reftest": "PASS"
   },
   "css/css-masking/clip-path/clip-path-shape-011.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-masking/clip-path/clip-path-shape-foreignobject-non-zero-xy.html": {
     "reftest": "PASS"
@@ -1675,6 +1675,9 @@
   },
   "css/css-masking/parsing/mask-repeat-valid.html": {
     "total": 22
+  },
+  "css/css-masking/parsing/mask-shorthand-serialization.html": {
+    "total": 4
   },
   "css/css-masking/parsing/mask-size-computed.html": {
     "total": 16

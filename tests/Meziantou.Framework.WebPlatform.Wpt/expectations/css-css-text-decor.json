@@ -254,8 +254,62 @@
   "css/css-text-decor/text-decoration-inset-030.html": {
     "reftest": "PASS"
   },
+  "css/css-text-decor/text-decoration-inset-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-bidi-seam.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-line-through.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-marked-text-gap.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text-decor/text-decoration-inset-negative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-not-inherited.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-one-value.html": {
+    "reftest": "PASS"
+  },
   "css/css-text-decor/text-decoration-inset-orthogonal-block-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-overline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-percentage-clone.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text-decor/text-decoration-inset-percentage-equivalence.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-percentage-negative-grow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-percentage-negative-incremental.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-percentage-negative-layer.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-percentage-negative-multiline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-percentage-negative-propagated.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-percentage-negative-repaint.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-percentage-negative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-percentage-padding.html": {
+    "reftest": "FAIL"
   },
   "css/css-text-decor/text-decoration-inset-percentage-slice-multiline.html": {
     "reftest": "PASS"
@@ -267,6 +321,12 @@
     "reftest": "PASS"
   },
   "css/css-text-decor/text-decoration-inset-svg-fragment-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-trims-underline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-inset-zero.html": {
     "reftest": "PASS"
   },
   "css/css-text-decor/text-decoration-line-010.xht": {
@@ -1033,6 +1093,9 @@
   },
   "css/css-text-decor/text-underline-offset-computed.html": {
     "total": 15
+  },
+  "css/css-text-decor/text-underline-offset-decorating-element.html": {
+    "reftest": "PASS"
   },
   "css/css-text-decor/text-underline-offset-initial.html": {
     "total": 1

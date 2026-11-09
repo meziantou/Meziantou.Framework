@@ -61,6 +61,9 @@
       "Check if the prefix of an attribute is NOT preserved in a case where neither its prefix nor its namespace URI is not already used.": "FAIL"
     }
   },
+  "domparsing/all-stream-methods-with-trusted-types-no-policy.html": {
+    "total": 38
+  },
   "domparsing/createContextualFragment-external-scripts-async.html": {
     "total": 1
   },
@@ -160,18 +163,263 @@
   "domparsing/positional-template-child.html": {
     "total": 6
   },
-  "domparsing/stream-html-reentrancy.html": {
-    "total": 21,
+  "domparsing/stream-append-html-unsafe.html": {
+    "total": 14
+  },
+  "domparsing/stream-append-html.html": {
+    "total": 17,
     "failures": {
-      "streamAppendHTMLUnsafe: abort() from a streamed inline script after a parser-blocking script is deferred until the current chunk is parsed": "FAIL",
+      "streamAppendHTML() can stream into a non-empty <style>": "FAIL"
+    }
+  },
+  "domparsing/stream-fragment-context.html": {
+    "total": 81,
+    "failures": {
+      "streamAppendHTML: unclosed <style> is popped on close()": "FAIL",
+      "streamAppendHTMLUnsafe: unclosed <style> is popped on close()": "FAIL",
+      "streamHTML: unclosed <style> is popped on close()": "FAIL",
+      "streamHTMLUnsafe: unclosed <style> is popped on close()": "FAIL"
+    }
+  },
+  "domparsing/stream-html-abort-unblocks-rendering-defer.html": {
+    "total": 1
+  },
+  "domparsing/stream-html-abort-unblocks-rendering.html": {
+    "total": 1
+  },
+  "domparsing/stream-html-custom-element-sanitizer.html": {
+    "total": 122
+  },
+  "domparsing/stream-html-custom-element.html": {
+    "total": 59
+  },
+  "domparsing/stream-html-defer-async-script.html": {
+    "total": 15,
+    "failures": {
+      "element.streamAppendHTMLUnsafe with defer/async scripts": "FAIL",
+      "element.streamAppendHTMLUnsafe: defer and module scripts run after close() resolves, one per task": "FAIL",
+      "element.streamHTMLUnsafe with defer/async scripts": "FAIL",
+      "element.streamHTMLUnsafe: defer and module scripts run after close() resolves, one per task": "FAIL",
+      "element.streamPrependHTMLUnsafe: defer scripts do not run if the reference child is removed before a trailing '<' is flushed by close()": "FAIL"
+    }
+  },
+  "domparsing/stream-html-disconnected-target-scripts.html": {
+    "total": 4,
+    "failures": {
+      "streamAppendHTMLUnsafe with runScripts: true into a disconnected element: external scripts run async once connected": "FAIL",
+      "streamHTMLUnsafe with runScripts: true into a disconnected element: external scripts run async once connected": "FAIL"
+    }
+  },
+  "domparsing/stream-html-element.html": {
+    "total": 28
+  },
+  "domparsing/stream-html-live-document.html": {
+    "total": 9
+  },
+  "domparsing/stream-html-parser-blocking-script.html": {
+    "total": 29,
+    "failures": {
+      "Blocking script whose src 404s fires error event, parsing continues, and close() resolves": "FAIL",
+      "DOM mutations inside streamed parser-blocking script maintain correct insertion order": "FAIL",
+      "External script tag split across chunk boundaries parses and executes correctly": "FAIL",
+      "Live document script-blocking stylesheets do not block streamed inline, external, or defer scripts": "FAIL",
+      "Multiple parser-blocking scripts with out-of-order fetch times execute in document order": "FAIL",
+      "Rejected write (displacedRef) stops the parser and prevents pending blocking script and buffered markup from running": "FAIL",
+      "Rejected write (symbol) stops the parser and prevents pending blocking script and buffered markup from running": "FAIL",
+      "Rejected write (toStringAbortAndThrow) stops the parser and prevents pending blocking script and buffered markup from running": "FAIL",
+      "Rejected write (toStringRemoveRefAndThrow) stops the parser and prevents pending blocking script and buffered markup from running": "FAIL",
+      "Rejected write (toStringThrow) stops the parser and prevents pending blocking script and buffered markup from running": "FAIL",
+      "Removing iframe while stream is blocked on external script does not crash or execute scripts": "FAIL",
+      "Two concurrent streams block independently": "FAIL",
+      "close() while blocked waits for the blocking script and remaining input, then defer scripts run": "FAIL",
+      "document.write() from external streamed script is ignored; from inline streamed script implicitly opens document": "FAIL",
+      "streamAppendHTMLUnsafe: close() waits for a pending parser-blocking script and remaining input": "FAIL",
+      "streamBeforeHTMLUnsafe: close() rejects with HierarchyRequestError if referenceChild is removed after a pending parser-blocking script": "FAIL",
+      "streamHTMLUnsafe with parser blocking script should process in order": "FAIL",
+      "streamHTMLUnsafe with parser-blocking script should not execute or parse buffered markup after abort": "FAIL",
+      "streamHTMLUnsafe: close() waits for a pending parser-blocking script and remaining input": "FAIL",
+      "streamPrependHTMLUnsafe: close() waits for a pending parser-blocking script and remaining input": "FAIL",
+      "write() resolves without waiting for a parser-blocking script to finish loading": "FAIL"
+    }
+  },
+  "domparsing/stream-html-reentrancy.html": {
+    "total": 40,
+    "failures": {
+      "documentElement.streamHTMLUnsafe: abort() from a foster-parented custom element reaction in table text does not merge <body> attributes": "FAIL",
+      "streamAppendHTMLUnsafe: abort() from a custom element reaction drops elements that the current token would insert": "FAIL",
+      "streamAppendHTMLUnsafe: abort() from a custom element reaction drops text that the current token would insert": "FAIL",
+      "streamAppendHTMLUnsafe: abort() from a foster-parented custom element reaction in table text keeps patch markers at </template>": "FAIL",
+      "streamAppendHTMLUnsafe: abort() from a microtask before a streamed script is prepared prevents that script from running": "FAIL",
+      "streamAppendHTMLUnsafe: abort() from a streamed inline script after a parser-blocking script stops parsing after the current token": "FAIL",
       "streamAppendHTMLUnsafe: close() from a streamed inline script after a parser-blocking script closes the stream after the current chunk": "FAIL",
+      "streamAppendHTMLUnsafe: customized built-in <template for> upgrades at microtask checkpoint after patching": "FAIL",
+      "streamAppendHTMLUnsafe: customized built-in <template shadowrootmode> upgrades at microtask checkpoint after attaching shadow root": "FAIL",
       "streamAppendHTMLUnsafe: write() from a streamed inline script after a parser-blocking script is parsed after the current chunk": "FAIL",
-      "streamHTMLUnsafe: abort() from a streamed inline script after a parser-blocking script is deferred until the current chunk is parsed": "FAIL",
+      "streamHTMLUnsafe: abort() from a custom element reaction drops elements that the current token would insert": "FAIL",
+      "streamHTMLUnsafe: abort() from a custom element reaction drops text that the current token would insert": "FAIL",
+      "streamHTMLUnsafe: abort() from a foster-parented custom element reaction in table text keeps patch markers at </template>": "FAIL",
+      "streamHTMLUnsafe: abort() from a microtask before a streamed script is prepared prevents that script from running": "FAIL",
+      "streamHTMLUnsafe: abort() from a streamed inline script after a parser-blocking script stops parsing after the current token": "FAIL",
       "streamHTMLUnsafe: close() from a streamed inline script after a parser-blocking script closes the stream after the current chunk": "FAIL",
+      "streamHTMLUnsafe: customized built-in <template for> upgrades at microtask checkpoint after patching": "FAIL",
+      "streamHTMLUnsafe: customized built-in <template shadowrootmode> upgrades at microtask checkpoint after attaching shadow root": "FAIL",
       "streamHTMLUnsafe: write() from a streamed inline script after a parser-blocking script is parsed after the current chunk": "FAIL",
-      "streamPrependHTMLUnsafe: abort() from a streamed inline script after a parser-blocking script is deferred until the current chunk is parsed": "FAIL",
+      "streamPrependHTMLUnsafe: abort() from a custom element reaction drops elements that the current token would insert": "FAIL",
+      "streamPrependHTMLUnsafe: abort() from a custom element reaction drops text that the current token would insert": "FAIL",
+      "streamPrependHTMLUnsafe: abort() from a foster-parented custom element reaction in table text keeps patch markers at </template>": "FAIL",
+      "streamPrependHTMLUnsafe: abort() from a microtask before a streamed script is prepared prevents that script from running": "FAIL",
+      "streamPrependHTMLUnsafe: abort() from a streamed inline script after a parser-blocking script stops parsing after the current token": "FAIL",
       "streamPrependHTMLUnsafe: close() from a streamed inline script after a parser-blocking script closes the stream after the current chunk": "FAIL",
+      "streamPrependHTMLUnsafe: customized built-in <template for> upgrades at microtask checkpoint after patching": "FAIL",
+      "streamPrependHTMLUnsafe: customized built-in <template shadowrootmode> upgrades at microtask checkpoint after attaching shadow root": "FAIL",
       "streamPrependHTMLUnsafe: write() from a streamed inline script after a parser-blocking script is parsed after the current chunk": "FAIL"
+    }
+  },
+  "domparsing/stream-html-run-scripts-option.html": {
+    "total": 30,
+    "failures": {
+      "element.streamAppendHTMLUnsafe: a streamed <script> moved to another document before its end tag does not execute": "FAIL",
+      "element.streamAppendHTMLUnsafe: a streamed SVG <script> does not execute after the target moves to another document": "FAIL",
+      "element.streamHTMLUnsafe: a streamed <script> moved to another document before its end tag does not execute": "FAIL",
+      "element.streamHTMLUnsafe: a streamed SVG <script> does not execute after the target moves to another document": "FAIL"
+    }
+  },
+  "domparsing/stream-html-sanitizer-safe.html": {
+    "total": 30
+  },
+  "domparsing/stream-html-sanitizer.html": {
+    "total": 338
+  },
+  "domparsing/stream-html-script-safe.html": {
+    "total": 36
+  },
+  "domparsing/stream-html-stylesheet-does-not-block-scripts.html": {
+    "total": 9
+  },
+  "domparsing/stream-html-unsafe.html": {
+    "total": 18
+  },
+  "domparsing/stream-html-with-declarative-shadow-root.html": {
+    "total": 49
+  },
+  "domparsing/stream-html-with-trusted-types-adopt.tentative.html": {
+    "total": 24
+  },
+  "domparsing/stream-html-with-trusted-types-createParserOptions-order.html": {
+    "total": 19
+  },
+  "domparsing/stream-html-with-trusted-types-error-in-policy.html": {
+    "total": 13
+  },
+  "domparsing/stream-html-with-trusted-types-from-non-tt.tentative.html": {
+    "total": 12
+  },
+  "domparsing/stream-html-with-trusted-types-no-createParserOptions.html": {
+    "total": 12
+  },
+  "domparsing/stream-html-with-trusted-types-pass-trusted.html": {
+    "total": 18
+  },
+  "domparsing/stream-html-with-trusted-types-report-only.html": {
+    "total": 24
+  },
+  "domparsing/stream-html-with-trusted-types-reporting.html": {
+    "total": 24
+  },
+  "domparsing/stream-html-with-trusted-types-runScripts-can-be-turned-on.html": {
+    "total": 6
+  },
+  "domparsing/stream-html-with-trusted-types-runScripts-off.html": {
+    "total": 12
+  },
+  "domparsing/stream-html-with-trusted-types-sanitizer.html": {
+    "total": 24
+  },
+  "domparsing/stream-html.html": {
+    "total": 18
+  },
+  "domparsing/stream-insertion-logic.html": {
+    "total": 153,
+    "failures": {
+      "Cross-realm streamBeforeHTMLUnsafe creates WritableStream and HierarchyRequestError in this's relevant realm": "FAIL",
+      "streamAfterHTMLUnsafe: <img> as first token after ref_node displacement is created in an inert document": "FAIL",
+      "streamAfterHTMLUnsafe: <template for> after ref_node displacement does not apply and errors the stream": "FAIL",
+      "streamAfterHTMLUnsafe: a comment as the only token after mid-chunk displacement errors the stream and is dropped": "FAIL",
+      "streamAfterHTMLUnsafe: adoption agency at the root after ref_node displacement keeps existing nodes and errors the stream": "FAIL",
+      "streamAfterHTMLUnsafe: child of replaceWithChildrenElements as first token after ref_node displacement is created in an inert document": "FAIL",
+      "streamAfterHTMLUnsafe: children of a replaceWithChildrenElements element are dropped, without erroring the stream, when the table it was foster parented before is moved": "FAIL",
+      "streamAfterHTMLUnsafe: custom element as first token after ref_node displacement is created in an inert document with null custom element registry": "FAIL",
+      "streamAfterHTMLUnsafe: displacing ref_node mid-chunk before a removeElements subtree errors the stream and suppresses custom element construction": "FAIL",
+      "streamAfterHTMLUnsafe: displacing ref_node mid-chunk drops subsequent nodes/subtrees/text/comments and errors the stream": "FAIL",
+      "streamAfterHTMLUnsafe: displacing ref_node mid-chunk with sanitizer and replaceWithChildrenElements drops nodes and errors the stream": "FAIL",
+      "streamAfterHTMLUnsafe: moving ref_node back into parent after mid-chunk displacement does not recover the errored stream": "FAIL",
+      "streamAfterHTMLUnsafe: ref_node displacement during table-text foster parenting errors the stream without applying <template for>": "FAIL",
+      "streamAfterHTMLUnsafe: whitespace as the only token after mid-chunk displacement errors the stream and is dropped": "FAIL",
+      "streamAppendHTMLUnsafe: adopting the target into another document mid-stream continues inserting nodes without running scripts": "FAIL",
+      "streamBeforeHTMLUnsafe: <img> as first token after ref_node displacement is created in an inert document": "FAIL",
+      "streamBeforeHTMLUnsafe: <template for> after ref_node displacement does not apply and errors the stream": "FAIL",
+      "streamBeforeHTMLUnsafe: a comment as the only token after mid-chunk displacement errors the stream and is dropped": "FAIL",
+      "streamBeforeHTMLUnsafe: adoption agency at the root after ref_node displacement keeps existing nodes and errors the stream": "FAIL",
+      "streamBeforeHTMLUnsafe: child of replaceWithChildrenElements as first token after ref_node displacement is created in an inert document": "FAIL",
+      "streamBeforeHTMLUnsafe: children of a replaceWithChildrenElements element are dropped, without erroring the stream, when the table it was foster parented before is moved": "FAIL",
+      "streamBeforeHTMLUnsafe: custom element as first token after ref_node displacement is created in an inert document with null custom element registry": "FAIL",
+      "streamBeforeHTMLUnsafe: displacing ref_node mid-chunk before a removeElements subtree errors the stream and suppresses custom element construction": "FAIL",
+      "streamBeforeHTMLUnsafe: displacing ref_node mid-chunk drops subsequent nodes/subtrees/text/comments and errors the stream": "FAIL",
+      "streamBeforeHTMLUnsafe: displacing ref_node mid-chunk with sanitizer and replaceWithChildrenElements drops nodes and errors the stream": "FAIL",
+      "streamBeforeHTMLUnsafe: moving ref_node back into parent after mid-chunk displacement does not recover the errored stream": "FAIL",
+      "streamBeforeHTMLUnsafe: ref_node displacement during table-text foster parenting errors the stream without applying <template for>": "FAIL",
+      "streamBeforeHTMLUnsafe: whitespace as the only token after mid-chunk displacement errors the stream and is dropped": "FAIL",
+      "streamHTMLUnsafe: adopting the target into another document mid-stream continues inserting nodes without running scripts": "FAIL",
+      "streamPrependHTMLUnsafe: <img> as first token after ref_node displacement is created in an inert document": "FAIL",
+      "streamPrependHTMLUnsafe: <template for> after ref_node displacement does not apply and errors the stream": "FAIL",
+      "streamPrependHTMLUnsafe: a comment as the only token after mid-chunk displacement errors the stream and is dropped": "FAIL",
+      "streamPrependHTMLUnsafe: adopting the target into another document mid-stream continues inserting nodes without running scripts": "FAIL",
+      "streamPrependHTMLUnsafe: adoption agency at the root after ref_node displacement keeps existing nodes and errors the stream": "FAIL",
+      "streamPrependHTMLUnsafe: child of replaceWithChildrenElements as first token after ref_node displacement is created in an inert document": "FAIL",
+      "streamPrependHTMLUnsafe: children of a replaceWithChildrenElements element are dropped, without erroring the stream, when the table it was foster parented before is moved": "FAIL",
+      "streamPrependHTMLUnsafe: custom element as first token after ref_node displacement is created in an inert document with null custom element registry": "FAIL",
+      "streamPrependHTMLUnsafe: displacing ref_node mid-chunk before a removeElements subtree errors the stream and suppresses custom element construction": "FAIL",
+      "streamPrependHTMLUnsafe: displacing ref_node mid-chunk drops subsequent nodes/subtrees/text/comments and errors the stream": "FAIL",
+      "streamPrependHTMLUnsafe: displacing ref_node mid-chunk with sanitizer and replaceWithChildrenElements drops nodes and errors the stream": "FAIL",
+      "streamPrependHTMLUnsafe: moving ref_node back into parent after mid-chunk displacement does not recover the errored stream": "FAIL",
+      "streamPrependHTMLUnsafe: ref_node displacement during table-text foster parenting errors the stream without applying <template for>": "FAIL",
+      "streamPrependHTMLUnsafe: whitespace as the only token after mid-chunk displacement errors the stream and is dropped": "FAIL",
+      "streamReplaceWithHTMLUnsafe: <img> as first token after ref_node displacement is created in an inert document": "FAIL",
+      "streamReplaceWithHTMLUnsafe: <template for> after ref_node displacement does not apply and errors the stream": "FAIL",
+      "streamReplaceWithHTMLUnsafe: a comment as the only token after mid-chunk displacement errors the stream and is dropped": "FAIL",
+      "streamReplaceWithHTMLUnsafe: adoption agency at the root after ref_node displacement keeps existing nodes and errors the stream": "FAIL",
+      "streamReplaceWithHTMLUnsafe: child of replaceWithChildrenElements as first token after ref_node displacement is created in an inert document": "FAIL",
+      "streamReplaceWithHTMLUnsafe: children of a replaceWithChildrenElements element are dropped, without erroring the stream, when the table it was foster parented before is moved": "FAIL",
+      "streamReplaceWithHTMLUnsafe: custom element as first token after ref_node displacement is created in an inert document with null custom element registry": "FAIL",
+      "streamReplaceWithHTMLUnsafe: displacing ref_node mid-chunk before a removeElements subtree errors the stream and suppresses custom element construction": "FAIL",
+      "streamReplaceWithHTMLUnsafe: displacing ref_node mid-chunk drops subsequent nodes/subtrees/text/comments and errors the stream": "FAIL",
+      "streamReplaceWithHTMLUnsafe: displacing ref_node mid-chunk with sanitizer and replaceWithChildrenElements drops nodes and errors the stream": "FAIL",
+      "streamReplaceWithHTMLUnsafe: moving ref_node back into parent after mid-chunk displacement does not recover the errored stream": "FAIL",
+      "streamReplaceWithHTMLUnsafe: ref_node displacement during table-text foster parenting errors the stream without applying <template for>": "FAIL",
+      "streamReplaceWithHTMLUnsafe: whitespace as the only token after mid-chunk displacement errors the stream and is dropped": "FAIL"
+    }
+  },
+  "domparsing/stream-positional-template-child.html": {
+    "total": 12
+  },
+  "domparsing/stream-positional.html": {
+    "total": 142
+  },
+  "domparsing/stream-sanitizer-customized-builtins.html": {
+    "total": 30
+  },
+  "domparsing/stream-sanitizer-img-ctor.html": {
+    "total": 78
+  },
+  "domparsing/stream-sanitizer-resource-fetch.html": {
+    "total": 42
+  },
+  "domparsing/stream-tokenizer-context.html": {
+    "total": 49,
+    "failures": {
+      "streamAppendHTMLUnsafe into <template> content parses <noscript> with the host document's scripting flag": "FAIL",
+      "streamHTMLUnsafe into <template> content parses <noscript> with the host document's scripting flag": "FAIL",
+      "streamPrependHTMLUnsafe into <template> content parses <noscript> with the host document's scripting flag": "FAIL"
     }
   },
   "domparsing/style_attribute_html.html": {
@@ -334,6 +582,9 @@
     "total": 45
   },
   "domparsing/tentative/unclosed-script-already-started.html": {
+    "total": 4
+  },
+  "domparsing/unclosed-script-already-started.html": {
     "total": 4
   },
   "domparsing/unsafe-and-trusted-types-external-scripts-async.html": {

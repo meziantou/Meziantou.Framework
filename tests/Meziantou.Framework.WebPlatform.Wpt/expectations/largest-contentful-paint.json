@@ -66,6 +66,9 @@
   "largest-contentful-paint/image-TAO.sub.html": {
     "total": 1
   },
+  "largest-contentful-paint/image-and-text-same-frame.html": {
+    "total": 1
+  },
   "largest-contentful-paint/image-element-when-fully-active.html": {
     "total": 1
   },

@@ -753,6 +753,12 @@
       "Navigating a popup using window.open(\"resources/redirect.py?location=data%3Atext%2Fhtml%2C...\", \"\", \"undefined\")": "FAIL"
     }
   },
+  "html/browsers/browsing-the-web/navigating-across-documents/window-stop-in-image-load-handler.html": {
+    "total": 1,
+    "failures": {
+      "window.stop() in an image load handler suppresses the document load event": "FAIL"
+    }
+  },
   "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/anchor-fragment-history-back-on-click.html": {
     "total": 1
   },
@@ -975,6 +981,20 @@
   "html/browsers/browsing-the-web/scroll-to-fragid/007.html": {
     "total": 1
   },
+  "html/browsers/browsing-the-web/scroll-to-fragid/embedded-svg-document-fragment-does-not-scroll-parent.tentative.html": {
+    "total": 3,
+    "failures": {
+      "Scrolling to the fragment of an SVG document in an <embed> does not scroll the parent document": "FAIL",
+      "Scrolling to the fragment of an SVG document in an <iframe> does not scroll the parent document": "FAIL",
+      "Scrolling to the fragment of an SVG document in an <object> does not scroll the parent document": "FAIL"
+    }
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/embedded-svg-document-fragment-does-not-scroll-svg-document.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Scrolling to the fragment of an SVG document in an <iframe> does not scroll the SVG document": "FAIL"
+    }
+  },
   "html/browsers/browsing-the-web/scroll-to-fragid/focus-changes-after-scroll-to-fragment.html": {
     "total": 1
   },
@@ -986,6 +1006,12 @@
   },
   "html/browsers/browsing-the-web/scroll-to-fragid/fragment-and-encoding.html": {
     "total": 4
+  },
+  "html/browsers/browsing-the-web/scroll-to-fragid/html-fragment-in-svg-foreign-object-scrolls-ancestors.html": {
+    "total": 1,
+    "failures": {
+      "Scrolling to the fragment of an HTML document in a foreignObject of an SVG document in an <iframe> scrolls every ancestor document": "FAIL"
+    }
   },
   "html/browsers/browsing-the-web/scroll-to-fragid/replacement-enabled.html": {
     "total": 1
@@ -1203,7 +1229,7 @@
     "total": 1
   },
   "html/browsers/history/the-history-interface/history-associated-with-document.window.js": {
-    "total": 3
+    "total": 4
   },
   "html/browsers/history/the-history-interface/history-state-after-bfcache.window.js": {
     "total": 1
@@ -1550,7 +1576,7 @@
     "total": 46
   },
   "html/browsers/history/the-location-interface/per-global.window.js": {
-    "total": 3
+    "total": 4
   },
   "html/browsers/history/the-location-interface/reload_document_open_write.html": {
     "total": 1

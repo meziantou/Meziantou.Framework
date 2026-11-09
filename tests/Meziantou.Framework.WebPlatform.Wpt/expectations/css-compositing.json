@@ -47,7 +47,7 @@
     "reftest": "PASS"
   },
   "css/compositing/mix-blend-mode/mix-blend-mode-border-image.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/compositing/mix-blend-mode/mix-blend-mode-both-parent-and-blended-with-3D-transform.html": {
     "reftest": "PASS"
@@ -65,7 +65,7 @@
     }
   },
   "css/compositing/mix-blend-mode/mix-blend-mode-filter.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/compositing/mix-blend-mode/mix-blend-mode-iframe-parent.html": {
     "reftest": "PASS"
@@ -146,7 +146,7 @@
     "reftest": "PASS"
   },
   "css/compositing/mix-blend-mode/mix-blend-mode-stacking-context-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/compositing/mix-blend-mode/mix-blend-mode-stacking-context-002.html": {
     "reftest": "PASS"

@@ -51,6 +51,10 @@ internal sealed partial class GridLayoutAlgorithm
         var tolerance = GetFlowTolerance();
         var trackReverse = TrackReverse;
         var running = new double[count];
+
+        // (the tracks closed by a forced break in the previous fragmentainer: the margins after a forced break are preserved)
+        var forced = new bool[count];
+        var nextForced = new bool[count];
         var cursor = 0;
         var rangeEnd = 0d;
         var pending = new List<GridItem>(_items);
@@ -71,25 +75,38 @@ internal sealed partial class GridLayoutAlgorithm
                 // An item that does not fit in what remains of the fragmentainer (its tracks are full or closed, or it cannot be
                 // broken), or that has a forced break before it, is pushed to the next one, unless it is at its start: the break
                 // before it closes its tracks (as in Gecko: the next items are not placed in them)
-                var (outer, isUnbreakable) = MeasureFragmentedLanesItem(item, breaks);
+                var (outer, marginStart, isUnbreakable) = MeasureFragmentedLanesItem(item, breaks);
                 var fragmentation = item.Box.Style.Layout.Fragmentation;
-                if (position > regionStart + FragmentationEpsilon && (breaks.IsForcedBreak(fragmentation.BreakBefore) || position >= regionEnd - FragmentationEpsilon || (isUnbreakable && position + outer > regionEnd + FragmentationEpsilon)))
+                var isForcedBefore = breaks.IsForcedBreak(fragmentation.BreakBefore);
+                if (position > regionStart + FragmentationEpsilon && !double.IsPositiveInfinity(regionEnd) && (isForcedBefore || position >= regionEnd - FragmentationEpsilon || (isUnbreakable && position + outer > regionEnd + FragmentationEpsilon)))
                 {
                     pushed.Add(item);
-                    Close(start, span, regionEnd);
+                    Close(start, span, regionEnd, isForcedBefore);
                     continue;
+                }
+
+                // https://drafts.csswg.org/css-break/#break-margins: the block-start margin of an item at the start of a fragmentainer
+                // after an unforced break is truncated (its margin box starts before the fragmentainer); it is preserved after a
+                // forced break
+                if (region > 0 && marginStart > 0 && position <= regionStart + FragmentationEpsilon && !isForcedBefore && !IsAfterForcedBreak(start, span))
+                {
+                    position -= Math.Min(marginStart, position);
                 }
 
                 var advance = Math.Max(0, outer + gap);
                 item.LanesOuterSize = Math.Max(0, outer);
                 item.LanesPosition = position;
 
-                // (an item that is broken ends where its rest ends once its contents are fragmented: the next items of its lanes follow it)
+                // (an item that is broken ends where its rest ends once its contents are fragmented, also when a forced break inside
+                // it breaks it: the next items of its lanes follow it)
                 var end = position + item.LanesOuterSize;
-                if (position + outer > regionEnd + FragmentationEpsilon && breaks.ItemEnds is { } itemEnds && itemEnds.TryGetValue(item.Box, out var fragmentedEnd) && fragmentedEnd > end)
+                var isBroken = position + outer > regionEnd + FragmentationEpsilon;
+                if (breaks.ItemEnds is { } itemEnds && itemEnds.TryGetValue(item.Box, out var fragmentedEnd) && fragmentedEnd.End > end
+                    && Math.Abs(fragmentedEnd.Start - (position + marginStart)) <= FragmentationEpsilon)
                 {
-                    advance += fragmentedEnd - end;
-                    end = fragmentedEnd;
+                    advance += fragmentedEnd.End - end;
+                    end = fragmentedEnd.End;
+                    isBroken |= end > regionEnd + FragmentationEpsilon;
                 }
 
                 rangeEnd = Math.Max(rangeEnd, end);
@@ -100,9 +117,10 @@ internal sealed partial class GridLayoutAlgorithm
 
                 // An item that is broken (its rest starts the next fragmentainer, see below), or that has a forced break after it,
                 // closes its tracks
-                if (position + outer > regionEnd + FragmentationEpsilon || breaks.IsForcedBreak(fragmentation.BreakAfter))
+                var isForcedAfter = breaks.IsForcedBreak(fragmentation.BreakAfter);
+                if (isBroken || isForcedAfter)
                 {
-                    Close(start, span, regionEnd);
+                    Close(start, span, regionEnd, isForcedAfter && !isBroken);
                 }
 
                 if (item.IsLanesAuto)
@@ -124,6 +142,8 @@ internal sealed partial class GridLayoutAlgorithm
             // (the placement starts again in the next fragment of the container: the auto-placement cursor points to the first line)
             regionStart = regionEnd;
             cursor = 0;
+            (forced, nextForced) = (nextForced, forced);
+            Array.Clear(nextForced);
             (pending, pushed) = (pushed, pending);
             pushed.Clear();
         }
@@ -131,20 +151,32 @@ internal sealed partial class GridLayoutAlgorithm
         _stackingRange = rangeEnd;
         _lanesPlaced = true;
 
-        void Close(int start, int span, double end)
+        void Close(int start, int span, double end, bool isForced)
         {
             for (var i = start; i < start + span; i++)
             {
                 running[i] = Math.Max(running[i], end);
+                nextForced[i] |= isForced;
             }
+        }
+
+        bool IsAfterForcedBreak(int start, int span)
+        {
+            for (var i = start; i < start + span; i++)
+            {
+                if (forced[i])
+                    return true;
+            }
+
+            return false;
         }
     }
 
     /// <summary>
     /// Lays out an item of a grid lanes container fragmented in its stacking axis: its outer size in the stacking axis, and whether it
-    /// cannot be broken (a monolithic box, <c>break-inside: avoid</c>).
+    /// cannot be broken (a monolithic box, <c>break-inside: avoid</c>), and its block-start margin.
     /// </summary>
-    private (double Outer, bool IsUnbreakable) MeasureFragmentedLanesItem(GridItem item, GridLanesBreaks breaks)
+    private (double Outer, double MarginStart, bool IsUnbreakable) MeasureFragmentedLanesItem(GridItem item, GridLanesBreaks breaks)
     {
         var inlineArea = GetAreaSize(item, GridAxis.Columns);
         var fragment = LayoutItem(item, inlineArea, GetAreaSize(item, GridAxis.Rows));
@@ -152,6 +184,6 @@ internal sealed partial class GridLayoutAlgorithm
         var margins = GetMargins(item, inlineArea ?? 0);
         var breakInside = item.Box.Style.Layout.Fragmentation.BreakInside;
         var isUnbreakable = breaks.IsAvoidInside(breakInside) || breaks.IsMonolithic(fragment, _writingDirection);
-        return (size.Block + margins.BlockSum(), isUnbreakable);
+        return (size.Block + margins.BlockSum(), margins.BlockStart, isUnbreakable);
     }
 }

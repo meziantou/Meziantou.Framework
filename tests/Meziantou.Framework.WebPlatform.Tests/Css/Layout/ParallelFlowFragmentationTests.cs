@@ -598,6 +598,61 @@ public sealed class ParallelFlowFragmentationTests : IDisposable
     }
 
     [Fact]
+    public void GridLanes_ForcedBreakInContainerThatFits()
+    {
+        // The container fits in the first column, but the forced break before the second item pushes it to the next column, where
+        // the third item follows it
+        var document = Parse("""
+            <div style='display: grid-lanes; grid-template-columns: 25px 25px'>
+              <div id=a style='grid-column: 1; height: 20px'></div>
+              <div id=b style='grid-column: 1; height: 40px; break-before: column'></div>
+              <div id=c style='grid-column: 1; height: 20px'></div>
+            </div>
+            """);
+        Assert.Equal([Rect(0, 0, 25, 20)], GetClientRects(document, "a"));
+        Assert.Equal([Rect(50, 0, 25, 40)], GetClientRects(document, "b"));
+        Assert.Equal([Rect(50, 40, 25, 20)], GetClientRects(document, "c"));
+    }
+
+    [Fact]
+    public void GridLanes_MarginIsTruncatedAfterAnUnforcedBreak()
+    {
+        // The second item does not fit and cannot be broken: it is pushed to the next column, where its block-start margin is
+        // truncated (https://drafts.csswg.org/css-break-3/#break-margins); after a forced break, the margin is preserved
+        var document = Parse("""
+            <div style='display: grid-lanes; grid-template-columns: 25px 25px'>
+              <div style='grid-column: 1; height: 90px'></div>
+              <div id=a style='grid-column: 1; height: 20px; margin-top: 10px; break-inside: avoid'></div>
+              <div id=b style='grid-column: 1; height: 20px'></div>
+            </div>
+            <div style='display: grid-lanes; grid-template-columns: 25px 25px; break-before: column'>
+              <div style='grid-column: 1; height: 20px; break-after: column'></div>
+              <div id=c style='grid-column: 1; height: 20px; margin-top: 10px'></div>
+            </div>
+            """, multicolStyle: "columns: 4; width: 200px");
+        Assert.Equal([Rect(50, 0, 25, 20)], GetClientRects(document, "a"));
+        Assert.Equal([Rect(50, 20, 25, 20)], GetClientRects(document, "b"));
+        Assert.Equal([Rect(150, 10, 25, 20)], GetClientRects(document, "c"));
+    }
+
+    [Fact]
+    public void GridLanes_ItemsAfterTheClipEdgeAreNotFragmented()
+    {
+        // The items after the block-end edge of a container that clips its overflow are clipped: the forced break before the last
+        // item does not create a column
+        var document = Parse("""
+            <div id=lanes style='display: grid-lanes; overflow: clip; height: 150px'>
+              <div style='height: 150px'></div>
+              <div id=a style='height: 100px'></div>
+              <div id=b style='height: 10px; break-before: column'></div>
+            </div>
+            """);
+        Assert.Equal([Rect(0, 0, 50, 100), Rect(50, 0, 50, 50)], GetClientRects(document, "lanes"));
+        Assert.Single(GetClientRects(document, "a"));
+        Assert.Equal(50, Assert.Single(GetClientRects(document, "b")).X);
+    }
+
+    [Fact]
     public void Grid_ForcedBreakBetweenTwoRowsBesideAMonolithicItemThatOverflows()
     {
         var document = Parse("""
@@ -652,5 +707,83 @@ public sealed class ParallelFlowFragmentationTests : IDisposable
         Assert.Equal([Rect(0, 0, 20, 100), Rect(50, 0, 20, 20)], GetClientRects(document, "a"));
         Assert.Equal([Rect(20, 0, 20, 120)], GetClientRects(document, "b"));
         Assert.Equal([Rect(50, 20, 50, 80), Rect(100, 0, 50, 40)], GetClientRects(document, "c"));
+    }
+
+    [Fact]
+    public void Flex_MaxBlockSizeLimitsTheFragmentsOfTheContainer()
+    {
+        // The forced breaks push the items: the container grows with them, up to its maximum block size (as in Blink), and its last
+        // item overflows it
+        var document = Parse("""
+            <div id=flex style='display: flex; flex-flow: column; align-items: start; max-height: 150px'>
+              <div style='flex: none; width: 50px; height: 20px; break-after: column'></div>
+              <div style='flex: none; width: 50px; height: 20px; break-after: column'></div>
+              <div id=c style='flex: none; width: 50px; height: 20px'></div>
+            </div>
+            """, multicolStyle: "columns: 3; width: 150px");
+        Assert.Equal([Rect(0, 0, 50, 100), Rect(50, 0, 50, 50)], GetClientRects(document, "flex").Where(rect => rect.Height > 0));
+        Assert.Equal([Rect(100, 0, 50, 20)], GetClientRects(document, "c"));
+    }
+
+    [Fact]
+    public void Flex_MinBlockSizeOverridesMaxBlockSize()
+    {
+        var document = Parse("""
+            <div id=flex style='display: flex; flex-flow: row wrap; align-content: start; min-height: 150px; max-height: 50px'>
+              <div style='flex: none; width: 50px; height: 20px; break-after: column'></div>
+              <div style='flex: none; width: 50px; height: 20px'></div>
+            </div>
+            """);
+        Assert.Equal([Rect(0, 0, 50, 100), Rect(50, 0, 50, 50)], GetClientRects(document, "flex"));
+    }
+
+    [Fact]
+    public void Flex_ForcedBreakBeforeTheStartOfTheMultiColumnContainer()
+    {
+        // The container starts above the multi-column container (a negative margin), in a box with a specified block size (whose
+        // contents are a parallel flow): the forced break after its first item is taken, the second item starts the next column
+        var document = Parse("""
+            <div style='height: 60px; padding-top: 1px'>
+              <div style='display: flex; flex-wrap: wrap; align-items: start; margin-top: -1001px'>
+                <div id=a style='flex: none; width: 50px; height: 20px; break-after: column'></div>
+                <div id=b style='flex: none; width: 50px; height: 30px'></div>
+              </div>
+            </div>
+            """);
+        Assert.Equal([Rect(0, -1000, 50, 20)], GetClientRects(document, "a"));
+        Assert.Equal([Rect(50, 0, 50, 30)], GetClientRects(document, "b"));
+    }
+
+    [Fact]
+    public void Flex_ForcedBreakBeforeTheStartOfTheStrip()
+    {
+        // (the negative margin collapses through the block: the forced break is in the flow of the multi-column container)
+        var document = Parse("""
+            <div style='height: 60px'>
+              <div style='display: flex; flex-wrap: wrap; align-items: start; margin-top: -1000px'>
+                <div id=a style='flex: none; width: 50px; height: 20px; break-after: column'></div>
+                <div id=b style='flex: none; width: 50px; height: 30px'></div>
+              </div>
+            </div>
+            """);
+        Assert.Equal([Rect(0, -1000, 50, 20)], GetClientRects(document, "a"));
+        Assert.Equal([Rect(50, 0, 50, 30)], GetClientRects(document, "b"));
+    }
+
+    [Fact]
+    public void Table_ClipsItsFragmentedAbsolutelyPositionedChild()
+    {
+        // The table grid box takes the overflow of the table and clips its absolutely positioned children: their contents after
+        // its block-end edge stay in its last fragment, they do not create columns
+        var document = Parse("""
+            <div style='display: table; position: relative; overflow: clip; width: 100%; height: 200px'>
+              <div id=abs style='position: absolute; width: 100%'>
+                <div style='height: 300px'></div>
+                <div id=b style='height: 100px; break-before: column'></div>
+              </div>
+            </div>
+            """);
+        Assert.Equal(2, GetClientRects(document, "abs").Count);
+        Assert.Equal(50, Assert.Single(GetClientRects(document, "b")).X);
     }
 }

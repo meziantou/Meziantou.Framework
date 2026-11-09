@@ -1349,7 +1349,8 @@ internal sealed partial class Painter
             // https://drafts.csswg.org/css-overflow-4/#line-clamp: the floats of a line-clamp container (that are not hidden) are
             // clipped to its block-end content edge (WPT css/css-overflow/line-clamp/line-clamp-with-floats-005.html)
             var inFloat = fragment is BoxFragment { Box.IsOutOfFlow: true } floatFragment && !PositionedLayout.IsAbsolutelyPositioned(floatFragment.Box);
-            for (var ancestor = fragment.Parent; ancestor is not null; ancestor = ancestor.Parent)
+            var child = fragment;
+            for (var ancestor = fragment.Parent; ancestor is not null; child = ancestor, ancestor = ancestor.Parent)
             {
                 if (inFloat && ancestor is BoxFragment { IsLineClampContainer: true } clamped)
                 {
@@ -1360,6 +1361,14 @@ internal sealed partial class Painter
                 if (ancestor is BoxFragment { ClipsOverflow: true, Parent: not null } clipper)
                 {
                     chain.Add(new ClipEntry(clipper, IsCssClip: false));
+                }
+
+                // The table grid box takes the overflow of the table (see ScrollContainers.GetUsedOverflow): it also clips the
+                // absolutely positioned children of the table wrapper box, their containing block (as in the browsers)
+                if (ancestor is BoxFragment { Box.Kind: ContainerBoxKind.TableWrapper } wrapper && child is BoxFragment { Box.IsOutOfFlow: true } positioned
+                    && PositionedLayout.IsAbsolutelyPositioned(positioned.Box) && wrapper.GetClippingTableGrid() is { } grid)
+                {
+                    chain.Add(new ClipEntry(grid, IsCssClip: false));
                 }
 
                 if (ancestor is BoxFragment { Box.IsOutOfFlow: true } floatAncestor && !PositionedLayout.IsAbsolutelyPositioned(floatAncestor.Box))

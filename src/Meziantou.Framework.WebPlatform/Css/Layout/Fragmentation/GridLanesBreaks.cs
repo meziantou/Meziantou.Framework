@@ -23,9 +23,11 @@ internal sealed class GridLanesBreaks
     /// The block-end edge of the margin box of each item that is broken, from the block-start edge of the content box of the
     /// container (in the coordinates of <see cref="Ends"/>: a fragmentainer starts where the previous one ends), once its contents
     /// are fragmented: the rest of an item is taller than the part of the item after the end of the fragmentainer when its
-    /// contents are pushed by their own breaks (a line box that does not fit), and the next items of its lanes follow it.
+    /// contents are pushed by their own breaks (a line box that does not fit, a forced break), and the next items of its lanes
+    /// follow it. The end applies while the item is placed at the same block-start edge of its border box (<c>Start</c>, in the
+    /// same coordinates).
     /// </summary>
-    public Dictionary<ContainerBox, double>? ItemEnds { get; init; }
+    public Dictionary<ContainerBox, (double Start, double End)>? ItemEnds { get; init; }
 
     /// <summary>The fragmentation context is a multi-column container (else pages): the forced breaks are the column breaks.</summary>
     public bool IsColumns { get; init; } = true;
@@ -34,7 +36,10 @@ internal sealed class GridLanesBreaks
     /// Returns whether a value of <c>break-before</c>/<c>break-after</c> forces a break in the fragmentation context (the column
     /// values in a multi-column container, the page values in the pages, see <see cref="PageBreakRules"/>).
     /// </summary>
-    public bool IsForcedBreak(BreakBetween value) => IsColumns ? value is BreakBetween.Column or BreakBetween.Always or BreakBetween.All : PageBreakRules.IsForced(value);
+    public bool IsForcedBreak(BreakBetween value) => IsForcedBreak(value, IsColumns);
+
+    /// <summary>Returns whether a value of <c>break-before</c>/<c>break-after</c> forces a break in a multi-column container (<paramref name="isColumns"/>) or in the pages.</summary>
+    public static bool IsForcedBreak(BreakBetween value, bool isColumns) => isColumns ? value is BreakBetween.Column or BreakBetween.Always or BreakBetween.All : PageBreakRules.IsForced(value);
 
     /// <summary>Returns whether a value of <c>break-inside</c> avoids the breaks of the fragmentation context (<c>avoid</c>, <c>avoid-column</c> or <c>avoid-page</c>).</summary>
     public bool IsAvoidInside(BreakInside value) => value == BreakInside.Avoid || value == (IsColumns ? BreakInside.AvoidColumn : BreakInside.AvoidPage);
@@ -70,9 +75,9 @@ internal sealed class GridLanesBreaks
 
         if (ItemEnds is not null && other.ItemEnds is not null)
         {
-            foreach (var (box, end) in ItemEnds)
+            foreach (var (box, (start, end)) in ItemEnds)
             {
-                if (!other.ItemEnds.TryGetValue(box, out var otherEnd) || Math.Abs(end - otherEnd) > Epsilon)
+                if (!other.ItemEnds.TryGetValue(box, out var otherEnd) || Math.Abs(start - otherEnd.Start) > Epsilon || Math.Abs(end - otherEnd.End) > Epsilon)
                     return false;
             }
         }

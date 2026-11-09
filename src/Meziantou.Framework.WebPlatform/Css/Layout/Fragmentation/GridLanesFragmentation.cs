@@ -33,10 +33,11 @@ internal static class GridLanesFragmentation
             return false;
 
         var changed = false;
-        Visit(children, stripSize, writingDirection, parentTop: 0, ref breaks);
+        Visit(children, stripSize, writingDirection, parentTop: 0, clipEnd: double.PositiveInfinity, ref breaks);
         return changed;
 
-        void Visit(ReadOnlySpan<Fragment> fragments, PhysicalSize parentSize, WritingDirection parentWritingDirection, double parentTop, ref Dictionary<ContainerBox, GridLanesBreaks>? breaks)
+        // (clipEnd: the block-end edge of the nearest ancestor that clips its overflow in the block axis)
+        void Visit(ReadOnlySpan<Fragment> fragments, PhysicalSize parentSize, WritingDirection parentWritingDirection, double parentTop, double clipEnd, ref Dictionary<ContainerBox, GridLanesBreaks>? breaks)
         {
             foreach (var fragment in fragments)
             {
@@ -44,10 +45,11 @@ internal static class GridLanesFragmentation
                     continue;
 
                 var (top, bottom, _) = FragmentationFlow.GetBlockRange(box, parentSize, parentWritingDirection, parentTop);
+                var boxClipEnd = (writingDirection.IsHorizontal ? box.ClipsOverflowY : box.ClipsOverflowX) ? Math.Min(clipEnd, bottom) : clipEnd;
                 if (box.Box.Display.Inside == DisplayInside.GridLanes)
                 {
                     // (the stacking axis is the block axis: the lanes are columns)
-                    if (GridLayoutAlgorithm.GetLaneAxis(box.Box.Style.Layout) == GridAxis.Columns && UpdateContainer(box, top, bottom, ref breaks))
+                    if (GridLayoutAlgorithm.GetLaneAxis(box.Box.Style.Layout) == GridAxis.Columns && UpdateContainer(box, top, bottom, boxClipEnd, ref breaks))
                     {
                         changed = true;
                     }
@@ -59,11 +61,11 @@ internal static class GridLanesFragmentation
                 if (flow.GetGroup(box) is not null || flow.GetDefiniteBox(box) is not null)
                     continue;
 
-                Visit(box.ChildrenSpan, box.Size, box.WritingDirection, top, ref breaks);
+                Visit(box.ChildrenSpan, box.Size, box.WritingDirection, top, boxClipEnd, ref breaks);
             }
         }
 
-        bool UpdateContainer(BoxFragment container, double top, double bottom, ref Dictionary<ContainerBox, GridLanesBreaks>? breaks)
+        bool UpdateContainer(BoxFragment container, double top, double bottom, double clipEnd, ref Dictionary<ContainerBox, GridLanesBreaks>? breaks)
         {
             var edges = writingDirection.ToLogical(container.Border.Add(container.Padding).Add(container.Scrollbars));
             var contentTop = top + edges.BlockStart;
@@ -75,8 +77,11 @@ internal static class GridLanesFragmentation
                 return false;
 
             // The block-end edge of each fragmentainer from the one where the content box starts, from the block-start edge of the
-            // content box (a container whose content is in one fragmentainer is not placed again)
+            // content box (a container whose content is in one fragmentainer is not placed again, unless an item has a forced break
+            // before or after it: the items after the break are pushed to the next fragmentainer)
+            var hasForcedBreak = previous is null && HasForcedBreak(container, isColumns: !flow.IsPaged);
             var ends = new List<double>();
+            var clipped = false;
             for (var index = first; index < blockSizes.Count; index++)
             {
                 var position = index == first ? contentTop : containerMap.GetRange(index) is var (start, _) ? start : double.NaN;
@@ -85,13 +90,22 @@ internal static class GridLanesFragmentation
 
                 var end = position + (blockSizes[index] - containerMap.GetOffsetIn(index, position));
                 ends.Add(end - contentTop);
-                if (previous is null && index == first && end >= contentEnd - Epsilon)
+                if (previous is null && !hasForcedBreak && index == first && end >= contentEnd - Epsilon)
                     return false;
+
+                // https://drafts.csswg.org/css-overflow-3/#valdef-overflow-clip: the contents that overflow a box that clips them are
+                // not fragmented (they stay in its last fragment): the items after the clip edge are placed as in a container that is
+                // not fragmented
+                if (end >= clipEnd - Epsilon)
+                {
+                    clipped = true;
+                    break;
+                }
             }
 
             // The ends of the items that grow once fragmented (their contents are pushed by their own breaks): the items are
             // parallel flows (see ParallelStructureKind.GridLanes)
-            Dictionary<ContainerBox, double>? itemEnds = null;
+            Dictionary<ContainerBox, (double Start, double End)>? itemEnds = null;
             if (flow.GetGroup(container) is { } group)
             {
                 foreach (var item in group.Items)
@@ -108,17 +122,33 @@ internal static class GridLanesFragmentation
                     var itemEnd = ends[region] - blockSizes[index] + offset + item.MarginEnd;
                     if (itemEnd > item.End + item.MarginEnd - contentTop + Epsilon)
                     {
-                        (itemEnds ??= [])[itemBox.Box] = itemEnd;
+                        (itemEnds ??= [])[itemBox.Box] = (item.Start - contentTop, itemEnd);
                     }
                 }
             }
 
-            var result = new GridLanesBreaks { Ends = [.. ends], NextBlockSize = blockSizes[^1], IsColumns = !flow.IsPaged, ItemEnds = itemEnds };
+            var result = new GridLanesBreaks { Ends = [.. ends], NextBlockSize = clipped ? double.PositiveInfinity : blockSizes[^1], IsColumns = !flow.IsPaged, ItemEnds = itemEnds };
             if (previous is not null && previous.IsSameAs(result))
                 return false;
 
             (breaks ??= [])[container.Box] = result;
             return true;
         }
+    }
+
+    /// <summary>Returns whether an in-flow item of a grid lanes container has a forced break before or after it in the fragmentation context.</summary>
+    private static bool HasForcedBreak(BoxFragment container, bool isColumns)
+    {
+        foreach (var child in container.ChildrenSpan)
+        {
+            if (child is not BoxFragment { Box.IsOutOfFlow: false } item)
+                continue;
+
+            var fragmentation = item.Box.Style.Layout.Fragmentation;
+            if (GridLanesBreaks.IsForcedBreak(fragmentation.BreakBefore, isColumns) || GridLanesBreaks.IsForcedBreak(fragmentation.BreakAfter, isColumns))
+                return true;
+        }
+
+        return false;
     }
 }

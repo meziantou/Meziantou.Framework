@@ -226,6 +226,27 @@ jobs:
             "tests/Meziantou.Framework.JavaScriptEngine.Test262/Meziantou.Framework.JavaScriptEngine.Test262.csproj"
           )
 
+          # The isolated projects that still take too long when they run every target framework in one job: they get
+          # one job per target framework. The Imaging groups below are always split this way.
+          $SplitByTargetFrameworkProjects = @(
+            "tests/Meziantou.Framework.WebPlatform.Wpt/Meziantou.Framework.WebPlatform.Wpt.csproj"
+          )
+
+          # The target frameworks of the split jobs, read from LatestTargetFrameworks in Directory.Build.props.
+          # A job runs "dotnet build/test --framework", and its delta build drops the projects that do not
+          # target that framework.
+          $output = @(dotnet msbuild eng/build.proj -getProperty:LatestTargetFrameworks)
+          if ($LASTEXITCODE -ne 0) {
+            throw "Cannot read LatestTargetFrameworks from eng/build.proj: $($output -join "`n")"
+          }
+
+          $TargetFrameworks = @($output[-1] -split ';' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+          if ($TargetFrameworks.Count -eq 0) {
+            throw "Cannot read LatestTargetFrameworks from eng/build.proj"
+          }
+
+          Write-Host "Target frameworks of the split jobs: $($TargetFrameworks -join ', ')"
+
           # The DNS suites bind sockets, so they run in their own job instead of competing with the
           # other tests of a shard
           $DnsProjects = @(
@@ -239,7 +260,8 @@ jobs:
           # busy. In a shard, they starve the suites that start processes:
           # Meziantou.Framework.SnapshotTesting.PackageTests completed no test before the hang dump
           # timeout on Windows. They run in jobs of their own, and in several of them: in a single
-          # job they took more than 90 minutes on the slowest legs.
+          # job they took more than 90 minutes on the slowest legs. Each group also runs once per
+          # target framework, in separate jobs.
           #
           # The value is the relative cost of a project: the sum of the durations of its tests in
           # the .trx files of a Debug run. The interoperability tests mostly wait for external
@@ -297,9 +319,15 @@ jobs:
 
           # Fail explicitly when a configured project is renamed or removed instead of silently
           # ignoring it and unbalancing the shards.
-          foreach ($project in @($IsolatedProjects) + @($DnsProjects) + @($ImagingProjects.Keys) + @($HeavyProjects)) {
+          foreach ($project in @($IsolatedProjects) + @($SplitByTargetFrameworkProjects) + @($DnsProjects) + @($ImagingProjects.Keys) + @($HeavyProjects)) {
             if (-not (Test-Path -LiteralPath $project)) {
               throw "Configured project does not exist: $project"
+            }
+          }
+
+          foreach ($project in $SplitByTargetFrameworkProjects) {
+            if ($IsolatedProjects -notcontains $project) {
+              throw "A project split by target framework must also be in `$IsolatedProjects: $project"
             }
           }
 
@@ -337,18 +365,26 @@ jobs:
           Write-Host "Test projects to run in invariant globalization mode: $($invariantProjects.Count)"
 
           # Splits the projects into the groups of the matrix. Each job of the matrix runs one group on one OS.
+          # A group with a framework only builds and tests that target framework; an empty framework means all of them.
           function Get-TestGroups([string[]] $affected, [bool] $invariant) {
             $groups = @()
             $isolated = @($IsolatedProjects | Where-Object { $affected -contains $_ })
             foreach ($project in $isolated) {
               # tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj -> SnapshotTesting
               $id = [System.IO.Path]::GetFileNameWithoutExtension($project) -replace '^Meziantou\.Framework\.', '' -replace '\.Tests$', ''
-              $groups += [pscustomobject]@{ id = $id; projects = $project; invariant = $invariant }
+              if ($SplitByTargetFrameworkProjects -contains $project) {
+                foreach ($framework in $TargetFrameworks) {
+                  $groups += [pscustomobject]@{ id = "$id-$framework"; projects = $project; framework = $framework; invariant = $invariant }
+                }
+              }
+              else {
+                $groups += [pscustomobject]@{ id = $id; projects = $project; framework = ""; invariant = $invariant }
+              }
             }
 
             $dns = @($DnsProjects | Where-Object { $affected -contains $_ })
             if ($dns.Count -gt 0) {
-              $groups += [pscustomobject]@{ id = "Dns"; projects = ($dns -join "`n"); invariant = $invariant }
+              $groups += [pscustomobject]@{ id = "Dns"; projects = ($dns -join "`n"); framework = ""; invariant = $invariant }
             }
 
             # Most expensive first, each into the group that is the cheapest so far: the largest
@@ -373,7 +409,9 @@ jobs:
               }
 
               for ($i = 0; $i -lt $imagingGroups.Count; $i++) {
-                $groups += [pscustomobject]@{ id = "Imaging-$($i + 1)"; projects = ($imagingGroups[$i].Projects -join "`n"); invariant = $invariant }
+                foreach ($framework in $TargetFrameworks) {
+                  $groups += [pscustomobject]@{ id = "Imaging-$($i + 1)-$framework"; projects = ($imagingGroups[$i].Projects -join "`n"); framework = $framework; invariant = $invariant }
+                }
               }
             }
 
@@ -409,7 +447,7 @@ jobs:
 
               for ($i = 0; $i -lt $shardCount; $i++) {
                 if ($shards[$i].Count -gt 0) {
-                  $groups += [pscustomobject]@{ id = "shard-$($i + 1)"; projects = ($shards[$i] -join "`n"); invariant = $invariant }
+                  $groups += [pscustomobject]@{ id = "shard-$($i + 1)"; projects = ($shards[$i] -join "`n"); framework = ""; invariant = $invariant }
                 }
               }
             }
@@ -420,7 +458,7 @@ jobs:
           $groups = @(Get-TestGroups $normalProjects $false) + @(Get-TestGroups $invariantProjects $true)
 
           foreach ($group in $groups) {
-            Write-Host "Group '$($group.id)'$(if ($group.invariant) { ' (invariant globalization)' }):"
+            Write-Host "Group '$($group.id)'$(if ($group.framework) { " ($($group.framework))" })$(if ($group.invariant) { ' (invariant globalization)' }):"
             $group.projects -split "`n" | ForEach-Object { Write-Host "  $_" }
           }
 
@@ -479,6 +517,9 @@ jobs:
     env:
       RUNS_ON: ${{ matrix.runs-on }}
       ADDITIONAL_ARGUMENTS: ${{ case(matrix.test-group.invariant, '/p:InvariantGlobalization=true', '') }}
+      # A group split by target framework builds and tests only that one. --framework only sets TargetFramework, which
+      # project references replace with their own, so the libraries the tests reference still build all of theirs.
+      FRAMEWORK_ARGUMENTS: ${{ case(matrix.test-group.framework != '', format('--framework {0}', matrix.test-group.framework), '') }}
       TestResultsDirectory: ${{ github.workspace}}/TestResults
       MEZIANTOU_PUBLIC_API_TEST_CACHE_DIRECTORY: ${{ github.workspace}}/.cache/public-api-generator-tests
       EnableCodeCoverage: ${{ case(github.event_name == 'workflow_dispatch' && inputs.enable_code_coverage, 'true', 'false') }}
@@ -509,7 +550,13 @@ jobs:
           # Lets eng/build.proj drop the projects whose tests cannot run in invariant globalization
           # mode. A group left with nothing to run skips its steps instead of failing the job with
           # "Zero tests ran".
-          properties: ${{ case(matrix.test-group.invariant, 'InvariantGlobalization=true', '') }}
+          properties: |
+            ${{ case(matrix.test-group.invariant, 'InvariantGlobalization=true', '') }}
+            ${{ case(matrix.test-group.framework != '', format('SelectedTargetFramework={0}', matrix.test-group.framework), '') }}
+          # "dotnet build --framework" fails on a project that does not target that framework, so a
+          # group split by target framework drops those projects. SelectedTargetFramework is not
+          # TargetFramework, which would change the evaluation of the projects.
+          where: "'$(SelectedTargetFramework)' == '' OR $([System.String]::Copy(';$(TargetFrameworks);$(TargetFramework);').Contains(';$(SelectedTargetFramework);'))"
           # The projects of the group are the only candidates, so the generated project contains
           # exactly the projects computed by the compute_test_matrix job.
           include: ${{ matrix.test-group.projects }}
@@ -635,12 +682,12 @@ jobs:
       # -graph: see the "Build all projects" step of the run_analyzers job
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet build ${{ steps.build-project.outputs.project }} -graph --configuration ${{ matrix.configuration }} /bl ${{ env.ADDITIONAL_ARGUMENTS }}
+        run: dotnet build ${{ steps.build-project.outputs.project }} -graph --configuration ${{ matrix.configuration }} /bl ${{ env.FRAMEWORK_ARGUMENTS }} ${{ env.ADDITIONAL_ARGUMENTS }}
 
       - name: Run tests
         if: steps.build-project.outputs.has-project == 'true'
         run: |
-          dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ env.ADDITIONAL_ARGUMENTS }}
+          dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ env.FRAMEWORK_ARGUMENTS }} ${{ env.ADDITIONAL_ARGUMENTS }}
 
           # Exit code 8 is 'zero tests ran'. A delta build can legitimately select only projects that
           # skip every test on this leg, such as the TDS tests, which need ICU and are therefore all

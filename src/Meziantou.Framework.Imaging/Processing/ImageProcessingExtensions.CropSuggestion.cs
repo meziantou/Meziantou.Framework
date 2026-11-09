@@ -67,6 +67,7 @@ public static partial class ImageProcessingExtensions
     public static Rectangle SuggestCrop(this Image image, int aspectWidth, int aspectHeight, CropSuggestionOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(SuggestCrop));
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(aspectWidth);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(aspectHeight);
         return image.SuggestCropFrames(frames: null, aspectWidth, aspectHeight, options ?? new CropSuggestionOptions(), cancellationToken);
@@ -92,6 +93,7 @@ public static partial class ImageProcessingExtensions
     public static Rectangle SuggestCrop(this ImageFrame frame, int aspectWidth, int aspectHeight, CropSuggestionOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(SuggestCrop));
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(aspectWidth);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(aspectHeight);
         _ = frame.GetStorage();

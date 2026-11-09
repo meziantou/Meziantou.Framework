@@ -9,10 +9,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 /// <param name="SamplesPerPixel">
 /// 1 (grayscale, bilevel or palette indexes), 2 (grayscale and straight alpha), 3 (RGB or YCbCr) or 4 (RGB and straight
-/// alpha).
+/// alpha, or CMYK inks).
 /// </param>
 /// <param name="BitsPerSample">1 (bilevel), 8 or 16, or 32 for floating-point samples.</param>
-/// <param name="Photometric">0 (<c>WhiteIsZero</c>, bilevel), 1 (<c>BlackIsZero</c>), 2 (<c>RGB</c>), 3 (palette color) or 6 (<c>YCbCr</c>, JPEG).</param>
+/// <param name="Photometric">0 (<c>WhiteIsZero</c>, bilevel), 1 (<c>BlackIsZero</c>), 2 (<c>RGB</c>), 3 (palette color), 5 (<c>Separated</c>, CMYK inks) or 6 (<c>YCbCr</c>, JPEG).</param>
 /// <param name="SourcePixelFormat">
 /// The pixel format the frame rows are converted to before serialization. The bilevel and palette layouts read the frame
 /// rows as they are, the rows of a JPEG page are converted by the JPEG encoder, and the floating-point samples are read
@@ -23,7 +23,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal readonly record struct TiffSampleLayout(int SamplesPerPixel, int BitsPerSample, int Photometric, PixelFormat SourcePixelFormat, int SampleFormat = TiffFormat.SampleFormatUnsignedInteger)
 {
     /// <summary>Gets a value indicating whether the layout stores a straight alpha channel (<c>ExtraSamples = 2</c>).</summary>
-    public bool HasAlpha => SamplesPerPixel is 2 or 4;
+    public bool HasAlpha => SamplesPerPixel == 2 || (SamplesPerPixel == 4 && !IsCmyk);
+
+    /// <summary>Gets a value indicating whether the layout stores CMYK inks (<c>PhotometricInterpretation = 5</c>, <c>InkSet = 1</c>).</summary>
+    public bool IsCmyk => Photometric == TiffFormat.PhotometricCmyk;
 
     /// <summary>Gets a value indicating whether the layout stores 32-bit floating-point samples.</summary>
     public bool IsFloatingPoint => SampleFormat == TiffFormat.SampleFormatFloat;
@@ -46,6 +49,9 @@ internal readonly record struct TiffSampleLayout(int SamplesPerPixel, int BitsPe
     public static TiffSampleLayout Create(TiffEncoder encoder, PixelFormat format)
     {
         ArgumentNullException.ThrowIfNull(encoder);
+        if (PixelFormats.IsCmyk(format) && (encoder.PixelLayout != TiffPixelLayout.Auto || encoder.Compression == TiffCompression.Jpeg))
+            throw TiffFormat.Unsupported($"CMYK pixels are written as separated samples with TiffPixelLayout.Auto and a lossless compression, but the layout is TiffPixelLayout.{encoder.PixelLayout} and the compression TiffCompression.{encoder.Compression}. Convert the image explicitly with CloneAs to use another layout.", "CMYK with this layout or compression");
+
         return encoder.PixelLayout switch
         {
             TiffPixelLayout.Bilevel => new TiffSampleLayout(1, 1, TiffFormat.PhotometricWhiteIsZero, format),
@@ -71,6 +77,8 @@ internal readonly record struct TiffSampleLayout(int SamplesPerPixel, int BitsPe
         PixelFormat.La16 => new TiffSampleLayout(2, 8, TiffFormat.PhotometricBlackIsZero, PixelFormat.La16),
         PixelFormat.La32 => new TiffSampleLayout(2, 16, TiffFormat.PhotometricBlackIsZero, PixelFormat.La32),
         PixelFormat.Rgb48 => new TiffSampleLayout(3, 16, TiffFormat.PhotometricRgb, PixelFormat.Rgb48),
+        PixelFormat.Cmyk32 => new TiffSampleLayout(4, 8, TiffFormat.PhotometricCmyk, PixelFormat.Cmyk32),
+        PixelFormat.Cmyk64 => new TiffSampleLayout(4, 16, TiffFormat.PhotometricCmyk, PixelFormat.Cmyk64),
 
         // The writer stores fewer samples when they hold the whole page (ForFloatingPoint)
         PixelFormat.RgbaFloat or PixelFormat.RgbaHalf => ForFloatingPoint(4),

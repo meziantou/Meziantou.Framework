@@ -227,6 +227,10 @@ public sealed class TiffEncoder : ImageEncoder
     internal override bool StoresFloatingPointSamples => PixelLayout == TiffPixelLayout.Auto && Compression != TiffCompression.Jpeg;
 
     /// <inheritdoc />
+    /// <remarks>The pages are written as separated samples; a layout or a compression that cannot store them rejects the page.</remarks>
+    internal override bool StoresCmykPixels => true;
+
+    /// <inheritdoc />
     internal override bool StoresPixelFormat(PixelFormat format) => format is PixelFormat.La16 or PixelFormat.La32 or PixelFormat.Rgb48;
 
     private static void ValidateTileSize(int value)

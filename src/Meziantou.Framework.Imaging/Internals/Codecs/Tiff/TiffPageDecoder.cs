@@ -22,7 +22,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// RGB by an ICC conversion from the CMYK profile of the page (or the assumed one) to the destination profile, which
 /// labels the image. The pixels and their profile change together, and the CMYK profile is not kept. Without the options,
 /// or without any source profile, the page is an <see cref="UnsupportedImageFeatureException"/> raised before any
-/// allocation.
+/// allocation. A CMYK page without alpha is also loaded as CMYK pixels (<see cref="PixelFormat.Cmyk32"/>,
+/// <see cref="PixelFormat.Cmyk64"/>) when the request asks for them, or for another pixel format with
+/// <see cref="PixelConversionOptions.CmykConversion"/>: the inks are the rows, labeled with the CMYK profile.
 /// </para>
 /// </remarks>
 internal static class TiffPageDecoder
@@ -44,11 +46,25 @@ internal static class TiffPageDecoder
 
         var profile = page.Metadata.IccProfile;
         IccPipeline? inkConversion = null;
-        if (page.IsCmyk)
+        var nativeInks = false;
+        var requestsCmyk = request.PixelFormat is { } requested && PixelFormats.IsCmyk(requested);
+        if (page.IsCmyk && (request.CmykConversion is null || requestsCmyk))
+        {
+            // The inks are the rows, labeled with the CMYK profile: the sink converts them when the request asks for
+            // another pixel format with a CMYK conversion
+            if (!requestsCmyk && (request.PixelFormat is null || request.Conversion.CmykConversion is null))
+                throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {page.Index} stores CMYK samples, which are only loaded as CMYK pixels (Cmyk32, Cmyk64) or with a color conversion: load the page as Cmyk32 or Cmyk64, or set the CmykConversion property of the decode options."), "PhotometricInterpretation: 5 without color conversion");
+
+            if (page.HasAlpha)
+                throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {page.Index} stores CMYK samples with alpha, which the CMYK pixel formats cannot hold: set the CmykConversion property of the decode options to load it as RGBA."), "PhotometricInterpretation: 5 with alpha as CMYK pixels");
+
+            nativeInks = true;
+        }
+        else if (page.IsCmyk)
         {
             // Only a CMYK profile is adopted for a CMYK page. The rows are converted to the destination profile, which is
             // the one that labels the image
-            var conversion = request.CmykConversion ?? throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {page.Index} stores CMYK samples, which are only loaded with a color conversion: set the CmykConversion property of the decode options."), "PhotometricInterpretation: 5 without color conversion");
+            var conversion = request.CmykConversion!;
             var transform = conversion.CreateTransform(profile) ?? throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The CMYK TIFF page {page.Index} has no CMYK color profile and CmykConversionOptions.AssumedSourceProfile is null."), "PhotometricInterpretation: 5 without color profile");
             inkConversion = transform.Pipeline;
             profile = conversion.DestinationProfile;
@@ -63,12 +79,13 @@ internal static class TiffPageDecoder
 
         var area = request.GetRegion(page.Size, ImageFormat.Tiff);
         var window = TiffBlockWindow.Create(page, area);
-        using var sink = DecodedFrameSink.Create(context, request, ImageFormat.Tiff, area.Size, page.DefaultPixelFormat, page.SourcePixelFormat, profile);
+        var sourcePixelFormat = nativeInks ? TiffRowExpander.GetCmykPixelFormat(page) : page.SourcePixelFormat;
+        using var sink = DecodedFrameSink.Create(context, request, ImageFormat.Tiff, area.Size, page.DefaultPixelFormat, sourcePixelFormat, profile);
         var scope = source.Scope;
 
         // The rows of tiles are assembled in a band that starts at the first column of tiles of the window
-        var columns = ColumnSpan.Create(page, page.IsTiled ? window.FirstColumn * page.BlockWidth : 0, area);
-        using var expander = new TiffRowExpander(page, inkConversion, scope, columns.Width);
+        var columns = ColumnSpan.Create(page, sourcePixelFormat, page.IsTiled ? window.FirstColumn * page.BlockWidth : 0, area);
+        using var expander = new TiffRowExpander(page, inkConversion, scope, columns.Width, nativeInks);
         using var reader = new TiffBlockReader(source, page);
         using var expanded = scope.Rent(expander.ExpandedRowLength, AllocationKind.DecoderState, clear: false);
         sink.BeginFrame(FrameDuration.Zero);
@@ -328,13 +345,13 @@ internal static class TiffPageDecoder
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct ColumnSpan(int StoredOffset, int Width, int SkippedBytes, int ImageBytes)
     {
-        /// <summary>Gets the columns of the area, in stored rows that start at the column <paramref name="rowX"/> of the page.</summary>
-        public static ColumnSpan Create(TiffPage page, int rowX, Rectangle area)
+        /// <summary>Gets the columns of the area, in stored rows that start at the column <paramref name="rowX"/> of the page, expanded to <paramref name="expandedFormat"/>.</summary>
+        public static ColumnSpan Create(TiffPage page, PixelFormat expandedFormat, int rowX, Rectangle area)
         {
             // Eight pixels of packed samples are a whole number of bytes, whatever the width of a pixel
             var bitsPerPixel = page.BitsPerPixel;
             var start = bitsPerPixel % 8 == 0 ? area.X : Math.Max(rowX, area.X & ~7);
-            var bytesPerPixel = PixelFormats.GetBytesPerPixel(page.SourcePixelFormat);
+            var bytesPerPixel = PixelFormats.GetBytesPerPixel(expandedFormat);
             return new ColumnSpan(
                 (int)((long)(start - rowX) * bitsPerPixel / 8),
                 area.Right - start,

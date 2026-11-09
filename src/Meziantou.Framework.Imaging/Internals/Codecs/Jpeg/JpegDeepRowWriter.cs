@@ -41,6 +41,9 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
 
     // The conversion of the inks of a four-component frame to RGB; null for the other frames
     private readonly IccPipeline? _inkConversion;
+
+    // Whether the ink amounts of a four-component frame are written as they are (Cmyk64, the source layout of the sink)
+    private readonly bool _nativeInks;
     private readonly int _width;
     private readonly int _precision;
     private readonly int _max;
@@ -58,8 +61,8 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
     public JpegDeepRowWriter(JpegFrameComponent[] components, DecodedFrameSink sink, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int bandRows, int precision, AllocationScope scope)
         : this(components, sink, receiver: null, colorModel, inkConversion, width, height, bandRows, precision, scope)
     {
-        if ((components.Length == 4) != (inkConversion is not null))
-            throw new ArgumentException("A four-component frame, and only it, needs the conversion of its inks.", nameof(inkConversion));
+        if (components.Length == 4 ? inkConversion is null && sink.SourcePixelFormat != PixelFormat.Cmyk64 : inkConversion is not null)
+            throw new ArgumentException("A four-component frame, and only it, needs the conversion of its inks, unless its rows are CMYK.", nameof(inkConversion));
     }
 
     /// <summary>Creates a writer that hands the rows to the container of an embedded datastream instead of an image.</summary>
@@ -79,6 +82,10 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
         _width = width;
         _precision = precision;
         _max = (1 << precision) - 1;
+        _nativeInks = sink?.SourcePixelFormat == PixelFormat.Cmyk64;
+        if (_nativeInks && (components.Length != 4 || inkConversion is not null))
+            throw new ArgumentException("Only the rows of a four-component frame are written as CMYK.", nameof(sink));
+
         _upsampled = new PooledBuffer?[components.Length];
         try
         {
@@ -99,7 +106,7 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
                 _sourceRow = scope.Rent(checked(width * PixelFormats.GetBytesPerPixel(sink.SourcePixelFormat)), AllocationKind.DecoderState, clear: false);
             }
 
-            if (components.Length == 3 || inkConversion is not null)
+            if (components.Length == 3 || inkConversion is not null || _nativeInks)
             {
                 _colorRow = scope.Rent(checked(width * 3 * sizeof(ushort)), AllocationKind.DecoderState, clear: false);
             }
@@ -307,7 +314,33 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
             var c1 = GetSamples(_components[1], y);
             var c2 = GetSamples(_components[2], y);
             var color = unsafe(MemoryMarshal.Cast<byte, ushort>(_colorRow!.RawBuffer.AsSpan(0, _width * 3 * sizeof(ushort))));
-            if (_inkConversion is not null)
+            if (_nativeInks)
+            {
+                // The scaled ink amounts are the output (Cmyk64)
+                var black = GetSamples(_components[3], y);
+                if (_colorModel == ImageColorModel.Ycck)
+                {
+                    ConvertYCbCr(c0, c1, c2, color, _precision);
+                    for (var x = 0; x < black.Length; x++)
+                    {
+                        row[4 * x] = Scale(color[3 * x], max);
+                        row[(4 * x) + 1] = Scale(color[(3 * x) + 1], max);
+                        row[(4 * x) + 2] = Scale(color[(3 * x) + 2], max);
+                        row[(4 * x) + 3] = Scale(max - black[x], max);
+                    }
+                }
+                else
+                {
+                    for (var x = 0; x < black.Length; x++)
+                    {
+                        row[4 * x] = Scale(max - c0[x], max);
+                        row[(4 * x) + 1] = Scale(max - c1[x], max);
+                        row[(4 * x) + 2] = Scale(max - c2[x], max);
+                        row[(4 * x) + 3] = Scale(max - black[x], max);
+                    }
+                }
+            }
+            else if (_inkConversion is not null)
             {
                 var black = GetSamples(_components[3], y);
                 var inks = unsafe(MemoryMarshal.Cast<byte, ushort>(_inkRow!.RawBuffer.AsSpan(0, _width * 5 * sizeof(ushort))));

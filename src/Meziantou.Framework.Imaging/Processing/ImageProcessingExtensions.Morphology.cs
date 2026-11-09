@@ -319,6 +319,7 @@ public static partial class ImageProcessingExtensions
     public static void PercentileFilter(this Image image, int radius, double percentile, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(PercentileFilter));
         var rank = ValidatePercentileFilter(radius, percentile, edgeMode);
         if (radius == 0)
         {
@@ -347,6 +348,7 @@ public static partial class ImageProcessingExtensions
     public static void PercentileFilter(this ImageFrame frame, int radius, double percentile, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(PercentileFilter));
         var rank = ValidatePercentileFilter(radius, percentile, edgeMode);
         var storage = frame.GetStorage();
         if (radius == 0)
@@ -359,6 +361,7 @@ public static partial class ImageProcessingExtensions
     {
         ArgumentNullException.ThrowIfNull(image);
         ValidateMorphology(element, edgeMode);
+        ThrowIfCmyk(image.PixelFormat, operation.ToString());
         if (element.RadiusX == 0 && element.RadiusY == 0 && operation is not (MorphologyOperation.TopHat or MorphologyOperation.BlackHat))
         {
             image.Owner.EnsureCanModify("filter the image");
@@ -372,6 +375,7 @@ public static partial class ImageProcessingExtensions
     {
         ArgumentNullException.ThrowIfNull(frame);
         ValidateMorphology(element, edgeMode);
+        ThrowIfCmyk(frame.PixelFormat, operation.ToString());
         _ = frame.GetStorage();
         if (element.RadiusX == 0 && element.RadiusY == 0 && operation is not (MorphologyOperation.TopHat or MorphologyOperation.BlackHat))
             return;

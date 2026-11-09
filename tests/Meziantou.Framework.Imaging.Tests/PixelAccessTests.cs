@@ -266,6 +266,8 @@ public sealed class PixelAccessTests
             case PixelFormat.Abgr32: CopyRoundTrip<Abgr32>(segmented); break;
             case PixelFormat.Bgr565: CopyRoundTrip<Bgr565>(segmented); break;
             case PixelFormat.Rgba1010102: CopyRoundTrip<Rgba1010102>(segmented); break;
+            case PixelFormat.Cmyk32: CopyRoundTrip<Cmyk32>(segmented); break;
+            case PixelFormat.Cmyk64: CopyRoundTrip<Cmyk64>(segmented); break;
             default: throw new ArgumentOutOfRangeException(nameof(format));
         }
     }

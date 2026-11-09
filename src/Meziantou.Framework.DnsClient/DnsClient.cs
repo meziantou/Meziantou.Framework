@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Globalization;
 using System.Net;
 using System.Net.Quic;
 using Meziantou.Framework.DnsClient.Helpers;
@@ -130,11 +129,14 @@ public sealed class DnsClient : IDisposable
         var questionType = effectiveMessage.Questions.Count > 0 ? effectiveMessage.Questions[0].Type.ToString() : "unknown";
         var questionClass = effectiveMessage.Questions.Count > 0 ? effectiveMessage.Questions[0].QueryClass.ToString() : "unknown";
 
-        using var activity = DnsTelemetry.ActivitySource.StartActivity("dns.query", ActivityKind.Client);
-        activity?.SetTag("dns.question.name", questionName);
-        activity?.SetTag("dns.question.type", questionType);
-        activity?.SetTag("dns.question.class", questionClass);
-        activity?.SetTag("network.transport", GetTransportName(_protocol));
+        IEnumerable<KeyValuePair<string, object?>> tags =
+        [
+            new("dns.question.name", questionName),
+            new("dns.question.type", questionType),
+            new("dns.question.class", questionClass),
+            new("network.transport", GetTransportName(_protocol)),
+        ];
+        using var activity = DnsTelemetry.ActivitySource.StartActivity("dns.query", ActivityKind.Client, default(ActivityContext), tags, startTime: _options.TimeProvider.GetUtcNow());
 
         try
         {

@@ -100,12 +100,9 @@ internal sealed partial class Painter
         var filters = hasFilter ? FilterEffects.Get(style, filterSpace, renderElement: RenderSvgElementForFilter) : null;
         if (filters is not null && Array.Exists(filters, filter => filter is FilterGraph) && style.Element is { } filtered && ContainsCrossOriginContent(filtered, _document, depth: 0))
         {
-            // As in the browsers, the SVG filters (whose duration could reveal the pixels) are not applied to cross-origin content
-            filters = Array.FindAll(filters, filter => filter is not FilterGraph);
-            if (filters.Length == 0)
-            {
-                filters = null;
-            }
+            // As in the browsers, a filter with SVG filters (whose duration could reveal the pixels) is not applied to cross-origin
+            // content: the whole filter is dropped, its CSS filter functions included
+            filters = null;
         }
 
         var backdropFilters = hasBackdropFilter ? FilterEffects.Get(style, space, "backdrop-filter") : null;

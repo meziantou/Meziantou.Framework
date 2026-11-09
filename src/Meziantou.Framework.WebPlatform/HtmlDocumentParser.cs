@@ -649,10 +649,11 @@ public sealed class HtmlDocumentParser
         document.OriginDocument = Document.GetOriginDocument(contextDocument);
         document.RealmDocument = contextDocument;
         document.FragmentParsingDestination = context is HtmlTemplateElement template ? template.TemplateContents.NodeDocument : target.NodeDocument;
-        // The template contents are parsed with the scripting of the template contents owner document (disabled), as in
-        // the browsers (tested by WPT html/syntax/serializing-html-fragments/escaping.html), rather than the scripting of
-        // the node document of the template
-        if (!contextDocument.ScriptingEnabled || context.IsHtml(TagId.Template))
+        // The template contents set by innerHTML are parsed with the scripting of the template contents owner document
+        // (disabled), as in the browsers (tested by WPT html/syntax/serializing-html-fragments/escaping.html), rather than the
+        // scripting of the node document of the template. The HTML streamed into a template uses the scripting of its node
+        // document, as the fragment parsing algorithm specifies (tested by WPT domparsing/stream-tokenizer-context.html).
+        if (!contextDocument.ScriptingEnabled || (context.IsHtml(TagId.Template) && !streaming))
         {
             scriptingMode = ParserScriptingMode.Disabled;
         }

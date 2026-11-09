@@ -239,7 +239,7 @@ internal static class CssomViewHelpers
                 break;
 
             case HtmlCanvasElement canvas:
-                natural = ImageNaturalSize.FromPixels(canvas.Width, canvas.Height);
+                natural = ImageNaturalSize.FromPixels((uint)canvas.BitmapSize.Width, (uint)canvas.BitmapSize.Height);
                 break;
 
             case HtmlIFrameElement or HtmlEmbedElement or HtmlVideoElement:

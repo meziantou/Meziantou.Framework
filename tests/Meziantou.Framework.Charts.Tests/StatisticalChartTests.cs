@@ -722,6 +722,19 @@ public sealed class StatisticalChartTests
         AssertFiniteScene(plot);
     }
 
+    [Fact]
+    public void FlowMarks_InfiniteAndHugeValues()
+    {
+        // An infinite flow counts as zero, and huge flows whose sums overflow are drawn as flows of the same ratios
+        (string Source, string Target, double Value)[] infinite = [("a", "b", double.PositiveInfinity), ("a", "c", 2), ("c", "d", double.NegativeInfinity)];
+        (string Source, string Target, double Value)[] huge = [("a", "b", 1e308), ("a", "c", 1e308), ("b", "d", 1e308), ("c", "d", 1e308)];
+        foreach (var rows in new[] { infinite, huge })
+        {
+            AssertFiniteScene(new Plot().Add(new SankeyMark<(string Source, string Target, double Value)>(rows, row => row.Source, row => row.Target, row => row.Value)));
+            AssertFiniteScene(new Plot().Add(new ChordMark<(string Source, string Target, double Value)>(rows, row => row.Source, row => row.Target, row => row.Value)));
+        }
+    }
+
     private static void AssertFiniteScene(Plot plot)
     {
         var groups = new Stack<SceneGroup>([plot.CreateScene().Root]);
@@ -736,6 +749,7 @@ public sealed class StatisticalChartTests
                     SceneCircle circle => [circle.CenterX, circle.CenterY, circle.Radius],
                     SceneRectangle rectangle => [rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height],
                     ScenePath path => [.. path.Data.Commands.SelectMany(command => new[] { command.X, command.Y, command.X1, command.Y1, command.X2, command.Y2 })],
+                    SceneText text => [text.X, text.Y, text.Rotation],
                     _ => [],
                 };
 
@@ -942,6 +956,24 @@ public sealed class StatisticalChartTests
 
         plot.Add(new GeoMark<GeoFeature>(countries, country => country.Geometry) { Fill = country => country.Properties["continent"] });
         ChartAssert.Svg(plot.ToSvg(), documentationImage: null, memberName: nameof(MapProjections) + "_" + name);
+    }
+
+    [Fact]
+    public void GeoMark_PositionsFarOutOfRange()
+    {
+        // A region out of the range of the world has no graticule, and an edge along a parallel out of range gets no
+        // more points than a full turn: both used to add points until memory ran out
+        GeoFeature[] features =
+        [
+            new(new GeoLineString([new(-2.3e80, 90)])),
+            new(new GeoPolygon([[new(-180, -90), new(1.8e80, -90), new(180, 90), new(-180, 90), new(-180, -90)]])),
+        ];
+        foreach (var feature in features)
+        {
+            var plot = new Plot { Coordinates = new GeoCoordinates { Projection = new AlbersProjection(), GraticuleStep = 30, Outline = true } };
+            plot.Add(new GeoMark<GeoFeature>([feature], feature => feature.Geometry));
+            AssertFiniteScene(plot);
+        }
     }
 
     [Fact]

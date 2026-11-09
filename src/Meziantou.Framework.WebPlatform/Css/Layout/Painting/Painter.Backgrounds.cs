@@ -390,8 +390,19 @@ internal sealed partial class Painter
             else if (bottomClip == BackgroundBox.BorderArea)
             {
                 // https://drafts.csswg.org/css-backgrounds-4/#valdef-background-clip-border-area: the area of the borders only
+                // The strokes of the borders that mask the color are in the area of the borders: the color fills the rectangle of
+                // the border box, so that the edges of the strokes are not antialiased twice (e.g. a dot tangent to the curve of a
+                // rounded corner)
                 var masked = PushBorderStrokesMask(style, border);
-                _builder.Add(new DrawPathItem(GetBorderAreaPath(borderShape, border), new DisplayPaint(color)) { Source = style.Element });
+                if (masked)
+                {
+                    FillRoundedRect(new RoundedRect(borderShape.Rect, default), new DisplayPaint(color), style.Element);
+                }
+                else
+                {
+                    _builder.Add(new DrawPathItem(GetBorderAreaPath(borderShape, border), new DisplayPaint(color)) { Source = style.Element });
+                }
+
                 PopBorderStrokesMask(masked, style, borderShape, border);
             }
             else

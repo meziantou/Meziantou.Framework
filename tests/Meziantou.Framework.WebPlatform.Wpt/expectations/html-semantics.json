@@ -1629,10 +1629,7 @@
     "total": 3
   },
   "html/semantics/embedded-content/media-elements/track/track-element/track-blob-url-revoked.window.js": {
-    "total": 3,
-    "failures": {
-      "track loads from a blob: URL revoked after src is set": "FAIL"
-    }
+    "total": 3
   },
   "html/semantics/embedded-content/media-elements/track/track-element/track-change-event.html": {
     "total": 1
@@ -3289,6 +3286,7 @@
     "failures": {
       "keeps element's already-loaded 2x candidate when iframe zoom decreases from 2 to 1": "FAIL",
       "keeps element's already-loaded 2x srcset candidate when an uncached src (1x default source) is set": "FAIL",
+      "keeps element's already-loaded default src (1x) when srcset adds an uncached sub-1x candidate matching zoomed-out DPR": "FAIL",
       "keeps element's already-loaded higher-density srcset candidate when an uncached 1x candidate is added": "FAIL",
       "keeps element's already-loaded src when srcset is added with that URL at higher density": "FAIL",
       "keeps element's already-loaded wider w-descriptor candidate when sizes shrinks": "FAIL",
@@ -3302,19 +3300,10 @@
     }
   },
   "html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-zoom-change.optional.html": {
-    "total": 1,
-    "failures": {
-      "dynamic zoom change on the iframe re-selects the x-descriptor image source": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-zoom.html": {
-    "total": 4,
-    "failures": {
-      "link rel=preload imagesrcset in zoomed iframe selects candidate matching zoomed devicePixelRatio": "FAIL",
-      "zoomed-in iframe (zoom: 2) selects x-descriptor matching zoomed devicePixelRatio": "FAIL",
-      "zoomed-in iframe (zoom: 2) with w descriptors and sizes selects normalized density matching zoomed devicePixelRatio": "FAIL",
-      "zoomed-out iframe (zoom: 0.5) selects x-descriptor matching zoomed devicePixelRatio": "FAIL"
-    }
+    "total": 4
   },
   "html/semantics/embedded-content/the-img-element/srcset/select-an-image-source.html": {
     "total": 46
@@ -5444,11 +5433,7 @@
     "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-custom-element-reactions.html": {
-    "total": 6,
-    "failures": {
-      "Removing the selected option updates selectedcontent and runs the clones' reactions after remove() returns": "FAIL",
-      "The parser's clone of a custom element is upgraded and connected before the next script runs": "FAIL"
-    }
+    "total": 6
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-insertion-removal.html": {
     "total": 4
@@ -9256,21 +9241,7 @@
     "total": 1
   },
   "html/semantics/scripting-1/the-template-element/template-for/stream-head-scope.html": {
-    "total": 13,
-    "failures": {
-      "streamAfterHTMLUnsafe targeting body does not patch markers in head": "FAIL",
-      "streamAfterHTMLUnsafe targeting body patches markers in body without touching head": "FAIL",
-      "streamAppendHTMLUnsafe targeting body does not patch markers in head": "FAIL",
-      "streamAppendHTMLUnsafe targeting body patches markers in body without touching head": "FAIL",
-      "streamBeforeHTMLUnsafe targeting body does not patch markers in head": "FAIL",
-      "streamBeforeHTMLUnsafe targeting body patches markers in body without touching head": "FAIL",
-      "streamHTMLUnsafe targeting body does not patch markers in head": "FAIL",
-      "streamHTMLUnsafe targeting body patches markers in body without touching head": "FAIL",
-      "streamPrependHTMLUnsafe targeting body does not patch markers in head": "FAIL",
-      "streamPrependHTMLUnsafe targeting body patches markers in body without touching head": "FAIL",
-      "streamReplaceWithHTMLUnsafe targeting body does not patch markers in head": "FAIL",
-      "streamReplaceWithHTMLUnsafe targeting body patches markers in body without touching head": "FAIL"
-    }
+    "total": 13
   },
   "html/semantics/scripting-1/the-template-element/template-for/template-for-append-element.html": {
     "total": 1

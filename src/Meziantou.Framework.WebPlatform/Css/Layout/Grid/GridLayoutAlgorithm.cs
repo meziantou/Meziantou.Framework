@@ -1125,6 +1125,13 @@ internal sealed partial class GridLayoutAlgorithm
                 ? AlignInStack(item, size.Block, margins.BlockStart, margins.BlockEnd)
                 : AlignInArea(item, GridAxis.Rows, size.Block, margins.BlockStart, margins.BlockEnd);
             item.Offset = new LogicalOffset(inlinePosition, blockPosition);
+            if (_isLanes)
+            {
+                // (the margin boxes, for the gap decorations)
+                var inlineBox = (inlinePosition - inlineStartMargin, Math.Max(inlinePosition - inlineStartMargin, inlinePosition + size.Inline + inlineEndMargin));
+                var blockBox = (blockPosition - blockStartMargin, Math.Max(blockPosition - blockStartMargin, blockPosition + size.Block + blockEndMargin));
+                ((item.LanesBoxStart, item.LanesBoxEnd), (item.LanesGridBoxStart, item.LanesGridBoxEnd)) = _stackAxis == GridAxis.Columns ? (inlineBox, blockBox) : (blockBox, inlineBox);
+            }
 
             // The used margins (the auto margins resolved)
             fragment.Margin = _writingDirection.ToPhysical(new LogicalSides<double>(blockStartMargin, inlineEndMargin, blockEndMargin, inlineStartMargin));

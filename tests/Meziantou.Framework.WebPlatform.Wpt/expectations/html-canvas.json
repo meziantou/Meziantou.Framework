@@ -10192,12 +10192,7 @@
     }
   },
   "html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.placeholder.size.html": {
-    "total": 4,
-    "failures": {
-      "The width and height content attributes do not change the aspect ratio of a placeholder canvas": "FAIL",
-      "The width and height content attributes do not resize a placeholder canvas": "FAIL",
-      "Transferring the OffscreenCanvas preserves the placeholder size": "FAIL"
-    }
+    "total": 4
   },
   "html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.resize.html": {
     "total": 10,

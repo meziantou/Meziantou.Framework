@@ -11,14 +11,13 @@ description: "The results of the web-platform-tests of css/css-view-transitions,
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 156 | 165 | 0 | 95% |
 | [Tentative](#tentative-tests) | 4 | 7 | 0 | 57% |
-| [Reftests](#reftests) | 317 | 333 | 0 | 95% |
-| **All** | **477** | **505** | **0** | **94%** |
+| [Reftests](#reftests) | 318 | 333 | 0 | 95% |
+| **All** | **478** | **505** | **0** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 14
 - **TEST RUNNER**: 3
@@ -279,7 +278,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`iframe-and-main-frame-transition-old-main-old-iframe.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-and-main-frame-transition-old-main-old-iframe.html) | Pass | 1 / 1 |  |  |
 | [`iframe-and-main-frame-transition-old-main.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-and-main-frame-transition-old-main.html) | Pass | 1 / 1 |  |  |
 | [`iframe-and-main-frame-transition-with-name-on-iframe.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-and-main-frame-transition-with-name-on-iframe.html) | Pass | 1 / 1 |  |  |
-| [`iframe-cross-origin-svg-filter-dynamic.tentative.sub.https.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-cross-origin-svg-filter-dynamic.tentative.sub.https.html) | Fail | 0 / 1 | BUG | only the SVG filters of the filter of `::view-transition-group(frame)` are dropped over the cross-origin frame (`Painter.Effects`: the `url(#late)` reference, resolved after the transition started): its `blur(5px)` still applies to the images of the frame, where the tentative test expects the whole filter not to be applied to the cross-origin content |
+| [`iframe-cross-origin-svg-filter-dynamic.tentative.sub.https.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-cross-origin-svg-filter-dynamic.tentative.sub.https.html) | Pass | 1 / 1 |  |  |
 | [`iframe-cross-origin-svg-filter.tentative.sub.https.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-cross-origin-svg-filter.tentative.sub.https.html) | Pass | 1 / 1 |  |  |
 | [`iframe-new-has-scrollbar.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-new-has-scrollbar.html) | Pass | 1 / 1 |  |  |
 | [`iframe-old-has-scrollbar.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-old-has-scrollbar.html) | Pass | 1 / 1 |  |  |

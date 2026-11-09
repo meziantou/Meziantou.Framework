@@ -348,4 +348,13 @@ public sealed class TableFormattingContextTests : IDisposable
         var document = Parse($"<table><tr style='height: 30px'><td rowspan=2 style='align-content: {alignment}'><div id=a style='width: 10px; height: 60px'></div></td></tr><tr style='visibility: collapse; height: 30px'></tr></table>");
         Assert.Equal(y, GetRect(document, "a").Y);
     }
+
+    [Fact]
+    public void OverflowClip_ClipsTheAbsolutelyPositionedChildren()
+    {
+        // The table grid box takes the overflow of the table: it also clips the absolutely positioned children of the table,
+        // which are not scrollable overflow of the scroll container
+        var document = Parse("<div id=s style='overflow: auto; height: 100px'><div style='display: table; position: relative; overflow: clip; width: 50px; height: 50px'><div style='position: absolute; width: 10px; height: 1000px'></div></div></div>");
+        Assert.Equal(100, document.GetElementById("s")!.ScrollHeight);
+    }
 }

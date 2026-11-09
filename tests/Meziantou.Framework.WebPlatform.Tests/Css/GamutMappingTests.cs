@@ -41,6 +41,17 @@ public sealed class GamutMappingTests
     [InlineData("oklch(0% 0.3 60)", 0, 0, 0)]
     public void LightnessLimitsAreWhiteAndBlack(string color, int r, int g, int b) => Assert.Equal((r, g, b), Paint(color));
 
+    // The edge cases of the Ray Trace algorithm near black and white (w3c/csswg-drafts#14698): the anchor is clamped to the
+    // gamut, a small component of the ray still limits it, and a degenerate ray finds no intersection
+    [Theory]
+    [InlineData("oklch(1.54% 0.90 275.02)", 0, 0, 0)]
+    [InlineData("oklch(3.08% 0.30 48.8)", 0, 0, 0)]
+    [InlineData("oklch(0.0001220703125 0.4 19.75)", 0, 0, 0)]
+    [InlineData("oklch(0.9999999999990905 0.4 105.5)", 255, 255, 255)]
+    [InlineData("oklch(0.99999994 0.05 0)", 255, 255, 255)]
+    [InlineData("oklch(0.99999994 0.05 240)", 255, 255, 255)]
+    public void LightnessesCloseToTheLimitsAreGamutMapped(string color, int r, int g, int b) => AssertColor((r, g, b), Paint(color));
+
     [Theory]
     [InlineData("rgb(200 100 50)", 200, 100, 50)]
     [InlineData("color(srgb 0.2 0.4 0.6)", 51, 102, 153)]

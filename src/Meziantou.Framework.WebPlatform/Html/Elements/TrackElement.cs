@@ -34,6 +34,12 @@ public partial class HtmlTrackElement
     /// <summary>The track URL of the element (https://html.spec.whatwg.org/multipage/media.html#track-url).</summary>
     private string _trackUrl = "";
 
+    /// <summary>
+    /// The blob URL entry of the track URL, resolved when the <c>src</c> attribute is set (https://url.spec.whatwg.org/#concept-url-blob-entry):
+    /// the blob is fetched even if the URL is revoked before the track processing model fetches it.
+    /// </summary>
+    private FileApi.BlobUrlEntry? _trackUrlBlobEntry;
+
     /// <summary>The track URL the track processing model fetched last.</summary>
     private string _loadedUrl = "";
 
@@ -87,6 +93,9 @@ public partial class HtmlTrackElement
                 // attribute has no track URL here, so that the removal aborts the load of the previous URL (WPT
                 // track-element-src-change-error.html)
                 _trackUrl = string.IsNullOrEmpty(value) ? "" : Reflection.EncodingParseAndSerializeUrl(NodeDocument, value) ?? "";
+                _trackUrlBlobEntry = _trackUrl.StartsWith("blob:", StringComparison.Ordinal) && Urls.UrlParser.Parse(_trackUrl, baseUrl: null) is { } trackUrl
+                    ? FileApi.BlobUrlStore.Get(NodeDocument).Resolve(trackUrl)
+                    : null;
 
                 // Whenever the src attribute is set, changed, or removed, the list of cues of the text track is emptied
                 Track.ClearCues();
@@ -229,9 +238,10 @@ public partial class HtmlTrackElement
             var track = Track;
             track.ReadinessState = TextTrackReadinessState.Loading;
             _loadedUrl = _trackUrl;
+            var blobUrlEntry = _trackUrlBlobEntry;
             var media = ParentNode as HtmlMediaElement;
             var document = NodeDocument;
-            if (_loadedUrl.Length == 0 || Urls.UrlParser.Parse(_loadedUrl, baseUrl: null) is not { } url || !Fetch(generation, document, url, media))
+            if (_loadedUrl.Length == 0 || Urls.UrlParser.Parse(_loadedUrl, baseUrl: null) is not { } url || !Fetch(generation, document, url, blobUrlEntry, media))
             {
                 // The URL is the empty string, or nothing can be fetched: the readiness state changes to failed to load and
                 // an error event is fired at the element, in a task
@@ -251,11 +261,12 @@ public partial class HtmlTrackElement
     /// <c>crossorigin</c> attribute of the parent media element and the same-origin fallback flag set (without the
     /// attribute, the resource must be same origin).
     /// </summary>
-    private bool Fetch(int generation, Document document, Urls.UrlRecord url, HtmlMediaElement? media)
+    private bool Fetch(int generation, Document document, Urls.UrlRecord url, FileApi.BlobUrlEntry? blobUrlEntry, HtmlMediaElement? media)
     {
         var client = document.BrowsingContext is null && document.OriginDocument is { } origin ? origin : document;
         var cors = media is not null && media.HasAttributeWithLocalName("crossorigin");
         var request = SubresourceFetching.CreateRequest(client, url, RequestDestination.Track, cors, referrerPolicy: "", this, useCredentials: cors && SubresourceFetching.UsesCredentials(media!));
+        request.BlobUrlEntry = blobUrlEntry;
         if (!cors)
         {
             request.Mode = RequestMode.SameOrigin;

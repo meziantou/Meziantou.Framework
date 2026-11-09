@@ -22,9 +22,23 @@ public partial class HtmlCanvasElement : ICanvasHost
     /// <summary>The last frame committed by the <see cref="OffscreenCanvas"/> of a placeholder canvas, and its image for the rendering backend, or null.</summary>
     internal (BitmapPixels Pixels, Rendering.PaintImage? Image)? PlaceholderFrame { get; private set; }
 
-    int ICanvasHost.BitmapWidth => (int)Math.Min(Width, int.MaxValue);
+    /// <summary>
+    /// The size of the bitmap of a placeholder canvas: the size of the canvas when its control was transferred, then the size of
+    /// the frames committed by its <see cref="OffscreenCanvas"/>. The <c>width</c> and <c>height</c> content attributes do not
+    /// change it (https://html.spec.whatwg.org/multipage/canvas.html#attr-canvas-width: "do nothing" for a placeholder).
+    /// </summary>
+    private (int Width, int Height) _placeholderBitmapSize;
 
-    int ICanvasHost.BitmapHeight => (int)Math.Min(Height, int.MaxValue);
+    /// <summary>
+    /// The size of the bitmap of the canvas (https://html.spec.whatwg.org/multipage/canvas.html#the-canvas-element), which gives
+    /// its natural dimensions: the size of the bitmap of the <see cref="OffscreenCanvas"/> for a placeholder canvas, else its
+    /// <c>width</c> and <c>height</c>.
+    /// </summary>
+    internal (int Width, int Height) BitmapSize => IsPlaceholder ? _placeholderBitmapSize : ((int)Math.Min(Width, int.MaxValue), (int)Math.Min(Height, int.MaxValue));
+
+    int ICanvasHost.BitmapWidth => BitmapSize.Width;
+
+    int ICanvasHost.BitmapHeight => BitmapSize.Height;
 
     /// <summary>
     /// Returns the rendering context of the canvas (https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-getcontext):
@@ -168,6 +182,7 @@ public partial class HtmlCanvasElement : ICanvasHost
             offscreen.SetRelevantGlobalCore(global);
         }
 
+        _placeholderBitmapSize = BitmapSize;
         IsPlaceholder = true;
         return offscreen;
     }
@@ -182,15 +197,22 @@ public partial class HtmlCanvasElement : ICanvasHost
         CanvasRenderingContext2D context => context.Bitmap.GetPixels(),
         ImageBitmapRenderingContext context => context.GetBitmap(),
         _ when PlaceholderFrame is { } frame => frame.Pixels,
-        _ => BitmapPixels.CreateTransparent((int)Math.Min(Width, int.MaxValue), (int)Math.Min(Height, int.MaxValue)),
+        _ => BitmapPixels.CreateTransparent(BitmapSize.Width, BitmapSize.Height),
     };
 
     /// <summary>Displays a frame committed by the <see cref="OffscreenCanvas"/> of a placeholder canvas.</summary>
     internal void SetPlaceholderFrame(BitmapPixels pixels, Rendering.PaintImage? image)
     {
         PlaceholderFrame = (pixels, image);
+        if (_placeholderBitmapSize != (pixels.Width, pixels.Height))
+        {
+            // The natural size of the canvas changed
+            _placeholderBitmapSize = (pixels.Width, pixels.Height);
+            NodeDocument.InvalidateLayout(rebuildBoxTree: false);
+        }
 
-        // The size of the placeholder follows the size of the frames of the OffscreenCanvas
+        // The size of the placeholder follows the size of the frames of the OffscreenCanvas (its width and height reflect it, as
+        // in the browsers)
         if (pixels.Width != Width)
         {
             Reflection.SetUnsignedLong(this, "width", positive: false, positiveWithFallback: false, defaultValue: 300, (uint)pixels.Width);

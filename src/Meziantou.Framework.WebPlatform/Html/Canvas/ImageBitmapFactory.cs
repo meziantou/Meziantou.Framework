@@ -108,8 +108,7 @@ internal static class ImageBitmapFactory
 
             case HtmlCanvasElement canvas:
             {
-                var width = canvas.Width;
-                var height = canvas.Height;
+                var (width, height) = canvas.BitmapSize;
                 if (width == 0 || height == 0)
                     throw InvalidState("The canvas has no pixels");
 

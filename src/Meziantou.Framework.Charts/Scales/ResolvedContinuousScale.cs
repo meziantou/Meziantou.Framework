@@ -101,7 +101,8 @@ internal sealed class ResolvedContinuousScale : ResolvedScale
         var result = new List<Tick>(values.Length);
         foreach (var value in values)
         {
-            if (value < min - tolerance || value > max + tolerance)
+            // The times out of the range of DateTime have no tick
+            if (value < min - tolerance || value > max + tolerance || (Kind is ChannelKind.Time && !TimeFormats.IsInRange(value)))
                 continue;
 
             var position = MapNumber(value);

@@ -72,7 +72,7 @@ public abstract partial class WorkerGlobalScope : GlobalScope
         });
     }
 
-    /// <summary>Applies the policies of the response of the script of the worker (its referrer policy, its CSP list and its embedder policies).</summary>
+    /// <summary>Applies the policies of the response of the script of the worker (its referrer policy, its CSP list and its embedder policy).</summary>
     internal void ApplyResponsePolicies(FetchedWorkerScript script)
     {
         if (ReferrerPolicies.ParseHeader(script.Headers) is { Length: > 0 } referrerPolicy)
@@ -89,14 +89,9 @@ public abstract partial class WorkerGlobalScope : GlobalScope
         if (Url.Scheme is "data" or "blob" or "about")
             return;
 
+        // The Document-Isolation-Policy header of the response does not apply: a dedicated worker has the document isolation
+        // policy of its creator, and the shared and service workers have none (see Document.CreateWorkerEnvironment)
         EnvironmentDocumentCore.EmbedderPolicy = EmbedderPolicy.Obtain(script.Headers, IsSecureContext);
-
-        // A dedicated worker has the document isolation policy of its creator (https://github.com/explainers-by-googlers/document-isolation-policy)
-        if (Agent.Kind != WorkerKind.Dedicated)
-        {
-            EnvironmentDocumentCore.DocumentIsolationPolicy = BrowsingContext.GetDocumentIsolationPolicy(script.Headers, IsSecureContext);
-        }
-
         EnvironmentDocumentCore.AddContentSecurityPolicies(script.Headers);
     }
 

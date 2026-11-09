@@ -132,6 +132,36 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void Sankey_HugeAndInfiniteValues()
+    {
+        // The sum of two values of 2^1023 overflows, but the nodes are laid out as for values of the same ratios
+        var max = Math.ScaleB(1, 1023);
+        var bounds = new ChartRectangle(0, 0, 300, 100);
+        var huge = SankeyLayout.Compute([("A", "B", max), ("A", "C", max), ("B", "D", max), ("C", "D", max)], bounds, 20, 5, 6, SankeyAlignment.Justify);
+        var unit = SankeyLayout.Compute([("A", "B", 1), ("A", "C", 1), ("B", "D", 1), ("C", "D", 1)], bounds, 20, 5, 6, SankeyAlignment.Justify);
+        Assert.Equal(unit.Nodes.Select(node => (node.X0, node.Y0, node.X1, node.Y1)).ToArray(), huge.Nodes.Select(node => (node.X0, node.Y0, node.X1, node.Y1)).ToArray());
+        Assert.Equal(unit.Links.Select(link => (link.Width, link.Y0, link.Y1)).ToArray(), huge.Links.Select(link => (link.Width, link.Y0, link.Y1)).ToArray());
+        Assert.Equal([max, max, max, max], huge.Links.Select(link => link.Value).ToArray());
+
+        // An infinite value counts as zero, as a missing one
+        var infinite = SankeyLayout.Compute([("A", "B", double.PositiveInfinity), ("A", "C", 1)], bounds, 20, 5, 6, SankeyAlignment.Justify);
+        Assert.Equal([0, 1], infinite.Links.Select(link => link.Value).ToArray());
+        Assert.All(infinite.Nodes, node => Assert.True(double.IsFinite(node.Y0) && double.IsFinite(node.Y1)));
+    }
+
+    [Fact]
+    public void Chord_HugeValues()
+    {
+        // The total of values of 2^1023 overflows, but the arcs are as long as for values of the same ratios
+        var max = Math.ScaleB(1, 1023);
+        var (groups, chords) = ChordLayout.Compute([[0, max], [max, max]], padAngle: 0.1);
+        var (unitGroups, unitChords) = ChordLayout.Compute([[0, 1], [1, 1]], padAngle: 0.1);
+        Assert.Equal(unitGroups.Select(group => (group.StartAngle, group.EndAngle)).ToArray(), groups.Select(group => (group.StartAngle, group.EndAngle)).ToArray());
+        Assert.Equal(unitChords.Select(chord => (chord.Source!.StartAngle, chord.Target!.EndAngle)).ToArray(), chords.Select(chord => (chord.Source!.StartAngle, chord.Target!.EndAngle)).ToArray());
+        Assert.Equal(max, groups[0].Value);
+    }
+
+    [Fact]
     public void Chord_TwoNodes()
     {
         // d3.chord: the rows total 2 and 1, so a unit of value is 2π / 3 radians; the chord between the nodes starts on
@@ -518,6 +548,18 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void PackSiblings_TinyCirclesNextToAHugeOne()
+    {
+        // Next to a huge circle, the coordinates of the tiny ones are too imprecise for the tolerance: a new circle
+        // intersected the pair it is tangent to, and the front chain of these two restarted forever
+        double[] radii = [Math.Sqrt(21), Math.Sqrt(60), Math.Sqrt(120), 0, 0, 2, 0, Math.Sqrt(2), 1e15, 0, 2, 0, Math.Sqrt(2)];
+        var circles = radii.Select(radius => new PackCircle(0, 0, radius)).ToArray();
+        var radius = CirclePacking.PackSiblings(circles, CirclePacking.CreateRandom());
+        Assert.True(radius >= 1e15 && radius < 1.000001e15, radius.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Assert.All(circles, circle => Assert.True(double.IsFinite(circle.X) && double.IsFinite(circle.Y)));
+    }
+
+    [Fact]
     public void Sum_InfiniteAndHugeValues()
     {
         var root = Hierarchy.FromPaths([("a", double.PositiveInfinity), ("b/x", 1e308), ("b/y", 1e308), ("c", 1), ("d", double.NaN), ("e", -1)], row => row.Item1, row => row.Item2);
@@ -780,5 +822,19 @@ public sealed class LayoutTests
         Assert.Equal([new GeoPosition(0, 0), new(10, 0), new(10, 5), new(0, 5), new(0, 0)], GeoSystem.SampleBox(new EquirectangularProjection(), 0, 0, 10, 5));
         Assert.HasCount(2 + 72 + 1 + 72, GeoSystem.SampleBox(new EqualEarthProjection(), -180, -90, 180, 90));
         Assert.HasCount(1 + 12 + 1 + 12 + 1, GeoSystem.SampleBox(new AlbersProjection(), -120, 30, -90, 40));
+    }
+
+    [Fact]
+    public void GeoSystem_EdgeAlongAParallelOutOfRange()
+    {
+        // The curved parallels of Albers get a point every 2.5°, but an edge between longitudes out of range gets no more
+        // points than a full turn: 1e80 degrees ran out of memory
+        var system = GeoSystem.Fit(new AlbersProjection(), (-1, -1, 1, 1), new ChartRectangle(0, 0, 100, 100));
+        foreach (var longitude in new[] { 3_360_600, 1.8e80 })
+        {
+            var builder = new PathBuilder();
+            system.AddPolyline(builder, [new(6, 0), new(longitude, 0), new(0, 0)], close: true);
+            Assert.HasCountLessThanOrEqual(300, builder.Build().Commands);
+        }
     }
 }

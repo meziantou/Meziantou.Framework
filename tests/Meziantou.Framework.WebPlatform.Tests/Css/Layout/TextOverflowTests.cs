@@ -153,6 +153,43 @@ public sealed class TextOverflowTests : IDisposable
     }
 
     [Fact]
+    public void FirstLine_EllipsisIsShapedInTheStyleOfTheBlock()
+    {
+        // The ellipsis has the 10px font of the block, not the 20px font of ::first-line: the third 20px character ends after
+        // 55 - 10 = 45px and is hidden
+        var document = Parse("<style>.t::first-line { font-size: 20px }</style><div class=t>abcdefghij</div>");
+        var drawings = GetDrawings(document);
+        Assert.Contains("clip-rect (-10000000, -10000000, 10000040x20000000)", drawings);
+        Assert.Contains(drawings, line => line.StartsWith("draw-glyphs \"" + Ellipsis + "\" Ahem 10px at (40, ", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Selection_HighlightsTheEllipsisWhenItElidesSelectedCharacters()
+    {
+        var document = Parse("<style>::selection { background-color: rgb(0, 0, 255) }</style><div class=t id=d>abcdefghij</div>");
+        var text = document.GetElementById("d")!.FirstChild!;
+        var selection = document.GetSelection()!;
+
+        // "ab" is visible: the ellipsis elides "efghij"
+        selection.SetBaseAndExtent(text, 0, text, 2);
+        Assert.DoesNotContain(GetDrawings(document), line => line.StartsWith("draw-rect (40, 0, 10x10) fill #0000ff", StringComparison.Ordinal));
+
+        selection.SetBaseAndExtent(text, 0, text, 6);
+        Assert.Contains(GetDrawings(document), line => line.StartsWith("draw-rect (40, 0, 10x10) fill #0000ff", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Selection_DoesNotHighlightTheEllipsisThatElidesTheStartOfAText()
+    {
+        // In the right-to-left line, the ellipsis on the left elides the logical start of the left-to-right text
+        var document = Parse("<style>::selection { background-color: rgb(0, 0, 255) }</style><div class=t id=d dir=rtl>abcdefghij</div>");
+        document.GetSelection()!.SelectAllChildren(document.GetElementById("d")!);
+        var drawings = GetDrawings(document);
+        Assert.Contains(drawings, line => line.StartsWith("draw-glyphs \"" + Ellipsis + "\" Ahem 10px at (5, ", StringComparison.Ordinal));
+        Assert.DoesNotContain(drawings, line => line.StartsWith("draw-rect (5, 0, 10x10) fill #0000ff", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Editable_WithTheCaretIsClipped()
     {
         var document = Parse("<div class=t id=d contenteditable>abcdefghij</div>");

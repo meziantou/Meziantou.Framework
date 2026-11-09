@@ -129,22 +129,13 @@
     "total": 7
   },
   "html/document-isolation-policy/credentialless-service-worker.https.tentative.window.js": {
-    "total": 5,
-    "failures": {
-      "fetch cross-origin + credentialless worker": "FAIL"
-    }
+    "total": 5
   },
   "html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js?request_origin=cross_origin&worker_dip=credentialless&window_dip=credentialless": {
-    "total": 1,
-    "failures": {
-      "credentialless-shared-worker": "FAIL"
-    }
+    "total": 1
   },
   "html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js?request_origin=cross_origin&worker_dip=credentialless&window_dip=none": {
-    "total": 1,
-    "failures": {
-      "credentialless-shared-worker": "FAIL"
-    }
+    "total": 1
   },
   "html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js?request_origin=cross_origin&worker_dip=none&window_dip=credentialless": {
     "total": 1
@@ -377,12 +368,7 @@
     }
   },
   "html/document-isolation-policy/shared-workers.tentative.https.html": {
-    "total": 9,
-    "failures": {
-      "\"isolate-and-require-corp\" is not inherited from the blob URL creator": "FAIL",
-      "\"isolate-and-require-corp\" is not inherited from the owner - data URL": "FAIL",
-      "\"isolate-and-require-corp\" on the worker script is ignored": "FAIL"
-    }
+    "total": 9
   },
   "html/document-isolation-policy/window-reuse.tentative.https.html": {
     "total": 6,

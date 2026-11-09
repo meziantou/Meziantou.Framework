@@ -3766,6 +3766,7 @@ public sealed partial class BrowsingContext : IDisposable
         StopCount++;
         CancelOngoingNavigation();
         Document.AbortDocumentAndDescendants();
+        Document.SuppressLoadEventOfDocumentAndDescendants();
         if (IsDelayingLoadEvents)
         {
             IsDelayingLoadEvents = false;

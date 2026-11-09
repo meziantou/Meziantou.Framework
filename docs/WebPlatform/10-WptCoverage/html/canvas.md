@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 3,088 | 3,166 | 0 | 98% |
+| [Stable](#stable-tests) | 3,089 | 3,166 | 0 | 98% |
 | [Tentative](#tentative-tests) | 7 | 302 | 0 | 2% |
 | [Reftests](#reftests) | 213 | 585 | 0 | 36% |
-| **All** | **3,308** | **4,053** | **0** | **82%** |
+| **All** | **3,309** | **4,053** | **0** | **82%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 11
+- **BUG**: 10
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 723
 - **REQUIRES**: 5
@@ -2209,7 +2209,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`offscreen/manual/the-offscreen-canvas/offscreencanvas.constructor.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.constructor.worker.js) | Pass | 2 / 2 |  |  |
 | [`offscreen/manual/the-offscreen-canvas/offscreencanvas.getcontext.html`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.getcontext.html) | Fail | 5 / 8 | NOT IMPLEMENTED | WebGL (`getContext("webgl")` returns null) |
 | [`offscreen/manual/the-offscreen-canvas/offscreencanvas.getcontext.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.getcontext.worker.js) | Fail | 5 / 8 | NOT IMPLEMENTED | WebGL (`getContext("webgl")` returns null) |
-| [`offscreen/manual/the-offscreen-canvas/offscreencanvas.placeholder.size.html`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.placeholder.size.html) | Fail | 1 / 4 | BUG | the natural size of a placeholder canvas comes from its `width` and `height` content attributes instead of the bitmap of its `OffscreenCanvas`, so setting the attributes after `transferControlToOffscreen()` resizes it and changes its aspect ratio |
+| [`offscreen/manual/the-offscreen-canvas/offscreencanvas.placeholder.size.html`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.placeholder.size.html) | Pass | 4 / 4 |  |  |
 | [`offscreen/manual/the-offscreen-canvas/offscreencanvas.resize.html`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.resize.html) | Fail | 8 / 10 | NOT IMPLEMENTED | WebGL (`getContext("webgl")` returns null) |
 | [`offscreen/manual/the-offscreen-canvas/offscreencanvas.transfer.lowlatency.nocrash.html`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.transfer.lowlatency.nocrash.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/manual/the-offscreen-canvas/offscreencanvas.transfer.to.imagebitmap.html`](https://wpt.fyi/results/html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.transfer.to.imagebitmap.html) | Fail | 5 / 6 | NOT IMPLEMENTED | WebGL (`getContext("webgl")` returns null) |

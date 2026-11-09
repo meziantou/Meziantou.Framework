@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-text-decor, and w
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 48 | 48 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 329 | 339 | 0 | 97% |
-| **All** | **377** | **387** | **0** | **97%** |
+| [Reftests](#reftests) | 330 | 339 | 0 | 97% |
+| **All** | **378** | **387** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 3
 - **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 3
 
@@ -147,7 +147,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`text-decoration-inset-percentage-negative-propagated.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-negative-propagated.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-percentage-negative-repaint.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-negative-repaint.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-percentage-negative.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-negative.html) | Pass | 1 / 1 |  |  |
-| [`text-decoration-inset-percentage-padding.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-padding.html) | Fail | 0 / 1 | BUG | the percentages of `text-decoration-inset` refer to the decorated text of the box (160px), not to the inline size of the decorating box with its paddings (240px): the underline is inset by 40px instead of 60px at each end |
+| [`text-decoration-inset-percentage-padding.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-padding.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-percentage-slice-multiline.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-slice-multiline.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-percentage-slice.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-slice.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-svg-fragment-001.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-svg-fragment-001.html) | Pass | 1 / 1 |  |  |

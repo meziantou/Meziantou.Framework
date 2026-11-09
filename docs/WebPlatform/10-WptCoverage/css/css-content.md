@@ -11,14 +11,8 @@ description: "The results of the web-platform-tests of css/css-content, and why 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 12 | 12 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 65 | 66 | 0 | 98% |
-| **All** | **77** | **78** | **0** | **99%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **BUG**: 1
+| [Reftests](#reftests) | 66 | 66 | 0 | 100% |
+| **All** | **78** | **78** | **0** | **100%** |
 
 ## Stable tests
 
@@ -105,5 +99,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`quotes-first-letter-005.html`](https://wpt.fyi/results/css/css-content/quotes-first-letter-005.html) | Pass | 1 / 1 |  |  |
 | [`quotes-first-line.html`](https://wpt.fyi/results/css/css-content/quotes-first-line.html) | Pass | 1 / 1 |  |  |
 | [`quotes-lang-dynamic-001.html`](https://wpt.fyi/results/css/css-content/quotes-lang-dynamic-001.html) | Pass | 1 / 1 |  |  |
-| [`quotes-match-parent-001.html`](https://wpt.fyi/results/css/css-content/quotes-match-parent-001.html) | Fail | 0 / 1 | BUG | `quotes: match-parent` that reaches an ancestor whose `quotes` is `auto` uses the quotation marks of the content language of the parent of the quote element itself (`de`, `sv`, `nl`: `‚second‘`, `’third‘`), instead of the ones that `auto` resolves to on that ancestor (the French marks of the language of its parent, the `div`) (`BoxTreeBuilder.GetQuote`) |
+| [`quotes-match-parent-001.html`](https://wpt.fyi/results/css/css-content/quotes-match-parent-001.html) | Pass | 1 / 1 |  |  |
 | [`quotes-slot-scoping.html`](https://wpt.fyi/results/css/css-content/quotes-slot-scoping.html) | Pass | 1 / 1 |  |  |

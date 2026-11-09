@@ -15,6 +15,9 @@ internal sealed class SankeyNode(string name, int index)
 
     public double Value { get; set; }
 
+    /// <summary>The value in the unit of <see cref="SankeyLink.Weight"/>.</summary>
+    public double Weight { get; set; }
+
     public int Depth { get; set; }
 
     public int Height { get; set; }

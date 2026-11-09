@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of css/css-values, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 253 | 266 | 0 | 95% |
+| [Stable](#stable-tests) | 255 | 266 | 0 | 96% |
 | [Tentative](#tentative-tests) | 21 | 22 | 0 | 95% |
 | [Reftests](#reftests) | 211 | 214 | 0 | 99% |
-| **All** | **485** | **502** | **0** | **97%** |
+| **All** | **487** | **502** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 1
 - **TEST BUG**: 10
 - **NOT IMPLEMENTED**: 2
 - **REQUIRES**: 2
@@ -36,7 +36,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animations/line-height-lh-transition.html`](https://wpt.fyi/results/css/css-values/animations/line-height-lh-transition.html) | Pass | 1 / 1 |  |  |
 | [`attr-IACVT.html`](https://wpt.fyi/results/css/css-values/attr-IACVT.html) | Pass | 1 / 1 |  |  |
 | [`attr-all-types.html`](https://wpt.fyi/results/css/css-values/attr-all-types.html) | Pass | 175 / 175 |  |  |
-| [`attr-argument-grammar.html`](https://wpt.fyi/results/css/css-values/attr-argument-grammar.html) | Fail | 15 / 18 | BUG | an `attr()` whose first argument does not parse as `<attr-name> <attr-type>?` (e.g. `attr(data-foo &, 30)`) is invalid instead of substituting its fallback: step 2 of https://drafts.csswg.org/css-values-5/#replace-an-attr-function jumps to the FAILURE step |
+| [`attr-argument-grammar.html`](https://wpt.fyi/results/css/css-values/attr-argument-grammar.html) | Pass | 18 / 18 |  |  |
 | [`attr-container-style-query.html`](https://wpt.fyi/results/css/css-values/attr-container-style-query.html) | Pass | 1 / 1 |  |  |
 | [`attr-css-wide-keywords.html`](https://wpt.fyi/results/css/css-values/attr-css-wide-keywords.html) | Pass | 21 / 21 |  |  |
 | [`attr-cycle.html`](https://wpt.fyi/results/css/css-values/attr-cycle.html) | Pass | 37 / 37 |  |  |
@@ -57,7 +57,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`attr-security-transition-interpolated.html`](https://wpt.fyi/results/css/css-values/attr-security-transition-interpolated.html) | Pass | 3 / 3 |  |  |
 | [`attr-security-transition-retarget-taint.html`](https://wpt.fyi/results/css/css-values/attr-security-transition-retarget-taint.html) | Pass | 1 / 1 |  |  |
 | [`attr-security-transition.html`](https://wpt.fyi/results/css/css-values/attr-security-transition.html) | Pass | 1 / 1 |  |  |
-| [`attr-security.html`](https://wpt.fyi/results/css/css-values/attr-security.html) | Fail | 31 / 32 | BUG | the computed value of `src()` with a string is serialized as `src(url("..."))` instead of `url("...")` (https://drafts.csswg.org/cssom/#serialize-a-url) |
+| [`attr-security.html`](https://wpt.fyi/results/css/css-values/attr-security.html) | Pass | 32 / 32 |  |  |
 | [`attr-serialization.html`](https://wpt.fyi/results/css/css-values/attr-serialization.html) | Pass | 1 / 1 |  |  |
 | [`attr-universal-selector.html`](https://wpt.fyi/results/css/css-values/attr-universal-selector.html) | Pass | 1 / 1 |  |  |
 | [`calc-angle-values.html`](https://wpt.fyi/results/css/css-values/calc-angle-values.html) | Pass | 27 / 27 |  |  |

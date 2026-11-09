@@ -1,0 +1,6 @@
+a { font-weight: attr(data-foo &, 30); width: attr(data-foo type(<number>) | <length>, 30px); --x: attr(var(--y), 3px); }
+b { background-image: src("https://example.test/a.png"); --s: src(attr(data-foo)); quotes: match-parent; }
+q { quotes: auto; } q q { quotes: match-parent; } q::before { content: open-quote; }
+@media (min-aspect-ratio: calc(-1)/2) and (max-aspect-ratio: 2/calc(-1)) { a { color: red } }
+@media not (aspect-ratio < calc(-1)), (aspect-ratio > -1) { a { color: blue } }
+@container (aspect-ratio > calc(-1)) and (min-aspect-ratio: calc(-1)/2) { a { color: green } }

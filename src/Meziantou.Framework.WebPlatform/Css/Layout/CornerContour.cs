@@ -517,9 +517,21 @@ internal sealed record CornerContour(PhysicalRect BorderRect, BorderRadii Radii,
             var count = GetSegmentCount(adjustedStart, adjustedEnd);
             for (var i = 0; i <= count; i++)
             {
-                var (sin, cos) = Math.SinCos(Math.PI / 2 * i / count);
-                var x = i == 0 ? 0 : i == count ? 1 : Math.Pow(sin, exponent);
-                var y = i == 0 ? 1 : i == count ? 0 : Math.Pow(cos, exponent);
+                double x;
+                double y;
+                if (Math.Abs(k) == 1)
+                {
+                    // A quarter of an ellipse (round or scoop): the cubic approximation of the corners of border-radius
+                    // (DisplayPath.AddRoundedRect), so that a round corner has the same curve with or without corner-shape
+                    (x, y) = GetQuarterEllipseCubicPoint((double)i / count);
+                }
+                else
+                {
+                    var (sin, cos) = Math.SinCos(Math.PI / 2 * i / count);
+                    x = i == 0 ? 0 : i == count ? 1 : Math.Pow(sin, exponent);
+                    y = i == 0 ? 1 : i == count ? 0 : Math.Pow(cos, exponent);
+                }
+
                 points.Add(MapToCorner(x, y, adjustedStart, adjustedEnd, center));
             }
         }
@@ -545,6 +557,20 @@ internal sealed record CornerContour(PhysicalRect BorderRect, BorderRadii Radii,
 
         points.Add(miterEnd);
         return index;
+    }
+
+    /// <summary>
+    /// Returns the point at a parameter of the cubic Bézier curve that approximates the quarter of the unit circle from (0, 1) to
+    /// (1, 0), whose control points are (κ, 1) and (1, κ).
+    /// </summary>
+    private static (double X, double Y) GetQuarterEllipseCubicPoint(double t)
+    {
+        const double Kappa = 0.5522847498307936;
+        var u = 1 - t;
+        var b1 = 3 * u * u * t;
+        var b2 = 3 * u * t * t;
+        var b3 = t * t * t;
+        return ((b1 * Kappa) + b2 + b3, (u * u * u) + b1 + (b2 * Kappa));
     }
 
     /// <summary>Returns the number of segments of the flattened curve of a corner: more for the larger corners.</summary>

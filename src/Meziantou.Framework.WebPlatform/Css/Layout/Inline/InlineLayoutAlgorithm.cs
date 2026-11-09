@@ -49,10 +49,15 @@ internal sealed partial class InlineLayoutAlgorithm
     /// </summary>
     private bool _measuring;
 
-    /// <summary>The max-content contributions of the line-left and line-right floats of the line being measured, and the largest width of the line before a float cleared some of them (see <see cref="AddMeasuredFloat"/>).</summary>
+    /// <summary>
+    /// The max-content contributions of the line-left and line-right floats of the line being measured (or of the floats below it,
+    /// after a float that clears), the width of the floats below the line (null while the floats are on the line), and the largest
+    /// width of the rows of floats below the line (see <see cref="AddMeasuredFloat"/>).
+    /// </summary>
     private double _measuredLineLeftFloats;
     private double _measuredLineRightFloats;
-    private double _measuredWidthBeforeClearance;
+    private double? _measuredFloatsBelow;
+    private double _measuredWidestRowBelow;
 
     /// <summary>Whether the text needs the bidi algorithm: a right-to-left paragraph, a strong right-to-left character, or bidi control codes.</summary>
     private bool _needsBidi;
@@ -324,7 +329,7 @@ internal sealed partial class InlineLayoutAlgorithm
             _lineStartOffset = indent;
             _lineAfterForcedBreak = afterForcedBreak;
             var end = BreakLine(position, availableSize, isFirstLine, mode);
-            result = Math.Max(result, Math.Max(end.Width, _measuredWidthBeforeClearance) + indent);
+            result = Math.Max(result, Math.Max(end.Width, _measuredWidestRowBelow) + indent);
             position = new LinePosition(end.Item, end.Position);
             afterForcedBreak = end.IsForced;
             isFirstLine = false;

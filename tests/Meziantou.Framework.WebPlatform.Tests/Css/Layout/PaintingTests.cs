@@ -445,6 +445,45 @@ public sealed class PaintingTests : IDisposable
         }
     }
 
+    [Fact]
+    public void Borders_RoundedDottedBorderFollowsTheCurves()
+    {
+        // The dots are on the line in the middle of the whole border (the curves of the corners included), not on straight
+        // lines along the sides
+        var dump = Dump(Parse("<div style='width: 100px; height: 100px; border: 20px dotted rgb(255, 0, 0); border-radius: 40px'></div>"));
+        Assert.DoesNotContain("draw-line", dump, StringComparison.Ordinal);
+        Assert.Contains("stroke #ff0000 width=20 dashes=0,", dump, StringComparison.Ordinal);
+        Assert.Contains("cap=round", dump, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Borders_RoundedDashedBorderWithAnEmptyPaddingBoxIsClippedToTheBorderEdge()
+    {
+        // The padding edge has no width but a curve of 20px by 80px: its path would enclose an area, which the clip of the ring
+        // would remove from the dashes
+        var dump = Dump(Parse("<div style='width: 0; height: 160px; border: 20px dashed rgb(255, 0, 0); border-radius: 40px 0 0 0 / 100px 0 0 0'></div>"));
+        var lines = dump.Split('\n');
+        var stroke = Array.FindIndex(lines, line => line.Contains("draw-path", StringComparison.Ordinal) && line.Contains("stroke #ff0000", StringComparison.Ordinal));
+        Assert.True(stroke > 0, dump);
+        var clip = lines[stroke - 1].Trim();
+        Assert.StartsWith("clip-path ", clip, StringComparison.Ordinal);
+        Assert.Equal(1, clip.Count(c => c == 'M'));
+    }
+
+    [Theory]
+    [InlineData("dotted", 20, 428.5, 11)] // the line in the middle of a 140px box with 20px borders and 40px radii
+    [InlineData("dashed", 4, 200, 17)]
+    public void Borders_ClosedDashesAreAWholeNumberOfDashes(string style, double width, double length, int dashes)
+    {
+        var stroke = BorderPainter.GetClosedDashes(style == "dotted" ? BorderStyle.Dotted : BorderStyle.Dashed, width, length);
+        Assert.NotNull(stroke);
+        Assert.NotNull(stroke.Dashes);
+        Assert.Equal(length, (stroke.Dashes[0] + stroke.Dashes[1]) * dashes, 9);
+    }
+
+    [Fact]
+    public void Borders_ClosedDashesOfAShortLineAreSolid() => Assert.Null(BorderPainter.GetClosedDashes(BorderStyle.Dotted, 20, 70));
+
     [Theory]
     [InlineData(10, "(0, 0, 10x20) - (3, 0, 7x20)", "(7, 0, 3x20) - (10, 0, 0x20)")] // 3 + 4 + 3
     [InlineData(5, "(0, 0, 5x20) - (2, 0, 3x20)", "(3, 0, 2x20) - (5, 0, 0x20)")] // 2 + 1 + 2
@@ -870,7 +909,8 @@ public sealed class PaintingTests : IDisposable
     [InlineData("text-decoration-inset: 5px", "(25, 9, 30x1)")] // trimmed at both ends of "cdef" (20 to 60)
     [InlineData("text-decoration-inset: -5px", "(15, 9, 50x1)")] // extended at both ends
     [InlineData("text-decoration-inset: 10px -10px", "(30, 9, 40x1)")] // the start inset, then the end inset
-    [InlineData("text-decoration-inset: 25% 50%", "(30, 9, 10x1)")] // percentages of the decorated text
+    [InlineData("text-decoration-inset: 25% 50%", "(30, 9, 10x1)")] // percentages of the decorating box
+    [InlineData("padding: 0 10px; text-decoration-inset: 25%", "(45, 9, 10x1)")] // with its paddings (15px), from the ends of the text (30 to 70)
     [InlineData("text-decoration-inset: 30px 10px", null)] // nothing is left
     [InlineData("text-decoration-inset: 60px -70px", "(80, 9, 50x1)")] // the whole line is after the text
     [InlineData("text-decoration-inset: auto", "(21, 9, 38x1)")] // half the thickness, 1px at least

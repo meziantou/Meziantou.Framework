@@ -167,19 +167,10 @@
     "total": 14
   },
   "domparsing/stream-append-html.html": {
-    "total": 17,
-    "failures": {
-      "streamAppendHTML() can stream into a non-empty <style>": "FAIL"
-    }
+    "total": 17
   },
   "domparsing/stream-fragment-context.html": {
-    "total": 81,
-    "failures": {
-      "streamAppendHTML: unclosed <style> is popped on close()": "FAIL",
-      "streamAppendHTMLUnsafe: unclosed <style> is popped on close()": "FAIL",
-      "streamHTML: unclosed <style> is popped on close()": "FAIL",
-      "streamHTMLUnsafe: unclosed <style> is popped on close()": "FAIL"
-    }
+    "total": 81
   },
   "domparsing/stream-html-abort-unblocks-rendering-defer.html": {
     "total": 1
@@ -276,13 +267,7 @@
     }
   },
   "domparsing/stream-html-run-scripts-option.html": {
-    "total": 30,
-    "failures": {
-      "element.streamAppendHTMLUnsafe: a streamed <script> moved to another document before its end tag does not execute": "FAIL",
-      "element.streamAppendHTMLUnsafe: a streamed SVG <script> does not execute after the target moves to another document": "FAIL",
-      "element.streamHTMLUnsafe: a streamed <script> moved to another document before its end tag does not execute": "FAIL",
-      "element.streamHTMLUnsafe: a streamed SVG <script> does not execute after the target moves to another document": "FAIL"
-    }
+    "total": 30
   },
   "domparsing/stream-html-sanitizer-safe.html": {
     "total": 30
@@ -341,7 +326,6 @@
   "domparsing/stream-insertion-logic.html": {
     "total": 153,
     "failures": {
-      "Cross-realm streamBeforeHTMLUnsafe creates WritableStream and HierarchyRequestError in this's relevant realm": "FAIL",
       "streamAfterHTMLUnsafe: <img> as first token after ref_node displacement is created in an inert document": "FAIL",
       "streamAfterHTMLUnsafe: <template for> after ref_node displacement does not apply and errors the stream": "FAIL",
       "streamAfterHTMLUnsafe: a comment as the only token after mid-chunk displacement errors the stream and is dropped": "FAIL",
@@ -355,7 +339,6 @@
       "streamAfterHTMLUnsafe: moving ref_node back into parent after mid-chunk displacement does not recover the errored stream": "FAIL",
       "streamAfterHTMLUnsafe: ref_node displacement during table-text foster parenting errors the stream without applying <template for>": "FAIL",
       "streamAfterHTMLUnsafe: whitespace as the only token after mid-chunk displacement errors the stream and is dropped": "FAIL",
-      "streamAppendHTMLUnsafe: adopting the target into another document mid-stream continues inserting nodes without running scripts": "FAIL",
       "streamBeforeHTMLUnsafe: <img> as first token after ref_node displacement is created in an inert document": "FAIL",
       "streamBeforeHTMLUnsafe: <template for> after ref_node displacement does not apply and errors the stream": "FAIL",
       "streamBeforeHTMLUnsafe: a comment as the only token after mid-chunk displacement errors the stream and is dropped": "FAIL",
@@ -369,11 +352,9 @@
       "streamBeforeHTMLUnsafe: moving ref_node back into parent after mid-chunk displacement does not recover the errored stream": "FAIL",
       "streamBeforeHTMLUnsafe: ref_node displacement during table-text foster parenting errors the stream without applying <template for>": "FAIL",
       "streamBeforeHTMLUnsafe: whitespace as the only token after mid-chunk displacement errors the stream and is dropped": "FAIL",
-      "streamHTMLUnsafe: adopting the target into another document mid-stream continues inserting nodes without running scripts": "FAIL",
       "streamPrependHTMLUnsafe: <img> as first token after ref_node displacement is created in an inert document": "FAIL",
       "streamPrependHTMLUnsafe: <template for> after ref_node displacement does not apply and errors the stream": "FAIL",
       "streamPrependHTMLUnsafe: a comment as the only token after mid-chunk displacement errors the stream and is dropped": "FAIL",
-      "streamPrependHTMLUnsafe: adopting the target into another document mid-stream continues inserting nodes without running scripts": "FAIL",
       "streamPrependHTMLUnsafe: adoption agency at the root after ref_node displacement keeps existing nodes and errors the stream": "FAIL",
       "streamPrependHTMLUnsafe: child of replaceWithChildrenElements as first token after ref_node displacement is created in an inert document": "FAIL",
       "streamPrependHTMLUnsafe: children of a replaceWithChildrenElements element are dropped, without erroring the stream, when the table it was foster parented before is moved": "FAIL",
@@ -415,12 +396,7 @@
     "total": 42
   },
   "domparsing/stream-tokenizer-context.html": {
-    "total": 49,
-    "failures": {
-      "streamAppendHTMLUnsafe into <template> content parses <noscript> with the host document's scripting flag": "FAIL",
-      "streamHTMLUnsafe into <template> content parses <noscript> with the host document's scripting flag": "FAIL",
-      "streamPrependHTMLUnsafe into <template> content parses <noscript> with the host document's scripting flag": "FAIL"
-    }
+    "total": 49
   },
   "domparsing/style_attribute_html.html": {
     "total": 4

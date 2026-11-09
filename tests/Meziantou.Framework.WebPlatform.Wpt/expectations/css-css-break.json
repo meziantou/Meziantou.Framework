@@ -501,41 +501,10 @@
     "reftest": "PASS"
   },
   "css/css-break/flexbox/auto-block-size-with-max-block-size-dynamic.html": {
-    "total": 6,
-    "failures": {
-      "max-block-size: 1100px: resizing a descendant reflows later columns": "FAIL",
-      "max-block-size: 2700px: resizing a descendant reflows later columns": "FAIL",
-      "max-block-size: none: resizing a descendant reflows later columns": "FAIL"
-    }
+    "total": 6
   },
   "css/css-break/flexbox/auto-block-size-with-max-block-size.html": {
-    "total": 52,
-    "failures": {
-      "horizontal-tb, column nowrap: maximum reached at a later fragment boundary": "FAIL",
-      "horizontal-tb, column nowrap: maximum reached in the first fragment": "FAIL",
-      "horizontal-tb, column nowrap: maximum reached partway through a later fragment": "FAIL",
-      "horizontal-tb, column nowrap: minimum overrides maximum": "FAIL",
-      "horizontal-tb, row wrap: maximum reached at a later fragment boundary": "FAIL",
-      "horizontal-tb, row wrap: maximum reached in the first fragment": "FAIL",
-      "horizontal-tb, row wrap: maximum reached partway through a later fragment": "FAIL",
-      "horizontal-tb, row wrap: minimum overrides maximum": "FAIL",
-      "vertical-lr, column nowrap: maximum reached at a later fragment boundary": "FAIL",
-      "vertical-lr, column nowrap: maximum reached in the first fragment": "FAIL",
-      "vertical-lr, column nowrap: maximum reached partway through a later fragment": "FAIL",
-      "vertical-lr, column nowrap: minimum overrides maximum": "FAIL",
-      "vertical-lr, row wrap: maximum reached at a later fragment boundary": "FAIL",
-      "vertical-lr, row wrap: maximum reached in the first fragment": "FAIL",
-      "vertical-lr, row wrap: maximum reached partway through a later fragment": "FAIL",
-      "vertical-lr, row wrap: minimum overrides maximum": "FAIL",
-      "vertical-rl, column nowrap: maximum reached at a later fragment boundary": "FAIL",
-      "vertical-rl, column nowrap: maximum reached in the first fragment": "FAIL",
-      "vertical-rl, column nowrap: maximum reached partway through a later fragment": "FAIL",
-      "vertical-rl, column nowrap: minimum overrides maximum": "FAIL",
-      "vertical-rl, row wrap: maximum reached at a later fragment boundary": "FAIL",
-      "vertical-rl, row wrap: maximum reached in the first fragment": "FAIL",
-      "vertical-rl, row wrap: maximum reached partway through a later fragment": "FAIL",
-      "vertical-rl, row wrap: minimum overrides maximum": "FAIL"
-    }
+    "total": 52
   },
   "css/css-break/flexbox/flex-container-fragmentation-001.html": {
     "reftest": "PASS"
@@ -1867,7 +1836,7 @@
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-013.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-014.html": {
     "reftest": "FAIL"
@@ -1879,7 +1848,7 @@
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-017.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-018.html": {
     "reftest": "PASS"
@@ -1891,24 +1860,10 @@
     "reftest": "FAIL"
   },
   "css/css-break/grid/grid-lanes/column-forced-breaks-margins.html": {
-    "total": 6,
-    "failures": {
-      "1-lane item margin after break-after: column": "FAIL",
-      "1-lane item margin after break-before: column": "FAIL",
-      "1-lane item margin after break-inside: avoid": "FAIL",
-      "2-lane item margin after break-after: column": "FAIL",
-      "2-lane item margin after break-before: column": "FAIL",
-      "2-lane item margin after break-inside: avoid": "FAIL"
-    }
+    "total": 6
   },
   "css/css-break/grid/grid-lanes/column-forced-breaks-overflow.html": {
-    "total": 4,
-    "failures": {
-      "break-after: column after a 1-lane overflow continuation": "FAIL",
-      "break-after: column after a 2-lane overflow continuation": "FAIL",
-      "break-before: column after a 1-lane overflow continuation": "FAIL",
-      "break-before: column after a 2-lane overflow continuation": "FAIL"
-    }
+    "total": 4
   },
   "css/css-break/grid/grid-lanes/column-grid-lanes-oof-fragmentation-001.html": {
     "reftest": "PASS"
@@ -2127,10 +2082,10 @@
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/overflow-clip-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/overflow-clip-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/row-grid-lanes-oof-fragmentation-001.html": {
     "reftest": "PASS"
@@ -2916,13 +2871,13 @@
     "reftest": "PASS"
   },
   "css/css-break/overflow-clip-022.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/overflow-clip-023.html": {
     "reftest": "PASS"
   },
   "css/css-break/overflow-clip-024.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/overflow-clip-025.html": {
     "reftest": "PASS"

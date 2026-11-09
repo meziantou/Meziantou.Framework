@@ -690,11 +690,7 @@
     "total": 2
   },
   "css/css-sizing/aspect-ratio/intrinsic-contribution-transferred-min-width-001.html": {
-    "total": 3,
-    "failures": {
-      ".container 2": "FAIL",
-      ".container 3": "FAIL"
-    }
+    "total": 3
   },
   "css/css-sizing/aspect-ratio/intrinsic-size-001.html": {
     "reftest": "PASS"
@@ -952,11 +948,7 @@
     "reftest": "PASS"
   },
   "css/css-sizing/aspect-ratio/replaced-element-intrinsic-contribution-transferred-min-width-001.html": {
-    "total": 3,
-    "failures": {
-      ".container 2": "FAIL",
-      ".container 3": "FAIL"
-    }
+    "total": 3
   },
   "css/css-sizing/aspect-ratio/select-element-001.html": {
     "reftest": "PASS"
@@ -968,10 +960,7 @@
     "reftest": "PASS"
   },
   "css/css-sizing/aspect-ratio/table-element-intrinsic-contribution-001.html": {
-    "total": 1,
-    "failures": {
-      ".container 1": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/aspect-ratio/zero-or-infinity-001.html": {
     "reftest": "PASS"

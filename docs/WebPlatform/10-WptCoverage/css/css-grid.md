@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-grid, and why the
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 732 | 735 | 0 | 99.5% |
 | [Tentative](#tentative-tests) | 32 | 36 | 0 | 89% |
-| [Reftests](#reftests) | 1,739 | 1,792 | 0 | 97% |
-| **All** | **2,503** | **2,563** | **0** | **98%** |
+| [Reftests](#reftests) | 1,740 | 1,792 | 0 | 97% |
+| **All** | **2,504** | **2,563** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 38
 - **NOT IMPLEMENTED**: 19
 - **TEST RUNNER**: 1
@@ -1909,7 +1909,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-002.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-002.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-different-borders-padding-and-gaps-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-different-borders-padding-and-gaps-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the extra margins of an auto-placed subgrid nested in a grid lanes subgrid (not done: they are the ones of its first position): the subgrid inside it is offset by the borders and paddings of an ancestor at the start edge (2px or 3px), which makes its inherited track, and the standalone tracks and the items sized from it, smaller than in the reference |
 | [`grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-margin-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-margin-001.html) | Pass | 1 / 1 |  |  |
-| [`grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-scrollbar-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-scrollbar-001.html) | Fail | 0 / 1 | BUG | the explicit grid lanes subgrids in a scroll container (`overflow: auto`) with a horizontal scrollbar: the scroll container also gets a vertical scrollbar, and the item with `aspect-ratio: 1 / 4` sized from the inherited row is 0px wide (44px in the reference: a quarter of the 176px row that remains once the horizontal scrollbar is subtracted) |
+| [`grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-scrollbar-001.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-scrollbar-001.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/subgrid/grid-lanes-subgridded-to-grid/column/grid-lanes-subgrid-001a.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid/column/grid-lanes-subgrid-001a.html) | Pass | 1 / 1 |  |  |
 | [`grid-lanes/subgrid/grid-lanes-subgridded-to-grid/column/grid-lanes-subgrid-002a.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid/column/grid-lanes-subgrid-002a.html) | Fail | 0 / 1 | TEST BUG | the reference is a regular grid subgrid with a height of 54px whose two auto rows (29px and 19px, a gap of 4px) are stretched by 1px each: its third item is 34px below the top of the subgrid; the grid lanes subgrid has no rows to stretch and stacks it after the first item and the gap (33px), as specified. Fails in Chrome, Firefox and Safari |
 | [`grid-lanes/subgrid/grid-lanes-subgridded-to-grid/column/independent-formatting-context.html`](https://wpt.fyi/results/css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid/column/independent-formatting-context.html) | Fail | 0 / 1 | TEST BUG | expects an item whose self-alignment is `normal` in the stacking axis to be stretched in its alignment container (the empty item of each grid lanes container, a subgrid or a standalone container when a containment makes `subgrid` behave as `none`, filling the 100px of the container): the items are not stretched, as in Chrome, Firefox and Safari, which fail this test too; stretching them makes 116 passing reftests of css/css-grid/grid-lanes fail (the last item of every track would fill the rest of the stacking range) |

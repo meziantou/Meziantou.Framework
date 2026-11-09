@@ -1193,6 +1193,22 @@ internal sealed class FragmentationFlow
     /// <summary>A box that repeats its edges at the breaks inside its border box (<c>box-decoration-break: clone</c>): the block-end edge of its border box and its edges.</summary>
     private sealed record CloneBox(double End, double StartEdges, double EndEdges, CloneBox? Next);
 
+    /// <summary>
+    /// Returns the context of the absolutely positioned children of a box: the ones of a table wrapper box are clipped by its table
+    /// grid box, which takes the <c>overflow</c> of the table (see <see cref="ScrollContainers.GetUsedOverflow"/>), as in the browsers
+    /// (a table that clips its overflow clips its absolutely positioned descendants).
+    /// </summary>
+    private VisitContext GetOutOfFlowContext(ReadOnlySpan<Fragment> children, int inFlowCount, BoxFragment parent, double parentTop, VisitContext context)
+    {
+        if (parent.Box.Kind != ContainerBoxKind.TableWrapper || inFlowCount >= children.Length || parent.GetClippingTableGrid() is not { } grid
+            || !(_writingDirection.IsHorizontal ? grid.ClipsOverflowY : grid.ClipsOverflowX))
+        {
+            return context;
+        }
+
+        return context with { ClipEnd = Math.Min(context.ClipEnd, GetBlockRange(grid, parent.Size, parent.WritingDirection, parentTop).Bottom) };
+    }
+
     /// <summary>Returns the logical block range of a child fragment in the strip (without its relative offset).</summary>
     internal static (double Top, double Bottom, double Inline) GetBlockRange(Fragment child, PhysicalSize parentSize, WritingDirection parentWritingDirection, double parentTop)
     {
@@ -1224,6 +1240,7 @@ internal sealed class FragmentationFlow
         var lineIndex = 0;
         var hasContentBefore = false;
         var lines = lineCount > 1 && (orphans > 1 || widows > 1) && !context.Avoid ? new LineBreakInfo(lineCount, orphans, widows) : null;
+        var outOfFlowContext = parent is not null ? GetOutOfFlowContext(children, inFlowCount, parent, parentTop, context) : context;
         for (var i = 0; i < children.Length; i++)
         {
             var child = children[i];
@@ -1259,9 +1276,9 @@ internal sealed class FragmentationFlow
             }
 
             // The absolutely positioned boxes are fragmented apart (they are not content of the flow)
-            if (i >= inFlowCount && parent is not null && child is BoxFragment outOfFlow && _root._separatesOutOfFlow && top < context.ClipEnd)
+            if (i >= inFlowCount && parent is not null && child is BoxFragment outOfFlow && _root._separatesOutOfFlow && top < outOfFlowContext.ClipEnd)
             {
-                AddOutOfFlow(outOfFlow, top, bottom, context, parent, parentTop, parentPortion);
+                AddOutOfFlow(outOfFlow, top, bottom, outOfFlowContext, parent, parentTop, parentPortion);
                 continue;
             }
 
@@ -1469,8 +1486,11 @@ internal sealed class FragmentationFlow
         var layout = box.Box.Style.Layout;
         var edges = _writingDirection.ToLogical(box.Border.Add(box.Padding).Add(box.Scrollbars));
         var clones = layout.Fragmentation.BoxDecorationBreak == BoxDecorationBreak.Clone && (edges.BlockStart > Epsilon || edges.BlockEnd > Epsilon);
+        var maxEnd = double.PositiveInfinity;
+        var grows = false;
         if (box.Box.Kind != ContainerBoxKind.Normal || box.Box.Display.Internal != DisplayInternal.None || (GetFirstInFlowChild(box) is null && !clones)
-            || (layout.Fragmentation.BoxDecorationBreak == BoxDecorationBreak.Clone && !clones) || !HasDefiniteBlockSize(box)
+            || (layout.Fragmentation.BoxDecorationBreak == BoxDecorationBreak.Clone && !clones)
+            || (!HasDefiniteBlockSize(box) && (clones || !(grows = IsLimitedFlexContainer(box, top, out maxEnd))))
             || (_spannerBoxes is not null && ContainsSpanner(box, _spannerBoxes)))
         {
             return false;
@@ -1486,20 +1506,58 @@ internal sealed class FragmentationFlow
             CloneEnd = context.CloneEnd,
             Repeated = context.Repeated,
             CloneOwner = context.CloneOwner,
-            CanGrow = false,
+            CanGrow = grows,
             OwnCloneStart = clones ? edges.BlockStart : 0,
             OwnCloneEnd = clones ? edges.BlockEnd : 0,
             ShrinksAtBreaks = clones && layout.BoxSizing == BoxSizing.BorderBox,
             BlockEndEdges = clones ? 0 : edges.BlockEnd,
         };
 
-        var item = CreateContentItem(box, top, bottom, clones ? context with { CloneOwner = group } : context);
+        var item = CreateContentItem(box, top, bottom, clones ? context with { CloneOwner = group } : context, grows);
+        if (grows)
+        {
+            // (the box grows with its contents when they are pushed by the breaks, up to its maximum block size)
+            item.CanGrow = true;
+            item.MaxEnd = maxEnd;
+        }
+
         group.Add(item, box);
         group.Complete();
         _parallelExtentEnd = Math.Max(_parallelExtentEnd, Math.Max(bottom, item.Flow.ExtentEnd));
         (Groups ??= []).Add(group);
         (_root._definiteItems ??= [])[box] = item;
         AddGroupAncestors(box);
+        return true;
+    }
+
+    /// <summary>
+    /// Returns whether a box is a flex container whose automatic block size is limited by its maximum block size: as in
+    /// Blink, its fragments are as tall together as its contents once they are fragmented (the forced breaks between its items
+    /// push them), clamped by its minimum and maximum block sizes (the minimum wins). The box is then a parallel flow of one item,
+    /// as a box with a definite block size (see <see cref="TryAddDefiniteBox"/>), that grows with its contents.
+    /// </summary>
+    /// <param name="box">The box.</param>
+    /// <param name="top">The block-start edge of the border box of the box in the strip.</param>
+    /// <param name="maxEnd">The block-end edge of the border box of the box at its maximum block size, or +∞.</param>
+    private bool IsLimitedFlexContainer(BoxFragment box, double top, out double maxEnd)
+    {
+        maxEnd = double.PositiveInfinity;
+        if (box.Box.LayoutState is not FlexContainerState)
+            return false;
+
+        var style = box.Box.Style.Layout.Box;
+        var horizontal = !_writingDirection.IsHorizontal;
+        if (!style.GetSize(horizontal).IsAuto)
+            return false;
+
+        if (style.GetMaxSize(horizontal) is not { IsNone: false } maxSize || maxSize.TryResolve(percentageBasis: null) is not { } max)
+            return false;
+
+        var min = style.GetMinSize(horizontal) is { IsAuto: false } minSize && minSize.TryResolve(percentageBasis: null) is { } resolvedMin ? resolvedMin : 0;
+
+        var edges = _writingDirection.ToLogical(box.Border.Add(box.Padding).Add(box.Scrollbars));
+        var contentBoxEdges = box.Box.Style.Layout.BoxSizing == BoxSizing.BorderBox ? 0 : edges.BlockStart + edges.BlockEnd;
+        maxEnd = top + Math.Max(max, min) + contentBoxEdges;
         return true;
     }
 
@@ -1651,7 +1709,8 @@ internal sealed class FragmentationFlow
     /// Creates the parallel flow of the contents of a box whose block-end edge does not follow them (a box with a specified or
     /// limited block size, an absolutely positioned box): the contents, and the empty block size of the box after them.
     /// </summary>
-    private ParallelItem CreateContentItem(BoxFragment box, double top, double bottom, VisitContext context)
+    /// <param name="grows">Whether the block size of the box follows its contents once they are fragmented (see <see cref="IsLimitedFlexContainer"/>): the box ends after them, at least where the flow of its container places its block-end edge.</param>
+    private ParallelItem CreateContentItem(BoxFragment box, double top, double bottom, VisitContext context, bool grows = false)
     {
         var layout = box.Box.Style.Layout;
         var flow = new FragmentationFlow(_writingDirection, _spannerBoxes, _root);
@@ -1692,7 +1751,12 @@ internal sealed class FragmentationFlow
             lastInFlowEnd = Math.Max(lastInFlowEnd, GetBlockRange(children[i], box.Size, box.WritingDirection, top).Bottom);
         }
 
-        if (contentEnd - lastInFlowEnd > Epsilon)
+        if (grows)
+        {
+            // (the empty block size after the contents is placed by the flow of the container, not by the flow of the contents)
+            item.IntrinsicEnd = Math.Min(bottom, lastInFlowEnd + edges.BlockEnd);
+        }
+        else if (contentEnd - lastInFlowEnd > Epsilon)
         {
             // (with the edges that the box repeats at its breaks)
             var rangeContext = layout.Fragmentation.BoxDecorationBreak == BoxDecorationBreak.Clone
@@ -1818,6 +1882,13 @@ internal sealed class FragmentationFlow
         if (!_root._separatesOutOfFlow)
             return;
 
+        // (the absolutely positioned children of a container that clips its overflow are clipped by it: their contents after its
+        // block-end edge are not fragmented)
+        if (_writingDirection.IsHorizontal ? box.ClipsOverflowY : box.ClipsOverflowX)
+        {
+            context = context with { ClipEnd = Math.Min(context.ClipEnd, top + _writingDirection.ToLogical(box.Size).Block) };
+        }
+
         var children = box.ChildrenSpan;
         for (var i = box.InFlowChildCount; i < children.Length; i++)
         {
@@ -1848,7 +1919,7 @@ internal sealed class FragmentationFlow
         var layout = container.Style.Layout;
         return container.Kind == ContainerBoxKind.Normal && layout.IsMultiColumnContainer && container.LayoutState is MultiColumnState
             && !box.IsScrollContainer && !container.IsAtomicInline && layout.WritingMode == _writingDirection.WritingMode
-            && bottom <= context.ClipEnd + Epsilon && !(_writingDirection.IsHorizontal ? box.ClipsOverflowY : box.ClipsOverflowX)
+            && bottom <= context.ClipEnd + Epsilon
             && !(IntrinsicSizing.HasSizeContainment(container, inlineAxis: false) && UsedContainment.CanApplySizeContainment(container));
     }
 
@@ -2167,6 +2238,13 @@ internal sealed class FragmentationFlow
             }
 
             var (childTop, childBottom, _) = GetBlockRange(child, box.Size, box.WritingDirection, top);
+
+            // https://drafts.csswg.org/css-overflow-3/#valdef-overflow-clip: an item that starts after the block-end edge of an
+            // ancestor that clips its overflow is not fragmented (it stays in the last fragment of the ancestor, as the content of
+            // the flow of the container)
+            if (childTop >= context.ClipEnd - Epsilon && childBottom > childTop + Epsilon)
+                continue;
+
             var nested = TakeNestedColumns(child, childBottom, context);
             var flow = nested is null ? new FragmentationFlow(_writingDirection, _spannerBoxes, _root) : CreateNestedColumnsFlow(nested, childTop, childBottom);
             var item = new ParallelItem(flow)
@@ -3361,6 +3439,18 @@ internal sealed class ParallelItem(FragmentationFlow flow)
     /// contents are pushed by the breaks are not taller together than its maximum block size (its contents then overflow it).
     /// </summary>
     public double MaxEnd { get; set; } = double.PositiveInfinity;
+
+    /// <summary>The fragmentainer where the item started, and its offset there (for <see cref="MaxEnd"/>).</summary>
+    public (int Index, double Offset) MaxStart { get; set; }
+
+    /// <summary>
+    /// The block size that the fragments of the item consumed in the fragmentainers before <see cref="MaxIndex"/> (the item reaches
+    /// <see cref="MaxEnd"/> when its fragments are as tall together as its maximum block size, whatever the breaks of its contents).
+    /// </summary>
+    public double MaxConsumed { get; set; }
+
+    /// <summary>The last fragmentainer where the breaker placed the block-end edge of the item, and the block size of that fragmentainer.</summary>
+    public (int Index, double BlockSize) MaxIndex { get; set; }
 
     public double MarginEnd { get; init; }
 

@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of css/CSS2, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 73 | 74 | 0 | 99% |
+| [Stable](#stable-tests) | 74 | 74 | 0 | 100% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | [Reftests](#reftests) | 6,225 | 6,286 | 0 | 99% |
-| **All** | **6,300** | **6,362** | **0** | **99%** |
+| **All** | **6,301** | **6,362** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 45
 - **TEST RUNNER**: 16
 
@@ -37,7 +36,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`floats/float-in-block-in-inline-position-001.html`](https://wpt.fyi/results/css/CSS2/floats/float-in-block-in-inline-position-001.html) | Pass | 6 / 6 |  |  |
 | [`floats/float-in-self-painting-inline.html`](https://wpt.fyi/results/css/CSS2/floats/float-in-self-painting-inline.html) | Pass | 1 / 1 |  |  |
 | [`floats/float-no-interpolation.html`](https://wpt.fyi/results/css/CSS2/floats/float-no-interpolation.html) | Pass | 66 / 66 |  |  |
-| [`floats/floats-in-inline-content-intrinsic-size-001.html`](https://wpt.fyi/results/css/CSS2/floats/floats-in-inline-content-intrinsic-size-001.html) | Fail | 15 / 16 | BUG | under a max-content constraint, the text that follows a float that clears the floats before it is measured next to that float (70px) instead of next to the floats before it on the first line (90px): the clearing float goes below them, the text stays on the first line |
+| [`floats/floats-in-inline-content-intrinsic-size-001.html`](https://wpt.fyi/results/css/CSS2/floats/floats-in-inline-content-intrinsic-size-001.html) | Pass | 16 / 16 |  |  |
 | [`floats/hit-test-floats-001.html`](https://wpt.fyi/results/css/CSS2/floats/hit-test-floats-001.html) | Pass | 1 / 1 |  |  |
 | [`floats/hit-test-floats-002.html`](https://wpt.fyi/results/css/CSS2/floats/hit-test-floats-002.html) | Pass | 1 / 1 |  |  |
 | [`floats/hit-test-floats-003.html`](https://wpt.fyi/results/css/CSS2/floats/hit-test-floats-003.html) | Pass | 1 / 1 |  |  |

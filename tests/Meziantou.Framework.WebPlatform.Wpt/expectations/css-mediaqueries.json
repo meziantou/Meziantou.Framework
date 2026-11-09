@@ -18,18 +18,7 @@
     "reftest": "PASS"
   },
   "css/mediaqueries/aspect-ratio-calc-negative.html": {
-    "total": 18,
-    "failures": {
-      "@container (aspect-ratio > calc(-1))": "FAIL",
-      "@container (min-aspect-ratio: calc(-1)/2)": "FAIL",
-      "@container not (aspect-ratio < calc(-1))": "FAIL",
-      "@container not (max-aspect-ratio: calc(-1)/2)": "FAIL",
-      "@media (aspect-ratio > calc(-1))": "FAIL",
-      "@media (max-aspect-ratio: 2/calc(-1))": "FAIL",
-      "@media (min-aspect-ratio: calc(-1)/2)": "FAIL",
-      "@media not (aspect-ratio < calc(-1))": "FAIL",
-      "@media not (max-aspect-ratio: calc(-1)/2)": "FAIL"
-    }
+    "total": 18
   },
   "css/mediaqueries/aspect-ratio-serialization.html": {
     "total": 1

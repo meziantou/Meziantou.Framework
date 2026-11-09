@@ -334,14 +334,9 @@ internal sealed partial class TableLayoutAlgorithm
         {
             width = specified;
         }
-        else if (preferred.IsAuto && boxModel.AspectRatio.Ratio is { } ratio && ResolveTableBlockSize(percentageBlockSize, Border.BlockSum() + GetPadding(percentageBasis ?? 0).BlockSum()) is { } blockSize)
+        else if (preferred.IsAuto && GetTransferredInlineSize(percentageBasis, percentageBlockSize) is { } transferred)
         {
-            // https://drafts.csswg.org/css-sizing-4/#aspect-ratio: the inline size transferred from the definite block size
-            var blockEdges = Border.BlockSum() + GetPadding(percentageBasis ?? 0).BlockSum();
-            var inlinePerBlock = horizontal ? ratio : 1 / ratio;
-            width = _style.BoxSizing == BoxSizing.BorderBox && !boxModel.AspectRatio.IsAuto
-                ? blockSize * inlinePerBlock
-                : (Math.Max(0, blockSize - blockEdges) * inlinePerBlock) + edges;
+            width = transferred;
         }
         else
         {
@@ -362,6 +357,30 @@ internal sealed partial class TableLayoutAlgorithm
         }
 
         return Math.Max(Math.Max(width, usedMin), edges);
+    }
+
+    /// <summary>
+    /// Returns the border-box inline size transferred through the <c>aspect-ratio</c> of the table from its block size
+    /// (https://drafts.csswg.org/css-sizing-4/#aspect-ratio), or null when it has no ratio or its block size is not definite: its
+    /// <c>height</c> or its <c>min-height</c>, which the table treats as a minimum height (see <see cref="ResolveTableBlockSize"/>).
+    /// </summary>
+    /// <param name="percentageBasis">The inline size of the containing block of the table wrapper box, or null when it is indefinite.</param>
+    /// <param name="percentageBlockSize">The block size of the containing block of the table when it is definite.</param>
+    public double? GetTransferredInlineSize(double? percentageBasis, double? percentageBlockSize)
+    {
+        var aspectRatio = _style.Box.AspectRatio;
+        if (aspectRatio.Ratio is not { } ratio)
+            return null;
+
+        var padding = GetPadding(percentageBasis ?? 0);
+        var blockEdges = Border.BlockSum() + padding.BlockSum();
+        if (ResolveTableBlockSize(percentageBlockSize, blockEdges) is not { } blockSize)
+            return null;
+
+        var inlinePerBlock = _writingDirection.IsHorizontal ? ratio : 1 / ratio;
+        return _style.BoxSizing == BoxSizing.BorderBox && !aspectRatio.IsAuto
+            ? blockSize * inlinePerBlock
+            : (Math.Max(0, blockSize - blockEdges) * inlinePerBlock) + Border.InlineSum() + padding.InlineSum();
     }
 
     // ----------------------------------------------------------------------------------------------------------------

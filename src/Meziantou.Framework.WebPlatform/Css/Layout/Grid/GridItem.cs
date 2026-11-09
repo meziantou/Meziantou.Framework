@@ -178,6 +178,19 @@ internal sealed class GridItem(ContainerBox box, int index, int order)
 
     public double LanesAreaSize { get; set; }
 
+    /// <summary>
+    /// The margin box of the item of a grid lanes container in the stacking axis, once aligned in its alignment container: its start
+    /// and end from the start edge of the content box (in the logical coordinates of the grid, as <see cref="Offset"/>).
+    /// </summary>
+    public double LanesBoxStart { get; set; }
+
+    public double LanesBoxEnd { get; set; }
+
+    /// <summary>The margin box of the item of a grid lanes container in the grid axis, once aligned in its grid area (in the same coordinates as <see cref="LanesBoxStart"/>).</summary>
+    public double LanesGridBoxStart { get; set; }
+
+    public double LanesGridBoxEnd { get; set; }
+
     /// <summary>The baseline shims of an auto-placed item of a grid lanes container in the grid axis, by start track (the item is sized in every position), or null.</summary>
     public double[]? LanesShims { get; set; }
 

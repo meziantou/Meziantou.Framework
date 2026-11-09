@@ -750,27 +750,33 @@ internal sealed class PlotRenderer
             var east = Math.Min(maxLongitude, (Math.Ceiling(region.East / step) + 1) * step);
             var south = Math.Max(-maxLatitude, (Math.Floor(region.South / step) - 1) * step);
             var north = Math.Min(maxLatitude, (Math.Ceiling(region.North / step) + 1) * step);
-            var builder = new PathBuilder();
-            for (var longitude = Math.Ceiling(west / step) * step; longitude <= east + 1e-9; longitude += step)
-            {
-                var line = new List<GeoPosition>();
-                GeoSystem.AddSegment(projection, line, longitude, south, longitude, north);
-                system.AddPolyline(builder, line, close: false);
-            }
 
-            for (var latitude = Math.Ceiling(south / step) * step; latitude <= north + 1e-9; latitude += step)
+            // A region out of the range of the world, such as positions whose longitudes are far out of range, has no
+            // graticule: its parallels would span the distance to it
+            if (west <= east && south <= north)
             {
-                if (Math.Abs(latitude) >= 90)
-                    continue;
+                var builder = new PathBuilder();
+                for (var longitude = Math.Ceiling(west / step) * step; longitude <= east + 1e-9; longitude += step)
+                {
+                    var line = new List<GeoPosition>();
+                    GeoSystem.AddSegment(projection, line, longitude, south, longitude, north);
+                    system.AddPolyline(builder, line, close: false);
+                }
 
-                var line = new List<GeoPosition>();
-                GeoSystem.AddSegment(projection, line, west, latitude, east, latitude);
-                system.AddPolyline(builder, line, close: false);
-            }
+                for (var latitude = Math.Ceiling(south / step) * step; latitude <= north + 1e-9; latitude += step)
+                {
+                    if (Math.Abs(latitude) >= 90)
+                        continue;
 
-            if (!builder.IsEmpty)
-            {
-                group.Add(new ScenePath(builder.Build()) { Stroke = _theme.GridColor, StrokeWidth = 0.5 });
+                    var line = new List<GeoPosition>();
+                    GeoSystem.AddSegment(projection, line, west, latitude, east, latitude);
+                    system.AddPolyline(builder, line, close: false);
+                }
+
+                if (!builder.IsEmpty)
+                {
+                    group.Add(new ScenePath(builder.Build()) { Stroke = _theme.GridColor, StrokeWidth = 0.5 });
+                }
             }
         }
 

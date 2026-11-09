@@ -521,7 +521,8 @@ internal sealed partial class LayoutEngine
     /// Scrolls an element into view (https://drafts.csswg.org/cssom-view/#scroll-a-target-into-view, with the behavior <c>auto</c>)
     /// once the document is laid out: at once when its layout was already requested, else after its first layout (the scroll
     /// positions are only observable through the geometry, so a document that never reads it is not laid out by a fragment
-    /// navigation or a call of <c>focus()</c>, unless the scroll events of the viewport are listened to).
+    /// navigation or a call of <c>focus()</c>, unless the scroll events of the viewport are listened to). The document of a
+    /// same-origin frame is laid out by the next rendering update: the scroll also scrolls its parent document to the frame.
     /// </summary>
     /// <param name="target">The element.</param>
     /// <param name="block">The alignment in the block flow direction.</param>
@@ -539,6 +540,14 @@ internal sealed partial class LayoutEngine
         }
 
         _pendingScrollIntoView = (target, block, inline, range, snapsToTarget, ifNeeded);
+
+        // The scroll also scrolls the same-origin parent document to the frame (https://drafts.csswg.org/cssom-view/#scroll-a-target-into-view),
+        // which the geometry of the parent document observes without laying out this document: the next rendering update lays it out
+        // (WPT css/cssom-view/scroll-target-into-view-fragment-in-same-origin-subframe.html)
+        if (_document.BrowsingContext is { Container: { } frame } && Document.IsSameOrigin(frame.NodeDocument, _document))
+        {
+            RequestRenderingUpdates();
+        }
     }
 
     private void RunScrollIntoView(Element target, ScrollLogicalPosition block, ScrollLogicalPosition inline, Dom.Range? range, bool snapsToTarget, bool ifNeeded)

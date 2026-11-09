@@ -118,6 +118,37 @@ public sealed class GridLanesLayoutTests : IDisposable
     }
 
     [Fact]
+    public void RowLanes_AspectRatioItemTransfersItsLaneSize()
+    {
+        // An item with an aspect ratio and normal alignment is stretched in its lane, and its width is transferred from its height
+        var document = Parse("""
+            <div id=g style="display: grid-lanes; grid-template-rows: 100px 200px; width: 80px">
+              <div id=a style="aspect-ratio: 1 / 4; grid-row: 1; min-width: 0; min-height: 0"></div>
+              <div id=b style="grid-row: 1; width: 10px"></div>
+            </div>
+            """);
+        Assert.Equal(Rect(0, 0, 25, 100), GetRect(document, "a"));
+        Assert.Equal(Rect(25, 0, 10, 100), GetRect(document, "b"));
+    }
+
+    [Fact]
+    public void RowLanesSubgrid_ScrollContainerDoesNotOverflowItsInheritedTracks()
+    {
+        // The rows of the subgrid scroll container include its borders and its scrollbar gutter: they are not scrollable overflow,
+        // so the horizontal scrollbar does not add a vertical one
+        var document = Parse("""
+            <div style="display: grid-lanes; grid-template-rows: 100px 200px; width: 80px">
+              <div id=s style="display: grid-lanes; grid-template-rows: subgrid; grid-row: 2; width: 80px; overflow: auto; border: 2px solid">
+                <div style="grid-row: 1; width: 210px"></div>
+              </div>
+            </div>
+            """);
+        var scroller = document.GetElementById("s")!;
+        Assert.Equal(scroller.ClientHeight, scroller.ScrollHeight);
+        Assert.True(scroller.ScrollWidth > scroller.ClientWidth);
+    }
+
+    [Fact]
     public void DensePacking_FillsTheOpeningsLeftBySpanningItems()
     {
         var document = Parse("""

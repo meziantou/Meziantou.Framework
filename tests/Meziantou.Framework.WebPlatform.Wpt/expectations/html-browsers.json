@@ -985,7 +985,6 @@
     "total": 3,
     "failures": {
       "Scrolling to the fragment of an SVG document in an <embed> does not scroll the parent document": "FAIL",
-      "Scrolling to the fragment of an SVG document in an <iframe> does not scroll the parent document": "FAIL",
       "Scrolling to the fragment of an SVG document in an <object> does not scroll the parent document": "FAIL"
     }
   },

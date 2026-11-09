@@ -298,6 +298,35 @@ public sealed class IntrinsicSizingTests : IDisposable
     }
 
     [Theory]
+    [InlineData("max-width: 50px", 50)] // A definite maximum caps the minimum transferred from min-height
+    [InlineData("max-width: max-content", 200)] // An intrinsic size keyword is not definite
+    [InlineData("max-width: min-content", 200)]
+    public void AspectRatio_TransferredMinimumIsCappedByADefiniteMaximumOnly(string style, double width)
+    {
+        // https://drafts.csswg.org/css-sizing-4/#aspect-ratio-size-transfers: "This transferred minimum is capped by any definite
+        // preferred or maximum size in the destination axis"
+        var document = Parse($"<div id=t style='float: left'><div style='aspect-ratio: 1; min-height: 200px; {style}'><div style='width: 50px; height: 1px'></div></div></div>");
+        Assert.Equal(width, GetSize(document, "t").Width);
+    }
+
+    [Theory]
+    [InlineData("max-width: 50px", 50)]
+    [InlineData("max-width: min-content", 200)]
+    public void AspectRatio_ReplacedElementTransferredMinimumIsCappedByADefiniteMaximumOnly(string style, double width)
+    {
+        var document = Parse($"<div id=t style='float: left'><img src='/100x100.png' style='min-height: 200px; {style}'></div>");
+        Assert.Equal(width, GetSize(document, "t").Width);
+    }
+
+    [Fact]
+    public void AspectRatio_TableMinimumHeightIsTransferredToItsContributions()
+    {
+        // The table treats its min-height as a minimum height of its grid, transferred through its aspect ratio to its width
+        var document = Parse("<div id=t style='float: left'><table style='aspect-ratio: 1; min-height: 200px; border-spacing: 0'><tr><td style='padding: 0'><div style='width: 10px; height: 10px'></div></td></tr></table></div>");
+        Assert.Equal(200, GetSize(document, "t").Width);
+    }
+
+    [Theory]
     [InlineData("min-height: auto", 50)] // The automatic minimum size: the box grows to its contents
     [InlineData("min-height: min-content", 25)] // The min-content block size is the size given by the ratio
     public void AspectRatio_MinimumBlockSize(string style, double height)

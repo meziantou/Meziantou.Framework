@@ -132,6 +132,21 @@ public sealed class ScrollSnapTests : IDisposable
         Assert.Equal(280, scroller.ScrollTop);
     }
 
+    [Theory]
+    [InlineData("left: -500px", 600)] // In the negative overflow: it can never be scrolled into view horizontally
+    [InlineData("left: 0; width: 0", 0)] // A zero-width area at the start edge of the scrollable overflow only touches the snapport
+    public void SnapAreaOutsideOfTheScrollableOverflowInTheCrossAxis_IsNotASnapTarget(string style, double expected)
+    {
+        var document = Parse("<div id=scroller style='position: relative; width: 300px; height: 300px; overflow: hidden; scroll-snap-type: y mandatory'>"
+            + "<div style='height: 1200px'></div>"
+            + $"<div style='position: absolute; top: 0; width: 100px; height: 100px; scroll-snap-align: start; {style}'></div>"
+            + "<div style='position: absolute; left: 100px; top: 600px; width: 100px; height: 100px; scroll-snap-align: start'></div></div>");
+        var scroller = document.GetElementById("scroller")!;
+
+        scroller.ScrollTop = 280;
+        Assert.Equal(expected, scroller.ScrollTop);
+    }
+
     [Fact]
     public void ScrollMargin_ExtendsTheSnapArea()
     {

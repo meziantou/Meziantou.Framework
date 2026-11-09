@@ -791,14 +791,14 @@ internal readonly record struct AxisSizing
     public double Clamp(double size, double? transferredMin = null, double? transferredMax = null, bool measuresContribution = false)
     {
         var box = Style.Box;
-        var maxSize = box.GetMaxSize(Horizontal);
-        var max = Resolve(maxSize, SizingProperty.Maximum);
+        var maxProperty = box.GetMaxSize(Horizontal);
+        var max = Resolve(maxProperty, SizingProperty.Maximum);
 
         // min-width: auto is 0 for the boxes that are not flex or grid items (https://drafts.csswg.org/css-sizing-3/#valdef-width-auto)
         var min = Resolve(box.GetMinSize(Horizontal), SizingProperty.Minimum);
         if (transferredMin is { } transferredMinimum)
         {
-            if (max is { } maximum && !(measuresContribution && maxSize.BehavesAsIntrinsic))
+            if (max is { } maximum && !(measuresContribution && maxProperty.BehavesAsIntrinsic))
             {
                 transferredMinimum = Math.Min(transferredMinimum, maximum);
             }

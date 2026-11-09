@@ -1416,8 +1416,11 @@ contents of a replaced element or a form control, and it is not a never-rendered
   `scrollHeight` the size of the scrolling area (rounded to integers; the viewport for the root element, the body element in
   quirks mode). The `offset*`, `client*` and `scroll*` sizes of a table are the ones of its table wrapper box (with its captions,
   without border), as in the browsers. The classic scrollbars take 15px by default (`ViewportOptions.ScrollbarThickness`, 0 for overlay
-  scrollbars). `focus()` scrolls the element into view (`preventScroll`), the fragment navigations scroll the target into view,
-  and the history traversals restore the scroll position of the viewport (`history.scrollRestoration`).
+  scrollbars). `focus()` scrolls the element into view (`preventScroll`; as in Blink, each axis is scrolled only when needed:
+  not when the element is entirely visible in it, to the nearest edge when it is partially visible, centered when it is
+  hidden), the fragment navigations scroll the target into view (the target of a same-origin frame also scrolls its parent
+  document to the frame: the frame document is laid out by the next rendering update), and the history traversals restore
+  the scroll position of the viewport (`history.scrollRestoration`).
 - The scroll snap containers (`scroll-snap-type`, see [Scroll snapping](layout.md#scroll-snapping-csslayoutscrollingsnapcontainercs-snapselectionstrategycs-layoutenginescrollsnapcs))
   snap the programmatic scrolls: `scrollTo()`, `scroll()`, `scrollLeft`/`scrollTop` and `scrollIntoView()` (with the focus and
   the fragment navigations) to the closest snap position, `scrollBy()` to the snap position ahead in its direction

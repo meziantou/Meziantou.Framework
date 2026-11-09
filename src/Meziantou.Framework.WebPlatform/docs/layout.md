@@ -658,7 +658,10 @@ the box of `box-sizing` (`<ratio>`), so the paddings and borders outside of that
 - [Min/max transfers](https://drafts.csswg.org/css-sizing-4/#aspect-ratio-size-transfers): the definite min/max sizes of the
   ratio-determining axis are transferred to the `auto` axis (capped/floored by its own sizes) and applied with its min/max
   sizes (`ClampBorderBoxSize(..., transferredMin, transferredMax)`); an intrinsic size keyword (`width: max-content`) is an
-  indefinite preferred size too, so they apply to it. For a replaced element with natural sizes, this gives
+  indefinite preferred size too, so they apply to it. In the intrinsic contributions (`IntrinsicSizing.GetContribution`,
+  `ConstraintSpace.MeasuresInlineContribution`), a maximum that is an intrinsic size keyword is not definite, so it does not
+  cap the transferred minimum. A table transfers its `height` or `min-height` (a minimum height of its grid) through its
+  ratio to its automatic width, in its layout and in its contributions (`TableLayoutAlgorithm.GetTransferredInlineSize`). For a replaced element with natural sizes, this gives
   the constraint table of [CSS 2.1 §10.4](https://drafts.csswg.org/css2/#min-max-widths).
 - [Automatic minimum](https://drafts.csswg.org/css-sizing-4/#aspect-ratio-minimum): a non-replaced box that is not a scroll
   container in the ratio-dependent axis, with `min-*: auto`, grows to its contents (block axis: the block size of its
@@ -2463,7 +2466,9 @@ aliases of `flex-start`/`flex-end`.
   indefinite, the items are laid out as if the rows without a definite max track sizing function were infinite, the rows are
   sized after the inline size, as in a grid and in Chrome), the inline sizes of a column container the sizes of its columns.
 - **Alignment**: in the grid axis, as in a grid (`track-reverse` puts `flex-start` on the end side, and the overflowing tracks of a
-  scroll container on the start side). In the stacking axis ([§6.3](https://drafts.csswg.org/css-grid-3/#stacking-axis-content-distribution),
+  scroll container on the start side). A non-replaced item of a row container with an aspect ratio and `normal` alignment has
+  no grid area to fill in the inline axis: as in Blink, it is stretched in its lane, and its automatic inline size is transferred
+  from that block size through its ratio. In the stacking axis ([§6.3](https://drafts.csswg.org/css-grid-3/#stacking-axis-content-distribution),
   [§6.4](https://drafts.csswg.org/css-grid-3/#stacking-axis-self-alignment)), `align-content`/`justify-content` align the
   stacking range (`normal`, `stretch` and the distributions on the side where the stacking starts); the alignment container of an
   item is its margin box extended to the next item of its tracks (minus the gap), or for the last item of a track to the end of
@@ -2495,7 +2500,8 @@ aliases of `flex-start`/`flex-end`.
   of the subgrid (`AddLanesHoistedItems`, `GridSizingItem.IsHypothetical`: it takes no part in the baseline alignment of the
   parent) with the extra margins of the edge of the subgrid where they are the largest (both edges when it spans the subgrid).
   The containing block of the items in the stacking axis, while the parent measures them, is the content box of the subgrid
-  when it fills a grid area of a known size.
+  when it fills a grid area of a known size. The tracks of the subgridded axis are not in the scrollable overflow of the
+  subgrid (they include its extra margins: its borders, paddings and scrollbar gutters), as in a grid.
 - **Fragmentation in the stacking axis** ([§7.1](https://drafts.csswg.org/css-grid-3/#fragmentation): "Each grid axis track is
   fragmented independently in the stacking axis [...] A grid item that is pushed, however, is placed again by the next grid
   container fragment"): a container whose stacking axis is the block axis of a multi-column container (or of the pages) and
@@ -4325,7 +4331,8 @@ The [viewports](https://drafts.csswg.org/cssom-view/#viewport) of a document fro
   area of an ancestor. `HasFocusWithin`/`IsTargeted` (`:target`) are updated before each selection (`UpdateAreaStates`).
 - **Selection of a snap position** (`SnapContainer.FindSnapPosition`, a port of Blink's `cc::SnapContainerData`): in each axis,
   the closest valid snap position (clamped to the scroll range: unreachable positions) to the base position of the strategy
-  whose snap area is visible in the snapport in the other axis; a snap area larger than the snapport gives the positions where
+  whose snap area is visible in the snapport in the other axis (a snap area outside of the scrollable overflow in the other
+  axis, in the negative overflow or clipped past it, is never visible: `SnapRange.Never`); a snap area larger than the snapport gives the positions where
   it covers the snapport (avoiding the snap areas intersecting it: `FindCoveringCandidate`); then the two axes are made
   mutually visible (the axis to follow: the closest, or after a layout change the focused, the targeted, then the block axis);
   `pair` chooses a single area aligned in both axes. Between aligned snap areas, the focused one wins, then the targeted one,

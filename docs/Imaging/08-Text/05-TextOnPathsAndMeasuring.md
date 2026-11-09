@@ -1,6 +1,6 @@
 ---
 title: Text on paths and measuring
-description: Make a text follow a curve, measure it, find the character under a point, draw carets and selections, and hint small text.
+description: Make a text follow a curve, measure it, find the character under a point, draw carets and selections, hint small text, and render it for LCD screens.
 ---
 
 A [TextLayout](cref:Meziantou.Framework.Imaging.Typography.TextLayout) knows where each of its characters is. This page shows how to draw a layout along a path, how to read
@@ -217,6 +217,45 @@ public static void DrawSmallLabel(string fontPath, string outputPath)
 - The grid is the pixel grid of the layout: draw it at a whole-pixel origin, without a transformation that scales or
   rotates the canvas.
 - A hinted layout measures what it draws: its baselines, and with [Full](cref:Meziantou.Framework.Imaging.Typography.TextHinting.Full) its advances, are whole pixels.
-- The result is the same on every platform, with or without hinting. A vertical layout is not hinted.
+- The result is the same on every platform, with or without hinting.
+- In a vertical layout, each glyph is fitted in its own orientation: an upright glyph starts on a whole pixel down the
+  column, and a glyph on its side has its baseline on a whole pixel across it. With [Full](cref:Meziantou.Framework.Imaging.Typography.TextHinting.Full), the advances down the
+  column are whole pixels.
 - The instructions of a font are untrusted code: each one counts toward [MaxGlyphComplexity](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxGlyphComplexity), so a program that loops
   forever fails with an [ImageResourceLimitException](cref:Meziantou.Framework.Imaging.ImageResourceLimitException).
+
+## Render text for an LCD screen
+
+The pixels of most LCD screens are three vertical stripes, red, green and blue. [TextLayoutOptions.SubpixelRendering](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.SubpixelRendering)
+gives each color of a pixel the coverage of its stripe, which triples the horizontal resolution of the text, as
+ClearType does:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/TextExamples.cs;region=Imaging_DrawSubpixelText;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void DrawSubpixelText(string fontPath, string outputPath)
+{
+    // Each color of a pixel gets the coverage of its stripe of the screen: three times the horizontal resolution.
+    // Use TextSubpixelRendering.Bgr for a screen whose stripes are blue, green and red from left to right.
+    var options = new TextLayoutOptions { Hinting = TextHinting.Light, SubpixelRendering = TextSubpixelRendering.Rgb };
+    var layout = TextLayout.Create("Settings and preferences", new TextStyle(Font.Load(fontPath), size: 12), options);
+
+    // A solid color on opaque pixels: on a transparent pixel, the colors would get fringes on any background
+    using var image = new Image<Rgb24>((int)layout.Width + 8, (int)Math.Ceiling(layout.Height) + 8, new Rgb24(255, 255, 255));
+    image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(4, 4)));
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
+![The words Settings and preferences in small black text with faint colored fringes on the edges of the letters](images/DrawSubpixelText.png)
+
+- [Rgb](cref:Meziantou.Framework.Imaging.Typography.TextSubpixelRendering.Rgb) and [Bgr](cref:Meziantou.Framework.Imaging.Typography.TextSubpixelRendering.Bgr) are the order of the stripes from left to right. The glyphs are rasterized at three
+  times the width of the image, and the coverage of each third of a pixel is filtered with the default LCD filter of
+  FreeType, which keeps the colored fringes faint.
+- Use it for an image shown at its size on a screen whose stripes you know: the fringes show when the image is scaled,
+  printed, or seen on a screen whose stripes are in the other order.
+- It applies to a layout filled at a point with a [SolidBrush](cref:Meziantou.Framework.Imaging.Drawing.SolidBrush), on an [Rgba32](cref:Meziantou.Framework.Imaging.PixelFormat.Rgba32), [Bgra32](cref:Meziantou.Framework.Imaging.PixelFormat.Bgra32), [Rgb24](cref:Meziantou.Framework.Imaging.PixelFormat.Rgb24),
+  [Rgba64](cref:Meziantou.Framework.Imaging.PixelFormat.Rgba64) or [Rgb48](cref:Meziantou.Framework.Imaging.PixelFormat.Rgb48) image. A gradient or an image brush, a text along a path, a text with color glyphs,
+  backgrounds, outlines or a synthetic bold, and the other pixel formats are drawn with grayscale antialiasing.
+- A pixel that is not opaque gets one coverage for its three colors: colored fringes over a transparent pixel would
+  show on whatever is behind the image. Draw on an opaque background.

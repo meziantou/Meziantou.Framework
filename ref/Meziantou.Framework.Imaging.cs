@@ -3994,6 +3994,7 @@ namespace Meziantou.Framework.Imaging.Typography
     {
         public Meziantou.Framework.Imaging.Typography.RichTextBuilder Append(string text, Meziantou.Framework.Imaging.Typography.TextStyle style) => throw null;
         public Meziantou.Framework.Imaging.Typography.RichTextBuilder AppendPlaceholder(double width, double height, double baseline, Meziantou.Framework.Imaging.Typography.TextStyle style) => throw null;
+        public Meziantou.Framework.Imaging.Typography.RichTextBuilder AppendRuby(string text, Meziantou.Framework.Imaging.Typography.TextStyle style, string annotation, Meziantou.Framework.Imaging.Typography.TextStyle annotationStyle) => throw null;
         public Meziantou.Framework.Imaging.Typography.RichText Build() => throw null;
         public void Clear() { }
     }
@@ -4119,6 +4120,7 @@ namespace Meziantou.Framework.Imaging.Typography
         public double MaxWidth { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextOrientation Orientation { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextOverflowWrap OverflowWrap { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.TextSubpixelRendering SubpixelRendering { get => throw null; init { } }
         public int TabSize { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.TextTabStop> TabStops { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextTrimming Trimming { get => throw null; init { } }
@@ -4174,6 +4176,8 @@ namespace Meziantou.Framework.Imaging.Typography
     {
         public bool IsPlaceholder { get => throw null; }
         public int Length { get => throw null; }
+        public Meziantou.Framework.Imaging.Typography.TextStyle? RubyStyle { get => throw null; }
+        public string? RubyText { get => throw null; }
         public int Start { get => throw null; }
         public Meziantou.Framework.Imaging.Typography.TextStyle Style { get => throw null; }
         public bool Equals(Meziantou.Framework.Imaging.Typography.TextSpan other) => throw null;
@@ -4201,6 +4205,13 @@ namespace Meziantou.Framework.Imaging.Typography
         public Meziantou.Framework.Imaging.Typography.FontSynthesis Synthesis { get => throw null; init { } }
         public double WordSpacing { get => throw null; init { } }
         public TextStyle(Meziantou.Framework.Imaging.Typography.FontStack fonts, double size) { }
+    }
+
+    public enum TextSubpixelRendering
+    {
+        None = 0,
+        Rgb = 1,
+        Bgr = 2,
     }
 
     public enum TextTabAlignment

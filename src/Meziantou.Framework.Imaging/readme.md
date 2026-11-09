@@ -3520,6 +3520,15 @@ of their characters and were not compared with a font.
   moves with the words around it when lines are wrapped and aligned, a line can end before or after it, and its line
   is at least as tall as it needs (`baseline` above the baseline of the line, the rest of `height` below).
   `TextLayout.Placeholders` gives the rectangle of each one, in the order of the text, for the caller to draw in.
+- **Ruby.** `RichTextBuilder.AppendRuby(text, style, annotation, annotationStyle)` adds a base, part of the text, with
+  an annotation set beside it: the reading of kanji in kana (furigana), a pronunciation. The annotation is laid out on
+  its own with its style (usually half the size of the base), in the writing mode and orientation of the layout, and
+  centered on the base: above it in a horizontal line, in a column on its right in a vertical line. The line is as tall
+  as the base and the annotation that stands on the ascent of its font (half its size around the central baseline of
+  a vertical line). A line never ends inside a base, nor is a base hyphenated or cut by `OverflowWrap`. A base
+  shorter than its annotation gets the difference as room, half before it and half after it: the annotation never
+  overhangs the text around it. The annotation is drawn, filled, stroked and turned into a path with the text, but
+  is not part of the positions of the text (`HitTest`, carets, selections) nor of its justification.
 - **Fonts of a character.** A character and the marks and selectors that follow it are drawn with the first font of
   the stack that has all of them. An emoji is first looked for in the fonts of its presentation (Unicode Technical
   Standard #51): the fonts that have color glyphs for a character that is an emoji by default (U+1F600), that is
@@ -3684,6 +3693,16 @@ of their characters and were not compared with a font.
   paints the spans that have none; `StrokeText` strokes every outline with its pen. `TextLayout.ToPath` gives the
   outlines as a `VectorPath`; filling or stroking it changes the same pixels to the same values as a layout of one
   paint.
+- **Subpixel rendering** (`TextLayoutOptions.SubpixelRendering`, `None` by default). For an LCD screen whose pixels
+  are three vertical stripes, `Rgb` or `Bgr` (the order of the stripes from left to right) gives each color of a
+  pixel the coverage of its stripe, as ClearType and FreeType do: the glyphs are rasterized at three times the width
+  of the image, and the coverage of each third of a pixel is filtered with the default LCD filter of FreeType (8, 77,
+  86, 77 and 8 over 256), then each color of an opaque pixel is composited with its own coverage; a pixel that is not
+  opaque gets the mean of the three. It applies to a layout filled at a point with antialiasing, with `SolidBrush`
+  paints that use `SourceOver` and `Normal` blending, outside a linear compositing space, on `Rgba32`, `Bgra32`,
+  `Rgb24`, `Rgba64` and `Rgb48` images, for a text without color glyphs, backgrounds, outlines or synthetic bold;
+  the transformation and the clip of the canvas apply. Anything else, and a text along a path or a glyph run, is
+  drawn with grayscale antialiasing. The colored fringes show when the image is scaled or seen on another screen.
 - **Hinting** (`TextLayoutOptions.Hinting`, `None` by default). Small text (9 to 16 pixels) is blurry when its edges
   fall across pixels; hinting fits the outlines to the pixel grid of the layout:
   - `Light`: the outlines are moved along the vertical axis only, without the instructions of the font. The
@@ -3705,7 +3724,10 @@ of their characters and were not compared with a font.
 
   The baseline of each hinted glyph is on a whole pixel of the layout, and what the layout measures is what it draws.
   The grid is the pixel grid of the layout: draw it at a whole-pixel origin and without a transform that scales or
-  rotates the canvas. A vertical layout is not hinted. The contrast across the horizontal edges (the sum of the
+  rotates the canvas. In a vertical layout, a glyph is fitted in its own orientation: an upright glyph starts on a
+  whole pixel down the column, and a glyph on its side has its baseline on a whole pixel across it; with `Full`, each
+  glyph starts on a whole pixel along both axes and the advances down the column are whole pixels (the advance of an
+  upright glyph, which the instructions do not hint, is rounded). The contrast across the horizontal edges (the sum of the
   differences between vertically neighboring pixels divided by the coverage, at 10 to 16 pixels, averaged) goes up
   with hinting:
 
@@ -3802,7 +3824,9 @@ every script, including those that join. Justification does not lengthen Arabic 
 bitmap strike are not used. Justification shares its room equally between its opportunities, without the priorities
 of some typographic traditions (spaces before characters, punctuation compression of Japanese). Optimal line breaking
 has no fitness classes (it does not avoid a loose line next to a tight one) and does not choose the breaks to fit
-`MaxLines`. In vertical lines, there is no ruby, the punctuation is not compressed
+`MaxLines`. A ruby annotation is only set over its base (above it, or on the right of a vertical line), without
+overhang over the text around it and without the spacing rules of Japanese typography (JIS X 4051). In vertical
+lines, the punctuation is not compressed
 nor hung, the side of an underline is not a choice, a line cannot be read from the bottom, and the marks of a font
 that has no positioning table are not placed on upright letters. Along a path, the glyphs are placed and turned,
 not bent to the curve, and the rectangles of the placeholders are those of a text drawn at a point. A placeholder is
@@ -5817,6 +5841,6 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | JPEG recompression | `JpegXlTranscoder.RecompressJpeg` rejects with `UnsupportedImageFeatureException` what a JPEG XL frame cannot hold: four components (CMYK, YCCK), a sampling factor other than 1 or 2 (4:1:1), subsampled RGB components, arithmetic, lossless, hierarchical and 12-bit files, restart intervals of several lengths (the description of the file has one), a quantization table that no component uses unless it repeats the table defined before it, a Huffman table that uses the code of all ones, more than 65,535 bytes between two markers or 4,260,096 bytes after the end of image, and entropy-coded data that would not be rebuilt byte for byte (the output is always checked). The whole file is held in memory, with two bytes per coefficient. The reconstruction data (`jbrd`) are read wherever the container has them: every encoder writes them before the codestream; when they follow it, the frame is held as it is coded until they are read, and `HasJpegReconstructionData` reads the file to its end |
 | JPEG 2000 | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the headers tell): samples of more than 16 bits, signed palette indexes, components of different depths, a sub-sampled first component and sub-sampled components that are not the chrominances of an image of three components, more than four components without color specification, a premultiplied opacity, several opacity channels, an opacity of one color, channels that are not defined, the extensions of ISO/IEC 15444-2 (other wavelet filters, other component transformations, other regions of interest), files of the `jpm ` and `mjp2` brands, files of several codestreams or of a fragmented codestream, more than 30 bit-planes in a sub-band; for the high-throughput block coder: tile-components that mix both block coders, a code-block with several HT sets, and placeholder passes in another packet than the HT cleanup pass. CMYK is loaded only with `CmykConversion`. Not read: the intellectual property and XML boxes, the comments of the codestream. Signed samples are read offset by half their range; `Jpeg2000DecodingOptions.QualityLayerLimit` decodes the first quality layers only. Not available: a region decode reads the whole compressed data of each tile it meets. Encoding: no precincts and one tile-part per tile, no HTJ2K, no palette, no sub-sampling, no CMYK, no animation; a codestream stores no metadata |
 | OpenEXR | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify`): multi-part files unless `OpenExrDecodingOptions.Part` selects a part, deep data unless `OpenExrDecodingOptions.DeepData` flattens them (and deep data without `Z` or `A`), the HTJ2K256, HTJ2K32 and LJ2K compressions, channels other than R, G, B, A and Y (layers, depth, `RY`/`BY` chroma, extra channels: they would be lost) unless `OpenExrDecodingOptions.Layer` selects a layer, the chroma channels `RY` and `BY` also in a layer, sub-sampled color channels (a sub-sampled channel that a layer ignores is fine), a data window that leaves the display window (its pixels would be lost) unless `OpenExrDecodingOptions.WindowMode` crops it or decodes the data window, UINT samples that a float cannot hold exactly, and versions other than 2. Not decoded: the lower levels of mipmaps and ripmaps, the preview image and the attributes other than the windows and the chromaticities. Encoding: one still image, scan lines only (no tiles), half or float samples (no UINT), no lossy compression (PXR24, B44, DWA), no attributes other than the required ones and the chromaticities, linear light only
-| Text | In vertical lines, no ruby and no compression of punctuation; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; greedy line breaking by default, optimal (total-fit) breaking without fitness classes; justification without kashida and without priorities; no device adjustment of positions; hinting is opt-in (`TextLayoutOptions.Hinting`), only for horizontal text, without the variations of the control values (`cvar`) and without the hints of CFF outlines; no subpixel (LCD) rendering; an installed font is never used by itself: it is loaded with `Font.LoadInstalled`, or used for the characters the fonts of a stack lack with `FontStack.WithInstalledFallback`, whose choice depends on the fonts of the machine; along a path, glyphs are turned but not warped; see [Text](#text) |
+| Text | In vertical lines, no compression of punctuation; ruby annotations only over their base, without overhang; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; greedy line breaking by default, optimal (total-fit) breaking without fitness classes; justification without kashida and without priorities; no device adjustment of positions; hinting is opt-in (`TextLayoutOptions.Hinting`), without the variations of the control values (`cvar`) and without the hints of CFF outlines; subpixel (LCD) rendering is opt-in (`TextLayoutOptions.SubpixelRendering`), for layouts filled at a point with a solid color on 8- and 16-bit RGB images; an installed font is never used by itself: it is loaded with `Font.LoadInstalled`, or used for the characters the fonts of a stack lack with `FontStack.WithInstalledFallback`, whose choice depends on the fonts of the machine; along a path, glyphs are turned but not warped; see [Text](#text) |
 | Fonts | No font of the system unless one is asked for (`Font.LoadInstalled`, `FontStack.WithInstalledFallback`, `SystemFontCollection`), no SVG glyph, no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hints of CFF outlines; see [Fonts](#fonts) |
 | API | No custom pixel type and no replaceable allocator (the buffer pool has settings, `ImageBufferPool`); the extension points are custom codecs and encoders and custom pixel operations ([Extension points](#extension-points)); implementation types are internal |

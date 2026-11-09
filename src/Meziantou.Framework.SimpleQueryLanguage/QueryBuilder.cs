@@ -23,6 +23,7 @@ public sealed class QueryBuilder<T>
     private static readonly Predicate<T> AlwaysTruePredicate = _ => true;
 
     private readonly TimeProvider _timeProvider;
+    private readonly TimeZoneInfo _timeZone;
 
     // Each handler turns the operator and value of a query term into a predicate when the query is built,
     // so values are parsed once per term instead of once per evaluated object.
@@ -39,8 +40,20 @@ public sealed class QueryBuilder<T>
     /// <summary>Initializes a new instance of <see cref="QueryBuilder{T}"/> with a specific time provider for date-related range keywords.</summary>
     /// <param name="timeProvider">The time provider to use, or <see langword="null"/> to use <see cref="TimeProvider.System"/>.</param>
     public QueryBuilder(TimeProvider? timeProvider)
+        : this(timeProvider, timeZone: null)
+    {
+    }
+
+    /// <summary>Initializes a new instance of <see cref="QueryBuilder{T}"/> with a specific time provider and time zone for date-related range keywords.</summary>
+    /// <param name="timeProvider">The time provider to use, or <see langword="null"/> to use <see cref="TimeProvider.System"/>.</param>
+    /// <param name="timeZone">
+    /// The time zone that gives the day boundaries of date keywords, such as <c>today</c> and <c>@today-3d</c>,
+    /// or <see langword="null"/> to use <see cref="TimeZoneInfo.Utc"/>.
+    /// </param>
+    public QueryBuilder(TimeProvider? timeProvider, TimeZoneInfo? timeZone)
     {
         _timeProvider = timeProvider ?? TimeProvider.System;
+        _timeZone = timeZone ?? TimeZoneInfo.Utc;
     }
 
     private void RegisterHandler(string key, string? value, Func<KeyValueOperator, string, Predicate<T>> handler)
@@ -81,7 +94,7 @@ public sealed class QueryBuilder<T>
     /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddHandler<TValue>(string key, Func<T, KeyValueOperator, TValue, bool> predicate, ScalarParser<TValue>? tryParseValue)
     {
-        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider);
+        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider, _timeZone);
         RegisterHandler(key, value: null, (op, value) =>
         {
             if (!tryParse(value, out var parsedValue))
@@ -124,7 +137,7 @@ public sealed class QueryBuilder<T>
     /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddHandler<TValue>(string key, Func<T, TValue, bool> predicate, ScalarParser<TValue>? tryParseValue)
     {
-        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider);
+        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider, _timeZone);
         RegisterHandler(key, value: null, (op, value) =>
         {
             // The predicate only tests for a match, so only the equality operators have a meaning
@@ -142,7 +155,7 @@ public sealed class QueryBuilder<T>
     /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddRangeHandler<TValue>(string key, Func<T, RangeSyntax<TValue>, bool> predicate, ScalarParser<TValue>? tryParseValue)
     {
-        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider);
+        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider, _timeZone);
         RegisterHandler(key, value: null, (op, value) => CreateRangePredicate(op, value, predicate, tryParse));
     }
 
@@ -163,7 +176,7 @@ public sealed class QueryBuilder<T>
         // field<>1..10
         if (op is KeyValueOperator.EqualTo or KeyValueOperator.NotEqualTo)
         {
-            var range = RangeSyntax.TryParse(value, tryParseValue, _timeProvider);
+            var range = RangeSyntax.TryParse(value, tryParseValue, _timeProvider, _timeZone);
             if (range is null)
                 return AlwaysFalsePredicate;
 

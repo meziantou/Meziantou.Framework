@@ -959,6 +959,24 @@ public sealed class StatisticalChartTests
     }
 
     [Fact]
+    public void GeoMark_PositionsFarOutOfRange()
+    {
+        // A region out of the range of the world has no graticule, and an edge along a parallel out of range gets no
+        // more points than a full turn: both used to add points until memory ran out
+        GeoFeature[] features =
+        [
+            new(new GeoLineString([new(-2.3e80, 90)])),
+            new(new GeoPolygon([[new(-180, -90), new(1.8e80, -90), new(180, 90), new(-180, 90), new(-180, -90)]])),
+        ];
+        foreach (var feature in features)
+        {
+            var plot = new Plot { Coordinates = new GeoCoordinates { Projection = new AlbersProjection(), GraticuleStep = 30, Outline = true } };
+            plot.Add(new GeoMark<GeoFeature>([feature], feature => feature.Geometry));
+            AssertFiniteScene(plot);
+        }
+    }
+
+    [Fact]
     public void GeoMarkOptions()
     {
         var square = new GeoPolygon([[new(0, 0), new(10, 0), new(10, 10), new(0, 10), new(0, 0)], [new(3, 3), new(7, 3), new(7, 7), new(3, 7)]]);

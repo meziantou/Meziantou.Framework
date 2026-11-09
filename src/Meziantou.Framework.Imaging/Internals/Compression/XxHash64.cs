@@ -1,7 +1,13 @@
 using System.Buffers.Binary;
 using System.Numerics;
 
+// Compiled into Meziantou.Framework.Imaging and Meziantou.Framework.Geo.GeoParquet, internal to each, in the namespace of
+// each library.
+#if MEZIANTOU_FRAMEWORK_IMAGING
 namespace Meziantou.Framework.Imaging.Internals;
+#else
+namespace Meziantou.Framework.Geo.Internals;
+#endif
 
 /// <summary>The XXH64 hash with a seed of 0 (the content checksum of a Zstandard frame, RFC 8878 section 3.1.1).</summary>
 internal static class XxHash64

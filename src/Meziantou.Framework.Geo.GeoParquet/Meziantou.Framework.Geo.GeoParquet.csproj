@@ -20,4 +20,10 @@
     <ProjectReference Include="../Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
   </ItemGroup>
 
+  <!-- The Zstandard decoder of Meziantou.Framework.Imaging, for the targets older than .NET 11 (which has ZstandardStream): the files are compiled here too, in the namespace of the library, so that they stay internal to both -->
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="../Meziantou.Framework.Imaging/Internals/Compression/ZstdDecoder.cs" Link="Internals/Shared/ZstdDecoder.cs" />
+    <Compile Include="../Meziantou.Framework.Imaging/Internals/Compression/XxHash64.cs" Link="Internals/Shared/XxHash64.cs" />
+  </ItemGroup>
+
 </Project>

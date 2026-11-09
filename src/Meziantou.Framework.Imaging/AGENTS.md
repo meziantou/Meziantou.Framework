@@ -914,7 +914,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   single precision, until alpha reaches 1). DWAA and DWAB (`ExrDwa`, section 8) reuse the PIZ Huffman decoder and are
   bit-exact with the scalar build of OpenEXR (the reference tools are built that way); their perceptual table is pinned by
   a hash. ZSTD (`ExrZstd`, section 13) wraps a fully managed Zstandard decoder written from RFC 8878
-  (`Internals/Compression/ZstdDecoder`, with the XXH64 checksum). HTJ2K and LJ2K (section 14) are not decoded: the JPEG
+  (`Internals/Compression/ZstdDecoder`, with the XXH64 checksum). Meziantou.Framework.Geo.GeoParquet compiles these two
+  files too, before .NET 11 (`MEZIANTOU_FRAMEWORK_IMAGING` picks the namespace): keep them free of Imaging types. HTJ2K and LJ2K (section 14) are not decoded: the JPEG
   2000 decoder has no signed components, no 32-bit components and no NLT marker.
   `MetadataWritePlan` treats OpenEXR as linear light only (`FormatCapabilities.LinearOnly`): an sRGB label is metadata
   the format cannot store.

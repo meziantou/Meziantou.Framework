@@ -8,4 +8,8 @@
     <PackageTags>public-api, api-approval, api-diff, reflection, testing</PackageTags>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.PublicApiGenerator.Fuzz" />
+  </ItemGroup>
+
 </Project>

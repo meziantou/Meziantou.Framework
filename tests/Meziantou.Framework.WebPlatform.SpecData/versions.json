@@ -14,7 +14,7 @@
     "urls": {
       "entities.json": "https://html.spec.whatwg.org/entities.json"
     },
-    "downloaded": "2026-11-02",
+    "downloaded": "2026-11-09",
     "files": {
       "entities.json": "d741d877ac77c4194c4ad526b5b4a19aef8dfe411ab840a466891cdbb9f362e6"
     }
@@ -871,7 +871,7 @@
     "urls": {
       "UnicodeData.txt": "https://www.unicode.org/Public/18.0.0/ucd/UnicodeData.txt"
     },
-    "downloaded": "2026-11-02",
+    "downloaded": "2026-11-09",
     "files": {
       "UnicodeData.txt": "0736451de439ae7baf1425136617da495e09ee5afbe6e394374db7009ea08950"
     }
@@ -880,7 +880,7 @@
     "kind": "github-test-suite",
     "repo": "html5lib/html5lib-tests",
     "ref": "master",
-    "commit": "c777c408b61078ea2eb4acefc2535f54dbc8b28a"
+    "commit": "c5495c539ca8a79c3c5107f5f14010bcff9a35d5"
   },
   "wpt": {
     "kind": "github-test-suite",
@@ -893,9 +893,9 @@
     "kind": "github-files",
     "repo": "whatwg/html",
     "ref": "main",
-    "commit": "404b3eb14a7a936dddefb2d78e224dbeb01d2358",
+    "commit": "5fcc2318395821db61e353705e6368ad9a000af5",
     "files": {
-      "source": "6880d01f4b29f07388d152c21c549ff4e52bad760400f839e160425521479e1e"
+      "source": "79758127c6aa3856e8d9036de0c1df17a8bfcf5aa96d886a2b6a6435661fb375"
     }
   },
   "css-parsing-tests": {
@@ -1734,7 +1734,7 @@
     "kind": "github-test-suite",
     "repo": "google/fonts",
     "ref": "main",
-    "commit": "6c1dbe27dcf7d817d4b62cec033ba77fa8e2a5ec"
+    "commit": "5bb28733cec313b63fbd415b574b5ae35c8aa8b8"
   },
   "icu": {
     "kind": "github-files",

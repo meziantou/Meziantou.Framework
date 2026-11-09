@@ -113,7 +113,7 @@ internal static class PublicApiModelBuilder
         "System.Runtime.CompilerServices.UnsafeValueTypeAttribute",
     };
 
-    public static PublicApiModel Build(string assemblyName, IEnumerable<CustomAttributeData> assemblyAttributes, IEnumerable<Type> rootTypes)
+    public static PublicApiModel Build(string assemblyName, IEnumerable<CustomAttributeData> assemblyAttributes, IEnumerable<Type> rootTypes, ImmutableArray<string> assemblyReferences)
     {
         var types = rootTypes
             .Where(type => type.DeclaringType is null)
@@ -122,7 +122,7 @@ internal static class PublicApiModelBuilder
             .ThenBy(type => type.FullName, StringComparer.Ordinal)
             .Select(BuildTypeModel)
             .ToImmutableArray();
-        return new PublicApiModel(assemblyName, BuildAssemblyAttributesSource(assemblyAttributes), types);
+        return new PublicApiModel(assemblyName, BuildAssemblyAttributesSource(assemblyAttributes), types, assemblyReferences);
     }
 
     private static string BuildAssemblyAttributesSource(IEnumerable<CustomAttributeData> attributes)

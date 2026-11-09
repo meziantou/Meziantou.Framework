@@ -4,8 +4,8 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Barcodes</RootNamespace>
     <Version>1.0.3</Version>
-    <Description>QR and barcode generation with SVG, PNG, and console renderers</Description>
-    <PackageTags>qrcode, barcode, svg, png, console</PackageTags>
+    <Description>QR code, Data Matrix, PDF417, Aztec and barcode generation with SVG, PNG, and console renderers</Description>
+    <PackageTags>qrcode, barcode, datamatrix, pdf417, aztec, svg, png, console</PackageTags>
     <NoWarn>$(NoWarn);CA1814</NoWarn>
   </PropertyGroup>
 

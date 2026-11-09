@@ -39,16 +39,28 @@ internal sealed class Jpeg2000PacketReader : IDisposable
     private readonly byte[]? _packedHeaders;
     private readonly int _packedHeadersLength;
     private readonly CancellationToken _cancellationToken;
+    private readonly int _layerLimit;
     private int _bodyPosition;
     private int _headerPosition;
     private int _packetCount;
     private bool _isExhausted;
+    private bool _hasSkippedLayers;
     private Av1PooledArray<Jpeg2000Contribution>? _contributions;
     private int _contributionCount;
     private Av1PooledArray<Jpeg2000PacketPosition>? _positions;
     private int _positionOrder = -1;
 
-    public Jpeg2000PacketReader(AllocationScope scope, Jpeg2000Siz siz, Jpeg2000TileCoding coding, Jpeg2000TileGeometry geometry, Jpeg2000Tile tile, CancellationToken cancellationToken)
+    /// <param name="scope">The scope of the allocations.</param>
+    /// <param name="siz">The image and tile size.</param>
+    /// <param name="coding">The coding parameters of the tile.</param>
+    /// <param name="geometry">The partition of the tile.</param>
+    /// <param name="tile">The data of the tile.</param>
+    /// <param name="layerLimit">
+    /// The number of quality layers whose coding passes are kept: the packets of the other layers are read, and what they add
+    /// to their code-blocks is left out.
+    /// </param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    public Jpeg2000PacketReader(AllocationScope scope, Jpeg2000Siz siz, Jpeg2000TileCoding coding, Jpeg2000TileGeometry geometry, Jpeg2000Tile tile, int layerLimit, CancellationToken cancellationToken)
     {
         _scope = scope;
         _siz = siz;
@@ -62,6 +74,7 @@ internal sealed class Jpeg2000PacketReader : IDisposable
             _packedHeadersLength = packed.Length;
         }
 
+        _layerLimit = layerLimit;
         _cancellationToken = cancellationToken;
     }
 
@@ -97,7 +110,15 @@ internal sealed class Jpeg2000PacketReader : IDisposable
         }
         else
         {
-            ReadProgression(new Jpeg2000ProgressionChange(0, 0, defaults.Layers, maxResolutions, componentCount, defaults.Progression));
+            // In the LRCP order without progression change, the packets of the layers that are left out end the tile: they
+            // are not read
+            var layers = defaults.Progression == Jpeg2000CodingDefaults.ProgressionLrcp ? Math.Min(defaults.Layers, _layerLimit) : defaults.Layers;
+            ReadProgression(new Jpeg2000ProgressionChange(0, 0, layers, maxResolutions, componentCount, defaults.Progression));
+        }
+
+        if (_hasSkippedLayers)
+        {
+            RemoveSkippedLayers();
         }
     }
 
@@ -315,6 +336,8 @@ internal sealed class Jpeg2000PacketReader : IDisposable
         // The bytes of the code-blocks follow the packet header, in the order of the header
         if (_contributionCount != firstContribution)
         {
+            var isSkipped = layer >= _layerLimit;
+            _hasSkippedLayers |= isSkipped;
             var contributions = _contributions!.Span[firstContribution.._contributionCount];
             foreach (ref var contribution in contributions)
             {
@@ -322,8 +345,44 @@ internal sealed class Jpeg2000PacketReader : IDisposable
                     throw Invalid("the data of a tile ends before the bytes of a packet.");
 
                 contribution.Offset = _bodyPosition;
+                contribution.IsSkipped = isSkipped;
                 _bodyPosition += contribution.Length;
             }
+        }
+    }
+
+    /// <summary>
+    /// Leaves out of each code-block the contributions of the layers above the limit. The layers of a precinct come in
+    /// order, so that they are the last contributions of their code-blocks; the number of coding passes of a code-block
+    /// becomes the one of the contributions it keeps.
+    /// </summary>
+    private void RemoveSkippedLayers()
+    {
+        var contributions = _contributions!.Span;
+        foreach (ref var block in _geometry.Blocks)
+        {
+            if (block.FirstContribution < 0)
+                continue;
+
+            var passes = 0;
+            var last = -1;
+            for (var index = block.FirstContribution; index >= 0 && !contributions[index].IsSkipped; index = contributions[index].Next)
+            {
+                passes += contributions[index].PassCount;
+                last = index;
+            }
+
+            if (last < 0)
+            {
+                block.FirstContribution = -1;
+                block.LastContribution = -1;
+                block.PassCount = 0;
+                continue;
+            }
+
+            contributions[last].Next = -1;
+            block.LastContribution = last;
+            block.PassCount = (ushort)passes;
         }
     }
 

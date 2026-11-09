@@ -45,6 +45,17 @@ public static class BarcodesFuzzTargets
         "ABC-123", "Hello 12345678", "5512345", "55123457", "590123412345", "4006381333931", "03600029145", "40156", "12345678", "1234-5678$:/.+",
     ];
 
+    private static readonly string[] Barcode2DSeedTexts =
+    [
+        "Hello", "123456", "0123456789012345678901234567890123456789", "HELLO WORLD", "hello world", "Abc 123 xyz", "https://www.meziantou.net/",
+        "*ABC>123*", "\r*>\r", "@ABC^_", "café", "Ελληνικά 漢字 😀", "\u0001\u007f\u0080\u00ff", new string('a', 200), new string('7', 400),
+        "01095212345432131725010110ABC123", "10ABC\u001D21XY",
+    ];
+
+    // Characters that switch the encodation modes of Data Matrix: C40 and Text (uppercase, lowercase), X12 (*>\r), EDIFACT
+    // (@^_), Base 256; of PDF417: the text sub-modes, numeric runs of 13 digits; of Aztec: the punctuation pairs
+    private static readonly string[] Barcode2DTokens = ["*", ">", "\r", "@", "^", "_", "ABC", "abc", "a1b2", "\u001D", "\u00e9", "\u0080", "\u00ff", "0000", ". ", ", ", ": ", "\t", "\n", ";", "{", "|", "1234567890123"];
+
     private static readonly string[] Code39Alphabet = ["0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%"];
 
     private static readonly double[] ModuleSizes = [1, 2, 3, 0.5, 1.5, 2.6, 4, 7.3, 0.1, 0, -1, double.NaN, double.PositiveInfinity, 1e7];
@@ -56,6 +67,7 @@ public static class BarcodesFuzzTargets
         new("barcodes-qrcode", QRCodeTarget) { Seeds = () => QRSeedTexts.SelectMany((text, index) => new[] { 0, 1, 2 }.Select(type => FuzzSeed.FromText($"qrcode-{index}-{type}", [(byte)type, (byte)index], text))), Dictionary = Tokens },
         new("barcodes-linear", LinearTarget) { Seeds = () => Enumerable.Range(0, 8).SelectMany(type => BarcodeSeedTexts.Select((text, index) => FuzzSeed.FromText($"linear-{type}-{index}", [(byte)type, (byte)index], text))), Dictionary = Tokens },
         new("barcodes-payload", PayloadTarget) { Seeds = GetPayloadSeeds, Dictionary = Tokens },
+        new("barcodes-2d", Barcode2DTarget) { Seeds = () => Enumerable.Range(0, 3).SelectMany(type => Barcode2DSeedTexts.SelectMany((text, index) => new[] { 0, 0x5A, 0xA5 }.Select(options => FuzzSeed.FromText($"2d-{type}-{index}-{options}", [(byte)type, (byte)options, (byte)index], text)))), Dictionary = [.. Tokens, .. Barcode2DTokens] },
         new("barcodes-draw", DrawTarget) { Seeds = () => Enumerable.Range(0, 12).Select(kind => new FuzzSeed($"draw-{kind}", (byte[])[(byte)kind, (byte)(kind % 8), (byte)(kind * 37), (byte)(kind * 11), (byte)(kind % 3), .. FuzzText.Encode(kind < 3 ? "HELLO" : "12345678")])), Dictionary = Tokens },
         .. Gs1FuzzTargets.All,
     ];
@@ -205,6 +217,529 @@ public static class BarcodesFuzzTargets
 
         // A payload is encoded, or is too long
         TryCreateQRCode(QRCodeType.Standard, payload, ErrorCorrectionLevel.L, out _);
+    }
+
+    private static void Barcode2DTarget(ReadOnlySpan<byte> data)
+    {
+        var type = (Barcode2DType)(FuzzInput.ReadByte(ref data) % 3);
+        var flags = FuzzInput.ReadByte(ref data);
+        var sizeByte = FuzzInput.ReadByte(ref data);
+        var binary = (flags & 0x80) != 0;
+        var text = FuzzInput.ReadText(data);
+        var bytes = data.ToArray();
+
+        Barcode2D? Create()
+        {
+            try
+            {
+                return type switch
+                {
+                    Barcode2DType.DataMatrix when (flags & 0x40) != 0 => Barcode2D.CreateGs1DataMatrix([.. CreateGs1Elements(text)], CreateDataMatrixOptions(flags, sizeByte)),
+                    Barcode2DType.DataMatrix => binary ? Barcode2D.CreateDataMatrix(bytes, CreateDataMatrixOptions(flags, sizeByte)) : Barcode2D.CreateDataMatrix(text, CreateDataMatrixOptions(flags, sizeByte)),
+                    Barcode2DType.Pdf417 => binary ? Barcode2D.CreatePdf417(bytes, CreatePdf417Options(flags, sizeByte)) : Barcode2D.CreatePdf417(text, CreatePdf417Options(flags, sizeByte)),
+                    _ => binary ? Barcode2D.CreateAztec(bytes, CreateAztecOptions(flags, sizeByte)) : Barcode2D.CreateAztec(text, CreateAztecOptions(flags, sizeByte)),
+                };
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+            catch (InvalidOperationException)
+            {
+                // The data does not fit
+                return null;
+            }
+        }
+
+        var barcode = Create();
+        if (barcode is null)
+            return;
+
+        FuzzAssert.Equal(type, barcode.Type, "The barcode type");
+        switch (type)
+        {
+            case Barcode2DType.DataMatrix:
+                CheckDataMatrix(barcode, CreateDataMatrixOptions(flags, sizeByte));
+                CheckDataMatrixContent(barcode, (flags & 0x40) != 0 ? CreateGs1Elements(text) : null, binary ? bytes : null, text);
+                break;
+            case Barcode2DType.Pdf417:
+                CheckPdf417(barcode, CreatePdf417Options(flags, sizeByte));
+                break;
+            default:
+                CheckAztec(barcode, CreateAztecOptions(flags, sizeByte));
+                break;
+        }
+
+        // The encoding is deterministic
+        var other = Create();
+        FuzzAssert.True(other is not null && SameModules(barcode, other), "Encoding the same data twice gives different symbols");
+
+        // The renderers agree with the module matrix
+        using var image = Image.Load<Rgba32>(barcode.ToPng(new Barcode2DPngOptions { ModuleSize = 1, QuietZoneModules = 0 }));
+        CheckPixels(image, barcode.Width, barcode.Height, (row, column) => barcode[row, column], "ToPng");
+        using var fromImaging = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 1, QuietZoneModules = 0 });
+        CheckPixels(fromImaging, barcode.Width, barcode.Height, (row, column) => barcode[row, column], "ToImage");
+        FuzzAssert.True(barcode.ToSvg().StartsWith("<svg ", StringComparison.Ordinal), "ToSvg does not start with <svg");
+    }
+
+    // The text as element strings: an application identifier of 2 digits, its data, and GS between the elements
+    private static List<Gs1Element> CreateGs1Elements(string text)
+    {
+        var elements = new List<Gs1Element>();
+        foreach (var part in text.Split('\u001D'))
+        {
+            if (part.Length < 3)
+                continue;
+
+            elements.Add(new Gs1Element(part[..2], part[2..]));
+        }
+
+        return elements;
+    }
+
+    // The heights and widths of the Data Matrix sizes, and invalid ones
+    private static readonly int[] DataMatrixDimensions = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 32, 36, 40, 44, 48, 52, 64, 72, 80, 88, 96, 104, 120, 132, 144, 26, 32, 36, 48, 9, 0, -1];
+
+    private static DataMatrixOptions? CreateDataMatrixOptions(byte flags, byte sizeByte)
+    {
+        if ((flags & 0x0F) == 0)
+            return null;
+
+        var options = new DataMatrixOptions { Shape = (DataMatrixShape)((flags & 0x0F) % 3) };
+        try
+        {
+            if ((flags & 0x10) != 0)
+            {
+                options.Height = DataMatrixDimensions[sizeByte % DataMatrixDimensions.Length];
+            }
+
+            if ((flags & 0x20) != 0)
+            {
+                options.Width = DataMatrixDimensions[(sizeByte / DataMatrixDimensions.Length) % DataMatrixDimensions.Length];
+            }
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // Not a height or width of a Data Matrix size: the options keep the other constraints
+        }
+
+        return options;
+    }
+
+    // The bits 0x01, 0x02 and 0x04 of the flags set the error correction level, the columns and the row height, from the
+    // size byte; some values are out of range and must be rejected
+    private static Pdf417Options? CreatePdf417Options(byte flags, byte sizeByte)
+    {
+        if ((flags & 0x0F) == 0)
+            return null;
+
+        var options = new Pdf417Options();
+        if ((flags & 0x01) != 0)
+        {
+            var level = (sizeByte % 10) - 1;
+            SetOption(level is >= 0 and <= 8, () => options.SecurityLevel = level, nameof(Pdf417Options.SecurityLevel));
+        }
+
+        if ((flags & 0x02) != 0)
+        {
+            var columns = sizeByte % 32;
+            SetOption(columns is >= 1 and <= 30, () => options.Columns = columns, nameof(Pdf417Options.Columns));
+        }
+
+        if ((flags & 0x04) != 0)
+        {
+            var rowHeight = sizeByte % 22;
+            SetOption(rowHeight is >= 1 and <= 20, () => options.RowHeight = rowHeight, nameof(Pdf417Options.RowHeight));
+        }
+
+        return options;
+    }
+
+    // An invalid value throws an ArgumentOutOfRangeException, which the caller catches
+    private static void SetOption(bool valid, Action set, string name)
+    {
+        set();
+        FuzzAssert.True(valid, $"The invalid value of {name} is accepted");
+    }
+
+    // Bits 0-1 of the flags: the shape (any, any, compact, full-range); bits 2-3: what the size byte sets (nothing, the error
+    // correction percentage, the number of layers, both). The values out of range throw ArgumentOutOfRangeException, which
+    // the caller handles as invalid options.
+    private static AztecOptions? CreateAztecOptions(byte flags, byte sizeByte)
+    {
+        if ((flags & 0x0F) == 0)
+            return null;
+
+        var options = new AztecOptions
+        {
+            Compact = (flags & 0x03) switch
+            {
+                2 => true,
+                3 => false,
+                _ => null,
+            },
+        };
+
+        switch ((flags >> 2) & 0x03)
+        {
+            case 1:
+                SetAztecOption(options, sizeByte, sizeByte is < 5 or > 95, (options, value) => options.ErrorCorrectionPercent = value);
+                break;
+
+            case 2:
+                SetAztecOption(options, sizeByte % 34, sizeByte % 34 is 0 or 33, (options, value) => options.Layers = value);
+                break;
+
+            case 3:
+                options.ErrorCorrectionPercent = 5 + (sizeByte % 16 * 6);
+                options.Layers = 1 + (sizeByte >> 3);
+                break;
+        }
+
+        return options;
+    }
+
+    private static void SetAztecOption(AztecOptions options, int value, bool outOfRange, Action<AztecOptions, int> setter)
+    {
+        try
+        {
+            setter(options, value);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            FuzzAssert.True(outOfRange, $"The option value {value} is valid but throws");
+            throw;
+        }
+
+        FuzzAssert.False(outOfRange, $"The option value {value} is out of range but does not throw");
+    }
+
+    private static readonly (int Height, int Width, int RegionHeight, int RegionWidth)[] DataMatrixSizes =
+    [
+        (10, 10, 8, 8), (12, 12, 10, 10), (14, 14, 12, 12), (16, 16, 14, 14), (18, 18, 16, 16), (20, 20, 18, 18), (22, 22, 20, 20),
+        (24, 24, 22, 22), (26, 26, 24, 24), (32, 32, 14, 14), (36, 36, 16, 16), (40, 40, 18, 18), (44, 44, 20, 20), (48, 48, 22, 22),
+        (52, 52, 24, 24), (64, 64, 14, 14), (72, 72, 16, 16), (80, 80, 18, 18), (88, 88, 20, 20), (96, 96, 22, 22), (104, 104, 24, 24),
+        (120, 120, 18, 18), (132, 132, 20, 20), (144, 144, 22, 22), (8, 18, 6, 16), (8, 32, 6, 14), (12, 26, 10, 24), (12, 36, 10, 16),
+        (16, 36, 14, 16), (16, 48, 14, 22),
+    ];
+
+    // The structure of a Data Matrix symbol: its size, and the finder pattern of each data region (a solid left side and
+    // bottom side, alternating modules on the top side and the right side)
+    private static void CheckDataMatrix(Barcode2D barcode, DataMatrixOptions? options)
+    {
+        var index = Array.FindIndex(DataMatrixSizes, size => size.Height == barcode.Height && size.Width == barcode.Width);
+        FuzzAssert.True(index >= 0, $"{barcode.Height} x {barcode.Width} is not a Data Matrix size");
+        var (height, width, regionHeight, regionWidth) = DataMatrixSizes[index];
+        if (options?.Height is { } expectedHeight)
+        {
+            FuzzAssert.Equal(expectedHeight, height, "The height of the symbol");
+        }
+
+        if (options?.Width is { } expectedWidth)
+        {
+            FuzzAssert.Equal(expectedWidth, width, "The width of the symbol");
+        }
+
+        if (options is not null && options.Height is null && options.Width is null)
+        {
+            FuzzAssert.True(options.Shape switch { DataMatrixShape.Square => height == width, DataMatrixShape.Rectangle => height != width, _ => true }, $"A {height} x {width} symbol does not have the shape {options.Shape}");
+        }
+
+        for (var top = 0; top < height; top += regionHeight + 2)
+        {
+            for (var left = 0; left < width; left += regionWidth + 2)
+            {
+                var bottom = top + regionHeight + 1;
+                var right = left + regionWidth + 1;
+                for (var column = left; column <= right; column++)
+                {
+                    FuzzAssert.True(barcode[bottom, column], $"The module ({column}, {bottom}) of the bottom side of a region is light");
+                    FuzzAssert.Equal((column - left) % 2 == 0, barcode[top, column], $"The module ({column}, {top}) of the top side of a region");
+                }
+
+                for (var row = top; row <= bottom; row++)
+                {
+                    FuzzAssert.True(barcode[row, left], $"The module ({left}, {row}) of the left side of a region is light");
+                    FuzzAssert.Equal((row - top) % 2 == 1, barcode[row, right], $"The module ({right}, {row}) of the right side of a region");
+                }
+            }
+        }
+    }
+
+    // The symbol decodes to the data: the bytes, the ASCII text, or the UTF-8 text after the ECI designator of UTF-8; the
+    // element strings of GS1 data after a FNC1, with FNC1 separators between some of them
+    private static void CheckDataMatrixContent(Barcode2D barcode, List<Gs1Element>? gs1Elements, byte[]? bytes, string text)
+    {
+        var (message, eci) = DataMatrixDecoder.Decode(barcode);
+        if (gs1Elements is not null)
+        {
+            FuzzAssert.True(eci is null, "GS1 data has an ECI designator");
+            FuzzAssert.True(message.Count > 0 && message[0] == DataMatrixDecoder.Fnc1, "GS1 data does not start with FNC1");
+            FuzzAssert.True(message[^1] != DataMatrixDecoder.Fnc1, "GS1 data ends with FNC1");
+            FuzzAssert.True(message.Count(value => value == DataMatrixDecoder.Fnc1) <= gs1Elements.Count, "GS1 data has more FNC1 separators than elements");
+            var elementStrings = string.Concat(gs1Elements.Select(element => element.ApplicationIdentifier + element.Value));
+            FuzzAssert.Equal(elementStrings, string.Concat(message.Where(value => value != DataMatrixDecoder.Fnc1).Select(value => (char)value)), "The element strings");
+            return;
+        }
+
+        FuzzAssert.False(message.Contains(DataMatrixDecoder.Fnc1), "The data has a FNC1");
+        var (expected, expectedEci) = bytes is not null ? (bytes, (int?)null) : Ascii.IsValid(text) ? (Encoding.ASCII.GetBytes(text), null) : (Encoding.UTF8.GetBytes(text), 26);
+        FuzzAssert.Equal(expectedEci, eci, "The ECI assignment number");
+        FuzzAssert.True(message.SequenceEqual(expected.Select(value => (int)value)), $"The symbol decodes to {Convert.ToHexString([.. message.Select(value => (byte)value)])} instead of {Convert.ToHexString(expected)}");
+    }
+
+    // The structure of a PDF417 symbol: its size, start and stop patterns, rows, and the clusters of the codewords
+    private static void CheckPdf417(Barcode2D barcode, Pdf417Options? options)
+    {
+        const string StartPattern = "11111111010101000";
+        const string StopPattern = "111111101000101001";
+
+        FuzzAssert.Equal(1, barcode.Width % 17, "The width is 17 modules per column, plus the final bar");
+        var columns = ((barcode.Width - 1) / 17) - 4;
+        FuzzAssert.True(columns is >= 1 and <= 30, $"{columns} data columns");
+        if (options?.Columns is { } expectedColumns)
+        {
+            FuzzAssert.Equal(expectedColumns, columns, "The number of columns of the options");
+        }
+
+        var rowHeight = options?.RowHeight ?? 3;
+        FuzzAssert.Equal(0, barcode.Height % rowHeight, "The height is a multiple of the row height");
+        var rows = barcode.Height / rowHeight;
+        FuzzAssert.True(rows is >= 3 and <= 90, $"{rows} rows");
+        FuzzAssert.True(rows * columns <= 928, $"{rows} rows of {columns} columns hold more than 928 codewords");
+
+        Span<int> widths = stackalloc int[8];
+        for (var row = 0; row < barcode.Height; row++)
+        {
+            var symbolRow = row / rowHeight;
+            for (var column = 0; column < barcode.Width; column++)
+            {
+                if (barcode[row, column] != barcode[symbolRow * rowHeight, column])
+                    FuzzAssert.Fail($"The row {row} differs from the first row of its group at column {column}");
+            }
+
+            for (var i = 0; i < StartPattern.Length; i++)
+            {
+                FuzzAssert.Equal(StartPattern[i] == '1', barcode[row, i], $"The start pattern of the row {row}");
+            }
+
+            for (var i = 0; i < StopPattern.Length; i++)
+            {
+                FuzzAssert.Equal(StopPattern[i] == '1', barcode[row, barcode.Width - StopPattern.Length + i], $"The stop pattern of the row {row}");
+            }
+
+            // The row indicators and the data codewords: 4 bars and 4 spaces of 1 to 6 modules, in the cluster of the row
+            for (var codeword = 0; codeword < columns + 2; codeword++)
+            {
+                var start = 17 * (codeword + 1);
+                widths.Clear();
+                var count = 0;
+                for (var i = 0; i < 17; i++)
+                {
+                    if (i > 0 && barcode[row, start + i] != barcode[row, start + i - 1])
+                    {
+                        count++;
+                        if (count >= 8)
+                            break;
+                    }
+
+                    widths[count]++;
+                }
+
+                FuzzAssert.True(count == 7 && barcode[row, start] && !barcode[row, start + 16], $"The codeword {codeword} of the row {row} does not have 4 bars and 4 spaces");
+                foreach (var width in widths)
+                {
+                    FuzzAssert.True(width is >= 1 and <= 6, $"The codeword {codeword} of the row {row} has an element of {width} modules");
+                }
+
+                var cluster = (widths[0] - widths[2] + widths[4] - widths[6] + 9) % 9;
+                FuzzAssert.Equal(3 * (symbolRow % 3), cluster, $"The cluster of the codeword {codeword} of the row {row}");
+            }
+        }
+    }
+
+    // The structure of an Aztec symbol: its size, finder pattern and orientation marks, the reference grid of a full-range
+    // symbol, and a mode message whose Reed-Solomon check words are valid and that gives the number of layers of the size
+    // and a number of data codewords that leaves the requested error correction
+    private static void CheckAztec(Barcode2D barcode, AztecOptions? options)
+    {
+        var size = barcode.Width;
+        FuzzAssert.Equal(size, barcode.Height, "An Aztec symbol is square");
+        var center = size / 2;
+
+        // A full-range finder has 4 dark rings (distances 0, 2, 4, 6) and a light ring at distance 5; the ring at distance 5
+        // of a compact symbol has the orientation marks
+        var compact = !(IsRing(barcode, center, 6, dark: true) && IsRing(barcode, center, 5, dark: false));
+        var radius = compact ? 5 : 7;
+        for (var distance = 0; distance < radius; distance++)
+        {
+            FuzzAssert.True(IsRing(barcode, center, distance, dark: distance % 2 == 0), $"The ring {distance} of the finder pattern");
+        }
+
+        bool Module(int row, int column) => barcode[center + row, center + column];
+        FuzzAssert.True(Module(-radius, -radius) && Module(-radius, -radius + 1) && Module(-radius + 1, -radius), "The top left orientation mark");
+        FuzzAssert.True(Module(-radius, radius) && Module(-radius + 1, radius) && !Module(-radius, radius - 1), "The top right orientation mark");
+        FuzzAssert.True(Module(radius - 1, radius) && !Module(radius, radius) && !Module(radius, radius - 1), "The bottom right orientation mark");
+        FuzzAssert.True(!Module(radius, -radius) && !Module(radius - 1, -radius) && !Module(radius, -radius + 1), "The bottom left orientation mark");
+
+        int layers;
+        if (compact)
+        {
+            FuzzAssert.True(size is 15 or 19 or 23 or 27, $"A compact Aztec symbol of {size} modules");
+            layers = (size - 11) / 4;
+            FuzzAssert.True(options?.Compact is not false, "A compact symbol when full-range is requested");
+        }
+        else
+        {
+            layers = 0;
+            for (var i = 1; i <= 32; i++)
+            {
+                var baseSize = 14 + (4 * i);
+                if (baseSize + 1 + (2 * (((baseSize / 2) - 1) / 15)) == size)
+                {
+                    layers = i;
+                }
+            }
+
+            FuzzAssert.True(layers > 0, $"A full-range Aztec symbol of {size} modules");
+            FuzzAssert.True(options?.Compact is not true, "A full-range symbol when compact is requested");
+            FuzzAssert.True(layers >= 4 || options?.Compact is false || options?.Layers is not null, "A full-range symbol of 1 to 3 layers holds less than the compact symbol of the same size");
+
+            // The reference grid: every 16th row and column from the center alternates dark and light modules
+            for (var offset = 0; offset <= center; offset += 16)
+            {
+                foreach (var line in new[] { center - offset, center + offset })
+                {
+                    for (var i = 0; i < size; i++)
+                    {
+                        var expected = (i - center) % 2 == 0;
+                        FuzzAssert.True(barcode[line, i] == expected && barcode[i, line] == expected, $"The reference grid line {line - center}");
+                    }
+                }
+            }
+        }
+
+        if (options?.Layers is { } requestedLayers)
+        {
+            FuzzAssert.Equal(requestedLayers, layers, "The number of layers");
+        }
+
+        // The mode message, clockwise from the top left corner of the finder, skipping the reference grid
+        var modeMessage = new int[compact ? 7 : 10];
+        var bitIndex = 0;
+        void AddBit(bool bit)
+        {
+            modeMessage[bitIndex / 4] = (modeMessage[bitIndex / 4] << 1) | (bit ? 1 : 0);
+            bitIndex++;
+        }
+
+        var sideLength = compact ? 7 : 10;
+        var positions = new int[sideLength];
+        for (var i = 0; i < sideLength; i++)
+        {
+            positions[i] = compact ? i - 3 : i - 5 + (i / 5);
+        }
+
+        for (var i = 0; i < sideLength; i++)
+        {
+            AddBit(Module(-radius, positions[i]));
+        }
+
+        for (var i = 0; i < sideLength; i++)
+        {
+            AddBit(Module(positions[i], radius));
+        }
+
+        for (var i = sideLength - 1; i >= 0; i--)
+        {
+            AddBit(Module(radius, positions[i]));
+        }
+
+        for (var i = sideLength - 1; i >= 0; i--)
+        {
+            AddBit(Module(positions[i], -radius));
+        }
+
+        FuzzAssert.True(HasValidGf16Syndromes(modeMessage, compact ? 5 : 6), "The check words of the mode message");
+        var info = compact ? (modeMessage[0] << 4) | modeMessage[1] : (modeMessage[0] << 12) | (modeMessage[1] << 8) | (modeMessage[2] << 4) | modeMessage[3];
+        var messageLayers = (compact ? info >> 6 : info >> 11) + 1;
+        var dataWords = (compact ? info & 0x3F : info & 0x7FF) + 1;
+        FuzzAssert.Equal(layers, messageLayers, "The number of layers in the mode message");
+
+        var wordSize = layers switch
+        {
+            <= 2 => 6,
+            <= 8 => 8,
+            <= 22 => 10,
+            _ => 12,
+        };
+        var totalWords = ((compact ? 88 : 112) + (16 * layers)) * layers / wordSize;
+        var percent = options?.ErrorCorrectionPercent ?? 23;
+        FuzzAssert.True(dataWords + ((totalWords * percent) + 99) / 100 + 3 <= totalWords, $"{dataWords} data codewords of {totalWords} leave {percent}% and 3 codewords of error correction");
+    }
+
+    private static bool IsRing(Barcode2D barcode, int center, int distance, bool dark)
+    {
+        for (var i = -distance; i <= distance; i++)
+        {
+            if (barcode[center - distance, center + i] != dark || barcode[center + distance, center + i] != dark || barcode[center + i, center - distance] != dark || barcode[center + i, center + distance] != dark)
+                return false;
+        }
+
+        return true;
+    }
+
+    // The values of the codeword (highest degree first) at α^1 to α^checkWords in GF(16), x^4 + x + 1, are 0
+    private static bool HasValidGf16Syndromes(int[] codeword, int checkWords)
+    {
+        var exp = new int[30];
+        var value = 1;
+        for (var i = 0; i < exp.Length; i++)
+        {
+            exp[i] = value;
+            value <<= 1;
+            if (value >= 16)
+            {
+                value ^= 0x13;
+            }
+        }
+
+        var log = new int[16];
+        for (var i = 0; i < 15; i++)
+        {
+            log[exp[i]] = i;
+        }
+
+        for (var root = 1; root <= checkWords; root++)
+        {
+            var syndrome = 0;
+            foreach (var coefficient in codeword)
+            {
+                syndrome = (syndrome is 0 ? 0 : exp[(log[syndrome] + root) % 15]) ^ coefficient;
+            }
+
+            if (syndrome is not 0)
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool SameModules(Barcode2D a, Barcode2D b)
+    {
+        if (a.Width != b.Width || a.Height != b.Height)
+            return false;
+
+        for (var row = 0; row < a.Height; row++)
+        {
+            for (var column = 0; column < a.Width; column++)
+            {
+                if (a[row, column] != b[row, column])
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     private static void DrawTarget(ReadOnlySpan<byte> data)

@@ -344,7 +344,8 @@ public sealed class JpegXlDecoderDifferentialTests
         var directory = InteropSettings.GetArtifactsDirectory(nameof(CmykFilesAreConvertedWithTheProfileOfTheFile));
         var name = string.Create(CultureInfo.InvariantCulture, $"cmyk{bits}{(hasAlpha ? "a" : "")}");
         var inputPath = directory / (name + ".pam");
-        var profilePath = directory / "cmyk.icc";
+        // One profile per case: the cases run in parallel, and rewriting a shared file truncates it under another encoder
+        var profilePath = directory / (name + ".icc");
         var jxlPath = directory / (name + ".jxl");
         await File.WriteAllBytesAsync(inputPath, WriteCmykPam(Width, Height, hasAlpha, max, samples), XunitCancellationToken);
         await File.WriteAllBytesAsync(profilePath, IccProfile.Cgats001CompatibleCmyk.Data.ToArray(), XunitCancellationToken);

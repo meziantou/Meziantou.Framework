@@ -2,6 +2,7 @@ using System.IO.Compression;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.Geo;
 using Meziantou.Framework.Geo.Fuzz;
+using Meziantou.Framework.Geo.Internals;
 using Meziantou.Framework.Geo.Internals.Parquet;
 using static Meziantou.Framework.GeoPackageFuzz.GeoFeatureDescriber;
 
@@ -86,7 +87,8 @@ public static class GeoParquetFuzzTargets
     /// <summary>
     /// <c>codec, length (3 bytes, little-endian), data</c>: a compressed page and its decompressed length. The decompressors
     /// reject invalid data with a <see cref="FormatException"/>, and return exactly the declared length. GZIP, Brotli and
-    /// Zstandard give the bytes that .NET decompresses.
+    /// Zstandard give the bytes that .NET decompresses. The Zstandard decoder shared with Meziantou.Framework.Imaging (that
+    /// of the library before .NET 11, a copy of the fuzz project from .NET 11) gives them too.
     /// </summary>
     private static void ParquetCompressionTarget(ReadOnlySpan<byte> data)
     {
@@ -94,6 +96,11 @@ public static class GeoParquetFuzzTargets
         var codec = FuzzInput.Pick(codecs, FuzzInput.ReadByte(ref data));
         var length = (FuzzInput.ReadByte(ref data) | (FuzzInput.ReadByte(ref data) << 8) | (FuzzInput.ReadByte(ref data) << 16)) % (MaxDecompressedLength + 1);
         var input = data.ToArray();
+        if (codec == ParquetCompression.Zstd)
+        {
+            CheckZstdDecoder(input, length);
+        }
+
         byte[] output;
         try
         {
@@ -119,6 +126,28 @@ public static class GeoParquetFuzzTargets
         {
             // .NET decompresses the whole data; the page is its beginning
             FuzzAssert.True(reference.AsSpan().StartsWith(output), "The decompressed page is not what .NET decompresses");
+        }
+
+        static void CheckZstdDecoder(byte[] input, int length)
+        {
+            var output = new byte[length];
+            try
+            {
+                new ZstdDecoder().Decompress(input, output);
+            }
+            catch (InvalidDataException)
+            {
+                return;
+            }
+
+#if NET11_0_OR_GREATER
+            // .NET may reject data the decoder accepts, such as a frame whose window is larger than its limit
+            var reference = Decompress(input, stream => new ZstandardStream(stream, CompressionMode.Decompress));
+            if (reference is not null)
+            {
+                FuzzAssert.True(reference.AsSpan().SequenceEqual(output), "The Zstandard decoder does not give what .NET decompresses");
+            }
+#endif
         }
 
         // The reference decompression, or null when .NET rejects the data: the decoder stops at the declared length, so it
@@ -251,6 +280,10 @@ public static class GeoParquetFuzzTargets
         // A sequence of 3 literals and a match of 5 bytes at offset 3, then the last literals: "abcabcabxyz"
         yield return new FuzzSeed("lz4-hadoop", (byte[])[4, 11, 0, 0, 0, 0, 0, 11, 0, 0, 0, 10, 0x31, .. "abc"u8, 3, 0, 0x30, .. "xyz"u8]);
         yield return new FuzzSeed("lz4-raw", (byte[])[6, 11, 0, 0, 0x31, .. "abc"u8, 3, 0, 0x30, .. "xyz"u8]);
+        // The text compressed by the zstd tool (-19 --check): Huffman literals, sequences and the checksum of the frame
+        yield return new FuzzSeed("zstd-checksum", (byte[])[5, (byte)text.Length, 0, 0, .. Convert.FromHexString("28b52ffd243f650100a202090ed0e79248cadd944c88293007a25be797e853c98aae33eab954121b7541f169cec21e020100fe8a177724fc37")]);
+        // 300 zeros compressed by the zstd tool: an RLE literal and a long match
+        yield return new FuzzSeed("zstd-zeros", (byte[])[5, 44, 1, 0, .. Convert.FromHexString("28b52ffd602c004d00001000000100272ac002")]);
 #if NET11_0_OR_GREATER
         yield return new FuzzSeed("zstd", (byte[])[5, (byte)text.Length, 0, 0, .. Compress(text, stream => new ZstandardStream(stream, CompressionLevel.Optimal))]);
 #endif

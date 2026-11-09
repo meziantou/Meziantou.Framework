@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Geo.Internals.Parquet;
 
 /// <summary>
 /// Decompresses the pages of a Parquet file. Snappy and LZ4 are decoded here; GZIP and Brotli by .NET, and Zstandard by
-/// .NET 11 or later. LZO is not supported.
+/// .NET from .NET 11, else by the decoder of Meziantou.Framework.Imaging. LZO is not supported.
 /// </summary>
 internal static class ParquetCompression
 {
@@ -23,6 +23,15 @@ internal static class ParquetCompression
     private const int MaxLz4Ratio = 256;
 
     private const int StreamChunkLength = 64 * 1024;
+
+#if !NET11_0_OR_GREATER
+    // An RLE block of Zstandard (a 3-byte header and 1 byte) writes up to 128 KB
+    private const int MaxZstdRatio = 32 * 1024;
+
+    // The decoder holds about 700 KB of tables; it resets them at every frame, so a thread reuses it from page to page
+    [ThreadStatic]
+    private static ZstdDecoder? s_zstdDecoder;
+#endif
 
     /// <summary>
     /// Decompresses data whose decompressed length is known, as the length of a page is. The length comes from the file,
@@ -55,7 +64,18 @@ internal static class ParquetCompression
 #if NET11_0_OR_GREATER
                 return DecompressStream(new ZstandardStream(new MemoryStream(buffer, offset, length, writable: false), CompressionMode.Decompress), decompressedLength);
 #else
-                throw new NotSupportedException("The Parquet file is compressed with Zstandard, which needs .NET 11 or later.");
+                CheckRatio(length, decompressedLength, MaxZstdRatio);
+                var zstd = new byte[decompressedLength];
+                try
+                {
+                    (s_zstdDecoder ??= new ZstdDecoder()).Decompress(input, zstd);
+                }
+                catch (InvalidDataException ex)
+                {
+                    throw new FormatException("A compressed page of the Parquet file is not valid: " + ex.Message, ex);
+                }
+
+                return zstd;
 #endif
 
             case Lz4Raw:

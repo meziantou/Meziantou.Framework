@@ -108,15 +108,6 @@ public sealed class GeoParquetTests
     [InlineData("pages-v1")]
     public async Task ReadAsync_MatchesPyArrow(string name)
     {
-#if !NET11_0_OR_GREATER
-        if (name is "zstd-v2")
-        {
-            // Zstandard is part of .NET from .NET 11
-            await Assert.ThrowsAsync<NotSupportedException>(() => GeoParquet.ReadAsync(GetPath($"generated/{name}.parquet"), cancellationToken: TestContext.Current.CancellationToken));
-            return;
-        }
-#endif
-
         var features = await GeoParquet.ReadAsync(GetPath($"generated/{name}.parquet"), cancellationToken: TestContext.Current.CancellationToken);
         using var expected = JsonDocument.Parse(File.ReadAllBytes(GetPath("generated/expected.json")));
         var rows = expected.RootElement.EnumerateArray().ToList();

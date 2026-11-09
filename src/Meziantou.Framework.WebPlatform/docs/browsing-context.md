@@ -56,6 +56,12 @@ navigations of the nested browsing contexts are run by the tasks of the event lo
 document load completes. `RunUntilIdle()` (or `RunTask()`) runs the tasks that are already queued, and
 `DomEventLoop.HasPendingOperations` tells whether document loads are in progress.
 
+The `load` event waits until nothing delays it, including the resources that the `DOMContentLoaded` listeners fetch (e.g.
+an image or an `iframe` they insert). As in the browsers, `window.stop()` (`Window.Stop()` in .NET) called after the
+parsing is finished and before the `load` event (e.g. by the `load` event handler of an image that delays it) completes
+the document without the `load` and `pageshow` events: its `readyState` becomes `complete`. The specification only aborts
+the fetches of the document.
+
 A `BrowsingContext` that has not navigated yet has an initial `about:blank` document.
 
 ## Event loops

@@ -48,18 +48,18 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,350 | 29,911 | 2,117 | 95% |
-| [Tentative](#tentative-tests) | 1,380 | 3,169 | 698 | 56% |
+| [Stable](#stable-tests) | 26,352 | 29,911 | 2,117 | 95% |
+| [Tentative](#tentative-tests) | 1,383 | 3,169 | 698 | 56% |
 | [Reftests](#reftests) | 28,112 | 29,507 | 171 | 96% |
-| **All** | **55,842** | **62,587** | **2,986** | **94%** |
+| **All** | **55,847** | **62,587** | **2,986** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 257
+- **BUG**: 253
 - **TEST BUG**: 1,017
-- **NOT IMPLEMENTED**: 4,492
+- **NOT IMPLEMENTED**: 4,491
 - **REQUIRES**: 765
   - `hardware`: 573
   - `layout`: 23
@@ -105,7 +105,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`contacts`](contacts.md) | 0 | 1 | 1 | – |
 | [`content-dpr`](content-dpr.md) | 1 | 1 | 0 | 100% |
 | [`content-index`](content-index.md) | 0 | 2 | 2 | – |
-| [`content-security-policy`](content-security-policy.md) | 868 | 901 | 0 | 96% |
+| [`content-security-policy`](content-security-policy.md) | 869 | 901 | 0 | 96% |
 | [`contenteditable`](contenteditable.md) | 0 | 2 | 2 | – |
 | [`cookies`](cookies.md) | 71 | 76 | 0 | 93% |
 | [`cookiestore`](cookiestore.md) | 39 | 47 | 0 | 83% |
@@ -356,7 +356,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`shadow-dom`](shadow-dom.md) | 218 | 254 | 0 | 86% |
 | [`shape-detection`](shape-detection.md) | 0 | 25 | 0 | 0% |
 | [`soft-navigation-heuristics`](soft-navigation-heuristics.md) | 1 | 1 | 0 | 100% |
-| [`speculation-rules`](speculation-rules.md) | 131 | 185 | 1 | 71% |
+| [`speculation-rules`](speculation-rules.md) | 132 | 185 | 1 | 72% |
 | [`speech-api`](speech-api.md) | 0 | 16 | 16 | – |
 | [`storage`](storage.md) | 11 | 14 | 0 | 79% |
 | [`storage-access-api`](storage-access-api.md) | 0 | 37 | 37 | – |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 320 | 331 | 0 | 97% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,350** | **29,911** | **2,117** | **95%** |
+| **Total (343 sections)** | **26,352** | **29,911** | **2,117** | **95%** |
 
 ## Tentative tests
 
@@ -508,7 +508,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/capability-delegation`](html/capability-delegation.md#tentative-tests) | 0 | 7 | 7 | – |
 | [`html/cross-origin-embedder-policy`](html/cross-origin-embedder-policy.md#tentative-tests) | 0 | 3 | 0 | 0% |
 | [`html/cross-origin-opener-policy`](html/cross-origin-opener-policy.md#tentative-tests) | 1 | 2 | 0 | 50% |
-| [`html/document-isolation-policy`](html/document-isolation-policy.md#tentative-tests) | 20 | 46 | 0 | 43% |
+| [`html/document-isolation-policy`](html/document-isolation-policy.md#tentative-tests) | 23 | 46 | 0 | 50% |
 | [`html/dom`](html/dom.md#tentative-tests) | 27 | 33 | 0 | 82% |
 | [`html/editing`](html/editing.md#tentative-tests) | 1 | 1 | 0 | 100% |
 | [`html/interaction`](html/interaction.md#tentative-tests) | 1 | 147 | 138 | 11% |
@@ -591,7 +591,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 1 | 8 | 0 | 13% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 0 | 2 | 2 | – |
-| **Total (166 sections)** | **1,380** | **3,169** | **698** | **56%** |
+| **Total (166 sections)** | **1,383** | **3,169** | **698** | **56%** |
 
 ## Reftests
 

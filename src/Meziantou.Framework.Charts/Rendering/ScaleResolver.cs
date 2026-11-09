@@ -116,7 +116,8 @@ internal static class ScaleResolver
 
             foreach (var value in channel.Numbers)
             {
-                if (double.IsNaN(value) || (positiveOnly && value <= 0))
+                // An infinite value has no position: it would make every position of the scale NaN
+                if (!double.IsFinite(value) || (positiveOnly && value <= 0))
                     continue;
 
                 min = Math.Min(min, value);

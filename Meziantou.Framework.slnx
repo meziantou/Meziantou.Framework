@@ -753,6 +753,7 @@
     <Project Path="fuzz/Meziantou.Framework.Markdown.Fuzz/Meziantou.Framework.Markdown.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.MediaTags.Fuzz/Meziantou.Framework.MediaTags.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Pdf.FuzzTests/Meziantou.Framework.Pdf.FuzzTests.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.PublicApiGenerator.Fuzz/Meziantou.Framework.PublicApiGenerator.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.RobotsTxt.Fuzz/Meziantou.Framework.RobotsTxt.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Scheduling.Fuzz/Meziantou.Framework.Scheduling.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz.csproj" />

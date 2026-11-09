@@ -37,7 +37,10 @@ public partial class Document
             // (WorkerGlobalScope.ApplyResponsePolicies)
             ReferrerPolicy = policySource is not null && url.Scheme is "data" or "blob" or "about" ? policySource.ReferrerPolicy : "",
             EmbedderPolicy = policySource?.EmbedderPolicy ?? EmbedderPolicy.Default,
-            DocumentIsolationPolicy = policySource?.DocumentIsolationPolicy ?? EmbedderPolicyValue.UnsafeNone,
+            // A dedicated worker has the document isolation policy of its creator. The policy does not apply to the shared
+            // and service workers, which are in their own agent cluster and use their embedder policy
+            // (https://github.com/WICG/document-isolation-policy/issues/13)
+            DocumentIsolationPolicy = global.Agent.Kind == WorkerKind.Dedicated ? policySource?.DocumentIsolationPolicy ?? EmbedderPolicyValue.UnsafeNone : EmbedderPolicyValue.UnsafeNone,
             IsCredentialless = creator?.IsCredentialless ?? false,
         };
 

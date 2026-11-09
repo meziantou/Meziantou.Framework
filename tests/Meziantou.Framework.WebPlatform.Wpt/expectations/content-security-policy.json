@@ -96,13 +96,7 @@
     "total": 1
   },
   "content-security-policy/connect-src/connect-src-json-import-in-worker-and-worklet-blocked.https.html": {
-    "harness": "TIMEOUT",
-    "total": 3,
-    "failures": {
-      "AudioWorklet: a JSON module import is reported on the creator.": "NOTRUN",
-      "DedicatedWorker: a JSON module import is reported on the creator.": "TIMEOUT",
-      "SharedWorker: a JSON module import is reported on the creator.": "NOTRUN"
-    }
+    "total": 3
   },
   "content-security-policy/connect-src/connect-src-syncxmlhttprequest-allowed.sub.html": {
     "total": 1

@@ -71,8 +71,7 @@ The features are kept whole: a feature that crosses the edge of the box is not c
 
 The reader reads the files that GDAL, GeoPandas (pyarrow), DuckDB and Spark write:
 
-- **Compression**: none, Snappy, GZIP, Brotli, LZ4 and Zstandard. Zstandard needs .NET 11 or later: on .NET 10, such a
-  file throws a `NotSupportedException`. LZO is not supported.
+- **Compression**: none, Snappy, GZIP, Brotli, LZ4 and Zstandard, on every target framework. LZO is not supported.
 - **Pages and encodings**: data pages of versions 1 and 2, dictionaries, and the PLAIN, RLE, DELTA_BINARY_PACKED,
   DELTA_LENGTH_BYTE_ARRAY, DELTA_BYTE_ARRAY and BYTE_STREAM_SPLIT encodings.
 - **Types**: the integers, signed or not, the floating-point numbers, the booleans, the strings, the byte arrays, the

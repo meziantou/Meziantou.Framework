@@ -5,7 +5,7 @@ description: Sankey diagrams and chord diagrams of the flows between nodes, with
 
 ## Sankey diagram
 
-A [SankeyMark\<T\>](cref:Meziantou.Framework.Charts.SankeyMark{T}) draws a row per link: the nodes are bars in columns, as tall as their values, and the links are bands as wide as their values. [Alignment](cref:Meziantou.Framework.Charts.SankeyMark{T}.Alignment) sets the column of each node. The links must not form a cycle.
+A [SankeyMark\<T\>](cref:Meziantou.Framework.Charts.SankeyMark{T}) draws a row per link: the nodes are bars in columns, as tall as their values, and the links are bands as wide as their values. [Alignment](cref:Meziantou.Framework.Charts.SankeyMark{T}.Alignment) sets the column of each node. The links must not form a cycle. Missing, infinite and negative values count as zero, and the layout keeps the ratios of huge values whose sum is larger than `double.MaxValue`.
 
 <!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/Samples/Flow.cs;region=Charts_FlowRecord;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -35,7 +35,8 @@ plot.Add(new SankeyMark<Flow>(flows, source: flow => flow.Source, target: flow =
 A [ChordMark\<T\>](cref:Meziantou.Framework.Charts.ChordMark{T}) draws a row per flow, like a Sankey diagram, but
 around a circle: each node is an arc as long as the total of the flows that leave it, and each pair of nodes is joined
 by a ribbon whose two ends are as wide as the flows in each direction. A ribbon takes the color of the node of its
-larger flow. Unlike a Sankey diagram, the flows may form cycles, and a node may flow to itself.
+larger flow. Unlike a Sankey diagram, the flows may form cycles, and a node may flow to itself. The rows that have the
+same source and target add up, and the values count as in a Sankey diagram.
 
 <!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_Chord;format=md-fenced-code-block;dedent=true -->
 ```csharp

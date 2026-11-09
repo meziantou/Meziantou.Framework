@@ -1,13 +1,16 @@
 namespace Meziantou.Framework.Charts;
 
 /// <summary>A link of a Sankey layout.</summary>
-internal sealed class SankeyLink(SankeyNode source, SankeyNode target, double value, int index)
+internal sealed class SankeyLink(SankeyNode source, SankeyNode target, double value, double weight, int index)
 {
     public SankeyNode Source { get; } = source;
 
     public SankeyNode Target { get; } = target;
 
     public double Value { get; } = value;
+
+    /// <summary>The value scaled by the power of two that brings the largest value of the layout near 1, so the sums of the layout cannot overflow.</summary>
+    public double Weight { get; } = weight;
 
     /// <summary>The index of the link, which is also the index of its row.</summary>
     public int Index { get; } = index;

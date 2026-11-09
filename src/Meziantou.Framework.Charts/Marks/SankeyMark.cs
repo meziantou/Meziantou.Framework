@@ -6,7 +6,10 @@ namespace Meziantou.Framework.Charts;
 /// the theme, and a link takes the color of its source, unless the <see cref="Mark{T}.Fill"/> channel colors the links.
 /// </summary>
 /// <typeparam name="T">The type of the rows: the links.</typeparam>
-/// <remarks>The links must not form a cycle: drawing the plot throws an <see cref="InvalidOperationException"/>.</remarks>
+/// <remarks>
+/// The links must not form a cycle: drawing the plot throws an <see cref="InvalidOperationException"/>. Missing, infinite
+/// and negative values count as zero.
+/// </remarks>
 public sealed class SankeyMark<T> : Mark<T>
 {
     private const string SourceColumn = "source";

@@ -41,7 +41,9 @@ internal static class CirclePacking
             Place(a.Circle, b.Circle, circles[i]);
             c = new ChainNode(circles[i]);
 
-            // Find the closest intersecting circle on the front chain, if any
+            // Find the closest intersecting circle on the front chain, if any. The new circle is tangent to a and b, so it
+            // intersects them only by rounding errors, as small circles far from the origin next to huge ones. When the
+            // chain is down to a and b, j and k reach them, and restarting on them would not shrink the chain: forever.
             var j = b.Next!;
             var k = a.Previous!;
             var sj = b.Circle.Radius;
@@ -51,7 +53,7 @@ internal static class CirclePacking
             {
                 if (sj <= sk)
                 {
-                    if (Intersects(j.Circle, c.Circle))
+                    if (j != a && j != b && Intersects(j.Circle, c.Circle))
                     {
                         b = j;
                         a.Next = b;
@@ -65,7 +67,7 @@ internal static class CirclePacking
                 }
                 else
                 {
-                    if (Intersects(k.Circle, c.Circle))
+                    if (k != a && k != b && Intersects(k.Circle, c.Circle))
                     {
                         a = k;
                         a.Next = b;

@@ -42,7 +42,7 @@ as in Mermaid.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/IshikawaDiagramParserTests.cs;region=Mermaid_IshikawaDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/IshikawaDiagramParserTests.cs;region=Mermaid_IshikawaDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (IshikawaDiagram)MermaidDocument.Parse("""
     ishikawa-beta

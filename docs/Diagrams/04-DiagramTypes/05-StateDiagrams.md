@@ -64,7 +64,7 @@ applies when no transition crosses its border, as for the subgraphs of a flowcha
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/StateDiagramParserTests.cs;region=Mermaid_StateDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/StateDiagramParserTests.cs;region=Mermaid_StateDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (StateDiagram)MermaidDocument.Parse("""
     stateDiagram-v2

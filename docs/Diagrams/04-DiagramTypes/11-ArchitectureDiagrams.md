@@ -47,7 +47,7 @@ column, in order. Mermaid refines the grid with a force-directed layout, so the 
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/ArchitectureDiagramParserTests.cs;region=Mermaid_ArchitectureDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/ArchitectureDiagramParserTests.cs;region=Mermaid_ArchitectureDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (ArchitectureDiagram)MermaidDocument.Parse("""
     architecture-beta

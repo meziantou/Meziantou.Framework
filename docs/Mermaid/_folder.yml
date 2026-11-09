@@ -1,0 +1,4 @@
+title: Mermaid
+description: Read the Mermaid text format into diagrams, draw them as SVG or images, and write them back as Mermaid.
+packageIds:
+- Meziantou.Framework.Mermaid

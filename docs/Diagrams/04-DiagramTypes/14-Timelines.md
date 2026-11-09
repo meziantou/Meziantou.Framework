@@ -40,7 +40,7 @@ their events below them, or from top to bottom, with their events on the right o
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/TimelineDiagramParserTests.cs;region=Mermaid_TimelineDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/TimelineDiagramParserTests.cs;region=Mermaid_TimelineDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (TimelineDiagram)MermaidDocument.Parse("""
     timeline

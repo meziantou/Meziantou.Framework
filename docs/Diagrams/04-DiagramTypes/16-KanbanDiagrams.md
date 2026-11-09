@@ -46,7 +46,7 @@ A card can show:
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/KanbanDiagramParserTests.cs;region=Mermaid_KanbanDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/KanbanDiagramParserTests.cs;region=Mermaid_KanbanDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (KanbanDiagram)MermaidDocument.Parse("""
     ---

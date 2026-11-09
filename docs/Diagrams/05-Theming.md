@@ -38,7 +38,7 @@ only changes the CSS `font-family` of the SVG.
 The configuration of a Mermaid text chooses the theme with `theme`, and changes its colors with `themeVariables`. The
 `base` theme derives every color from `primaryColor`, `background` and `darkMode`, as Mermaid does:
 
-<!-- ref:../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/MermaidDocumentTests.cs;region=Mermaid_ThemeVariables;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Mermaid.Tests/MermaidDocumentTests.cs;region=Mermaid_ThemeVariables;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var document = MermaidDocument.Parse("""
     %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#bbf7d0', 'lineColor': '#166534', 'fontSize': '14px'}}}%%

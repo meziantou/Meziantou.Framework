@@ -49,7 +49,7 @@ boundary of an enterprise, a system or a container, a solid frame for a deployme
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/C4DiagramParserTests.cs;region=Mermaid_C4Diagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/C4DiagramParserTests.cs;region=Mermaid_C4Diagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (C4Diagram)MermaidDocument.Parse("""
     C4Container

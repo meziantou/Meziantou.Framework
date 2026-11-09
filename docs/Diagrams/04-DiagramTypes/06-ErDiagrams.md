@@ -81,7 +81,7 @@ relationship.IsIdentifying = false;
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/ErDiagramParserTests.cs;region=Mermaid_ErDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/ErDiagramParserTests.cs;region=Mermaid_ErDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (ErDiagram)MermaidDocument.Parse("""
     erDiagram

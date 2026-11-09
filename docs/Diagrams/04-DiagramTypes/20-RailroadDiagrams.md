@@ -43,7 +43,7 @@ such as the `2*4` of ABNF, are written below the loop.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/RailroadDiagramParserTests.cs;region=Mermaid_RailroadDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/RailroadDiagramParserTests.cs;region=Mermaid_RailroadDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (RailroadDiagram)MermaidDocument.Parse("""
     railroad-ebnf-beta

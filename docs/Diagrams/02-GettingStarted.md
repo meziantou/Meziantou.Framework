@@ -40,11 +40,11 @@ layout as drawing primitives (see [vector graphics](../VectorGraphics/01-Introdu
 
 ## From Mermaid text
 
-To draw a diagram written in Mermaid, add the `Meziantou.Framework.Diagrams.Mermaid` package and parse the text:
+To draw a diagram written in Mermaid, add the `Meziantou.Framework.Mermaid` package and parse the text:
 
-<InstallNuGetPackage Id="Meziantou.Framework.Diagrams.Mermaid" />
+<InstallNuGetPackage Id="Meziantou.Framework.Mermaid" />
 
-<!-- ref:../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/MermaidDocumentTests.cs;region=Mermaid_Parse;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Mermaid.Tests/MermaidDocumentTests.cs;region=Mermaid_Parse;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var text = """
     ---
@@ -64,4 +64,4 @@ var svg = flowchart.ToSvg();
 ```
 <!-- endref -->
 
-See [Mermaid](03-Mermaid.md) for the supported syntax.
+See [Mermaid](../Mermaid/01-Introduction.md) for the supported syntax.

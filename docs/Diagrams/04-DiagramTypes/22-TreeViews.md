@@ -67,7 +67,7 @@ properties [FontSize](cref:Meziantou.Framework.Diagrams.TreeViewDiagram.FontSize
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/TreeViewDiagramParserTests.cs;region=Mermaid_TreeViewDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/TreeViewDiagramParserTests.cs;region=Mermaid_TreeViewDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (TreeViewDiagram)MermaidDocument.Parse("""
     ---

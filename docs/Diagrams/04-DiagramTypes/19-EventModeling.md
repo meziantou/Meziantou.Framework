@@ -58,7 +58,7 @@ them either.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/EventModelingDiagramParserTests.cs;region=Mermaid_EventModeling;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/EventModelingDiagramParserTests.cs;region=Mermaid_EventModeling;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (EventModelingDiagram)MermaidDocument.Parse("""
     eventmodeling

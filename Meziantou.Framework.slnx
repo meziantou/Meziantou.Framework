@@ -106,7 +106,6 @@
     <Project Path="src/Meziantou.Framework.DependencyScanning/Meziantou.Framework.DependencyScanning.csproj" />
     <Project Path="src/Meziantou.Framework.Diagnostics.ContextSnapshot/Meziantou.Framework.Diagnostics.ContextSnapshot.csproj" />
     <Project Path="src/Meziantou.Framework.Diagnostics.MemoryDump/Meziantou.Framework.Diagnostics.MemoryDump.csproj" />
-    <Project Path="src/Meziantou.Framework.Diagrams.Mermaid/Meziantou.Framework.Diagrams.Mermaid.csproj" />
     <Project Path="src/Meziantou.Framework.Diagrams/Meziantou.Framework.Diagrams.csproj" />
     <Project Path="src/Meziantou.Framework.DiffEngine/Meziantou.Framework.DiffEngine.csproj" />
     <Project Path="src/Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
@@ -422,6 +421,7 @@
     <Project Path="src/Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj" />
     <Project Path="src/Meziantou.Framework.Markdown/Meziantou.Framework.Markdown.csproj" />
     <Project Path="src/Meziantou.Framework.MediaTags/Meziantou.Framework.MediaTags.csproj" />
+    <Project Path="src/Meziantou.Framework.Mermaid/Meziantou.Framework.Mermaid.csproj" />
     <Project Path="src/Meziantou.Framework.NodeJs/Meziantou.Framework.NodeJs.csproj" />
     <Project Path="src/Meziantou.Framework.NtpClient/Meziantou.Framework.NtpClient.csproj" />
     <Project Path="src/Meziantou.Framework.NtpServer/Meziantou.Framework.NtpServer.csproj" />
@@ -536,7 +536,6 @@
     <Project Path="tests/Meziantou.Framework.DependencyScanning.Tool.Tests/Meziantou.Framework.DependencyScanning.Tool.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Diagnostics.ContextSnapshot.Tests/Meziantou.Framework.Diagnostics.ContextSnapshot.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Diagnostics.MemoryDump.Tests/Meziantou.Framework.Diagnostics.MemoryDump.Tests.csproj" />
-    <Project Path="tests/Meziantou.Framework.Diagrams.Mermaid.Tests/Meziantou.Framework.Diagrams.Mermaid.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Diagrams.Tests/Meziantou.Framework.Diagrams.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DiffEngine.Tests/Meziantou.Framework.DiffEngine.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DnsClient.Tests/Meziantou.Framework.DnsClient.Tests.csproj" />
@@ -622,6 +621,7 @@
     <Project Path="tests/Meziantou.Framework.LLMContext.Tests/Meziantou.Framework.LLMContext.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Markdown.Tests/Meziantou.Framework.Markdown.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.MediaTags.Tests/Meziantou.Framework.MediaTags.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Mermaid.Tests/Meziantou.Framework.Mermaid.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.NodeJs.Tests/Meziantou.Framework.NodeJs.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.NtpClient.Tests/Meziantou.Framework.NtpClient.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.NtpServer.Tests/Meziantou.Framework.NtpServer.Tests.csproj" />

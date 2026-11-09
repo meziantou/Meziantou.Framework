@@ -57,7 +57,7 @@ links two actors or two use cases with a hollow triangle at the general one.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/UseCaseDiagramParserTests.cs;region=Mermaid_UseCaseDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/UseCaseDiagramParserTests.cs;region=Mermaid_UseCaseDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (UseCaseDiagram)MermaidDocument.Parse("""
     usecase-beta

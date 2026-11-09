@@ -50,7 +50,7 @@ line styles and the arrowheads of the flowcharts.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/BlockDiagramParserTests.cs;region=Mermaid_BlockDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/BlockDiagramParserTests.cs;region=Mermaid_BlockDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (BlockDiagram)MermaidDocument.Parse("""
     block

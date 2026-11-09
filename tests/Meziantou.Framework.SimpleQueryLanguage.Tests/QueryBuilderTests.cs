@@ -1599,6 +1599,135 @@ public sealed class QueryBuilderTests
         Assert.False(query.Evaluate(new Sample { StringValue = "a b" }));
     }
 
+    [Theory]
+    [InlineData("a b", "")]
+    [InlineData("a OR b", "")]
+    [InlineData("a OR", "MissingOperand[2,4)")]
+    [InlineData("(a OR)", "MissingOperand[3,5)")]
+    [InlineData("a AND", "MissingOperand[2,5)")]
+    [InlineData("AND a", "MissingOperand[0,3)")]
+    [InlineData("OR a", "MissingOperand[0,2)")]
+    [InlineData("a AND OR b", "MissingOperand[2,5)")]
+    [InlineData("NOT", "MissingOperand[0,3)")]
+    [InlineData("a -", "MissingOperand[2,3)")]
+    [InlineData("(NOT)", "MissingOperand[1,4)")]
+    [InlineData("not:value", "")]
+    [InlineData("state:or", "")]
+    [InlineData("(a", "MissingCloseParenthesis[0,1)")]
+    [InlineData("a (", "MissingCloseParenthesis[2,3)")]
+    [InlineData("((a)", "MissingCloseParenthesis[0,1)")]
+    [InlineData("a OR (", "MissingCloseParenthesis[5,6)")]
+    [InlineData("(a OR", "MissingCloseParenthesis[0,1), MissingOperand[3,5)")]
+    [InlineData(")", "UnmatchedCloseParenthesis[0,1)")]
+    [InlineData("a ) b", "UnmatchedCloseParenthesis[2,3)")]
+    [InlineData("(a))", "UnmatchedCloseParenthesis[3,4)")]
+    [InlineData("()", "EmptyParentheses[0,2)")]
+    [InlineData("a (())", "EmptyParentheses[3,5)")]
+    [InlineData("key:", "MissingValue[3,4)")]
+    [InlineData("key: value", "MissingValue[3,4)")]
+    [InlineData("key>=", "MissingValue[3,5)")]
+    [InlineData("key:\"\"", "")]
+    [InlineData("\"abc", "UnterminatedQuotedText[0,4)")]
+    [InlineData("a \"b\"\"", "UnterminatedQuotedText[2,6)")]
+    [InlineData("\"a \"\" b\"", "")]
+    [InlineData("key:\"value", "UnterminatedQuotedText[4,10)")]
+    public void Parse_Diagnostics(string query, string expectedDiagnostics)
+    {
+        var syntax = QuerySyntax.Parse(query, out var diagnostics);
+
+        Assert.Equal(expectedDiagnostics, string.Join(", ", diagnostics.Select(diagnostic => $"{diagnostic.Code}{diagnostic.Span}")));
+        Assert.Equal(QuerySyntax.Parse(query).ToString(), syntax.ToString());
+        Assert.All(diagnostics, diagnostic => Assert.False(string.IsNullOrEmpty(diagnostic.Message)));
+    }
+
+    [Fact]
+    public void Diagnostics_Documentation()
+    {
+        #region QueryBuilder_Diagnostics
+        var queryBuilder = new QueryBuilder<Issue>();
+        queryBuilder.AddHandler("author", (issue, value) => issue.Author.Equals(value, StringComparison.OrdinalIgnoreCase));
+        queryBuilder.SetTextFilterHandler((issue, text) => issue.Title.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        // The query is read leniently, and the diagnostics tell the user what was not understood
+        var query = queryBuilder.Build("(author:alice OR label:bug");
+        Assert.Equal(["[0,1): '(' is not closed", "[17,22): The key 'label' is unknown"], query.Diagnostics.Select(diagnostic => diagnostic.ToString()));
+
+        // In strict mode, Build throws instead
+        queryBuilder.Strict = true;
+        var exception = Assert.Throws<InvalidQueryException>(() => queryBuilder.Build("crash AND"));
+        var diagnostic = Assert.Single(exception.Diagnostics);
+        Assert.Equal(QueryDiagnosticCode.MissingOperand, diagnostic.Code);
+        Assert.Equal(6, diagnostic.Span.Start);
+        Assert.Equal(3, diagnostic.Span.Length);
+        #endregion
+    }
+
+    [Fact]
+    public void Diagnostics_UnknownKeys()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+        queryBuilder.AddHandler("is", "open", obj => true);
+        queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
+
+        var query = queryBuilder.Build("Int32:1 other:1 (-missing>2 OR is:unknown) text");
+
+        Assert.Equal(["UnknownKey[8,13)", "UnknownKey[18,25)"], query.Diagnostics.Select(diagnostic => $"{diagnostic.Code}{diagnostic.Span}"));
+        Assert.Equal("The key 'other' is unknown", query.Diagnostics[0].Message);
+    }
+
+    [Fact]
+    public void Diagnostics_UnhandledPropertyHandler_NoUnknownKey()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetUnhandledPropertyHandler((obj, name, op, value) => true);
+
+        Assert.Empty(queryBuilder.Build("other:1").Diagnostics);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("int32:1 OR text")]
+    public void Diagnostics_ValidQuery_Empty(string text)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+        queryBuilder.Strict = true;
+
+        var query = queryBuilder.Build(text);
+
+        Assert.Empty(query.Diagnostics);
+    }
+
+    [Fact]
+    public void Diagnostics_Lenient_QueryIsStillEvaluated()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+        queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
+
+        var query = queryBuilder.Build("int32:1 OR");
+
+        Assert.Equal(QueryDiagnosticCode.MissingOperand, Assert.Single(query.Diagnostics).Code);
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, StringValue = "OR" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 1, StringValue = "dummy" }));
+    }
+
+    [Fact]
+    public void Diagnostics_Strict_Throws()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+        queryBuilder.Strict = true;
+
+        var exception = Assert.Throws<InvalidQueryException>(() => queryBuilder.Build("other:1 (int32:1"));
+
+        Assert.Equal("other:1 (int32:1", exception.Query);
+        Assert.Equal([QueryDiagnosticCode.UnknownKey, QueryDiagnosticCode.MissingCloseParenthesis], exception.Diagnostics.Select(diagnostic => diagnostic.Code));
+        Assert.Equal("The query is not valid: [0,5): The key 'other' is unknown (and 1 more)", exception.Message);
+    }
+
     [Fact]
     public void Parse_ManyUnmatchedClosingParentheses()
     {

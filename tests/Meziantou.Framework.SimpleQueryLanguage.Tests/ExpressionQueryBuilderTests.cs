@@ -864,6 +864,42 @@ public sealed class ExpressionQueryBuilderTests
         return queryBuilder;
     }
 
+    [Fact]
+    public void Diagnostics_UnknownKeysAndSyntax()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", item => item.Int32Value);
+        queryBuilder.AddHandler("custom", KeyValueOperator.LessThan, value => item => item.Int32Value < value.Length);
+        queryBuilder.SetFreeTextHandler(text => item => item.StringValue == text);
+
+        var query = queryBuilder.Build("INT32:1 custom<abc other:1 AND");
+
+        Assert.Equal(["UnknownKey[19,24)", "MissingOperand[27,30)"], query.Diagnostics.Select(diagnostic => $"{diagnostic.Code}{diagnostic.Span}"));
+        Assert.NotNull(query.Predicate);
+    }
+
+    [Fact]
+    public void Diagnostics_UnhandledPropertyHandler_NoUnknownKey()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.SetUnhandledPropertyHandler((name, op, value) => null);
+
+        Assert.Empty(queryBuilder.Build("other:1").Diagnostics);
+    }
+
+    [Fact]
+    public void Diagnostics_Strict_Throws()
+    {
+        var queryBuilder = new ExpressionQueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", item => item.Int32Value);
+        queryBuilder.Strict = true;
+
+        Assert.Empty(queryBuilder.Build("int32:1").Diagnostics);
+        Assert.Empty(queryBuilder.Build("").Diagnostics);
+        var exception = Assert.Throws<InvalidQueryException>(() => queryBuilder.Build("int32:1)"));
+        Assert.Equal(QueryDiagnosticCode.UnmatchedCloseParenthesis, Assert.Single(exception.Diagnostics).Code);
+    }
+
     private sealed record Person(string FullName, int Age);
 
     private sealed class Sample

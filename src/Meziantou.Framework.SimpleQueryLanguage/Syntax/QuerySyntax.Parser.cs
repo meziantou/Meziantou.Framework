@@ -8,6 +8,7 @@ public partial class QuerySyntax
     private sealed class Parser
     {
         private readonly QueryToken[] _tokens;
+        private readonly List<QueryDiagnostic> _diagnostics = [];
         private int _tokenIndex;
 
         public Parser(IEnumerable<QueryToken> tokens)
@@ -64,8 +65,13 @@ public partial class QuerySyntax
             _tokens[_tokenIndex] = _tokens[_tokenIndex].AsText();
         }
 
+        /// <summary>Gets the problems found by <see cref="Parse"/>, in the order they appear in the query.</summary>
+        public IReadOnlyList<QueryDiagnostic> Diagnostics { get; private set; } = [];
+
         public QuerySyntax Parse()
         {
+            // The tokens are read before the parser turns some of them into text
+            var tokenDiagnostics = GetTokenDiagnostics();
             MarkUnmatchedCloseParenthesesAsText();
 
         Again:
@@ -76,10 +82,57 @@ public partial class QuerySyntax
                 Debug.Fail($"Unexpected token {Current.Kind} at position {Current.Span.Start}");
                 MarkCurrentAsText();
                 _tokenIndex = 0;
+                _diagnostics.Clear();
                 goto Again;
             }
 
+            if (tokenDiagnostics.Count > 0 || _diagnostics.Count > 0)
+            {
+                // OrderBy is stable, so problems at the same position keep the order they were found in
+                Diagnostics = [.. tokenDiagnostics.Concat(_diagnostics).OrderBy(diagnostic => diagnostic.Span.Start)];
+            }
+
             return result;
+        }
+
+        /// <summary>Reports the unbalanced parentheses and the quoted texts without a closing quote.</summary>
+        private List<QueryDiagnostic> GetTokenDiagnostics()
+        {
+            var diagnostics = new List<QueryDiagnostic>();
+            var openParentheses = new Stack<int>();
+            for (var i = 0; i < _tokens.Length; i++)
+            {
+                var token = _tokens[i];
+                switch (token.Kind)
+                {
+                    case QuerySyntaxKind.OpenParenthesisToken:
+                        openParentheses.Push(i);
+                        break;
+
+                    case QuerySyntaxKind.CloseParenthesisToken:
+                        if (!openParentheses.TryPop(out var openIndex))
+                        {
+                            diagnostics.Add(QueryDiagnostic.UnmatchedCloseParenthesis(token.Span));
+                        }
+                        else if (openIndex == i - 1)
+                        {
+                            diagnostics.Add(QueryDiagnostic.EmptyParentheses(TextSpan.FromBounds(_tokens[openIndex].Span.Start, token.Span.End)));
+                        }
+
+                        break;
+
+                    case QuerySyntaxKind.QuotedTextToken when token.IsUnterminated:
+                        diagnostics.Add(QueryDiagnostic.UnterminatedQuotedText(token.Span));
+                        break;
+                }
+            }
+
+            foreach (var openIndex in openParentheses)
+            {
+                diagnostics.Add(QueryDiagnostic.MissingCloseParenthesis(_tokens[openIndex].Span));
+            }
+
+            return diagnostics;
         }
 
         /// <summary>
@@ -129,6 +182,7 @@ public partial class QuerySyntax
                 // otherwise the missing operand becomes an empty search term that matches everything.
                 if (Lookahead.Kind is QuerySyntaxKind.EndOfFile or QuerySyntaxKind.CloseParenthesisToken)
                 {
+                    _diagnostics.Add(QueryDiagnostic.MissingOperand(Current));
                     result = new AndQuerySyntax(result, @operator: null, new TextQuerySyntax(Next().AsText()));
                     break;
                 }
@@ -159,7 +213,10 @@ public partial class QuerySyntax
                 }
                 else
                 {
-                    result = new AndQuerySyntax(result, @operator: null, new TextQuerySyntax(op!.AsText()));
+                    // The loop condition excludes these tokens, so only an AND can be followed by them
+                    Debug.Assert(op is not null);
+                    _diagnostics.Add(QueryDiagnostic.MissingOperand(op));
+                    result = new AndQuerySyntax(result, @operator: null, new TextQuerySyntax(op.AsText()));
                 }
             }
 
@@ -185,13 +242,23 @@ public partial class QuerySyntax
         {
             if (!CanStartPrimaryExpression(Lookahead.Kind))
             {
+                var operatorToken = Current;
                 MarkCurrentAsText();
-                return ParseTextOrKeyValueExpression();
+                var result = ParseTextOrKeyValueExpression();
+
+                // Followed by an operator, the keyword is a key ("not:value") rather than a dangling operator
+                if (result is TextQuerySyntax)
+                {
+                    _diagnostics.Add(QueryDiagnostic.MissingOperand(operatorToken));
+                }
+
+                return result;
             }
 
             var token = Next();
             if (Current.Kind == QuerySyntaxKind.EndOfFile)
             {
+                _diagnostics.Add(QueryDiagnostic.MissingOperand(token));
                 token = token.AsText();
                 return new TextQuerySyntax(token);
             }
@@ -217,6 +284,12 @@ public partial class QuerySyntax
                 _tokens[_tokenIndex + 1] = op.AsText();
             }
 
+            // An AND or OR where a term starts has no left operand
+            if (Current.Kind is QuerySyntaxKind.AndKeyword or QuerySyntaxKind.OrKeyword)
+            {
+                _diagnostics.Add(QueryDiagnostic.MissingOperand(Current));
+            }
+
             // If the current token isn't text, we make it text.
             // This is to avoid an infinite loop in the parser
             // where we keep inserting new tokens when we can't
@@ -237,6 +310,11 @@ public partial class QuerySyntax
             var key = Match(QuerySyntaxKind.TextToken);
             var op = MatchOperator();
             var value = ReadKeyValueArgument(op);
+            if (value.Span.Length == 0)
+            {
+                _diagnostics.Add(QueryDiagnostic.MissingValue(key, op));
+            }
+
             return new KeyValueQuerySyntax(key, op, value);
         }
 

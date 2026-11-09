@@ -11,8 +11,8 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Fuzz;
 
 /// <summary>
 /// Parsing a query never fails (except with <see cref="QueryTooComplexException"/>), and the tokens of the syntax tree cover
-/// the non-whitespace characters of the query in order. The disjunctive normal form of the bound query is equivalent to
-/// the syntax tree. <see cref="QueryBuilder{T}"/> and <see cref="ExpressionQueryBuilder{T}"/> evaluate a query as the
+/// the non-whitespace characters of the query in order. The diagnostics point at the tokens they report, and reporting
+/// them does not change the tree. The disjunctive normal form of the bound query is equivalent to the syntax tree. <see cref="QueryBuilder{T}"/> and <see cref="ExpressionQueryBuilder{T}"/> evaluate a query as the
 /// AND/OR/NOT combination of its terms, each term evaluated as a query of its own; compiling the expression, interpreting
 /// it, and applying it to an <see cref="IQueryable{T}"/> agree. The string match modes and the enum comparisons of
 /// <see cref="ExpressionQueryBuilder{T}"/> agree with the same handlers written for <see cref="QueryBuilder{T}"/>.
@@ -41,6 +41,9 @@ public static partial class SimpleQueryLanguageFuzzTargets
         new(4, "\"quoted\" name:value", int.MinValue, Rank: 0, DateTime.MinValue, DateOnly.MinValue, 0, IsOpen: true, QueryItemStatus.Active, ["a", "b", "c"]) { Previous = QueryItemStatus.Pending },
         new(5, "JOHN", 1, Rank: 2, new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc), new DateOnly(2026, 3, 1), 2, IsOpen: false, (QueryItemStatus)(-1), ["bug"]) { Previous = (QueryItemStatus)42 },
     ];
+
+    private static readonly string[] QueryBuilderKeys = ["name", "age", "rank", "created", "day", "score", "open", "status", "is", "tag"];
+    private static readonly string[] ExpressionQueryBuilderKeys = ["name", "age", "rank", "created", "day", "score", "open", "status", "tag"];
 
     private static readonly string[] Tokens =
     [
@@ -77,6 +80,11 @@ public static partial class SimpleQueryLanguageFuzzTargets
 
         var terms = CheckSyntaxTree(syntax, text);
         FuzzAssert.Equal(syntax.ToString(), QuerySyntax.Parse(text).ToString(), "Parsing the same query twice gives different trees");
+
+        var syntaxWithDiagnostics = QuerySyntax.Parse(text, out var diagnostics);
+        FuzzAssert.Equal(syntax.ToString(), syntaxWithDiagnostics.ToString(), "Reporting diagnostics changes the syntax tree");
+        CheckDiagnostics(text, diagnostics, allowUnknownKeys: false);
+        CheckDiagnosticsMatchTree(syntax, text, diagnostics);
 
         foreach (var term in terms.Take(MaxTerms))
         {
@@ -140,6 +148,11 @@ public static partial class SimpleQueryLanguageFuzzTargets
         }
 
         FuzzAssert.Equal(text, query.Text, "Query.Text is not the query");
+        CheckBuilderDiagnostics(text, query.Diagnostics, QueryBuilderKeys, hasUnhandledPropertyHandler: (options & UnhandledPropertyOption) != 0);
+        builder.Strict = true;
+        CheckStrictBuild(text, query.Diagnostics, () => builder.Build(text).Diagnostics);
+        builder.Strict = false;
+
         var oracle = CreateOracle(text, term => builder.Build(GetTermText(term)).Evaluate);
         foreach (var item in Items)
         {
@@ -173,6 +186,11 @@ public static partial class SimpleQueryLanguageFuzzTargets
         }
 
         FuzzAssert.Equal(text, query.Text, "ExpressionQuery.Text is not the query");
+        CheckBuilderDiagnostics(text, query.Diagnostics, ExpressionQueryBuilderKeys, hasUnhandledPropertyHandler: (options & UnhandledPropertyOption) != 0);
+        builder.Strict = true;
+        CheckStrictBuild(text, query.Diagnostics, () => builder.Build(text).Diagnostics);
+        builder.Strict = false;
+
         FuzzAssert.Equal(string.IsNullOrWhiteSpace(text), query.Predicate is null, "The predicate is null for a query that is not empty, or the reverse");
         if (query.Predicate is null)
         {
@@ -199,6 +217,201 @@ public static partial class SimpleQueryLanguageFuzzTargets
             }
         }
     }
+
+    /// <summary>
+    /// Checks that the diagnostics are sorted, within the query, and point at the text they report: a ')' for an unmatched
+    /// parenthesis, a keyword for a missing operand, an operator after a key for a missing value, ...
+    /// </summary>
+    private static void CheckDiagnostics(string text, IReadOnlyList<QueryDiagnostic> diagnostics, bool allowUnknownKeys)
+    {
+        var previousStart = 0;
+        foreach (var diagnostic in diagnostics)
+        {
+            var span = diagnostic.Span;
+            FuzzAssert.True(span.Start >= 0 && span.Length > 0 && span.End <= text.Length, $"The span {span} of the diagnostic {diagnostic.Code} is outside the query of length {text.Length}");
+            FuzzAssert.True(span.Start >= previousStart, $"The diagnostic {diagnostic} is before the previous one, which starts at {previousStart}");
+            FuzzAssert.True(!string.IsNullOrEmpty(diagnostic.Message), $"The diagnostic {diagnostic.Code} has no message");
+            previousStart = span.Start;
+
+            var spanText = text.Substring(span.Start, span.Length);
+            switch (diagnostic.Code)
+            {
+                case QueryDiagnosticCode.UnmatchedCloseParenthesis:
+                    FuzzAssert.Equal(")", spanText, "An unmatched parenthesis is not a ')'");
+                    break;
+
+                case QueryDiagnosticCode.MissingCloseParenthesis:
+                    FuzzAssert.Equal("(", spanText, "An unclosed parenthesis is not a '('");
+                    break;
+
+                case QueryDiagnosticCode.EmptyParentheses:
+                    FuzzAssert.True(spanText.Length >= 2 && spanText[0] == '(' && spanText[^1] == ')' && spanText.AsSpan(1, spanText.Length - 2).IsWhiteSpace(), $"The empty parentheses {FuzzAssert.Format(spanText)} are not '(' and ')' around whitespace");
+                    break;
+
+                case QueryDiagnosticCode.MissingOperand:
+                    FuzzAssert.True(spanText is "-" || spanText.Equals("and", StringComparison.OrdinalIgnoreCase) || spanText.Equals("or", StringComparison.OrdinalIgnoreCase) || spanText.Equals("not", StringComparison.OrdinalIgnoreCase), $"The operator without operand {FuzzAssert.Format(spanText)} is not AND, OR, NOT or '-'");
+                    break;
+
+                case QueryDiagnosticCode.MissingValue:
+                    FuzzAssert.True(spanText is ":" or "=" or "<" or "<=" or ">" or ">=" or "<>", $"The operator without value {FuzzAssert.Format(spanText)} is not an operator");
+                    FuzzAssert.True(span.Start > 0 && !char.IsWhiteSpace(text[span.Start - 1]), "The operator without value does not follow a key");
+                    FuzzAssert.True(span.End == text.Length || char.IsWhiteSpace(text[span.End]) || text[span.End] is '(' or ')' or '=' or '<' or '>', "The operator without value is followed by a value");
+                    break;
+
+                case QueryDiagnosticCode.UnterminatedQuotedText:
+                    FuzzAssert.True(spanText[0] == '"', "The unterminated quoted text does not start with a quote");
+                    FuzzAssert.Equal(text.Length, span.End, "The unterminated quoted text does not end the query");
+                    break;
+
+                case QueryDiagnosticCode.UnknownKey:
+                    FuzzAssert.True(allowUnknownKeys, "QuerySyntax.Parse reports an unknown key");
+                    break;
+
+                default:
+                    FuzzAssert.Fail($"Unexpected diagnostic code {diagnostic.Code}");
+                    break;
+            }
+        }
+
+        if (!text.Contains('(', StringComparison.Ordinal) && !text.Contains(')', StringComparison.Ordinal))
+        {
+            FuzzAssert.False(diagnostics.Any(diagnostic => diagnostic.Code is QueryDiagnosticCode.UnmatchedCloseParenthesis or QueryDiagnosticCode.MissingCloseParenthesis or QueryDiagnosticCode.EmptyParentheses), "A query without parentheses has a parenthesis diagnostic");
+        }
+
+        if (!text.Contains('"', StringComparison.Ordinal))
+        {
+            FuzzAssert.False(diagnostics.Any(diagnostic => diagnostic.Code is QueryDiagnosticCode.UnterminatedQuotedText), "A query without quotes has an unterminated quoted text");
+        }
+    }
+
+    /// <summary>
+    /// Checks that what the lenient parser reads differently from what was typed is reported: without a parenthesis diagnostic,
+    /// no parenthesis is text and every group is closed; without a missing operand, no keyword is text; without a missing
+    /// value, every key has a value.
+    /// </summary>
+    private static void CheckDiagnosticsMatchTree(QuerySyntax root, string text, IReadOnlyList<QueryDiagnostic> diagnostics)
+    {
+        var hasParenthesisDiagnostic = diagnostics.Any(diagnostic => diagnostic.Code is QueryDiagnosticCode.UnmatchedCloseParenthesis or QueryDiagnosticCode.MissingCloseParenthesis or QueryDiagnosticCode.EmptyParentheses);
+        var hasMissingOperand = diagnostics.Any(diagnostic => diagnostic.Code is QueryDiagnosticCode.MissingOperand);
+        var hasMissingValue = diagnostics.Any(diagnostic => diagnostic.Code is QueryDiagnosticCode.MissingValue);
+
+        var stack = new Stack<QuerySyntax>();
+        stack.Push(root);
+        while (stack.TryPop(out var node))
+        {
+            switch (node)
+            {
+                case TextQuerySyntax { TextToken: { Kind: QuerySyntaxKind.TextToken } token }:
+                    var tokenText = token.Text;
+                    if (tokenText is "(" or ")")
+                    {
+                        FuzzAssert.True(hasParenthesisDiagnostic, $"The parenthesis at {token.Span} of {FuzzAssert.Format(text)} is text without a diagnostic");
+                    }
+
+                    if (tokenText is "-" || tokenText.Equals("and", StringComparison.OrdinalIgnoreCase) || tokenText.Equals("or", StringComparison.OrdinalIgnoreCase) || tokenText.Equals("not", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FuzzAssert.True(hasMissingOperand, $"The operator at {token.Span} of {FuzzAssert.Format(text)} is text without a diagnostic");
+                    }
+
+                    break;
+
+                case KeyValueQuerySyntax keyValue:
+                    if (keyValue.ValueToken.Span.Length == 0)
+                    {
+                        FuzzAssert.True(hasMissingValue, $"The key at {keyValue.KeyToken.Span} of {FuzzAssert.Format(text)} has no value and no diagnostic");
+                    }
+
+                    break;
+
+                case ParenthesizedQuerySyntax parenthesized:
+                    if (parenthesized.CloseParenthesisToken.Span.Length == 0)
+                    {
+                        FuzzAssert.True(hasParenthesisDiagnostic, $"The parenthesis at {parenthesized.OpenParenthesisToken.Span} of {FuzzAssert.Format(text)} is not closed and has no diagnostic");
+                    }
+
+                    stack.Push(parenthesized.Query);
+                    break;
+
+                default:
+                    foreach (var child in node.GetChildren())
+                    {
+                        if (child is QuerySyntax childNode)
+                        {
+                            stack.Push(childNode);
+                        }
+                    }
+
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Checks the diagnostics of a built query: the syntax diagnostics of <see cref="QuerySyntax.Parse(string, out IReadOnlyList{QueryDiagnostic})"/>,
+    /// and an unknown key for each key-value query whose key has no handler, unless an unhandled property handler takes them.
+    /// </summary>
+    private static void CheckBuilderDiagnostics(string text, IReadOnlyList<QueryDiagnostic> diagnostics, string[] knownKeys, bool hasUnhandledPropertyHandler)
+    {
+        CheckDiagnostics(text, diagnostics, allowUnknownKeys: true);
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            FuzzAssert.Equal(0, diagnostics.Count, "An empty query has diagnostics");
+            return;
+        }
+
+        var syntax = QuerySyntax.Parse(text, out var syntaxDiagnostics);
+        FuzzAssert.Equal(FormatDiagnostics(syntaxDiagnostics), FormatDiagnostics(diagnostics.Where(diagnostic => diagnostic.Code is not QueryDiagnosticCode.UnknownKey)), $"The builder and the parser report different syntax diagnostics for {FuzzAssert.Format(text)}");
+
+        var expectedUnknownKeys = new List<string>();
+        if (!hasUnhandledPropertyHandler)
+        {
+            var stack = new Stack<QuerySyntax>();
+            stack.Push(syntax);
+            while (stack.TryPop(out var node))
+            {
+                if (node is KeyValueQuerySyntax keyValue)
+                {
+                    if (!knownKeys.Contains(keyValue.KeyToken.Text, StringComparer.OrdinalIgnoreCase))
+                    {
+                        expectedUnknownKeys.Add(keyValue.KeyToken.Span.ToString());
+                    }
+
+                    continue;
+                }
+
+                var children = node.GetChildren();
+                for (var i = children.Length - 1; i >= 0; i--)
+                {
+                    if (children[i] is QuerySyntax childNode)
+                    {
+                        stack.Push(childNode);
+                    }
+                }
+            }
+        }
+
+        var unknownKeys = diagnostics.Where(diagnostic => diagnostic.Code is QueryDiagnosticCode.UnknownKey).Select(diagnostic => diagnostic.Span.ToString()).ToList();
+        FuzzAssert.Equal(string.Join(", ", expectedUnknownKeys), string.Join(", ", unknownKeys), $"The unknown keys of {FuzzAssert.Format(text)} are not the keys without a handler");
+    }
+
+    /// <summary>A strict build throws <see cref="InvalidQueryException"/> with the diagnostics of the lenient build, and only when there are some.</summary>
+    private static void CheckStrictBuild(string text, IReadOnlyList<QueryDiagnostic> lenientDiagnostics, Func<IReadOnlyList<QueryDiagnostic>> buildStrict)
+    {
+        try
+        {
+            var diagnostics = buildStrict();
+            FuzzAssert.Equal(0, lenientDiagnostics.Count, $"The strict build of {FuzzAssert.Format(text)} does not throw although the query has diagnostics");
+            FuzzAssert.Equal(0, diagnostics.Count, "A strict build returns a query with diagnostics");
+        }
+        catch (InvalidQueryException ex)
+        {
+            FuzzAssert.True(lenientDiagnostics.Count > 0, $"The strict build of {FuzzAssert.Format(text)} throws although the query has no diagnostics");
+            FuzzAssert.Equal(text, ex.Query, "InvalidQueryException.Query is not the query");
+            FuzzAssert.Equal(FormatDiagnostics(lenientDiagnostics), FormatDiagnostics(ex.Diagnostics), "The strict and lenient builds report different diagnostics");
+        }
+    }
+
+    private static string FormatDiagnostics(IEnumerable<QueryDiagnostic> diagnostics) => string.Join(", ", diagnostics.Select(diagnostic => $"{diagnostic.Code}{diagnostic}"));
 
     /// <summary>
     /// Builds date keywords with a time zone and a current instant read from the first bytes (a base offset, an optional

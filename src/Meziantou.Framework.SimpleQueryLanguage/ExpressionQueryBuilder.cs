@@ -28,6 +28,7 @@ namespace Meziantou.Framework.SimpleQueryLanguage;
 public sealed class ExpressionQueryBuilder<T>
 {
     private readonly Dictionary<ExpressionFilterKey, Func<string, Expression<Func<T, bool>>>> _handlers = [];
+    private readonly HashSet<string> _keys = [];
     private readonly TimeProvider _timeProvider;
     private readonly TimeZoneInfo _timeZone;
     private FreeTextExpressionHandler<T>? _freeTextHandler;
@@ -60,8 +61,18 @@ public sealed class ExpressionQueryBuilder<T>
 
     private void AddHandlerCore(string key, KeyValueOperator op, Func<string, Expression<Func<T, bool>>> handler)
     {
-        _handlers.Add(new ExpressionFilterKey(key.ToLowerInvariant(), op), handler);
+        var lowerKey = key.ToLowerInvariant();
+        _handlers.Add(new ExpressionFilterKey(lowerKey, op), handler);
+        _keys.Add(lowerKey);
     }
+
+    /// <summary>Gets or sets whether <see cref="Build"/> throws when the query has diagnostics.</summary>
+    /// <value>
+    /// <see langword="true"/> to throw an <see cref="InvalidQueryException"/> for a query with diagnostics, such as an unbalanced
+    /// parenthesis or an unknown key; <see langword="false"/> (the default) to read the query leniently and report the
+    /// diagnostics in <see cref="ExpressionQuery{T}.Diagnostics"/>.
+    /// </value>
+    public bool Strict { get; set; }
 
     /// <summary>Registers a handler for a string property using a "contains" comparison.</summary>
     /// <param name="key">The property key to handle.</param>
@@ -171,7 +182,9 @@ public sealed class ExpressionQueryBuilder<T>
     public void AddHandler(string key, KeyValueOperator op, Func<string, Expression<Func<T, bool>>> handler)
     {
         ArgumentNullException.ThrowIfNull(handler);
-        _handlers[new ExpressionFilterKey(key.ToLowerInvariant(), op)] = handler;
+        var lowerKey = key.ToLowerInvariant();
+        _handlers[new ExpressionFilterKey(lowerKey, op)] = handler;
+        _keys.Add(lowerKey);
     }
 
     /// <summary>Registers a custom expression handler for a property key with equality operator.</summary>
@@ -199,18 +212,24 @@ public sealed class ExpressionQueryBuilder<T>
     /// <summary>Builds a query from a query string.</summary>
     /// <param name="query">The query string to parse.</param>
     /// <returns>A compiled expression query that can be applied to an <see cref="IQueryable{T}"/>.</returns>
+    /// <exception cref="QueryTooComplexException">The query is too complex to be evaluated.</exception>
+    /// <exception cref="InvalidQueryException"><see cref="Strict"/> is <see langword="true"/> and the query has diagnostics.</exception>
     public ExpressionQuery<T> Build(string query)
     {
         ArgumentNullException.ThrowIfNull(query);
 
         if (string.IsNullOrWhiteSpace(query))
-            return new ExpressionQuery<T>(query, predicate: null);
+            return new ExpressionQuery<T>(query, predicate: null, diagnostics: []);
 
-        var syntax = QuerySyntax.Parse(query);
+        var syntax = QuerySyntax.Parse(query, out var diagnostics);
+        diagnostics = QuerySyntax.AddUnknownKeyDiagnostics(syntax, diagnostics, IsKnownKey);
+        if (Strict && diagnostics.Count > 0)
+            throw new InvalidQueryException(query, diagnostics);
+
         var boundQuery = BoundQuery.Create(syntax);
 
         if (boundQuery is [[var single]])
-            return new ExpressionQuery<T>(query, CreateExpression(single));
+            return new ExpressionQuery<T>(query, CreateExpression(single), diagnostics);
 
         // Combining the terms pairwise with AndAlso/OrElse would rebind the parameter of the whole expression built
         // so far at every step, which is quadratic. Instead, rebind each distinct term once onto a shared parameter.
@@ -239,8 +258,11 @@ public sealed class ExpressionQueryBuilder<T>
         }
 
         var filter = Expression.Lambda<Func<T, bool>>(Combine(disjunctions, Expression.OrElse), parameter);
-        return new ExpressionQuery<T>(query, filter);
+        return new ExpressionQuery<T>(query, filter, diagnostics);
     }
+
+    // A key without a handler is searched as text, unless the unhandled property handler takes it
+    private bool IsKnownKey(string key) => _unhandledPropertyHandler is not null || _keys.Contains(key.ToLowerInvariant());
 
     /// <summary>
     /// Combines the operands as a balanced tree, keeping their order. A left-leaning chain would be as deep as the

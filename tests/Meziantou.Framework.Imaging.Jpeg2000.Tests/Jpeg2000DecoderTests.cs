@@ -34,6 +34,9 @@ public sealed class Jpeg2000DecoderTests
         { nameof(Jpeg2000TestFiles.HighThroughputGray), 5, 3, PixelFormat.Gray8, ImageColorModel.Grayscale, 8, false },
         { nameof(Jpeg2000TestFiles.HighThroughputRgb), 5, 3, PixelFormat.Rgb24, ImageColorModel.Rgb, 8, false },
         { nameof(Jpeg2000TestFiles.HighThroughputLayers), 7, 6, PixelFormat.Gray8, ImageColorModel.Grayscale, 8, false },
+        { nameof(Jpeg2000TestFiles.Signed), 5, 3, PixelFormat.Gray8, ImageColorModel.Grayscale, 8, false },
+        { nameof(Jpeg2000TestFiles.SignedGray12), 5, 3, PixelFormat.Gray16, ImageColorModel.Grayscale, 12, false },
+        { nameof(Jpeg2000TestFiles.SignedRgb), 5, 3, PixelFormat.Rgb24, ImageColorModel.Rgb, 8, false },
     };
 
     public static TheoryData<string> Files =>
@@ -52,6 +55,9 @@ public sealed class Jpeg2000DecoderTests
         nameof(Jpeg2000TestFiles.HighThroughputGray),
         nameof(Jpeg2000TestFiles.HighThroughputRgb),
         nameof(Jpeg2000TestFiles.HighThroughputLayers),
+        nameof(Jpeg2000TestFiles.Signed),
+        nameof(Jpeg2000TestFiles.SignedGray12),
+        nameof(Jpeg2000TestFiles.SignedRgb),
     ];
 
     public static TheoryData<string> LosslessEightBitFiles =>
@@ -250,11 +256,71 @@ public sealed class Jpeg2000DecoderTests
     }
 
     [Fact]
-    public void SignedSamplesAreNotSupported()
+    public void SignedSamplesAreOffsetByHalfTheirRange()
     {
-        var data = Jpeg2000TestFiles.Signed;
-        Assert.Equal("signed samples", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data)).Feature);
-        Assert.Equal("signed samples", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data)).Feature);
+        // A signed sample v of B bits is the unsigned sample v + 2^(B-1), as OpenJPEG and FFmpeg show it
+        using (var gray = Image.Load(Jpeg2000TestFiles.Signed))
+        {
+            var expected = new byte[15];
+            for (var i = 0; i < 15; i++)
+            {
+                expected[i] = (byte)((((i * 37) + 11) % 256) - 128 + 128);
+            }
+
+            Assert.Equal(PixelFormat.Gray8, gray.PixelFormat);
+            Assert.Equal(expected, GetBytes(gray));
+        }
+
+        using (var twelve = Image.Load(Jpeg2000TestFiles.SignedGray12))
+        {
+            var words = new ushort[15];
+            for (var i = 0; i < 15; i++)
+            {
+                var unsigned = (((i * 331) + 5) % 4096) - 2048 + 2048;
+                words[i] = (ushort)(((unsigned * 65535) + 2047) / 4095);
+            }
+
+            Assert.Equal(PixelFormat.Gray16, twelve.PixelFormat);
+            Assert.Equal(words, GetWords(twelve));
+        }
+
+        // The reversible component transformation applies to the signed samples, before the offset
+        using var rgb = Image.Load(Jpeg2000TestFiles.SignedRgb);
+        var pixels = GetBytes(rgb);
+        for (var i = 0; i < 15; i++)
+        {
+            Assert.Equal([(byte)(((i * 53) + 7) % 256), (byte)(((i * 71) + 19) % 256), (byte)(((i * 29) + 3) % 256)], pixels.AsSpan(3 * i, 3).ToArray(), message: $"pixel {i}");
+        }
+    }
+
+    [Fact]
+    public void SignedPaletteValuesAreOffsetAndSignedIndexesAreNotSupported()
+    {
+        // Two entries of a signed 8-bit column and of an unsigned one: the signed values are offset like signed samples
+        int[][] entries = [[-128, 10], [-1, 20], [0, 30], [127, 40]];
+        var file = Jp2FileBuilder.File(
+            Jpeg2000TestFiles.Index,
+            Jp2FileBuilder.ImageHeader(5, 3, 1, 1),
+            Jp2FileBuilder.EnumeratedColor(Jp2FileBuilder.ColorSpaceGray),
+            Jp2FileBuilder.Palette([0x87], entries),
+            Jp2FileBuilder.ComponentMapping((0, 1, 0)));
+        using (var image = Image.Load(file))
+        {
+            var pixels = GetBytes(image);
+            for (var i = 0; i < 15; i++)
+            {
+                Assert.Equal((byte)(entries[((i * 3) + 1) % 4][0] + 128), pixels[i]);
+            }
+        }
+
+        // An index is not signed
+        var signedIndexes = Jp2FileBuilder.File(
+            Jpeg2000TestFiles.Signed,
+            Jp2FileBuilder.ImageHeader(5, 3, 1, 0x87),
+            Jp2FileBuilder.EnumeratedColor(Jp2FileBuilder.ColorSpaceGray),
+            Jp2FileBuilder.Palette([7], entries),
+            Jp2FileBuilder.ComponentMapping((0, 1, 0)));
+        Assert.Equal("signed palette indexes", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(signedIndexes)).Feature);
     }
 
     [Theory]
@@ -993,6 +1059,62 @@ public sealed class Jpeg2000DecoderTests
         Assert.Null(reader.ReadFrame());
     }
 
+    [Theory]
+    [InlineData(Jpeg2000ProgressionOrder.Lrcp, Jpeg2000Compression.Lossless)]
+    [InlineData(Jpeg2000ProgressionOrder.Rpcl, Jpeg2000Compression.Lossless)]
+    [InlineData(Jpeg2000ProgressionOrder.Cprl, Jpeg2000Compression.Lossy)]
+    public void AQualityLayerLimitDecodesTheFirstLayers(Jpeg2000ProgressionOrder order, Jpeg2000Compression compression)
+    {
+        var encoder = new Jpeg2000Encoder
+        {
+            Compression = compression,
+            ProgressionOrder = order,
+            TileWidth = 64,
+            TileHeight = 48,
+            QualityLayers = [Jpeg2000QualityLayer.FromBitsPerPixel(0.25), Jpeg2000QualityLayer.FromBitsPerPixel(1), compression == Jpeg2000Compression.Lossless ? Jpeg2000QualityLayer.Complete : Jpeg2000QualityLayer.FromBitsPerPixel(4)],
+        };
+        var data = EncodeImage(150, 100, encoder, seed: 2);
+        using var full = Image.Load(data);
+        var fullBytes = GetBytes(full);
+
+        // A limit of at least the number of layers decodes them all
+        foreach (var limit in new[] { 3, 4, 1000 })
+        {
+            using var all = Image.Load(data, LayerLimit(limit));
+            Assert.Equal(fullBytes, GetBytes(all));
+        }
+
+        // Each layer refines the image
+        var errors = new List<double>();
+        for (var limit = 1; limit <= 2; limit++)
+        {
+            using var limited = Image.Load(data, LayerLimit(limit));
+            var bytes = GetBytes(limited);
+            errors.Add(bytes.Zip(fullBytes, (first, second) => Math.Abs(first - second)).Average());
+        }
+
+        Assert.True(errors[0] > errors[1] && errors[1] > 0, $"The mean errors of the layers are {string.Join(", ", errors)}.");
+
+        // A sequential reader decodes the same layers
+        using var expected = Image.Load<Rgba32>(data, LayerLimit(1));
+        using var reader = Image.OpenReader<Rgba32>(new MemoryStream(data), new ImageReaderOptions { Configuration = LayerLimit(1).Configuration });
+        using var frame = reader.ReadFrame();
+        Assert.NotNull(frame);
+        Assert.Equal(GetBytes(expected), GetBytes(frame));
+    }
+
+    [Fact]
+    public void TheQualityLayerLimitIsPositive()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000DecodingOptions { QualityLayerLimit = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000DecodingOptions { QualityLayerLimit = -1 });
+        Assert.Throws<ArgumentNullException>(() => new ImageConfiguration { Jpeg2000Decoding = null! });
+        Assert.Same(Jpeg2000DecodingOptions.Default, ImageConfiguration.Default.Jpeg2000Decoding);
+        Assert.Null(Jpeg2000DecodingOptions.Default.QualityLayerLimit);
+    }
+
+    private static ImageDecodeOptions LayerLimit(int layers) => new() { Configuration = new ImageConfiguration { Jpeg2000Decoding = new Jpeg2000DecodingOptions { QualityLayerLimit = layers } } };
+
     /// <summary>
     /// The memory of a decode follows what it produces: a decode at a quarter of the size allocates a sixteenth of the
     /// planes, a region inside one tile decodes that tile only, and a region of an image of one tile rebuilds the samples
@@ -1134,6 +1256,9 @@ public sealed class Jpeg2000DecoderTests
         nameof(Jpeg2000TestFiles.HighThroughputGray) => Jpeg2000TestFiles.HighThroughputGray,
         nameof(Jpeg2000TestFiles.HighThroughputRgb) => Jpeg2000TestFiles.HighThroughputRgb,
         nameof(Jpeg2000TestFiles.HighThroughputLayers) => Jpeg2000TestFiles.HighThroughputLayers,
+        nameof(Jpeg2000TestFiles.Signed) => Jpeg2000TestFiles.Signed,
+        nameof(Jpeg2000TestFiles.SignedGray12) => Jpeg2000TestFiles.SignedGray12,
+        nameof(Jpeg2000TestFiles.SignedRgb) => Jpeg2000TestFiles.SignedRgb,
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown file."),
     };
 

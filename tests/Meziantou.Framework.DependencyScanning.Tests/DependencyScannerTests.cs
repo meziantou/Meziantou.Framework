@@ -625,6 +625,59 @@ public sealed class DependencyScannerTests
     }
 
     [Fact]
+    public async Task DocumentationExample_ResolveProperty()
+    {
+        var cancellationToken = XunitCancellationToken;
+        #region DependencyScanning_ResolveProperty
+        var root = Directory.CreateTempSubdirectory().FullName; // The folder to scan
+        var projectPath = Path.Combine(root, "Tests.csproj");
+        File.WriteAllText(projectPath, """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <XunitVersion>2.9.2</XunitVersion>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="xunit.core" Version="$(XunitVersion)" />
+                <PackageReference Include="xunit.assert" Version="$(XunitVersion)" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        var dependencies = await DependencyScanner.ScanDirectoryAsync(root, options: null, cancellationToken);
+        var xunitCore = dependencies.Single(dependency => dependency.Name == "xunit.core");
+
+        Assert.Equal("$(XunitVersion)", xunitCore.RawVersion); // As written
+        Assert.Equal("2.9.2", xunitCore.ResolvedVersion);       // null when the property is not found
+        Assert.Equal("2.9.2", xunitCore.Version);               // The resolved version when there is one
+        Assert.Equal("XunitVersion", xunitCore.Metadata["property"]);
+
+        // The resolved version location is the definition of the property, shared by every package that uses it.
+        // The raw version location is the Version attribute of the package.
+        var xunitAssert = dependencies.Single(dependency => dependency.Name == "xunit.assert");
+        Assert.Same(xunitCore.ResolvedVersionLocation, xunitAssert.ResolvedVersionLocation);
+        Assert.NotSame(xunitCore.RawVersionLocation, xunitAssert.RawVersionLocation);
+
+        // VersionLocation is the resolved version location: updating it updates the property
+        Assert.Same(xunitCore.ResolvedVersionLocation, xunitCore.VersionLocation);
+
+        await xunitCore.UpdateVersionAsync("2.9.3", cancellationToken);
+        Assert.Equal("""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <XunitVersion>2.9.3</XunitVersion>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="xunit.core" Version="$(XunitVersion)" />
+                <PackageReference Include="xunit.assert" Version="$(XunitVersion)" />
+              </ItemGroup>
+            </Project>
+            """, File.ReadAllText(projectPath));
+        #endregion
+
+        Directory.Delete(root, recursive: true);
+    }
+
+    [Fact]
     public async Task DocumentationExample_UpdateModifiedFile()
     {
         var cancellationToken = XunitCancellationToken;

@@ -149,11 +149,29 @@ internal static class Jpeg2000TestFiles
 
     /// <summary>
     /// A codestream of signed samples: 5x3, 8 bits, reversible. <c>opj_compress -i signed.raw -o signed.j2k -F 5,3,1,8,s
-    /// -n 2</c>.
+    /// -n 2</c>, where sample <c>i</c> of the raw file is <c>((i * 37 + 11) mod 256) - 128</c>.
     /// </summary>
     public static byte[] Signed => Convert.FromBase64String(
         "/0//UQApAAAAAAAFAAAAAwAAAAAAAAAAAAAABQAAAAMAAAAAAAAAAAABhwEB/1IADAAAAAEAAQQEAAH/XAAHQEBISFD/ZAAlAAFDcmVhdGVkIGJ5IE9wZW5KUEVHIHZlcnNpb24gMi41LjT/kAAKAA" +
-        "AAAAArAAH/k8+0IAyPhk4qF/y/x9oJH2gcPtAgC6ZfTwVwHwEv/9k=");
+        "AAAAAqAAH/k8+0HApleb99J1/H2gc/AEj8AIACHTUDIUl/AwP/2Q==");
+
+    /// <summary>
+    /// A codestream of signed samples: 5x3, 12 bits, reversible. <c>opj_compress -i signed12.raw -o signed12.j2k -F
+    /// 5,3,1,12,s -n 2</c>, where sample <c>i</c> of the raw file (big-endian) is <c>((i * 331 + 5) mod 4096) - 2048</c>.
+    /// </summary>
+    public static byte[] SignedGray12 => Convert.FromBase64String(
+        "/0//UQApAAAAAAAFAAAAAwAAAAAAAAAAAAAABQAAAAMAAAAAAAAAAAABiwEB/1IADAAAAAEAAQQEAAH/XAAHQGBoaHD/ZAAlAAFDcmVhdGVkIGJ5IE9wZW5KUEVHIHZlcnNpb24gMi41LjT/kAAKAA" +
+        "AAAAAuAAH/k8/kLAmfjyo3CpiaWAwfx/IHP8AkP5AgEIvrDYPlLwuL/9k=");
+
+    /// <summary>
+    /// A codestream of three components of signed samples: 5x3, 8 bits, reversible, with the reversible component
+    /// transformation. <c>opj_compress -i signedrgb.raw -o signedrgb.j2k -F 5,3,3,8,s -n 2</c>, where sample <c>i</c> of
+    /// the planes of the raw file is <c>((i * 53 + 7) mod 256) - 128</c>, <c>((i * 71 + 19) mod 256) - 128</c> and
+    /// <c>((i * 29 + 3) mod 256) - 128</c>.
+    /// </summary>
+    public static byte[] SignedRgb => Convert.FromBase64String(
+        "/0//UQAvAAAAAAAFAAAAAwAAAAAAAAAAAAAABQAAAAMAAAAAAAAAAAADhwEBhwEBhwEB/1IADAAAAAEBAQQEAAH/XAAHQEBISFD/ZAAlAAFDcmVhdGVkIGJ5IE9wZW5KUEVHIHZlcnNpb24gMi41LjT/kAAKAA" +
+        "AAAABgAAH/k8+0GAd2+dDiQN+AOA+lNmN0RQ/fgEAMLUoUskncv8faBx9oJD7QIA1b2gRzLLcD38faB35gcfgBAAbJOQt95Amnx9oHH2gcfgBABmWOCX8vBXv/2Q==");
 
     /// <summary>
     /// A codestream of 2-bit samples, to be used as the indices of a palette: 5x3, reversible. <c>opj_compress -i index.raw

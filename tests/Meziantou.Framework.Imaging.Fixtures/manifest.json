@@ -65008,46 +65008,6 @@
       "notes": "The fourth channel is a premultiplied opacity: an image of the library holds straight alpha."
     },
     {
-      "id": "invalid/jp2/signed-samples",
-      "kind": "unsupported",
-      "format": "jp2",
-      "input": {
-        "path": "invalid/jp2/signed-samples.j2k",
-        "sha256": "2a1eae17bb2fdeff6822432c0094918447d7afee297950e32e60df955f5968a5",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "generated",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Jp2Corpus.cs (BuildUnsupported)",
-        "tools": [
-          "OpenJPEG 2.5.4 (opj_compress, opj_decompress)",
-          "OpenJPH 0.32.0 (ojph_compress, ojph_expand)",
-          "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
-        ],
-        "commands": [
-          "opj_compress -i {source}.raw -o {output}.j2k -F 11,7,1,8,s@1x1 -n 2"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "Jpeg2000",
-        "feature": "signed samples"
-      },
-      "features": [
-        "jp2.bits=8",
-        "jp2.components=1",
-        "jp2.file=codestream",
-        "jp2.levels=1",
-        "jp2.progression=lrcp",
-        "jp2.quantization=none",
-        "jp2.transform=5-3"
-      ],
-      "notes": "The samples of the component are signed: an image of the library holds unsigned samples."
-    },
-    {
       "id": "invalid/jp2/siz-image-offset",
       "kind": "invalid",
       "format": "jp2",
@@ -75553,6 +75513,344 @@
         "mode": "exact"
       },
       "notes": "A codestream of four components has no channel definition: the fourth one is the opacity."
+    },
+    {
+      "id": "jp2/lossless-signed-gray12",
+      "kind": "valid",
+      "format": "jp2",
+      "input": {
+        "path": "jp2/lossless-signed-gray12.j2k",
+        "sha256": "f5643538cd089d0313bd4a737d0951d6112b745f20970737844b9ee8d510e917",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Jp2Corpus.cs (BuildLossless)",
+        "tools": [
+          "OpenJPEG 2.5.4 (opj_compress, opj_decompress)",
+          "OpenJPH 0.32.0 (ojph_compress, ojph_expand)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 7
+        },
+        "commands": [
+          "opj_compress -i {source}.raw -o {output}.j2k -F 9,7,1,12,s@1x1 -n 3"
+        ]
+      },
+      "features": [
+        "jp2.bits=12",
+        "jp2.components=1",
+        "jp2.file=codestream",
+        "jp2.levels=2",
+        "jp2.progression=lrcp",
+        "jp2.quantization=none",
+        "jp2.signed",
+        "jp2.transform=5-3"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to the encoder: Samples (683x + 1000y + 5) mod 4096 of twelve bits, less 2048 in the file, scaled to sixteen bits: (v * 65535 + 2047) / 4095.",
+        "crossChecks": [
+          {
+            "decoder": "OpenJPEG 2.5.4 opj_decompress",
+            "command": "opj_decompress -i {input} -o {output}.pgx",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec jpeg2000 decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -f j2k_pipe -i {input} -fps_mode passthrough -f rawvideo -pix_fmt gray16le -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 7,
+        "pixelFormat": "Gray16",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 12,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jp2/lossless-signed-gray12.frame-0.rgba16le.raw",
+                "sha256": "da4bd3189aa0ad31b1b0695061a3b9d23278eeab488c7ce93583bc01b0924f19",
+                "layout": "rgba16le",
+                "width": 9,
+                "height": 7,
+                "rowBytes": 72,
+                "byteLength": 504,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jp2/lossless-signed-gray12.frame-0.gray16le.raw",
+                "sha256": "9fbf8af3b2ecb22e63b55b068735f40d7d9bede5aacf53f6c72e2b8ff119741c",
+                "layout": "gray16le",
+                "width": 9,
+                "height": 7,
+                "rowBytes": 18,
+                "byteLength": 126,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "jp2/lossless-signed-gray8",
+      "kind": "valid",
+      "format": "jp2",
+      "input": {
+        "path": "jp2/lossless-signed-gray8.j2k",
+        "sha256": "2a1eae17bb2fdeff6822432c0094918447d7afee297950e32e60df955f5968a5",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Jp2Corpus.cs (BuildLossless)",
+        "tools": [
+          "OpenJPEG 2.5.4 (opj_compress, opj_decompress)",
+          "OpenJPH 0.32.0 (ojph_compress, ojph_expand)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 11,
+          "height": 7
+        },
+        "commands": [
+          "opj_compress -i {source}.raw -o {output}.j2k -F 11,7,1,8,s@1x1 -n 2"
+        ]
+      },
+      "features": [
+        "jp2.bits=8",
+        "jp2.components=1",
+        "jp2.file=codestream",
+        "jp2.levels=1",
+        "jp2.progression=lrcp",
+        "jp2.quantization=none",
+        "jp2.signed",
+        "jp2.transform=5-3"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to the encoder: PatternCheckerboardGray, less 128 in the file.",
+        "crossChecks": [
+          {
+            "decoder": "OpenJPEG 2.5.4 opj_decompress",
+            "command": "opj_decompress -i {input} -o {output}.pgx",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec jpeg2000 decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -f j2k_pipe -i {input} -fps_mode passthrough -f rawvideo -pix_fmt gray -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 11,
+        "height": 7,
+        "pixelFormat": "Gray8",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jp2/lossless-signed-gray8.frame-0.rgba8.raw",
+                "sha256": "f0cca035a362d1ae9687c25d53af5a574f63609fe66cb8f910905e8b92a66b7c",
+                "layout": "rgba8",
+                "width": 11,
+                "height": 7,
+                "rowBytes": 44,
+                "byteLength": 308,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jp2/lossless-signed-gray8.frame-0.gray8.raw",
+                "sha256": "41c37e96ba9b9cb0026740d680d2e4aab153969dbef0acc036530f011a263f3a",
+                "layout": "gray8",
+                "width": 11,
+                "height": 7,
+                "rowBytes": 11,
+                "byteLength": 77,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "jp2/lossless-signed-rgb8",
+      "kind": "valid",
+      "format": "jp2",
+      "input": {
+        "path": "jp2/lossless-signed-rgb8.j2k",
+        "sha256": "fbefd139a8c2033e2d9aed35f5fe6637d9074ee1cb5eb3fbbe867cfd6e91d174",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Jp2Corpus.cs (BuildLossless)",
+        "tools": [
+          "OpenJPEG 2.5.4 (opj_compress, opj_decompress)",
+          "OpenJPH 0.32.0 (ojph_compress, ojph_expand)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 9
+        },
+        "commands": [
+          "opj_compress -i {source}.raw -o {output}.j2k -F 13,9,3,8,s@1x1:1x1:1x1 -n 3"
+        ]
+      },
+      "features": [
+        "jp2.bits=8",
+        "jp2.componentTransform",
+        "jp2.components=3",
+        "jp2.file=codestream",
+        "jp2.levels=2",
+        "jp2.progression=lrcp",
+        "jp2.quantization=none",
+        "jp2.signed",
+        "jp2.transform=5-3"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to the encoder: PatternRgbOdd, less 128 in the file.",
+        "crossChecks": [
+          {
+            "decoder": "OpenJPEG 2.5.4 opj_decompress",
+            "command": "opj_decompress -i {input} -o {output}.pgx",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec jpeg2000 decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -f j2k_pipe -i {input} -fps_mode passthrough -f rawvideo -pix_fmt rgb24 -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 9,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jp2/lossless-signed-rgb8.frame-0.rgba8.raw",
+                "sha256": "94d01bf0d0b43dd5cb3b8218938e6dda104b5cb97856d56b2291356bef5b8a90",
+                "layout": "rgba8",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 52,
+                "byteLength": 468,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jp2/lossless-signed-rgb8.frame-0.rgb8.raw",
+                "sha256": "e363f9d84c2ef31332d10ec75b4c4cb16205123731e9a424840971f03dd13e3b",
+                "layout": "rgb8",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 39,
+                "byteLength": 351,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The reversible component transformation applies to the signed samples."
     },
     {
       "id": "jp2/lossless-six-levels",

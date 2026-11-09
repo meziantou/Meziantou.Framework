@@ -91,12 +91,12 @@ Reported as [JavaPackage](cref:Meziantou.Framework.DependencyScanning.Dependency
 `exclusions`.
 
 - A dependency without a version, such as one managed by an imported BOM, is reported with a `null` version.
-- A version that is exactly a reference to a property defined once in the `properties` of the same pom, and not
-  redefined by a profile, such as `${junit.version}`, is reported with the value of the property, the property name in
-  [Dependency.Metadata](cref:Meziantou.Framework.DependencyScanning.Dependency.Metadata) under the `property` key, and the location of the property definition. That location is not
-  updatable when the pom references the property more than once, as updating it would change the other references too.
-  References from other poms, such as child modules, are not counted.
-- Other property references are reported as written, with a location that is not updatable.
+- A version that references properties defined once in the `properties` of the same pom with a literal value, and not
+  redefined by a profile, such as `${junit.version}`, is resolved. A version that is exactly one reference is reported
+  with the property name in [Dependency.Metadata](cref:Meziantou.Framework.DependencyScanning.Dependency.Metadata) under the `property` key, and the location of the property
+  definition, shared by every dependency that uses the property: one update changes all of them.
+- Other property references, such as `${project.version}` or a property of a parent pom, are not resolved, and are
+  reported as written with a location that is not updatable. See [Properties and variables](01-Overview.md#properties-and-variables).
 
 **Gradle** (`build.gradle`, `build.gradle.kts`):
 
@@ -105,11 +105,20 @@ Reported as [JavaPackage](cref:Meziantou.Framework.DependencyScanning.Dependency
 - Plugins declared with a version (`id 'x' version '1.0'`, `id("x") version "1.0"`, `kotlin("jvm") version "1.0"`) are
   reported under the name of their plugin marker artifact, `<id>:<id>.gradle.plugin`, with the plugin id in
   [Dependency.Metadata](cref:Meziantou.Framework.DependencyScanning.Dependency.Metadata) under the `pluginId` key.
-- Comments are ignored, and a version that is not a string literal, such as `"$version"`, is not reported.
+- A version that references variables, such as `"group:artifact:$junitVersion"`, `"group:artifact:${junitVersion}"` or
+  `version: junitVersion`, is resolved when the script defines the variable once with a string literal: `def name =
+  '1.0'`, `ext.name = '1.0'`, `ext { name = '1.0' }`, `ext['name'] = '1.0'` or `ext.set('name', '1.0')` in Groovy, and
+  `val name = "1.0"`, `val name by extra("1.0")` or `extra["name"] = "1.0"` in Kotlin. `${ext.name}` and
+  `${project.ext.name}` reference the same variable. The version location is the string of the definition, shared by
+  every dependency that uses it. Variables of `gradle.properties` or of another script, and expressions such as
+  `libs.versions.junit.get()`, are not resolved. See [Properties and variables](01-Overview.md#properties-and-variables).
+- Comments are ignored. Plugin versions are only read from string literals.
 
 **Version catalogs** (`libs.versions.toml`): the `[libraries]` and `[plugins]`, with a literal version, a `version.ref`
-or a `version = { ref = "..." }`. A catalog version shared by several libraries or plugins, or written with escape
-sequences, is not updatable.
+or a `version = { ref = "..." }`. A referenced version is resolved from the `[versions]` table: the library has no
+[RawVersion](cref:Meziantou.Framework.DependencyScanning.Dependency.RawVersion), the name of the version is in [Dependency.Metadata](cref:Meziantou.Framework.DependencyScanning.Dependency.Metadata) under the `property` key, and the location
+of the version is shared by all the libraries and plugins that use it. A catalog version written with escape sequences
+is not updatable.
 
 ## PHP
 

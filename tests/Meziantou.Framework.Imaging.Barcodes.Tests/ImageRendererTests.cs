@@ -52,6 +52,28 @@ public sealed class ImageRendererTests
     }
 
     [Fact]
+    public void ReadmeExample_Barcode2DToImage()
+    {
+        #region ImagingBarcodes_Barcode2DToImage
+        var dataMatrix = Barcode2D.CreateDataMatrix("https://www.meziantou.net");
+
+        // Default options: 4 pixels per module and a 2-module quiet zone
+        using var image = dataMatrix.ToImage();
+        Assert.Equal((104, 104), (image.Width, image.Height));
+
+        // Draw a PDF417 symbol at the bottom of a ticket
+        var pdf417 = Barcode2D.CreatePdf417("TICKET 0042", new Pdf417Options { Columns = 3 });
+        var options = new Barcode2DDrawingOptions { ModuleSize = 2 };
+        var size = Barcode2DImageRenderer.MeasureBarcode2D(pdf417, options);
+        using var ticket = new Image<Rgba32>(400, 200, Colors.White);
+        ticket.Draw(canvas => canvas.DrawBarcode2D(pdf417, new PointD((400 - size.Width) / 2, 200 - 16 - size.Height), options));
+        #endregion
+
+        Assert.Equal(((17 * (3 + 4)) + 1 + 4) * 2, size.Width);
+        Assert.Equal(Colors.Black, ticket.Frames[0][(int)((400 - size.Width) / 2) + 4, 200 - 16 - 4 - 1]);
+    }
+
+    [Fact]
     public void ReadmeExample_DrawQRCode()
     {
         #region ImagingBarcodes_DrawQRCode

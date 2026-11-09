@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-backgrounds, and 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 130 | 132 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 708 | 720 | 1 | 98% |
-| **All** | **838** | **852** | **1** | **98%** |
+| [Reftests](#reftests) | 709 | 720 | 1 | 99% |
+| **All** | **839** | **852** | **1** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 7
+- **BUG**: 6
 - **TEST BUG**: 6
 - **FLAKY**: 1
 
@@ -262,7 +262,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`background-clip/clip-border-area-border-shape-overflow.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-border-shape-overflow.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-border-area-border-shape.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-border-shape.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-border-area-box-decoration-break.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-box-decoration-break.html) | Pass | 1 / 1 |  |  |
-| [`background-clip/clip-border-area-complex-color.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-complex-color.html) | Fail | 0 / 1 | BUG | the `dotted` sides of a box with border radii are straight strokes along the sides: the dots of the reference at the corners are painted outside of the rounded border edge (neither clipped by it nor following the curve), while the `border-area` background of the test is clipped to the rounded area of the borders, which cuts these dots |
+| [`background-clip/clip-border-area-complex-color.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-complex-color.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-border-area-complex.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-complex.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-border-area-corner-shape.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-corner-shape.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-border-area-double.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-double.html) | Pass | 1 / 1 |  |  |

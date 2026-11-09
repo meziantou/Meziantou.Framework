@@ -4997,7 +4997,7 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   only round the colors of its translucent contents twice) and the backdrop filters
   (`BackdropFilters` + `BackdropClip`, the rounded border box; not on the root element); the filters
   (`FilterEffects.Get`: the CSS functions, and the `url()` references to SVG filter elements as `FilterGraph`s built by
-  `SvgFilterBuilder`, a missing reference ignores the whole chain, the SVG filters are dropped over cross-origin frames) in
+  `SvgFilterBuilder`, a missing reference ignores the whole chain, a chain with SVG filters is dropped as a whole over cross-origin frames) in
   the same layer (they also filter the filtered backdrop of the element), or in a nested one when a mask is painted between
   them. The masks are painted at the
   end of the stacking context (`Group.Mask`, after the filter layer is composited, `PaintMask`), each one in a
@@ -5119,13 +5119,15 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   other radii, `BorderRadii.Get`). The corners shaped by `corner-shape`
   ([CSS Borders 4](https://drafts.csswg.org/css-borders-4/#corner-shaping); `round`, `scoop`, `bevel`, `notch`, `square`,
   `squircle`, `superellipse()`) make the edges of the box contours (`RoundedRect.Contour`, `CornerContour`: the border contour
-  path of the specification, see [the display list](rendering.md#display-list)): the backgrounds and their clips, the
+  path of the specification, see [the display list](rendering.md#display-list); the quarters of ellipses of `round` and `scoop`
+  follow the cubic Bézier curves of the corners of `border-radius`, the other superellipses are exact): the backgrounds and their clips, the
   borders (the area between the outer and the inner contour), the shadows, the outlines, the overflow clips, the box values
   of `clip-path`, the backdrop of `backdrop-filter` and the hit testing follow them. The radii of the concave corners are
   also reduced so that the hulls of two opposite corners do not intersect (the opposite corner scale factor, `BorderRadii.Get`),
   and `border-shape` makes the radii ignored. The styles: solid, double, dotted/dashed as strokes along the side with the dash lengths of Blink adjusted to
   the length of the side (`BorderPainter.GetDashes`: dashes of 3 widths and gaps of 2, 2 and 1 from 3px, dots of one width,
-  whole dashes at both ends), groove/ridge/inset/outset darkened by 2/3. `border-image` replaces them: the nine slices of the
+  whole dashes at both ends; around a rounded border, as in Blink, the stroke of the line in the middle of the whole border, the
+  curves of the corners included, with a whole number of dashes along it, `BorderPainter.GetClosedDashes`), groove/ridge/inset/outset darkened by 2/3. `border-image` replaces them: the nine slices of the
   image (`border-image-slice`, `fill`) in the regions of the border image area (`border-image-outset`, `border-image-width`
   reduced when they overlap; the lines between the regions are snapped to the device pixels), the sides stretched, repeated
   (centered), rounded or spaced (`TiledShader` of the slice: the pixels of the slice of a raster image, the display list of

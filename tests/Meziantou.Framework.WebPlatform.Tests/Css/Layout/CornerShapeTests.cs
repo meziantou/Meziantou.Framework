@@ -82,12 +82,13 @@ public sealed class CornerShapeTests : IDisposable
     [Fact]
     public void Contour_Round_IsTheEllipseOfTheRadii()
     {
+        // The curve of the corners of border-radius: the cubic approximation of the ellipse, at most 0.027% outside of it
         var contour = new CornerContour(new PhysicalRect(0, 0, 100, 100), new BorderRadii((50, 50), default, default, default), new CornerShapes(1, 1, 1, 1));
         foreach (var point in contour.GetShape(new PhysicalRect(0, 0, 100, 100)).Polygon)
         {
             if (point.X < 50 && point.Y < 50)
             {
-                Assert.Equal(50, Math.Sqrt(((50 - point.X) * (50 - point.X)) + ((50 - point.Y) * (50 - point.Y))), 6);
+                Assert.InRange(Math.Sqrt(((50 - point.X) * (50 - point.X)) + ((50 - point.Y) * (50 - point.Y))), 50 - 1e-9, 50 * 1.00028);
             }
         }
     }

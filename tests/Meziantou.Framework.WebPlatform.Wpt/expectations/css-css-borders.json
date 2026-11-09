@@ -651,7 +651,7 @@
     "reftest": "PASS"
   },
   "css/css-borders/corner-shape/inner-corner-intersection001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-borders/corner-shape/inner-corner-intersection002.html": {
     "reftest": "PASS"

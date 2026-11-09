@@ -42,7 +42,7 @@ internal static class PublicApiMultiTargetModelMerger
             mergedTypes.Add(MergeType(typeGroup.Value, orderedSymbols));
         }
 
-        return new PublicApiModel(assemblyName, MergeAssemblyAttributes(modelsBySymbol, orderedSymbols), [.. mergedTypes]);
+        return new PublicApiModel(assemblyName, MergeAssemblyAttributes(modelsBySymbol, orderedSymbols), [.. mergedTypes], AssemblyReferences: []);
     }
 
     private static string MergeAssemblyAttributes(IReadOnlyDictionary<string, PublicApiModel> modelsBySymbol, string[] orderedSymbols)

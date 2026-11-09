@@ -131,6 +131,8 @@ public sealed class ProcessingTests
             static image => image.ReplaceColor(new Rgba64(0, 0, 0), new Rgba64(1, 1, 1)),
             static image => image.AutoCrop(),
             static image => image.DetectEdges(EdgeDetector.Sobel),
+            static image => image.DetectCannyEdges(),
+            static image => image.Frames[0].DetectCannyEdges(),
             static image => image.ConvertColorProfile(IccProfile.Srgb),
             static image => image.ApplyToneCurve(ToneCurve.Identity),
             static image => image.Frames[0].ApplyToneCurve(ToneCurve.Identity),

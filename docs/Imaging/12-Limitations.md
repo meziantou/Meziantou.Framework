@@ -43,15 +43,8 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 | JPEG 2000 | More than 16 bits and Part 2 extensions are not read; a region decode reads the whole compressed data of each tile it meets. Writing has no precincts and no tile-parts beyond one per tile; HTJ2K output has one quality layer and no HT refinement passes. |
 | OpenEXR | HTJ2K and LJ2K compressions and chroma (RY, BY) channels are not read; deep data are flattened, never read as samples; a multi-part file, deep data, other channels than R, G, B, A and Y, and an overscan, need a part, the flattening, a layer or a window mode ([OpenExrDecodingOptions](cref:Meziantou.Framework.Imaging.OpenExrDecodingOptions)). Writing uses lossless scan-line compression, but alpha premultiplication and sample conversion can change source pixels. |
 
-## Processing
-
-- Convolution matrices have odd dimensions and no divisor (divide the weights).
-- Edge detection has no non-maximum suppression or thresholds (no Canny detector).
-- Histograms, equalization and auto-levels work on integer pixel formats only.
-
 ## Drawing and text
 
-- No mesh gradients.
 - Text lines are broken greedily.
 - Hinting and subpixel (LCD) rendering are opt-in. Subpixel rendering applies to a layout filled at a point with a
   solid color on an 8- or 16-bit RGB image; other text is drawn with grayscale antialiasing.

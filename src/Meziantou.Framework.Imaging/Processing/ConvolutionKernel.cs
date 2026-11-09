@@ -4,13 +4,16 @@ namespace Meziantou.Framework.Imaging;
 /// <remarks>
 /// <para>
 /// The matrix is applied as written, without being flipped: the weight at column <c>x</c> and row <c>y</c> multiplies the
-/// pixel <c>x - Width / 2</c> columns to the right of and <c>y - Height / 2</c> rows below the pixel being computed, so the
-/// top-left weight applies to the top-left neighbor. Both dimensions are odd, which makes the middle weight the one of
-/// the pixel itself.
+/// pixel <c>x - anchorX</c> columns to the right of and <c>y - anchorY</c> rows below the pixel being computed, so the
+/// top-left weight applies to the top-left neighbor. The anchor is the weight of the pixel itself:
+/// <see cref="ConvolutionOptions.Anchor"/>, by default the column <c>Width / 2</c> and the row <c>Height / 2</c> (rounded
+/// down), the middle weight of odd dimensions. A matrix of even dimensions has no middle weight: its default anchor is the
+/// weight right of and below the middle, as the <c>targetX</c> and <c>targetY</c> of SVG's <c>feConvolveMatrix</c> and
+/// the default anchor of OpenCV's <c>filter2D</c>.
 /// </para>
 /// <para>
 /// The weights are used as given: they are not normalized. A matrix whose weights add up to 1 keeps the overall
-/// brightness; divide the weights by their sum to obtain one.
+/// brightness; divide the weights by their sum, or set <see cref="ConvolutionOptions.Divisor"/> to it, to obtain one.
 /// </para>
 /// <para>
 /// A separable matrix, whose every weight is the product of a weight of a column and a weight of a row
@@ -27,21 +30,15 @@ public sealed class ConvolutionKernel
     private readonly double[]? _columnWeights;
 
     /// <summary>Initializes a new instance of the <see cref="ConvolutionKernel"/> class.</summary>
-    /// <param name="width">The number of columns. Must be positive and odd.</param>
-    /// <param name="height">The number of rows. Must be positive and odd.</param>
+    /// <param name="width">The number of columns. Must be positive.</param>
+    /// <param name="height">The number of rows. Must be positive.</param>
     /// <param name="values">The weights, row by row from the top-left one (<paramref name="width"/> times <paramref name="height"/> finite values). They are copied.</param>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> or <paramref name="height"/> is not positive or is even.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> or <paramref name="height"/> is not positive.</exception>
     /// <exception cref="ArgumentException"><paramref name="values"/> does not hold exactly <paramref name="width"/> times <paramref name="height"/> values, or a value is not finite.</exception>
     public ConvolutionKernel(int width, int height, ReadOnlySpan<double> values)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
-        if (width % 2 == 0)
-            throw new ArgumentOutOfRangeException(nameof(width), width, "The kernel width must be odd.");
-
-        if (height % 2 == 0)
-            throw new ArgumentOutOfRangeException(nameof(height), height, "The kernel height must be odd.");
-
         if ((long)width * height != values.Length)
             throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"A {width}x{height} kernel has {(long)width * height} weights, but {values.Length} were provided."), nameof(values));
 
@@ -171,17 +168,17 @@ public sealed class ConvolutionKernel
     /// <paramref name="rowWeights"/>, then the filtered rows combined by <paramref name="columnWeights"/>), so the time grows
     /// with the sum of the two lengths instead of their product.
     /// </summary>
-    /// <param name="rowWeights">The weights of a row, from left to right: an odd number of finite values. They are copied.</param>
-    /// <param name="columnWeights">The weights of a column, from top to bottom: an odd number of finite values. They are copied.</param>
+    /// <param name="rowWeights">The weights of a row, from left to right: at least one finite value. They are copied.</param>
+    /// <param name="columnWeights">The weights of a column, from top to bottom: at least one finite value. They are copied.</param>
     /// <returns>The matrix.</returns>
-    /// <exception cref="ArgumentException">A span is empty or holds an even number of values, or a value is not finite.</exception>
+    /// <exception cref="ArgumentException">A span is empty, or a value is not finite.</exception>
     public static ConvolutionKernel CreateSeparable(ReadOnlySpan<double> rowWeights, ReadOnlySpan<double> columnWeights)
     {
-        if (rowWeights.Length % 2 == 0)
-            throw new ArgumentException("The row weights must be an odd number of values.", nameof(rowWeights));
+        if (rowWeights.IsEmpty)
+            throw new ArgumentException("The row weights must hold at least one value.", nameof(rowWeights));
 
-        if (columnWeights.Length % 2 == 0)
-            throw new ArgumentException("The column weights must be an odd number of values.", nameof(columnWeights));
+        if (columnWeights.IsEmpty)
+            throw new ArgumentException("The column weights must hold at least one value.", nameof(columnWeights));
 
         ValidateWeights(rowWeights, nameof(rowWeights));
         ValidateWeights(columnWeights, nameof(columnWeights));
@@ -291,6 +288,48 @@ public sealed class ConvolutionKernel
 
             return true;
         }
+    }
+
+    /// <summary>
+    /// Gets the matrix a plan applies for an anchor and a divisor: the weights divided by <paramref name="divisor"/>, with
+    /// columns and rows of zeros added so that the anchor is the middle weight of odd dimensions. Zero weights read no
+    /// pixel, so the padding costs nothing per pixel. Returns this matrix when nothing changes.
+    /// </summary>
+    internal ConvolutionKernel GetCentered(int anchorX, int anchorY, double divisor)
+    {
+        if (anchorX == Width / 2 && anchorY == Height / 2 && Width % 2 == 1 && Height % 2 == 1 && divisor == 1)
+            return this;
+
+        // The anchor of the padded matrix is its middle: as many weights on each side as the farthest side has
+        var radiusX = Math.Max(anchorX, Width - 1 - anchorX);
+        var radiusY = Math.Max(anchorY, Height - 1 - anchorY);
+        var offsetX = radiusX - anchorX;
+        var offsetY = radiusY - anchorY;
+        if (_values is null)
+        {
+            var row = new double[(2 * radiusX) + 1];
+            var column = new double[(2 * radiusY) + 1];
+            _rowWeights.AsSpan().CopyTo(row.AsSpan(offsetX));
+            for (var y = 0; y < Height; y++)
+            {
+                column[offsetY + y] = _columnWeights![y] / divisor;
+            }
+
+            return new ConvolutionKernel(row, column);
+        }
+
+        var width = (2 * radiusX) + 1;
+        var height = (2 * radiusY) + 1;
+        var values = new double[(long)width * height];
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                values[((offsetY + y) * width) + offsetX + x] = _values[(y * Width) + x] / divisor;
+            }
+        }
+
+        return new ConvolutionKernel(width, height, values);
     }
 
     /// <summary>Gets the weights, row by row (computed from the factors of a matrix created by <see cref="CreateSeparable"/>).</summary>

@@ -111,8 +111,8 @@ per pixel (64 by default): raise it for very long streaks, at the cost of time.
 ## Apply a convolution matrix
 
 [Convolve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Convolve) replaces every sample by the weighted sum of the same sample of the neighboring pixels: sharpening,
-blurring, embossing and edge detection are all matrices. A [ConvolutionKernel](cref:Meziantou.Framework.Imaging.ConvolutionKernel) has odd dimensions, its middle weight
-is the one of the pixel itself, and its weights are given row by row:
+blurring, embossing and edge detection are all matrices. A [ConvolutionKernel](cref:Meziantou.Framework.Imaging.ConvolutionKernel) has its weights given row by row, and
+its middle weight is the one of the pixel itself:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Convolve;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -138,7 +138,7 @@ public static void SharpenAndDetectEdges(string inputPath, string sharpenedPath,
 <!-- endref -->
 
 The matrix is applied as written: the top-left weight multiplies the top-left neighbor (it is not flipped), and the
-weights are used as given. Divide them by their sum to keep the overall brightness. [ConvolutionKernel](cref:Meziantou.Framework.Imaging.ConvolutionKernel) has the
+weights are used as given. Divide them by their sum, or set [Divisor](cref:Meziantou.Framework.Imaging.ConvolutionOptions.Divisor) to it, to keep the overall brightness. [ConvolutionKernel](cref:Meziantou.Framework.Imaging.ConvolutionKernel) has the
 published matrices [SobelX](cref:Meziantou.Framework.Imaging.ConvolutionKernel.SobelX), [SobelY](cref:Meziantou.Framework.Imaging.ConvolutionKernel.SobelY), [ScharrX](cref:Meziantou.Framework.Imaging.ConvolutionKernel.ScharrX), [ScharrY](cref:Meziantou.Framework.Imaging.ConvolutionKernel.ScharrY), [PrewittX](cref:Meziantou.Framework.Imaging.ConvolutionKernel.PrewittX), [PrewittY](cref:Meziantou.Framework.Imaging.ConvolutionKernel.PrewittY) (horizontal and vertical
 gradients), [Laplacian3x3](cref:Meziantou.Framework.Imaging.ConvolutionKernel.Laplacian3x3), [Laplacian5x5](cref:Meziantou.Framework.Imaging.ConvolutionKernel.Laplacian5x5), [LaplacianOfGaussian](cref:Meziantou.Framework.Imaging.ConvolutionKernel.LaplacianOfGaussian), [Emboss](cref:Meziantou.Framework.Imaging.ConvolutionKernel.Emboss) and [Sharpen3x3](cref:Meziantou.Framework.Imaging.ConvolutionKernel.Sharpen3x3).
 
@@ -150,6 +150,8 @@ gradients), [Laplacian3x3](cref:Meziantou.Framework.Imaging.ConvolutionKernel.La
 | [PreserveAlpha](cref:Meziantou.Framework.Imaging.ConvolutionOptions.PreserveAlpha) | `false` | By default, colors are filtered premultiplied by alpha and alpha is filtered too, so that hidden colors never bleed. A matrix whose weights add up to zero then turns every pixel transparent: set `true` to filter the colors as stored and keep alpha |
 | [WorkingSpace](cref:Meziantou.Framework.Imaging.ConvolutionOptions.WorkingSpace) | [Encoded](cref:Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded) | [Encoded](cref:Meziantou.Framework.Imaging.ConvolutionWorkingSpace.Encoded) filters the stored values; [LinearSrgb](cref:Meziantou.Framework.Imaging.ConvolutionWorkingSpace.LinearSrgb) filters linear light, as for [resizing](03-Resizing.md) |
 | [Bias](cref:Meziantou.Framework.Imaging.ConvolutionOptions.Bias) | 0 | Added to every color sum, as a fraction of the range: 0.5 shows the negative sums of a gradient or an emboss as darker than mid-gray instead of black |
+| [Divisor](cref:Meziantou.Framework.Imaging.ConvolutionOptions.Divisor) | 1 | Divides every sum before [Bias](cref:Meziantou.Framework.Imaging.ConvolutionOptions.Bias) is added: the sum of the weights keeps the brightness of a matrix of integer weights |
+| [Anchor](cref:Meziantou.Framework.Imaging.ConvolutionOptions.Anchor) | `null` | The column and the row of the weight of the pixel itself. By default, `(Width / 2, Height / 2)` rounded down: the middle of odd dimensions |
 
 The sums are computed in double precision at the storage precision, then rounded and clamped to the range of the
 samples: negative sums become 0. A separable matrix, whose weights are the products of a row and a column of weights
@@ -157,6 +159,25 @@ samples: negative sums become 0. A separable matrix, whose weights are the produ
 dimensions instead of their product.
 `ConvolutionKernel.CreateSeparable(rowWeights, columnWeights)` makes one, and [IsSeparable](cref:Meziantou.Framework.Imaging.ConvolutionKernel.IsSeparable) tells whether a matrix is
 one.
+
+A matrix can have even dimensions. It then has no middle weight: by default, the pixel itself takes the weight right
+of and below the middle, and [Anchor](cref:Meziantou.Framework.Imaging.ConvolutionOptions.Anchor) chooses another one. The result is the one of SVG's `feConvolveMatrix`
+(`targetX`, `targetY`, `divisor`, `bias`) and of OpenCV's `cv2.filter2D` (`anchor`, `delta`):
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ConvolveEvenKernel;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void AverageWithRightAndBottomNeighbors(string inputPath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // A 2x2 box: every pixel becomes the mean of itself (the anchor, the top-left weight) and of its right, bottom and
+    // bottom-right neighbors. The divisor divides the sums: the weights stay integers.
+    var box = new ConvolutionKernel(2, 2, [1, 1, 1, 1]);
+    image.Convolve(new ConvolutionOptions(box) { Anchor = new Point(0, 0), Divisor = 4 });
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
 
 ## Detect edges
 
@@ -184,6 +205,39 @@ public static void DetectEdges(string inputPath, string edgesPath)
 By default, [DetectEdges](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.DetectEdges) converts every frame to grayscale first, which gives white edges on black; with
 `grayscale: false`, every color has its own edges. Alpha is kept. The edge mode [Clamp](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp) (default) finds no edge along
 the border of the image, and [Zero](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Zero) reads black beyond it.
+
+### Find thin edges with the Canny detector
+
+The operators above give the strength of the edges, thick and with the noise. [DetectCannyEdges](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.DetectCannyEdges) gives the edges
+themselves, as lines one pixel wide, white on black:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_CannyEdges;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void DetectCannyEdges(string inputPath, string edgesPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // Lines one pixel wide, white on black. A larger Sigma blurs more before the gradient is computed, and ignores more
+    // noise; the thresholds are fractions of the range: a gradient above 0.3 is an edge, and one above 0.1 continues it
+    image.DetectCannyEdges(new CannyEdgeOptions { Sigma = 1.5, LowThreshold = 0.1, HighThreshold = 0.3 });
+    image.Save(edgesPath);
+}
+```
+<!-- endref -->
+
+The detector blurs the luminance to remove the noise, computes the Sobel gradient of every pixel, keeps the gradients
+that are a maximum across their edge (non-maximum suppression), then keeps those above the high threshold and those
+above the low threshold that are connected to them (hysteresis): a weak edge is kept where it continues a strong one.
+
+| [CannyEdgeOptions](cref:Meziantou.Framework.Imaging.CannyEdgeOptions) | Default | Meaning |
+| --- | --- | --- |
+| [Sigma](cref:Meziantou.Framework.Imaging.CannyEdgeOptions.Sigma) | 1 | The standard deviation of the Gaussian blur, in pixels: raise it to ignore more noise and finer details, 0 does not blur |
+| [LowThreshold](cref:Meziantou.Framework.Imaging.CannyEdgeOptions.LowThreshold), [HighThreshold](cref:Meziantou.Framework.Imaging.CannyEdgeOptions.HighThreshold) | 0.1 and 0.2 | The magnitudes of the gradient, as fractions of the range, of the weak and the strong edges. A step from black to white has a magnitude of 4 |
+
+The thresholds are those of scikit-image's `canny` on floating-point images; OpenCV's `cv2.Canny` takes them multiplied
+by 255. With [Sigma](cref:Meziantou.Framework.Imaging.CannyEdgeOptions.Sigma) set to 0, the edges of an 8-bit grayscale image are exactly the ones `cv2.Canny` finds
+with `L2gradient=True`. Alpha is kept, and the working memory (18 bytes per pixel) is charged to the allocation limit
+of the image before any pixel changes.
 
 ## Precision and cost
 

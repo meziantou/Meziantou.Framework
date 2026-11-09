@@ -41,6 +41,7 @@ internal sealed partial class DrawingSession : IDisposable
     private TransformSink? _strokeTransformSink;
     private GradientEvaluator? _gradient;
     private PathGradientEvaluator? _pathGradient;
+    private MeshGradientEvaluator? _meshGradient;
     private ImageEvaluator? _imagePaint;
     private FloatSolidEvaluator? _floatSolidPaint;
     private GlyphPathSink? _glyphSink;
@@ -934,6 +935,8 @@ internal sealed partial class DrawingSession : IDisposable
         _gradient?.Dispose();
         _pathGradient?.Dispose();
         _pathGradient = null;
+        _meshGradient?.Dispose();
+        _meshGradient = null;
         _imagePaint?.Dispose();
         _imagePaint = null;
         _floatSolidPaint?.Dispose();
@@ -1388,6 +1391,15 @@ internal sealed partial class DrawingSession : IDisposable
                 return false;
 
             evaluator = pathPaint;
+        }
+        else if (brush is MeshGradientBrush meshGradient)
+        {
+            var meshPaint = _meshGradient ??= new MeshGradientEvaluator(_image.Owner.Scope);
+            meshPaint.Prepare(meshGradient, ToCanvasProjection(meshGradient.Transform), _frames[0], Width, _paintPipeline);
+            if (meshPaint.IsTransparent && isInert)
+                return false;
+
+            evaluator = meshPaint;
         }
         else
         {

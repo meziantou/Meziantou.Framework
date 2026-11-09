@@ -6,11 +6,9 @@ namespace Meziantou.Framework.Imaging;
 public abstract partial class Image
 {
     /// <summary>Counts the levels of a channel of frames of this image (every displayed frame and the poster when <paramref name="frames"/> is <see langword="null"/>).</summary>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one.</exception>
     internal ImageHistogram ComputeHistogramCore(ImageFrame[]? frames, HistogramChannel channel, CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
-        ToneSamples.EnsureIntegerSamples(PixelFormat, "compute its histogram");
         cancellationToken.ThrowIfCancellationRequested();
         frames ??= GetAllFrames();
         var format = PixelFormat;
@@ -89,11 +87,9 @@ public abstract partial class Image
     /// <paramref name="frames"/> is <see langword="null"/>). The working memory is charged to the scope of the image and rented
     /// before any pixel changes; afterward, on failure, some frames or rows may already be remapped.
     /// </summary>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one.</exception>
     internal void EqualizeFrames(ImageFrame[]? frames, HistogramEqualizationOptions options, CancellationToken cancellationToken)
     {
         Owner.EnsureCanModify("equalize the image");
-        ToneSamples.EnsureIntegerSamples(PixelFormat, "equalize it");
         cancellationToken.ThrowIfCancellationRequested();
         var shared = frames is null && options.ShareHistogramAcrossFrames;
         frames ??= GetAllFrames();
@@ -109,11 +105,9 @@ public abstract partial class Image
     /// Stretches the levels of frames of this image in place (every displayed frame and the poster when
     /// <paramref name="frames"/> is <see langword="null"/>), as <see cref="EqualizeFrames"/> does.
     /// </summary>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one.</exception>
     internal void AutoLevelsFrames(ImageFrame[]? frames, AutoLevelsOptions options, CancellationToken cancellationToken)
     {
         Owner.EnsureCanModify("stretch the levels of the image");
-        ToneSamples.EnsureIntegerSamples(PixelFormat, "stretch its levels");
         cancellationToken.ThrowIfCancellationRequested();
         var shared = frames is null && options.ShareHistogramAcrossFrames;
         frames ??= GetAllFrames();
@@ -130,7 +124,6 @@ public abstract partial class Image
     /// <see langword="null"/>). The working memory is charged to the scope of the image and rented before any pixel changes;
     /// afterward, on failure, some frames or rows may already be binarized.
     /// </summary>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one.</exception>
     /// <exception cref="ArgumentException">The pixel format cannot store a color of <paramref name="options"/> exactly.</exception>
     internal void ThresholdFrames(ImageFrame[]? frames, ThresholdOptions options, CancellationToken cancellationToken)
     {

@@ -156,6 +156,36 @@ internal static class DrawingExamples
     }
     #endregion
 
+    /// <summary>A mesh gradient: two Coons patches with curved sides, sharing an edge.</summary>
+    #region Imaging_DrawMeshGradient
+    public static void DrawMeshGradient(string outputPath)
+    {
+        // Each patch is bounded by four cubic Bézier curves, given as 12 points from its top-left corner: the top side
+        // from left to right, then the right side, the bottom side from right to left, and the left side
+        var left = MeshGradientPatch.CreateCoons(
+            [new(10, 10), new(50, -5), new(90, 25), new(130, 10),
+             new(120, 40), new(140, 70), new(130, 100),
+             new(90, 115), new(50, 85), new(10, 100),
+             new(25, 70), new(-5, 40)],
+            [Colors.Crimson, Colors.Gold, Colors.SeaGreen, Colors.RoyalBlue]);
+
+        // The second patch starts where the first one ends: its left side is the right side of the first one, reversed
+        var right = MeshGradientPatch.CreateCoons(
+            [new(130, 10), new(170, 30), new(210, -5), new(250, 15),
+             new(235, 45), new(260, 75), new(250, 100),
+             new(210, 120), new(170, 90), new(130, 100),
+             new(140, 70), new(120, 40)],
+            [Colors.Gold, Colors.White, Colors.DarkViolet, Colors.SeaGreen]);
+
+        var mesh = new MeshGradientBrush([left, right]);
+
+        // The brush paints only inside its patches: fill the whole canvas with it
+        using var image = new Image<Rgba32>(260, 120, Colors.White);
+        image.Draw(canvas => canvas.Fill(mesh));
+        image.Save(outputPath);
+    }
+    #endregion
+
     /// <summary>The same gradient mixed in each color space.</summary>
     #region Imaging_GradientColorSpaces
     public static void DrawGradientColorSpaces(string outputPath)

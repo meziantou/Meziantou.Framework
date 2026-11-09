@@ -5,11 +5,10 @@ description: What the barcode packages do not do.
 
 - **No reading.** The packages generate QR codes and barcodes; they do not detect or decode them in photos or scans.
 - **The symbologies listed** only: standard QR codes, Micro QR codes, rMQR codes, Data Matrix, PDF417, Aztec, Code 39,
-  Code 93, Code 128, GS1-128, EAN-8, EAN-13, UPC-A, Codabar and ITF. Other linear barcodes (UPC-E, GS1 DataBar) are not
-  supported, nor are the variants of the two-dimensional ones (Data Matrix rectangular extension, Macro and Micro PDF417,
-  Aztec Runes).
-- **GS1 dictionary checks are opt-in.** GS1-128 elements are checked against the syntax rules of element strings
-  unless you pass [Gs1ValidationMode.Dictionary](cref:Meziantou.Framework.Barcodes.Gs1ValidationMode.Dictionary). The
+  Code 93, Code 128, GS1-128, EAN-8, EAN-13, UPC-A, UPC-E, GS1 DataBar, Codabar and ITF. The variants of the
+  two-dimensional codes are not supported (Data Matrix rectangular extension, Macro and Micro PDF417, Aztec Runes).
+- **GS1 dictionary checks are opt-in.** GS1-128 and GS1 DataBar Expanded elements are checked against the syntax rules
+  of element strings unless you pass [Gs1ValidationMode.Dictionary](cref:Meziantou.Framework.Barcodes.Gs1ValidationMode.Dictionary). The
   dictionary does not know which GS1 Company Prefixes are allocated: a key is checked for its format and check digit,
   not for its owner.
 - **Mixed modes in standard QR codes only.** [QRCode.Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) splits a text into segments of different modes,

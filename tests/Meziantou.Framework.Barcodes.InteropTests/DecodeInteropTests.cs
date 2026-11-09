@@ -356,7 +356,7 @@ public sealed class DecodeInteropTests
         {
             var (main, addOn) = SplitAddOn(barcode);
             var expected = GetExpectedZXingText(barcode.Type, main, addOn);
-            var found = results.Where(result => result.FilePath == path).Select(result => barcode.Type is BarcodeType.Gs1128 ? result.HumanReadableText : result.Text).ToList();
+            var found = results.Where(result => result.FilePath == path).Select(result => IsGs1(barcode.Type) ? result.HumanReadableText : result.Text).ToList();
             Assert.Contains(expected, found);
         }
     }
@@ -388,6 +388,40 @@ public sealed class DecodeInteropTests
             Assert.Equal(barcode.Text, result.HumanReadableText);
 
             Assert.Equal(["CODE-128:" + data], await tools.ReadWithZBarAsync(path));
+        }
+    }
+
+    // A reader reports a GS1 DataBar symbol with the symbology identifier ]e0, and its FNC1 separators as GS (U+001D)
+    [Theory]
+    [MemberData(nameof(DrawingVariants))]
+    public async Task Gs1DataBar_IsReadAsGs1(string variant)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        Gs1Element[] elements = [new("01", "09501101530003"), new("17", "250101"), new("10", "ABC123"), new("21", "XY")];
+        (Barcode Barcode, string Format, string Data)[] samples =
+        [
+            (Barcode.CreateGs1DataBar("0950110153000"), "DataBar Omni", "0109501101530003"),
+            (Barcode.CreateGs1DataBarStacked("0950110153000"), "DataBar Stacked", "0109501101530003"),
+            (Barcode.CreateGs1DataBarStackedOmnidirectional("2997220033224"), "DataBar Stacked", "0129972200332241"),
+            (Barcode.CreateGs1DataBarLimited("1501234567890"), "DataBar Limited", "0115012345678907"),
+            (Barcode.CreateGs1DataBarExpanded(elements), "DataBar Expanded", "01095011015300031725010110ABC123\u001D21XY"),
+            (Barcode.CreateGs1DataBarExpanded(new Gs1Element("01", "98898765432106"), new Gs1Element("3202", "012345"), new Gs1Element("15", "991231")), "DataBar Expanded", "0198898765432106320201234515991231"),
+            (Barcode.CreateGs1DataBarExpandedStacked(4, elements), "DataBar Expanded Stacked", "01095011015300031725010110ABC123\u001D21XY"),
+            (Barcode.CreateGs1DataBarExpandedStacked(6, elements), "DataBar Expanded Stacked", "01095011015300031725010110ABC123\u001D21XY"),
+        ];
+
+        foreach (var (barcode, format, data) in samples)
+        {
+            var path = directory.FullPath / "databar.png";
+            await File.WriteAllBytesAsync(path, RenderBarcode(barcode, variant), XunitCancellationToken);
+
+            var result = Assert.Single(await tools.ReadWithZXingAsync([path]));
+            Assert.Equal(format, result.Format);
+            Assert.Equal("]e0", result.SymbologyIdentifier);
+            Assert.Equal("GS1", result.ContentType);
+            Assert.Equal(data, result.Text);
+            Assert.Equal(barcode.Text, result.HumanReadableText);
         }
     }
 
@@ -664,6 +698,8 @@ public sealed class DecodeInteropTests
         yield return Barcode.CreateUpcA("03600029145", extension: "12");
         yield return Barcode.CreateCodabar("40156");
         yield return Barcode.CreateItf("12345678");
+        yield return Barcode.CreateUpcE("0425261");
+        yield return Barcode.CreateUpcE("0123456", extension: "12");
     }
 
     private static byte[] RenderQRCode(QRCode qr, string variant)
@@ -751,13 +787,28 @@ public sealed class DecodeInteropTests
     private static (string Main, string? AddOn) SplitAddOn(Barcode barcode)
     {
         var text = barcode.Text;
-        var index = barcode.Type is BarcodeType.Ean8 or BarcodeType.Ean13 or BarcodeType.UpcA ? text.IndexOf(' ', StringComparison.Ordinal) : -1;
+        var index = barcode.Type is BarcodeType.Ean8 or BarcodeType.Ean13 or BarcodeType.UpcA or BarcodeType.UpcE ? text.IndexOf(' ', StringComparison.Ordinal) : -1;
         return index < 0 ? (text, null) : (text[..index], text[(index + 1)..]);
     }
 
     // ZXingReader reads a UPC-A symbol as the EAN-13 number it is part of, with a leading 0, and gives a symbol with an
-    // add-on as its main digits followed by the add-on digits (sometimes with a second result of the main digits alone)
-    private static string GetExpectedZXingText(BarcodeType type, string main, string? addOn) => (type is BarcodeType.UpcA ? "0" + main : main) + addOn;
+    // add-on as its main digits followed by the add-on digits (sometimes with a second result of the main digits alone).
+    // It reads a UPC-E symbol as the EAN-13 number of the UPC-A number it stands for.
+    private static string GetExpectedZXingText(BarcodeType type, string main, string? addOn) => type switch
+    {
+        BarcodeType.UpcA => "0" + main,
+        BarcodeType.UpcE => "0" + ExpandUpcE(main),
+        _ => main,
+    } + addOn;
+
+    // The UPC-A number of the 8 digits of a UPC-E number (GS1 General Specifications, section 5.2.2.4.2)
+    private static string ExpandUpcE(string upcE) => upcE[6] switch
+    {
+        '0' or '1' or '2' => upcE[..3] + upcE[6] + "0000" + upcE[3..6],
+        '3' => upcE[..4] + "00000" + upcE[4..6],
+        '4' => upcE[..5] + "00000" + upcE[5],
+        _ => upcE[..6] + "0000" + upcE[6],
+    } + upcE[7];
 
     private static string GetZBarText(BarcodeType type, string text) => type switch
     {
@@ -767,6 +818,7 @@ public sealed class DecodeInteropTests
         BarcodeType.Ean8 => "EAN-8:" + text,
         BarcodeType.Ean13 => "EAN-13:" + text,
         BarcodeType.UpcA => "EAN-13:0" + text,
+        BarcodeType.UpcE => "EAN-13:0" + ExpandUpcE(text),
         BarcodeType.Codabar => "Codabar:" + text,
         BarcodeType.Itf => "I2/5:" + text,
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, message: null),
@@ -818,9 +870,19 @@ public sealed class DecodeInteropTests
             // ZXingReader reads ITF symbols of 6 digits or more
             BarcodeType.Itf => Barcode.CreateItf(Digits(2 * random.Next(3, 10))),
             BarcodeType.Gs1128 => Barcode.CreateGs1128([.. ZintMatrixTests.ParseGs1(ZintMatrixTests.CreateRandomGs1Data(random))]),
+            // A last digit of 5 to 9 after a 5th digit other than 0 is a valid UPC-E form
+            BarcodeType.UpcE => Barcode.CreateUpcE("0" + Digits(4) + (char)('1' + random.Next(9)) + (char)('5' + random.Next(5)), AddOn()),
+            BarcodeType.Gs1DataBar => Barcode.CreateGs1DataBar(Digits(13)),
+            BarcodeType.Gs1DataBarStacked => Barcode.CreateGs1DataBarStacked(Digits(13)),
+            BarcodeType.Gs1DataBarStackedOmnidirectional => Barcode.CreateGs1DataBarStackedOmnidirectional(Digits(13)),
+            BarcodeType.Gs1DataBarLimited => Barcode.CreateGs1DataBarLimited((char)('0' + random.Next(2)) + Digits(12)),
+            BarcodeType.Gs1DataBarExpanded => Barcode.CreateGs1DataBarExpanded([.. ZintMatrixTests.ParseGs1(ZintMatrixTests.CreateRandomGs1Data(random))]),
+            BarcodeType.Gs1DataBarExpandedStacked => Barcode.CreateGs1DataBarExpandedStacked(2 * random.Next(1, 11), [.. ZintMatrixTests.ParseGs1(ZintMatrixTests.CreateRandomGs1Data(random))]),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, message: null),
         };
     }
+
+    private static bool IsGs1(BarcodeType type) => type is BarcodeType.Gs1128 or BarcodeType.Gs1DataBar or BarcodeType.Gs1DataBarStacked or BarcodeType.Gs1DataBarStackedOmnidirectional or BarcodeType.Gs1DataBarLimited or BarcodeType.Gs1DataBarExpanded or BarcodeType.Gs1DataBarExpandedStacked;
 
     private static string Escape(string value) => string.Concat(value.Select(c => c < 0x20 || c > 0x7E ? $"\\u{(int)c:X4}" : c.ToString()));
 }

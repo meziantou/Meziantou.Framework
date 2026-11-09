@@ -45,6 +45,25 @@ public static class BarcodesFuzzTargets
         "ABC-123", "Hello 12345678", "5512345", "55123457", "590123412345", "4006381333931", "03600029145", "40156", "12345678", "1234-5678$:/.+",
     ];
 
+    // The tokens of UPC-E numbers, GTINs and GS1 element strings: application identifiers, separators and the
+    // characters of the general-purpose modes of GS1 DataBar Expanded
+    private static readonly string[] Gs1DataBarTokens =
+    [
+        "0", "1", "9", "00000", "0123456", "04252614", "0950110153000", "09501101530003", "2001234567890", "1999999999999",
+        "01\0", "10\0", "17\0", "21\0", "90\0", "3103\0", "3202\0", "3203\0", "3922\0", "3932\0", "11\0", "13\0", "15\0", "17\0", "8200\0",
+        "\0", "ABCXYZ", "abcxyz", "*,-./", "!\"%&'()+:;<=>?_", "991231", "250101", "001750",
+    ];
+
+    // The UPC-E numbers and GTINs of the unit tests, then element strings: application identifier and data, separated by NUL
+    private static readonly string[] Gs1DataBarSeedTexts =
+    [
+        "0425261", "04252614", "425261", "04210000526", "0123456", "1234567", "03600000029", "0180432",
+        "0950110153001", "09501101530003", "2001234567890", "1501234567890", "0658200098646", "0000001979845", "9999999999999",
+        "01\098898765432106\03202\0012345\015\0991231", "01\090012345678908\03103\0001750", "01\090012345678908\03922\0795",
+        "01\090012345678908\03932\00401234\021\0XY", "01\009501101530003\017\0250101\010\0ABC123", "10\012", "21\0abc-DEF/12345%xyz",
+        "8200\0http://example.com/abc", "90\00123456789ABCDEFGHIJ0123456789",
+    ];
+
     private static readonly string[] Barcode2DSeedTexts =
     [
         "Hello", "123456", "0123456789012345678901234567890123456789", "HELLO WORLD", "hello world", "Abc 123 xyz", "https://www.meziantou.net/",
@@ -66,6 +85,7 @@ public static class BarcodesFuzzTargets
     [
         new("barcodes-qrcode", QRCodeTarget) { Seeds = () => QRSeedTexts.SelectMany((text, index) => new[] { 0, 1, 2 }.Select(type => FuzzSeed.FromText($"qrcode-{index}-{type}", [(byte)type, (byte)index], text))), Dictionary = Tokens },
         new("barcodes-linear", LinearTarget) { Seeds = () => Enumerable.Range(0, 8).SelectMany(type => BarcodeSeedTexts.Select((text, index) => FuzzSeed.FromText($"linear-{type}-{index}", [(byte)type, (byte)index], text))), Dictionary = Tokens },
+        new("barcodes-gs1-databar", Gs1DataBarTarget) { Seeds = GetGs1DataBarSeeds, Dictionary = Gs1DataBarTokens },
         new("barcodes-payload", PayloadTarget) { Seeds = GetPayloadSeeds, Dictionary = Tokens },
         new("barcodes-2d", Barcode2DTarget) { Seeds = () => Enumerable.Range(0, 3).SelectMany(type => Barcode2DSeedTexts.SelectMany((text, index) => new[] { 0, 0x5A, 0xA5 }.Select(options => FuzzSeed.FromText($"2d-{type}-{index}-{options}", [(byte)type, (byte)options, (byte)index], text)))), Dictionary = [.. Tokens, .. Barcode2DTokens] },
         new("barcodes-draw", DrawTarget) { Seeds = () => Enumerable.Range(0, 12).Select(kind => new FuzzSeed($"draw-{kind}", (byte[])[(byte)kind, (byte)(kind % 8), (byte)(kind * 37), (byte)(kind * 11), (byte)(kind % 3), .. FuzzText.Encode(kind < 3 ? "HELLO" : "12345678")])), Dictionary = Tokens },
@@ -150,6 +170,165 @@ public static class BarcodesFuzzTargets
             // A barcode wider than the default image width limit of Meziantou.Framework.Imaging (32768 pixels)
         }
         FuzzAssert.True(barcode.ToSvg().Length > 0, "ToSvg is empty");
+    }
+
+    // UPC-E and GS1 DataBar: the texts carry the check digits recomputed here, the sizes are the ones of the
+    // specification, a stacked symbol has the modules of the single-row symbol, and the renderers agree with the matrix
+    private static void Gs1DataBarTarget(ReadOnlySpan<byte> data)
+    {
+        var type = (BarcodeType)((int)BarcodeType.UpcE + (FuzzInput.ReadByte(ref data) % 7));
+        var segmentsPerRow = 2 * (1 + (FuzzInput.ReadByte(ref data) % 10));
+        var text = FuzzInput.ReadText(data);
+        var elements = new List<Gs1Element>();
+        if (type is BarcodeType.Gs1DataBarExpanded or BarcodeType.Gs1DataBarExpandedStacked)
+        {
+            var fields = text.Split('\0');
+            for (var i = 0; i + 1 < fields.Length; i += 2)
+            {
+                try
+                {
+                    elements.Add(new Gs1Element(fields[i], fields[i + 1]));
+                }
+                catch (ArgumentException)
+                {
+                    return;
+                }
+            }
+        }
+
+        Barcode barcode;
+        try
+        {
+            barcode = type switch
+            {
+                BarcodeType.UpcE => Barcode.CreateUpcE(text),
+                BarcodeType.Gs1DataBar => Barcode.CreateGs1DataBar(text),
+                BarcodeType.Gs1DataBarStacked => Barcode.CreateGs1DataBarStacked(text),
+                BarcodeType.Gs1DataBarStackedOmnidirectional => Barcode.CreateGs1DataBarStackedOmnidirectional(text),
+                BarcodeType.Gs1DataBarLimited => Barcode.CreateGs1DataBarLimited(text),
+                BarcodeType.Gs1DataBarExpanded => Barcode.CreateGs1DataBarExpanded([.. elements]),
+                _ => Barcode.CreateGs1DataBarExpandedStacked(segmentsPerRow, [.. elements]),
+            };
+        }
+        catch (ArgumentException)
+        {
+            return;
+        }
+
+        FuzzAssert.Equal(type, barcode.Type, "The barcode type");
+        FuzzAssert.Equal(type is BarcodeType.Gs1DataBarStacked or BarcodeType.Gs1DataBarStackedOmnidirectional or BarcodeType.Gs1DataBarExpandedStacked, barcode.IsStacked, "IsStacked");
+        switch (type)
+        {
+            case BarcodeType.UpcE:
+                FuzzAssert.Equal(8, barcode.Text.Length, "The length of a UPC-E number");
+                var upcA = ExpandUpcE(barcode.Text);
+                FuzzAssert.Equal(GetCheckDigit(upcA[..^1]), upcA[^1] - '0', "The check digit of the UPC-A number of the UPC-E number");
+                var expectedPrefix = text.Length switch
+                {
+                    6 => "0" + text,
+                    7 or 8 => text,
+                    _ => null,
+                };
+                FuzzAssert.True(expectedPrefix is null ? upcA.StartsWith(text, StringComparison.Ordinal) : barcode.Text.StartsWith(expectedPrefix, StringComparison.Ordinal), "The UPC-E number stands for the data");
+                FuzzAssert.Equal((51, 1), (barcode.Width, barcode.Height), "The size of a UPC-E symbol");
+                FuzzAssert.True(Barcode.CreateUpcE(upcA).Text == barcode.Text, "The UPC-A number gives the same UPC-E number");
+                break;
+
+            case BarcodeType.Gs1DataBarExpanded or BarcodeType.Gs1DataBarExpandedStacked:
+                FuzzAssert.Equal(string.Concat(elements.Select(element => element.ToString())), barcode.Text, "The human-readable text");
+                var singleRow = Barcode.CreateGs1DataBarExpanded([.. elements]);
+                FuzzAssert.Equal(1, singleRow.Height, "GS1 DataBar Expanded is one row");
+                var characters = Enumerable.Range(3, 20).FirstOrDefault(count => 4 + (17 * count) + (15 * ((count + 1) / 2)) == singleRow.Width);
+                FuzzAssert.True(characters is >= 4 and <= 22, "The number of symbol characters");
+                if (type is BarcodeType.Gs1DataBarExpandedStacked)
+                {
+                    // The last row has at least 2 segments: the data is padded with a character when it would have 1
+                    var stackedCharacters = characters % segmentsPerRow == 1 ? characters + 1 : characters;
+                    var rows = (stackedCharacters + segmentsPerRow - 1) / segmentsPerRow;
+                    FuzzAssert.Equal((34 * rows) + (3 * (rows - 1)), barcode.Height, "The height of a GS1 DataBar Expanded Stacked symbol");
+                    if (rows == 1 && stackedCharacters == characters)
+                    {
+                        FuzzAssert.True(SameModules(singleRow, barcode, row: 0), "A single-row GS1 DataBar Expanded Stacked symbol is GS1 DataBar Expanded");
+                    }
+                }
+
+                break;
+
+            default:
+                var gtin = text.Length == 13 ? text + GetCheckDigit(text).ToString(CultureInfo.InvariantCulture) : text;
+                FuzzAssert.Equal(GetCheckDigit(gtin[..^1]), gtin[^1] - '0', "The check digit of the GTIN");
+                FuzzAssert.Equal("(01)" + gtin, barcode.Text, "The human-readable text");
+                var expectedSize = type switch
+                {
+                    BarcodeType.Gs1DataBar => (96, 1),
+                    BarcodeType.Gs1DataBarStacked => (50, 13),
+                    BarcodeType.Gs1DataBarStackedOmnidirectional => (50, 69),
+                    _ => (74, 1),
+                };
+                FuzzAssert.Equal(expectedSize, (barcode.Width, barcode.Height), "The size of the symbol");
+                if (type is BarcodeType.Gs1DataBarStacked or BarcodeType.Gs1DataBarStackedOmnidirectional)
+                {
+                    // The top row is the left half of the single-row symbol and a guard, the bottom row a guard and its right half
+                    var omnidirectional = Barcode.CreateGs1DataBar(text);
+                    for (var column = 0; column < 48; column++)
+                    {
+                        FuzzAssert.Equal(omnidirectional[0, column], barcode[0, column], "The top row of a stacked symbol");
+                        FuzzAssert.Equal(omnidirectional[0, 48 + column], barcode[barcode.Height - 1, 2 + column], "The bottom row of a stacked symbol");
+                    }
+                }
+
+                break;
+        }
+
+        // A stacked symbol is drawn with rows as high as a module is wide
+        try
+        {
+            using var image = Image.Load<Rgba32>(barcode.ToPng(new BarcodePngOptions { ModuleWidth = 1, ModuleHeight = 1, QuietZoneModules = 0 }));
+            CheckPixels(image, barcode.Width, barcode.Height, (row, column) => barcode[row, column], "ToPng");
+            using var fromImaging = barcode.ToImage(new BarcodeDrawingOptions { ModuleWidth = 1, ModuleHeight = 1, QuietZoneModules = 0 });
+            CheckPixels(fromImaging, barcode.Width, barcode.Height, (row, column) => barcode[row, column], "ToImage");
+        }
+        catch (ImageResourceLimitException)
+        {
+            // Wider than the default image width limit of Meziantou.Framework.Imaging
+        }
+
+        var svg = barcode.ToSvg(new BarcodeSvgOptions { ModuleWidth = 1, ModuleHeight = 1, QuietZoneModules = 0 });
+        FuzzAssert.True(svg.Contains(FormattableString.Invariant($"viewBox=\"0 0 {barcode.Width} {barcode.Height}\""), StringComparison.Ordinal), "The size of the SVG");
+    }
+
+    // The 12 digits of the UPC-A number of the 8 digits of a UPC-E number (GS1 General Specifications, section 5.2.2.4.2)
+    private static string ExpandUpcE(string upcE) => upcE[6] switch
+    {
+        '0' or '1' or '2' => upcE[..3] + upcE[6] + "0000" + upcE[3..6],
+        '3' => upcE[..4] + "00000" + upcE[4..6],
+        '4' => upcE[..5] + "00000" + upcE[5],
+        _ => upcE[..6] + "0000" + upcE[6],
+    } + upcE[7];
+
+    private static bool SameModules(Barcode expected, Barcode actual, int row)
+    {
+        if (expected.Width != actual.Width)
+            return false;
+
+        for (var column = 0; column < expected.Width; column++)
+        {
+            if (expected[0, column] != actual[row, column])
+                return false;
+        }
+
+        return true;
+    }
+
+    private static IEnumerable<FuzzSeed> GetGs1DataBarSeeds()
+    {
+        for (var type = 0; type < 7; type++)
+        {
+            for (var index = 0; index < Gs1DataBarSeedTexts.Length; index++)
+            {
+                yield return FuzzSeed.FromText($"gs1-databar-{type}-{index}", [(byte)type, (byte)index], Gs1DataBarSeedTexts[index]);
+            }
+        }
     }
 
     private static void PayloadTarget(ReadOnlySpan<byte> data)

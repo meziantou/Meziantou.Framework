@@ -1,3 +1,5 @@
+using Meziantou.Framework.Barcodes.Internal;
+
 namespace Meziantou.Framework.Barcodes;
 
 /// <summary>
@@ -22,12 +24,12 @@ public static class BarcodeSvgRenderer
 
         var quietZone = options.QuietZoneModules;
         var moduleWidth = options.ModuleWidth;
-        var moduleHeight = options.ModuleHeight;
+        // The rows of a stacked barcode are one module high: as high as a module is wide
+        var moduleHeight = barcode.IsStacked ? options.ModuleWidth : options.ModuleHeight;
         var totalWidth = ((long)barcode.Width + (2L * quietZone)) * moduleWidth;
         var totalHeight = (long)barcode.Height * moduleHeight;
         var totalWidthStr = totalWidth.ToString(CultureInfo.InvariantCulture);
         var totalHeightStr = totalHeight.ToString(CultureInfo.InvariantCulture);
-        var moduleHeightStr = moduleHeight.ToString(CultureInfo.InvariantCulture);
 
         var sb = new StringBuilder(capacity: 1024);
         sb.Append("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 ");
@@ -48,8 +50,11 @@ public static class BarcodeSvgRenderer
         sb.Append(options.DarkColor.ToCssString());
         sb.Append("\" d=\"");
 
-        for (var row = 0; row < barcode.Height; row++)
+        for (var row = 0; row < barcode.Height;)
         {
+            // Identical rows, such as the rows of a stacked barcode, are drawn as one
+            var rowCount = BarcodeRows.CountIdenticalRows(barcode, row);
+            var heightStr = ((long)rowCount * moduleHeight).ToString(CultureInfo.InvariantCulture);
             var col = 0;
             while (col < barcode.Width)
             {
@@ -75,7 +80,7 @@ public static class BarcodeSvgRenderer
                     sb.Append('h');
                     sb.Append(widthStr);
                     sb.Append('v');
-                    sb.Append(moduleHeightStr);
+                    sb.Append(heightStr);
                     sb.Append('h');
                     sb.Append((-width).ToString(CultureInfo.InvariantCulture));
                     sb.Append('z');
@@ -85,6 +90,8 @@ public static class BarcodeSvgRenderer
                     col++;
                 }
             }
+
+            row += rowCount;
         }
 
         sb.Append("\"/></svg>");

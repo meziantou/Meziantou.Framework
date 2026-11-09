@@ -682,7 +682,11 @@ public static partial class SimpleQueryLanguageFuzzTargets
         builder.AddHandler<QueryItemStatus?>("previous", item => item.Previous);
 
         var reference = new QueryBuilder<QueryItem>(new FixedTimeProvider(Now));
-        reference.AddHandler("name", (QueryItem item, KeyValueOperator op, string value) => op is KeyValueOperator.EqualTo && MatchesString(item.Name, value, matchMode, comparisonType ?? StringComparison.Ordinal));
+        // Without a comparison, the builder emits string.StartsWith(string) and string.EndsWith(string), which use the current culture
+#pragma warning disable MFGS0001 // Both builders compare with the current culture, so their agreement does not depend on ICU
+        var referenceComparison = comparisonType ?? (matchMode is StringMatchMode.StartsWith or StringMatchMode.EndsWith ? StringComparison.CurrentCulture : StringComparison.Ordinal);
+#pragma warning restore MFGS0001
+        reference.AddHandler("name", (QueryItem item, KeyValueOperator op, string value) => op is KeyValueOperator.EqualTo && MatchesString(item.Name, value, matchMode, referenceComparison));
         reference.AddRangeHandler<QueryItemStatus>("status", (item, range) => range.IsInRange(item.Status));
         reference.AddRangeHandler<QueryItemStatus>("previous", (item, range) => item.Previous is { } previous && range.IsInRange(previous));
 

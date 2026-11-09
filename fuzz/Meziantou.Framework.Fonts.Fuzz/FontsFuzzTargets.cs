@@ -7,12 +7,16 @@ namespace Meziantou.Framework.Fonts.Fuzz;
 /// The hinting of a font must only throw <see cref="FontException"/>. A hinted outline must have finite coordinates,
 /// the contours of the outline the font draws, and, with the TrueType instructions, an advance that is a whole number of
 /// pixels. It must not depend on the glyphs hinted before it nor on the storage the hinter rents. A subset must load,
-/// and keep the advances and the bounds of the glyphs of its closure.
+/// and keep the advances and the bounds of the glyphs of its closure. Shaping a text must only throw
+/// <see cref="FontException"/>, give glyph identifiers and clusters that are characters of the text in the order of the
+/// run, and give the same glyphs with the plan a <see cref="ShapingCache"/> keeps.
 /// </summary>
 public static class FontsFuzzTargets
 {
     private const int MaxHintedGlyphs = 24;
     private const int MaxComparedGlyphs = 512;
+    private const int MaxShapedCharacters = 64;
+    private const int MaxMappedCharacters = 240;
     private const uint Cvt = ((uint)'c' << 24) | ((uint)'v' << 16) | ((uint)'t' << 8) | ' ';
     private const uint Fpgm = ((uint)'f' << 24) | ((uint)'p' << 16) | ((uint)'g' << 8) | 'm';
     private const uint Prep = ((uint)'p' << 24) | ((uint)'r' << 16) | ((uint)'e' << 8) | 'p';
@@ -23,6 +27,9 @@ public static class FontsFuzzTargets
         MaxEncodedBytes = 4 * 1024 * 1024,
         MaxFontBytes = 16 * 1024 * 1024,
         MaxGlyphComplexity = 200_000,
+
+        // A morx table that inserts glyphs at each glyph would otherwise grow a text of 64 characters for a long time
+        MaxTextGlyphs = 16_384,
     };
 
     private static readonly PooledFontEnvironment SharedEnvironment = new(Limits, 64 * 1024 * 1024);
@@ -39,11 +46,55 @@ public static class FontsFuzzTargets
 
     private static readonly Lazy<List<BaseFont>> BytecodeBases = new(LoadBytecodeBases);
 
+    // The scripts of the shaping target: the default model, the scripts that have a model of their own, and a script
+    // that has none
+    private static readonly UnicodeScript[] ShapingScripts =
+    [
+        UnicodeScript.Common, UnicodeScript.Latin, UnicodeScript.Arabic, UnicodeScript.Hebrew, UnicodeScript.Syriac,
+        UnicodeScript.Devanagari, UnicodeScript.Bengali, UnicodeScript.Tamil, UnicodeScript.Khmer, UnicodeScript.Myanmar,
+        UnicodeScript.Thai, UnicodeScript.Lao, UnicodeScript.Hangul, UnicodeScript.Han, UnicodeScript.Mongolian,
+        UnicodeScript.Tibetan, UnicodeScript.Javanese, UnicodeScript.Adlam, UnicodeScript.Nko, UnicodeScript.Unknown,
+    ];
+
+    // The features a bit of the input turns on or off: OpenType features, which also select settings of the feat table
+    // of a font of Apple Advanced Typography, features that turn a default one off, and a feature no font has
+    private static readonly ShapingFeature[] ShapingFeatures =
+    [
+        new("liga", 0), new("liga"), new("dlig"), new("smcp"), new("c2sc"), new("ss01"), new("ss02"), new("onum"),
+        new("frac"), new("swsh"), new("zero"), new("kern", 0), new("salt", 2), new("vert"), new("vrt2"), new("test"),
+    ];
+
+    // The language systems of the shaping target, by order of preference
+    private static readonly uint[][] ShapingLanguages =
+    [
+        [],
+        [ShapingFeature.ToTag("TRK ")],
+        [ShapingFeature.ToTag("URD "), ShapingFeature.ToTag("ARA ")],
+        [ShapingFeature.ToTag("SRB "), ShapingFeature.ToTag("dflt")],
+    ];
+
+    // The characters a byte of the text gives instead of a character of the font: spaces, joiners, marks, variation
+    // selectors, a fraction slash, a mirrored character, a character outside the BMP and a lone surrogate
+    private static readonly string[] SpecialCharacters =
+    [
+        " ", "\u200D", "\u200C", "\u0640", "\u0301", "\u0308", "\u2044", "\uFE0F",
+        "\uFE00", "\u034F", "\u00AD", "\u25CC", "\U0001F600", "\uD800", "(", "\u05BC",
+    ];
+
+    // The tags of the tables shaping reads, and of the features of the target
+    private static readonly string[] ShapingTokens =
+    [
+        "cmap", "GSUB", "GPOS", "GDEF", "morx", "mort", "kerx", "kern", "feat", "trak", "ankr", "hmtx", "vmtx", "VORG", "maxp",
+        "liga", "dlig", "smcp", "c2sc", "ss01", "onum", "frac", "swsh", "zero", "salt", "vert", "vrt2", "ccmp", "locl", "mark", "mkmk",
+        "latn", "arab", "DFLT", "dflt", "TRK ", "\0\0", "\0\x01", "\xFF\xFF",
+    ];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("fonts-hinting", Hinting) { Seeds = GetHintingSeeds },
         new("fonts-hinting-bytecode", HintingBytecode) { Seeds = GetBytecodeSeeds },
         new("fonts-subset", Subset) { Seeds = () => GetFontSeeds().Select((seed, index) => seed with { Data = (byte[])[(byte)index, (byte)(index * 13), .. seed.Data.Span] }) },
+        new("fonts-shaping", Shaping) { Seeds = GetShapingSeeds, Dictionary = ShapingTokens },
     ];
 
     /// <summary>Hints the glyphs of a font file: option bytes give the hinting mode and the size.</summary>
@@ -149,6 +200,198 @@ public static class FontsFuzzTargets
             SubsetFace(face, keepHinting: (flags & 1) != 0, stride: ((flags >> 1) % 16) + 1, count: (count % 64) + 1);
         }
     }
+
+    /// <summary>
+    /// Shapes a text with a font file: option bytes give the direction, the script, the language, the features and the
+    /// size, then come the length of the text and a byte per character, which selects a character the font maps or one
+    /// of <see cref="SpecialCharacters"/>, then the font.
+    /// </summary>
+    private static void Shaping(ReadOnlySpan<byte> data)
+    {
+        var flags = FuzzInput.ReadByte(ref data);
+        var script = ShapingScripts[FuzzInput.ReadByte(ref data) % ShapingScripts.Length];
+        var featureBits = (FuzzInput.ReadByte(ref data) << 8) | FuzzInput.ReadByte(ref data);
+        var pointSize = ReadPointSize(FuzzInput.ReadByte(ref data));
+        var length = FuzzInput.ReadByte(ref data) % (MaxShapedCharacters + 1);
+        var characters = data[..Math.Min(length, data.Length)];
+        data = data[characters.Length..];
+
+        FontFace[] faces;
+        try
+        {
+            faces = FontLoader.Load(data, SharedEnvironment);
+        }
+        catch (FontException)
+        {
+            return;
+        }
+
+        // A feature of a part of the text only, when bit 6 is set
+        var features = new List<ShapingFeature>();
+        for (var i = 0; i < ShapingFeatures.Length; i++)
+        {
+            if ((featureBits & (1 << i)) != 0)
+            {
+                features.Add((flags & 0x40) != 0 && i % 2 == 0 ? ShapingFeatures[i] with { Start = 1, End = 4 } : ShapingFeatures[i]);
+            }
+        }
+
+        var settings = new ShapingSettings(
+            script,
+            ShapingLanguages[(flags >> 4) & 3],
+            IsRightToLeft: (flags & 0x01) != 0,
+            IsVertical: (flags & 0x02) != 0,
+            AreCharactersMirrored: (flags & 0x04) != 0,
+            [.. features],
+            pointSize);
+
+        foreach (var face in faces.Take(2))
+        {
+            ShapeFace(face, characters, settings, compareWithCache: (flags & 0x08) != 0);
+        }
+    }
+
+    private static void ShapeFace(FontFace face, ReadOnlySpan<byte> characters, ShapingSettings settings, bool compareWithCache)
+    {
+        int[] mapped;
+        try
+        {
+            mapped = GetMappedCharacters(face);
+        }
+        catch (FontException)
+        {
+            return;
+        }
+
+        var text = new System.Text.StringBuilder();
+        foreach (var value in characters)
+        {
+            if (value >= 0xF0 || mapped.Length == 0)
+            {
+                text.Append(SpecialCharacters[value % SpecialCharacters.Length]);
+                continue;
+            }
+
+            // A character of the BMP is appended as it is: a font can map a surrogate
+            var codePoint = mapped[value % mapped.Length];
+            if (codePoint > 0xFFFF)
+            {
+                text.Append(char.ConvertFromUtf32(codePoint));
+            }
+            else
+            {
+                text.Append((char)codePoint);
+            }
+        }
+
+        var shapedText = text.ToString();
+        var allocator = SharedEnvironment.CreateAllocator("fuzz");
+        using var scratch = new GlyphScratch(allocator);
+        var buffer = new GlyphBuffer(Limits);
+        var expected = Shape(buffer, face, shapedText, settings, scratch, cache: null);
+        if (expected.Glyphs is not null)
+        {
+            CheckShapedGlyphs(face, shapedText, settings, expected);
+        }
+
+        if (!compareWithCache)
+            return;
+
+        // The second run uses the plan the first one kept, in a buffer that was cleared
+        var cache = new ShapingCache();
+        for (var run = 0; run < 2; run++)
+        {
+            buffer.Clear();
+            var actual = Shape(buffer, face, shapedText, settings, scratch, cache);
+            FuzzAssert.Equal(expected.Error, actual.Error, $"The run {run} with a cache does not fail as the run without one");
+            if (expected.Glyphs is not null && actual.Glyphs is not null)
+            {
+                FuzzAssert.Equal(expected.Glyphs.Length, actual.Glyphs.Length, $"The run {run} with a cache does not have the glyphs of the run without one");
+                FuzzAssert.True(expected.Glyphs.AsSpan().SequenceEqual(actual.Glyphs), $"The run {run} with a cache does not have the glyphs of the run without one");
+                FuzzAssert.True(expected.Positions.AsSpan().SequenceEqual(actual.Positions), $"The run {run} with a cache does not have the positions of the run without one");
+            }
+        }
+    }
+
+    private static ShapingOutcome Shape(GlyphBuffer buffer, FontFace face, string text, ShapingSettings settings, GlyphScratch scratch, ShapingCache? cache)
+    {
+        try
+        {
+            TextShaper.AddText(buffer, text);
+            TextShaper.Shape(buffer, face, settings.Script, settings.Languages, settings.IsRightToLeft, settings.Features, settings.IsVertical, settings.IsVertical ? scratch : null, cache, settings.AreCharactersMirrored, settings.PointSize);
+        }
+        catch (FontException ex)
+        {
+            return new ShapingOutcome(ex.GetType().Name, Glyphs: null, Positions: []);
+        }
+
+        FuzzAssert.Equal(buffer.Length, buffer.Positions.Length, "The glyphs of a shaped run do not all have a position");
+        var glyphs = new (int Glyph, int Cluster)[buffer.Length];
+        var positions = new (int, int, int, int, int, byte)[buffer.Length];
+        for (var i = 0; i < buffer.Length; i++)
+        {
+            var info = buffer.Info[i];
+            var position = buffer.Positions[i];
+            glyphs[i] = (info.Glyph, info.Cluster);
+            positions[i] = (position.XAdvance, position.YAdvance, position.XOffset, position.YOffset, position.AttachmentChain, position.AttachmentType);
+        }
+
+        return new ShapingOutcome(Error: null, glyphs, positions);
+    }
+
+    private static void CheckShapedGlyphs(FontFace face, string text, ShapingSettings settings, ShapingOutcome outcome)
+    {
+        // The clusters are the indexes of the first code unit of the characters AddText adds
+        var starts = new HashSet<int>();
+        for (var index = 0; index < text.Length;)
+        {
+            starts.Add(index);
+            System.Text.Rune.DecodeFromUtf16(text.AsSpan(index), out _, out var consumed);
+            index += consumed;
+        }
+
+        var glyphs = outcome.Glyphs!;
+        for (var i = 0; i < glyphs.Length; i++)
+        {
+            var (glyph, cluster) = glyphs[i];
+
+            // A substitution may name a glyph identifier the font does not have, as HarfBuzz keeps it: it is drawn as the glyph 0
+            FuzzAssert.True(glyph is >= 0 and <= ushort.MaxValue, $"The shaper gives the glyph {glyph} ({face.GlyphCount} glyphs)");
+            FuzzAssert.True(starts.Contains(cluster), $"The shaper gives the cluster {cluster}, which is not a character of the text of {text.Length} code units");
+            if (i > 0)
+            {
+                var previous = glyphs[i - 1].Cluster;
+                FuzzAssert.True(settings.IsRightToLeft ? cluster <= previous : cluster >= previous, $"The cluster {cluster} of the glyph {i} is out of the order of the run after the cluster {previous}");
+            }
+        }
+    }
+
+    /// <summary>Gets the first characters the font maps to a glyph, in the order of their code points.</summary>
+    private static int[] GetMappedCharacters(FontFace face)
+    {
+        if (!face.TryGetTable(FontTags.Cmap, out var table))
+            return [];
+
+        var ranges = CmapTable.Read(table, face.GlyphCount).GetCoveredRanges();
+        var characters = new List<int>();
+        for (var i = 0; i + 1 < ranges.Length && characters.Count < MaxMappedCharacters; i += 2)
+        {
+            for (var codePoint = ranges[i]; codePoint <= ranges[i + 1] && characters.Count < MaxMappedCharacters; codePoint++)
+            {
+                characters.Add(codePoint);
+            }
+        }
+
+        return [.. characters];
+    }
+
+    private static double ReadPointSize(byte value) => value switch
+    {
+        // Unknown, the sizes of text, and the large sizes, up to those of the last track entries of a trak table
+        0 => 0,
+        < 0x80 => value,
+        _ => (value - 0x7F) * 16,
+    };
 
     private static void CheckHinting(FontFace face, double size, GlyphHinting mode, List<int> glyphs)
     {
@@ -676,22 +919,59 @@ public static class FontsFuzzTargets
         static byte[] Section(byte[]? table) => table is null ? [0, 0] : [(byte)(table.Length >> 8), (byte)table.Length, .. table];
     }
 
-    private static IEnumerable<FuzzSeed> GetFontSeeds()
+    /// <summary>
+    /// Gets the seeds of the shaping target: for each font, the first characters it maps, then each of them twice, in
+    /// reverse order, so that the state machines of morx and kerx see sequences of the same class and the transitions
+    /// between classes; once in a left-to-right run, and once with other settings: features and a size, a right-to-left
+    /// run, a vertical one.
+    /// </summary>
+    private static IEnumerable<FuzzSeed> GetShapingSeeds()
+    {
+        const int Characters = 20;
+        byte[] text = [.. Enumerable.Range(0, Characters).Select(i => (byte)i), .. Enumerable.Range(0, Characters).Reverse().SelectMany(i => new[] { (byte)i, (byte)i })];
+        var index = 0;
+        foreach (var seed in GetFontSeeds().Concat(GetFontSeeds("Seeds/shaping/")))
+        {
+            byte[][] options =
+            [
+                [0x00, 1, 0x00, 0x00, 0],
+                (index % 3) switch
+                {
+                    // Features that select settings of feat, with a cache, at the size of text and at a large size
+                    0 => [0x08, 0, 0x01, 0x39, 9],
+                    1 => [0x08 | 0x40, 1, 0x86, 0x28, 0xC0],
+                    _ => (index % 2) == 0 ? [0x01 | 0x10, 2, 0x00, 0x00, 48] : [0x02, 13, 0x60, 0x00, 24],
+                },
+            ];
+
+            for (var variant = 0; variant < options.Length; variant++)
+            {
+                yield return new FuzzSeed($"{variant}-{seed.Name}", (byte[])[.. options[variant], (byte)text.Length, .. text, .. seed.Data.Span]);
+            }
+
+            index++;
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetFontSeeds(string prefix = "Seeds/fonts/")
     {
         var assembly = typeof(FontsFuzzTargets).Assembly;
-        const string Prefix = "Seeds/fonts/";
-        foreach (var name in assembly.GetManifestResourceNames().Where(name => name.StartsWith(Prefix, StringComparison.Ordinal)).Order(StringComparer.Ordinal))
+        foreach (var name in assembly.GetManifestResourceNames().Where(name => name.StartsWith(prefix, StringComparison.Ordinal)).Order(StringComparer.Ordinal))
         {
             using var stream = FuzzResources.Open(assembly, name);
             using var memory = new MemoryStream();
             stream.CopyTo(memory);
-            yield return new FuzzSeed(name[Prefix.Length..], memory.ToArray());
+            yield return new FuzzSeed(name[prefix.Length..], memory.ToArray());
         }
     }
 
     private sealed record BaseFont(string Name, SortedDictionary<uint, byte[]> Tables, byte[][] Glyphs, int[] SimpleGlyphs);
 
     private sealed record GlyphOutcome(string? Error, double Advance, double[] Path, int Contours);
+
+    private sealed record ShapingSettings(UnicodeScript Script, uint[] Languages, bool IsRightToLeft, bool IsVertical, bool AreCharactersMirrored, ShapingFeature[] Features, double PointSize);
+
+    private sealed record ShapingOutcome(string? Error, (int Glyph, int Cluster)[]? Glyphs, (int, int, int, int, int, byte)[] Positions);
 
     /// <summary>Records the commands of an outline, and checks that its coordinates are finite.</summary>
     private sealed class RecordingSink : OutlineSink

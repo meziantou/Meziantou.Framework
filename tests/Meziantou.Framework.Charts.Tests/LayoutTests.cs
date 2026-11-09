@@ -838,4 +838,18 @@ public sealed class LayoutTests
         Assert.HasCount(2 + 72 + 1 + 72, GeoSystem.SampleBox(new EqualEarthProjection(), -180, -90, 180, 90));
         Assert.HasCount(1 + 12 + 1 + 12 + 1, GeoSystem.SampleBox(new AlbersProjection(), -120, 30, -90, 40));
     }
+
+    [Fact]
+    public void GeoSystem_EdgeAlongAParallelOutOfRange()
+    {
+        // The curved parallels of Albers get a point every 2.5°, but an edge between longitudes out of range gets no more
+        // points than a full turn: 1e80 degrees ran out of memory
+        var system = GeoSystem.Fit(new AlbersProjection(), (-1, -1, 1, 1), new ChartRectangle(0, 0, 100, 100));
+        foreach (var longitude in new[] { 3_360_600, 1.8e80 })
+        {
+            var builder = new PathBuilder();
+            system.AddPolyline(builder, [new(6, 0), new(longitude, 0), new(0, 0)], close: true);
+            Assert.HasCountLessThanOrEqual(300, builder.Build().Commands);
+        }
+    }
 }

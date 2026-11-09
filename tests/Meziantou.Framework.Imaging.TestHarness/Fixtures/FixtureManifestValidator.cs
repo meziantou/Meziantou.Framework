@@ -558,7 +558,12 @@ public static partial class FixtureManifestValidator
                 errors.Add($"{decodingName}: invalid windowMode '{decoding.WindowMode}' (allowed: {string.Join(", ", ExrDecodingDefinition.WindowModes)}).");
             }
 
-            if (decoding.Layer is null && decoding.WindowMode == "DisplayWindow")
+            if (decoding.DeepData is { } deepData && !ExrDecodingDefinition.DeepDataModes.Contains(deepData, StringComparer.Ordinal))
+            {
+                errors.Add($"{decodingName}: invalid deepData '{deepData}' (allowed: {string.Join(", ", ExrDecodingDefinition.DeepDataModes)}).");
+            }
+
+            if (decoding.Part is null && decoding.DeepData is null or "Reject" && decoding.Layer is null && decoding.WindowMode == "DisplayWindow")
             {
                 errors.Add($"{decodingName}: the default options are the decoding of the fixture itself (its expectedError).");
             }

@@ -895,6 +895,16 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   product by the stored alpha give the bits of the scalar double-precision forms); `ExrPredictor` and the first level of
   `ExrWavelet` have vector paths, and the PIZ Huffman decoder reads the codes of its lookup table from a 64-bit bit
   buffer (`DecodeTableCodes`). Each vector path keeps its scalar reference (`VectorizedKernelTests`).
+  A multi-part file is decoded from the part `OpenExrDecodingOptions.Part` names: the parser reads every header (the
+  other parts are checked by `ExrHeader.CompleteOtherPart`, for their chunk counts), skips the offset tables of the other
+  parts, and their chunks as bytes between two chunks of the part; a chunk starts with its part number. Deep data
+  (section 1.6 of `ExrCompression.md`) are decoded one chunk at a time on the calling thread (no workers: their sizes are
+  only known from the chunk) and flattened by `ExrDeepPixels` as OpenEXR flattens one source (section 1.7: stored order,
+  single precision, until alpha reaches 1). DWAA and DWAB (`ExrDwa`, section 8) reuse the PIZ Huffman decoder and are
+  bit-exact with the scalar build of OpenEXR (the reference tools are built that way); their perceptual table is pinned by
+  a hash. ZSTD (`ExrZstd`, section 13) wraps a fully managed Zstandard decoder written from RFC 8878
+  (`Internals/Compression/ZstdDecoder`, with the XXH64 checksum). HTJ2K and LJ2K (section 14) are not decoded: the JPEG
+  2000 decoder has no signed components, no 32-bit components and no NLT marker.
   `MetadataWritePlan` treats OpenEXR as linear light only (`FormatCapabilities.LinearOnly`): an sRGB label is metadata
   the format cannot store.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.

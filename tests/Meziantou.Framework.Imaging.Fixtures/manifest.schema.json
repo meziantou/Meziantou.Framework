@@ -527,8 +527,10 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["windowMode"],
-      "description": "Unsupported OpenEXR fixtures only (extra channels, layers, pixels outside the display window): a decoding with OpenExrDecodingOptions, and either its pixels (what OpenEXR decodes, presented by the rules of the library) or the error the options still give.",
+      "description": "Unsupported OpenEXR fixtures only (several parts, deep data, extra channels, layers, pixels outside the display window): a decoding with OpenExrDecodingOptions, and either its pixels (what OpenEXR decodes, presented by the rules of the library) or the error the options still give.",
       "properties": {
+        "part": { "type": ["string", "null"], "description": "OpenExrDecodingOptions.Part: the name of the part, null to decode files of one part only." },
+        "deepData": { "enum": ["Reject", "Flatten"], "description": "OpenExrDecodingOptions.DeepData; Reject when absent." },
         "layer": { "type": ["string", "null"], "description": "OpenExrDecodingOptions.Layer: the empty string for the default layer, null to decode every channel." },
         "windowMode": { "enum": ["DisplayWindow", "CropToDisplayWindow", "DataWindow"] },
         "width": { "type": "integer", "minimum": 1 },

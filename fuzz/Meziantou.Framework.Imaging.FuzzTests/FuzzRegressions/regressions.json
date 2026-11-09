@@ -253,6 +253,17 @@
       "defect": "The item data have two different sequence headers before the frame (the first one from another stream): the full identification checked the first one against the av1C record and rejected the file, while Load decodes the frame with the second one, which matches it. Fixed in AvifBinding.ReadSequenceHeader: it reads the sequence header the first frame is decoded with, the last one before the first frame header.",
       "expectedIdentify": "success",
       "expectedLoad": "success"
+    },
+    {
+      "id": "exr/deep-scanline-empty-count-table",
+      "file": "exr-deep-scanline-empty-count-table.min.exr",
+      "sha256": "67978e26b4379fced36468d95715c26b8744bfefa772fa27c27918eda280b3e0",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group exr, base seed 20261108, 1000110 inputs in 20 minutes, mutation 48695 of invalid/exr/deep-scanline-zips (reader variant 137), decoded with the OpenEXR options of the oracle (deep data flattened)",
+      "defect": "A deep scan line whose stored sample count table is empty: the empty size matched the size of the raw table of an unclipped tile, which is 0 for scan lines, so the table was copied from a too-short span (ArgumentOutOfRangeException). Fixed in ExrChunkDecompressor.DecompressDeepTable: only a tile stores its table raw in a larger buffer.",
+      "expectedIdentify": "UnsupportedImageFeatureException",
+      "expectedLoad": "UnsupportedImageFeatureException"
     }
   ]
 }

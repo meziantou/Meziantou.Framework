@@ -1,14 +1,14 @@
 namespace Meziantou.Framework.Imaging;
 
 /// <summary>
-/// Immutable options of the OpenEXR decoder (<see cref="ImageConfiguration.OpenExrDecoding"/>): the channels it decodes and
-/// the window the image covers.
+/// Immutable options of the OpenEXR decoder (<see cref="ImageConfiguration.OpenExrDecoding"/>): the part and the channels it
+/// decodes, the window the image covers, and how deep data become pixels.
 /// </summary>
 /// <remarks>
 /// <para>
 /// They apply to every operation that reads an OpenEXR file: identification, eager loads, sequential readers and
-/// collections, which report and decode the same image. The defaults read only the files whose every channel and every
-/// stored pixel is part of the image, and reject the others with an <see cref="UnsupportedImageFeatureException"/>.
+/// collections, which report and decode the same image. The defaults read only the files whose every part, every channel
+/// and every stored pixel is part of the image, and reject the others with an <see cref="UnsupportedImageFeatureException"/>.
 /// </para>
 /// <para>
 /// A channel belongs to the layer named by its name up to its last dot: <c>diffuse.R</c> is the red channel of the layer
@@ -43,6 +43,39 @@ public sealed class OpenExrDecodingOptions
     /// </para>
     /// </remarks>
     public string? Layer { get; init; }
+
+    /// <summary>
+    /// Gets the name of the part that is decoded (its <c>name</c> attribute), or <see langword="null"/> (the default) to
+    /// decode files of one part only.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A multi-part file holds several images, such as the views of a stereo pair, or the outputs of a renderer stored apart.
+    /// With <see langword="null"/>, a file of several parts is rejected with an <see cref="UnsupportedImageFeatureException"/>
+    /// whose message lists the names of its parts, since the other parts would be lost. With a name, that part is decoded and
+    /// the other parts are ignored; a file that has no part of that name is rejected, also a single-part file whose part
+    /// has another name or none.
+    /// </para>
+    /// <para>
+    /// The other options apply to the part: <see cref="Layer"/> selects channels of its channels, and
+    /// <see cref="WindowMode"/> its windows.
+    /// </para>
+    /// </remarks>
+    public string? Part { get; init; }
+
+    /// <summary>Gets how the pixels of deep data are decoded. Defaults to <see cref="OpenExrDeepDataMode.Reject"/>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="OpenExrDeepDataMode"/>.</exception>
+    public OpenExrDeepDataMode DeepData
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The OpenEXR deep data mode is not valid.");
+
+            field = value;
+        }
+    }
 
     /// <summary>Gets the window the image covers. Defaults to <see cref="OpenExrWindowMode.DisplayWindow"/>.</summary>
     /// <remarks>

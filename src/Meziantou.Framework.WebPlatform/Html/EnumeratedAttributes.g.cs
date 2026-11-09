@@ -134,7 +134,7 @@ internal static class EnumeratedAttributes
         InvalidValueDefault: 0,
         EmptyValueDefault: -1);
 
-    /// <summary>button/command,html-global/command</summary>
+    /// <summary>button/command</summary>
     public static readonly EnumeratedAttribute Command = new(
         new Dictionary<string, int>(StringComparer.Ordinal)
         {
@@ -422,7 +422,7 @@ internal static class EnumeratedAttributes
         InvalidValueDefault: 1,
         EmptyValueDefault: 0);
 
-    /// <summary>html-global/popovertargetaction</summary>
+    /// <summary>button/popovertargetaction,input/popovertargetaction</summary>
     public static readonly EnumeratedAttribute Popovertargetaction = new(
         new Dictionary<string, int>(StringComparer.Ordinal)
         {

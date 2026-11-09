@@ -57,9 +57,8 @@ when they fit.
 
 [ValueFormat](cref:Meziantou.Framework.Mermaid.TreemapChart.ValueFormat) formats the values with a format specifier
 of d3-format, as Mermaid does: `,` (the default) adds thousands separators, `.1f` writes one decimal, `.0%` a
-percentage, and `$0,0` or `$.2f` add a dollar sign. A section writes its total after its name, as `Clothing (80)`. With
-the default format, a leaf writes its value under its name; with another format, after its name, as
-`Salaries ($700,000)`. [ShowValues](cref:Meziantou.Framework.Mermaid.TreemapChart.ShowValues) hides the values. The
+percentage, and `$0,0` or `$.2f` add a dollar sign. A section writes its total after its name, as `Clothing (80)`, and
+a leaf writes its value under its name. [ShowValues](cref:Meziantou.Framework.Mermaid.TreemapChart.ShowValues) hides the values. The
 tooltip of a node is its path and its formatted value.
 
 [ClassDefinitions](cref:Meziantou.Framework.Mermaid.TreemapChart.ClassDefinitions) holds styles by class name, and the

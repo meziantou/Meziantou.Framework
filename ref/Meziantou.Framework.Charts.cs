@@ -857,6 +857,7 @@ namespace Meziantou.Framework.Charts
         public double PaddingTop { get => throw null; set { } }
         public bool ShowValues { get => throw null; set { } }
         public Meziantou.Framework.Charts.TreemapTiling Tiling { get => throw null; set { } }
+        public System.Func<double, string>? ValueFormat { get => throw null; set { } }
         public TreemapMark(Meziantou.Framework.Charts.HierarchyNode<T> root) { }
     }
 

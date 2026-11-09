@@ -83,7 +83,7 @@ plot.Add(new PackMark<FileEntry?>(root));
 
 ## Treemap
 
-A [TreemapMark\<T\>](cref:Meziantou.Framework.Charts.TreemapMark{T}) divides the area into rectangles. [PaddingTop](cref:Meziantou.Framework.Charts.TreemapMark{T}.PaddingTop) leaves room for the names of the groups. The default tiling is squarified; [TreemapTiling](cref:Meziantou.Framework.Charts.TreemapTiling) has the others.
+A [TreemapMark\<T\>](cref:Meziantou.Framework.Charts.TreemapMark{T}) divides the area into rectangles. [PaddingTop](cref:Meziantou.Framework.Charts.TreemapMark{T}.PaddingTop) leaves room for the names of the groups. The default tiling is squarified; [TreemapTiling](cref:Meziantou.Framework.Charts.TreemapTiling) has the others. The value of a leaf is drawn under its label: [ValueFormat](cref:Meziantou.Framework.Charts.TreemapMark{T}.ValueFormat) formats it, and [ShowValues](cref:Meziantou.Framework.Charts.TreemapMark{T}.ShowValues) hides it.
 
 <!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/HierarchyChartTests.cs;region=Charts_Treemap;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -81,7 +81,7 @@ public sealed class TreemapChart : MermaidChart
     /// <summary>
     /// Gets or sets the format of the values: a format specifier of d3-format, such as <c>,</c> (the default, with thousands
     /// separators), <c>.1f</c> or <c>.0%</c>, optionally after a <c>$</c>, as in Mermaid. An invalid format falls back to <c>,</c>.
-    /// With the default format, a leaf shows its value under its name; with another format, after its name.
+    /// A leaf shows its value under its name, and a section after its name.
     /// </summary>
     public string ValueFormat
     {
@@ -140,16 +140,16 @@ public sealed class TreemapChart : MermaidChart
             keys.Add(node, keys.Count.ToString(CultureInfo.InvariantCulture));
         }
 
-        // The format of Charts draws the values of the leaves under their names; another format writes them after the names
-        var defaultFormat = ValueFormat is "," or "";
+        // The values of the leaves are drawn under their names, those of the sections after their names
         var mark = new TreemapMark<TreemapNode?>(root)
         {
             PaddingInner = InnerPadding,
             PaddingOuter = SectionPadding,
             PaddingTop = SectionHeaderHeight,
-            ShowValues = ShowValues && defaultFormat,
+            ShowValues = ShowValues,
+            ValueFormat = formatter.Format,
             Fill = node => keys[node],
-            Label = node => GetLabel(node, formatter, defaultFormat),
+            Label = node => GetLabel(node, formatter),
             Title = node => GetTooltip(node, formatter),
         };
 
@@ -265,12 +265,12 @@ public sealed class TreemapChart : MermaidChart
         }
     }
 
-    private string? GetLabel(HierarchyNode<TreemapNode?> node, TreemapValueFormatter formatter, bool defaultFormat)
+    private string? GetLabel(HierarchyNode<TreemapNode?> node, TreemapValueFormatter formatter)
     {
         if (node.Data is null)
             return null;
 
-        if (!ShowValues || node.Value is 0 || (defaultFormat && node.IsLeaf))
+        if (!ShowValues || node.Value is 0 || node.IsLeaf)
             return node.Name;
 
         var value = formatter.Format(node.Value);

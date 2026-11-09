@@ -41,9 +41,23 @@ public sealed class TreemapChartTests
 
         var svg = diagram.ToSvg();
         Assert.Contains("fill=\"#ff9966", svg, StringComparison.Ordinal);
-        Assert.Contains("Salaries ($700,000)", svg, StringComparison.Ordinal);
+        Assert.Contains(">$700,000<", svg, StringComparison.Ordinal);
+        Assert.DoesNotContain("Salaries (", svg, StringComparison.Ordinal);
         Assert.Contains("Budget ($1,500,000)", svg, StringComparison.Ordinal);
         ChartAssert.Svg(svg);
+    }
+
+    [Fact]
+    public void LeafValuesUseTheValueFormat()
+    {
+        var diagram = new TreemapChart();
+        var section = diagram.AddNode("Section");
+        section.AddChild("Leaf", 1234567.891);
+        section.AddChild("Other", 1000);
+
+        var svg = diagram.ToSvg();
+        Assert.Contains(">1,234,567.891<", svg, StringComparison.Ordinal);
+        Assert.DoesNotContain("1,234,570", svg, StringComparison.Ordinal);
     }
 
     [Fact]

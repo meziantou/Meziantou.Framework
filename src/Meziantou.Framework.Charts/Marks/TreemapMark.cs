@@ -26,6 +26,9 @@ public sealed class TreemapMark<T> : HierarchyMark<T>
     /// <summary>Gets or sets a value that indicates whether the value of a leaf is drawn under its label. The default is <see langword="true"/>.</summary>
     public bool ShowValues { get; set; } = true;
 
+    /// <summary>Gets or sets the function that formats the values drawn under the labels, or <see langword="null"/> for <see cref="NumberFormats.Default"/>.</summary>
+    public Func<double, string>? ValueFormat { get; set; }
+
     private protected override void Render(RenderContext context, MarkData data, SceneGroup group, Dictionary<HierarchyNode<T>, int> indexes)
     {
         var frame = context.Frame;
@@ -76,7 +79,7 @@ public sealed class TreemapMark<T> : HierarchyMark<T>
             var textColor = RenderContext.GetContrastingColor(color);
             if (AddLabel(context, group, text, x + 4, y + 3, rectangle.Width - 8, textColor, font) && ShowValues && rectangle.Height >= (2 * lineHeight) + 4)
             {
-                AddLabel(context, group, NumberFormats.Default(rectangle.Node.Value), x + 4, y + 3 + lineHeight, rectangle.Width - 8, textColor.WithOpacity(0.75), font);
+                AddLabel(context, group, ValueFormat?.Invoke(rectangle.Node.Value) ?? NumberFormats.Default(rectangle.Node.Value), x + 4, y + 3 + lineHeight, rectangle.Width - 8, textColor.WithOpacity(0.75), font);
             }
         }
     }

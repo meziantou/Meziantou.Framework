@@ -245,6 +245,14 @@ public sealed class ScaleTests
     }
 
     [Fact]
+    public void LogTicks_InfiniteBounds()
+    {
+        Assert.Empty(TickGenerator.LogTicks(1, double.PositiveInfinity, 10, 10));
+        Assert.Empty(TickGenerator.LogTicks(double.PositiveInfinity, 1, 10, 10));
+        Assert.NotEmpty(TickGenerator.LogTicks(1, 100, 10, 10));
+    }
+
+    [Fact]
     public void TimeScale_DomainOutOfTheRangeOfDateTime()
     {
         // The ticks stay within the times a DateTime can represent

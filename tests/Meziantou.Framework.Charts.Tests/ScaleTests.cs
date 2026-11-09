@@ -269,7 +269,17 @@ public sealed class ScaleTests
             var ticks = lastMonths.GetTicks();
             Assert.NotEmpty(ticks);
             Assert.All(ticks, tick => Assert.True(double.IsFinite(tick.Position)));
+
+            // A single time out of the range of DateTime gives a domain of a single time, with no tick
+            var single = new ResolvedContinuousScale(ContinuousTransformKind.Linear, ChannelKind.Time, 1e308, 1e308, new TimeScale(), 0, nice);
+            single.Configure(0, 100, 10);
+            Assert.Empty(single.GetTicks());
         }
+
+        // The explicit ticks out of the range of DateTime are left out
+        var explicitTicks = new ResolvedContinuousScale(ContinuousTransformKind.Linear, ChannelKind.Time, 0, 1e300, new TimeScale { Ticks = [0, 1e300] }, 0, nice: false);
+        explicitTicks.Configure(0, 100, 10);
+        Assert.Equal(["1970"], explicitTicks.GetTicks().Select(tick => tick.Label).ToArray());
     }
 
     [Fact]

@@ -15,18 +15,22 @@ internal static class ChordLayout
         var n = matrix.Length;
         var groupSums = new double[n];
 
-        // The scale from a value to an angle, so the arcs and the gaps fill the circle
+        // The scale from a value to an angle, so the arcs and the gaps fill the circle. The total is the sum of the values
+        // scaled by a power of two, which keeps their ratios exactly, so that it cannot overflow for huge values.
+        var exponent = matrix.SelectMany(row => row).DefaultIfEmpty().Max() is > 0 and var max ? -Math.ILogB(max) : 0;
         var k = 0.0;
         for (var i = 0; i < n; i++)
         {
             var sum = 0.0;
+            var scaledSum = 0.0;
             for (var j = 0; j < n; j++)
             {
                 sum += matrix[i][j];
+                scaledSum += Math.ScaleB(matrix[i][j], exponent);
             }
 
             groupSums[i] = sum;
-            k += sum;
+            k += scaledSum;
         }
 
         k = Math.Max(0, Tau - (padAngle * n)) / k;
@@ -48,7 +52,7 @@ internal static class ChordLayout
                     continue;
 
                 var start = x;
-                x += matrix[i][j] * k;
+                x += Math.ScaleB(matrix[i][j], exponent) * k;
                 var subgroup = new ChordSubgroup(i, start, x, matrix[i][j]);
                 Chord chord;
                 if (i < j)

@@ -201,7 +201,10 @@ internal sealed class GeoSystem : CoordinateSystem
         if (!alongParallel && !alongMeridian)
             return;
 
-        var steps = (int)Math.Ceiling(Math.Max(Math.Abs(to.Longitude - from.Longitude), Math.Abs(to.Latitude - from.Latitude)) / Precision);
+        // Valid positions are at most a full turn apart: an edge between positions out of range, such as a longitude of
+        // 1e80 degrees, gets as many points as a full turn, rather than more points than memory can hold
+        var span = Math.Min(Math.Max(Math.Abs(to.Longitude - from.Longitude), Math.Abs(to.Latitude - from.Latitude)), 360);
+        var steps = (int)Math.Ceiling(span / Precision);
         for (var i = 1; i < steps; i++)
         {
             var t = (double)i / steps;

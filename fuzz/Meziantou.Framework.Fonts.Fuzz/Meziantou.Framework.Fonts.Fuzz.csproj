@@ -1,5 +1,5 @@
 <Project Sdk="Meziantou.NET.Sdk">
-  <!-- SharpFuzz targets of Meziantou.Framework.Fonts (the TrueType hinting interpreter and the subsetter). See fuzz/README.md. -->
+  <!-- SharpFuzz targets of Meziantou.Framework.Fonts (the TrueType hinting interpreter, the subsetter and the shaper). See fuzz/README.md. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
@@ -17,6 +17,13 @@
     <SeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-sans\NotoSans-Regular.subset.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-sans-cff\NotoSans-Regular.subset.otf" />
     <SeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\font-suites\aots\fonts\cmap4_font1.otf" />
     <EmbeddedResource Include="@(SeedFont)" LogicalName="Seeds/fonts/%(Filename)%(Extension)" Link="Seeds\fonts\%(Filename)%(Extension)" />
+
+    <!-- The seeds of the shaping target only: fonts of Apple Advanced Typography (morx, kerx, feat, trak) and the GSUB and GPOS fonts of the AOTS suite -->
+    <ShapingSeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\text-rendering-tests\TestMORX*.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\text-rendering-tests\TestAATMorx.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\text-rendering-tests\TestGPOSFour.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\text-rendering-tests\TestRVRN.ttf" />
+    <ShapingSeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\harfbuzz\*.ttf" />
+    <ShapingSeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\aat-*.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\arabic-forms.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\thai-forms.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\thai-forms.mac.ttf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\synthetic\languages.ttf" />
+    <ShapingSeedFont Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\font-suites\aots\fonts\gsub*.otf;..\..\tests\Meziantou.Framework.Imaging.Fixtures\font-suites\aots\fonts\gpos*.otf" />
+    <EmbeddedResource Include="@(ShapingSeedFont)" LogicalName="Seeds/shaping/%(Filename)%(Extension)" Link="Seeds\shaping\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

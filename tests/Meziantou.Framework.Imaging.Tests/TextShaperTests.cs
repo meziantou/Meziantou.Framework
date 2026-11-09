@@ -101,6 +101,15 @@ public sealed class TextShaperTests
     }
 
     [Fact]
+    public void AnIndicSyllableWithoutBaseKeepsItsClustersInOrder()
+    {
+        // A Lao mark, a vowel below and the Thai vowel drawn on the left, shaped as Tamil: the syllable has no base
+        // consonant, and the vowel drawn on the left moves before the vowel below. They are one cluster.
+        Assert.Equal("0=0 0=0 0=0", Clusters(Boxes, "\u0EBC\u0EB9\u0E42", UnicodeScript.Tamil));
+        Assert.Equal("0=0 0=0 0=0", Clusters(Boxes, "\u0EBC\u0EB9\u0E42", UnicodeScript.Devanagari));
+    }
+
+    [Fact]
     public void CharactersWithoutVisibleFormBecomeInvisibleGlyphs()
     {
         // The glyph of the space, without advance: nothing is drawn, and the cluster is still there. The kerning of the

@@ -16,6 +16,18 @@ internal sealed class JpegArithmeticConditioning
     /// <summary>The number of statistics bins of an AC table: three for each of the 63 coefficients, then twice 14 magnitude categories and 14 magnitude bits (T.81 table F.5).</summary>
     public const int AcBinCount = 245;
 
+    /// <summary>
+    /// The number of statistics bins of the DC table of a lossless scan: four for each of the 25 classes of the
+    /// differences on the left and above, then twice 15 magnitude categories and 14 magnitude bits (T.81 table H.3).
+    /// </summary>
+    public const int LosslessBinCount = 158;
+
+    /// <summary>The first magnitude category bin of a lossless difference whose difference above is small or zero.</summary>
+    public const int LosslessSmallMagnitudeBins = 100;
+
+    /// <summary>The first magnitude category bin of a lossless difference whose difference above is large.</summary>
+    public const int LosslessLargeMagnitudeBins = 129;
+
     /// <param name="dcStatistics">The statistics area of the DC table, or an empty array when the scan codes no DC difference.</param>
     /// <param name="acStatistics">The statistics area of the AC table, or an empty array when the scan codes no AC coefficient.</param>
     /// <param name="dcLower">L: the lower bound of the DC conditioning, 0 to 15.</param>

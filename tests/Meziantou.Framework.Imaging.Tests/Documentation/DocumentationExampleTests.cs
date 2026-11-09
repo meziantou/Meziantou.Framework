@@ -1056,6 +1056,76 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DetectCannyEdgesDrawsThinOutlines()
+    {
+        // A 16x16 opaque black image with a white square from (4, 4) to (11, 11)
+        var input = GetPath("square.png");
+        using (var source = new Image<Rgba32>(16, 16, new Rgba32(0, 0, 0)))
+        {
+            for (var y = 4; y < 12; y++)
+            {
+                for (var x = 4; x < 12; x++)
+                {
+                    source.Frames[0][x, y] = new Rgba32(255, 255, 255);
+                }
+            }
+
+            source.Save(input);
+        }
+
+        var edgesPath = GetPath("square-edges.png");
+        Examples.DetectCannyEdges(input, edgesPath);
+
+        // The outline of the square, one pixel wide: the pixels inside and far outside are black, and each row of the
+        // square has an edge on each side and nothing between them
+        using var edges = Image.Load<Rgba32>(edgesPath);
+        var white = new Rgba32(255, 255, 255);
+        var black = new Rgba32(0, 0, 0);
+        Assert.Equal(black, edges.Frames[0][7, 7]);
+        Assert.Equal(black, edges.Frames[0][0, 0]);
+        Assert.Equal(black, edges.Frames[0][15, 8]);
+        for (var y = 6; y < 10; y++)
+        {
+            var row = Enumerable.Range(0, 16).Where(x => edges.Frames[0][x, y] == white).ToArray();
+            Assert.HasCount(2, row);
+            Assert.Contains(row[0], new[] { 3, 4 });
+            Assert.Contains(row[1], new[] { 11, 12 });
+        }
+    }
+
+    [Fact]
+    public void AverageWithRightAndBottomNeighborsUsesTheAnchorAndTheDivisor()
+    {
+        // A 3x2 opaque gray image: 0 40 80 on the first row, 120 160 200 on the second one
+        var input = GetPath("grid.png");
+        using (var source = new Image<Rgba32>(3, 2))
+        {
+            for (var y = 0; y < 2; y++)
+            {
+                for (var x = 0; x < 3; x++)
+                {
+                    var value = (byte)(40 * ((3 * y) + x));
+                    source.Frames[0][x, y] = new Rgba32(value, value, value);
+                }
+            }
+
+            source.Save(input);
+        }
+
+        var outputPath = GetPath("grid-averaged.png");
+        Examples.AverageWithRightAndBottomNeighbors(input, outputPath);
+
+        // (0 + 40 + 120 + 160) / 4 = 80, (40 + 80 + 160 + 200) / 4 = 120, and the last column reads itself again beyond
+        // the edge (Clamp): (80 + 80 + 200 + 200) / 4 = 140; the last row reads itself twice: (120 + 160 + 120 + 160) / 4
+        using var averaged = Image.Load<Rgba32>(outputPath);
+        Assert.Equal(new Rgba32(80, 80, 80), averaged.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(120, 120, 120), averaged.Frames[0][1, 0]);
+        Assert.Equal(new Rgba32(140, 140, 140), averaged.Frames[0][2, 0]);
+        Assert.Equal(new Rgba32(140, 140, 140), averaged.Frames[0][0, 1]);
+        Assert.Equal(new Rgba32(200, 200, 200), averaged.Frames[0][2, 1]);
+    }
+
+    [Fact]
     public void CleanUpScanRemovesSpecksAndSharpensEdges()
     {
         // A 9x9 opaque image: 50 on the left (columns 0 to 4), 200 on the right, and a white speck at (2, 2)
@@ -1185,6 +1255,104 @@ public sealed class DocumentationExampleTests : IDisposable
             {
                 Assert.Equal(baseline.Frames[0][x, y], progressive.Frames[0][x, y]);
             }
+        }
+    }
+
+    [Fact]
+    public void SaveLosslessJpegKeepsEverySampleOfA16BitImage()
+    {
+        var source = GetPath("lossless-source.png");
+        using (var image = new Image<Rgb48>(40, 24))
+        {
+            image.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgb48((ushort)((x * 1601) + y), (ushort)(y * 2711), (ushort)(((x + y) * 997) ^ 0x5A5A));
+                    }
+                }
+            });
+            image.Save(source);
+        }
+
+        var output = GetPath("lossless.jpg");
+        Examples.SaveLosslessJpeg(source, output);
+
+        // A lossless frame (SOF3) of 16-bit samples, which loads as Rgb48 with the pixels of the source
+        var data = File.ReadAllBytes(output);
+        var frame = data.AsSpan().IndexOf([(byte)0xFF, (byte)0xC3]);
+        Assert.True(frame > 0);
+        Assert.Equal(16, data[frame + 4]);
+        using var expected = Image.Load<Rgb48>(source);
+        using var decoded = Image.Load(output);
+        Assert.Equal(PixelFormat.Rgb48, decoded.PixelFormat);
+        using var pixels = decoded.CloneAs<Rgb48>();
+        for (var y = 0; y < 24; y++)
+        {
+            for (var x = 0; x < 40; x++)
+            {
+                Assert.Equal(expected.Frames[0][x, y], pixels.Frames[0][x, y]);
+            }
+        }
+    }
+
+    [Fact]
+    public void SaveTwelveBitJpegWritesAnArithmeticCodedFrameOf12BitSamples()
+    {
+        var source = GetPath("twelve-bit-source.png");
+        using (var image = new Image<Rgb48>(40, 24))
+        {
+            image.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgb48((ushort)(x * 1600), (ushort)(y * 2700), (ushort)((x + y) * 1000));
+                    }
+                }
+            });
+            image.Save(source);
+        }
+
+        var output = GetPath("twelve-bit.jpg");
+        Examples.SaveTwelveBitJpeg(source, output);
+
+        // A sequential arithmetic-coded frame (SOF9) of precision 12, without Huffman tables, which loads as Rgb48
+        var data = File.ReadAllBytes(output);
+        var frame = data.AsSpan().IndexOf([(byte)0xFF, (byte)0xC9]);
+        Assert.True(frame > 0);
+        Assert.Equal(12, data[frame + 4]);
+        Assert.Equal(-1, data.AsSpan().IndexOf([(byte)0xFF, (byte)0xC4]));
+        using var expected = Image.Load<Rgb48>(source);
+        using var decoded = Image.Load<Rgb48>(output);
+
+        // Closer to the 16-bit source than the same settings with 8-bit samples
+        var eightBitPath = GetPath("eight-bit.jpg");
+        expected.Save(eightBitPath, new JpegEncoder { Quality = 90, AllowBitDepthReduction = true });
+        using var eightBit = Image.Load<Rgb48>(eightBitPath);
+        var twelveBitError = GetMeanError(expected, decoded);
+        var eightBitError = GetMeanError(expected, eightBit);
+        Assert.True(twelveBitError < eightBitError, $"Mean error {twelveBitError} with 12 bits, {eightBitError} with 8 bits.");
+
+        static double GetMeanError(Image<Rgb48> a, Image<Rgb48> b)
+        {
+            var error = 0L;
+            for (var y = 0; y < a.Height; y++)
+            {
+                for (var x = 0; x < a.Width; x++)
+                {
+                    var p = a.Frames[0][x, y];
+                    var q = b.Frames[0][x, y];
+                    error += Math.Abs(p.R - q.R) + Math.Abs(p.G - q.G) + Math.Abs(p.B - q.B);
+                }
+            }
+
+            return error / (a.Width * a.Height * 3.0);
         }
     }
 
@@ -3738,6 +3906,30 @@ public sealed class DocumentationExampleTests : IDisposable
             Assert.Equal(expected[i][1], frame[x + 37, 45] == Colors.SteelBlue);
             Assert.Equal(expected[i][2], frame[x + 62, 45] == Colors.SteelBlue);
         }
+    }
+
+    [Fact]
+    public void DrawMeshGradientPaintsTheCornerColorsOfItsPatches()
+    {
+        var output = GetPath("mesh-gradient.png");
+        DrawingExamples.DrawMeshGradient(output);
+
+        using var image = Image.Load<Rgba32>(output);
+        var frame = image.Frames[0];
+
+        // Near the corners, the colors of the corners: crimson at the top left of the first patch, dark violet at the bottom
+        // right of the second one
+        Assert.True(frame[12, 14].R > 180 && frame[12, 14].G < 80);
+        Assert.True(frame[245, 98].B > 150 && frame[245, 98].G < 60);
+
+        // The shared corner at the top (130, 10) is gold for both patches, and the patches meet without a seam
+        Assert.True(frame[130, 13].R > 220 && frame[130, 13].G > 180 && frame[130, 13].B < 80);
+        var leftOfEdge = frame[128, 50];
+        var rightOfEdge = frame[131, 50];
+        Assert.True(Math.Abs(leftOfEdge.R - rightOfEdge.R) < 24 && Math.Abs(leftOfEdge.G - rightOfEdge.G) < 24 && Math.Abs(leftOfEdge.B - rightOfEdge.B) < 24);
+
+        // Outside the patches, above the wavy top side, the white of the canvas
+        Assert.Equal(Colors.White, frame[200, 1]);
     }
 
     [Fact]

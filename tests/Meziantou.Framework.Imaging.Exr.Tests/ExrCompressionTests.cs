@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using System.Security.Cryptography;
+using System.Text;
 using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -73,6 +74,70 @@ public sealed class ExrCompressionTests
         Assert.Equal(alternating, decoded);
 
         Assert.Equal(-1, ExrRle.Encode(alternating, new byte[10]));
+    }
+
+    [Fact]
+    public void ZstandardFramesOfRawAndRunLengthBlocksAreCopied()
+    {
+        // A frame of one segment and a content size of 7 (header 0x20), a raw block of 4 bytes, then a last RLE block of 3
+        byte[] frame = [0x28, 0xB5, 0x2F, 0xFD, 0x20, 7, 0x20, 0, 0, (byte)'a', (byte)'b', (byte)'c', (byte)'d', 0x1B, 0, 0, (byte)'z'];
+        var output = new byte[7];
+        new ZstdDecoder().Decompress(frame, output);
+        Assert.Equal("abcdzzz"u8.ToArray(), output);
+
+        // A skippable frame before it is skipped; the content size and the destination must agree
+        byte[] skippable = [0x5A, 0x2A, 0x4D, 0x18, 2, 0, 0, 0, 1, 2, .. frame];
+        new ZstdDecoder().Decompress(skippable, output);
+        Assert.Equal("abcdzzz"u8.ToArray(), output);
+        Assert.Throws<InvalidDataException>(() => new ZstdDecoder().Decompress(frame, new byte[8]));
+        Assert.Throws<InvalidDataException>(() => new ZstdDecoder().Decompress(frame.AsSpan(0, frame.Length - 1), output));
+    }
+
+    [Fact]
+    public void ZstandardCompressedBlocksAreThoseOfTheReferenceEncoder()
+    {
+        // zstd -19 of "abracadabra 0; ... abracadabra 6; " (600 bytes): raw literals, then repeated matches; and its checksum
+        var repeated = Convert.FromHexString(
+            "28b52ffd6458015d0100b8616272616361646162726120303b203132333435363b200700ec6c5007c80764066401f20199156ed601dc2881c1");
+        var text = string.Concat(Enumerable.Range(0, 40).Select(i => $"abracadabra {i % 7}; "));
+        var output = new byte[text.Length];
+        new ZstdDecoder().Decompress(repeated, output);
+        Assert.Equal(Encoding.ASCII.GetBytes(text), output);
+
+        // zstd -3 --no-check of 2000 pseudo-random letters of skewed frequencies: Huffman-coded literals in four streams
+        var skewed = Convert.FromHexString(
+            ""
+            + "28b52ffd60d00645130012c90a05e00f69b00e2c104ef765b666fcba6b8a0bf5133e57d6c2bd8852eadeca505b7a71b9591b382b05068405"
+            + "8154a8f1eea6d0182104108481d65b3d11f0351ba50ebc004a105e636641a123ec94fd1e28714ea68cd984a153919a0dfa636f505367979b"
+            + "a80bd862ba72837434d3496d732fe80071be2e493c0c9df1fc0163324a9a8eb3e44d84466ba446ccc9713e958a7cf564ac8e25f52ae5f774"
+            + "cb0066d758033a5487239ef705fa163e2b8685d49b0fd2c37321c14eff2e3684b563554d2df4d59c498eaa8a2308519a8f77d7171180be46"
+            + "49ed5921297d7222f43f479019e28c6469bbaa7007e3df9874f3fbbc38c524a20b052d5629a7f08e073eb34fc70e0d2a4e153b364b2be374"
+            + "14b21f0dea6816d8b258fea9894c699c810979fddda27369463c56d601312eae6524e5376254fda7a34cf2bfd680c1187525f2155f9a0537"
+            + "6857ae5f23840137a77858cf86baca2f965c84201217a074c46a5026b2f5038ca4d0ec1868f99d05023f440db47bb12b7a37e0510a706dd6"
+            + "9c631089631d0a0e044c5dc41ab273edd3711508f4ac715a77ec5f73e61751326bd819811783b150e7a0125b341b8a927260d3724f26899d"
+            + "cd128869a2192af6685e5b7cd87f240ebda38336928de2688ccf2d5b367ca613c0fa3079bf14e704a3be1bd8ada5bff29110c3aff52a82b0"
+            + "7ed80716c24e44396d69893316246c6296f1b2c68810515d183ac7827d98e02b7505004524c8d6a35d5324428eb937e1a0226e9e9372e343"
+            + "eecf8c5e8c17c1231957ae80c4525c09e6b8a0c9c05fd2077ea35a30ac7088a9d78039a0a6b4ac035455114246bf792aeab603b51c17d226"
+            + "8c29d8d93901fd38d82a");
+        var letters = "aaaaaaaabbbbccd"u8.ToArray();
+        var expected = new byte[2000];
+        var state = 1u;
+        for (var i = 0; i < expected.Length; i++)
+        {
+            state = ((state * 1103515245) + 12345) & 0x7FFFFFFF;
+            expected[i] = letters[(state >> 16) % 15];
+        }
+
+        output = new byte[2000];
+        new ZstdDecoder().Decompress(skewed, output);
+        Assert.Equal(expected, output);
+
+        // A corrupt checksum, and a frame that needs a dictionary, are errors
+        var corrupt = repeated.ToArray();
+        corrupt[^1] ^= 1;
+        Assert.Throws<InvalidDataException>(() => new ZstdDecoder().Decompress(corrupt, new byte[text.Length]));
+        byte[] dictionary = [0x28, 0xB5, 0x2F, 0xFD, 0x21, 1, 7, 0x20, 0, 0, 1, 2, 3, 4, 0x1B, 0, 0, 5];
+        Assert.Throws<InvalidDataException>(() => new ZstdDecoder().Decompress(dictionary, new byte[7]));
     }
 
     [Fact]
@@ -385,6 +450,31 @@ public sealed class ExrCompressionTests
         Assert.Equal(0x558C, table[0x7BFF]);
         Assert.Equal(0xFC00, table[0x8000]);
         Assert.Equal(0x0000, table[0x8001]);
+    }
+
+    [Fact]
+    public void TheDwaPerceptualCurveIsAPowerOfTheCodedValue()
+    {
+        // toLinear(x) = half(x^2.2) up to 1, half(9.025^(x - 1)) above, in single precision: the hash of the 65,536
+        // little-endian values and some of them (section 8.13)
+        var table = ExrDwa.GetToLinearTable();
+        var bytes = new byte[table.Length * 2];
+        for (var i = 0; i < table.Length; i++)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(2 * i), table[i]);
+        }
+
+        Assert.Equal("72e80880a49b9428073cf87e2b181a6da74cfac9f8f7f4c6e459f0ac1f0225a5", Convert.ToHexStringLower(SHA256.HashData(bytes)));
+        Assert.Equal(0x0000, table[0x0001]);
+        Assert.Equal(0x32F7, table[0x3800]);
+        Assert.Equal(0x3C00, table[0x3C00]);
+        Assert.Equal(0x3C02, table[0x3C01]);
+        Assert.Equal(0x4883, table[0x4000]);
+        Assert.Equal(0x7C00, table[0x4900]);
+        Assert.Equal(0x0000, table[0x7C00]);
+        Assert.Equal(0x8000, table[0x8001]);
+        Assert.Equal(0xC883, table[0xC000]);
+        Assert.Equal(0xFC00, table[0xFBFF]);
     }
 
     private static ushort[] ToUInt16(byte[] bytes)

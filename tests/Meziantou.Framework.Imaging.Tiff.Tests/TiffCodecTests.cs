@@ -2671,12 +2671,12 @@ public sealed class TiffCodecTests
         var lenient = new ImageDecodeOptions { Configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient } };
         Assert.Equal(ImageFormat.Tiff, Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(16, 8, 3, 6, strip[..^2]), lenient)).Format);
 
-        // What a JPEG file cannot be either is reported for the page: here a hierarchical frame (SOF5)
-        var hierarchical = (byte[])strip.Clone();
-        hierarchical[hierarchical.AsSpan().IndexOf((ReadOnlySpan<byte>)[0xFF, 0xC0]) + 1] = 0xC5;
-        var unsupported = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 3, 6, hierarchical)));
+        // What a JPEG file cannot be either is reported for the page: here a frame of the JPG extension marker (0xFFC8)
+        var extension = (byte[])strip.Clone();
+        extension[extension.AsSpan().IndexOf((ReadOnlySpan<byte>)[0xFF, 0xC0]) + 1] = 0xC8;
+        var unsupported = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(16, 8, 3, 6, extension)));
         Assert.Equal(ImageFormat.Tiff, unsupported.Format);
-        Assert.Equal("Compression: JPEG hierarchical", unsupported.Feature);
+        Assert.Equal("Compression: JPEG extensions", unsupported.Feature);
 
         // And what a JPEG file can be is decoded: an arithmetic-coded datastream has the samples of the Huffman-coded one
         var image = JpegTestImage.CreateRandom(16, 8, sampling, seed: 9);

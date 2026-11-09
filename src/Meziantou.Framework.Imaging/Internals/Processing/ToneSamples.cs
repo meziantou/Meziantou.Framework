@@ -7,6 +7,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// The samples of the histogram-based tone operations: rows of stored pixels read as red, green, blue and alpha samples at
 /// the storage precision (0 to 255 for 8-bit formats, 0 to 65,535 for 16-bit ones), and their colors written back.
+/// Floating-point samples are binned to 65,536 levels from 0 to 1 (<see cref="GetFloatLevel"/>), and a sample is written
+/// back as its level divided by 65,535, unless its level does not change: it then keeps its stored value.
 /// </summary>
 /// <remarks>
 /// The packed formats have the precision of the format their kernels work in (<see cref="ProcessingBridge.GetKernelFormat"/>):
@@ -15,22 +17,20 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal static class ToneSamples
 {
-    /// <summary>Gets the number of levels of a sample of an integer pixel format: 256 or 65,536.</summary>
-    public static int GetLevelCount(PixelFormat format) => format is PixelFormat.Rgba64 or PixelFormat.Gray16 or PixelFormat.La32 or PixelFormat.Rgb48 or PixelFormat.Rgba1010102 ? 65536 : 256;
+    /// <summary>The largest level of a floating-point sample: they are binned to 65,536 levels from 0 to 1.</summary>
+    private const float FloatLevelMax = 65535;
+
+    /// <summary>Gets the number of levels of a sample: 256 or 65,536 (16-bit and floating-point formats).</summary>
+    public static int GetLevelCount(PixelFormat format) => format is PixelFormat.Rgba64 or PixelFormat.Gray16 or PixelFormat.La32 or PixelFormat.Rgb48 or PixelFormat.Rgba1010102 or PixelFormat.RgbaFloat or PixelFormat.RgbaHalf ? 65536 : 256;
 
     /// <summary>
-    /// Checks that the pixels have discrete levels: floating-point samples have none, and binning them would lose their
-    /// precision silently.
+    /// Gets the level of a floating-point sample: <c>round(65535 v)</c> for a value from 0 to 1, ties away from zero, 0 below
+    /// 0 and for a value that is not a number, and 65,535 above 1.
     /// </summary>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one.</exception>
-    public static void EnsureIntegerSamples(PixelFormat format, string operation)
-    {
-        if (PixelFormats.IsFloatingPoint(format))
-            throw new UnsupportedImageFeatureException(
-                $"Histograms count the levels of integer samples, but {format} samples are floating-point values: binning them would lose their precision. Convert the image to Rgba64 with Image.CloneAs first to {operation}.",
-                ImageFormat.Unknown,
-                "Histogram of floating-point samples");
-    }
+    internal static ushort GetFloatLevel(float value) => value > 0 ? value < 1 ? (ushort)((value * FloatLevelMax) + 0.5f) : ushort.MaxValue : (ushort)0;
+
+    /// <summary>Gets the value written for a level of a floating-point sample, unless the level is the one of the stored value, which is then kept.</summary>
+    private static float GetFloatValue(ushort level, float stored) => GetFloatLevel(stored) == level ? stored : level / FloatLevelMax;
 
     /// <summary>The number of 16-bit values of a working row per pixel: four samples (<see cref="GetSamples"/>) and a luma (<see cref="GetLuma"/>).</summary>
     private const int RowValuesPerPixel = 5;
@@ -368,6 +368,24 @@ internal static class ToneSamples
 
                 break;
 
+            case PixelFormat.RgbaFloat:
+                var floats = unsafe(MemoryMarshal.Cast<byte, float>(pixels));
+                for (var i = 0; i < 4 * count; i++)
+                {
+                    rgba[i] = GetFloatLevel(floats[i]);
+                }
+
+                break;
+
+            case PixelFormat.RgbaHalf:
+                var halves = unsafe(MemoryMarshal.Cast<byte, Half>(pixels));
+                for (var i = 0; i < 4 * count; i++)
+                {
+                    rgba[i] = GetFloatLevel((float)halves[i]);
+                }
+
+                break;
+
             default:
                 throw new NotSupportedException($"The pixel format '{format}' has no integer samples.");
         }
@@ -524,6 +542,28 @@ internal static class ToneSamples
                 {
                     // The alpha bits are kept
                     packed32[i] = (packed32[i] & 0xC0000000u) | PixelConverter.Reduce(rgba[4 * i], 1023, ushort.MaxValue) | (PixelConverter.Reduce(rgba[(4 * i) + 1], 1023, ushort.MaxValue) << 10) | (PixelConverter.Reduce(rgba[(4 * i) + 2], 1023, ushort.MaxValue) << 20);
+                }
+
+                break;
+
+            case PixelFormat.RgbaFloat:
+                var floats = unsafe(MemoryMarshal.Cast<byte, float>(pixels));
+                for (var i = 0; i < 4 * count; i += 4)
+                {
+                    floats[i] = GetFloatValue(rgba[i], floats[i]);
+                    floats[i + 1] = GetFloatValue(rgba[i + 1], floats[i + 1]);
+                    floats[i + 2] = GetFloatValue(rgba[i + 2], floats[i + 2]);
+                }
+
+                break;
+
+            case PixelFormat.RgbaHalf:
+                var halves = unsafe(MemoryMarshal.Cast<byte, Half>(pixels));
+                for (var i = 0; i < 4 * count; i += 4)
+                {
+                    halves[i] = (Half)GetFloatValue(rgba[i], (float)halves[i]);
+                    halves[i + 1] = (Half)GetFloatValue(rgba[i + 1], (float)halves[i + 1]);
+                    halves[i + 2] = (Half)GetFloatValue(rgba[i + 2], (float)halves[i + 2]);
                 }
 
                 break;

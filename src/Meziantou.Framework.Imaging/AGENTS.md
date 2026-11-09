@@ -730,8 +730,18 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   files its `ljpeg` encoder writes (with its BGR pixel formats it writes a frame of 9-bit samples that are not the
   pixels: such a file is read as what its frame header says, or rejected when a sample does not fit), and FFmpeg
   9.0.2 misreads the category 16.
-  Apple ImageIO does not read lossless files reliably. The process with arithmetic coding (SOF11) is not decoded: no
-  tool at hand writes or reads it.
+  Apple ImageIO does not read lossless files reliably. The process with arithmetic coding (SOF11) has no writer at
+  hand (the encoder of the ISO reference codec fails on lossless frames): the test-side encoder writes it, and the ISO
+  reference decoder reads it back (InteropTests); that decoder predicts the first sample with `2^(P - 1)` whatever the
+  point transform, so it is no oracle for a point transform.
+- **Hierarchical JPEG** (`JpegDecoder.EndHierarchicalFrame`): frames are decoded into full planes and reconstructed in
+  integers (T.81 J.1); the ISO reference software, the only writer at hand (`jpeg -y N`, Huffman needs `-h`), keeps four
+  fractional bits and unclamped values between frames, so its decoding differs by a few units, and its lossless
+  hierarchical files (`-y 0 -c`) are not restored exactly. The lossless-only structure is tested exactly with frames of
+  the test-side lossless encoder (`JpegLosslessTestOptions.Differential`).
+- **JPEG-LS** (`JpegLsScanDecoder`): the T.87 conformance streams (downloaded from CharLS at a pinned commit) are the
+  oracle. FFmpeg 9.0.2 misreads the sample-interleaved mode (ILV 2) and ignores the HP transforms of separate scans; the
+  ISO reference decoder misreads near-lossless and 16-bit streams that CharLS, FFmpeg and the library agree on.
 - **Scaled JPEG decoding** (`ImageDecodeRequest.ScaleDenominator`/`TargetSize`, `JpegFrameComponent.SetGeometry`,
   `JpegIdct.TransformReduced`). A codec opts in with `ImageCodec.SupportsScaledDecoding`; the drivers reject an exact scale
   for the others before decoding (`ImageDecodeRequest.For`), and a decoder picks its denominator with
@@ -896,6 +906,16 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   product by the stored alpha give the bits of the scalar double-precision forms); `ExrPredictor` and the first level of
   `ExrWavelet` have vector paths, and the PIZ Huffman decoder reads the codes of its lookup table from a 64-bit bit
   buffer (`DecodeTableCodes`). Each vector path keeps its scalar reference (`VectorizedKernelTests`).
+  A multi-part file is decoded from the part `OpenExrDecodingOptions.Part` names: the parser reads every header (the
+  other parts are checked by `ExrHeader.CompleteOtherPart`, for their chunk counts), skips the offset tables of the other
+  parts, and their chunks as bytes between two chunks of the part; a chunk starts with its part number. Deep data
+  (section 1.6 of `ExrCompression.md`) are decoded one chunk at a time on the calling thread (no workers: their sizes are
+  only known from the chunk) and flattened by `ExrDeepPixels` as OpenEXR flattens one source (section 1.7: stored order,
+  single precision, until alpha reaches 1). DWAA and DWAB (`ExrDwa`, section 8) reuse the PIZ Huffman decoder and are
+  bit-exact with the scalar build of OpenEXR (the reference tools are built that way); their perceptual table is pinned by
+  a hash. ZSTD (`ExrZstd`, section 13) wraps a fully managed Zstandard decoder written from RFC 8878
+  (`Internals/Compression/ZstdDecoder`, with the XXH64 checksum). HTJ2K and LJ2K (section 14) are not decoded: the JPEG
+  2000 decoder has no signed components, no 32-bit components and no NLT marker.
   `MetadataWritePlan` treats OpenEXR as linear light only (`FormatCapabilities.LinearOnly`): an sRGB label is metadata
   the format cannot store.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.

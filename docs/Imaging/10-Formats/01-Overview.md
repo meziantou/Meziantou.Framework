@@ -12,7 +12,7 @@ is read, what is written, how to save with its encoder and its options, and the 
 | --- | --- | --- | --- |
 | [PNG and APNG](02-Png.md) | Every color type and bit depth, palettes, interlacing, Apple CgBI files | Lossless: gray, RGB and RGBA at 8 or 16 bits, palettes on request | Read and written |
 | [GIF](03-Gif.md) | GIF87a and GIF89a, interlacing, transparency, comments | Lossy by design: 256 colors per frame, one transparent color | Read and written |
-| [JPEG](04-Jpeg.md) | Baseline, progressive, arithmetic coded, 12-bit, lossless; CMYK as CMYK pixels or with a color conversion | Lossy, 8 bits, baseline or progressive, gray or YCbCr; baseline CMYK | No |
+| [JPEG](04-Jpeg.md) | Baseline, progressive, arithmetic coded, 12-bit, lossless; CMYK as CMYK pixels or with a color conversion | Lossy (8 or 12 bits, baseline or progressive, gray or YCbCr) or lossless (2 to 16 bits, gray or RGB); Huffman or arithmetic coded; 8-bit baseline CMYK | No |
 | [WebP](05-WebP.md) | Lossless, lossy, alpha | Lossless (default) or lossy, alpha | Read and written |
 | [QOI](06-Qoi.md) | Every file | Lossless 8-bit RGB and RGBA | No |
 | [BMP](07-Bmp.md) | Windows and OS/2 bitmaps, 1 to 32 bits, bit fields, run-length | 24 or 32 bits by default; indexed, run-length and 16 bits on request | No |

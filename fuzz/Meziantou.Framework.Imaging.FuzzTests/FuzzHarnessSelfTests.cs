@@ -81,6 +81,54 @@ public sealed class FuzzHarnessSelfTests
     }
 
     [Fact]
+    public void TheOpenExrSeedsThatTheDefaultOptionsRejectDecodeWithTheOptionsOfTheOracle()
+    {
+        // The default options reject multi-part files, deep data, layers and overscan: the oracle decodes each OpenEXR input
+        // again with the options that accept them, as a whole and as each part it names, so that the mutations of these
+        // seeds reach their decoding
+        var ids = FuzzSeeds.Get("exr").Select(seed => seed.Id).ToHashSet(StringComparer.Ordinal);
+        var fixtures = GoldenCorpus.Default.Fixtures
+            .Where(fixture => fixture.Entry.ExrDecodings?.Any(decoding => decoding.Buffer is not null
+                && (decoding.Part is not null || decoding.DeepData == "Flatten" || (decoding.Layer is { Length: 0 } && decoding.WindowMode is "DisplayWindow" or "CropToDisplayWindow"))) == true)
+            .ToList();
+        Assert.NotEmpty(fixtures);
+        var errors = new List<string>();
+        foreach (var fixture in fixtures)
+        {
+            Assert.Contains(fixture.Id, ids);
+            var data = fixture.ReadInput();
+            var names = FuzzOracle.FindOpenExrPartNames(data);
+            foreach (var decoding in fixture.Entry.ExrDecodings!)
+            {
+                if (decoding.Part is not null && decoding.Buffer is not null)
+                {
+                    Assert.Contains(decoding.Part, names);
+                }
+            }
+
+            var decoded = 0;
+            foreach (var part in new string?[] { null }.Concat(names))
+            {
+                var configuration = FuzzOracle.CreateOpenExrConfiguration(part);
+                try
+                {
+                    using var image = Image.Load(data, new ImageDecodeOptions { Configuration = configuration }, TestContext.Current.CancellationToken);
+                    decoded++;
+                }
+                catch (ImageException exception)
+                {
+                    errors.Add($"{fixture.Id} (part {part ?? "none"}): {exception.Message}");
+                }
+            }
+
+            if (decoded == 0)
+            {
+                Assert.Fail($"The fixture '{fixture.Id}' does not decode with the options of the oracle: {string.Join("; ", errors)}");
+            }
+        }
+    }
+
+    [Fact]
     public void Av1MutationsKeepTheSizeFieldsOfTheUnitsAndTheContainer()
     {
         // The mutations change whole units: the media data of the file they give is still a sequence of units whose size

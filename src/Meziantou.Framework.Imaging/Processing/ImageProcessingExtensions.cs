@@ -897,9 +897,10 @@ public static partial class ImageProcessingExtensions
     /// </summary>
     /// <remarks>
     /// The levels are the stored (encoded) sample values, at the storage precision: 256 bins for 8-bit pixel formats,
-    /// 65,536 for 16-bit ones (see <see cref="ImageHistogram"/>). No color profile is applied. Floating-point pixel formats
-    /// have no discrete levels: convert the image to <see cref="Rgba64"/> with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>
-    /// first. The working storage (one row) is charged to the image.
+    /// 65,536 for 16-bit ones (see <see cref="ImageHistogram"/>). No color profile is applied. Floating-point samples
+    /// (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) are binned to 65,536 levels from 0 to 1: the level of a value
+    /// <c>v</c> is <c>round(65535 v)</c>, values below 0 and values that are not numbers count as level 0, values above 1
+    /// as level 65,535. The working storage (one row) is charged to the image.
     /// </remarks>
     /// <param name="image">The image.</param>
     /// <param name="channel">The channel to count.</param>
@@ -907,7 +908,6 @@ public static partial class ImageProcessingExtensions
     /// <returns>The histogram.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="channel"/> is not a defined <see cref="HistogramChannel"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
@@ -927,7 +927,6 @@ public static partial class ImageProcessingExtensions
     /// <returns>The histogram.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="channel"/> is not a defined <see cref="HistogramChannel"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit.</exception>
     /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
@@ -951,8 +950,9 @@ public static partial class ImageProcessingExtensions
     /// they remap: by default, the luminance, so that the hues do not shift. The mappings work on the stored (encoded)
     /// sample values at the storage precision, with 256 levels for 8-bit pixel formats and 65,536 for 16-bit ones, and are
     /// deterministic: the same on every platform. No color profile is applied. Fully transparent pixels are not counted.
-    /// Floating-point pixel formats have no discrete levels: convert the image to <see cref="Rgba64"/> with
-    /// <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> first.
+    /// Floating-point samples are binned to 65,536 levels from 0 to 1, as <see cref="ComputeHistogram(Image, HistogramChannel, CancellationToken)"/>
+    /// counts them, and a remapped sample is written as its new level divided by 65,535; a sample whose level does not
+    /// change keeps its stored value (values above 1 stay above 1 unless the top level moves).
     /// </para>
     /// <para>
     /// Each frame is equalized alone by default; <see cref="HistogramEqualizationOptions.ShareHistogramAcrossFrames"/>
@@ -1007,7 +1007,6 @@ public static partial class ImageProcessingExtensions
     /// <param name="options">The options, or <see langword="null"/> for <see cref="HistogramEqualizationOptions.Default"/>.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
@@ -1024,7 +1023,6 @@ public static partial class ImageProcessingExtensions
     /// <param name="options">The options, or <see langword="null"/> for <see cref="HistogramEqualizationOptions.Default"/>.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be remapped.</param>
     /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
     /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
@@ -1046,8 +1044,9 @@ public static partial class ImageProcessingExtensions
     /// See <see cref="AutoLevelsOptions"/> for the mapping and <see cref="HistogramColorMode"/> for the samples it remaps:
     /// by default, the luminance, so that the hues do not shift. The mapping works on the stored (encoded) sample values at
     /// the storage precision, with 256 levels for 8-bit pixel formats and 65,536 for 16-bit ones. No color profile is
-    /// applied. Fully transparent pixels are not counted. Floating-point pixel formats have no discrete levels: convert the
-    /// image to <see cref="Rgba64"/> with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> first.
+    /// applied. Fully transparent pixels are not counted. Floating-point samples are binned to 65,536 levels from 0 to 1, as
+    /// <see cref="ComputeHistogram(Image, HistogramChannel, CancellationToken)"/> counts them, and a remapped sample is
+    /// written as its new level divided by 65,535; a sample whose level does not change keeps its stored value.
     /// </para>
     /// <para>
     /// Each frame is stretched alone by default; <see cref="AutoLevelsOptions.ShareHistogramAcrossFrames"/> gives every
@@ -1061,7 +1060,6 @@ public static partial class ImageProcessingExtensions
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><see cref="AutoLevelsOptions.LowPercentile"/> is not less than <see cref="AutoLevelsOptions.HighPercentile"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
@@ -1081,7 +1079,6 @@ public static partial class ImageProcessingExtensions
     /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be remapped.</param>
     /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><see cref="AutoLevelsOptions.LowPercentile"/> is not less than <see cref="AutoLevelsOptions.HighPercentile"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
     /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
@@ -1161,11 +1158,11 @@ public static partial class ImageProcessingExtensions
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">The pixel format cannot store <see cref="ThresholdOptions.UpperColor"/> or <see cref="ThresholdOptions.LowerColor"/> exactly. Nothing is changed.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     public static void Threshold(this Image image, ThresholdOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
@@ -1179,11 +1176,11 @@ public static partial class ImageProcessingExtensions
     /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be binarized.</param>
     /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">The pixel format cannot store <see cref="ThresholdOptions.UpperColor"/> or <see cref="ThresholdOptions.LowerColor"/> exactly. Nothing is changed.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
     /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     public static void Threshold(this ImageFrame frame, ThresholdOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
@@ -1726,6 +1723,68 @@ public static partial class ImageProcessingExtensions
         ValidateEdgeDetection(detector, edgeMode);
         var storage = frame.GetStorage();
         frame.OwnerImage.DetectEdgesFrame(frame, storage, detector, grayscale, edgeMode, cancellationToken);
+    }
+
+    /// <summary>
+    /// Replaces every frame of the image (including the poster frame) by its edges found by the Canny detector, in place:
+    /// thin lines one pixel wide, white on black. The pixel format, the size and alpha are kept.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The detector works on the luminance of the pixels, the Rec. 709 luma of their stored (encoded) samples at the
+    /// storage precision (floating-point samples binned to 65,536 levels from 0 to 1, as
+    /// <see cref="ComputeHistogram(Image, HistogramChannel, CancellationToken)"/> counts them). It runs five steps:
+    /// </para>
+    /// <list type="number">
+    /// <item><description>A Gaussian blur of <see cref="CannyEdgeOptions.Sigma"/> removes the noise.</description></item>
+    /// <item><description>The Sobel operator gives the gradient of every pixel: its magnitude <c>sqrt(gx² + gy²)</c> and its direction, rounded to horizontal, vertical or one of the diagonals.</description></item>
+    /// <item><description>Non-maximum suppression keeps the gradients that are a maximum across the edge, compared with the two neighbors along their direction, so that the edges are thin.</description></item>
+    /// <item><description>A double threshold: the remaining gradients above <see cref="CannyEdgeOptions.HighThreshold"/> are edges, those above <see cref="CannyEdgeOptions.LowThreshold"/> are candidates, and the others are dropped.</description></item>
+    /// <item><description>Hysteresis: the candidates connected to an edge through candidates (any of the 8 neighbors of a pixel) become edges.</description></item>
+    /// </list>
+    /// <para>
+    /// The steps after the blur are those of OpenCV's <c>cv2.Canny</c> with <c>L2gradient=True</c> and its default
+    /// aperture of 3: with <see cref="CannyEdgeOptions.Sigma"/> set to 0, the edges of an 8-bit grayscale image are the ones
+    /// OpenCV finds with the thresholds multiplied by 255. The edges get the maximum sample in their colors (1 for
+    /// floating-point samples) and the other pixels 0. The working memory (18 bytes per pixel) is charged to the image and
+    /// rented before any pixel changes. The EXIF thumbnail, now stale, is removed.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="CannyEdgeOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some frames may already be changed.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><see cref="CannyEdgeOptions.LowThreshold"/> exceeds <see cref="CannyEdgeOptions.HighThreshold"/>.</exception>
+    /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void DetectCannyEdges(this Image image, CannyEdgeOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(DetectCannyEdges));
+        image.DetectCannyEdgesFrames(frames: null, options ?? CannyEdgeOptions.Default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Replaces one frame by its edges found by the Canny detector, in place. See
+    /// <see cref="DetectCannyEdges(Image, CannyEdgeOptions?, CancellationToken)"/>.
+    /// </summary>
+    /// <param name="frame">The frame to modify.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="CannyEdgeOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be changed.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><see cref="CannyEdgeOptions.LowThreshold"/> exceeds <see cref="CannyEdgeOptions.HighThreshold"/>.</exception>
+    /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. The frame is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void DetectCannyEdges(this ImageFrame frame, CannyEdgeOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(DetectCannyEdges));
+        _ = frame.GetStorage();
+        frame.OwnerImage.DetectCannyEdgesFrames([frame], options ?? CannyEdgeOptions.Default, cancellationToken);
     }
 
     private static TransformOptions ValidateTransformOptions(TransformOptions? options)

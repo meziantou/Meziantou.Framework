@@ -277,6 +277,19 @@ public sealed class BoxTreeTests : IDisposable
         """);
 
     [Fact]
+    public void Quotes_MatchParentUsesTheMarksAutoResolvesToOnTheParent() => AssertBody("<style>q { quotes: auto } q q { quotes: match-parent } q::after { content: none }</style><div lang=fr><q lang=de><q lang=sv>a</q></q></div>", """
+        block <body> block-children
+          block <div> inline-children
+            inline <q>
+              inline <q>::before
+                generated-text "\AB"
+              inline <q>
+                inline <q>::before
+                  generated-text "\AB"
+                text "a"
+        """);
+
+    [Fact]
     public void ListItems_Markers() => AssertBody("<ol><li id=a>a</li><li id=b style='list-style-position: inside'><p>b</p></li></ol><ul><li id=c>c</li></ul><ul style='list-style: none'><li id=d>d</li></ul>", """
         block <body> block-children
           block <ol> block-children

@@ -411,17 +411,28 @@ internal sealed class ContainerQueryContext(ComputedStyle container)
                 return ResolveNonNegativeNumber(single);
 
             case [var numerator, CssPreservedToken slash, var denominator] when slash.Token.IsDelim('/'):
-                return ResolveNonNegativeNumber(numerator) is { } n && ResolveNonNegativeNumber(denominator) is { } d ? n / d : null;
+                // The degenerate ratio 0/0 behaves as 1/0
+                if (ResolveNonNegativeNumber(numerator) is not { } n || ResolveNonNegativeNumber(denominator) is not { } d)
+                    return null;
+
+                return n == 0 && d == 0 ? double.PositiveInfinity : n / d;
 
             default:
                 return null;
         }
     }
 
+    /// <summary>Resolves a &lt;number [0,∞]&gt;: a negative number is invalid, but a math function is clamped to 0 (https://drafts.csswg.org/css-values-4/#calc-range).</summary>
     private double? ResolveNonNegativeNumber(CssComponentValue value)
     {
         var text = CssSerializer.SerializeValue([value], property: null);
-        return CustomPropertySyntax.ComputeGrammar(Container, "<number>", text, baseUrl: null) is { } number && CssValueComputer.TryParseNumber(number, out var result) && result >= 0 ? result : null;
+        if (CustomPropertySyntax.ComputeGrammar(Container, "<number>", text, baseUrl: null) is not { } number || !CssValueComputer.TryParseNumber(number, out var result))
+            return null;
+
+        if (value is CssFunction)
+            return result >= 0 ? result : 0;
+
+        return result >= 0 ? result : null;
     }
 
     /// <summary>Substitutes the arbitrary substitution functions of a value with the computed values of the container; null when it is invalid.</summary>

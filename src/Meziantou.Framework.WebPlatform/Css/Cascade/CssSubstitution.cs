@@ -1153,6 +1153,8 @@ internal static class CssSubstitution
         var first = comma < 0 ? function.Value : function.Value[..comma];
         var fallback = comma < 0 ? null : function.Value[(comma + 1)..];
 
+        // When the first argument does not parse as <attr-name> <attr-type>?, the fallback is used (step 2 of
+        // https://drafts.csswg.org/css-values-5/#replace-an-attr-function jumps to the FAILURE step)
         AttrArguments? arguments;
         if (ValueMatcher.ContainsSubstitutionFunction(first))
         {
@@ -1163,10 +1165,7 @@ internal static class CssSubstitution
         }
         else
         {
-            // The arguments are not valid at parse time: the attr() function is invalid, whatever its fallback
             arguments = ParseAttrArguments(first);
-            if (arguments is null)
-                return null;
         }
 
         if (arguments is { } attr && GetAttrValue(attr, context) is { } value)

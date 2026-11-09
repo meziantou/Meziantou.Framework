@@ -48,16 +48,16 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,350 | 29,911 | 2,117 | 95% |
+| [Stable](#stable-tests) | 26,353 | 29,911 | 2,117 | 95% |
 | [Tentative](#tentative-tests) | 1,380 | 3,169 | 698 | 56% |
-| [Reftests](#reftests) | 28,112 | 29,507 | 171 | 96% |
-| **All** | **55,842** | **62,587** | **2,986** | **94%** |
+| [Reftests](#reftests) | 28,113 | 29,507 | 171 | 96% |
+| **All** | **55,846** | **62,587** | **2,986** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 257
+- **BUG**: 253
 - **TEST BUG**: 1,017
 - **NOT IMPLEMENTED**: 4,492
 - **REQUIRES**: 765
@@ -178,7 +178,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-transitions`](css/css-transitions.md) | 99 | 107 | 0 | 93% |
 | [`css/css-typed-om`](css/css-typed-om.md) | 290 | 319 | 0 | 91% |
 | [`css/css-ui`](css/css-ui.md) | 94 | 101 | 0 | 93% |
-| [`css/css-values`](css/css-values.md) | 253 | 266 | 0 | 95% |
+| [`css/css-values`](css/css-values.md) | 255 | 266 | 0 | 96% |
 | [`css/css-variables`](css/css-variables.md) | 62 | 64 | 0 | 97% |
 | [`css/css-view-transitions`](css/css-view-transitions.md) | 156 | 165 | 0 | 95% |
 | [`css/css-viewport`](css/css-viewport.md) | 28 | 28 | 0 | 100% |
@@ -191,7 +191,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/fill-stroke`](css/fill-stroke.md) | 5 | 8 | 0 | 63% |
 | [`css/filter-effects`](css/filter-effects.md) | 37 | 37 | 0 | 100% |
 | [`css/geometry`](css/geometry.md) | 30 | 30 | 0 | 100% |
-| [`css/mediaqueries`](css/mediaqueries.md) | 26 | 27 | 0 | 96% |
+| [`css/mediaqueries`](css/mediaqueries.md) | 27 | 27 | 0 | 100% |
 | [`css/motion`](css/motion.md) | 46 | 46 | 0 | 100% |
 | [`css/selectors`](css/selectors.md) | 457 | 459 | 0 | 99.5% |
 | [`custom-elements`](custom-elements.md) | 185 | 191 | 0 | 97% |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 320 | 331 | 0 | 97% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,350** | **29,911** | **2,117** | **95%** |
+| **Total (343 sections)** | **26,353** | **29,911** | **2,117** | **95%** |
 
 ## Tentative tests
 
@@ -618,7 +618,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-color-adjust`](css/css-color-adjust.md#reftests) | 25 | 25 | 0 | 100% |
 | [`css/css-conditional`](css/css-conditional.md#reftests) | 172 | 173 | 0 | 99% |
 | [`css/css-contain`](css/css-contain.md#reftests) | 431 | 436 | 0 | 99% |
-| [`css/css-content`](css/css-content.md#reftests) | 65 | 66 | 0 | 98% |
+| [`css/css-content`](css/css-content.md#reftests) | 66 | 66 | 0 | 100% |
 | [`css/css-counter-styles`](css/css-counter-styles.md#reftests) | 253 | 259 | 0 | 98% |
 | [`css/css-display`](css/css-display.md#reftests) | 169 | 222 | 0 | 76% |
 | [`css/css-exclusions`](css/css-exclusions.md#reftests) | 0 | 4 | 4 | – |
@@ -728,4 +728,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 182 | 252 | 0 | 72% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (131 sections)** | **28,112** | **29,507** | **171** | **96%** |
+| **Total (131 sections)** | **28,113** | **29,507** | **171** | **96%** |

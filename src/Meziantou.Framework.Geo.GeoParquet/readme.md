@@ -22,4 +22,4 @@ Assert.Equal(["Canada", "United States of America"], names);
 <!-- endref -->
 
 The package reads the Parquet files itself, with no dependency outside .NET. Only the geometry columns encoded as WKB are
-read, and the files compressed with Zstandard need .NET 11 or later.
+read.

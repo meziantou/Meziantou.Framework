@@ -37,12 +37,13 @@ internal static class RangeSyntax
 
     /// <summary>
     /// Makes <paramref name="scalarParser"/> also accept a date relative to today when <typeparamref name="T"/> is a date:
-    /// <c>@today</c>, <c>@today-3d</c>, <c>@today+1w</c>. The value is the start of that day in UTC.
+    /// <c>@today</c>, <c>@today-3d</c>, <c>@today+1w</c>. The value is the start of that day in <paramref name="timeZone"/>.
     /// </summary>
-    public static ScalarParser<T> WithRelativeDates<T>(ScalarParser<T> scalarParser, TimeProvider timeProvider)
+    public static ScalarParser<T> WithRelativeDates<T>(ScalarParser<T> scalarParser, TimeProvider timeProvider, TimeZoneInfo timeZone)
     {
         ArgumentNullException.ThrowIfNull(scalarParser);
         ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(timeZone);
 
         if (!IsDateType<T>())
             return scalarParser;
@@ -51,14 +52,14 @@ internal static class RangeSyntax
 
         bool TryParse(string value, [MaybeNullWhen(false)] out T result)
         {
-            if (TryParseRelativeDate(value, timeProvider, out result))
+            if (TryParseRelativeDate(value, timeProvider, timeZone, out result))
                 return true;
 
             return scalarParser(value, out result);
         }
     }
 
-    private static bool TryParseRelativeDate<T>(string text, TimeProvider timeProvider, [MaybeNullWhen(false)] out T value)
+    private static bool TryParseRelativeDate<T>(string text, TimeProvider timeProvider, TimeZoneInfo timeZone, [MaybeNullWhen(false)] out T value)
     {
         value = default;
 
@@ -87,30 +88,27 @@ internal static class RangeSyntax
             days = (offset[0] is '-' ? -1L : 1L) * count * unitInDays;
         }
 
-        // Reject an offset past the range of dates rather than overflowing. Bounding the day count first keeps the tick arithmetic within a long.
-        var start = StartOfDay(timeProvider.GetUtcNow());
-        if (Math.Abs(days) > DateTimeOffset.MaxValue.UtcTicks / TimeSpan.TicksPerDay)
+        // Reject an offset past the range of dates rather than overflowing
+        var today = Today(timeProvider, timeZone);
+        var dayNumber = today.DayNumber + days;
+        if (dayNumber < DateOnly.MinValue.DayNumber || dayNumber > DateOnly.MaxValue.DayNumber)
             return false;
 
-        var ticks = start.UtcTicks + (days * TimeSpan.TicksPerDay);
-        if (ticks < DateTimeOffset.MinValue.UtcTicks || ticks > DateTimeOffset.MaxValue.UtcTicks)
-            return false;
-
-        value = ConvertDate<T>(new DateTimeOffset(ticks, TimeSpan.Zero));
-        return true;
+        return TryCreateDate(DateOnly.FromDayNumber((int)dayNumber), timeZone, out value);
     }
 
-    public static RangeSyntax<T>? TryParse<T>(string text, ScalarParser<T> tryParse, TimeProvider timeProvider)
+    public static RangeSyntax<T>? TryParse<T>(string text, ScalarParser<T> tryParse, TimeProvider timeProvider, TimeZoneInfo timeZone)
     {
         ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(timeZone);
 
-        if (TryExpandRangeVariables<T>(text, timeProvider, out var result))
+        if (TryExpandRangeVariables<T>(text, timeProvider, timeZone, out var result))
             return result;
 
         return Parse(text, tryParse);
     }
 
-    private static bool TryExpandRangeVariables<T>(string text, TimeProvider timeProvider, [MaybeNullWhen(false)] out RangeSyntax<T> value)
+    private static bool TryExpandRangeVariables<T>(string text, TimeProvider timeProvider, TimeZoneInfo timeZone, [MaybeNullWhen(false)] out RangeSyntax<T> value)
     {
         // Every keyword below expands to a range of dates, so it cannot be represented for any other type.
         // Returning false lets the caller fall back to the type's own parser instead of failing the cast.
@@ -121,50 +119,33 @@ internal static class RangeSyntax
         }
 
         var span = text.AsSpan().Trim();
-        var utcNow = timeProvider.GetUtcNow();
+        var today = Today(timeProvider, timeZone);
 
         if (span.Equals("today", StringComparison.OrdinalIgnoreCase))
+            return Between(today, days: 0, months: 0, years: 0, length: (0, 0, 1), out value);
+
+        if (span.Equals("yesterday", StringComparison.OrdinalIgnoreCase))
+            return Between(today, days: -1, months: 0, years: 0, length: (0, 0, 1), out value);
+
+        if (IsKeyword(span, "this week"))
         {
-            var start = StartOfDay(utcNow);
-            value = Between(start, start.AddDays(1));
-            return true;
+            var daysSinceMonday = ((int)today.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
+            return Between(today, days: -daysSinceMonday, months: 0, years: 0, length: (0, 0, 7), out value);
         }
-        else if (span.Equals("yesterday", StringComparison.OrdinalIgnoreCase))
-        {
-            var end = StartOfDay(utcNow);
-            value = Between(end.AddDays(-1), end);
-            return true;
-        }
-        else if (IsKeyword(span, "this week"))
-        {
-            var start = StartOfWeek(utcNow);
-            value = Between(start, start.AddDays(7));
-            return true;
-        }
-        else if (IsKeyword(span, "this month"))
-        {
-            var start = StartOfMonth(utcNow);
-            value = Between(start, start.AddMonths(1));
-            return true;
-        }
-        else if (IsKeyword(span, "last month"))
-        {
-            var end = StartOfMonth(utcNow);
-            value = Between(end.AddMonths(-1), end);
-            return true;
-        }
-        else if (IsKeyword(span, "this year"))
-        {
-            var start = StartOfYear(utcNow);
-            value = Between(start, start.AddYears(1));
-            return true;
-        }
-        else if (IsKeyword(span, "last year"))
-        {
-            var end = StartOfYear(utcNow);
-            value = Between(end.AddYears(-1), end);
-            return true;
-        }
+
+        var startOfMonth = new DateOnly(today.Year, today.Month, 1);
+        if (IsKeyword(span, "this month"))
+            return Between(startOfMonth, days: 0, months: 0, years: 0, length: (0, 1, 0), out value);
+
+        if (IsKeyword(span, "last month"))
+            return Between(startOfMonth, days: 0, months: -1, years: 0, length: (0, 1, 0), out value);
+
+        var startOfYear = new DateOnly(today.Year, 1, 1);
+        if (IsKeyword(span, "this year"))
+            return Between(startOfYear, days: 0, months: 0, years: 0, length: (1, 0, 0), out value);
+
+        if (IsKeyword(span, "last year"))
+            return Between(startOfYear, days: 0, months: 0, years: -1, length: (1, 0, 0), out value);
 
         value = default;
         return false;
@@ -179,9 +160,41 @@ internal static class RangeSyntax
                 && text[(separatorIndex + 1)..].Equals(keyword.AsSpan(separatorIndex + 1), StringComparison.OrdinalIgnoreCase);
         }
 
-        static RangeSyntax<T> Between(DateTimeOffset lowerBound, DateTimeOffset upperBound)
+        // The range starts at the beginning of 'anchor' moved by the given amounts, and ends 'length' later, both in the time zone.
+        // A range that would start or end outside the supported dates is not a keyword.
+        bool Between(DateOnly anchor, int days, int months, int years, (int Years, int Months, int Days) length, [MaybeNullWhen(false)] out RangeSyntax<T> result)
         {
-            return new BinaryRangeSyntax<T>(ConvertDate<T>(lowerBound), lowerBoundIncluded: true, ConvertDate<T>(upperBound), upperBoundIncluded: false);
+            result = default;
+            if (!TryAdd(anchor, years, months, days, out var lowerDate) || !TryAdd(lowerDate, length.Years, length.Months, length.Days, out var upperDate))
+                return false;
+
+            if (!TryCreateDate<T>(lowerDate, timeZone, out var lowerBound) || !TryCreateDate<T>(upperDate, timeZone, out var upperBound))
+                return false;
+
+            result = new BinaryRangeSyntax<T>(lowerBound, lowerBoundIncluded: true, upperBound, upperBoundIncluded: false);
+            return true;
+        }
+
+        static bool TryAdd(DateOnly date, int years, int months, int days, out DateOnly result)
+        {
+            result = default;
+            var dayNumber = (long)date.DayNumber + days;
+            var monthNumber = ((long)date.Year * 12) + date.Month - 1 + months + (years * 12L);
+            if (monthNumber < 12 || monthNumber >= 10000L * 12)
+                return false;
+
+            // Months and years only move dates that are the first of a month or a year, so the day always exists
+            if (months is not 0 || years is not 0)
+            {
+                result = new DateOnly((int)(monthNumber / 12), (int)(monthNumber % 12) + 1, date.Day);
+                return true;
+            }
+
+            if (dayNumber < DateOnly.MinValue.DayNumber || dayNumber > DateOnly.MaxValue.DayNumber)
+                return false;
+
+            result = DateOnly.FromDayNumber((int)dayNumber);
+            return true;
         }
     }
 
@@ -192,46 +205,113 @@ internal static class RangeSyntax
         return type == typeof(DateTime) || type == typeof(DateTimeOffset) || type == typeof(DateOnly);
     }
 
-    private static T ConvertDate<T>(DateTimeOffset value)
+    private static DateOnly Today(TimeProvider timeProvider, TimeZoneInfo timeZone)
+    {
+        // Computed from ticks: converting an instant close to the bounds of DateTimeOffset could overflow
+        var utcNow = timeProvider.GetUtcNow();
+        var localTicks = Math.Clamp(utcNow.UtcTicks + GetUtcOffset(timeZone, utcNow.UtcTicks).Ticks, DateTime.MinValue.Ticks, DateTime.MaxValue.Ticks);
+        return DateOnly.FromDateTime(new DateTime(localTicks, DateTimeKind.Unspecified));
+    }
+
+    /// <summary>Gets the offset of <paramref name="timeZone"/> at an instant, given by its UTC ticks.</summary>
+    private static TimeSpan GetUtcOffset(TimeZoneInfo timeZone, long utcTicks)
+    {
+        try
+        {
+            return timeZone.GetUtcOffset(new DateTime(utcTicks, DateTimeKind.Utc));
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // TimeZoneInfo can overflow while applying a daylight saving time rule close to the bounds of DateTime
+            return timeZone.BaseUtcOffset;
+        }
+    }
+
+    /// <summary>
+    /// Converts the start of <paramref name="date"/> in <paramref name="timeZone"/> to <typeparamref name="T"/>.
+    /// A <see cref="DateOnly"/> is the date itself; a <see cref="DateTimeOffset"/> is the instant the day starts, with the
+    /// zone's offset; a <see cref="DateTime"/> is that instant in UTC, matching what <see cref="ValueConverter"/> produces for an explicit date.
+    /// </summary>
+    private static bool TryCreateDate<T>(DateOnly date, TimeZoneInfo timeZone, [MaybeNullWhen(false)] out T value)
     {
         var type = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
-        if (type == typeof(DateTimeOffset))
-            return (T)(object)value;
-
         if (type == typeof(DateOnly))
-            return (T)(object)DateOnly.FromDateTime(value.UtcDateTime);
-
-        // UtcDateTime yields DateTimeKind.Utc, matching what ValueConverter produces for an explicit date
-        return (T)(object)value.UtcDateTime;
-    }
-
-    private static DateTimeOffset StartOfDay(DateTimeOffset dt)
-    {
-        var utc = dt.UtcDateTime;
-        return new DateTimeOffset(utc.Year, utc.Month, utc.Day, 0, 0, 0, TimeSpan.Zero);
-    }
-
-    private static DateTimeOffset StartOfMonth(DateTimeOffset dt)
-    {
-        var utc = dt.UtcDateTime;
-        return new DateTimeOffset(utc.Year, utc.Month, 1, 0, 0, 0, TimeSpan.Zero);
-    }
-
-    private static DateTimeOffset StartOfYear(DateTimeOffset dt)
-    {
-        var utc = dt.UtcDateTime;
-        return new DateTimeOffset(utc.Year, 1, 1, 0, 0, 0, TimeSpan.Zero);
-    }
-
-    private static DateTimeOffset StartOfWeek(DateTimeOffset dt)
-    {
-        var start = StartOfDay(dt);
-        var diff = start.DayOfWeek - DayOfWeek.Monday;
-        if (diff < 0)
         {
-            diff += 7;
+            value = (T)(object)date;
+            return true;
         }
 
-        return start.AddDays(-diff);
+        if (!TryGetStartOfDay(date, timeZone, out var start))
+        {
+            value = default;
+            return false;
+        }
+
+        value = type == typeof(DateTimeOffset) ? (T)(object)start : (T)(object)start.UtcDateTime;
+        return true;
+    }
+
+    /// <summary>Gets the first instant of <paramref name="date"/> in <paramref name="timeZone"/>, or <see langword="false"/> when it cannot be represented.</summary>
+    private static bool TryGetStartOfDay(DateOnly date, TimeZoneInfo timeZone, out DateTimeOffset value)
+    {
+        value = default;
+        var midnight = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified).Ticks;
+
+        // Offsets are within 14 hours, so the day starts within 14 hours of midnight read as UTC
+        var window = TimeSpan.FromHours(14).Ticks;
+        var low = Math.Max(DateTimeOffset.MinValue.UtcTicks, midnight - window);
+        var high = Math.Min(DateTimeOffset.MaxValue.UtcTicks, midnight + window);
+        var lowerLimit = low;
+
+        // Most days start at midnight, with the offset in effect at that time. The offset is checked from the instant: for
+        // some rules, TimeZoneInfo does not give the same offset for a local time and for the instant it converts to.
+        try
+        {
+            if (!timeZone.IsInvalidTime(new DateTime(midnight, DateTimeKind.Unspecified)))
+            {
+                var midnightDateTime = new DateTime(midnight, DateTimeKind.Unspecified);
+                var offset = timeZone.IsAmbiguousTime(midnightDateTime)
+                    ? timeZone.GetAmbiguousTimeOffsets(midnightDateTime).Max() // Midnight happens twice: the day starts at the first one
+                    : timeZone.GetUtcOffset(midnightDateTime);
+
+                var utcTicks = midnight - offset.Ticks;
+                if (utcTicks < DateTimeOffset.MinValue.UtcTicks || utcTicks > DateTimeOffset.MaxValue.UtcTicks)
+                    return false;
+
+                if (GetUtcOffset(timeZone, utcTicks) == offset)
+                {
+                    value = new DateTimeOffset(midnightDateTime, offset);
+                    return true;
+                }
+            }
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // Rules close to the bounds of DateTime can overflow: search the instant instead
+        }
+
+        // Otherwise, such as when clocks skip midnight, the day starts at the first instant whose local time is not before
+        // midnight. The local time only goes back across a midnight that happens twice, so a binary search finds it.
+        while (low < high)
+        {
+            var middle = low + ((high - low) / 2);
+            if (middle + GetUtcOffset(timeZone, middle).Ticks < midnight)
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+
+        // The day may start before the first instant that can be represented
+        var startOffset = GetUtcOffset(timeZone, low);
+        var startTicks = low + startOffset.Ticks;
+        if (startTicks < midnight || startTicks > DateTime.MaxValue.Ticks || (low == lowerLimit && startTicks > midnight))
+            return false;
+
+        value = new DateTimeOffset(new DateTime(startTicks, DateTimeKind.Unspecified), startOffset);
+        return true;
     }
 }

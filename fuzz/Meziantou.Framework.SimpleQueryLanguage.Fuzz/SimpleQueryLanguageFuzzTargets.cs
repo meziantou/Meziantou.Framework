@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.SimpleQueryLanguage.Binding;
+using Meziantou.Framework.SimpleQueryLanguage.Ranges;
 using Meziantou.Framework.SimpleQueryLanguage.Syntax;
 
 namespace Meziantou.Framework.SimpleQueryLanguage.Fuzz;
@@ -55,7 +56,10 @@ public static partial class SimpleQueryLanguageFuzzTargets
         new("query-builder", Builder) { Seeds = () => GetSeeds(optionsMask: FreeTextOption | UnhandledPropertyOption), Dictionary = Tokens },
         new("query-expression", ExpressionBuilder) { Seeds = () => GetSeeds(optionsMask: FreeTextOption | UnhandledPropertyOption | IgnoreCaseOption | MatchModeOptions), Dictionary = Tokens },
         new("query-expression-operators", ExpressionOperators) { Seeds = () => GetSeeds(optionsMask: IgnoreCaseOption | MatchModeOptions), Dictionary = Tokens },
+        new("query-time-zone", TimeZoneDates) { Seeds = GetTimeZoneSeeds, Dictionary = Tokens },
     ];
+
+    private const int TimeZoneHeaderLength = 14;
 
     /// <summary>
     /// Checks the syntax tree (token positions, kinds and values, node spans), that each term parses back alone, and that
@@ -192,6 +196,255 @@ public static partial class SimpleQueryLanguageFuzzTargets
             if (oracle is not null)
             {
                 FuzzAssert.Equal(oracle(item), actual, $"{FuzzAssert.Format(text)} and the combination of its terms disagree on item {item.Id}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Builds date keywords with a time zone and a current instant read from the first bytes (a base offset, an optional
+    /// daylight saving time rule whose transitions can skip or repeat midnight, and the ticks of the instant), and builds the
+    /// rest of the input as a query. <c>today</c> spans from the first instant of the local day to the first instant of the
+    /// next one, contains the current instant, and agrees with <c>yesterday</c>, <c>@today</c>, <c>@today-1d</c>,
+    /// <c>@today+1d</c>, and with the <see cref="DateTime"/> and <see cref="DateOnly"/> forms of the same keywords.
+    /// </summary>
+    private static void TimeZoneDates(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < TimeZoneHeaderLength)
+            return;
+
+        var timeZone = CreateTimeZone(data[..6]);
+        var ticks = (long)(BitConverter.ToUInt64(data[6..TimeZoneHeaderLength]) % (ulong)(DateTimeOffset.MaxValue.UtcTicks + 1));
+        var now = new DateTimeOffset(ticks, TimeSpan.Zero);
+        var text = FuzzText.Decode(data[TimeZoneHeaderLength..]);
+        var timeProvider = new FixedTimeProvider(now);
+
+        RangeSyntax<DateTimeOffset>? offsetRange = null;
+        RangeSyntax<DateTime>? dateTimeRange = null;
+        RangeSyntax<DateOnly>? dateOnlyRange = null;
+        var builder = new QueryBuilder<QueryItem>(timeProvider, timeZone);
+        builder.AddRangeHandler<DateTimeOffset>("offset", (_, range) => { offsetRange = range; return true; });
+        builder.AddRangeHandler<DateTime>("created", (_, range) => { dateTimeRange = range; return true; });
+        builder.AddRangeHandler<DateOnly>("day", (_, range) => { dateOnlyRange = range; return true; });
+
+        try
+        {
+            var query = builder.Build(text);
+            foreach (var item in Items)
+            {
+                _ = query.Evaluate(item);
+            }
+        }
+        catch (QueryTooComplexException)
+        {
+        }
+
+        var expressionBuilder = new ExpressionQueryBuilder<QueryItem>(timeProvider, timeZone);
+        expressionBuilder.AddHandler<DateTime>("created", item => item.Created);
+        expressionBuilder.AddHandler<DateOnly>("day", item => item.Day);
+        try
+        {
+            _ = expressionBuilder.Build(text).Apply(Items.AsQueryable()).Count();
+        }
+        catch (QueryTooComplexException)
+        {
+        }
+
+        RangeSyntax<T>? Get<T>(string query, Func<RangeSyntax<T>?> captured)
+        {
+            offsetRange = null;
+            dateTimeRange = null;
+            dateOnlyRange = null;
+            _ = builder.Build(query).Evaluate(Items[0]);
+            return captured();
+        }
+
+        // The local date, computed from the offset of the zone at that instant
+        long localTicks;
+        bool isAmbiguous;
+        try
+        {
+            localTicks = now.UtcTicks + timeZone.GetUtcOffset(now).Ticks;
+            isAmbiguous = timeZone.IsAmbiguousTime(now);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // TimeZoneInfo can overflow close to the bounds of DateTime
+            return;
+        }
+
+        if (localTicks < DateTime.MinValue.Ticks || localTicks > DateTime.MaxValue.Ticks)
+            return;
+
+        var today = DateOnly.FromDateTime(new DateTime(localTicks, DateTimeKind.Unspecified));
+        var zone = $"{timeZone.ToSerializedString()} at {now.UtcTicks}";
+
+        if (today > DateOnly.MinValue && today < DateOnly.MaxValue)
+        {
+            var dates = Get("day:today", () => dateOnlyRange);
+            FuzzAssert.True(dates is not null, $"day:today is not a range in {zone}");
+            FuzzAssert.True(dates.IsInRange(today) && !dates.IsInRange(today.AddDays(-1)) && !dates.IsInRange(today.AddDays(1)), $"day:today is not the local date {today} in {zone}");
+
+            var relative = Get("day:@today", () => dateOnlyRange);
+            FuzzAssert.True(relative is not null && relative.IsInRange(today) && !relative.IsInRange(today.AddDays(-1)), $"day:@today is not the local date {today} in {zone}");
+        }
+
+        if (today == DateOnly.MinValue || today == DateOnly.MaxValue)
+            return;
+
+        var start = FirstInstantOf(today, timeZone);
+        var end = FirstInstantOf(today.AddDays(1), timeZone);
+        var yesterdayStart = FirstInstantOf(today.AddDays(-1), timeZone);
+        if (start is not { } startValue || end is not { } endValue)
+            return;
+
+        FuzzAssert.True(startValue <= now, $"The oracle start of today {startValue:O} is after {now:O} in {zone}");
+
+        // When clocks go back across midnight, the local date goes back too: a day ends at the first midnight of the next one
+        if (!isAmbiguous)
+        {
+            FuzzAssert.True(now < endValue, $"The oracle end of today {endValue:O} is before {now:O} in {zone}");
+        }
+
+        var todayRange = Get("offset:today", () => offsetRange);
+        FuzzAssert.True(todayRange is not null, $"offset:today is not a range in {zone}");
+        FuzzAssert.True(todayRange.IsInRange(startValue), $"offset:today does not contain its first instant {startValue:O} in {zone}");
+        FuzzAssert.True(todayRange.IsInRange(endValue.AddTicks(-1)), $"offset:today does not contain its last instant before {endValue:O} in {zone}");
+        FuzzAssert.False(todayRange.IsInRange(endValue), $"offset:today contains the first instant of tomorrow {endValue:O} in {zone}");
+        if (startValue.UtcTicks > DateTimeOffset.MinValue.UtcTicks)
+        {
+            FuzzAssert.False(todayRange.IsInRange(startValue.AddTicks(-1)), $"offset:today contains the instant before {startValue:O} in {zone}");
+        }
+
+        var relativeToday = Get("offset:@today", () => offsetRange);
+        FuzzAssert.True(relativeToday is not null && relativeToday.IsInRange(startValue) && !relativeToday.IsInRange(startValue.AddTicks(1)), $"offset:@today is not {startValue:O} in {zone}");
+
+        var relativeTomorrow = Get("offset:@today+1d", () => offsetRange);
+        FuzzAssert.True(relativeTomorrow is not null && relativeTomorrow.IsInRange(endValue), $"offset:@today+1d is not {endValue:O} in {zone}");
+
+        var dateTimes = Get("created:today", () => dateTimeRange);
+        FuzzAssert.True(dateTimes is not null && dateTimes.IsInRange(startValue.UtcDateTime) && !dateTimes.IsInRange(endValue.UtcDateTime), $"created:today does not match offset:today in {zone}");
+
+        if (yesterdayStart is { } yesterdayValue)
+        {
+            var yesterday = Get("offset:yesterday", () => offsetRange);
+            FuzzAssert.True(yesterday is not null && yesterday.IsInRange(yesterdayValue) && !yesterday.IsInRange(startValue), $"offset:yesterday is not [{yesterdayValue:O}, {startValue:O}) in {zone}");
+
+            var relativeYesterday = Get("offset:@today-1d", () => offsetRange);
+            FuzzAssert.True(relativeYesterday is not null && relativeYesterday.IsInRange(yesterdayValue), $"offset:@today-1d is not {yesterdayValue:O} in {zone}");
+        }
+    }
+
+    /// <summary>
+    /// The oracle of the start of a day: the first instant whose local date is not before <paramref name="date"/>, found by
+    /// stepping through the instants within 15 hours of midnight read as UTC. The offsets of the fuzzed zones, and the
+    /// instants of their transitions, are multiples of 15 minutes, so the steps cannot miss it.
+    /// </summary>
+    private static DateTimeOffset? FirstInstantOf(DateOnly date, TimeZoneInfo timeZone)
+    {
+        var midnight = date.ToDateTime(TimeOnly.MinValue).Ticks;
+        var step = TimeSpan.FromMinutes(15).Ticks;
+        var skipped = false;
+        for (var ticks = midnight - TimeSpan.FromHours(15).Ticks; ticks <= midnight + TimeSpan.FromHours(15).Ticks; ticks += step)
+        {
+            if (ticks < DateTimeOffset.MinValue.UtcTicks || ticks > DateTimeOffset.MaxValue.UtcTicks)
+            {
+                skipped = true;
+                continue;
+            }
+
+            TimeSpan offset;
+            try
+            {
+                offset = timeZone.GetUtcOffset(new DateTime(ticks, DateTimeKind.Utc));
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // TimeZoneInfo can overflow close to the bounds of DateTime
+                return null;
+            }
+
+            if (ticks + offset.Ticks >= midnight)
+            {
+                // The day starts before the first instant that can be represented
+                if (skipped && ticks - step < DateTimeOffset.MinValue.UtcTicks)
+                    return null;
+
+                // The local time must be a date of its own for the instant to be representable with its offset
+                if (ticks + offset.Ticks > DateTime.MaxValue.Ticks)
+                    return null;
+
+                return new DateTimeOffset(ticks, TimeSpan.Zero).ToOffset(offset);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// A zone whose base offset is a multiple of 15 minutes, with a daylight saving time rule when the second byte is odd:
+    /// its delta (30 or 60 minutes), and the month, day and hour of both transitions, come from the other bytes. An hour of 0 moves clocks at midnight.
+    /// </summary>
+    private static TimeZoneInfo CreateTimeZone(ReadOnlySpan<byte> data)
+    {
+        var baseOffset = TimeSpan.FromMinutes(((data[0] % 113) - 56) * 15);
+        if ((data[1] & 1) == 0)
+            return TimeZoneInfo.CreateCustomTimeZone("Fuzz", baseOffset, "Fuzz", "Fuzz");
+
+        // Up to one hour, so that clocks going back at 1:00 do not go back to the previous day: the start of a day is then the only instant the local date changes to it
+        var delta = TimeSpan.FromMinutes((((data[1] >> 1) & 1) + 1) * 30);
+        if (baseOffset + delta > TimeSpan.FromHours(14))
+        {
+            baseOffset -= delta;
+        }
+
+        try
+        {
+            var start = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, data[2] % 24, 0, 0), (data[3] % 12) + 1, (data[4] % 28) + 1);
+            var end = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, (data[2] >> 3) % 24, 0, 0), (data[5] % 12) + 1, ((data[5] >> 4) % 28) + 1);
+            var rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(DateTime.MinValue.Date, DateTime.MaxValue.Date, delta, start, end);
+            return TimeZoneInfo.CreateCustomTimeZone("Fuzz", baseOffset, "Fuzz", "Standard", "Daylight", [rule]);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidTimeZoneException)
+        {
+            return TimeZoneInfo.CreateCustomTimeZone("Fuzz", baseOffset, "Fuzz", "Fuzz");
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetTimeZoneSeeds()
+    {
+        // Zones: UTC, UTC-8, UTC+14, UTC-14, zones whose clocks skip or repeat midnight, and one that moves clocks at 6:00
+        (string Name, byte[] Zone)[] zones =
+        [
+            ("utc", [56, 0, 0, 0, 0, 0]),
+            ("utc-8", [24, 0, 0, 0, 0, 0]),
+            ("utc+14", [112, 0, 0, 0, 0, 0]),
+            ("utc-14", [0, 0, 0, 0, 0, 0]),
+            ("skip-midnight", [44, 3, 0, 2, 14, 9]),
+            ("repeat-midnight", [44, 3, 8, 2, 14, 9]),
+            ("skip-hour-at-6", [80, 3, 6, 9, 0, 3]),
+        ];
+
+        DateTimeOffset[] instants =
+        [
+            Now,
+            new(2026, 3, 15, 3, 30, 0, TimeSpan.Zero),
+            new(2026, 10, 1, 2, 30, 0, TimeSpan.Zero),
+            new(2026, 12, 31, 23, 0, 0, TimeSpan.Zero),
+            DateTimeOffset.MinValue,
+            DateTimeOffset.MaxValue,
+        ];
+
+        string[] queries = ["created:today", "day:this_week offset:last_month", "created:yesterday OR created>=@today-1w", "offset:this_year day:last_year", "day:@today-2147483647d"];
+
+        var index = 0;
+        foreach (var (name, zone) in zones)
+        {
+            foreach (var instant in instants)
+            {
+                var query = queries[index % queries.Length];
+                byte[] header = [.. zone, .. BitConverter.GetBytes((ulong)instant.UtcTicks)];
+                yield return FuzzSeed.FromText(string.Create(CultureInfo.InvariantCulture, $"{index:D3}-{name}"), header, query);
+                index++;
             }
         }
     }

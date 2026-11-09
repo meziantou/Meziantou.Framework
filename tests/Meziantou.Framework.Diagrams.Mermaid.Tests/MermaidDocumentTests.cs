@@ -58,7 +58,7 @@ public sealed class MermaidDocumentTests
     [Theory]
     [InlineData("", "(1, 1): The text has no diagram.")]
     [InlineData("   \n\n", "(3, 1): The text has no diagram.")]
-    [InlineData("pie\n\"a\": 1", "(1, 1): The diagram type 'pie' is not supported yet.")]
+    [InlineData("zenuml\n    title Demo", "(1, 1): The diagram type 'zenuml' is not supported yet.")]
     [InlineData("hello", "(1, 1): No diagram type was found: 'hello' is not a type of Mermaid diagram.")]
     [InlineData("---\ntitle: a\nflowchart TD", "(1, 1): The front matter is not closed by a line '---'.")]
     [InlineData("---\n[a\n---\nflowchart TD", "(2, 1): The YAML is not valid")]
@@ -241,5 +241,29 @@ public sealed class MermaidDocumentTests
         diagram.AddNode("A");
         var text = MermaidWriter.Write(diagram);
         Assert.Equal("a\uFFFDb", MermaidDocument.Parse(text).Diagram.Title);
+    }
+
+    [Fact]
+    public void EmptyTitleIsNotWritten()
+    {
+        var diagram = new FlowchartDiagram { Title = "" };
+        diagram.AddNode("A");
+        var text = MermaidWriter.Write(diagram);
+        Assert.DoesNotContain("title", text, StringComparison.Ordinal);
+        Assert.Equal(text, MermaidWriter.Write(MermaidDocument.Parse(text).Diagram));
+    }
+
+    [Theory]
+    [InlineData("%%{init: {}}%% x")]
+    [InlineData("100%% sure")]
+    [InlineData("%%%")]
+    public void TitleWithPercentSignsRoundTrips(string title)
+    {
+        // %% starts a directive or a comment anywhere, so the front matter must not contain it
+        var diagram = new FlowchartDiagram { Title = title };
+        diagram.AddNode("A");
+        var text = MermaidWriter.Write(diagram);
+        Assert.DoesNotContain("%%", text, StringComparison.Ordinal);
+        Assert.Equal(title, MermaidDocument.Parse(text).Diagram.Title);
     }
 }

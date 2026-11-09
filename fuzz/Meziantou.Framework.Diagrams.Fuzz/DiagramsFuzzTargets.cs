@@ -57,6 +57,24 @@ public static partial class DiagramsFuzzTargets
         "mindmap", "\n\t", "id[Text]", "id(Text)", "id((Text))", "id))Text((", "id)Text(", "id{{Text}}", "id(-Text-)", "::icon(fa fa-book)", ":::a b", "colorBy: depth", "padding: 5", "maxNodeWidth: 50",
         "treeView-beta", "├── ", "└── ", "│   ", "┣━━ ", "┗━━ ", "┃   ", "\t", "src/", "\"a b\"", "'a b'", " :::highlight", " icon(logos:react)", " icon()", " icon(none)", " ## ",
         "showIcons: true", "defaultIconPack: x", "filenameIcons:\n      a: b", "extensionIcons:\n      .ts: c", "rowIndent: 80", "paddingX: 2", "lineThickness: 3", "labelFontSize: '20px'", "highlightBg: red",
+        "pie", "pie showData", "\"Dogs\" : 386", "'a' : 0.5", " : -1", "textPosition: 0.5", "donutHole: 0.2", "legendPosition: left", "highlightSlice: Dogs", "pie12: \"#f00\"", "pieOpacity: 0.5",
+        "radar-beta", "radar-beta:", "axis ", "curve ", "a[\"A\"]", "{1, 2, 3}", "{ a: 1, b: 2 }", "showLegend false", "ticks 3", "max 10", "min 1", "graticule polygon", "graticule circle",
+        "axisScaleFactor: 0.5", "curveTension: 0.1", "radar:\n      curveOpacity: 0",
+        "wardley-beta", "size [1100, 800]", "evolution ", " -> ", "@0.25", " / ", "anchor ", "component ", " [0.5, 0.5]", " [0.25]", " [50.0, 101.0]", " label [-60, 10]", " (build)",
+        " (buy)", " (outsource)", " (market)", " (inertia)", " inertia", "evolve ", " 0.75", "pipeline ", " {\n", "\n}", "note \"n\"", "annotations [0.1, 0.9]", "annotation 1,[1, 0] \"a\"",
+        "accelerator ", "deaccelerator ", " +> ", " +< ", " +<> ", " -.-> ", " --> ", " > ", " +'flow'> ", "; label", "#35;", "builder", "notes", "Cup of Tea", "real-time", "_id",
+        "padding: 20", "nodeRadius: 4", "showGrid: true", "axisFontSize: 14",
+        "xychart", "xychart-beta", "xychart horizontal", "vertical", "x-axis ", "y-axis ", "line ", "bar ", " --> ", "[1, 2.5, -.3]", "[a, \"b c\"]", "45.5", "+.5",
+        " \"label\"", "\"`md`\"", "xyChart:", "showDataLabel: true", "showDataLabelOutsideBar: true", "chartOrientation: horizontal", "plotReservedSpacePercent: 30",
+        "xAxis:\n      labelRotation: 45", "plotColorPalette: '#000, #00f'", "titleColor: '#f00'", "barName", "TITLE", "a%%b", "#9829;",
+        "quadrantChart", "x-axis ", "y-axis ", " --> ", "quadrant-1 ", "quadrant-2 ", "quadrant-3 ", "quadrant-4 ", ": [0.3, 0.6]", ": [1, 0]", ": [0, 0.25]", ":::cls", "classDef cls ",
+        "radius: 12", "color: #ff3300", "stroke-color: #10f0f0", "stroke-width: 5px", ", ", "\"`md`\"", "chartWidth: 400", "xAxisPosition: bottom", "yAxisPosition: right", "quadrant1Fill: \"#f00\"",
+        "cynefin-beta", "cynefin-beta:", "complex", "complicated", "clear", "chaotic", "confusion", "\n    \"item\"", "'item'", "complex --> clear", " : \"label\"",
+        "showDomainDescriptions: false", "boundaryAmplitude: 0", "seed: 42", "cynefin:\n      complexBg: \"#123\"",
+        "treemap", "treemap-beta", "\"Section\"", "\"Leaf\": 12", ": 1,000.5", ", 0.5", ": 1_000", ":::class1", "classDef class1 fill:red,color:blue;", "'single'", "valueFormat: '$0,0'", "valueFormat: '.1%'", "nodeWidth: 50", "padding: 4",
+        "sankey", "sankey-beta", "A,B,10", "\"a, b\"", "\"\"\"\"", ",", "1e3", "linkColor: source", "linkColor: '#a1a1a1'", "nodeAlignment: center", "labelStyle: outlined", "nodeColors:\n      A: red", "prefix: $", "showValues: false",
+        "venn-beta", "set ", "union ", "text ", "style ", "title ", "A,B", "A,B,C", "[\"label\"]", "[label]", "[\" \"]", ":10", ":0", ":2.5", "\n  text ", "\n    text ",
+        "fill:#ff6b6b", "fill-opacity: 0.5", "stroke: rgba(0,0,255,0.5)", "stroke-width: 3", "color:red", "\"%%\"", "style A fill:#f00;", "venn1: '#ff0000'", "vennSetTextColor: blue", "width: 400", "height: 300",
     ];
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
@@ -299,7 +317,7 @@ public static partial class DiagramsFuzzTargets
             yield return FuzzSeed.FromText("corpus-" + name.Replace('/', '-').Replace(".mmd", string.Empty, StringComparison.Ordinal), FuzzResources.ReadText(assembly, name));
         }
 
-        foreach (var file in new[] { "FlowchartParserTests.cs", "MermaidDocumentTests.cs", "ClassDiagramParserTests.cs", "StateDiagramParserTests.cs", "ErDiagramParserTests.cs", "RequirementDiagramParserTests.cs", "UseCaseDiagramParserTests.cs", "C4DiagramParserTests.cs", "BlockDiagramParserTests.cs", "ArchitectureDiagramParserTests.cs", "RailroadDiagramParserTests.cs", "SequenceDiagramParserTests.cs", "GitGraphDiagramParserTests.cs", "KanbanDiagramParserTests.cs", "PacketDiagramParserTests.cs", "GanttDiagramParserTests.cs", "TimelineDiagramParserTests.cs", "UserJourneyDiagramParserTests.cs", "EventModelingDiagramParserTests.cs", "IshikawaDiagramParserTests.cs", "MindmapDiagramParserTests.cs", "TreeViewDiagramParserTests.cs" })
+        foreach (var file in new[] { "FlowchartParserTests.cs", "MermaidDocumentTests.cs", "ClassDiagramParserTests.cs", "StateDiagramParserTests.cs", "ErDiagramParserTests.cs", "RequirementDiagramParserTests.cs", "UseCaseDiagramParserTests.cs", "C4DiagramParserTests.cs", "BlockDiagramParserTests.cs", "ArchitectureDiagramParserTests.cs", "RailroadDiagramParserTests.cs", "SequenceDiagramParserTests.cs", "GitGraphDiagramParserTests.cs", "KanbanDiagramParserTests.cs", "PacketDiagramParserTests.cs", "GanttDiagramParserTests.cs", "TimelineDiagramParserTests.cs", "UserJourneyDiagramParserTests.cs", "EventModelingDiagramParserTests.cs", "IshikawaDiagramParserTests.cs", "MindmapDiagramParserTests.cs", "TreeViewDiagramParserTests.cs", "PieDiagramParserTests.cs", "RadarDiagramParserTests.cs", "WardleyDiagramParserTests.cs", "XyChartDiagramParserTests.cs", "QuadrantChartDiagramParserTests.cs", "CynefinDiagramParserTests.cs", "TreemapDiagramParserTests.cs", "SankeyDiagramParserTests.cs", "VennDiagramParserTests.cs" })
         {
             var source = FuzzResources.ReadText(assembly, file);
             var index = 0;

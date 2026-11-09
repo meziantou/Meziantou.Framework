@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="616" height="416" viewBox="0 0 616 416" role="img" font-family="Helvetica, Arial, sans-serif">
+<defs>
+<linearGradient id="diagram-gradient0" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="295" y2="0">
+<stop offset="0" stop-color="#4e79a7"/>
+<stop offset="1" stop-color="#f28e2c"/>
+</linearGradient>
+<linearGradient id="diagram-gradient1" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="295" y2="0">
+<stop offset="0" stop-color="#4e79a7"/>
+<stop offset="1" stop-color="#e15759"/>
+</linearGradient>
+<linearGradient id="diagram-gradient2" gradientUnits="userSpaceOnUse" x1="305" y1="0" x2="590" y2="0">
+<stop offset="0" stop-color="#f28e2c"/>
+<stop offset="1" stop-color="#76b7b2"/>
+</linearGradient>
+<linearGradient id="diagram-gradient3" gradientUnits="userSpaceOnUse" x1="305" y1="0" x2="590" y2="0">
+<stop offset="0" stop-color="#e15759"/>
+<stop offset="1" stop-color="#76b7b2"/>
+</linearGradient>
+<linearGradient id="diagram-gradient4" gradientUnits="userSpaceOnUse" x1="305" y1="0" x2="590" y2="0">
+<stop offset="0" stop-color="#e15759"/>
+<stop offset="1" stop-color="#59a14f"/>
+</linearGradient>
+<linearGradient id="diagram-gradient5" gradientUnits="userSpaceOnUse" x1="305" y1="0" x2="590" y2="0">
+<stop offset="0" stop-color="#edc949"/>
+<stop offset="1" stop-color="#59a14f"/>
+</linearGradient>
+</defs>
+<rect width="616" height="416" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="nodes">
+<rect x="0" y="6.57" width="10" height="264.4" fill="#4e79a7" class="node"/>
+<rect x="295" y="0" width="10" height="198.3" fill="#f28e2c" class="node"/>
+<rect x="295" y="225.3" width="10" height="66.1" fill="#e15759" class="node"/>
+<rect x="590" y="7.66" width="10" height="198.3" fill="#76b7b2" class="node"/>
+<rect x="590" y="281.42" width="10" height="114.65" fill="#59a14f" class="node"/>
+<rect x="295" y="318.4" width="10" height="81.6" fill="#edc949" class="node"/>
+</g>
+<g class="node-labels">
+<text x="16" y="138.77" font-size="14" fill="#333333">A 40</text>
+<text x="311" y="99.15" font-size="14" fill="#333333">B 30</text>
+<text x="311" y="258.35" font-size="14" fill="#333333">C 10</text>
+<text x="584" y="106.81" text-anchor="end" font-size="14" fill="#333333">D 30</text>
+<text x="584" y="338.74" text-anchor="end" font-size="14" fill="#333333">E 17.35</text>
+<text x="311" y="359.2" font-size="14" fill="#333333">F 12.35</text>
+</g>
+<g class="links">
+<path d="M10,105.72 C152.5,105.72 152.5,99.15 295,99.15" fill="none" stroke="url(#diagram-gradient0)" stroke-width="198.3" opacity="0.5" class="link"/>
+<path d="M10,237.92 C152.5,237.92 152.5,258.35 295,258.35" fill="none" stroke="url(#diagram-gradient1)" stroke-width="66.1" opacity="0.5" class="link"/>
+<path d="M305,82.62 C447.5,82.62 447.5,90.28 590,90.28" fill="none" stroke="url(#diagram-gradient2)" stroke-width="165.25" opacity="0.5" class="link"/>
+<path d="M305,241.82 C447.5,241.82 447.5,189.43 590,189.43" fill="none" stroke="url(#diagram-gradient3)" stroke-width="33.05" opacity="0.5" class="link"/>
+<path d="M305,274.87 C447.5,274.87 447.5,297.94 590,297.94" fill="none" stroke="url(#diagram-gradient4)" stroke-width="33.05" opacity="0.5" class="link"/>
+<path d="M305,359.2 C447.5,359.2 447.5,355.27 590,355.27" fill="none" stroke="url(#diagram-gradient5)" stroke-width="81.6" opacity="0.5" class="link"/>
+</g>
+</g>
+</svg>

@@ -6,5 +6,6 @@ https://github.com/mermaid-js/mermaid, under the MIT license (`LICENSE.txt`). Ea
 type of diagram, numbered in their order in the page. The tests check that every example parses, writes back to an
 equivalent text, and draws.
 
-The `gantt`, `timeline`, `mindmap`, `ishikawa` and `treeView` folders come from the same pages of Mermaid 12.3.0. In
-`gantt/010.mmd`, the multi-line `themeCSS` value of the front matter, which is not valid YAML, is removed.
+The `gantt`, `timeline`, `mindmap`, `ishikawa`, `treeView`, `treemap` and `sankey` folders come from the same pages of
+Mermaid 12.3.0. In `gantt/010.mmd`, the multi-line `themeCSS` value of the front matter, which is not valid YAML, is
+removed.

@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="831.6" viewBox="0 0 1100 831.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Platform</title>
+<defs>
+<clipPath id="diagram-clip0"><rect x="0" y="0" width="1100" height="800"/></clipPath>
+</defs>
+<rect width="1100" height="831.6" fill="#ffffff"/>
+<g class="title">
+<text x="550" y="15.4" text-anchor="middle" font-size="18" fill="#333333">Platform</text>
+</g>
+<g class="diagram" transform="translate(0 31.6)">
+<g class="wardley-map" clip-path="url(#diagram-clip0)">
+<rect x="0" y="0" width="1100" height="800" fill="#ffffff" class="wardley-background"/>
+<g class="wardley-axes">
+<line x1="48" y1="752" x2="1052" y2="752" stroke="#333333"/>
+<line x1="48" y1="48" x2="48" y2="752" stroke="#333333"/>
+<text x="550" y="788" text-anchor="middle" font-size="12" font-weight="bold" fill="#131300">Evolution</text>
+<g transform="matrix(0 -1 1 0 -384 416)">
+<text x="16" y="400" text-anchor="middle" font-size="12" font-weight="bold" fill="#131300">Visibility</text>
+</g>
+</g>
+<g class="wardley-stages">
+<text x="173.5" y="768" text-anchor="middle" font-size="10" fill="#131300">Genesis / Concept</text>
+<line x1="299" y1="48" x2="299" y2="752" stroke="#000000" stroke-dasharray="5 5" opacity="0.8"/>
+<text x="424.5" y="768" text-anchor="middle" font-size="10" fill="#131300">Custom / Emerging</text>
+<line x1="550" y1="48" x2="550" y2="752" stroke="#000000" stroke-dasharray="5 5" opacity="0.8"/>
+<text x="675.5" y="768" text-anchor="middle" font-size="10" fill="#131300">Product</text>
+<line x1="801" y1="48" x2="801" y2="752" stroke="#000000" stroke-dasharray="5 5" opacity="0.8"/>
+<text x="926.5" y="768" text-anchor="middle" font-size="10" fill="#131300">Commodity</text>
+</g>
+<g class="wardley-grid">
+<line x1="299" y1="48" x2="299" y2="752" stroke="#d3d3d3" stroke-dasharray="2 6"/>
+<line x1="48" y1="576" x2="1052" y2="576" stroke="#d3d3d3" stroke-dasharray="2 6"/>
+<line x1="550" y1="48" x2="550" y2="752" stroke="#d3d3d3" stroke-dasharray="2 6"/>
+<line x1="48" y1="400" x2="1052" y2="400" stroke="#d3d3d3" stroke-dasharray="2 6"/>
+<line x1="801" y1="48" x2="801" y2="752" stroke="#d3d3d3" stroke-dasharray="2 6"/>
+<line x1="48" y1="224" x2="1052" y2="224" stroke="#d3d3d3" stroke-dasharray="2 6"/>
+</g>
+<g class="wardley-pipelines">
+<rect x="284" y="388" width="481.8" height="24" rx="4" fill="none" stroke="#333333" stroke-width="1.5" class="wardley-pipeline-box"/>
+</g>
+<g class="wardley-pipeline-links">
+<line x1="299" y1="400" x2="550" y2="400" stroke="#333333" stroke-dasharray="4 4" class="wardley-pipeline-evolution-link"/>
+<line x1="550" y1="400" x2="750.8" y2="400" stroke="#333333" stroke-dasharray="4 4" class="wardley-pipeline-evolution-link"/>
+</g>
+<g class="wardley-links">
+<line x1="996.89" y1="121.84" x2="906.31" y2="185.36" stroke="#333333" class="wardley-link"/>
+<line x1="996.89" y1="121.84" x2="856.11" y2="220.56" stroke="#333333" class="wardley-link"/>
+<path d="M861.23,220.02 L855.7,220.84 L858.36,215.92 Z" fill="#333333"/>
+<path d="M991.77,122.38 L997.3,121.56 L994.64,126.48 Z" fill="#333333"/>
+<line x1="895.74" y1="190.79" x2="706.26" y2="257.21" stroke="#333333" class="wardley-link"/>
+<path d="M890.66,189.91 L896.21,190.62 L892.32,194.63 Z" fill="#333333"/>
+<line x1="695.74" y1="262.72" x2="530.4" y2="382.42" stroke="#333333" stroke-dasharray="4 4" class="wardley-link wardley-link--dashed"/>
+<line x1="756.03" y1="402.94" x2="996.57" y2="537.86" stroke="#333333" class="wardley-link"/>
+<g class="wardley-link-label" transform="matrix(0.81001 -0.586416 0.586416 0.81001 -75.787464 424.637338)">
+<text x="617.44" y="331.84" text-anchor="middle" font-size="10" fill="#131300">reads</text>
+</g>
+<g class="wardley-link-label" transform="matrix(0.87215 0.489238 -0.489238 0.87215 339.259188 -371.385684)">
+<text x="880.21" y="465.98" text-anchor="middle" font-size="10" fill="#131300">hosted on</text>
+</g>
+</g>
+<g class="wardley-trends">
+<line x1="700.6" y1="259.2" x2="893.4" y2="259.2" stroke="#dc3545" stroke-dasharray="4 4" class="wardley-trend"/>
+<path d="M888,256.2 L894,259.2 L888,262.2 Z" fill="#dc3545"/>
+<line x1="524.9" y1="386.4" x2="793.01" y2="399.61" stroke="#dc3545" stroke-dasharray="4 4" class="wardley-trend"/>
+<path d="M787.76,396.34 L793.61,399.64 L787.47,402.34 Z" fill="#dc3545"/>
+</g>
+<g class="wardley-nodes">
+<g class="wardley-node wardley-node--anchor">
+<text x="1001.8" y="117.96" text-anchor="middle" font-size="10" font-weight="bold" fill="#131300">Customer</text>
+</g>
+<g class="wardley-node wardley-node--component">
+<circle cx="901.4" cy="188.8" r="12" fill="#eeeeee" stroke="#000000" class="wardley-build-overlay"/>
+<circle cx="901.4" cy="188.8" r="6" fill="#ffffff" stroke="#333333"/>
+<text x="919.4" y="170.8" font-size="10" fill="#131300">Mobile App</text>
+</g>
+<g class="wardley-node wardley-node--component">
+<circle cx="851.2" cy="224" r="12" fill="#eeeeee" stroke="#000000" class="wardley-build-overlay"/>
+<circle cx="851.2" cy="224" r="6" fill="#ffffff" stroke="#333333"/>
+<text x="791.2" y="234" font-size="10" fill="#131300">Web App</text>
+</g>
+<g class="wardley-node wardley-node--component">
+<circle cx="700.6" cy="259.2" r="12" fill="#cccccc" stroke="#333333" class="wardley-buy-overlay"/>
+<circle cx="700.6" cy="259.2" r="6" fill="#ffffff" stroke="#333333"/>
+<text x="718.6" y="241.2" font-size="10" fill="#131300">API Gateway</text>
+</g>
+<g class="wardley-node wardley-node--component">
+<circle cx="524.9" cy="386.4" r="12" fill="#cccccc" stroke="#333333" class="wardley-buy-overlay"/>
+<rect x="520.1" y="381.6" width="9.6" height="9.6" fill="#ffffff" stroke="#333333"/>
+<line x1="560.7" y1="381.6" x2="560.7" y2="391.2" stroke="#333333" stroke-width="6" class="wardley-inertia"/>
+<text x="542.9" y="368.4" font-size="10" fill="#131300">Database</text>
+</g>
+<g class="wardley-node wardley-node--component">
+<circle cx="1001.8" cy="540.8" r="12" fill="#ffffff" stroke="#333333" class="wardley-market-overlay"/>
+<line x1="1001.8" y1="533.6" x2="995.56" y2="544.4" stroke="#333333" class="wardley-market-line"/>
+<line x1="995.56" y1="544.4" x2="1008.04" y2="544.4" stroke="#333333" class="wardley-market-line"/>
+<line x1="1008.04" y1="544.4" x2="1001.8" y2="533.6" stroke="#333333" class="wardley-market-line"/>
+<circle cx="1001.8" cy="533.6" r="4.2" fill="#ffffff" stroke="#333333" stroke-width="2" class="wardley-market-dot"/>
+<circle cx="995.56" cy="544.4" r="4.2" fill="#ffffff" stroke="#333333" stroke-width="2" class="wardley-market-dot"/>
+<circle cx="1008.04" cy="544.4" r="4.2" fill="#ffffff" stroke="#333333" stroke-width="2" class="wardley-market-dot"/>
+<text x="1019.8" y="522.8" font-size="10" fill="#131300">Cloud</text>
+</g>
+<g class="wardley-node wardley-node--pipeline-component">
+<circle cx="299" cy="400" r="6" fill="#ffffff" stroke="#333333"/>
+<text x="307" y="392" font-size="10" fill="#131300">File System</text>
+</g>
+<g class="wardley-node wardley-node--pipeline-component">
+<circle cx="550" cy="400" r="6" fill="#ffffff" stroke="#333333"/>
+<text x="540" y="420" font-size="10" fill="#131300">SQL</text>
+</g>
+<g class="wardley-node wardley-node--pipeline-component">
+<circle cx="750.8" cy="400" r="6" fill="#ffffff" stroke="#333333"/>
+<text x="758.8" y="392" font-size="10" fill="#131300">NoSQL</text>
+</g>
+</g>
+<g class="wardley-annotations">
+<g class="wardley-annotation">
+<circle cx="650.4" cy="259.2" r="10" fill="#ffffff" stroke="#333333" stroke-width="1.5"/>
+<text x="650.4" y="261.76" text-anchor="middle" font-size="10" font-weight="bold" fill="#131300">2</text>
+</g>
+<g class="wardley-annotation">
+<circle cx="871.28" cy="202.88" r="10" fill="#ffffff" stroke="#333333" stroke-width="1.5"/>
+<text x="871.28" y="205.44" text-anchor="middle" font-size="10" font-weight="bold" fill="#131300">1</text>
+</g>
+<g class="wardley-annotation">
+<circle cx="449.6" cy="400" r="10" fill="#ffffff" stroke="#333333" stroke-width="1.5"/>
+<text x="449.6" y="402.56" text-anchor="middle" font-size="10" font-weight="bold" fill="#131300">3</text>
+</g>
+<g class="wardley-annotations-box">
+<rect x="248.8" y="681.6" width="219.11" height="58.6" rx="4" fill="#ffffff" stroke="#333333" stroke-width="1.5"/>
+<text x="258.8" y="710.41" font-size="11" fill="#131300">1. User touchpoints</text>
+<text x="258.8" y="726.41" font-size="11" fill="#131300">2. Integration layer</text>
+</g>
+</g>
+<g class="wardley-accelerators">
+<path d="M901.4,596.2 L941.4,596.2 L941.4,588.2 L961.4,611.2 L941.4,634.2 L941.4,626.2 L901.4,626.2 Z" fill="#ffffff" stroke="#333333"/>
+<text x="931.4" y="641.2" text-anchor="middle" font-size="10" font-weight="bold" fill="#131300">Cloud Native</text>
+</g>
+<g class="wardley-deaccelerators">
+<path d="M459.4,420.2 L419.4,420.2 L419.4,412.2 L399.4,435.2 L419.4,458.2 L419.4,450.2 L459.4,450.2 Z" fill="#ffffff" stroke="#333333"/>
+<text x="429.4" y="465.2" text-anchor="middle" font-size="10" font-weight="bold" fill="#131300">Legacy Data</text>
+</g>
+</g>
+</g>
+</svg>

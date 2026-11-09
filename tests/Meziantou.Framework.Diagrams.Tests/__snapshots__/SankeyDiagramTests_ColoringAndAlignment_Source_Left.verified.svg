@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="616" height="416" viewBox="0 0 616 416" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="616" height="416" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="nodes">
+<rect x="0" y="0" width="10" height="285.03" fill="#4e79a7" class="node"/>
+<rect x="295" y="0" width="10" height="213.77" fill="#f28e2c" class="node"/>
+<rect x="295" y="240.77" width="10" height="71.26" fill="#e15759" class="node"/>
+<rect x="590" y="8.07" width="10" height="213.77" fill="#76b7b2" class="node"/>
+<rect x="590" y="276.4" width="10" height="123.6" fill="#59a14f" class="node"/>
+<rect x="0" y="312.03" width="10" height="87.97" fill="#edc949" class="node"/>
+</g>
+<g class="node-labels">
+<text x="16" y="142.52" font-size="14" fill="#333333">A 40</text>
+<text x="311" y="106.89" font-size="14" fill="#333333">B 30</text>
+<text x="311" y="276.4" font-size="14" fill="#333333">C 10</text>
+<text x="584" y="114.95" text-anchor="end" font-size="14" fill="#333333">D 30</text>
+<text x="584" y="338.2" text-anchor="end" font-size="14" fill="#333333">E 17.35</text>
+<text x="16" y="356.02" font-size="14" fill="#333333">F 12.35</text>
+</g>
+<g class="links">
+<path d="M10,106.89 C152.5,106.89 152.5,106.89 295,106.89" fill="none" stroke="#4e79a7" stroke-width="213.77" opacity="0.5" class="link"/>
+<path d="M10,249.4 C152.5,249.4 152.5,276.4 295,276.4" fill="none" stroke="#4e79a7" stroke-width="71.26" opacity="0.5" class="link"/>
+<path d="M305,89.07 C447.5,89.07 447.5,97.14 590,97.14" fill="none" stroke="#f28e2c" stroke-width="178.14" opacity="0.5" class="link"/>
+<path d="M305,258.59 C447.5,258.59 447.5,204.03 590,204.03" fill="none" stroke="#e15759" stroke-width="35.63" opacity="0.5" class="link"/>
+<path d="M305,294.22 C447.5,294.22 447.5,294.22 590,294.22" fill="none" stroke="#e15759" stroke-width="35.63" opacity="0.5" class="link"/>
+<path d="M10,356.02 C300,356.02 300,356.02 590,356.02" fill="none" stroke="#edc949" stroke-width="87.97" opacity="0.5" class="link"/>
+</g>
+</g>
+</svg>

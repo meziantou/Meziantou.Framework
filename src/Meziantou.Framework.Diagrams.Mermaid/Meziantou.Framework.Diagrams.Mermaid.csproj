@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Diagrams.Mermaid</RootNamespace>
     <Version>1.0.0</Version>
-    <Description>Reads and writes the Mermaid text format for Meziantou.Framework.Diagrams: flowcharts, swimlanes, class, state, entity relationship, requirement, use case, C4, block and architecture diagrams, with the front matter, the directives and the themes of Mermaid.</Description>
+    <Description>Reads and writes the Mermaid text format for Meziantou.Framework.Diagrams: the 31 diagram types of Meziantou.Framework.Diagrams, with the front matter, the directives and the themes of Mermaid.</Description>
     <PackageTags>mermaid;mermaid-js;diagram;diagrams;svg;flowchart;uml;parser;markdown</PackageTags>
 
     <!-- Every public member must be documented -->

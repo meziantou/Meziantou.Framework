@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="516" height="547.6" viewBox="0 0 516 547.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Reach and engagement of campaigns</title>
+<defs>
+<clipPath id="diagram-clip0"><rect x="0" y="0" width="500" height="500"/></clipPath>
+</defs>
+<rect width="516" height="547.6" fill="#ffffff"/>
+<g class="title">
+<text x="258" y="23.4" text-anchor="middle" font-size="18" fill="#333333">Reach and engagement of campaigns</text>
+</g>
+<g class="diagram" transform="translate(8 39.6)">
+<g class="quadrant-chart" clip-path="url(#diagram-clip0)">
+<g class="quadrants">
+<g class="quadrant">
+<rect x="263" y="5" width="232" height="232" fill="#ececff"/>
+<text x="379" y="23.69" text-anchor="middle" font-size="16" fill="#131300">We should expand</text>
+</g>
+<g class="quadrant">
+<rect x="31" y="5" width="232" height="232" fill="#f1f1ff"/>
+<text x="147" y="23.69" text-anchor="middle" font-size="16" fill="#0e0e00">Need to promote</text>
+</g>
+<g class="quadrant">
+<rect x="31" y="237" width="232" height="232" fill="#f6f6ff"/>
+<text x="147" y="255.69" text-anchor="middle" font-size="16" fill="#090900">Re-evaluate</text>
+</g>
+<g class="quadrant">
+<rect x="263" y="237" width="232" height="232" fill="#fbfbff"/>
+<text x="379" y="255.69" text-anchor="middle" font-size="16" fill="#040400">May be improved</text>
+</g>
+</g>
+<g class="border">
+<line x1="30" y1="5" x2="496" y2="5" stroke="#c7c7f1" stroke-width="2"/>
+<line x1="495" y1="6" x2="495" y2="468" stroke="#c7c7f1" stroke-width="2"/>
+<line x1="30" y1="469" x2="496" y2="469" stroke="#c7c7f1" stroke-width="2"/>
+<line x1="31" y1="6" x2="31" y2="468" stroke="#c7c7f1" stroke-width="2"/>
+<line x1="263" y1="6" x2="263" y2="468" stroke="#c7c7f1"/>
+<line x1="32" y1="237" x2="494" y2="237" stroke="#c7c7f1"/>
+</g>
+<g class="data-points">
+<g class="data-point">
+<circle cx="392.92" cy="311.24" r="10" fill="#109060"/>
+<text x="392.92" y="326.51" text-anchor="middle" font-size="12" fill="#131300">Campaign D</text>
+</g>
+<g class="data-point">
+<circle cx="295.48" cy="148.84" r="5" fill="#ff3300"/>
+<text x="295.48" y="164.11" text-anchor="middle" font-size="12" fill="#131300">Campaign C</text>
+</g>
+<g class="data-point">
+<circle cx="239.8" cy="362.28" r="5" fill="#000000"/>
+<text x="239.8" y="377.55" text-anchor="middle" font-size="12" fill="#131300">Campaign B</text>
+</g>
+<g class="data-point">
+<circle cx="170.2" cy="190.6" r="5" fill="#000000"/>
+<text x="170.2" y="205.87" text-anchor="middle" font-size="12" fill="#131300">Campaign A</text>
+</g>
+</g>
+<g class="labels">
+<text x="147" y="492.69" text-anchor="middle" font-size="16" fill="#131300">Low Reach</text>
+<text x="379" y="492.69" text-anchor="middle" font-size="16" fill="#131300">High Reach</text>
+<g transform="matrix(0 -1 1 0 -348 358)">
+<text x="5" y="366.69" text-anchor="middle" font-size="16" fill="#131300">Low Engagement</text>
+</g>
+<g transform="matrix(0 -1 1 0 -116 126)">
+<text x="5" y="134.69" text-anchor="middle" font-size="16" fill="#131300">High Engagement</text>
+</g>
+</g>
+</g>
+</g>
+</svg>

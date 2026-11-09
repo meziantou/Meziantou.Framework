@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="716" height="716" viewBox="0 0 716 716" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="716" height="716" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="radarGraticules">
+<circle cx="350" cy="350" r="60" fill="#dedede" fill-opacity="0.302" stroke="#dedede" class="radarGraticule"/>
+<circle cx="350" cy="350" r="120" fill="#dedede" fill-opacity="0.302" stroke="#dedede" class="radarGraticule"/>
+<circle cx="350" cy="350" r="180" fill="#dedede" fill-opacity="0.302" stroke="#dedede" class="radarGraticule"/>
+<circle cx="350" cy="350" r="240" fill="#dedede" fill-opacity="0.302" stroke="#dedede" class="radarGraticule"/>
+<circle cx="350" cy="350" r="300" fill="#dedede" fill-opacity="0.302" stroke="#dedede" class="radarGraticule"/>
+</g>
+<g class="radarAxes">
+<line x1="350" y1="350" x2="350" y2="50" stroke="#333333" stroke-width="2" class="radarAxisLine"/>
+<text x="350" y="31" text-anchor="middle" font-size="12" fill="#333333" class="radarAxisLabel">a</text>
+<line x1="350" y1="350" x2="609.81" y2="500" stroke="#333333" stroke-width="2" class="radarAxisLine"/>
+<text x="626.26" y="518.12" font-size="12" fill="#333333" class="radarAxisLabel">b</text>
+<line x1="350" y1="350" x2="90.19" y2="500" stroke="#333333" stroke-width="2" class="radarAxisLine"/>
+<text x="73.74" y="518.12" text-anchor="end" font-size="12" fill="#333333" class="radarAxisLabel">c</text>
+</g>
+<g class="radarCurves">
+<path d="M350,250 C350,250 523.21,450 523.21,450 C523.21,450 90.19,500 90.19,500 C90.19,500 350,250 350,250 Z" fill="#8686ff" fill-opacity="0.502" stroke="#8686ff" stroke-width="2" class="radarCurve-0"/>
+</g>
+</g>
+</svg>

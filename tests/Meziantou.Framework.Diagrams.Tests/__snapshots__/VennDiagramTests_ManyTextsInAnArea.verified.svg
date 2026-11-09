@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="816" height="497.6" viewBox="0 0 816 497.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Languages</title>
+<rect width="816" height="497.6" fill="#ffffff"/>
+<g class="title">
+<text x="408" y="23.4" text-anchor="middle" font-size="18" fill="#333333">Languages</text>
+</g>
+<g class="diagram" transform="translate(8 39.6)">
+<g class="venn-area venn-circle" data-venn-sets="Static">
+<circle cx="266.71" cy="225" r="210" fill="#5353ff" fill-opacity="0.102" stroke="#5353ff" stroke-opacity="0.949" stroke-width="2.5"/>
+<text x="190" y="232.4" text-anchor="middle" font-size="24" fill="#0000b9">Static</text>
+</g>
+<g class="venn-area venn-circle" data-venn-sets="Dynamic">
+<circle cx="533.29" cy="225" r="210" fill="#ffff45" fill-opacity="0.102" stroke="#ffff45" stroke-opacity="0.949" stroke-width="2.5"/>
+<text x="610" y="233.4" text-anchor="middle" font-size="24" fill="#abab00">Dynamic</text>
+</g>
+<g class="venn-area venn-intersection" data-venn-sets="Dynamic_Static">
+<text x="400" y="233.4" text-anchor="middle" font-size="24" fill="#333333">Gradual</text>
+</g>
+<g class="venn-text-nodes">
+<g class="venn-text-area">
+<g class="venn-text-node" data-id="C#">
+<text x="105.58" y="166.8" text-anchor="middle" font-size="20" fill="#333333">C#</text>
+</g>
+<g class="venn-text-node" data-id="Java">
+<text x="190" y="166.8" text-anchor="middle" font-size="20" fill="#333333">Java</text>
+</g>
+<g class="venn-text-node" data-id="Rust">
+<text x="274.42" y="166.8" text-anchor="middle" font-size="20" fill="#333333">Rust</text>
+</g>
+<g class="venn-text-node" data-id="Go">
+<text x="105.58" y="293.42" text-anchor="middle" font-size="20" fill="#333333">Go</text>
+</g>
+<g class="venn-text-node" data-id="Kotlin">
+<text x="190" y="293.42" text-anchor="middle" font-size="20" fill="#333333">Kotlin</text>
+</g>
+</g>
+<g class="venn-text-area">
+<g class="venn-text-node" data-id="TypeScript">
+<text x="400" y="225.11" text-anchor="middle" font-size="20" fill="#333333">TypeScript</text>
+<text x="400" y="249.11" text-anchor="middle" font-size="20" fill="#333333">with a long</text>
+<text x="400" y="273.11" text-anchor="middle" font-size="20" fill="#333333">name that</text>
+<text x="400" y="297.11" text-anchor="middle" font-size="20" fill="#333333">wraps</text>
+</g>
+</g>
+</g>
+</g>
+</svg>

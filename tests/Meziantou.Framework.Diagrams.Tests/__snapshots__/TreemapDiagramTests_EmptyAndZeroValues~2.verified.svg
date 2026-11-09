@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="996" height="29" viewBox="0 0 996 29" role="img" font-family="Helvetica, Arial, sans-serif">
+<defs>
+<clipPath id="diagram-clip0"><rect x="10" y="30" width="968" height="25"/></clipPath>
+</defs>
+<rect width="996" height="29" fill="#ffffff"/>
+<g class="diagram" transform="translate(-2 -22)">
+<g class="treemapSection">
+<rect x="10" y="30" width="980" height="0" fill="#b9d970" fill-opacity="0.6" stroke="#7ca02a" stroke-opacity="0.4" stroke-width="2" class="treemapSection"/>
+<g class="treemapSectionLabel" clip-path="url(#diagram-clip0)">
+<text x="16" y="45.57" font-size="12" font-weight="bold" fill="#000000">Zeros</text>
+</g>
+</g>
+<g class="treemapNode treemapLeafGroup">
+<rect x="10" y="30" width="980" height="0" fill="#000000" fill-opacity="0" stroke="#000000" stroke-opacity="0" stroke-width="3" class="treemapLeaf"/>
+</g>
+<g class="treemapNode treemapLeafGroup">
+<rect x="10" y="30" width="980" height="0" fill="#000000" fill-opacity="0" stroke="#000000" stroke-opacity="0" stroke-width="3" class="treemapLeaf"/>
+</g>
+<g class="treemapNode treemapLeafGroup">
+<rect x="20" y="43" width="960" height="0" fill="#b9d970" fill-opacity="0.302" stroke="#b9d970" stroke-width="3" class="treemapLeaf"/>
+</g>
+</g>
+</svg>

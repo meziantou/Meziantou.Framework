@@ -3,6 +3,7 @@ using Meziantou.Framework.Diagrams.Mermaid.Internals.ArchitectureDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.BlockDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.C4Diagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.ClassDiagrams;
+using Meziantou.Framework.Diagrams.Mermaid.Internals.CynefinDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.ErDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.EventModelingDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.Flowcharts;
@@ -12,14 +13,22 @@ using Meziantou.Framework.Diagrams.Mermaid.Internals.IshikawaDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.KanbanDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.MindmapDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.PacketDiagrams;
+using Meziantou.Framework.Diagrams.Mermaid.Internals.PieDiagrams;
+using Meziantou.Framework.Diagrams.Mermaid.Internals.RadarDiagrams;
+using Meziantou.Framework.Diagrams.Mermaid.Internals.QuadrantChartDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.RailroadDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.RequirementDiagrams;
+using Meziantou.Framework.Diagrams.Mermaid.Internals.SankeyDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.SequenceDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.StateDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.TimelineDiagrams;
+using Meziantou.Framework.Diagrams.Mermaid.Internals.TreemapDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.TreeViewDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.UseCaseDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals.UserJourneyDiagrams;
+using Meziantou.Framework.Diagrams.Mermaid.Internals.WardleyDiagrams;
+using Meziantou.Framework.Diagrams.Mermaid.Internals.XyChartDiagrams;
+using Meziantou.Framework.Diagrams.Mermaid.Internals.VennDiagrams;
 using Meziantou.Framework.Diagrams.Mermaid.Internals;
 
 namespace Meziantou.Framework.Diagrams.Mermaid;
@@ -48,7 +57,7 @@ public sealed class MermaidDocument
     public IReadOnlyList<MermaidWarning> Warnings { get; }
 
     /// <summary>Gets the keywords of the types of diagrams that can be read.</summary>
-    public static IReadOnlyList<string> SupportedDiagramTypes { get; } = ["flowchart", "graph", "flowchart-elk", "swimlane-beta", "classDiagram", "classDiagram-v2", "stateDiagram", "stateDiagram-v2", "erDiagram", "requirementDiagram", "usecase-beta", "C4Context", "C4Container", "C4Component", "C4Dynamic", "C4Deployment", "block", "block-beta", "architecture-beta", "railroad-beta", "railroad-ebnf-beta", "railroad-abnf-beta", "railroad-peg-beta", "sequenceDiagram", "gitGraph", "kanban", "packet", "packet-beta", "gantt", "timeline", "journey", "eventmodeling", "ishikawa-beta", "ishikawa", "mindmap", "treeView-beta"];
+    public static IReadOnlyList<string> SupportedDiagramTypes { get; } = ["flowchart", "graph", "flowchart-elk", "swimlane-beta", "classDiagram", "classDiagram-v2", "stateDiagram", "stateDiagram-v2", "erDiagram", "requirementDiagram", "usecase-beta", "C4Context", "C4Container", "C4Component", "C4Dynamic", "C4Deployment", "block", "block-beta", "architecture-beta", "railroad-beta", "railroad-ebnf-beta", "railroad-abnf-beta", "railroad-peg-beta", "sequenceDiagram", "gitGraph", "kanban", "packet", "packet-beta", "gantt", "timeline", "journey", "eventmodeling", "ishikawa-beta", "ishikawa", "mindmap", "treeView-beta", "pie", "radar-beta", "wardley-beta", "xychart", "xychart-beta", "quadrantChart", "cynefin-beta", "treemap", "treemap-beta", "sankey", "sankey-beta", "venn-beta"];
 
     /// <summary>Reads a Mermaid text.</summary>
     /// <param name="text">The text.</param>
@@ -102,6 +111,15 @@ public sealed class MermaidDocument
             "eventmodeling" => EventModelingDiagramParser.Parse(context, position),
             _ when IshikawaDiagramParser.GetKeywordLength(keyword, 0, keyword.Length) == keyword.Length => IshikawaDiagramParser.Parse(context, position),
             "treeView-beta" => TreeViewDiagramParser.Parse(context, position),
+            "pie" => PieDiagramParser.Parse(context, position),
+            "radar-beta" => RadarDiagramParser.Parse(context, position),
+            "wardley-beta" => WardleyDiagramParser.Parse(context, position),
+            "xychart" or "xychart-beta" => XyChartDiagramParser.Parse(context, position),
+            "quadrantChart" => QuadrantChartDiagramParser.Parse(context, position),
+            "cynefin-beta" => CynefinDiagramParser.Parse(context, position),
+            "treemap" or "treemap-beta" => TreemapDiagramParser.Parse(context, position),
+            "sankey" or "sankey-beta" => SankeyDiagramParser.Parse(context, position),
+            "venn-beta" => VennDiagramParser.Parse(context, position),
             _ => throw context.Error(position, IsKnownType(keyword) ? $"The diagram type '{keyword}' is not supported yet." : $"No diagram type was found: '{(keyword.Length is 0 ? context.Text[position].ToString() : keyword)}' is not a type of Mermaid diagram."),
         };
 

@@ -1,0 +1,20 @@
+---
+config:
+  the&eVariables:
+    xyChart:
+      plotColorPalette: '#000000, &0000FF, #00FF00 ], #FF0000'
+---
+xychart
+title "Diffe?ent Colors in xonfig:
+  the&eVaria]Chart"
+x-axis "categoriesX" ["Category 1", "Category 2", "Category 3", "Category 4"]
+y-axis "value@{ assigned: {group}'x' }sY" 0 --> 50
+accDescr {%% B^ack line
+li,30,40]
+%% Blue bar
+bar [20,30,2ne [10,20,30,40]
+%% Bluª bar
+bar [20,30,25,35]
+%% Green bar
+bar [15,25,20,3service0]%% Red line
+line [5,15,25,35]

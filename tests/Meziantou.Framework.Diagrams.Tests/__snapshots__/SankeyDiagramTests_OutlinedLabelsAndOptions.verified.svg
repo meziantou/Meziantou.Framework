@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="595.6" height="416" viewBox="0 0 595.6 416" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="595.6" height="416" fill="#333333"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="nodes">
+<rect x="0" y="0" width="20" height="271.28" fill="#4e79a7" class="node"/>
+<rect x="240" y="0" width="20" height="203.46" fill="#ff0000" class="node"/>
+<rect x="240" y="248.46" width="20" height="67.82" fill="#f28e2c" class="node"/>
+<rect x="480" y="9.22" width="20" height="203.46" fill="#e15759" class="node"/>
+<rect x="480" y="282.37" width="20" height="117.63" fill="#76b7b2" class="node"/>
+<rect x="0" y="316.28" width="20" height="83.72" fill="#59a14f" class="node"/>
+</g>
+<g class="node-labels">
+<text x="28" y="135.64" font-size="14" fill="#1f2020" class="sankey-label-bg">A $40 M</text>
+<text x="27.41" y="137.05" font-size="14" fill="#1f2020" class="sankey-label-bg">A $40 M</text>
+<text x="26" y="137.64" font-size="14" fill="#1f2020" class="sankey-label-bg">A $40 M</text>
+<text x="24.59" y="137.05" font-size="14" fill="#1f2020" class="sankey-label-bg">A $40 M</text>
+<text x="24" y="135.64" font-size="14" fill="#1f2020" class="sankey-label-bg">A $40 M</text>
+<text x="24.59" y="134.22" font-size="14" fill="#1f2020" class="sankey-label-bg">A $40 M</text>
+<text x="26" y="133.64" font-size="14" fill="#1f2020" class="sankey-label-bg">A $40 M</text>
+<text x="27.41" y="134.22" font-size="14" fill="#1f2020" class="sankey-label-bg">A $40 M</text>
+<text x="26" y="135.64" font-size="14" fill="#cccccc" class="sankey-label-fg">A $40 M</text>
+<text x="268" y="101.73" font-size="14" fill="#1f2020" class="sankey-label-bg">B $30 M</text>
+<text x="267.41" y="103.14" font-size="14" fill="#1f2020" class="sankey-label-bg">B $30 M</text>
+<text x="266" y="103.73" font-size="14" fill="#1f2020" class="sankey-label-bg">B $30 M</text>
+<text x="264.59" y="103.14" font-size="14" fill="#1f2020" class="sankey-label-bg">B $30 M</text>
+<text x="264" y="101.73" font-size="14" fill="#1f2020" class="sankey-label-bg">B $30 M</text>
+<text x="264.59" y="100.31" font-size="14" fill="#1f2020" class="sankey-label-bg">B $30 M</text>
+<text x="266" y="99.73" font-size="14" fill="#1f2020" class="sankey-label-bg">B $30 M</text>
+<text x="267.41" y="100.31" font-size="14" fill="#1f2020" class="sankey-label-bg">B $30 M</text>
+<text x="266" y="101.73" font-size="14" fill="#cccccc" class="sankey-label-fg">B $30 M</text>
+<text x="268" y="282.37" font-size="14" fill="#1f2020" class="sankey-label-bg">C $10 M</text>
+<text x="267.41" y="283.78" font-size="14" fill="#1f2020" class="sankey-label-bg">C $10 M</text>
+<text x="266" y="284.37" font-size="14" fill="#1f2020" class="sankey-label-bg">C $10 M</text>
+<text x="264.59" y="283.78" font-size="14" fill="#1f2020" class="sankey-label-bg">C $10 M</text>
+<text x="264" y="282.37" font-size="14" fill="#1f2020" class="sankey-label-bg">C $10 M</text>
+<text x="264.59" y="280.95" font-size="14" fill="#1f2020" class="sankey-label-bg">C $10 M</text>
+<text x="266" y="280.37" font-size="14" fill="#1f2020" class="sankey-label-bg">C $10 M</text>
+<text x="267.41" y="280.95" font-size="14" fill="#1f2020" class="sankey-label-bg">C $10 M</text>
+<text x="266" y="282.37" font-size="14" fill="#cccccc" class="sankey-label-fg">C $10 M</text>
+<text x="508" y="110.95" font-size="14" fill="#1f2020" class="sankey-label-bg">D $30 M</text>
+<text x="507.41" y="112.36" font-size="14" fill="#1f2020" class="sankey-label-bg">D $30 M</text>
+<text x="506" y="112.95" font-size="14" fill="#1f2020" class="sankey-label-bg">D $30 M</text>
+<text x="504.59" y="112.36" font-size="14" fill="#1f2020" class="sankey-label-bg">D $30 M</text>
+<text x="504" y="110.95" font-size="14" fill="#1f2020" class="sankey-label-bg">D $30 M</text>
+<text x="504.59" y="109.53" font-size="14" fill="#1f2020" class="sankey-label-bg">D $30 M</text>
+<text x="506" y="108.95" font-size="14" fill="#1f2020" class="sankey-label-bg">D $30 M</text>
+<text x="507.41" y="109.53" font-size="14" fill="#1f2020" class="sankey-label-bg">D $30 M</text>
+<text x="506" y="110.95" font-size="14" fill="#cccccc" class="sankey-label-fg">D $30 M</text>
+<text x="508" y="341.18" font-size="14" fill="#1f2020" class="sankey-label-bg">E $17.35 M</text>
+<text x="507.41" y="342.6" font-size="14" fill="#1f2020" class="sankey-label-bg">E $17.35 M</text>
+<text x="506" y="343.18" font-size="14" fill="#1f2020" class="sankey-label-bg">E $17.35 M</text>
+<text x="504.59" y="342.6" font-size="14" fill="#1f2020" class="sankey-label-bg">E $17.35 M</text>
+<text x="504" y="341.18" font-size="14" fill="#1f2020" class="sankey-label-bg">E $17.35 M</text>
+<text x="504.59" y="339.77" font-size="14" fill="#1f2020" class="sankey-label-bg">E $17.35 M</text>
+<text x="506" y="339.18" font-size="14" fill="#1f2020" class="sankey-label-bg">E $17.35 M</text>
+<text x="507.41" y="339.77" font-size="14" fill="#1f2020" class="sankey-label-bg">E $17.35 M</text>
+<text x="506" y="341.18" font-size="14" fill="#cccccc" class="sankey-label-fg">E $17.35 M</text>
+<text x="28" y="358.14" font-size="14" fill="#1f2020" class="sankey-label-bg">F $12.35 M</text>
+<text x="27.41" y="359.55" font-size="14" fill="#1f2020" class="sankey-label-bg">F $12.35 M</text>
+<text x="26" y="360.14" font-size="14" fill="#1f2020" class="sankey-label-bg">F $12.35 M</text>
+<text x="24.59" y="359.55" font-size="14" fill="#1f2020" class="sankey-label-bg">F $12.35 M</text>
+<text x="24" y="358.14" font-size="14" fill="#1f2020" class="sankey-label-bg">F $12.35 M</text>
+<text x="24.59" y="356.72" font-size="14" fill="#1f2020" class="sankey-label-bg">F $12.35 M</text>
+<text x="26" y="356.14" font-size="14" fill="#1f2020" class="sankey-label-bg">F $12.35 M</text>
+<text x="27.41" y="356.72" font-size="14" fill="#1f2020" class="sankey-label-bg">F $12.35 M</text>
+<text x="26" y="358.14" font-size="14" fill="#cccccc" class="sankey-label-fg">F $12.35 M</text>
+</g>
+<g class="links">
+<path d="M20,101.73 C130,101.73 130,101.73 240,101.73" fill="none" stroke="#a1a1a1" stroke-width="203.46" opacity="0.5" class="link"/>
+<path d="M20,237.37 C130,237.37 130,282.37 240,282.37" fill="none" stroke="#a1a1a1" stroke-width="67.82" opacity="0.5" class="link"/>
+<path d="M260,84.77 C370,84.77 370,93.99 480,93.99" fill="none" stroke="#a1a1a1" stroke-width="169.55" opacity="0.5" class="link"/>
+<path d="M260,265.41 C370,265.41 370,195.72 480,195.72" fill="none" stroke="#a1a1a1" stroke-width="33.91" opacity="0.5" class="link"/>
+<path d="M260,299.32 C370,299.32 370,299.32 480,299.32" fill="none" stroke="#a1a1a1" stroke-width="33.91" opacity="0.5" class="link"/>
+<path d="M20,358.14 C250,358.14 250,358.14 480,358.14" fill="none" stroke="#a1a1a1" stroke-width="83.72" opacity="0.5" class="link"/>
+</g>
+</g>
+</svg>

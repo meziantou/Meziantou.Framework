@@ -31,6 +31,15 @@
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Diagrams.Mermaid.Tests\IshikawaDiagramParserTests.cs" LogicalName="IshikawaDiagramParserTests.cs" Link="Seeds\IshikawaDiagramParserTests.cs" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Diagrams.Mermaid.Tests\MindmapDiagramParserTests.cs" LogicalName="MindmapDiagramParserTests.cs" Link="Seeds\MindmapDiagramParserTests.cs" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Diagrams.Mermaid.Tests\TreeViewDiagramParserTests.cs" LogicalName="TreeViewDiagramParserTests.cs" Link="Seeds\TreeViewDiagramParserTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Diagrams.Mermaid.Tests\PieDiagramParserTests.cs" LogicalName="PieDiagramParserTests.cs" Link="Seeds\PieDiagramParserTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Diagrams.Mermaid.Tests\RadarDiagramParserTests.cs" LogicalName="RadarDiagramParserTests.cs" Link="Seeds\RadarDiagramParserTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Diagrams.Mermaid.Tests\WardleyDiagramParserTests.cs" LogicalName="WardleyDiagramParserTests.cs" Link="Seeds\WardleyDiagramParserTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Diagrams.Mermaid.Tests\XyChartDiagramParserTests.cs" LogicalName="XyChartDiagramParserTests.cs" Link="Seeds\XyChartDiagramParserTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Diagrams.Mermaid.Tests\QuadrantChartDiagramParserTests.cs" LogicalName="QuadrantChartDiagramParserTests.cs" Link="Seeds\QuadrantChartDiagramParserTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Diagrams.Mermaid.Tests\CynefinDiagramParserTests.cs" LogicalName="CynefinDiagramParserTests.cs" Link="Seeds\CynefinDiagramParserTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Diagrams.Mermaid.Tests\TreemapDiagramParserTests.cs" LogicalName="TreemapDiagramParserTests.cs" Link="Seeds\TreemapDiagramParserTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Diagrams.Mermaid.Tests\SankeyDiagramParserTests.cs" LogicalName="SankeyDiagramParserTests.cs" Link="Seeds\SankeyDiagramParserTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Diagrams.Mermaid.Tests\VennDiagramParserTests.cs" LogicalName="VennDiagramParserTests.cs" Link="Seeds\VennDiagramParserTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

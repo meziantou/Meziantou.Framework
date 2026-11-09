@@ -94,6 +94,9 @@ internal static class MermaidTheme
             if (name is "darkMode")
                 continue;
 
+            if (IsNotColor(name))
+                continue;
+
             if (!SceneColor.TryParse(value, out var color))
             {
                 context.Warn(0, $"The value '{value}' of the theme variable '{name}' is not a supported color.");
@@ -158,7 +161,7 @@ internal static class MermaidTheme
         var resolved = new Dictionary<string, SceneColor>(StringComparer.Ordinal);
         foreach (var (name, value) in variables)
         {
-            if (name is "fontFamily" or "fontSize" or "darkMode")
+            if (name is "fontFamily" or "fontSize" or "darkMode" || IsNotColor(name))
                 continue;
 
             if (SceneColor.TryParse(value, out var color))
@@ -266,6 +269,9 @@ internal static class MermaidTheme
 
         return theme;
     }
+
+    // The sizes and the opacities of the diagram types, which their parsers read
+    private static bool IsNotColor(string name) => name is "pieTitleTextSize" or "pieSectionTextSize" or "pieLegendTextSize" or "pieStrokeWidth" or "pieOuterStrokeWidth" or "pieOpacity";
 
     private static double? ParseSize(string value)
     {

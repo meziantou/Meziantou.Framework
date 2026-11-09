@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="380" viewBox="0 0 480 380" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="480" height="380" fill="#ffffff"/>
+<g class="diagram" transform="translate(40 40)">
+<g class="cynefin-backgrounds">
+<rect x="0" y="0" width="200" height="150" fill="#e8f5e9" fill-opacity="0.4" class="cynefinDomain"/>
+<rect x="200" y="0" width="200" height="150" fill="#e3f2fd" fill-opacity="0.4" class="cynefinDomain"/>
+<rect x="0" y="150" width="200" height="150" fill="#fbe9e7" fill-opacity="0.4" class="cynefinDomain"/>
+<rect x="200" y="150" width="200" height="150" fill="#fff8e1" fill-opacity="0.4" class="cynefinDomain"/>
+</g>
+<g class="cynefin-boundaries">
+<path d="M200,0 C200,21.43 200,21.43 200,42.86 C200,64.29 200,64.29 200,85.71 C200,107.14 200,107.14 200,128.57 C200,150 200,150 200,171.43 C200,192.86 200,192.86 200,214.29 C200,235.71 200,235.71 200,257.14 C200,278.57 200,278.57 200,300" fill="none" stroke="#333333" stroke-width="2" stroke-dasharray="6 3" class="cynefinBoundary"/>
+<path d="M0,150 C28.57,150 28.57,150 57.14,150 C85.71,150 85.71,150 114.29,150 C142.86,150 142.86,150 171.43,150 C200,150 200,150 228.57,150 C257.14,150 257.14,150 285.71,150 C314.29,150 314.29,150 342.86,150 C371.43,150 371.43,150 400,150" fill="none" stroke="#333333" stroke-width="2" stroke-dasharray="6 3" class="cynefinBoundary"/>
+<path d="M200,150 C212,180 182,232.5 206,262.5 C188,277.5 203.6,292.5 200,300" fill="none" stroke="#8b0000" stroke-width="4" class="cynefinCliff"/>
+</g>
+<path d="M140,150 A60,45 0 1,1 260,150 A60,45 0 1,1 140,150 Z" fill="#f3e5f5" fill-opacity="0.502" stroke="#333333" stroke-width="1.5" stroke-dasharray="4 2" class="cynefinConfusion"/>
+<g class="cynefin-labels">
+<text x="100" y="79.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Complex</text>
+<text x="300" y="79.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Complicated</text>
+<text x="100" y="229.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Chaotic</text>
+<text x="300" y="229.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Clear</text>
+<text x="200" y="154.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Confusion</text>
+</g>
+<g class="cynefin-items">
+</g>
+<g class="cynefin-arrows">
+</g>
+</g>
+</svg>

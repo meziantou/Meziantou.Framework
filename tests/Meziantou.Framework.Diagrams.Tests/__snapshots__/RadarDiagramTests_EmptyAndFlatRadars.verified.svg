@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="716" height="716" viewBox="0 0 716 716" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="716" height="716" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="radarGraticules">
+<circle cx="350" cy="350" r="60" fill="#dedede" fill-opacity="0.302" stroke="#dedede" class="radarGraticule"/>
+<circle cx="350" cy="350" r="120" fill="#dedede" fill-opacity="0.302" stroke="#dedede" class="radarGraticule"/>
+<circle cx="350" cy="350" r="180" fill="#dedede" fill-opacity="0.302" stroke="#dedede" class="radarGraticule"/>
+<circle cx="350" cy="350" r="240" fill="#dedede" fill-opacity="0.302" stroke="#dedede" class="radarGraticule"/>
+<circle cx="350" cy="350" r="300" fill="#dedede" fill-opacity="0.302" stroke="#dedede" class="radarGraticule"/>
+</g>
+<g class="radarAxes">
+</g>
+<g class="radarCurves">
+</g>
+<g class="radarLegend">
+</g>
+</g>
+</svg>

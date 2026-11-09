@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="416" height="316" viewBox="0 0 416 316" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="416" height="316" fill="#333333"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="venn-area venn-circle" data-venn-sets="S0">
+<circle cx="64.69" cy="73.86" r="49.69" fill="#6a6e6e" fill-opacity="0.102" stroke="#6a6e6e" stroke-opacity="0.949" stroke-width="1.25"/>
+<text x="46" y="77.2" text-anchor="middle" font-size="12" fill="#b7baba">S0</text>
+</g>
+<g class="venn-area venn-circle" data-venn-sets="S1">
+<circle cx="124.83" cy="73.86" r="47.14" fill="#00ff00" fill-opacity="0.102" stroke="#00ff00" stroke-opacity="0.949" stroke-width="1.25"/>
+<text x="143" y="77.2" text-anchor="middle" font-size="12" fill="#99ff99">S1</text>
+</g>
+<g class="venn-area venn-circle" data-venn-sets="S2">
+<circle cx="219.56" cy="73.86" r="44.45" fill="#cc2a91" fill-opacity="0.502"/>
+<text x="219" y="77.2" text-anchor="middle" font-size="12" fill="#eca3d1">S2</text>
+</g>
+<g class="venn-area venn-circle" data-venn-sets="S3">
+<circle cx="93.49" cy="168.26" r="41.57" fill="#87a1a9" fill-opacity="0.102" stroke="#87a1a9" stroke-opacity="0.949" stroke-width="1.25"/>
+<text x="93" y="172.2" text-anchor="middle" font-size="12" fill="#e0e7e9">S3</text>
+</g>
+<g class="venn-area venn-circle" data-venn-sets="S4">
+<circle cx="213.6" cy="165.18" r="38.49" fill="#bf7344" fill-opacity="0.102" stroke="#bf7344" stroke-opacity="0.949" stroke-width="1.25"/>
+<text x="213" y="169.2" text-anchor="middle" font-size="12" fill="#e6c8b6">S4</text>
+</g>
+<g class="venn-area venn-circle" data-venn-sets="S5">
+<circle cx="302.28" cy="117" r="35.14" fill="#eb2626" fill-opacity="0.102" stroke="#eb2626" stroke-opacity="0.949" stroke-width="1.25"/>
+<text x="302" y="121.2" text-anchor="middle" font-size="12" fill="#f8b2b2">S5</text>
+</g>
+<g class="venn-area venn-circle" data-venn-sets="S6">
+<circle cx="139.5" cy="244.41" r="31.43" fill="#b800e1" fill-opacity="0.102" stroke="#b800e1" stroke-opacity="0.949" stroke-width="1.25"/>
+<text x="139" y="248.2" text-anchor="middle" font-size="12" fill="#e77bff">S6</text>
+</g>
+<g class="venn-area venn-circle" data-venn-sets="S7">
+<circle cx="294.36" cy="240.19" r="27.22" fill="#feab35" fill-opacity="0.102" stroke="#feab35" stroke-opacity="0.949" stroke-width="1.25"/>
+<text x="294" y="244.2" text-anchor="middle" font-size="12" fill="#ffeacd">S7</text>
+</g>
+<g class="venn-area venn-circle" data-venn-sets="S8">
+<circle cx="362.78" cy="150" r="22.22" fill="#6a6e6e" fill-opacity="0.102" stroke="#6a6e6e" stroke-opacity="0.949" stroke-width="1.25"/>
+<text x="362" y="154.2" text-anchor="middle" font-size="12" fill="#b7baba">S8</text>
+</g>
+<g class="venn-area venn-intersection" data-venn-sets="S0_S1">
+<text x="96" y="77.2" text-anchor="middle" font-size="12" fill="#ffffff">Both</text>
+</g>
+</g>
+</svg>

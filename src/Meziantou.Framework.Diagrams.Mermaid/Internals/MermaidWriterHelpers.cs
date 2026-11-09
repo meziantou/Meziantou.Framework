@@ -8,7 +8,8 @@ internal static class MermaidWriterHelpers
     /// <summary>Writes the front matter: the title, the theme when it is one of the themes of Mermaid, and the configuration of the diagram.</summary>
     public static void WriteFrontMatter(StringBuilder builder, Diagram diagram, string section, List<string> configuration, bool includeTitle = true)
     {
-        var title = includeTitle ? diagram.Title : null;
+        // An empty title is read back as no title
+        var title = includeTitle && !string.IsNullOrEmpty(diagram.Title) ? diagram.Title : null;
         var themeName = diagram.Theme switch
         {
             var theme when ReferenceEquals(theme, DiagramTheme.Dark) => "dark",
@@ -101,6 +102,10 @@ internal static class MermaidWriterHelpers
                     break;
                 case '\\':
                     builder.Append("\\\\");
+                    break;
+                case '%' when i > 0 && value[i - 1] is '%':
+                    // %% starts a directive or a comment anywhere in the text, front matter included
+                    builder.Append("\\u0025");
                     break;
                 case '\n':
                     builder.Append("\\n");

@@ -1629,10 +1629,7 @@
     "total": 3
   },
   "html/semantics/embedded-content/media-elements/track/track-element/track-blob-url-revoked.window.js": {
-    "total": 3,
-    "failures": {
-      "track loads from a blob: URL revoked after src is set": "FAIL"
-    }
+    "total": 3
   },
   "html/semantics/embedded-content/media-elements/track/track-element/track-change-event.html": {
     "total": 1
@@ -5436,11 +5433,7 @@
     "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-custom-element-reactions.html": {
-    "total": 6,
-    "failures": {
-      "Removing the selected option updates selectedcontent and runs the clones' reactions after remove() returns": "FAIL",
-      "The parser's clone of a custom element is upgraded and connected before the next script runs": "FAIL"
-    }
+    "total": 6
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-insertion-removal.html": {
     "total": 4

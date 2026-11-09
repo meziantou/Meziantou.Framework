@@ -825,6 +825,34 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void CustomElements_ClonedIntoSelectedContent_AreUpgradedBeforeTheOldClonesAreDisconnected()
+    {
+        // https://html.spec.whatwg.org/multipage/form-elements.html#clone-an-option-into-a-selectedcontent: the upgrade reaction
+        // of a clone is enqueued when it is cloned, before the reactions of the removal of the previous clone (the removal of
+        // the selected option updates the selectedcontent in a microtask, whose reactions go to the backup element queue)
+        var document = Load("""
+            <body><script>
+              const log = [];
+              customElements.define('x-item', class extends HTMLElement {
+                constructor() { super(); log.push('constructed ' + this.textContent); }
+                connectedCallback() { log.push('connected ' + this.textContent + (this.closest('selectedcontent') ? ' clone' : '')); }
+                disconnectedCallback() { log.push('disconnected ' + this.textContent + (this.inSelectedContent ? ' clone' : '')); }
+              });
+              const div = document.createElement('div');
+              div.innerHTML = '<select><button><selectedcontent></selectedcontent></button><option><x-item>zero</x-item></option><option><x-item>one</x-item></option></select>';
+              document.body.append(div);
+              const select = div.querySelector('select');
+              for (const item of select.querySelectorAll('selectedcontent x-item')) item.inSelectedContent = true;
+              log.length = 0;
+              select.options[0].remove();
+              setTimeout(() => document.title = log.join(), 0);
+            </script>
+            """);
+        Assert.Equal("disconnected zero,constructed one,connected one clone,disconnected zero clone", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void Observable_OperatorsTransformTheValues()
     {
         var document = Load("""

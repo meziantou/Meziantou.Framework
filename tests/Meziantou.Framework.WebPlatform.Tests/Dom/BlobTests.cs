@@ -106,6 +106,34 @@ public sealed class BlobTests : IDisposable
     }
 
     [Fact]
+    public void Track_BlobUrlIsResolvedWhenTheSrcAttributeIsSet()
+    {
+        // https://url.spec.whatwg.org/#concept-url-blob-entry: the blob of the URL is resolved when the src attribute is parsed,
+        // so revoking the URL afterwards does not affect the load
+        var document = Load("""
+            <body><script>
+              const results = [];
+              function load(revokeBeforeSrc) {
+                const url = URL.createObjectURL(new Blob(['WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nfoo\n'], { type: 'text/vtt' }));
+                if (revokeBeforeSrc) URL.revokeObjectURL(url);
+                const video = document.createElement('video');
+                const track = document.createElement('track');
+                track.src = url;
+                video.appendChild(track);
+                document.body.appendChild(video);
+                track.track.mode = 'hidden';
+                if (!revokeBeforeSrc) URL.revokeObjectURL(url);
+                track.onload = () => { results.push('load ' + track.track.cues[0].text); document.title = results.join(); };
+                track.onerror = () => { results.push('error ' + track.readyState); document.title = results.join(); };
+              }
+              load(false);
+              load(true);
+            </script>
+            """);
+        Assert.Equal("load foo,error 3", document.Title);
+    }
+
+    [Fact]
     public void Iframe_NavigatesToABlobUrl()
     {
         var document = Load("""

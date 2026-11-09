@@ -255,6 +255,50 @@ public sealed class BrowsingContextTests
     }
 
     [Fact]
+    public void Image_InsertedByADomContentLoadedListener_DelaysTheLoadEvent()
+    {
+        // https://html.spec.whatwg.org/multipage/parsing.html#the-end: the load event is delayed by the images fetched by the
+        // DOMContentLoaded listeners
+        using var context = new BrowsingContext();
+        var document = context.Navigate("https://example.com/", _ => "<body>");
+        var events = new List<string>();
+        document.AddEventListener("DOMContentLoaded", _ => document.Body!.AppendChild(CreateImage(document, events, stop: null)));
+        context.Window.AddEventListener("load", _ => events.Add("load"));
+        context.EventLoop.RunUntilIdle();
+
+        Assert.Equal(["image load", "load"], events);
+    }
+
+    [Fact]
+    public void Stop_BeforeTheLoadEvent_SuppressesTheLoadEvent()
+    {
+        // As in the browsers, stopping a document whose parsing is finished completes it without the load and pageshow events
+        using var context = new BrowsingContext();
+        var document = context.Navigate("https://example.com/", _ => "<body>");
+        var events = new List<string>();
+        document.AddEventListener("DOMContentLoaded", _ => document.Body!.AppendChild(CreateImage(document, events, stop: context.Window)));
+        context.Window.AddEventListener("load", _ => events.Add("load"));
+        context.Window.AddEventListener("pageshow", _ => events.Add("pageshow"));
+        context.EventLoop.RunUntilIdle();
+
+        Assert.Equal(["image load"], events);
+        Assert.Equal(DocumentReadyState.Complete, document.ReadyState);
+    }
+
+    private static HtmlImageElement CreateImage(Document document, List<string> events, Window? stop)
+    {
+        var image = (HtmlImageElement)document.CreateElement("img");
+        image.AddEventListener("load", _ =>
+        {
+            events.Add("image load");
+            stop?.Stop();
+        });
+        image.AddEventListener("error", _ => events.Add("image error"));
+        image.Src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+        return image;
+    }
+
+    [Fact]
     public void Iframe_NavigatedByAFormSubmittedWhileParsing_DelaysTheLoadEvent()
     {
         // https://html.spec.whatwg.org/multipage/parsing.html#the-end: the end spins the event loop until nothing delays the load

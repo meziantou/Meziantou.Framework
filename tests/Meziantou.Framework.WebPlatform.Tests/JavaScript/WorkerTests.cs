@@ -236,6 +236,57 @@ public sealed class WorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task ModuleWorker_JsonImport_IsBlockedByTheConnectSrcOfItsCreator()
+    {
+        _loader.Resources["https://example.com/dir/data.json"] = new DocumentResource("{}") { Headers = [new("Content-Type", "application/json")] };
+        AddScript("https://example.com/dir/worker.js", "import data from './data.json' with { type: 'json' }; postMessage('loaded');");
+        var document = Load("""
+            <meta http-equiv="Content-Security-Policy" content="connect-src 'none'">
+            <script>
+              const results = [];
+              const done = result => { results.push(result); if (results.length === 2) document.title = results.sort().join('|'); };
+              document.addEventListener('securitypolicyviolation', e => done(e.effectiveDirective + ' ' + e.blockedURI));
+              const worker = new Worker('worker.js', { type: 'module' });
+              worker.onmessage = e => done(e.data);
+              worker.onerror = () => done('error');
+            </script>
+            """);
+
+        var title = await WaitForTitleAsync(document);
+        Assert.Equal("connect-src https://example.com/dir/data.json|error", title);
+        lock (_loader.Requests)
+        {
+            Assert.DoesNotContain(_loader.Requests, request => request.Url == "https://example.com/dir/data.json");
+        }
+    }
+
+    [Theory]
+    [InlineData("Worker")]
+    [InlineData("SharedWorker")]
+    public async Task Worker_DocumentIsolationPolicyOfItsScript_DoesNotApply(string type)
+    {
+        _loader.Resources["https://other.example/data.txt"] = new DocumentResource("data") { Headers = [new("Content-Type", "text/plain")] };
+        AddScript("https://example.com/dir/worker.js", """
+            const run = port => fetch('https://other.example/data.txt', { mode: 'no-cors', credentials: 'include' }).then(() => port.postMessage('done'), e => port.postMessage('error ' + e));
+            if (typeof onconnect === 'undefined') run(self); else onconnect = e => run(e.ports[0]);
+            """, new KeyValuePair<string, string>("Document-Isolation-Policy", "isolate-and-credentialless"));
+        var document = Load($$"""
+            <script>
+              const worker = new {{type}}('worker.js');
+              (worker.port ?? worker).onmessage = e => document.title = e.data;
+            </script>
+            """);
+
+        var title = await WaitForTitleAsync(document);
+        Assert.Equal("done", title);
+        lock (_loader.Requests)
+        {
+            var request = Assert.Single(_loader.Requests, request => request.Url == "https://other.example/data.txt");
+            Assert.True(request.IncludeCredentials);
+        }
+    }
+
+    [Fact]
     public async Task NestedWorker()
     {
         AddScript("https://example.com/dir/inner.js", "postMessage('inner ' + location.pathname);");

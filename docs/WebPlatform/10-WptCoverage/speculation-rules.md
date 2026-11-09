@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of speculation-rules, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 131 | 185 | 1 | 71% |
+| [Stable](#stable-tests) | 132 | 185 | 1 | 72% |
 | [Tentative](#tentative-tests) | 6 | 26 | 0 | 23% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **137** | **211** | **1** | **65%** |
+| **All** | **138** | **211** | **1** | **66%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 9
+- **BUG**: 8
 - **TEST BUG**: 7
 - **NOT IMPLEMENTED**: 55
 - **TEST RUNNER**: 28
@@ -35,7 +35,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`invalid-rules.https.html`](https://wpt.fyi/results/speculation-rules/invalid-rules.https.html) | Pass | 2 / 2 |  |  |
 | [`prefetch/anonymous/anonymous-client.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/anonymous/anonymous-client.https.html) | Pass | 1 / 1 |  |  |
 | [`prefetch/anonymous/cross-origin-cookies-anonymous-client-ip-duplicate.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/anonymous/cross-origin-cookies-anonymous-client-ip-duplicate.https.html) | Pass | 1 / 1 |  |  |
-| [`prefetch/clear-prefetch-cache-after-clear-site-data-cache.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/clear-prefetch-cache-after-clear-site-data-cache.https.html) | Fail | 2 / 3 | BUG | `Clear-Site-Data: "prefetchCache"` of a `fetch()` response does not discard the prefetches of the documents of its origin: only the responses of the navigations are processed (`NavigationalPrefetch.ProcessClearSiteData`, called by the navigation; `ClearSiteData.ProcessResponse` of the fetch ignores the speculative loads) |
+| [`prefetch/clear-prefetch-cache-after-clear-site-data-cache.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/clear-prefetch-cache-after-clear-site-data-cache.https.html) | Pass | 3 / 3 |  |  |
 | [`prefetch/client-hints/basic.https.sub.html`](https://wpt.fyi/results/speculation-rules/prefetch/client-hints/basic.https.sub.html) | Pass | 9 / 9 |  |  |
 | [`prefetch/client-hints/redirect.https.sub.html`](https://wpt.fyi/results/speculation-rules/prefetch/client-hints/redirect.https.sub.html) | Pass | 5 / 5 |  |  |
 | [`prefetch/cross-origin-cookies.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/cross-origin-cookies.https.html) | Pass | 1 / 1 |  |  |

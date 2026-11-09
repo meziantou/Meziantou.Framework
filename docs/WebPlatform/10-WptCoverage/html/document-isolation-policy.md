@@ -10,17 +10,16 @@ description: "The results of the web-platform-tests of html/document-isolation-p
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 20 | 46 | 0 | 43% |
+| [Tentative](#tentative-tests) | 23 | 46 | 0 | 50% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **20** | **46** | **0** | **43%** |
+| **All** | **23** | **46** | **0** | **50%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
 - **TEST BUG**: 5
-- **NOT IMPLEMENTED**: 24
+- **NOT IMPLEMENTED**: 23
 
 ## Tentative tests
 
@@ -42,8 +41,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`credentialless-link.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-link.https.tentative.window.js) | Pass | 7 / 7 |  |  |
 | [`credentialless-redirect.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-redirect.tentative.window.js) | Pass | 5 / 5 |  |  |
 | [`credentialless-script.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-script.https.tentative.window.js) | Pass | 7 / 7 |  |  |
-| [`credentialless-service-worker.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-service-worker.https.tentative.window.js) | Fail | 4 / 5 | BUG | the `Document-Isolation-Policy` of the response of a shared worker or service worker script applies to the worker (`isolate-and-credentialless` omits the credentials of its cross-origin no-cors requests); the policy only applies to the documents and their dedicated workers, which inherit it |
-| [`credentialless-shared-worker.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js) | Fail | 6 / 8 | BUG | the `Document-Isolation-Policy` of the response of a shared worker or service worker script applies to the worker (`isolate-and-credentialless` omits the credentials of its cross-origin no-cors requests); the policy only applies to the documents and their dedicated workers, which inherit it |
+| [`credentialless-service-worker.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-service-worker.https.tentative.window.js) | Pass | 5 / 5 |  |  |
+| [`credentialless-shared-worker.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js) | Pass | 8 / 8 |  |  |
 | [`credentialless-video.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-video.https.tentative.window.js) | Pass | 6 / 6 |  |  |
 | [`credentialless-websocket.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-websocket.https.tentative.window.js) | Pass | 3 / 3 |  |  |
 | [`cross-origin-frame.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/cross-origin-frame.tentative.https.html) | Pass | 2 / 2 |  |  |
@@ -70,5 +69,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker-coep-credentialless-proxy.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/service-worker-coep-credentialless-proxy.https.tentative.window.js) | Pass | 1 / 1 |  |  |
 | [`service-worker-coep-none-proxy.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/service-worker-coep-none-proxy.https.tentative.window.js) | Pass | 1 / 1 |  |  |
 | [`shared-array-buffer.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/shared-array-buffer.tentative.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the agent clusters and the cross-origin isolation of `Document-Isolation-Policy` (`crossOriginIsolated` is only true with COOP + COEP) |
-| [`shared-workers.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/shared-workers.tentative.https.html) | Fail | 6 / 9 | NOT IMPLEMENTED | the document isolation policy of a shared worker created from a local URL is the one of its creator, not derived from all the owners of its owner set |
+| [`shared-workers.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/shared-workers.tentative.https.html) | Pass | 9 / 9 |  |  |
 | [`window-reuse.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/window-reuse.tentative.https.html) | Fail | 3 / 6 | NOT IMPLEMENTED | the agent clusters of `Document-Isolation-Policy`: the `Window` of an initial `about:blank` document is reused by a same-origin document whose policy differs, although the two documents need different agent clusters (WICG/document-isolation-policy#11) |

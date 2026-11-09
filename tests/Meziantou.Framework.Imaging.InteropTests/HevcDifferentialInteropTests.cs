@@ -96,6 +96,38 @@ public sealed class HevcDifferentialInteropTests
     [Fact]
     public Task InterStreamsDecodeAsTheReferenceDecoders() => RunCampaignAsync(inter: true);
 
+    /// <summary>
+    /// Bit depths above 12, which only the intra profiles of 16 bits of the range extensions allow: HM encodes intra pictures
+    /// of 13 to 16 bits in each chroma format, with the tools whose arithmetic depends on the bit depth (transform skip and
+    /// the residual DPCM, the adaptation of the Rice parameters, the scaling of the SAO offsets, the cross-component
+    /// prediction, PCM samples, lossless coding units). FFmpeg does not decode them: dec265 and HM are the references.
+    /// </summary>
+    public static TheoryData<int, int, string> HighBitDepthCases => new()
+    {
+        { 13, 1, "" },
+        { 14, 2, "--TransformSkipLog2MaxSize=3 --ImplicitResidualDPCM=1 --ExplicitResidualDPCM=1 --ResidualRotation=1" },
+        { 15, 3, "--GolombRiceParameterAdaptation=1 --CrossComponentPrediction=1 --SaoLumaOffsetBitShift=3 --SaoChromaOffsetBitShift=5" },
+        { 16, 0, "--GolombRiceParameterAdaptation=1 --SaoLumaOffsetBitShift=6" },
+        { 16, 1, "--ScalingList=1 --StrongIntraSmoothing=1" },
+        { 16, 2, "--PCMEnabledFlag=1 --PCMLog2MinSize=3 --PCMLog2MaxSize=4 --PCMInputBitDepthFlag=1 --QP=1" },
+        { 16, 3, "--TransquantBypassEnable=1 --CostMode=mixed_lossless_lossy --QP=2" },
+        { 16, 3, "--QP=51" },
+    };
+
+    [Theory]
+    [MemberData(nameof(HighBitDepthCases))]
+    public async Task HighBitDepthStreamsDecodeAsTheReferenceDecoders(int bitDepth, int chromaFormatIdc, string options)
+    {
+        var decoders = await RequiredTools.HevcReferenceDecodersAsync();
+        var encoder = await RequiredTools.HevcReferenceEncoderAsync(HevcReferenceEncoder.Hm);
+        var name = string.Create(CultureInfo.InvariantCulture, $"high-{bitDepth}-{chromaFormatIdc}-{(uint)StringComparer.Ordinal.GetHashCode(options):x8}");
+        var content = options.Contains("PCM", StringComparison.Ordinal) ? "noise" : "gradient";
+        var tuple = new StreamTuple(name, string.Create(CultureInfo.InvariantCulture, $"HM 40x32 {bitDepth}-bit chroma_format_idc {chromaFormatIdc} [{options}]"), encoder.Name, 40, 32, chromaFormatIdc, bitDepth, 1, content, 4217 + bitDepth,
+            [.. options.Split(' ', StringSplitOptions.RemoveEmptyEntries)], LocalPath: null);
+        var result = await RunAsync(decoders, encoder, tuple, InteropSettings.GetArtifactsDirectory(nameof(HevcDifferentialInteropTests)), XunitCancellationToken);
+        Assert.True(result.Outcome is Outcome.Effective, $"{name}: {result.Outcome}: {result.Message} ({tuple.Description})");
+    }
+
     private static async Task RunCampaignAsync(bool inter)
     {
         // The local streams are those of the first campaign

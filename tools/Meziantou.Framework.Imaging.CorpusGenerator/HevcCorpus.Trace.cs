@@ -762,7 +762,7 @@ internal static partial class HevcCorpus
         {
             tags.Contains("hevc.extendedPrecision") ? "extendedPrecision" : null,
             tags.Contains("hevc.cabacBypassAlignment") ? "cabacBypassAlignment" : null,
-            formats.Any(format => format.BitDepthLuma > 12 || format.BitDepthChroma > 12) ? "bitDepth" : null,
+            formats.Any(format => format.BitDepthLuma > 12 || format.BitDepthChroma > 12) && tags.Contains("hevc.frameTypes=inter") ? "bitDepth" : null,
             formats.Any(format => format.ChromaFormatIdc != 0 && format.BitDepthLuma != format.BitDepthChroma) ? "unequalBitDepth" : null,
             tags.Contains("hevc.separateColourPlanes") ? "separateColourPlanes" : null,
             tags.Contains("hevc.fieldSeq") ? "fieldSeq" : null,

@@ -10,8 +10,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// Converts the rows of the decoded planes of an image of the HEIF family to the pixel layout that the decoder hands to the
-/// frame sink: chroma upsampling, the matrix coefficients and the sample range of ITU-T H.273, and the scaling of 10 and
-/// 12-bit samples to 16 bits.
+/// frame sink: chroma upsampling, the matrix coefficients and the sample range of ITU-T H.273, and the scaling of 10-bit
+/// to 16-bit samples to 16 bits.
 /// </summary>
 /// <remarks>
 /// <para>

@@ -110,6 +110,44 @@ internal static class JpegXlTestFiles
     /// </remarks>
     public static byte[] FrameLargerThanTheImage => Convert.FromBase64String("/woYEAAJCAYCABwASzgoQCIRDAgmAQRggEEFABwASygWTIRgAA==");
 
+    /// <summary>
+    /// A container: 2x2, RGB of 32-bit floating-point samples, lossless, in sRGB. <c>cjxl float.pfm float.jxl -d 0 --num_threads=0</c>,
+    /// where the PFM file holds, row by row from the top, (0, 0.5, 1), (-0.25, 2.5, 0.001), (100, -3, 0.75) and (1, 1, 1):
+    /// <c>djxl</c> returns these numbers.
+    /// </summary>
+    public static byte[] Float32 => Convert.FromBase64String(
+        "AAAADEpYTCANCocKAAAAFGZ0eXBqeGwgAAAAAGp4bCAAAAAJanhsbAoAAABPanhsY/8KCBByAMWFCAABAOQASxiLFcICsHEDAAD4qYn///8CAQC0TdItwi0AAADwCwCAyv8X4T7A8UU9AAAA/0O2izMUAhKOyeIM");
+
+    /// <summary>
+    /// A bare codestream written by <c>jxl_from_tree</c>: 3x2, RGB of half-precision samples (16 bits, 5 of exponent). The
+    /// samples are the bits of the numbers: <c>djxl</c> returns 1, 5, 5 on the first row and -1, -1, 2^-24 on the second one.
+    /// </summary>
+    /// <remarks>
+    /// <code>
+    /// Width 3  Height 2  Bitdepth 16  FloatExpBits 5
+    /// if y > 0 (if x > 1 - Set 1 - Set 48128) (if x > 0 - Set 17664 - Set 15360)
+    /// </code>
+    /// </remarks>
+    public static byte[] HalfFloat => Convert.FromBase64String("/woIQEaQCAYBAFgAS0iBzJsCQH8qURDwAHhwAAoYAI4EAw==");
+
+    /// <summary>
+    /// A bare codestream written by <c>jxl_from_tree</c>: 3x2, 24-bit RGB; every row holds 1, 8388609 and 16777215 (the
+    /// largest sample). <c>Width 3  Height 2  Bitdepth 24  if x > 1 (- Set 16777215) (if x > 0 - Set 8388609 - Set 1)</c>.
+    /// </summary>
+    public static byte[] Integer24Bit => Convert.FromBase64String("/woIQHxBAggGAQBIAEtI2UCMfIT7//8zcAEAAAgSDA==");
+
+    /// <summary>A bare codestream written by <c>jxl_from_tree</c>: 3x2, 25-bit RGB. <c>Width 3  Height 2  Bitdepth 25  - Set 7</c>.</summary>
+    public static byte[] Integer25Bit => Convert.FromBase64String("/woIQIxBAggGAQAYAEsoFEgjGA==");
+
+    /// <summary>
+    /// A container: 3x2, 8-bit CMYK with alpha, lossless, without ICC profile. <c>cjxl cmyka.pam cmyka.jxl -d 0 --num_threads=0</c>,
+    /// where the PAM file has the tuple types <c>RGB</c>, <c>Black</c> and <c>Alpha</c>; its samples, in the convention of
+    /// JPEG XL where 255 is no ink, are (C, M, Y, K, A) = (255, 255, 255, 255, 255), (0, 255, 255, 255, 128),
+    /// (255, 0, 255, 255, 255), (255, 255, 0, 255, 0), (255, 255, 255, 0, 255) and (245, 195, 135, 55, 200).
+    /// </summary>
+    public static byte[] CmykWithAlpha => Convert.FromBase64String(
+        "AAAADEpYTCANCocKAAAAFGZ0eXBqeGwgAAAAAGp4bCAAAAAJanhsbAoAAABLanhsY/8KCEBQoACC4kIIAAABAMgASxiLFcIRuDOwugtMADAA8L85pP/BSL6zgU+ytTYo+mGj/zbgEBHRy3Gr9PlEb9WrpgY=");
+
     /// <summary>Wraps a bare codestream in a container, in <c>jxlp</c> boxes that end at the given offsets of the codestream.</summary>
     /// <param name="codestream">The codestream.</param>
     /// <param name="splits">The offsets where a part ends, in increasing order; a last part holds the rest.</param>

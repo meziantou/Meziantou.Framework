@@ -512,27 +512,14 @@ internal static partial class JxlCorpus
 
         var rgb = CommonCorpus.PatternRgbOdd(13, 9);
 
-        // A PFM file: three 32-bit floating-point samples per pixel, rows from the bottom
-        var pfm = new ByteBuilder();
-        foreach (var value in Encoding.ASCII.GetBytes("PF\n13 9\n-1.0\n"))
-            pfm.U8(value);
-        Span<byte> sample = stackalloc byte[4];
-        for (var y = rgb.Height - 1; y >= 0; y--)
-        {
-            for (var x = 0; x < rgb.Width; x++)
-            {
-                foreach (var value in rgb.Pixels[(y * rgb.Width) + x])
-                {
-                    BinaryPrimitives.WriteSingleLittleEndian(sample, value / 255f);
-                    foreach (var b in sample)
-                        pfm.U8(b);
-                }
-            }
-        }
-
-        var source = c.Scratch / "source.pfm";
-        File.WriteAllBytes(source, pfm.ToArray());
-        Add("float-samples", CjxlFile(c, source, "{source}.pfm", ["-d", "0"]), "floating-point samples", "32-bit floating-point samples: an image of the library holds integers of 8 or 16 bits.", file => file.HasFloatSamples);
+        // Integer samples of 25 bits: a single-precision number holds 24 bits at most (floating-point samples and integers of
+        // up to 24 bits are read)
+        Add("integer-25-bit", FromTree(c, """
+            Width 3
+            Height 2
+            Bitdepth 25
+            - Set 7
+            """), "samples of more than 24 bits", "25-bit integer samples: the image would hold them as single-precision numbers, whose 24 bits of precision cannot store them.", file => file is { BitsPerSample: 25, HasFloatSamples: false });
         Add("premultiplied-alpha", Cjxl(c, CommonCorpus.PatternCornerMarkers(12, 9), ["-d", "0", "--premultiply=1"]), "premultiplied alpha",
             "The color channels are premultiplied by the alpha channel: an image of the library holds straight alpha.", file => file.ExtraChannels is [{ Type: 0, IsAlphaAssociated: true }]);
         Add("pq-white-point-e", Cjxl(c, rgb, ["-d", "0", "-x", "color_space=RGB_0.3333;0.3333_202_Rel_PeQ"]), "PQ or HLG with a custom color space",

@@ -50,8 +50,20 @@ internal readonly record struct JpegXlBitDepth(int BitsPerSample, int ExponentBi
         destination = destination[..source.Length];
         if (!IsFloat)
         {
-            // A 31-bit maximum does not fit the arithmetic of 32-bit integers
-            var scale = 1f / ((1L << BitsPerSample) - 1);
+            if (BitsPerSample > 16)
+            {
+                // Rounded once from the exact quotient: a sample of up to 24 bits goes back to itself when it is multiplied
+                // by the largest value and rounded (a 31-bit maximum does not fit the arithmetic of 32-bit integers)
+                var max = (double)((1L << BitsPerSample) - 1);
+                for (var i = 0; i < source.Length; i++)
+                {
+                    destination[i] = (float)(source[i] / max);
+                }
+
+                return;
+            }
+
+            var scale = 1f / ((1 << BitsPerSample) - 1);
             for (var i = 0; i < source.Length; i++)
             {
                 destination[i] = source[i] * scale;

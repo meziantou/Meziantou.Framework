@@ -80,6 +80,7 @@ public sealed class JpegXlConformanceTests
         { "grayscale_5", OutputColor.ConvertedIcc },
         { "grayscale_jpeg", OutputColor.EmbeddedIcc },
         { "grayscale_jpeg_5", OutputColor.EmbeddedIcc },
+        { "lossless_pfm", OutputColor.Srgb },
         { "lz77_flower", OutputColor.SynthesizedIcc },
         { "mul_no_extra_channels", OutputColor.Srgb },
         { "noise", OutputColor.Srgb },
@@ -100,18 +101,19 @@ public sealed class JpegXlConformanceTests
     public static TheoryData<string, string> UnsupportedCases => new()
     {
         { "alpha_premultiplied", "premultiplied alpha" },
-        { "cmyk_layers", "black channel" },
         { "grayscale_public_university", "grayscale Modular frame with restoration filters" },
-        { "lossless_pfm", "floating-point color samples" },
         { "spot", "spot color" },
     };
 
     public static TheoryData<string> CasesWithReconstructedJpeg => ["bench_oriented_brg", "bench_oriented_brg_5", "cafe", "cafe_5", "grayscale_jpeg", "grayscale_jpeg_5"];
 
+    /// <summary>The CMYK cases: their references hold the inks, in the CMYK color space of <c>reference.icc</c>.</summary>
+    public static TheoryData<string> CmykCases => ["cmyk_layers"];
+
     [Fact]
     public void EveryCaseOfTheCorpusIsListed()
     {
-        var listed = DecodedCases.Select(row => row.Data.Item1).Concat(UnsupportedCases.Select(row => row.Data.Item1)).Order(StringComparer.Ordinal).ToArray();
+        var listed = DecodedCases.Select(row => row.Data.Item1).Concat(UnsupportedCases.Select(row => row.Data.Item1)).Concat(CmykCases.Select(row => row.Data)).Order(StringComparer.Ordinal).ToArray();
         Assert.Equal(JpegXlConformanceCorpus.CaseNames.Order(StringComparer.Ordinal).ToArray(), listed);
     }
 
@@ -170,6 +172,60 @@ public sealed class JpegXlConformanceTests
         Assert.Empty(Compare(testCase, image, referencePath, conversion));
     }
 
+    /// <summary>
+    /// The library converts the inks of a CMYK image with the options of the load: the reference inks (1 is no ink in JPEG
+    /// XL, 0 in ICC), rounded to the depth of the image, go through the same conversion, from <c>reference.icc</c> (the
+    /// profile of the file) to sRGB, and must give the colors of the library exactly. The conversion is the color management
+    /// of the library, tested on its own; this compares the inks the decoder gives it, layers composited.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(CmykCases))]
+    public async Task DecodesTheInksOfTheReference(string name)
+    {
+        var testCase = await JpegXlConformanceCorpus.GetAsync(name, XunitCancellationToken);
+        var conversion = new CmykConversionOptions();
+        using var image = Image.Load(testCase.InputPath, new ImageDecodeOptions { CmykConversion = conversion });
+        Assert.Equal(PixelFormat.Rgba32, image.PixelFormat);
+        Assert.Equal(conversion.DestinationProfile.Data.ToArray(), image.Metadata.IccProfile!.Data.ToArray());
+
+        var referenceIcc = await File.ReadAllBytesAsync(await testCase.GetReferenceIccAsync(XunitCancellationToken), XunitCancellationToken);
+        var transform = IccColorTransform.Create(new IccProfile(new MetadataBlob(referenceIcc)), conversion.DestinationProfile, conversion.Transform);
+        using var reference = new JpegXlConformanceCase.NpyFrameReader(await testCase.GetReferenceImageAsync(XunitCancellationToken));
+        Assert.Equal((testCase.Frames.Count, image.Height, image.Width, 5), (reference.FrameCount, reference.Height, reference.Width, reference.ChannelCount));
+        Assert.Equal(testCase.Frames.Count, image.Frames.Count);
+
+        var pixelCount = image.Width * image.Height;
+        var samples = new float[pixelCount * 5];
+        var inks = new byte[pixelCount * 4];
+        var colors = new byte[pixelCount * 3];
+        var actual = new byte[pixelCount * 4];
+        for (var frame = 0; frame < testCase.Frames.Count; frame++)
+        {
+            reference.ReadFrame(samples);
+            for (var pixel = 0; pixel < pixelCount; pixel++)
+            {
+                for (var channel = 0; channel < 4; channel++)
+                {
+                    inks[(pixel * 4) + channel] = (byte)(byte.MaxValue - ToByte(samples[(pixel * 5) + channel]));
+                }
+            }
+
+            transform.Convert(inks, colors);
+            image.Frames[frame].CopyPixelBytesTo(actual);
+            for (var pixel = 0; pixel < pixelCount; pixel++)
+            {
+                var expected = (colors[pixel * 3], colors[(pixel * 3) + 1], colors[(pixel * 3) + 2], ToByte(samples[(pixel * 5) + 4]));
+                var decoded = (actual[pixel * 4], actual[(pixel * 4) + 1], actual[(pixel * 4) + 2], actual[(pixel * 4) + 3]);
+                if (decoded != expected)
+                {
+                    Assert.Fail($"frame {frame}: the pixel {pixel % image.Width}, {pixel / image.Width} is {decoded}; the reference inks give {expected}.");
+                }
+            }
+        }
+
+        static byte ToByte(float value) => (byte)Math.Round(Math.Clamp(value, 0, 1) * byte.MaxValue, MidpointRounding.AwayFromZero);
+    }
+
     [Theory]
     [MemberData(nameof(UnsupportedCases))]
     public async Task RejectsTheDocumentedUnsupportedFeatures(string name, string feature)
@@ -214,15 +270,18 @@ public sealed class JpegXlConformanceTests
             PixelFormat.Rgba32 or PixelFormat.La32 => 4,
             PixelFormat.Rgb48 => 6,
             PixelFormat.Rgba64 => 8,
+            PixelFormat.RgbaFloat => 16,
             _ => throw new InvalidOperationException($"Unexpected pixel format {format}."),
         };
         var isGray = format is PixelFormat.Gray8 or PixelFormat.La16 or PixelFormat.Gray16 or PixelFormat.La32;
-        Assert.Equal(channels == 1, isGray);
+        Assert.True(channels == 1 ? isGray || format == PixelFormat.RgbaFloat : !isGray, $"The pixel format {format} does not have the channels of the reference ({channels}).");
         var colorChannels = isGray ? 1 : 3;
         Assert.True(conversion is null || conversion.ChannelCount == colorChannels, "The conversion does not have the channels of the image.");
 
+        // Floating-point samples are not rounded, and are compared without clamping them
+        var isFloat = format == PixelFormat.RgbaFloat;
         var maxLevel = IsSixteenBit(format) ? ushort.MaxValue : byte.MaxValue;
-        var step = 1.0 / maxLevel;
+        var step = isFloat ? 0 : 1.0 / maxLevel;
         var pixelCount = image.Width * image.Height;
         var raw = new byte[pixelCount * bytesPerPixel];
         var referenceSamples = new float[pixelCount * channels];
@@ -274,8 +333,8 @@ public sealed class JpegXlConformanceTests
 
                 for (var channel = 0; channel < channels; channel++)
                 {
-                    var expected = Math.Clamp(referenceSamples[(pixel * channels) + channel], 0f, 1f);
-                    var error = Math.Abs(expected - Math.Clamp(values[channel], 0, 1));
+                    var expected = isFloat ? referenceSamples[(pixel * channels) + channel] : Math.Clamp(referenceSamples[(pixel * channels) + channel], 0f, 1f);
+                    var error = Math.Abs(expected - (isFloat ? values[channel] : Math.Clamp(values[channel], 0, 1)));
                     peak = Math.Max(peak, error);
                     peakExcess = Math.Max(peakExcess, error - (gains[channel] * step / 2));
                     squares[channel] += error * error;
@@ -347,6 +406,7 @@ public sealed class JpegXlConformanceTests
     {
         static float U8(ReadOnlySpan<byte> data, int index) => data[index] / 255f;
         static float U16(ReadOnlySpan<byte> data, int index) => BinaryPrimitives.ReadUInt16LittleEndian(data[(index * 2)..]) / 65535f;
+        static float F32(ReadOnlySpan<byte> data, int index) => BinaryPrimitives.ReadSingleLittleEndian(data[(index * 4)..]);
 
         (rgba[0], rgba[1], rgba[2], rgba[3]) = format switch
         {
@@ -358,6 +418,7 @@ public sealed class JpegXlConformanceTests
             PixelFormat.La32 => (U16(pixel, 0), U16(pixel, 0), U16(pixel, 0), U16(pixel, 1)),
             PixelFormat.Rgb48 => (U16(pixel, 0), U16(pixel, 1), U16(pixel, 2), 1f),
             PixelFormat.Rgba64 => (U16(pixel, 0), U16(pixel, 1), U16(pixel, 2), U16(pixel, 3)),
+            PixelFormat.RgbaFloat => (F32(pixel, 0), F32(pixel, 1), F32(pixel, 2), F32(pixel, 3)),
             _ => throw new InvalidOperationException($"Unexpected pixel format {format}."),
         };
     }

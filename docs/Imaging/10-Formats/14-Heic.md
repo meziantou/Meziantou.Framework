@@ -12,7 +12,7 @@ are large and opened by fewer readers: choose lossy 4:2:0 output for files that 
 | | Reading | Writing |
 | --- | --- | --- |
 | Images | Still images and image sequences, grids (the tiles of phone photos) | Still images and image sequences, grids |
-| Samples | 8 to 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome | 8, 10 or 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome |
+| Samples | 8 to 16 bits (above 12 bits, intra pictures, as the 16-bit profiles define them); 4:4:4, 4:2:2, 4:2:0 and monochrome | 8, 10 or 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome |
 | Alpha | Straight alpha | Lossless alpha |
 | Geometry | Clean aperture applied; orientation reported | Orientation of still images |
 | Metadata | ICC profile, EXIF, XMP, CICP color description, content light level, mastering display, pixel aspect ratio | The same |
@@ -126,6 +126,6 @@ a bit-rate or luma-sample-rate limit on playback.
 - [ImageDecodeOptions.Region](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Region) skips the tiles of a grid that an area does not need, such as
   most tiles of a phone photo for a crop; an image that is not a grid is decoded whole before the area is kept. See
   [Decode an area](../05-LoadingAndSaving/02-LoadingImages.md#decode-an-area).
-- Premultiplied alpha, bit depths above 12 bits and the screen content, multilayer and 3D extensions of HEVC are
-  rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Only the base layer of a layered stream is decoded.
+- Premultiplied alpha, extended precision processing, inter pictures of more than 12 bits and the screen content,
+  multilayer and 3D extensions of HEVC are rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Only the base layer of a layered stream is decoded.
 - HEVC is covered by patents in many countries: check the licensing terms that apply to what you distribute.

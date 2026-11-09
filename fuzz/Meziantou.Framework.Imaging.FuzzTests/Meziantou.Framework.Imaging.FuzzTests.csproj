@@ -23,6 +23,8 @@
     <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\IccProfileBuilder.cs" Link="Shared\IccProfileBuilder.cs" />
     <!-- The HEIC files of libheif that the unit tests embed are fuzz seeds (FuzzSeeds, groups heic-still and heic-sequence) -->
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Heic.Tests\HeicTestFiles.cs" Link="Shared\HeicTestFiles.cs" />
+    <!-- The JPEG XL files of libjxl that the unit tests embed are fuzz seeds for the samples the corpus has no fixture of: floating-point, 24 and 25 bits, CMYK (FuzzSeeds, group jxl-lossless) -->
+    <Compile Include="..\..\tests\Meziantou.Framework.Imaging.JpegXl.Tests\JpegXlTestFiles.cs" Link="Shared\JpegXlTestFiles.cs" />
     <!-- Images of any pixel format and their samples, shared with the drawing unit tests (DrawingFuzzTests) -->
     <Compile Include="..\..\tests\Meziantou.Framework.Imaging.Tests.Shared\Helpers\DrawingTestSupport.cs" Link="Shared\DrawingTestSupport.cs" />
     <!-- The byte-level TIFF, ICO/CUR and ANI builders of the unit tests make the seeds of what the encoders never write (FuzzGeneratedSeeds) -->

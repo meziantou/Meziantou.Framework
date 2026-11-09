@@ -160,8 +160,10 @@ internal static class FuzzHeicContainer
         }
 
         var chromaFormat = sequence?.ChromaFormatIdc ?? 1;
-        var bitDepth = Math.Clamp(sequence?.BitDepthLuma ?? 8, 8, 15);
-        var bitDepthChroma = Math.Clamp(sequence?.BitDepthChroma ?? 8, 8, 15);
+        // A 16-bit depth is written as 8 in the three bits of the record, as in the files of the encoders: the decoder reads
+        // the depth of the sequence parameter set the record holds
+        var bitDepth = Math.Clamp(sequence?.BitDepthLuma ?? 8, 8, 16);
+        var bitDepthChroma = Math.Clamp(sequence?.BitDepthChroma ?? 8, 8, 16);
         var configuration = HeifFileBuilder.HevcConfiguration(chromaFormat, bitDepth, bitDepthChroma,
             options.ParameterSetsInRecord ? arrays.Select(array => (array.NalUnitType, array.NalUnits.ToArray())) : [], options.NalLengthSize);
 

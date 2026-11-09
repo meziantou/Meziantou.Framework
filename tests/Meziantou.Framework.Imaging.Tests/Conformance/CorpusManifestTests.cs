@@ -1349,7 +1349,7 @@ public sealed class CorpusManifestTests
     [InlineData("hevc.intraSmoothingDisabled")]
     [InlineData("hevc.unsupported=extendedPrecision")]
     [InlineData("hevc.unsupported=cabacBypassAlignment")]
-    [InlineData("hevc.unsupported=bitDepth")]
+    [InlineData("hevc.bitDepth=16")]
     [InlineData("hevc.unsupported=unequalBitDepth")]
     [InlineData("hevc.unsupported=fieldSeq")]
     [InlineData("hevc.encoder=x265")]
@@ -1481,7 +1481,8 @@ public sealed class CorpusManifestTests
     [InlineData("hevc.encoder=kvazaar", "hevc.dependentSlices")]
     [InlineData("hevc.encoder=hm", "hevc.tiles")]
     [InlineData("hevc.encoder=hm", "hevc.pcm")]
-    [InlineData("hevc.unsupported=bitDepth", "hevc.chroma=4:0:0")]
+    [InlineData("hevc.bitDepth=16", "hevc.chroma=4:0:0")]
+    [InlineData("hevc.bitDepth=16", "hevc.chroma=4:4:4")]
     public void HevcVectorsCoverFeatureCombination(string first, string second)
     {
         Assert.Contains(LoadManifest().HevcVectors!.Entries, vector => Has(vector, first) && Has(vector, second));

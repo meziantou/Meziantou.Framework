@@ -46,9 +46,10 @@ public sealed class ImageInfo
         if (!Enum.IsDefined(colorModel))
             throw new ArgumentOutOfRangeException(nameof(colorModel), colorModel, "The color model is not valid.");
 
-        // 24 and 32 bits are the floating-point samples of TIFF and the FLOAT and UINT samples of OpenEXR, which only RgbaFloat holds
-        if (bitsPerComponent is < 1 or > 16 && !(pixelFormat == PixelFormat.RgbaFloat && bitsPerComponent is 24 or 32))
-            throw new ArgumentOutOfRangeException(nameof(bitsPerComponent), bitsPerComponent, "The bits per component must be between 1 and 16, or 24 or 32 for RgbaFloat.");
+        // More than 16 bits are the floating-point samples of TIFF and JPEG XL, the integer samples of JPEG XL of up to 24
+        // bits, and the FLOAT and UINT samples of OpenEXR, which only RgbaFloat holds
+        if (bitsPerComponent is < 1 or > 32 || (bitsPerComponent > 16 && pixelFormat != PixelFormat.RgbaFloat))
+            throw new ArgumentOutOfRangeException(nameof(bitsPerComponent), bitsPerComponent, "The bits per component must be between 1 and 16, or between 17 and 32 for RgbaFloat.");
 
         if (frameCount is <= 0)
             throw new ArgumentOutOfRangeException(nameof(frameCount), frameCount, "The frame count must be positive or unknown (null).");
@@ -135,7 +136,9 @@ public sealed class ImageInfo
 
     /// <summary>
     /// Gets the precision of the encoded samples, in bits per component (for example 1, 2, 4, 8 or 16 for PNG; 8, 10 or 12
-    /// for AVIF; 8 to 12 for HEIC; 1 to 16 for JPEG XL and JPEG 2000; 16, 24 or 32 for the floating-point samples of TIFF,
+    /// for AVIF; 8 to 16 for HEIC; 1 to 16 for JPEG 2000; 1 to 24 for the integer samples of JPEG XL and up to 32 for its
+    /// floating-point samples, whose <see cref="PixelFormat"/> is <see cref="PixelFormat.RgbaFloat"/> above 16 bits (or
+    /// <see cref="PixelFormat.RgbaHalf"/> for half-precision samples); 16, 24 or 32 for the floating-point samples of TIFF,
     /// whose <see cref="PixelFormat"/> is <see cref="PixelFormat.RgbaHalf"/> or <see cref="PixelFormat.RgbaFloat"/>; 16
     /// (HALF) or 32 (FLOAT or UINT) for OpenEXR).
     /// </summary>

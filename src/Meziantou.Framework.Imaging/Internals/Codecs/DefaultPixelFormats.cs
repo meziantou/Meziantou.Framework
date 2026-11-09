@@ -22,7 +22,7 @@ internal static class DefaultPixelFormats
     /// <summary>Selects the default pixel format of an HEIC image: the one of an AVIF image with the same planes.</summary>
     /// <param name="isMonochrome">Whether the color image has a single plane.</param>
     /// <param name="hasAlpha">Whether the image has an alpha plane.</param>
-    /// <param name="bitDepth">The largest bit depth of the color and alpha planes (8, 10 or 12).</param>
+    /// <param name="bitDepth">The largest bit depth of the color and alpha planes (8 to 16).</param>
     /// <returns>The pixel format.</returns>
     public static PixelFormat ForHeic(bool isMonochrome, bool hasAlpha, int bitDepth) => ForAvif(isMonochrome, hasAlpha, bitDepth);
 
@@ -145,6 +145,19 @@ internal static class DefaultPixelFormats
     /// <param name="isSixteenBit">Whether the color channels or the alpha channel have more than 8 bits.</param>
     /// <returns>The pixel format: 8-bit or 16-bit gray, gray with alpha, RGB or RGBA.</returns>
     public static PixelFormat ForJpegXl(bool isGray, bool hasAlpha, bool isSixteenBit) => Select(isGray, hasAlpha, isSixteenBit);
+
+    /// <summary>
+    /// Selects the default pixel format of a JPEG XL image of floating-point samples, or of integer samples of more than
+    /// 16 bits (grayscale or RGB, with or without alpha).
+    /// </summary>
+    /// <param name="isHalfPrecision">Whether every sample is a half-precision number.</param>
+    /// <returns>
+    /// <see cref="PixelFormat.RgbaHalf"/> for half-precision samples and <see cref="PixelFormat.RgbaFloat"/> for the others,
+    /// which it stores exactly: floating-point samples have 23 bits of mantissa at most, and an integer of up to 24 bits
+    /// divided by its largest value goes back to itself (the library has no floating-point gray format, so gray samples are
+    /// repeated in the three colors, and samples without alpha are opaque).
+    /// </returns>
+    public static PixelFormat ForJpegXlFloatingPoint(bool isHalfPrecision) => isHalfPrecision ? PixelFormat.RgbaHalf : PixelFormat.RgbaFloat;
 
     /// <summary>Selects the default pixel format of a JPEG 2000 image.</summary>
     /// <param name="isGray">Whether the image has a single color channel.</param>

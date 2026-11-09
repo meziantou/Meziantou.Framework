@@ -3,7 +3,7 @@ title: JPEG XL
 description: Read and write JPEG XL images and animations, lossless or lossy, progressive files, and recompress JPEG files without loss.
 ---
 
-JPEG XL stores lossless and lossy images and animations, up to 16 bits per sample. The library reads every JPEG XL file
+JPEG XL stores lossless and lossy images and animations, with integer or floating-point samples. The library reads every JPEG XL file
 that does not use the features listed in [Limitations](../12-Limitations.md), and [JpegXlEncoder](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder) writes lossless files
 by default. [JpegXlTranscoder](cref:Meziantou.Framework.Imaging.JpegXlTranscoder) stores a JPEG file in a smaller JPEG XL file without any loss, and rebuilds it.
 
@@ -16,13 +16,48 @@ numbers do not establish a matched comparison. Measure representative images at 
 | | Reading | Writing |
 | --- | --- | --- |
 | Coding | Lossy (VarDCT) and lossless (Modular) frames; recompressed JPEG files | Lossless (default) or lossy |
-| Samples | Up to 16 bits, gray and color, alpha | Every pixel format at its own depth ([Gray8](cref:Meziantou.Framework.Imaging.Gray8), [Gray16](cref:Meziantou.Framework.Imaging.Gray16), [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24), [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32), [Bgra32](cref:Meziantou.Framework.Imaging.Bgra32), [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64)), lossless alpha |
+| Samples | Integers up to 24 bits and floating-point numbers, gray and color, alpha; CMYK, converted to RGB | Every pixel format at its own depth ([Gray8](cref:Meziantou.Framework.Imaging.Gray8), [Gray16](cref:Meziantou.Framework.Imaging.Gray16), [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24), [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32), [Bgra32](cref:Meziantou.Framework.Imaging.Bgra32), [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64)), lossless alpha |
 | Animations | Composited into full frames with exact durations and the play count | Full frames, durations in milliseconds, play count |
 | Progressive | Renderings of a partial file | Progressive files on request |
 | Metadata | ICC profile, EXIF, XMP, enumerated color encodings, orientation | The same |
 
-8-bit files load as [Gray8](cref:Meziantou.Framework.Imaging.Gray8), [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) or [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32); deeper files as [Gray16](cref:Meziantou.Framework.Imaging.Gray16), [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48) or [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64). The orientation of the
+8-bit files load as [Gray8](cref:Meziantou.Framework.Imaging.Gray8), [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) or [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32); files of up to 16 bits as [Gray16](cref:Meziantou.Framework.Imaging.Gray16), [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48) or [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64). The orientation of the
 image header is reported in `Metadata.Orientation`, never applied.
+
+## Read floating-point and CMYK files
+
+JPEG XL also stores the samples of high dynamic range and print workflows. They load without losing anything, or not at
+all:
+
+- Floating-point samples load as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) when every sample is a half-precision number, otherwise as
+  [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat). Values above 1 (highlights) and below 0 are kept, in the color encoding the file declares
+  (often linear sRGB): nothing is clamped or tone mapped.
+- Integer samples of 17 to 24 bits load as [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat): each sample divided by the largest value, which gives the
+  sample back when multiplied by it. Integers of more than 24 bits do not fit a single-precision number and throw an
+  [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
+- A CMYK file (cyan, magenta and yellow in the color channels, black in an extra channel) loads only with
+  [ImageDecodeOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion): its inks are converted from its CMYK profile to RGB, its layers composited first,
+  and the alpha channel is kept. [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) reports [ImageColorModel.Cmyk](cref:Meziantou.Framework.Imaging.ImageColorModel.Cmyk). See [Color management](../09-Color/03-ColorManagement.md).
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadJpegxl;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static string DescribeJpegXl(string path)
+{
+    var info = Image.Identify(path);
+
+    // A CMYK file (ImageColorModel.Cmyk: a black extra channel) is only loaded with a color conversion, here to sRGB
+    // from the CMYK profile of the file; the other files ignore the option
+    using var image = Image.Load(path, new ImageDecodeOptions { CmykConversion = CmykConversionOptions.Default });
+
+    // Floating-point samples, and integer samples of 17 to 24 bits, load as RgbaHalf or RgbaFloat: values above 1
+    // (highlights) and below 0 are kept, in the color encoding of the file (Metadata.TransferFunction, Cicp, IccProfile)
+    return $"{info.ColorModel}, {info.BitsPerComponent} bits: {image.PixelFormat}";
+}
+```
+<!-- endref -->
+
+Layers (frames without duration) are composited with the frames they belong to, with the blend modes and the
+reference frames of the file: an image holds what a viewer shows.
 
 ## Save a JPEG XL file
 
@@ -152,6 +187,9 @@ public static bool RecompressJpeg(string jpegPath, string jxlPath, string rebuil
 - Lossy output converts the samples to the XYB color space, which needs an enumerated color encoding (sRGB, linear,
   BT.709 or DCI, with sRGB, Display P3 or BT.2020 primaries) or an sRGB ICC profile. Another ICC profile, or the
   PQ and HLG transfer functions, throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException): write those images losslessly.
-- The decoder rejects floating-point samples, samples of more than 16 bits, premultiplied alpha and CMYK images.
+- The decoder rejects integer samples of more than 24 bits and premultiplied alpha. A CMYK image throws an
+  [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) unless the load sets [CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion).
+- A floating-point image is not saved as JPEG XL as it is: the encoder takes integer pixel formats. Set
+  [FloatingPointConversion](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.FloatingPointConversion) to reduce it to 16 bits, or save it as OpenEXR or TIFF.
 - A lossy file with an ICC profile is decoded to the colors of that profile, through its colorants and tone curves, and
   keeps the profile. A file whose profile converts with lookup tables throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).

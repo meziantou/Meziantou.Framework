@@ -568,9 +568,21 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
         var encoding = header.ColorEncoding;
         var isGray = encoding.IsGray;
         var hasAlpha = header.AlphaChannelIndex >= 0;
-        DefaultPixelFormat = DefaultPixelFormats.ForJpegXl(isGray, hasAlpha, JpegXlFeaturePolicy.IsSixteenBit(header));
+        var isFloatingPoint = JpegXlFeaturePolicy.IsFloatingPoint(header);
+        DefaultPixelFormat = isFloatingPoint
+            ? DefaultPixelFormats.ForJpegXlFloatingPoint(JpegXlFeaturePolicy.IsHalfPrecision(header))
+            : DefaultPixelFormats.ForJpegXl(isGray, hasAlpha, JpegXlFeaturePolicy.IsSixteenBit(header));
         _metadata.Metadata.Orientation = (ExifOrientation)header.Orientation;
-        if (encoding.WantIcc)
+        if (header.IsCmyk)
+        {
+            // The color channels are inks: only a CMYK profile describes them, and the decoder converts them with it (or
+            // with the profile CmykConversionOptions assumes); the image is labeled with the destination profile
+            if (encoding.WantIcc && _walker.IccProfile is { } icc)
+            {
+                _metadata.TryAdoptIccProfile(icc, IccProfileColorSpace.Cmyk);
+            }
+        }
+        else if (encoding.WantIcc)
         {
             // The profile was charged when it was decoded
             var adopted = _walker.IccProfile is { } icc && _metadata.TryAdoptIccProfile(icc, isGray);
@@ -603,6 +615,10 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
                 _metadata.Metadata.IccProfile = JpegXlFeaturePolicy.CreateProfile(encoding);
             }
         }
+
+        // The floating-point pixel formats have three colors: a gray profile cannot label them
+        if (isFloatingPoint && isGray && _metadata.Metadata.IccProfile is not null)
+            throw JpegXlFormat.Unsupported("The JPEG XL image has grayscale floating-point samples described by an ICC profile: the floating-point pixel formats are RGB, which a grayscale profile cannot describe.", "grayscale floating-point samples with an ICC profile");
 
         if (header.HasAnimation)
         {
@@ -678,7 +694,7 @@ internal sealed class JpegXlStructureParser : ImageParser<ImageInfo>
         var header = Header;
         var isGray = header.ColorEncoding.IsGray;
         var hasAlpha = header.AlphaChannelIndex >= 0;
-        var colorModel = (isGray, hasAlpha) switch
+        var colorModel = header.IsCmyk ? ImageColorModel.Cmyk : (isGray, hasAlpha) switch
         {
             (true, false) => ImageColorModel.Grayscale,
             (true, true) => ImageColorModel.GrayscaleAlpha,

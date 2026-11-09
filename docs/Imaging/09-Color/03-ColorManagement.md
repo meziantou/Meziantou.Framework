@@ -191,8 +191,8 @@ public static void SaveForPrint(Image image, IccProfile pressProfile, string pat
 
 ## Load CMYK files as RGB
 
-A CMYK image (a JPEG with four components, a TIFF page of separated data or a JPEG 2000 file) can also be converted to
-RGB while it is loaded. Without a conversion, the untyped [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) throws an
+A CMYK image (a JPEG with four components, a TIFF page of separated data, a JPEG 2000 file or a JPEG XL file with a
+black channel) can also be converted to RGB while it is loaded. Without a conversion, the untyped [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) throws an
 [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) (load the JPEG and TIFF files as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) to keep their inks); [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) always works and reports [ImageColorModel.Cmyk](cref:Meziantou.Framework.Imaging.ImageColorModel.Cmyk) or [Ycck](cref:Meziantou.Framework.Imaging.ImageColorModel.Ycck):
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadCmykJpeg;format=md-fenced-code-block;dedent=true -->

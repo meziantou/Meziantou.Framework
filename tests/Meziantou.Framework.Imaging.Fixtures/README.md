@@ -772,9 +772,9 @@ header (65,536 bytes) rejects.
 | AVIF | lossless identity-matrix RGB at 8, 10 and 12 bits, monochrome (lossless and lossy at 8, 10 and 12 bits, full and limited range), alpha at 8, 10 and 12 bits (lossless, lossy, under limited-range colors, under lossless colors; hidden colors kept), gray + alpha; premultiplied alpha (avifenc `-p`: lossless at 8 and 10 bits, lossy 4:2:0 under a lossy alpha plane, and a `prem` track reference assembled on a sequence whose colors are clipped); lossy 4:4:4 / 4:2:2 / 4:2:0 with the BT.709, FCC, BT.470BG, BT.601, SMPTE 240M, YCgCo and BT.2020 matrices and unspecified coefficients, in full and limited range, at 8, 10 (HDR 9/16/9) and 12 bits; the chromaticity-derived matrix with the BT.2020 primaries (4:4:4) and with the Display P3 primaries (4:2:0, limited range, 10-bit), and the SMPTE ST 2085 matrix on the planes of a y4m source; the matrices that go through the transfer characteristics, on patterns converted with the forward equations and coded without loss (BT.2020 constant luminance at 10 bits, chromaticity-derived constant luminance with the Display P3 primaries, ICtCp with PQ and with HLG at 12 bits) and on arbitrary 4:2:0 planes whose colors leave the gamut (BT.2020 constant luminance, ICtCp with PQ), and ICtCp with HLG in limited range in the sample entry of a sequence; identity derivations (`iden`, assembled on committed payloads): without transformation, a clean aperture and a mirror on the derivation of a turned image, two nested derivations with an alpha plane derived the same way, a derivation whose alpha plane is a derivation with the same clean aperture, an untransformed derivation whose alpha plane is a coded image, a clean aperture across the tiles of a grid, and a derivation without `colr` box whose input is matrixed; images built from other images (`iovl` and `grid` items assembled the same way): an overlay of four copies of an image with alpha on an opaque canvas, two of them across its edges, an overlay with a transparent fill, a clean aperture and a rotation, an overlay of a grid and of a turned and cropped identity derivation of one of its tiles on a half transparent canvas, a grid whose tiles are mirrored and turned identity derivations and exceed the image, an identity derivation of a mirrored 10-bit overlay, an overlay of lossy matrixed images, an overlay that takes its ICC profile from its input image, one that no `colr` box describes (the bitstream of its input image does), and an overlay of a PQ image on an opaque black canvas; sizes 1x1, 5x1, 1x5, odd 4:2:0 and 4:2:2 images at every depth, 33x17, 64x64, 67x65; vertical and co-located chroma samples (y4m inputs); a lossless 2x2 grid, lossy 4:2:0 2x1 (with alpha) and 3x1 grids, a 1x3 grid with an alpha grid, a 10-bit 2x1 grid, a 3x2 grid of 16x16 tiles, a grid cropped below its tiles, a grid whose tiles repeat its `clap`, `irot` and `imir` as avifenc writes them; `irot` 0-3, `imir` 0-1 and both; a clean aperture followed by a rotation, and one on 4:2:0 content; a clean aperture associated after a rotation, and one between a mirroring and a rotation (not the order of MIAF: the properties apply in the order of their association); Exif (whose orientation tag contradicts `irot`), XMP and ICC, an ICC profile without `nclx`; colr variants of one payload (`nclx` overriding the bitstream, no `colr` box with identity, BT.709 and undescribed bitstreams, after and before the media data); a pixel aspect ratio and a content light level (avifenc `--pasp`, `--clli`), a mastering display color volume with its light levels (`mdcv` and `clli` properties assembled on an HDR image), and the three boxes in the sample entry of a sequence; film grain (4:2:0, odd, monochrome 10-bit, 4:2:2 10-bit limited, 4:4:4 12-bit with chroma scaled from luma, under an alpha plane); assembled layouts (`layout-*`); sequences: lossless with three durations and infinite repetition, alpha with two repetitions, 10-bit played once at 1001/30000 s, 8 to 12 images with inter frames and frames that are not shown (4:2:0, 4:4:4 at speed 2, 4:2:2 with key frames every three images, monochrome, 10-bit, lossless 12-bit, a lossy alpha track, 10-bit alpha), XMP in the `meta` box of the track and an ICC profile (avifenc), Exif and XMP in the `meta` box of the file or of the track with their data in `mdat`, in `idat` and after the samples, a track `meta` box that wins over the file one, a file `meta` box after `moov` (not read), chunks written in reverse order, two from the FFmpeg muxer (libaom, SVT-AV1), a matrix that turns the images a quarter turn, a matrix that mirrors them with a clean aperture in the sample entries of both tracks, no edit list, edit lists that select parts of the media (an edit that starts inside the first image, an edit that ends before the second image, two edits around an image that the next one refers to, edits in another time scale than the media that show images for a part of their duration, three edits whose durations are thirds of a second on a media in tenths, the same edit on a color track and on its alpha track), fragmented sequences assembled on the same payloads (three fragments with offsets relative to the `moof` box; explicit base offsets, two runs per track fragment and no `tfdt`; images in the `moov` box followed by fragments; an alpha track whose data follow the color data without base flag; default durations in `tfhd` and in `trex`; alpha planes described by a later fragment than their images), `mdat` first, `co64` + `stz2` + one sample per chunk; layered images: `--progressive` (4:2:0, identity-matrix 10-bit, with a layered alpha item), `--layered` with 2, 3 and 4 quality layers (4:2:0 limited range, identity, monochrome 12-bit), three layers of growing sizes (4:2:2 10-bit), a second layer that is another picture, coded losslessly; `lsel` 0xFFFF, 0, 1, 2 and 3, `a1op` 0, 1 and 2, both together, a selected frame smaller than the last layer (`ispe` of its size) by `lsel` and by `a1op`, `lsel` on 4:2:0 content; a grid of two layered tiles, grids whose tiles select their own layer and their own operating point; a sequence of two layered samples |
 | AVIF errors | invalid: truncated `meta` box and item data, a box smaller than its header, a child box larger than its parent, no file type box and no AVIF brand (unknown format), no `pitm`, primary item, `ispe` or `av1C`, two `meta` boxes, item data outside the file and outside `idat`, `ispe` and `av1C` contradicting the bitstream, an `a1op` operating point the sequence header does not have (one and three operating points), an `lsel` layer the bitstream does not have (one and three layers) or that its operating point does not have, layer 4, a selected frame of another size than `ispe`, `lsel` and `a1op` on a grid item, grids (tile count, descriptor size, tile sizes), a sequence without AV1 track, with an edit whose media time is negative or that shows no image, with a `moof` box that the `moov` box does not announce, with a fragment that lacks the alpha plane of an image, without chunk offsets, truncated, with a malformed `meta` box in its track, with a metadata item of its track or of the file located after the end of the file; an identity derivation with two input images, with an input that does not exist, derived from itself, or of another size than its input; an overlay whose descriptor declares another size than its `ispe` property or lacks an offset, a derived image that is its own input, a grid of derived tiles of two sizes; unsupported: an overlay whose visible fill color would have to be converted to the color space of the image, an alpha plane for an overlay itself, an overlay of images of two color spaces, of two ICC profiles, or whose input image has another color space in its bitstream than the overlay declares, nine nested identity derivations (of a coded image and of an overlay), an untransformed alpha plane for an identity derivation that has a clean aperture, fractional `clap`, an essential unknown property, reserved matrix coefficients, ICtCp matrix coefficients with other transfer characteristics than PQ and HLG, chromaticity-derived constant luminance matrix coefficients with unspecified primaries, an alpha plane of another size, a `moof` box before the `moov` box, fragments that do not follow each other, with composition time offsets or whose samples precede them, a fragmented sequence whose edit list selects a part of its media, edit lists with an empty edit, with a media rate of 2 or of 0, with edits that are not in the order of the media or that overlap, an alpha track whose edit is not the one of its color track, constant luminance matrix coefficients with unspecified transfer characteristics in the sample entry of a sequence, a grid tile that declares another rotation than its grid, a sequence whose images change size; limits: width, height, frame pixels, encoded bytes, live allocations, metadata bytes (ICC, then Exif; the XMP packet of a sequence), sequence frames, displayed pixels, frames that are decoded without being shown, and the lower layers of a layered image |
 | HEIC | lossless identity-matrix RGB at 8, 10 and 12 bits, monochrome (lossless and lossy, at 8, 10 and 12 bits, full and limited range), alpha at 8, 10 and 12 bits (monochrome and 4:2:0 alpha pictures, both auxiliary types, a limited-range alpha plane, hidden colors kept), gray + alpha; lossy 4:4:4, 4:2:2 and 4:2:0 with the BT.709, BT.470BG, BT.601, YCgCo and BT.2020 matrices and unspecified coefficients, in full and limited range, at 8, 10 (HDR 9/16/9) and 12 bits; 4:2:0 at the default chroma sample location and at each signalled one (0, 1, 2); sizes 1x1, odd sizes, 33x17, 64x64, 67x65; pictures of 64x64 under a clean aperture (`heif-enc`) and pictures with a conformance window (x265), a window that removes more than the padding, and both together; files without `colr` box whose bitstream has a color description, a range only or no video signal description, a `colr` box that overrides the bitstream, an ICC profile with and without `nclx`; lossless 2x2 and 3x2 grids (the second cropped below its tiles), a grid cropped by its descriptor, 10-bit and 4:2:0 grids, a grid with an alpha grid, the layout of a phone (grid, rotation, ICC profile, Exif item, hidden thumbnail and depth map) at 8 and 10 bits; `irot` 1-3, `imir` 0-1 and both, a clean aperture followed by a rotation and one at an odd position of 4:2:0 content; Exif (whose orientation tag contradicts `irot`) and XMP; configuration records with NAL unit lengths of 1 and 2 bytes, two parameter sets of each type, incomplete arrays, and parameter sets in the coded data only; assembled layouts (`layout-*`, generic and AVIF brands); sequences: lossless intra pictures played three times, lossless P pictures repeated forever, B pictures whose composition offsets reorder the samples (`heif-enc` and x265, with an edit list that starts at the first presentation time, without edit list, under an `hev1` sample entry with the parameter sets in the first sample, with two-byte NAL unit lengths), an alpha track, 10-bit, monochrome, 4:2:0 and 4:2:2 images, pictures with a conformance window, a clean aperture in the sample entry (an odd size, and an offset on a color and an alpha track), `mdat` first, `co64` + `stz2` + one sample per chunk, chunks written in reverse order, generic and AVIF brands, Exif and XMP in the `meta` box of the file after the samples and in the `idat` box of the `meta` box of the track |
-| HEIC errors | invalid: truncated `meta` box and item data, a child box larger than its parent, no file type box (unknown format), no `pitm`, `ispe` or `hvcC`, item data outside the file, `ispe` contradicting the picture, an `hvcC` record that is truncated, reserves its length size or contradicts its sequence parameter set (bit depth, chroma format), an item with no picture, with two pictures, whose picture is not an intra random access point, whose NAL unit lengths exceed or do not fill its data, whose slice data are truncated or are random bytes, grids (tile count, a tile that does not exist, descriptor size, tile sizes), a sequence without HEVC track, without chunk offsets, truncated, with two samples at one composition time, with a missing reference picture, with a record that contradicts its bitstream, with a malformed `meta` box in its track; unsupported: an `hvc1` item under the brands of AVIF and an `av01` item under the brands of HEIC, `lhv1` items and layer selectors, an `hvcC` record of another version, premultiplied alpha, `iden`/`iovl` derived images, a grid whose tiles have a `clap` property (as `heif-enc` writes small tiles), fractional `clap`, an essential unknown property, ICtCp matrix coefficients, an alpha plane of another size, 16-bit samples, luma and chroma planes of different depths, extended precision processing, `chroma_sample_loc_type` 3, `moof`, an edit that starts after the first image, a sequence whose pictures do not have the size of its sample entry (assembled, and as `heif-enc` writes small images); limits: width, height, frame pixels (of the image, and of the picture under a clean aperture), encoded bytes, live allocations, metadata bytes (ICC, then Exif; the items of a sequence), sequence frames and displayed pixels |
+| HEIC errors | invalid: truncated `meta` box and item data, a child box larger than its parent, no file type box (unknown format), no `pitm`, `ispe` or `hvcC`, item data outside the file, `ispe` contradicting the picture, an `hvcC` record that is truncated, reserves its length size or contradicts its sequence parameter set (bit depth, chroma format), an item with no picture, with two pictures, whose picture is not an intra random access point, whose NAL unit lengths exceed or do not fill its data, whose slice data are truncated or are random bytes, grids (tile count, a tile that does not exist, descriptor size, tile sizes), a sequence without HEVC track, without chunk offsets, truncated, with two samples at one composition time, with a missing reference picture, with a record that contradicts its bitstream, with a malformed `meta` box in its track; unsupported: an `hvc1` item under the brands of AVIF and an `av01` item under the brands of HEIC, `lhv1` items and layer selectors, an `hvcC` record of another version, premultiplied alpha, `iden`/`iovl` derived images, a grid whose tiles have a `clap` property (as `heif-enc` writes small tiles), fractional `clap`, an essential unknown property, ICtCp matrix coefficients, an alpha plane of another size, luma and chroma planes of different depths, extended precision processing, `chroma_sample_loc_type` 3, `moof`, an edit that starts after the first image, a sequence whose pictures do not have the size of its sample entry (assembled, and as `heif-enc` writes small images); limits: width, height, frame pixels (of the image, and of the picture under a clean aperture), encoded bytes, live allocations, metadata bytes (ICC, then Exif; the items of a sequence), sequence frames and displayed pixels |
 | JPEG XL | lossless (Modular): gray, gray + alpha, RGB and RGBA at 8 and 16 bits, 12-bit samples scaled to 16 bits, efforts 1 and 9, an image of few colors (palette), a responsive image (squeeze), four groups of 128x128 samples, a bare codestream and a container; metadata: Exif and XMP boxes, plain and compressed (`brob`), ICC profiles (RGB and gray) in the codestream, the linear transfer function, enumerated color encodings with code points (Display P3, BT.2100 PQ, gray BT.709), orientation 6 in the image header; containers assembled around one codestream: three `jxlp` parts, a 64-bit box size, a box that extends to the end of the file, unknown boxes, metadata after the codestream; lossy (references decoded by djxl): VarDCT RGB, RGBA, gray and 16-bit, effort 3, large transforms on a smooth image, progressive passes with a permuted table of contents, an LF frame, noise, patches, a frame upsampled by 2, a lossy Modular frame, without and with strong restoration filters, JPEG files recompressed without loss (4:2:0, 4:2:2, 4:4:4, gray), a spline; animations: full frames at 10 ticks per second, 30000/1001 ticks per second, a layer without duration and a cropped frame, a multiplied frame, an alpha animation played three times |
-| JPEG XL errors | invalid (rejected by djxl and jxl-oxide too): inverted bytes in the frame header and in the coded samples, a codestream without its signature, a container without codestream, with two codestreams, with parts out of order, with a box smaller than its header; unsupported: floating-point samples, premultiplied alpha, PQ with the white point E, an XYB image with an ICC profile based on lookup tables; limits: width, height, frame pixels, animation frames, metadata bytes, and the pixels of a layer that is decoded without being shown |
+| JPEG XL errors | invalid (rejected by djxl and jxl-oxide too): inverted bytes in the frame header and in the coded samples, a codestream without its signature, a container without codestream, with two codestreams, with parts out of order, with a box smaller than its header; unsupported: integer samples of 25 bits, premultiplied alpha, PQ with the white point E, an XYB image with an ICC profile based on lookup tables; limits: width, height, frame pixels, animation frames, metadata bytes, and the pixels of a layer that is decoded without being shown |
 | JPEG 2000 | reversible (5-3): gray, gray + opacity, RGB and RGBA at 8 and 16 bits, samples of 4 and 12 bits scaled exactly, signed samples (gray at 8 and 12 bits, RGB) offset by half their range, with and without the component transformation, zero to six decomposition levels, images of one pixel, one column and one row; the five progression orders with layers and precincts, a POC marker segment, tiles (with offsets of the image and of the tile grid), tile-parts by resolution level, layer and component, interleaved tile-parts, SOP/EPH, PLT/TLM, packet headers packed in the main header (PPM) and in tile-part headers (PPT), COC/QCC marker segments, a coding style in the tile-part headers, a region of interest, five guard bits, every style of the coding passes (bypass, reset, termination on each pass, vertically causal, predictable termination, segmentation symbols, all of them), code-blocks of 4x4 and 64x4; irreversible (9-7): gray, RGB with and without the component transformation, RGBA, 16 bits, layers, tiles, a region of interest, and a reversible codestream cut by a rate; JP2 files: written by opj_compress (RGB, gray 16 bits, RGBA), a palette (with an opacity column), channel definitions (colors reordered, opacity first, gray + opacity), sYCC with and without sub-sampled chrominances, ICC profiles (RGB and gray), a capture resolution, EXIF and XMP UUID boxes before and after the codestream, boxes of 64-bit length, a codestream box that extends to the end of the file; the high-throughput block coder (Rec. ITU-T T.814): reversible gray and RGB at 8, 12 and 16 bits, tiles, precincts, code-blocks of 1024 columns, images of one column and one row, irreversible, a JPH file, and hand-authored coding passes: HT SigProp and HT MagRef passes (with and without the vertically causal contexts), an HT SigProp pass alone, placeholder passes, the passes of a code-block over two and three layers |
 | JPEG 2000 errors | invalid (rejected by opj_decompress, and by FFmpeg unless stated): a codestream without EOC marker and one cut in its tile-part, a tile of width 0, no component, an empty image area, no COD and no QCD marker segment, a tile index, a tile-part length and a tile-part index out of range, a file without codestream box, without JP2 header box (FFmpeg reads it), with an image header that contradicts the codestream (FFmpeg reads it), with a codestream box that is cut (FFmpeg reads it), without color specification box and with a box length of 4 (the reference decoders read both: the Recommendation is the reference), an HT cleanup segment with a suffix longer than itself; unsupported: five components without color specification, a sub-sampled first component, a premultiplied opacity, several opacity channels, the extensions of ISO/IEC 15444-2, the brand of Motion JPEG 2000, two codestreams, mixed block coders, a second HT set, placeholder passes in another packet than the HT cleanup pass; limits: width, height, frame pixels, metadata bytes before and after the codestream |
 | OpenEXR | every compression the library reads (NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44, B44A, DWAA, DWAB, ZSTD) with HALF RGBA and FLOAT RGB samples; DWAA tiles (zlib AC coefficients), a DWAB colour set of HALF and FLOAT channels, a DWAA luminance with alpha, ZSTD tiles and ZSTD segments of 2-byte and 4-byte samples; luminance (Y) with and without alpha, a red channel alone, HALF, FLOAT and UINT channels in one file, UINT luminance, infinities, not-a-number and the extreme floats, one pixel; flat B44A blocks, a pLinear B44 channel, PXR24 rounding ties, a PIZ chunk of more than 16384 values (16-bit wavelet); tiles of one level, mipmaps rounded up, ripmaps, tiles in random order, B44 tiles of odd sizes; a decreasing line order, a data window inside the display window from negative coordinates, other attributes and a long name; the chromaticities of BT.709, BT.2020 and Display P3; four sample images of the OpenEXR project (stripes, every half value, mipmapped PXR24 tiles, t01 of DisplayWindow) |
@@ -816,7 +816,7 @@ follows it, so keep both headings unique in this file.
 | bmp | 24 | 21 | 4 | 2 |
 | exr | 54 | 7 | 33 | 2 |
 | gif | 24 | 13 | 1 | 2 |
-| heic | 117 | 31 | 21 | 11 |
+| heic | 117 | 31 | 20 | 11 |
 | jpeg | 72 | 19 | 5 | 1 |
 | jp2 | 95 | 17 | 10 | 5 |
 | jxl | 54 | 7 | 4 | 6 |
@@ -1387,7 +1387,7 @@ follows it, so keep both headings unique in this file.
 | HEIC essential unknown property (rejected) | `heic.unsupported=essential-property` | 0 | 0 | 1 | 0 |
 | HEIC other matrix coefficients (rejected) | `heic.unsupported=matrix` | 0 | 0 | 1 | 0 |
 | HEIC alpha plane of another size (rejected) | `heic.unsupported=alpha-size` | 0 | 0 | 1 | 0 |
-| HEIC bit depths above 12, or luma and chroma planes of different bit depths (rejected) | `heic.unsupported=bit-depth` | 0 | 0 | 2 | 0 |
+| HEIC luma and chroma planes of different bit depths (rejected) | `heic.unsupported=bit-depth` | 0 | 0 | 1 | 0 |
 | HEIC extended precision processing (rejected) | `heic.unsupported=extended-precision` | 0 | 0 | 1 | 0 |
 | HEIC chroma sample location of a bottom field (rejected) | `heic.unsupported=chroma-sample-location` | 0 | 0 | 1 | 0 |
 | HEIC sequence whose pictures do not have the size of its sample entry (rejected) | `heic.unsupported=sequence-size` | 0 | 0 | 2 | 0 |
@@ -1397,7 +1397,7 @@ follows it, so keep both headings unique in this file.
 | JPEG XL animation | `jxl.animation` | 5 | 0 | 0 | 2 |
 | JPEG XL 12-bit samples | `jxl.bits=12` | 1 | 0 | 0 | 0 |
 | JPEG XL 16-bit samples | `jxl.bits=16` | 6 | 0 | 0 | 0 |
-| JPEG XL 32-bit floating-point samples (rejected) | `jxl.bits=32` | 0 | 0 | 1 | 0 |
+| JPEG XL 25-bit integer samples (rejected) | `jxl.bits=25` | 0 | 0 | 1 | 0 |
 | JPEG XL 8-bit samples | `jxl.bits=8` | 47 | 7 | 3 | 6 |
 | JPEG XL frame that is added | `jxl.blend=add` | 1 | 0 | 0 | 1 |
 | JPEG XL frame with the blend mode | `jxl.blend=blend` | 2 | 0 | 0 | 1 |
@@ -1408,8 +1408,8 @@ follows it, so keep both headings unique in this file.
 | JPEG XL `brob` box | `jxl.box=brob` | 1 | 0 | 0 | 0 |
 | JPEG XL `free` box | `jxl.box=free` | 1 | 0 | 0 | 0 |
 | JPEG XL `jbrd` box | `jxl.box=jbrd` | 5 | 0 | 0 | 0 |
-| JPEG XL `jxlc` box | `jxl.box=jxlc` | 10 | 0 | 1 | 0 |
-| JPEG XL `jxll` box | `jxl.box=jxll` | 5 | 0 | 1 | 0 |
+| JPEG XL `jxlc` box | `jxl.box=jxlc` | 10 | 0 | 0 | 0 |
+| JPEG XL `jxll` box | `jxl.box=jxll` | 5 | 0 | 0 | 0 |
 | JPEG XL `jxlp` box | `jxl.box=jxlp` | 8 | 0 | 0 | 1 |
 | JPEG XL `xml ` box | `jxl.box=xml` | 2 | 0 | 0 | 1 |
 | JPEG XL boxes after the codestream | `jxl.boxesAfterCodestream` | 3 | 0 | 0 | 0 |
@@ -1422,8 +1422,8 @@ follows it, so keep both headings unique in this file.
 | JPEG XL YCbCr frame (recompressed JPEG) | `jxl.colorTransform=ycbcr` | 5 | 0 | 0 | 0 |
 | JPEG XL Modular frame | `jxl.encoding=modular` | 37 | 7 | 3 | 6 |
 | JPEG XL VarDCT frame | `jxl.encoding=vardct` | 17 | 0 | 0 | 0 |
-| JPEG XL bare codestream | `jxl.file=codestream` | 36 | 7 | 3 | 5 |
-| JPEG XL container (boxes) | `jxl.file=container` | 18 | 0 | 1 | 1 |
+| JPEG XL bare codestream | `jxl.file=codestream` | 36 | 7 | 4 | 5 |
+| JPEG XL container (boxes) | `jxl.file=container` | 18 | 0 | 0 | 1 |
 | JPEG XL frame that is decoded without being shown | `jxl.frame=hidden` | 3 | 0 | 0 | 1 |
 | JPEG XL LF frame | `jxl.frame=lf` | 2 | 0 | 0 | 0 |
 | JPEG XL frame smaller than the image | `jxl.frame=partial` | 1 | 0 | 0 | 1 |
@@ -2019,8 +2019,8 @@ apart from `fixtures`:
   (`rd=6` of x265 with rotated and noisy sources, `sao=band` and `sao=edge` of kvazaar, a very low QP on noise for PCM).
   Whether the vectors reach every tool is for a tool coverage test of the HEVC decoder to tell, as
   `Av1ToolCoverageTests` does for AV1.
-- **Unsupported streams.** A few vectors are streams the library rejects (`hevc.unsupported=<reason>`): bit depths above
-  12, luma and chroma planes of different bit depths, extended precision processing, CABAC bypass alignment (all from
+- **Unsupported streams.** A few vectors are streams the library rejects (`hevc.unsupported=<reason>`): luma and
+  chroma planes of different bit depths, extended precision processing, CABAC bypass alignment (all from
   HM), and a field sequence (x265). They are recorded like the others when two decoders agree. The two extended
   precision vectors have no digest (`planes` is empty, `decoders.agree` is HM alone): FFmpeg and libde265 ignore the
   flag and decode other samples, which the hashes of the stream contradict. No encoder of the pinned release writes
@@ -2137,50 +2137,55 @@ key recorded in the section is not mapped by any row.
 | Range extensions profile, Main 4:4:4 12 | `hevc.profile=rext-444-12` | 20 |
 | Range extensions profile, Main Intra (what x265 signals for an all-intra 8-bit 4:2:0 stream) | `hevc.profile=rext-420-8-intra` | 53 |
 | Range extensions profile, Main 4:2:2 10 Intra | `hevc.profile=rext-422-10-intra` | 15 |
-| Range extensions profile, Main 4:4:4 16 Intra | `hevc.profile=rext-444-16-intra` | 3 |
+| Range extensions profile, Main 4:4:4 16 Intra | `hevc.profile=rext-444-16-intra` | 6 |
 | Range extensions profile, Main 4:4:4 Still Picture | `hevc.profile=rext-444-8-still` | 1 |
 | High throughput profile (rejected by the library) | `hevc.profile=highThroughput-444-16-intra` | 1 |
-| Level (every vector) | `hevc.level` | 402 |
+| Level (every vector) | `hevc.level` | 405 |
 | Level 8.5 (x265, lossless) | `hevc.level=8.5` | 11 |
 | High tier | `hevc.tier=high` | 1 |
 | Monochrome (4:0:0), 8-bit | `hevc.chroma=4:0:0` + `hevc.bitDepth=8` | 6 |
 | Monochrome (4:0:0), 10-bit | `hevc.chroma=4:0:0` + `hevc.bitDepth=10` | 7 |
 | Monochrome (4:0:0), 12-bit | `hevc.chroma=4:0:0` + `hevc.bitDepth=12` | 8 |
+| Monochrome (4:0:0), 16-bit | `hevc.chroma=4:0:0` + `hevc.bitDepth=16` | 1 |
 | 4:2:0, 8-bit | `hevc.chroma=4:2:0` + `hevc.bitDepth=8` | 215 |
 | 4:2:0, 10-bit | `hevc.chroma=4:2:0` + `hevc.bitDepth=10` | 21 |
 | 4:2:0, 12-bit | `hevc.chroma=4:2:0` + `hevc.bitDepth=12` | 6 |
+| 4:2:0, 13-bit | `hevc.chroma=4:2:0` + `hevc.bitDepth=13` | 1 |
 | 4:2:2, 8-bit | `hevc.chroma=4:2:2` + `hevc.bitDepth=8` | 13 |
 | 4:2:2, 10-bit | `hevc.chroma=4:2:2` + `hevc.bitDepth=10` | 30 |
 | 4:2:2, 12-bit | `hevc.chroma=4:2:2` + `hevc.bitDepth=12` | 10 |
+| 4:2:2, 14-bit | `hevc.chroma=4:2:2` + `hevc.bitDepth=14` | 1 |
 | 4:4:4, 8-bit | `hevc.chroma=4:4:4` + `hevc.bitDepth=8` | 27 |
 | 4:4:4, 10-bit | `hevc.chroma=4:4:4` + `hevc.bitDepth=10` | 30 |
 | 4:4:4, 12-bit | `hevc.chroma=4:4:4` + `hevc.bitDepth=12` | 26 |
+| 4:4:4, 15-bit | `hevc.chroma=4:4:4` + `hevc.bitDepth=15` | 1 |
+| 4:4:4, 16-bit | `hevc.chroma=4:4:4` + `hevc.bitDepth=16` | 2 |
 | Identity matrix (planar GBR) | `hevc.matrix=identity` | 13 |
 | Identity matrix, 10-bit | `hevc.matrix=identity` + `hevc.bitDepth=10` | 3 |
 | Identity matrix, 12-bit | `hevc.matrix=identity` + `hevc.bitDepth=12` | 4 |
 | 16x16 coding tree blocks | `hevc.ctb=16` | 44 |
 | 32x32 coding tree blocks | `hevc.ctb=32` | 152 |
-| 64x64 coding tree blocks | `hevc.ctb=64` | 206 |
-| Minimum coding block 8x8 | `hevc.minCb=8` | 393 |
+| 64x64 coding tree blocks | `hevc.ctb=64` | 209 |
+| Minimum coding block 8x8 | `hevc.minCb=8` | 396 |
 | Minimum coding block 16x16 | `hevc.minCb=16` | 5 |
 | Minimum coding block 32x32 | `hevc.minCb=32` | 3 |
 | Minimum coding block 64x64 (the coding tree block) | `hevc.minCb=64` | 1 |
-| Minimum transform block 4x4 | `hevc.minTb=4` | 399 |
+| Minimum transform block 4x4 | `hevc.minTb=4` | 402 |
 | Minimum transform block 8x8 | `hevc.minTb=8` | 1 |
 | Minimum transform block 16x16 | `hevc.minTb=16` | 1 |
 | Minimum transform block 32x32 | `hevc.minTb=32` | 1 |
 | Maximum transform block 4x4 (DST for intra luma) | `hevc.maxTb=4` | 5 |
 | Maximum transform block 8x8 | `hevc.maxTb=8` | 2 |
 | Maximum transform block 16x16 | `hevc.maxTb=16` | 38 |
-| Maximum transform block 32x32 | `hevc.maxTb=32` | 357 |
+| Maximum transform block 32x32 | `hevc.maxTb=32` | 360 |
 | Transform hierarchy depth of intra coding units: 0 | `hevc.tuDepthIntra=0` | 251 |
 | Transform hierarchy depth of intra coding units: 1 | `hevc.tuDepthIntra=1` | 4 |
-| Transform hierarchy depth of intra coding units: 2 | `hevc.tuDepthIntra=2` | 144 |
+| Transform hierarchy depth of intra coding units: 2 | `hevc.tuDepthIntra=2` | 147 |
 | Transform hierarchy depth of intra coding units: 3 | `hevc.tuDepthIntra=3` | 3 |
 | Transform hierarchy depth of inter coding units: 1 | `hevc.tuDepthInter=1` + `hevc.frameTypes=inter` | 1 |
 | Transform hierarchy depth of inter coding units: 2 | `hevc.tuDepthInter=2` + `hevc.frameTypes=inter` | 82 |
 | Transform hierarchy depth of inter coding units: 3 | `hevc.tuDepthInter=3` + `hevc.frameTypes=inter` | 2 |
-| Picture of one coding tree block | `hevc.ctbs=1x1` | 140 |
+| Picture of one coding tree block | `hevc.ctbs=1x1` | 143 |
 | Picture of 6x5 coding tree blocks (CIF, or QCIF with 32x32 blocks) | `hevc.ctbs=6x5` | 5 |
 | Picture of 6x4 coding tree blocks (384x216, the stills of the benchmarks) | `hevc.ctbs=6x4` | 2 |
 | Picture one coding tree block wide, with wavefronts | `hevc.ctbs=1x4` + `hevc.wpp` | 2 |
@@ -2193,12 +2198,12 @@ key recorded in the section is not mapped by any row.
 | Conformance window on every side, 4:2:2 | `hevc.crop=left` + `hevc.crop=top` + `hevc.chroma=4:2:2` | 3 |
 | Conformance window on every side, 4:4:4 | `hevc.crop=left` + `hevc.crop=top` + `hevc.chroma=4:4:4` | 3 |
 | Strong intra smoothing off | `hevc.strongIntraSmoothing=0` | 36 |
-| Strong intra smoothing on | `hevc.strongIntraSmoothing=1` | 366 |
+| Strong intra smoothing on | `hevc.strongIntraSmoothing=1` | 369 |
 | Constrained intra prediction | `hevc.constrainedIntraPred` | 3 |
-| Transform skip | `hevc.transformSkip` | 24 |
+| Transform skip | `hevc.transformSkip` | 25 |
 | Sign data hiding off | `hevc.signDataHiding=0` | 36 |
-| Sign data hiding on | `hevc.signDataHiding=1` | 366 |
-| Asymmetric motion partitions | `hevc.amp` | 155 |
+| Sign data hiding on | `hevc.signDataHiding=1` | 369 |
+| Asymmetric motion partitions | `hevc.amp` | 158 |
 | PCM coding units | `hevc.pcm` | 8 |
 | PCM, samples at the bit depth of an 8-bit stream | `hevc.pcm.bitDepth=8/8` + `hevc.bitDepth=8` | 4 |
 | PCM, 8-bit samples in a 10-bit stream | `hevc.pcm.bitDepth=8/8` + `hevc.bitDepth=10` | 1 |
@@ -2210,7 +2215,7 @@ key recorded in the section is not mapped by any row.
 | Lossless: the decoded pictures are the source pictures (measured) | `hevc.lossless` | 22 |
 | Lossless, inter pictures | `hevc.lossless` + `hevc.frameTypes=inter` | 10 |
 | Lossless, identity matrix | `hevc.lossless` + `hevc.matrix=identity` | 3 |
-| Slice QP (every vector) | `hevc.sliceQp` | 402 |
+| Slice QP (every vector) | `hevc.sliceQp` | 405 |
 | Lowest slice QP of a 12-bit stream (-24) | `hevc.sliceQp=-24` | 1 |
 | Slice QP 0 | `hevc.sliceQp=0` | 11 |
 | Slice QP 51 | `hevc.sliceQp=51` | 5 |
@@ -2227,13 +2232,13 @@ key recorded in the section is not mapped by any row.
 | Scaling list coded with its coefficients | `hevc.scalingList.coding=explicit` | 9 |
 | Scaling list copied from another list | `hevc.scalingList.coding=copy` | 7 |
 | Scaling list set to the default list by its prediction | `hevc.scalingList.coding=default` | 2 |
-| Deblocking filter on | `hevc.deblocking=1` | 395 |
+| Deblocking filter on | `hevc.deblocking=1` | 398 |
 | Deblocking filter off | `hevc.deblocking=0` | 7 |
 | Deblocking offsets (beta/tc, halved) | `hevc.deblocking.offsets` | 7 |
 | Deblocking parameters in the slice header | `hevc.deblocking.sliceOverride` | 1 |
 | Sample adaptive offset off | `hevc.sao=off` | 10 |
-| Sample adaptive offset, luma | `hevc.sao=luma` | 392 |
-| Sample adaptive offset, chroma | `hevc.sao=chroma` | 370 |
+| Sample adaptive offset, luma | `hevc.sao=luma` | 395 |
+| Sample adaptive offset, chroma | `hevc.sao=chroma` | 373 |
 | Sample adaptive offset disabled by a slice | `hevc.sao=sliceOff` | 11 |
 | Sample adaptive offset, 10-bit | `hevc.sao=luma` + `hevc.bitDepth=10` | 88 |
 | Sample adaptive offset, 12-bit | `hevc.sao=luma` + `hevc.bitDepth=12` | 50 |
@@ -2252,9 +2257,9 @@ key recorded in the section is not mapped by any row.
 | Wavefronts with dependent slice segments | `hevc.wpp` + `hevc.dependentSlices` | 3 |
 | Wavefronts with several slices | `hevc.wpp` + `hevc.slices` | 6 |
 | CABAC initialization type chosen by the slice | `hevc.cabacInit` | 3 |
-| I slices only | `hevc.frameTypes=intra` | 198 |
+| I slices only | `hevc.frameTypes=intra` | 201 |
 | P or B slices | `hevc.frameTypes=inter` | 204 |
-| Slice types (every vector) | `hevc.sliceTypes` | 402 |
+| Slice types (every vector) | `hevc.sliceTypes` | 405 |
 | P slices | `hevc.sliceTypes=P` | 163 |
 | B slices | `hevc.sliceTypes=B` | 121 |
 | B pictures used as references | `hevc.referenceB` | 92 |
@@ -2278,9 +2283,9 @@ key recorded in the section is not mapped by any row.
 | Reference picture set of the sequence parameter set | `hevc.rps=sps` | 84 |
 | Reference picture set coded in the slice header | `hevc.rps=slice` | 133 |
 | Reference picture set predicted from another one | `hevc.rps.interPrediction` | 13 |
-| NAL unit types (every vector) | `hevc.nal` | 402 |
+| NAL unit types (every vector) | `hevc.nal` | 405 |
 | IDR pictures without leading pictures | `hevc.nal=IDR_N_LP` | 217 |
-| IDR pictures that may have RADL pictures | `hevc.nal=IDR_W_RADL` | 183 |
+| IDR pictures that may have RADL pictures | `hevc.nal=IDR_W_RADL` | 186 |
 | CRA pictures | `hevc.nal=CRA` | 17 |
 | RASL pictures | `hevc.nal=RASL_N` | 15 |
 | RASL pictures used as references | `hevc.nal=RASL_R` | 11 |
@@ -2310,9 +2315,9 @@ key recorded in the section is not mapped by any row.
 | Pictures discarded before their output (NoOutputOfPriorPicsFlag) | `hevc.noOutputOfPriorPics` | 2 |
 | Picture order count that wraps | `hevc.pocWrap` | 5 |
 | Picture order count coded with 4 bits | `hevc.pocLsbBits=4` | 31 |
-| Picture order count coded with 8 bits | `hevc.pocLsbBits=8` | 366 |
-| SEI messages (every vector) | `hevc.sei` | 402 |
-| Decoded picture hash: MD5 | `hevc.pictureHash=md5` | 370 |
+| Picture order count coded with 8 bits | `hevc.pocLsbBits=8` | 369 |
+| SEI messages (every vector) | `hevc.sei` | 405 |
+| Decoded picture hash: MD5 | `hevc.pictureHash=md5` | 373 |
 | Decoded picture hash: CRC | `hevc.pictureHash=crc` | 14 |
 | Decoded picture hash: checksum | `hevc.pictureHash=checksum` | 18 |
 | Mastering display colour volume | `hevc.sei=masteringDisplayColourVolume` | 2 |
@@ -2325,29 +2330,28 @@ key recorded in the section is not mapped by any row.
 | Chroma sample location | `hevc.chromaLoc` | 8 |
 | Chroma sample location type 5 | `hevc.chromaLoc=5` | 2 |
 | Default display window (not applied) | `hevc.defaultDisplayWindow` | 3 |
-| Implicit residual DPCM | `hevc.implicitRdpcm` | 13 |
-| Explicit residual DPCM | `hevc.explicitRdpcm` | 10 |
-| Rotation of transform-skipped residuals | `hevc.transformSkipRotation` | 10 |
+| Implicit residual DPCM | `hevc.implicitRdpcm` | 14 |
+| Explicit residual DPCM | `hevc.explicitRdpcm` | 11 |
+| Rotation of transform-skipped residuals | `hevc.transformSkipRotation` | 11 |
 | Transform skip context | `hevc.transformSkipContext` | 9 |
-| Transform skip up to 8x8 | `hevc.transformSkip.maxSize=8` | 1 |
+| Transform skip up to 8x8 | `hevc.transformSkip.maxSize=8` | 2 |
 | Transform skip up to 16x16 | `hevc.transformSkip.maxSize=16` | 8 |
 | Transform skip up to 32x32 | `hevc.transformSkip.maxSize=32` | 1 |
 | Cross-component prediction | `hevc.crossComponentPrediction` | 7 |
 | Chroma QP offset lists | `hevc.chromaQpOffsetList` + `hevc.cuChromaQpOffset` | 6 |
-| Persistent Rice adaptation | `hevc.persistentRice` | 10 |
+| Persistent Rice adaptation | `hevc.persistentRice` | 11 |
 | Scaled sample adaptive offsets | `hevc.saoOffsetScale` | 2 |
 | High precision weighted prediction offsets | `hevc.highPrecisionOffsets` | 2 |
 | Intra smoothing disabled | `hevc.intraSmoothingDisabled` | 4 |
 | Range extensions tools in lossless coding units | `hevc.implicitRdpcm` + `hevc.lossless` | 5 |
-| Rejected by the library | `hevc.unsupported` | 8 |
-| Rejected: bit depth above 12 | `hevc.unsupported=bitDepth` | 3 |
+| Rejected by the library | `hevc.unsupported` | 6 |
 | Rejected: luma and chroma bit depths differ | `hevc.unsupported=unequalBitDepth` + `hevc.bitDepthChroma` | 2 |
 | Rejected: extended precision processing (no digest) | `hevc.unsupported=extendedPrecision` + `hevc.extendedPrecision` | 2 |
 | Rejected: CABAC bypass alignment | `hevc.unsupported=cabacBypassAlignment` + `hevc.cabacBypassAlignment` | 1 |
 | Rejected: field sequence | `hevc.unsupported=fieldSeq` + `hevc.fieldSeq` | 1 |
 | Encoded by x265 | `hevc.encoder=x265` | 218 |
 | Encoded by kvazaar | `hevc.encoder=kvazaar` | 34 |
-| Encoded by HM | `hevc.encoder=hm` | 150 |
+| Encoded by HM | `hevc.encoder=hm` | 153 |
 | Derived from the stream of another vector | `hevc.derived` | 28 |
 | Derived: parameter set rewritten by hevc_metadata | `hevc.derived=metadata` | 10 |
 | Derived: NAL units removed by filter_units | `hevc.derived=filterUnits` | 1 |

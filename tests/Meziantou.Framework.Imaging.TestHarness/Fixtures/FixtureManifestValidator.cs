@@ -82,8 +82,8 @@ public static partial class FixtureManifestValidator
     /// <summary>The directory of the AV1 conformance vectors, and the prefix of their identifiers.</summary>
     public const string Av1VectorPrefix = "av1/";
 
-    /// <summary>The accepted values of <see cref="HevcVectorEntry.BitDepth"/>: 16 is a stream the library rejects.</summary>
-    public static IReadOnlySet<int> AllowedHevcBitDepths { get; } = new HashSet<int> { 8, 10, 12, 16 };
+    /// <summary>The accepted values of <see cref="HevcVectorEntry.BitDepth"/>: 13 to 16 bits are the still pictures of the range extensions.</summary>
+    public static IReadOnlySet<int> AllowedHevcBitDepths { get; } = new HashSet<int> { 8, 10, 12, 13, 14, 15, 16 };
 
     /// <summary>The accepted values of <see cref="HevcVectorEntry.ChromaFormat"/>.</summary>
     public static IReadOnlySet<string> AllowedHevcChromaFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "4:0:0", "4:2:0", "4:2:2", "4:4:4" };
@@ -148,7 +148,7 @@ public static partial class FixtureManifestValidator
     public static IReadOnlyDictionary<string, IReadOnlySet<string>> AllowedHevcFeatureValues { get; } = new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal)
     {
         ["hevc.chroma"] = AllowedHevcChromaFormats,
-        ["hevc.bitDepth"] = new HashSet<string>(StringComparer.Ordinal) { "8", "10", "12", "16" },
+        ["hevc.bitDepth"] = new HashSet<string>(StringComparer.Ordinal) { "8", "10", "12", "13", "14", "15", "16" },
         ["hevc.tier"] = new HashSet<string>(StringComparer.Ordinal) { "high" },
         ["hevc.matrix"] = new HashSet<string>(StringComparer.Ordinal) { "identity" },
         ["hevc.ctb"] = new HashSet<string>(StringComparer.Ordinal) { "16", "32", "64" },

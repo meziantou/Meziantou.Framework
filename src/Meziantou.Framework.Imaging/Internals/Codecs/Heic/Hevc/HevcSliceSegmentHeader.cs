@@ -249,6 +249,9 @@ internal sealed class HevcSliceSegmentHeader
         if (nal.IsIrap && SliceType is not HevcConstants.SliceI)
             throw HevcErrors.Invalid("a slice of an intra random access point picture is not an I slice.");
 
+        if (SliceType is not HevcConstants.SliceI && sps.BitDepth > HevcConstants.MaxInterBitDepth)
+            throw HevcErrors.Unsupported("inter prediction of samples of more than 12 bits");
+
         if (pps.OutputFlagPresentFlag)
         {
             PicOutputFlag = reader.ReadFlag();

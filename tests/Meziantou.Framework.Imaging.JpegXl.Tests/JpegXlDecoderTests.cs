@@ -564,6 +564,96 @@ public sealed class JpegXlDecoderTests
     }
 
     [Fact]
+    public void FloatingPointSamplesAreKeptAsTheyAreStored()
+    {
+        // Values outside [0, 1] are kept: the image is in the color encoding of the file (sRGB), not clamped
+        var info = Image.Identify(JpegXlTestFiles.Float32);
+        Assert.Equal((PixelFormat.RgbaFloat, ImageColorModel.Rgb, 32), (info.PixelFormat, info.ColorModel, info.BitsPerComponent));
+
+        using var image = Image.Load(JpegXlTestFiles.Float32);
+        Assert.Equal(PixelFormat.RgbaFloat, image.PixelFormat);
+        Assert.Null(image.Metadata.IccProfile);
+        Assert.Equal(ColorTransferFunction.Srgb, image.Metadata.TransferFunction);
+        Assert.Equal([0f, 0.5f, 1f, 1f, -0.25f, 2.5f, 0.001f, 1f, 100f, -3f, 0.75f, 1f, 1f, 1f, 1f, 1f], GetFloatSamples(image));
+    }
+
+    [Fact]
+    public void HalfPrecisionSamplesAreLoadedAsHalfPrecisionPixels()
+    {
+        var info = Image.Identify(JpegXlTestFiles.HalfFloat);
+        Assert.Equal((PixelFormat.RgbaHalf, 16), (info.PixelFormat, info.BitsPerComponent));
+
+        using var image = Image.Load(JpegXlTestFiles.HalfFloat);
+        Assert.Equal(PixelFormat.RgbaHalf, image.PixelFormat);
+        var smallest = BitConverter.UInt16BitsToHalf(1);
+        Half[] expected =
+        [
+            Half.One, Half.One, Half.One, Half.One, (Half)5, (Half)5, (Half)5, Half.One, (Half)5, (Half)5, (Half)5, Half.One,
+            Half.NegativeOne, Half.NegativeOne, Half.NegativeOne, Half.One, Half.NegativeOne, Half.NegativeOne, Half.NegativeOne, Half.One, smallest, smallest, smallest, Half.One,
+        ];
+        Assert.Equal(expected, GetHalfSamples(image));
+    }
+
+    [Fact]
+    public void IntegerSamplesOfMoreThan16BitsAreLoadedAsSinglePrecisionNumbers()
+    {
+        // A sample of up to 24 bits divided by the largest value goes back to itself: no precision is lost
+        var info = Image.Identify(JpegXlTestFiles.Integer24Bit);
+        Assert.Equal((PixelFormat.RgbaFloat, 24), (info.PixelFormat, info.BitsPerComponent));
+
+        using var image = Image.Load(JpegXlTestFiles.Integer24Bit);
+        Assert.Equal(PixelFormat.RgbaFloat, image.PixelFormat);
+        const double Max = (1 << 24) - 1;
+        var samples = GetFloatSamples(image);
+        int[] columns = [1, 8388609, 16777215];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var expected = i % 4 == 3 ? Max : columns[(i / 4) % 3];
+            Assert.Equal(expected, Math.Round(samples[i] * Max, MidpointRounding.AwayFromZero));
+        }
+    }
+
+    [Fact]
+    public void IntegerSamplesOfMoreThan24BitsAreNotSupported()
+    {
+        // A single-precision number cannot hold them
+        Assert.Equal("samples of more than 24 bits", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(JpegXlTestFiles.Integer25Bit)).Feature);
+        Assert.Equal("samples of more than 24 bits", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(JpegXlTestFiles.Integer25Bit)).Feature);
+    }
+
+    [Fact]
+    public void CmykIsOnlyLoadedWithAConversion()
+    {
+        // Inks in the color channels and in the black channel: identified as they are, rejected by a load without a conversion
+        var file = JpegXlTestFiles.CmykWithAlpha;
+        var info = Image.Identify(file);
+        Assert.Equal((PixelFormat.Rgba32, ImageColorModel.Cmyk, 8, true), (info.PixelFormat, info.ColorModel, info.BitsPerComponent, info.MayHaveTransparency));
+        Assert.Equal("CMYK", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(file)).Feature);
+        Assert.Equal("CMYK without color profile", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(file, new ImageDecodeOptions { CmykConversion = new CmykConversionOptions { AssumedSourceProfile = null } })).Feature);
+
+        // The inks (255 is no ink in JPEG XL, 0 in ICC) go through the conversion of the options, the alpha is copied, and
+        // the image is labelled with the destination profile
+        var conversion = new CmykConversionOptions();
+        using var image = Image.Load(file, new ImageDecodeOptions { CmykConversion = conversion });
+        Assert.Equal(PixelFormat.Rgba32, image.PixelFormat);
+        Assert.Equal(conversion.DestinationProfile.Data.ToArray(), image.Metadata.IccProfile!.Data.ToArray());
+        byte[][] samples = [[255, 255, 255, 255, 255], [0, 255, 255, 255, 128], [255, 0, 255, 255, 255], [255, 255, 0, 255, 0], [255, 255, 255, 0, 255], [245, 195, 135, 55, 200]];
+        var inks = samples.SelectMany(pixel => pixel[..4].Select(sample => (byte)(255 - sample))).ToArray();
+        var colors = new byte[samples.Length * 3];
+        IccColorTransform.Create(conversion.AssumedSourceProfile!, conversion.DestinationProfile, conversion.Transform).Convert(inks, colors);
+        var expected = new byte[samples.Length * 4];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            colors.AsSpan(i * 3, 3).CopyTo(expected.AsSpan(i * 4));
+            expected[(i * 4) + 3] = samples[i][4];
+        }
+
+        var actual = new byte[expected.Length];
+        image.Frames[0].CopyPixelBytesTo(actual);
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
     public void ManyTypeCommandsOfAnIccProfileDoNotGrowTheStack()
     {
         // Each type command writes 8 bytes. The commands cost nothing in an entropy-coded stream, so a file can contain a
@@ -1978,6 +2068,20 @@ public sealed class JpegXlDecoderTests
         var pixels = new Rgba64[frame.Width * frame.Height];
         frame.CopyPixelDataTo(pixels);
         return pixels;
+    }
+
+    private static float[] GetFloatSamples(Image image)
+    {
+        var bytes = new byte[image.Width * image.Height * 16];
+        image.Frames[0].CopyPixelBytesTo(bytes);
+        return [.. Enumerable.Range(0, bytes.Length / 4).Select(i => BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(i * 4)))];
+    }
+
+    private static Half[] GetHalfSamples(Image image)
+    {
+        var bytes = new byte[image.Width * image.Height * 8];
+        image.Frames[0].CopyPixelBytesTo(bytes);
+        return [.. Enumerable.Range(0, bytes.Length / 2).Select(i => BinaryPrimitives.ReadHalfLittleEndian(bytes.AsSpan(i * 2)))];
     }
 
     private static byte[] GetFile(string name) => name switch

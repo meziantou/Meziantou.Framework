@@ -73,7 +73,7 @@ replaces them (Mermaid `venn1` to `venn8`).
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/VennDiagramParserTests.cs;region=Mermaid_VennDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/VennDiagramParserTests.cs;region=Mermaid_VennDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (VennDiagram)MermaidDocument.Parse("""
     venn-beta

@@ -119,7 +119,7 @@ task is in its bar when it fits, otherwise next to it.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/GanttDiagramParserTests.cs;region=Mermaid_GanttDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/GanttDiagramParserTests.cs;region=Mermaid_GanttDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (GanttDiagram)MermaidDocument.Parse("""
     gantt

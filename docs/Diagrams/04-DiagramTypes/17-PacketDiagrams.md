@@ -35,7 +35,7 @@ the bits of a row from right to left.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/PacketDiagramParserTests.cs;region=Mermaid_PacketDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/PacketDiagramParserTests.cs;region=Mermaid_PacketDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (PacketDiagram)MermaidDocument.Parse("""
     packet

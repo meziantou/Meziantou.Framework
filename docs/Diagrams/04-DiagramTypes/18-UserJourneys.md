@@ -32,7 +32,7 @@ of a task are colored dots on it, and the legend on the left lists the actors in
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/UserJourneyDiagramParserTests.cs;region=Mermaid_UserJourney;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/UserJourneyDiagramParserTests.cs;region=Mermaid_UserJourney;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (UserJourneyDiagram)MermaidDocument.Parse("""
     journey

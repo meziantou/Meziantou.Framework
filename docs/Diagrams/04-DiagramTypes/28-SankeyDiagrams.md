@@ -61,7 +61,7 @@ precede the column of the largest node, after the others.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/SankeyDiagramParserTests.cs;region=Mermaid_SankeyDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/SankeyDiagramParserTests.cs;region=Mermaid_SankeyDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (SankeyDiagram)MermaidDocument.Parse("""
     sankey

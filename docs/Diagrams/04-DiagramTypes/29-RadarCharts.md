@@ -56,7 +56,7 @@ Mermaid.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/RadarDiagramParserTests.cs;region=Mermaid_RadarDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/RadarDiagramParserTests.cs;region=Mermaid_RadarDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (RadarDiagram)MermaidDocument.Parse("""
     radar-beta

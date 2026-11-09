@@ -4,7 +4,7 @@ description: What the diagram libraries do, and how they relate to Mermaid.
 ---
 
 `Meziantou.Framework.Diagrams` draws diagrams as SVG: you describe the nodes and the edges, and the library lays them
-out and draws them. `Meziantou.Framework.Diagrams.Mermaid` reads the text format of [Mermaid](https://mermaid.js.org)
+out and draws them. `Meziantou.Framework.Mermaid` reads the text format of [Mermaid](https://mermaid.js.org)
 into these diagrams, and writes them back as Mermaid text.
 
 ![A flowchart of the processing of an order](images/Flowchart.svg)
@@ -21,7 +21,7 @@ library measures and draws its own texts, and does not run a browser.
   treemaps, pie charts, XY charts, quadrant charts, sankey diagrams, radar charts, Venn diagrams, Wardley maps and
   Cynefin diagrams. See [diagram types](04-DiagramTypes/01-Overview.md).
 - **Read Mermaid text**, with its front matter, its directives and its themes, and **write diagrams as Mermaid**, for
-  instance to embed them in a Markdown page of GitHub. See [Mermaid](03-Mermaid.md).
+  instance to embed them in a Markdown page of GitHub. See [Mermaid](../Mermaid/01-Introduction.md).
 - **Theme the diagrams** with the themes of Mermaid, or your own colors. See [themes](05-Theming.md).
 - **Render images**: PNG, WebP, JPEG, or drawing on an existing image. See [image rendering](06-ImageRendering.md).
 
@@ -32,7 +32,7 @@ installed.
 ## Namespaces
 
 The diagrams are in the [Meziantou.Framework.Diagrams](cref:Meziantou.Framework.Diagrams) namespace, and the Mermaid
-reader and writer in [Meziantou.Framework.Diagrams.Mermaid](cref:Meziantou.Framework.Diagrams.Mermaid).
+reader and writer in [Meziantou.Framework.Mermaid](cref:Meziantou.Framework.Mermaid).
 
 ## Next steps
 

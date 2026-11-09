@@ -69,7 +69,7 @@ at the top.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/XyChartDiagramParserTests.cs;region=Mermaid_XyChartDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/XyChartDiagramParserTests.cs;region=Mermaid_XyChartDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (XyChartDiagram)MermaidDocument.Parse("""
     xychart

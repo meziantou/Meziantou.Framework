@@ -53,7 +53,7 @@ color, the weight and the size of the texts.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/TreemapDiagramParserTests.cs;region=Mermaid_TreemapDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/TreemapDiagramParserTests.cs;region=Mermaid_TreemapDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (TreemapDiagram)MermaidDocument.Parse("""
     treemap

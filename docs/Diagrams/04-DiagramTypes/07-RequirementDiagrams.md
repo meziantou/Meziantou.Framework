@@ -50,7 +50,7 @@ and `traces` are dashed arrows from the source to the target.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/RequirementDiagramParserTests.cs;region=Mermaid_RequirementDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/RequirementDiagramParserTests.cs;region=Mermaid_RequirementDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (RequirementDiagram)MermaidDocument.Parse("""
     requirementDiagram

@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using Meziantou.Framework.Diagrams.Layout;
-using Meziantou.Framework.Diagrams.Mermaid;
+using Meziantou.Framework.Mermaid;
 using Meziantou.Framework.Fuzzing;
 
 namespace Meziantou.Framework.Diagrams.Fuzz;

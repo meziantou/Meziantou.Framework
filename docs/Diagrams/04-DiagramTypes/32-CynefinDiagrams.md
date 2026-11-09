@@ -50,7 +50,7 @@ font sizes, as the `cynefin` theme variables of Mermaid do.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/CynefinDiagramParserTests.cs;region=Mermaid_CynefinDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/CynefinDiagramParserTests.cs;region=Mermaid_CynefinDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (CynefinDiagram)MermaidDocument.Parse("""
     cynefin-beta

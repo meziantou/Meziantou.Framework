@@ -92,7 +92,7 @@ canvas is cut. [ShowGrid](cref:Meziantou.Framework.Diagrams.WardleyDiagram.ShowG
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/WardleyDiagramParserTests.cs;region=Mermaid_WardleyDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/WardleyDiagramParserTests.cs;region=Mermaid_WardleyDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var map = (WardleyDiagram)MermaidDocument.Parse("""
     wardley-beta

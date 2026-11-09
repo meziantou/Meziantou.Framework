@@ -58,7 +58,7 @@ charts of Mermaid.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/PieDiagramParserTests.cs;region=Mermaid_PieDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/PieDiagramParserTests.cs;region=Mermaid_PieDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (PieDiagram)MermaidDocument.Parse("""
     pie showData

@@ -63,7 +63,7 @@ edges get thinner as they go away from the root.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/MindmapDiagramParserTests.cs;region=Mermaid_MindmapDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/MindmapDiagramParserTests.cs;region=Mermaid_MindmapDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (MindmapDiagram)MermaidDocument.Parse("""
     mindmap

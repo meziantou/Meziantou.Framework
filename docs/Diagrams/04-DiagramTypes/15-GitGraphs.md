@@ -67,7 +67,7 @@ the tags replace them, as the `git0`...`git7`, `gitBranchLabel0`... and `gitInv0
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/GitGraphDiagramParserTests.cs;region=Mermaid_GitGraph;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/GitGraphDiagramParserTests.cs;region=Mermaid_GitGraph;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (GitGraphDiagram)MermaidDocument.Parse("""
     gitGraph

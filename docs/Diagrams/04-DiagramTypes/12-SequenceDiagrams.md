@@ -74,7 +74,7 @@ a participant, whose lifeline ends at a cross.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/SequenceDiagramParserTests.cs;region=Mermaid_SequenceDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/SequenceDiagramParserTests.cs;region=Mermaid_SequenceDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (SequenceDiagram)MermaidDocument.Parse("""
     sequenceDiagram

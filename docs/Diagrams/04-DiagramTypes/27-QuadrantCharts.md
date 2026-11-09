@@ -69,7 +69,7 @@ theme variables of Mermaid do.
 
 ## Mermaid syntax
 
-<!-- ref:../../../tests/Meziantou.Framework.Diagrams.Mermaid.Tests/QuadrantChartDiagramParserTests.cs;region=Mermaid_QuadrantChartDiagram;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/QuadrantChartDiagramParserTests.cs;region=Mermaid_QuadrantChartDiagram;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var diagram = (QuadrantChartDiagram)MermaidDocument.Parse("""
     quadrantChart

@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-inline, and why t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 53 | 54 | 0 | 98% |
 | [Tentative](#tentative-tests) | 5 | 6 | 0 | 83% |
-| [Reftests](#reftests) | 193 | 204 | 0 | 95% |
-| **All** | **251** | **264** | **0** | **95%** |
+| [Reftests](#reftests) | 196 | 204 | 0 | 96% |
+| **All** | **254** | **264** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 8
+- **BUG**: 5
 - **TEST BUG**: 5
 
 ## Stable tests
@@ -115,10 +115,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`baseline-source/baseline-source-inline-box.html`](https://wpt.fyi/results/css/css-inline/baseline-source/baseline-source-inline-box.html) | Pass | 1 / 1 |  |  |
 | [`br-font-size.html`](https://wpt.fyi/results/css/css-inline/br-font-size.html) | Pass | 1 / 1 |  |  |
 | [`br-line-height-inherited-quirks.html`](https://wpt.fyi/results/css/css-inline/br-line-height-inherited-quirks.html) | Pass | 1 / 1 |  |  |
-| [`br-line-height-shrink-quirks.html`](https://wpt.fyi/results/css/css-inline/br-line-height-shrink-quirks.html) | Fail | 0 / 1 | BUG | in quirks mode, the line of a `<br>` without text has the height of the strut of its block (`20px/1`) instead of the `line-height` of the `<br>` (5px, 200px or 0): the forced line break is treated as text of the root inline box (the no-quirks variants of the tests pass) |
+| [`br-line-height-shrink-quirks.html`](https://wpt.fyi/results/css/css-inline/br-line-height-shrink-quirks.html) | Pass | 1 / 1 |  |  |
 | [`br-line-height-shrink.html`](https://wpt.fyi/results/css/css-inline/br-line-height-shrink.html) | Pass | 1 / 1 |  |  |
-| [`br-line-height-stretch-quirks.html`](https://wpt.fyi/results/css/css-inline/br-line-height-stretch-quirks.html) | Fail | 0 / 1 | BUG | in quirks mode, the line of a `<br>` without text has the height of the strut of its block (`20px/1`) instead of the `line-height` of the `<br>` (5px, 200px or 0): the forced line break is treated as text of the root inline box (the no-quirks variants of the tests pass) |
-| [`br-line-height-zero-quirks.html`](https://wpt.fyi/results/css/css-inline/br-line-height-zero-quirks.html) | Fail | 0 / 1 | BUG | in quirks mode, the line of a `<br>` without text has the height of the strut of its block (`20px/1`) instead of the `line-height` of the `<br>` (5px, 200px or 0): the forced line break is treated as text of the root inline box (the no-quirks variants of the tests pass) |
+| [`br-line-height-stretch-quirks.html`](https://wpt.fyi/results/css/css-inline/br-line-height-stretch-quirks.html) | Pass | 1 / 1 |  |  |
+| [`br-line-height-zero-quirks.html`](https://wpt.fyi/results/css/css-inline/br-line-height-zero-quirks.html) | Pass | 1 / 1 |  |  |
 | [`br-line-height-zero.html`](https://wpt.fyi/results/css/css-inline/br-line-height-zero.html) | Pass | 1 / 1 |  |  |
 | [`br-line-height.html`](https://wpt.fyi/results/css/css-inline/br-line-height.html) | Pass | 1 / 1 |  |  |
 | [`dominant-baseline/dominant-baseline-alignment-baseline.html`](https://wpt.fyi/results/css/css-inline/dominant-baseline/dominant-baseline-alignment-baseline.html) | Pass | 9 / 9 |  |  |

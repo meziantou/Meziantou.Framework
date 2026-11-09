@@ -4836,10 +4836,7 @@
     "reftest": "PASS"
   },
   "css/CSS2/floats/floats-in-inline-content-intrinsic-size-001.html": {
-    "total": 16,
-    "failures": {
-      "Text sits next to the floats that come before the clearing float (textNextToFirstFloat, max-content)": "FAIL"
-    }
+    "total": 16
   },
   "css/CSS2/floats/floats-in-table-caption-001.html": {
     "reftest": "PASS"

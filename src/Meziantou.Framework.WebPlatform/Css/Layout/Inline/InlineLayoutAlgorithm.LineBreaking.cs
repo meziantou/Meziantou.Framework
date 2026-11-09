@@ -63,14 +63,15 @@ internal sealed partial class InlineLayoutAlgorithm
 
     /// <summary>
     /// Adds a float to the line measured for the max-content size (the floats are side by side on the line of the content around
-    /// them) and returns the change of the width of the line: a float with <c>clear</c> is placed below the floats of the line
-    /// that it clears, which no longer are next to the content after it (the width of the line with them is kept in
-    /// <see cref="_measuredWidthBeforeClearance"/>).
+    /// them) and returns the change of the width of the line. A float with <c>clear</c> is placed below the floats of the line that
+    /// it clears, and so are the floats after it (a float is not higher than the floats before it,
+    /// https://drafts.csswg.org/css2/#float-position), but the content of the line after it stays next to the floats before it: the
+    /// floats below the line do not change its width, their widest row is kept in <see cref="_measuredWidestRowBelow"/>.
     /// </summary>
-    private double AddMeasuredFloat(in InlineItem item, double width)
+    private double AddMeasuredFloat(in InlineItem item)
     {
         if (item.Box is not ContainerBox box)
-            return item.InlineSize;
+            return _measuredFloatsBelow is null ? item.InlineSize : 0;
 
         var layout = box.Style.Layout;
         var clear = ExclusionSpace.GetClearSides(layout.Clear, _writingDirection);
@@ -87,11 +88,6 @@ internal sealed partial class InlineLayoutAlgorithm
             _measuredLineRightFloats = 0;
         }
 
-        if (cleared > 0)
-        {
-            _measuredWidthBeforeClearance = Math.Max(_measuredWidthBeforeClearance, width);
-        }
-
         if (ExclusionSpace.GetFloatSide(layout.Float, _writingDirection) == FloatSide.LineLeft)
         {
             _measuredLineLeftFloats += item.InlineSize;
@@ -101,7 +97,14 @@ internal sealed partial class InlineLayoutAlgorithm
             _measuredLineRightFloats += item.InlineSize;
         }
 
-        return item.InlineSize - cleared;
+        if (_measuredFloatsBelow is null && cleared == 0)
+            return item.InlineSize;
+
+        // The float is below the line: in a new row of floats when it clears the floats of the row it would be in (the floats of
+        // the line, or the floats below it), else next to them
+        _measuredFloatsBelow = _measuredLineLeftFloats + _measuredLineRightFloats;
+        _measuredWidestRowBelow = Math.Max(_measuredWidestRowBelow, _measuredFloatsBelow.Value);
+        return 0;
     }
 
     /// <summary>
@@ -122,7 +125,8 @@ internal sealed partial class InlineLayoutAlgorithm
         start = SkipHyphenationRemovedCharacters(start);
         _measuredLineLeftFloats = 0;
         _measuredLineRightFloats = 0;
-        _measuredWidthBeforeClearance = 0;
+        _measuredFloatsBelow = null;
+        _measuredWidestRowBelow = 0;
 
         // The content that fits exactly fits despite the rounding errors of the used sizes (e.g. a width of 4ch is rounded to
         // 6 decimals, a little less than the advances of 4 characters, and three inline-blocks of 33.333333% are a little wider
@@ -136,7 +140,15 @@ internal sealed partial class InlineLayoutAlgorithm
         // The content that does not fit with the ellipsis is displaced entirely; with -webkit-line-clamp, only when it does not fit
         // without the ellipsis either: the content that fits without it is kept and truncated by the ellipsis (see LineClamp.IsLegacy)
         var displacesAll = displaces && !_blockEllipsisIsLegacy;
-        var legacyLimit = displaces && _blockEllipsisIsLegacy ? availableSize + GetBlockEllipsisReservedSize(_blockEllipsis) : double.PositiveInfinity;
+
+        var withoutEllipsisLimit = displaces ? availableSize + GetBlockEllipsisReservedSize(_blockEllipsis) : double.PositiveInfinity;
+        var legacyLimit = _blockEllipsisIsLegacy ? withoutEllipsisLimit : double.PositiveInfinity;
+
+        // Whether the line starts with an atomic inline: as in Blink, one that fits on the line without the ellipsis is not
+        // displaced when it does not fit with it (the ellipsis follows it and overflows the line; WPT
+        // css/css-overflow/line-clamp/line-clamp-form-textarea-003.tentative.html), one wider than the line is
+        // (block-ellipsis-repaint-003.html)
+        var startsWithAtomic = false;
 
         // Most lines of the documents are short: the break opportunities are computed only when the rest of the content (up to
         // the next forced line break) does not fit
@@ -248,7 +260,7 @@ internal sealed partial class InlineLayoutAlgorithm
                         if (mode == IntrinsicSizeMode.MaxContent)
                         {
                             // The floats are on the line of the content around them
-                            width += AddMeasuredFloat(item, width - trailing);
+                            width += AddMeasuredFloat(item);
                         }
                         else if (mode == IntrinsicSizeMode.None && !item.HasFlag(InlineItemFlags.FloatPlaced))
                         {
@@ -362,6 +374,7 @@ internal sealed partial class InlineLayoutAlgorithm
                         return atomicEnd;
 
                     width += mode == IntrinsicSizeMode.MinContent ? item.MinContentInlineSize : item.InlineSize;
+                    startsWithAtomic |= !hasCharacters;
 
                     // The letter spacing after a run of atomic inlines is not applied at the end of a line
                     trailing = item.HasFlag(InlineItemFlags.LetterSpaced) ? item.Container.Style.Layout.Text.LetterSpacing : 0;
@@ -597,7 +610,7 @@ internal sealed partial class InlineLayoutAlgorithm
         }
 
         // Whether the content of the line that does not fit (of the width) is displaced entirely by the block overflow ellipsis
-        bool DisplacesAll(double contentWidth) => displacesAll || contentWidth > legacyLimit;
+        bool DisplacesAll(double contentWidth) => (displacesAll && !(startsWithAtomic && contentWidth <= withoutEllipsisLimit)) || contentWidth > legacyLimit;
 
         LineEnd ToLineEnd(BreakCandidate candidate) => new() { Item = candidate.Item, Position = candidate.Position, IsHyphenated = candidate.IsHyphen, ContentStart = contentStart, Width = candidate.Width };
 
@@ -667,7 +680,7 @@ internal sealed partial class InlineLayoutAlgorithm
                     {
                         if (mode == IntrinsicSizeMode.MaxContent)
                         {
-                            width += AddMeasuredFloat(item, width - trailing);
+                            width += AddMeasuredFloat(item);
                         }
                         else if (!item.HasFlag(InlineItemFlags.FloatPlaced))
                         {

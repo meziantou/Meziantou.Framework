@@ -1780,7 +1780,9 @@ an atomic inline laid out while its parent collects its items rents another inst
   directly in it on the line and without inline-axis borders and paddings (the margins do not count) does not contribute to
   the height of the line at all (rather than with a line height of 0), and the root inline box (the strut) only contributes
   when the line has text directly in it. A forced line break is not a text, except on a line without text and without atomic
-  inline (an empty paragraph with a `<br>` keeps the height of a line; a `<br>` after an image does not make its line taller).
+  inline (an empty paragraph with a `<br>` keeps the height of a line; a `<br>` after an image does not make its line taller):
+  the `<br>` alone on its line then gives the line its own font and line height, which can make it shorter or taller than the
+  strut. In no-quirks mode, the font and the line height of a `<br>` never change the height of its line.
   A preserved segment break is preserved white space: the inline box that contains the segment break that ends a line is not
   subject to the quirk (the empty lines of a `pre` element keep their height, as in the browsers). In all the modes, the
   inline box of a preserved segment break that has no other content on its line has a fragment on it (an empty line of a
@@ -1957,9 +1959,10 @@ an atomic inline laid out while its parent collects its items rents another inst
   on the vertical lines, and the borders, paddings and margins of the inline boxes of the first line, which are resolved
   with the font size the boxes have on the other lines. `::first-letter` is a box of the box tree.
 - **Text of `display: contents` elements**: a text run has the style of its parent element, which is not the style of the
-  box it is in when the element has `display: contents`. Its layout bounds (the content area of its font and the
-  half-leading of its line height) make the line taller, as the ones of an inline box would (`IsTextOfContentsElement`), as
-  in the browsers.
+  box it is in when the element has `display: contents` (`IsTextOfContentsElement`). Its glyphs have the font of the element,
+  but it has no box of its own: the line height of the box it is in applies, as in the browsers. Its own `line-height` does not
+  change the line, and its font only does as a font used by that box when the line height of the box is `normal` (as a
+  fallback font).
 - **Initial letters** ([CSS Inline §5](https://drafts.csswg.org/css-inline-3/#initial-letter-styling), `InitialLetter.cs`,
   `InlineLayoutAlgorithm.InitialLetter.cs`): `initial-letter: normal | <number> <integer> | <number> && [ drop | raise ]?`
   on `::first-letter` (the only boxes it applies to: not the inline-level boxes at the start of the first line nor the
@@ -2040,8 +2043,9 @@ an atomic inline laid out while its parent collects its items rents another inst
   every opportunity; the emergency ones only with `overflow-wrap: anywhere`) and the max-content size (only the forced breaks).
   The `auto` inline size of the atomic inlines, floats, absolutely positioned boxes (unless both inline insets are set: their
   stretch-fit size), outside markers and buttons whose contents are inline is their shrink-to-fit size. The floats of the
-  content add their margin box to the max-content size of their line (a float with `clear` is below the floats that it
-  clears, which are no longer next to the content after it), and to the min-content size alone. The atomic inlines
+  content add their margin box to the max-content size of their line, and to the min-content size alone. A float with
+  `clear` is below the floats that it clears, and so are the floats after it, in rows of floats below the line (a float is not
+  higher than the floats before it); the content of the line after it stays next to the floats before it. The atomic inlines
   and the floats are not laid out to compute the intrinsic sizes: their min-content and max-content contributions are used
   (`IntrinsicSizing.GetContribution`, `InlineItem.MinContentInlineSize`).
 - **Writing modes**: the lines use the logical coordinates of the block container (vertical lines are stacked from the right
@@ -4155,10 +4159,14 @@ browsers).
 - **Ellipsis** (`LineEllipsis`, the reusable part with `LineTruncator.Truncate(line, leftEdge, rightEdge, leftEllipsis,
   rightEllipsis)`): `Create(line, text)` shapes the string (`null`: U+2026, or `...` when the first available font has no glyph
   for it, as Blink; a `<string>` has its segment breaks (line feeds, carriage returns, U+2028, U+2029) collapsed and transformed as
-  collapsible segment breaks, `GetText`) in the style of the root inline box of the line (`LineBoxFragment.Style`: the style of the
-  block container, or its `::first-line` style on its first line): its fonts, its color, its decorations (the run of the
-  ellipsis is a generated `TextRun` whose parent is the block container, so it gets the decorations of the block container and of
-  its decorating ancestors), its visibility; no emphasis marks (`TextFragment.IsEllipsis`). It is "treated as if it were wrapped in
+  collapsible segment breaks, `GetText`) in the style of the block container ("styled [...] according to the block"): its fonts,
+  its spacing, its color, its decorations (the run of the ellipsis is a generated `TextRun` whose parent is the block container,
+  so it gets the decorations of the block container and of its decorating ancestors), its visibility; no emphasis marks
+  (`TextFragment.IsEllipsis`). On the first line, it is painted in the `::first-line` style of the block (`TextFragment.LineStyle`:
+  its color), but shaped in the style of the block, as in the browsers: the fonts and the spacing of `::first-line` do not change
+  the room it takes. As in Blink, the ellipsis is highlighted as selected when the selection has characters that it elides at the
+  logical end of a text (the characters of the line beyond the edge where it is placed, in a text whose inline-end side faces
+  it, `LineTruncator.ElidesRange`), in the `::selection` style of the block container. It is "treated as if it were wrapped in
   an anonymous inline with `unicode-bidi: isolate`": a text fragment per bidi level run of the string resolved with the direction
   of the paragraph (`BidiResolver.GetVisualRuns`, mirrored glyphs in the right-to-left runs), in visual order. `Place(line,
   lineLeft)` attaches the fragments to the line box (`Fragment.AttachTo`: they are not in its children, so the geometry, the
@@ -4228,7 +4236,9 @@ laid out but hidden (`continue: collapse`, as Blink), and the container is sized
   when the ellipsis itself does not fit next to them (as Blink). "Displacing content from the end of
   the line as if wrapping, until the last soft wrap opportunity": `BreakLine` ignores the emergency opportunities of
   `overflow-wrap` (and the opportunities inhibited by `nowrap`), and returns an empty line when nothing fits, which "is considered
-  to contain a strut" (the root inline box contributes to its height, also in quirks mode); the spaces that would hang at its end
+  to contain a strut", except when the line starts with an atomic inline that fits on the line without the ellipsis, which is
+  kept on the line with the ellipsis after it (overflowing the line), as in Blink (an atomic inline wider than the line is
+  displaced) (the root inline box contributes to its height, also in quirks mode); the spaces that would hang at its end
   are removed. The ellipsis is shaped in the style of the block container (not its `::first-line` style), isolated in the direction
   of the bidi paragraph of the line, placed after the content in that direction (on the line-left side of a right-to-left line) and
   aligned with it (`text-align`, after the justification); as the anonymous inline of `line-height: 0`, its fonts do not extend
@@ -5214,8 +5224,9 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   of a block container are propagated to). With `box-decoration-break: slice`, the decorated text of the lines is one run:
   the percentages refer to its size, the start inset applies from the start of the first line and the end inset from the
   end of the last line (an inset longer than a line continues on the next line, a negative inset only extends the first
-  or the last line); with `clone`, the insets apply to each line and the percentages refer to the decorated text of the
-  line. The text fragment at an end of the decorated text draws the part of a line that a negative inset adds. `auto` is
+  or the last line); with `clone`, the insets apply to each line. The percentages refer to the inline size of the decorating
+  box, with its paddings and its borders (of all its fragments with `slice`, of the fragment on the line with `clone`; the
+  decorated text for a block container), while the insets apply from the ends of the decorated text. The text fragment at an end of the decorated text draws the part of a line that a negative inset adds. `auto` is
   half the thickness of the line, 1px at least, on each side (the amount is chosen by the user agent; when `auto` is
   interpolated with lengths it stands for that length, computed from `text-decoration-thickness` and a tenth of the font
   size for `auto`, [csswg-drafts#13036](https://github.com/w3c/csswg-drafts/issues/13036)). The WPT references of the
@@ -5738,7 +5749,10 @@ element from its computed font properties:
   angles, such as a variable font whose `@font-face` descriptor is `auto` or a range: nothing is synthesized outside of
   the range of its designer, [csswg-drafts#7999](https://github.com/w3c/csswg-drafts/issues/7999); only flags for the
   renderer: the advances and the metrics are not changed, as in the browsers), and the
-  `size-adjust`, `ascent-override`, `descent-override` and `line-gap-override` descriptors. `GetEmSize(fontSize)` is the
+  `size-adjust`, `ascent-override`, `descent-override` and `line-gap-override` descriptors. The ascent, the descent and the
+  line gap are rounded to whole pixels, as in Blink; when the `@font-face` rule overrides one of them, the line gap is what
+  the rounded sum of the three leaves after the rounded ascent and descent (overrides of 25%, 12.5% and 12.5% give a normal
+  line height of 50px for a 100px font, not 51px). `GetEmSize(fontSize)` is the
   used font size (`size-adjust`, or the size that makes the aspect value of the font equal to `font-size-adjust`),
   `GetMetrics(fontSize)` the `UsedFontMetrics` in CSS px (`GetMetricsForEmSize` for an em size that is already adjusted,
   such as the one of a shaped font run), `GetGlyph`, `HasGlyph` and `GetAdvance` the glyphs and their advances.

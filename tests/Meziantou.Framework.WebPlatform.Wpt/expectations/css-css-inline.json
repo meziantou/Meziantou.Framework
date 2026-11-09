@@ -304,16 +304,16 @@
     "reftest": "PASS"
   },
   "css/css-inline/br-line-height-shrink-quirks.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-inline/br-line-height-shrink.html": {
     "reftest": "PASS"
   },
   "css/css-inline/br-line-height-stretch-quirks.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-inline/br-line-height-zero-quirks.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-inline/br-line-height-zero.html": {
     "reftest": "PASS"

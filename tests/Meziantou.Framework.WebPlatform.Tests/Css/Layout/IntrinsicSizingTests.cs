@@ -237,6 +237,15 @@ public sealed class IntrinsicSizingTests : IDisposable
     }
 
     [Theory]
+    [InlineData("<div class=f style='width: 50px'></div><div class=f style='width: 30px; clear: left'></div>xxxx", 90)] // The text stays next to the float before the clearing float
+    [InlineData("<div class=f style='width: 50px'></div><div class=f style='width: 30px; clear: left'></div><div class=f style='width: 70px'></div>", 100)] // The floats after it are below the line, next to it
+    public void MaxContent_FloatWithClear(string html, double width)
+    {
+        var document = Parse("<style>.f { float: left; height: 20px }</style><div id=t style='width: max-content; font: 10px/1 Ahem'>" + html + "</div>");
+        Assert.Equal(width, GetSize(document, "t").Width);
+    }
+
+    [Theory]
     [InlineData("allow-keywords", 50)]
     [InlineData("numeric-only", 100)]
     public void InterpolateSize_TransitionToAuto(string interpolateSize, double height)

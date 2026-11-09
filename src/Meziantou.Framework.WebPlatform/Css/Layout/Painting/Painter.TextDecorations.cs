@@ -450,15 +450,22 @@ internal sealed partial class Painter
     /// of the box propagate to (between the spacers that <c>text-decoration-skip-spaces</c> skips at the start and at the end of
     /// the line). It is a fragment of the decorating box for the insets of its decoration lines: a fragment of the inline box,
     /// or of the anonymous inline box that the decorations of a block container are propagated to in each block container of its
-    /// descendants (https://drafts.csswg.org/css-text-decor-4/#line-decoration).
+    /// descendants (https://drafts.csswg.org/css-text-decor-4/#line-decoration). <see cref="Basis"/> is the size the percentages
+    /// of the insets refer to on the line: the inline size of the fragments of the inline box (their paddings and borders
+    /// included), or the size of the decorated text for a block container.
     /// </summary>
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
-    private record struct DecoratedSegment(LineBoxFragment Line, WritingMode WritingMode, double Low, double High, double SizeBefore);
+    private record struct DecoratedSegment(LineBoxFragment Line, WritingMode WritingMode, double Low, double High, double SizeBefore)
+    {
+        public double Basis { get; set; }
+    }
 
-    /// <summary>The segments of a decorating box in the lines of a block container, in the order of the lines, and the sum of their inline sizes.</summary>
+    /// <summary>The segments of a decorating box in the lines of a block container, in the order of the lines, the sum of their inline sizes and the sum of their bases.</summary>
     private sealed record DecoratedRun(List<DecoratedSegment> Segments)
     {
         public double TotalSize { get; set; }
+
+        public double TotalBasis { get; set; }
     }
 
     private Dictionary<(ContainerBox DecoratingBox, ContainerBox? BlockContainer), DecoratedRun?>? _decoratedRuns;
@@ -534,7 +541,7 @@ internal sealed partial class Painter
             if (insets is not var (startInset, endInset))
                 return null;
 
-            var basis = clones ? size : run.TotalSize;
+            var basis = clones ? segment.Basis : run.TotalBasis;
             start = startInset.Resolve(basis);
             end = endInset.Resolve(basis);
         }
@@ -627,6 +634,7 @@ internal sealed partial class Painter
         }
 
         var segments = new List<DecoratedSegment>();
+        Dictionary<LineBoxFragment, PhysicalSize>? boxSizes = null;
         var skipSpaces = decoratingBox.Style.GetComputedValue("text-decoration-skip-spaces");
         for (var part = first; part is not null; part = part.Continuation)
         {
@@ -648,6 +656,15 @@ internal sealed partial class Painter
                 }
 
                 Visit(fragment, lineBox, lineBox is null ? 0 : x, lineBox is null ? 0 : y, isRoot: true);
+
+                // https://drafts.csswg.org/css-text-decor-4/#text-decoration-inset-property: the percentages refer to the
+                // decorating box, with its paddings and its borders (WPT css/css-text-decor/text-decoration-inset-percentage-padding.html)
+                if (lineBox is not null)
+                {
+                    boxSizes ??= new(ReferenceEqualityComparer.Instance);
+                    var size = boxSizes.GetValueOrDefault(lineBox);
+                    boxSizes[lineBox] = new PhysicalSize(size.Width + fragment.Size.Width, size.Height + fragment.Size.Height);
+                }
             }
         }
 
@@ -666,6 +683,10 @@ internal sealed partial class Painter
             ClampToLineContent(ref segment);
             segment.SizeBefore = containerRun.TotalSize;
             containerRun.TotalSize += Math.Max(0, segment.High - segment.Low);
+            segment.Basis = boxSizes is not null && boxSizes.TryGetValue(segment.Line, out var boxSize)
+                ? (segment.WritingMode == WritingMode.HorizontalTb ? boxSize.Width : boxSize.Height)
+                : Math.Max(0, segment.High - segment.Low);
+            containerRun.TotalBasis += segment.Basis;
             containerRun.Segments.Add(segment);
         }
 
@@ -1310,9 +1331,10 @@ internal sealed partial class Painter
         {
             // The selection of the value of a text control (https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#textFieldSelection)
             // is highlighted in its inner editor, with the ::selection pseudo-element of the control
-            return fragment.Run.Node is null && TextControlLayout.GetSelectedRange(fragment) is var (control, controlStart, controlEnd) && !FocusModel.IsInert(control)
-                ? GetHighlights(fragment, offset, [(engine.GetStyle(control, "selection"), controlStart, controlEnd, "highlight", null)], coversLine: true)
-                : null;
+            if (fragment.Run.Node is null && TextControlLayout.GetSelectedRange(fragment) is var (control, controlStart, controlEnd))
+                return FocusModel.IsInert(control) ? null : GetHighlights(fragment, offset, [(engine.GetStyle(control, "selection"), controlStart, controlEnd, "highlight", null)], coversLine: true);
+
+            return fragment.IsEllipsis ? GetEllipsisHighlights(fragment, offset) : null;
         }
 
         // The layers that intersect the fragment, in painting order
@@ -1391,6 +1413,27 @@ internal sealed partial class Painter
         }
 
         return layers is null ? null : GetHighlights(fragment, offset, layers);
+    }
+
+    /// <summary>
+    /// Returns the selection highlight of a fragment of a <c>text-overflow</c> ellipsis (<see cref="LineEllipsis"/>), or null: as in
+    /// Blink, the whole ellipsis is selected when the selection has characters that it elides at the logical end of a text (see
+    /// <see cref="LineTruncator.ElidesRange"/>), in the <c>::selection</c> style of its block container.
+    /// </summary>
+    private List<TextHighlight>? GetEllipsisHighlights(TextFragment ellipsis, PhysicalOffset offset)
+    {
+        if (ellipsis.Parent is not LineBoxFragment line || ellipsis.Run.Element is not { } element
+            || _document.GetSelection()?.GetRenderedBoundaryPoints() is not var (startNode, startOffset, endNode, endOffset)
+            || FocusModel.IsInert(element) || LineTruncator.GetTextOverflow(line) is not { } truncation)
+        {
+            return null;
+        }
+
+        var engine = _document.GetStyleEngine();
+        if (IsUserSelectNone(engine, element) || !LineTruncator.ElidesRange(truncation, ellipsis, text => text.Run.Node is Text node ? GetIntersection(startNode, startOffset, endNode, endOffset, node, text) : null))
+            return null;
+
+        return GetHighlights(ellipsis, offset, [(engine.GetStyle(element, "selection"), ellipsis.Start, ellipsis.End, "highlight", null)]);
     }
 
     /// <summary>Returns the highlighted ranges of a text fragment from the layers of the highlights that intersect it, in painting order (see <see cref="GetHighlights(TextFragment, PhysicalOffset)"/>).</summary>

@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of css/css-color, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 66 | 69 | 0 | 96% |
+| [Stable](#stable-tests) | 67 | 69 | 0 | 97% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 304 | 311 | 1 | 98% |
-| **All** | **370** | **380** | **1** | **98%** |
+| **All** | **371** | **380** | **1** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 5
-- **TEST BUG**: 4
+- **BUG**: 1
+- **TEST BUG**: 7
 - **FLAKY**: 1
 
 ## Stable tests
@@ -30,7 +30,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animation/color-interpolation.html`](https://wpt.fyi/results/css/css-color/animation/color-interpolation.html) | Pass | 192 / 192 |  |  |
 | [`animation/opacity-interpolation.html`](https://wpt.fyi/results/css/css-color/animation/opacity-interpolation.html) | Pass | 120 / 120 |  |  |
 | [`canvas-display-p3-gamut-mapping.html`](https://wpt.fyi/results/css/css-color/canvas-display-p3-gamut-mapping.html) | Pass | 17 / 17 |  |  |
-| [`canvas-srgb-gamut-mapping.html`](https://wpt.fyi/results/css/css-color/canvas-srgb-gamut-mapping.html) | Fail | 19 / 20 | BUG | the ray trace gamut mapping does not handle the edge cases near black and white fixed by w3c/csswg-drafts#14698 (e.g. the anchor clamped to the RGB cube): `oklch(0.0001220703125 0.4 19.75)` is painted pure red (255, 0, 0) instead of black |
+| [`canvas-srgb-gamut-mapping.html`](https://wpt.fyi/results/css/css-color/canvas-srgb-gamut-mapping.html) | Pass | 20 / 20 |  |  |
 | [`color-initial-canvastext.html`](https://wpt.fyi/results/css/css-color/color-initial-canvastext.html) | Pass | 2 / 2 |  |  |
 | [`color-mix-currentcolor-parent-change.html`](https://wpt.fyi/results/css/css-color/color-mix-currentcolor-parent-change.html) | Pass | 1 / 1 |  |  |
 | [`color-mix-currentcolor-visited-getcomputedstyle.html`](https://wpt.fyi/results/css/css-color/color-mix-currentcolor-visited-getcomputedstyle.html) | Pass | 1 / 1 |  |  |
@@ -194,9 +194,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`hsl-006.html`](https://wpt.fyi/results/css/css-color/hsl-006.html) | Pass | 1 / 1 |  |  |
 | [`hsl-007.html`](https://wpt.fyi/results/css/css-color/hsl-007.html) | Pass | 1 / 1 |  |  |
 | [`hsl-008.html`](https://wpt.fyi/results/css/css-color/hsl-008.html) | Pass | 1 / 1 |  |  |
-| [`hsl-009.html`](https://wpt.fyi/results/css/css-color/hsl-009.html) | Fail | 0 / 1 | BUG | the channels of an `hsl()` color outside of sRGB are clamped when it is parsed (as in the browsers, so that its `rgb()` serialization is the same color), while the `color(srgb ...)` of the reference box is CSS gamut mapped when it is painted (https://drafts.csswg.org/css-color-4/#css-gamut-mapping; the browsers clip each channel, which gives the same color as the clamped `hsl()`): `hsl(60 5701% 100.96%)` paints (118,118,255) and `color(srgb 0.462304 0.462304 1.556896)` (148,167,255) |
-| [`hsl-010.html`](https://wpt.fyi/results/css/css-color/hsl-010.html) | Fail | 0 / 1 | BUG | the channels of an `hsl()` color outside of sRGB are clamped when it is parsed (as in the browsers, so that its `rgb()` serialization is the same color), while the `color(srgb ...)` of the reference box is CSS gamut mapped when it is painted (https://drafts.csswg.org/css-color-4/#css-gamut-mapping; the browsers clip each channel, which gives the same color as the clamped `hsl()`): `hsl(240 7176% -0.85%)` paints (153,153,0) and `color(srgb 0.60146 0.60146 -0.61846)` (136,150,0) |
-| [`hsl-011.html`](https://wpt.fyi/results/css/css-color/hsl-011.html) | Fail | 0 / 1 | BUG | the channels of an `hsl()` color outside of sRGB are clamped when it is parsed (as in the browsers, so that its `rgb()` serialization is the same color), while the `color(srgb ...)` of the reference box is CSS gamut mapped when it is painted (https://drafts.csswg.org/css-color-4/#css-gamut-mapping; the browsers clip each channel, which gives the same color as the clamped `hsl()`): `hsl(120 140% 50%)` paints (0,255,0) and `color(srgb -0.2 1.2 -0.2)` (247,255,246) |
+| [`hsl-009.html`](https://wpt.fyi/results/css/css-color/hsl-009.html) | Fail | 0 / 1 | TEST BUG | the reference box only matches when its out-of-sRGB `color(srgb ...)` is clipped channel by channel, as in the browsers, while the colors outside of the gamut of the display must be CSS gamut mapped (https://drafts.csswg.org/css-color-4/#css-gamut-mapping, which `canvas-srgb-gamut-mapping.html` checks against clipping); the `hsl()` color is a legacy sRGB color whose channels are in [0, 255] (https://drafts.csswg.org/css-color-4/#css-serialization-of-srgb, its computed value is the clamped `rgb()` color in the browsers), so the two boxes differ once gamut mapped: `hsl(60 5701% 100.96%)` paints (118,118,255) and `color(srgb 0.462304 0.462304 1.556896)` (148,167,255) |
+| [`hsl-010.html`](https://wpt.fyi/results/css/css-color/hsl-010.html) | Fail | 0 / 1 | TEST BUG | the reference box only matches when its out-of-sRGB `color(srgb ...)` is clipped channel by channel, as in the browsers, while the colors outside of the gamut of the display must be CSS gamut mapped (https://drafts.csswg.org/css-color-4/#css-gamut-mapping, which `canvas-srgb-gamut-mapping.html` checks against clipping); the `hsl()` color is a legacy sRGB color whose channels are in [0, 255] (https://drafts.csswg.org/css-color-4/#css-serialization-of-srgb, its computed value is the clamped `rgb()` color in the browsers), so the two boxes differ once gamut mapped: `hsl(240 7176% -0.85%)` paints (153,153,0) and `color(srgb 0.60146 0.60146 -0.61846)` (136,150,0) |
+| [`hsl-011.html`](https://wpt.fyi/results/css/css-color/hsl-011.html) | Fail | 0 / 1 | TEST BUG | the reference box only matches when its out-of-sRGB `color(srgb ...)` is clipped channel by channel, as in the browsers, while the colors outside of the gamut of the display must be CSS gamut mapped (https://drafts.csswg.org/css-color-4/#css-gamut-mapping, which `canvas-srgb-gamut-mapping.html` checks against clipping); the `hsl()` color is a legacy sRGB color whose channels are in [0, 255] (https://drafts.csswg.org/css-color-4/#css-serialization-of-srgb, its computed value is the clamped `rgb()` color in the browsers), so the two boxes differ once gamut mapped: `hsl(120 140% 50%)` paints (0,255,0) and `color(srgb -0.2 1.2 -0.2)` (247,255,246) |
 | [`hsl-clamp-negative-saturation.html`](https://wpt.fyi/results/css/css-color/hsl-clamp-negative-saturation.html) | Pass | 1 / 1 |  |  |
 | [`hsla-001.html`](https://wpt.fyi/results/css/css-color/hsla-001.html) | Pass | 1 / 1 |  |  |
 | [`hsla-002.html`](https://wpt.fyi/results/css/css-color/hsla-002.html) | Pass | 1 / 1 |  |  |

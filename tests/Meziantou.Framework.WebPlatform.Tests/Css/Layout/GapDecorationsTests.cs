@@ -138,6 +138,31 @@ public sealed class GapDecorationsTests : IDisposable
     }
 
     [Fact]
+    public void GridLanes_BetweenStopsAtTheEdgesOfTheAlignedItems()
+    {
+        // The rule is only painted where both tracks have an item: it stops at the end of the shorter track
+        const string Style = "display: grid-lanes; grid-template-columns: 100px 100px; gap: 10px; width: 210px; height: 200px; column-rule: 2px solid; column-rule-visibility-items: between";
+        var document = Parse($"<div id=c style='{Style}'><div style='grid-column: 1; height: 50px'></div><div style='grid-column: 2; height: 30px'></div></div>");
+        Assert.Equal([Rect(104, 0, 2, 30)], GetDecorations(document)[0]);
+
+        // The alignment space around a centered item is empty
+        document = Parse($"<div id=c style='{Style}'><div style='grid-column: 1; height: 40px; align-self: center'></div><div style='grid-column: 2; height: 200px'></div></div>");
+        Assert.Equal([Rect(104, 80, 2, 40)], GetDecorations(document)[0]);
+    }
+
+    [Fact]
+    public void GridLanes_RulesContinueAroundACenteredSpanningItem()
+    {
+        // The rule stops at the gap of the stacking axis before and after the spanning item: these endpoints are caps
+        var document = Parse("""
+            <div id=c style='display: grid-lanes; grid-template-columns: 60px 60px; gap: 20px; width: 140px; height: 240px; column-rule: 4px solid; column-rule-inset-cap: 8px; column-rule-inset-junction: 30px'>
+              <div style='grid-column: 1 / -1; height: 40px; align-self: center'></div>
+            </div>
+            """);
+        Assert.Equal([Rect(68, 8, 4, 64), Rect(68, 168, 4, 64)], GetDecorations(document)[0]);
+    }
+
+    [Fact]
     public void Fragmentation_TheGapAtABreakDisappears()
     {
         // The break is in the row gap: the second row starts the second column, no row rule is painted, and the column rule runs to

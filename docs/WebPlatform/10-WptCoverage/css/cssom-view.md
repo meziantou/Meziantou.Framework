@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of css/cssom-view, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 216 | 233 | 0 | 93% |
+| [Stable](#stable-tests) | 217 | 233 | 0 | 93% |
 | [Tentative](#tentative-tests) | 3 | 4 | 0 | 75% |
 | [Reftests](#reftests) | 11 | 11 | 0 | 100% |
-| **All** | **230** | **248** | **0** | **93%** |
+| **All** | **231** | **248** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 7
 - **NOT IMPLEMENTED**: 6
 - **REQUIRES**: 3
@@ -187,7 +187,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scroll-overflow-clip-quirks-001.html`](https://wpt.fyi/results/css/cssom-view/scroll-overflow-clip-quirks-001.html) | Pass | 1 / 1 |  |  |
 | [`scroll-overflow-clip-quirks-002.html`](https://wpt.fyi/results/css/cssom-view/scroll-overflow-clip-quirks-002.html) | Pass | 1 / 1 |  |  |
 | [`scroll-position-root-child-ib-split-insertion.html`](https://wpt.fyi/results/css/cssom-view/scroll-position-root-child-ib-split-insertion.html) | Pass | 1 / 1 |  |  |
-| [`scroll-target-into-view-fragment-in-same-origin-subframe.html`](https://wpt.fyi/results/css/cssom-view/scroll-target-into-view-fragment-in-same-origin-subframe.html) | Fail | 0 / 3 | BUG | scrolling to the fragment of a document loaded in an `iframe`, `object` or `embed` does not scroll the same-origin parent document to the frame (https://drafts.csswg.org/cssom-view/#scroll-a-target-into-view): the parent stays at 0 |
+| [`scroll-target-into-view-fragment-in-same-origin-subframe.html`](https://wpt.fyi/results/css/cssom-view/scroll-target-into-view-fragment-in-same-origin-subframe.html) | Pass | 3 / 3 |  |  |
 | [`scroll-width-with-over-constrained-block-in-inline.html`](https://wpt.fyi/results/css/cssom-view/scroll-width-with-over-constrained-block-in-inline.html) | Pass | 2 / 2 |  |  |
 | [`scroll-zoom.html`](https://wpt.fyi/results/css/cssom-view/scroll-zoom.html) | Pass | 3 / 3 |  |  |
 | [`scrollIntoView-align-scrollport-covering-child.html`](https://wpt.fyi/results/css/cssom-view/scrollIntoView-align-scrollport-covering-child.html) | Pass | 1 / 1 |  |  |

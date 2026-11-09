@@ -56,6 +56,12 @@ navigations of the nested browsing contexts are run by the tasks of the event lo
 document load completes. `RunUntilIdle()` (or `RunTask()`) runs the tasks that are already queued, and
 `DomEventLoop.HasPendingOperations` tells whether document loads are in progress.
 
+The `load` event waits until nothing delays it, including the resources that the `DOMContentLoaded` listeners fetch (e.g.
+an image or an `iframe` they insert). As in the browsers, `window.stop()` (`Window.Stop()` in .NET) called after the
+parsing is finished and before the `load` event (e.g. by the `load` event handler of an image that delays it) completes
+the document without the `load` and `pageshow` events: its `readyState` becomes `complete`. The specification only aborts
+the fetches of the document.
+
 A `BrowsingContext` that has not navigated yet has an initial `about:blank` document.
 
 ## Event loops
@@ -315,7 +321,8 @@ contexts), until `URL.revokeObjectURL(url)` or the destruction of the document t
 Content-Type (`text/plain` when it is empty); a URL that is not in the store is a network error. The loader is not
 called. The blob of a navigation is resolved when the navigation starts: revoking the URL afterwards does not prevent the
 document from loading. `URL.revokeObjectURL(url)` only revokes the URLs without fragment (as in the browsers, revoking
-`blob:...#fragment` does nothing).
+`blob:...#fragment` does nothing). The blob of the `src` of a `track` element is resolved when the attribute is set:
+revoking the URL afterwards does not prevent the track from loading.
 
 `FileReader` reads a blob as text (decoded with the BOM, the `encoding` argument, the `charset` of the type of the blob,
 else UTF-8), a `data:` URL, an `ArrayBuffer` or a binary string. The events (`loadstart`, `progress`, `load`, `loadend`,
@@ -368,7 +375,8 @@ iframe without `allow-forms` are not submitted.
 The `img` elements of the documents of a browsing context load their image
 ([update the image data](https://html.spec.whatwg.org/multipage/images.html#update-the-image-data)): the source is
 selected from the `src`, `srcset` and `sizes` attributes and the `source` elements of a parent `picture` element (with
-the viewport and the device pixel ratio of `ViewportOptions`), and fetched by the loader (`RequestDestination.Image`,
+the viewport and the device pixel ratio of `ViewportOptions`; in the document of an iframe, the device pixel ratio is its
+`devicePixelRatio`, which includes the effective `zoom` of the iframe, so a change of the zoom selects the source again), and fetched by the loader (`RequestDestination.Image`,
 the resource should be returned as bytes), or from a `data:` or `blob:` URL. The image is available when the response is
 an image (a known signature: PNG, GIF, JPEG, BMP, WebP, ICO, AVIF, JPEG XL, or an SVG document) and, with a rendering backend
 (`BrowsingContextOptions.RenderingBackend`), when the decoder of the backend can read a raster image (see
@@ -2787,7 +2795,9 @@ specification, the browsers are followed, as the tests expect:
 - `insertText` removes the line break that only rendered the empty last line of a block when text is inserted on this
   line: the `br` that follows the caret and ends the block, when the caret follows a `br` or a line feed that
   `white-space` preserves (`AB<br>[]<br>` gives `AB<br>a`), and the preserved line feed that is the only content of
-  the block (the specification only removes the `br` that is the sole child of its parent);
+  the block (the specification only removes the `br` that is the sole child of its parent). The line break that follows
+  the content of a line is kept when the text replaces all this content (`<p>[abc]<br></p>` gives `<p>a<br></p>`, and the
+  same for a preserved line feed), although the deletion of the selection makes it the line break of an empty line;
 - `delete` and `forwardDelete` do not canonicalize the white space around the deletion as the specification does (the whole
   sequence of spaces and no-break spaces, through the inline elements). The spaces that collapse around the selection are
   removed first, with the spaces that are not rendered around a line break that is deleted (after a `br`, around an `hr`, a

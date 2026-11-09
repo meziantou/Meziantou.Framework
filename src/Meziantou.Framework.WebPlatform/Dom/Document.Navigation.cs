@@ -649,6 +649,32 @@ public partial class Document
     {
         _parsingFinished = false;
         _loadEventQueued = false;
+        IsLoadEventSuppressed = false;
+    }
+
+    /// <summary>
+    /// Whether the load event of the document is suppressed: as in the browsers (<c>Document::SuppressLoadEvent</c> in Blink and
+    /// WebKit), stopping the loading of a document whose parsing is finished (e.g. <c>window.stop()</c> called by the load event
+    /// handler of an image that delays the load event) completes it without the load and pageshow events. The specification
+    /// aborts the document, which only cancels its fetches (https://html.spec.whatwg.org/multipage/document-lifecycle.html#abort-a-document).
+    /// </summary>
+    private bool IsLoadEventSuppressed { get; set; }
+
+    /// <summary>Suppresses the load event of the document and of its descendants whose parsing is finished and that are not loaded yet (see <see cref="IsLoadEventSuppressed"/>).</summary>
+    internal void SuppressLoadEventOfDocumentAndDescendants()
+    {
+        if (ChildNavigables is { } children)
+        {
+            foreach (var child in children)
+            {
+                child.Document.SuppressLoadEventOfDocumentAndDescendants();
+            }
+        }
+
+        if (_parsingFinished && ReadyState != DocumentReadyState.Complete)
+        {
+            IsLoadEventSuppressed = true;
+        }
     }
 
     /// <summary>The parser of the document while it is parsing (https://html.spec.whatwg.org/multipage/dom.html#active-parser).</summary>
@@ -723,6 +749,10 @@ public partial class Document
     /// <summary>Whether the scripts delay the load event: they are being fetched, or will execute as soon as possible (https://html.spec.whatwg.org/multipage/parsing.html#the-end, steps 7 and 8).</summary>
     private bool AreScriptsDelayingTheLoadEvent => ScriptsDelayingTheLoadEvent > 0 || _scriptsToExecuteAsSoonAsPossible is { Count: > 0 } || _scriptsToExecuteInOrderAsSoonAsPossible is { Count: > 0 };
 
+    /// <summary>Whether the scripts, the style sheets, the images, the links, the embedded content or the font faces of the document delay its load event.</summary>
+    private bool AreResourcesDelayingTheLoadEvent => AreScriptsDelayingTheLoadEvent || StyleSheetImportsDelayingTheLoadEvent > 0 || ImagesDelayingTheLoadEvent > 0 || LinksDelayingTheLoadEvent > 0 || EmbeddedContentDelayingTheLoadEvent > 0 || CssImagesDelayingTheLoadEvent > 0
+        || FontFacesDelayingTheLoadEvent > 0;
+
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/parsing.html#delay-the-load-event: the navigable containers delay the load
     /// event of their document while their content navigable is loading, i.e. while it is delaying load events or its
@@ -731,11 +761,8 @@ public partial class Document
     /// </summary>
     private bool IsLoadEventDelayed()
     {
-        if (AreScriptsDelayingTheLoadEvent || StyleSheetImportsDelayingTheLoadEvent > 0 || ImagesDelayingTheLoadEvent > 0 || LinksDelayingTheLoadEvent > 0 || EmbeddedContentDelayingTheLoadEvent > 0 || CssImagesDelayingTheLoadEvent > 0
-            || FontFacesDelayingTheLoadEvent > 0)
-        {
+        if (AreResourcesDelayingTheLoadEvent)
             return true;
-        }
 
         if (ChildNavigables is not { Count: > 0 } children)
             return false;
@@ -773,10 +800,17 @@ public partial class Document
         {
             // https://html.spec.whatwg.org/multipage/parsing.html#the-end (steps 8–9): the end spins the event loop until nothing
             // delays the load event, so the tasks queued before the load task run first: the load event is delayed by the
-            // navigables inserted since the task was queued (e.g. an iframe inserted by a DOMContentLoaded listener), and by
-            // the navigations of the other child navigables that these tasks started (e.g. the planned navigation of a form
-            // submitted while the document was parsed; a reload does not delay the load event). The task is queued again once
-            // they no longer delay it.
+            // resources fetched since the task was queued (e.g. an image inserted by a DOMContentLoaded listener), by the
+            // navigables inserted since then (e.g. an iframe inserted by a DOMContentLoaded listener), and by the navigations
+            // of the other child navigables that these tasks started (e.g. the planned navigation of a form submitted while
+            // the document was parsed; a reload does not delay the load event). The task is queued again once they no longer
+            // delay it.
+            if (AreResourcesDelayingTheLoadEvent)
+            {
+                _loadEventQueued = false;
+                return;
+            }
+
             if (ChildNavigables is { Count: > 0 } currentChildren)
             {
                 foreach (var child in currentChildren)
@@ -792,6 +826,14 @@ public partial class Document
             UpdateReadiness(DocumentReadyState.Complete);
             if (BrowsingContext is null || RelevantWindow is not { } window)
                 return;
+
+            if (IsLoadEventSuppressed)
+            {
+                // The document is completely loaded, without the load and pageshow events
+                PageShowing = true;
+                CompletelyFinishLoading(isContainerLoadEventFired: false, isNavigatingAway: false);
+                return;
+            }
 
             // The navigable is navigating away from the document (e.g. a form submitted while it was parsed), not by a navigation
             // started by the load event handlers

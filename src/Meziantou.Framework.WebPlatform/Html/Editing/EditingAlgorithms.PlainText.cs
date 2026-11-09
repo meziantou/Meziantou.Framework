@@ -147,9 +147,10 @@ internal sealed partial class EditingAlgorithms
     /// range is the inserted text): the br element that follows the text, when nothing follows it in its block and the text
     /// follows a line break (a br element, or a line feed that white-space preserves); or the line feed that white-space
     /// preserves, when it was the only content of the block. The specification only removes the br that is the sole child
-    /// of its parent; the browsers do not leave a line break that has no effect after the text.
+    /// of its parent; the browsers do not leave a line break that has no effect after the text. The line break that followed
+    /// visible content before the selection that the text replaces was deleted is kept (<paramref name="keptLineBreak"/>).
     /// </summary>
-    private void RemovePaddingLineBreakAfterInsertedText()
+    private void RemovePaddingLineBreakAfterInsertedText(Node? keptLineBreak)
     {
         var range = ActiveRange;
         if (range.StartContainer is not Text text || !ReferenceEquals(range.EndContainer, text))
@@ -160,7 +161,7 @@ internal sealed partial class EditingAlgorithms
         var data = text.Data;
         if (end == data.Length)
         {
-            if (text.NextSibling is not { } next || !IsHtmlElement(next, "br") || !IsEditable(next) || !IsCollapsedLineBreak(next))
+            if (text.NextSibling is not { } next || ReferenceEquals(next, keptLineBreak) || !IsHtmlElement(next, "br") || !IsEditable(next) || !IsCollapsedLineBreak(next))
                 return;
 
             var followsLineBreak = start > 0
@@ -173,11 +174,41 @@ internal sealed partial class EditingAlgorithms
                 RemoveNode(next);
             }
         }
-        else if (start == 0 && end == data.Length - 1 && data[end] == '\n' && PreservesLineFeeds(GetWhiteSpace(text))
+        else if (start == 0 && end == data.Length - 1 && data[end] == '\n' && !ReferenceEquals(text, keptLineBreak) && PreservesLineFeeds(GetWhiteSpace(text))
             && FindLineItem(text, forward: false) == LineItem.Boundary && FindLineItem(text, forward: true) == LineItem.Boundary)
         {
             text.DeleteData((uint)end, 1);
         }
+    }
+
+    /// <summary>
+    /// Returns the line break that follows the selection and ends a line whose content precedes it: a br element that is an
+    /// extraneous line break, or the Text node whose last character is a line feed that white-space preserves and that ends
+    /// its block. Such a line break has no effect, but some applications add it as a marker: as in the browsers, the text that
+    /// replaces the selection keeps it (deleting the selection first makes it the padding line break of an empty line).
+    /// </summary>
+    private Node? GetUnnecessaryLineBreakAfterSelection()
+    {
+        var range = ActiveRange;
+        if (range.Collapsed)
+            return null;
+
+        var offset = (int)range.EndOffset;
+        if (range.EndContainer is Text text)
+        {
+            var data = text.Data;
+            if (offset < data.Length)
+            {
+                return offset > 0 && offset == data.Length - 1 && data[offset] == '\n' && data[offset - 1] != '\n' && PreservesLineFeeds(GetWhiteSpace(text))
+                    && FindLineItem(text, forward: true) == LineItem.Boundary
+                    ? text
+                    : null;
+            }
+
+            return text.NextSibling is { } next && IsEditable(next) && IsExtraneousLineBreak(next) ? next : null;
+        }
+
+        return ChildAt(range.EndContainer, offset) is { } child && IsEditable(child) && IsExtraneousLineBreak(child) ? child : null;
     }
 
     /// <summary>

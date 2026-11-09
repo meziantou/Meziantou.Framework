@@ -786,13 +786,18 @@ public partial class HtmlSelectedContentElement
             }
         }
 
+        // The update is not an operation with [CEReactions]: the reactions of the clones (their upgrade, enqueued when they are
+        // cloned) and the ones of the removed and inserted nodes go to the same element queue, the current one or the backup
+        // element queue, in the order they are enqueued. Replacing the children does not push its own element queue, which
+        // would run the reactions of the removal before the upgrade of the clones.
+        using var reactionsScope = CEReactionsScope.EnterWithoutPush();
         if (option is null)
         {
             ReplaceAll(null);
             return;
         }
 
-        // Clone an option into a selectedcontent
+        // Clone an option into a selectedcontent (https://html.spec.whatwg.org/multipage/form-elements.html#clone-an-option-into-a-selectedcontent)
         var fragment = new DocumentFragment(option.NodeDocument);
         for (var child = option.FirstChild; child is not null; child = child.NextSibling)
         {

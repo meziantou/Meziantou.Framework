@@ -470,7 +470,9 @@ operations (see [Paint worklet images](#paint-worklet-images)).
   becomes its placeholder (its `getContext()` and the setters of its `width` and `height` throw an `InvalidStateError`). The
   `OffscreenCanvas` commits its frame at the end of the task that drew it: the frame is given to the placeholder in a task
   of the event loop of the placeholder (its `width` and `height` attributes take the size of the frame), which paints it and
-  draws it into the other canvases. The direction of the texts of a transferred `OffscreenCanvas` is the direction of its
+  draws it into the other canvases. The natural size of the placeholder is the size of the bitmap of its `OffscreenCanvas`
+  (its size when its control was transferred, then the size of the committed frames): setting its `width` and `height`
+  content attributes changes neither its size nor its aspect ratio. The direction of the texts of a transferred `OffscreenCanvas` is the direction of its
   placeholder element when its control was transferred.
 - **Painting**: `Painter.PaintCanvas` draws the snapshot of the bitmap (`CanvasBitmap.GetSnapshot()`, cached until the
   bitmap changes) in the box of the canvas with `object-fit` and `image-rendering`; each drawing operation repaints the

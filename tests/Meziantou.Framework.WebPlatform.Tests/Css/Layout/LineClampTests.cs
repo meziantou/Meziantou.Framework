@@ -114,6 +114,15 @@ public sealed class LineClampTests : IDisposable
     }
 
     [Fact]
+    public void BlockEllipsis_KeepsTheAtomicInlineThatStartsTheLine()
+    {
+        // The inline-block does not fit with the ellipsis, but it is not displaced: the ellipsis follows it and overflows the line
+        var document = Parse("<div id=c style='line-clamp: 1; width: 50px'><span id=ib style='display: inline-block; width: 45px; height: 10px'></span><br>ccc</div>");
+        Assert.Equal(45, GetLines(GetFragment(document, "c"))[0].BlockEllipsis!.LineLeft);
+        Assert.Equal(0, GetFragment(document, "ib").Offset.Y);
+    }
+
+    [Fact]
     public void BlockEllipsis_String()
     {
         var document = Parse("<div id=c style='line-clamp: 1 \"[more]\"'>aa<br>bb</div>");

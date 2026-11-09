@@ -146,6 +146,13 @@ internal sealed partial class HtmlTreeBuilder
     /// </summary>
     public bool IsStreaming { get; private set; }
 
+    /// <summary>
+    /// The document against which the streamed scripts run: the node document of <see cref="RootInsertionTarget"/> when the
+    /// stream starts. A streamed script whose node document is another one when its end tag is parsed (it was moved to
+    /// another document, or the target was adopted into another document) does not run.
+    /// </summary>
+    private Document? _streamingScriptDocument;
+
     public bool AllowDeclarativeShadowRoots { get; set; }
 
     public ParserScriptingMode ScriptingMode { get; set; }
@@ -177,6 +184,7 @@ internal sealed partial class HtmlTreeBuilder
         RootInsertionTarget = rootInsertionTarget;
         RootInsertionReferenceChild = referenceChild;
         IsStreaming = streaming;
+        _streamingScriptDocument = streaming ? rootInsertionTarget.NodeDocument : null;
         if (context.IsHtml(TagId.Template))
         {
             _templateModes.Add(InsertionMode.InTemplate);
@@ -1178,10 +1186,11 @@ internal sealed partial class HtmlTreeBuilder
         var element = CreateElementForToken(token, @namespace, adjustedInsertionLocation.Parent);
 
         // The SVG script elements are processed when the parser reaches their end tag. As for the HTML script elements, the
-        // scripts of the Fragment scripting mode are not parser-inserted, and the scripts of the Inert scripting mode never run.
+        // scripts of the Fragment scripting mode are not parser-inserted (except the streamed ones, until their end tag), and
+        // the scripts of the Inert scripting mode never run.
         if (element is SvgScriptElement svgScript)
         {
-            svgScript.IsParserInserted = ScriptingMode != ParserScriptingMode.Fragment;
+            svgScript.IsParserInserted = ScriptingMode != ParserScriptingMode.Fragment || IsStreaming;
             if (ScriptingMode == ParserScriptingMode.Inert)
             {
                 svgScript.MarkAsAlreadyProcessed();
@@ -1243,12 +1252,11 @@ internal sealed partial class HtmlTreeBuilder
         {
             text.SetDataCore(string.Concat(text.Data, data));
 
-            // The style sheet parsed from the previous text (e.g. a style element written by several document.write() calls) is outdated
-            if (targetParent is HtmlStyleElement style)
-            {
-                style.OnParserAppendedText();
-            }
-
+            // As for a change of the data by the DOM (https://dom.spec.whatwg.org/#concept-cd-replace): the child text content
+            // change steps of the parent run (e.g. the style sheet of a style element, written by several document.write()
+            // calls or streamed into an element that already has text, is updated), and the styles are invalidated
+            targetParent.ChildTextContentChanged();
+            text.NodeDocument.OnCharacterDataChangedForStyles(text);
             return;
         }
 

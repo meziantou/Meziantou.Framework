@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-anchor-position, 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 257 | 264 | 0 | 97% |
 | [Tentative](#tentative-tests) | 3 | 4 | 0 | 75% |
-| [Reftests](#reftests) | 236 | 242 | 0 | 98% |
-| **All** | **496** | **510** | **0** | **97%** |
+| [Reftests](#reftests) | 237 | 242 | 0 | 98% |
+| **All** | **497** | **510** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 9
+- **TEST BUG**: 8
 - **NOT IMPLEMENTED**: 5
 
 ## Stable tests
@@ -528,7 +528,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scroll-to-anchored-fixed-003.html`](https://wpt.fyi/results/css/css-anchor-position/scroll-to-anchored-fixed-003.html) | Pass | 1 / 1 |  |  |
 | [`scroll-to-anchored-fixed-004.html`](https://wpt.fyi/results/css/css-anchor-position/scroll-to-anchored-fixed-004.html) | Fail | 0 / 1 | TEST BUG | the test expects the fixed box with `position-area: center span-all; left: calc(100vw - 5em)` not to follow its anchor in the horizontal axis (its reference resets the horizontal scroll position after the focus: the viewport must only scroll in the other axis), as Chrome and Safari do when the tracks of `position-area` are `span-all` in an axis; css-anchor-position-1 says that a box compensates for scroll "in the horizontal or vertical axis" when "abspos has a non-none value for position-area" (https://drafts.csswg.org/css-anchor-position-1/#compensate-for-scroll, no condition on the axis), so the library moves the box with the document in both axes and `focus()` (which now scrolls the viewport for an anchored fixed box) also scrolls the viewport in the horizontal axis; Firefox fails too |
 | [`scroll-to-anchored-fixed-005.html`](https://wpt.fyi/results/css/css-anchor-position/scroll-to-anchored-fixed-005.html) | Pass | 1 / 1 |  |  |
-| [`scroll-to-anchored-fixed-006.html`](https://wpt.fyi/results/css/css-anchor-position/scroll-to-anchored-fixed-006.html) | Fail | 0 / 1 | TEST BUG | the test expects the fixed box with `position-area: span-all center; top: calc(100vh - 5em)` not to follow its anchor in the vertical axis (its reference resets the vertical scroll position after the focus: the viewport must only scroll in the other axis), as Chrome and Safari do when the tracks of `position-area` are `span-all` in an axis; css-anchor-position-1 says that a box compensates for scroll "in the horizontal or vertical axis" when "abspos has a non-none value for position-area" (https://drafts.csswg.org/css-anchor-position-1/#compensate-for-scroll, no condition on the axis), so the library moves the box with the document in both axes and `focus()` (which now scrolls the viewport for an anchored fixed box) also scrolls the viewport in the vertical axis; Firefox fails too |
+| [`scroll-to-anchored-fixed-006.html`](https://wpt.fyi/results/css/css-anchor-position/scroll-to-anchored-fixed-006.html) | Pass | 1 / 1 |  |  |
 | [`sticky-anchor-position-invalid.html`](https://wpt.fyi/results/css/css-anchor-position/sticky-anchor-position-invalid.html) | Pass | 1 / 1 |  |  |
 | [`transform-001.html`](https://wpt.fyi/results/css/css-anchor-position/transform-001.html) | Pass | 1 / 1 |  |  |
 | [`transform-002.html`](https://wpt.fyi/results/css/css-anchor-position/transform-002.html) | Pass | 1 / 1 |  |  |

@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of html/browsers, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 696 | 748 | 0 | 93% |
+| [Stable](#stable-tests) | 697 | 748 | 0 | 93% |
 | [Tentative](#tentative-tests) | 11 | 17 | 0 | 65% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **711** | **769** | **0** | **92%** |
+| **All** | **712** | **769** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 5
+- **BUG**: 4
 - **TEST BUG**: 31
 - **NOT IMPLEMENTED**: 7
 - **REQUIRES**: 5
@@ -247,7 +247,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`browsing-the-web/navigating-across-documents/source/navigate-child-function.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/source/navigate-child-function.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/navigating-across-documents/source/navigate-child-src-about-blank.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/source/navigate-child-src-about-blank.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/navigating-across-documents/top-level-data-url.window.js`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/top-level-data-url.window.js) | Fail | 4 / 8 | TEST BUG | the test expects a popup navigated to a `data:` URL (directly or through a redirect) to be closed; the HTML Standard navigates it, and the browsers that block the top-level `data:` navigations keep the popup open on its initial `about:blank` document (fails in every browser) |
-| [`browsing-the-web/navigating-across-documents/window-stop-in-image-load-handler.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/window-stop-in-image-load-handler.html) | Fail | 0 / 1 | BUG | the load task is queued as soon as the parsing is finished, before the `DOMContentLoaded` listeners run, and only checks again the child navigables: an image inserted by a `DOMContentLoaded` listener does not delay the `load` event (https://html.spec.whatwg.org/multipage/parsing.html#the-end), which fires before the image's `load` and its `window.stop()` |
+| [`browsing-the-web/navigating-across-documents/window-stop-in-image-load-handler.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/window-stop-in-image-load-handler.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/overlapping-navigations-and-traversals/anchor-fragment-history-back-on-click.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/overlapping-navigations-and-traversals/anchor-fragment-history-back-on-click.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/overlapping-navigations-and-traversals/cross-document-nav-cross-document-nav.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/overlapping-navigations-and-traversals/cross-document-nav-cross-document-nav.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/overlapping-navigations-and-traversals/cross-document-nav-cross-document-traversal.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/overlapping-navigations-and-traversals/cross-document-nav-cross-document-traversal.html) | Pass | 1 / 1 |  |  |
@@ -789,7 +789,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`browsing-the-web/history-traversal/iframe-history-restore-on-container-traversal.tentative.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/history-traversal/iframe-history-restore-on-container-traversal.tentative.html) | Pass | 2 / 2 |  |  |
 | [`browsing-the-web/navigating-across-documents/javascript-url-abort/javascript-url-abort-return-value-string.tentative.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/javascript-url-abort/javascript-url-abort-return-value-string.tentative.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/navigating-across-documents/javascript-url-abort/javascript-url-abort-return-value-undefined.tentative.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/javascript-url-abort/javascript-url-abort-return-value-undefined.tentative.html) | Pass | 1 / 1 |  |  |
-| [`browsing-the-web/scroll-to-fragid/embedded-svg-document-fragment-does-not-scroll-parent.tentative.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/scroll-to-fragid/embedded-svg-document-fragment-does-not-scroll-parent.tentative.html) | Fail | 0 / 3 | REQUIRES(layout) | scrolling to the fragment (scroll positions are always 0) |
+| [`browsing-the-web/scroll-to-fragid/embedded-svg-document-fragment-does-not-scroll-parent.tentative.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/scroll-to-fragid/embedded-svg-document-fragment-does-not-scroll-parent.tentative.html) | Fail | 1 / 3 | REQUIRES(layout) | scrolling to the fragment (scroll positions are always 0) |
 | [`browsing-the-web/scroll-to-fragid/embedded-svg-document-fragment-does-not-scroll-svg-document.tentative.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/scroll-to-fragid/embedded-svg-document-fragment-does-not-scroll-svg-document.tentative.html) | Fail | 0 / 1 | REQUIRES(layout) | scrolling to the fragment (scroll positions are always 0) |
 | [`origin/api/file-scheme-origin.tentative.any.js`](https://wpt.fyi/results/html/browsers/origin/api/file-scheme-origin.tentative.any.js) | Pass | 2 / 2 |  |  |
 | [`origin/origin-keyed-agent-clusters/about-blank-popup-insecure-opener.tentative.sub.html`](https://wpt.fyi/results/html/browsers/origin/origin-keyed-agent-clusters/about-blank-popup-insecure-opener.tentative.sub.html) | Pass | 1 / 1 |  |  |

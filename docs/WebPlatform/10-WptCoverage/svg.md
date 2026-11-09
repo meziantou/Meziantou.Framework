@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 719 | 746 | 2 | 97% |
+| [Stable](#stable-tests) | 720 | 746 | 2 | 97% |
 | [Tentative](#tentative-tests) | 46 | 47 | 0 | 98% |
 | [Reftests](#reftests) | 577 | 644 | 2 | 90% |
-| **All** | **1,342** | **1,437** | **4** | **94%** |
+| **All** | **1,343** | **1,437** | **4** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 6
+- **BUG**: 5
 - **TEST BUG**: 10
 - **NOT IMPLEMENTED**: 70
 - **TEST RUNNER**: 7
@@ -569,7 +569,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scripted/attr-script-fetchpriority.optional.html`](https://wpt.fyi/results/svg/scripted/attr-script-fetchpriority.optional.html) | Fail | 0 / 2 | NOT IMPLEMENTED | `fetchPriority` of SVG `<script>` |
 | [`scripted/script-ancestor-disconnected-before-end-tag.html`](https://wpt.fyi/results/svg/scripted/script-ancestor-disconnected-before-end-tag.html) | Pass | 1 / 1 |  |  |
 | [`scripted/script-invalid-script-type.html`](https://wpt.fyi/results/svg/scripted/script-invalid-script-type.html) | Pass | 1 / 1 |  |  |
-| [`scripted/script-moved-to-another-document-before-end-tag.html`](https://wpt.fyi/results/svg/scripted/script-moved-to-another-document-before-end-tag.html) | Fail | 0 / 1 | BUG | the parser processes an SVG `<script>` at its end tag even when the element was moved to another document while it was parsed (`HtmlTreeBuilder.ProcessSvgScriptEndTag` does not check its node document); a moved HTML `<script>` does not run |
+| [`scripted/script-moved-to-another-document-before-end-tag.html`](https://wpt.fyi/results/svg/scripted/script-moved-to-another-document-before-end-tag.html) | Pass | 1 / 1 |  |  |
 | [`scripted/script-runs-in-shadow-tree.html`](https://wpt.fyi/results/svg/scripted/script-runs-in-shadow-tree.html) | Pass | 1 / 1 |  |  |
 | [`scripted/text-attrs-dxdy-have-length.svg`](https://wpt.fyi/results/svg/scripted/text-attrs-dxdy-have-length.svg) | Pass | 1 / 1 |  |  |
 | [`scripted/text-attrs-xyrotate-have-length.svg`](https://wpt.fyi/results/svg/scripted/text-attrs-xyrotate-have-length.svg) | Pass | 1 / 1 |  |  |

@@ -1890,6 +1890,7 @@ internal sealed partial class EditingAlgorithms
         // after a text is inserted at the end of this text: it does not get the formatting of the image
         var precedingText = deletesSelection && ActiveRange.StartContainer is Text startText && ActiveRange.StartOffset == startText.Length
             && GetAllEffectivelyContainedNodes(ActiveRange).Find(IsFormattableNode) is { } firstNode && IsAtomicElement(firstNode) ? startText : null;
+        var keptLineBreak = deletesSelection ? GetUnnecessaryLineBreakAfterSelection() : null;
         DeleteSelection(stripWrappers: false);
         var range = ActiveRange;
         if (precedingText is { ParentNode: not null } && IsEditable(precedingText) && range.Collapsed)
@@ -1971,7 +1972,7 @@ internal sealed partial class EditingAlgorithms
         offset = (int)range.StartOffset;
         if (node is Text text)
         {
-            offset = PrepareTextInsertionPoint(text, offset);
+            offset = PrepareTextInsertionPoint(text, offset, keptLineBreak);
             text.InsertData((uint)offset, value);
             SetRange(node, offset, node, offset + value.Length);
         }
@@ -1979,7 +1980,7 @@ internal sealed partial class EditingAlgorithms
         {
             // The specification only removes the br that is the sole child of the node. As in the browsers, the br that
             // keeps the line of the caret rendered (the last br of a block, next to the caret) is replaced with the text
-            if (ChildAt(node, offset) is { } nextChild && IsCollapsedLineBreak(nextChild) && IsEditable(nextChild))
+            if (ChildAt(node, offset) is { } nextChild && !ReferenceEquals(nextChild, keptLineBreak) && IsCollapsedLineBreak(nextChild) && IsEditable(nextChild))
             {
                 node.RemoveChild(nextChild);
             }
@@ -1993,7 +1994,7 @@ internal sealed partial class EditingAlgorithms
             SetRange(newText, 0, newText, value.Length);
         }
 
-        RemovePaddingLineBreakAfterInsertedText();
+        RemovePaddingLineBreakAfterInsertedText(keptLineBreak);
         RestoreStatesAndValues(overrides);
         CanonicalizeWhitespace(range.StartContainer, (int)range.StartOffset, fixCollapsedSpace: false);
         CanonicalizeWhitespace(range.EndContainer, (int)range.EndOffset, fixCollapsedSpace: false);
@@ -2012,11 +2013,14 @@ internal sealed partial class EditingAlgorithms
     /// <summary>
     /// Prepares the insertion of content at a point of a Text node, and returns the offset where the content is inserted.
     /// </summary>
-    private int PrepareTextInsertionPoint(Text text, int offset)
+    /// <param name="text">The Text node.</param>
+    /// <param name="offset">The offset of the insertion point.</param>
+    /// <param name="keptLineBreak">The Text node whose last line feed is kept (see <see cref="GetUnnecessaryLineBreakAfterSelection"/>), or null.</param>
+    private int PrepareTextInsertionPoint(Text text, int offset, Node? keptLineBreak = null)
     {
         // As in the browsers, the line feed that only keeps an empty last line of a block rendered (white-space: pre,
         // pre-wrap or pre-line) is replaced with the content, as the br of an empty line is
-        if (offset + 1 == text.Length && text.Data[offset] == '\n' && (offset == 0 ? FindLineItem(text, forward: false) != LineItem.Content : text.Data[offset - 1] == '\n')
+        if (!ReferenceEquals(text, keptLineBreak) && offset + 1 == text.Length && text.Data[offset] == '\n' && (offset == 0 ? FindLineItem(text, forward: false) != LineItem.Content : text.Data[offset - 1] == '\n')
             && PreservesLineFeeds(GetWhiteSpace(text.ParentNode)) && FindLineItem(text, forward: true) == LineItem.Boundary)
         {
             text.DeleteData((uint)offset, 1);

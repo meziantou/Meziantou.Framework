@@ -264,7 +264,7 @@
     "reftest": "PASS"
   },
   "css/css-view-transitions/iframe-cross-origin-svg-filter-dynamic.tentative.sub.https.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-view-transitions/iframe-cross-origin-svg-filter.tentative.sub.https.html": {
     "reftest": "PASS"

@@ -13,10 +13,12 @@ namespace Meziantou.Framework.WebPlatform.Css.Layout;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The ellipsis is styled like the root inline box of the line (https://drafts.csswg.org/css-overflow-4/#ellipsing-details: "The
-/// ellipsis is styled and baseline-aligned according to the block"): its fonts (U+2026, or three periods when the first available
-/// font has no glyph for it), its color, its decorations (the decorations of the block container and of its ancestors, as for a
-/// text directly in it) and the <c>::first-line</c> style on the first line. It is "treated as if it were wrapped in an anonymous
+/// The ellipsis is styled like the block container (https://drafts.csswg.org/css-overflow-4/#ellipsing-details: "The ellipsis is
+/// styled and baseline-aligned according to the block"): its fonts (U+2026, or three periods when the first available font has
+/// no glyph for it), its spacing, its color and its decorations (the decorations of the block container and of its ancestors, as
+/// for a text directly in it). On the first line, it is painted in the <c>::first-line</c> style of the block (its color), but
+/// shaped in the style of the block, as in the browsers: the <c>::first-line</c> fonts and spacing do not change the room it
+/// takes (WPT css/css-overflow/text-overflow-ellipsis-first-line.html). It is "treated as if it were wrapped in an anonymous
 /// inline with <c>unicode-bidi: isolate</c> which inherits <c>direction</c> from the bidi paragraph": it has a fragment per bidi
 /// level run, in visual order. The segment breaks of a &lt;string&gt; are transformed as collapsible segment breaks (a space, or
 /// nothing between East Asian wide characters).
@@ -59,20 +61,23 @@ internal sealed class LineEllipsis
     public double LineLeft { get; private set; }
 
     /// <summary>
-    /// Shapes the ellipsis of a line in the style of its root inline box (<see cref="LineBoxFragment.Style"/>): <paramref name="text"/>
-    /// (a &lt;string&gt; value), or the ellipsis character when null. The line must be a child of the fragment of its block container.
+    /// Shapes the ellipsis of a line in the style of its block container: <paramref name="text"/> (a &lt;string&gt; value), or the
+    /// ellipsis character when null. On the first formatted line, the ellipsis is painted in the <c>::first-line</c> style of the
+    /// line (<see cref="LineBoxFragment.Style"/>). The line must be a child of the fragment of its block container.
     /// </summary>
     public static LineEllipsis Create(LineBoxFragment line, string? text)
     {
         var block = ((BoxFragment)line.Parent!).Box;
-        return Create(block, line.Style ?? block.Style, text, line.IsRightToLeft);
+        var lineStyle = line.Style is { PseudoElement: "first-line" } firstLineStyle ? firstLineStyle : null;
+        return Create(block, block.Style, text, line.IsRightToLeft, lineStyle);
     }
 
     /// <summary>
     /// Shapes an ellipsis for a line of a block container (see <see cref="Create(LineBoxFragment, string?)"/>): <paramref name="style"/>
-    /// is the style of the root inline box of the line, <paramref name="isRightToLeft"/> the direction of its bidi paragraph.
+    /// is the style of the block container, <paramref name="isRightToLeft"/> the direction of its bidi paragraph, and
+    /// <paramref name="lineStyle"/> the <c>::first-line</c> style the ellipsis is painted in, or null.
     /// </summary>
-    public static LineEllipsis Create(ContainerBox block, ComputedStyle style, string? text, bool isRightToLeft)
+    public static LineEllipsis Create(ContainerBox block, ComputedStyle style, string? text, bool isRightToLeft, ComputedStyle? lineStyle = null)
     {
         text = GetText(style, text);
 
@@ -104,7 +109,7 @@ internal sealed class LineEllipsis
             var shaped = TextShaper.Shape(characters, style.Fonts, InlineLayoutAlgorithm.GetShapingOptions(style, rightToLeft));
             var size = writingDirection.ToPhysical(new LogicalSize(shaped.Width, ascent + descent));
             var baseline = writingDirection.IsLineOverBlockEnd ? descent : ascent;
-            fragments[i] = new TextFragment(run, start, end, size, baseline, shaped, 0, shaped.Glyphs.Length) { IsEllipsis = true };
+            fragments[i] = new TextFragment(run, start, end, size, baseline, shaped, 0, shaped.Glyphs.Length) { IsEllipsis = true, LineStyle = lineStyle };
             inlineSize += shaped.Width;
         }
 

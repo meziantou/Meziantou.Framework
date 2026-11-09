@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-fonts, and why th
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 161 | 169 | 0 | 95% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
-| [Reftests](#reftests) | 363 | 389 | 1 | 94% |
-| **All** | **530** | **564** | **1** | **94%** |
+| [Reftests](#reftests) | 364 | 389 | 1 | 94% |
+| **All** | **531** | **564** | **1** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 20
 - **NOT IMPLEMENTED**: 4
 - **REQUIRES**: 1
@@ -521,7 +521,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`math-script-level-and-math-style/math-script-level-auto-and-math-style-005.tentative.html`](https://wpt.fyi/results/css/css-fonts/math-script-level-and-math-style/math-script-level-auto-and-math-style-005.tentative.html) | Pass | 1 / 1 |  |  |
 | [`math-script-level-and-math-style/math-script-level-font-size-clamping-001.tentative.html`](https://wpt.fyi/results/css/css-fonts/math-script-level-and-math-style/math-script-level-font-size-clamping-001.tentative.html) | Disabled | – | FLAKY | reftest whose result depends on the platform: the glyphs are antialiased by the font engine of the platform (CoreText, FreeType, DirectWrite), so it passes on Linux and fails on macOS or the reverse |
 | [`metrics-override-normal-keyword.html`](https://wpt.fyi/results/css/css-fonts/metrics-override-normal-keyword.html) | Pass | 1 / 1 |  |  |
-| [`metrics-override-small-lineheight.html`](https://wpt.fyi/results/css/css-fonts/metrics-override-small-lineheight.html) | Fail | 0 / 1 | BUG | the ascent, the descent and the line gap are rounded to whole pixels separately, as in Blink (`MatchedFont`): the overrides of 25%, 12.5% and 12.5% of the 100px font give a normal line height of 25 + 13 + 13 = 51px instead of 50px, so each box clipped to its line is 1px taller than the reference |
+| [`metrics-override-small-lineheight.html`](https://wpt.fyi/results/css/css-fonts/metrics-override-small-lineheight.html) | Pass | 1 / 1 |  |  |
 | [`oblique-last-resort-weight-selection.html`](https://wpt.fyi/results/css/css-fonts/oblique-last-resort-weight-selection.html) | Pass | 1 / 1 |  |  |
 | [`palette-values-rule-add-2.html`](https://wpt.fyi/results/css/css-fonts/palette-values-rule-add-2.html) | Pass | 1 / 1 |  |  |
 | [`palette-values-rule-add.html`](https://wpt.fyi/results/css/css-fonts/palette-values-rule-add.html) | Pass | 1 / 1 |  |  |

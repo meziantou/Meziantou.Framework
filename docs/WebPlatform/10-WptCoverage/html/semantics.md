@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 2,112 | 2,208 | 31 | 97% |
+| [Stable](#stable-tests) | 2,117 | 2,208 | 31 | 97% |
 | [Tentative](#tentative-tests) | 65 | 203 | 32 | 38% |
 | [Reftests](#reftests) | 330 | 434 | 67 | 90% |
-| **All** | **2,507** | **2,845** | **130** | **92%** |
+| **All** | **2,512** | **2,845** | **130** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 6
+- **BUG**: 1
 - **TEST BUG**: 56
 - **NOT IMPLEMENTED**: 270
 - **REQUIRES**: 2
@@ -362,7 +362,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`embedded-content/media-elements/track/track-element/track-add-track.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-add-track.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/media-elements/track/track-element/track-addtrack-kind.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-addtrack-kind.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/media-elements/track/track-element/track-api-texttracks.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-api-texttracks.html) | Pass | 3 / 3 |  |  |
-| [`embedded-content/media-elements/track/track-element/track-blob-url-revoked.window.js`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-blob-url-revoked.window.js) | Fail | 2 / 3 | BUG | the track URL is kept as a string and its blob URL entry is resolved when the track processing model fetches it, after a stable state, not when the `src` attribute is set: a `blob:` URL revoked in the same task no longer resolves and the track fails to load |
+| [`embedded-content/media-elements/track/track-element/track-blob-url-revoked.window.js`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-blob-url-revoked.window.js) | Pass | 3 / 3 |  |  |
 | [`embedded-content/media-elements/track/track-element/track-change-event.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-change-event.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/media-elements/track/track-element/track-css-cue-pseudo-class.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-css-cue-pseudo-class.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/media-elements/track/track-element/track-cue-empty.html`](https://wpt.fyi/results/html/semantics/embedded-content/media-elements/track/track-element/track-cue-empty.html) | Pass | 1 / 1 |  |  |
@@ -797,9 +797,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`embedded-content/the-img-element/srcset-natural-size-in-dynamic-iframe.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset-natural-size-in-dynamic-iframe.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/the-img-element/srcset/avoid-reload-on-resize.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/avoid-reload-on-resize.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/the-img-element/srcset/parse-a-srcset-attribute.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/parse-a-srcset-attribute.html) | Pass | 236 / 236 |  |  |
-| [`embedded-content/the-img-element/srcset/select-an-image-source-cached.optional.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-cached.optional.html) | Fail | 1 / 13 | NOT IMPLEMENTED | the optional preference of the source selection for a higher-density candidate that is already available (in the list of available images, a `data:` URL, a preloaded image, or the current image of the element) over an uncached candidate that matches the device pixel ratio |
-| [`embedded-content/the-img-element/srcset/select-an-image-source-zoom-change.optional.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-zoom-change.optional.html) | Fail | 0 / 1 | BUG | the source selection of `srcset` uses the device pixel ratio of the viewport of the top-level browsing context, not the `devicePixelRatio` of the iframe's document that includes the iframe's `zoom`, so a change of the zoom does not select another candidate |
-| [`embedded-content/the-img-element/srcset/select-an-image-source-zoom.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-zoom.html) | Fail | 0 / 4 | BUG | the source selection of `srcset` (`img` and `<link rel=preload imagesrcset>`) uses the device pixel ratio of the viewport of the top-level browsing context, not the `devicePixelRatio` of the iframe's document that includes the iframe's `zoom` |
+| [`embedded-content/the-img-element/srcset/select-an-image-source-cached.optional.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-cached.optional.html) | Fail | 0 / 13 | NOT IMPLEMENTED | the optional preference of the source selection for a higher-density candidate that is already available (in the list of available images, a `data:` URL, a preloaded image, or the current image of the element) over an uncached candidate that matches the device pixel ratio |
+| [`embedded-content/the-img-element/srcset/select-an-image-source-zoom-change.optional.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-zoom-change.optional.html) | Pass | 1 / 1 |  |  |
+| [`embedded-content/the-img-element/srcset/select-an-image-source-zoom.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-zoom.html) | Pass | 4 / 4 |  |  |
 | [`embedded-content/the-img-element/srcset/select-an-image-source.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/select-an-image-source.html) | Pass | 46 / 46 |  |  |
 | [`embedded-content/the-img-element/srcset/srcset-media-dynamic.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/srcset-media-dynamic.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/the-img-element/srcset/srcset-w-reselect-on-resize.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/srcset-w-reselect-on-resize.html) | Pass | 1 / 1 |  |  |
@@ -1270,7 +1270,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`forms/the-select-element/customizable-select/select-value-selectedOption.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-value-selectedOption.html) | Pass | 11 / 11 |  |  |
 | [`forms/the-select-element/customizable-select/select-vertical-writing-mode-navigation.optional.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-vertical-writing-mode-navigation.optional.html) | Pass | 8 / 8 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-attribute-change.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-attribute-change.html) | Pass | 7 / 7 |  |  |
-| [`forms/the-select-element/customizable-select/selectedcontent-custom-element-reactions.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-custom-element-reactions.html) | Fail | 4 / 6 | BUG | the custom elements cloned from an option into a `selectedcontent` are upgraded when they are inserted, after the reactions of the removal of the previous clones, instead of by the upgrade reaction enqueued when they are cloned: the `disconnectedCallback` of the old clone runs before the constructor of the new one, and while parsing, the clone of the first option (replaced by the one of the later `selected` option) is upgraded and connected |
+| [`forms/the-select-element/customizable-select/selectedcontent-custom-element-reactions.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-custom-element-reactions.html) | Pass | 6 / 6 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-insertion-removal.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-insertion-removal.html) | Pass | 4 / 4 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-list-box-pick.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-list-box-pick.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-movebefore.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-movebefore.html) | Pass | 1 / 1 |  |  |
@@ -2097,7 +2097,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scripting-1/the-template-element/template-for/stream-append-has-invalidation.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/stream-append-has-invalidation.html) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-template-element/template-for/stream-append-positional-pseudo-class-invalidation.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/stream-append-positional-pseudo-class-invalidation.html) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-template-element/template-for/stream-append-with-template-for.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/stream-append-with-template-for.html) | Pass | 1 / 1 |  |  |
-| [`scripting-1/the-template-element/template-for/stream-head-scope.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/stream-head-scope.html) | Fail | 1 / 13 | BUG | a `<template for>` whose insertion parent is the body element looks up its markers in the `html` element, as for the parsing of the document, also when it is streamed into the body (`streamHTMLUnsafe()`, `streamAppendHTMLUnsafe()`, `streamPrependHTMLUnsafe()` of the body, `streamBeforeHTMLUnsafe()` of its child): it patches the markers of the head instead of being inserted into the body |
+| [`scripting-1/the-template-element/template-for/stream-head-scope.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/stream-head-scope.html) | Pass | 13 / 13 |  |  |
 | [`scripting-1/the-template-element/template-for/template-for-append-element.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/template-for-append-element.html) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-template-element/template-for/template-for-append-text-and-element.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/template-for-append-text-and-element.html) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-template-element/template-for/template-for-append-to-head.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/template-for-append-to-head.html) | Pass | 1 / 1 |  |  |

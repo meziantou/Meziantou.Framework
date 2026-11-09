@@ -237,6 +237,15 @@ public sealed class IntrinsicSizingTests : IDisposable
     }
 
     [Theory]
+    [InlineData("<div class=f style='width: 50px'></div><div class=f style='width: 30px; clear: left'></div>xxxx", 90)] // The text stays next to the float before the clearing float
+    [InlineData("<div class=f style='width: 50px'></div><div class=f style='width: 30px; clear: left'></div><div class=f style='width: 70px'></div>", 100)] // The floats after it are below the line, next to it
+    public void MaxContent_FloatWithClear(string html, double width)
+    {
+        var document = Parse("<style>.f { float: left; height: 20px }</style><div id=t style='width: max-content; font: 10px/1 Ahem'>" + html + "</div>");
+        Assert.Equal(width, GetSize(document, "t").Width);
+    }
+
+    [Theory]
     [InlineData("allow-keywords", 50)]
     [InlineData("numeric-only", 100)]
     public void InterpolateSize_TransitionToAuto(string interpolateSize, double height)
@@ -295,6 +304,35 @@ public sealed class IntrinsicSizingTests : IDisposable
         // https://drafts.csswg.org/css-sizing-4/#aspect-ratio-size-transfers: max-content is an indefinite preferred size
         var document = Parse("<div id=t style='max-height: 100px; aspect-ratio: 1; width: max-content'><div style='width: 200px'></div></div>");
         Assert.Equal((100d, 100d), GetSize(document, "t"));
+    }
+
+    [Theory]
+    [InlineData("max-width: 50px", 50)] // A definite maximum caps the minimum transferred from min-height
+    [InlineData("max-width: max-content", 200)] // An intrinsic size keyword is not definite
+    [InlineData("max-width: min-content", 200)]
+    public void AspectRatio_TransferredMinimumIsCappedByADefiniteMaximumOnly(string style, double width)
+    {
+        // https://drafts.csswg.org/css-sizing-4/#aspect-ratio-size-transfers: "This transferred minimum is capped by any definite
+        // preferred or maximum size in the destination axis"
+        var document = Parse($"<div id=t style='float: left'><div style='aspect-ratio: 1; min-height: 200px; {style}'><div style='width: 50px; height: 1px'></div></div></div>");
+        Assert.Equal(width, GetSize(document, "t").Width);
+    }
+
+    [Theory]
+    [InlineData("max-width: 50px", 50)]
+    [InlineData("max-width: min-content", 200)]
+    public void AspectRatio_ReplacedElementTransferredMinimumIsCappedByADefiniteMaximumOnly(string style, double width)
+    {
+        var document = Parse($"<div id=t style='float: left'><img src='/100x100.png' style='min-height: 200px; {style}'></div>");
+        Assert.Equal(width, GetSize(document, "t").Width);
+    }
+
+    [Fact]
+    public void AspectRatio_TableMinimumHeightIsTransferredToItsContributions()
+    {
+        // The table treats its min-height as a minimum height of its grid, transferred through its aspect ratio to its width
+        var document = Parse("<div id=t style='float: left'><table style='aspect-ratio: 1; min-height: 200px; border-spacing: 0'><tr><td style='padding: 0'><div style='width: 10px; height: 10px'></div></td></tr></table></div>");
+        Assert.Equal(200, GetSize(document, "t").Width);
     }
 
     [Theory]

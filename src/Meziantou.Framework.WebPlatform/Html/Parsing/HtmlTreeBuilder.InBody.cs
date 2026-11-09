@@ -1037,8 +1037,24 @@ internal sealed partial class HtmlTreeBuilder
             parsedScript.ScriptText = TakeParsedScriptText(parsedScript);
         }
 
-        if (ContextElement is null && script is SvgScriptElement svgScript)
+        var runsScripts = ContextElement is null || (IsStreaming && ScriptingMode == ParserScriptingMode.Fragment);
+        if (runsScripts && script is SvgScriptElement svgScript)
         {
+            // As for an HTML script element whose parser document is not its node document, a script moved to another
+            // document while it was parsed does not run (https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element:
+            // the check comes after the one of the connected elements, so a script of the template contents is not marked)
+            if (svgScript.IsConnected && !IsInScriptDocument(svgScript))
+            {
+                svgScript.MarkAsAlreadyProcessed();
+                return;
+            }
+
+            // The streamed scripts run as the scripts inserted by a script (see the end tag of an HTML script element)
+            if (IsStreaming)
+            {
+                svgScript.IsParserInserted = false;
+            }
+
             PerformMicrotaskCheckpointBeforeScript();
             var oldInsertionPoint = InsertionPoint;
             InsertionPoint = _tokenizer.PositionFromEnd;
@@ -1063,6 +1079,12 @@ internal sealed partial class HtmlTreeBuilder
             RunPendingSvgScripts();
         }
     }
+
+    /// <summary>
+    /// Whether <paramref name="script"/> is still in the document against which the parser runs its scripts: the document
+    /// being parsed, or the node document of the target of the streamed HTML when the stream started.
+    /// </summary>
+    private bool IsInScriptDocument(Element script) => ReferenceEquals(script.NodeDocument, IsStreaming ? _streamingScriptDocument : _document);
 
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/parsing.html#scriptEndTag (step 1): a microtask checkpoint is performed before

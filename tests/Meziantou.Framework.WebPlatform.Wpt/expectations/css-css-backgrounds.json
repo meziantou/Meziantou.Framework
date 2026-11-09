@@ -417,7 +417,7 @@
     "reftest": "PASS"
   },
   "css/css-backgrounds/background-clip/clip-border-area-complex-color.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-backgrounds/background-clip/clip-border-area-complex.html": {
     "reftest": "PASS"

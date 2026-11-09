@@ -209,6 +209,22 @@ public sealed class EditingInsertionTests : IDisposable
         Assert.Equal(expected, Run(html, "insertText=d"));
     }
 
+    [Theory]
+    // The line break that follows the content of a line is kept when the text replaces all the content of the line
+    [InlineData("", "<p>[abc]<br></p>", "<p>d<br></p>")]
+    [InlineData("", "<div>[abc]<br><p>p</p></div>", "<div>d<br><p>p</p></div>")]
+    [InlineData("white-space:pre-wrap", "<p>[abc]\n</p>", "<p>d\n</p>")]
+    [InlineData("white-space:pre-wrap", "<div>[abc]\n<p>p</p></div>", "<div>d\n<p>p</p></div>")]
+    // The line break that renders an empty line is replaced with the text
+    [InlineData("", "<p>abc<br>[]<br></p>", "<p>abc<br>d</p>")]
+    [InlineData("white-space:pre-wrap", "<p>abc\n[]\n</p>", "<p>abc\nd</p>")]
+    public void InsertText_ReplacingTheContentOfALineKeepsItsLineBreak(string hostStyle, string html, string expected)
+    {
+        var (document, host) = Load(html, hostAttributes: hostStyle);
+        Assert.True(document.ExecCommand("insertText", showUI: false, "d"));
+        Assert.Equal(expected, host.InnerHtml);
+    }
+
     [Fact]
     public void InsertText_CaretInVoidElement()
     {

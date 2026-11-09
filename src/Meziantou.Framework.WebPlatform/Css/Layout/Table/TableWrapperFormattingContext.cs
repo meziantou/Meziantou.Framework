@@ -271,10 +271,18 @@ internal sealed class TableWrapperFormattingContext : FormattingContext
         var sizes = GetBorderBoxIntrinsicSizes(context, box, expandsPercentages: !ignoresPercentages);
         var grid = GetGrid(box);
         var edges = 0d;
+        double? transferred = null;
         if (grid is not null)
         {
             var algorithm = new TableLayoutAlgorithm(context, grid);
             edges = algorithm.Border.InlineSum() + algorithm.GetPadding(0).InlineSum();
+
+            // An auto width is transferred through the aspect ratio from a definite height or min-height, as in the layout of
+            // the table (see TableLayoutAlgorithm.ComputeTableInlineSize, WPT css/css-sizing/aspect-ratio/table-element-intrinsic-contribution-001.html)
+            if (boxModel.GetSize(horizontal).IsAuto)
+            {
+                transferred = algorithm.GetTransferredInlineSize(percentageBasis: null, percentageBlockSize: null);
+            }
         }
 
         var sizing = new AxisSizing(context, grid ?? box)
@@ -287,7 +295,7 @@ internal sealed class TableWrapperFormattingContext : FormattingContext
 
         var min = sizes.MinContent;
         var max = sizes.MaxContent;
-        if (sizing.ResolveContribution(boxModel.GetSize(horizontal), SizingProperty.Preferred) is { } preferred)
+        if ((transferred is { } transferredSize ? IntrinsicSizes.FromSize(transferredSize) : sizing.ResolveContribution(boxModel.GetSize(horizontal), SizingProperty.Preferred)) is { } preferred)
         {
             min = Math.Max(min, preferred.MinContent);
             max = Math.Max(sizes.MinContent, preferred.MaxContent);

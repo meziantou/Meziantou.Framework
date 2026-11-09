@@ -1649,14 +1649,17 @@ internal sealed partial class BoxTreeBuilder
 
     /// <summary>
     /// The quote of a nesting level (the last pair is used for the deeper levels). The auto value uses the quotation marks of
-    /// the content language of the parent of the element (<see cref="LanguageQuotes"/>).
+    /// the content language of the parent of the element (<see cref="LanguageQuotes"/>). match-parent uses the quotes of the
+    /// parent: when they are auto, the ones auto resolves to on the parent.
     /// </summary>
     internal static string GetQuote(ComputedStyle style, int depth, bool open)
     {
         var quotes = style.GetComputedValue("quotes");
+        var owner = style;
         for (var current = style.Parent; quotes == "match-parent" && current is not null; current = current.Parent)
         {
             quotes = current.GetComputedValue("quotes");
+            owner = current;
         }
 
         if (quotes is "none")
@@ -1667,7 +1670,7 @@ internal sealed partial class BoxTreeBuilder
             // The quotation marks of the content language of the parent of the element: "based on the content language of the
             // element and/or its parent"; the quotes of a quotation follow the language of the text around it, not the language
             // of the quotation (https://github.com/w3c/csswg-drafts/issues/5478#issuecomment-701507076)
-            var marks = LanguageQuotes.Get(style.Element is { } element ? Selectors.HtmlElementStates.GetLanguage(element.ParentElement ?? element) : null);
+            var marks = LanguageQuotes.Get(owner.Element is { } element ? Selectors.HtmlElementStates.GetLanguage(element.ParentElement ?? element) : null);
             return marks[(depth == 0 ? 0 : 2) + (open ? 0 : 1)];
         }
 

@@ -228,7 +228,7 @@
     "reftest": "PASS"
   },
   "css/css-content/quotes-match-parent-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-content/quotes-slot-scoping.html": {
     "reftest": "PASS"

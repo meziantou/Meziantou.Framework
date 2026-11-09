@@ -363,17 +363,23 @@ internal static class IntrinsicSizing
             }
         }
 
-        var minContribution = Clamp(result.MinContent, min?.MinContent, max?.MinContent, transferredMin, transferredMax, paddingAndBorder.InlineSum());
-        var maxContribution = Clamp(result.MaxContent, min?.MaxContent, max?.MaxContent, transferredMin, transferredMax, paddingAndBorder.InlineSum());
+        // "This transferred minimum is capped by any definite preferred or maximum size in the destination axis": an intrinsic
+        // size keyword is not definite (WPT css/css-sizing/aspect-ratio/intrinsic-contribution-transferred-min-width-001.html)
+        var capsTransferredMin = !boxModel.GetMaxSize(horizontal).BehavesAsIntrinsic;
+        var minContribution = Clamp(result.MinContent, min?.MinContent, max?.MinContent, transferredMin, transferredMax, capsTransferredMin, paddingAndBorder.InlineSum());
+        var maxContribution = Clamp(result.MaxContent, min?.MaxContent, max?.MaxContent, transferredMin, transferredMax, capsTransferredMin, paddingAndBorder.InlineSum());
         return new IntrinsicSizes(minContribution + marginSum, Math.Max(minContribution, maxContribution) + marginSum);
     }
 
-    /// <summary>Clamps a border-box size between a minimum and a maximum (the maximum is applied first: the minimum wins), and the transferred ones.</summary>
-    private static double Clamp(double size, double? min, double? max, double? transferredMin, double? transferredMax, double paddingAndBorder)
+    /// <summary>
+    /// Clamps a border-box size between a minimum and a maximum (the maximum is applied first: the minimum wins), and the
+    /// transferred ones (the maximum caps the transferred minimum when <paramref name="maxCapsTransferredMin"/> is set).
+    /// </summary>
+    private static double Clamp(double size, double? min, double? max, double? transferredMin, double? transferredMax, bool maxCapsTransferredMin, double paddingAndBorder)
     {
         if (transferredMin is { } transferredMinimum)
         {
-            min = Math.Max(min ?? 0, max is { } maximum ? Math.Min(transferredMinimum, maximum) : transferredMinimum);
+            min = Math.Max(min ?? 0, max is { } maximum && maxCapsTransferredMin ? Math.Min(transferredMinimum, maximum) : transferredMinimum);
         }
 
         if (transferredMax is { } transferredMaximum)
@@ -419,6 +425,7 @@ internal static class IntrinsicSizing
             PercentageBlockSize = containingBlockBlockSize,
             QuirksPercentageBlockSize = quirksPercentageBlockSize,
             IsInlineSizeIndefinite = true,
+            MeasuresInlineContribution = true,
         };
 
         // The stretched size of the box in the block axis of the containing block is imposed (see GetContribution)
@@ -774,16 +781,24 @@ internal readonly record struct AxisSizing
     /// transferred maximum is floored by any definite preferred or minimum size in the destination axis as well as by the
     /// transferred minimum, if any." The maximum is applied first: the minimum wins when they conflict (https://drafts.csswg.org/css2/#min-max-widths).
     /// </summary>
-    public double Clamp(double size, double? transferredMin = null, double? transferredMax = null)
+    /// <param name="size">The border-box size.</param>
+    /// <param name="transferredMin">The minimum transferred from the other axis, or null.</param>
+    /// <param name="transferredMax">The maximum transferred from the other axis, or null.</param>
+    /// <param name="measuresContribution">
+    /// Whether the size is an intrinsic contribution of the box (see <see cref="ConstraintSpace.MeasuresInlineContribution"/>):
+    /// a maximum that is an intrinsic size keyword is not definite, so it does not cap <paramref name="transferredMin"/>.
+    /// </param>
+    public double Clamp(double size, double? transferredMin = null, double? transferredMax = null, bool measuresContribution = false)
     {
         var box = Style.Box;
-        var max = Resolve(box.GetMaxSize(Horizontal), SizingProperty.Maximum);
+        var maxProperty = box.GetMaxSize(Horizontal);
+        var max = Resolve(maxProperty, SizingProperty.Maximum);
 
         // min-width: auto is 0 for the boxes that are not flex or grid items (https://drafts.csswg.org/css-sizing-3/#valdef-width-auto)
         var min = Resolve(box.GetMinSize(Horizontal), SizingProperty.Minimum);
         if (transferredMin is { } transferredMinimum)
         {
-            if (max is { } maximum)
+            if (max is { } maximum && !(measuresContribution && maxProperty.BehavesAsIntrinsic))
             {
                 transferredMinimum = Math.Min(transferredMinimum, maximum);
             }

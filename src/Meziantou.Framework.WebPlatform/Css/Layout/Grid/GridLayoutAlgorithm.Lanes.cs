@@ -350,6 +350,15 @@ internal sealed partial class GridLayoutAlgorithm
             item.StretchesColumns = false;
             item.FillsColumns = false;
             item.SubgridsColumns = false;
+
+            // A non-replaced item with an aspect ratio and normal alignment in the rows (see GridItem.TransfersStretchedBlockSize) has
+            // no grid area to fill in the inline axis: as in Blink, it is stretched in its lane, and its automatic inline size is
+            // transferred from that block size through its aspect ratio (WPT
+            // css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-scrollbar-001.html)
+            if (item.TransfersStretchedBlockSize && !item.IsOrthogonal && GetPreferredSize(item, GridAxis.Columns).IsAuto)
+            {
+                item.StretchesRows = true;
+            }
         }
         else
         {
@@ -627,12 +636,15 @@ internal sealed partial class GridLayoutAlgorithm
 
         // The tracks are included in the scrollable overflow of the container, as the ones of a grid (with track-reverse, the tracks
         // that overflow the start side, where the scroll origin is, WPT css/css-grid/grid-lanes/overflow/grid-lanes-overflow-reverse-baseline-001.html)
+        // The tracks of a subgridded axis are the ones of the parent grid, which the subgrid does not overflow (they include its extra
+        // margins: its borders, paddings and scrollbar gutters, WPT
+        // css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-scrollbar-001.html)
         var inFlowInlineEnd = _stackAxis == GridAxis.Columns ? stackTrack.End : GetGridEnd(GridAxis.Columns);
         var laneStart = TrackReverse ? Math.Min(0, GetGridStart(_laneAxis)) : 0;
         return new ContentLayoutResult(contentBlockSize, firstBaseline, lastBaseline)
         {
-            InFlowBlockSize = Math.Max(0, inFlowEnd),
-            InFlowInlineSize = Math.Max(0, inFlowInlineEnd),
+            InFlowBlockSize = _rowsFromParent ? null : Math.Max(0, inFlowEnd),
+            InFlowInlineSize = _columnsFromParent ? null : Math.Max(0, inFlowInlineEnd),
             InFlowStart = _laneAxis == GridAxis.Columns ? new LogicalOffset(laneStart, 0) : new LogicalOffset(0, laneStart),
         };
     }

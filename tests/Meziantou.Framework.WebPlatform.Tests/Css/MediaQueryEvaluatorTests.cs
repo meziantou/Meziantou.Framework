@@ -213,6 +213,14 @@ public sealed class MediaQueryEvaluatorTests
     [InlineData("(aspect-ratio: -4/3)", false)]
     [InlineData("(aspect-ratio: 4/-3)", false)]
     [InlineData("(aspect-ratio: 4px/3px)", false)]
+    // A negative math function is clamped to 0, a negative number is invalid
+    [InlineData("(min-aspect-ratio: calc(-1)/2)", true)]
+    [InlineData("not (max-aspect-ratio: calc(-1)/2)", true)]
+    [InlineData("(max-aspect-ratio: 2/calc(-1))", true)]
+    [InlineData("(aspect-ratio > calc(-1))", true)]
+    [InlineData("(aspect-ratio < calc(-1))", false)]
+    [InlineData("(aspect-ratio > -1)", false)]
+    [InlineData("not (aspect-ratio > -1)", false)]
     [InlineData("(device-aspect-ratio: 4/3)", true)]
     [InlineData("(aspect-ratio: 1.3333333333333333)", true)]
     // Integers

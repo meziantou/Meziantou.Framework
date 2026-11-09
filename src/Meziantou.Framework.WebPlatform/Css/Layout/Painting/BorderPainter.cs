@@ -12,10 +12,10 @@ namespace Meziantou.Framework.WebPlatform.Css.Layout;
 /// side (https://drafts.csswg.org/css-backgrounds/#corner-transitions: the transition between two sides is on the line between
 /// the outer corner and the inner corner): the transition between two colors is antialiased (when both are opaque, the side
 /// painted first covers the whole corner, so the background does not show through the diagonal), and the one between two sides
-/// of the same color is not (each pixel belongs to one side, without seam). <c>dotted</c> and <c>dashed</c> are strokes along the middle of each side (the
-/// curves of the rounded corners are not dashed), <c>double</c> is two rings, <c>groove</c>, <c>ridge</c>, <c>inset</c> and
+/// of the same color is not (each pixel belongs to one side, without seam). <c>dotted</c> and <c>dashed</c> are strokes along the middle of each side (along
+/// the middle of the whole border, the curves of the corners included, when it is rounded), <c>double</c> is two rings, <c>groove</c>, <c>ridge</c>, <c>inset</c> and
 /// <c>outset</c> darken the colors of some sides. The dashes are adjusted to the length of the side as in the browsers
-/// (<see cref="GetDashes"/>); the curves of the rounded corners are not dashed. The lines of a <c>double</c> side and the
+/// (<see cref="GetDashes"/>, <see cref="GetClosedDashes"/>). The lines of a <c>double</c> side and the
 /// halves of a <c>groove</c> or <c>ridge</c> side are whole numbers of device pixels, and a line paints the same pixels as
 /// any side of a box and as a rule (see docs/rendering.md, Pixel snapping).
 /// </remarks>
@@ -306,6 +306,56 @@ internal static class BorderPainter
         return new StrokeStyle(width, Dashes: [dash, bestGap]);
     }
 
+    /// <summary>
+    /// Returns the stroke of the dots or the dashes of a closed line of a width and a length (the line in the middle of a rounded
+    /// border): the nominal dashes and gaps of <see cref="GetDashes"/>, with the gap that gives a whole number of dashes along the
+    /// line. Returns null when two dashes do not fit: the line is solid.
+    /// </summary>
+    internal static StrokeStyle? GetClosedDashes(BorderStyle style, double width, double length)
+    {
+        var dash = width;
+        var gap = width;
+        if (style == BorderStyle.Dashed)
+        {
+            dash *= width >= 3 ? 2 : 3;
+            gap *= width >= 3 ? 1 : 2;
+        }
+
+        if (!(width > 0) || !double.IsFinite(length) || length <= (dash + gap) * 2)
+            return null;
+
+        // The number of dashes whose gap is the closest to the nominal gap
+        var minDashes = Math.Max(2, Math.Floor(length / (dash + gap)));
+        var maxDashes = minDashes + 1;
+        var minGap = (length / minDashes) - dash;
+        var maxGap = (length / maxDashes) - dash;
+        var bestGap = maxGap <= 0 || Math.Abs(minGap - gap) < Math.Abs(maxGap - gap) ? minGap : maxGap;
+        if (style == BorderStyle.Dotted && width >= 3)
+        {
+            // A dot is a round cap of a dash of length 0
+            return new StrokeStyle(width, LineCap.Round, Dashes: [0, dash + bestGap]);
+        }
+
+        return new StrokeStyle(width, Dashes: [dash, bestGap]);
+    }
+
+    /// <summary>Returns the length of the outline of a rounded rectangle (the quarters of ellipses of its corners by Ramanujan's approximation).</summary>
+    private static double GetPerimeter(RoundedRect rounded)
+    {
+        var rect = rounded.Rect;
+        var radii = rounded.Radii;
+        var straight = (2 * (rect.Width + rect.Height))
+            - (radii.TopLeft.X + radii.TopRight.X + radii.BottomRight.X + radii.BottomLeft.X)
+            - (radii.TopLeft.Y + radii.TopRight.Y + radii.BottomRight.Y + radii.BottomLeft.Y);
+        return straight + QuarterEllipse(radii.TopLeft) + QuarterEllipse(radii.TopRight) + QuarterEllipse(radii.BottomRight) + QuarterEllipse(radii.BottomLeft);
+
+        static double QuarterEllipse((double X, double Y) radius)
+        {
+            var (a, b) = (Math.Max(0, radius.X), Math.Max(0, radius.Y));
+            return Math.PI / 4 * ((3 * (a + b)) - Math.Sqrt(((3 * a) + b) * (a + (3 * b))));
+        }
+    }
+
     private static bool IsPainted(double width, BorderStyle style, DisplayColor color) => width > 0 && style is not (BorderStyle.None or BorderStyle.Hidden) && !color.IsTransparent;
 
     /// <summary>
@@ -426,6 +476,32 @@ internal static class BorderPainter
     {
         switch (style)
         {
+            case BorderStyle.Dotted or BorderStyle.Dashed when outer.Contour is null && !outer.IsRect:
+            {
+                // A rounded border, as in Blink: the dots or the dashes follow the line in the middle of the border, the curves of
+                // the corners included, evenly spaced along the whole closed line (clipped to the area of the side)
+                var width = GetWidth(widths, side);
+                var centerline = outer.Inset(new Sides<double>(widths.Top / 2, widths.Right / 2, widths.Bottom / 2, widths.Left / 2));
+                if (GetClosedDashes(style, width, GetPerimeter(centerline)) is not { } stroke)
+                {
+                    builder.Add(new DrawRingItem(outer, inner, new DisplayPaint(color)) { Source = source });
+                    break;
+                }
+
+                // The stroke around an elliptical curve of the middle line is not between the curves of the border edge and the
+                // padding edge (the parallel curve of an ellipse is not an ellipse): it is clipped to the ring of the border
+                var ring = new DisplayPath { FillRule = FillRule.EvenOdd };
+                ring.AddRoundedRect(outer);
+                if (inner.Rect.Width > 0 && inner.Rect.Height > 0)
+                {
+                    // The path of an empty padding edge whose curves have radii would enclose an area (as in CreateComplement)
+                    ring.AddRoundedRect(inner);
+                }
+                builder.Add(new ClipPathItem(ring) { Source = source });
+                builder.Add(new DrawPathItem(DisplayPath.FromRoundedRect(centerline), DisplayPaint.ForStroke(color, stroke)) { Source = source });
+                break;
+            }
+
             case BorderStyle.Dotted or BorderStyle.Dashed:
             {
                 var width = GetWidth(widths, side);

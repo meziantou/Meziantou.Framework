@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-borders, and why 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 25 | 38 | 0 | 66% |
 | [Tentative](#tentative-tests) | 38 | 47 | 0 | 81% |
-| [Reftests](#reftests) | 109 | 122 | 0 | 89% |
-| **All** | **172** | **207** | **0** | **83%** |
+| [Reftests](#reftests) | 110 | 122 | 0 | 90% |
+| **All** | **173** | **207** | **0** | **84%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 8
+- **BUG**: 7
 - **TEST BUG**: 10
 - **NOT IMPLEMENTED**: 17
 
@@ -233,7 +233,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`corner-shape/inner-corner-collapse001.html`](https://wpt.fyi/results/css/css-borders/corner-shape/inner-corner-collapse001.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/inner-corner-collapse002.html`](https://wpt.fyi/results/css/css-borders/corner-shape/inner-corner-collapse002.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/inner-corner-collapse003.html`](https://wpt.fyi/results/css/css-borders/corner-shape/inner-corner-collapse003.html) | Pass | 1 / 1 |  |  |
-| [`corner-shape/inner-corner-intersection001.html`](https://wpt.fyi/results/css/css-borders/corner-shape/inner-corner-intersection001.html) | Fail | 0 / 1 | BUG | the coverage of the antialiased edges is the exact area of the pixels, which differs slightly from the one of the browsers the fuzziness of the test is tuned for (the reference is a `clip-path` of cubic curves): 1560 pixels of the edges of the scoop corners differ (by up to 27), 1535 are allowed |
+| [`corner-shape/inner-corner-intersection001.html`](https://wpt.fyi/results/css/css-borders/corner-shape/inner-corner-intersection001.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/inner-corner-intersection002.html`](https://wpt.fyi/results/css/css-borders/corner-shape/inner-corner-intersection002.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/inner-corner-intersection003.html`](https://wpt.fyi/results/css/css-borders/corner-shape/inner-corner-intersection003.html) | Pass | 1 / 1 |  |  |
 | [`corner-shape/inner-corner-intersection004.html`](https://wpt.fyi/results/css/css-borders/corner-shape/inner-corner-intersection004.html) | Pass | 1 / 1 |  |  |

@@ -43,12 +43,11 @@ internal static partial class CssColorConversion
             return Clip(FromXyz(destination, OklabToXyz([0, 0, 0])));
 
         var hue = double.IsNaN(origin[2]) ? 0 : origin[2];
-        var anchor = FromXyz(linearSpace, OklabToXyz(LchToLab([lightness, 0, hue])));
 
         // The achromatic color of a lightness very close to 0% or 100% can be just outside of the gamut (the white points of
-        // OkLab and of the RGB space differ by the rounding of their matrices): it is the closest color of the gamut
-        if (!IsInGamut(anchor, 0, 1))
-            return Clip(Map(Clip(anchor), LinearToSrgb));
+        // OkLab and of the RGB space differ by the rounding of their matrices): the anchor is clamped to the gamut, so that the
+        // ray starts inside of it (w3c/csswg-drafts#14698)
+        var anchor = Clip(FromXyz(linearSpace, OklabToXyz(LchToLab([lightness, 0, hue]))));
 
         var current = FromXyz(linearSpace, OklabToXyz(LchToLab([lightness, origin[1], hue])));
         if (!IsInGamut(current, 0, 1))
@@ -91,19 +90,27 @@ internal static partial class CssColorConversion
 
     /// <summary>
     /// Casts a ray through a linear-light RGB space from a point inside of the gamut to a point outside of it, and returns its
-    /// intersection with the gamut boundary (the unit cube), or null when there is none (https://drafts.csswg.org/css-color-4/#raytrace).
+    /// intersection with the gamut boundary (the unit cube), or null when there is none or the ray is degenerate
+    /// (https://drafts.csswg.org/css-color-4/#raytrace).
     /// </summary>
     private static double[]? CastRay(double[] start, double[] end)
     {
         var far = double.PositiveInfinity;
         var near = double.NegativeInfinity;
         var direction = new double[3];
+        var length = 0d;
+        var magnitude = 0d;
         for (var i = 0; i < 3; i++)
         {
             var a = start[i];
             var d = end[i] - a;
             direction[i] = d;
-            if (Math.Abs(d) > 1e-12)
+            length = Math.Max(length, Math.Abs(d));
+            magnitude = Math.Max(magnitude, Math.Max(Math.Abs(a), Math.Abs(end[i])));
+
+            // Only an exactly-zero component is parallel to a pair of faces: a small one still limits the ray when the start
+            // is close to a face
+            if (d != 0)
             {
                 var t1 = (0 - a) / d;
                 var t2 = (1 - a) / d;
@@ -115,6 +122,10 @@ internal static partial class CssColorConversion
                 return null;
             }
         }
+
+        // The endpoints differ by no more than their own rounding error
+        if (length <= magnitude * 1e-12)
+            return null;
 
         if (near > far || far < 0)
             return null;

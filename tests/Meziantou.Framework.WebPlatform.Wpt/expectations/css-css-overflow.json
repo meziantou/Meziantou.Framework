@@ -1059,7 +1059,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-text-overflow-first-line-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-with-text-overflow-grapheme-001.html": {
     "reftest": "PASS"
@@ -2715,7 +2715,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/text-overflow-ellipsis-first-line.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/text-overflow-ellipsis-hyphen.html": {
     "total": 1
@@ -2889,7 +2889,7 @@
     "reftest": "PASS"
   },
   "css/css-overflow/text-overflow-with-selection-first-line.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-overflow/text-overflow-with-selection.html": {
     "reftest": "PASS"

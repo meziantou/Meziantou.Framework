@@ -754,10 +754,7 @@
     }
   },
   "html/browsers/browsing-the-web/navigating-across-documents/window-stop-in-image-load-handler.html": {
-    "total": 1,
-    "failures": {
-      "window.stop() in an image load handler suppresses the document load event": "FAIL"
-    }
+    "total": 1
   },
   "html/browsers/browsing-the-web/overlapping-navigations-and-traversals/anchor-fragment-history-back-on-click.html": {
     "total": 1
@@ -985,7 +982,6 @@
     "total": 3,
     "failures": {
       "Scrolling to the fragment of an SVG document in an <embed> does not scroll the parent document": "FAIL",
-      "Scrolling to the fragment of an SVG document in an <iframe> does not scroll the parent document": "FAIL",
       "Scrolling to the fragment of an SVG document in an <object> does not scroll the parent document": "FAIL"
     }
   },

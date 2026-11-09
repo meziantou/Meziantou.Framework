@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of content-security-policy, 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 868 | 901 | 0 | 96% |
+| [Stable](#stable-tests) | 869 | 901 | 0 | 96% |
 | [Tentative](#tentative-tests) | 8 | 15 | 0 | 53% |
 | [Reftests](#reftests) | 8 | 8 | 0 | 100% |
-| **All** | **884** | **924** | **0** | **96%** |
+| **All** | **885** | **924** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 21
 - **TEST RUNNER**: 1
@@ -60,7 +60,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`connect-src/connect-src-fetch-keepalive-redirect-to-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-fetch-keepalive-redirect-to-blocked.sub.html) | Pass | 2 / 2 |  |  |
 | [`connect-src/connect-src-json-import-allowed.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-json-import-allowed.sub.html) | Pass | 1 / 1 |  |  |
 | [`connect-src/connect-src-json-import-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-json-import-blocked.sub.html) | Pass | 1 / 1 |  |  |
-| [`connect-src/connect-src-json-import-in-worker-and-worklet-blocked.https.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-json-import-in-worker-and-worklet-blocked.https.html) | Timeout | 0 / 3 | BUG | the JSON modules of the static module graph of a module worker are fetched with the policies of the worker instead of those of its creator (`ModuleFetching.Fetch` only uses the creator as policy client for the JavaScript modules): `connect-src 'none'` of the document does not block the import of `/common/dummy.json`, so the worker loads and the test times out (the SharedWorker and AudioWorklet subtests do not run) |
+| [`connect-src/connect-src-json-import-in-worker-and-worklet-blocked.https.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-json-import-in-worker-and-worklet-blocked.https.html) | Pass | 3 / 3 |  |  |
 | [`connect-src/connect-src-syncxmlhttprequest-allowed.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-syncxmlhttprequest-allowed.sub.html) | Pass | 1 / 1 |  |  |
 | [`connect-src/connect-src-syncxmlhttprequest-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-syncxmlhttprequest-blocked.sub.html) | Pass | 1 / 1 |  |  |
 | [`connect-src/connect-src-syncxmlhttprequest-redirect-to-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-syncxmlhttprequest-redirect-to-blocked.sub.html) | Pass | 1 / 1 |  |  |

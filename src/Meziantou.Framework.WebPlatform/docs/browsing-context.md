@@ -1559,7 +1559,8 @@ https://w3c.github.io/webappsec-csp/#should-block-navigation-request), and with 
   ignored (the base URL of the document is its fallback base URL). As in the browsers and the tests, the blocked URI of
   the violation is the URL rather than `inline`.
 - `worker-src` (then `child-src`, `script-src` and `default-src`) applies to the scripts of the dedicated, shared and
-  service workers, and to the static imports of the module workers, which are checked with the policies of the
+  service workers, and to the static imports of the module workers (the JSON and CSS modules of their static module
+  graph are checked by `connect-src` and `style-src`), which are checked with the policies of the
   environment that created the worker (the client of the job that installs a service worker), and whose violations are
   reported to it (https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-module-worker-script-tree; the requests
   keep the worker as their client for the loader and the service workers). The dynamic imports are checked with the
@@ -3597,8 +3598,11 @@ The dedicated workers (`Worker`) and the shared workers (`SharedWorker`) are imp
   origin of its creator. A script that cannot be fetched or parsed fires an `error` event (an `Event`) at the worker
   object.
 - A worker gets the referrer policy, the CSP list (`Content-Security-Policy` headers) and the embedder policy
-  (`Cross-Origin-Embedder-Policy`) of the response of its script, and a shared worker its document isolation policy; a
-  worker created from a `data:` URL inherits them from its creator, from a `blob:` URL from the creator of the blob URL.
+  (`Cross-Origin-Embedder-Policy`) of the response of its script; a worker created from a `data:` URL inherits them from
+  its creator, from a `blob:` URL from the creator of the blob URL. A dedicated worker has the document isolation policy
+  (`Document-Isolation-Policy`) of its creator; the policy does not apply to the shared and service workers (neither the
+  header of their script nor the policy of their creator), which are in their own agent cluster and use their embedder
+  policy.
   A dedicated worker whose owner requires CORP (or is credentialless) fails to load when its own embedder policy does not.
   A worker is a secure context when its creator is one, and the mixed content checks of its requests also consider its
   creator (e.g. a `data:` worker created by an `https:` page). A dedicated worker is cross-origin isolated when its owner
@@ -3819,6 +3823,10 @@ ignored.
   again (a page that fetches a `Clear-Site-Data: "*"` response when it loads would reload forever). The browsing
   contexts are not sandboxed while they reload.
 - `"clientHints"` (also `"cache"` and `"cookies"`): the client hints of the origin (see [Client hints](#client-hints)).
+- `"prefetchCache"` and `"prerenderCache"` (also `"cache"`): the prefetches and the prerenders of the documents of the
+  origin in the browsing context group (see [Speculative loading](#speculative-loading)), for the responses of the
+  navigations and of the other requests (e.g. `fetch()`; the ones of a worker are discarded by a task of the event loop
+  of its browsing context).
 - `"*"`: all of the above.
 
 As in the browsers, the response to a request whose top-level origin is not same site with the origin (a third-party

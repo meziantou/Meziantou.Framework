@@ -6,7 +6,8 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The <c>Clear-Site-Data</c> response header (https://w3c.github.io/webappsec-clear-site-data/): a response of a
 /// potentially trustworthy URL clears the data that the user agent stores for its origin. The client hints and the
 /// speculative loads are cleared by <see cref="ClientHints.ProcessClearSiteData"/> and
-/// <see cref="NavigationalPrefetch.ProcessClearSiteData"/>; this class clears the other data:
+/// <see cref="NavigationalPrefetch.ProcessClearSiteData"/> (called here for the responses that are not the ones of a
+/// navigation); this class clears the other data:
 /// <list type="bullet">
 /// <item><c>"cache"</c>: the stored responses of the HTTP cache of the URLs of the origin, and the documents of the origin kept in the back/forward cache, in the partition of the request.</item>
 /// <item><c>"cookies"</c>: the cookies of the registrable domain of the origin.</item>
@@ -74,11 +75,34 @@ internal static class ClearSiteData
         if (url.Scheme is not ("http" or "https") || !ReferrerPolicies.IsPotentiallyTrustworthy(url))
             return false;
 
+        var browsingContext = request.Navigable ?? request.Client?.EnvironmentBrowsingContext ?? request.KeepaliveBrowsingContext;
+
+        // The speculative loads (the "prefetchCache" and "prerenderCache" types): a navigation processes them with its
+        // response (see BrowsingContext.ProcessNavigationResponse), the other requests here. The prefetch records belong to
+        // the documents, so a worker processes them on the event loop of its browsing context.
+        if (request.Mode != RequestMode.Navigate && browsingContext is not null)
+        {
+            if (request.Client is { WorkerGlobal: not null })
+            {
+                var headers = response.HeaderList.ToArray();
+                browsingContext.EventLoop.QueueTask(() =>
+                {
+                    if (!browsingContext.IsDestroyed)
+                    {
+                        NavigationalPrefetch.ProcessClearSiteData(browsingContext, url, headers);
+                    }
+                });
+            }
+            else
+            {
+                NavigationalPrefetch.ProcessClearSiteData(browsingContext, url, response.HeaderList);
+            }
+        }
+
         var types = Parse(response.HeaderList);
         if ((types & (DataTypes.Cache | DataTypes.Cookies | DataTypes.Storage | DataTypes.ExecutionContexts)) == DataTypes.None)
             return false;
 
-        var browsingContext = request.Navigable ?? request.Client?.EnvironmentBrowsingContext ?? request.KeepaliveBrowsingContext;
         var options = request.Navigable?.Options ?? request.Client?.EnvironmentOptions ?? browsingContext?.Options;
         if (options is null)
             return false;

@@ -93,6 +93,20 @@ public sealed class PieChartTests
     }
 
     [Fact]
+    public void LabelsEqualOnOneLineKeepTheirColors()
+    {
+        var diagram = new PieChart();
+        diagram.AddSlice("A\nB", 1);
+        diagram.AddSlice("A B", 1);
+        var scale = Assert.IsType<OrdinalColorScale>(diagram.ToPlot().ColorScale);
+        Assert.Equal(["A B", "A B\u200B"], scale.Domain);
+
+        var svg = diagram.ToSvg();
+        Assert.Contains("fill=\"" + scale.Palette![0].ToString() + "\"", svg, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("fill=\"" + scale.Palette[1].ToString() + "\"", svg, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void LegendPositions()
     {
         Assert.Equal(LegendPosition.Right, Create(PieLegendPosition.Right).ToPlot().Legend.Position);

@@ -2,10 +2,10 @@
 <rect width="530" height="400" fill="#333333"/>
 <g class="marks">
 <g class="radarGraticule">
-<path d="M280,163.5 L316.5,200 L280,236.5 L243.5,200 Z" fill="#0000ff" fill-opacity="0.102" stroke="#0000ff" stroke-width="2" stroke-linejoin="round"/>
-<path d="M280,127 L353,200 L280,273 L207,200 Z" fill="#0000ff" fill-opacity="0.102" stroke="#0000ff" stroke-width="2" stroke-linejoin="round"/>
-<path d="M280,90.5 L389.5,200 L280,309.5 L170.5,200 Z" fill="#0000ff" fill-opacity="0.102" stroke="#0000ff" stroke-width="2" stroke-linejoin="round"/>
 <path d="M280,54 L426,200 L280,346 L134,200 Z" fill="#0000ff" fill-opacity="0.102" stroke="#0000ff" stroke-width="2" stroke-linejoin="round"/>
+<path d="M280,90.5 L389.5,200 L280,309.5 L170.5,200 Z" fill="#0000ff" fill-opacity="0.102" stroke="#0000ff" stroke-width="2" stroke-linejoin="round"/>
+<path d="M280,127 L353,200 L280,273 L207,200 Z" fill="#0000ff" fill-opacity="0.102" stroke="#0000ff" stroke-width="2" stroke-linejoin="round"/>
+<path d="M280,163.5 L316.5,200 L280,236.5 L243.5,200 Z" fill="#0000ff" fill-opacity="0.102" stroke="#0000ff" stroke-width="2" stroke-linejoin="round"/>
 </g>
 <g class="radarAxes">
 <line x1="280" y1="200" x2="280" y2="127" stroke="#ff0000"/>

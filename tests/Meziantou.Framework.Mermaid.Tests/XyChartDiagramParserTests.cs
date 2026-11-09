@@ -192,6 +192,18 @@ public sealed class XyChartDiagramParserTests
     }
 
     [Fact]
+    public void WriteEmptyCategories()
+    {
+        var parsed = MermaidDocument.Parse("xychart\nx-axis [\" \", a]\nbar [1, 2]");
+        Assert.Equal(["", "a"], ((XyChart)parsed.Content).XAxis.Categories);
+
+        var text = MermaidWriter.Write(parsed.Content);
+        var reparsed = MermaidDocument.Parse(text);
+        Assert.Equal(text, MermaidWriter.Write(reparsed.Content));
+        Assert.Equal(["", "a"], ((XyChart)reparsed.Content).XAxis.Categories);
+    }
+
+    [Fact]
     public void WriteRejectsWhatMermaidCannotRead()
     {
         var withCategories = new XyChart();

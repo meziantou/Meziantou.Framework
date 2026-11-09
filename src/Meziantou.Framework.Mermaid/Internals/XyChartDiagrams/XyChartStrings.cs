@@ -77,6 +77,10 @@ internal static class XyChartStrings
     /// <summary>Writes a text in quotes: the characters the reading changes become entity codes.</summary>
     public static string Quote(string value)
     {
+        // An empty quoted string is skipped by the lexer: a space is read back as an empty text, once trimmed
+        if (value.Length is 0)
+            return "\" \"";
+
         var builder = new StringBuilder(value.Length + 2).Append('"');
         var trimmed = Trim(value);
         var first = trimmed.Length is 0 ? value.Length : value.IndexOf(trimmed, StringComparison.Ordinal);

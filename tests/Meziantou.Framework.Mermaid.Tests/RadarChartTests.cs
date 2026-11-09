@@ -26,6 +26,23 @@ public sealed class RadarChartTests
     }
 
     [Fact]
+    public void GraticuleIsDrawnFromTheLargestRing()
+    {
+        var circles = new RadarChart { Ticks = 3, GraticuleOpacity = 1 };
+        circles.AddAxis("a");
+        var radii = circles.ToPlot().Marks.OfType<ArcMark<double>>().Where(mark => mark.CssClass is "radarGraticule").Select(mark => mark.Data.Single()).ToList();
+        Assert.HasCount(3, radii);
+        Assert.Equal(radii.OrderDescending(), radii);
+
+        var polygons = new RadarChart { Ticks = 3, GraticuleOpacity = 1, Graticule = RadarGraticule.Polygon };
+        polygons.AddAxis("a");
+        polygons.AddAxis("b");
+        polygons.AddAxis("c");
+        var corners = polygons.ToPlot().Marks.OfType<AreaMark<(int Ring, int Axis)>>().Single(mark => mark.CssClass is "radarGraticule").Data.Select(corner => corner.Ring).Distinct();
+        Assert.Equal([2, 1, 0], corners);
+    }
+
+    [Fact]
     public void PolygonsAndStyle()
     {
         var diagram = new RadarChart

@@ -3,19 +3,19 @@
 <rect width="400" height="400" fill="#ffffff"/>
 <g class="marks">
 <g class="radarGraticule">
-<path d="M200,170.8 A29.2,29.2 0 0,1 200,229.2 A29.2,29.2 0 0,1 200,170.8 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
-</g>
-<g class="radarGraticule">
-<path d="M200,141.6 A58.4,58.4 0 0,1 200,258.4 A58.4,58.4 0 0,1 200,141.6 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
-</g>
-<g class="radarGraticule">
-<path d="M200,112.4 A87.6,87.6 0 0,1 200,287.6 A87.6,87.6 0 0,1 200,112.4 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
+<path d="M200,54 A146,146 0 0,1 200,346 A146,146 0 0,1 200,54 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
 </g>
 <g class="radarGraticule">
 <path d="M200,83.2 A116.8,116.8 0 0,1 200,316.8 A116.8,116.8 0 0,1 200,83.2 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
 </g>
 <g class="radarGraticule">
-<path d="M200,54 A146,146 0 0,1 200,346 A146,146 0 0,1 200,54 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
+<path d="M200,112.4 A87.6,87.6 0 0,1 200,287.6 A87.6,87.6 0 0,1 200,112.4 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
+</g>
+<g class="radarGraticule">
+<path d="M200,141.6 A58.4,58.4 0 0,1 200,258.4 A58.4,58.4 0 0,1 200,141.6 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
+</g>
+<g class="radarGraticule">
+<path d="M200,170.8 A29.2,29.2 0 0,1 200,229.2 A29.2,29.2 0 0,1 200,170.8 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
 </g>
 <g class="radarAxes">
 <line x1="200" y1="200" x2="200" y2="54" stroke="#333333" stroke-width="2"/>

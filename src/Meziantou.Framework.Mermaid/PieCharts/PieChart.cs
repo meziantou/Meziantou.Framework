@@ -164,14 +164,22 @@ public sealed class PieChart : MermaidChart
             }
         }
 
-        // The shares are relative to the largest value, so the total of huge values stays finite
+        // The shares are relative to the largest value, so the total of huge values stays finite. The legend texts are the
+        // keys of the colors: the texts that become equal once on one line get zero-width spaces, so each slice keeps its color
         var legendTexts = new string[sections.Count];
+        var usedTexts = new HashSet<string>(StringComparer.Ordinal);
         var palette = new SceneColor[sections.Count];
         var largest = 0.0;
         for (var i = 0; i < sections.Count; i++)
         {
             var section = sections[i];
-            legendTexts[i] = (ShowData ? section.Label + " [" + JavaScriptNumber.ToString(section.Value) + "]" : section.Label).ReplaceLineEndings(" ");
+            var legendText = (ShowData ? section.Label + " [" + JavaScriptNumber.ToString(section.Value) + "]" : section.Label).ReplaceLineEndings(" ");
+            while (!usedTexts.Add(legendText))
+            {
+                legendText += "\u200B";
+            }
+
+            legendTexts[i] = legendText;
             palette[i] = colors.Slice(i);
             largest = Math.Max(largest, section.Value);
         }

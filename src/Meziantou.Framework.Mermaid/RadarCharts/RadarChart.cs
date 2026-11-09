@@ -284,10 +284,11 @@ public sealed class RadarChart : MermaidChart
 
         var fill = color.WithOpacity((GraticuleOpacity ?? 0.3) * color.Opacity);
         var strokeWidth = GraticuleStrokeWidth ?? 1;
+        // The rings are drawn from the largest, so an opaque fill does not hide the outlines of the smaller ones
         if (Graticule is RadarGraticule.Circle)
         {
             // A pie of one slice of the radius of the circle
-            for (var i = 0; i < Ticks; i++)
+            for (var i = Ticks - 1; i >= 0; i--)
             {
                 plot.Add(new ArcMark<double>([value((i + 1.0) / Ticks)], value: _ => 1)
                 {
@@ -307,7 +308,7 @@ public sealed class RadarChart : MermaidChart
             return;
 
         var corners = new List<(int Ring, int Axis)>(Ticks * axisCount);
-        for (var ring = 0; ring < Ticks; ring++)
+        for (var ring = Ticks - 1; ring >= 0; ring--)
         {
             for (var axis = 0; axis < axisCount; axis++)
             {

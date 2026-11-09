@@ -2,13 +2,13 @@
 <rect width="700" height="700" fill="#ffffff"/>
 <g class="marks">
 <g class="radarGraticule">
-<path d="M350,251.33 A98.67,98.67 0 0,1 350,448.67 A98.67,98.67 0 0,1 350,251.33 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
+<path d="M350,54 A296,296 0 0,1 350,646 A296,296 0 0,1 350,54 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
 </g>
 <g class="radarGraticule">
 <path d="M350,152.67 A197.33,197.33 0 0,1 350,547.33 A197.33,197.33 0 0,1 350,152.67 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
 </g>
 <g class="radarGraticule">
-<path d="M350,54 A296,296 0 0,1 350,646 A296,296 0 0,1 350,54 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
+<path d="M350,251.33 A98.67,98.67 0 0,1 350,448.67 A98.67,98.67 0 0,1 350,251.33 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
 </g>
 <g class="radarAxes">
 <line x1="350" y1="350" x2="350" y2="54" stroke="#333333" stroke-width="2"/>

@@ -720,12 +720,25 @@ public sealed class DrawingSessionTests
             var active = 0;
             var maxActive = 0;
             var threads = new System.Collections.Concurrent.ConcurrentDictionary<int, bool>();
+            var callingThread = Environment.CurrentManagedThreadId;
+            using var otherThreadStarted = new ManualResetEventSlim();
             DrawingSession.TestBatchObserver = (count, started) =>
             {
                 Assert.Equal(workers, count);
                 if (started)
                 {
                     threads[Environment.CurrentManagedThreadId] = true;
+                    if (Environment.CurrentManagedThreadId != callingThread)
+                    {
+                        otherThreadStarted.Set();
+                    }
+                    else
+                    {
+                        // The calling thread composites a batch only after handing one off, and nothing else can run that
+                        // one while it waits here: the thread pool starts it, however long it takes on a loaded machine
+                        Assert.True(otherThreadStarted.Wait(TimeSpan.FromMinutes(2)), "No batch started on another thread");
+                    }
+
                     var now = Interlocked.Increment(ref active);
                     int seen;
                     do

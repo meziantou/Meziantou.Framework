@@ -70,13 +70,25 @@ internal static class GanttSchedule
         }
 
         var exclusions = new GanttExclusions(diagram);
+
+        // The start of a task is known before its end: an "until" reference needs only the start of the task it names
+        var startKnown = new bool[tasks.Count];
         var remaining = tasks.Count;
-        for (var pass = 0; pass <= tasks.Count && remaining > 0; pass++)
+        for (var pass = 0; pass <= 2 * tasks.Count && remaining > 0; pass++)
         {
             var progress = false;
             for (var i = 0; i < tasks.Count; i++)
             {
-                if (!tasks[i].IsResolved && TryResolve(i))
+                if (tasks[i].IsResolved)
+                    continue;
+
+                if (!startKnown[i] && TryResolveStart(i))
+                {
+                    startKnown[i] = true;
+                    progress = true;
+                }
+
+                if (startKnown[i] && TryResolveEnd(i))
                 {
                     remaining--;
                     progress = true;
@@ -87,18 +99,27 @@ internal static class GanttSchedule
                 break;
         }
 
-        // The tasks left are in a cycle: they start at the origin
+        // The tasks left are in a cycle: the ones whose start is not known start at the origin
+        for (var i = 0; i < tasks.Count; i++)
+        {
+            if (!startKnown[i])
+            {
+                tasks[i].Start = origin;
+                startKnown[i] = true;
+            }
+        }
+
         for (var i = 0; i < tasks.Count; i++)
         {
             if (!tasks[i].IsResolved)
             {
-                Finish(tasks[i], origin);
+                Finish(tasks[i]);
             }
         }
 
         return tasks;
 
-        bool TryResolve(int index)
+        bool TryResolveStart(int index)
         {
             var scheduled = tasks[index];
             var task = scheduled.Task;
@@ -138,22 +159,30 @@ internal static class GanttSchedule
                 start = origin;
             }
 
+            scheduled.Start = start;
+            return true;
+        }
+
+        bool TryResolveEnd(int index)
+        {
+            var task = tasks[index].Task;
             if (task.End is null && task.Until.Count > 0)
             {
                 foreach (var id in task.Until)
                 {
-                    if (ids.TryGetValue(id, out var reference) && !tasks[reference].IsResolved && reference != index)
+                    if (ids.TryGetValue(id, out var reference) && !startKnown[reference])
                         return false;
                 }
             }
 
-            Finish(scheduled, start);
+            Finish(tasks[index]);
             return true;
         }
 
-        void Finish(GanttScheduledTask scheduled, DateTime start)
+        void Finish(GanttScheduledTask scheduled)
         {
             var task = scheduled.Task;
+            var start = scheduled.Start;
             DateTime end;
             var manual = false;
             if (task.End is { } date)
@@ -172,7 +201,7 @@ internal static class GanttSchedule
                 DateTime? earliest = null;
                 foreach (var id in task.Until)
                 {
-                    if (ids.TryGetValue(id, out var reference) && tasks[reference].IsResolved && (earliest is null || tasks[reference].Start < earliest))
+                    if (ids.TryGetValue(id, out var reference) && startKnown[reference] && (earliest is null || tasks[reference].Start < earliest))
                     {
                         earliest = tasks[reference].Start;
                     }
@@ -189,7 +218,6 @@ internal static class GanttSchedule
                 end = start;
             }
 
-            scheduled.Start = start;
             scheduled.End = end;
             if (exclusions.HasExclusions && !manual)
             {

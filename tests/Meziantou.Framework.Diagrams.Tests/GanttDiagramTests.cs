@@ -107,6 +107,34 @@ public sealed class GanttDiagramTests
     }
 
     [Fact]
+    public void UntilNeedsOnlyTheStartOfItsTarget()
+    {
+        // Each task ends at the start of the next one, whose start does not depend on that end
+        var diagram = new GanttDiagram();
+        var a = diagram.AddTask("A");
+        a.Id = "a";
+        a.Start = new DateTime(2024, 1, 1);
+        a.Until.Add("b");
+        var b = diagram.AddTask("B");
+        b.Id = "b";
+        b.Start = new DateTime(2024, 1, 5);
+        b.Until.Add("c");
+        var c = diagram.AddTask("C");
+        c.Id = "c";
+        c.After.Add("a");
+        c.Duration = new GanttDuration(1, GanttTimeUnit.Day);
+
+        var schedule = GanttSchedule.Compute(diagram);
+        Assert.Equal(
+            [
+                (new DateTime(2024, 1, 1), new DateTime(2024, 1, 5)),
+                (new DateTime(2024, 1, 5), new DateTime(2024, 1, 5)),
+                (new DateTime(2024, 1, 5), new DateTime(2024, 1, 6)),
+            ],
+            schedule.Select(task => (task.Start, task.End)));
+    }
+
+    [Fact]
     public void Cycles()
     {
         var diagram = new GanttDiagram();

@@ -2503,7 +2503,7 @@ aliases of `flex-start`/`flex-end`.
 - **Fragmentation in the stacking axis** ([§7.1](https://drafts.csswg.org/css-grid-3/#fragmentation): "Each grid axis track is
   fragmented independently in the stacking axis [...] A grid item that is pushed, however, is placed again by the next grid
   container fragment"): a container whose stacking axis is the block axis of a multi-column container (or of the pages) and
-  that crosses the end of a column (a page) is laid out again in the strip with the block-end edges of the columns where it is
+  that crosses the end of a column (a page), or whose items have a forced break before or after them, is laid out again in the strip with the block-end edges of the columns where it is
   (`GridLanesFragmentation`, `GridLanesBreaks`, `LayoutContext.GridLanesBreaks`: a second pass over the strip, as for the
   floats that are pushed, see [Multi-column layout and fragmentation](#multi-column-layout-and-fragmentation-csslayoutmulticol-csslayoutfragmentation)
   and [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)). The breaks are the ones of the fragmentation
@@ -2516,11 +2516,16 @@ aliases of `flex-start`/`flex-end`.
   items are placed again after the position of the strip where the next column starts, where the running positions start
   again (after the rest of the broken items, without the gaps after the items that end in the previous column) and the
   auto-placement cursor points to the first line again; the fragmentation of the strip then breaks the items that cross the
-  end of a column. The items are parallel flows of a single track (`ParallelStructureKind.GridLanes`: each one breaks at
+  end of a column. The block-start margin of an item at the start of a column after an unforced break is truncated (its
+  margin box starts before the column, [§5.2](https://drafts.csswg.org/css-break-3/#break-margins)); after a forced break
+  (before the item, or after the previous item of one of its tracks), it is preserved. The items after the block-end edge of
+  the container or of an ancestor that clips its overflow (`overflow: clip`) are placed as in a container that is not
+  fragmented: they are clipped, and do not create columns. The items are parallel flows of a single track (`ParallelStructureKind.GridLanes`: each one breaks at
   its own possible breaks, independently of the items of the other lanes), and the rest of an item that is broken is as tall
-  as its contents once fragmented (its contents may be pushed by their own breaks, a line box that does not fit): the
-  fragmentation records where each broken item ends (`GridLanesBreaks.ItemEnds`, from the end the breaker placed,
-  `ParallelItem.EndIndex`), and the next items of its lanes follow it in the next placement. Gecko places the items without the auto-placement cursor (the ties go to the first track): the references of
+  as its contents once fragmented (its contents may be pushed by their own breaks, a line box that does not fit, a forced
+  break inside the item, which breaks an item that fits in the column): the fragmentation records where each broken item
+  ends (`GridLanesBreaks.ItemEnds`, from the end the breaker placed, `ParallelItem.EndIndex`, for the position where the item
+  was placed), and the next items of its lanes follow it in the next placement. Gecko places the items without the auto-placement cursor (the ties go to the first track): the references of
   WPT `css/css-break/grid/grid-lanes/grid-lanes-fragmentation-001.html` and `-002.html` differ where the cursor decides.
 - Not done: the fragmentation in the stacking axis of a container in a parallel flow (an item of a flex or grid container,
   a box with a specified block size) or in a nested multi-column container, with dense packing or `fill-reverse` (the items
@@ -2751,7 +2756,11 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
 - **Breaker** (`ColumnBreaker.FindBreaks`, [§4.4](https://drafts.csswg.org/css-break-3/#best-breaks)): each column ends at a forced
   break (also when the rest of the content fits in the column), else at the latest possible break whose content fits (the
   perfect ones first, then the ones that violate `orphans`/`widows` or an `avoid` value); when nothing fits, the column
-  overflows and the next one starts at the next possible break. The columns are ranges of positions of the strip, not
+  overflows and the next one starts at the next possible break. As in Blink, a forced break in the content pulled before the
+  start of the strip or of a parallel flow (a negative margin) is taken: the content before it stays before the start of the
+  first column, and the content after it starts the next one (`ColumnBreaker.GetForcedBreakBefore`: the flow starts at its
+  first content, with the origin of the first column unchanged; the box whose contents are the parallel flow starts where the
+  flow of its container places it). The columns are ranges of positions of the strip, not
   multiples of the column height (the margins at an unforced break are truncated because the next column starts at the border
   box after the break; the ones after a forced break are kept; a column may end in the margins between two boxes when the
   content before them fits). A break at the end of the empty block size of an in-flow box is
@@ -2797,7 +2806,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     uses for the fragments of the flow.
   - The block-end edge of an item follows its contents when its block size is automatic (the item grows when its contents
     are pushed by its breaks; a stretched item is at least as tall as its track; as in Blink, its fragments are not taller
-    together than its `max-height`, `ParallelItem.MaxEnd`: the item then ends and its contents overflow it), and is placed by the flow of the container
+    together than its `max-height`, `ParallelItem.MaxEnd`: the item then ends and its contents overflow it; the block size
+    of its fragments in the previous fragmentainers is the one they consumed, `ParallelItem.MaxConsumed`, not the distance
+    in the strip), and is placed by the flow of the container
     when its block size is definite (a specified block size, an item stretched in a single-line flex container or a grid
     with a definite block size, a column flex item with a definite flex basis and block size, a stretched item of a grid
     whose rows have a fixed track sizing function, `GridItemRows.HasFixedRows`: as in Blink, a row that is neither
@@ -2842,8 +2853,11 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     an item of a grid lanes container whose lanes are rows that is shorter than its contents, as a grid item in a fixed row;
     also the flex and grid containers, and the anonymous content box of a fieldset that is one; not the ones that contain a
     column spanner): "content overflowing the content edge of a fixed-size box is considered parallel to the content after the
-    fixed-size box". The box is a track of one item in the flow of its container (`FragmentationFlow.TryAddDefiniteBox`,
-    `ParallelItem.IsDefiniteBox`): its block-end edge is placed by that flow (a box that is broken uses the block size of the
+    fixed-size box". As in Blink, a flex container whose block size is automatic and that has a `max-height` is such a box
+    too, whose block size follows its contents once they are fragmented (the forced breaks between its items push them),
+    clamped by its `min-height` and `max-height` (the minimum wins; `FragmentationFlow.IsLimitedFlexContainer`: it grows as an
+    item, up to `ParallelItem.MaxEnd`, and ends at least where its block size in the strip ends). The box is a track of one
+    item in the flow of its container (`FragmentationFlow.TryAddDefiniteBox`, `ParallelItem.IsDefiniteBox`): its block-end edge is placed by that flow (a box that is broken uses the block size of the
     fragmentainers, whatever the breaks of its contents: the block size it has left is what its fragments did not consume),
     and its contents have their own flow, which is broken at the end of each fragmentainer and continues after the end of the
     box; the flow of the container breaks beside the contents that overflow the box. The box extends over monolithic contents
@@ -2892,7 +2906,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     position of a box whose containing block is outside of the strip is mapped with
     the flow that contains it (`OutOfFlowCandidate.StaticPositionContainer`), as is the static position of a box whose
     containing block is an inline box of the strip when it is in the contents of an absolutely positioned box that is
-    fragmented apart (`FragmentationFlow.GetStaticPositionCarrier`). As in Blink, the boxes are not placed
+    fragmented apart (`FragmentationFlow.GetStaticPositionCarrier`). The absolutely positioned children of a table wrapper
+    box are clipped by its table grid box when the table clips its overflow (their contents after its block-end edge stay in
+    its last fragment, as for a block container that clips them). As in Blink, the boxes are not placed
     between the edges that the boxes around them repeat (`box-decoration-break: clone`: a box starts at the padding edge
     of its containing block and its fragments start at the start of the next fragmentainers). A box whose containing
     block is a relatively positioned inline box is placed from its position before the relative positioning (the offset
@@ -3061,7 +3077,8 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     fragmentainer, it overflows its column, `FloatExtent.LeadingEnd`), an absolutely positioned box is placed as the other
     ones (see *Absolutely positioned boxes*) by a cursor of its rows. The inline-blocks that are multi-column containers are
     monolithic, as are the containers that extend past the block-end edge of an ancestor that clips its overflow
-    (`overflow: clip`; a container inside such an ancestor is fragmented).
+    (`overflow: clip`; a container inside such an ancestor is fragmented, as is a container that clips its own overflow,
+    whose absolutely positioned children are clipped at its block-end edge: their contents after it are not fragmented).
 - **Fragments** (`FragmentSlicer`, [§5](https://drafts.csswg.org/css-break-3/#box-splitting)): a fragment whose subtree is in one column
   (and contains no column spanner, which the multi-column container places itself) is moved to it; a box that spans several columns gets one `BoxFragment` per column (`BoxFragment.CreateSlice`:
   `IsFirstFragment`/`IsLastFragment`, `UnfragmentedFragment` is the fragment before the split), whose children are distributed
@@ -4027,7 +4044,9 @@ that are 0, the default alignment of `position-area`, the center of the default 
   `overflow-clip-margin` can only shrink, or the `<visual-box>` of `overflow-clip-margin` extended by its length for
   `overflow: clip`), transformed by its transform (`LayoutTransforms`: `translate`, `rotate`, `scale`, the offset transform
   of the motion path and `transform` around `transform-origin`, the bounding box of the projected corners), the line boxes
-  contributing their contents, and the column boxes of a multi-column container (`BoxFragment.ColumnRects`, as Blink: the
+  contributing their contents (the absolutely positioned children of a table wrapper box clipped by its table grid box when
+  the table clips its overflow: the grid takes the `overflow` of the table, and also clips them when they are painted), and
+  the column boxes of a multi-column container (`BoxFragment.ColumnRects`, as Blink: the
   overflow columns extend it to the end of their column box, not only of their content). The offset transform ([Motion Path](https://drafts.fxtf.org/motion-1/), `MotionPath`) moves
   the anchor point of the box (`offset-anchor`, the transform origin by default) to the point at `offset-distance` along its
   `offset-path` and rotates the box by `offset-rotate` (the direction of the path for `auto`): the basic shapes, `ray()`

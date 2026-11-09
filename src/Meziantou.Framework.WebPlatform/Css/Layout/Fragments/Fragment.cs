@@ -1129,6 +1129,18 @@ internal sealed class BoxFragment : Fragment
     /// <summary>Returns the scrollable overflow of the contents of the fragment (its children and their overflow), without its padding box.</summary>
     internal PhysicalRect GetContentsOverflow() => ComputeOverflow(out _);
 
+    /// <summary>Returns the table grid box of a table wrapper box when it clips its overflow, else null.</summary>
+    internal BoxFragment? GetClippingTableGrid()
+    {
+        foreach (var child in ChildrenSpan)
+        {
+            if (child is BoxFragment { Box.Kind: ContainerBoxKind.TableGrid, ClipsOverflow: true } grid)
+                return grid;
+        }
+
+        return null;
+    }
+
     private PhysicalRect ComputeOverflow(out PhysicalRect inkOverflow)
     {
         var contents = PhysicalRect.Empty;
@@ -1167,6 +1179,22 @@ internal sealed class BoxFragment : Fragment
                     contents = Unite(contents, childContents);
                 }
 
+                continue;
+            }
+
+            // The table grid box takes the overflow of the table (see ScrollContainers.GetUsedOverflow): it also clips the absolutely
+            // positioned children of the table wrapper box, their containing block (as in the browsers)
+            if (Box.Kind == ContainerBoxKind.TableWrapper && child is BoxFragment { Box.IsOutOfFlow: true } positioned && PositionedLayout.IsAbsolutelyPositioned(positioned.Box)
+                && GetClippingTableGrid() is { } grid)
+            {
+                var childContents = PhysicalRect.Empty;
+                var childInk = BorderBoxRect;
+                AddOverflow(child, child.Offset, ref childContents, ref childInk, floatClip);
+                var clip = grid.OverflowClipRect.Translate(grid.Offset);
+                var clipX = (grid._flags & OverflowFlags.ClipsX) != OverflowFlags.None;
+                var clipY = (grid._flags & OverflowFlags.ClipsY) != OverflowFlags.None;
+                contents = Unite(contents, Clip(childContents, clip, clipX, clipY));
+                ink = ink.Union(Clip(childInk, clip, clipX, clipY));
                 continue;
             }
 

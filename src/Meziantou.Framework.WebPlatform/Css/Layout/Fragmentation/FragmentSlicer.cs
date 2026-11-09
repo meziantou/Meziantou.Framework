@@ -273,8 +273,10 @@ internal sealed class FragmentSlicer
             outOfFlowMap = map = contentMap;
         }
 
-        // A box without block size at a break is before the break when the break follows it in the content
-        var place = map.Map(top);
+        // A box without block size at a break is before the break when the break follows it in the content (the border box of a box
+        // whose contents are a parallel flow starts where the flow of its container places it: its contents may have breaks
+        // before its start, a forced break in contents pulled before it by a negative margin)
+        var place = parentMap.Map(top);
         if (fragment is BoxFragment && bottom - top <= 0.01 && _flow.GetEmptyOrdinal(fragment) is { } ordinal)
         {
             place = map.MapEmpty(top, ordinal);

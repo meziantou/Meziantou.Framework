@@ -88,7 +88,13 @@ internal static partial class ColumnBreaker
                 }
             }
         }
-        var cursor = new FlowCursor(flow, map, start, end, baseIndex, flow.NextGeneration(), canBreakBefore: false, includesStart: start <= Epsilon);
+        // (at the start of the flow, the contents pulled before it by a negative margin may have a forced break, see GetForcedBreakBefore)
+        var cursorStart = start <= Epsilon ? GetForcedBreakBefore(flow, start) : start;
+        var cursor = new FlowCursor(flow, map, cursorStart, end, baseIndex, flow.NextGeneration(), canBreakBefore: false, includesStart: start <= Epsilon);
+        if (cursorStart < start)
+        {
+            cursor.SetOrigin(start);
+        }
         var violating = false;
         while (breaks.Count < MaxFragmentainers)
         {
@@ -1154,6 +1160,9 @@ internal static partial class ColumnBreaker
                     item.IsContentPlaced = false;
                     item.Map = new FlowMap();
                     item.Map.Add(double.NegativeInfinity, _index, origin, isBreak: false);
+                    item.MaxStart = (_index, offset);
+                    item.MaxConsumed = 0;
+                    item.MaxIndex = (_index, double.NaN);
                     if (item.Nested is { } nested)
                     {
                         item.Cursor = new NestedColumnsCursor(item, nested, offset);
@@ -1162,7 +1171,7 @@ internal static partial class ColumnBreaker
                     {
                         // (a new generation: the parallel flows of the item start again when the item does, after a break before it)
                         var canBreakBefore = (item.CanBreakBefore && offset > Epsilon) || isResumedStart;
-                        var cursor = new FlowCursor(item.Flow, item.Map, item.Start, item.Flow.ContentEnd, _index, item.Flow.NextGeneration(), canBreakBefore, includesStart: true) { BreaksBeforeAsLastResort = item.BreaksBeforeAsLastResort };
+                        var cursor = new FlowCursor(item.Flow, item.Map, GetForcedBreakBefore(item.Flow, item.Start), item.Flow.ContentEnd, _index, item.Flow.NextGeneration(), canBreakBefore, includesStart: true) { BreaksBeforeAsLastResort = item.BreaksBeforeAsLastResort };
                         cursor.SetOrigin(origin);
                         // (the pages slice the monolithic content that does not fit in the page instead: SlicesMonolithicContent)
                         if (!item.CanGrow && !double.IsNaN(item.LeadingMonolithicEnd) && GetItemEndOffset(item) <= blockSize + Epsilon
@@ -1332,7 +1341,9 @@ internal static partial class ColumnBreaker
             // (as in Blink, an item whose block size follows its track ends with the monolithic item of the track that overflows
             // the fragmentainer; an item with a definite block size is broken at the end of the fragmentainer beside it)
             var available = Math.Max(Math.Max(blockSize - item.Group!.CloneEndEdges, item.CanGrow ? _overflowEndOffset : 0), item.OverflowExtent);
-            var placed = item.IsFlowDone || item.IsContentPlaced;
+            // (the contents of a box that grows with them are placed when their flow is done: the parallel flows they contain may
+            // grow after the position of the automatic block size of the box in the strip)
+            var placed = item.IsFlowDone || (item.IsContentPlaced && !(item.IsDefiniteBox && item.CanGrow));
             var end = GetItemEndOffset(item);
             if (placed && item.CanGrow && item.AdvancedIndex == _index && _flow.StartsInMonolithicSlice(_index))
             {
@@ -1343,7 +1354,7 @@ internal static partial class ColumnBreaker
 
             // (the fragments of a box that grows with its contents are not taller together than its maximum block size: the box ends
             // there, its contents overflow it)
-            var maxEnd = item.CanGrow && double.IsFinite(item.MaxEnd) ? GetOffset(item.MaxEnd + item.PushShift) : double.PositiveInfinity;
+            var maxEnd = item.CanGrow && double.IsFinite(item.MaxEnd) ? GetMaxEndOffset(item, blockSize) : double.PositiveInfinity;
             var reachesMax = !placed && maxEnd <= available + Epsilon;
             var isNested = item.Nested is not null && item.CanGrow;
             if ((placed || !item.CanGrow || reachesMax) && (item.IsMonolithic ? item.IsFlowDone : isNested || end <= available + Epsilon || reachesMax))
@@ -1375,6 +1386,32 @@ internal static partial class ColumnBreaker
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Returns the offset of the block-end edge of a box that grows with its contents at its maximum block size (see
+        /// <see cref="ParallelItem.MaxEnd"/>) in the current fragmentainer: its fragments in the previous fragmentainers consumed their
+        /// block size (the position of the maximum in the strip does not follow the breaks of the contents that push them).
+        /// </summary>
+        private double GetMaxEndOffset(ParallelItem item, double blockSize)
+        {
+            var (start, startOffset) = item.MaxStart;
+            if (_index <= start)
+            {
+                item.MaxIndex = (_index, blockSize);
+                return GetOffset(item.MaxEnd + item.PushShift);
+            }
+
+            var (index, previousBlockSize) = item.MaxIndex;
+            if (index < _index)
+            {
+                // (the fragmentainers between the last one and this one are consumed as a whole)
+                var previous = double.IsNaN(previousBlockSize) ? blockSize : previousBlockSize;
+                item.MaxConsumed += Math.Max(0, previous - (index == start ? startOffset : 0)) + ((_index - index - 1) * blockSize);
+                item.MaxIndex = (_index, blockSize);
+            }
+
+            return item.MaxEnd - item.Start - item.MaxConsumed;
         }
 
         /// <summary>Returns the offset of a position in the fragmentainer that was just filled (before the break).</summary>
@@ -1621,6 +1658,67 @@ internal static partial class ColumnBreaker
 
     /// <summary>Rounds a block size up to the precision of the layout units of the browsers (1/64 px), so that the balanced columns are not shorter than their contents.</summary>
     private static double CeilToLayoutUnit(double value) => Math.Ceiling(value * 64 - 1e-6) / 64;
+
+    /// <summary>
+    /// Returns the position where the cursor of a parallel flow starts: the start of its first content when the contents before the
+    /// start of the box (pulled before it by a negative margin) have a forced break, else the start of the box. As in Blink, the
+    /// forced break is taken: the contents after it start the next fragmentainer, the ones before it stay before the start of the
+    /// box (the origin of the fragmentainer does not change).
+    /// </summary>
+    private static double GetForcedBreakBefore(FragmentationFlow flow, double start)
+    {
+        if (!HasForcedBreakBefore(flow, start, depth: 0))
+            return start;
+
+        var contentStart = start;
+        foreach (var candidate in flow.Candidates)
+        {
+            if (candidate.Position >= start - Epsilon)
+                break;
+
+            contentStart = Math.Min(contentStart, candidate.Position);
+        }
+
+        if (flow.Groups is { } groups)
+        {
+            foreach (var group in groups)
+            {
+                contentStart = Math.Min(contentStart, group.Start);
+            }
+        }
+
+        return contentStart - (4 * Epsilon);
+
+        // (also in the parallel flows of the contents before the start: the items of a flex container)
+        static bool HasForcedBreakBefore(FragmentationFlow flow, double start, int depth)
+        {
+            foreach (var candidate in flow.Candidates)
+            {
+                if (candidate.Position >= start - Epsilon)
+                    break;
+
+                if (candidate.Appeal == BreakAppeal.Forced)
+                    return true;
+            }
+
+            if (flow.Groups is { } groups && depth < 8)
+            {
+                foreach (var group in groups)
+                {
+                    if (group.Start >= start - Epsilon)
+                        continue;
+
+                    foreach (var item in group.Items)
+                    {
+                        if (HasForcedBreakBefore(item.Flow, start, depth + 1))
+                            return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+    }
 
     private static bool IsValid(FragmentationFlow flow, double position, double current)
         => flow.ClampToValidPosition(position, current) is var clamped && !double.IsNaN(clamped) && Math.Abs(clamped - position) < Epsilon;

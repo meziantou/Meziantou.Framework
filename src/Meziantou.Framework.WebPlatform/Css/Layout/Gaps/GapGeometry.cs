@@ -30,6 +30,16 @@ internal enum GapSegmentState : byte
 
     /// <summary>An item spans across the gap.</summary>
     Blocked = 4,
+
+    /// <summary>
+    /// The area before the gap is not empty but is not occupied by an item either: it is the alignment space of an item of a grid
+    /// lanes container smaller than its alignment container (https://github.com/w3c/csswg-drafts/issues/14489: <c>between</c> only
+    /// paints the rules "strictly between two items", after the alignment).
+    /// </summary>
+    AlignmentSpaceBefore = 8,
+
+    /// <summary>The area after the gap is the alignment space of an item (see <see cref="AlignmentSpaceBefore"/>).</summary>
+    AlignmentSpaceAfter = 16,
 }
 
 /// <summary>
@@ -91,8 +101,8 @@ internal struct GapIntersection
 
     /// <summary>
     /// Whether the intersection is not a gap junction but a point of a gap of a grid lanes container where the area of one of its
-    /// sides becomes empty or occupied (the end of the last item of a track, the start of a spanning item): the decorations continue
-    /// through it when they are visible on both sides.
+    /// sides becomes empty or occupied (an edge of the margin box of an aligned item, the gap of the stacking axis around a spanning
+    /// item): the decorations continue through it when they are visible on both sides, and end there with a cap segment endpoint.
     /// </summary>
     public bool IsOccupancyChange;
 

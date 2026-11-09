@@ -1002,8 +1002,10 @@ public partial class HtmlImageElement
         if (candidates.Count == 0)
             return (null, 1);
 
-        // The candidate whose density is the smallest one greater than or equal to the device pixel ratio, else the largest one
-        var devicePixelRatio = environmentDocument.BrowsingContext?.Top.Viewport.DevicePixelRatio ?? 1;
+        // The candidate whose density is the smallest one greater than or equal to the device pixel ratio, else the largest one.
+        // The device pixel ratio is the one of the document (https://drafts.csswg.org/cssom-view/#determine-the-device-pixel-ratio):
+        // in a nested document, it includes the effective zoom of its container (https://drafts.csswg.org/css-viewport/#zoom-om)
+        var devicePixelRatio = StyleEngine.CreateEnvironment(environmentDocument).DevicePixelRatio;
         ImageCandidate? best = null;
         foreach (var candidate in candidates)
         {

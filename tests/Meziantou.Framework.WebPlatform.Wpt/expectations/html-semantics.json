@@ -3289,6 +3289,7 @@
     "failures": {
       "keeps element's already-loaded 2x candidate when iframe zoom decreases from 2 to 1": "FAIL",
       "keeps element's already-loaded 2x srcset candidate when an uncached src (1x default source) is set": "FAIL",
+      "keeps element's already-loaded default src (1x) when srcset adds an uncached sub-1x candidate matching zoomed-out DPR": "FAIL",
       "keeps element's already-loaded higher-density srcset candidate when an uncached 1x candidate is added": "FAIL",
       "keeps element's already-loaded src when srcset is added with that URL at higher density": "FAIL",
       "keeps element's already-loaded wider w-descriptor candidate when sizes shrinks": "FAIL",
@@ -3302,19 +3303,10 @@
     }
   },
   "html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-zoom-change.optional.html": {
-    "total": 1,
-    "failures": {
-      "dynamic zoom change on the iframe re-selects the x-descriptor image source": "FAIL"
-    }
+    "total": 1
   },
   "html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-zoom.html": {
-    "total": 4,
-    "failures": {
-      "link rel=preload imagesrcset in zoomed iframe selects candidate matching zoomed devicePixelRatio": "FAIL",
-      "zoomed-in iframe (zoom: 2) selects x-descriptor matching zoomed devicePixelRatio": "FAIL",
-      "zoomed-in iframe (zoom: 2) with w descriptors and sizes selects normalized density matching zoomed devicePixelRatio": "FAIL",
-      "zoomed-out iframe (zoom: 0.5) selects x-descriptor matching zoomed devicePixelRatio": "FAIL"
-    }
+    "total": 4
   },
   "html/semantics/embedded-content/the-img-element/srcset/select-an-image-source.html": {
     "total": 46

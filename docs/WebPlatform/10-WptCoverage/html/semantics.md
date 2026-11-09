@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 2,112 | 2,208 | 31 | 97% |
+| [Stable](#stable-tests) | 2,114 | 2,208 | 31 | 97% |
 | [Tentative](#tentative-tests) | 65 | 203 | 32 | 38% |
 | [Reftests](#reftests) | 330 | 434 | 67 | 90% |
-| **All** | **2,507** | **2,845** | **130** | **92%** |
+| **All** | **2,509** | **2,845** | **130** | **92%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 6
+- **BUG**: 4
 - **TEST BUG**: 56
 - **NOT IMPLEMENTED**: 270
 - **REQUIRES**: 2
@@ -797,9 +797,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`embedded-content/the-img-element/srcset-natural-size-in-dynamic-iframe.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset-natural-size-in-dynamic-iframe.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/the-img-element/srcset/avoid-reload-on-resize.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/avoid-reload-on-resize.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/the-img-element/srcset/parse-a-srcset-attribute.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/parse-a-srcset-attribute.html) | Pass | 236 / 236 |  |  |
-| [`embedded-content/the-img-element/srcset/select-an-image-source-cached.optional.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-cached.optional.html) | Fail | 1 / 13 | NOT IMPLEMENTED | the optional preference of the source selection for a higher-density candidate that is already available (in the list of available images, a `data:` URL, a preloaded image, or the current image of the element) over an uncached candidate that matches the device pixel ratio |
-| [`embedded-content/the-img-element/srcset/select-an-image-source-zoom-change.optional.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-zoom-change.optional.html) | Fail | 0 / 1 | BUG | the source selection of `srcset` uses the device pixel ratio of the viewport of the top-level browsing context, not the `devicePixelRatio` of the iframe's document that includes the iframe's `zoom`, so a change of the zoom does not select another candidate |
-| [`embedded-content/the-img-element/srcset/select-an-image-source-zoom.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-zoom.html) | Fail | 0 / 4 | BUG | the source selection of `srcset` (`img` and `<link rel=preload imagesrcset>`) uses the device pixel ratio of the viewport of the top-level browsing context, not the `devicePixelRatio` of the iframe's document that includes the iframe's `zoom` |
+| [`embedded-content/the-img-element/srcset/select-an-image-source-cached.optional.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-cached.optional.html) | Fail | 0 / 13 | NOT IMPLEMENTED | the optional preference of the source selection for a higher-density candidate that is already available (in the list of available images, a `data:` URL, a preloaded image, or the current image of the element) over an uncached candidate that matches the device pixel ratio |
+| [`embedded-content/the-img-element/srcset/select-an-image-source-zoom-change.optional.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-zoom-change.optional.html) | Pass | 1 / 1 |  |  |
+| [`embedded-content/the-img-element/srcset/select-an-image-source-zoom.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-zoom.html) | Pass | 4 / 4 |  |  |
 | [`embedded-content/the-img-element/srcset/select-an-image-source.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/select-an-image-source.html) | Pass | 46 / 46 |  |  |
 | [`embedded-content/the-img-element/srcset/srcset-media-dynamic.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/srcset-media-dynamic.html) | Pass | 1 / 1 |  |  |
 | [`embedded-content/the-img-element/srcset/srcset-w-reselect-on-resize.html`](https://wpt.fyi/results/html/semantics/embedded-content/the-img-element/srcset/srcset-w-reselect-on-resize.html) | Pass | 1 / 1 |  |  |

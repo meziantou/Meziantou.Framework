@@ -150,6 +150,36 @@ public sealed class ImageElementTests : IDisposable
     }
 
     [Theory]
+    [InlineData("2", "https://example.com/b.png")]
+    [InlineData("0.5", "https://example.com/c.png")]
+    public void Srcset_UsesTheDevicePixelRatioOfTheDocument(string zoom, string expected)
+    {
+        // The device pixel ratio of the document of an iframe includes the zoom of the iframe
+        var document = Load($"<iframe style='zoom: {zoom}' srcdoc=\"<img srcset='c.png 0.5x, a.png 1x, b.png 2x'>\"></iframe>");
+        var iframe = (HtmlIFrameElement)document.QuerySelector("iframe")!;
+        Assert.Equal(expected, Image(iframe.ContentDocument!).CurrentSrc);
+    }
+
+    [Fact]
+    public void Srcset_ReactsToAChangeOfTheZoomOfTheIframe()
+    {
+        var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var context = _contexts.Create(new BrowsingContextOptions { DocumentLoader = new ImageLoader(this), TimeProvider = clock });
+        var document = context.Navigate("https://example.com/", _ => "<iframe srcdoc=\"<img srcset='a.png 1x, b.png 2x'>\"></iframe>");
+        _contexts.EventLoop.RunUntilIdle();
+        var iframe = (HtmlIFrameElement)document.QuerySelector("iframe")!;
+        var image = Image(iframe.ContentDocument!);
+        Assert.Equal("https://example.com/a.png", image.CurrentSrc);
+
+        // The environment of the nested document is checked at the next rendering opportunity
+        iframe.Style.SetProperty("zoom", "2");
+        _contexts.EventLoop.RunUntilIdle();
+        clock.Advance(TimeSpan.FromMilliseconds(17));
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal("https://example.com/b.png", image.CurrentSrc);
+    }
+
+    [Theory]
     [InlineData("a.png .5x", "https://example.com/a.png")]
     [InlineData("a.png .5e1x", "https://example.com/a.png")]
     [InlineData("a.png -0x", "https://example.com/a.png")]

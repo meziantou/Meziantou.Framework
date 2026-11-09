@@ -368,7 +368,8 @@ iframe without `allow-forms` are not submitted.
 The `img` elements of the documents of a browsing context load their image
 ([update the image data](https://html.spec.whatwg.org/multipage/images.html#update-the-image-data)): the source is
 selected from the `src`, `srcset` and `sizes` attributes and the `source` elements of a parent `picture` element (with
-the viewport and the device pixel ratio of `ViewportOptions`), and fetched by the loader (`RequestDestination.Image`,
+the viewport and the device pixel ratio of `ViewportOptions`; in the document of an iframe, the device pixel ratio is its
+`devicePixelRatio`, which includes the effective `zoom` of the iframe, so a change of the zoom selects the source again), and fetched by the loader (`RequestDestination.Image`,
 the resource should be returned as bytes), or from a `data:` or `blob:` URL. The image is available when the response is
 an image (a known signature: PNG, GIF, JPEG, BMP, WebP, ICO, AVIF, JPEG XL, or an SVG document) and, with a rendering backend
 (`BrowsingContextOptions.RenderingBackend`), when the decoder of the backend can read a raster image (see

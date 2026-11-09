@@ -262,6 +262,27 @@ public sealed class ReplacedFormattingContextTests : IDisposable
     }
 
     [Fact]
+    public void Canvas_PlaceholderNaturalSizeIsTheSizeOfItsOffscreenCanvas()
+    {
+        // The width and height content attributes of a placeholder canvas change neither its size nor its aspect ratio
+        using var engine = TestScriptEngines.CreateDisposable();
+        var context = _contexts.Create(new BrowsingContextOptions { TimeProvider = _clock, ScriptEngine = engine, Viewport = new ViewportOptions { Width = 800, Height = 600 } });
+        var document = context.Navigate("https://example.com/", _ => "<!DOCTYPE html><style>body { margin: 0 }</style><canvas id=e width=64 height=32></canvas><canvas id=f width=64 height=32 style='width: 128px'></canvas>");
+        _contexts.EventLoop.RunUntilIdle();
+        foreach (var id in (string[])["e", "f"])
+        {
+            var canvas = (HtmlCanvasElement)document.GetElementById(id)!;
+            var offscreen = canvas.TransferControlToOffscreen();
+            canvas.SetAttribute("width", "200");
+            canvas.SetAttribute("height", "64");
+            Assert.Equal((64u, 32u), (offscreen.Width, offscreen.Height));
+        }
+
+        Assert.Equal((64, 32), GetSize(document, "e"));
+        Assert.Equal((128, 64), GetSize(document, "f"));
+    }
+
+    [Fact]
     public void Video_PosterNaturalSize()
     {
         var document = Parse("<video id=e poster=60x30.png></video>");

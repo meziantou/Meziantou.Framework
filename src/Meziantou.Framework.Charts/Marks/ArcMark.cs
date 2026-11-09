@@ -93,6 +93,14 @@ public sealed class ArcMark<T> : Mark<T>
             if (double.IsNaN(x1) || double.IsNaN(x2) || double.IsNaN(y2) || x1 == x2)
                 continue;
 
+            // The slices start at 0, which has no position on a log scale: they start at the baseline of the scale instead
+            if (double.IsNaN(y1))
+            {
+                y1 = context.Y.Baseline;
+                if (double.IsNaN(y1))
+                    continue;
+            }
+
             var shape = context.Coordinates.Rectangle(x1, x2, y1, y2);
             var fill = data.Fill is null && FillColor is null ? context.Theme.GetPaletteColor(i) : GetFill(context, data, i);
             shape.Fill = fill;

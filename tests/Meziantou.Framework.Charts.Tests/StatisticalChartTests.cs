@@ -685,6 +685,70 @@ public sealed class StatisticalChartTests
     }
 
     [Fact]
+    public void StatisticalMarks_LeaveOutValuesWithoutPosition()
+    {
+        // Infinite values, and values out of the domain of a log scale, have no position
+        (string Group, double Value)[] rows = [("a", 1), ("a", 2), ("a", 4), ("a", double.PositiveInfinity), ("b", double.NegativeInfinity), ("c", -1), ("c", 3), ("c", 5)];
+        Mark[] marks =
+        [
+            new BoxMark<(string Group, double Value)>(rows, row => row.Group, row => row.Value),
+            new ViolinMark<(string Group, double Value)>(rows, row => row.Group, row => row.Value),
+            new RidgelineMark<(string Group, double Value)>(rows, row => row.Value, row => row.Group),
+            new ContourMark<(string Group, double Value)>(rows, row => row.Value, row => row.Value * 2),
+            new ArcMark<(string Group, double Value)>(rows, row => row.Value) { Label = row => row.Group },
+        ];
+
+        foreach (var mark in marks)
+        {
+            AssertFiniteScene(new Plot().Add(mark));
+            AssertFiniteScene(new Plot { XScale = new LogScale(), YScale = new LogScale() }.Add(mark));
+        }
+    }
+
+    [Fact]
+    public void StatisticalMarks_FacetWithoutNumbers()
+    {
+        // The values of the facet "f2" are not numbers, so its rows are not summarized
+        (string Facet, string Group, object Value)[] rows = [("f1", "a", 1), ("f1", "a", 3), ("f1", "b", 2), ("f2", "a", "x"), ("f2", "b", "y")];
+        AssertFiniteScene(new Plot().Add(new BoxMark<(string Facet, string Group, object Value)>(rows, row => row.Group, row => row.Value) { FacetX = row => row.Facet }));
+        AssertFiniteScene(new Plot().Add(new ViolinMark<(string Facet, string Group, object Value)>(rows, row => row.Group, row => row.Value) { FacetX = row => row.Facet }));
+        AssertFiniteScene(new Plot().Add(new RidgelineMark<(string Facet, string Group, object Value)>(rows, row => row.Value, row => row.Group) { FacetX = row => row.Facet }));
+    }
+
+    [Fact]
+    public void Sankey_FacetsWithoutRows()
+    {
+        var plot = new Plot().Add(new SankeyMark<(string Source, string Target, double Value)>([], link => link.Source, link => link.Target, link => link.Value) { FacetX = link => link.Source });
+        AssertFiniteScene(plot);
+    }
+
+    private static void AssertFiniteScene(Plot plot)
+    {
+        var groups = new Stack<SceneGroup>([plot.CreateScene().Root]);
+        while (groups.TryPop(out var group))
+        {
+            foreach (var child in group.Children)
+            {
+                double[] values = child switch
+                {
+                    SceneGroup childGroup => [],
+                    SceneLine line => [line.X1, line.Y1, line.X2, line.Y2],
+                    SceneCircle circle => [circle.CenterX, circle.CenterY, circle.Radius],
+                    SceneRectangle rectangle => [rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height],
+                    ScenePath path => [.. path.Data.Commands.SelectMany(command => new[] { command.X, command.Y, command.X1, command.Y1, command.X2, command.Y2 })],
+                    _ => [],
+                };
+
+                Assert.All(values, value => Assert.True(double.IsFinite(value), child.GetType().Name));
+                if (child is SceneGroup nested)
+                {
+                    groups.Push(nested);
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void SankeyRejectsCycles()
     {
         var plot = new Plot();

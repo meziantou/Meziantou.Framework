@@ -90,7 +90,7 @@ var diagram = (SequenceDiagram)MermaidDocument.Parse("""
         end
         Shop-->>-Customer: Order confirmed
         Note over Customer,Bank: One order, one payment
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

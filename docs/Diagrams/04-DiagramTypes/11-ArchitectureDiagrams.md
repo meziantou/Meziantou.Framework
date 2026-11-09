@@ -57,7 +57,7 @@ var diagram = (ArchitectureDiagram)MermaidDocument.Parse("""
         service server(server)[Server] in api
         db:L -- R:server
         disk:T --> B:server
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

@@ -63,7 +63,7 @@ var diagram = (C4Diagram)MermaidDocument.Parse("""
         Rel(customer, web, "Uses", "HTTPS")
         Rel(web, db, "Reads and writes")
         BiRel(web, mail, "Sends e-mails")
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

@@ -529,10 +529,7 @@
     "total": 1
   },
   "permissions-policy/reporting/sync-xhr-reporting.html": {
-    "total": 1,
-    "failures": {
-      "Sync-xhr Report Format": "FAIL"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/usb-report-only.https.html": {
     "total": 1,

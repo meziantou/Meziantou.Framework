@@ -1878,6 +1878,9 @@
   "dom/nodes/moveBefore/moveBefore-child-list-selector-invalidation.html": {
     "total": 9
   },
+  "dom/nodes/moveBefore/moveBefore-custom-element-registry.html": {
+    "total": 4
+  },
   "dom/nodes/moveBefore/moveBefore-dir.html": {
     "total": 1
   },
@@ -1889,6 +1892,9 @@
   },
   "dom/nodes/moveBefore/moveBefore-id-map.html": {
     "total": 4
+  },
+  "dom/nodes/moveBefore/moveBefore-image-map.html": {
+    "total": 3
   },
   "dom/nodes/moveBefore/moveBefore-into-display-none.html": {
     "total": 1
@@ -1908,6 +1914,9 @@
   "dom/nodes/moveBefore/moveBefore-option-recalc-style.html": {
     "total": 1
   },
+  "dom/nodes/moveBefore/moveBefore-radio-groups.html": {
+    "total": 8
+  },
   "dom/nodes/moveBefore/moveBefore-selector-matching.html": {
     "total": 1
   },
@@ -1921,7 +1930,7 @@
     "total": 1
   },
   "dom/nodes/moveBefore/moveBefore-shadow-root.html": {
-    "total": 1
+    "total": 3
   },
   "dom/nodes/moveBefore/moveBefore-size-query.html": {
     "total": 1
@@ -2722,7 +2731,7 @@
     "total": 3
   },
   "dom/xpath-evaluation-detached-nodes.html": {
-    "total": 17
+    "total": 19
   },
   "dom/xpath-result-single-node-value-nullable.html": {
     "total": 1

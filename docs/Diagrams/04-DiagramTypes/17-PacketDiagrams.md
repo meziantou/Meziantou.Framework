@@ -45,7 +45,7 @@ var diagram = (PacketDiagram)MermaidDocument.Parse("""
       +16: "Length"
       +16: "Checksum"
       64-127: "Data (variable length)"
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

@@ -69,7 +69,7 @@ var diagram = (UseCaseDiagram)MermaidDocument.Parse("""
     end
     Customer --> Checkout
     Checkout ..> : include Pay
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

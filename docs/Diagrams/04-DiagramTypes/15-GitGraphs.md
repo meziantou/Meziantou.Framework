@@ -80,7 +80,7 @@ var diagram = (GitGraphDiagram)MermaidDocument.Parse("""
       merge develop id: "release" tag: "v1.0.0"
       branch support order: 2
       cherry-pick id: "feature"
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

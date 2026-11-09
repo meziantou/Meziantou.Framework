@@ -71,7 +71,7 @@ var diagram = (EventModelingDiagram)MermaidDocument.Parse("""
       description: string
       price: number
     }
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

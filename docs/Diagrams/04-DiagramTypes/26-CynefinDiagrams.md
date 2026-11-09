@@ -65,7 +65,7 @@ var diagram = (CynefinDiagram)MermaidDocument.Parse("""
         "Crisis management"
       complex --> complicated : "Pattern identified"
       clear --> chaotic : "Complacency"
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

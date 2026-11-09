@@ -73,7 +73,7 @@ var diagram = (StateDiagram)MermaidDocument.Parse("""
         Moving --> Still
         Moving --> Crash
         Crash --> [*]
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

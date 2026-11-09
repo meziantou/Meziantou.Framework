@@ -299,6 +299,9 @@
   "css/css-anchor-position/anchor-position-grid-002.html": {
     "reftest": "PASS"
   },
+  "css/css-anchor-position/anchor-position-in-offset-inline-containing-block.html": {
+    "total": 1
+  },
   "css/css-anchor-position/anchor-position-inline-001.html": {
     "total": 4
   },
@@ -480,10 +483,16 @@
     "total": 1
   },
   "css/css-anchor-position/anchor-scroll-011.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "Scrolling the anchor's scroller updates the positioned element's scroller's scrollHeight on scroll end": "FAIL"
+    }
   },
   "css/css-anchor-position/anchor-scroll-012.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "Switching position fallbacks after scrolling updates the scroller's scrollHeight": "FAIL"
+    }
   },
   "css/css-anchor-position/anchor-scroll-013.html": {
     "total": 1
@@ -591,7 +600,7 @@
     "total": 3
   },
   "css/css-anchor-position/anchor-scroll-position-try-015.tentative.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-anchor-position/anchor-scroll-position-try-016.html": {
     "total": 3
@@ -1112,7 +1121,9 @@
   "css/css-anchor-position/position-area-scrolling-002.tentative.html": {
     "total": 6,
     "failures": {
-      "Reattach at 40,60": "FAIL"
+      "Reattach at 40,60": "FAIL",
+      "Scroll to 0,0 and relayout": "FAIL",
+      "Scroll to 40,60": "FAIL"
     }
   },
   "css/css-anchor-position/position-area-scrolling-003.tentative.html": {
@@ -1122,13 +1133,25 @@
     "reftest": "PASS"
   },
   "css/css-anchor-position/position-area-scrolling-005.html": {
-    "total": 7
+    "total": 7,
+    "failures": {
+      "Scroll to 0,0": "FAIL",
+      "Scroll to 40,60": "FAIL"
+    }
   },
   "css/css-anchor-position/position-area-scrolling-006.html": {
     "total": 5
   },
   "css/css-anchor-position/position-area-scrolling-007.html": {
     "total": 4
+  },
+  "css/css-anchor-position/position-area-scrolling-008.html": {
+    "total": 4,
+    "failures": {
+      "Scroll back to (0, 0) restores initial sizes once stopped": "FAIL",
+      "Scroll down to (0, 100) shrinks top and grows bottom once stopped": "FAIL",
+      "Scroll up to (0, 50) grows top back and shrinks bottom once stopped": "FAIL"
+    }
   },
   "css/css-anchor-position/position-area-value.html": {
     "total": 7
@@ -1492,6 +1515,9 @@
   },
   "css/css-anchor-position/transform-023.html": {
     "total": 1
+  },
+  "css/css-anchor-position/transform-024.html": {
+    "reftest": "PASS"
   },
   "css/css-anchor-position/try-tactic-alignment.html": {
     "total": 60

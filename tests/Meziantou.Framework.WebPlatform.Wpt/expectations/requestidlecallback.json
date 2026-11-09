@@ -2,6 +2,9 @@
   "requestidlecallback/basic.html": {
     "total": 6
   },
+  "requestidlecallback/callback-after-removed-frame-with-pending-timeout.html": {
+    "total": 1
+  },
   "requestidlecallback/callback-exception.html": {
     "total": 1
   },

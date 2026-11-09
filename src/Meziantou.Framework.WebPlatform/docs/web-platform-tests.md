@@ -333,6 +333,9 @@
   does), and `delete_all_cookies()` empties the jar. `bidi.log.entry_added.subscribe()` and `on()` emit the WebDriver BiDi `log.entryAdded` events
   of the messages of the `console` namespace of the test page (`BrowsingContextOptions.ConsoleMessage`), after the call
   that printed them; the console messages are also added to the log of the result.
+  `bidi.speculation.prefetch_status_updated.subscribe()` rejects with the error of a browser that does not implement the
+  WebDriver BiDi subscriptions (`error: Action bidi.session.subscribe not implemented`), so the helpers of
+  `speculation-rules/prefetch/resources/utils.sub.js` fall back to waiting 2 s for the prefetch.
 - The test page is the active document of the browsing context of the test: when it navigates, the new document
   reports the results. The windows opened by the test (`window.open()`) share its event loop.
 - The `.any.js` tests run in each of their globals (https://web-platform-tests.org/writing-tests/testharness.html#specifying-a-test-scope):

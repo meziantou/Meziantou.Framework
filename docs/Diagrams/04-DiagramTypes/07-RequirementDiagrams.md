@@ -64,7 +64,7 @@ var diagram = (RequirementDiagram)MermaidDocument.Parse("""
             type: simulation
         }
         test_entity - satisfies -> test_req
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

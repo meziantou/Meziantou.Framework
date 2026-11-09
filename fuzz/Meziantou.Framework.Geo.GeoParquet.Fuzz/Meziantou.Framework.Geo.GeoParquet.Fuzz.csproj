@@ -16,6 +16,12 @@
     <Compile Include="..\Meziantou.Framework.Geo.Fuzz\ShortReadStream.cs" Link="ShortReadStream.cs" />
   </ItemGroup>
 
+  <!-- The library compiles the Zstandard decoder of Meziantou.Framework.Imaging before .NET 11 only: the target compares it with .NET from .NET 11 -->
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+    <Compile Include="..\..\src\Meziantou.Framework.Imaging\Internals\Compression\ZstdDecoder.cs" Link="Shared\ZstdDecoder.cs" />
+    <Compile Include="..\..\src\Meziantou.Framework.Imaging\Internals\Compression\XxHash64.cs" Link="Shared\XxHash64.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.GeoParquet\Meziantou.Framework.Geo.GeoParquet.csproj" />

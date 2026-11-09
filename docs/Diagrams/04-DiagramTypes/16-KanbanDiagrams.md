@@ -62,7 +62,7 @@ var diagram = (KanbanDiagram)MermaidDocument.Parse("""
         renderer[Draw the cards]@{ assigned: 'Alice', priority: 'Very High' }
       [Done]
         [Design the model]
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

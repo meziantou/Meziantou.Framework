@@ -61,7 +61,7 @@ var diagram = (IshikawaDiagram)MermaidDocument.Parse("""
         Environment
             Subject moved too quickly
             Too dark
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

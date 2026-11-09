@@ -313,6 +313,7 @@ namespace Meziantou.Framework.Mermaid
     public sealed class TreemapChart : Meziantou.Framework.Mermaid.MermaidChart
     {
         public System.Collections.Generic.IDictionary<string, Meziantou.Framework.Diagrams.DiagramStyle> ClassDefinitions { get => throw null; }
+        public double DiagramPadding { get => throw null; set { } }
         public double InnerPadding { get => throw null; set { } }
         public double NodeHeight { get => throw null; set { } }
         public double NodeWidth { get => throw null; set { } }

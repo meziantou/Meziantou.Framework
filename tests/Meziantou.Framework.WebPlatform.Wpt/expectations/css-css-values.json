@@ -36,10 +36,15 @@
     "total": 1
   },
   "css/css-values/attr-all-types.html": {
-    "total": 178
+    "total": 175
   },
   "css/css-values/attr-argument-grammar.html": {
-    "total": 15
+    "total": 18,
+    "failures": {
+      "CSS Values and Units Test: attr() argument grammar 10": "FAIL",
+      "CSS Values and Units Test: attr() argument grammar 8": "FAIL",
+      "CSS Values and Units Test: attr() argument grammar 9": "FAIL"
+    }
   },
   "css/css-values/attr-color-invalid-cast.html": {
     "reftest": "PASS"
@@ -58,6 +63,17 @@
   },
   "css/css-values/attr-dynamic-marker-content.html": {
     "reftest": "PASS"
+  },
+  "css/css-values/attr-fallback-braces.html": {
+    "total": 6,
+    "failures": {
+      "Property color value 'attr(data-missing type(<color>), { rgb(1, 2, 3) })'": "FAIL",
+      "Property color value 'attr(data-missing type(<color>), {rgb(1, 2, 3)} )'": "FAIL",
+      "Property color value 'attr(data-missing type(<color>), {rgb(1, 2, 3)})'": "FAIL",
+      "Property font-family value 'attr(data-missing, {Arial, sans-serif})'": "FAIL",
+      "e.style['color'] = \"attr(data-missing type(<color>), {rgb(1, 2, 3)} rgb(4, 5, 6))\" should not set the property value": "FAIL",
+      "e.style['font-family'] = \"attr(data-missing, {Arial}, sans-serif)\" should not set the property value": "FAIL"
+    }
   },
   "css/css-values/attr-in-max.html": {
     "reftest": "PASS"
@@ -146,11 +162,17 @@
   "css/css-values/attr-security-transition-interpolated.html": {
     "total": 3
   },
+  "css/css-values/attr-security-transition-retarget-taint.html": {
+    "total": 1
+  },
   "css/css-values/attr-security-transition.html": {
     "total": 1
   },
   "css/css-values/attr-security.html": {
-    "total": 32
+    "total": 32,
+    "failures": {
+      "'background-image: src(\"https://does-not-exist.test/404.png\")' with data-foo=\"https://does-not-exist.test/404.png\"": "FAIL"
+    }
   },
   "css/css-values/attr-serialization.html": {
     "total": 1
@@ -243,7 +265,7 @@
     "total": 12
   },
   "css/css-values/calc-infinity-nan-computed.html": {
-    "total": 65,
+    "total": 73,
     "failures": {
       "Property width value 'calc(infinity * 1px + infinity * 1%)'": "FAIL"
     }
@@ -734,7 +756,7 @@
     "reftest": "PASS"
   },
   "css/css-values/hypot-pow-sqrt-computed.html": {
-    "total": 123
+    "total": 127
   },
   "css/css-values/hypot-pow-sqrt-invalid.html": {
     "total": 49
@@ -1096,7 +1118,7 @@
     "total": 162
   },
   "css/css-values/signs-abs-computed.html": {
-    "total": 233
+    "total": 239
   },
   "css/css-values/signs-abs-invalid.html": {
     "total": 53

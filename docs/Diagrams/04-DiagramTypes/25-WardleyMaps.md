@@ -115,7 +115,7 @@ var map = (WardleyDiagram)MermaidDocument.Parse("""
     evolve Power 0.89
 
     note "Standardising power allows Kettles to evolve faster" [0.30, 0.49]
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

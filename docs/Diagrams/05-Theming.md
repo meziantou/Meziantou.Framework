@@ -47,7 +47,7 @@ var document = MermaidDocument.Parse("""
     """);
 
 // The base theme derives the other colors from primaryColor, as Mermaid does
-var theme = document.Diagram.Theme;
+var theme = ((FlowchartDiagram)document.Content).Theme;
 Assert.Equal((SceneColor)"#bbf7d0", theme.NodeBackground);
 Assert.Equal((SceneColor)"#166534", theme.LineColor);
 Assert.Equal(14, theme.FontSize);

@@ -50,7 +50,7 @@ var diagram = (RailroadDiagram)MermaidDocument.Parse("""
     title "Numbers"
     number = [ "+" | "-" ] digit+ ( "." digit* )? ;
     digit = ? a digit from 0 to 9 ? ;
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

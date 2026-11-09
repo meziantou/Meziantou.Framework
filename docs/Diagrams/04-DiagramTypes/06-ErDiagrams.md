@@ -92,7 +92,7 @@ var diagram = (ErDiagram)MermaidDocument.Parse("""
             string email PK
             string name "Full name"
         }
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

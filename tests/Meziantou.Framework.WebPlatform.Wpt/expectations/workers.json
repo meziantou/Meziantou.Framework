@@ -686,6 +686,12 @@
   "workers/interfaces/WorkerUtils/navigator/language.html": {
     "total": 1
   },
+  "workers/modules/dedicated-worker-blob-url-sandboxed-iframe.html": {
+    "total": 4
+  },
+  "workers/modules/dedicated-worker-blob-url.window.js": {
+    "total": 4
+  },
   "workers/modules/dedicated-worker-import-blob-url.any.js": {
     "total": 9
   },

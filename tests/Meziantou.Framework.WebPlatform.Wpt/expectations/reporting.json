@@ -2,6 +2,12 @@
   "reporting/bufferSize.html": {
     "total": 1
   },
+  "reporting/buffered-observe-again.html": {
+    "total": 1
+  },
+  "reporting/callback-this.html": {
+    "total": 1
+  },
   "reporting/crashReport-test.html": {
     "total": 10,
     "failures": {
@@ -73,10 +79,16 @@
     "total": 1
   },
   "reporting/generateTestReport.html": {
-    "total": 1,
-    "failures": {
-      "Generate Test Report": "FAIL"
-    }
+    "total": 1
+  },
+  "reporting/historical.any.js": {
+    "total": 10
+  },
+  "reporting/historical.any.js#dedicatedworker": {
+    "total": 10
+  },
+  "reporting/historical.any.js#sharedworker": {
+    "total": 10
   },
   "reporting/idlharness.any.js": {
     "total": 11
@@ -88,6 +100,9 @@
     "total": 1
   },
   "reporting/order.html": {
+    "total": 1
+  },
+  "reporting/report-dictionary.html": {
     "total": 1
   },
   "reporting/reporting-api-honors-limits.https.sub.html": {
@@ -106,6 +121,9 @@
     "total": 1
   },
   "reporting/same-origin-same-site-credentials.https.sub.html": {
+    "total": 1
+  },
+  "reporting/takeRecords-before-callback.window.js": {
     "total": 1
   }
 }

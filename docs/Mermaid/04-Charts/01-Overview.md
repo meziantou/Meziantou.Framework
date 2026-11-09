@@ -27,6 +27,19 @@ Every chart derives from [MermaidChart](cref:Meziantou.Framework.Mermaid.Mermaid
 that draws the chart. Change it to go beyond what Mermaid can say, then draw it as any other plot:
 
 <!-- ref:../../../tests/Meziantou.Framework.Mermaid.Tests/PieChartTests.cs;region=Mermaid_ToPlot;format=md-fenced-code-block;dedent=true -->
+```csharp
+var chart = (PieChart)MermaidDocument.Parse("""
+    pie title Pets adopted by volunteers
+        "Dogs" : 386
+        "Cats" : 85
+        "Rats" : 15
+    """).Content;
+
+var plot = chart.ToPlot();
+plot.Subtitle = "Source: the shelter, 2025";
+plot.Width = 600;
+var svg = plot.ToSvg();
+```
 <!-- endref -->
 
 The charts look like the other charts of Meziantou.Framework.Charts, in the colors of the Mermaid theme: they are not

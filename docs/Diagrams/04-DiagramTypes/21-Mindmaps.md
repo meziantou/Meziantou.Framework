@@ -76,7 +76,7 @@ var diagram = (MindmapDiagram)MermaidDocument.Parse("""
         Tools
           Pen and paper
           Mermaid
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

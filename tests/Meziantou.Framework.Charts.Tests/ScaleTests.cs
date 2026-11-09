@@ -245,6 +245,34 @@ public sealed class ScaleTests
     }
 
     [Fact]
+    public void LogTicks_InfiniteBounds()
+    {
+        Assert.Empty(TickGenerator.LogTicks(1, double.PositiveInfinity, 10, 10));
+        Assert.Empty(TickGenerator.LogTicks(double.PositiveInfinity, 1, 10, 10));
+        Assert.NotEmpty(TickGenerator.LogTicks(1, 100, 10, 10));
+    }
+
+    [Fact]
+    public void TimeScale_DomainOutOfTheRangeOfDateTime()
+    {
+        // The ticks stay within the times a DateTime can represent
+        var endOf9999 = (new DateTime(9999, 12, 31, 0, 0, 0, DateTimeKind.Utc) - DateTime.UnixEpoch).TotalMilliseconds;
+        var june9999 = (new DateTime(9999, 6, 1, 0, 0, 0, DateTimeKind.Utc) - DateTime.UnixEpoch).TotalMilliseconds;
+        foreach (var nice in new[] { false, true })
+        {
+            var huge = new ResolvedContinuousScale(ContinuousTransformKind.Linear, ChannelKind.Time, -1e308, 5, new TimeScale(), 0, nice);
+            huge.Configure(0, 100, 10);
+            Assert.All(huge.GetTicks(), tick => Assert.True(double.IsFinite(tick.Position)));
+
+            var lastMonths = new ResolvedContinuousScale(ContinuousTransformKind.Linear, ChannelKind.Time, june9999, endOf9999, new TimeScale(), 0, nice);
+            lastMonths.Configure(0, 100, 10);
+            var ticks = lastMonths.GetTicks();
+            Assert.NotEmpty(ticks);
+            Assert.All(ticks, tick => Assert.True(double.IsFinite(tick.Position)));
+        }
+    }
+
+    [Fact]
     public void ContinuousScales_FormatTicks()
     {
         var custom = new ResolvedContinuousScale(ContinuousTransformKind.Linear, ChannelKind.Number, 0, 1, new LinearScale { Ticks = [0, 0.25, 2], TickFormat = NumberFormats.Percent() }, 0, nice: false);

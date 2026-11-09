@@ -93,6 +93,9 @@
   "navigation-timing/navigation-type-post-backforward.html": {
     "total": 1
   },
+  "navigation-timing/nested-document-timing-after-cross-origin-redirect.https.html": {
+    "total": 1
+  },
   "navigation-timing/nested-unload-timing.html": {
     "total": 1
   },
@@ -112,7 +115,13 @@
     }
   },
   "navigation-timing/redirect-tao.html": {
-    "total": 6
+    "total": 8
+  },
+  "navigation-timing/response-start-after-coop-bcg-switch-no-tao.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "Redirect data is hidden and the navigation start time is not leaked after a cross-origin COOP browsing context group switch without a TAO opt-in": "FAIL"
+    }
   },
   "navigation-timing/response-start-after-coop-bcg-switch.https.html": {
     "total": 1,

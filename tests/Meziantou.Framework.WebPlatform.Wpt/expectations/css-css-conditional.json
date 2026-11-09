@@ -359,6 +359,9 @@
   "css/css-conditional/container-queries/container-name-computed.html": {
     "total": 10
   },
+  "css/css-conditional/container-queries/container-name-host-slotted-tree-scoped.html": {
+    "total": 2
+  },
   "css/css-conditional/container-queries/container-name-invalidation.html": {
     "total": 2
   },
@@ -956,10 +959,20 @@
   "css/css-conditional/container-queries/style-query-container-name-change.html": {
     "total": 1
   },
+  "css/css-conditional/container-queries/style-query-custom-attr-braces-change.html": {
+    "total": 4,
+    "failures": {
+      "Changing data-typed to 'correct' in container makes target color green": "FAIL",
+      "Changing data-untyped to 'correct' in container makes target color green": "FAIL"
+    }
+  },
   "css/css-conditional/container-queries/style-query-custom-attr-change-named-container.html": {
     "total": 2
   },
   "css/css-conditional/container-queries/style-query-custom-attr-change.html": {
+    "total": 2
+  },
+  "css/css-conditional/container-queries/style-query-custom-attr-nested-name-change.html": {
     "total": 2
   },
   "css/css-conditional/container-queries/style-query-document-element.html": {
@@ -1227,7 +1240,10 @@
     "total": 17
   },
   "css/css-conditional/match-container.tentative.html": {
-    "total": 30
+    "total": 29,
+    "failures": {
+      "Element.matchContainer throws SyntaxError for unparsable queries.": "FAIL"
+    }
   },
   "css/css-conditional/supports-basic.html": {
     "total": 1

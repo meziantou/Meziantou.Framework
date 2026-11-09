@@ -88,7 +88,7 @@ var diagram = (VennDiagram)MermaidDocument.Parse("""
       style A fill:#ff6b6b
       style A,B color:#333
       style A1 color:red
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

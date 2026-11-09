@@ -56,6 +56,21 @@
   "css/css-box/margin-trim/block-container-block-end-nested-last-child-with-border.html": {
     "total": 3
   },
+  "css/css-box/margin-trim/block-container-block-end-propagation-boundaries.html": {
+    "total": 10,
+    "failures": {
+      "Block-end trimming through a auto wrapper": "FAIL",
+      "Block-end trimming through a bfc wrapper": "FAIL",
+      "Block-end trimming through a border wrapper": "FAIL",
+      "Block-end trimming through a fixed wrapper": "FAIL",
+      "Block-end trimming through a large-maximum wrapper": "FAIL",
+      "Block-end trimming through a maximum wrapper": "FAIL",
+      "Block-end trimming through a minimum wrapper": "FAIL",
+      "Block-end trimming through a padding wrapper": "FAIL",
+      "Block-end trimming through a small-minimum wrapper": "FAIL",
+      "Block-end trimming updates after sibling and boundary changes": "FAIL"
+    }
+  },
   "css/css-box/margin-trim/block-container-block-end-self-collapsing-and-border.html": {
     "reftest": "PASS"
   },
@@ -163,6 +178,13 @@
   },
   "css/css-box/margin-trim/block-container-style-change-triggers-layout-block.html": {
     "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/computed-margin-values/block-container-style-change-triggers-layout-block.html": {
+    "total": 4,
+    "failures": {
+      "Adding margin-trim: block trims the adjoining margins": "FAIL",
+      "Narrowing margin-trim to block-end restores the block-start margin": "FAIL"
+    }
   },
   "css/css-box/margin-trim/computed-margin-values/flexbox-column-block-end.html": {
     "total": 2,

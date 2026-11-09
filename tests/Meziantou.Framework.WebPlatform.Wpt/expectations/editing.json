@@ -1388,6 +1388,15 @@
   "editing/other/inserttext-after-bold-in-font-face-monospace.html": {
     "total": 1
   },
+  "editing/other/inserttext-before-unnecessary-linebreak.html": {
+    "total": 14,
+    "failures": {
+      "Replacing all text before unnecessary line break before a child block shouldn't cause removing the <br>": "FAIL",
+      "Replacing all text before unnecessary line break shouldn't cause removing the <br>": "FAIL",
+      "Replacing all text before unnecessary linefeed before a child block shouldn't cause removing the linefeed": "FAIL",
+      "Replacing all text before unnecessary linefeed shouldn't cause removing the linefeed": "FAIL"
+    }
+  },
   "editing/other/inserttext-last-mutation.html?whiteSpace=normal": {
     "total": 16
   },
@@ -2713,7 +2722,11 @@
   "editing/run/forwarddelete.html?1001-2000": {
     "total": 1000,
     "failures": {
-      "[[\"defaultparagraphseparator\",\"div\"],[\"forwarddelete\",\"\"]] \"<ol><li>foo[]<li><p>bar</ol>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL"
+      "[[\"defaultparagraphseparator\",\"div\"],[\"forwarddelete\",\"\"]] \"<ol><li>foo[]<li><p>bar</ol>\" queryCommandValue(\"defaultparagraphseparator\") before": "FAIL",
+      "[[\"forwarddelete\",\"\"]] \"<p>foo<table><tr><td>bar[]<br></table><p>baz\" compare innerHTML": "FAIL",
+      "[[\"forwarddelete\",\"\"]] \"<table><tr><td>foo[]<br><td>bar</table>\" compare innerHTML": "FAIL",
+      "[[\"forwarddelete\",\"\"]] \"<table><tr><td>foo[]<br><tr><td>bar</table>\" compare innerHTML": "FAIL",
+      "[[\"forwarddelete\",\"\"]] \"foo<table><tr><td>bar[]<br></table>baz\" compare innerHTML": "FAIL"
     }
   },
   "editing/run/forwarddelete.html?2001-3000": {
@@ -3492,8 +3505,6 @@
       "[[\"styleWithCSS\",\"false\"],[\"bold\",\"\"],[\"inserttext\",\"d\"]] \"<div><b><i>abc[]</i><br></b></div>\" compare innerHTML": "FAIL",
       "[[\"styleWithCSS\",\"false\"],[\"bold\",\"\"],[\"inserttext\",\"d\"]] \"<div><b><i>abc[]<br></i></b></div>\" compare innerHTML": "FAIL",
       "[[\"styleWithCSS\",\"false\"],[\"bold\",\"\"],[\"inserttext\",\"d\"]] \"<div><b><i>abc[]<br></i><br></b></div>\" compare innerHTML": "FAIL",
-      "[[\"styleWithCSS\",\"false\"],[\"bold\",\"\"],[\"inserttext\",\"d\"]] \"<div><i><b>abc[]</b><br></i></div>\" compare innerHTML": "FAIL",
-      "[[\"styleWithCSS\",\"false\"],[\"bold\",\"\"],[\"inserttext\",\"d\"]] \"<div><i><b>abc[]<br></b></i></div>\" compare innerHTML": "FAIL",
       "[[\"styleWithCSS\",\"false\"],[\"delete\",\"\"],[\"fontSize\",\"5\"],[\"foreColor\",\"#ff0000\"],[\"insertText\",\"b\"]] \"<p><font size=\\\"5\\\" color=\\\"#ff0000\\\">a</font></p><p>[]c</p>\" compare innerHTML": "FAIL",
       "[[\"styleWithCSS\",\"false\"],[\"delete\",\"\"],[\"fontSize\",\"5\"],[\"insertText\",\"b\"]] \"<p><font size=\\\"5\\\"><b>a</b></font></p><p><i>[]c</i></p>\" compare innerHTML": "FAIL",
       "[[\"styleWithCSS\",\"false\"],[\"delete\",\"\"],[\"fontSize\",\"5\"],[\"insertText\",\"b\"]] \"<p><font size=\\\"5\\\"><b>a</b></font></p><p>[]c</p>\" compare innerHTML": "FAIL",

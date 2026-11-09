@@ -62,7 +62,7 @@ var diagram = (BlockDiagram)MermaidDocument.Parse("""
         database[("Database")] cache("Cache")
       end
       backend --> database
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

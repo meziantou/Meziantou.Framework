@@ -171,6 +171,13 @@
     return () => { logListeners.delete(listener); };
   };
 
+  // speculation.prefetchStatusUpdated is not emitted: reject the subscription with the error of the browsers that do not
+  // implement the BiDi subscriptions, so the helpers of speculation-rules/prefetch/resources/utils.sub.js fall back to
+  // their fixed timeout
+  internal.bidi.speculation.prefetch_status_updated.subscribe = function () {
+    return Promise.reject('error: Action bidi.session.subscribe not implemented');
+  };
+
   // permissions.setPermission (https://w3c.github.io/permissions/#webdriver-bidi-command-permissions-setPermission): as
   // set_permission, the state is set for every origin
   internal.bidi.permissions.set_permission = function (params) {

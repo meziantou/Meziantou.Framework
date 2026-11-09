@@ -44,7 +44,7 @@ var diagram = (UserJourneyDiagram)MermaidDocument.Parse("""
         section Go home
           Go downstairs: 5: Me
           Sit down: 5: Me
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

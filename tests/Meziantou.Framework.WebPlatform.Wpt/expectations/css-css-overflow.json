@@ -284,6 +284,9 @@
   "css/css-overflow/line-clamp/block-ellipsis-repaint-004.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/line-clamp/block-ellipsis-vertical-001.html": {
+    "reftest": "PASS"
+  },
   "css/css-overflow/line-clamp/continue-001.html": {
     "reftest": "PASS"
   },
@@ -671,6 +674,21 @@
   "css/css-overflow/line-clamp/line-clamp-auto-063.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/line-clamp/line-clamp-auto-064.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-065.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-066.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-067.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-068.html": {
+    "reftest": "PASS"
+  },
   "css/css-overflow/line-clamp/line-clamp-auto-with-ruby-001.html": {
     "reftest": "PASS"
   },
@@ -740,6 +758,81 @@
   "css/css-overflow/line-clamp/line-clamp-dynamic-width-change.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/line-clamp/line-clamp-form-button-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-button-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-button-003.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-button-004.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-fieldset-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-fieldset-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-fieldset-003.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-fieldset-004.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-input-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-input-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-input-003.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-input-004.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-output-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-output-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-output-003.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-output-004.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-output-005.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-select-001.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-select-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-select-003.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-select-004.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-textarea-001.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-textarea-002.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-textarea-003.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/line-clamp/line-clamp-form-textarea-004.tentative.html": {
+    "reftest": "PASS"
+  },
   "css/css-overflow/line-clamp/line-clamp-fragmentation-001.html": {
     "reftest": "PASS"
   },
@@ -759,6 +852,9 @@
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-invalidation-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-outside-list-marker-001.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-preserves-dom-content.html": {
@@ -955,6 +1051,21 @@
   },
   "css/css-overflow/line-clamp/line-clamp-with-popover-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-text-overflow-bidi-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-text-overflow-first-character-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-text-overflow-first-line-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-text-overflow-grapheme-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-with-text-overflow-hanging-punctuation-001.html": {
+    "reftest": "FAIL"
   },
   "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-001.html": {
     "reftest": "PASS"
@@ -2013,6 +2124,24 @@
   "css/css-overflow/scroll-markers/scroll-marker-group-add-dynamic-004.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/scroll-markers/scroll-marker-group-body-overflow-propagation-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-body-overflow-propagation-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-body-overflow-propagation-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-body-overflow-propagation-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-body-overflow-propagation-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/scroll-marker-group-body-overflow-propagation-006.html": {
+    "reftest": "PASS"
+  },
   "css/css-overflow/scroll-markers/scroll-marker-group-keeps-active-in-view.html": {
     "reftest": "PASS"
   },
@@ -2202,6 +2331,9 @@
   "css/css-overflow/scroll-with-border-radius.html": {
     "total": 1
   },
+  "css/css-overflow/scrollable-overflow-abspos-in-inline-containing-block.html": {
+    "total": 3
+  },
   "css/css-overflow/scrollable-overflow-empty-newline-span.html": {
     "reftest": "PASS"
   },
@@ -2379,6 +2511,9 @@
     "reftest": "PASS"
   },
   "css/css-overflow/scrollbar-gutter-fixedpos-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/scrollbar-gutter-fixedpos-005.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/scrollbar-gutter-propagation-001.html": {
@@ -2567,6 +2702,9 @@
   "css/css-overflow/text-overflow-ellipsis-abspos-in-inline-block-crash-001.html": {
     "total": 1
   },
+  "css/css-overflow/text-overflow-ellipsis-bidi-grapheme-001.html": {
+    "reftest": "PASS"
+  },
   "css/css-overflow/text-overflow-ellipsis-changing-scroll.html": {
     "reftest": "PASS"
   },
@@ -2575,6 +2713,9 @@
   },
   "css/css-overflow/text-overflow-ellipsis-editing-input.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-ellipsis-first-line.html": {
+    "reftest": "FAIL"
   },
   "css/css-overflow/text-overflow-ellipsis-hyphen.html": {
     "total": 1
@@ -2746,6 +2887,9 @@
   },
   "css/css-overflow/text-overflow-string-in-textarea-scrolled.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/text-overflow-with-selection-first-line.html": {
+    "reftest": "FAIL"
   },
   "css/css-overflow/text-overflow-with-selection.html": {
     "reftest": "PASS"

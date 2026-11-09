@@ -50,7 +50,7 @@ var diagram = (TimelineDiagram)MermaidDocument.Parse("""
              : Google
         2005 : YouTube : Twitch
         2006
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

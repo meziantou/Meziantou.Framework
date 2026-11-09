@@ -57,13 +57,13 @@
     "total": 4
   },
   "eventsource/eventsource-constructor-url-bogus.any.js": {
-    "total": 1
+    "total": 2
   },
   "eventsource/eventsource-constructor-url-bogus.any.js#dedicatedworker": {
-    "total": 1
+    "total": 2
   },
   "eventsource/eventsource-constructor-url-bogus.any.js#sharedworker": {
-    "total": 1
+    "total": 2
   },
   "eventsource/eventsource-constructor-url-multi-window.htm": {
     "total": 1

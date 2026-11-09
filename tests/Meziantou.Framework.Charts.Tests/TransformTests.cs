@@ -295,6 +295,32 @@ public sealed class TransformTests
         Assert.Null(BoxStatistics.Summarize([]));
     }
 
+    [Fact]
+    public void Quantile_InfiniteAndHugeValues()
+    {
+        Assert.Equal(2, BoxStatistics.Quantile([1, 2, double.PositiveInfinity], 0.5));
+        Assert.Equal(double.NegativeInfinity, BoxStatistics.Quantile([double.NegativeInfinity, 1], 0.5));
+        Assert.Equal(double.PositiveInfinity, BoxStatistics.Quantile([double.PositiveInfinity, double.PositiveInfinity], 0.5));
+        Assert.Equal(0, BoxStatistics.Quantile([-1e308, 1e308], 0.5));
+        Assert.True(double.IsNaN(BoxStatistics.Quantile([double.NegativeInfinity, double.PositiveInfinity], 0.5)));
+    }
+
+    [Fact]
+    public void BoxSummary_InfiniteValues()
+    {
+        var summary = BoxStatistics.Summarize([double.NegativeInfinity])!;
+        Assert.Equal(double.NegativeInfinity, summary.Median);
+        Assert.Equal(double.NegativeInfinity, summary.LowerWhisker);
+        Assert.Equal(double.NegativeInfinity, summary.UpperWhisker);
+        Assert.Empty(summary.Outliers);
+
+        summary = BoxStatistics.Summarize([1, 2, 3, 4, double.PositiveInfinity])!;
+        Assert.Equal(3, summary.Median);
+        Assert.Equal(1, summary.LowerWhisker);
+        Assert.Equal(4, summary.UpperWhisker);
+        Assert.Equal([double.PositiveInfinity], summary.Outliers);
+    }
+
     [Theory]
     [InlineData(GroupReducer.Sum, 6)]
     [InlineData(GroupReducer.Mean, 2)]

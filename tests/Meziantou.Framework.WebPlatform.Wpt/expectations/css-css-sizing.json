@@ -689,6 +689,13 @@
   "css/css-sizing/aspect-ratio/inheritance.html": {
     "total": 2
   },
+  "css/css-sizing/aspect-ratio/intrinsic-contribution-transferred-min-width-001.html": {
+    "total": 3,
+    "failures": {
+      ".container 2": "FAIL",
+      ".container 3": "FAIL"
+    }
+  },
   "css/css-sizing/aspect-ratio/intrinsic-size-001.html": {
     "reftest": "PASS"
   },
@@ -944,6 +951,13 @@
   "css/css-sizing/aspect-ratio/replaced-element-dynamic-aspect-ratio.html": {
     "reftest": "PASS"
   },
+  "css/css-sizing/aspect-ratio/replaced-element-intrinsic-contribution-transferred-min-width-001.html": {
+    "total": 3,
+    "failures": {
+      ".container 2": "FAIL",
+      ".container 3": "FAIL"
+    }
+  },
   "css/css-sizing/aspect-ratio/select-element-001.html": {
     "reftest": "PASS"
   },
@@ -952,6 +966,12 @@
   },
   "css/css-sizing/aspect-ratio/table-element-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-sizing/aspect-ratio/table-element-intrinsic-contribution-001.html": {
+    "total": 1,
+    "failures": {
+      ".container 1": "FAIL"
+    }
   },
   "css/css-sizing/aspect-ratio/zero-or-infinity-001.html": {
     "reftest": "PASS"
@@ -1451,6 +1471,9 @@
   "css/css-sizing/float-clearance-with-margin-collapse-and-stretch-and-padding-percentage.html": {
     "reftest": "PASS"
   },
+  "css/css-sizing/form-control-in-inline-content-intrinsic-size-001.html": {
+    "total": 9
+  },
   "css/css-sizing/grid-item-image-percentage-min-height-computes-as-0.html": {
     "reftest": "PASS"
   },
@@ -1492,6 +1515,9 @@
   },
   "css/css-sizing/image-min-max-content-intrinsic-size-change-008.html": {
     "reftest": "PASS"
+  },
+  "css/css-sizing/image-min-max-content-intrinsic-size-change-009.html": {
+    "total": 8
   },
   "css/css-sizing/image-percentage-max-height-in-anonymous-block.html": {
     "reftest": "PASS"
@@ -1706,6 +1732,9 @@
   "css/css-sizing/intrinsic-size-min-content-box-sizing.html": {
     "reftest": "PASS"
   },
+  "css/css-sizing/keyword-min-max-width-with-fixed-width-contribution.html": {
+    "total": 3
+  },
   "css/css-sizing/keyword-sizes-for-intrinsic-contributions-002.html": {
     "total": 8
   },
@@ -1756,6 +1785,9 @@
   },
   "css/css-sizing/min-max-content-orthogonal-flow-crash-001.html": {
     "total": 1
+  },
+  "css/css-sizing/min-max-width-contribution-box-sizing.html": {
+    "total": 4
   },
   "css/css-sizing/min-width-max-width-precedence.html": {
     "total": 1
@@ -1906,6 +1938,9 @@
   },
   "css/css-sizing/replaced-fractional-height-from-aspect-ratio.html": {
     "total": 1
+  },
+  "css/css-sizing/replaced-keyword-max-width-contribution.html": {
+    "total": 3
   },
   "css/css-sizing/replaced-max-height-min-content.html": {
     "reftest": "PASS"
@@ -2067,10 +2102,9 @@
     "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-navigation.html?origin=cross": {
-    "harness": "ERROR",
     "total": 1,
     "failures": {
-      "Responsive iframe preserves size during navigation": "TIMEOUT"
+      "Responsive iframe preserves size during navigation": "FAIL"
     }
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-navigation.html?origin=same": {
@@ -2153,6 +2187,9 @@
   },
   "css/css-sizing/stretch/abspos-2.html": {
     "reftest": "PASS"
+  },
+  "css/css-sizing/stretch/abspos-inline-containing-block.html": {
+    "total": 2
   },
   "css/css-sizing/stretch/aspect-ratio-1.html": {
     "total": 4

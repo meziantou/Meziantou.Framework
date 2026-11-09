@@ -132,7 +132,7 @@ var diagram = (GanttDiagram)MermaidDocument.Parse("""
         section Another
             Task in sec  :crit, 2014-01-12, 12d
             Release      :milestone, 2014-02-20, 0d
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

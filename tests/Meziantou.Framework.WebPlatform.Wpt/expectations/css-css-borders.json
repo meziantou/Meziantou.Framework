@@ -201,19 +201,85 @@
     "reftest": "PASS"
   },
   "css/css-borders/corner-shape/corner-block-start-computed.html": {
-    "total": 4
+    "total": 7,
+    "failures": {
+      "Property corner-block-start value '0px round'": "FAIL",
+      "Property corner-block-start value '10px 20px / 5px bevel scoop'": "FAIL",
+      "Property corner-block-start value '10px bevel'": "FAIL",
+      "Property corner-block-start value '1em scoop'": "FAIL",
+      "Property corner-block-start value '4px 2% squircle'": "FAIL",
+      "Property corner-block-start value 'bevel'": "FAIL",
+      "Property corner-block-start value 'round'": "FAIL"
+    }
   },
   "css/css-borders/corner-shape/corner-block-start-valid.html": {
-    "total": 14
+    "total": 23,
+    "failures": {
+      "e.style['corner-block-start'] = \"10px 20px / 5px bevel scoop\" should not set unrelated longhands": "FAIL",
+      "e.style['corner-block-start'] = \"10px 20px / 5px bevel scoop\" should set border-start-end-radius": "FAIL",
+      "e.style['corner-block-start'] = \"10px 20px / 5px bevel scoop\" should set border-start-start-radius": "FAIL",
+      "e.style['corner-block-start'] = \"10px 20px / 5px bevel scoop\" should set corner-start-end-shape": "FAIL",
+      "e.style['corner-block-start'] = \"10px 20px / 5px bevel scoop\" should set corner-start-start-shape": "FAIL",
+      "e.style['corner-block-start'] = \"10px 20px / 5px bevel scoop\" should set the property value": "FAIL",
+      "e.style['corner-block-start'] = \"10px bevel\" should set the property value": "FAIL",
+      "e.style['corner-block-start'] = \"10px\" should set the property value": "FAIL",
+      "e.style['corner-block-start'] = \"4px 2% squircle\" should set the property value": "FAIL",
+      "e.style['corner-block-start'] = \"bevel 10px 20px\" should set the property value": "FAIL",
+      "e.style['corner-block-start'] = \"bevel\" should not set unrelated longhands": "FAIL",
+      "e.style['corner-block-start'] = \"bevel\" should set border-start-end-radius": "FAIL",
+      "e.style['corner-block-start'] = \"bevel\" should set border-start-start-radius": "FAIL",
+      "e.style['corner-block-start'] = \"bevel\" should set corner-start-end-shape": "FAIL",
+      "e.style['corner-block-start'] = \"bevel\" should set corner-start-start-shape": "FAIL",
+      "e.style['corner-block-start'] = \"bevel\" should set the property value": "FAIL",
+      "e.style['corner-block-start'] = \"round 10% / 2rem\" should set the property value": "FAIL",
+      "e.style['corner-block-start'] = \"round\" should set the property value": "FAIL"
+    }
   },
   "css/css-borders/corner-shape/corner-block-start-writing-modes.html": {
-    "total": 3
+    "total": 5,
+    "failures": {
+      "corner-block-start in horizontal-tb ltr": "FAIL",
+      "corner-block-start in horizontal-tb rtl": "FAIL",
+      "corner-block-start in vertical-rl ltr": "FAIL",
+      "corner-inline-start in horizontal-tb ltr": "FAIL",
+      "corner-inline-start in horizontal-tb rtl": "FAIL"
+    }
   },
   "css/css-borders/corner-shape/corner-computed.html": {
-    "total": 24
+    "total": 17,
+    "failures": {
+      "Property corner value '0% bevel'": "FAIL",
+      "Property corner value '0px notch'": "FAIL",
+      "Property corner value '0px round'": "FAIL",
+      "Property corner value '10px'": "FAIL",
+      "Property corner value '1em squircle'": "FAIL",
+      "Property corner value '2% notch'": "FAIL",
+      "Property corner value '3% 5rem superellipse(0.4)'": "FAIL",
+      "Property corner value '30px superellipse(0.4)'": "FAIL",
+      "Property corner value '4px 5% round'": "FAIL",
+      "Property corner value 'bevel 0 5px 5px 0 / 0 50% 50% 0'": "FAIL",
+      "Property corner value 'bevel scoop 2px'": "FAIL",
+      "Property corner value 'bevel'": "FAIL",
+      "Property corner value 'round 3px'": "FAIL",
+      "Property corner value 'round 5px / 3px'": "FAIL",
+      "Property corner value 'round'": "FAIL",
+      "Property corner value 'scoop 100%'": "FAIL",
+      "Property corner value 'square bevel bevel square 10px / 50%'": "FAIL"
+    }
   },
   "css/css-borders/corner-shape/corner-invalid.html": {
-    "total": 14
+    "total": 19,
+    "failures": {
+      "e.style['corner'] = \"10px round / 20px bevel\" should not set the property value": "FAIL",
+      "e.style['corner'] = \"36px round / 18px bevel / 28px scoop / 20px notch\" should not set the property value": "FAIL",
+      "e.style['corner'] = \"normal / 1px round\" should not set the property value": "FAIL",
+      "e.style['corner'] = \"normal\" should not set the property value": "FAIL",
+      "e.style['corner'] = \"notch 10px / squircle 30% 10px / 1rem bevel / 2px round\" should not set the property value": "FAIL",
+      "e.style['corner'] = \"round 10% / 2rem squircle\" should not set the property value": "FAIL"
+    }
+  },
+  "css/css-borders/corner-shape/corner-shape-ancestor-clip-dynamic.html": {
+    "reftest": "PASS"
   },
   "css/css-borders/corner-shape/corner-shape-backdrop-filter-overflow.html": {
     "reftest": "PASS"
@@ -336,7 +402,7 @@
     "reftest": "PASS"
   },
   "css/css-borders/corner-shape/corner-shape-outline-offset-elliptical.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-borders/corner-shape/corner-shape-outside-content-box.html": {
     "total": 7
@@ -417,28 +483,184 @@
     "reftest": "PASS"
   },
   "css/css-borders/corner-shape/corner-shorthand-rendering.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-borders/corner-shape/corner-top-computed.html": {
-    "total": 4
+    "total": 8,
+    "failures": {
+      "Property corner-top value '0% bevel'": "FAIL",
+      "Property corner-top value '0px round'": "FAIL",
+      "Property corner-top value '10px 20px / 5px bevel scoop'": "FAIL",
+      "Property corner-top value '10px bevel'": "FAIL",
+      "Property corner-top value '1em scoop'": "FAIL",
+      "Property corner-top value '4px 2% squircle'": "FAIL",
+      "Property corner-top value 'bevel'": "FAIL",
+      "Property corner-top value 'round'": "FAIL"
+    }
+  },
+  "css/css-borders/corner-shape/corner-top-invalid.html": {
+    "total": 10,
+    "failures": {
+      "e.style['corner-top'] = \"10px round / 20px bevel\" should not set the property value": "FAIL",
+      "e.style['corner-top'] = \"normal\" should not set the property value": "FAIL",
+      "e.style['corner-top'] = \"round 10% / 2rem squircle\" should not set the property value": "FAIL"
+    }
   },
   "css/css-borders/corner-shape/corner-top-left-computed.html": {
-    "total": 6
+    "total": 10,
+    "failures": {
+      "Property corner-top-left value '0% bevel'": "FAIL",
+      "Property corner-top-left value '0px round'": "FAIL",
+      "Property corner-top-left value '10px / 5px notch'": "FAIL",
+      "Property corner-top-left value '2% notch'": "FAIL",
+      "Property corner-top-left value '4px 2% squircle'": "FAIL",
+      "Property corner-top-left value '4px round'": "FAIL",
+      "Property corner-top-left value '4px'": "FAIL",
+      "Property corner-top-left value 'bevel'": "FAIL",
+      "Property corner-top-left value 'round'": "FAIL",
+      "Property corner-top-left value 'superellipse(-0.5) 30% 10px'": "FAIL"
+    }
   },
   "css/css-borders/corner-shape/corner-top-left-invalid.html": {
-    "total": 10
+    "total": 12,
+    "failures": {
+      "e.style['corner-top-left'] = \"normal\" should not set the property value": "FAIL"
+    }
   },
   "css/css-borders/corner-shape/corner-top-left-valid.html": {
-    "total": 11
+    "total": 23,
+    "failures": {
+      "e.style['corner-top-left'] = \"0px round\" should set the property value": "FAIL",
+      "e.style['corner-top-left'] = \"10px / 10px notch\" should set the property value": "FAIL",
+      "e.style['corner-top-left'] = \"10px / 5px notch\" should not set unrelated longhands": "FAIL",
+      "e.style['corner-top-left'] = \"10px / 5px notch\" should set border-top-left-radius": "FAIL",
+      "e.style['corner-top-left'] = \"10px / 5px notch\" should set corner-top-left-shape": "FAIL",
+      "e.style['corner-top-left'] = \"10px / 5px notch\" should set the property value": "FAIL",
+      "e.style['corner-top-left'] = \"10px bevel\" should set the property value": "FAIL",
+      "e.style['corner-top-left'] = \"10px\" should not set unrelated longhands": "FAIL",
+      "e.style['corner-top-left'] = \"10px\" should set border-top-left-radius": "FAIL",
+      "e.style['corner-top-left'] = \"10px\" should set corner-top-left-shape": "FAIL",
+      "e.style['corner-top-left'] = \"10px\" should set the property value": "FAIL",
+      "e.style['corner-top-left'] = \"4px 2% round\" should set the property value": "FAIL",
+      "e.style['corner-top-left'] = \"bevel 10px\" should set the property value": "FAIL",
+      "e.style['corner-top-left'] = \"bevel\" should not set unrelated longhands": "FAIL",
+      "e.style['corner-top-left'] = \"bevel\" should set border-top-left-radius": "FAIL",
+      "e.style['corner-top-left'] = \"bevel\" should set corner-top-left-shape": "FAIL",
+      "e.style['corner-top-left'] = \"bevel\" should set the property value": "FAIL",
+      "e.style['corner-top-left'] = \"round 30%\" should set the property value": "FAIL",
+      "e.style['corner-top-left'] = \"round\" should set the property value": "FAIL",
+      "e.style['corner-top-left'] = \"superellipse(-0.5) 30% 10px\" should set the property value": "FAIL"
+    }
   },
   "css/css-borders/corner-shape/corner-top-valid.html": {
-    "total": 14
+    "total": 23,
+    "failures": {
+      "e.style['corner-top'] = \"10px 20px / 5px bevel scoop\" should not set unrelated longhands": "FAIL",
+      "e.style['corner-top'] = \"10px 20px / 5px bevel scoop\" should set border-top-left-radius": "FAIL",
+      "e.style['corner-top'] = \"10px 20px / 5px bevel scoop\" should set border-top-right-radius": "FAIL",
+      "e.style['corner-top'] = \"10px 20px / 5px bevel scoop\" should set corner-top-left-shape": "FAIL",
+      "e.style['corner-top'] = \"10px 20px / 5px bevel scoop\" should set corner-top-right-shape": "FAIL",
+      "e.style['corner-top'] = \"10px 20px / 5px bevel scoop\" should set the property value": "FAIL",
+      "e.style['corner-top'] = \"10px bevel\" should set the property value": "FAIL",
+      "e.style['corner-top'] = \"10px\" should set the property value": "FAIL",
+      "e.style['corner-top'] = \"4px 2% squircle\" should set the property value": "FAIL",
+      "e.style['corner-top'] = \"bevel 10px 20px\" should set the property value": "FAIL",
+      "e.style['corner-top'] = \"bevel\" should not set unrelated longhands": "FAIL",
+      "e.style['corner-top'] = \"bevel\" should set border-top-left-radius": "FAIL",
+      "e.style['corner-top'] = \"bevel\" should set border-top-right-radius": "FAIL",
+      "e.style['corner-top'] = \"bevel\" should set corner-top-left-shape": "FAIL",
+      "e.style['corner-top'] = \"bevel\" should set corner-top-right-shape": "FAIL",
+      "e.style['corner-top'] = \"bevel\" should set the property value": "FAIL",
+      "e.style['corner-top'] = \"round 10% / 2rem\" should set the property value": "FAIL",
+      "e.style['corner-top'] = \"round\" should set the property value": "FAIL"
+    }
   },
   "css/css-borders/corner-shape/corner-valid.html": {
-    "total": 12
+    "total": 67,
+    "failures": {
+      "'corner' resets an omitted component to its initial value": "FAIL",
+      "e.style['corner'] = \"0\" should set the property value": "FAIL",
+      "e.style['corner'] = \"0% bevel\" should set the property value": "FAIL",
+      "e.style['corner'] = \"0.25em bevel\" should set the property value": "FAIL",
+      "e.style['corner'] = \"0px round\" should set the property value": "FAIL",
+      "e.style['corner'] = \"10px 20px / 5px bevel\" should set the property value": "FAIL",
+      "e.style['corner'] = \"10px bevel\" should set the property value": "FAIL",
+      "e.style['corner'] = \"10px\" should not set unrelated longhands": "FAIL",
+      "e.style['corner'] = \"10px\" should set border-bottom-left-radius": "FAIL",
+      "e.style['corner'] = \"10px\" should set border-bottom-right-radius": "FAIL",
+      "e.style['corner'] = \"10px\" should set border-top-left-radius": "FAIL",
+      "e.style['corner'] = \"10px\" should set border-top-right-radius": "FAIL",
+      "e.style['corner'] = \"10px\" should set corner-bottom-left-shape": "FAIL",
+      "e.style['corner'] = \"10px\" should set corner-bottom-right-shape": "FAIL",
+      "e.style['corner'] = \"10px\" should set corner-top-left-shape": "FAIL",
+      "e.style['corner'] = \"10px\" should set corner-top-right-shape": "FAIL",
+      "e.style['corner'] = \"10px\" should set the property value": "FAIL",
+      "e.style['corner'] = \"1px 2px 3px bevel\" should set the property value": "FAIL",
+      "e.style['corner'] = \"3px round\" should set the property value": "FAIL",
+      "e.style['corner'] = \"5px / 3px bevel\" should set the property value": "FAIL",
+      "e.style['corner'] = \"bevel 0 5px 5px 0 / 0 50% 50% 0\" should not set unrelated longhands": "FAIL",
+      "e.style['corner'] = \"bevel 0 5px 5px 0 / 0 50% 50% 0\" should set border-bottom-left-radius": "FAIL",
+      "e.style['corner'] = \"bevel 0 5px 5px 0 / 0 50% 50% 0\" should set border-bottom-right-radius": "FAIL",
+      "e.style['corner'] = \"bevel 0 5px 5px 0 / 0 50% 50% 0\" should set border-top-left-radius": "FAIL",
+      "e.style['corner'] = \"bevel 0 5px 5px 0 / 0 50% 50% 0\" should set border-top-right-radius": "FAIL",
+      "e.style['corner'] = \"bevel 0 5px 5px 0 / 0 50% 50% 0\" should set corner-bottom-left-shape": "FAIL",
+      "e.style['corner'] = \"bevel 0 5px 5px 0 / 0 50% 50% 0\" should set corner-bottom-right-shape": "FAIL",
+      "e.style['corner'] = \"bevel 0 5px 5px 0 / 0 50% 50% 0\" should set corner-top-left-shape": "FAIL",
+      "e.style['corner'] = \"bevel 0 5px 5px 0 / 0 50% 50% 0\" should set corner-top-right-shape": "FAIL",
+      "e.style['corner'] = \"bevel 0 5px 5px 0 / 0 50% 50% 0\" should set the property value": "FAIL",
+      "e.style['corner'] = \"bevel 0.25em\" should set the property value": "FAIL",
+      "e.style['corner'] = \"bevel scoop 2px\" should set the property value": "FAIL",
+      "e.style['corner'] = \"bevel square bevel square 10px / 100%\" should set the property value": "FAIL",
+      "e.style['corner'] = \"bevel\" should not set unrelated longhands": "FAIL",
+      "e.style['corner'] = \"bevel\" should set border-bottom-left-radius": "FAIL",
+      "e.style['corner'] = \"bevel\" should set border-bottom-right-radius": "FAIL",
+      "e.style['corner'] = \"bevel\" should set border-top-left-radius": "FAIL",
+      "e.style['corner'] = \"bevel\" should set border-top-right-radius": "FAIL",
+      "e.style['corner'] = \"bevel\" should set corner-bottom-left-shape": "FAIL",
+      "e.style['corner'] = \"bevel\" should set corner-bottom-right-shape": "FAIL",
+      "e.style['corner'] = \"bevel\" should set corner-top-left-shape": "FAIL",
+      "e.style['corner'] = \"bevel\" should set corner-top-right-shape": "FAIL",
+      "e.style['corner'] = \"bevel\" should set the property value": "FAIL",
+      "e.style['corner'] = \"notch 10px\" should set the property value": "FAIL",
+      "e.style['corner'] = \"round 3px\" should set the property value": "FAIL",
+      "e.style['corner'] = \"round 5px / 3px\" should set the property value": "FAIL",
+      "e.style['corner'] = \"round\" should set the property value": "FAIL",
+      "e.style['corner'] = \"square bevel bevel square 10px / 50%\" should not set unrelated longhands": "FAIL",
+      "e.style['corner'] = \"square bevel bevel square 10px / 50%\" should set border-bottom-left-radius": "FAIL",
+      "e.style['corner'] = \"square bevel bevel square 10px / 50%\" should set border-bottom-right-radius": "FAIL",
+      "e.style['corner'] = \"square bevel bevel square 10px / 50%\" should set border-top-left-radius": "FAIL",
+      "e.style['corner'] = \"square bevel bevel square 10px / 50%\" should set border-top-right-radius": "FAIL",
+      "e.style['corner'] = \"square bevel bevel square 10px / 50%\" should set corner-bottom-left-shape": "FAIL",
+      "e.style['corner'] = \"square bevel bevel square 10px / 50%\" should set corner-bottom-right-shape": "FAIL",
+      "e.style['corner'] = \"square bevel bevel square 10px / 50%\" should set corner-top-left-shape": "FAIL",
+      "e.style['corner'] = \"square bevel bevel square 10px / 50%\" should set corner-top-right-shape": "FAIL",
+      "e.style['corner'] = \"square bevel bevel square 10px / 50%\" should set the property value": "FAIL",
+      "e.style['corner'] = \"superellipse(-0.5) 30% 10px\" should set the property value": "FAIL"
+    }
   },
   "css/css-borders/corner-shape/corners-invalid.html": {
     "total": 23
+  },
+  "css/css-borders/corner-shape/inner-corner-collapse001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/inner-corner-collapse002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/inner-corner-collapse003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/inner-corner-intersection001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/corner-shape/inner-corner-intersection002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/inner-corner-intersection003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/inner-corner-intersection004.html": {
+    "reftest": "PASS"
   },
   "css/css-borders/corner-shape/render-corner-shape.html?border-radius=10,50%&corner-shape=0&shadow-spread=20": {
     "reftest": "PASS"

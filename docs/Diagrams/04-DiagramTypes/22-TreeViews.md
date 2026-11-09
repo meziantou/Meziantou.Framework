@@ -81,7 +81,7 @@ var diagram = (TreeViewDiagram)MermaidDocument.Parse("""
             index.ts ## entry point
         "my notes.txt"
         package.json
-    """).Diagram;
+    """).Content;
 ```
 <!-- endref -->
 

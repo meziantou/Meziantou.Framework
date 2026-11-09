@@ -59,7 +59,7 @@ var text = """
     """;
 
 var document = MermaidDocument.Parse(text);
-var flowchart = (FlowchartDiagram)document.Diagram;
+var flowchart = (FlowchartDiagram)document.Content;
 var svg = flowchart.ToSvg();
 ```
 <!-- endref -->

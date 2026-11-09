@@ -215,6 +215,9 @@
   "css/css-display/display-contents-svg-switch-child.html": {
     "total": 1
   },
+  "css/css-display/display-contents-svg-tspan-baseline-shift.html": {
+    "reftest": "PASS"
+  },
   "css/css-display/display-contents-svg-tspan-child-character-positions.html": {
     "total": 1
   },
@@ -226,6 +229,9 @@
   },
   "css/css-display/display-contents-svg-tspan-child-text-inserted.html": {
     "total": 1
+  },
+  "css/css-display/display-contents-svg-tspan-text-fill.html": {
+    "reftest": "PASS"
   },
   "css/css-display/display-contents-table-001.html": {
     "reftest": "PASS"
@@ -245,7 +251,16 @@
   "css/css-display/display-contents-text-inherit.html": {
     "reftest": "PASS"
   },
+  "css/css-display/display-contents-text-line-height-quirks.html": {
+    "total": 3
+  },
+  "css/css-display/display-contents-text-line-height.html": {
+    "reftest": "FAIL"
+  },
   "css/css-display/display-contents-text-only-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-display/display-contents-text-only-content-properties.html": {
     "reftest": "PASS"
   },
   "css/css-display/display-contents-tr-001.html": {
@@ -343,6 +358,22 @@
   },
   "css/css-display/reading-flow/reading-flow-computed.html": {
     "total": 7
+  },
+  "css/css-display/reading-flow/reading-flow-grid-lanes-computed.tentative.html": {
+    "total": 3,
+    "failures": {
+      "Property reading-flow value 'grid-lanes-flow'": "FAIL",
+      "Property reading-flow value 'grid-lanes-order'": "FAIL",
+      "Property reading-flow value 'grid-lanes-track'": "FAIL"
+    }
+  },
+  "css/css-display/reading-flow/reading-flow-grid-lanes-valid.tentative.html": {
+    "total": 3,
+    "failures": {
+      "e.style['reading-flow'] = \"grid-lanes-flow\" should set the property value": "FAIL",
+      "e.style['reading-flow'] = \"grid-lanes-order\" should set the property value": "FAIL",
+      "e.style['reading-flow'] = \"grid-lanes-track\" should set the property value": "FAIL"
+    }
   },
   "css/css-display/reading-flow/reading-flow-invalid.html": {
     "total": 9

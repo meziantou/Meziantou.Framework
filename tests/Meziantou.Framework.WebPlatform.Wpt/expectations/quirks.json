@@ -87,6 +87,18 @@
   "quirks/percentage-height-quirk-excludes-flex-grid-003.html": {
     "reftest": "PASS"
   },
+  "quirks/percentage-height-quirk-min-height-001.html": {
+    "reftest": "FAIL"
+  },
+  "quirks/percentage-height-quirk-min-height-002.html": {
+    "reftest": "PASS"
+  },
+  "quirks/percentage-height-quirk-min-height-003.html": {
+    "reftest": "PASS"
+  },
+  "quirks/percentage-height-quirk-relpos-percent.html": {
+    "reftest": "PASS"
+  },
   "quirks/reference/percentage-height-quirk-excludes-flex-grid-002-ref.html": {
     "reftest": "PASS"
   },

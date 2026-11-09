@@ -21,7 +21,7 @@
     "total": 30
   },
   "css/css-mixins/functions/dashed-function-eval.html": {
-    "total": 89
+    "total": 94
   },
   "css/css-mixins/functions/dashed-function-named-arg.tentative.html": {
     "total": 15
@@ -169,6 +169,21 @@
   },
   "css/css-mixins/private/private-cssom-serialization.tentative.html": {
     "total": 16
+  },
+  "css/css-mixins/private/private-cssom-style-api.tentative.html": {
+    "total": 10,
+    "failures": {
+      "CSSPrivateRule inherits CSSStyleRule": "FAIL",
+      "CSSPrivateRule supports inherited rule-list mutation": "FAIL",
+      "individual style setters preserve private declaration restrictions": "FAIL",
+      "selectorText is empty and ignores assignment": "FAIL",
+      "style exposes and mutates private declarations": "FAIL",
+      "style mutations update detached private rules": "FAIL",
+      "style serializes private declarations with inline types": "FAIL",
+      "style.cssText filters non-custom declarations": "FAIL",
+      "style.cssText uses private declaration parsing": "FAIL",
+      "styleMap exposes and mutates private declarations": "FAIL"
+    }
   },
   "css/css-mixins/private/private-shared-stylesheet.tentative.html": {
     "total": 1

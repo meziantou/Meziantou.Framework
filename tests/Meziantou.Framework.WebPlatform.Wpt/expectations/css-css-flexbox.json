@@ -629,6 +629,9 @@
   "css/css-flexbox/aspect-ratio-intrinsic-size-014.html": {
     "reftest": "PASS"
   },
+  "css/css-flexbox/aspect-ratio-nonreplaced-max-content-contribution-001.html": {
+    "reftest": "PASS"
+  },
   "css/css-flexbox/aspect-ratio-transferred-max-size.html": {
     "reftest": "PASS"
   },
@@ -1127,6 +1130,15 @@
   "css/css-flexbox/flex-base-size-ignores-max-width.html": {
     "reftest": "PASS"
   },
+  "css/css-flexbox/flex-base-size-ignores-min-max-width-001.html": {
+    "total": 4
+  },
+  "css/css-flexbox/flex-base-size-ignores-min-max-width-002.html": {
+    "total": 4
+  },
+  "css/css-flexbox/flex-base-size-ignores-min-max-width-003.html": {
+    "total": 4
+  },
   "css/css-flexbox/flex-baseline-overflow-hidden.html": {
     "total": 6
   },
@@ -1180,6 +1192,9 @@
   },
   "css/css-flexbox/flex-basis-item-margins-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-flexbox/flex-basis-min-content-dynamic-001.html": {
+    "total": 1
   },
   "css/css-flexbox/flex-box-wrap.html": {
     "reftest": "PASS"
@@ -1316,6 +1331,12 @@
   "css/css-flexbox/flex-item-and-percentage-abspos.html": {
     "reftest": "PASS"
   },
+  "css/css-flexbox/flex-item-aspect-ratio-svg-use-symbol-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-flexbox/flex-item-aspect-ratio-svg-use-symbol-002.html": {
+    "reftest": "PASS"
+  },
   "css/css-flexbox/flex-item-compressible-001.html": {
     "total": 15
   },
@@ -1348,6 +1369,9 @@
   },
   "css/css-flexbox/flex-item-min-height-min-content.html": {
     "reftest": "PASS"
+  },
+  "css/css-flexbox/flex-item-min-max-width-intrinsic-contribution-001.html": {
+    "total": 2
   },
   "css/css-flexbox/flex-item-min-width-min-content-max-width.html": {
     "reftest": "PASS"
@@ -3512,6 +3536,9 @@
   "css/css-flexbox/intrinsic-size/col-wrap-calc-size-001.html": {
     "total": 2
   },
+  "css/css-flexbox/intrinsic-size/col-wrap-dynamic-002.html": {
+    "total": 2
+  },
   "css/css-flexbox/intrinsic-size/col-wrap-dynamic.html": {
     "reftest": "PASS"
   },
@@ -3801,7 +3828,7 @@
     "total": 3
   },
   "css/css-flexbox/parsing/order-computed.html": {
-    "total": 3
+    "total": 7
   },
   "css/css-flexbox/parsing/order-invalid.html": {
     "total": 3

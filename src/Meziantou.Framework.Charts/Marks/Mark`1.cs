@@ -65,7 +65,9 @@ public abstract class Mark<T> : Mark
         var rows = Data as IReadOnlyList<T> ?? [.. Data];
         var facetX = Evaluate(rows, FacetX)?.ToCategorical();
         var facetY = Evaluate(rows, FacetY)?.ToCategorical();
-        if (facetX is null && facetY is null)
+
+        // Without rows, there is no facet to prepare: joining no part would also drop the channels of the mark
+        if ((facetX is null && facetY is null) || rows.Count is 0)
             return PrepareRows(rows);
 
         // The rows of each facet are prepared apart, so the transforms (stacks, bins, totals) apply to each facet

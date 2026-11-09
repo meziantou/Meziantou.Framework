@@ -473,34 +473,23 @@ internal sealed partial class InlineLayoutAlgorithm
                     node.Metrics = leaf.Kind is LineLeafKind.OutOfFlow or LineLeafKind.RubyGap ? parentMetrics : GetMetrics(GetLineStyle(Items[leaf.Item], isFirstLine));
                     node.LineRelative = BaselineShiftKind.Length;
                     node.Baseline = parentBaseline;
-                    if (leaf.Kind == LineLeafKind.Text && IsTextOfContentsElement(Items[leaf.Item]))
+                    var isTextOfContentsElement = leaf.Kind == LineLeafKind.Text && IsTextOfContentsElement(Items[leaf.Item]);
+                    if (isTextOfContentsElement)
                     {
                         // https://drafts.csswg.org/css-inline-3/#baseline-alignment: "for a glyph, the alignment baseline is always
                         // determined by the parent's dominant baseline"
                         node.Baseline -= parentMetrics.GetBaseline(parentMetrics.DominantBaseline) - node.Metrics.GetBaseline(parentMetrics.DominantBaseline);
-
-                        // The text of a display: contents element has the font and the line height of the element, not the ones of
-                        // the box it is in: as in the browsers, its layout bounds (its content area and its half-leading) make the
-                        // line taller, as the ones of an inline box would
-                        var (textAscentLeading, textDescentLeading) = GetHalfLeadings(node.Metrics);
-                        var (textTop, textBottom) = (node.Baseline - node.Metrics.Ascent - textAscentLeading, node.Baseline + node.Metrics.Descent + textDescentLeading);
-                        if (node.AlignRoot < 0)
-                        {
-                            Extend(textTop, textBottom);
-                        }
-                        else
-                        {
-                            ref var group = ref nodes[node.AlignRoot];
-                            group.GroupTop = Math.Min(group.GroupTop, textTop);
-                            group.GroupBottom = Math.Max(group.GroupBottom, textBottom);
-                        }
                     }
 
                     // https://drafts.csswg.org/css-inline-3/#valdef-line-height-normal: with line-height: normal, the layout bounds of
                     // the box of the text include the ones of the fallback fonts of its glyphs (their ascent, descent and line gap),
-                    // as in the browsers (Blink's InlineBoxState::AccumulateUsedFonts), also the hyphen of a hyphenated line
+                    // as in the browsers (Blink's InlineBoxState::AccumulateUsedFonts), also the hyphen of a hyphenated line. The text
+                    // of a display: contents element has the font of the element, but no box: it is in the box of its parent, whose
+                    // line height applies (https://drafts.csswg.org/css-display-3/#valdef-display-contents): its own line-height
+                    // does not change the line, and its font only does as a font used by the box of its parent with line-height:
+                    // normal (WPT css/css-display/display-contents-text-line-height.html)
                     if (leaf.Kind is LineLeafKind.Text or LineLeafKind.Hyphen && leaf.Shaped is not null && (parent < 0 ? !quirks || _rootHasText : nodes[parent].Contributes)
-                        && GetFallbackFontBounds(leaf, GetLineStyle(Items[leaf.Item], isFirstLine)) is { } fallback)
+                        && GetFallbackFontBounds(leaf, isTextOfContentsElement ? GetLineStyle(Items[leaf.Item].Container, isFirstLine) : GetLineStyle(Items[leaf.Item], isFirstLine)) is { } fallback)
                     {
                         var (fallbackTop, fallbackBottom) = (node.Baseline - fallback.Ascent, node.Baseline + fallback.Descent);
                         if (node.AlignRoot < 0)
@@ -520,10 +509,19 @@ internal sealed partial class InlineLayoutAlgorithm
             }
             else
             {
-                if (node.Box is { PseudoElement: null, Element: { } breakElement } && breakElement.IsHtml(TagId.Br))
+                var isBreakElement = node.Box is { PseudoElement: null, Element: { } breakElement } && breakElement.IsHtml(TagId.Br);
+                if (isBreakElement && quirks && node.HasDirectText)
                 {
-                    // As in the browsers, the font and the line height of a br element do not change the height of the line it
-                    // ends: its box has the layout bounds of its parent
+                    // In quirks mode, a br element alone on its line (see MarkDirectText) gives the line its own font and line
+                    // height, as an inline box with text, and the root inline box, without text, does not contribute (the line
+                    // height calculation quirk): as in the browsers, its line-height can make the line shorter than the strut
+                    // (WPT css/css-inline/br-line-height-shrink-quirks.html)
+                    AlignInlineBox(ref node, GetLineStyle(node.Box!, isFirstLine), parentMetrics, quirks);
+                }
+                else if (isBreakElement)
+                {
+                    // Otherwise, as in the browsers, the font and the line height of a br element do not change the height of the
+                    // line it ends: its box has the layout bounds of its parent
                     node.Metrics = parentMetrics;
                     var (breakAscentLeading, breakDescentLeading) = GetHalfLeadings(parentMetrics);
                     node.Ascent = parentMetrics.Ascent + breakAscentLeading;

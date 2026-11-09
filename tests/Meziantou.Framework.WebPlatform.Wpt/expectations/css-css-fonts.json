@@ -1148,7 +1148,7 @@
     "reftest": "PASS"
   },
   "css/css-fonts/metrics-override-small-lineheight.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-fonts/mvs-shaping.html": {
     "total": 5

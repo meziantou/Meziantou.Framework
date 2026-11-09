@@ -870,7 +870,8 @@ public sealed class PaintingTests : IDisposable
     [InlineData("text-decoration-inset: 5px", "(25, 9, 30x1)")] // trimmed at both ends of "cdef" (20 to 60)
     [InlineData("text-decoration-inset: -5px", "(15, 9, 50x1)")] // extended at both ends
     [InlineData("text-decoration-inset: 10px -10px", "(30, 9, 40x1)")] // the start inset, then the end inset
-    [InlineData("text-decoration-inset: 25% 50%", "(30, 9, 10x1)")] // percentages of the decorated text
+    [InlineData("text-decoration-inset: 25% 50%", "(30, 9, 10x1)")] // percentages of the decorating box
+    [InlineData("padding: 0 10px; text-decoration-inset: 25%", "(45, 9, 10x1)")] // with its paddings (15px), from the ends of the text (30 to 70)
     [InlineData("text-decoration-inset: 30px 10px", null)] // nothing is left
     [InlineData("text-decoration-inset: 60px -70px", "(80, 9, 50x1)")] // the whole line is after the text
     [InlineData("text-decoration-inset: auto", "(21, 9, 38x1)")] // half the thickness, 1px at least

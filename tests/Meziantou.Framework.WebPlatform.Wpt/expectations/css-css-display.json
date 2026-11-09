@@ -255,7 +255,7 @@
     "total": 3
   },
   "css/css-display/display-contents-text-line-height.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-display/display-contents-text-only-001.html": {
     "reftest": "PASS"

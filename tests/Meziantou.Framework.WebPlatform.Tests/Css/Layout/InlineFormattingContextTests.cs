@@ -520,12 +520,22 @@ public sealed class InlineFormattingContextTests : IDisposable
     [Fact]
     public void LineHeight_OfTheTextOfDisplayContentsElements()
     {
-        // The text of a display: contents element has its font and its line height: 16px above the baseline, 4px below
+        // The text of a display: contents element has its font, but the line height of the box it is in (10px): its glyphs
+        // overflow the line (16px above the baseline, 4px below), and its own line height does not apply
         var document = Parse("<div id=d><span style='display: contents; font-size: 20px'>X</span></div><div id=e><span style='display: contents; line-height: 30px'>X</span></div>");
+        Assert.Equal(10, GetRect(document, "d").Height);
+        Assert.Equal(new PhysicalRect(0, -8, 20, 20), GetTextFragments(document, "d")[0].GetRectInRoot());
+        Assert.Equal(8, Assert.IsType<LineBoxFragment>(GetTextFragments(document, "d")[0].Parent).Baseline);
+        Assert.Equal(10, GetRect(document, "e").Height);
+    }
+
+    [Fact]
+    public void LineHeight_OfTheTextOfDisplayContentsElements_NormalLineHeightOfTheBox()
+    {
+        // With line-height: normal, the font of the text is a font used by the box it is in: 16px above the baseline, 4px below
+        var document = Parse("<div id=d style='line-height: normal'><span style='display: contents; font-size: 20px'>X</span></div>");
         Assert.Equal(20, GetRect(document, "d").Height);
-        Assert.Equal(new PhysicalRect(0, 0, 20, 20), GetTextFragments(document, "d")[0].GetRectInRoot());
         Assert.Equal(16, Assert.IsType<LineBoxFragment>(GetTextFragments(document, "d")[0].Parent).Baseline);
-        Assert.Equal(30, GetRect(document, "e").Height);
     }
 
     [Theory]
@@ -941,6 +951,11 @@ public sealed class InlineFormattingContextTests : IDisposable
     [InlineData("", "<span style='font-size: 5px'>X</span>", 5)] // The blocks ignore line-height quirk: the strut of the block has no text
     [InlineData("", "<span style='font-size: 5px'>X</span><br><span style='font-size: 5px'>X</span>", 10)] // A forced line break is not a text
     [InlineData("", "<br>", 10)] // Except on a line without text
+    [InlineData("", "<br style='line-height: 5px'>", 5)] // Then the line has the line height of the br element
+    [InlineData("", "<br style='line-height: 30px'>", 30)]
+    [InlineData("", "<br style='line-height: 0'>", 0)]
+    [InlineData("", "X<br style='line-height: 30px'>", 10)] // Not on a line with text
+    [InlineData("<!DOCTYPE html>", "<br style='line-height: 5px'>", 10)] // Not in no-quirks mode: the strut
     [InlineData("", "<img style='width: 10px; height: 3px; vertical-align: top'><br><img style='width: 10px; height: 3px; vertical-align: top'>", 6)] // That has no atomic inline either
     [InlineData("", "<li style='list-style: none'><img style='width: 10px; height: 3px; vertical-align: top'></li>", 10)] // The quirks do not apply to the lines of a list item
     [InlineData("", "<img style='width: 10px; height: 3px; vertical-align: top'>", 3)]

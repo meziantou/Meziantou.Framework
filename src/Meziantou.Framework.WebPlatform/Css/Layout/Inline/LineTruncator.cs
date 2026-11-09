@@ -526,6 +526,46 @@ internal static class LineTruncator
         }
     }
 
+    /// <summary>
+    /// Whether an ellipsis placed by a truncation elides characters of a range at the logical end of a text: a text of the line
+    /// whose inline-end side faces the ellipsis has characters of the range (<paramref name="getRange"/>: the offsets of the
+    /// characters of a text fragment in its node, or null) beyond the edge of the content where the ellipsis is placed. The
+    /// characters elided at the logical start of a text of the other direction (e.g. a left-to-right number truncated by the
+    /// ellipsis at the left end of a right-to-left line) do not count, as in Blink (WPT css/css-overflow/text-overflow-with-selection.html).
+    /// </summary>
+    public static bool ElidesRange(LineTruncation truncation, TextFragment ellipsis, Func<TextFragment, (int Start, int End)?> getRange)
+    {
+        var line = truncation.Line;
+        var lineLeft = new WritingDirection(((BoxFragment)line.Parent!).WritingDirection.WritingMode, Direction.Ltr).InlineStart;
+        var (ellipsisLeft, ellipsisRight) = ToLineRange(line, new PhysicalRect(ellipsis.Offset, ellipsis.Size), lineLeft);
+        var right = ellipsisLeft >= truncation.ClipRight - Epsilon;
+        var left = ellipsisRight <= truncation.ClipLeft + Epsilon;
+        return (left || right) && Elides(line, PhysicalOffset.Zero);
+
+        bool Elides(Fragment parent, PhysicalOffset origin)
+        {
+            foreach (var child in parent.ChildrenSpan)
+            {
+                var offset = origin + child.Offset;
+                switch (child)
+                {
+                    case TextFragment { IsEllipsis: false } text when getRange(text) is var (start, end):
+                        var forward = text.WritingDirection.InlineStart == lineLeft;
+                        var (rangeLeft, rangeRight) = ToLineRange(line, text.GetRangeRect(start, end).Translate(offset), lineLeft);
+                        if ((right && forward && rangeRight > truncation.ClipRight + Epsilon) || (left && !forward && rangeLeft < truncation.ClipLeft - Epsilon))
+                            return true;
+
+                        break;
+
+                    case BoxFragment { Box.IsInlineBox: true, Box.IsOutOfFlow: false } inlineBox when Elides(inlineBox, offset):
+                        return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
     /// <summary>Returns the line-relative range (from the line-left edge of the line box) covered by a rectangle in the coordinates of the line box.</summary>
     internal static (double Left, double Right) ToLineRange(LineBoxFragment line, PhysicalRect rect, PhysicalSide lineLeft) => lineLeft switch
     {

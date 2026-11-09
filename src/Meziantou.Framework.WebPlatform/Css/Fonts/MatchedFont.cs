@@ -250,9 +250,15 @@ internal sealed class MatchedFont
         var capHeight = metrics.CapHeight is { } capHeightUnits ? capHeightUnits * scale : ascent;
         if (ascent >= 3 && ascent + descent >= 2)
         {
+            // The metrics of the descriptors of the @font-face rule are exact fractions of the em size: the normal line height is
+            // their sum, rounded as a whole (the line gap takes the rounding of the ascent and of the descent), as in the browsers:
+            // overrides of 25%, 12.5% and 12.5% give a 50px line for a 100px font, not 51px (WPT css/css-fonts/metrics-override-small-lineheight.html)
+            var lineSpacing = Math.Round(ascent + descent + lineGap, MidpointRounding.AwayFromZero);
             ascent = Math.Round(ascent, MidpointRounding.AwayFromZero);
             descent = Math.Round(descent, MidpointRounding.AwayFromZero);
-            lineGap = Math.Round(lineGap, MidpointRounding.AwayFromZero);
+            lineGap = AscentOverride is not null || DescentOverride is not null || LineGapOverride is not null
+                ? Math.Max(0, lineSpacing - ascent - descent)
+                : Math.Round(lineGap, MidpointRounding.AwayFromZero);
         }
 
         return new UsedFontMetrics

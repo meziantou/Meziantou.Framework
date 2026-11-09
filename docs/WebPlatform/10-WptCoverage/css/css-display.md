@@ -11,14 +11,13 @@ description: "The results of the web-platform-tests of css/css-display, and why 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 37 | 37 | 0 | 100% |
 | [Tentative](#tentative-tests) | 8 | 10 | 0 | 80% |
-| [Reftests](#reftests) | 169 | 222 | 0 | 76% |
-| **All** | **214** | **269** | **0** | **80%** |
+| [Reftests](#reftests) | 170 | 222 | 0 | 77% |
+| **All** | **215** | **269** | **0** | **80%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
 - **TEST BUG**: 52
 - **NOT IMPLEMENTED**: 2
 
@@ -153,7 +152,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`display-contents-td-001.html`](https://wpt.fyi/results/css/css-display/display-contents-td-001.html) | Pass | 1 / 1 |  |  |
 | [`display-contents-text-inherit-002.html`](https://wpt.fyi/results/css/css-display/display-contents-text-inherit-002.html) | Pass | 1 / 1 |  |  |
 | [`display-contents-text-inherit.html`](https://wpt.fyi/results/css/css-display/display-contents-text-inherit.html) | Pass | 1 / 1 |  |  |
-| [`display-contents-text-line-height.html`](https://wpt.fyi/results/css/css-display/display-contents-text-line-height.html) | Fail | 0 / 1 | BUG | the text of a `display: contents` element contributes to the line with the `line-height` and the font of the element (40px font, 80px line height), which stretch the lines; it belongs to the box of its parent, whose fixed 30px `line-height` sets the height of the lines (the element has no inline box) |
+| [`display-contents-text-line-height.html`](https://wpt.fyi/results/css/css-display/display-contents-text-line-height.html) | Pass | 1 / 1 |  |  |
 | [`display-contents-text-only-001.html`](https://wpt.fyi/results/css/css-display/display-contents-text-only-001.html) | Pass | 1 / 1 |  |  |
 | [`display-contents-text-only-content-properties.html`](https://wpt.fyi/results/css/css-display/display-contents-text-only-content-properties.html) | Pass | 1 / 1 |  |  |
 | [`display-contents-tr-001.html`](https://wpt.fyi/results/css/css-display/display-contents-tr-001.html) | Pass | 1 / 1 |  |  |

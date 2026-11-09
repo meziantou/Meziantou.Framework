@@ -309,7 +309,7 @@
     "reftest": "PASS"
   },
   "css/css-text-decor/text-decoration-inset-percentage-padding.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text-decor/text-decoration-inset-percentage-slice-multiline.html": {
     "reftest": "PASS"

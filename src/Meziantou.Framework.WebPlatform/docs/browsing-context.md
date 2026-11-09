@@ -2794,7 +2794,9 @@ specification, the browsers are followed, as the tests expect:
 - `insertText` removes the line break that only rendered the empty last line of a block when text is inserted on this
   line: the `br` that follows the caret and ends the block, when the caret follows a `br` or a line feed that
   `white-space` preserves (`AB<br>[]<br>` gives `AB<br>a`), and the preserved line feed that is the only content of
-  the block (the specification only removes the `br` that is the sole child of its parent);
+  the block (the specification only removes the `br` that is the sole child of its parent). The line break that follows
+  the content of a line is kept when the text replaces all this content (`<p>[abc]<br></p>` gives `<p>a<br></p>`, and the
+  same for a preserved line feed), although the deletion of the selection makes it the line break of an empty line;
 - `delete` and `forwardDelete` do not canonicalize the white space around the deletion as the specification does (the whole
   sequence of spaces and no-break spaces, through the inline elements). The spaces that collapse around the selection are
   removed first, with the spaces that are not rendered around a line break that is deleted (after a `br`, around an `hr`, a

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Reflection;
 
 namespace Meziantou.Framework.PublicApiGenerator;
@@ -37,9 +38,9 @@ public static class PublicApi
             return Generate(model, options, singleTargetFrameworks);
         }
 
-        var modelsBySymbol = BuildModelsBySymbol(assemblySources, out var firstAssemblyName, out var targetFrameworks);
+        var modelsBySymbol = BuildModelsBySymbol(assemblySources, options, out var firstAssemblyName, out var targetFrameworks, out var assemblyReferencesByTargetFramework);
         var mergedModel = PublicApiMultiTargetModelMerger.Merge(modelsBySymbol, firstAssemblyName);
-        return Generate(mergedModel, options, targetFrameworks);
+        return PublicApiEmitter.Generate(mergedModel, options, targetFrameworks, MergeAssemblyReferences(assemblyReferencesByTargetFramework, targetFrameworks));
     }
 
     /// <summary>Reads the public API of an assembly file, without loading it.</summary>
@@ -115,13 +116,63 @@ public static class PublicApi
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(targetFrameworks);
-        return PublicApiEmitter.Generate(model, options, targetFrameworks);
+        return PublicApiEmitter.Generate(model, options, targetFrameworks, SelectAssemblyReferences(model, options));
     }
 
-    private static Dictionary<string, PublicApiModel> BuildModelsBySymbol(IReadOnlyList<AssemblySource> assemblySources, out string firstAssemblyName, out IReadOnlyList<string> targetFrameworks)
+    /// <summary>Gets the referenced assemblies to write: the ones of the <c>.deps.json</c> file, or all of them without it, plus the included ones, minus the excluded ones.</summary>
+    private static ImmutableArray<string> SelectAssemblyReferences(PublicApiModel model, PublicApiOptions options)
+    {
+        if (!options.IncludeAssemblyReferences)
+            return [];
+
+        return [.. model.AssemblyReferences.Where(name =>
+            (model.ExternalAssemblyNames is null || model.ExternalAssemblyNames.Contains(name) || MatchesAny(name, options.IncludedAssemblyReferences))
+            && !MatchesAny(name, options.ExcludedAssemblyReferences))];
+    }
+
+    private static bool MatchesAny(string name, IList<string> patterns)
+    {
+        foreach (var pattern in patterns)
+        {
+            if (!string.IsNullOrEmpty(pattern) && System.IO.Enumeration.FileSystemName.MatchesSimpleExpression(pattern, name, ignoreCase: true))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Lists the assemblies referenced by any target framework. A name that only some target frameworks reference is followed by these target frameworks.</summary>
+    private static List<string> MergeAssemblyReferences(Dictionary<string, ImmutableArray<string>> assemblyReferencesByTargetFramework, IReadOnlyList<string> targetFrameworks)
+    {
+        var targetFrameworksByAssemblyReference = new SortedDictionary<string, List<string>>(AssemblyReferenceNameComparer.Instance);
+        foreach (var targetFramework in targetFrameworks)
+        {
+            foreach (var assemblyReference in assemblyReferencesByTargetFramework[targetFramework])
+            {
+                if (!targetFrameworksByAssemblyReference.TryGetValue(assemblyReference, out var referencingTargetFrameworks))
+                {
+                    referencingTargetFrameworks = [];
+                    targetFrameworksByAssemblyReference.Add(assemblyReference, referencingTargetFrameworks);
+                }
+
+                referencingTargetFrameworks.Add(targetFramework);
+            }
+        }
+
+        var result = new List<string>(targetFrameworksByAssemblyReference.Count);
+        foreach (var (assemblyReference, referencingTargetFrameworks) in targetFrameworksByAssemblyReference)
+        {
+            result.Add(referencingTargetFrameworks.Count == targetFrameworks.Count ? assemblyReference : assemblyReference + " (" + string.Join(", ", referencingTargetFrameworks) + ")");
+        }
+
+        return result;
+    }
+
+    private static Dictionary<string, PublicApiModel> BuildModelsBySymbol(IReadOnlyList<AssemblySource> assemblySources, PublicApiOptions options, out string firstAssemblyName, out IReadOnlyList<string> targetFrameworks, out Dictionary<string, ImmutableArray<string>> assemblyReferencesByTargetFramework)
     {
         firstAssemblyName = string.Empty;
         targetFrameworks = [];
+        assemblyReferencesByTargetFramework = new Dictionary<string, ImmutableArray<string>>(StringComparer.Ordinal);
         var modelsBySymbol = new Dictionary<string, PublicApiModel>(StringComparer.Ordinal);
         var resolvedTargetFrameworks = new List<string>(assemblySources.Count);
         var isFirstAssemblySource = true;
@@ -144,6 +195,8 @@ public static class PublicApi
             {
                 throw new ArgumentException($"Multiple assembly sources resolve to the same preprocessor symbol '{symbol}'.", nameof(assemblySources));
             }
+
+            assemblyReferencesByTargetFramework[PublicApiTargetFramework.ToTargetFramework(targetFramework)] = SelectAssemblyReferences(model, options);
         }
 
         targetFrameworks = NormalizeAndSortTargetFrameworks(resolvedTargetFrameworks);

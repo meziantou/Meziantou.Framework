@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.PortableExecutable;
 
@@ -32,7 +33,7 @@ internal static class PublicApiModelReader
     public static PublicApiModel ReadFromMetadata(string assemblyPath)
     {
         var assembly = ReadAssembly(assemblyPath, options: null);
-        return CreateModel(assembly);
+        return CreateModel(assembly) with { ExternalAssemblyNames = DependencyFileReader.ReadExternalAssemblyNames(assemblyPath) };
     }
 
     public static PublicApiModel CreateModel(PublicApiAssembly assembly)
@@ -54,7 +55,8 @@ internal static class PublicApiModelReader
         return new PublicApiModel(
             assembly.IsModuleOnly ? string.Empty : assembly.Name,
             formatter.FormatAssemblyAttributes(assembly),
-            [.. types]);
+            [.. types],
+            assembly.AssemblyReferences);
     }
 
     public static PublicApiModel ReadFromReflection(Assembly assembly)
@@ -63,6 +65,17 @@ internal static class PublicApiModelReader
 
         var assemblyName = assembly.GetName().Name ?? string.Empty;
         var types = assembly.GetExportedTypes().Where(type => type.DeclaringType is null);
-        return PublicApiModelBuilder.Build(assemblyName, assembly.CustomAttributes, types);
+        var assemblyReferences = assembly.GetReferencedAssemblies()
+            .Select(reference => reference.Name)
+            .Where(name => !string.IsNullOrEmpty(name))
+            .Select(name => name!)
+            .Distinct(StringComparer.Ordinal)
+            .Order(AssemblyReferenceNameComparer.Instance)
+            .ToImmutableArray();
+        var model = PublicApiModelBuilder.Build(assemblyName, assembly.CustomAttributes, types, assemblyReferences);
+        if (string.IsNullOrEmpty(assembly.Location))
+            return model;
+
+        return model with { ExternalAssemblyNames = DependencyFileReader.ReadExternalAssemblyNames(assembly.Location) };
     }
 }

@@ -141,10 +141,26 @@ internal sealed partial class PublicApiMetadataReader : IDisposable
             _options.InputIdentity,
             _usesUpdatedMemorySafetyRules,
             attributes,
+            ReadAssemblyReferences(),
             orderedTypes)
         {
             IsModuleOnly = !_metadataReader.IsAssembly,
         };
+    }
+
+    private ImmutableArray<string> ReadAssemblyReferences()
+    {
+        var names = new SortedSet<string>(AssemblyReferenceNameComparer.Instance);
+        foreach (var handle in _metadataReader.AssemblyReferences)
+        {
+            var name = _metadataReader.GetString(_metadataReader.GetAssemblyReference(handle).Name);
+            if (name.Length > 0)
+            {
+                names.Add(name);
+            }
+        }
+
+        return [.. names];
     }
 
     private (ImmutableArray<PublicApiPdbReference> PdbReferences, bool HasEmbeddedPdb) ReadDebugDirectory()

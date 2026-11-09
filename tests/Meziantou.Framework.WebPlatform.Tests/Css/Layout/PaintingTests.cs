@@ -456,6 +456,20 @@ public sealed class PaintingTests : IDisposable
         Assert.Contains("cap=round", dump, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Borders_RoundedDashedBorderWithAnEmptyPaddingBoxIsClippedToTheBorderEdge()
+    {
+        // The padding edge has no width but a curve of 20px by 80px: its path would enclose an area, which the clip of the ring
+        // would remove from the dashes
+        var dump = Dump(Parse("<div style='width: 0; height: 160px; border: 20px dashed rgb(255, 0, 0); border-radius: 40px 0 0 0 / 100px 0 0 0'></div>"));
+        var lines = dump.Split('\n');
+        var stroke = Array.FindIndex(lines, line => line.Contains("draw-path", StringComparison.Ordinal) && line.Contains("stroke #ff0000", StringComparison.Ordinal));
+        Assert.True(stroke > 0, dump);
+        var clip = lines[stroke - 1].Trim();
+        Assert.StartsWith("clip-path ", clip, StringComparison.Ordinal);
+        Assert.Equal(1, clip.Count(c => c == 'M'));
+    }
+
     [Theory]
     [InlineData("dotted", 20, 428.5, 11)] // the line in the middle of a 140px box with 20px borders and 40px radii
     [InlineData("dashed", 4, 200, 17)]

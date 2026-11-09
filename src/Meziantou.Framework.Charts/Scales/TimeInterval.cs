@@ -11,10 +11,6 @@ internal sealed class TimeInterval
     private const double Month = 30 * Day;
     private const double Year = 365 * Day;
 
-    // A day inside the bounds of DateTime, so that converting the milliseconds back to a DateTime cannot round out of them
-    private static readonly double MinMilliseconds = TimeFormats.ToMilliseconds(DateTime.MinValue.AddDays(1));
-    private static readonly double MaxMilliseconds = TimeFormats.ToMilliseconds(DateTime.MaxValue.AddDays(-1));
-
     private static readonly TimeInterval[] Intervals =
     [
         new(TimeUnit.Second, 1, Second),
@@ -82,8 +78,8 @@ internal sealed class TimeInterval
             return TickGenerator.Ticks(start, stop, Math.Max(1, (stop - start) / Step));
 
         // The times out of the range of DateTime have no tick
-        start = Math.Max(start, MinMilliseconds);
-        stop = Math.Min(stop, MaxMilliseconds);
+        start = Math.Max(start, TimeFormats.MinMilliseconds);
+        stop = Math.Min(stop, TimeFormats.MaxMilliseconds);
         if (!(start <= stop))
             return [];
 
@@ -112,7 +108,7 @@ internal sealed class TimeInterval
             return Math.Floor(milliseconds / Step) * Step;
 
         // A time whose interval starts out of the range of DateTime stays as it is
-        if (!(milliseconds >= MinMilliseconds && milliseconds <= MaxMilliseconds) || !TryMove(TimeFormats.FromMilliseconds(milliseconds), Floor, out var current))
+        if (!TimeFormats.IsInRange(milliseconds) || !TryMove(TimeFormats.FromMilliseconds(milliseconds), Floor, out var current))
             return milliseconds;
 
         while (!IsAligned(current))
@@ -131,7 +127,7 @@ internal sealed class TimeInterval
             return Math.Ceiling(milliseconds / Step) * Step;
 
         // A time whose interval ends out of the range of DateTime stays as it is
-        if (!(milliseconds >= MinMilliseconds && milliseconds <= MaxMilliseconds))
+        if (!TimeFormats.IsInRange(milliseconds))
             return milliseconds;
 
         var date = TimeFormats.FromMilliseconds(milliseconds);

@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Charts;
 /// of the node of its larger flow, unless the <see cref="Mark{T}.Fill"/> channel colors the ribbons.
 /// </summary>
 /// <typeparam name="T">The type of the rows: the flows.</typeparam>
-/// <remarks>The rows that have the same source and target add up. Missing and negative values count as zero.</remarks>
+/// <remarks>The rows that have the same source and target add up. Missing, infinite and negative values count as zero.</remarks>
 public sealed class ChordMark<T> : Mark<T>
 {
     private const string SourceColumn = "source";
@@ -75,7 +75,7 @@ public sealed class ChordMark<T> : Mark<T>
             if (sources.GetCategory(i) is { } source && targets.GetCategory(i) is { } target)
             {
                 var value = values.GetNumber(i);
-                flows.Add((GetIndex(source), GetIndex(target), double.IsNaN(value) ? 0 : Math.Max(0, value), i));
+                flows.Add((GetIndex(source), GetIndex(target), double.IsFinite(value) ? Math.Max(0, value) : 0, i));
             }
         }
 

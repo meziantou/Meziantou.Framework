@@ -132,6 +132,36 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void Sankey_HugeAndInfiniteValues()
+    {
+        // The sum of two values of 2^1023 overflows, but the nodes are laid out as for values of the same ratios
+        var max = Math.ScaleB(1, 1023);
+        var bounds = new ChartRectangle(0, 0, 300, 100);
+        var huge = SankeyLayout.Compute([("A", "B", max), ("A", "C", max), ("B", "D", max), ("C", "D", max)], bounds, 20, 5, 6, SankeyAlignment.Justify);
+        var unit = SankeyLayout.Compute([("A", "B", 1), ("A", "C", 1), ("B", "D", 1), ("C", "D", 1)], bounds, 20, 5, 6, SankeyAlignment.Justify);
+        Assert.Equal(unit.Nodes.Select(node => (node.X0, node.Y0, node.X1, node.Y1)).ToArray(), huge.Nodes.Select(node => (node.X0, node.Y0, node.X1, node.Y1)).ToArray());
+        Assert.Equal(unit.Links.Select(link => (link.Width, link.Y0, link.Y1)).ToArray(), huge.Links.Select(link => (link.Width, link.Y0, link.Y1)).ToArray());
+        Assert.Equal([max, max, max, max], huge.Links.Select(link => link.Value).ToArray());
+
+        // An infinite value counts as zero, as a missing one
+        var infinite = SankeyLayout.Compute([("A", "B", double.PositiveInfinity), ("A", "C", 1)], bounds, 20, 5, 6, SankeyAlignment.Justify);
+        Assert.Equal([0, 1], infinite.Links.Select(link => link.Value).ToArray());
+        Assert.All(infinite.Nodes, node => Assert.True(double.IsFinite(node.Y0) && double.IsFinite(node.Y1)));
+    }
+
+    [Fact]
+    public void Chord_HugeValues()
+    {
+        // The total of values of 2^1023 overflows, but the arcs are as long as for values of the same ratios
+        var max = Math.ScaleB(1, 1023);
+        var (groups, chords) = ChordLayout.Compute([[0, max], [max, max]], padAngle: 0.1);
+        var (unitGroups, unitChords) = ChordLayout.Compute([[0, 1], [1, 1]], padAngle: 0.1);
+        Assert.Equal(unitGroups.Select(group => (group.StartAngle, group.EndAngle)).ToArray(), groups.Select(group => (group.StartAngle, group.EndAngle)).ToArray());
+        Assert.Equal(unitChords.Select(chord => (chord.Source!.StartAngle, chord.Target!.EndAngle)).ToArray(), chords.Select(chord => (chord.Source!.StartAngle, chord.Target!.EndAngle)).ToArray());
+        Assert.Equal(max, groups[0].Value);
+    }
+
+    [Fact]
     public void Chord_TwoNodes()
     {
         // d3.chord: the rows total 2 and 1, so a unit of value is 2π / 3 radians; the chord between the nodes starts on

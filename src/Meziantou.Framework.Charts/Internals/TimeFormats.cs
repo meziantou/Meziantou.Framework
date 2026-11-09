@@ -5,6 +5,13 @@ namespace Meziantou.Framework.Charts;
 /// <summary>Formats the times of the charts, in UTC, with the invariant culture.</summary>
 internal static class TimeFormats
 {
+    // A day inside the bounds of DateTime, so that converting the milliseconds back to a DateTime cannot round out of them
+    public static readonly double MinMilliseconds = ToMilliseconds(DateTime.MinValue.AddDays(1));
+    public static readonly double MaxMilliseconds = ToMilliseconds(DateTime.MaxValue.AddDays(-1));
+
+    /// <summary>Returns whether a time, in milliseconds since the Unix epoch, converts to a <see cref="DateTime"/>.</summary>
+    public static bool IsInRange(double milliseconds) => milliseconds >= MinMilliseconds && milliseconds <= MaxMilliseconds;
+
     public static double ToMilliseconds(DateTime utc) => (utc - DateTime.UnixEpoch).Ticks / (double)TimeSpan.TicksPerMillisecond;
 
     public static DateTime FromMilliseconds(double milliseconds) => DateTime.UnixEpoch.AddTicks((long)Math.Round(milliseconds * TimeSpan.TicksPerMillisecond, MidpointRounding.AwayFromZero));

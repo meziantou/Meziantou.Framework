@@ -36,10 +36,16 @@ internal sealed class SankeyLayout
     {
         var layout = new SankeyLayout(bounds.X, bounds.Y, bounds.Right, bounds.Bottom, nodeWidth, nodePadding, iterations, alignment);
         var nodes = new Dictionary<string, SankeyNode>(StringComparer.Ordinal);
+
+        // Missing, infinite and negative values count as zero. The layout works on the values scaled by a power of two,
+        // which keeps their ratios exactly, so that the sums of huge values cannot overflow.
+        var maxValue = links.Select(link => GetValue(link.Value)).DefaultIfEmpty().Max();
+        var exponent = maxValue > 0 ? -Math.ILogB(maxValue) : 0;
         for (var i = 0; i < links.Count; i++)
         {
             var (source, target, value) = links[i];
-            var link = new SankeyLink(layout.GetNode(nodes, source), layout.GetNode(nodes, target), double.IsNaN(value) ? 0 : Math.Max(0, value), i);
+            value = GetValue(value);
+            var link = new SankeyLink(layout.GetNode(nodes, source), layout.GetNode(nodes, target), value, Math.ScaleB(value, exponent), i);
             link.Source.SourceLinks.Add(link);
             link.Target.TargetLinks.Add(link);
             layout.Links.Add(link);
@@ -48,6 +54,7 @@ internal sealed class SankeyLayout
         foreach (var node in layout.Nodes)
         {
             node.Value = Math.Max(node.SourceLinks.Sum(link => link.Value), node.TargetLinks.Sum(link => link.Value));
+            node.Weight = Math.Max(node.SourceLinks.Sum(link => link.Weight), node.TargetLinks.Sum(link => link.Weight));
         }
 
         layout.ComputeDepths();
@@ -57,6 +64,8 @@ internal sealed class SankeyLayout
         ComputeLinkBreadths(layout.Nodes);
         return layout;
     }
+
+    private static double GetValue(double value) => double.IsFinite(value) ? Math.Max(0, value) : 0;
 
     private SankeyNode GetNode(Dictionary<string, SankeyNode> nodes, string name)
     {
@@ -170,7 +179,7 @@ internal sealed class SankeyLayout
         var scale = double.PositiveInfinity;
         foreach (var column in columns)
         {
-            var sum = column.Sum(node => node.Value);
+            var sum = column.Sum(node => node.Weight);
             if (sum > 0)
             {
                 scale = Math.Min(scale, (_y1 - _y0 - ((column.Count - 1) * _padding)) / sum);
@@ -188,11 +197,11 @@ internal sealed class SankeyLayout
             foreach (var node in column)
             {
                 node.Y0 = y;
-                node.Y1 = y + (node.Value * scale);
+                node.Y1 = y + (node.Weight * scale);
                 y = node.Y1 + _padding;
                 foreach (var link in node.SourceLinks)
                 {
-                    link.Width = link.Value * scale;
+                    link.Width = link.Weight * scale;
                 }
             }
 
@@ -219,7 +228,7 @@ internal sealed class SankeyLayout
                 var weight = 0.0;
                 foreach (var link in target.TargetLinks)
                 {
-                    var v = link.Value * (target.Layer - link.Source.Layer);
+                    var v = link.Weight * (target.Layer - link.Source.Layer);
                     y += TargetTop(link.Source, target) * v;
                     weight += v;
                 }
@@ -249,7 +258,7 @@ internal sealed class SankeyLayout
                 var weight = 0.0;
                 foreach (var link in source.SourceLinks)
                 {
-                    var v = link.Value * (link.Target.Layer - source.Layer);
+                    var v = link.Weight * (link.Target.Layer - source.Layer);
                     y += SourceTop(source, link.Target) * v;
                     weight += v;
                 }

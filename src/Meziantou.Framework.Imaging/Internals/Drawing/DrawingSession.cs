@@ -41,6 +41,7 @@ internal sealed partial class DrawingSession : IDisposable
     private TransformSink? _strokeTransformSink;
     private GradientEvaluator? _gradient;
     private PathGradientEvaluator? _pathGradient;
+    private MeshGradientEvaluator? _meshGradient;
     private ImageEvaluator? _imagePaint;
     private FloatSolidEvaluator? _floatSolidPaint;
     private GlyphPathSink? _glyphSink;
@@ -87,6 +88,10 @@ internal sealed partial class DrawingSession : IDisposable
     /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
     public static DrawingSession Begin(Image image, ImageFrame[] frames, PixelStorage[] storages, CancellationToken cancellationToken)
     {
+        // The paints are colors of light, which CMYK inks are not
+        if (PixelFormats.IsCmyk(image.PixelFormat))
+            throw new UnsupportedImageFeatureException($"Drawing paints colors of light, and the {image.PixelFormat} pixels of the image are CMYK inks. Convert the image first with CloneAs and PixelConversionOptions.CmykConversion.", ImageFormat.Unknown, "CMYK pixels");
+
         var session = new DrawingSession(image, frames, storages, cancellationToken);
         try
         {
@@ -730,6 +735,9 @@ internal sealed partial class DrawingSession : IDisposable
         ArgumentNullException.ThrowIfNull(brush);
         ArgumentNullException.ThrowIfNull(layout);
         DrawingGuard.Point(origin, nameof(origin));
+        if (layout.SubpixelRendering != TextSubpixelRendering.None && TryFillSubpixelText(brush, layout, origin))
+            return;
+
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs && !layout.HasBackgrounds && layout.OutlineCount == 0)
         {
             var glyphSink = _glyphSink ??= new GlyphPathSink();
@@ -906,6 +914,7 @@ internal sealed partial class DrawingSession : IDisposable
     {
         IsActive = false;
         DisposeRendering();
+        DisposeSubpixelText();
         DisposeLayers();
         DisposeClips();
         DisposePatterns();
@@ -926,10 +935,13 @@ internal sealed partial class DrawingSession : IDisposable
         _gradient?.Dispose();
         _pathGradient?.Dispose();
         _pathGradient = null;
+        _meshGradient?.Dispose();
+        _meshGradient = null;
         _imagePaint?.Dispose();
         _imagePaint = null;
         _floatSolidPaint?.Dispose();
         _floatSolidPaint = null;
+        DisposePaintWorkers();
         _rasterizer?.Dispose();
         _edges?.Dispose();
         _gradient = null;
@@ -1182,6 +1194,9 @@ internal sealed partial class DrawingSession : IDisposable
     {
         RemoveStaleThumbnail();
         var rasterizer = _rasterizer!;
+        if (TryPaintRowsInParallel(color, evaluator, mode, blend, opacity, alphaFactor))
+            return;
+
         while (rasterizer.MoveNext())
         {
             PaintSpan(color, evaluator, mode, blend, opacity, rasterizer.Y, rasterizer.X, rasterizer.Coverage, alphaFactor);
@@ -1200,19 +1215,23 @@ internal sealed partial class DrawingSession : IDisposable
 
     /// <summary>Paints the coverages of a run of pixels of a row: through the clip and the opacity, on every frame.</summary>
     private void PaintSpan(DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, int y, int x, ReadOnlySpan<uint> coverage, double alphaFactor = 1)
+        => PaintSpan(worker: null, color, evaluator, mode, blend, opacity, y, x, coverage, alphaFactor);
+
+    /// <summary>Paints the coverages of a run of pixels of a row, with the scratch of a worker or, without one, the scratch of the session.</summary>
+    private void PaintSpan(PaintWorker? worker, DrawingColor color, PaintEvaluator? evaluator, CompositeMode mode, BlendMode blend, uint opacity, int y, int x, ReadOnlySpan<uint> coverage, double alphaFactor)
     {
-        if (_clipDepth != 0 && !ApplyClip(y, ref x, ref coverage, out _))
+        if (_clipDepth != 0 && !ApplyClip(y, ref x, ref coverage, out _, worker?.CoverageRow ?? _clipRow))
             return;
 
         if (opacity != CoverageRasterizer.FullCoverage)
         {
-            coverage = ApplyOpacity(coverage, opacity);
+            coverage = ApplyOpacity(coverage, opacity, worker?.CoverageRow ?? _clipRow);
         }
 
         // A paint that gives the whole row one color is composited as a single color: the same formulas
         if (evaluator is null)
         {
-            CompositeRun(y, x, coverage, new DrawingSource(color, mode, blend, _transfer, _curves));
+            CompositeRun(worker, y, x, coverage, new DrawingSource(color, mode, blend, _transfer, _curves));
             return;
         }
 
@@ -1224,7 +1243,7 @@ internal sealed partial class DrawingSession : IDisposable
                 rowColor = rowColor with { Alpha = ScaleAlpha(rowColor.Alpha, alphaFactor) };
             }
 
-            CompositeRun(y, x, coverage, new DrawingSource(rowColor, mode, blend, _transfer, _curves));
+            CompositeRun(worker, y, x, coverage, new DrawingSource(rowColor, mode, blend, _transfer, _curves));
             return;
         }
 
@@ -1237,7 +1256,7 @@ internal sealed partial class DrawingSession : IDisposable
             var gap = search < coverage.Length ? coverage[search..].IndexOf(0u) : -1;
             if (gap < 0)
             {
-                PaintRun(evaluator, y, x + start, coverage[start..], mode, blend, alphaFactor);
+                PaintRun(worker, evaluator, y, x + start, coverage[start..], mode, blend, alphaFactor);
                 break;
             }
 
@@ -1248,7 +1267,7 @@ internal sealed partial class DrawingSession : IDisposable
             {
                 if (gap > start)
                 {
-                    PaintRun(evaluator, y, x + start, coverage[start..gap], mode, blend, alphaFactor);
+                    PaintRun(worker, evaluator, y, x + start, coverage[start..gap], mode, blend, alphaFactor);
                 }
 
                 start = gapEnd;
@@ -1261,11 +1280,11 @@ internal sealed partial class DrawingSession : IDisposable
     }
 
     /// <summary>Evaluates the colors of a run and composites it onto every frame.</summary>
-    private void PaintRun(PaintEvaluator evaluator, int y, int x, ReadOnlySpan<uint> coverage, CompositeMode mode, BlendMode blend, double alphaFactor)
+    private void PaintRun(PaintWorker? worker, PaintEvaluator evaluator, int y, int x, ReadOnlySpan<uint> coverage, CompositeMode mode, BlendMode blend, double alphaFactor)
     {
         if (evaluator.TryEvaluateFloat(y, x, coverage.Length, alphaFactor, out var floatColors))
         {
-            CompositeRun(y, x, coverage, new DrawingSource(floatColors, mode, blend, _transfer, _curves));
+            CompositeRun(worker, y, x, coverage, new DrawingSource(floatColors, mode, blend, _transfer, _curves));
             return;
         }
 
@@ -1273,7 +1292,7 @@ internal sealed partial class DrawingSession : IDisposable
         if (alphaFactor != 1)
         {
             // The opacity of the brush multiplies the alpha of each color
-            var scaled = unsafe(MemoryMarshal.Cast<byte, ushort>(_alphaRow!.Span))[..colors.Length];
+            var scaled = unsafe(MemoryMarshal.Cast<byte, ushort>((worker?.AlphaRow ?? _alphaRow)!.Span))[..colors.Length];
             colors.CopyTo(scaled);
             for (var i = 3; i < scaled.Length; i += 4)
             {
@@ -1283,13 +1302,21 @@ internal sealed partial class DrawingSession : IDisposable
             colors = scaled;
         }
 
-        CompositeRun(y, x, coverage, new DrawingSource(colors, mode, blend, _transfer, _curves));
+        CompositeRun(worker, y, x, coverage, new DrawingSource(colors, mode, blend, _transfer, _curves));
     }
 
-    /// <summary>Composites a run onto every frame.</summary>
-    private void CompositeRun(int y, int x, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+    /// <summary>Composites a run onto every frame; a worker records what it drew, which the session marks once the workers are done.</summary>
+    private void CompositeRun(PaintWorker? worker, int y, int x, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
     {
-        MarkDrawn(x, y, x + coverage.Length, y + 1);
+        if (worker is null)
+        {
+            MarkDrawn(x, y, x + coverage.Length, y + 1);
+        }
+        else
+        {
+            worker.MarkDrawn(x, y, x + coverage.Length, y + 1);
+        }
+
         for (var i = 0; i < _frames.Length; i++)
         {
             _frames[i].CompositePixels(_storages[i], y, x, coverage, source);
@@ -1364,6 +1391,15 @@ internal sealed partial class DrawingSession : IDisposable
                 return false;
 
             evaluator = pathPaint;
+        }
+        else if (brush is MeshGradientBrush meshGradient)
+        {
+            var meshPaint = _meshGradient ??= new MeshGradientEvaluator(_image.Owner.Scope);
+            meshPaint.Prepare(meshGradient, ToCanvasProjection(meshGradient.Transform), _frames[0], Width, _paintPipeline);
+            if (meshPaint.IsTransparent && isInert)
+                return false;
+
+            evaluator = meshPaint;
         }
         else
         {

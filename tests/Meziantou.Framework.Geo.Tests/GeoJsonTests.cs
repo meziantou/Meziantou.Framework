@@ -190,4 +190,116 @@ public sealed class GeoJsonTests
         var feature = Assert.Single(GeoJson.Parse("""{"type":"Feature","properties":{"value":1e999}}"""));
         Assert.Equal(double.PositiveInfinity, feature.Properties["value"]);
     }
+
+    [Theory]
+    [InlineData(int.MaxValue)]
+    [InlineData(1)]
+    [InlineData(7)]
+    public async Task ReadFeaturesAsync_AllTypes(int maxReadLength)
+    {
+        // Reading a few bytes at a time ends the buffer in the middle of every token and feature
+        var expected = GeoJson.Parse(AllTypes);
+        expected.Name = null;
+        using var stream = new CountingStream(Encoding.UTF8.GetBytes(AllTypes), canSeek: false, maxReadLength);
+        var features = await GeoJson.ReadFeaturesAsync(stream, TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(GeoJson.Format(expected), GeoJson.Format(new GeoFeatureCollection(features)));
+        Assert.Equal("42", features[0].Id);
+    }
+
+    [Theory]
+    [InlineData("""{"features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[1,2]}}],"bbox":[1,2,1,2],"type":"FeatureCollection"}""")]
+    [InlineData("""{"name":{"a":[1,{"b":2}]},"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[1,2]}}],"other":[]}""")]
+    [InlineData("""  {"type":"Feature","geometry":{"type":"Point","coordinates":[1,2]}}  """)]
+    [InlineData("""{"geometry":{"type":"Point","coordinates":[1,2]},"type":"Feature","features":[1]}""")]
+    [InlineData("""{"coordinates":[1,2],"type":"Point"}""")]
+    [InlineData("""{"type":"Feature","name":"\ud800","geometry":{"type":"Point","coordinates":[1,2]}}""")]
+    public async Task ReadFeaturesAsync_OneFeature(string json)
+    {
+        byte[][] documents = [Encoding.UTF8.GetBytes(json), [.. Encoding.UTF8.Preamble, .. Encoding.UTF8.GetBytes(json)]];
+        foreach (var document in documents)
+        {
+            foreach (var maxReadLength in new[] { 1, int.MaxValue })
+            {
+                using var stream = new CountingStream(document, canSeek: false, maxReadLength);
+                var feature = Assert.Single(await GeoJson.ReadFeaturesAsync(stream, TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken));
+                Assert.Equal(new GeoPosition(1, 2), Assert.IsType<GeoPoint>(feature.Geometry).Position);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("{")]
+    [InlineData("[]")]
+    [InlineData("1")]
+    [InlineData("""{"type":1}""")]
+    [InlineData("""{"type":"FeatureCollection"}""")]
+    [InlineData("""{"type":"FeatureCollection","features":[{"type":"Point","coordinates":[1,2]}]}""")]
+    [InlineData("""{"type":"FeatureCollection","features":[1]}""")]
+    [InlineData("""{"type":"FeatureCollection","features":[{"type":"Feature","geometry":null}]""")]
+    [InlineData("""{"type":"FeatureCollection","features":[{"type":"Feature","geometry":null}]} 1""")]
+    [InlineData("""{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"name":"\ud800"}}]}""")]
+    [InlineData("""{"features":[{"type":"Feature","geometry":null}]}""")]
+    [InlineData("""{"features":[{"type":"Feature","geometry":null}],"type":"Feature"}""")]
+    [InlineData("""{"type":"Point","coordinates":[1]}""")]
+    [InlineData("""{"type":"FeatureCollection","name":"\ud800","features":[]}""")]
+    [InlineData("""{"features":[],"name":"\ud800","type":"FeatureCollection"}""")]
+    public async Task ReadFeaturesAsync_Invalid(string json)
+    {
+        using var stream = new CountingStream(Encoding.UTF8.GetBytes(json), canSeek: false);
+        await Assert.ThrowsAsync<FormatException>(async () => await GeoJson.ReadFeaturesAsync(stream, TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ReadFeaturesAsync_LargeDocument_ReadsAsTheFeaturesAreEnumerated()
+    {
+        // 200,000 features, about 20 MB, generated as the stream is read
+        const int Count = 200_000;
+        var feature = Encoding.UTF8.GetBytes("""{"type":"Feature","properties":{"name":"feature","value":42},"geometry":{"type":"Point","coordinates":[2.35,48.86]}}""");
+        using var stream = new RepeatedRecordStream(
+            [.. """{"type":"FeatureCollection","name":"large","features":["""u8, .. feature],
+            [(byte)',', .. feature],
+            Count - 1,
+            [.. "]}"u8]);
+
+        var index = 0;
+        await foreach (var item in GeoJson.ReadFeaturesAsync(stream, TestContext.Current.CancellationToken))
+        {
+            // When a feature is returned, the reader is at most a buffer ahead of it: it does not read the whole document first
+            Assert.True(stream.Position < ((index + 1L) * (feature.Length + 1)) + (1024 * 1024), $"Feature {index} was returned after reading {stream.Position} bytes");
+            Assert.Equal("feature", item.Properties["name"]);
+            index++;
+        }
+
+        Assert.Equal(Count, index);
+        Assert.Equal(stream.Length, stream.Position);
+    }
+
+    [Fact]
+    public async Task Documentation_ReadFeaturesAsync()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".geojson");
+        await File.WriteAllTextAsync(path, AllTypes, TestContext.Current.CancellationToken);
+        try
+        {
+            #region Geo_GeoJsonReadFeaturesAsync
+            // The features are read one at a time: a large export is processed without loading it in memory
+            await using var stream = File.OpenRead(path);
+            var points = 0;
+            await foreach (var feature in GeoJson.ReadFeaturesAsync(stream))
+            {
+                if (feature.Geometry is GeoPoint)
+                {
+                    points++;
+                }
+            }
+
+            Assert.Equal(1, points);
+            #endregion
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }

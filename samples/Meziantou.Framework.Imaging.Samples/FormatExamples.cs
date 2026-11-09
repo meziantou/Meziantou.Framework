@@ -32,6 +32,22 @@ internal static class FormatExamples
     }
     #endregion
 
+    /// <summary>PNG output: the chunks of other applications are kept.</summary>
+    #region Imaging_PngPrivateChunks
+    public static PngChunk SavePngWithPrivateChunk(string outputPath)
+    {
+        using var image = new Image<Rgba32>(4, 4);
+
+        // A private chunk of an application (lowercase second letter) that is safe to copy (lowercase fourth letter): the
+        // PNG encoder writes it before the image data, and the decoder reads it back with its type, data and position
+        image.Metadata.PngChunks.Add(new PngChunk("myAp", new MetadataBlob("settings"u8)));
+        image.Save(outputPath, new PngEncoder());
+
+        using var loaded = Image.Load(outputPath);
+        return loaded.Metadata.PngChunks.Single(chunk => chunk.Type == "myAp");
+    }
+    #endregion
+
     /// <summary>TGA output, and the detection of a format without a signature.</summary>
     #region Imaging_SaveTga
     public static ImageFormat SaveTga(string inputPath, string tgaPath)

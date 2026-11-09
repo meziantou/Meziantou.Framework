@@ -544,6 +544,28 @@ public abstract partial class Image
         }
     }
 
+    /// <summary>
+    /// Replaces frames of this image by their Canny edges, in place (every displayed frame and the poster when
+    /// <paramref name="frames"/> is <see langword="null"/>). The working memory is charged to the scope of the image and
+    /// rented before any pixel changes.
+    /// </summary>
+    internal void DetectCannyEdgesFrames(ImageFrame[]? frames, CannyEdgeOptions options, CancellationToken cancellationToken)
+    {
+        Owner.EnsureCanModify("detect the edges of the image");
+        if (options.LowThreshold > options.HighThreshold)
+            throw new ArgumentException("The lower threshold must not exceed the upper threshold.", nameof(options));
+
+        cancellationToken.ThrowIfCancellationRequested();
+        frames ??= GetAllFrames();
+        using var detector = new CannyEdgeDetector(Owner.Scope, PixelFormat, _size, options);
+        _metadata.RemoveStaleThumbnail();
+        foreach (var frame in frames)
+        {
+            using var lease = frame.GetStorage().AcquireLease();
+            detector.Apply(lease, cancellationToken);
+        }
+    }
+
     /// <summary>Replaces one attached frame of this image by its edges, in place, as <see cref="DetectEdgesAllFrames"/> does for all of them.</summary>
     /// <exception cref="UnsupportedImageFeatureException"><paramref name="grayscale"/> is set and the ICC profile is incompatible with the pixel format.</exception>
     internal void DetectEdgesFrame(ImageFrame frame, PixelStorage storage, EdgeDetector detector, bool grayscale, ConvolutionEdgeMode edgeMode, CancellationToken cancellationToken)
@@ -669,7 +691,7 @@ public abstract partial class Image
     private ConvolutionPlan CreateConvolutionPlan(ConvolutionOptions options)
     {
         var transfer = options.WorkingSpace == ConvolutionWorkingSpace.LinearSrgb ? GetLinearLightTransfer("convolution", "convolve") : (byte)0;
-        return new ConvolutionPlan(options.Kernel, options.EdgeMode, options.PreserveAlpha, transfer is not 0, KernelPixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer, bias: options.Bias);
+        return new ConvolutionPlan(options.GetEffectiveKernel(), options.EdgeMode, options.PreserveAlpha, transfer is not 0, KernelPixelFormat, _size, _configuration.MaxDegreeOfParallelism, transfer, bias: options.Bias);
     }
 
     /// <summary>The separable plan of a blur: the weights as a column, every row filtered by the same weights first (and an unsharp mask when <paramref name="sharpenAmount"/> is positive).</summary>

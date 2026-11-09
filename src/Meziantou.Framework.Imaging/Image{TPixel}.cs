@@ -9,8 +9,8 @@ namespace Meziantou.Framework.Imaging;
 /// The pixel type: <see cref="Rgba32"/>, <see cref="Bgra32"/>, <see cref="Rgb24"/>, <see cref="Rgba64"/>,
 /// <see cref="Gray8"/>, <see cref="Gray16"/>, <see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>, <see cref="La16"/>,
 /// <see cref="La32"/>, <see cref="Rgb48"/>, <see cref="A8"/>, <see cref="Argb32"/>, <see cref="Abgr32"/>,
-/// <see cref="Bgr565"/> or <see cref="Rgba1010102"/>. Other unmanaged types are rejected with a
-/// <see cref="NotSupportedException"/>.
+/// <see cref="Bgr565"/>, <see cref="Rgba1010102"/>, <see cref="Cmyk32"/> or <see cref="Cmyk64"/>. Other unmanaged types are
+/// rejected with a <see cref="NotSupportedException"/>.
 /// </typeparam>
 /// <remarks>See <see cref="Image"/> for the ownership, frame and atomicity contract.</remarks>
 public sealed class Image<TPixel> : Image
@@ -74,6 +74,19 @@ public sealed class Image<TPixel> : Image
         _ = PixelFormats.GetPixelFormat<TPixel>();
         _frames = new ImageFrameCollection<TPixel>(this);
         AppendFrameCore(new FrameMetadata());
+    }
+
+    /// <summary>
+    /// Initializes a new single-frame still image over memory the caller owns (<see cref="Image.WrapMemory{TPixel}(Memory{byte}, int, int, int, Action?, ImageConfiguration?)"/>):
+    /// the arguments are validated, and the memory holds <paramref name="size"/> rows at <paramref name="stride"/>.
+    /// </summary>
+    internal Image(ImageConfiguration configuration, Size size, Memory<byte> memory, nint pointer, long stride, Action? release)
+        : base(configuration, size, scope: null, layoutOptions: null)
+    {
+        _frames = new ImageFrameCollection<TPixel>(this);
+        var layout = PixelStorageLayout.CreateExternal(size.Width, size.Height, PixelFormats.GetBytesPerPixel(PixelFormats.GetPixelFormat<TPixel>()), stride);
+        AppendFrameCore(Owner.AttachExternal(layout, memory, pointer, release), new FrameMetadata());
+        LabelNewImage();
     }
 
     /// <inheritdoc />

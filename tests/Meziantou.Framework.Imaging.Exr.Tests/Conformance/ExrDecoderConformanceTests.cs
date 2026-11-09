@@ -22,6 +22,9 @@ public sealed class ExrDecoderConformanceTests
     [InlineData("pxr24")]
     [InlineData("b44")]
     [InlineData("b44a")]
+    [InlineData("dwaa")]
+    [InlineData("dwab")]
+    [InlineData("zstd")]
     public void EveryCompressionHasValidFixtures(string compression)
     {
         var fixtures = GetValidFixtures().Where(fixture => fixture.Entry.HasFeature("exr.compression=" + compression)).ToList();
@@ -45,9 +48,7 @@ public sealed class ExrDecoderConformanceTests
     }
 
     [Theory]
-    [InlineData("invalid/exr/compression-dwaa")]
-    [InlineData("invalid/exr/compression-dwab")]
-    [InlineData("invalid/exr/compression-zstd")]
+    [InlineData("invalid/exr/compression-htj2k256")]
     [InlineData("invalid/exr/compression-htj2k32")]
     public void RejectedCompressionsHaveFixtures(string id)
     {
@@ -70,9 +71,15 @@ public sealed class ExrDecoderConformanceTests
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
         foreach (var decoding in fixture.ExrDecodings)
         {
-            var options = new OpenExrDecodingOptions { Layer = decoding.Layer, WindowMode = Enum.Parse<OpenExrWindowMode>(decoding.WindowMode) };
+            var options = new OpenExrDecodingOptions
+            {
+                Part = decoding.Part,
+                DeepData = Enum.Parse<OpenExrDeepDataMode>(decoding.DeepData ?? "Reject"),
+                Layer = decoding.Layer,
+                WindowMode = Enum.Parse<OpenExrWindowMode>(decoding.WindowMode),
+            };
             var configuration = new ImageConfiguration { OpenExrDecoding = options };
-            var description = $"{id}, layer {decoding.Layer ?? "(every channel)"}, {decoding.WindowMode}";
+            var description = $"{id}, part {decoding.Part ?? "(single)"}, deep data {decoding.DeepData ?? "Reject"}, layer {decoding.Layer ?? "(every channel)"}, {decoding.WindowMode}";
             if (decoding.ExpectedError is { } error)
             {
                 Assert.Equal(error.Feature, Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data, new ImageIdentifyOptions { Configuration = configuration })).Feature);
@@ -122,10 +129,20 @@ public sealed class ExrDecoderConformanceTests
         var decoded = decodings.Where(item => item.Decoding.ExpectedError is null).ToList();
 
         // Every compression, scan lines and tiles, mipmaps, sub-sampled channels that are ignored, sample images of the OpenEXR project
-        foreach (var compression in new[] { "none", "rle", "zips", "zip", "piz", "pxr24", "b44", "b44a" })
+        foreach (var compression in new[] { "none", "rle", "zips", "zip", "piz", "pxr24", "b44", "b44a", "dwaa", "dwab", "zstd" })
         {
             Assert.Contains(decoded, item => item.Fixture.Id == "invalid/exr/overscan-layers-" + compression);
         }
+
+        // Parts of multi-part files, scan lines and tiles; deep data in every compression they allow, scan lines and tiles
+        Assert.Contains(decoded, item => item.Decoding.Part is not null && item.Decoding.Layer is null);
+        Assert.Contains(decoded, item => item.Decoding.Part is not null && item.Decoding.Layer is not null);
+        foreach (var compression in new[] { "none", "rle", "zips", "zstd" })
+        {
+            Assert.Contains(decoded, item => item.Fixture.Id == "invalid/exr/deep-scanline-" + compression && item.Decoding.DeepData == "Flatten");
+        }
+
+        Assert.Contains(decoded, item => item.Fixture.Id.StartsWith("invalid/exr/deep-tiles-", StringComparison.Ordinal) && item.Decoding.DeepData == "Flatten");
 
         Assert.Contains(decoded, item => item.Fixture.Id == "invalid/exr/tiles-layers-overscan" && item.Decoding.WindowMode == "CropToDisplayWindow");
         Assert.Contains(decoded, item => item.Fixture.Id == "invalid/exr/tiles-mipmap-layers");
@@ -140,15 +157,15 @@ public sealed class ExrDecoderConformanceTests
         Assert.Contains(decoded, item => item.Decoding.ColorModel == "Rgba");
         Assert.Contains(decoded, item => item.Decoding.WindowMode == "CropToDisplayWindow");
         Assert.Contains(decoded, item => item.Decoding.WindowMode == "DataWindow");
-        foreach (var feature in new[] { "Missing layer", "Ambiguous layer", "Luminance-chroma channels", "Pixels outside the display window" })
+        foreach (var feature in new[] { "Missing layer", "Ambiguous layer", "Luminance-chroma channels", "Pixels outside the display window", "Missing part", "Deep data without depth or alpha" })
         {
             Assert.Contains(decodings, item => item.Decoding.ExpectedError?.Feature == feature);
         }
 
-        // Every file rejected for its channels or its windows says how it is decoded
+        // Every file rejected for its parts, its deep data, its channels or its windows says how it is decoded
         var rejected = GoldenCorpus.Default.GetIds(format: "exr", kind: FixtureKinds.Unsupported)
             .Select(GoldenCorpus.Default.Get)
-            .Where(fixture => fixture.Entry.ExpectedError?.Feature is "Extra channels" or "Pixels outside the display window")
+            .Where(fixture => fixture.Entry.ExpectedError?.Feature is "Multi-part file" or "Deep data" or "Extra channels" or "Pixels outside the display window")
             .Select(fixture => fixture.Id);
         Assert.Equal(rejected.Order(StringComparer.Ordinal), DecodingIds.Order(StringComparer.Ordinal));
     }

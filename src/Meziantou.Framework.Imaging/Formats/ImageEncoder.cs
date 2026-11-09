@@ -5,7 +5,8 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <summary>The base class of the immutable encoder settings accepted by the save and writer APIs.</summary>
 /// <remarks>
 /// Encoders are immutable and thread-safe; a single instance can be reused for any number of save operations.
-/// The set of encoders is closed in this version: there is no codec plug-in interface.
+/// The encoders of the formats the library does not write derive from <see cref="CustomImageEncoder"/>; this class cannot
+/// be derived otherwise.
 /// </remarks>
 public abstract class ImageEncoder
 {
@@ -20,15 +21,17 @@ public abstract class ImageEncoder
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Formats.MetadataHandling"/>.</exception>
     public MetadataHandling MetadataHandling
     {
-        get;
+        get => _metadataHandling;
         init
         {
             if (!Enum.IsDefined(value))
                 throw new ArgumentOutOfRangeException(nameof(value), value, "The metadata handling is not valid.");
 
-            field = value;
+            _metadataHandling = value;
         }
     }
+
+    private MetadataHandling _metadataHandling;
 
     /// <summary>
     /// Gets the conversion that reduces floating-point pixels (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) to 16-bit
@@ -61,6 +64,32 @@ public abstract class ImageEncoder
     internal virtual bool StoresFloatingPointSamples => false;
 
     /// <summary>
+    /// Gets a value indicating whether the output stores CMYK pixels (<see cref="PixelFormat.Cmyk32"/>,
+    /// <see cref="PixelFormat.Cmyk64"/>) as they are. The other outputs reject them: converting inks to RGB converts colors,
+    /// which is explicit (<see cref="PixelConversionOptions.CmykConversion"/>).
+    /// </summary>
+    internal virtual bool StoresCmykPixels => false;
+
+    /// <summary>
+    /// Creates a copy of the settings that writes the image of a gain map: the same settings, without gain map, and with a
+    /// metadata policy of its own.
+    /// </summary>
+    /// <param name="metadataHandling">The metadata policy of the copy.</param>
+    /// <returns>The copy.</returns>
+    internal ImageEncoder CloneForGainMapImage(MetadataHandling metadataHandling)
+    {
+        var clone = (ImageEncoder)MemberwiseClone();
+        clone._metadataHandling = metadataHandling;
+        clone.PrepareGainMapImageSettings();
+        return clone;
+    }
+
+    /// <summary>Adapts a copy made by <see cref="CloneForGainMapImage"/>: removes its gain map, and the settings that only apply to the primary image.</summary>
+    private protected virtual void PrepareGainMapImageSettings()
+    {
+    }
+
+    /// <summary>
     /// Gets a value indicating whether the output stores pixels of a format that widens (<see cref="PixelFormatWidening.IsWidened"/>:
     /// <see cref="PixelFormat.La16"/>, <see cref="PixelFormat.La32"/>, <see cref="PixelFormat.Rgb48"/>, <see cref="PixelFormat.A8"/>
     /// and the interoperability formats) as they are; otherwise the writer gives the encoder a copy of the frames widened
@@ -78,7 +107,10 @@ public abstract class ImageEncoder
     /// <see cref="IcoEncoder"/>, of the matching <see cref="IcoEncoder.Kind"/>.
     /// </returns>
     /// <remarks>This method is thread-safe. To change a setting, create the encoder type directly with an object initializer.</remarks>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is <see cref="ImageFormat.Unknown"/> or not a defined value.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// <paramref name="format"/> is <see cref="ImageFormat.Unknown"/>, <see cref="ImageFormat.Custom"/> (use
+    /// <see cref="CustomImageCodec.CreateEncoder"/>) or not a defined value.
+    /// </exception>
     public static ImageEncoder Create(ImageFormat format) => format switch
     {
         ImageFormat.Png => new PngEncoder(),
@@ -136,6 +168,30 @@ public abstract class ImageEncoder
     /// <returns>The encoder.</returns>
     /// <exception cref="ArgumentException">The extension is not recognized.</exception>
     internal static ImageEncoder FromPath(string path) => FromExtension(Path.GetExtension(path), nameof(path));
+
+    /// <summary>
+    /// Selects the default encoder for a file name: the encoder of the first custom codec of <paramref name="configuration"/>
+    /// whose format has the extension (<see cref="CustomImageCodec.CreateEncoder"/>), otherwise the built-in one
+    /// (<see cref="FromFileExtension(string)"/>).
+    /// </summary>
+    /// <param name="path">The file path.</param>
+    /// <param name="configuration">The configuration of the image.</param>
+    /// <returns>The encoder.</returns>
+    /// <exception cref="ArgumentException">The extension is not recognized, or belongs to a custom codec that does not write its format.</exception>
+    internal static ImageEncoder FromPath(string path, ImageConfiguration configuration)
+    {
+        var extension = Path.GetExtension(path);
+        if (extension.Length > 1)
+        {
+            foreach (var codec in configuration.Codecs)
+            {
+                if (codec.FormatInfo.HasFileExtension(extension))
+                    return codec.CreateEncoder() ?? throw new ArgumentException($"The {codec.FormatInfo.Name} codec reads files of the extension '{extension}' but does not write them. Specify an encoder explicitly.", nameof(path));
+            }
+        }
+
+        return FromExtension(extension, nameof(path));
+    }
 
     private static ImageEncoder FromExtension(string extension, string parameterName)
     {

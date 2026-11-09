@@ -28,6 +28,9 @@ public sealed class QueryToken : QueryNodeOrToken
     /// <summary>Gets the parsed value of this token, or null if the token has no value.</summary>
     public string? Value { get; }
 
+    /// <summary>Gets whether this quoted text has no closing quote.</summary>
+    internal bool IsUnterminated { get; init; }
+
     /// <summary>Gets the child elements of this token (always empty for tokens).</summary>
     /// <returns>An empty array.</returns>
     public override QueryNodeOrToken[] GetChildren()

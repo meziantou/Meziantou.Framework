@@ -127,6 +127,33 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>The thin edges of an image found by the Canny detector.</summary>
+    #region Imaging_CannyEdges
+    public static void DetectCannyEdges(string inputPath, string edgesPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // Lines one pixel wide, white on black. A larger Sigma blurs more before the gradient is computed, and ignores more
+        // noise; the thresholds are fractions of the range: a gradient above 0.3 is an edge, and one above 0.1 continues it
+        image.DetectCannyEdges(new CannyEdgeOptions { Sigma = 1.5, LowThreshold = 0.1, HighThreshold = 0.3 });
+        image.Save(edgesPath);
+    }
+    #endregion
+
+    /// <summary>A convolution matrix of even dimensions, with an anchor and a divisor.</summary>
+    #region Imaging_ConvolveEvenKernel
+    public static void AverageWithRightAndBottomNeighbors(string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // A 2x2 box: every pixel becomes the mean of itself (the anchor, the top-left weight) and of its right, bottom and
+        // bottom-right neighbors. The divisor divides the sums: the weights stay integers.
+        var box = new ConvolutionKernel(2, 2, [1, 1, 1, 1]);
+        image.Convolve(new ConvolutionOptions(box) { Anchor = new Point(0, 0), Divisor = 4 });
+        image.Save(outputPath);
+    }
+    #endregion
+
     /// <summary>A scan cleaned up by a median and an unsharp mask, then a soft background made by a box blur and a separable matrix.</summary>
     #region Imaging_BlurAndSharpen
     public static void CleanUpScan(string inputPath, string cleanedPath, string backgroundPath)
@@ -1481,6 +1508,24 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>JPEG 2000 decoding of the first quality layers only: a preview of a layered file.</summary>
+    #region Imaging_Jpeg2000DecodeQualityLayers
+    public static Image LoadJpeg2000Preview(string path)
+    {
+        // Only the coding passes of the first quality layer are decoded: the image a reader gets from the first bytes of
+        // an LRCP file. A file of one layer decodes as a whole.
+        var options = new ImageDecodeOptions
+        {
+            Configuration = new ImageConfiguration
+            {
+                Jpeg2000Decoding = new Jpeg2000DecodingOptions { QualityLayerLimit = 1 },
+            },
+        };
+
+        return Image.Load(path, options);
+    }
+    #endregion
+
     /// <summary>JPEG 2000 with the high-throughput block coder (HTJ2K): a JPH file, and a codestream with a target size.</summary>
     #region Imaging_SaveHighThroughputJpeg2000
     public static void SaveHighThroughputJpeg2000(string inputPath, string jphPath, string codestreamPath)
@@ -1566,6 +1611,23 @@ internal static class Examples
         // The windows of the file, in its pixel coordinates: the cropped image starts at the display window
         var windows = image.Metadata.OpenExrWindows!;
         return (image, windows.DisplayWindowMin);
+    }
+    #endregion
+
+    /// <summary>OpenEXR: a part of a multi-part file, and deep data flattened.</summary>
+    #region Imaging_OpenExrPartsAndDeepData
+    public static (Image RightEye, Image Flattened) LoadStereoAndDeep(string stereoPath, string deepPath)
+    {
+        // A multi-part file stores several images (the views of a stereo pair, the passes of a renderer): the default
+        // options reject it, since the other parts would be lost. Part selects one by its name
+        var stereo = new ImageConfiguration { OpenExrDecoding = new OpenExrDecodingOptions { Part = "right" } };
+        var rightEye = Image.Load(stereoPath, new ImageDecodeOptions { Configuration = stereo });
+
+        // Deep data store a list of samples per pixel, each at its depth (Z): Flatten composites them front to back, as
+        // OpenEXR does, into one RGBA color per pixel; the depths are lost
+        var deep = new ImageConfiguration { OpenExrDecoding = new OpenExrDecodingOptions { DeepData = OpenExrDeepDataMode.Flatten } };
+        var flattened = Image.Load(deepPath, new ImageDecodeOptions { Configuration = deep });
+        return (rightEye, flattened);
     }
     #endregion
 
@@ -1801,6 +1863,46 @@ internal static class Examples
 
         // The pixels are RGB, labeled with the destination profile (image.Metadata.IccProfile)
         return Image.Load(path, new ImageDecodeOptions { CmykConversion = conversion });
+    }
+    #endregion
+
+    /// <summary>A CMYK JPEG keeps its inks when it is loaded as CMYK pixels.</summary>
+    #region Imaging_LoadCmykPixels
+    public static void KeepCmykInks(string jpegPath, string tiffPath, string previewPath)
+    {
+        // The ink amounts as they are (0 is no ink), labeled with the CMYK profile of the file
+        using var inks = Image.Load<Cmyk32>(jpegPath);
+
+        // Crop, Flip, Rotate by quarter turns and AutoOrient keep CMYK pixels; JPEG and TIFF store them
+        inks.Crop(new Rectangle(0, 0, inks.Width / 2, inks.Height));
+        inks.Save(tiffPath, new TiffEncoder());
+
+        // Colors of light are an explicit conversion: from the CMYK profile of the image when it has one,
+        // otherwise with the device CMYK formulas
+        var conversion = new PixelConversionOptions { CmykConversion = new CmykPixelConversionOptions() };
+        using var preview = inks.CloneAs<Rgb24>(conversion);
+        preview.Save(previewPath);
+    }
+    #endregion
+
+    /// <summary>Separation of an RGB image into the inks of a printing condition.</summary>
+    #region Imaging_ConvertToCmyk
+    public static void SaveForPrint(Image image, IccProfile pressProfile, string path)
+    {
+        // The press profile (a CMYK output profile) describes the inks and labels them; the colors of the image are
+        // those of its own profile, or sRGB when it has none. CMYK has no alpha: flatten transparent pixels on white
+        var conversion = new PixelConversionOptions
+        {
+            BackgroundColor = new Rgba64(65535, 65535, 65535),
+            CmykConversion = new CmykPixelConversionOptions
+            {
+                CmykProfile = pressProfile,
+                Transform = new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual },
+            },
+        };
+
+        using var inks = image.CloneAs<Cmyk32>(conversion);
+        inks.Save(path, new JpegEncoder { Quality = 90 });
     }
     #endregion
 

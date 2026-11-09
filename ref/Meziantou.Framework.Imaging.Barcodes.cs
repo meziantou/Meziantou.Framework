@@ -4,6 +4,22 @@
 
 namespace Meziantou.Framework.Imaging.Barcodes
 {
+    public sealed class Barcode2DDrawingOptions
+    {
+        public Meziantou.Framework.Imaging.Drawing.Brush DarkBrush { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Drawing.Brush? LightBrush { get => throw null; set { } }
+        public double ModuleSize { get => throw null; set { } }
+        public int QuietZoneModules { get => throw null; set { } }
+        public bool SnapToPixels { get => throw null; set { } }
+    }
+
+    public static class Barcode2DImageRenderer
+    {
+        public static Meziantou.Framework.Imaging.RectangleD DrawBarcode2D(this Meziantou.Framework.Imaging.Drawing.DrawingCanvas canvas, Meziantou.Framework.Barcodes.Barcode2D barcode, Meziantou.Framework.Imaging.PointD position, Meziantou.Framework.Imaging.Barcodes.Barcode2DDrawingOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.RectangleD MeasureBarcode2D(Meziantou.Framework.Barcodes.Barcode2D barcode, Meziantou.Framework.Imaging.Barcodes.Barcode2DDrawingOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> ToImage(this Meziantou.Framework.Barcodes.Barcode2D barcode, Meziantou.Framework.Imaging.Barcodes.Barcode2DDrawingOptions? options = null) => throw null;
+    }
+
     public sealed class BarcodeDrawingOptions
     {
         public Meziantou.Framework.Imaging.Drawing.Brush DarkBrush { get => throw null; set { } }

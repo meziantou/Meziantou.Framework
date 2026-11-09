@@ -27,11 +27,16 @@ public sealed class ExpressionQuery<T>
     /// <summary>Gets the original query text.</summary>
     public string Text { get; }
 
-    internal ExpressionQuery(string text, Expression<Func<T, bool>>? predicate)
+    internal ExpressionQuery(string text, Expression<Func<T, bool>>? predicate, IReadOnlyList<QueryDiagnostic> diagnostics)
     {
         Text = text ?? throw new ArgumentNullException(nameof(text));
         _predicate = predicate;
+        Diagnostics = diagnostics;
     }
+
+    /// <summary>Gets the problems found in the query, such as unbalanced parentheses or unknown keys, in the order they appear in it.</summary>
+    /// <remarks>The query is still applied: the parts the diagnostics report are read leniently, mostly as text.</remarks>
+    public IReadOnlyList<QueryDiagnostic> Diagnostics { get; }
 
     /// <summary>Gets the compiled predicate expression, or <see langword="null"/> if the query matches all items.</summary>
     public Expression<Func<T, bool>>? Predicate => _predicate;

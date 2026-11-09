@@ -15,7 +15,8 @@ public sealed class ConvolutionTests
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    public static TheoryData<PixelFormat> AllFormats => [.. PixelFormats.All];
+    // The CMYK formats hold inks, which these operations reject (CmykImagesOnlyMovePixelsAndRejectColorOperations)
+    public static TheoryData<PixelFormat> AllFormats => [.. PixelFormats.All.Where(format => !PixelFormats.IsCmyk(format))];
 
     // -----------------------------------------------------------------------------------------------------------------
     // The matrix: applied as written, weights used as given
@@ -943,8 +944,9 @@ public sealed class ConvolutionTests
         Assert.False(Kernel(1, 3, [1, 2, 1]).IsSeparable);
 
         Assert.Throws<ArgumentException>(() => ConvolutionKernel.CreateSeparable([], [1]));
-        Assert.Throws<ArgumentException>(() => ConvolutionKernel.CreateSeparable([1, 1], [1]));
-        Assert.Throws<ArgumentException>(() => ConvolutionKernel.CreateSeparable([1], [1, 2, 3, 4]));
+        Assert.Throws<ArgumentException>(() => ConvolutionKernel.CreateSeparable([1], []));
+        Assert.Equal(2, ConvolutionKernel.CreateSeparable([1, 1], [1]).Width);
+        Assert.Equal(4, ConvolutionKernel.CreateSeparable([1], [1, 2, 3, 4]).Height);
         Assert.Throws<ArgumentException>(() => ConvolutionKernel.CreateSeparable([1, double.NaN, 1], [1]));
         Assert.Throws<ArgumentException>(() => ConvolutionKernel.CreateSeparable([1], [double.PositiveInfinity]));
     }
@@ -2010,10 +2012,10 @@ public sealed class ConvolutionTests
     {
         Assert.Throws<ArgumentOutOfRangeException>("width", () => new ConvolutionKernel(0, 1, []));
         Assert.Throws<ArgumentOutOfRangeException>("width", () => new ConvolutionKernel(-3, 1, []));
-        Assert.Throws<ArgumentOutOfRangeException>("width", () => new ConvolutionKernel(2, 1, [1, 1]));
+        Assert.Equal(2, new ConvolutionKernel(2, 1, [1, 1]).Width);
         Assert.Throws<ArgumentOutOfRangeException>("height", () => new ConvolutionKernel(1, 0, []));
         Assert.Throws<ArgumentOutOfRangeException>("height", () => new ConvolutionKernel(1, -1, []));
-        Assert.Throws<ArgumentOutOfRangeException>("height", () => new ConvolutionKernel(1, 4, [1, 1, 1, 1]));
+        Assert.Equal(4, new ConvolutionKernel(1, 4, [1, 1, 1, 1]).Height);
         Assert.Throws<ArgumentException>("values", () => new ConvolutionKernel(3, 3, new double[8]));
         Assert.Throws<ArgumentException>("values", () => new ConvolutionKernel(3, 3, new double[10]));
         Assert.Throws<ArgumentException>("values", () => new ConvolutionKernel(1, 1, [double.NaN]));
@@ -2491,5 +2493,383 @@ public sealed class ConvolutionTests
             Assert.Equal(x is >= 2 and <= 6 ? 50 : 0, image.Frames[0][x, 1].Value);
             Assert.Equal(0, image.Frames[0][x, 0].Value);
         }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Even dimensions, anchor and divisor
+    // -----------------------------------------------------------------------------------------------------------------
+
+    // The image of EvenKernelsMatchOpenCvFilter2D: ((37 x + 61 y) mod 17) / 16
+    private static Image<RgbaFloat> CreateFilter2DImage()
+    {
+        var image = new Image<RgbaFloat>(7, 5);
+        for (var y = 0; y < 5; y++)
+        {
+            for (var x = 0; x < 7; x++)
+            {
+                var value = (((x * 37) + (y * 61)) % 17) / 16f;
+                image.Frames[0][x, y] = new RgbaFloat(value, value, value, 1);
+            }
+        }
+
+        return image;
+    }
+
+    [Theory]
+    [InlineData(1, 0, ConvolutionEdgeMode.Clamp)]
+    [InlineData(3, 1, ConvolutionEdgeMode.Mirror)]
+    [InlineData(-1, -1, ConvolutionEdgeMode.Clamp)]
+    public void EvenKernelsMatchOpenCvFilter2D(int anchorX, int anchorY, ConvolutionEdgeMode edgeMode)
+    {
+        // cv2.filter2D(image, cv2.CV_64F, kernel / 4, anchor=(anchorX, anchorY), delta=0.25, borderType=BORDER_REPLICATE or
+        // BORDER_REFLECT), with kernel = [[1, 2, -1, 3], [0, -2, 4, 1]] (opencv-python-headless 5.0.0); -1 is OpenCV's
+        // default anchor, (2, 1)
+        double[][] expected = (anchorX, anchorY) switch
+        {
+            (1, 0) =>
+            [
+                [1.234375, 1.296875, 0.609375, 1.515625, 1.09375, 1.546875, 1.0625],
+                [1.6875, 1.21875, 1.859375, 1.4375, 0.484375, 1.203125, 1.25],
+                [1.34375, 0.609375, 1.515625, 1.09375, 1.734375, 1.390625, 1.171875],
+                [1.265625, 1.859375, 1.4375, 0.484375, 1.390625, 1.578125, 1.625],
+                [1.515625, 1.84375, 1.15625, 0.734375, 1.109375, 1.03125, 1.078125],
+            ],
+            (3, 1) =>
+            [
+                [0.34375, 0.484375, 0.765625, 1.09375, 1.46875, 1.84375, 1.15625],
+                [0.8125, 0.953125, 1.234375, 1.296875, 0.609375, 1.515625, 1.09375],
+                [1.265625, 1.40625, 1.6875, 1.21875, 1.859375, 1.4375, 0.484375],
+                [1.1875, 1.328125, 1.34375, 0.609375, 1.515625, 1.09375, 1.734375],
+                [1.375, 1.78125, 1.265625, 1.859375, 1.4375, 0.484375, 1.390625],
+            ],
+            _ =>
+            [
+                [0.4375, 0.765625, 1.09375, 1.46875, 1.84375, 1.15625, 0.546875],
+                [0.90625, 1.234375, 1.296875, 0.609375, 1.515625, 1.09375, 1.546875],
+                [1.359375, 1.6875, 1.21875, 1.859375, 1.4375, 0.484375, 1.203125],
+                [1.28125, 1.34375, 0.609375, 1.515625, 1.09375, 1.734375, 1.390625],
+                [1.734375, 1.265625, 1.859375, 1.4375, 0.484375, 1.390625, 1.578125],
+            ],
+        };
+
+        using var image = CreateFilter2DImage();
+        var options = new ConvolutionOptions(new ConvolutionKernel(4, 2, [1, 2, -1, 3, 0, -2, 4, 1]))
+        {
+            Anchor = anchorX < 0 ? null : new Point(anchorX, anchorY),
+            Divisor = 4,
+            Bias = 0.25,
+            EdgeMode = edgeMode,
+            PreserveAlpha = true,
+        };
+
+        image.Convolve(options, Ct);
+        for (var y = 0; y < 5; y++)
+        {
+            for (var x = 0; x < 7; x++)
+            {
+                var pixel = image.Frames[0][x, y];
+                Assert.Equal(expected[y][x], pixel.R, 1e-6);
+                Assert.Equal(expected[y][x], pixel.B, 1e-6);
+                Assert.Equal(1, pixel.A);
+            }
+        }
+    }
+
+    [Fact]
+    public void EvenSeparableKernelsUseTheAnchor()
+    {
+        // [1, 1] / 2 with the anchor on its first weight averages a pixel with its right neighbor; on its second weight,
+        // with its left neighbor. Clamp repeats the last and the first pixel.
+        using var right = new Image<Gray8>(4, 1);
+        using var left = new Image<Gray8>(4, 1);
+        foreach (var image in new[] { right, left })
+        {
+            image.Frames[0][0, 0] = new Gray8(0);
+            image.Frames[0][1, 0] = new Gray8(100);
+            image.Frames[0][2, 0] = new Gray8(200);
+            image.Frames[0][3, 0] = new Gray8(250);
+        }
+
+        var kernel = ConvolutionKernel.CreateSeparable([1, 1], [1]);
+        Assert.True(kernel.IsSeparable);
+        right.Convolve(new ConvolutionOptions(kernel) { Anchor = new Point(0, 0), Divisor = 2 }, Ct);
+        left.Convolve(new ConvolutionOptions(kernel) { Divisor = 2 }, Ct);
+        AssertGray8(right.Frames[0], [[50, 150, 225, 250]]);
+        AssertGray8(left.Frames[0], [[0, 50, 150, 225]]);
+    }
+
+    [Fact]
+    public void TheDivisorDividesEveryWeight()
+    {
+        // The binomial [1 2 1; 2 4 2; 1 2 1] divided by 16 is the blur of SeparableMatricesFilterRowsThenColumns
+        using var image = new Image<Gray8>(5, 5);
+        image.Frames[0][2, 2] = new Gray8(255);
+        image.Convolve(new ConvolutionOptions(new ConvolutionKernel(3, 3, [1, 2, 1, 2, 4, 2, 1, 2, 1])) { Divisor = 16 }, Ct);
+        AssertGray8(image.Frames[0], [[0, 0, 0, 0, 0], [0, 16, 32, 16, 0], [0, 32, 64, 32, 0], [0, 16, 32, 16, 0], [0, 0, 0, 0, 0]]);
+
+        // A negative divisor negates the sums: the bias then shows them
+        using var negative = new Image<Gray8>(3, 1, new Gray8(100));
+        negative.Convolve(new ConvolutionOptions(new ConvolutionKernel(1, 1, [1])) { Divisor = -4, Bias = 0.5 }, Ct);
+        Assert.Equal(103, negative.Frames[0][1, 0].Value);
+    }
+
+    [Fact]
+    public void AnchorAndDivisorAreValidated()
+    {
+        var kernel = new ConvolutionKernel(2, 3, [1, 1, 1, 1, 1, 1]);
+        Assert.Null(new ConvolutionOptions(kernel).Anchor);
+        Assert.Equal(1, new ConvolutionOptions(kernel).Divisor);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ConvolutionOptions(kernel) { Anchor = new Point(2, 0) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ConvolutionOptions(kernel) { Anchor = new Point(0, 3) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ConvolutionOptions(kernel) { Anchor = new Point(-1, 0) });
+        Assert.Throws<ArgumentException>(() => new ConvolutionOptions(kernel) { Divisor = 0 });
+        Assert.Throws<ArgumentException>(() => new ConvolutionOptions(kernel) { Divisor = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ConvolutionKernel(0, 1, []));
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Canny edge detector
+    // -----------------------------------------------------------------------------------------------------------------
+
+    // A disc (200) and a rectangle (150, 230 where it covers the disc) on a background of 40, plus a noise of -18 to 18
+    private static Image<Gray8> CreateCannyImage()
+    {
+        var image = new Image<Gray8>(32, 24);
+        for (var y = 0; y < 24; y++)
+        {
+            for (var x = 0; x < 32; x++)
+            {
+                var value = ((x - 11) * (x - 11)) + ((y - 11) * (y - 11)) <= 49 ? 200 : 40;
+                if (x is >= 18 and <= 28 && y is >= 4 and <= 19)
+                {
+                    value = value == 40 ? 150 : 230;
+                }
+
+                var noise = (((x * 7919) + (y * 104729)) % 37) - 18;
+                image.Frames[0][x, y] = new Gray8((byte)Math.Clamp(value + noise, 0, 255));
+            }
+        }
+
+        return image;
+    }
+
+    private static void AssertEdges(ImageFrame<Gray8> frame, string[] expected)
+    {
+        var actual = new string[frame.Height];
+        for (var y = 0; y < frame.Height; y++)
+        {
+            actual[y] = string.Concat(Enumerable.Range(0, frame.Width).Select(x => frame[x, y].Value switch
+            {
+                255 => '#',
+                0 => '.',
+                _ => '?',
+            }));
+        }
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [InlineData(50, 120)]
+    [InlineData(30, 60)]
+    [InlineData(100, 100)]
+    public void CannyWithoutBlurMatchesOpenCv(int low, int high)
+    {
+        // cv2.Canny(image, low, high, L2gradient=True) (opencv-python-headless 5.0.0) on CreateCannyImage
+        string[] expected = (low, high) switch
+        {
+            (50, 120) =>
+            [
+                "................................",
+                "................................",
+                "................................",
+                "...................#########....",
+                ".........#####....#.........#...",
+                ".......##.....##.#..........#...",
+                "......##.......##.#.........#...",
+                ".....##.........##..........#...",
+                ".....#...........#..........#...",
+                "....#............#..........#...",
+                "....#.............#.........#...",
+                "....#.............#.........#...",
+                "....#.............#.........#...",
+                "....#............#...........#..",
+                ".....#...........#...........#..",
+                ".....##.........##...........#..",
+                "......##.......##.#.........#...",
+                ".......##....###.#..........#...",
+                ".........####....#..........#...",
+                "........#.........###########...",
+                "........#.......................",
+                ".......#........................",
+                ".......#.................#......",
+                "#######.#################.......",
+            ],
+            (30, 60) =>
+            [
+                "################################",
+                ".................#..............",
+                "................................",
+                "...................#########....",
+                ".........#####....#.........#...",
+                ".......##.....##.#..........#...",
+                "......##.......##.#.........#...",
+                ".....##.........##..........#...",
+                ".....#........#..#..........#...",
+                "....#........#...#..........#...",
+                "....#........#....#.........#...",
+                "....#.......#.....#.........#..#",
+                "....#.......#.....#.........#..#",
+                "....#......#.....#...........#..",
+                ".....#.....#.....#...........#..",
+                ".....##...#.....##...........#..",
+                "......##.......##.#.........#...",
+                ".......##....###.#..........#...",
+                ".........####....#..........#...",
+                "........#.........###########...",
+                "........#.......................",
+                ".......#........................",
+                ".......#.................#......",
+                "#######.########################",
+            ],
+            _ =>
+            [
+                "................................",
+                "................................",
+                "................................",
+                "...................#########....",
+                ".........#####....#.........#...",
+                ".......##.....##.#..........#...",
+                "......##.......##.#.........#...",
+                ".....##.........##..........#...",
+                ".....#...........#..........#...",
+                "....#............#..........#...",
+                "....#.............#.........#...",
+                "....#.............#.........#..#",
+                "....#.............#.........#...",
+                "....#............#...........#..",
+                ".....#...........#...........#..",
+                ".....##.........##...........#..",
+                "......##.......##.#.........#...",
+                ".......##....###.#..........#...",
+                ".........####....#..........#...",
+                "..................###########...",
+                "................................",
+                "................................",
+                "................................",
+                "......#.........................",
+            ],
+        };
+
+        using var image = CreateCannyImage();
+        image.DetectCannyEdges(new CannyEdgeOptions { Sigma = 0, LowThreshold = low / 255.0, HighThreshold = high / 255.0 }, Ct);
+        AssertEdges(image.Frames[0], expected);
+    }
+
+    [Fact]
+    public void CannyBlurRemovesTheNoise()
+    {
+        // Without blur, the noise of the background makes edges; with the default blur, only the outlines of the disc and
+        // of the rectangle are left: closed, one pixel wide, and near the true borders
+        using var noisy = CreateCannyImage();
+        noisy.DetectCannyEdges(new CannyEdgeOptions { Sigma = 0 }, Ct);
+        using var blurred = CreateCannyImage();
+        blurred.DetectCannyEdges(cancellationToken: Ct);
+        var noisyCount = CountEdges(noisy.Frames[0], 0, 3);
+        Assert.True(noisyCount > 0);
+        Assert.Equal(0, CountEdges(blurred.Frames[0], 0, 3));
+
+        // The left side of the disc crosses row 11 at x = 4 (the disc covers x = 4..18), the right side of the rectangle at x = 28
+        var row = Enumerable.Range(0, 32).Where(x => blurred.Frames[0][x, 11].Value == 255).ToArray();
+        Assert.Contains(row[0], new[] { 3, 4 });
+        Assert.Contains(row[^1], new[] { 28, 29 });
+
+        static int CountEdges(ImageFrame<Gray8> frame, int top, int bottom)
+        {
+            var count = 0;
+            for (var y = top; y < bottom; y++)
+            {
+                for (var x = 0; x < frame.Width; x++)
+                {
+                    if (frame[x, y].Value == 255)
+                    {
+                        count++;
+                    }
+                }
+            }
+
+            return count;
+        }
+    }
+
+    [Theory]
+    [InlineData(50)]
+    [InlineData(90)]
+    public void CannyHysteresisFollowsWeakEdgesConnectedToStrongOnes(int low)
+    {
+        // A bar whose height goes from 60 (top two rows) down to 20: its gradient (4 times the step) is above the high
+        // threshold at the top only, and the weak sides below (80) are kept when the low threshold lets them connect to
+        // it. A lone weak step on the right, connected to no strong edge, is dropped. The expectations are
+        // cv2.Canny(image, low, 200, L2gradient=True) (opencv-python-headless 5.0.0).
+        string[] expected = low == 50
+            ? ["..#...#.....", "...####.....", "...#..#.....", "..#...#.....", "..#...#.....", "..#...#.....", "..#...#.....", "..#...#....."]
+            : ["..#...#.....", "...####.....", "...#..#.....", "............", "............", "............", "............", "............"];
+        using var image = new Image<Gray8>(12, 8);
+        for (var y = 0; y < 8; y++)
+        {
+            var step = y < 2 ? 60 : 20;
+            for (var x = 0; x < 12; x++)
+            {
+                image.Frames[0][x, y] = new Gray8((byte)(x is >= 3 and < 7 ? step : x >= 9 ? 20 : 0));
+            }
+        }
+
+        image.DetectCannyEdges(new CannyEdgeOptions { Sigma = 0, LowThreshold = low / 255.0, HighThreshold = 200 / 255.0 }, Ct);
+        AssertEdges(image.Frames[0], expected);
+    }
+
+    [Fact]
+    public void CannyKeepsAlphaAndWritesEveryPixelFormat()
+    {
+        using var rgba = new Image<Rgba64>(6, 4, new Rgba64(0, 0, 0, 30000));
+        using var floats = new Image<RgbaFloat>(6, 4, new RgbaFloat(-0.5f, 0, 0, 0.5f));
+        using var halves = new Image<RgbaHalf>(6, 4, new RgbaHalf(Half.Zero, Half.Zero, Half.Zero, Half.One));
+        for (var y = 0; y < 4; y++)
+        {
+            for (var x = 3; x < 6; x++)
+            {
+                rgba.Frames[0][x, y] = new Rgba64(60000, 60000, 60000, 30000);
+                floats.Frames[0][x, y] = new RgbaFloat(2, 2, 2, 0.5f);
+                halves.Frames[0][x, y] = new RgbaHalf(Half.One, Half.One, Half.One, Half.One);
+            }
+        }
+
+        var options = new CannyEdgeOptions { Sigma = 0 };
+        rgba.DetectCannyEdges(options, Ct);
+        floats.Frames[0].DetectCannyEdges(options, Ct);
+        halves.DetectCannyEdges(options, Ct);
+
+        // Both sides of the step have the same gradient: non-maximum suppression keeps the left one (greater than the
+        // left neighbor, not lower than the right one)
+        Assert.Equal(new Rgba64(65535, 65535, 65535, 30000), rgba.Frames[0][2, 1]);
+        Assert.Equal(new Rgba64(0, 0, 0, 30000), rgba.Frames[0][3, 1]);
+        Assert.Equal(new RgbaFloat(1, 1, 1, 0.5f), floats.Frames[0][2, 1]);
+        Assert.Equal(new RgbaFloat(0, 0, 0, 0.5f), floats.Frames[0][4, 1]);
+        Assert.Equal(new RgbaFloat(0, 0, 0, 0.5f), floats.Frames[0][0, 1]);
+        Assert.Equal(Half.One, halves.Frames[0][2, 3].R);
+        Assert.Equal(Half.Zero, halves.Frames[0][3, 3].R);
+    }
+
+    [Fact]
+    public void CannyOptionsAreValidated()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CannyEdgeOptions { Sigma = -1 });
+        Assert.Throws<ArgumentException>(() => new CannyEdgeOptions { Sigma = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CannyEdgeOptions { LowThreshold = -0.1 });
+        Assert.Throws<ArgumentException>(() => new CannyEdgeOptions { HighThreshold = double.PositiveInfinity });
+        using var image = new Image<Gray8>(3, 3, new Gray8(7));
+        Assert.Throws<ArgumentException>(() => image.DetectCannyEdges(new CannyEdgeOptions { LowThreshold = 0.5, HighThreshold = 0.4 }, Ct));
+        Assert.Equal(new Gray8(7), image.Frames[0][1, 1]);
+        Assert.Throws<ArgumentNullException>(() => ((Image)null!).DetectCannyEdges());
     }
 }

@@ -67,6 +67,7 @@ public static void DrawGradients(string outputPath)
 | [RadialGradientBrush](cref:Meziantou.Framework.Imaging.Drawing.RadialGradientBrush) | From a center up to a radius (a circle, or an ellipse with two radii) |
 | [SweepGradientBrush](cref:Meziantou.Framework.Imaging.Drawing.SweepGradientBrush) | Around a center, with the angle, clockwise from [StartAngle](cref:Meziantou.Framework.Imaging.Drawing.SweepGradientBrush.StartAngle) to [EndAngle](cref:Meziantou.Framework.Imaging.Drawing.SweepGradientBrush.EndAngle) (a full turn from the right of the center by default) |
 | [PathGradientBrush](cref:Meziantou.Framework.Imaging.Drawing.PathGradientBrush) | Across a polygon, from the color of each corner to the color of a center |
+| [MeshGradientBrush](cref:Meziantou.Framework.Imaging.Drawing.MeshGradientBrush) | Across patches with curved sides, from the color of each of their corners (see [below](#paint-with-a-mesh-gradient)) |
 
 - A [GradientStop](cref:Meziantou.Framework.Imaging.Drawing.GradientStop) is an offset from 0 to 1 and a color. Two stops with the same offset make a hard edge. Stops are
   mixed on alpha-premultiplied values, so a transparent stop does not tint its neighbors.
@@ -81,6 +82,61 @@ public static void DrawGradients(string outputPath)
 - The colors of a sweep gradient change abruptly at its start angle, unless it ends on the color it starts with.
 - A [PathGradientBrush](cref:Meziantou.Framework.Imaging.Drawing.PathGradientBrush) mixes its colors across the triangles from the center to each side, and paints nothing outside
   them. The center is the mean of the points unless one is given. Its cost grows with the number of points.
+
+## Paint with a mesh gradient
+
+A [MeshGradientBrush](cref:Meziantou.Framework.Imaging.Drawing.MeshGradientBrush) paints free-form gradients: a mesh of patches, each bounded by four cubic Bézier curves
+with a color at each corner, mixed smoothly across its surface. These are the mesh gradients of SVG 2 and the shadings
+of types 6 and 7 of PDF:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/DrawingExamples.cs;region=Imaging_DrawMeshGradient;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void DrawMeshGradient(string outputPath)
+{
+    // Each patch is bounded by four cubic Bézier curves, given as 12 points from its top-left corner: the top side
+    // from left to right, then the right side, the bottom side from right to left, and the left side
+    var left = MeshGradientPatch.CreateCoons(
+        [new(10, 10), new(50, -5), new(90, 25), new(130, 10),
+         new(120, 40), new(140, 70), new(130, 100),
+         new(90, 115), new(50, 85), new(10, 100),
+         new(25, 70), new(-5, 40)],
+        [Colors.Crimson, Colors.Gold, Colors.SeaGreen, Colors.RoyalBlue]);
+
+    // The second patch starts where the first one ends: its left side is the right side of the first one, reversed
+    var right = MeshGradientPatch.CreateCoons(
+        [new(130, 10), new(170, 30), new(210, -5), new(250, 15),
+         new(235, 45), new(260, 75), new(250, 100),
+         new(210, 120), new(170, 90), new(130, 100),
+         new(140, 70), new(120, 40)],
+        [Colors.Gold, Colors.White, Colors.DarkViolet, Colors.SeaGreen]);
+
+    var mesh = new MeshGradientBrush([left, right]);
+
+    // The brush paints only inside its patches: fill the whole canvas with it
+    using var image = new Image<Rgba32>(260, 120, Colors.White);
+    image.Draw(canvas => canvas.Fill(mesh));
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
+![Two patches side by side with wavy sides: the left one goes from crimson at its top left to gold, sea green and royal blue at its other corners, the right one from gold to white, dark violet and sea green](images/DrawMeshGradient.png)
+
+- [MeshGradientPatch.CreateCoons](cref:Meziantou.Framework.Imaging.Drawing.MeshGradientPatch.CreateCoons) makes a patch from the 12 points of its boundary, from its top-left corner: the top
+  side from left to right, then the right, bottom and left sides, each a Bézier curve of 4 points that shares its ends
+  with its neighbors. A straight side has its control points at a third and two thirds of it. It is the order of a
+  patch of a PDF type 6 shading and of an SVG `meshpatch`.
+- [MeshGradientPatch.CreateTensorProduct](cref:Meziantou.Framework.Imaging.Drawing.MeshGradientPatch.CreateTensorProduct) takes the 16 control points of the surface, row by row, whose four inner
+  points shape the inside of the patch (PDF type 7).
+- The corner colors go around the patch from its top-left corner: top-left, top-right, bottom-right, bottom-left. The
+  color of a point is the bilinear mix of the corners in the parameters of the surface, on alpha-premultiplied values.
+- The patches are painted in order, so a later patch covers an earlier one. Where a patch folds over itself, the part
+  with the largest parameters is shown, as PDF specifies.
+- Nothing is painted outside the patches, whatever the shape that is filled: fill the canvas or the outline of the
+  mesh. A pixel takes the color of its center, so the outline of the mesh is not antialiased; fill a path that follows
+  it, or a shape inside it, for smooth edges. [Transform](cref:Meziantou.Framework.Imaging.Drawing.MeshGradientBrush.Transform) places the mesh on the canvas.
+- Each patch is cut into small triangles, less than a tenth of a pixel away from its surface, before the shape is
+  painted; their memory is charged to the allocation limit of the image.
 
 ## Choose how the colors of a gradient mix
 

@@ -51,14 +51,28 @@ public sealed class ImageDecodeOptions
     } = PixelConversionOptions.Default;
 
     /// <summary>
-    /// Gets the color conversion applied to images whose samples are CMYK inks (four-component JPEG, separated TIFF), or
+    /// Gets the color conversion applied to images whose samples are CMYK inks (four-component JPEG, separated TIFF) when they are not
+    /// loaded as CMYK pixels, or <see langword="null"/> (the default) to reject them with an
+    /// <see cref="UnsupportedImageFeatureException"/>.
+    /// </summary>
+    /// <remarks>
+    /// Such an image keeps its inks when it is loaded as <see cref="Cmyk32"/> or <see cref="Cmyk64"/> pixels; another pixel
+    /// format converts its colors. Like every color conversion it is explicit: set <c>new CmykConversionOptions()</c> to
+    /// convert to sRGB here, or <see cref="PixelConversionOptions.CmykConversion"/> to convert the CMYK pixels. Other images
+    /// are not affected.
+    /// </remarks>
+    public CmykConversionOptions? CmykConversion { get; init; }
+
+    /// <summary>
+    /// Gets the color conversion applied to images whose samples are CIE L*a*b* colors (TIFF pages), or
     /// <see langword="null"/> (the default) to reject them with an <see cref="UnsupportedImageFeatureException"/>.
     /// </summary>
     /// <remarks>
-    /// No pixel format holds CMYK samples, so such an image can only be loaded by converting its colors. Like every color
-    /// conversion it is explicit: set <c>new CmykConversionOptions()</c> to convert to sRGB. Other images are not affected.
+    /// No pixel format holds L*a*b* samples, so such an image can only be loaded by converting its colors, which can lose
+    /// the ones outside the gamut of the destination. Like every color conversion it is explicit: set
+    /// <c>new CieLabConversionOptions()</c> to convert to sRGB. Other images are not affected.
     /// </remarks>
-    public CmykConversionOptions? CmykConversion { get; init; }
+    public CieLabConversionOptions? CieLabConversion { get; init; }
 
     /// <summary>
     /// Gets the factor by which the decoder divides the width and the height of the image, a power of two. Defaults to 1:

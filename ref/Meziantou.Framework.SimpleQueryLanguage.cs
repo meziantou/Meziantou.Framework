@@ -6,10 +6,13 @@ namespace Meziantou.Framework.SimpleQueryLanguage
 {
     public sealed class ExpressionQueryBuilder<T>
     {
+        public bool Strict { get => throw null; set { } }
         public ExpressionQueryBuilder(System.TimeProvider? timeProvider) { }
+        public ExpressionQueryBuilder(System.TimeProvider? timeProvider, System.TimeZoneInfo? timeZone) { }
         public void AddHandler(string key, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }
         public void AddHandler(string key, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator op, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }
         public void AddHandler(string key, System.Linq.Expressions.Expression<System.Func<T, string?>> selector, System.StringComparison? comparisonType = null) { }
+        public void AddHandler(string key, System.Linq.Expressions.Expression<System.Func<T, string?>> selector, Meziantou.Framework.SimpleQueryLanguage.StringMatchMode matchMode, System.StringComparison? comparisonType = null) { }
         public void AddHandler<TValue>(string key, System.Linq.Expressions.Expression<System.Func<T, TValue>> selector, Meziantou.Framework.SimpleQueryLanguage.ScalarParser<TValue>? tryParseValue = null) { }
         public Meziantou.Framework.SimpleQueryLanguage.ExpressionQuery<T> Build(string query) => throw null;
         public void SetFreeTextHandler(Meziantou.Framework.SimpleQueryLanguage.FreeTextExpressionHandler<T>? handler) { }
@@ -18,12 +21,22 @@ namespace Meziantou.Framework.SimpleQueryLanguage
 
     public sealed class ExpressionQuery<T>
     {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.SimpleQueryLanguage.QueryDiagnostic> Diagnostics { get => throw null; }
         public System.Linq.Expressions.Expression<System.Func<T, bool>>? Predicate { get => throw null; }
         public string Text { get => throw null; }
         public System.Linq.IQueryable<T> Apply(System.Linq.IQueryable<T> queryable) => throw null;
     }
 
     public delegate System.Linq.Expressions.Expression<System.Func<T, bool>> FreeTextExpressionHandler<T>(string text);
+
+    public sealed class InvalidQueryException : System.Exception
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.SimpleQueryLanguage.QueryDiagnostic> Diagnostics { get => throw null; }
+        public string Query { get => throw null; }
+        public InvalidQueryException(string? message) { }
+        public InvalidQueryException(string query, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.SimpleQueryLanguage.QueryDiagnostic> diagnostics) { }
+        public InvalidQueryException(string? message, System.Exception? innerException) { }
+    }
 
     public enum KeyValueOperator
     {
@@ -37,7 +50,9 @@ namespace Meziantou.Framework.SimpleQueryLanguage
 
     public sealed class QueryBuilder<T>
     {
+        public bool Strict { get => throw null; set { } }
         public QueryBuilder(System.TimeProvider? timeProvider) { }
+        public QueryBuilder(System.TimeProvider? timeProvider, System.TimeZoneInfo? timeZone) { }
         public void AddHandler(string key, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, string, bool> predicate) { }
         public void AddHandler(string key, System.Func<T, string, bool> predicate) { }
         public void AddHandler(string key, string? value, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, bool> predicate) { }
@@ -53,6 +68,25 @@ namespace Meziantou.Framework.SimpleQueryLanguage
         public void SetUnhandledPropertyHandler(Meziantou.Framework.SimpleQueryLanguage.UnhandledPropertyDelegate<T>? predicate) { }
     }
 
+    public sealed class QueryDiagnostic
+    {
+        public Meziantou.Framework.SimpleQueryLanguage.QueryDiagnosticCode Code { get => throw null; }
+        public string Message { get => throw null; }
+        public Meziantou.Framework.SimpleQueryLanguage.Syntax.TextSpan Span { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public enum QueryDiagnosticCode
+    {
+        UnmatchedCloseParenthesis = 0,
+        MissingCloseParenthesis = 1,
+        EmptyParentheses = 2,
+        MissingOperand = 3,
+        MissingValue = 4,
+        UnterminatedQuotedText = 5,
+        UnknownKey = 6,
+    }
+
     public sealed class QueryTooComplexException : System.Exception
     {
         public QueryTooComplexException(string? message) { }
@@ -61,11 +95,20 @@ namespace Meziantou.Framework.SimpleQueryLanguage
 
     public sealed class Query<T>
     {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.SimpleQueryLanguage.QueryDiagnostic> Diagnostics { get => throw null; }
         public string Text { get => throw null; }
         public bool Evaluate(T value) => throw null;
     }
 
     public delegate bool ScalarParser<T>(string value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T result);
+
+    public enum StringMatchMode
+    {
+        Contains = 0,
+        Exact = 1,
+        StartsWith = 2,
+        EndsWith = 3,
+    }
 
     public delegate bool UnhandledPropertyDelegate<T>(T obj, string propertyName, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator @operator, string value);
 
@@ -182,6 +225,7 @@ namespace Meziantou.Framework.SimpleQueryLanguage.Syntax
     public abstract class QuerySyntax : Meziantou.Framework.SimpleQueryLanguage.Syntax.QueryNodeOrToken
     {
         public static Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Parse(string text) => throw null;
+        public static Meziantou.Framework.SimpleQueryLanguage.Syntax.QuerySyntax Parse(string text, out System.Collections.Generic.IReadOnlyList<Meziantou.Framework.SimpleQueryLanguage.QueryDiagnostic> diagnostics) => throw null;
         public override string ToString() => throw null;
     }
 

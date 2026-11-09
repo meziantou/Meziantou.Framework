@@ -11,18 +11,87 @@ public abstract partial class QuerySyntax : QueryNodeOrToken
     /// <exception cref="QueryTooComplexException">The query nests expressions too deeply to be parsed.</exception>
     public static QuerySyntax Parse(string text)
     {
+        return Parse(text, out _);
+    }
+
+    /// <summary>Parses a query string into a syntax tree, and reports the problems found in it.</summary>
+    /// <param name="text">The query string to parse.</param>
+    /// <param name="diagnostics">
+    /// When this method returns, the problems found in the query, such as unbalanced parentheses or operators without
+    /// operand, in the order they appear in it. The list is empty when the query has no problem.
+    /// </param>
+    /// <returns>The root node of the parsed syntax tree. It is the same tree as <see cref="Parse(string)"/> returns.</returns>
+    /// <exception cref="QueryTooComplexException">The query nests expressions too deeply to be parsed.</exception>
+    /// <remarks>
+    /// Keys are not checked: only a builder knows which keys have a handler. Use <see cref="Query{T}.Diagnostics"/> or
+    /// <see cref="ExpressionQuery{T}.Diagnostics"/> to get the unknown keys too.
+    /// </remarks>
+    public static QuerySyntax Parse(string text, out IReadOnlyList<QueryDiagnostic> diagnostics)
+    {
         ArgumentNullException.ThrowIfNull(text);
 
         var tokens = Lexer.Tokenize(text).Where(t => t.Kind != QuerySyntaxKind.WhitespaceToken);
         var parser = new Parser(tokens);
         try
         {
-            return parser.Parse();
+            var result = parser.Parse();
+            diagnostics = parser.Diagnostics;
+            return result;
         }
         catch (InsufficientExecutionStackException ex)
         {
             throw new QueryTooComplexException("The query nests expressions too deeply to be parsed", ex);
         }
+    }
+
+    /// <summary>
+    /// Adds a diagnostic for each key-value query of the tree whose key <paramref name="isKnownKey"/> rejects, and
+    /// returns all the diagnostics in the order they appear in the query.
+    /// </summary>
+    internal static IReadOnlyList<QueryDiagnostic> AddUnknownKeyDiagnostics(QuerySyntax root, IReadOnlyList<QueryDiagnostic> diagnostics, Func<string, bool> isKnownKey)
+    {
+        List<QueryDiagnostic>? unknownKeys = null;
+
+        // Walk with an explicit stack: a long conjunction is a left-leaning tree as deep as its term count
+        var stack = new Stack<QuerySyntax>();
+        stack.Push(root);
+        while (stack.TryPop(out var node))
+        {
+            switch (node)
+            {
+                case KeyValueQuerySyntax keyValue:
+                    if (!isKnownKey(keyValue.KeyToken.Text))
+                    {
+                        unknownKeys ??= [];
+                        unknownKeys.Add(QueryDiagnostic.UnknownKey(keyValue.KeyToken));
+                    }
+
+                    break;
+
+                case AndQuerySyntax andQuery:
+                    stack.Push(andQuery.Right);
+                    stack.Push(andQuery.Left);
+                    break;
+
+                case OrQuerySyntax orQuery:
+                    stack.Push(orQuery.Right);
+                    stack.Push(orQuery.Left);
+                    break;
+
+                case NegatedQuerySyntax negatedQuery:
+                    stack.Push(negatedQuery.Query);
+                    break;
+
+                case ParenthesizedQuerySyntax parenthesizedQuery:
+                    stack.Push(parenthesizedQuery.Query);
+                    break;
+            }
+        }
+
+        if (unknownKeys is null)
+            return diagnostics;
+
+        return [.. diagnostics.Concat(unknownKeys).OrderBy(diagnostic => diagnostic.Span.Start)];
     }
 
     public override string ToString()

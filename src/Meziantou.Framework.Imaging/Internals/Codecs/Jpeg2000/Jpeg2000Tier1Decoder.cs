@@ -78,6 +78,17 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
         var bypass = (style & Jpeg2000CodingStyle.StyleBypass) != 0;
         var reset = (style & Jpeg2000CodingStyle.StyleReset) != 0;
         var segmentationSymbols = (style & Jpeg2000CodingStyle.StyleSegmentationSymbols) != 0;
+
+        // A codeword segment that is cut after a pass (a layer that is not decoded, or a writer that drops layers) was not
+        // flushed there: the symbols that end its last pass, the segmentation symbol included, may not be decodable
+        var passCount = 0;
+        foreach (var segment in segments)
+        {
+            passCount += segment.PassCount;
+        }
+
+        var lastPass = passCount - 1;
+        var isCut = passCount < (3 * bitPlanes) - 2 && !Jpeg2000CodeBlockSegment.IsTerminatedAfter(lastPass, style);
         var zeroCoding = Jpeg2000Tier1Tables.GetZeroCodingContexts(orientation);
         var pass = 0;
         foreach (var segment in segments)
@@ -135,7 +146,7 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
                             // D.5: the symbols 1, 0, 1, 0 in the uniform context end each cleanup pass
                             ref var uniform = ref _contexts[ContextUniform];
                             var symbol = (_mq.Decode(ref uniform) << 3) | (_mq.Decode(ref uniform) << 2) | (_mq.Decode(ref uniform) << 1) | _mq.Decode(ref uniform);
-                            if (symbol != 0b1010)
+                            if (symbol != 0b1010 && !(isCut && pass == lastPass))
                                 throw Jpeg2000Format.Invalid("the segmentation symbol of a code-block is wrong.");
                         }
 

@@ -67,7 +67,7 @@ public readonly struct Cmyk : IEquatable<Cmyk>
         return new Rgba64(ColorValueMath.ToUInt16(r), ColorValueMath.ToUInt16(g), ColorValueMath.ToUInt16(b), ushort.MaxValue);
     }
 
-    private static Cmyk FromRgb(double red, double green, double blue)
+    internal static Cmyk FromRgb(double red, double green, double blue)
     {
         var black = 1 - Math.Max(red, Math.Max(green, blue));
         if (black == 1)

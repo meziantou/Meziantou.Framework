@@ -7,7 +7,9 @@ namespace Meziantou.Framework.Imaging;
 /// </summary>
 /// <remarks>
 /// There is one bin per sample level, at the storage precision: 256 bins for 8-bit pixel formats, 65,536 for 16-bit ones.
-/// Every pixel is counted, fully transparent ones included.
+/// Floating-point samples (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) have 65,536 bins from 0 to 1: the level of a
+/// value <c>v</c> is <c>round(65535 v)</c>, and values below 0 or above 1 (and values that are not numbers, counted as 0)
+/// go to the first or the last bin. Every pixel is counted, fully transparent ones included.
 /// </remarks>
 public sealed class ImageHistogram
 {
@@ -23,7 +25,7 @@ public sealed class ImageHistogram
     /// <summary>Gets the channel that is counted.</summary>
     public HistogramChannel Channel { get; }
 
-    /// <summary>Gets the number of bins: 256 for 8-bit pixel formats, 65,536 for 16-bit ones.</summary>
+    /// <summary>Gets the number of bins: 256 for 8-bit pixel formats, 65,536 for 16-bit and floating-point ones.</summary>
     public int BinCount => _counts.Length;
 
     /// <summary>Gets the number of pixels counted, the sum of the bins.</summary>

@@ -28,12 +28,13 @@ folder, and updates them to the latest versions published on NuGet, npm, Docker 
 ## Principles
 
 - **Declared, not resolved.** The library reads what the files say. It does not restore packages, evaluate MSBuild, or
-  ask a registry which versions exist. The command-line tool queries the registries.
+  ask a registry which versions exist. The command-line tool queries the registries. It does resolve the simple
+  properties and variables a file defines for itself, such as `$(XunitVersion)` in an MSBuild project.
 - **Precise locations.** Each name and version comes with its location in the file, so an update changes exactly that
   text and keeps the formatting of the file.
 - **Safe updates.** An update first checks that the file still holds the value found by the scan, and refuses to write
-  otherwise. Values that cannot be updated safely, such as lock file entries or values built from variables, are
-  reported with a location that is not updatable.
+  otherwise. Values that cannot be updated safely, such as lock file entries or values built from variables that
+  cannot be resolved, are reported with a location that is not updatable.
 - **Parallel.** Files are scanned in parallel.
 
 ## Namespaces

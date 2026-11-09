@@ -6,11 +6,14 @@ description: What the library and the tool do not do, and how to work around it.
 - **Declared dependencies only.** The library reads the files as text, XML, JSON, YAML or TOML: it does not evaluate
   MSBuild, run package managers, or resolve transitive dependencies. Scan the lock files to see the resolved versions.
   See [Lock files](05-SupportedFiles/01-Overview.md#lock-files).
-- **Variables are not resolved.** A value built from a variable or a property is reported as written, with a location
-  that is not updatable. The exceptions are the Dockerfile `ARG` defaults and the Maven properties described in
-  [Containers](05-SupportedFiles/04-Containers.md#dockerfiles) and
-  [Other ecosystems](05-SupportedFiles/06-OtherEcosystems.md#java).
-- **Some formats are not scanned**, such as `pnpm-lock.yaml`, `yarn.lock`, `bun.lock` and npm lockfile version 1. See
+- **Only simple properties and variables of the same file are resolved.** MSBuild properties, `#:property` directives,
+  Dockerfile `ARG` defaults, Maven properties, Gradle variables and version catalog references are resolved when the
+  file defines them once with a literal value. A property defined in another file (`Directory.Build.props`,
+  `gradle.properties`, a parent pom), with a condition, from other properties, or by the environment, such as a compose
+  file `${TAG}` or a GitHub Actions expression, is not resolved: the value is reported as written, with a `null`
+  resolved version and a location that is not updatable. See
+  [Properties and variables](05-SupportedFiles/01-Overview.md#properties-and-variables).
+- **Some formats are not scanned**, such as the binary Bun lock file `bun.lockb`. See
   [JavaScript](05-SupportedFiles/03-JavaScript.md#lock-files). Use a [custom scanner](08-CustomScanners.md) for other
   formats.
 - **The library does not choose versions.** It writes the value it is given. The command-line tool chooses versions

@@ -1355,6 +1355,83 @@ public sealed class JpegEncoderTests
         }
     }
 
+    [Theory]
+    [InlineData(75, false, 0)]
+    [InlineData(95, true, 0)]
+    [InlineData(50, true, 3)]
+    public void CmykPixelsAreWrittenAsAdobeInksThatMatchTheEncoderModel(int quality, bool optimizeHuffmanTables, int restartInterval)
+    {
+        foreach (var (width, height) in new[] { (1, 1), (7, 5), (16, 8), (17, 9), (33, 31) })
+        {
+            // Four planes of different content: the inks are those of a photo-like image and of its luma
+            var photo = JpegTestPatterns.PhotoLike(width, height, seed: width + (3 * height));
+            var inks = new Cmyk32[width * height];
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var (r, g, b) = ((byte)photo.GetSample(x, y, 0), (byte)photo.GetSample(x, y, 1), (byte)photo.GetSample(x, y, 2));
+                    inks[(y * width) + x] = new Cmyk32((byte)(255 - r), (byte)(255 - g), (byte)(255 - b), (byte)((r + (2 * g) + b) / 4));
+                }
+            }
+
+            using var image = Image.ImportPixelData<Cmyk32>(inks, width, height);
+            var encoder = new JpegEncoder { Quality = quality, OptimizeHuffmanTables = optimizeHuffmanTables, RestartInterval = restartInterval, ChromaSubsampling = JpegChromaSubsampling.Ratio420 };
+            var jpeg = Encode(image, encoder);
+            var context = $"{width}x{height} q{quality}";
+
+            // Four components without subsampling and the Adobe transform 0 (no color conversion), baseline
+            var reference = ReferenceJpeg.Parse(jpeg);
+            Assert.False(reference.IsProgressive);
+            Assert.Equal(restartInterval, reference.RestartInterval);
+            Assert.HasCount(4, reference.Components);
+            Assert.All(reference.Components, component => Assert.Equal((1, 1), (component.H, component.V)));
+            var adobe = Assert.Single(reference.Segments, segment => segment.Marker == 0xEE);
+            Assert.Equal((byte)'A', adobe.Payload.Span[0]);
+            Assert.Equal(0, adobe.Payload.Span[11]);
+
+            // Each component is the complement of its ink, transformed like a gray image with the luminance table
+            var table = JpegEncoderModel.ScaleTable(JpegEncoderModel.AnnexKLuminance, quality);
+            var expected = new List<ReferenceJpegModelBlocks>();
+            for (var component = 0; component < 4; component++)
+            {
+                var plane = inks.Select(ink => (byte)(255 - component switch { 0 => ink.C, 1 => ink.M, 2 => ink.Y, _ => ink.K })).ToArray();
+                expected.Add(JpegEncoderModel.ComputeCoefficients(RawPixelBuffer.Create(width, height, RawPixelLayout.Gray8, plane), 1, 1, table, table)[0]);
+            }
+
+            var comparison = JpegEncoderModel.Compare(expected, reference.DecodeCoefficients());
+            Assert.True(comparison.IsMatch, context + ": " + comparison.Describe());
+
+            // The file is read back as CMYK
+            Assert.Equal(ImageColorModel.Cmyk, Image.Identify(jpeg).ColorModel);
+            using var decoded = Image.Load<Cmyk32>(jpeg);
+            Assert.Equal(image.Size, decoded.Size);
+        }
+    }
+
+    [Fact]
+    public void CmykOutputKeepsTheProfileAndRejectsWhatItCannotStore()
+    {
+        using var image = new Image<Cmyk64>(9, 4);
+        image.Metadata.IccProfile = IccTestProfiles.CmykLabLut16();
+        Assert.Equal("Bit depth reduction", Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new JpegEncoder())).Feature);
+        Assert.Equal("Progressive CMYK JPEG", Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new JpegEncoder { AllowBitDepthReduction = true, Process = JpegEncodingProcess.Progressive })).Feature);
+        using (var gainMap = CreateGrayGradient(4, 2))
+        {
+            var metadata = new GainMapMetadata(0, 3, [new GainMapChannel(-0.5, 3, gamma: 1, baseOffset: 1.0 / 64, alternateOffset: 1.0 / 64)]);
+            Assert.Equal("Gain map with CMYK pixels", Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new JpegEncoder { AllowBitDepthReduction = true, GainMap = new GainMap(gainMap, metadata) })).Feature);
+        }
+
+
+        var jpeg = Encode(image, new JpegEncoder { AllowBitDepthReduction = true });
+        using var decoded = Image.Load<Cmyk64>(jpeg);
+        Assert.Equal(image.Metadata.IccProfile.Data.ToArray(), decoded.Metadata.IccProfile?.Data.ToArray());
+
+        // An RGB profile does not describe inks: it follows the metadata policy
+        image.Metadata.IccProfile = IccProfile.Srgb;
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new JpegEncoder { AllowBitDepthReduction = true, MetadataHandling = MetadataHandling.Strict }));
+    }
+
     [Fact]
     public void HarnessReadsProgressiveFilesOfAnotherEncoder()
     {
@@ -1422,6 +1499,224 @@ public sealed class JpegEncoderTests
         var expected = JpegEncoderModel.ComputeCoefficients(samples, h, v, luminance, chrominance);
         var comparison = JpegEncoderModel.Compare(expected, reference.DecodeCoefficients());
         Assert.True(comparison.IsMatch, context + ": " + comparison.Describe());
+    }
+
+    [Fact]
+    public void UltraHdrGainMapIsWrittenAndReadBack()
+    {
+        // The base image and the gain map of a file of libultrahdr 1.4.0, written again: the rendition stays the one that
+        // libultrahdr decodes from the original file (ultrahdr_app -m 1, linear light in Display P3), within the tolerance
+        // of the original file (UltraHdrRenditionMatchesLibUltraHdr) widened for the rounding of the second encoding, which
+        // the gain amplifies (up to 2^5.6). libultrahdr decodes the written file too (checked by hand: within 0.1 of the
+        // rendition of the library with 4:4:4 images, as for its own file)
+        const string Directory = "tests/Meziantou.Framework.Imaging.Jpeg.Tests/GainMaps/";
+        var source = AuxiliaryImageCollection.Load(GainMapTestFiles.Read(Directory + "ultrahdr-multichannel.jpg"));
+        var sourceGainMap = Assert.NotNull(source.GainMapImage);
+        var metadata = Assert.NotNull(sourceGainMap.GainMapMetadata);
+        using var baseImage = Image.Load(GainMapTestFiles.Read(Directory + "ultrahdr-multichannel.jpg"));
+        using var gainMap = sourceGainMap.Decode();
+        var data = Save(baseImage, new JpegEncoder { Quality = 100, ChromaSubsampling = JpegChromaSubsampling.Ratio444, GainMap = new GainMap(gainMap, metadata) });
+
+        var images = AuxiliaryImageCollection.Load(data);
+        var written = Assert.Single(images);
+        Assert.Equal(AuxiliaryImageKind.GainMap, written.Kind);
+        Assert.Equal(new Size(64, 48), written.Size);
+        Assert.Equal(metadata, written.GainMapMetadata);
+        using var rendition = images.DecodeHdr(metadata.AlternateHdrHeadroom);
+        GainMapTestFiles.AssertClose(rendition, GainMapTestFiles.ReadHalfFloats(Directory + "ultrahdr-multichannel.linear.f16"), channels: 4, tolerance: 0.15, medianTolerance: 0.01, context: "written again");
+
+        // The primary image decodes as the image that was saved, with its ICC profile; the gain map image keeps its own
+        using var primary = Image.Load(data);
+        Assert.Equal(baseImage.Metadata.IccProfile!.Data, primary.Metadata.IccProfile?.Data);
+        using var writtenGainMap = written.Decode();
+        Assert.Equal(gainMap.Metadata.IccProfile!.Data, writtenGainMap.Metadata.IccProfile?.Data);
+    }
+
+    [Fact]
+    public void UltraHdrFileHasTheIndexTheIsoVersionAndTheContainerDirectory()
+    {
+        using var baseImage = CreateGradient(40, 24);
+        using var gainMap = CreateGrayGradient(20, 12);
+        var metadata = new GainMapMetadata(0, 3, [new GainMapChannel(-0.5, 3, gamma: 1, baseOffset: 1.0 / 64, alternateOffset: 1.0 / 64)]);
+        var data = Save(baseImage, new JpegEncoder { GainMap = new GainMap(gainMap, metadata) });
+
+        // The Multi-Picture Format index: the primary image, then the gain map image, which ends the file
+        var header = data.AsSpan().IndexOf("MPF\0"u8) + 4;
+        Assert.Equal("MM\0*"u8.ToArray(), data.AsSpan(header, 4).ToArray());
+        var entries = header + 50;
+        Assert.Equal(0x030000u, BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(entries)));
+        var primaryLength = (int)BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(entries + 4));
+        var gainMapLength = (int)BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(entries + 20));
+        Assert.Equal(primaryLength, header + (int)BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(entries + 24)));
+        Assert.Equal(data.Length, primaryLength + gainMapLength);
+        Assert.Equal([0xFF, 0xD9], data.AsSpan(primaryLength - 2, 2).ToArray());
+        Assert.Equal([0xFF, 0xD8], data.AsSpan(primaryLength, 2).ToArray());
+
+        // The primary image only gives the version of ISO 21496-1 (a reader that finds no parameters there looks for the
+        // gain map), and its XMP packet the container directory of Ultra HDR
+        var primary = data.AsSpan(0, primaryLength).ToArray();
+        var iso = primary.AsSpan().IndexOf("urn:iso:std:iso:ts:21496:-1\0"u8);
+        Assert.Equal(2 + 28 + 4, BinaryPrimitives.ReadUInt16BigEndian(primary.AsSpan(iso - 2)));
+        var xmp = Assert.NotNull(EncodedFieldInspector.Inspect("jpeg", primary).Xmp).ToArray();
+        var text = System.Text.Encoding.UTF8.GetString(xmp);
+        Assert.Contains("hdrgm:Version=\"1.0\"", text);
+        Assert.Contains("Item:Semantic=\"GainMap\"", text);
+        Assert.Contains(string.Create(CultureInfo.InvariantCulture, $"Item:Length=\"{gainMapLength}\""), text);
+
+        // The gain map image has both descriptions of the parameters, which give the same gain map
+        var gainMapFile = data.AsSpan(primaryLength).ToArray();
+        var gainMapXmp = Assert.NotNull(EncodedFieldInspector.Inspect("jpeg", gainMapFile).Xmp).ToArray();
+        Assert.Equal(metadata, GainMapMetadataReader.ReadXmp(gainMapXmp, ImageFormat.Jpeg));
+        var written = Assert.Single(AuxiliaryImageCollection.Load(data));
+        Assert.Equal(metadata, written.GainMapMetadata);
+        Assert.Equal(new Size(20, 12), written.Size);
+        using var decodedGainMap = written.Decode();
+        Assert.Equal(PixelFormat.Gray8, decodedGainMap.PixelFormat);
+    }
+
+    [Fact]
+    public void GainMapParametersAreWrittenAsIsoMetadataAndXmp()
+    {
+        // Three channels, a high dynamic range base rendition (BaseRenditionIsHDR, the headrooms and the offsets swapped in
+        // XMP), and the color space of the alternate rendition, which only ISO 21496-1 can express
+        GainMapChannel[] channels =
+        [
+            new(-1, 2.5, gamma: 1, baseOffset: 0.125, alternateOffset: 0.25),
+            new(-0.75, 2, gamma: 2, baseOffset: 0.125, alternateOffset: 0.25),
+            new(-0.5, 1.5, gamma: 0.5, baseOffset: 0.125, alternateOffset: 0.25),
+        ];
+        var metadata = new GainMapMetadata(2.5, 0, channels);
+        Assert.Equal(metadata, GainMapMetadataReader.ReadIso(GainMapMetadataWriter.WriteIso(metadata, ImageFormat.Jpeg), ImageFormat.Jpeg));
+        Assert.Equal(metadata, GainMapMetadataReader.ReadXmp(GainMapMetadataWriter.MergeGainMapXmp([], metadata), ImageFormat.Jpeg));
+
+        var otherSpace = new GainMapMetadata(0, 2.5, channels, useBaseColorSpace: false);
+        using var baseImage = CreateGradient(16, 16);
+        using var gainMap = CreateGradient(16, 16);
+        var data = Save(baseImage, new JpegEncoder { GainMap = new GainMap(gainMap, otherSpace) });
+        Assert.Equal(otherSpace, Assert.Single(AuxiliaryImageCollection.Load(data)).GainMapMetadata);
+    }
+
+    [Theory]
+    [InlineData(0.015625, 1, 64)]
+    [InlineData(-0.5, -1, 2)]
+    [InlineData(3, 3, 1)]
+    [InlineData(0, 0, 1)]
+    [InlineData(5.622376441955566, 5895489, 1048576)]
+    public void GainMapValuesAreWrittenAsTheClosestFractions(double value, long numerator, uint denominator)
+    {
+        Assert.Equal((numerator, denominator), GainMapMetadataWriter.ToFraction(value, signed: true, ImageFormat.Jpeg));
+    }
+
+    [Fact]
+    public void GainMapFractionsApproximateOtherValues()
+    {
+        foreach (var value in new[] { 0.1, -1.0 / 3, Math.PI, 1e-12, 2147483647.0, -2147483648.0 })
+        {
+            var (numerator, denominator) = GainMapMetadataWriter.ToFraction(value, signed: true, ImageFormat.Jpeg);
+            Assert.True(Math.Abs((numerator / (double)denominator) - value) <= Math.Max(1e-9, Math.Abs(value) * 1e-9), $"{value}: {numerator}/{denominator}");
+        }
+
+        Assert.Throws<UnsupportedImageFeatureException>(() => GainMapMetadataWriter.ToFraction(3e9, signed: true, ImageFormat.Jpeg));
+        Assert.Equal((3_000_000_000L, 1u), GainMapMetadataWriter.ToFraction(3e9, signed: false, ImageFormat.Jpeg));
+    }
+
+    [Fact]
+    public void TheXmpPacketsOfTheImagesAreMergedWithTheGainMapProperties()
+    {
+        // A packet of the image keeps its properties; the properties of a gain map it had (an Ultra HDR file read and written
+        // again) are replaced
+        const string Packet = """
+            <x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+            <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:hdrgm="http://ns.adobe.com/hdr-gain-map/1.0/" dc:format="image/jpeg" hdrgm:Version="0.9"/>
+            </rdf:RDF></x:xmpmeta>
+            """;
+        using var baseImage = CreateGradient(16, 16);
+        baseImage.Metadata.XmpProfile = new XmpProfile(new MetadataBlob(System.Text.Encoding.UTF8.GetBytes(Packet)));
+        using var gainMap = CreateGrayGradient(8, 8);
+        gainMap.Metadata.XmpProfile = baseImage.Metadata.XmpProfile;
+        var metadata = new GainMapMetadata(0, 1, [new GainMapChannel(0, 1, 1, 0, 0)]);
+        var data = Save(baseImage, new JpegEncoder { GainMap = new GainMap(gainMap, metadata) });
+
+        using var primary = Image.Load(data);
+        var text = System.Text.Encoding.UTF8.GetString(primary.Metadata.XmpProfile!.Data.Span);
+        Assert.Contains("dc:format=\"image/jpeg\"", text);
+        Assert.DoesNotContain("0.9", text);
+        Assert.Contains("Item:Semantic=\"GainMap\"", text);
+        var written = Assert.Single(AuxiliaryImageCollection.Load(data));
+        using var decodedGainMap = written.Decode();
+        Assert.Contains("dc:format", System.Text.Encoding.UTF8.GetString(decodedGainMap.Metadata.XmpProfile!.Data.Span));
+        Assert.Equal(metadata, GainMapMetadataReader.ReadXmp(decodedGainMap.Metadata.XmpProfile.Data.Span, ImageFormat.Jpeg));
+
+        // A malformed packet cannot be merged
+        baseImage.Metadata.XmpProfile = new XmpProfile(new MetadataBlob("<x:xmpmeta"u8));
+        Assert.Throws<InvalidImageContentException>(() => Save(baseImage, new JpegEncoder { GainMap = new GainMap(gainMap, metadata) }));
+    }
+
+    [Fact]
+    public async Task GainMapsAreWrittenByEveryOutput()
+    {
+        using var baseImage = CreateGradient(24, 16);
+        using var gainMap = CreateGrayGradient(12, 8);
+        var metadata = new GainMapMetadata(0, 2, [new GainMapChannel(0, 2, 1, 0, 0)]);
+        var encoder = new JpegEncoder { GainMap = new GainMap(gainMap, metadata) };
+        var expected = Save(baseImage, encoder);
+
+        using var stream = new MemoryStream();
+        await baseImage.SaveAsync(stream, encoder, XunitCancellationToken);
+        Assert.Equal(expected, stream.ToArray());
+
+        using var written = new MemoryStream();
+        using (var writer = Image.CreateWriter<Rgb24>(written, new ImageWriterOptions(24, 16) { Encoder = encoder }))
+        {
+            using var frame = baseImage.CloneAs<Rgb24>();
+            writer.WriteFrame(frame.Frames[0]);
+            writer.Complete();
+        }
+
+        Assert.Equal(expected, written.ToArray());
+    }
+
+    [Fact]
+    public void GainMapsNeedStillImages()
+    {
+        using var baseImage = CreateGradient(8, 8);
+        using var animated = CreateGradient(8, 8);
+        animated.AppendFrame();
+        var metadata = new GainMapMetadata(0, 1, [new GainMapChannel(0, 1, 1, 0, 0)]);
+        Assert.Equal("Animated gain map", Assert.Throws<UnsupportedImageFeatureException>(() => Save(baseImage, new JpegEncoder { GainMap = new GainMap(animated, metadata) })).Feature);
+
+        var disposed = CreateGradient(8, 8);
+        disposed.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => Save(baseImage, new JpegEncoder { GainMap = new GainMap(disposed, metadata) }));
+        Assert.Throws<ArgumentNullException>(() => new GainMap(null!, metadata));
+        Assert.Throws<ArgumentNullException>(() => new GainMap(baseImage, null!));
+    }
+
+    private static Image<Rgb24> CreateGradient(int width, int height)
+    {
+        var image = new Image<Rgb24>(width, height);
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                image.Frames[0][x, y] = new Rgb24((byte)(x * 255 / width), (byte)(y * 255 / height), (byte)((x + y) * 4));
+            }
+        }
+
+        return image;
+    }
+
+    private static Image<Gray8> CreateGrayGradient(int width, int height)
+    {
+        using var image = CreateGradient(width, height);
+        return image.CloneAs<Gray8>();
+    }
+
+    private static byte[] Save(Image image, JpegEncoder encoder)
+    {
+        using var stream = new MemoryStream();
+        image.Save(stream, encoder);
+        return stream.ToArray();
     }
 
     private static void AssertSameCoefficients(ReferenceJpeg expected, ReferenceJpeg actual, string context)

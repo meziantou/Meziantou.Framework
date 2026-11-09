@@ -1,0 +1,22 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Geo</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Reads the feature tables of GeoPackage files (.gpkg), the SQLite format of GDAL, QGIS and ArcGIS, as the features of Meziantou.Framework.Geo, with a streaming reader and the R-tree spatial index to read a region.</Description>
+    <PackageTags>geo;gis;geopackage;gpkg;sqlite;features;spatial-index</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
+  </ItemGroup>
+
+</Project>

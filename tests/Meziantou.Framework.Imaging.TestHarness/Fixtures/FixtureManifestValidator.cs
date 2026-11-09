@@ -47,10 +47,10 @@ public static partial class FixtureManifestValidator
     public static IReadOnlySet<string> AllowedFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "png", "gif", "jpeg", "webp", "qoi", "bmp", "tga", "pnm", "avif", "heic", "jxl", "jp2", "exr" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.PixelFormat"/> (library <c>PixelFormat</c> names).</summary>
-    public static IReadOnlySet<string> AllowedPixelFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16", "RgbaFloat", "RgbaHalf", "La16", "La32", "Rgb48", "A8", "Argb32", "Abgr32", "Bgr565", "Rgba1010102" };
+    public static IReadOnlySet<string> AllowedPixelFormats { get; } = new HashSet<string>(StringComparer.Ordinal) { "Rgba32", "Bgra32", "Rgb24", "Rgba64", "Gray8", "Gray16", "RgbaFloat", "RgbaHalf", "La16", "La32", "Rgb48", "A8", "Argb32", "Abgr32", "Bgr565", "Rgba1010102", "Cmyk32", "Cmyk64" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.ColorModel"/> (library <c>ImageColorModel</c> names).</summary>
-    public static IReadOnlySet<string> AllowedColorModels { get; } = new HashSet<string>(StringComparer.Ordinal) { "Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr", "Cmyk", "Ycck" };
+    public static IReadOnlySet<string> AllowedColorModels { get; } = new HashSet<string>(StringComparer.Ordinal) { "Grayscale", "GrayscaleAlpha", "Rgb", "Rgba", "Indexed", "YCbCr", "Cmyk", "Ycck", "CieLab" };
 
     /// <summary>The accepted values of <see cref="FixtureExpectation.IccProfile"/>.</summary>
     public static IReadOnlySet<string> AllowedIccProfiles { get; } = new HashSet<string>(StringComparer.Ordinal) { "none", "rgb", "gray" };
@@ -558,7 +558,12 @@ public static partial class FixtureManifestValidator
                 errors.Add($"{decodingName}: invalid windowMode '{decoding.WindowMode}' (allowed: {string.Join(", ", ExrDecodingDefinition.WindowModes)}).");
             }
 
-            if (decoding.Layer is null && decoding.WindowMode == "DisplayWindow")
+            if (decoding.DeepData is { } deepData && !ExrDecodingDefinition.DeepDataModes.Contains(deepData, StringComparer.Ordinal))
+            {
+                errors.Add($"{decodingName}: invalid deepData '{deepData}' (allowed: {string.Join(", ", ExrDecodingDefinition.DeepDataModes)}).");
+            }
+
+            if (decoding.Part is null && decoding.DeepData is null or "Reject" && decoding.Layer is null && decoding.WindowMode == "DisplayWindow")
             {
                 errors.Add($"{decodingName}: the default options are the decoding of the fixture itself (its expectedError).");
             }

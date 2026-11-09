@@ -83,8 +83,9 @@ public sealed partial class PdfImage
     /// <summary>Creates an image from the first frame of an image of <c>Meziantou.Framework.Imaging</c>, compressed without loss.</summary>
     /// <param name="image">The image. Its pixels are copied.</param>
     /// <returns>
-    /// The image: 8 or 16 bits per component, gray or RGB, with a soft mask when the image has transparent pixels. The
-    /// packed pixel formats get the precision of their widening: 8 bits for <see cref="PixelFormat.Bgr565"/>, 16 bits for
+    /// The image: 8 or 16 bits per component, gray, RGB or CMYK (<c>DeviceCMYK</c> for <see cref="PixelFormat.Cmyk32"/> and
+    /// <see cref="PixelFormat.Cmyk64"/>), with a soft mask when the image has transparent pixels. The packed pixel formats
+    /// get the precision of their widening: 8 bits for <see cref="PixelFormat.Bgr565"/>, 16 bits for
     /// <see cref="PixelFormat.Rgba1010102"/>. The samples are compressed with <c>FlateDecode</c> and a PNG predictor when
     /// the document is saved with <see cref="PdfSaveOptions.CompressStreams"/>.
     /// </returns>
@@ -108,14 +109,22 @@ public sealed partial class PdfImage
     /// <see cref="JpegEncoder.Process"/>...), or <see langword="null"/> for the default settings of <see cref="JpegEncoder"/>.
     /// </param>
     /// <returns>
-    /// The image: gray or RGB (YCbCr in the JPEG data), 8 bits per component; the samples of 16 bits are rounded to 8 bits.
-    /// The transparent pixels give a soft mask compressed without loss, as with <see cref="FromImage"/>, and the ICC
-    /// profile of the image becomes the color space of the image.
+    /// The image: gray or RGB (YCbCr in the JPEG data), or CMYK for the CMYK pixel formats, 8 bits per component; the
+    /// samples of 16 bits are rounded to 8 bits. The transparent pixels give a soft mask compressed without loss, as with
+    /// <see cref="FromImage"/>, and the ICC profile of the image becomes the color space of the image.
     /// </returns>
     /// <exception cref="ArgumentException">The image has floating-point pixels: convert it to an integer pixel format first.</exception>
     public static PdfImage FromImageAsJpeg(Image image, JpegEncoder? encoder = null)
     {
         ArgumentNullException.ThrowIfNull(image);
+        if (PixelFormats.IsCmyk(image.PixelFormat))
+        {
+            // A CMYK JPEG file (Adobe, inverted samples) with the profile of the image, read back like any JPEG file
+            using var inks = image.PixelFormat == PixelFormat.Cmyk64 ? image.CloneAs<Cmyk32>() : null;
+            using var cmyk = new MemoryStream();
+            (inks ?? image).Save(cmyk, encoder ?? new JpegEncoder());
+            return FromJpeg(cmyk.ToArray());
+        }
 
         var samples = GetSamples(image);
         var data = samples.Data;
@@ -213,10 +222,13 @@ public sealed partial class PdfImage
         // An alpha mask (A8) has no color: it is black gray samples with its alpha as the soft mask
         var hasColor = PixelFormats.HasColor(pixelFormat);
         var gray = PixelFormats.IsGrayscale(pixelFormat) || !hasColor;
-        var colorSpace = gray ? PdfDeviceColorSpace.Gray : PdfDeviceColorSpace.Rgb;
+
+        // CMYK pixels are ink amounts, which are the samples of DeviceCMYK (0 is no ink)
+        var cmyk = PixelFormats.IsCmyk(pixelFormat);
+        var colorSpace = gray ? PdfDeviceColorSpace.Gray : cmyk ? PdfDeviceColorSpace.Cmyk : PdfDeviceColorSpace.Rgb;
         var bitsPerComponent = PixelFormats.GetBitsPerComponent(pixelFormat);
         var bytesPerSample = bitsPerComponent / 8;
-        var colorComponents = gray ? 1 : 3;
+        var colorComponents = gray ? 1 : cmyk ? 4 : 3;
         var storedColorComponents = hasColor ? colorComponents : 0;
         var hasAlpha = PixelFormats.HasAlpha(pixelFormat);
         var components = storedColorComponents + (hasAlpha ? 1 : 0);
@@ -280,7 +292,7 @@ public sealed partial class PdfImage
         {
             // The samples are compressed with the PNG predictors (7.4.4.4), which make them smaller for most images
             stream.SetData(_data, compressible: true);
-            stream.PngPredictor = new PdfPngPredictor(_colorSpace == PdfDeviceColorSpace.Gray ? 1 : 3, _bitsPerComponent, Width);
+            stream.PngPredictor = new PdfPngPredictor(_colorSpace switch { PdfDeviceColorSpace.Gray => 1, PdfDeviceColorSpace.Rgb => 3, _ => 4 }, _bitsPerComponent, Width);
         }
 
         reference = document.Objects.Add(stream);

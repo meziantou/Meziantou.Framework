@@ -48,7 +48,7 @@ internal sealed class ToneCurveMapper : IDisposable
 
     /// <summary>Rents the working memory of the operation.</summary>
     /// <param name="scope">The scope charged for the working memory.</param>
-    /// <param name="format">The pixel format of the frames: an integer one.</param>
+    /// <param name="format">The pixel format of the frames (floating-point samples are binned to 16-bit levels, see <see cref="ToneSamples"/>).</param>
     /// <param name="size">The size of the frames.</param>
     /// <param name="colorMode">The samples that are remapped.</param>
     /// <param name="adaptive">The options of an adaptive equalization, or <see langword="null"/> for one table per plane.</param>

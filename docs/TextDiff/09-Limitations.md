@@ -8,9 +8,6 @@ description: What the library does not do, so you can plan around it.
 - **No patches or merges.** The library does not apply a diff to a text, read a patch file, or merge three versions of
   a text.
 - **No move detection.** A block of text moved elsewhere is a deletion and an insertion.
-- **No work limit and no cancellation.** A diff runs to completion however long it takes, and there is no
-  `CancellationToken`. Diffs of large, unrelated texts can be slow, especially at the character level; see
-  [Algorithms](07-Algorithms.md#cost).
 - **Ordinal comparisons only.** [IgnoreCase](cref:Meziantou.Framework.TextDiffOptions.IgnoreCase) uses ordinal case-insensitive rules; there is no culture-aware or
   accent-insensitive comparison.
 - **Characters are UTF-16 code units.** [TextChunker.Characters](cref:Meziantou.Framework.TextChunker.Characters) splits surrogate pairs and combining sequences into

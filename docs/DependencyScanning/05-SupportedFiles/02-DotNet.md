@@ -22,6 +22,12 @@ and `.vdproj`, and every `.props` and `.targets` file, is scanned by [MsBuildRef
   are trimmed. When an item declares several packages, their shared version is not updatable.
 - An SDK without a version (`Sdk="Microsoft.NET.Sdk"`) is not reported: its version is built in or comes from
   `global.json`.
+- A version or a target framework that references a property, such as `Version="$(XunitVersion)"`, is resolved when the
+  file defines the property once, in a `PropertyGroup` of the project without condition, with a literal value. The
+  version location is the definition of the property, shared by every dependency that uses it. A property defined in
+  another file, such as `Directory.Build.props`, defined with a condition, in a target or under `Choose`, or defined
+  from other properties, is not resolved. Property functions (`$([System.DateTime]::Now)`) and item lists (`@(Items)`)
+  are not resolved either. See [Properties and variables](01-Overview.md#properties-and-variables).
 
 ## packages.config
 
@@ -59,6 +65,10 @@ and `.vdproj`, and every `.props` and `.targets` file, is scanned by [MsBuildRef
 | `#:property TargetFramework=Value` | [DotNetTargetFramework](cref:Meziantou.Framework.DependencyScanning.DependencyType.DotNetTargetFramework) |
 | `#:project Path` | [MSBuildProjectReference](cref:Meziantou.Framework.DependencyScanning.DependencyType.MSBuildProjectReference) |
 | `#:ref Path` | [DotNetAssemblyReference](cref:Meziantou.Framework.DependencyScanning.DependencyType.DotNetAssemblyReference) |
+
+A version that references a property, such as `#:package xunit.v3@$(XunitVersion)`, is resolved when a
+`#:property XunitVersion=3.0.0` directive of the file defines it once with a literal value, even after the reference.
+The version location is the value of the `#:property` directive. See [Properties and variables](01-Overview.md#properties-and-variables).
 
 Like the .NET SDK, the directives are read until the first token of the file. Comments and other preprocessor
 directives (`#nullable`, `#region`, `#pragma`, ...) do not stop the scan, but `#if` does. An SDK without a version

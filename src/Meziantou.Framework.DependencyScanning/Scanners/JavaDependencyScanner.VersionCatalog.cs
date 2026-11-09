@@ -47,22 +47,22 @@ public sealed partial class JavaDependencyScanner
             }
         }
 
-        var referenceCounts = versionReferences.CountBy(item => item.VersionReference, StringComparer.Ordinal).ToDictionary(StringComparer.Ordinal);
+        // The libraries and plugins that share a version share its location, so that one update changes all of them
         foreach (var reference in versionReferences)
         {
-            var metadata = reference.PluginId is null ? [] : new[] { KeyValuePair.Create<string, object?>(PluginIdMetadataKey, reference.PluginId) };
-            if (!versions.TryGetValue(reference.VersionReference, out var version))
-            {
-                context.ReportDependency(this, reference.Name, version: null, DependencyType.JavaPackage, new NonUpdatableLocation(context), new NonUpdatableLocation(context), tags: [], metadata);
-                continue;
-            }
+            KeyValuePair<string, object?>[] metadata = reference.PluginId is null
+                ? [KeyValuePair.Create<string, object?>(VariableResolverExtensions.PropertyMetadataKey, reference.VersionReference)]
+                : [KeyValuePair.Create<string, object?>(PluginIdMetadataKey, reference.PluginId), KeyValuePair.Create<string, object?>(VariableResolverExtensions.PropertyMetadataKey, reference.VersionReference)];
 
-            // A version shared by several libraries or plugins cannot be updated for one of them only
-            var isShared = referenceCounts[reference.VersionReference] > 1;
-            context.ReportDependency(this, reference.Name, version.Version, DependencyType.JavaPackage,
-                new NonUpdatableLocation(context),
-                isShared ? new NonUpdatableLocation(context) : version.Location,
-                tags: [], metadata);
+            // The library only references the version, so it has no raw version
+            if (versions.TryGetValue(reference.VersionReference, out var version))
+            {
+                context.ReportDependency(this, reference.Name, rawVersion: null, version.Version, DependencyType.JavaPackage, new NonUpdatableLocation(context), rawVersionLocation: null, version.Location, tags: [], metadata);
+            }
+            else
+            {
+                context.ReportDependency(this, reference.Name, rawVersion: null, resolvedVersion: null, DependencyType.JavaPackage, new NonUpdatableLocation(context), rawVersionLocation: null, resolvedVersionLocation: null, tags: [], metadata);
+            }
         }
     }
 

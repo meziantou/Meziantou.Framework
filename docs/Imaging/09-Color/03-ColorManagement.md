@@ -1,6 +1,6 @@
 ---
 title: Color management
-description: Convert images to sRGB, tone map HDR images, load CMYK files, convert sample buffers, choose a rendering intent, map colors into the gamut and use device link and abstract profiles.
+description: Convert images to sRGB, tone map HDR images, keep, convert and write CMYK images, convert sample buffers, choose a rendering intent, map colors into the gamut and use device link and abstract profiles.
 ---
 
 The samples of an image only mean a color together with a description of their color space: an ICC profile, a CICP
@@ -10,8 +10,8 @@ loads and saves an image, and it converts colors only when you ask for it.
 ## Profiles are labels
 
 - Decoders keep the ICC profile of a file in `image.Metadata.IccProfile`, and encoders write it. A conversion of the
-  pixel format keeps it when it can still describe the pixels (a gray profile for gray formats, an RGB profile for
-  color formats).
+  pixel format keeps it when it can still describe the pixels (a gray profile for gray formats, a CMYK profile for the
+  CMYK formats, an RGB profile for the other color formats).
 - `Metadata.Cicp` holds the CICP color description of AVIF, HEIC, PNG (`cICP`) and JPEG XL files: color primaries,
   transfer characteristics, matrix coefficients and range. The decoder applies the matrix and the range to produce RGB;
   the primaries and the transfer characteristics stay a label, so the samples of an HDR image are returned as they are
@@ -19,8 +19,8 @@ loads and saves an image, and it converts colors only when you ask for it.
 - `Metadata.TransferFunction` is [Linear](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.TransferFunction) for the linear-light samples of QOI and JPEG XL files, [Srgb](cref:Meziantou.Framework.Imaging.Metadata.ColorTransferFunction.Srgb) otherwise.
 - [Metadata.ContentLightLevel](cref:Meziantou.Framework.Imaging.Metadata.ContentLightLevel) and `Metadata.MasteringDisplay` describe how HDR samples were mastered.
 
-Only [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile), [IccColorTransform](cref:Meziantou.Framework.Imaging.IccColorTransform) and a load with [CmykConversionOptions](cref:Meziantou.Framework.Imaging.CmykConversionOptions) convert colors, and the pixels
-and their label always change together. To draw sRGB colors on an image of another color space, see
+Only [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile), [IccColorTransform](cref:Meziantou.Framework.Imaging.IccColorTransform), a load with [CmykConversionOptions](cref:Meziantou.Framework.Imaging.CmykConversionOptions) or [CieLabConversionOptions](cref:Meziantou.Framework.Imaging.CieLabConversionOptions) and a conversion with
+[PixelConversionOptions.CmykConversion](cref:Meziantou.Framework.Imaging.PixelConversionOptions.CmykConversion) convert colors, and the pixels and their label always change together. To draw sRGB colors on an image of another color space, see
 [Drawing](../07-Drawing/01-Overview.md).
 
 ## Convert an image to sRGB
@@ -105,11 +105,95 @@ public static void ConvertHdrToSrgb(string avifPath, string pngPath)
 - An ICC profile can also describe HDR samples with a `cicp` tag ([IccProfile.Cicp](cref:Meziantou.Framework.Imaging.Metadata.IccProfile.Cicp)): the samples are then converted
   from the color space of the tag.
 
-## Load CMYK images
+## Keep CMYK images
 
-No pixel format holds CMYK samples, so a CMYK image (a JPEG with four components, a TIFF page of separated data or a
-JPEG 2000 file) is only loaded by converting its colors. Without a conversion, [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) throws an
-[UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException); [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) always works and reports [ImageColorModel.Cmyk](cref:Meziantou.Framework.Imaging.ImageColorModel.Cmyk) or [Ycck](cref:Meziantou.Framework.Imaging.ImageColorModel.Ycck):
+Print workflows keep the inks of an image: load a CMYK JPEG file or TIFF page as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) or [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) pixels and
+save it as JPEG or TIFF, and nothing is converted:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadCmykPixels;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void KeepCmykInks(string jpegPath, string tiffPath, string previewPath)
+{
+    // The ink amounts as they are (0 is no ink), labeled with the CMYK profile of the file
+    using var inks = Image.Load<Cmyk32>(jpegPath);
+
+    // Crop, Flip, Rotate by quarter turns and AutoOrient keep CMYK pixels; JPEG and TIFF store them
+    inks.Crop(new Rectangle(0, 0, inks.Width / 2, inks.Height));
+    inks.Save(tiffPath, new TiffEncoder());
+
+    // Colors of light are an explicit conversion: from the CMYK profile of the image when it has one,
+    // otherwise with the device CMYK formulas
+    var conversion = new PixelConversionOptions { CmykConversion = new CmykPixelConversionOptions() };
+    using var preview = inks.CloneAs<Rgb24>(conversion);
+    preview.Save(previewPath);
+}
+```
+<!-- endref -->
+
+- A component is the amount of an ink: 0 is no ink, so paper white is `(0, 0, 0, 0)`. The decoder complements the
+  samples of Adobe JPEG files (255 is no ink there) and converts YCCK files to CMYK; TIFF pages store the amounts.
+- The CMYK profile of the file labels the pixels ([IccProfile](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.IccProfile)), and the encoders write it back.
+- 12-bit and lossless JPEG files and 16-bit TIFF pages keep their precision as [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64). [CloneAs](cref:Meziantou.Framework.Imaging.Image.CloneAs) converts
+  between [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) and [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) like any change of precision.
+- CMYK pixels have no alpha: a TIFF page of inks with alpha is only loaded as RGBA, with [CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion).
+- Inks are not colors of light. [Crop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Crop), [Flip](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Flip), [Rotate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Rotate) by quarter turns and [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) move the pixels;
+  the other operations (resizing, filters, drawing...) and the encoders other than JPEG and TIFF throw an
+  [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException): convert the image to RGB first.
+- JPEG output is the layout of Adobe Photoshop: four components without subsampling, the complements of the inks and an
+  Adobe segment without color transform, baseline only. TIFF output stores separated samples (`PhotometricInterpretation`
+  5, `InkSet` 1) with a lossless compression.
+
+## Convert between CMYK and RGB pixels
+
+[PixelConversionOptions.CmykConversion](cref:Meziantou.Framework.Imaging.PixelConversionOptions.CmykConversion) lets [CloneAs](cref:Meziantou.Framework.Imaging.Image.CloneAs) and the typed loads convert between CMYK pixels and the other formats.
+To prepare an image for a press, give the profile of its printing condition:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ConvertToCmyk;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveForPrint(Image image, IccProfile pressProfile, string path)
+{
+    // The press profile (a CMYK output profile) describes the inks and labels them; the colors of the image are
+    // those of its own profile, or sRGB when it has none. CMYK has no alpha: flatten transparent pixels on white
+    var conversion = new PixelConversionOptions
+    {
+        BackgroundColor = new Rgba64(65535, 65535, 65535),
+        CmykConversion = new CmykPixelConversionOptions
+        {
+            CmykProfile = pressProfile,
+            Transform = new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual },
+        },
+    };
+
+    using var inks = image.CloneAs<Cmyk32>(conversion);
+    inks.Save(path, new JpegEncoder { Quality = 90 });
+}
+```
+<!-- endref -->
+
+| [CmykPixelConversionOptions](cref:Meziantou.Framework.Imaging.CmykPixelConversionOptions) | Default | What it does |
+| --- | --- | --- |
+| [CmykProfile](cref:Meziantou.Framework.Imaging.CmykPixelConversionOptions.CmykProfile) | `null` | The CMYK profile of the inks when the image has none: the source of CMYK pixels, the destination of a conversion to CMYK (it labels the inks). `null` uses the device CMYK formulas |
+| [RgbProfile](cref:Meziantou.Framework.Imaging.CmykPixelConversionOptions.RgbProfile) | [IccProfile.Srgb](cref:Meziantou.Framework.Imaging.Metadata.IccProfile.Srgb) | The RGB profile of the colors converted from CMYK pixels (it labels them), and of the RGB pixels without profile converted to CMYK |
+| [Transform](cref:Meziantou.Framework.Imaging.CmykPixelConversionOptions.Transform) | [IccColorTransformOptions.Default](cref:Meziantou.Framework.Imaging.IccColorTransformOptions.Default) | The rendering intent and the black point compensation |
+
+- From CMYK pixels, the colors are converted from the CMYK profile of the image, or from [CmykProfile](cref:Meziantou.Framework.Imaging.CmykPixelConversionOptions.CmykProfile). Without
+  any, the device CMYK formulas of [Cmyk](cref:Meziantou.Framework.Imaging.Cmyk) are used and the colors have no profile: a quick preview, not
+  what a press prints.
+- To CMYK pixels, the colors are converted from the profile of the image (sRGB when it has none) to [CmykProfile](cref:Meziantou.Framework.Imaging.CmykPixelConversionOptions.CmykProfile),
+  or with the device formulas without it. The profile must have the tables from the connection space (`B2A`): an output
+  profile of a printing condition. [IccProfile.Cgats001CompatibleCmyk](cref:Meziantou.Framework.Imaging.Metadata.IccProfile.Cgats001CompatibleCmyk) only describes inks, it cannot be a destination.
+- CMYK has no alpha: transparent pixels need [BackgroundColor](cref:Meziantou.Framework.Imaging.PixelConversionOptions.BackgroundColor), and floating-point pixels follow the rules of the
+  other conversions to integers. Gray pixels are converted like the RGB color of their gray level.
+- The ICC conversion of 8-bit pixels uses 8-bit samples, and 16-bit samples as soon as one side has 16 bits. The device
+  formulas are computed in double precision and rounded once.
+- Without the option, a conversion between CMYK and other pixels throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException):
+  inks are never turned into colors of light by accident.
+
+## Load CMYK files as RGB
+
+A CMYK image (a JPEG with four components, a TIFF page of separated data or a JPEG 2000 file) can also be converted to
+RGB while it is loaded. Without a conversion, the untyped [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) throws an
+[UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) (load the JPEG and TIFF files as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) to keep their inks); [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) always works and reports [ImageColorModel.Cmyk](cref:Meziantou.Framework.Imaging.ImageColorModel.Cmyk) or [Ycck](cref:Meziantou.Framework.Imaging.ImageColorModel.Ycck):
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadCmykJpeg;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -145,10 +229,28 @@ public static Image LoadCmykJpeg(string path)
 [ImageReaderOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageReaderOptions.CmykConversion) does the same for
 [streaming readers](../05-LoadingAndSaving/05-StreamingReadersAndWriters.md).
 
+## Load CIE L\*a\*b\* images
+
+No pixel format holds L\*a\*b\* samples either, so a TIFF page of L\*a\*b\* colors is only loaded with
+[ImageDecodeOptions.CieLabConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CieLabConversion): `new ImageDecodeOptions { CieLabConversion = CieLabConversionOptions.Default }` converts
+it to sRGB. Without it, [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException); [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) reports
+[ImageColorModel.CieLab](cref:Meziantou.Framework.Imaging.ImageColorModel.CieLab).
+
+| [CieLabConversionOptions](cref:Meziantou.Framework.Imaging.CieLabConversionOptions) | Default | What it does |
+| --- | --- | --- |
+| [DestinationProfile](cref:Meziantou.Framework.Imaging.CieLabConversionOptions.DestinationProfile) | [IccProfile.Srgb](cref:Meziantou.Framework.Imaging.Metadata.IccProfile.Srgb) | The RGB profile of the loaded pixels, which are labeled with it |
+| [Transform](cref:Meziantou.Framework.Imaging.CieLabConversionOptions.Transform) | [IccColorTransformOptions.Default](cref:Meziantou.Framework.Imaging.IccColorTransformOptions.Default) | The rendering intent, the black point compensation and the gamut mapping |
+
+- The colors are relative to the white point of the file, D50 when it declares none. They are adapted to the D50 white
+  of the ICC profile connection space with the linear Bradford transform, then converted to the destination profile.
+- L\*a\*b\* holds colors that no RGB profile can show: the colors outside the gamut of the destination are clipped,
+  or mapped as [IccColorTransformOptions.GamutMapping](cref:Meziantou.Framework.Imaging.IccColorTransformOptions.GamutMapping) says. A profile embedded in the file is not used.
+- The loaded image has [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) pixels, [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) with an alpha sample, and [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48) or [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) for 16-bit samples.
+
 ## Convert sample buffers
 
 [IccColorTransform](cref:Meziantou.Framework.Imaging.IccColorTransform) is the conversion between two profiles that [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile) uses, for your own buffers of
-interleaved samples without alpha: 8-bit, 16-bit or floating-point. It is the only way to reach CMYK:
+interleaved samples without alpha: 8-bit, 16-bit or floating-point, CMYK samples included:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ConvertSamples;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -170,8 +272,7 @@ public static byte[] ConvertSamplesToSrgb(IccProfile sourceProfile, ReadOnlySpan
   allocates nothing.
 - Integer samples cover the whole range of their type, floating-point samples are in [0, 1], and colors outside the
   destination gamut are clipped per channel unless [GamutMapping](cref:Meziantou.Framework.Imaging.IccColorTransformOptions.GamutMapping) maps them. CMYK samples are ink
-  amounts: 0 is no ink. A conversion to a CMYK printer profile gives CMYK samples, which no pixel format holds and no
-  encoder writes.
+  amounts: 0 is no ink, the layout of [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) and [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) pixels.
 - With [ClipFloatingPointSamples](cref:Meziantou.Framework.Imaging.IccColorTransformOptions.ClipFloatingPointSamples) set to `false`, floating-point samples keep their values outside [0, 1]: the light
   above the white of HDR colors, and the negative components of wide-gamut colors. The tone curves are extended beyond
   [0, 1] (mirrored below 0, as in CSS Color 4). Only matrix-based profiles can do this: a conversion through a lookup
@@ -217,6 +318,53 @@ public static IReadOnlyList<AuxiliaryImageKind> SaveHdrRendition(string photoPat
 - The result is linear light where 1 is the white of SDR, in the primaries of the photo, with nothing clipped. The
   parameters come from the ISO 21496-1 metadata (JPEG, HEIC, AVIF) or from the `hdrgm` XMP properties of Ultra HDR;
   the gain maps of Apple that have no ISO 21496-1 metadata are listed without parameters.
+
+## Write a photo with its gain map
+
+[JpegEncoder.GainMap](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.GainMap) and [AvifEncoder.GainMap](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.GainMap) write a gain map next to the image: an Ultra HDR JPEG file, or an
+AVIF file with a tone map item. A [GainMap](cref:Meziantou.Framework.Imaging.Formats.GainMap) is the gain map image and its [GainMapMetadata](cref:Meziantou.Framework.Imaging.Metadata.GainMapMetadata), for example the
+ones of a photo that was read, after the same edit:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ColorExamples.cs;region=Imaging_WriteGainMap;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void ResizeHdrPhoto(string photoPath, string outputPath)
+{
+    using var photo = Image.Load(photoPath);
+    var images = AuxiliaryImageCollection.Load(photoPath);
+    if (images.GainMapImage is { GainMapMetadata: { } metadata } gainMapImage)
+    {
+        // The samples of the gain map are its coded values, often at a fraction of the size of the photo: it gets the
+        // same geometry (the same resize, crop or rotation), scaled to its own size
+        using var gainMap = gainMapImage.Decode();
+        var scaleX = (double)gainMap.Width / photo.Width;
+        var scaleY = (double)gainMap.Height / photo.Height;
+        photo.Resize(new ResizeOptions(1024, 1024) { AllowUpscaling = false });
+        gainMap.Resize(new ResizeOptions(Math.Max(1, (int)Math.Round(photo.Width * scaleX, MidpointRounding.AwayFromZero)), Math.Max(1, (int)Math.Round(photo.Height * scaleY, MidpointRounding.AwayFromZero))) { Mode = ResizeMode.Stretch });
+
+        // An Ultra HDR file: the gain map image follows the photo, with its parameters (ISO 21496-1 and XMP). An
+        // AvifEncoder with a GainMap writes the same photo as an AVIF file
+        photo.Save(outputPath, new JpegEncoder { Quality = 90, GainMap = new GainMap(gainMap, metadata) });
+    }
+    else
+    {
+        photo.Resize(new ResizeOptions(1024, 1024) { AllowUpscaling = false });
+        photo.Save(outputPath, new JpegEncoder { Quality = 90 });
+    }
+}
+```
+<!-- endref -->
+
+- The samples of the gain map image are its coded values, as [AuxiliaryImage.Decode](cref:Meziantou.Framework.Imaging.AuxiliaryImage.Decode) returns them: a grayscale image gives
+  one gain for the three channels. Its color description (ICC profile or CICP) is the one of the alternate rendition,
+  which a gain map that does not use the color space of the base image applies in.
+- The gain map image is encoded with the settings of the encoder, but with full chroma resolution: the gain multiplies
+  its errors. Both images are kept in memory until the file is written.
+- The parameters are written as the metadata of ISO 21496-1 and, in a JPEG file, as the `hdrgm` XMP properties of
+  Ultra HDR 1.0, merged with the XMP packet of each image. XMP cannot describe a gain map in the color space of the
+  alternate rendition: the readers of Ultra HDR 1.0, which only read XMP, apply such a gain map in the color space of
+  the base image.
+- Only a still image has a gain map: an animation, or an animated gain map image, throws an
+  [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). The gain map image of an AVIF file must be opaque.
 
 ## Choose a rendering intent
 

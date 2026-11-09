@@ -1,5 +1,7 @@
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Text;
 using Meziantou.Framework.Imaging.Tests.Conformance.Hardening;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
@@ -213,6 +215,15 @@ internal static class FuzzOracle
             var interrupted = Run(audit, "interrupted", () => CheckInterruptedDecodingAsync(input, variant, typed.Value?.Frames.Count ?? 0).GetAwaiter().GetResult());
             if (interrupted.Failure is not null)
                 return interrupted.Failure;
+        }
+
+        // OpenEXR: the default options reject multi-part files and deep data, so that the decoding of a part and the
+        // flattening of deep samples are only reached with the options that ask for them
+        if (detected == ImageFormat.OpenExr)
+        {
+            var exr = CheckOpenExrOptions(audit, input, variant, eager);
+            if (exr is not null)
+                return exr;
         }
 
         // A JPEG file that is recompressed as a JPEG XL file comes back byte for byte, whatever the mutation; reconstruction
@@ -572,7 +583,142 @@ internal static class FuzzOracle
 
     private static string Describe(ImageInfo? info) => info is null ? "none" : FormattableString.Invariant($"{info.Format} {info.Width}x{info.Height} {info.PixelFormat} frames={info.FrameCount} poster={info.HasPosterFrame}");
 
-    private static async Task<DecodedSummary> ReadAllAsync(byte[] input, int variant)
+    /// <summary>
+    /// Decodes an OpenEXR file with the options that the default options lack (<see cref="CreateOpenExrConfiguration"/>), as a
+    /// whole and as each part it seems to name: the identifications, the eager load and the reader agree, and a file that
+    /// the default options decode decodes the same.
+    /// </summary>
+    private static FuzzFailure? CheckOpenExrOptions(PoolAudit audit, byte[] input, int variant, Outcome<DecodedSummary> defaultLoad)
+    {
+        string?[] parts = [null, .. FindOpenExrPartNames(input)];
+        foreach (var part in parts)
+        {
+            var configuration = CreateOpenExrConfiguration(part);
+            var prefix = part is null ? "exr-options-" : "exr-part-";
+            var header = Run(audit, prefix + "identify-header", () => Image.Identify(input, new ImageIdentifyOptions { Configuration = configuration, Mode = ImageIdentifyMode.Header }));
+            if (header.Failure is not null)
+                return header.Failure;
+
+            var full = Run(audit, prefix + "identify-full", () => Image.Identify(input, new ImageIdentifyOptions { Configuration = configuration, Mode = ImageIdentifyMode.FullScan }));
+            if (full.Failure is not null)
+                return full.Failure;
+
+            var eager = Run(audit, prefix + "load", () =>
+            {
+                using var image = Image.Load(input, new ImageDecodeOptions { Configuration = configuration, Conversion = Conversion });
+                return DecodedSummary.Capture(image);
+            });
+            if (eager.Failure is not null)
+                return eager.Failure;
+
+            var typed = Run(audit, prefix + "load-rgba64", () =>
+            {
+                using var image = Image.Load<Rgba64>(input, new ImageDecodeOptions { Configuration = configuration, Conversion = Conversion });
+                return DecodedSummary.Capture(image);
+            });
+            if (typed.Failure is not null)
+                return typed.Failure;
+
+            var sequential = Run(audit, prefix + "reader", () => ReadAllAsync(input, variant, configuration).GetAwaiter().GetResult());
+            if (sequential.Failure is not null)
+                return sequential.Failure;
+
+            var context = part is null ? "with the OpenEXR options" : $"with the OpenEXR options for the part '{part}'";
+            if (header.Exception is not null)
+            {
+                foreach (var (name, succeeded) in new[] { ("identify-full", full.Succeeded), ("load", eager.Succeeded), ("reader", sequential.Succeeded) })
+                {
+                    if (succeeded)
+                        return FuzzFailure.Property(prefix + "header-failure-but-" + name, $"Header identification {context} failed ({Describe(header.Exception)}) but {name} succeeded");
+                }
+            }
+
+            if (eager.Succeeded)
+            {
+                var decoded = eager.Value!;
+                if (full.Value is not { } info || info.Width != decoded.Width || info.Height != decoded.Height || info.PixelFormat != decoded.PixelFormat
+                    || header.Value!.Width != decoded.Width || header.Value.Height != decoded.Height || header.Value.PixelFormat != decoded.PixelFormat)
+                {
+                    return FuzzFailure.Property(prefix + "identify-mismatch", $"Identify {context} (header {Describe(header.Value)}, full {Describe(full.Value)}) disagrees with the load ({decoded})");
+                }
+
+                // The options only change what the default options reject: a file that they decode decodes the same
+                if (defaultLoad.Succeeded && !defaultLoad.Value!.Matches(decoded))
+                    return FuzzFailure.Property(prefix + "default-mismatch", $"The load {context} ({decoded}) differs from the load with the default options ({defaultLoad.Value})");
+            }
+
+            var rejectsFloatingPointSamples = eager.Succeeded && typed.Exception is UnsupportedImageFeatureException { Feature: "Not-a-number samples" or "Out-of-range samples" };
+            if (eager.Succeeded != typed.Succeeded && !rejectsFloatingPointSamples && !IsLiveAllocationLimit(eager.Exception) && !IsLiveAllocationLimit(typed.Exception))
+                return FuzzFailure.Property(prefix + "typed-untyped", $"Untyped load {context} {Describe(eager)}, Rgba64 load {Describe(typed)}");
+
+            if (typed.Succeeded && sequential.Succeeded)
+            {
+                if (!typed.Value!.Matches(sequential.Value!))
+                    return FuzzFailure.Property(prefix + "eager-sequential", $"Eager Rgba64 load {context} {typed.Value} differs from the reader {sequential.Value}");
+            }
+            else if (typed.Succeeded && !IsLiveAllocationLimit(sequential.Exception))
+            {
+                return FuzzFailure.Property(prefix + "eager-ok-reader-failed", $"Eager Rgba64 load {context} succeeded ({typed.Value}) but the reader {Describe(sequential.Exception)}");
+            }
+            else if (sequential.Succeeded && !IsLiveAllocationLimit(typed.Exception))
+            {
+                return FuzzFailure.Property(prefix + "clean-end-on-malformed-data", $"Eager Rgba64 load {context} {Describe(typed.Exception)} but the reader ended cleanly after {sequential.Value}");
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The options that reach what the default options reject: a part, deep data (flattened), channels outside the root layer
+    /// (ignored), a data window that leaves the display window (cropped). They change nothing for a file that the default
+    /// options decode.
+    /// </summary>
+    internal static ImageConfiguration CreateOpenExrConfiguration(string? part) => new()
+    {
+        Limits = Configuration.Limits,
+        OpenExrDecoding = new OpenExrDecodingOptions
+        {
+            Part = part,
+            DeepData = OpenExrDeepDataMode.Flatten,
+            Layer = "",
+            WindowMode = OpenExrWindowMode.CropToDisplayWindow,
+        },
+    };
+
+    /// <summary>The values of the first "name" attributes of the headers (at most four), found by their bytes: a mutated file has no reliable structure.</summary>
+    internal static List<string> FindOpenExrPartNames(ReadOnlySpan<byte> input)
+    {
+        var names = new List<string>();
+        var marker = "name\0string\0"u8;
+        var offset = 0;
+        while (names.Count < 4)
+        {
+            var index = input[offset..].IndexOf(marker);
+            if (index < 0)
+                break;
+
+            var start = offset + index + marker.Length;
+            if (start + 4 > input.Length)
+                break;
+
+            var length = BinaryPrimitives.ReadInt32LittleEndian(input[start..]);
+            if (length is >= 0 and <= 256 && start + 4 + length <= input.Length)
+            {
+                var name = Encoding.UTF8.GetString(input.Slice(start + 4, length));
+                if (!names.Contains(name, StringComparer.Ordinal))
+                {
+                    names.Add(name);
+                }
+            }
+
+            offset = start;
+        }
+
+        return names;
+    }
+
+    private static async Task<DecodedSummary> ReadAllAsync(byte[] input, int variant, ImageConfiguration? configuration = null)
     {
         var shortReads = (variant & 1) != 0;
         var useInto = (variant & 2) != 0;
@@ -586,7 +732,7 @@ internal static class FuzzOracle
             ForbidSynchronousReads = asynchronous,
             ForbidAsynchronousReads = !asynchronous,
         };
-        var options = new ImageReaderOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion };
+        var options = new ImageReaderOptions { Configuration = configuration ?? Configuration, Conversion = Conversion, CmykConversion = CmykConversion };
         using var reader = await OpenReaderAsync(stream, options, asynchronous).ConfigureAwait(false);
         var info = reader.Info;
         FrameSummary? poster = null;

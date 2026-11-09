@@ -1,6 +1,6 @@
 # Meziantou.Framework.Barcodes
 
-QR and barcode generation library with SVG and PNG renderers, plus a console renderer for QR codes. Implements QR code specifications from scratch with support for standard QR, Micro QR, and Rectangular Micro QR (rMQR) codes, and supports Code 39 / Code 128 linear barcodes.
+QR and barcode generation library with SVG and PNG renderers, plus a console renderer for QR codes. Implements QR code specifications from scratch with support for standard QR, Micro QR, and Rectangular Micro QR (rMQR) codes, Data Matrix (including GS1 Data Matrix), PDF417 and Aztec codes, and linear barcodes from Code 39 to ITF.
 
 ## Supported QR Code Types
 
@@ -10,6 +10,15 @@ QR and barcode generation library with SVG and PNG renderers, plus a console ren
 | Micro QR | `QRCode.CreateMicroQR(...)` | 11x11 to 17x17 | ISO/IEC 18004, versions M1-M4 |
 | rMQR | `QRCode.CreateRMQR(...)` | Rectangular (width > height) | ISO/IEC 23941 |
 
+## Supported 2D Barcode Types
+
+| Type | Method | Sizes | Description |
+|------|--------|-------|-------------|
+| Data Matrix | `Barcode2D.CreateDataMatrix(...)` | 10x10 to 144x144, rectangular 8x18 to 16x48 | ISO/IEC 16022 ECC 200, with automatic switching between the encodation schemes |
+| GS1 Data Matrix | `Barcode2D.CreateGs1DataMatrix(...)` | Same as Data Matrix | GS1 element strings, with the leading FNC1 and the FNC1 separators |
+| PDF417 | `Barcode2D.CreatePdf417(...)` | 3 to 90 rows, 1 to 30 columns | ISO/IEC 15438, error correction levels 0 to 8 |
+| Aztec | `Barcode2D.CreateAztec(...)` | 15x15 to 151x151 | ISO/IEC 24778, compact and full-range symbols |
+
 ## Supported Barcode Types
 
 | Type | Method | Description |
@@ -17,10 +26,13 @@ QR and barcode generation library with SVG and PNG renderers, plus a console ren
 | Code 39 | `Barcode.CreateCode39(...)` | Supports standard Code 39 alphabet, optional Mod 43 checksum |
 | Code 93 | `Barcode.CreateCode93(...)` | Supports standard and extended Code 93 character encoding |
 | Code 128 | `Barcode.CreateCode128(...)` | Supports all ASCII characters, control characters included, with automatic switching between Code Sets A, B and C |
-| GS1-128 | `Barcode.CreateGs1128(...)` | Supports GS1 element strings, with the leading FNC1 and the FNC1 separators after variable-length elements |
+| GS1-128 | `Barcode.CreateGs1128(...)` | Supports GS1 element strings, with the leading FNC1 and the FNC1 separators after variable-length elements; optionally checked against the GS1 dictionary of application identifiers (`Gs1ValidationMode.Dictionary`) |
 | EAN-8 | `Barcode.CreateEan8(...)` | Supports 7/8-digit payloads and optional 2/5-digit add-on extension |
 | EAN-13 | `Barcode.CreateEan13(...)` | Supports 12/13-digit payloads and optional 2/5-digit add-on extension |
 | UPC-A | `Barcode.CreateUpcA(...)` | Supports 11/12-digit payloads and optional 2/5-digit add-on extension |
+| UPC-E | `Barcode.CreateUpcE(...)` | Supports 6/7/8-digit payloads, compression of 11/12-digit UPC-A numbers, and optional 2/5-digit add-on extension |
+| GS1 DataBar | `Barcode.CreateGs1DataBar(...)`, `CreateGs1DataBarStacked(...)`, `CreateGs1DataBarStackedOmnidirectional(...)`, `CreateGs1DataBarLimited(...)` | Supports 13/14-digit GTINs; the stacked variants have one matrix row per module of height |
+| GS1 DataBar Expanded | `Barcode.CreateGs1DataBarExpanded(...)`, `CreateGs1DataBarExpandedStacked(...)` | Supports GS1 element strings, with the compressed encodations of GTINs, weights, dates and prices |
 | Codabar | `Barcode.CreateCodabar(...)` | Supports standard Codabar payload characters and configurable start/stop guards |
 | ITF | `Barcode.CreateItf(...)` | Supports numeric payloads with an even number of digits |
 
@@ -60,6 +72,8 @@ var ean13 = Barcode.CreateEan13("400638133393");
 var upcA = Barcode.CreateUpcA("03600029145", extension: "12");
 var codabar = Barcode.CreateCodabar("40156", startCharacter: 'A', stopCharacter: 'B');
 var itf = Barcode.CreateItf("12345678");
+var upcE = Barcode.CreateUpcE("0425261");
+var dataBar = Barcode.CreateGs1DataBar("0950110153000");
 
 // Type, width in modules and height (a linear barcode is one module high)
 Assert.Equal((BarcodeType.Code39, 129, 1), (code39.Type, code39.Width, code39.Height));
@@ -70,6 +84,8 @@ Assert.Equal((BarcodeType.Ean13, 95, 1), (ean13.Type, ean13.Width, ean13.Height)
 Assert.Equal((BarcodeType.UpcA, 124, 1), (upcA.Type, upcA.Width, upcA.Height));
 Assert.Equal((BarcodeType.Codabar, 71, 1), (codabar.Type, codabar.Width, codabar.Height));
 Assert.Equal((BarcodeType.Itf, 81, 1), (itf.Type, itf.Width, itf.Height));
+Assert.Equal((BarcodeType.UpcE, 51, 1), (upcE.Type, upcE.Width, upcE.Height));
+Assert.Equal((BarcodeType.Gs1DataBar, 96, 1), (dataBar.Type, dataBar.Width, dataBar.Height));
 
 // The human-readable text, with the characters the barcode adds (check digits, add-on, Codabar guards)
 Assert.Equal("ABC-123W", code39.Text);
@@ -77,6 +93,61 @@ Assert.Equal("55123457", ean8.Text);
 Assert.Equal("4006381333931", ean13.Text);
 Assert.Equal("036000291452 12", upcA.Text);
 Assert.Equal("A40156B", codabar.Text);
+Assert.Equal("04252614", upcE.Text);
+Assert.Equal("(01)09501101530003", dataBar.Text);
+```
+<!-- endref -->
+
+### Generate 2D barcodes (Data Matrix, PDF417, Aztec)
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/DataMatrixTests.cs;region=Barcode2D_DataMatrix;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The smallest square symbol that holds the data
+var dataMatrix = Barcode2D.CreateDataMatrix("https://www.meziantou.net");
+Assert.Equal((Barcode2DType.DataMatrix, 22, 22), (dataMatrix.Type, dataMatrix.Width, dataMatrix.Height));
+
+// A rectangular symbol, for a narrow space
+var rectangle = Barcode2D.CreateDataMatrix("ABC-12345", new DataMatrixOptions { Shape = DataMatrixShape.Rectangle });
+Assert.Equal((32, 8), (rectangle.Width, rectangle.Height));
+
+// A symbol of an exact size: the data is padded
+var fixedSize = Barcode2D.CreateDataMatrix("42", new DataMatrixOptions { Height = 24, Width = 24 });
+Assert.Equal((24, 24), (fixedSize.Width, fixedSize.Height));
+
+// Binary data
+var binary = Barcode2D.CreateDataMatrix([0x00, 0xFF, 0x10, 0x80]);
+Assert.Equal((14, 14), (binary.Width, binary.Height));
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/Pdf417Tests.cs;region=Barcode2D_Pdf417;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new Pdf417Options
+{
+    Columns = 4,       // 4 data columns: 17 × (4 + 4) + 1 = 137 modules wide
+    SecurityLevel = 3, // 16 error correction codewords
+    RowHeight = 3,     // each row of the symbol is 3 modules high
+};
+var pdf417 = Barcode2D.CreatePdf417("Hello, PDF417!", options);
+
+Assert.Equal(Barcode2DType.Pdf417, pdf417.Type);
+Assert.Equal(137, pdf417.Width);
+Assert.Equal(21, pdf417.Height); // 7 rows of 3 modules
+string svg = pdf417.ToSvg();
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/AztecTests.cs;region=Barcode2D_Aztec;format=md-fenced-code-block;dedent=true -->
+```csharp
+var barcode = Barcode2D.CreateAztec("Hello, World!", new AztecOptions
+{
+    ErrorCorrectionPercent = 50, // 50% of the symbol and 3 codewords are error correction
+    Compact = true, // 1 to 4 layers: 15 × 15 to 27 × 27 modules
+});
+
+Assert.Equal(Barcode2DType.Aztec, barcode.Type);
+Assert.Equal(19, barcode.Width);
+Assert.Equal(19, barcode.Height);
 ```
 <!-- endref -->
 

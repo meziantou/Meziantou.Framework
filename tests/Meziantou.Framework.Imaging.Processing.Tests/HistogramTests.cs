@@ -625,16 +625,94 @@ public sealed class HistogramTests
     }
 
     [Fact]
-    public void FloatingPointPixelsHaveNoHistogram()
+    public void FloatingPointSamplesAreBinnedTo65536Levels()
     {
-        using var image = new Image<RgbaFloat>(2, 1, new RgbaFloat(0.25f, 0.5f, 0.75f, 1));
-        Assert.Throws<UnsupportedImageFeatureException>(() => image.ComputeHistogram(HistogramChannel.Red));
-        Assert.Throws<UnsupportedImageFeatureException>(() => image.Equalize());
-        Assert.Throws<UnsupportedImageFeatureException>(() => image.Frames[0].AutoLevels());
-        Assert.Equal(new RgbaFloat(0.25f, 0.5f, 0.75f, 1), image.Frames[0][1, 0]);
+        // round(65535 v): 0.25 is 16383.75, level 16384; values outside [0, 1] and NaN go to the end bins
+        using var image = new Image<RgbaFloat>(5, 1);
+        image.Frames[0][0, 0] = new RgbaFloat(0.25f, 0, 0, 1);
+        image.Frames[0][1, 0] = new RgbaFloat(-1, 0, 0, 1);
+        image.Frames[0][2, 0] = new RgbaFloat(float.NaN, 0, 0, 1);
+        image.Frames[0][3, 0] = new RgbaFloat(2.5f, 0, 0, 1);
+        image.Frames[0][4, 0] = new RgbaFloat(1, 0, 0, 0.5f);
+        var red = image.ComputeHistogram(HistogramChannel.Red, Ct);
+        Assert.Equal(65536, red.BinCount);
+        Assert.Equal(5, red.TotalCount);
+        Assert.Equal(1, red[16384]);
+        Assert.Equal(2, red[0]);
+        Assert.Equal(2, red[65535]);
+        Assert.Equal(1, image.Frames[0].ComputeHistogram(HistogramChannel.Alpha, Ct)[32768]);
 
-        using var half = new Image<RgbaHalf>(1, 1);
-        Assert.Throws<UnsupportedImageFeatureException>(() => half.Frames[0].Equalize());
+        using var half = new Image<RgbaHalf>(2, 1, new RgbaHalf((Half)0.5f, (Half)0.5f, (Half)0.5f, Half.One));
+        var luminance = half.ComputeHistogram(HistogramChannel.Luminance, Ct);
+        Assert.Equal(65536, luminance.BinCount);
+        Assert.Equal(2, luminance[32768]);
+    }
+
+    [Theory]
+    [InlineData(HistogramColorMode.Luminance, false)]
+    [InlineData(HistogramColorMode.PerChannel, false)]
+    [InlineData(HistogramColorMode.Luminance, true)]
+    [InlineData(HistogramColorMode.PerChannel, true)]
+    public void FloatingPointSamplesAreRemappedAs16BitLevels(HistogramColorMode colorMode, bool adaptive)
+    {
+        // Samples that are exactly levels (k / 65535) give the result of the same levels in Rgba64
+        using var floats = new Image<RgbaFloat>(23, 17);
+        using var halves = new Image<RgbaHalf>(23, 17, new RgbaHalf(Half.Zero, Half.Zero, Half.Zero, Half.One));
+        using var integers = new Image<Rgba64>(23, 17);
+        for (var y = 0; y < 17; y++)
+        {
+            for (var x = 0; x < 23; x++)
+            {
+                var r = (ushort)(10000 + (((x * 7919) + (y * 104729)) % 30000));
+                var g = (ushort)(5000 + (((x * 15485863) + (y * 2971)) % 45000));
+                var b = (ushort)(20000 + (((x * 3571) + (y * 7907)) % 10000));
+                integers.Frames[0][x, y] = new Rgba64(r, g, b, ushort.MaxValue);
+                floats.Frames[0][x, y] = new RgbaFloat(r / 65535f, g / 65535f, b / 65535f, 1);
+            }
+        }
+
+        var options = new HistogramEqualizationOptions { ColorMode = colorMode, Mode = adaptive ? HistogramEqualizationMode.Adaptive : HistogramEqualizationMode.Global };
+        integers.Equalize(options, Ct);
+        floats.Equalize(options, Ct);
+        for (var y = 0; y < 17; y++)
+        {
+            for (var x = 0; x < 23; x++)
+            {
+                var expected = integers.Frames[0][x, y];
+                var actual = floats.Frames[0][x, y];
+                Assert.Equal(expected.R, Math.Round(actual.R * 65535, MidpointRounding.AwayFromZero));
+                Assert.Equal(expected.G, Math.Round(actual.G * 65535, MidpointRounding.AwayFromZero));
+                Assert.Equal(expected.B, Math.Round(actual.B * 65535, MidpointRounding.AwayFromZero));
+                Assert.Equal(1, actual.A);
+            }
+        }
+
+        halves.Frames[0][0, 0] = new RgbaHalf((Half)0.25f, (Half)0.5f, (Half)0.75f, Half.One);
+        halves.Frames[0].AutoLevels(new AutoLevelsOptions { ColorMode = colorMode }, Ct);
+        Assert.Equal(Half.One, halves.Frames[0][0, 0].B);
+    }
+
+    [Fact]
+    public void FloatingPointSamplesWhoseLevelDoesNotChangeKeepTheirValue()
+    {
+        // The levels already span 0 to 65535: auto-levels maps every level to itself, so nothing changes, not even the
+        // values above 1 or the fractions of a level
+        using var image = new Image<RgbaFloat>(3, 1);
+        image.Frames[0][0, 0] = new RgbaFloat(-0.25f, 0, 0, 1);
+        image.Frames[0][1, 0] = new RgbaFloat(0.123456789f, 0.3f, 0.7f, 1);
+        image.Frames[0][2, 0] = new RgbaFloat(4, 1.5f, 1, 1);
+        image.AutoLevels(new AutoLevelsOptions { ColorMode = HistogramColorMode.PerChannel }, Ct);
+        Assert.Equal(new RgbaFloat(-0.25f, 0, 0, 1), image.Frames[0][0, 0]);
+        Assert.Equal(new RgbaFloat(0.123456789f, 0.3f, 0.7f, 1), image.Frames[0][1, 0]);
+        Assert.Equal(new RgbaFloat(4, 1.5f, 1, 1), image.Frames[0][2, 0]);
+
+        // Equalizing two levels moves the lower one to 0 and the upper one to 65535: 2 / 2 of the pixels are at or below it
+        using var twoLevels = new Image<RgbaFloat>(2, 1);
+        twoLevels.Frames[0][0, 0] = new RgbaFloat(0.25f, 0.25f, 0.25f, 1);
+        twoLevels.Frames[0][1, 0] = new RgbaFloat(0.5f, 0.5f, 0.5f, 1);
+        twoLevels.Equalize(cancellationToken: Ct);
+        Assert.Equal(0, twoLevels.Frames[0][0, 0].R);
+        Assert.Equal(1, twoLevels.Frames[0][1, 0].G);
     }
 
     #region Histogram_Clahe

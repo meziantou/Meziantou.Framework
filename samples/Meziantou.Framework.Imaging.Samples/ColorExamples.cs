@@ -50,6 +50,34 @@ internal static class ColorExamples
     }
     #endregion
 
+    /// <summary>Resizes an HDR photo with a gain map, and writes it with its gain map, resized the same way.</summary>
+    #region Imaging_WriteGainMap
+    public static void ResizeHdrPhoto(string photoPath, string outputPath)
+    {
+        using var photo = Image.Load(photoPath);
+        var images = AuxiliaryImageCollection.Load(photoPath);
+        if (images.GainMapImage is { GainMapMetadata: { } metadata } gainMapImage)
+        {
+            // The samples of the gain map are its coded values, often at a fraction of the size of the photo: it gets the
+            // same geometry (the same resize, crop or rotation), scaled to its own size
+            using var gainMap = gainMapImage.Decode();
+            var scaleX = (double)gainMap.Width / photo.Width;
+            var scaleY = (double)gainMap.Height / photo.Height;
+            photo.Resize(new ResizeOptions(1024, 1024) { AllowUpscaling = false });
+            gainMap.Resize(new ResizeOptions(Math.Max(1, (int)Math.Round(photo.Width * scaleX, MidpointRounding.AwayFromZero)), Math.Max(1, (int)Math.Round(photo.Height * scaleY, MidpointRounding.AwayFromZero))) { Mode = ResizeMode.Stretch });
+
+            // An Ultra HDR file: the gain map image follows the photo, with its parameters (ISO 21496-1 and XMP). An
+            // AvifEncoder with a GainMap writes the same photo as an AVIF file
+            photo.Save(outputPath, new JpegEncoder { Quality = 90, GainMap = new GainMap(gainMap, metadata) });
+        }
+        else
+        {
+            photo.Resize(new ResizeOptions(1024, 1024) { AllowUpscaling = false });
+            photo.Save(outputPath, new JpegEncoder { Quality = 90 });
+        }
+    }
+    #endregion
+
     /// <summary>A soft proof: the colors of a print, shown on a display, through a sequence of ICC profiles.</summary>
     #region Imaging_SoftProof
     public static ushort[] SoftProof(IccProfile display, IccProfile printer, ReadOnlySpan<ushort> rgb)

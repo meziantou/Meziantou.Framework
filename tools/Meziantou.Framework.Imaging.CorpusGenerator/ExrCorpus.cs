@@ -53,7 +53,7 @@ internal static partial class ExrCorpus
         ("DisplayWindow/t13.exr", "e779baaed0563955213f99daf07f903727f9100c3b6ea342302d0f0a32607d2a"),
     ];
 
-    private static readonly string[] Compressions = ["NONE", "RLE", "ZIPS", "ZIP", "PIZ", "PXR24", "B44", "B44A"];
+    private static readonly string[] Compressions = ["NONE", "RLE", "ZIPS", "ZIP", "PIZ", "PXR24", "B44", "B44A", "DWAA", "DWAB", "ZSTD"];
 
     private static bool IsExrFixture(Obj fixture) => (string?)fixture["format"] == "exr";
 
@@ -124,6 +124,17 @@ internal static partial class ExrCorpus
         public List<(string Name, string Type, object Value)> Attributes { get; init; } = [];
 
         public string? Type { get; init; }
+
+        /// <summary>Gets the name of the part (required for the parts of a multi-part file).</summary>
+        public string? Name { get; init; }
+
+        /// <summary>
+        /// Gets the number of samples of each pixel (x, y) of a deep part, whose channels give the value of the sample s of a
+        /// pixel as their value at the level s.
+        /// </summary>
+        public Func<int, int, int>? DeepCounts { get; init; }
+
+        public bool IsDeep => Type?.StartsWith("deep", StringComparison.Ordinal) == true;
     }
 
     /// <summary>The sizes of the levels of a description, in the order exr-from-raw reads their samples.</summary>
@@ -153,11 +164,23 @@ internal static partial class ExrCorpus
         return result;
     }
 
-    /// <summary>The samples of a channel, little-endian in its pixel type, for every level.</summary>
+    /// <summary>The number of samples of each pixel of a deep part, as exr-from-raw reads them.</summary>
+    private static byte[] DeepCounts(Description d)
+    {
+        var bytes = new byte[d.Width * d.Height * 4];
+        for (var y = 0; y < d.Height; y++)
+        {
+            for (var x = 0; x < d.Width; x++)
+                BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(((y * d.Width) + x) * 4), d.DeepCounts!(x, y));
+        }
+
+        return bytes;
+    }
+
+    /// <summary>The samples of a channel, little-endian in its pixel type, for every level (for every sample of each pixel of a deep part).</summary>
     private static byte[] Samples(Description d, Channel channel)
     {
         var builder = new List<byte>();
-        Span<byte> sample = stackalloc byte[4];
         var level = 0;
         foreach (var (_, _, width, height) in Levels(d))
         {
@@ -168,22 +191,14 @@ internal static partial class ExrCorpus
 
                 for (var x = 0; x < width; x += channel.XSampling)
                 {
-                    var value = channel.Value(level, x, y);
-                    switch (channel.PixelType)
+                    if (d.DeepCounts is null)
                     {
-                        case "HALF":
-                            BinaryPrimitives.WriteHalfLittleEndian(sample, (Half)value);
-                            builder.AddRange(sample[..2].ToArray());
-                            break;
-                        case "FLOAT":
-                            BinaryPrimitives.WriteSingleLittleEndian(sample, (float)value);
-                            builder.AddRange(sample.ToArray());
-                            break;
-                        default:
-                            BinaryPrimitives.WriteUInt32LittleEndian(sample, (uint)value);
-                            builder.AddRange(sample.ToArray());
-                            break;
+                        Append(channel.Value(level, x, y));
+                        continue;
                     }
+
+                    for (var sample = 0; sample < d.DeepCounts(x, y); sample++)
+                        Append(channel.Value(sample, x, y));
                 }
             }
 
@@ -191,11 +206,35 @@ internal static partial class ExrCorpus
         }
 
         return [.. builder];
+
+        void Append(double value)
+        {
+            Span<byte> sample = stackalloc byte[4];
+            switch (channel.PixelType)
+            {
+                case "HALF":
+                    BinaryPrimitives.WriteHalfLittleEndian(sample, (Half)value);
+                    builder.AddRange(sample[..2].ToArray());
+                    break;
+                case "FLOAT":
+                    BinaryPrimitives.WriteSingleLittleEndian(sample, (float)value);
+                    builder.AddRange(sample.ToArray());
+                    break;
+                default:
+                    BinaryPrimitives.WriteUInt32LittleEndian(sample, (uint)value);
+                    builder.AddRange(sample.ToArray());
+                    break;
+            }
+        }
     }
 
-    /// <summary>Writes a file with exr-from-raw.</summary>
-    private static (byte[] Data, string Command) Write(Corpus<ExrTools> c, Description d)
+    /// <summary>Writes a single-part file with exr-from-raw.</summary>
+    private static (byte[] Data, string Command) Write(Corpus<ExrTools> c, Description d) => Write(c, [d], multiPart: false);
+
+    /// <summary>Writes a file with exr-from-raw: a multi-part file when <paramref name="multiPart"/> is set.</summary>
+    private static (byte[] Data, string Command) Write(Corpus<ExrTools> c, Description[] parts, bool multiPart)
     {
+        Py.Assert(multiPart || parts.Length == 1, "one part");
         var directory = c.Scratch / "write";
         if (Directory.Exists(directory))
             Directory.Delete(directory, recursive: true);
@@ -204,95 +243,124 @@ internal static partial class ExrCorpus
         using (var stream = File.Create(directory / "description.json"))
         using (var json = new Utf8JsonWriter(stream))
         {
-            json.WriteStartObject();
-            if (d.Type is not null)
-                json.WriteString("type", d.Type);
-
-            json.WritePropertyName("dataWindow");
-            WriteInts(json, d.X0, d.Y0, d.X0 + d.Width - 1, d.Y0 + d.Height - 1);
-            if (d.DisplayWindow is { } display)
+            if (multiPart)
             {
-                json.WritePropertyName("displayWindow");
-                WriteInts(json, display);
-            }
-
-            json.WriteString("compression", d.Compression);
-            if (d.LineOrder is not null)
-                json.WriteString("lineOrder", d.LineOrder);
-
-            if (d.Tiles is { } tiles)
-            {
-                json.WriteStartObject("tiles");
-                json.WriteNumber("xSize", tiles.Width);
-                json.WriteNumber("ySize", tiles.Height);
-                json.WriteString("levelMode", tiles.LevelMode);
-                json.WriteString("roundingMode", tiles.RoundingMode);
-                json.WriteEndObject();
-            }
-
-            json.WriteStartArray("channels");
-            for (var i = 0; i < d.Channels.Length; i++)
-            {
-                var channel = d.Channels[i];
-                var file = $"channel{i.ToString(CultureInfo.InvariantCulture)}.raw";
-                var isDeep = d.Type?.StartsWith("deep", StringComparison.Ordinal) == true;
-                if (!isDeep)
-                    File.WriteAllBytes(directory / file, Samples(d, channel));
-
                 json.WriteStartObject();
-                json.WriteString("name", channel.Name);
-                json.WriteString("pixelType", channel.PixelType);
-                json.WriteNumber("xSampling", channel.XSampling);
-                json.WriteNumber("ySampling", channel.YSampling);
-                json.WriteBoolean("pLinear", channel.PLinear);
-                if (!isDeep)
-                    json.WriteString("file", file);
+                json.WriteStartArray("parts");
+            }
 
+            for (var p = 0; p < parts.Length; p++)
+                WritePart(json, directory, parts[p], multiPart ? string.Create(CultureInfo.InvariantCulture, $"part{p}.") : "");
+
+            if (multiPart)
+            {
+                json.WriteEndArray();
                 json.WriteEndObject();
             }
-
-            json.WriteEndArray();
-            if (d.Attributes.Count > 0)
-            {
-                json.WriteStartArray("attributes");
-                foreach (var (name, type, value) in d.Attributes)
-                {
-                    json.WriteStartObject();
-                    json.WriteString("name", name);
-                    json.WriteString("type", type);
-                    json.WritePropertyName(value is byte[] ? "data" : "value");
-                    switch (value)
-                    {
-                        case byte[] bytes:
-                            json.WriteStringValue(Convert.ToHexStringLower(bytes));
-                            break;
-                        case string text:
-                            json.WriteStringValue(text);
-                            break;
-                        case float[] numbers:
-                            json.WriteStartArray();
-                            foreach (var number in numbers)
-                                json.WriteNumberValue(number);
-                            json.WriteEndArray();
-                            break;
-                        default:
-                            json.WriteNumberValue(Convert.ToDouble(value, CultureInfo.InvariantCulture));
-                            break;
-                    }
-
-                    json.WriteEndObject();
-                }
-
-                json.WriteEndArray();
-            }
-
-            json.WriteEndObject();
         }
 
         var output = directory / "output.exr";
         List<string> command = [c.Tools.ExrFromRaw, (directory / "description.json").Value, output.Value];
         Proc.Run(command);
         return (File.ReadAllBytes(output), CommonCorpus.Display(command, c.Tools, [((directory / "description.json").Value, "{description}.json"), (output.Value, "{output}.exr")]));
+    }
+
+    /// <summary>Writes the description of a part, and the files of its samples.</summary>
+    private static void WritePart(Utf8JsonWriter json, FullPath directory, Description d, string prefix)
+    {
+        json.WriteStartObject();
+        if (d.Type is not null)
+            json.WriteString("type", d.Type);
+
+        if (d.Name is not null)
+            json.WriteString("name", d.Name);
+
+        json.WritePropertyName("dataWindow");
+        WriteInts(json, d.X0, d.Y0, d.X0 + d.Width - 1, d.Y0 + d.Height - 1);
+        if (d.DisplayWindow is { } display)
+        {
+            json.WritePropertyName("displayWindow");
+            WriteInts(json, display);
+        }
+
+        json.WriteString("compression", d.Compression);
+        if (d.LineOrder is not null)
+            json.WriteString("lineOrder", d.LineOrder);
+
+        if (d.Tiles is { } tiles)
+        {
+            json.WriteStartObject("tiles");
+            json.WriteNumber("xSize", tiles.Width);
+            json.WriteNumber("ySize", tiles.Height);
+            json.WriteString("levelMode", tiles.LevelMode);
+            json.WriteString("roundingMode", tiles.RoundingMode);
+            json.WriteEndObject();
+        }
+
+        if (d.IsDeep && d.DeepCounts is not null)
+        {
+            var counts = prefix + "sampleCounts.raw";
+            File.WriteAllBytes(directory / counts, DeepCounts(d));
+            json.WriteString("sampleCounts", counts);
+        }
+
+        json.WriteStartArray("channels");
+        for (var i = 0; i < d.Channels.Length; i++)
+        {
+            var channel = d.Channels[i];
+            var file = prefix + $"channel{i.ToString(CultureInfo.InvariantCulture)}.raw";
+            var hasSamples = !d.IsDeep || d.DeepCounts is not null;
+            if (hasSamples)
+                File.WriteAllBytes(directory / file, Samples(d, channel));
+
+            json.WriteStartObject();
+            json.WriteString("name", channel.Name);
+            json.WriteString("pixelType", channel.PixelType);
+            json.WriteNumber("xSampling", channel.XSampling);
+            json.WriteNumber("ySampling", channel.YSampling);
+            json.WriteBoolean("pLinear", channel.PLinear);
+            if (hasSamples)
+                json.WriteString("file", file);
+
+            json.WriteEndObject();
+        }
+
+        json.WriteEndArray();
+        if (d.Attributes.Count > 0)
+        {
+            json.WriteStartArray("attributes");
+            foreach (var (name, type, value) in d.Attributes)
+            {
+                json.WriteStartObject();
+                json.WriteString("name", name);
+                json.WriteString("type", type);
+                json.WritePropertyName(value is byte[] ? "data" : "value");
+                switch (value)
+                {
+                    case byte[] bytes:
+                        json.WriteStringValue(Convert.ToHexStringLower(bytes));
+                        break;
+                    case string text:
+                        json.WriteStringValue(text);
+                        break;
+                    case float[] numbers:
+                        json.WriteStartArray();
+                        foreach (var number in numbers)
+                            json.WriteNumberValue(number);
+                        json.WriteEndArray();
+                        break;
+                    default:
+                        json.WriteNumberValue(Convert.ToDouble(value, CultureInfo.InvariantCulture));
+                        break;
+                }
+
+                json.WriteEndObject();
+            }
+
+            json.WriteEndArray();
+        }
+
+        json.WriteEndObject();
 
         static void WriteInts(Utf8JsonWriter json, params int[] values)
         {
@@ -318,11 +386,14 @@ internal static partial class ExrCorpus
         };
     }
 
-    /// <summary>The header and the samples exr-to-raw gives for a file.</summary>
-    private sealed record Dump(JsonElement Part, int[] DataWindow, int[] DisplayWindow, List<DecodedChannel> Channels, string Command);
+    /// <summary>
+    /// The header and the samples exr-to-raw gives for a part of a file; for deep data, the number of samples of each pixel
+    /// (<see cref="SampleCounts"/>), the samples of the channels being those of each pixel one after the other.
+    /// </summary>
+    private sealed record Dump(JsonElement Part, int[] DataWindow, int[] DisplayWindow, List<DecodedChannel> Channels, string Command, uint[]? SampleCounts = null);
 
-    /// <summary>Decodes a file with exr-to-raw; <see langword="null"/> when OpenEXR refuses it.</summary>
-    private static Dump? Decode(Corpus<ExrTools> c, byte[] data)
+    /// <summary>Decodes a part of a file with exr-to-raw; <see langword="null"/> when OpenEXR refuses it.</summary>
+    private static Dump? Decode(Corpus<ExrTools> c, byte[] data, int partIndex = 0)
     {
         var directory = c.Scratch / "dump";
         if (Directory.Exists(directory))
@@ -336,7 +407,7 @@ internal static partial class ExrCorpus
             return null;
 
         using var header = JsonDocument.Parse(File.ReadAllBytes(directory / "header.json"));
-        var part = header.RootElement.GetProperty("parts")[0].Clone();
+        var part = header.RootElement.GetProperty("parts")[partIndex].Clone();
         var dataWindow = part.GetProperty("dataWindow").EnumerateArray().Select(value => value.GetInt32()).ToArray();
         var displayWindow = part.GetProperty("displayWindow").EnumerateArray().Select(value => value.GetInt32()).ToArray();
         var width = dataWindow[2] - dataWindow[0] + 1;
@@ -356,7 +427,16 @@ internal static partial class ExrCorpus
             channels.Add(new DecodedChannel(channel.GetProperty("name").GetString()!, type, bits, channel.GetProperty("pLinear").GetBoolean()));
         }
 
-        return new Dump(part, dataWindow, displayWindow, channels, CommonCorpus.Display(command, c.Tools, [(input.Value, "{input}"), (directory.Value, "{output}")]));
+        uint[]? counts = null;
+        if (part.TryGetProperty("sampleCounts", out var countsFile))
+        {
+            var bytes = File.ReadAllBytes(directory / countsFile.GetString()!);
+            counts = new uint[bytes.Length / 4];
+            for (var i = 0; i < counts.Length; i++)
+                counts[i] = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(4 * i));
+        }
+
+        return new Dump(part, dataWindow, displayWindow, channels, CommonCorpus.Display(command, c.Tools, [(input.Value, "{input}"), (directory.Value, "{output}")]), counts);
     }
 
     /// <summary>The expected pixels: RGBA floats of the display window, by the rules of the library.</summary>
@@ -463,6 +543,7 @@ internal static partial class ExrCorpus
         var frame = frames[0];
         var plane = width * height;
         var differing = 0;
+        var largest = 0.0;
         for (var p = 0; p < planeOrder.Length; p++)
         {
             var channel = dump.Channels.First(item => item.Name == planeOrder[p]);
@@ -471,7 +552,11 @@ internal static partial class ExrCorpus
                 var offset = ((p * plane) + i) * size;
                 var bits = half ? BinaryPrimitives.ReadUInt16LittleEndian(frame.AsSpan(offset)) : BinaryPrimitives.ReadUInt32LittleEndian(frame.AsSpan(offset));
                 if (bits != channel.Bits[i])
+                {
                     differing++;
+                    var value = half ? (double)BitConverter.UInt16BitsToHalf((ushort)bits) : BitConverter.UInt32BitsToSingle(bits);
+                    largest = Math.Max(largest, Math.Abs(value - channel[i]));
+                }
             }
         }
 
@@ -490,7 +575,9 @@ internal static partial class ExrCorpus
             check["excludedFromTolerance"] = true;
             check["notes"] = dump.Channels.Any(channel => channel.PLinear)
                 ? string.Create(CultureInfo.InvariantCulture, $"{differing} stored samples differ from OpenEXR: FFmpeg does not apply the conversion of the pLinear channels of B44, which the library and OpenEXR apply.")
-                : string.Create(CultureInfo.InvariantCulture, $"{differing} stored samples differ from OpenEXR.");
+                : dump.Part.GetProperty("compression").GetString() is "DWAA" or "DWAB"
+                    ? string.Create(CultureInfo.InvariantCulture, $"{differing} stored samples differ from OpenEXR, by at most {largest:G4}: FFmpeg has its own DWA decoder, which does not reproduce the arithmetic of OpenEXR.")
+                    : string.Create(CultureInfo.InvariantCulture, $"{differing} stored samples differ from OpenEXR.");
         }
 
         return check;
@@ -502,13 +589,10 @@ internal static partial class ExrCorpus
     /// </summary>
     private static Obj? PatternCrossCheck(Description d, Dump dump)
     {
-        var lossyTypes = d.Compression switch
-        {
-            "PXR24" => new[] { "FLOAT" },
-            "B44" or "B44A" => ["HALF"],
-            _ => [],
-        };
-        var channels = d.Channels.Where(channel => !lossyTypes.Contains(channel.PixelType, StringComparer.Ordinal) && channel.XSampling == 1 && channel.YSampling == 1).ToList();
+        if (dump.SampleCounts is not null)
+            return DeepPatternCrossCheck(d, dump);
+
+        var channels = d.Channels.Where(channel => !IsLossy(d.Compression, channel) && channel.XSampling == 1 && channel.YSampling == 1).ToList();
         if (channels.Count == 0)
             return null;
 
@@ -542,6 +626,104 @@ internal static partial class ExrCorpus
         }
 
         return check;
+    }
+
+    /// <summary>
+    /// Determines whether a compression loses the samples of a channel: FLOAT samples of PXR24, HALF samples of B44, and the
+    /// colors (R, G, B, Y, RY, BY of type HALF or FLOAT) that DWA codes with its DCT (compression notes, section 8.3).
+    /// </summary>
+    private static bool IsLossy(string compression, Channel channel) => compression switch
+    {
+        "PXR24" => channel.PixelType == "FLOAT",
+        "B44" or "B44A" => channel.PixelType == "HALF",
+        "DWAA" or "DWAB" => channel.PixelType != "UINT" && channel.Name[(channel.Name.LastIndexOf('.', StringComparison.Ordinal) + 1)..] is "R" or "G" or "B" or "Y" or "RY" or "BY",
+        _ => false,
+    };
+
+    /// <summary>Compares the deep samples and the sample counts OpenEXR decodes with the pattern given to exr-from-raw.</summary>
+    private static Obj DeepPatternCrossCheck(Description d, Dump dump)
+    {
+        var differing = 0;
+        var counts = DeepCounts(d);
+        for (var i = 0; i < dump.SampleCounts!.Length; i++)
+        {
+            if (dump.SampleCounts[i] != BinaryPrimitives.ReadUInt32LittleEndian(counts.AsSpan(4 * i)))
+                differing++;
+        }
+
+        foreach (var channel in d.Channels)
+        {
+            var decoded = dump.Channels.Single(item => item.Name == channel.Name);
+            var samples = Samples(d, channel);
+            var size = channel.PixelType == "HALF" ? 2 : 4;
+            Py.Assert(samples.Length / size == decoded.Bits.Length, "the number of deep samples");
+            for (var i = 0; i < decoded.Bits.Length; i++)
+            {
+                var bits = size == 2 ? BinaryPrimitives.ReadUInt16LittleEndian(samples.AsSpan(2 * i)) : BinaryPrimitives.ReadUInt32LittleEndian(samples.AsSpan(4 * i));
+                if (bits != decoded.Bits[i])
+                    differing++;
+            }
+        }
+
+        var check = new Obj
+        {
+            ["decoder"] = "the pattern given to exr-from-raw",
+            ["result"] = differing == 0 ? "exact" : "differs",
+            ["notes"] = differing == 0
+                ? "The number of samples of every pixel and the samples of every channel, bit for bit: the compression keeps them. The expected pixels flatten them as OpenEXR does (compression notes, section 1.7)."
+                : string.Create(CultureInfo.InvariantCulture, $"{differing} sample counts or samples differ from the pattern."),
+        };
+        if (differing == 0)
+        {
+            check["maxAbsoluteError"] = 0;
+            check["meanAbsoluteError"] = 0.0;
+        }
+
+        return check;
+    }
+
+    /// <summary>
+    /// Flattens a deep dump as OpenEXR flattens the samples of one source (compression notes, section 1.7): the samples of a
+    /// pixel in their stored order, each adding (1 - alpha) times its values, in single precision, until alpha reaches 1.
+    /// </summary>
+    /// <returns>A dump of FLOAT channels of one sample per pixel: the composited channels, without Z and ZBack.</returns>
+    private static Dump Flatten(Dump dump)
+    {
+        var counts = dump.SampleCounts!;
+        var alpha = dump.Channels.Single(channel => channel.Name == "A");
+        var channels = dump.Channels.Where(channel => channel.Name is not ("Z" or "ZBack")).ToList();
+        var outputs = channels.Select(_ => new uint[counts.Length]).ToList();
+        var values = new float[channels.Count];
+        var alphaIndex = channels.IndexOf(alpha);
+        var first = 0;
+        for (var pixel = 0; pixel < counts.Length; pixel++)
+        {
+            Array.Clear(values);
+            for (var s = first; s < first + counts[pixel]; s++)
+            {
+                var accumulated = values[alphaIndex];
+                if (accumulated >= 1f)
+                    break;
+
+                var weight = 1f - accumulated;
+                for (var c = 0; c < channels.Count; c++)
+                {
+                    var product = weight * channels[c][s];
+                    values[c] += product;
+                }
+            }
+
+            for (var c = 0; c < channels.Count; c++)
+                outputs[c][pixel] = BitConverter.SingleToUInt32Bits(values[c]);
+
+            first += (int)counts[pixel];
+        }
+
+        return dump with
+        {
+            Channels = [.. channels.Select((channel, c) => new DecodedChannel(channel.Name, "FLOAT", outputs[c], channel.PLinear))],
+            SampleCounts = null,
+        };
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -742,6 +924,17 @@ internal static partial class ExrCorpus
             Compression = "PXR24",
             Channels = [new("Y", "FLOAT", (level, x, y) => BitConverter.Int32BitsToSingle(0x3F800000 + (x * 0x7F) + (y * 0x81)))],
         }, "FLOAT samples whose low 8 bits are near 0x80.", "PXR24 rounds the samples to 24 bits, ties up.");
+        // DWA: tiles (deflate AC), a colour set of mixed types, a luminance; ZSTD: tiles, two segments of 2-byte and 4-byte samples
+        AddGenerated(c, "dwaa-tiles", Function, new Description { Width = 29, Height = 21, Compression = "DWAA", Tiles = (16, 16, "ONE_LEVEL", "ROUND_DOWN"), Channels = Rgba("HALF", 70) },
+            "Tiles of 16x16 pixels of HALF R, G, B and A, DWAA.", "OpenEXR compresses the AC coefficients of DWAA tiles with zlib, and those of scan lines with Huffman codes.");
+        AddGenerated(c, "dwab-mixed-types", Function, new Description { Width = 27, Height = 13, Compression = "DWAB", Channels = [new("A", "FLOAT", Alpha), new("B", "HALF", Wave(71)), new("G", "FLOAT", Smooth(72)), new("R", "HALF", Wave(73, 8))] },
+            "HALF R and B, FLOAT G and A, DWAB.", "R, G and B of different types are one colour set, coded through the luma-chroma transform; A is run-length coded.");
+        AddGenerated(c, "dwaa-luminance-alpha", Function, new Description { Width = 19, Height = 35, Compression = "DWAA", Channels = [new("A", "HALF", Alpha), new("Y", "HALF", Smooth(74))] },
+            "HALF Y and A, DWAA.", "Y is coded alone with the DCT, A with run-length coding.");
+        AddGenerated(c, "zstd-tiles", Function, new Description { Width = 21, Height = 17, Compression = "ZSTD", Tiles = (8, 8, "ONE_LEVEL", "ROUND_DOWN"), Channels = Rgba("HALF", 75) },
+            "Tiles of 8x8 pixels of HALF R, G, B and A, ZSTD.");
+        AddGenerated(c, "zstd-mixed-types", Function, new Description { Width = 15, Height = 9, Compression = "ZSTD", Channels = [new("A", "HALF", Alpha), new("B", "FLOAT", Wave(76)), new("G", "HALF", Smooth(77)), new("R", "FLOAT", Wave(78, 8))] },
+            "HALF A and G, FLOAT B and R, ZSTD.", "The 2-byte samples and the 4-byte samples are two segments of the Zstandard data.");
         AddGenerated(c, "b44-plinear", Function, new Description
         {
             Width = 13,
@@ -901,7 +1094,17 @@ internal static partial class ExrCorpus
     }
 
     /// <summary>A decoding with options of an OpenEXR file the default options reject: its pixels, or the error it still gives.</summary>
-    private sealed record ExrDecoding(string? Layer, string WindowMode, string? Feature = null);
+    private sealed record ExrDecoding(string? Layer, string WindowMode, string? Feature = null)
+    {
+        /// <summary>Gets the name of the part, and its index in the file.</summary>
+        public (string Name, int Index)? Part { get; init; }
+
+        /// <summary>Gets a value indicating whether deep data are flattened.</summary>
+        public bool Flatten { get; init; }
+
+        /// <summary>Gets the pattern the part was written from, when it is not the one of the fixture.</summary>
+        public Description? Pattern { get; init; }
+    }
 
     private static ExrDecoding Layer(string layer, string windowMode = "DisplayWindow") => new(layer, windowMode);
 
@@ -913,11 +1116,18 @@ internal static partial class ExrCorpus
     private static List<object?> Decodings(Corpus<ExrTools> c, string fixtureId, byte[] data, ExrDecoding[] decodings, Description? pattern)
     {
         var result = new List<object?>();
-        var dump = decodings.Any(decoding => decoding.Feature is null) ? Decode(c, data) ?? throw new FatalException(fixtureId + ": OpenEXR does not read the file.") : null;
         for (var i = 0; i < decodings.Length; i++)
         {
             var decoding = decodings[i];
-            var entry = new Obj { ["layer"] = decoding.Layer, ["windowMode"] = decoding.WindowMode };
+            var entry = new Obj();
+            if (decoding.Part is { } selected)
+                entry["part"] = selected.Name;
+
+            if (decoding.Flatten)
+                entry["deepData"] = "Flatten";
+
+            entry["layer"] = decoding.Layer;
+            entry["windowMode"] = decoding.WindowMode;
             if (decoding.Feature is { } feature)
             {
                 entry["expectedError"] = Unsupported(feature);
@@ -925,13 +1135,31 @@ internal static partial class ExrCorpus
                 continue;
             }
 
-            var pixels = Present(dump!, decoding.Layer, decoding.WindowMode, out var halfPixels, out var colorModel, out var bits, out var width, out var height);
+            var dump = Decode(c, data, decoding.Part?.Index ?? 0) ?? throw new FatalException(fixtureId + ": OpenEXR does not read the file.");
             var checks = new List<object?>();
-            if (FfmpegDecodingCrossCheck(c, data, dump!, decoding) is { } ffmpegCheck)
-                checks.Add(ffmpegCheck);
-
-            if (pattern is not null && PatternCrossCheck(pattern, dump!) is { } patternCheck)
+            var decodingPattern = decoding.Pattern ?? pattern;
+            if (decodingPattern is not null && PatternCrossCheck(decodingPattern, dump) is { } patternCheck)
                 checks.Add(patternCheck);
+
+            var halfOnly = true;
+            if (dump.SampleCounts is not null)
+            {
+                Py.Assert(decoding.Flatten, fixtureId + ": deep data are flattened");
+                halfOnly = dump.Channels.Where(channel => channel.Name is not ("Z" or "ZBack") && (decoding.Layer is null || LayerChannel(channel.Name, decoding.Layer) is not null)).All(channel => channel.PixelType == "HALF");
+                dump = Flatten(dump);
+            }
+            else if (decoding.Part is null && FfmpegDecodingCrossCheck(c, data, dump, decoding) is { } ffmpegCheck)
+            {
+                checks.Add(ffmpegCheck);
+            }
+
+            var pixels = Present(dump, decoding.Layer, decoding.WindowMode, out var halfPixels, out var colorModel, out var bits, out var width, out var height);
+            if (decoding.Flatten)
+            {
+                halfPixels = false;
+                bits = halfOnly ? 16 : 32;
+            }
+
 
             Py.Assert(checks.Count > 0, fixtureId + ": no independent cross-check");
             var options = decoding.Layer switch
@@ -940,6 +1168,11 @@ internal static partial class ExrCorpus
                 "" => "the default layer",
                 var layer => $"the layer '{layer}'",
             };
+            if (decoding.Part is { } part)
+                options = $"the part '{part.Name}', " + options;
+
+            if (decoding.Flatten)
+                options = "the deep samples of each pixel flattened in their stored order (compression notes, section 1.7), " + options;
             entry["width"] = width;
             entry["height"] = height;
             entry["pixelFormat"] = halfPixels ? "RgbaHalf" : "RgbaFloat";
@@ -952,7 +1185,7 @@ internal static partial class ExrCorpus
                 ["description"] = $"The samples OpenEXR decodes, presented by the rules of the library: {options}, the {(decoding.WindowMode == "DataWindow" ? "data window" : "display window")} is the image{(decoding.WindowMode == "CropToDisplayWindow" ? " (the pixels of the data window outside it are cropped)" : "")}, the other channels are ignored, the colors are divided by alpha.",
                 ["decoder"] = $"OpenEXR {c.Tools.OpenExrVersion} (exr-to-raw)",
                 ["backend"] = "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
-                ["command"] = dump!.Command,
+                ["command"] = dump.Command,
                 ["crossChecks"] = checks,
             };
             entry["comparison"] = new Obj { ["mode"] = "exact" };
@@ -1143,7 +1376,7 @@ internal static partial class ExrCorpus
     private static void BuildUnsupported(Corpus<ExrTools> c, FullPath images)
     {
         const string Function = nameof(BuildUnsupported);
-        foreach (var compression in new[] { "DWAA", "DWAB", "ZSTD", "HTJ2K32" })
+        foreach (var compression in new[] { "HTJ2K256", "HTJ2K32" })
         {
             var (data, command) = Write(c, new Description { Width = 16, Height = 16, Compression = compression, Channels = Rgb("HALF", 30) });
             AddError(c, "unsupported", "compression-" + compression.ToLowerInvariant(), Function, data, Unsupported("Compression: " + compression), $"The {compression} compression.", [command], requireOpenExrRejection: false);
@@ -1215,8 +1448,61 @@ internal static partial class ExrCorpus
             Compression = "RLE",
             Channels = [.. Rgb("HALF", 65), new("C", "HALF", Wave(66), XSampling: 2, YSampling: 2)],
         }, "Extra channels", "A channel sub-sampled by 2 along x and y next to the colors: the lines of the chunks do not all have its samples.", Layer(""));
-        AddUnsupported("deep-scanline", new Description { Width = 4, Height = 3, Compression = "ZIPS", Type = "deepscanline", Channels = [new("Z", "FLOAT", Flat(1))] }, "Deep data",
-            "Deep data: a list of samples per pixel.");
+        // Multi-part files: the parts are decoded one by one
+        void AddMultipart(string name, Description[] parts, string notes, params ExrDecoding[] decodings)
+        {
+            var (data, command) = Write(c, parts, multiPart: true);
+            decodings = [.. decodings.Select(decoding => decoding.Part is { Index: >= 0 } part ? decoding with { Pattern = parts[part.Index] } : decoding)];
+            AddError(c, "unsupported", name, Function, data, Unsupported("Multi-part file"), notes, [command], requireOpenExrRejection: false, decodings: decodings);
+        }
+
+        ExrDecoding Part(string name, int index, string? layer = null) => new(layer, "DisplayWindow") { Part = (name, index) };
+
+        AddMultipart("multipart-stereo",
+            [
+                new Description { Name = "left", Width = 17, Height = 11, Compression = "PIZ", Channels = Rgba("HALF", 80), Attributes = [("view", "string", "left")] },
+                new Description { Name = "right", Width = 17, Height = 11, Compression = "ZSTD", Channels = Rgb("FLOAT", 81), Attributes = [("view", "string", "right")] },
+            ],
+            "The two views of a stereo pair, PIZ and ZSTD: each part is decoded when it is selected.",
+            Part("left", 0), Part("right", 1), new ExrDecoding(null, "DisplayWindow", "Missing part") { Part = ("center", -1) });
+        AddMultipart("multipart-render-passes",
+            [
+                new Description { Name = "beauty", Width = 14, Height = 10, Compression = "ZIP", Channels = Rgba("HALF", 82) },
+                new Description { Name = "depth", Width = 14, Height = 10, Compression = "ZIPS", Channels = [new("Z", "FLOAT", Smooth(83))] },
+                new Description { Name = "normals", Width = 14, Height = 10, Compression = "RLE", Tiles = (8, 8, "ONE_LEVEL", "ROUND_DOWN"), Channels = [new("N.X", "HALF", Wave(84)), new("N.Y", "HALF", Wave(85)), new("N.Z", "HALF", Wave(86)), new("diffuse.B", "HALF", Wave(87)), new("diffuse.G", "HALF", Wave(88)), new("diffuse.R", "HALF", Wave(89))] },
+            ],
+            "The outputs of a renderer in three parts (scan lines and tiles): the beauty pass, a depth, normals and a diffuse layer.",
+            Part("beauty", 0), Part("normals", 2, "diffuse"), new ExrDecoding(null, "DisplayWindow", "Extra channels") { Part = ("depth", 1) },
+            new ExrDecoding("N", "DisplayWindow", "Ambiguous layer") { Part = ("normals", 2) });
+
+        // Deep data: flattened when it is selected, in every compression deep data allow, scan lines and clipped tiles
+        static int Counts(int x, int y) => ((x * 7) + (y * 3)) % 5 == 4 ? 0 : (((x * 7) + (y * 3)) % 5) + 1;
+        static double DeepAlpha(int s, int x, int y) => ((s + x + y) % 4) switch { 0 => 0.25, 1 => 0.5, 2 => 1, _ => 0.75 };
+        Channel[] DeepRgba(int seed) => [new("A", "HALF", DeepAlpha), new("B", "HALF", Wave(seed)), new("G", "FLOAT", Smooth(seed)), new("R", "HALF", Wave(seed + 1, 8)), new("Z", "FLOAT", (s, x, y) => 1 + s + (((x + y) % 3) * 0.25))];
+        var flatten = new ExrDecoding(null, "DisplayWindow") { Flatten = true };
+        foreach (var compression in new[] { "NONE", "RLE", "ZIPS", "ZSTD" })
+        {
+            AddUnsupported("deep-scanline-" + compression.ToLowerInvariant(), new Description { Width = 13, Height = 7, Compression = compression, Type = "deepscanline", DeepCounts = Counts, Channels = DeepRgba(90) }, "Deep data",
+                $"Deep scan lines of 0 to 5 samples per pixel, {compression}: HALF A, B and R, FLOAT G and Z; samples whose accumulated alpha reaches 1 hide those behind them.", flatten);
+        }
+
+        foreach (var compression in new[] { "RLE", "ZSTD" })
+        {
+            AddUnsupported("deep-tiles-" + compression.ToLowerInvariant(), new Description { Width = 13, Height = 7, Compression = compression, Type = "deeptile", Tiles = (5, 4, "ONE_LEVEL", "ROUND_DOWN"), DeepCounts = Counts, Channels = DeepRgba(91) }, "Deep data",
+                $"Deep tiles of 5x4 pixels clipped at the right and bottom edges, {compression}.", flatten);
+        }
+
+        AddUnsupported("deep-layers-zips", new Description
+        {
+            Width = 9,
+            Height = 6,
+            Compression = "ZIPS",
+            Type = "deepscanline",
+            DeepCounts = Counts,
+            Channels = [.. DeepRgba(92), new("ZBack", "FLOAT", (s, x, y) => 1.5 + s), new("spec.Y", "HALF", Wave(93))],
+        }, "Deep data", "Deep scan lines with ZBack and another layer: flattening needs the layer option to ignore it.", flatten with { Feature = "Extra channels" }, flatten with { Layer = "" });
+        AddUnsupported("deep-without-alpha", new Description { Width = 5, Height = 4, Compression = "NONE", Type = "deepscanline", DeepCounts = Counts, Channels = [new("R", "HALF", Wave(94)), new("Z", "FLOAT", (s, x, y) => s)] }, "Deep data",
+            "Deep data without alpha: OpenEXR does not flatten them either.", flatten with { Feature = "Deep data without depth or alpha" });
 
         foreach (var (path, notes) in new[]
         {

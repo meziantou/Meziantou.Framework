@@ -32220,6 +32220,676 @@
       "notes": "A CICP description with the linear transfer characteristics."
     },
     {
+      "id": "exr/dwaa-float-rgb",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/dwaa-float-rgb.exr",
+        "sha256": "ac6b530644b8bc6d95c4f2b95a665162922762df879c7422bd34f73906f0fab4",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 19,
+          "height": 21
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=bgr",
+        "exr.compression=dwaa",
+        "exr.storage=scanline",
+        "exr.type=float"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "FLOAT R, G and B: waves. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "1197 stored samples differ from OpenEXR, by at most 0.007163: FFmpeg has its own DWA decoder, which does not reproduce the arithmetic of OpenEXR."
+          }
+        ]
+      },
+      "expected": {
+        "width": 19,
+        "height": 21,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/dwaa-float-rgb.frame-0.rgbaf32le.raw",
+                "sha256": "22c3a60a7de3c0dc9cb100652a3f0cfff6157b769e3fe17d23822dd910278b2d",
+                "layout": "rgbaf32le",
+                "width": 19,
+                "height": 21,
+                "rowBytes": 304,
+                "byteLength": 6384,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "exr/dwaa-half-rgba",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/dwaa-half-rgba.exr",
+        "sha256": "3aeed5b970433df4d2ad4736c10e311f477854c6cc183016d81fbd712d952fde",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 23,
+          "height": 37
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=abgr",
+        "exr.compression=dwaa",
+        "exr.storage=scanline",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "HALF R, G, B and A: waves and alphas of 0, 1/4, 1/2, 4/5 and 1. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "2797 stored samples differ from OpenEXR, by at most 5.949: FFmpeg has its own DWA decoder, which does not reproduce the arithmetic of OpenEXR."
+          },
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 23,
+        "height": 37,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/dwaa-half-rgba.frame-0.rgbaf32le.raw",
+                "sha256": "ad4a5974f61857bb31c48283c5c102a73045942787afc68fdc1de890b5105d1f",
+                "layout": "rgbaf32le",
+                "width": 23,
+                "height": 37,
+                "rowBytes": 368,
+                "byteLength": 13616,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "exr/dwaa-luminance-alpha",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/dwaa-luminance-alpha.exr",
+        "sha256": "23e1f28224c52a535463543eeba8aa708abdb6f7063c0be0a0483d3f3af9ad4d",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 19,
+          "height": 35
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=ay",
+        "exr.compression=dwaa",
+        "exr.storage=scanline",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "HALF Y and A, DWAA. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 19,
+        "height": 35,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "GrayscaleAlpha",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/dwaa-luminance-alpha.frame-0.rgbaf32le.raw",
+                "sha256": "cc08cb0d1ae4756694c84446a814f8edb4386ab53a594d4031b119f1c7664f08",
+                "layout": "rgbaf32le",
+                "width": 19,
+                "height": 35,
+                "rowBytes": 304,
+                "byteLength": 10640,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "Y is coded alone with the DCT, A with run-length coding."
+    },
+    {
+      "id": "exr/dwaa-tiles",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/dwaa-tiles.exr",
+        "sha256": "55089e06427fe414985571be5c4a453263744a9b73107aa66d984c30a9a8fec6",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 29,
+          "height": 21
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=abgr",
+        "exr.compression=dwaa",
+        "exr.levels=one-level",
+        "exr.storage=tiled",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Tiles of 16x16 pixels of HALF R, G, B and A, DWAA. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "861 stored samples differ from OpenEXR, by at most 0.007812: FFmpeg has its own DWA decoder, which does not reproduce the arithmetic of OpenEXR."
+          },
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 29,
+        "height": 21,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/dwaa-tiles.frame-0.rgbaf32le.raw",
+                "sha256": "41679f4254eee4b0422bc7619337313ee3afce6740311e3110c65dd469730d0c",
+                "layout": "rgbaf32le",
+                "width": 29,
+                "height": 21,
+                "rowBytes": 464,
+                "byteLength": 9744,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "OpenEXR compresses the AC coefficients of DWAA tiles with zlib, and those of scan lines with Huffman codes."
+    },
+    {
+      "id": "exr/dwab-float-rgb",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/dwab-float-rgb.exr",
+        "sha256": "7818c82321e5cac7b1e5982e84b6c65df05e982ca8c25578d1044b0a8da3b955",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 19,
+          "height": 21
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=bgr",
+        "exr.compression=dwab",
+        "exr.storage=scanline",
+        "exr.type=float"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "FLOAT R, G and B: waves. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "1197 stored samples differ from OpenEXR, by at most 0.007163: FFmpeg has its own DWA decoder, which does not reproduce the arithmetic of OpenEXR."
+          }
+        ]
+      },
+      "expected": {
+        "width": 19,
+        "height": 21,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/dwab-float-rgb.frame-0.rgbaf32le.raw",
+                "sha256": "22c3a60a7de3c0dc9cb100652a3f0cfff6157b769e3fe17d23822dd910278b2d",
+                "layout": "rgbaf32le",
+                "width": 19,
+                "height": 21,
+                "rowBytes": 304,
+                "byteLength": 6384,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "exr/dwab-half-rgba",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/dwab-half-rgba.exr",
+        "sha256": "2956739b4993ab2c5f5212ce936283a8d46136ee35ac9dfc8025a76ed0f38a46",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 23,
+          "height": 37
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=abgr",
+        "exr.compression=dwab",
+        "exr.storage=scanline",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "HALF R, G, B and A: waves and alphas of 0, 1/4, 1/2, 4/5 and 1. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -",
+            "result": "differs",
+            "excludedFromTolerance": true,
+            "notes": "1564 stored samples differ from OpenEXR, by at most 0.007812: FFmpeg has its own DWA decoder, which does not reproduce the arithmetic of OpenEXR."
+          },
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 23,
+        "height": 37,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/dwab-half-rgba.frame-0.rgbaf32le.raw",
+                "sha256": "53a42dfdc2a2b4f73704fcb717f632d4d8cee8a2233cab928d0efb9b25723778",
+                "layout": "rgbaf32le",
+                "width": 23,
+                "height": 37,
+                "rowBytes": 368,
+                "byteLength": 13616,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "exr/dwab-mixed-types",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/dwab-mixed-types.exr",
+        "sha256": "27e9d96eb8ffa076920d497eb9ecb6d836cb384ebc41393f33a803a38e5598e0",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 27,
+          "height": 13
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=abgr",
+        "exr.compression=dwab",
+        "exr.storage=scanline",
+        "exr.type=float",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "HALF R and B, FLOAT G and A, DWAB. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 27,
+        "height": 13,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/dwab-mixed-types.frame-0.rgbaf32le.raw",
+                "sha256": "86c9b176d8500ba7c53988cf4f7b172e6f2a293decd119c1d149edbac9d6d30f",
+                "layout": "rgbaf32le",
+                "width": 27,
+                "height": 13,
+                "rowBytes": 432,
+                "byteLength": 5616,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "R, G and B of different types are one colour set, coded through the luma-chroma transform; A is run-length coded."
+    },
+    {
       "id": "exr/none-float-rgb",
       "kind": "valid",
       "format": "exr",
@@ -35536,6 +36206,392 @@
         "mode": "exact"
       },
       "notes": "The long name sets the long-name flag of the version field."
+    },
+    {
+      "id": "exr/zstd-float-rgb",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/zstd-float-rgb.exr",
+        "sha256": "2148be515164c3c550aeb71dd5ac6cd8fdbcc9b609a9a9f97f0cc01c53b742e3",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 19,
+          "height": 21
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=bgr",
+        "exr.compression=zstd",
+        "exr.storage=scanline",
+        "exr.type=float"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "FLOAT R, G and B: waves. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "result": "differs",
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-dc8d00b95a7cc993/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-OMI3Nr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf32le -"
+          },
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of B, G, R, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 19,
+        "height": 21,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/zstd-float-rgb.frame-0.rgbaf32le.raw",
+                "sha256": "ed968c281b85472f6be8785b6557b7d51ddc086aa5bbbaf6fc7914e1fe5f7a4b",
+                "layout": "rgbaf32le",
+                "width": 19,
+                "height": 21,
+                "rowBytes": 304,
+                "byteLength": 6384,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "exr/zstd-half-rgba",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/zstd-half-rgba.exr",
+        "sha256": "cb1cf36f9ebe82e49b67493ed6732e744903f50d5bb566c7e2d5b8459f363959",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 23,
+          "height": 37
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=abgr",
+        "exr.compression=zstd",
+        "exr.storage=scanline",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "HALF R, G, B and A: waves and alphas of 0, 1/4, 1/2, 4/5 and 1. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "result": "differs",
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-dc8d00b95a7cc993/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-OMI3Nr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+          },
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, B, G, R, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 23,
+        "height": 37,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/zstd-half-rgba.frame-0.rgbaf32le.raw",
+                "sha256": "bfb0079bb817894ae3de2f809cd0695ed6f6a9685ce805af94ac94025b34307b",
+                "layout": "rgbaf32le",
+                "width": 23,
+                "height": 37,
+                "rowBytes": 368,
+                "byteLength": 13616,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "exr/zstd-mixed-types",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/zstd-mixed-types.exr",
+        "sha256": "d94d7058d5e8524996ba3f2c2ce78b0fdfe19ab57c965e60c50703a6f0938043",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 15,
+          "height": 9
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=abgr",
+        "exr.compression=zstd",
+        "exr.storage=scanline",
+        "exr.type=float",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "HALF A and G, FLOAT B and R, ZSTD. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, B, G, R, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 15,
+        "height": 9,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 32,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/zstd-mixed-types.frame-0.rgbaf32le.raw",
+                "sha256": "a0f10ec8892607a70b8febeceaee67f3aaba7a1c8d12cdc507bb038a6f927a0d",
+                "layout": "rgbaf32le",
+                "width": 15,
+                "height": 9,
+                "rowBytes": 240,
+                "byteLength": 2160,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The 2-byte samples and the 4-byte samples are two segments of the Zstandard data."
+    },
+    {
+      "id": "exr/zstd-tiles",
+      "kind": "valid",
+      "format": "exr",
+      "input": {
+        "path": "exr/zstd-tiles.exr",
+        "sha256": "04a0d6117e53337c07f1ec9e25d6d1b8ae7c1d57ccd664c5b21dcf0feb7673a5",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildCompressions)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 21,
+          "height": 17
+        },
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "features": [
+        "exr.channels=abgr",
+        "exr.compression=zstd",
+        "exr.levels=one-level",
+        "exr.storage=tiled",
+        "exr.type=half"
+      ],
+      "reference": {
+        "method": "decoded",
+        "description": "Tiles of 8x8 pixels of HALF R, G, B and A, ZSTD. The samples OpenEXR decodes, presented by the rules of the library: the display window is the image, the colors are divided by alpha.",
+        "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+        "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+        "command": "exr-to-raw {input} {output}",
+        "crossChecks": [
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+            "result": "differs",
+            "notes": "FFmpeg failed to decode the input: Command failed (69): /Users/meziantou/Library/Application Support/Meziantou.Prebuilt/ffmpeg/9.0.2-osx-arm64-dc8d00b95a7cc993/ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i /var/folders/l_/m8fk0x1s07ngvkcrk8mhhpqh0000gn/T/mfi-corpus-scratch-OMI3Nr/ffmpeg.exr -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -"
+          },
+          {
+            "decoder": "the pattern given to exr-from-raw",
+            "result": "exact",
+            "notes": "The samples of A, B, G, R, bit for bit: the compression keeps them.",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0
+          }
+        ]
+      },
+      "expected": {
+        "width": 21,
+        "height": 17,
+        "pixelFormat": "RgbaFloat",
+        "colorModel": "Rgba",
+        "bitsPerComponent": 16,
+        "orientation": 1,
+        "iccProfile": "none",
+        "transferFunction": "linear",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "exr/zstd-tiles.frame-0.rgbaf32le.raw",
+                "sha256": "70aa0edfdfea906d1c03c852901fe09a93c70b8af09769db45f09d5256ee8c82",
+                "layout": "rgbaf32le",
+                "width": 21,
+                "height": 17,
+                "rowBytes": 336,
+                "byteLength": 5712,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
     },
     {
       "id": "gif/disposal-background-color",
@@ -57855,12 +58911,12 @@
       "notes": "The second chunk says it starts at the line 0."
     },
     {
-      "id": "invalid/exr/compression-dwaa",
+      "id": "invalid/exr/compression-htj2k256",
       "kind": "unsupported",
       "format": "exr",
       "input": {
-        "path": "invalid/exr/compression-dwaa.exr",
-        "sha256": "aa18115b37bd1b7b424103551fcfb30849fbec9db33bfb001d8fae5da574542c",
+        "path": "invalid/exr/compression-htj2k256.exr",
+        "sha256": "16ca28cdeb66531e15053c1ca215f71c5978e6ad18c2d93a3ff8fb206d8e6bdc",
         "role": "encoded"
       },
       "provenance": {
@@ -57879,38 +58935,9 @@
       "expectedError": {
         "exception": "UnsupportedImageFeatureException",
         "format": "OpenExr",
-        "feature": "Compression: DWAA"
+        "feature": "Compression: HTJ2K256"
       },
-      "notes": "The DWAA compression."
-    },
-    {
-      "id": "invalid/exr/compression-dwab",
-      "kind": "unsupported",
-      "format": "exr",
-      "input": {
-        "path": "invalid/exr/compression-dwab.exr",
-        "sha256": "b18ed44f807374b673600ea4b6da95c8d2724820e6f454fd4bcc9beb5d2faac1",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "generated",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
-        "tools": [
-          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
-        ],
-        "commands": [
-          "exr-from-raw {description}.json {output}.exr"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "OpenExr",
-        "feature": "Compression: DWAB"
-      },
-      "notes": "The DWAB compression."
+      "notes": "The HTJ2K256 compression."
     },
     {
       "id": "invalid/exr/compression-htj2k32",
@@ -57940,35 +58967,6 @@
         "feature": "Compression: HTJ2K32"
       },
       "notes": "The HTJ2K32 compression."
-    },
-    {
-      "id": "invalid/exr/compression-zstd",
-      "kind": "unsupported",
-      "format": "exr",
-      "input": {
-        "path": "invalid/exr/compression-zstd.exr",
-        "sha256": "7f162f74f0c176938c838081904c2638162ecdd5dc7d9032ec0ed82b8a5a6362",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "generated",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
-        "tools": [
-          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
-          ".NET 10.0"
-        ],
-        "commands": [
-          "exr-from-raw {description}.json {output}.exr"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "OpenExr",
-        "feature": "Compression: ZSTD"
-      },
-      "notes": "The ZSTD compression."
     },
     {
       "id": "invalid/exr/data-window-outside",
@@ -58026,19 +59024,19 @@
             "command": "exr-to-raw {input} {output}",
             "crossChecks": [
               {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
                 "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
                 "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
                 "result": "exact",
                 "maxAbsoluteError": 0,
                 "meanAbsoluteError": 0.0,
                 "notes": "The 108 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
-              },
-              {
-                "decoder": "the pattern given to exr-from-raw",
-                "result": "exact",
-                "notes": "The samples of B, G, R, bit for bit: the compression keeps them.",
-                "maxAbsoluteError": 0,
-                "meanAbsoluteError": 0.0
               }
             ]
           },
@@ -58074,19 +59072,19 @@
             "command": "exr-to-raw {input} {output}",
             "crossChecks": [
               {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
                 "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
                 "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
                 "result": "exact",
                 "maxAbsoluteError": 0,
                 "meanAbsoluteError": 0.0,
                 "notes": "The 300 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
-              },
-              {
-                "decoder": "the pattern given to exr-from-raw",
-                "result": "exact",
-                "notes": "The samples of B, G, R, bit for bit: the compression keeps them.",
-                "maxAbsoluteError": 0,
-                "meanAbsoluteError": 0.0
               }
             ]
           },
@@ -58098,12 +59096,12 @@
       "notes": "The data window is larger than the display window: its pixels outside would be lost. They are cropped, or the data window is the image."
     },
     {
-      "id": "invalid/exr/deep-scanline",
+      "id": "invalid/exr/deep-layers-zips",
       "kind": "unsupported",
       "format": "exr",
       "input": {
-        "path": "invalid/exr/deep-scanline.exr",
-        "sha256": "6b6a6c2b8ce471e9c4ce4e62c79f6b2935632c9499ee1f7c7522a0ccdaf44973",
+        "path": "invalid/exr/deep-layers-zips.exr",
+        "sha256": "032ba3cb577339b086faac6afb66d9484cf7cce3911f0e2cb3955f56efe6633f",
         "role": "encoded"
       },
       "provenance": {
@@ -58124,7 +59122,533 @@
         "format": "OpenExr",
         "feature": "Deep data"
       },
-      "notes": "Deep data: a list of samples per pixel."
+      "exrDecodings": [
+        {
+          "deepData": "Flatten",
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Extra channels"
+          }
+        },
+        {
+          "deepData": "Flatten",
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "width": 9,
+          "height": 6,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "invalid/exr/deep-layers-zips.decoding-1.rgbaf32le.raw",
+            "sha256": "9033ab5ae3800e8d0943b10466d4bf295ac91cc87604de4f4d4d1b1aab70df8e",
+            "layout": "rgbaf32le",
+            "width": 9,
+            "height": 6,
+            "rowBytes": 144,
+            "byteLength": 864,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the deep samples of each pixel flattened in their stored order (compression notes, section 1.7), the default layer, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The number of samples of every pixel and the samples of every channel, bit for bit: the compression keeps them. The expected pixels flatten them as OpenEXR does (compression notes, section 1.7).",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
+      "notes": "Deep scan lines with ZBack and another layer: flattening needs the layer option to ignore it."
+    },
+    {
+      "id": "invalid/exr/deep-scanline-none",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/deep-scanline-none.exr",
+        "sha256": "fbb7c8fbd1af27932f070749a96703a47f697ec60ddc2e06879556719296844a",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Deep data"
+      },
+      "exrDecodings": [
+        {
+          "deepData": "Flatten",
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "width": 13,
+          "height": 7,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "invalid/exr/deep-scanline-none.decoding-0.rgbaf32le.raw",
+            "sha256": "ec2c9509f72b374d3d11ad44f131dc39eae39fb806919ad95d03d4c8a4b03eb3",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 7,
+            "rowBytes": 208,
+            "byteLength": 1456,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the deep samples of each pixel flattened in their stored order (compression notes, section 1.7), every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The number of samples of every pixel and the samples of every channel, bit for bit: the compression keeps them. The expected pixels flatten them as OpenEXR does (compression notes, section 1.7).",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
+      "notes": "Deep scan lines of 0 to 5 samples per pixel, NONE: HALF A, B and R, FLOAT G and Z; samples whose accumulated alpha reaches 1 hide those behind them."
+    },
+    {
+      "id": "invalid/exr/deep-scanline-rle",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/deep-scanline-rle.exr",
+        "sha256": "aff43b9ac0086f93b6720e6b00d3864a2283ce5fe4e2af170654ce498675ba25",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Deep data"
+      },
+      "exrDecodings": [
+        {
+          "deepData": "Flatten",
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "width": 13,
+          "height": 7,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "invalid/exr/deep-scanline-rle.decoding-0.rgbaf32le.raw",
+            "sha256": "ec2c9509f72b374d3d11ad44f131dc39eae39fb806919ad95d03d4c8a4b03eb3",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 7,
+            "rowBytes": 208,
+            "byteLength": 1456,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the deep samples of each pixel flattened in their stored order (compression notes, section 1.7), every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The number of samples of every pixel and the samples of every channel, bit for bit: the compression keeps them. The expected pixels flatten them as OpenEXR does (compression notes, section 1.7).",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
+      "notes": "Deep scan lines of 0 to 5 samples per pixel, RLE: HALF A, B and R, FLOAT G and Z; samples whose accumulated alpha reaches 1 hide those behind them."
+    },
+    {
+      "id": "invalid/exr/deep-scanline-zips",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/deep-scanline-zips.exr",
+        "sha256": "2bd637ead20590a3af5eac7ef600c93c0e42491f9901eb4d35fa77efc03d1132",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Deep data"
+      },
+      "exrDecodings": [
+        {
+          "deepData": "Flatten",
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "width": 13,
+          "height": 7,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "invalid/exr/deep-scanline-zips.decoding-0.rgbaf32le.raw",
+            "sha256": "ec2c9509f72b374d3d11ad44f131dc39eae39fb806919ad95d03d4c8a4b03eb3",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 7,
+            "rowBytes": 208,
+            "byteLength": 1456,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the deep samples of each pixel flattened in their stored order (compression notes, section 1.7), every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The number of samples of every pixel and the samples of every channel, bit for bit: the compression keeps them. The expected pixels flatten them as OpenEXR does (compression notes, section 1.7).",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
+      "notes": "Deep scan lines of 0 to 5 samples per pixel, ZIPS: HALF A, B and R, FLOAT G and Z; samples whose accumulated alpha reaches 1 hide those behind them."
+    },
+    {
+      "id": "invalid/exr/deep-scanline-zstd",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/deep-scanline-zstd.exr",
+        "sha256": "118505e315346f0f40058931ae0954512dea80db3ce58074c25f90125467d815",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Deep data"
+      },
+      "exrDecodings": [
+        {
+          "deepData": "Flatten",
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "width": 13,
+          "height": 7,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "invalid/exr/deep-scanline-zstd.decoding-0.rgbaf32le.raw",
+            "sha256": "ec2c9509f72b374d3d11ad44f131dc39eae39fb806919ad95d03d4c8a4b03eb3",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 7,
+            "rowBytes": 208,
+            "byteLength": 1456,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the deep samples of each pixel flattened in their stored order (compression notes, section 1.7), every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The number of samples of every pixel and the samples of every channel, bit for bit: the compression keeps them. The expected pixels flatten them as OpenEXR does (compression notes, section 1.7).",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
+      "notes": "Deep scan lines of 0 to 5 samples per pixel, ZSTD: HALF A, B and R, FLOAT G and Z; samples whose accumulated alpha reaches 1 hide those behind them."
+    },
+    {
+      "id": "invalid/exr/deep-tiles-rle",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/deep-tiles-rle.exr",
+        "sha256": "e2e6f4b037be7ecdee0c168e5a0bdb78b2ef74566eb8c7e2132cb14a977f67a5",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Deep data"
+      },
+      "exrDecodings": [
+        {
+          "deepData": "Flatten",
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "width": 13,
+          "height": 7,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "invalid/exr/deep-tiles-rle.decoding-0.rgbaf32le.raw",
+            "sha256": "1bf118157ec323444ce595f62eb38b138ff71397255ab8e90b0642bb7b4a96cc",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 7,
+            "rowBytes": 208,
+            "byteLength": 1456,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the deep samples of each pixel flattened in their stored order (compression notes, section 1.7), every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The number of samples of every pixel and the samples of every channel, bit for bit: the compression keeps them. The expected pixels flatten them as OpenEXR does (compression notes, section 1.7).",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
+      "notes": "Deep tiles of 5x4 pixels clipped at the right and bottom edges, RLE."
+    },
+    {
+      "id": "invalid/exr/deep-tiles-zstd",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/deep-tiles-zstd.exr",
+        "sha256": "6365ee4ec03b99c6313927ac6ea256c072a1c46beb0bd6ecae194fbfe4a340e6",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Deep data"
+      },
+      "exrDecodings": [
+        {
+          "deepData": "Flatten",
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "width": 13,
+          "height": 7,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "invalid/exr/deep-tiles-zstd.decoding-0.rgbaf32le.raw",
+            "sha256": "1bf118157ec323444ce595f62eb38b138ff71397255ab8e90b0642bb7b4a96cc",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 7,
+            "rowBytes": 208,
+            "byteLength": 1456,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the deep samples of each pixel flattened in their stored order (compression notes, section 1.7), every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The number of samples of every pixel and the samples of every channel, bit for bit: the compression keeps them. The expected pixels flatten them as OpenEXR does (compression notes, section 1.7).",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
+      "notes": "Deep tiles of 5x4 pixels clipped at the right and bottom edges, ZSTD."
+    },
+    {
+      "id": "invalid/exr/deep-without-alpha",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/deep-without-alpha.exr",
+        "sha256": "d72eeec89763771a94217616ec9e47d5acb944f6f433e4c0c06687dc1b59d867",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Deep data"
+      },
+      "exrDecodings": [
+        {
+          "deepData": "Flatten",
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Deep data without depth or alpha"
+          }
+        }
+      ],
+      "notes": "Deep data without alpha: OpenEXR does not flatten them either."
     },
     {
       "id": "invalid/exr/extra-channel",
@@ -58182,19 +59706,19 @@
             "command": "exr-to-raw {input} {output}",
             "crossChecks": [
               {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R, Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
                 "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
                 "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
                 "result": "exact",
                 "maxAbsoluteError": 0,
                 "meanAbsoluteError": 0.0,
                 "notes": "The 48 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
-              },
-              {
-                "decoder": "the pattern given to exr-from-raw",
-                "result": "exact",
-                "notes": "The samples of B, G, R, Z, bit for bit: the compression keeps them.",
-                "maxAbsoluteError": 0,
-                "meanAbsoluteError": 0.0
               }
             ]
           },
@@ -58261,19 +59785,19 @@
             "command": "exr-to-raw {input} {output}",
             "crossChecks": [
               {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of diffuse.B, diffuse.G, diffuse.R, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
                 "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
                 "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -layer diffuse -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
                 "result": "exact",
                 "maxAbsoluteError": 0,
                 "meanAbsoluteError": 0.0,
                 "notes": "The 48 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
-              },
-              {
-                "decoder": "the pattern given to exr-from-raw",
-                "result": "exact",
-                "notes": "The samples of diffuse.B, diffuse.G, diffuse.R, bit for bit: the compression keeps them.",
-                "maxAbsoluteError": 0,
-                "meanAbsoluteError": 0.0
               }
             ]
           },
@@ -58369,6 +59893,262 @@
         "format": "OpenExr"
       },
       "notes": "The channels attribute is renamed: the header has no channel list."
+    },
+    {
+      "id": "invalid/exr/multipart-render-passes",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/multipart-render-passes.exr",
+        "sha256": "640ba8fc5691f7cd95bc4bb82af17d0592b94a38521c87d1e5c612ad048b73ec",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Multi-part file"
+      },
+      "exrDecodings": [
+        {
+          "part": "beauty",
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "width": 14,
+          "height": 10,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/multipart-render-passes.decoding-0.rgbaf32le.raw",
+            "sha256": "506b73c2fd71863aac2a248f8a4168097dce48800a0b350ca83d4e4059fe9daf",
+            "layout": "rgbaf32le",
+            "width": 14,
+            "height": 10,
+            "rowBytes": 224,
+            "byteLength": 2240,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the part 'beauty', every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "part": "normals",
+          "layer": "diffuse",
+          "windowMode": "DisplayWindow",
+          "width": 14,
+          "height": 10,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/multipart-render-passes.decoding-1.rgbaf32le.raw",
+            "sha256": "87e4153821632b8bc579a88039bce72fe3f32160ab75dcab39a755eda01b89ed",
+            "layout": "rgbaf32le",
+            "width": 14,
+            "height": 10,
+            "rowBytes": 224,
+            "byteLength": 2240,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the part 'normals', the layer 'diffuse', the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of N.X, N.Y, N.Z, diffuse.B, diffuse.G, diffuse.R, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "part": "depth",
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Extra channels"
+          }
+        },
+        {
+          "part": "normals",
+          "layer": "N",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Ambiguous layer"
+          }
+        }
+      ],
+      "notes": "The outputs of a renderer in three parts (scan lines and tiles): the beauty pass, a depth, normals and a diffuse layer."
+    },
+    {
+      "id": "invalid/exr/multipart-stereo",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/multipart-stereo.exr",
+        "sha256": "9c933ef75a9f2bf33d2454c200473b6a88c7686cbb9892f9e083c7d07450536b",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Multi-part file"
+      },
+      "exrDecodings": [
+        {
+          "part": "left",
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "width": 17,
+          "height": 11,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/multipart-stereo.decoding-0.rgbaf32le.raw",
+            "sha256": "cb4f933229cb49e9372dae577215c11eb6fcf8374250a9b1a7ccba40813d06d9",
+            "layout": "rgbaf32le",
+            "width": 17,
+            "height": 11,
+            "rowBytes": 272,
+            "byteLength": 2992,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the part 'left', every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "part": "right",
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "width": 17,
+          "height": 11,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "invalid/exr/multipart-stereo.decoding-1.rgbaf32le.raw",
+            "sha256": "7e9cb3261961cd7c0ad0209f932fe4bfe8cb37e62a3313ab4e1d971a94abea48",
+            "layout": "rgbaf32le",
+            "width": 17,
+            "height": 11,
+            "rowBytes": 272,
+            "byteLength": 2992,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the part 'right', every channel, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "part": "center",
+          "layer": null,
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing part"
+          }
+        }
+      ],
+      "notes": "The two views of a stereo pair, PIZ and ZSTD: each part is decoded when it is selected."
     },
     {
       "id": "invalid/exr/offset-past-end",
@@ -58787,19 +60567,19 @@
             "command": "exr-to-raw {input} {output}",
             "crossChecks": [
               {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
                 "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
                 "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf32le -",
                 "result": "exact",
                 "maxAbsoluteError": 0,
                 "meanAbsoluteError": 0.0,
                 "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
-              },
-              {
-                "decoder": "the pattern given to exr-from-raw",
-                "result": "exact",
-                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
-                "maxAbsoluteError": 0,
-                "meanAbsoluteError": 0.0
               }
             ]
           },
@@ -58933,19 +60713,19 @@
             "command": "exr-to-raw {input} {output}",
             "crossChecks": [
               {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
                 "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
                 "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf32le -",
                 "result": "exact",
                 "maxAbsoluteError": 0,
                 "meanAbsoluteError": 0.0,
                 "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
-              },
-              {
-                "decoder": "the pattern given to exr-from-raw",
-                "result": "exact",
-                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
-                "maxAbsoluteError": 0,
-                "meanAbsoluteError": 0.0
               }
             ]
           },
@@ -59024,6 +60804,294 @@
       "notes": "RGBA, a depth and the normals of a renderer (N.X, N.Y, N.Z), B44A, with an overscan of 2 to 4 pixels around the display window. The layer N is a vector: its N.Y is not a luminance."
     },
     {
+      "id": "invalid/exr/overscan-layers-dwaa",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/overscan-layers-dwaa.exr",
+        "sha256": "5c2c5da46684b14510254d326079f6794bd8414c9880f116a606c190e4ce1df4",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "CropToDisplayWindow",
+          "width": 9,
+          "height": 6,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-dwaa.decoding-0.rgbaf32le.raw",
+            "sha256": "4759908c90c67b1f71080e0d78b147f68d223f74cce7c59777f6fc6633dbcf89",
+            "layout": "rgbaf32le",
+            "width": 9,
+            "height": 6,
+            "rowBytes": 144,
+            "byteLength": 864,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, Z, N.X, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "result": "differs",
+                "excludedFromTolerance": true,
+                "notes": "FFmpeg failed to decode the input: Decoding error: Not yet implemented in FFmpeg, patches welcome"
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DataWindow",
+          "width": 13,
+          "height": 11,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-dwaa.decoding-1.rgbaf32le.raw",
+            "sha256": "3e5e91085b9d4ce0e495701e89ac0a0a08393ed5a52fe37adbee6896e11922be",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 11,
+            "rowBytes": 208,
+            "byteLength": 2288,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, Z, N.X, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "N",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Ambiguous layer"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Pixels outside the display window"
+          }
+        },
+        {
+          "layer": "P",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing layer"
+          }
+        }
+      ],
+      "notes": "RGBA, a depth and the normals of a renderer (N.X, N.Y, N.Z), DWAA, with an overscan of 2 to 4 pixels around the display window. The layer N is a vector: its N.Y is not a luminance."
+    },
+    {
+      "id": "invalid/exr/overscan-layers-dwab",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/overscan-layers-dwab.exr",
+        "sha256": "d571f40a2441f0aee1e3abcf80e0f50be37009250e0eb3cec2fe859245551a2f",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "CropToDisplayWindow",
+          "width": 9,
+          "height": 6,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-dwab.decoding-0.rgbaf32le.raw",
+            "sha256": "4759908c90c67b1f71080e0d78b147f68d223f74cce7c59777f6fc6633dbcf89",
+            "layout": "rgbaf32le",
+            "width": 9,
+            "height": 6,
+            "rowBytes": 144,
+            "byteLength": 864,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, Z, N.X, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "result": "differs",
+                "excludedFromTolerance": true,
+                "notes": "FFmpeg failed to decode the input: Decoding error: Not yet implemented in FFmpeg, patches welcome"
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DataWindow",
+          "width": 13,
+          "height": 11,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-dwab.decoding-1.rgbaf32le.raw",
+            "sha256": "3e5e91085b9d4ce0e495701e89ac0a0a08393ed5a52fe37adbee6896e11922be",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 11,
+            "rowBytes": 208,
+            "byteLength": 2288,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, Z, N.X, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "N",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Ambiguous layer"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Pixels outside the display window"
+          }
+        },
+        {
+          "layer": "P",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing layer"
+          }
+        }
+      ],
+      "notes": "RGBA, a depth and the normals of a renderer (N.X, N.Y, N.Z), DWAB, with an overscan of 2 to 4 pixels around the display window. The layer N is a vector: its N.Y is not a luminance."
+    },
+    {
       "id": "invalid/exr/overscan-layers-none",
       "kind": "unsupported",
       "format": "exr",
@@ -59079,19 +61147,19 @@
             "command": "exr-to-raw {input} {output}",
             "crossChecks": [
               {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
                 "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
                 "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -",
                 "result": "exact",
                 "maxAbsoluteError": 0,
                 "meanAbsoluteError": 0.0,
                 "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
-              },
-              {
-                "decoder": "the pattern given to exr-from-raw",
-                "result": "exact",
-                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
-                "maxAbsoluteError": 0,
-                "meanAbsoluteError": 0.0
               }
             ]
           },
@@ -59225,19 +61293,19 @@
             "command": "exr-to-raw {input} {output}",
             "crossChecks": [
               {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
                 "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
                 "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -",
                 "result": "exact",
                 "maxAbsoluteError": 0,
                 "meanAbsoluteError": 0.0,
                 "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
-              },
-              {
-                "decoder": "the pattern given to exr-from-raw",
-                "result": "exact",
-                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
-                "maxAbsoluteError": 0,
-                "meanAbsoluteError": 0.0
               }
             ]
           },
@@ -59371,19 +61439,19 @@
             "command": "exr-to-raw {input} {output}",
             "crossChecks": [
               {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
                 "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
                 "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -",
                 "result": "exact",
                 "maxAbsoluteError": 0,
                 "meanAbsoluteError": 0.0,
                 "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
-              },
-              {
-                "decoder": "the pattern given to exr-from-raw",
-                "result": "exact",
-                "notes": "The samples of A, B, G, R, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
-                "maxAbsoluteError": 0,
-                "meanAbsoluteError": 0.0
               }
             ]
           },
@@ -59517,19 +61585,19 @@
             "command": "exr-to-raw {input} {output}",
             "crossChecks": [
               {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
                 "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
                 "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -",
                 "result": "exact",
                 "maxAbsoluteError": 0,
                 "meanAbsoluteError": 0.0,
                 "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
-              },
-              {
-                "decoder": "the pattern given to exr-from-raw",
-                "result": "exact",
-                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
-                "maxAbsoluteError": 0,
-                "meanAbsoluteError": 0.0
               }
             ]
           },
@@ -59663,19 +61731,19 @@
             "command": "exr-to-raw {input} {output}",
             "crossChecks": [
               {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
                 "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
                 "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -",
                 "result": "exact",
                 "maxAbsoluteError": 0,
                 "meanAbsoluteError": 0.0,
                 "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
-              },
-              {
-                "decoder": "the pattern given to exr-from-raw",
-                "result": "exact",
-                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
-                "maxAbsoluteError": 0,
-                "meanAbsoluteError": 0.0
               }
             ]
           },
@@ -59809,19 +61877,19 @@
             "command": "exr-to-raw {input} {output}",
             "crossChecks": [
               {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
                 "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
                 "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -",
                 "result": "exact",
                 "maxAbsoluteError": 0,
                 "meanAbsoluteError": 0.0,
                 "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
-              },
-              {
-                "decoder": "the pattern given to exr-from-raw",
-                "result": "exact",
-                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
-                "maxAbsoluteError": 0,
-                "meanAbsoluteError": 0.0
               }
             ]
           },
@@ -59898,6 +61966,150 @@
         }
       ],
       "notes": "RGBA, a depth and the normals of a renderer (N.X, N.Y, N.Z), ZIPS, with an overscan of 2 to 4 pixels around the display window. The layer N is a vector: its N.Y is not a luminance."
+    },
+    {
+      "id": "invalid/exr/overscan-layers-zstd",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/overscan-layers-zstd.exr",
+        "sha256": "7291c8ade62abbd65c1067a017deb225c98a33c8272a0fff3d1178a05c175a6a",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "CropToDisplayWindow",
+          "width": 9,
+          "height": 6,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-zstd.decoding-0.rgbaf32le.raw",
+            "sha256": "4759908c90c67b1f71080e0d78b147f68d223f74cce7c59777f6fc6633dbcf89",
+            "layout": "rgbaf32le",
+            "width": 9,
+            "height": 6,
+            "rowBytes": 144,
+            "byteLength": 864,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "result": "differs",
+                "excludedFromTolerance": true,
+                "notes": "FFmpeg failed to decode the input: Decoding error: Not yet implemented in FFmpeg, patches welcome"
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DataWindow",
+          "width": 13,
+          "height": 11,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-zstd.decoding-1.rgbaf32le.raw",
+            "sha256": "3e5e91085b9d4ce0e495701e89ac0a0a08393ed5a52fe37adbee6896e11922be",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 11,
+            "rowBytes": 208,
+            "byteLength": 2288,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "N",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Ambiguous layer"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Pixels outside the display window"
+          }
+        },
+        {
+          "layer": "P",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing layer"
+          }
+        }
+      ],
+      "notes": "RGBA, a depth and the normals of a renderer (N.X, N.Y, N.Z), ZSTD, with an overscan of 2 to 4 pixels around the display window. The layer N is a vector: its N.Y is not a luminance."
     },
     {
       "id": "invalid/exr/piz-huffman-bit-count",
@@ -60082,19 +62294,19 @@
             "command": "exr-to-raw {input} {output}",
             "crossChecks": [
               {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R, Z, diffuse.A, diffuse.B, diffuse.G, diffuse.R, shadow.Y, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
                 "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
                 "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
                 "result": "exact",
                 "maxAbsoluteError": 0,
                 "meanAbsoluteError": 0.0,
                 "notes": "The 1170 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
-              },
-              {
-                "decoder": "the pattern given to exr-from-raw",
-                "result": "exact",
-                "notes": "The samples of B, G, R, Z, diffuse.A, diffuse.B, diffuse.G, diffuse.R, shadow.Y, bit for bit: the compression keeps them.",
-                "maxAbsoluteError": 0,
-                "meanAbsoluteError": 0.0
               }
             ]
           },
@@ -60281,19 +62493,19 @@
             "command": "exr-to-raw {input} {output}",
             "crossChecks": [
               {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of beauty.B, beauty.G, beauty.R, depth.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              },
+              {
                 "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
                 "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -layer beauty -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
                 "result": "exact",
                 "maxAbsoluteError": 0,
                 "meanAbsoluteError": 0.0,
                 "notes": "The 741 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
-              },
-              {
-                "decoder": "the pattern given to exr-from-raw",
-                "result": "exact",
-                "notes": "The samples of beauty.B, beauty.G, beauty.R, depth.Z, bit for bit: the compression keeps them.",
-                "maxAbsoluteError": 0,
-                "meanAbsoluteError": 0.0
               }
             ]
           },
@@ -62794,46 +65006,6 @@
         "jp2.transform=5-3"
       ],
       "notes": "The fourth channel is a premultiplied opacity: an image of the library holds straight alpha."
-    },
-    {
-      "id": "invalid/jp2/signed-samples",
-      "kind": "unsupported",
-      "format": "jp2",
-      "input": {
-        "path": "invalid/jp2/signed-samples.j2k",
-        "sha256": "2a1eae17bb2fdeff6822432c0094918447d7afee297950e32e60df955f5968a5",
-        "role": "encoded"
-      },
-      "provenance": {
-        "origin": "generated",
-        "license": "CC0-1.0",
-        "author": "Meziantou.Framework.Imaging contributors",
-        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Jp2Corpus.cs (BuildUnsupported)",
-        "tools": [
-          "OpenJPEG 2.5.4 (opj_compress, opj_decompress)",
-          "OpenJPH 0.32.0 (ojph_compress, ojph_expand)",
-          "ffmpeg 9.0.2 (cross-check)",
-          ".NET 10.0"
-        ],
-        "commands": [
-          "opj_compress -i {source}.raw -o {output}.j2k -F 11,7,1,8,s@1x1 -n 2"
-        ]
-      },
-      "expectedError": {
-        "exception": "UnsupportedImageFeatureException",
-        "format": "Jpeg2000",
-        "feature": "signed samples"
-      },
-      "features": [
-        "jp2.bits=8",
-        "jp2.components=1",
-        "jp2.file=codestream",
-        "jp2.levels=1",
-        "jp2.progression=lrcp",
-        "jp2.quantization=none",
-        "jp2.transform=5-3"
-      ],
-      "notes": "The samples of the component are signed: an image of the library holds unsigned samples."
     },
     {
       "id": "invalid/jp2/siz-image-offset",
@@ -73341,6 +75513,344 @@
         "mode": "exact"
       },
       "notes": "A codestream of four components has no channel definition: the fourth one is the opacity."
+    },
+    {
+      "id": "jp2/lossless-signed-gray12",
+      "kind": "valid",
+      "format": "jp2",
+      "input": {
+        "path": "jp2/lossless-signed-gray12.j2k",
+        "sha256": "f5643538cd089d0313bd4a737d0951d6112b745f20970737844b9ee8d510e917",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Jp2Corpus.cs (BuildLossless)",
+        "tools": [
+          "OpenJPEG 2.5.4 (opj_compress, opj_decompress)",
+          "OpenJPH 0.32.0 (ojph_compress, ojph_expand)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 9,
+          "height": 7
+        },
+        "commands": [
+          "opj_compress -i {source}.raw -o {output}.j2k -F 9,7,1,12,s@1x1 -n 3"
+        ]
+      },
+      "features": [
+        "jp2.bits=12",
+        "jp2.components=1",
+        "jp2.file=codestream",
+        "jp2.levels=2",
+        "jp2.progression=lrcp",
+        "jp2.quantization=none",
+        "jp2.signed",
+        "jp2.transform=5-3"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to the encoder: Samples (683x + 1000y + 5) mod 4096 of twelve bits, less 2048 in the file, scaled to sixteen bits: (v * 65535 + 2047) / 4095.",
+        "crossChecks": [
+          {
+            "decoder": "OpenJPEG 2.5.4 opj_decompress",
+            "command": "opj_decompress -i {input} -o {output}.pgx",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec jpeg2000 decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -f j2k_pipe -i {input} -fps_mode passthrough -f rawvideo -pix_fmt gray16le -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 9,
+        "height": 7,
+        "pixelFormat": "Gray16",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 12,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jp2/lossless-signed-gray12.frame-0.rgba16le.raw",
+                "sha256": "da4bd3189aa0ad31b1b0695061a3b9d23278eeab488c7ce93583bc01b0924f19",
+                "layout": "rgba16le",
+                "width": 9,
+                "height": 7,
+                "rowBytes": 72,
+                "byteLength": 504,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jp2/lossless-signed-gray12.frame-0.gray16le.raw",
+                "sha256": "9fbf8af3b2ecb22e63b55b068735f40d7d9bede5aacf53f6c72e2b8ff119741c",
+                "layout": "gray16le",
+                "width": 9,
+                "height": 7,
+                "rowBytes": 18,
+                "byteLength": 126,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "jp2/lossless-signed-gray8",
+      "kind": "valid",
+      "format": "jp2",
+      "input": {
+        "path": "jp2/lossless-signed-gray8.j2k",
+        "sha256": "2a1eae17bb2fdeff6822432c0094918447d7afee297950e32e60df955f5968a5",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Jp2Corpus.cs (BuildLossless)",
+        "tools": [
+          "OpenJPEG 2.5.4 (opj_compress, opj_decompress)",
+          "OpenJPH 0.32.0 (ojph_compress, ojph_expand)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 11,
+          "height": 7
+        },
+        "commands": [
+          "opj_compress -i {source}.raw -o {output}.j2k -F 11,7,1,8,s@1x1 -n 2"
+        ]
+      },
+      "features": [
+        "jp2.bits=8",
+        "jp2.components=1",
+        "jp2.file=codestream",
+        "jp2.levels=1",
+        "jp2.progression=lrcp",
+        "jp2.quantization=none",
+        "jp2.signed",
+        "jp2.transform=5-3"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to the encoder: PatternCheckerboardGray, less 128 in the file.",
+        "crossChecks": [
+          {
+            "decoder": "OpenJPEG 2.5.4 opj_decompress",
+            "command": "opj_decompress -i {input} -o {output}.pgx",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec jpeg2000 decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -f j2k_pipe -i {input} -fps_mode passthrough -f rawvideo -pix_fmt gray -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 11,
+        "height": 7,
+        "pixelFormat": "Gray8",
+        "colorModel": "Grayscale",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jp2/lossless-signed-gray8.frame-0.rgba8.raw",
+                "sha256": "f0cca035a362d1ae9687c25d53af5a574f63609fe66cb8f910905e8b92a66b7c",
+                "layout": "rgba8",
+                "width": 11,
+                "height": 7,
+                "rowBytes": 44,
+                "byteLength": 308,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jp2/lossless-signed-gray8.frame-0.gray8.raw",
+                "sha256": "41c37e96ba9b9cb0026740d680d2e4aab153969dbef0acc036530f011a263f3a",
+                "layout": "gray8",
+                "width": 11,
+                "height": 7,
+                "rowBytes": 11,
+                "byteLength": 77,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      }
+    },
+    {
+      "id": "jp2/lossless-signed-rgb8",
+      "kind": "valid",
+      "format": "jp2",
+      "input": {
+        "path": "jp2/lossless-signed-rgb8.j2k",
+        "sha256": "fbefd139a8c2033e2d9aed35f5fe6637d9074ee1cb5eb3fbbe867cfd6e91d174",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/Jp2Corpus.cs (BuildLossless)",
+        "tools": [
+          "OpenJPEG 2.5.4 (opj_compress, opj_decompress)",
+          "OpenJPH 0.32.0 (ojph_compress, ojph_expand)",
+          "ffmpeg 9.0.2 (cross-check)",
+          ".NET 10.0"
+        ],
+        "parameters": {
+          "width": 13,
+          "height": 9
+        },
+        "commands": [
+          "opj_compress -i {source}.raw -o {output}.j2k -F 13,9,3,8,s@1x1:1x1:1x1 -n 3"
+        ]
+      },
+      "features": [
+        "jp2.bits=8",
+        "jp2.componentTransform",
+        "jp2.components=3",
+        "jp2.file=codestream",
+        "jp2.levels=2",
+        "jp2.progression=lrcp",
+        "jp2.quantization=none",
+        "jp2.signed",
+        "jp2.transform=5-3"
+      ],
+      "reference": {
+        "method": "hand-computed",
+        "description": "The pattern given to the encoder: PatternRgbOdd, less 128 in the file.",
+        "crossChecks": [
+          {
+            "decoder": "OpenJPEG 2.5.4 opj_decompress",
+            "command": "opj_decompress -i {input} -o {output}.pgx",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          },
+          {
+            "decoder": "ffmpeg 9.0.2 (libavcodec jpeg2000 decoder)",
+            "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -f j2k_pipe -i {input} -fps_mode passthrough -f rawvideo -pix_fmt rgb24 -",
+            "maxAbsoluteError": 0,
+            "meanAbsoluteError": 0.0,
+            "result": "exact"
+          }
+        ]
+      },
+      "expected": {
+        "width": 13,
+        "height": 9,
+        "pixelFormat": "Rgb24",
+        "colorModel": "Rgb",
+        "bitsPerComponent": 8,
+        "orientation": 1,
+        "iccProfile": "none",
+        "animation": null,
+        "resolution": null,
+        "profiles": {
+          "icc": null,
+          "exif": null,
+          "xmp": null
+        },
+        "text": [],
+        "frameCount": 1,
+        "frames": [
+          {
+            "duration": "0/1",
+            "buffers": [
+              {
+                "path": "jp2/lossless-signed-rgb8.frame-0.rgba8.raw",
+                "sha256": "94d01bf0d0b43dd5cb3b8218938e6dda104b5cb97856d56b2291356bef5b8a90",
+                "layout": "rgba8",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 52,
+                "byteLength": 468,
+                "alpha": "straight",
+                "rowOrder": "top-down",
+                "compression": "none"
+              },
+              {
+                "path": "jp2/lossless-signed-rgb8.frame-0.rgb8.raw",
+                "sha256": "e363f9d84c2ef31332d10ec75b4c4cb16205123731e9a424840971f03dd13e3b",
+                "layout": "rgb8",
+                "width": 13,
+                "height": 9,
+                "rowBytes": 39,
+                "byteLength": 351,
+                "alpha": "none",
+                "rowOrder": "top-down",
+                "compression": "none"
+              }
+            ]
+          }
+        ],
+        "poster": null
+      },
+      "comparison": {
+        "mode": "exact"
+      },
+      "notes": "The reversible component transformation applies to the signed samples."
     },
     {
       "id": "jp2/lossless-six-levels",

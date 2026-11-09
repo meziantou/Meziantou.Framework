@@ -420,6 +420,8 @@ public abstract partial class Image
         PixelFormat.Abgr32 => new Image<Abgr32>(configuration, size, scope, layoutOptions: null),
         PixelFormat.Bgr565 => new Image<Bgr565>(configuration, size, scope, layoutOptions: null),
         PixelFormat.Rgba1010102 => new Image<Rgba1010102>(configuration, size, scope, layoutOptions: null),
+        PixelFormat.Cmyk32 => new Image<Cmyk32>(configuration, size, scope, layoutOptions: null),
+        PixelFormat.Cmyk64 => new Image<Cmyk64>(configuration, size, scope, layoutOptions: null),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The pixel format is not supported."),
     };
 

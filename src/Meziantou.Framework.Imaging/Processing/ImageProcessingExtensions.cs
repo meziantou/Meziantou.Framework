@@ -149,6 +149,7 @@ public static partial class ImageProcessingExtensions
     public static AutoCropAnalysis AnalyzeAutoCrop(this Image image, AutoCropOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(AnalyzeAutoCrop));
         return image.AnalyzeAutoCropCore(options ?? AutoCropOptions.Default, cancellationToken);
     }
 
@@ -202,6 +203,7 @@ public static partial class ImageProcessingExtensions
     public static bool AutoCrop(this Image image, AutoCropOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(AutoCrop));
         return image.AutoCropCore(analysis: null, options ?? AutoCropOptions.Default, cancellationToken);
     }
 
@@ -227,6 +229,7 @@ public static partial class ImageProcessingExtensions
     public static bool AutoCrop(this Image image, AutoCropAnalysis analysis, AutoCropOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(AutoCrop));
         ArgumentNullException.ThrowIfNull(analysis);
         var size = image.Size;
         if (analysis.CanvasSize != size)
@@ -295,6 +298,7 @@ public static partial class ImageProcessingExtensions
     public static void Resize(this Image image, ResizeOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Resize));
         ArgumentNullException.ThrowIfNull(options);
         var geometry = ResizeGeometry.Compute(image.Size, options);
         image.Resize(geometry, options, cancellationToken);
@@ -333,6 +337,7 @@ public static partial class ImageProcessingExtensions
     public static void Pad(this Image image, int left, int top, int right, int bottom, Rgba64? backgroundColor = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Pad));
         ArgumentOutOfRangeException.ThrowIfNegative(left);
         ArgumentOutOfRangeException.ThrowIfNegative(top);
         ArgumentOutOfRangeException.ThrowIfNegative(right);
@@ -372,6 +377,7 @@ public static partial class ImageProcessingExtensions
     public static void ExtendCanvas(this Image image, Size size, ResizeAnchor anchor = ResizeAnchor.Center, Rgba64? backgroundColor = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(ExtendCanvas));
         if (!Enum.IsDefined(anchor))
             throw new ArgumentOutOfRangeException(nameof(anchor), anchor, "The anchor is not valid.");
 
@@ -437,6 +443,7 @@ public static partial class ImageProcessingExtensions
     public static void Rotate(this Image image, double degrees, TransformOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Rotate));
         var rotation = AffineTransform.CreateRotation(degrees);
         options = ValidateTransformOptions(options);
         var size = image.Size;
@@ -469,6 +476,7 @@ public static partial class ImageProcessingExtensions
     public static void Skew(this Image image, double degreesX, double degreesY, TransformOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Skew));
         var skew = AffineTransform.CreateSkew(degreesX, degreesY);
         options = ValidateTransformOptions(options);
         var size = image.Size;
@@ -496,6 +504,7 @@ public static partial class ImageProcessingExtensions
     public static void Transform(this Image image, AffineTransform transform, TransformOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Transform));
         options = ValidateTransformOptions(options);
         image.Warp(transform, options, centered: false, nameof(transform), cancellationToken);
     }
@@ -557,6 +566,7 @@ public static partial class ImageProcessingExtensions
     public static void Transform(this Image image, ProjectiveTransform transform, TransformOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Transform));
         options = ValidateTransformOptions(options);
         image.Warp(transform, options, centered: false, nameof(transform), cancellationToken);
     }
@@ -646,6 +656,7 @@ public static partial class ImageProcessingExtensions
     public static void Grayscale(this Image image, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Grayscale));
         image.GrayscaleAllFrames(cancellationToken);
     }
 
@@ -658,6 +669,7 @@ public static partial class ImageProcessingExtensions
     public static void Grayscale(this ImageFrame frame, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Grayscale));
         var storage = frame.GetStorage();
         var image = frame.OwnerImage;
         image.EnsureColorProfileCompatible();
@@ -740,6 +752,7 @@ public static partial class ImageProcessingExtensions
     public static void Quantize(this Image image, QuantizeOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Quantize));
         image.QuantizeFrames(frames: null, options ?? QuantizeOptions.Default, cancellationToken);
     }
 
@@ -757,6 +770,7 @@ public static partial class ImageProcessingExtensions
     public static void Quantize(this ImageFrame frame, QuantizeOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Quantize));
         _ = frame.GetStorage();
         frame.OwnerImage.QuantizeFrames([frame], options ?? QuantizeOptions.Default, cancellationToken);
     }
@@ -792,6 +806,7 @@ public static partial class ImageProcessingExtensions
     public static void ApplyColorMatrix(this Image image, ColorMatrix matrix, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(ApplyColorMatrix));
         ArgumentNullException.ThrowIfNull(matrix);
         image.Draw(matrix, static (canvas, matrix) => canvas.FilterBackdrop(matrix), cancellationToken);
     }
@@ -808,6 +823,7 @@ public static partial class ImageProcessingExtensions
     public static void ApplyColorMatrix(this ImageFrame frame, ColorMatrix matrix, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(ApplyColorMatrix));
         ArgumentNullException.ThrowIfNull(matrix);
         frame.Draw(matrix, static (canvas, matrix) => canvas.FilterBackdrop(matrix), cancellationToken);
     }
@@ -849,6 +865,7 @@ public static partial class ImageProcessingExtensions
     public static void ReplaceColor(this Image image, Rgba64 color, Rgba64 replacement, double tolerance = 0, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(ReplaceColor));
         ValidateTolerance(tolerance);
         image.ReplaceColorFrames(frames: null, color, replacement, tolerance, cancellationToken);
     }
@@ -868,6 +885,7 @@ public static partial class ImageProcessingExtensions
     public static void ReplaceColor(this ImageFrame frame, Rgba64 color, Rgba64 replacement, double tolerance = 0, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(ReplaceColor));
         ValidateTolerance(tolerance);
         _ = frame.GetStorage();
         frame.OwnerImage.ReplaceColorFrames([frame], color, replacement, tolerance, cancellationToken);
@@ -879,9 +897,10 @@ public static partial class ImageProcessingExtensions
     /// </summary>
     /// <remarks>
     /// The levels are the stored (encoded) sample values, at the storage precision: 256 bins for 8-bit pixel formats,
-    /// 65,536 for 16-bit ones (see <see cref="ImageHistogram"/>). No color profile is applied. Floating-point pixel formats
-    /// have no discrete levels: convert the image to <see cref="Rgba64"/> with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>
-    /// first. The working storage (one row) is charged to the image.
+    /// 65,536 for 16-bit ones (see <see cref="ImageHistogram"/>). No color profile is applied. Floating-point samples
+    /// (<see cref="RgbaFloat"/>, <see cref="RgbaHalf"/>) are binned to 65,536 levels from 0 to 1: the level of a value
+    /// <c>v</c> is <c>round(65535 v)</c>, values below 0 and values that are not numbers count as level 0, values above 1
+    /// as level 65,535. The working storage (one row) is charged to the image.
     /// </remarks>
     /// <param name="image">The image.</param>
     /// <param name="channel">The channel to count.</param>
@@ -889,7 +908,6 @@ public static partial class ImageProcessingExtensions
     /// <returns>The histogram.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="channel"/> is not a defined <see cref="HistogramChannel"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
@@ -897,6 +915,7 @@ public static partial class ImageProcessingExtensions
     public static ImageHistogram ComputeHistogram(this Image image, HistogramChannel channel, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(ComputeHistogram));
         ValidateHistogramChannel(channel);
         return image.ComputeHistogramCore(frames: null, channel, cancellationToken);
     }
@@ -908,7 +927,6 @@ public static partial class ImageProcessingExtensions
     /// <returns>The histogram.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="channel"/> is not a defined <see cref="HistogramChannel"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit.</exception>
     /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
@@ -916,6 +934,7 @@ public static partial class ImageProcessingExtensions
     public static ImageHistogram ComputeHistogram(this ImageFrame frame, HistogramChannel channel, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(ComputeHistogram));
         ValidateHistogramChannel(channel);
         _ = frame.GetStorage();
         return frame.OwnerImage.ComputeHistogramCore([frame], channel, cancellationToken);
@@ -931,8 +950,9 @@ public static partial class ImageProcessingExtensions
     /// they remap: by default, the luminance, so that the hues do not shift. The mappings work on the stored (encoded)
     /// sample values at the storage precision, with 256 levels for 8-bit pixel formats and 65,536 for 16-bit ones, and are
     /// deterministic: the same on every platform. No color profile is applied. Fully transparent pixels are not counted.
-    /// Floating-point pixel formats have no discrete levels: convert the image to <see cref="Rgba64"/> with
-    /// <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> first.
+    /// Floating-point samples are binned to 65,536 levels from 0 to 1, as <see cref="ComputeHistogram(Image, HistogramChannel, CancellationToken)"/>
+    /// counts them, and a remapped sample is written as its new level divided by 65,535; a sample whose level does not
+    /// change keeps its stored value (values above 1 stay above 1 unless the top level moves).
     /// </para>
     /// <para>
     /// Each frame is equalized alone by default; <see cref="HistogramEqualizationOptions.ShareHistogramAcrossFrames"/>
@@ -987,7 +1007,6 @@ public static partial class ImageProcessingExtensions
     /// <param name="options">The options, or <see langword="null"/> for <see cref="HistogramEqualizationOptions.Default"/>.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
@@ -995,6 +1014,7 @@ public static partial class ImageProcessingExtensions
     public static void Equalize(this Image image, HistogramEqualizationOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Equalize));
         image.EqualizeFrames(frames: null, options ?? HistogramEqualizationOptions.Default, cancellationToken);
     }
 
@@ -1003,7 +1023,6 @@ public static partial class ImageProcessingExtensions
     /// <param name="options">The options, or <see langword="null"/> for <see cref="HistogramEqualizationOptions.Default"/>.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be remapped.</param>
     /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
     /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
@@ -1011,6 +1030,7 @@ public static partial class ImageProcessingExtensions
     public static void Equalize(this ImageFrame frame, HistogramEqualizationOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Equalize));
         _ = frame.GetStorage();
         frame.OwnerImage.EqualizeFrames([frame], options ?? HistogramEqualizationOptions.Default, cancellationToken);
     }
@@ -1024,8 +1044,9 @@ public static partial class ImageProcessingExtensions
     /// See <see cref="AutoLevelsOptions"/> for the mapping and <see cref="HistogramColorMode"/> for the samples it remaps:
     /// by default, the luminance, so that the hues do not shift. The mapping works on the stored (encoded) sample values at
     /// the storage precision, with 256 levels for 8-bit pixel formats and 65,536 for 16-bit ones. No color profile is
-    /// applied. Fully transparent pixels are not counted. Floating-point pixel formats have no discrete levels: convert the
-    /// image to <see cref="Rgba64"/> with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> first.
+    /// applied. Fully transparent pixels are not counted. Floating-point samples are binned to 65,536 levels from 0 to 1, as
+    /// <see cref="ComputeHistogram(Image, HistogramChannel, CancellationToken)"/> counts them, and a remapped sample is
+    /// written as its new level divided by 65,535; a sample whose level does not change keeps its stored value.
     /// </para>
     /// <para>
     /// Each frame is stretched alone by default; <see cref="AutoLevelsOptions.ShareHistogramAcrossFrames"/> gives every
@@ -1039,7 +1060,6 @@ public static partial class ImageProcessingExtensions
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><see cref="AutoLevelsOptions.LowPercentile"/> is not less than <see cref="AutoLevelsOptions.HighPercentile"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
@@ -1047,6 +1067,7 @@ public static partial class ImageProcessingExtensions
     public static void AutoLevels(this Image image, AutoLevelsOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(AutoLevels));
         options ??= AutoLevelsOptions.Default;
         ValidateAutoLevels(options);
         image.AutoLevelsFrames(frames: null, options, cancellationToken);
@@ -1058,7 +1079,6 @@ public static partial class ImageProcessingExtensions
     /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be remapped.</param>
     /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException"><see cref="AutoLevelsOptions.LowPercentile"/> is not less than <see cref="AutoLevelsOptions.HighPercentile"/>.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
     /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
@@ -1066,6 +1086,7 @@ public static partial class ImageProcessingExtensions
     public static void AutoLevels(this ImageFrame frame, AutoLevelsOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(AutoLevels));
         options ??= AutoLevelsOptions.Default;
         ValidateAutoLevels(options);
         _ = frame.GetStorage();
@@ -1137,14 +1158,15 @@ public static partial class ImageProcessingExtensions
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">The pixel format cannot store <see cref="ThresholdOptions.UpperColor"/> or <see cref="ThresholdOptions.LowerColor"/> exactly. Nothing is changed.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
     /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     public static void Threshold(this Image image, ThresholdOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Threshold));
         image.ThresholdFrames(frames: null, options ?? ThresholdOptions.Default, cancellationToken);
     }
 
@@ -1154,16 +1176,29 @@ public static partial class ImageProcessingExtensions
     /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be binarized.</param>
     /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">The pixel format cannot store <see cref="ThresholdOptions.UpperColor"/> or <see cref="ThresholdOptions.LowerColor"/> exactly. Nothing is changed.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
     /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
     /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The pixel format is a floating-point one. Nothing is changed.</exception>
     public static void Threshold(this ImageFrame frame, ThresholdOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Threshold));
         _ = frame.GetStorage();
         frame.OwnerImage.ThresholdFrames([frame], options ?? ThresholdOptions.Default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Rejects the CMYK pixel formats, which hold inks rather than colors of light: the operations work on red, green and
+    /// blue (or gray) samples, and only <see cref="Crop"/>, <see cref="Flip(Image, FlipMode, CancellationToken)"/>,
+    /// <see cref="Rotate(Image, RotateMode, CancellationToken)"/> and <see cref="AutoOrient"/>, which move pixels without
+    /// computing new ones, keep CMYK pixels.
+    /// </summary>
+    private static void ThrowIfCmyk(PixelFormat format, string operation)
+    {
+        if (PixelFormats.IsCmyk(format))
+            throw new UnsupportedImageFeatureException($"{operation} works on colors of light, and the {format} pixels of the image are CMYK inks. Convert the image first with CloneAs and PixelConversionOptions.CmykConversion; Crop, Flip, Rotate by quarter turns and AutoOrient keep CMYK pixels.", ImageFormat.Unknown, "CMYK pixels");
     }
 
     private static void ValidateHistogramChannel(HistogramChannel channel)
@@ -1205,8 +1240,9 @@ public static partial class ImageProcessingExtensions
     /// <para>
     /// The pixel format is kept, so the destination profile must be able to label it: an RGB profile for color formats, a
     /// grayscale profile for <see cref="Gray8"/> and <see cref="Gray16"/>. To change the color model, convert the pixel
-    /// format with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>, or convert sample buffers with
-    /// <see cref="IccColorTransform"/> (the only way to reach CMYK).
+    /// format with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> (to or from CMYK pixels with
+    /// <see cref="PixelConversionOptions.CmykConversion"/>), or convert sample buffers with <see cref="IccColorTransform"/>.
+    /// CMYK images are rejected.
     /// </para>
     /// <para>
     /// Colors are converted at the storage precision (16-bit formats are never reduced to 8 bits) by the scalar reference
@@ -1249,6 +1285,7 @@ public static partial class ImageProcessingExtensions
     public static void ConvertColorProfile(this Image image, IccProfile destinationProfile, IccColorTransformOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(ConvertColorProfile));
         ArgumentNullException.ThrowIfNull(destinationProfile);
         image.ConvertAllFramesToColorProfile(destinationProfile, options ?? IccColorTransformOptions.Default, cancellationToken);
     }
@@ -1294,6 +1331,7 @@ public static partial class ImageProcessingExtensions
     public static void Convolve(this Image image, ConvolutionOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Convolve));
         ArgumentNullException.ThrowIfNull(options);
         image.ConvolveAllFrames(options, cancellationToken);
     }
@@ -1312,6 +1350,7 @@ public static partial class ImageProcessingExtensions
     public static void Convolve(this ImageFrame frame, ConvolutionOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Convolve));
         ArgumentNullException.ThrowIfNull(options);
         var storage = frame.GetStorage();
         frame.OwnerImage.ConvolveFrame(frame, storage, options, cancellationToken);
@@ -1350,6 +1389,7 @@ public static partial class ImageProcessingExtensions
     public static void GaussianBlur(this Image image, double sigma, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(GaussianBlur));
         GaussianKernel.Validate(sigma, nameof(sigma));
         ValidateBlur(edgeMode, workingSpace);
         if (sigma == 0)
@@ -1379,6 +1419,7 @@ public static partial class ImageProcessingExtensions
     public static void GaussianBlur(this ImageFrame frame, double sigma, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(GaussianBlur));
         GaussianKernel.Validate(sigma, nameof(sigma));
         ValidateBlur(edgeMode, workingSpace);
         var storage = frame.GetStorage();
@@ -1424,6 +1465,7 @@ public static partial class ImageProcessingExtensions
     public static void BoxBlur(this Image image, int radius, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(BoxBlur));
         ValidateRadius(radius, MaxBoxBlurRadius);
         ValidateBlur(edgeMode, workingSpace);
         if (radius == 0)
@@ -1452,6 +1494,7 @@ public static partial class ImageProcessingExtensions
     public static void BoxBlur(this ImageFrame frame, int radius, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(BoxBlur));
         ValidateRadius(radius, MaxBoxBlurRadius);
         ValidateBlur(edgeMode, workingSpace);
         var storage = frame.GetStorage();
@@ -1497,6 +1540,7 @@ public static partial class ImageProcessingExtensions
     public static void Sharpen(this Image image, double sigma, double amount = 1, double threshold = 0, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Sharpen));
         ValidateSharpen(sigma, amount, threshold);
         ValidateBlur(edgeMode, workingSpace);
         if (sigma == 0 || amount == 0)
@@ -1528,6 +1572,7 @@ public static partial class ImageProcessingExtensions
     public static void Sharpen(this ImageFrame frame, double sigma, double amount = 1, double threshold = 0, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Sharpen));
         ValidateSharpen(sigma, amount, threshold);
         ValidateBlur(edgeMode, workingSpace);
         var storage = frame.GetStorage();
@@ -1570,6 +1615,7 @@ public static partial class ImageProcessingExtensions
     public static void MedianBlur(this Image image, int radius, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(MedianBlur));
         ValidateRadius(radius, MaxMedianRadius);
         ValidateBlur(edgeMode, ConvolutionWorkingSpace.Encoded);
         if (radius == 0)
@@ -1596,6 +1642,7 @@ public static partial class ImageProcessingExtensions
     public static void MedianBlur(this ImageFrame frame, int radius, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(MedianBlur));
         ValidateRadius(radius, MaxMedianRadius);
         ValidateBlur(edgeMode, ConvolutionWorkingSpace.Encoded);
         var storage = frame.GetStorage();
@@ -1650,6 +1697,7 @@ public static partial class ImageProcessingExtensions
     public static void DetectEdges(this Image image, EdgeDetector detector, bool grayscale = true, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(DetectEdges));
         ValidateEdgeDetection(detector, edgeMode);
         image.DetectEdgesAllFrames(detector, grayscale, edgeMode, cancellationToken);
     }
@@ -1671,9 +1719,72 @@ public static partial class ImageProcessingExtensions
     public static void DetectEdges(this ImageFrame frame, EdgeDetector detector, bool grayscale = true, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(DetectEdges));
         ValidateEdgeDetection(detector, edgeMode);
         var storage = frame.GetStorage();
         frame.OwnerImage.DetectEdgesFrame(frame, storage, detector, grayscale, edgeMode, cancellationToken);
+    }
+
+    /// <summary>
+    /// Replaces every frame of the image (including the poster frame) by its edges found by the Canny detector, in place:
+    /// thin lines one pixel wide, white on black. The pixel format, the size and alpha are kept.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The detector works on the luminance of the pixels, the Rec. 709 luma of their stored (encoded) samples at the
+    /// storage precision (floating-point samples binned to 65,536 levels from 0 to 1, as
+    /// <see cref="ComputeHistogram(Image, HistogramChannel, CancellationToken)"/> counts them). It runs five steps:
+    /// </para>
+    /// <list type="number">
+    /// <item><description>A Gaussian blur of <see cref="CannyEdgeOptions.Sigma"/> removes the noise.</description></item>
+    /// <item><description>The Sobel operator gives the gradient of every pixel: its magnitude <c>sqrt(gx² + gy²)</c> and its direction, rounded to horizontal, vertical or one of the diagonals.</description></item>
+    /// <item><description>Non-maximum suppression keeps the gradients that are a maximum across the edge, compared with the two neighbors along their direction, so that the edges are thin.</description></item>
+    /// <item><description>A double threshold: the remaining gradients above <see cref="CannyEdgeOptions.HighThreshold"/> are edges, those above <see cref="CannyEdgeOptions.LowThreshold"/> are candidates, and the others are dropped.</description></item>
+    /// <item><description>Hysteresis: the candidates connected to an edge through candidates (any of the 8 neighbors of a pixel) become edges.</description></item>
+    /// </list>
+    /// <para>
+    /// The steps after the blur are those of OpenCV's <c>cv2.Canny</c> with <c>L2gradient=True</c> and its default
+    /// aperture of 3: with <see cref="CannyEdgeOptions.Sigma"/> set to 0, the edges of an 8-bit grayscale image are the ones
+    /// OpenCV finds with the thresholds multiplied by 255. The edges get the maximum sample in their colors (1 for
+    /// floating-point samples) and the other pixels 0. The working memory (18 bytes per pixel) is charged to the image and
+    /// rented before any pixel changes. The EXIF thumbnail, now stale, is removed.
+    /// </para>
+    /// </remarks>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="CannyEdgeOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some frames may already be changed.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><see cref="CannyEdgeOptions.LowThreshold"/> exceeds <see cref="CannyEdgeOptions.HighThreshold"/>.</exception>
+    /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. Nothing is changed.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void DetectCannyEdges(this Image image, CannyEdgeOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(DetectCannyEdges));
+        image.DetectCannyEdgesFrames(frames: null, options ?? CannyEdgeOptions.Default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Replaces one frame by its edges found by the Canny detector, in place. See
+    /// <see cref="DetectCannyEdges(Image, CannyEdgeOptions?, CancellationToken)"/>.
+    /// </summary>
+    /// <param name="frame">The frame to modify.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="CannyEdgeOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be changed.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><see cref="CannyEdgeOptions.LowThreshold"/> exceeds <see cref="CannyEdgeOptions.HighThreshold"/>.</exception>
+    /// <exception cref="ImageResourceLimitException">The working memory would exceed the allocation limit. The frame is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void DetectCannyEdges(this ImageFrame frame, CannyEdgeOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(DetectCannyEdges));
+        _ = frame.GetStorage();
+        frame.OwnerImage.DetectCannyEdgesFrames([frame], options ?? CannyEdgeOptions.Default, cancellationToken);
     }
 
     private static TransformOptions ValidateTransformOptions(TransformOptions? options)

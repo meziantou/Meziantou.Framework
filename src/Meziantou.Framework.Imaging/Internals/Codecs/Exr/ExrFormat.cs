@@ -83,7 +83,7 @@ internal static class ExrFormat
     };
 
     /// <summary>Determines whether the library decodes the chunks of a compression method.</summary>
-    public static bool IsDecodable(ExrCompressionMethod compression) => compression <= ExrCompressionMethod.B44A;
+    public static bool IsDecodable(ExrCompressionMethod compression) => compression is <= ExrCompressionMethod.Dwab or ExrCompressionMethod.Zstd;
 
     public static InvalidImageContentException Invalid(string message) => new("The OpenEXR file is invalid: " + message, ImageFormat.OpenExr);
 

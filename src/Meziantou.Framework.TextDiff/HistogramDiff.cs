@@ -9,14 +9,14 @@ internal static class HistogramDiff
     // on the region and let the fallback algorithm handle it, as git's histogram diff does.
     private const int MaxAnchorScore = 64;
 
-    internal static DiffComputationResult Compute(string[] left, string[] right, IEqualityComparer<string> comparer)
+    internal static DiffComputationResult Compute(string[] left, string[] right, IEqualityComparer<string> comparer, DiffBudget budget)
     {
         var leftModified = new bool[left.Length];
         var rightModified = new bool[right.Length];
         Array.Fill(leftModified, true);
         Array.Fill(rightModified, true);
 
-        ComputeRange(left, 0, left.Length, right, 0, right.Length, comparer, leftModified, rightModified);
+        ComputeRange(left, 0, left.Length, right, 0, right.Length, comparer, budget, leftModified, rightModified);
         return new DiffComputationResult(leftModified, rightModified);
     }
 
@@ -28,6 +28,7 @@ internal static class HistogramDiff
         int rightStart,
         int rightEnd,
         IEqualityComparer<string> comparer,
+        DiffBudget budget,
         bool[] leftModified,
         bool[] rightModified)
     {
@@ -56,19 +57,20 @@ internal static class HistogramDiff
                 rightModified[rightEnd] = false;
             }
 
-            if (leftStart >= leftEnd || rightStart >= rightEnd)
+            // Every chunk starts as modified, so a region left once the time limit is reached is reported as replaced
+            if (leftStart >= leftEnd || rightStart >= rightEnd || budget.IsExpired())
                 return;
 
             var anchors = FindAnchors(left, leftStart, leftEnd, right, rightStart, rightEnd, comparer);
             if (anchors.Count == 0)
             {
-                ApplyMyers(left, leftStart, leftEnd, right, rightStart, rightEnd, comparer, leftModified, rightModified);
+                ApplyMyers(left, leftStart, leftEnd, right, rightStart, rightEnd, comparer, budget, leftModified, rightModified);
                 return;
             }
 
             foreach (var anchor in anchors)
             {
-                ComputeRange(left, leftStart, anchor.LeftIndex, right, rightStart, anchor.RightIndex, comparer, leftModified, rightModified);
+                ComputeRange(left, leftStart, anchor.LeftIndex, right, rightStart, anchor.RightIndex, comparer, budget, leftModified, rightModified);
                 leftModified[anchor.LeftIndex] = false;
                 rightModified[anchor.RightIndex] = false;
                 leftStart = anchor.LeftIndex + 1;
@@ -85,13 +87,15 @@ internal static class HistogramDiff
         int rightStart,
         int rightEnd,
         IEqualityComparer<string> comparer,
+        DiffBudget budget,
         bool[] leftModified,
         bool[] rightModified)
     {
         var subDiff = MyersDiff.Compute(
             left.AsSpan(leftStart, leftEnd - leftStart),
             right.AsSpan(rightStart, rightEnd - rightStart),
-            comparer);
+            comparer,
+            budget);
 
         DiffAlgorithmHelpers.ApplySubDiff(subDiff, leftModified, leftStart, rightModified, rightStart);
     }

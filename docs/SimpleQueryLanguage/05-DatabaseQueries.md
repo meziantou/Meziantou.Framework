@@ -57,21 +57,104 @@ instance with `await query.Apply(dbContext.Customers).ToListAsync()`.
 | Registration | Generates | Operators |
 | --- | --- | --- |
 | `AddHandler(key, x => x.Text)` | `x.Text != null && x.Text.Contains(value)` | `:`, `=`, `<>` |
+| `AddHandler(key, x => x.Text, matchMode)` | `x.Text != null && x.Text == value`, or `StartsWith`, `EndsWith`, `Contains` | `:`, `=`, `<>` |
 | `AddHandler<TValue>(key, x => x.Value)` for a type that can be ordered | Comparisons with the parsed value | All, and ranges |
 | `AddHandler<TValue>(key, x => x.Value)` for other types | `x.Value == value` | `:`, `=`, `<>` |
 | `AddHandler(key, value => …)` | The expression your function returns for the value | `:`, `=`, `<>` |
 | `AddHandler(key, op, value => …)` | The expression your function returns, for one operator | The one you give |
 
-- A string handler uses `string.Contains(string)`, so its case sensitivity is the provider's: the collation of the
-  column for Entity Framework Core, ordinal in memory. Passing a `StringComparison` makes the query run in memory
-  only: Entity Framework Core cannot translate that overload.
-- Numbers, dates (`DateTime`, `DateTimeOffset`, `DateOnly`), `TimeOnly`, `TimeSpan`, `decimal` and the other types
-  that define `<` can be ordered, and their nullable versions. Enums, `bool` and `Guid` support equality only.
+- A string handler uses `string.Contains(string)` unless you pick another [match mode](#string-match-modes). Its case
+  sensitivity is the provider's: the collation of the column for Entity Framework Core, ordinal in memory. Passing a
+  `StringComparison` makes the query run in memory only: Entity Framework Core cannot translate those overloads.
+- Numbers, dates (`DateTime`, `DateTimeOffset`, `DateOnly`), `TimeOnly`, `TimeSpan`, `decimal`, [enums](#enums) and
+  the other types that define `<` can be ordered, and their nullable versions. `bool` and `Guid` support equality only.
 - `<>` negates the `:` handler of the key when no handler is registered for `<>` itself.
 - A value that cannot be parsed generates a condition that is always false.
 
 The values of the query are not inserted in the expression as constants. They are read from an object, like a captured
 variable, which LINQ providers such as Entity Framework Core turn into query parameters.
+
+## String match modes
+
+Pass a [StringMatchMode](cref:Meziantou.Framework.SimpleQueryLanguage.StringMatchMode) to choose how a string column matches the value:
+
+| Mode | Generates |
+| --- | --- |
+| `Contains` (default) | `x.Text != null && x.Text.Contains(value)` |
+| `Exact` | `x.Text != null && x.Text == value` |
+| `StartsWith` | `x.Text != null && x.Text.StartsWith(value)` |
+| `EndsWith` | `x.Text != null && x.Text.EndsWith(value)` |
+
+Entity Framework Core translates all of them, to `=` and `LIKE` for most databases:
+
+<!-- ref:../../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/ExpressionQueryBuilderTests.cs;region=ExpressionQueryBuilder_StringMatchMode;format=md-fenced-code-block;dedent=true -->
+```csharp
+var queryBuilder = new ExpressionQueryBuilder<Ticket>();
+
+// Generates ticket.Title != null && ticket.Title.StartsWith(value)
+queryBuilder.AddHandler("title", ticket => ticket.Title, StringMatchMode.StartsWith);
+
+var tickets = new[]
+{
+    new Ticket("Crash on startup", TicketPriority.Critical),
+    new Ticket("Startup is slow", TicketPriority.Normal),
+};
+
+var query = queryBuilder.Build("title:Crash");
+Assert.Equal(["Crash on startup"], query.Apply(tickets.AsQueryable()).Select(ticket => ticket.Title));
+```
+<!-- endref -->
+
+with the following types:
+
+<!-- ref:../../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/ExpressionQueryBuilderTests.cs;region=ExpressionQueryBuilder_Ticket;format=md-fenced-code-block;dedent=true -->
+```csharp
+internal enum TicketPriority
+{
+    Low,
+    Normal,
+    High,
+    Critical,
+}
+
+internal sealed record Ticket(string Title, TicketPriority Priority);
+```
+<!-- endref -->
+
+`<>` matches the rows that do not match, and the null ones. A string handler does not support `<`, `<=`, `>` and `>=`;
+register a [custom expression](#custom-expressions) for them.
+
+## Enums
+
+An enum property supports the comparison operators and ranges, like a number. The values are compared by their
+numeric value, the order in which the members are declared unless you give them values:
+
+<!-- ref:../../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/ExpressionQueryBuilderTests.cs;region=ExpressionQueryBuilder_EnumComparison;format=md-fenced-code-block;dedent=true -->
+```csharp
+var queryBuilder = new ExpressionQueryBuilder<Ticket>();
+queryBuilder.AddHandler<TicketPriority>("priority", ticket => ticket.Priority);
+
+var tickets = new[]
+{
+    new Ticket("Typo in the footer", TicketPriority.Low),
+    new Ticket("Startup is slow", TicketPriority.Normal),
+    new Ticket("Crash on startup", TicketPriority.Critical),
+};
+
+// Compares the numeric values: (int)ticket.Priority >= (int)value
+var query = queryBuilder.Build("priority>=normal");
+Assert.Equal(["Startup is slow", "Crash on startup"], query.Apply(tickets.AsQueryable()).Select(ticket => ticket.Title));
+
+// Ranges work too
+query = queryBuilder.Build("priority:low..normal");
+Assert.Equal(["Typo in the footer", "Startup is slow"], query.Apply(tickets.AsQueryable()).Select(ticket => ticket.Title));
+```
+<!-- endref -->
+
+The ordered comparisons convert both sides to the underlying type of the enum, such as `(int)x.Priority < (int)value`,
+which Entity Framework Core translates for a column that stores the number. For a column that stores the name of the
+member (`HasConversion<string>()`), only equality is meaningful: `:` and `<>` compare the enum values without a
+conversion, so they keep working.
 
 ## Custom expressions
 
@@ -108,6 +191,8 @@ Write expressions the provider can translate: Entity Framework Core cannot trans
   several columns. Without it, free text matches nothing.
 - [SetUnhandledPropertyHandler](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}.SetUnhandledPropertyHandler) receives the key, the operator and the value of a term whose key has no handler. Return
   an expression, or `null` to search the term as free text, which is also what happens without this handler.
+- Without [SetUnhandledPropertyHandler](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}.SetUnhandledPropertyHandler), a key without a handler is reported in [Diagnostics](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQuery{T}.Diagnostics); see
+  [Malformed queries](03-QuerySyntax.md#malformed-queries).
 
 ## The predicate
 

@@ -502,7 +502,7 @@ public sealed class ReferenceJpeg
         var height = BinaryPrimitives.ReadUInt16BigEndian(payload[1..]);
         var width = BinaryPrimitives.ReadUInt16BigEndian(payload[3..]);
         var count = payload[5];
-        if (width == 0 || height == 0 || count is not (1 or 3) || payload.Length != 6 + (3 * count))
+        if (width == 0 || height == 0 || count is not (1 or 3 or 4) || payload.Length != 6 + (3 * count))
             throw new InvalidDataException("The frame header has invalid dimensions or component count.");
 
         var components = new (int Id, int H, int V, int Tq)[count];

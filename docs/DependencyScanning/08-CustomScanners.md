@@ -75,7 +75,10 @@ public sealed class VersionsFileScanner : DependencyScanner
 - [SupportedDependencyTypes](cref:Meziantou.Framework.DependencyScanning.DependencyScanner.SupportedDependencyTypes) lists the types the scanner reports. It decides whether the scanner runs when the options
   filter the dependency types, and reporting another type throws an `InvalidOperationException`.
 - [ScanAsync](cref:Meziantou.Framework.DependencyScanning.DependencyScanner.ScanAsync) reads [ScanFileContext.Content](cref:Meziantou.Framework.DependencyScanning.ScanFileContext.Content), a seekable stream, and calls [ReportDependency](cref:Meziantou.Framework.DependencyScanning.ScanFileContext.ReportDependency) for each dependency. Leave
-  the stream open: the other scanners of the file read it too. An overload of [ReportDependency](cref:Meziantou.Framework.DependencyScanning.ScanFileContext.ReportDependency) adds tags and metadata.
+  the stream open: the other scanners of the file read it too. An overload of [ReportDependency](cref:Meziantou.Framework.DependencyScanning.ScanFileContext.ReportDependency) adds tags and metadata, and another one takes
+  the raw version, as written, and the resolved version of a version that references a variable, with their locations.
+  Pass the location of the definition of the variable as the resolved version location, and the same location instance
+  for every dependency that uses it. See [Properties and variables](05-SupportedFiles/01-Overview.md#properties-and-variables).
 - Scanners run in parallel on different files: keep them free of shared mutable state.
 
 Add the scanner to the options:

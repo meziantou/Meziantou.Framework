@@ -67,10 +67,33 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(GradientBrush))]
     public void ExtensibilityIsClosed(Type type)
     {
-        // No codec plug-in, custom pixel or custom frame contract in v1: base types cannot be derived outside the library
+        // The base types of the model cannot be derived outside the library: the extension points are their own types
+        // (CustomImageCodec, CustomImageEncoder, the pixel operations), and there is no custom pixel or frame contract
         var accessibleConstructors = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             .Where(constructor => constructor.IsPublic || constructor.IsFamily || constructor.IsFamilyOrAssembly);
         Assert.Empty(accessibleConstructors);
+    }
+
+    [Fact]
+    public void ExtensionPointsHaveTheirPublicShape()
+    {
+        // The custom format is out of the range of the built-in ones, which are appended after OpenExr
+        Assert.Equal(1000, (int)ImageFormat.Custom);
+
+        foreach (var type in new[] { typeof(CustomImageCodec), typeof(CustomImageEncoder) })
+        {
+            Assert.True(type.IsPublic && type.IsAbstract);
+            var constructor = Assert.Single(type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic));
+            Assert.True(constructor.IsFamily);
+            Assert.Equal([typeof(ImageFormatInfo)], constructor.GetParameters().Select(parameter => parameter.ParameterType));
+        }
+
+        Assert.Equal("Meziantou.Framework.Imaging.Formats", typeof(CustomImageEncoder).Namespace);
+        Assert.True(typeof(CustomImageDecodeContext).IsSealed);
+        Assert.Empty(typeof(CustomImageDecodeContext).GetConstructors());
+        Assert.True(typeof(ImageBufferPool).IsAbstract && typeof(ImageBufferPool).IsSealed);
+        Assert.True(typeof(PixelRowSource<>).IsByRefLike);
+        Assert.True(typeof(IPixelRowOperation<>).IsInterface && typeof(IPixelNeighborhoodOperation<>).IsInterface);
     }
 
     [Theory]
@@ -190,7 +213,7 @@ public sealed class ApiSurfaceTests
             settings);
 
         // The shared settings exclude codec-specific options and container features that only AVIF writes so far
-        string[] avifOnly = [nameof(AvifEncoder.AutoTiling), nameof(AvifEncoder.CleanAperture), nameof(AvifEncoder.PremultiplyAlpha)];
+        string[] avifOnly = [nameof(AvifEncoder.AutoTiling), nameof(AvifEncoder.CleanAperture), nameof(AvifEncoder.GainMap), nameof(AvifEncoder.PremultiplyAlpha)];
         string[] heicOnly = [nameof(HeicEncoder.OptimizeQuantization)];
         Assert.Equal(typeof(AvifEncoder).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Except(avifOnly).Order(StringComparer.Ordinal), settings.Except(heicOnly));
         Assert.Equal(typeof(bool), GetDeclaredProperty(type, nameof(HeicEncoder.OptimizeQuantization)).PropertyType);
@@ -303,7 +326,7 @@ public sealed class ApiSurfaceTests
     {
         // A new format is appended: the values of the existing members never change
         Assert.Equal(17, (int)ImageFormat.OpenExr);
-        Assert.Equal(17, Enum.GetValues<ImageFormat>().Max(format => (int)format));
+        Assert.Equal(17, Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Custom).Max(format => (int)format));
 
         var type = typeof(OpenExrEncoder);
         Assert.Equal("Meziantou.Framework.Imaging.Formats", type.Namespace);

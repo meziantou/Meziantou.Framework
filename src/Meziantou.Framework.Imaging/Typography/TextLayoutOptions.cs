@@ -431,8 +431,16 @@ public sealed class TextLayoutOptions
     /// </para>
     /// <para>
     /// The grid is the pixel grid of the layout: draw it at a whole-pixel origin, without a transform that scales or
-    /// rotates the canvas, for the edges to fall on the pixels of the image. Hinting applies to horizontal text; a
-    /// vertical layout (<see cref="WritingMode"/>) is not hinted.
+    /// rotates the canvas, for the edges to fall on the pixels of the image.
+    /// </para>
+    /// <para>
+    /// In a vertical layout (<see cref="WritingMode"/>), the outline of a glyph is fitted in its own orientation. An
+    /// upright glyph keeps its axes: with <see cref="TextHinting.Light"/>, its origin is on a whole pixel down the
+    /// column. A glyph on its side, such as a Latin letter of a mixed line, is fitted across the column: its
+    /// baseline is on a whole pixel along the x axis of the image, and its position down the column does not change.
+    /// With <see cref="TextHinting.Full"/>, each glyph starts on a whole pixel along both axes and advances by a whole
+    /// number of pixels down the column: the advance of an upright glyph, which the instructions do not hint, is
+    /// rounded.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a member of <see cref="TextHinting"/>.</exception>
@@ -442,6 +450,44 @@ public sealed class TextLayoutOptions
         init
         {
             ValidateEnum((int)value, (int)TextHinting.Full, nameof(value));
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets how the glyphs are antialiased when the layout is filled at a point: with one coverage per pixel
+    /// (<see cref="TextSubpixelRendering.None"/>, the default), or with one per color of the pixel, for the order of the
+    /// stripes of red, green and blue of the screen the image is shown on.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Subpixel rendering triples the horizontal resolution of the text on an LCD screen whose pixels are made of
+    /// three vertical stripes, as ClearType and FreeType do: the glyphs are rasterized at three times the width of the
+    /// image, the coverage of each third of a pixel is filtered with the five weights of the default LCD filter of
+    /// FreeType (8, 77, 86, 77 and 8 over 256), which keeps colored fringes faint, and each color of a pixel is
+    /// composited with the coverage of its stripe. The fringes show on other screens, when the image is scaled, and
+    /// on screens whose stripes are in the other order: use it for images shown at their size on a known screen.
+    /// </para>
+    /// <para>
+    /// A text is drawn with subpixel rendering when it is filled at a point
+    /// (<see cref="Drawing.DrawingCanvas.FillText(Drawing.Brush, TextLayout, PointD)"/>), with antialiasing, with a
+    /// <see cref="Drawing.SolidBrush"/> (also for the styles that have their own brush) whose compositing is
+    /// <see cref="Drawing.CompositeMode.SourceOver"/> and blending <see cref="Drawing.BlendMode.Normal"/>, outside
+    /// a <see cref="Drawing.CompositingSpace.LinearSrgb"/> compositing space, on an image of <see cref="PixelFormat.Rgba32"/>, <see cref="PixelFormat.Bgra32"/>,
+    /// <see cref="PixelFormat.Rgb24"/>, <see cref="PixelFormat.Rgba64"/> or <see cref="PixelFormat.Rgb48"/>, and when
+    /// the text has no glyph drawn with the colors of its font, no background, no outline and no synthetic bold.
+    /// Otherwise, and along a path, it is drawn with grayscale antialiasing. The transformation and the clip of the
+    /// canvas apply. A pixel that is not opaque gets the mean of the three coverages: colored fringes over transparent
+    /// pixels would show on any background.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a member of <see cref="TextSubpixelRendering"/>.</exception>
+    public TextSubpixelRendering SubpixelRendering
+    {
+        get;
+        init
+        {
+            ValidateEnum((int)value, (int)TextSubpixelRendering.Bgr, nameof(value));
             field = value;
         }
     }

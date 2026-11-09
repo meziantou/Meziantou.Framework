@@ -1,6 +1,6 @@
 ---
 title: Text layout
-description: Fallback fonts, right-to-left and vertical text, hyphenation, synthetic bold and oblique, language and shaping.
+description: Fallback fonts, right-to-left and vertical text, hyphenation, ruby, synthetic bold and oblique, language and shaping.
 ---
 
 A layout turns characters into positioned glyphs: it chooses a font for each character, orders mixed directions,
@@ -154,7 +154,9 @@ public static void DrawVerticalText(string fontPath, string outputPath)
   4), such as a date or a number.
 - The vertical metrics and forms of the font are used (`vhea`, `vmtx`, `VORG`, `vert`). A font without vertical
   metrics, which is every font not made for vertical text, centers each glyph in an advance of its ascent and descent.
-- A vertical layout is not hinted. There is no ruby, and punctuation is neither compressed nor hung.
+- Punctuation is neither compressed nor hung. A vertical layout is hinted like a horizontal one, each glyph in its
+  own orientation ([hint small text](05-TextOnPathsAndMeasuring.md#hint-small-text)), and a ruby annotation is on the
+  right of its base ([ruby](#ruby)).
 
 ## Hyphenation and scripts without spaces
 
@@ -177,6 +179,55 @@ To use your own words, set [TextLayoutOptions.LineBreakDictionary](cref:Mezianto
 words, `LineBreakDictionary.Parse("")`, only breaks such text at a space.
 
 Lines are broken one after the other, each as full as possible, not by optimizing the whole paragraph.
+
+## Ruby
+
+[RichTextBuilder.AppendRuby](cref:Meziantou.Framework.Imaging.Typography.RichTextBuilder.AppendRuby) adds a base with an annotation set beside it, such as the reading of Japanese words in kana
+(furigana):
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/TextExamples.cs;region=Imaging_DrawRuby;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void DrawRuby(string fontPath, string outputPath)
+{
+    var font = Font.Load(fontPath);
+    var text = new TextStyle(font, size: 28);
+    var reading = new TextStyle(font, size: 14);
+
+    // The base is part of the text; the annotation is set beside it, at half the size, and a line never ends inside the base
+    var rubyText = new RichTextBuilder()
+        .AppendRuby("東京", text, "とうきょう", reading)
+        .Append("の", text)
+        .AppendRuby("日本語", text, "にほんご", reading)
+        .Build();
+
+    // Above the base in a horizontal layout, on its right in a vertical one
+    var horizontal = TextLayout.Create(rubyText);
+    var vertical = TextLayout.Create(rubyText, new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft });
+
+    var width = (int)Math.Ceiling(horizontal.Width + vertical.Width) + 40;
+    var height = (int)Math.Ceiling(Math.Max(horizontal.Height, vertical.Height)) + 20;
+    using var image = new Image<Rgba32>(width, height, new Rgba32(255, 255, 255));
+    image.Draw(canvas =>
+    {
+        canvas.FillText(new Rgba32(0, 0, 0), horizontal, new PointD(10, 10));
+        canvas.FillText(new Rgba32(0, 0, 0), vertical, new PointD(horizontal.Width + 30, 10));
+    });
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
+![Tokyo and Japanese in kanji with their readings in small kana: above them in a horizontal line, and on their right in a vertical column](images/DrawRuby.png)
+
+- The base is text of the layout, with its style: it is measured, hit and selected like the rest of the text. A line
+  never ends inside it, and it is never hyphenated.
+- The annotation is laid out on its own, with its style, in the writing mode and orientation of the layout, and
+  centered on the base: above it in a horizontal line, on its right in a vertical line. The line is as tall as the
+  base and its annotation need.
+- A base shorter than its annotation gets the difference as room, half before it and half after it: the annotation
+  never runs over the text around it. Japanese typesetting lets it overhang neighboring kana; this layout does not.
+- The annotation is drawn and is part of [ToPath](cref:Meziantou.Framework.Imaging.Typography.TextLayout.ToPath), but not of the positions of the text: [HitTest](cref:Meziantou.Framework.Imaging.Typography.TextLayout.HitTest), the
+  carets and the selections are those of the base.
 
 ## Synthetic bold and oblique
 

@@ -28,6 +28,10 @@ public sealed class DotNetFileBasedAppDependencyScanner : DependencyScanner
         var lineNo = 0;
         var isInsideMultilineComment = false;
         var tokens = new List<DirectiveToken>();
+
+        // The properties apply to every directive, even to the ones before them, so the dependencies are reported at the end
+        var properties = new VariableDefinitions(StringComparer.OrdinalIgnoreCase);
+        var dependencies = new List<FoundDependency>();
         string? line;
         while ((line = await sr.ReadLineAsync(context.CancellationToken).ConfigureAwait(false)) is not null)
         {
@@ -86,7 +90,19 @@ public sealed class DotNetFileBasedAppDependencyScanner : DependencyScanner
                 continue;
             }
 
-            ScanDirective(context, line, lineNo, offset + 2, tokens);
+            ScanDirective(context, line, lineNo, offset + 2, tokens, properties, dependencies);
+        }
+
+        foreach (var dependency in dependencies)
+        {
+            if (dependency.Version is { } version && MsBuildProperties.IsExpression(version))
+            {
+                context.ReportDependency(this, dependency.Name, version, properties.Resolve(version, MsBuildProperties.GetReferences(version)), dependency.Type, dependency.NameLocation, dependency.VersionLocation);
+            }
+            else
+            {
+                context.ReportDependency(this, dependency.Name, dependency.Version, dependency.Type, dependency.NameLocation, dependency.VersionLocation);
+            }
         }
     }
 
@@ -99,7 +115,7 @@ public sealed class DotNetFileBasedAppDependencyScanner : DependencyScanner
     }
 
 
-    private void ScanDirective(ScanFileContext context, string line, int lineNo, int start, List<DirectiveToken> tokens)
+    private static void ScanDirective(ScanFileContext context, string line, int lineNo, int start, List<DirectiveToken> tokens, VariableDefinitions properties, List<FoundDependency> dependencies)
     {
         // Like the SDK, the text after "#:" is trimmed, and its first whitespace separates the kind of the directive from its text.
         // The text is read from the raw line, so the reported columns are columns in the raw line.
@@ -119,7 +135,7 @@ public sealed class DotNetFileBasedAppDependencyScanner : DependencyScanner
             case "package":
                 if (TryTokenize(line, textStart, end, nameSeparator: '@', allowMetadata: true, tokens))
                 {
-                    ScanPackageDirective(context, lineNo, tokens);
+                    ScanPackageDirective(context, lineNo, tokens, dependencies);
                 }
 
                 break;
@@ -127,7 +143,7 @@ public sealed class DotNetFileBasedAppDependencyScanner : DependencyScanner
             case "sdk":
                 if (TryTokenize(line, textStart, end, nameSeparator: '@', allowMetadata: false, tokens))
                 {
-                    ScanSdkDirective(context, lineNo, tokens);
+                    ScanSdkDirective(context, lineNo, tokens, dependencies);
                 }
 
                 break;
@@ -135,7 +151,7 @@ public sealed class DotNetFileBasedAppDependencyScanner : DependencyScanner
             case "project":
                 if (TryTokenize(line, textStart, end, nameSeparator: null, allowMetadata: true, tokens))
                 {
-                    ScanPathDirective(context, lineNo, tokens, DependencyType.MSBuildProjectReference);
+                    ScanPathDirective(context, lineNo, tokens, DependencyType.MSBuildProjectReference, dependencies);
                 }
 
                 break;
@@ -143,7 +159,7 @@ public sealed class DotNetFileBasedAppDependencyScanner : DependencyScanner
             case "ref":
                 if (TryTokenize(line, textStart, end, nameSeparator: null, allowMetadata: true, tokens))
                 {
-                    ScanPathDirective(context, lineNo, tokens, DependencyType.DotNetAssemblyReference);
+                    ScanPathDirective(context, lineNo, tokens, DependencyType.DotNetAssemblyReference, dependencies);
                 }
 
                 break;
@@ -151,7 +167,7 @@ public sealed class DotNetFileBasedAppDependencyScanner : DependencyScanner
             case "property":
                 if (TryTokenize(line, textStart, end, nameSeparator: '=', allowMetadata: false, tokens))
                 {
-                    ScanPropertyDirective(context, lineNo, tokens);
+                    ScanPropertyDirective(context, lineNo, tokens, properties, dependencies);
                 }
 
                 break;
@@ -159,7 +175,7 @@ public sealed class DotNetFileBasedAppDependencyScanner : DependencyScanner
     }
 
     // #:package Name, #:package Name@Version or #:package Name Version=1.0.0, optionally followed by other item metadata
-    private void ScanPackageDirective(ScanFileContext context, int lineNo, List<DirectiveToken> tokens)
+    private static void ScanPackageDirective(ScanFileContext context, int lineNo, List<DirectiveToken> tokens, List<FoundDependency> dependencies)
     {
         if (!TryGetNameAndValue(tokens, out var name, out var version) || !HasValidMetadata(tokens, conflictingName: version is null ? null : "Version"))
             return;
@@ -170,19 +186,19 @@ public sealed class DotNetFileBasedAppDependencyScanner : DependencyScanner
         {
             if (candidate?.Trim() is { Text.Length: > 0 } value)
             {
-                context.ReportDependency(this, name.Text, value.Text, DependencyType.NuGet, CreateLocation(context, lineNo, name), CreateLocation(context, lineNo, value));
+                dependencies.Add(new FoundDependency(name.Text, value.Text, DependencyType.NuGet, CreateLocation(context, lineNo, name), CreateLocation(context, lineNo, value)));
                 reported = true;
             }
         }
 
         if (!reported)
         {
-            context.ReportDependency(this, name.Text, version: null, DependencyType.NuGet, CreateLocation(context, lineNo, name), versionLocation: null);
+            dependencies.Add(new FoundDependency(name.Text, Version: null, DependencyType.NuGet, CreateLocation(context, lineNo, name), VersionLocation: null));
         }
     }
 
     // #:sdk Name or #:sdk Name@Version
-    private void ScanSdkDirective(ScanFileContext context, int lineNo, List<DirectiveToken> tokens)
+    private static void ScanSdkDirective(ScanFileContext context, int lineNo, List<DirectiveToken> tokens, List<FoundDependency> dependencies)
     {
         if (tokens.Count > 1 || !TryGetNameAndValue(tokens, out var name, out var version))
             return;
@@ -190,12 +206,12 @@ public sealed class DotNetFileBasedAppDependencyScanner : DependencyScanner
         // Like Sdk="Name" in a project file, an SDK without a version is not reported: it is either a built-in SDK or its version comes from global.json.
         if (version?.Trim() is { Text.Length: > 0 } value)
         {
-            context.ReportDependency(this, name.Text, value.Text, DependencyType.NuGet, CreateLocation(context, lineNo, name), CreateLocation(context, lineNo, value));
+            dependencies.Add(new FoundDependency(name.Text, value.Text, DependencyType.NuGet, CreateLocation(context, lineNo, name), CreateLocation(context, lineNo, value)));
         }
     }
 
     // #:project Path or #:ref Path, optionally followed by item metadata
-    private void ScanPathDirective(ScanFileContext context, int lineNo, List<DirectiveToken> tokens, DependencyType type)
+    private static void ScanPathDirective(ScanFileContext context, int lineNo, List<DirectiveToken> tokens, DependencyType type, List<FoundDependency> dependencies)
     {
         if (tokens.Count == 0 || !HasValidMetadata(tokens, conflictingName: null))
             return;
@@ -203,19 +219,29 @@ public sealed class DotNetFileBasedAppDependencyScanner : DependencyScanner
         var path = tokens[0].Name.Trim();
         if (path.Text.Length > 0)
         {
-            context.ReportDependency(this, path.Text, version: null, type, CreateLocation(context, lineNo, path), versionLocation: null);
+            dependencies.Add(new FoundDependency(path.Text, Version: null, type, CreateLocation(context, lineNo, path), VersionLocation: null));
         }
     }
 
-    // #:property TargetFramework=Value
-    private void ScanPropertyDirective(ScanFileContext context, int lineNo, List<DirectiveToken> tokens)
+    // #:property Name=Value. A TargetFramework property is a dependency, and any property can be referenced by the version of a directive, such as #:package Name@$(Name).
+    private static void ScanPropertyDirective(ScanFileContext context, int lineNo, List<DirectiveToken> tokens, VariableDefinitions properties, List<FoundDependency> dependencies)
     {
         if (tokens.Count > 1 || !TryGetNameAndValue(tokens, out var name, out var propertyValue))
             return;
 
-        if (name.Text.Equals("TargetFramework", StringComparison.OrdinalIgnoreCase) && propertyValue?.Trim() is { Text.Length: > 0 } value)
+        var value = propertyValue?.Trim();
+        if (value is { Text.Length: > 0 } literal && !MsBuildProperties.IsExpression(literal.Text))
         {
-            context.ReportDependency(this, name: null, value.Text, DependencyType.DotNetTargetFramework, nameLocation: null, CreateLocation(context, lineNo, value));
+            properties.Add(name.Text, literal.Text, () => CreateLocation(context, lineNo, literal));
+        }
+        else
+        {
+            properties.Add(name.Text, value: null, () => new NonUpdatableLocation(context));
+        }
+
+        if (name.Text.Equals("TargetFramework", StringComparison.OrdinalIgnoreCase) && value is { Text.Length: > 0 } targetFramework)
+        {
+            dependencies.Add(new FoundDependency(Name: null, targetFramework.Text, DependencyType.DotNetTargetFramework, NameLocation: null, CreateLocation(context, lineNo, targetFramework)));
         }
     }
 
@@ -654,4 +680,6 @@ public sealed class DotNetFileBasedAppDependencyScanner : DependencyScanner
 
     /// <summary>A whitespace-separated token of a directive, such as <c>Package@1.0.0</c> or <c>Name=Value</c>. <paramref name="Value"/> is <see langword="null"/> when the token has no separator.</summary>
     private readonly record struct DirectiveToken(DirectivePart Name, DirectivePart? Value);
+
+    private sealed record FoundDependency(string? Name, string? Version, DependencyType Type, Location? NameLocation, Location? VersionLocation);
 }

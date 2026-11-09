@@ -108,36 +108,80 @@ internal static class PackedRTree
         while (queue.Count > 0)
         {
             var (node, level) = queue.Pop();
-
-            // An offset that comes from the file must be a node of its level
-            if (node < levels[level].Start || node >= levels[level].End)
-                throw new FormatException("The index of the FlatGeobuf data is not valid.");
-
-            var end = Math.Min(node + nodeSize, levels[level].End);
-            for (var position = node; position < end; position++)
-            {
-                var span = tree[(int)(position * NodeSize)..];
-                var west = BinaryPrimitives.ReadDoubleLittleEndian(span);
-                var south = BinaryPrimitives.ReadDoubleLittleEndian(span[8..]);
-                var east = BinaryPrimitives.ReadDoubleLittleEndian(span[16..]);
-                var north = BinaryPrimitives.ReadDoubleLittleEndian(span[24..]);
-                if (west > bounds.East || east < bounds.West || south > bounds.North || north < bounds.South)
-                    continue;
-
-                var offset = BinaryPrimitives.ReadInt64LittleEndian(span[32..]);
-                if (position >= leaves)
-                {
-                    results.Add(offset);
-                }
-                else if (level > 0)
-                {
-                    queue.Push((offset, level - 1));
-                }
-            }
+            var end = GetEnd(levels, node, level, nodeSize);
+            VisitNodes(tree[(int)(node * NodeSize)..(int)(end * NodeSize)], node, level, leaves, bounds, results, queue);
         }
 
         results.Sort();
         return results;
+    }
+
+    /// <summary>
+    /// Finds the features whose boxes intersect a box, reading the nodes of the tree from a seekable stream as they are
+    /// visited, and returns their positions in the data, in increasing order.
+    /// </summary>
+    /// <param name="stream">The data.</param>
+    /// <param name="treeStart">The position of the tree in the stream.</param>
+    /// <param name="count">The number of features.</param>
+    /// <param name="nodeSize">The number of children of a node.</param>
+    /// <param name="bounds">The box.</param>
+    /// <param name="cancellationToken">The token to cancel the search.</param>
+    public static async ValueTask<List<long>> SearchAsync(Stream stream, long treeStart, ulong count, ushort nodeSize, GeoBounds bounds, CancellationToken cancellationToken)
+    {
+        var levels = GetLevelBounds(count, nodeSize);
+        var leaves = levels[0].End - (long)count;
+        var buffer = new byte[nodeSize * NodeSize];
+        var results = new List<long>();
+        var queue = new Stack<(long Node, int Level)>();
+        queue.Push((0, levels.Length - 1));
+        while (queue.Count > 0)
+        {
+            var (node, level) = queue.Pop();
+            var end = GetEnd(levels, node, level, nodeSize);
+            var length = (int)(end - node) * NodeSize;
+            stream.Seek(treeStart + (node * NodeSize), SeekOrigin.Begin);
+            if (await stream.ReadAtLeastAsync(buffer.AsMemory(0, length), length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false) < length)
+                throw new FormatException("The index of the FlatGeobuf data is truncated.");
+
+            VisitNodes(buffer.AsSpan(0, length), node, level, leaves, bounds, results, queue);
+        }
+
+        results.Sort();
+        return results;
+    }
+
+    // Gets the end of the children of a node; an offset that comes from the file must be a node of its level
+    private static long GetEnd((long Start, long End)[] levels, long node, int level, ushort nodeSize)
+    {
+        if (node < levels[level].Start || node >= levels[level].End)
+            throw new FormatException("The index of the FlatGeobuf data is not valid.");
+
+        return Math.Min(node + nodeSize, levels[level].End);
+    }
+
+    // Visits the consecutive nodes from the first one: a leaf that intersects the box is a result, and another node is searched
+    private static void VisitNodes(ReadOnlySpan<byte> nodes, long first, int level, long leaves, GeoBounds bounds, List<long> results, Stack<(long Node, int Level)> queue)
+    {
+        for (var i = 0; i < nodes.Length / NodeSize; i++)
+        {
+            var span = nodes[(i * NodeSize)..];
+            var west = BinaryPrimitives.ReadDoubleLittleEndian(span);
+            var south = BinaryPrimitives.ReadDoubleLittleEndian(span[8..]);
+            var east = BinaryPrimitives.ReadDoubleLittleEndian(span[16..]);
+            var north = BinaryPrimitives.ReadDoubleLittleEndian(span[24..]);
+            if (west > bounds.East || east < bounds.West || south > bounds.North || north < bounds.South)
+                continue;
+
+            var offset = BinaryPrimitives.ReadInt64LittleEndian(span[32..]);
+            if (first + i >= leaves)
+            {
+                results.Add(offset);
+            }
+            else if (level > 0)
+            {
+                queue.Push((offset, level - 1));
+            }
+        }
     }
 
     /// <summary>Gets the range of the nodes of each level, from the leaves to the root, in the order of the storage, where the root is first.</summary>

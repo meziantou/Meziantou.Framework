@@ -45,9 +45,11 @@ internal static class Gs1128Encoder
         if (value.Length == 0)
             throw new ArgumentException("The data of an element string cannot be empty.", nameof(value));
 
+        // The component/part identifier (8010) uses the GS1 AI encodable character set 39, which adds '#'
+        var allowHash = applicationIdentifier is "8010";
         foreach (var character in value)
         {
-            if (!IsCharacterSet82(character))
+            if (!IsCharacterSet82(character) && !(allowHash && character == '#'))
                 throw new ArgumentException($"The character '{character}' is not in the GS1 AI encodable character set 82.", nameof(value));
         }
 
@@ -58,7 +60,7 @@ internal static class Gs1128Encoder
 
     // The application identifiers whose element strings have a predefined length (GS1 General Specifications,
     // Figure 7.8.5-2): a reader knows where they end, so no FNC1 follows them. Returns -1 for the other identifiers.
-    private static int GetPredefinedValueLength(string applicationIdentifier)
+    internal static int GetPredefinedValueLength(string applicationIdentifier)
     {
         return applicationIdentifier[..2] switch
         {

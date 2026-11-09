@@ -9,10 +9,11 @@ namespace Meziantou.Framework.Imaging.Tests;
 internal static class DrawingTestSupport
 {
     /// <summary>
-    /// Gets the pixel formats whose samples the references of the tests describe: every format but the interoperability
-    /// formats (<see cref="IsInteropFormat"/>), which are compared with their working format instead.
+    /// Gets the pixel formats whose samples the references of the tests describe: every format of light but the
+    /// interoperability formats (<see cref="IsInteropFormat"/>), which are compared with their working format instead. The
+    /// CMYK formats hold inks, which drawing and processing reject.
     /// </summary>
-    public static TheoryData<PixelFormat> AllFormats => [.. PixelFormats.All.Where(format => !IsInteropFormat(format))];
+    public static TheoryData<PixelFormat> AllFormats => [.. PixelFormats.All.Where(format => !IsInteropFormat(format) && !PixelFormats.IsCmyk(format))];
 
     /// <summary>Gets the integer pixel formats: the ones the exact references of the test harness describe (<see cref="ReferencePixelLayout"/>).</summary>
     public static TheoryData<PixelFormat> IntegerFormats => [.. IntegerPixelFormats];
@@ -21,7 +22,7 @@ internal static class DrawingTestSupport
     /// Gets the integer pixel formats, as a list. The interoperability formats are not in it: the library draws and
     /// processes them as their working format (<see cref="GetWorkingFormat"/>), and the tests compare them with it.
     /// </summary>
-    public static IReadOnlyList<PixelFormat> IntegerPixelFormats { get; } = [.. PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format) && !IsInteropFormat(format))];
+    public static IReadOnlyList<PixelFormat> IntegerPixelFormats { get; } = [.. PixelFormats.All.Where(format => !PixelFormats.IsFloatingPoint(format) && !IsInteropFormat(format) && !PixelFormats.IsCmyk(format))];
 
     /// <summary>Gets the interoperability formats (<see cref="IsInteropFormat"/>).</summary>
     public static TheoryData<PixelFormat> InteropFormats => [.. PixelFormats.All.Where(IsInteropFormat)];
@@ -60,6 +61,8 @@ internal static class DrawingTestSupport
         PixelFormat.Abgr32 => new Image<Abgr32>(width, height, configuration),
         PixelFormat.Bgr565 => new Image<Bgr565>(width, height, configuration),
         PixelFormat.Rgba1010102 => new Image<Rgba1010102>(width, height, configuration),
+        PixelFormat.Cmyk32 => new Image<Cmyk32>(width, height, configuration),
+        PixelFormat.Cmyk64 => new Image<Cmyk64>(width, height, configuration),
         _ => throw new ArgumentOutOfRangeException(nameof(format)),
     };
 

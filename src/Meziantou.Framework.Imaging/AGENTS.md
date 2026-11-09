@@ -36,11 +36,15 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
   jixel (BSD-3-Clause), whose source the user allowed reading for that purpose, and each one was kept on measurements
   (see "Lossy JPEG XL quality tools"); they are listed in `THIRD-PARTY-NOTICES.md`. Reading the source of another codec
   needs the same explicit permission.
-- No public allocator, custom pixel type, codec plug-in or image-processor interface. Implementation types are `internal`
-  and live under `Internals/`.
+- The extension points are `CustomImageCodec`/`CustomImageEncoder` (formats registered in `ImageConfiguration.Codecs`),
+  `IPixelRowOperation<TPixel>`/`IPixelNeighborhoodOperation<TPixel>` (custom filters), `Image.WrapMemory` (caller-owned
+  pixel memory) and `ImageBufferPool` (the retention of the pool). No public allocator and no custom pixel type: the
+  pixel formats are a closed set that every kernel, converter and codec switches over. Implementation types are
+  `internal` and live under `Internals/`.
 - Public namespaces: `Meziantou.Framework.Imaging`, `.Metadata`, `.Formats` (encoder settings), `.Drawing` (brushes,
   pens, paths, the canvas) and `.Typography` (fonts). The base types of the model (`Image`, `ImageFrame`, `ImageFrameCollection`, `ImageEncoder`,
-  `AutoCropAnalysis`, `Brush`, `GradientBrush`) cannot be derived outside the library.
+  `AutoCropAnalysis`, `Brush`, `GradientBrush`) cannot be derived outside the library; `CustomImageEncoder` is the one
+  public subclass of `ImageEncoder` with a protected constructor.
 - Every public member has XML documentation (`DisableDocumentationWarnings` is `false`).
 - `Meziantou.Framework.FullPath` is used by the tests, benchmarks and tools, never by the library.
 
@@ -175,7 +179,12 @@ reference white, values outside [0, 1] are meaningful (highlights, negative out-
 - Geometry changes go through `PixelStorageTransaction`: replacements are budgeted while the originals are live and are
   only swapped on commit.
 - Sequential readers and writers keep live storage independent of the frame count.
-- `SlabPool` retention is bounded per size class and in total bytes. When the total bound is reached, a returned buffer
+- A wrapped frame (`Image.WrapMemory`) has an external `PixelStorage` (`IsExternal`): one slab of caller memory at a
+  caller stride, not charged and not cleared, whose release calls the caller's callback. Pixel-only operations write it
+  in place; `ReplaceGeometry` replaces it with pooled storage and releases it. Code that reaches rows goes through
+  `GetRowSpanCore`, never through the slab arrays, so that external storage keeps working.
+- `SlabPool` retention is bounded per size class and in total bytes (`SlabPool.MaxRetainedBytes`, which
+  `ImageBufferPool.MaxRetainedBytes` sets on the shared pool at run time; lowering it releases buffers). When the total bound is reached, a returned buffer
   releases the buffers of the size classes that were not used recently (`SlabPoolOptions.StaleAfterOperations`), so that
   a change of image sizes or codecs does not leave the pool full of buffers nobody rents; the size classes in use are
   never released for one another.
@@ -200,6 +209,11 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
 - Each format has a structure parser (container rules, written once and walked as header, full scan or decode), a pixel
   decoder that observes it, and an encoder codec. Decoders hand rows to a `DecodedFrameSink` in a lossless source layout;
   the sink converts to the requested pixel format and charges frames before allocating them.
+- Custom codecs (`CustomImageCodec`) go through `CustomImageCodecAdapter`, a random-access codec that buffers the whole
+  input and calls the public codec once; `ImageCodecRegistry.For(configuration)` puts them before the built-in codecs.
+  Their format is `ImageFormat.Custom` and `ImageInfo.CustomFormatInfo` names them. Sequential readers reject them;
+  `Image.Save`/`ImageFrame.Save` route `CustomImageEncoder` around `ImageWriterCore`, which rejects it
+  (`ImageOutputCapabilities`). A switch over `ImageFormat` must keep handling `Custom` (or reject it explicitly).
 - A new format always adds an `ImageFormat` member, its name in `ImageFormatNames`, an `ImageCodec` in
   `ImageCodecRegistry`, a default pixel format in `DefaultPixelFormats`, and a row in the support matrix and a section in
   the format reference of `readme.md`. A format that is also written adds an encoder codec in `ImageEncoderRegistry`, a
@@ -881,19 +895,41 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   product by the stored alpha give the bits of the scalar double-precision forms); `ExrPredictor` and the first level of
   `ExrWavelet` have vector paths, and the PIZ Huffman decoder reads the codes of its lookup table from a 64-bit bit
   buffer (`DecodeTableCodes`). Each vector path keeps its scalar reference (`VectorizedKernelTests`).
+  A multi-part file is decoded from the part `OpenExrDecodingOptions.Part` names: the parser reads every header (the
+  other parts are checked by `ExrHeader.CompleteOtherPart`, for their chunk counts), skips the offset tables of the other
+  parts, and their chunks as bytes between two chunks of the part; a chunk starts with its part number. Deep data
+  (section 1.6 of `ExrCompression.md`) are decoded one chunk at a time on the calling thread (no workers: their sizes are
+  only known from the chunk) and flattened by `ExrDeepPixels` as OpenEXR flattens one source (section 1.7: stored order,
+  single precision, until alpha reaches 1). DWAA and DWAB (`ExrDwa`, section 8) reuse the PIZ Huffman decoder and are
+  bit-exact with the scalar build of OpenEXR (the reference tools are built that way); their perceptual table is pinned by
+  a hash. ZSTD (`ExrZstd`, section 13) wraps a fully managed Zstandard decoder written from RFC 8878
+  (`Internals/Compression/ZstdDecoder`, with the XXH64 checksum). HTJ2K and LJ2K (section 14) are not decoded: the JPEG
+  2000 decoder has no signed components, no 32-bit components and no NLT marker.
   `MetadataWritePlan` treats OpenEXR as linear light only (`FormatCapabilities.LinearOnly`): an sRGB label is metadata
   the format cannot store.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.
 
 ## Color management
 
-`IccColorTransform` (sample buffers), `ConvertColorProfile` (images) and the decoding of CMYK samples
-(`CmykConversionOptions`) are the only code that applies an ICC profile; everything is under `Internals/Color`.
+`IccColorTransform` (sample buffers), `ConvertColorProfile` (images), the decoding of CMYK samples
+(`CmykConversionOptions`) and the conversions between CMYK and other pixels (`PixelConversionOptions.CmykConversion`,
+`CmykColorConversion`) are the only code that applies an ICC profile; everything is under `Internals/Color`, except
+`Internals/CmykColorConversion.cs`, which drives the pipelines.
 
-- No pixel format holds CMYK samples. A decoder that meets them (four-component JPEG, separated TIFF) converts its rows
-  with the pipeline of an `IccColorTransform`, only when the request carries `CmykConversionOptions`, and labels the image with
-  the destination profile; without the options it throws `UnsupportedImageFeatureException` before allocating. An
-  embedded profile that cannot be used is an error, never replaced by the assumed one.
+- A decoder that meets CMYK samples (four-component JPEG, separated TIFF) converts its rows with the pipeline of an
+  `IccColorTransform` when the request carries `CmykConversionOptions` and asks for another format than CMYK, and labels
+  the image with the destination profile. Otherwise its rows are `Cmyk32`/`Cmyk64` ink amounts (0 is no ink) labeled with
+  the CMYK profile, given to the sink, which converts them only with `PixelConversionOptions.CmykConversion`; an untyped
+  load without `CmykConversionOptions` and a request for another format without either option throw
+  `UnsupportedImageFeatureException` before allocating. An embedded profile that cannot be used is an error, never
+  replaced by the assumed one.
+- `Cmyk32` and `Cmyk64` are storage formats: `PixelConverter` only changes their precision and rejects every conversion
+  with another format, which only `PixelConversionPlan` does (`CmykColorConversion`: an ICC pipeline when a CMYK profile
+  is known, else the device formulas of `Cmyk`, through 8- or 16-bit RGB rows). The processing extensions reject them
+  (`ThrowIfCmyk`, except the operations that move pixels: crop, flip, quarter turns, auto-orientation), and so does
+  drawing (`DrawingSession.Begin`). Only the JPEG (`JpegCmykEncoderSession`, Adobe inverted samples) and TIFF
+  (separated samples) encoders store them (`ImageEncoder.StoresCmykPixels`); the writers reject them for the others. A
+  new operation or encoder must handle them or reject them before any allocation.
 - `IccProfile.Cgats001CompatibleCmyk` is third-party data (CC0-1.0): `Internals/Color/BuiltInCmykProfile.g.cs` is
   transcribed from the corpus by the `icc-builtin` command of the corpus generator. Never edit it by hand.
 
@@ -970,6 +1006,15 @@ reads these images.
   (read the `tmap` item instead), and `avifgainmaputil tonemap` is not an oracle (its output differs from the formula by
   several percent): the AVIF references are the formula evaluated with numpy on the planes libavif decodes. Both tools
   upsample a smaller gain map with their own filter, which Ultra HDR leaves to the reader: compare with a tolerance.
+- Writing (`JpegEncoder.GainMap`, `AvifEncoder.GainMap`) never touches the sessions of the formats:
+  `GainMapEncoderSession` buffers the file of the primary image, the gain map image is saved with a copy of the
+  settings (`ImageEncoder.CloneForGainMapImage`: no gain map, 4:4:4, no AVIF grid), and an assembler rewrites the two
+  files (`JpegGainMapAssembler`: XMP merged, ISO 21496-1 APP2 segments, the `MPF` index of libultrahdr 1.4;
+  `AvifGainMapAssembler`: the boxes of `HeifFileWriter` with a hidden gain map item, a `tmap` item, a `dimg`
+  reference, an `altr` group and the `tmap` brand, as libavif 1.3 writes them). The JPEG gain map is 4:4:4 because a
+  4:2:0 gain map (or base image) makes libultrahdr and this library disagree by several percent: their chroma upsampling
+  differs, and the gain multiplies the difference. Check new output with `ultrahdr_app -m 1` and
+  `avifgainmaputil printmetadata` in the fixtures image.
 
 ## Drawing
 

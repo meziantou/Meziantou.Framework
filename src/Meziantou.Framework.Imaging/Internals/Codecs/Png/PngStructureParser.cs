@@ -23,7 +23,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// Rules: a CRC mismatch, an invalid IHDR, misplaced or duplicate critical chunks, non-consecutive <c>IDAT</c>, inconsistent
 /// APNG control data and truncation are <see cref="InvalidImageContentException"/>; an unknown critical chunk is
 /// <see cref="UnsupportedImageFeatureException"/>. Unknown ancillary chunks, misplaced or duplicate ancillary chunks and
-/// invalid metadata payloads are skipped (streamed, never buffered). An <c>acTL</c> after the first <c>IDAT</c> is ignored
+/// invalid metadata payloads are skipped (streamed, never buffered), except the unknown ancillary chunks whose type is
+/// valid (<see cref="PngChunk"/>), which are buffered like the other metadata and kept in
+/// <see cref="ImageMetadata.PngChunks"/> with their position (<see cref="PngChunkPosition.BeforeImageData"/> for the chunks
+/// that precede the image data of a file without palette; the header walk stops at the first <c>IDAT</c>, before the
+/// chunks that follow the image data). An <c>acTL</c> after the first <c>IDAT</c> is ignored
 /// (the file is a static PNG, as for non-APNG decoders); <c>fcTL</c>/<c>fdAT</c> are then ignored as ancillary chunks.
 /// A <c>cICP</c> chunk takes precedence over <c>iCCP</c> (PNG third edition, section 4.3): the profile is then not
 /// adopted. Its matrix coefficients must be 0 (RGB), else the chunk is skipped; a narrow range is an
@@ -387,6 +391,7 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
             case ChunkIdat:
                 if (!_seenIdat)
                 {
+                    NormalizeChunkPositions();
                     OnFirstImageData();
                     if (_walk == StructureWalk.Header)
                         return ChunkAction.Stop;
@@ -533,7 +538,8 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
                 if ((type & 0x20000000) == 0)
                     throw new UnsupportedImageFeatureException($"The PNG file contains the unknown critical chunk '{ChunkName(type)}'.", ImageFormat.Png, "PNG critical chunk " + ChunkName(type));
 
-                return ChunkAction.Stream;
+                // A chunk with the reserved bit set (lowercase third letter) does not conform to the specification
+                return PngChunk.IsValidType(ChunkName(type), out _) ? BufferMetadata(length) : ChunkAction.Stream;
         }
     }
 
@@ -640,6 +646,32 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
             case ChunkIend:
                 OnEnd();
                 break;
+
+            default:
+                // An unknown ancillary chunk (OnChunkHeader streams the others)
+                _metadata.Charge(data.Length);
+                var position = _seenIdat ? PngChunkPosition.AfterImageData : Palette.IsEmpty ? PngChunkPosition.BeforePalette : PngChunkPosition.BeforeImageData;
+                _metadata.Metadata.PngChunks.Add(new PngChunk(ChunkName(type), new MetadataBlob(data), position));
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Places the chunks of a file without palette before the image data: "before the palette" only means something when a
+    /// <c>PLTE</c> chunk follows them. The method is idempotent (a sequential reader processes the header again).
+    /// </summary>
+    private void NormalizeChunkPositions()
+    {
+        if (!Palette.IsEmpty)
+            return;
+
+        var chunks = _metadata.Metadata.PngChunks;
+        for (var i = 0; i < chunks.Count; i++)
+        {
+            if (chunks[i] is { Position: PngChunkPosition.BeforePalette } chunk)
+            {
+                chunks[i] = new PngChunk(chunk.Type, chunk.Data, PngChunkPosition.BeforeImageData);
+            }
         }
     }
 

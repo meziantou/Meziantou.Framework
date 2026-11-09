@@ -131,7 +131,7 @@ internal sealed class TiffBlockReader : IDisposable
         ArgumentNullException.ThrowIfNull(scope);
 
         // A buffer that cannot be rented makes the decoding of the first block fail: it is left to one worker
-        var unitsLength = page.YCbCr?.GetStoredLength(page.BlockWidth, page.BlockHeight) ?? 0;
+        var unitsLength = page.BlockYCbCr?.GetStoredLength(page.BlockWidth, page.BlockHeight) ?? 0;
         var changesLength = page.IsCcitt ? TiffCcittDecoder.GetChangeListLength(page.BlockWidth) * 2 * sizeof(int) : 0;
         if (unitsLength > CheckedSizes.MaxBufferLength || changesLength > CheckedSizes.MaxBufferLength)
             return long.MaxValue;
@@ -161,7 +161,7 @@ internal sealed class TiffBlockReader : IDisposable
         {
             // The compressed bytes are copied when the input is a stream, when their bits are reversed, and for the Deflate
             // decompressor of .NET 10: counted whenever the block is compressed
-            var decodedLength = page.YCbCr is { } units ? units.GetStoredLength(page.BlockWidth, page.BlockHeight) : (long)page.BlockRowLength * page.BlockHeight;
+            var decodedLength = page.BlockYCbCr is { } units ? units.GetStoredLength(page.BlockWidth, page.BlockHeight) : (long)page.BlockRowLength * page.BlockHeight;
             var largest = 0UL;
             foreach (var count in page.BlockByteCounts)
             {
@@ -253,7 +253,7 @@ internal sealed class TiffBlockReader : IDisposable
         }
 
         var destination = workspace.GetBlock(page).Span[..(block.RowCount * page.BlockRowLength)];
-        page.YCbCr?.Convert(stored, destination, page.BlockWidth, block.RowCount);
+        page.BlockYCbCr?.Convert(stored, destination, page.BlockWidth, block.RowCount);
         return destination;
     }
 
@@ -310,7 +310,7 @@ internal sealed class TiffBlockReader : IDisposable
     private Span<byte> GetStored(int storedRows, Workspace workspace)
     {
         var page = _page;
-        return page.YCbCr is { } conversion
+        return page.BlockYCbCr is { } conversion
             ? workspace.GetUnits(conversion.GetStoredLength(page.BlockWidth, storedRows), _source.Limits)
             : workspace.GetBlock(page).Span[..(storedRows * page.BlockRowLength)];
     }
@@ -398,7 +398,7 @@ internal sealed class TiffBlockReader : IDisposable
     {
         rows = default;
         var page = _page;
-        if (page.Compression != TiffFormat.CompressionNone || page.IsJpeg || page.IsJpeg2000 || page.YCbCr is not null || page.Predictor != TiffFormat.PredictorNone || page.IsSigned || page.IsLeastSignificantBitFirst)
+        if (page.Compression != TiffFormat.CompressionNone || page.IsJpeg || page.IsJpeg2000 || page.BlockYCbCr is not null || page.Predictor != TiffFormat.PredictorNone || page.IsSigned || page.IsLeastSignificantBitFirst)
             return false;
 
         // A tile is always stored in full, even when it extends past the bottom edge of the page; a strip is not
@@ -729,7 +729,8 @@ internal sealed class TiffBlockReader : IDisposable
     {
         var page = _page;
         var receiver = _jpegReceiver!;
-        var compressed = ReadCompressedBytes(index, (long)rowCount * page.BlockRowLength, out var copy);
+        var decodedLength = (long)rowCount * page.BlockRowLength;
+        var compressed = page.OldJpeg is { } layout ? ReadOldJpegDatastream(layout, index, rowCount, decodedLength, out var copy) : ReadCompressedBytes(index, decodedLength, out copy);
         using var owner = copy;
         if (handler is not null && page.DecodedBitsPerSample == 16)
         {
@@ -765,6 +766,78 @@ internal sealed class TiffBlockReader : IDisposable
 
         if (receiver.RowsReceived < rowCount)
             throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG data of the TIFF block {index} of page {page.Index} produced {receiver.RowsReceived} rows; {rowCount} are required."));
+    }
+
+    /// <summary>
+    /// Assembles the JPEG datastream of a block of an old-style JPEG page (<see cref="TiffOldJpegLayout"/>): the header of
+    /// the page followed by every block of the page when it is decoded as a single datastream, or by the data of the block.
+    /// </summary>
+    private ReadOnlySpan<byte> ReadOldJpegDatastream(TiffOldJpegLayout layout, int index, int rowCount, long decodedLength, out PooledBuffer? copy)
+    {
+        var page = _page;
+        if (!layout.IsWholeImage)
+        {
+            var data = ReadCompressedBytes(index, decodedLength, out var dataCopy);
+            using (dataCopy)
+            {
+                var buffer = _source.Scope.Rent(layout.GetBlockDatastreamLength(page, index, data.Length), AllocationKind.DecoderState, clear: false);
+                var written = layout.WriteBlockDatastream(page, index, rowCount, data, buffer.Span);
+                if (written == 0)
+                {
+                    // The block is a datastream of its own
+                    data.CopyTo(buffer.Span);
+                    written = data.Length;
+                }
+
+                copy = buffer;
+                return buffer.Span[..written];
+            }
+        }
+
+        // The header, then the slices of the scan, which are never read beyond what a page of this size can need
+        var limit = GetCompressedReadLimit(page, decodedLength);
+        var header = layout.Headers[0];
+        var total = 0L;
+        foreach (var (offset, length) in layout.DataRanges)
+        {
+            if (offset > (ulong)_source.Length || length > (ulong)_source.Length - offset)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The old-style JPEG page {page.Index} stores data at offset {offset} with {length} bytes, outside the input."));
+
+            total += (long)Math.Min(length, (ulong)limit);
+        }
+
+        total = Math.Min(total, limit);
+        var result = _source.Scope.Rent(checked(header.Length + (int)total + 2), AllocationKind.DecoderState, clear: false);
+        var span = result.Span;
+        var position = 0;
+        var remaining = total;
+        Span<byte> start = stackalloc byte[2];
+        foreach (var (offset, length) in layout.DataRanges)
+        {
+            var count = (int)Math.Min((long)length, remaining);
+            if (count == 0)
+                break;
+
+            if (position == 0)
+            {
+                // A first slice that starts with a start-of-image marker holds the whole datastream: the header is its own
+                _source.Read((long)offset, start[..Math.Min(2, count)], charge: false);
+                if (count < 2 || start[0] != 0xFF || start[1] != 0xD8)
+                {
+                    header.CopyTo(span);
+                    position = header.Length;
+                }
+            }
+
+            _source.Read((long)offset, span.Slice(position, count));
+            position += count;
+            remaining -= count;
+        }
+
+        span[position] = 0xFF;
+        span[position + 1] = 0xD9;
+        copy = result;
+        return span[..(position + 2)];
     }
 
     /// <summary>
@@ -898,7 +971,7 @@ internal sealed class TiffBlockReader : IDisposable
             ArgumentNullException.ThrowIfNull(page);
             ArgumentNullException.ThrowIfNull(limits);
             _ = GetBlock(page);
-            if (page.YCbCr is { } conversion)
+            if (page.BlockYCbCr is { } conversion)
             {
                 _ = GetUnits(conversion.GetStoredLength(page.BlockWidth, page.BlockHeight), limits);
             }
@@ -1021,6 +1094,10 @@ internal sealed class TiffBlockReader : IDisposable
             {
                 if (component.Precision != page.BitsPerSample)
                     throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 data of the TIFF block {_index} of page {page.Index} has samples of {component.Precision} bits; the page declares {page.BitsPerSample}."));
+
+                // The pages of this compression have unsigned samples
+                if (component.IsSigned)
+                    throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 data of the TIFF block {_index} of page {page.Index} has signed samples; the page declares unsigned samples."));
             }
 
             // A block holds at least the rows of the page it covers, and never more than the rows of a block

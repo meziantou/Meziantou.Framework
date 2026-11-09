@@ -198,6 +198,9 @@ public sealed class DocumentationImageTests : IDisposable
     public void DrawGradients() => AssertImage(Drawing, nameof(DrawingExamples.DrawGradients), DrawingExamples.DrawGradients);
 
     [Fact]
+    public void DrawMeshGradient() => AssertImage(Drawing, nameof(DrawingExamples.DrawMeshGradient), DrawingExamples.DrawMeshGradient);
+
+    [Fact]
     public void DrawGradientColorSpaces() => AssertImage(Drawing, nameof(DrawingExamples.DrawGradientColorSpaces), DrawingExamples.DrawGradientColorSpaces);
 
     [Fact]
@@ -253,6 +256,20 @@ public sealed class DocumentationImageTests : IDisposable
     {
         var hebrew = FixtureRoot.GetDirectory() / "fonts" / "noto-sans-hebrew" / "NotoSansHebrew-Regular.ttf";
         AssertImage(Text, nameof(TextExamples.DrawMixedDirections), output => TextExamples.DrawMixedDirections(RegularFont, hebrew, output));
+    }
+
+    [Fact]
+    public void DrawRuby()
+    {
+        var japanese = FixtureRoot.GetDirectory() / "fonts" / "noto-sans-cjk" / "NotoSansCJKjp-Regular.subset.otf";
+        AssertImage(Text, nameof(TextExamples.DrawRuby), output => TextExamples.DrawRuby(japanese, output));
+    }
+
+    [Fact]
+    public void DrawSubpixelText()
+    {
+        var font = FixtureRoot.GetDirectory() / "font-suites" / "truetype-hinting" / "DroidSans.subset.ttf";
+        AssertImage(Text, nameof(TextExamples.DrawSubpixelText), output => TextExamples.DrawSubpixelText(font, output));
     }
 
     [Fact]

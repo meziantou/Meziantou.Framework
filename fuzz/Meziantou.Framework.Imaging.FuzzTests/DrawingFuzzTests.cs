@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 
 /// <summary>
 /// Random drawings: any valid sequence of shapes, pens and brushes, with coordinates from a fraction of a pixel to the
-/// largest ones the API accepts, on every pixel format, must complete and keep the invariants of drawing.
+/// largest ones the API accepts, on every pixel format but CMYK, must complete and keep the invariants of drawing.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -36,6 +36,9 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 public sealed class DrawingFuzzTests
 {
     private const double MaxCoordinate = 16777216;
+
+    // The CMYK formats are not drawn on: a drawing session rejects them
+    private static readonly PixelFormat[] DrawableFormats = [.. PixelFormats.All.Where(format => !PixelFormats.IsCmyk(format))];
 
     // In perspective, coordinates and lengths of the size of the canvas: a shape of 2^24 pixels whose far end is drawn
     // at the vanishing point of the canvas is millions of chords and dashes there, which the limits of the image refuse
@@ -119,7 +122,7 @@ public sealed class DrawingFuzzTests
     private static string? Check(ulong seed, out bool changed)
     {
         var random = new FuzzRandom(seed);
-        var format = PixelFormats.All[random.Next(PixelFormats.All.Count)];
+        var format = DrawableFormats[random.Next(DrawableFormats.Length)];
 
         // The commands are generated once and replayed on every frame, whatever the frame
         var commandSeed = random.NextUInt64();
@@ -128,7 +131,7 @@ public sealed class DrawingFuzzTests
         var erases = random.Chance(33);
 
         // The image some drawings paint with: any pixel format, never the image that is drawn on
-        using var sprite = DrawingTestSupport.CreateRandom(PixelFormats.All[random.Next(PixelFormats.All.Count)], random.Next(1, 9), random.Next(1, 9), random.Next);
+        using var sprite = DrawingTestSupport.CreateRandom(DrawableFormats[random.Next(DrawableFormats.Length)], random.Next(1, 9), random.Next(1, 9), random.Next);
         var context = new FuzzContext(sprite.Frames[0], erases);
         return CheckInvariants(format, (canvas, _) => Paint(canvas.Canvas, new FuzzRandom(commandSeed), context, depth: 0), out changed, random, checkAlpha: !erases);
     }

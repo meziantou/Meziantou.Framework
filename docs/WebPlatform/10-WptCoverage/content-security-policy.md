@@ -18,12 +18,11 @@ description: "The results of the web-platform-tests of content-security-policy, 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
+- **BUG**: 2
 - **TEST BUG**: 9
-- **NOT IMPLEMENTED**: 20
+- **NOT IMPLEMENTED**: 21
 - **TEST RUNNER**: 1
 - **OUT OF SCOPE**: 7
-- *No reason documented*: 2
 
 ## Stable tests
 
@@ -61,7 +60,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`connect-src/connect-src-fetch-keepalive-redirect-to-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-fetch-keepalive-redirect-to-blocked.sub.html) | Pass | 2 / 2 |  |  |
 | [`connect-src/connect-src-json-import-allowed.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-json-import-allowed.sub.html) | Pass | 1 / 1 |  |  |
 | [`connect-src/connect-src-json-import-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-json-import-blocked.sub.html) | Pass | 1 / 1 |  |  |
-| [`connect-src/connect-src-json-import-in-worker-and-worklet-blocked.https.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-json-import-in-worker-and-worklet-blocked.https.html) | Timeout | 0 / 3 |  | *No reason documented* |
+| [`connect-src/connect-src-json-import-in-worker-and-worklet-blocked.https.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-json-import-in-worker-and-worklet-blocked.https.html) | Timeout | 0 / 3 | BUG | the JSON modules of the static module graph of a module worker are fetched with the policies of the worker instead of those of its creator (`ModuleFetching.Fetch` only uses the creator as policy client for the JavaScript modules): `connect-src 'none'` of the document does not block the import of `/common/dummy.json`, so the worker loads and the test times out (the SharedWorker and AudioWorklet subtests do not run) |
 | [`connect-src/connect-src-syncxmlhttprequest-allowed.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-syncxmlhttprequest-allowed.sub.html) | Pass | 1 / 1 |  |  |
 | [`connect-src/connect-src-syncxmlhttprequest-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-syncxmlhttprequest-blocked.sub.html) | Pass | 1 / 1 |  |  |
 | [`connect-src/connect-src-syncxmlhttprequest-redirect-to-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-syncxmlhttprequest-redirect-to-blocked.sub.html) | Pass | 1 / 1 |  |  |
@@ -694,7 +693,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`script-src/script-src-strict_dynamic_in_img-src.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_in_img-src.html) | Pass | 1 / 1 |  |  |
 | [`script-src/script-src-strict_dynamic_javascript_uri.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_javascript_uri.html) | Pass | 1 / 1 |  |  |
 | [`script-src/script-src-strict_dynamic_meta_tag.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_meta_tag.html) | Pass | 4 / 4 |  |  |
-| [`script-src/script-src-strict_dynamic_modulepreload_integrity_mismatch.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_modulepreload_integrity_mismatch.html) | Fail | 2 / 6 |  | *No reason documented* |
+| [`script-src/script-src-strict_dynamic_modulepreload_integrity_mismatch.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_modulepreload_integrity_mismatch.html) | Fail | 2 / 6 | NOT IMPLEMENTED | a parser-inserted module script allowed by `strict-dynamic` through a policy hash of its `integrity` attribute runs the module of a `modulepreload` entry whose integrity was not verified against that metadata (the module map hit skips the integrity check of the script element); the test expects it to be blocked with a `script-src-elem` violation |
 | [`script-src/script-src-strict_dynamic_modulepreload_parser_inserted_module.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_modulepreload_parser_inserted_module.html) | Pass | 3 / 3 |  |  |
 | [`script-src/script-src-strict_dynamic_new_function.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_new_function.html) | Pass | 1 / 1 |  |  |
 | [`script-src/script-src-strict_dynamic_non_parser_inserted.html`](https://wpt.fyi/results/content-security-policy/script-src/script-src-strict_dynamic_non_parser_inserted.html) | Pass | 4 / 4 |  |  |

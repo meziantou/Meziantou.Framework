@@ -19,9 +19,8 @@ description: "The results of the web-platform-tests of clipboard-apis, and why t
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 4
-- **NOT IMPLEMENTED**: 3
+- **NOT IMPLEMENTED**: 4
 - **TEST RUNNER**: 3
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -83,7 +82,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`async-unsanitized-html-formats-write-read.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-unsanitized-html-formats-write-read.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | inlining the computed style of the elements in the unsanitized `text/html` read (a Chromium-specific expectation) |
 | [`async-unsanitized-plaintext-formats-write-read.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-unsanitized-plaintext-formats-write-read.tentative.https.html) | Pass | 1 / 1 |  |  |
 | [`async-unsanitized-standard-html-read-fail.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/async-unsanitized-standard-html-read-fail.tentative.https.html) | Pass | 4 / 4 |  |  |
-| [`clipboard-copy-selection-style-opacity.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/clipboard-copy-selection-style-opacity.tentative.https.html) | Timeout | 0 / 3 |  | *No reason documented* |
+| [`clipboard-copy-selection-style-opacity.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/clipboard-copy-selection-style-opacity.tentative.https.html) | Timeout | 0 / 3 | NOT IMPLEMENTED | dropping `opacity` from the inline style of the copied `text/html` (the tentative behavior of w3c/clipboard-apis#246): the copied `<span>` keeps `opacity: 0.5`; the next subtest then times out |
 | [`downloadurl-list-custom-clipboard-data.tentative.https.html`](https://wpt.fyi/results/clipboard-apis/downloadurl-list-custom-clipboard-data.tentative.https.html) | Pass | 1 / 1 |  |  |
 | [`permissions-policy/clipboard-read/clipboard-read-disabled-by-permissions-policy.tentative.https.sub.html`](https://wpt.fyi/results/clipboard-apis/permissions-policy/clipboard-read/clipboard-read-disabled-by-permissions-policy.tentative.https.sub.html) | Pass | 3 / 3 |  |  |
 | [`permissions-policy/clipboard-read/clipboard-read-enabled-by-permissions-policy.tentative.https.sub.html`](https://wpt.fyi/results/clipboard-apis/permissions-policy/clipboard-read/clipboard-read-enabled-by-permissions-policy.tentative.https.sub.html) | Fail | 1 / 2 | TEST RUNNER | the clipboard is empty so `readText()` rejects with `NotFoundError` in the top-level document (the policy allows it) |

@@ -18,8 +18,7 @@ description: "The results of the web-platform-tests of css/css-box, and why the 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 57
-- *No reason documented*: 1
+- **TEST BUG**: 58
 
 ## Stable tests
 
@@ -39,7 +38,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`inheritance.html`](https://wpt.fyi/results/css/css-box/inheritance.html) | Pass | 24 / 24 |  |  |
 | [`margin-trim/block-container-block-end-last-child-with-border.html`](https://wpt.fyi/results/css/css-box/margin-trim/block-container-block-end-last-child-with-border.html) | Pass | 2 / 2 |  |  |
 | [`margin-trim/block-container-block-end-nested-last-child-with-border.html`](https://wpt.fyi/results/css/css-box/margin-trim/block-container-block-end-nested-last-child-with-border.html) | Pass | 3 / 3 |  |  |
-| [`margin-trim/block-container-block-end-propagation-boundaries.html`](https://wpt.fyi/results/css/css-box/margin-trim/block-container-block-end-propagation-boundaries.html) | Fail | 0 / 10 |  | *No reason documented* |
+| [`margin-trim/block-container-block-end-propagation-boundaries.html`](https://wpt.fyi/results/css/css-box/margin-trim/block-container-block-end-propagation-boundaries.html) | Fail | 0 / 10 | TEST BUG | expects the computed `margin-block-end` of the boxes whose margins `margin-trim` truncated to be `0px` (the layout and the heights are as expected): https://drafts.csswg.org/css-box-4/#margin-trim only truncates them in the layout, and css/css-box/margin-trim/margin-trim-computed-value.html expects a trimmed margin to keep its resolved value |
 | [`margin-trim/block-container-block-end-self-collapsing-children-nested-at-bottom.html`](https://wpt.fyi/results/css/css-box/margin-trim/block-container-block-end-self-collapsing-children-nested-at-bottom.html) | Pass | 7 / 7 |  |  |
 | [`margin-trim/block-container-block-end-self-collapsing-children-nested-margin-trim.html`](https://wpt.fyi/results/css/css-box/margin-trim/block-container-block-end-self-collapsing-children-nested-margin-trim.html) | Pass | 1 / 1 |  |  |
 | [`margin-trim/block-container-block-end-self-collapsing-children-offsets-nested-multiple-times.html`](https://wpt.fyi/results/css/css-box/margin-trim/block-container-block-end-self-collapsing-children-offsets-nested-multiple-times.html) | Pass | 1 / 1 |  |  |

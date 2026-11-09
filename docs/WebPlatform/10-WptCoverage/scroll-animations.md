@@ -20,9 +20,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 2
 - **TEST BUG**: 3
-- **NOT IMPLEMENTED**: 45
+- **NOT IMPLEMENTED**: 46
 - **OUT OF SCOPE**: 1
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -79,7 +78,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/timeline-offset-keyframes-zero-length-attachment-range.html`](https://wpt.fyi/results/scroll-animations/css/timeline-offset-keyframes-zero-length-attachment-range.html) | Pass | 2 / 2 |  |  |
 | [`css/timeline-scope-all.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope-all.html) | Pass | 3 / 3 |  |  |
 | [`css/timeline-scope-computed.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope-computed.html) | Pass | 12 / 12 |  |  |
-| [`css/timeline-scope-on-pseudo.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope-on-pseudo.html) | Fail | 2 / 3 |  | *No reason documented* |
+| [`css/timeline-scope-on-pseudo.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope-on-pseudo.html) | Fail | 2 / 3 | NOT IMPLEMENTED | `timeline-scope` on pseudo-elements: only the declarations of the elements are collected, so the animation of a `::before` that scopes `--t1` still finds the `--t1` timeline of another element |
 | [`css/timeline-scope-parsing.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope-parsing.html) | Pass | 25 / 25 |  |  |
 | [`css/timeline-scope.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope.html) | Pass | 12 / 12 |  |  |
 | [`css/view-timeline-animation.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-animation.html) | Fail | 0 / 3 | TEST BUG | the last step expects a `fill: none` animation to apply its effect when its view progress timeline is at 100% (the end of the cover range, `scrollTop` 200 of 250): the scroller is not at its maximum scroll offset, so the active-after boundary is not "at timeline boundary" (https://drafts.csswg.org/web-animations-2/#at-timeline-boundary: the minimum and maximum timeline times are the ones of the minimum and maximum scroll offsets) and it is exclusive, as `view-timelines/block-view-timeline-current-time.tentative.html` and `range-boundary.tentative.html` expect ("Effect is in the after phase at effect end time"); Chromium fails it too |

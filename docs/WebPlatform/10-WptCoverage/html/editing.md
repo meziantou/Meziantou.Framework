@@ -19,12 +19,11 @@ description: "The results of the web-platform-tests of html/editing, and why the
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 5
+- **NOT IMPLEMENTED**: 6
 - **REQUIRES**: 2
   - `layout`: 2
-- **TEST RUNNER**: 2
+- **TEST RUNNER**: 10
 - **FLAKY**: 1
-- *No reason documented*: 8
 
 ## Stable tests
 
@@ -114,14 +113,14 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`dnd/platform/mousedown-move-inner-when-dragging-2.html`](https://wpt.fyi/results/html/editing/dnd/platform/mousedown-move-inner-when-dragging-2.html) | Pass | 1 / 1 |  |  |
 | [`dnd/platform/pointerdown-add-display-none.html`](https://wpt.fyi/results/html/editing/dnd/platform/pointerdown-add-display-none.html) | Pass | 1 / 1 |  |  |
 | [`dnd/platform/pointerdown-add-overflow-hidden.html`](https://wpt.fyi/results/html/editing/dnd/platform/pointerdown-add-overflow-hidden.html) | Pass | 1 / 1 |  |  |
-| [`dnd/reload/001.html`](https://wpt.fyi/results/html/editing/dnd/reload/001.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`dnd/reload/002.html`](https://wpt.fyi/results/html/editing/dnd/reload/002.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`dnd/reload/003.html`](https://wpt.fyi/results/html/editing/dnd/reload/003.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`dnd/reload/004.html`](https://wpt.fyi/results/html/editing/dnd/reload/004.html) | Timeout | 0 / 1 |  | *No reason documented* |
-| [`dnd/reload/005.html`](https://wpt.fyi/results/html/editing/dnd/reload/005.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`dnd/reload/006.html`](https://wpt.fyi/results/html/editing/dnd/reload/006.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`dnd/reload/007.html`](https://wpt.fyi/results/html/editing/dnd/reload/007.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`dnd/reload/008.html`](https://wpt.fyi/results/html/editing/dnd/reload/008.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`dnd/reload/001.html`](https://wpt.fyi/results/html/editing/dnd/reload/001.html) | Fail | 0 / 1 | TEST RUNNER | the action sequence keeps the `Window` that `setContext(popup)` resolved to when it started: once `location.reload()` replaces the document, that window has no browsing context, so the pointer moves and the release are dropped and the reloaded document never gets the `drop` |
+| [`dnd/reload/002.html`](https://wpt.fyi/results/html/editing/dnd/reload/002.html) | Fail | 0 / 1 | TEST RUNNER | the action sequence keeps the `Window` that `setContext(popup)` resolved to when it started: once `location.reload()` replaces the document, that window has no browsing context, so the pointer moves and the release are dropped and the reloaded document never gets the `drop` |
+| [`dnd/reload/003.html`](https://wpt.fyi/results/html/editing/dnd/reload/003.html) | Fail | 0 / 1 | TEST RUNNER | the action sequence keeps the `Window` that `setContext(popup)` resolved to when it started: once `location.reload()` replaces the document, that window has no browsing context, so the pointer moves and the release are dropped and the reloaded document never gets the `drop` |
+| [`dnd/reload/004.html`](https://wpt.fyi/results/html/editing/dnd/reload/004.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | dragging the selected text of a text control (the `<input>` selection is not a document selection, so no drag starts); the action sequence keeps the `Window` that `setContext(popup)` resolved to when it started: once `location.reload()` replaces the document, that window has no browsing context, so the pointer moves and the release are dropped and the reloaded document never gets the `drop` |
+| [`dnd/reload/005.html`](https://wpt.fyi/results/html/editing/dnd/reload/005.html) | Fail | 0 / 1 | TEST RUNNER | the action sequence keeps the `Window` that `setContext(popup)` resolved to when it started: once `location.reload()` replaces the document, that window has no browsing context, so the pointer moves and the release are dropped and the reloaded document never gets the `drop` |
+| [`dnd/reload/006.html`](https://wpt.fyi/results/html/editing/dnd/reload/006.html) | Fail | 0 / 1 | TEST RUNNER | the action sequence keeps the `Window` that `setContext(popup)` resolved to when it started: once `location.reload()` replaces the document, that window has no browsing context, so the pointer moves and the release are dropped and the reloaded document never gets the `drop` |
+| [`dnd/reload/007.html`](https://wpt.fyi/results/html/editing/dnd/reload/007.html) | Fail | 0 / 1 | TEST RUNNER | the action sequence keeps the `Window` that `setContext(popup)` resolved to when it started: once `location.reload()` replaces the document, that window has no browsing context, so the pointer moves and the release are dropped and the reloaded document never gets the `drop` |
+| [`dnd/reload/008.html`](https://wpt.fyi/results/html/editing/dnd/reload/008.html) | Fail | 0 / 1 | TEST RUNNER | the action sequence keeps the `Window` that `setContext(popup)` resolved to when it started: once `location.reload()` replaces the document, that window has no browsing context, so the pointer moves and the release are dropped and the reloaded document never gets the `drop` |
 | [`dnd/remove/001.html`](https://wpt.fyi/results/html/editing/dnd/remove/001.html) | Pass | 1 / 1 |  |  |
 | [`dnd/remove/002.html`](https://wpt.fyi/results/html/editing/dnd/remove/002.html) | Pass | 1 / 1 |  |  |
 | [`dnd/remove/003.html`](https://wpt.fyi/results/html/editing/dnd/remove/003.html) | Pass | 1 / 1 |  |  |

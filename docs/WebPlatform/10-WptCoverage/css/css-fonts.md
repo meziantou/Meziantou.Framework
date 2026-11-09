@@ -18,14 +18,13 @@ description: "The results of the web-platform-tests of css/css-fonts, and why th
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
+- **BUG**: 2
 - **TEST BUG**: 20
-- **NOT IMPLEMENTED**: 3
+- **NOT IMPLEMENTED**: 4
 - **REQUIRES**: 1
   - `layout`: 1
 - **TEST RUNNER**: 6
 - **FLAKY**: 1
-- *No reason documented*: 2
 
 ## Stable tests
 
@@ -62,7 +61,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`font-feature-settings-serialization-001.html`](https://wpt.fyi/results/css/css-fonts/font-feature-settings-serialization-001.html) | Pass | 2 / 2 |  |  |
 | [`font-feature-values-map-live.html`](https://wpt.fyi/results/css/css-fonts/font-feature-values-map-live.html) | Pass | 2 / 2 |  |  |
 | [`font-feature-values-map-order.html`](https://wpt.fyi/results/css/css-fonts/font-feature-values-map-order.html) | Pass | 6 / 6 |  |  |
-| [`font-feature-values-serialization-order.html`](https://wpt.fyi/results/css/css-fonts/font-feature-values-serialization-order.html) | Fail | 0 / 10 |  | *No reason documented* |
+| [`font-feature-values-serialization-order.html`](https://wpt.fyi/results/css/css-fonts/font-feature-values-serialization-order.html) | Fail | 0 / 10 | NOT IMPLEMENTED | the serialization of `@font-feature-values` of w3c/csswg-drafts#14658: on one line (`{ }` when empty), `font-display` first, then the blocks in a fixed order (`@swash`, `@stylistic`, `@ornaments`, `@annotation`, `@character-variant`, `@styleset`, `@historical-forms`); the blocks are serialized on their own lines in the order of the style sheet, as in Firefox and Safari |
 | [`font-palette-vs-shorthand.html`](https://wpt.fyi/results/css/css-fonts/font-palette-vs-shorthand.html) | Pass | 4 / 4 |  |  |
 | [`font-shorthand-serialization-001.html`](https://wpt.fyi/results/css/css-fonts/font-shorthand-serialization-001.html) | Pass | 1 / 1 |  |  |
 | [`font-shorthand-serialization-font-stretch.html`](https://wpt.fyi/results/css/css-fonts/font-shorthand-serialization-font-stretch.html) | Pass | 4 / 4 |  |  |
@@ -522,7 +521,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`math-script-level-and-math-style/math-script-level-auto-and-math-style-005.tentative.html`](https://wpt.fyi/results/css/css-fonts/math-script-level-and-math-style/math-script-level-auto-and-math-style-005.tentative.html) | Pass | 1 / 1 |  |  |
 | [`math-script-level-and-math-style/math-script-level-font-size-clamping-001.tentative.html`](https://wpt.fyi/results/css/css-fonts/math-script-level-and-math-style/math-script-level-font-size-clamping-001.tentative.html) | Disabled | – | FLAKY | reftest whose result depends on the platform: the glyphs are antialiased by the font engine of the platform (CoreText, FreeType, DirectWrite), so it passes on Linux and fails on macOS or the reverse |
 | [`metrics-override-normal-keyword.html`](https://wpt.fyi/results/css/css-fonts/metrics-override-normal-keyword.html) | Pass | 1 / 1 |  |  |
-| [`metrics-override-small-lineheight.html`](https://wpt.fyi/results/css/css-fonts/metrics-override-small-lineheight.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`metrics-override-small-lineheight.html`](https://wpt.fyi/results/css/css-fonts/metrics-override-small-lineheight.html) | Fail | 0 / 1 | BUG | the ascent, the descent and the line gap are rounded to whole pixels separately, as in Blink (`MatchedFont`): the overrides of 25%, 12.5% and 12.5% of the 100px font give a normal line height of 25 + 13 + 13 = 51px instead of 50px, so each box clipped to its line is 1px taller than the reference |
 | [`oblique-last-resort-weight-selection.html`](https://wpt.fyi/results/css/css-fonts/oblique-last-resort-weight-selection.html) | Pass | 1 / 1 |  |  |
 | [`palette-values-rule-add-2.html`](https://wpt.fyi/results/css/css-fonts/palette-values-rule-add-2.html) | Pass | 1 / 1 |  |  |
 | [`palette-values-rule-add.html`](https://wpt.fyi/results/css/css-fonts/palette-values-rule-add.html) | Pass | 1 / 1 |  |  |

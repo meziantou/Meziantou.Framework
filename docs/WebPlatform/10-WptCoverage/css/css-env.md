@@ -18,15 +18,15 @@ description: "The results of the web-platform-tests of css/css-env, and why the 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- *No reason documented*: 4
+- **NOT IMPLEMENTED**: 4
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`env-fallback-braces.html`](https://wpt.fyi/results/css/css-env/env-fallback-braces.html) | Fail | 0 / 6 |  | *No reason documented* |
+| [`env-fallback-braces.html`](https://wpt.fyi/results/css/css-env/env-fallback-braces.html) | Fail | 0 / 6 | NOT IMPLEMENTED | an argument of `env()` written in a `{}` block (https://drafts.csswg.org/css-values-5/#component-function-commas): the fallback is not unwrapped (a block alone) nor rejected when the block is mixed with other values |
 | [`env-fallback-substitution.html`](https://wpt.fyi/results/css/css-env/env-fallback-substitution.html) | Pass | 11 / 11 |  |  |
-| [`env-parsing.html`](https://wpt.fyi/results/css/css-env/env-parsing.html) | Fail | 10 / 15 |  | *No reason documented* |
+| [`env-parsing.html`](https://wpt.fyi/results/css/css-env/env-parsing.html) | Fail | 10 / 15 | NOT IMPLEMENTED | the `<declaration-value>` argument of `env()` (https://drafts.csswg.org/css-env-1/#funcdef-env): the name and the indices are validated at parse time (`<custom-ident> <integer [0,∞]>*`) instead of at substitution time, so `env(10px)` or `env(test1 test2, green)` are invalid |
 | [`env-revert-rule.html`](https://wpt.fyi/results/css/css-env/env-revert-rule.html) | Pass | 1 / 1 |  |  |
 
 ## Tentative tests
@@ -36,8 +36,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`at-supports.tentative.html`](https://wpt.fyi/results/css/css-env/at-supports.tentative.html) | Pass | 1 / 1 |  |  |
 | [`env-in-custom-properties.tentative.html`](https://wpt.fyi/results/css/css-env/env-in-custom-properties.tentative.html) | Pass | 2 / 2 |  |  |
 | [`fallback-nested-var.tentative.html`](https://wpt.fyi/results/css/css-env/fallback-nested-var.tentative.html) | Pass | 1 / 1 |  |  |
-| [`indexed-env.tentative.html`](https://wpt.fyi/results/css/css-env/indexed-env.tentative.html) | Fail | 7 / 11 |  | *No reason documented* |
+| [`indexed-env.tentative.html`](https://wpt.fyi/results/css/css-env/indexed-env.tentative.html) | Fail | 7 / 11 | NOT IMPLEMENTED | the `<declaration-value>` argument of `env()` (https://drafts.csswg.org/css-env-1/#funcdef-env): the name and the indices are validated at parse time (`<custom-ident> <integer [0,∞]>*`) instead of at substitution time, so `env(10px)` or `env(test1 test2, green)` are invalid |
 | [`seralization-round-tripping.tentative.html`](https://wpt.fyi/results/css/css-env/seralization-round-tripping.tentative.html) | Pass | 1 / 1 |  |  |
 | [`supports-script.tentative.html`](https://wpt.fyi/results/css/css-env/supports-script.tentative.html) | Pass | 1 / 1 |  |  |
-| [`syntax.tentative.html`](https://wpt.fyi/results/css/css-env/syntax.tentative.html) | Fail | 23 / 25 |  | *No reason documented* |
+| [`syntax.tentative.html`](https://wpt.fyi/results/css/css-env/syntax.tentative.html) | Fail | 23 / 25 | NOT IMPLEMENTED | the `<declaration-value>` argument of `env()` (https://drafts.csswg.org/css-env-1/#funcdef-env): the name and the indices are validated at parse time (`<custom-ident> <integer [0,∞]>*`) instead of at substitution time, so `env(10px)` or `env(test1 test2, green)` are invalid |
 | [`unknown-env-names-override-previous.tentative.html`](https://wpt.fyi/results/css/css-env/unknown-env-names-override-previous.tentative.html) | Pass | 1 / 1 |  |  |

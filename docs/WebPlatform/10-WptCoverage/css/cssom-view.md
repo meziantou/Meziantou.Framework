@@ -18,12 +18,11 @@ description: "The results of the web-platform-tests of css/cssom-view, and why t
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
-- **TEST BUG**: 6
+- **BUG**: 2
+- **TEST BUG**: 7
 - **NOT IMPLEMENTED**: 6
 - **REQUIRES**: 3
   - `user-input`: 3
-- *No reason documented*: 2
 
 ## Stable tests
 
@@ -149,7 +148,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`offsetTopLeft-border-box.html`](https://wpt.fyi/results/css/cssom-view/offsetTopLeft-border-box.html) | Pass | 28 / 28 |  |  |
 | [`offsetTopLeft-empty-inline-offset.html`](https://wpt.fyi/results/css/cssom-view/offsetTopLeft-empty-inline-offset.html) | Pass | 6 / 6 |  |  |
 | [`offsetTopLeft-empty-inline.html`](https://wpt.fyi/results/css/cssom-view/offsetTopLeft-empty-inline.html) | Pass | 3 / 3 |  |  |
-| [`offsetTopLeft-inline-offsetParent.html`](https://wpt.fyi/results/css/cssom-view/offsetTopLeft-inline-offsetParent.html) | Fail | 7 / 19 |  | *No reason documented* |
+| [`offsetTopLeft-inline-offsetParent.html`](https://wpt.fyi/results/css/cssom-view/offsetTopLeft-inline-offsetParent.html) | Fail | 7 / 19 | TEST BUG | expects `offsetLeft` relative to the border edge of an inline `offsetParent` that has a border; https://drafts.csswg.org/cssom-view-1/#dom-htmlelement-offsetleft subtracts the padding edge of the first box of the `offsetParent` |
 | [`offsetTopLeft-leading-space-inline.html`](https://wpt.fyi/results/css/cssom-view/offsetTopLeft-leading-space-inline.html) | Pass | 3 / 3 |  |  |
 | [`offsetTopLeft-table-caption.html`](https://wpt.fyi/results/css/cssom-view/offsetTopLeft-table-caption.html) | Pass | 1 / 1 |  |  |
 | [`offsetTopLeft-trailing-space-inline.html`](https://wpt.fyi/results/css/cssom-view/offsetTopLeft-trailing-space-inline.html) | Pass | 3 / 3 |  |  |
@@ -188,7 +187,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scroll-overflow-clip-quirks-001.html`](https://wpt.fyi/results/css/cssom-view/scroll-overflow-clip-quirks-001.html) | Pass | 1 / 1 |  |  |
 | [`scroll-overflow-clip-quirks-002.html`](https://wpt.fyi/results/css/cssom-view/scroll-overflow-clip-quirks-002.html) | Pass | 1 / 1 |  |  |
 | [`scroll-position-root-child-ib-split-insertion.html`](https://wpt.fyi/results/css/cssom-view/scroll-position-root-child-ib-split-insertion.html) | Pass | 1 / 1 |  |  |
-| [`scroll-target-into-view-fragment-in-same-origin-subframe.html`](https://wpt.fyi/results/css/cssom-view/scroll-target-into-view-fragment-in-same-origin-subframe.html) | Fail | 0 / 3 |  | *No reason documented* |
+| [`scroll-target-into-view-fragment-in-same-origin-subframe.html`](https://wpt.fyi/results/css/cssom-view/scroll-target-into-view-fragment-in-same-origin-subframe.html) | Fail | 0 / 3 | BUG | scrolling to the fragment of a document loaded in an `iframe`, `object` or `embed` does not scroll the same-origin parent document to the frame (https://drafts.csswg.org/cssom-view/#scroll-a-target-into-view): the parent stays at 0 |
 | [`scroll-width-with-over-constrained-block-in-inline.html`](https://wpt.fyi/results/css/cssom-view/scroll-width-with-over-constrained-block-in-inline.html) | Pass | 2 / 2 |  |  |
 | [`scroll-zoom.html`](https://wpt.fyi/results/css/cssom-view/scroll-zoom.html) | Pass | 3 / 3 |  |  |
 | [`scrollIntoView-align-scrollport-covering-child.html`](https://wpt.fyi/results/css/cssom-view/scrollIntoView-align-scrollport-covering-child.html) | Pass | 1 / 1 |  |  |

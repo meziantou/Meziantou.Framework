@@ -20,8 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 2
-- **NOT IMPLEMENTED**: 3
-- *No reason documented*: 1
+- **NOT IMPLEMENTED**: 4
 
 ## Stable tests
 
@@ -69,7 +68,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`percentage-height-quirk-excludes-flex-grid-001.html`](https://wpt.fyi/results/quirks/percentage-height-quirk-excludes-flex-grid-001.html) | Pass | 1 / 1 |  |  |
 | [`percentage-height-quirk-excludes-flex-grid-002.html`](https://wpt.fyi/results/quirks/percentage-height-quirk-excludes-flex-grid-002.html) | Pass | 1 / 1 |  |  |
 | [`percentage-height-quirk-excludes-flex-grid-003.html`](https://wpt.fyi/results/quirks/percentage-height-quirk-excludes-flex-grid-003.html) | Pass | 1 / 1 |  |  |
-| [`percentage-height-quirk-min-height-001.html`](https://wpt.fyi/results/quirks/percentage-height-quirk-min-height-001.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`percentage-height-quirk-min-height-001.html`](https://wpt.fyi/results/quirks/percentage-height-quirk-min-height-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the percentage height calculation quirk only applies to `height`: a percentage `min-height` of an element whose containing block has an auto height resolves to 0 instead of against the ancestor with a definite height (whatwg/quirks#95) |
 | [`percentage-height-quirk-min-height-002.html`](https://wpt.fyi/results/quirks/percentage-height-quirk-min-height-002.html) | Pass | 1 / 1 |  |  |
 | [`percentage-height-quirk-min-height-003.html`](https://wpt.fyi/results/quirks/percentage-height-quirk-min-height-003.html) | Pass | 1 / 1 |  |  |
 | [`percentage-height-quirk-relpos-percent.html`](https://wpt.fyi/results/quirks/percentage-height-quirk-relpos-percent.html) | Pass | 1 / 1 |  |  |

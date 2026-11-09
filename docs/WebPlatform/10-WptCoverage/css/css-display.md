@@ -18,8 +18,9 @@ description: "The results of the web-platform-tests of css/css-display, and why 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 1
 - **TEST BUG**: 52
-- *No reason documented*: 3
+- **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
@@ -69,8 +70,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`parsing/tentative/display-computed.html`](https://wpt.fyi/results/css/css-display/parsing/tentative/display-computed.html) | Pass | 10 / 10 |  |  |
 | [`parsing/tentative/display-valid.html`](https://wpt.fyi/results/css/css-display/parsing/tentative/display-valid.html) | Pass | 6 / 6 |  |  |
-| [`reading-flow/reading-flow-grid-lanes-computed.tentative.html`](https://wpt.fyi/results/css/css-display/reading-flow/reading-flow-grid-lanes-computed.tentative.html) | Fail | 0 / 3 |  | *No reason documented* |
-| [`reading-flow/reading-flow-grid-lanes-valid.tentative.html`](https://wpt.fyi/results/css/css-display/reading-flow/reading-flow-grid-lanes-valid.tentative.html) | Fail | 0 / 3 |  | *No reason documented* |
+| [`reading-flow/reading-flow-grid-lanes-computed.tentative.html`](https://wpt.fyi/results/css/css-display/reading-flow/reading-flow-grid-lanes-computed.tentative.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the `grid-lanes-flow`, `grid-lanes-track` and `grid-lanes-order` values of `reading-flow` |
+| [`reading-flow/reading-flow-grid-lanes-valid.tentative.html`](https://wpt.fyi/results/css/css-display/reading-flow/reading-flow-grid-lanes-valid.tentative.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the `grid-lanes-flow`, `grid-lanes-track` and `grid-lanes-order` values of `reading-flow` |
 | [`reading-flow/tentative/reading-flow-computed.html`](https://wpt.fyi/results/css/css-display/reading-flow/tentative/reading-flow-computed.html) | Pass | 7 / 7 |  |  |
 | [`reading-flow/tentative/reading-flow-invalid.html`](https://wpt.fyi/results/css/css-display/reading-flow/tentative/reading-flow-invalid.html) | Pass | 9 / 9 |  |  |
 | [`reading-flow/tentative/reading-flow-valid.html`](https://wpt.fyi/results/css/css-display/reading-flow/tentative/reading-flow-valid.html) | Pass | 7 / 7 |  |  |
@@ -152,7 +153,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`display-contents-td-001.html`](https://wpt.fyi/results/css/css-display/display-contents-td-001.html) | Pass | 1 / 1 |  |  |
 | [`display-contents-text-inherit-002.html`](https://wpt.fyi/results/css/css-display/display-contents-text-inherit-002.html) | Pass | 1 / 1 |  |  |
 | [`display-contents-text-inherit.html`](https://wpt.fyi/results/css/css-display/display-contents-text-inherit.html) | Pass | 1 / 1 |  |  |
-| [`display-contents-text-line-height.html`](https://wpt.fyi/results/css/css-display/display-contents-text-line-height.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`display-contents-text-line-height.html`](https://wpt.fyi/results/css/css-display/display-contents-text-line-height.html) | Fail | 0 / 1 | BUG | the text of a `display: contents` element contributes to the line with the `line-height` and the font of the element (40px font, 80px line height), which stretch the lines; it belongs to the box of its parent, whose fixed 30px `line-height` sets the height of the lines (the element has no inline box) |
 | [`display-contents-text-only-001.html`](https://wpt.fyi/results/css/css-display/display-contents-text-only-001.html) | Pass | 1 / 1 |  |  |
 | [`display-contents-text-only-content-properties.html`](https://wpt.fyi/results/css/css-display/display-contents-text-only-content-properties.html) | Pass | 1 / 1 |  |  |
 | [`display-contents-tr-001.html`](https://wpt.fyi/results/css/css-display/display-contents-tr-001.html) | Pass | 1 / 1 |  |  |

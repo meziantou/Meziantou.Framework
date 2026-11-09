@@ -18,10 +18,10 @@ description: "The results of the web-platform-tests of web-monetization, and why
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- *No reason documented*: 1
+- **NOT IMPLEMENTED**: 1
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`rellist-supports.tentative.html`](https://wpt.fyi/results/web-monetization/rellist-supports.tentative.html) | Disabled | – |  | *No reason documented* |
+| [`rellist-supports.tentative.html`](https://wpt.fyi/results/web-monetization/rellist-supports.tentative.html) | Disabled | – | NOT IMPLEMENTED | Web Monetization (the `monetization` link type); the `web-monetization` directory is not fetched |

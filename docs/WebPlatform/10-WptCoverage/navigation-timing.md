@@ -19,8 +19,7 @@ description: "The results of the web-platform-tests of navigation-timing, and wh
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **NOT IMPLEMENTED**: 3
-- *No reason documented*: 1
+- **NOT IMPLEMENTED**: 4
 
 ## Stable tests
 
@@ -90,4 +89,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`response-start-after-coop-bcg-switch-no-tao.tentative.https.html`](https://wpt.fyi/results/navigation-timing/response-start-after-coop-bcg-switch-no-tao.tentative.https.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`response-start-after-coop-bcg-switch-no-tao.tentative.https.html`](https://wpt.fyi/results/navigation-timing/response-start-after-coop-bcg-switch-no-tao.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the time origin of a document reached through cross-origin redirects that fail the navigation TAO check, after a browsing context group switch, is the start of the navigation: the tentative test expects it not to include the redirects (`responseStart` includes the 2 s of `slow-redirect.py`; the redirect data is hidden as expected) |

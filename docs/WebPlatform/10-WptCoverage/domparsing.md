@@ -18,9 +18,9 @@ description: "The results of the web-platform-tests of domparsing, and why the t
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 5
 - **TEST BUG**: 4
-- **NOT IMPLEMENTED**: 3
-- *No reason documented*: 8
+- **NOT IMPLEMENTED**: 7
 
 ## Stable tests
 
@@ -77,19 +77,19 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`positional-methods.html`](https://wpt.fyi/results/domparsing/positional-methods.html) | Pass | 480 / 480 |  |  |
 | [`positional-template-child.html`](https://wpt.fyi/results/domparsing/positional-template-child.html) | Pass | 6 / 6 |  |  |
 | [`stream-append-html-unsafe.html`](https://wpt.fyi/results/domparsing/stream-append-html-unsafe.html) | Pass | 14 / 14 |  |  |
-| [`stream-append-html.html`](https://wpt.fyi/results/domparsing/stream-append-html.html) | Fail | 16 / 17 |  | *No reason documented* |
-| [`stream-fragment-context.html`](https://wpt.fyi/results/domparsing/stream-fragment-context.html) | Fail | 77 / 81 |  | *No reason documented* |
+| [`stream-append-html.html`](https://wpt.fyi/results/domparsing/stream-append-html.html) | Fail | 16 / 17 | BUG | the text streamed into a `<style>` that already has a text node is appended to that text node (`HtmlTreeBuilder.InsertCharacters`) without updating the style sheet of the element: the rule completed by the stream does not apply (streaming into an empty `<style>` works) |
+| [`stream-fragment-context.html`](https://wpt.fyi/results/domparsing/stream-fragment-context.html) | Fail | 77 / 81 | BUG | a `<style>` streamed into a connected element gets its style sheet when it is inserted, while it is still on the stack of open elements of the streaming parser: the style block is only updated when the element is popped (https://html.spec.whatwg.org/#update-a-style-block), at `close()` for an unclosed element |
 | [`stream-html-abort-unblocks-rendering-defer.html`](https://wpt.fyi/results/domparsing/stream-html-abort-unblocks-rendering-defer.html) | Pass | 1 / 1 |  |  |
 | [`stream-html-abort-unblocks-rendering.html`](https://wpt.fyi/results/domparsing/stream-html-abort-unblocks-rendering.html) | Pass | 1 / 1 |  |  |
 | [`stream-html-custom-element-sanitizer.html`](https://wpt.fyi/results/domparsing/stream-html-custom-element-sanitizer.html) | Pass | 122 / 122 |  |  |
 | [`stream-html-custom-element.html`](https://wpt.fyi/results/domparsing/stream-html-custom-element.html) | Pass | 59 / 59 |  |  |
-| [`stream-html-defer-async-script.html`](https://wpt.fyi/results/domparsing/stream-html-defer-async-script.html) | Fail | 10 / 15 |  | *No reason documented* |
-| [`stream-html-disconnected-target-scripts.html`](https://wpt.fyi/results/domparsing/stream-html-disconnected-target-scripts.html) | Fail | 2 / 4 |  | *No reason documented* |
+| [`stream-html-defer-async-script.html`](https://wpt.fyi/results/domparsing/stream-html-defer-async-script.html) | Fail | 10 / 15 | NOT IMPLEMENTED | the `defer` and `async` scripts of the streaming HTML methods: with `runScripts`, a streamed script runs when its end tag is parsed, as a script inserted by a script (the `defer` and module scripts do not wait for `close()`, and `close()` does not reject when the reference child was removed) |
+| [`stream-html-disconnected-target-scripts.html`](https://wpt.fyi/results/domparsing/stream-html-disconnected-target-scripts.html) | Fail | 2 / 4 | NOT IMPLEMENTED | the external scripts streamed with `runScripts` into a disconnected element are not made async (`script.async` is false while disconnected); the proposal runs them as async scripts once they are connected |
 | [`stream-html-element.html`](https://wpt.fyi/results/domparsing/stream-html-element.html) | Pass | 28 / 28 |  |  |
 | [`stream-html-live-document.html`](https://wpt.fyi/results/domparsing/stream-html-live-document.html) | Pass | 9 / 9 |  |  |
-| [`stream-html-parser-blocking-script.html`](https://wpt.fyi/results/domparsing/stream-html-parser-blocking-script.html) | Fail | 8 / 29 |  | *No reason documented* |
+| [`stream-html-parser-blocking-script.html`](https://wpt.fyi/results/domparsing/stream-html-parser-blocking-script.html) | Fail | 8 / 29 | NOT IMPLEMENTED | the parser-blocking scripts of the streaming HTML methods (the parser does not pause for an external script streamed with `runScripts`, so `write()`, `close()`, `abort()` and the rejected writes do not wait for it or stop it, and its `error` event, the concurrent streams and `document.write()` of a streamed script do not behave as the proposal specifies) |
 | [`stream-html-reentrancy.html`](https://wpt.fyi/results/domparsing/stream-html-reentrancy.html) | Fail | 12 / 40 | NOT IMPLEMENTED | the parser-blocking scripts of the streaming HTML methods (the parser does not pause for an external script streamed with `runScripts`) |
-| [`stream-html-run-scripts-option.html`](https://wpt.fyi/results/domparsing/stream-html-run-scripts-option.html) | Fail | 26 / 30 |  | *No reason documented* |
+| [`stream-html-run-scripts-option.html`](https://wpt.fyi/results/domparsing/stream-html-run-scripts-option.html) | Fail | 26 / 30 | BUG | a script streamed with `runScripts` still runs at its end tag when it, or the target, was moved to another document while it was parsed (HTML and SVG `<script>`); for the SVG script, `HtmlTreeBuilder.ProcessSvgScriptEndTag` does not check the node document of the element |
 | [`stream-html-sanitizer-safe.html`](https://wpt.fyi/results/domparsing/stream-html-sanitizer-safe.html) | Pass | 30 / 30 |  |  |
 | [`stream-html-sanitizer.html`](https://wpt.fyi/results/domparsing/stream-html-sanitizer.html) | Pass | 338 / 338 |  |  |
 | [`stream-html-script-safe.html`](https://wpt.fyi/results/domparsing/stream-html-script-safe.html) | Pass | 36 / 36 |  |  |
@@ -106,13 +106,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`stream-html-with-trusted-types-runScripts-off.html`](https://wpt.fyi/results/domparsing/stream-html-with-trusted-types-runScripts-off.html) | Pass | 12 / 12 |  |  |
 | [`stream-html-with-trusted-types-sanitizer.html`](https://wpt.fyi/results/domparsing/stream-html-with-trusted-types-sanitizer.html) | Pass | 24 / 24 |  |  |
 | [`stream-html.html`](https://wpt.fyi/results/domparsing/stream-html.html) | Pass | 18 / 18 |  |  |
-| [`stream-insertion-logic.html`](https://wpt.fyi/results/domparsing/stream-insertion-logic.html) | Fail | 97 / 153 |  | *No reason documented* |
+| [`stream-insertion-logic.html`](https://wpt.fyi/results/domparsing/stream-insertion-logic.html) | Fail | 97 / 153 | BUG, NOT IMPLEMENTED | adopting the target into another document mid-stream: the streamed scripts run in the new document; the `WritableStream` returned by `streamBeforeHTMLUnsafe()` of a node of another realm is not created in the relevant realm of the node; the displacement of the reference node in the middle of a chunk (by a script or a custom element constructor run by the parser): the nodes after it are dropped, but the stream is not errored with a `HierarchyRequestError` (the reference node is only checked at the start of `write()`), the first token after it is not created in an inert document, and a foster-parented `replaceWithChildrenElements` element whose table is moved does not drop its children |
 | [`stream-positional-template-child.html`](https://wpt.fyi/results/domparsing/stream-positional-template-child.html) | Pass | 12 / 12 |  |  |
 | [`stream-positional.html`](https://wpt.fyi/results/domparsing/stream-positional.html) | Pass | 142 / 142 |  |  |
 | [`stream-sanitizer-customized-builtins.html`](https://wpt.fyi/results/domparsing/stream-sanitizer-customized-builtins.html) | Pass | 30 / 30 |  |  |
 | [`stream-sanitizer-img-ctor.html`](https://wpt.fyi/results/domparsing/stream-sanitizer-img-ctor.html) | Pass | 78 / 78 |  |  |
 | [`stream-sanitizer-resource-fetch.html`](https://wpt.fyi/results/domparsing/stream-sanitizer-resource-fetch.html) | Pass | 42 / 42 |  |  |
-| [`stream-tokenizer-context.html`](https://wpt.fyi/results/domparsing/stream-tokenizer-context.html) | Fail | 46 / 49 |  | *No reason documented* |
+| [`stream-tokenizer-context.html`](https://wpt.fyi/results/domparsing/stream-tokenizer-context.html) | Fail | 46 / 49 | BUG | the fragment parser of a `<template>` context always disables scripting (`HtmlDocumentParser.CreateFragmentParser`, as `html/syntax/serializing-html-fragments/escaping.html` expects), so a `<noscript>` streamed into template contents is parsed as markup; the test expects the scripting flag of the node document of the template (enabled: RAWTEXT) |
 | [`style_attribute_html.html`](https://wpt.fyi/results/domparsing/style_attribute_html.html) | Pass | 4 / 4 |  |  |
 | [`svg-template.html`](https://wpt.fyi/results/domparsing/svg-template.html) | Pass | 2 / 2 |  |  |
 | [`unclosed-script-already-started.html`](https://wpt.fyi/results/domparsing/unclosed-script-already-started.html) | Pass | 4 / 4 |  |  |

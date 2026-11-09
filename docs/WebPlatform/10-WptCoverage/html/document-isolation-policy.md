@@ -18,9 +18,9 @@ description: "The results of the web-platform-tests of html/document-isolation-p
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 2
 - **TEST BUG**: 5
-- **NOT IMPLEMENTED**: 22
-- *No reason documented*: 4
+- **NOT IMPLEMENTED**: 24
 
 ## Tentative tests
 
@@ -28,7 +28,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`agent-cluster.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/agent-cluster.tentative.https.html) | Fail | 8 / 25 | NOT IMPLEMENTED | the agent clusters and the cross-origin isolation of `Document-Isolation-Policy` (`crossOriginIsolated` is only true with COOP + COEP) |
 | [`back-forward-cache-frames.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/back-forward-cache-frames.tentative.https.html) | Fail | 2 / 4 | NOT IMPLEMENTED | the agent clusters and the cross-origin isolation of `Document-Isolation-Policy` (`crossOriginIsolated` is only true with COOP + COEP) |
-| [`back-forward-cache-same-origin-frames.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/back-forward-cache-same-origin-frames.tentative.https.html) | Fail | 0 / 4 |  | *No reason documented* |
+| [`back-forward-cache-same-origin-frames.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/back-forward-cache-same-origin-frames.tentative.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the agent clusters and the cross-origin isolation of `Document-Isolation-Policy` (`crossOriginIsolated` is only true with COOP + COEP) |
 | [`back-forward-cache.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/back-forward-cache.tentative.https.html) | Fail | 4 / 10 | NOT IMPLEMENTED | the agent clusters and the cross-origin isolation of `Document-Isolation-Policy` (`crossOriginIsolated` is only true with COOP + COEP) |
 | [`blob-document-inherits-policy.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/blob-document-inherits-policy.tentative.https.html) | Pass | 2 / 2 |  |  |
 | [`broadcast-channel.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/broadcast-channel.tentative.https.html) | Fail | 1 / 3 | NOT IMPLEMENTED | the agent clusters and the cross-origin isolation of `Document-Isolation-Policy` (`crossOriginIsolated` is only true with COOP + COEP, so `SharedArrayBuffer` is not exposed to a document with a policy) |
@@ -42,8 +42,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`credentialless-link.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-link.https.tentative.window.js) | Pass | 7 / 7 |  |  |
 | [`credentialless-redirect.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-redirect.tentative.window.js) | Pass | 5 / 5 |  |  |
 | [`credentialless-script.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-script.https.tentative.window.js) | Pass | 7 / 7 |  |  |
-| [`credentialless-service-worker.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-service-worker.https.tentative.window.js) | Fail | 4 / 5 |  | *No reason documented* |
-| [`credentialless-shared-worker.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js) | Fail | 6 / 8 |  | *No reason documented* |
+| [`credentialless-service-worker.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-service-worker.https.tentative.window.js) | Fail | 4 / 5 | BUG | the `Document-Isolation-Policy` of the response of a shared worker or service worker script applies to the worker (`isolate-and-credentialless` omits the credentials of its cross-origin no-cors requests); the policy only applies to the documents and their dedicated workers, which inherit it |
+| [`credentialless-shared-worker.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-shared-worker.https.tentative.window.js) | Fail | 6 / 8 | BUG | the `Document-Isolation-Policy` of the response of a shared worker or service worker script applies to the worker (`isolate-and-credentialless` omits the credentials of its cross-origin no-cors requests); the policy only applies to the documents and their dedicated workers, which inherit it |
 | [`credentialless-video.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-video.https.tentative.window.js) | Pass | 6 / 6 |  |  |
 | [`credentialless-websocket.https.tentative.window.js`](https://wpt.fyi/results/html/document-isolation-policy/credentialless-websocket.https.tentative.window.js) | Pass | 3 / 3 |  |  |
 | [`cross-origin-frame.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/cross-origin-frame.tentative.https.html) | Pass | 2 / 2 |  |  |
@@ -52,7 +52,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`cross-origin-isolated.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/cross-origin-isolated.tentative.https.html) | Fail | 5 / 12 | NOT IMPLEMENTED | the agent clusters and the cross-origin isolation of `Document-Isolation-Policy` (`crossOriginIsolated` is only true with COOP + COEP) |
 | [`dedicated-worker.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/dedicated-worker.tentative.https.html) | Fail | 4 / 9 | NOT IMPLEMENTED | the agent clusters and the cross-origin isolation of `Document-Isolation-Policy` (`crossOriginIsolated` is only true with COOP + COEP, so the dedicated workers of a document with a policy are not cross-origin isolated and `SharedArrayBuffer` is not exposed) |
 | [`header-parsing.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/header-parsing.tentative.https.html) | Timeout | 0 / 27 | NOT IMPLEMENTED | the agent clusters and the cross-origin isolation of `Document-Isolation-Policy` (`crossOriginIsolated` is only true with COOP + COEP) |
-| [`history-traversal-frames.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/history-traversal-frames.tentative.https.html) | Fail | 2 / 5 |  | *No reason documented* |
+| [`history-traversal-frames.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/history-traversal-frames.tentative.https.html) | Fail | 2 / 5 | NOT IMPLEMENTED | the agent clusters and the cross-origin isolation of `Document-Isolation-Policy` (`crossOriginIsolated` is only true with COOP + COEP) |
 | [`isolate-and-require-corp-load-from-cache-storage.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/isolate-and-require-corp-load-from-cache-storage.tentative.https.html) | Pass | 29 / 29 |  |  |
 | [`isolate-and-require-corp.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/isolate-and-require-corp.tentative.https.html) | Pass | 2 / 2 |  |  |
 | [`location-replace-keeps-entry.tentative.https.html`](https://wpt.fyi/results/html/document-isolation-policy/location-replace-keeps-entry.tentative.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the agent clusters and the cross-origin isolation of `Document-Isolation-Policy` (`crossOriginIsolated` is only true with COOP + COEP): the replacement document with `isolate-and-require-corp` is not cross-origin isolated |

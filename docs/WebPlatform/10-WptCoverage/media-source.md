@@ -20,9 +20,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **TEST BUG**: 6
 - **NOT IMPLEMENTED**: 3
-- **REQUIRES**: 2
-  - `media`: 2
-- *No reason documented*: 1
+- **REQUIRES**: 3
+  - `media`: 3
 
 ## Stable tests
 
@@ -126,4 +125,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`mediasource-video-is-visible.html`](https://wpt.fyi/results/media-source/mediasource-video-is-visible.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`mediasource-video-is-visible.html`](https://wpt.fyi/results/media-source/mediasource-video-is-visible.html) | Fail | 0 / 1 | REQUIRES(media) | the test compares the frame of the video played by Media Source Extensions with a blue box: the media backend of the tests decodes nothing (its frames are black) |

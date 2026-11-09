@@ -18,11 +18,10 @@ description: "The results of the web-platform-tests of editing, and why the test
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 33
+- **BUG**: 34
 - **TEST BUG**: 53
 - **NOT IMPLEMENTED**: 23
 - **TEST RUNNER**: 1
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -62,7 +61,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`other/inserthtml-do-not-preserve-inline-styles.html`](https://wpt.fyi/results/editing/other/inserthtml-do-not-preserve-inline-styles.html) | Fail | 51 / 54 | TEST BUG | 3 of 54 subtests (the `stylesInserting=hilitecolor` variant) fail in every browser: the test compares `queryCommandValue("hilitecolor")` with `"rgb(0, 255, 255))"` (two closing parentheses). |
 | [`other/insertparagraph-in-non-splittable-element.html`](https://wpt.fyi/results/editing/other/insertparagraph-in-non-splittable-element.html) | Fail | 11 / 14 | BUG | 3 of 14 subtests, which only Firefox passes: with the caret set by script in a `<button>`, a `<caption>` or a `<legend>`, the test expects a line break in the element (`<div><button><br>abc</button></div>`), where the library splits the enclosing `<div>` (`<div><br></div><div><button>abc</button></div>`; for `caption` and `legend`, through the table or the fieldset, which is cloned). |
 | [`other/inserttext-after-bold-in-font-face-monospace.html`](https://wpt.fyi/results/editing/other/inserttext-after-bold-in-font-face-monospace.html) | Pass | 1 / 1 |  |  |
-| [`other/inserttext-before-unnecessary-linebreak.html`](https://wpt.fyi/results/editing/other/inserttext-before-unnecessary-linebreak.html) | Fail | 10 / 14 |  | *No reason documented* |
+| [`other/inserttext-before-unnecessary-linebreak.html`](https://wpt.fyi/results/editing/other/inserttext-before-unnecessary-linebreak.html) | Fail | 10 / 14 | BUG | replacing the whole text of a line followed by an unnecessary `<br>` (or linefeed in `pre-wrap`) removes it: the selection is deleted first, which makes the line break the padding line break of an empty line, and the inserted text then removes it |
 | [`other/inserttext-last-mutation.html`](https://wpt.fyi/results/editing/other/inserttext-last-mutation.html) | Pass | 64 / 64 |  |  |
 | [`other/join-different-white-space-style-left-line-and-right-paragraph.html`](https://wpt.fyi/results/editing/other/join-different-white-space-style-left-line-and-right-paragraph.html) | Pass | 2,607 / 2,607 |  |  |
 | [`other/join-different-white-space-style-left-paragraph-and-right-line.html`](https://wpt.fyi/results/editing/other/join-different-white-space-style-left-paragraph-and-right-line.html) | Pass | 1,455 / 1,455 |  |  |

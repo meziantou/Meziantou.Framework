@@ -18,8 +18,7 @@ description: "The results of the web-platform-tests of css/css-mixins, and why t
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 1
-- *No reason documented*: 1
+- **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
@@ -86,5 +85,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`mixins/mixin-invalidation.tentative.html`](https://wpt.fyi/results/css/css-mixins/mixins/mixin-invalidation.tentative.html) | Pass | 3 / 3 |  |  |
 | [`private/private-cssom-insert-rule.tentative.html`](https://wpt.fyi/results/css/css-mixins/private/private-cssom-insert-rule.tentative.html) | Pass | 4 / 4 |  |  |
 | [`private/private-cssom-serialization.tentative.html`](https://wpt.fyi/results/css/css-mixins/private/private-cssom-serialization.tentative.html) | Pass | 16 / 16 |  |  |
-| [`private/private-cssom-style-api.tentative.html`](https://wpt.fyi/results/css/css-mixins/private/private-cssom-style-api.tentative.html) | Fail | 0 / 10 |  | *No reason documented* |
+| [`private/private-cssom-style-api.tentative.html`](https://wpt.fyi/results/css/css-mixins/private/private-cssom-style-api.tentative.html) | Fail | 0 / 10 | NOT IMPLEMENTED | the `CSSStyleRule` API of `CSSPrivateRule` (w3c/csswg-drafts#14427: `cssRules`, `insertRule()`, `selectorText`, `style`, `styleMap`): it is a plain `CSSRule` |
 | [`private/private-shared-stylesheet.tentative.html`](https://wpt.fyi/results/css/css-mixins/private/private-shared-stylesheet.tentative.html) | Pass | 1 / 1 |  |  |

@@ -18,18 +18,18 @@ description: "The results of the web-platform-tests of container-timing, and why
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- *No reason documented*: 7
+- **NOT IMPLEMENTED**: 7
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`tentative/containertiming-ancestor-removed-and-reinserted.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-ancestor-removed-and-reinserted.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`tentative/containertiming-ancestor-removed-and-reinserted.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-ancestor-removed-and-reinserted.html) | Fail | 0 / 1 | NOT IMPLEMENTED | reporting from scratch the content of a container root inserted again: its record is reset while it is disconnected, but the paint timing reports each image and text once per document (a reinserted image or text is not painted again), so no new entry is reported |
 | [`tentative/containertiming-and-ignore-on-img-itself.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-and-ignore-on-img-itself.html) | Pass | 1 / 1 |  |  |
 | [`tentative/containertiming-and-ignore-on-text-itself.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-and-ignore-on-text-itself.html) | Pass | 1 / 1 |  |  |
-| [`tentative/containertiming-attribute-removed.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-attribute-removed.html) | Fail | 1 / 2 |  | *No reason documented* |
+| [`tentative/containertiming-attribute-removed.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-attribute-removed.html) | Fail | 1 / 2 | NOT IMPLEMENTED | starting a container over when its `containertiming` attribute is removed and set again, or changed, between two rendering updates: the record of the container root is kept (it is only reset when the root has no attribute or is disconnected at a rendering update), so the entry has the `firstRenderTime` of the first paint, before the change |
 | [`tentative/containertiming-body-with-child-img.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-body-with-child-img.html) | Pass | 1 / 1 |  |  |
-| [`tentative/containertiming-identifier-changed.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-identifier-changed.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`tentative/containertiming-identifier-changed.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-identifier-changed.html) | Fail | 0 / 1 | NOT IMPLEMENTED | starting a container over when its `containertiming` attribute is removed and set again, or changed, between two rendering updates: the record of the container root is kept (it is only reset when the root has no attribute or is disconnected at a rendering update), so the entry has the `firstRenderTime` of the first paint, before the change |
 | [`tentative/containertiming-img-already-loaded.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-img-already-loaded.html) | Pass | 1 / 1 |  |  |
 | [`tentative/containertiming-img-itself.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-img-itself.html) | Pass | 1 / 1 |  |  |
 | [`tentative/containertiming-largest-painted-element-own-area.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-largest-painted-element-own-area.html) | Pass | 1 / 1 |  |  |
@@ -39,9 +39,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`tentative/containertiming-observe-after-paint-without-buffering.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-observe-after-paint-without-buffering.html) | Pass | 1 / 1 |  |  |
 | [`tentative/containertiming-observe-after-paints-with-buffering.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-observe-after-paints-with-buffering.html) | Pass | 1 / 1 |  |  |
 | [`tentative/containertiming-observe-no-paint.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-observe-no-paint.html) | Pass | 1 / 1 |  |  |
-| [`tentative/containertiming-root-moved-with-movebefore.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-root-moved-with-movebefore.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`tentative/containertiming-root-moved.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-root-moved.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`tentative/containertiming-root-removed-and-reinserted.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-root-removed-and-reinserted.html) | Fail | 0 / 2 |  | *No reason documented* |
+| [`tentative/containertiming-root-moved-with-movebefore.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-root-moved-with-movebefore.html) | Fail | 0 / 1 | NOT IMPLEMENTED | reporting from scratch the content of a container root moved to another parent between two rendering updates (`appendChild()`, `moveBefore()`): its record is kept (it is only reset when the root is disconnected or has no `containertiming` attribute at a rendering update), and its image is not reported again (the paint timing reports each image and text once per document), so no new entry is reported |
+| [`tentative/containertiming-root-moved.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-root-moved.html) | Fail | 0 / 1 | NOT IMPLEMENTED | reporting from scratch the content of a container root moved to another parent between two rendering updates (`appendChild()`, `moveBefore()`): its record is kept (it is only reset when the root is disconnected or has no `containertiming` attribute at a rendering update), and its image is not reported again (the paint timing reports each image and text once per document), so no new entry is reported |
+| [`tentative/containertiming-root-removed-and-reinserted.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-root-removed-and-reinserted.html) | Fail | 0 / 2 | NOT IMPLEMENTED | reporting from scratch the content of a container root inserted again: its record is reset while it is disconnected, but the paint timing reports each image and text once per document (a reinserted image or text is not painted again), so no new entry is reported |
 | [`tentative/containertiming-root-removed-element-null.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-root-removed-element-null.html) | Pass | 1 / 1 |  |  |
 | [`tentative/containertiming-text-itself.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-text-itself.html) | Pass | 1 / 1 |  |  |
 | [`tentative/containertiming-two-overlapping-imgs.html`](https://wpt.fyi/results/container-timing/tentative/containertiming-two-overlapping-imgs.html) | Pass | 1 / 1 |  |  |
@@ -57,7 +57,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`tentative/nested-containertiming-and-ignore-on-text.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-and-ignore-on-text.html) | Pass | 1 / 1 |  |  |
 | [`tentative/nested-containertiming-child-img-with-ignore.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-child-img-with-ignore.html) | Pass | 1 / 1 |  |  |
 | [`tentative/nested-containertiming-child-img.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-child-img.html) | Pass | 1 / 1 |  |  |
-| [`tentative/nested-containertiming-inner-root-removed-and-reinserted.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-inner-root-removed-and-reinserted.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`tentative/nested-containertiming-inner-root-removed-and-reinserted.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-inner-root-removed-and-reinserted.html) | Fail | 0 / 1 | NOT IMPLEMENTED | reporting from scratch the content of a container root inserted again: its record is reset while it is disconnected, but the paint timing reports each image and text once per document (a reinserted image or text is not painted again), so no new entry is reported |
 | [`tentative/nested-containertiming-on-img-without-ignore.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-on-img-without-ignore.html) | Pass | 1 / 1 |  |  |
 | [`tentative/nested-containertiming-with-ignore.html`](https://wpt.fyi/results/container-timing/tentative/nested-containertiming-with-ignore.html) | Pass | 1 / 1 |  |  |
 | [`tentative/pseudo-background-image-before-in-container-timing.html`](https://wpt.fyi/results/container-timing/tentative/pseudo-background-image-before-in-container-timing.html) | Pass | 1 / 1 |  |  |

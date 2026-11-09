@@ -20,9 +20,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 6
-- **NOT IMPLEMENTED**: 2
+- **NOT IMPLEMENTED**: 6
 - **TEST RUNNER**: 1
-- *No reason documented*: 4
 
 ## Stable tests
 
@@ -516,22 +515,22 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`object-view-box-empty-bounds.html`](https://wpt.fyi/results/css/css-images/object-view-box-empty-bounds.html) | Pass | 1 / 1 |  |  |
 | [`object-view-box-fit-contain-canvas.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-contain-canvas.html) | Pass | 1 / 1 |  |  |
 | [`object-view-box-fit-contain-img.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-contain-img.html) | Pass | 1 / 1 |  |  |
-| [`object-view-box-fit-contain-svg-object.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-contain-svg-object.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`object-view-box-fit-contain-svg-object.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-contain-svg-object.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `object-view-box` on the SVG document of an `object` element (`ReplacedContent` deliberately ignores it for the nested documents, as Chrome does): the objects show the whole document instead of the part of it in their view box |
 | [`object-view-box-fit-contain-svg.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-contain-svg.html) | Pass | 1 / 1 |  |  |
 | [`object-view-box-fit-contain-video.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-contain-video.html) | Pass | 1 / 1 |  |  |
 | [`object-view-box-fit-cover-canvas.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-cover-canvas.html) | Pass | 1 / 1 |  |  |
 | [`object-view-box-fit-cover-img.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-cover-img.html) | Pass | 1 / 1 |  |  |
-| [`object-view-box-fit-cover-svg-object.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-cover-svg-object.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`object-view-box-fit-cover-svg-object.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-cover-svg-object.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `object-view-box` on the SVG document of an `object` element (`ReplacedContent` deliberately ignores it for the nested documents, as Chrome does): the objects show the whole document instead of the part of it in their view box |
 | [`object-view-box-fit-cover-svg.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-cover-svg.html) | Pass | 1 / 1 |  |  |
 | [`object-view-box-fit-cover-video.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-cover-video.html) | Pass | 1 / 1 |  |  |
 | [`object-view-box-fit-fill-canvas.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-fill-canvas.html) | Pass | 1 / 1 |  |  |
 | [`object-view-box-fit-fill-img.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-fill-img.html) | Pass | 1 / 1 |  |  |
-| [`object-view-box-fit-fill-svg-object.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-fill-svg-object.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`object-view-box-fit-fill-svg-object.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-fill-svg-object.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `object-view-box` on the SVG document of an `object` element (`ReplacedContent` deliberately ignores it for the nested documents, as Chrome does): the objects show the whole document instead of the part of it in their view box |
 | [`object-view-box-fit-fill-svg.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-fill-svg.html) | Pass | 1 / 1 |  |  |
 | [`object-view-box-fit-fill-video.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-fill-video.html) | Pass | 1 / 1 |  |  |
 | [`object-view-box-fit-none-canvas.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-none-canvas.html) | Pass | 1 / 1 |  |  |
 | [`object-view-box-fit-none-img.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-none-img.html) | Pass | 1 / 1 |  |  |
-| [`object-view-box-fit-none-svg-object.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-none-svg-object.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`object-view-box-fit-none-svg-object.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-none-svg-object.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `object-view-box` on the SVG document of an `object` element (`ReplacedContent` deliberately ignores it for the nested documents, as Chrome does): the objects show the whole document instead of the part of it in their view box |
 | [`object-view-box-fit-none-svg.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-none-svg.html) | Pass | 1 / 1 |  |  |
 | [`object-view-box-fit-none-video.html`](https://wpt.fyi/results/css/css-images/object-view-box-fit-none-video.html) | Pass | 1 / 1 |  |  |
 | [`object-view-box-iframe.html`](https://wpt.fyi/results/css/css-images/object-view-box-iframe.html) | Pass | 1 / 1 |  |  |

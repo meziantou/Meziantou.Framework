@@ -19,7 +19,7 @@ description: "The results of the web-platform-tests of css/css-anchor-position, 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 9
-- *No reason documented*: 5
+- **NOT IMPLEMENTED**: 5
 
 ## Stable tests
 
@@ -113,8 +113,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`anchor-scroll-006.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-006.html) | Pass | 3 / 3 |  |  |
 | [`anchor-scroll-007.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-007.html) | Pass | 1 / 1 |  |  |
 | [`anchor-scroll-010.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-010.html) | Pass | 1 / 1 |  |  |
-| [`anchor-scroll-011.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-011.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`anchor-scroll-012.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-012.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`anchor-scroll-011.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-011.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the end of a scroll as an anchor recalculation point (w3c/csswg-drafts#14112): once scrolling stops, the positioned element is not laid out again with the current scroll offsets (only the default scroll shift is applied) |
+| [`anchor-scroll-012.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-012.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the end of a scroll as an anchor recalculation point (w3c/csswg-drafts#14112): once scrolling stops, the positioned element is not laid out again with the current scroll offsets (only the default scroll shift is applied) |
 | [`anchor-scroll-013.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-013.html) | Pass | 1 / 1 |  |  |
 | [`anchor-scroll-014.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-014.html) | Pass | 1 / 1 |  |  |
 | [`anchor-scroll-cleanup.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-cleanup.html) | Pass | 3 / 3 |  |  |
@@ -222,10 +222,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`position-area-in-position-try.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-in-position-try.html) | Pass | 64 / 64 |  |  |
 | [`position-area-interpolation.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-interpolation.html) | Pass | 42 / 42 |  |  |
 | [`position-area-parsing.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-parsing.html) | Pass | 2,125 / 2,125 |  |  |
-| [`position-area-scrolling-005.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-scrolling-005.html) | Fail | 5 / 7 |  | *No reason documented* |
+| [`position-area-scrolling-005.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-scrolling-005.html) | Fail | 5 / 7 | NOT IMPLEMENTED | the end of a scroll as an anchor recalculation point (w3c/csswg-drafts#14112): once scrolling stops, the positioned element is not laid out again with the current scroll offsets (only the default scroll shift is applied) |
 | [`position-area-scrolling-006.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-scrolling-006.html) | Pass | 5 / 5 |  |  |
 | [`position-area-scrolling-007.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-scrolling-007.html) | Pass | 4 / 4 |  |  |
-| [`position-area-scrolling-008.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-scrolling-008.html) | Fail | 1 / 4 |  | *No reason documented* |
+| [`position-area-scrolling-008.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-scrolling-008.html) | Fail | 1 / 4 | NOT IMPLEMENTED | the end of a scroll as an anchor recalculation point (w3c/csswg-drafts#14112): once scrolling stops, the positioned element is not laid out again with the current scroll offsets (only the default scroll shift is applied) |
 | [`position-area-value.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-value.html) | Pass | 7 / 7 |  |  |
 | [`position-area-with-insets.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-with-insets.html) | Pass | 5 / 5 |  |  |
 | [`position-area-wm-dir.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-wm-dir.html) | Pass | 44 / 44 |  |  |
@@ -390,7 +390,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`anchor-scroll-nested.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-nested.html) | Pass | 1 / 1 |  |  |
 | [`anchor-scroll-overflow-hidden.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-overflow-hidden.html) | Pass | 1 / 1 |  |  |
 | [`anchor-scroll-position-try-012.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-position-try-012.html) | Pass | 1 / 1 |  |  |
-| [`anchor-scroll-position-try-015.tentative.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-position-try-015.tentative.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`anchor-scroll-position-try-015.tentative.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-position-try-015.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the position fallback is not determined again at the end of a scroll: the anchored box laid out with its `flip-block` option after the first scroll (150px tall below the anchor) keeps its size after the second one, where the updated tentative test expects it to grow to the 200px below the anchor once the scrolling ends (the box is only laid out again when its shifted margin box overflows its inset-modified containing block) |
 | [`anchor-scroll-scrollable-anchor.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-scrollable-anchor.html) | Pass | 1 / 1 |  |  |
 | [`anchor-scroll-to-sticky-001.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-to-sticky-001.html) | Pass | 1 / 1 |  |  |
 | [`anchor-scroll-to-sticky-002.html`](https://wpt.fyi/results/css/css-anchor-position/anchor-scroll-to-sticky-002.html) | Pass | 1 / 1 |  |  |

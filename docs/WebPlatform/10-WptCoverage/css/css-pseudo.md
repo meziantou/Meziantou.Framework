@@ -20,15 +20,14 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 9
-- **NOT IMPLEMENTED**: 13
-- *No reason documented*: 4
+- **NOT IMPLEMENTED**: 17
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`CSSPseudoElement-identity.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-identity.html) | Pass | 1 / 1 |  |  |
-| [`CSSPseudoElement-scroll-button.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-scroll-button.html) | Fail | 4 / 8 |  | *No reason documented* |
+| [`CSSPseudoElement-scroll-button.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-scroll-button.html) | Fail | 4 / 8 | NOT IMPLEMENTED | a distinct `CSSPseudoElement` for each physical direction of `::scroll-button()` (`up`, `left`...): `pseudo()` returns the object of the logical direction it maps to, so its `selectorText` is the logical direction (the previous behavior of the test) |
 | [`CSSPseudoElement-selectorText.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-selectorText.html) | Pass | 4 / 4 |  |  |
 | [`backdrop-animate.html`](https://wpt.fyi/results/css/css-pseudo/backdrop-animate.html) | Pass | 1 / 1 |  |  |
 | [`backdrop-pseudo-element-click.html`](https://wpt.fyi/results/css/css-pseudo/backdrop-pseudo-element-click.html) | Pass | 1 / 1 |  |  |
@@ -36,10 +35,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`chrome-486467574.html`](https://wpt.fyi/results/css/css-pseudo/chrome-486467574.html) | Pass | 1 / 1 |  |  |
 | [`events-on-pseudo-element-shadow-dom.html`](https://wpt.fyi/results/css/css-pseudo/events-on-pseudo-element-shadow-dom.html) | Pass | 6 / 6 |  |  |
 | [`file-selector-button-inherit.html`](https://wpt.fyi/results/css/css-pseudo/file-selector-button-inherit.html) | Pass | 1 / 1 |  |  |
-| [`first-letter-allowed-properties.html`](https://wpt.fyi/results/css/css-pseudo/first-letter-allowed-properties.html) | Fail | 36 / 45 |  | *No reason documented* |
+| [`first-letter-allowed-properties.html`](https://wpt.fyi/results/css/css-pseudo/first-letter-allowed-properties.html) | Fail | 36 / 45 | NOT IMPLEMENTED | the animation properties on `::first-letter` (the browsers apply them, which https://drafts.csswg.org/css-pseudo-4/#first-letter-styling allows): they are not in the properties that apply to the pseudo-element, so they are ignored |
 | [`first-letter-animate.html`](https://wpt.fyi/results/css/css-pseudo/first-letter-animate.html) | Pass | 3 / 3 |  |  |
 | [`first-letter-punctuation-and-space.html`](https://wpt.fyi/results/css/css-pseudo/first-letter-punctuation-and-space.html) | Pass | 43 / 43 |  |  |
-| [`first-line-allowed-properties.html`](https://wpt.fyi/results/css/css-pseudo/first-line-allowed-properties.html) | Fail | 112 / 139 |  | *No reason documented* |
+| [`first-line-allowed-properties.html`](https://wpt.fyi/results/css/css-pseudo/first-line-allowed-properties.html) | Fail | 112 / 139 | NOT IMPLEMENTED | the animation properties on `::first-line` (the browsers apply them, which https://drafts.csswg.org/css-pseudo-4/#first-line-styling allows): they are not in the properties that apply to the pseudo-element, so they are ignored |
 | [`first-line-animate.html`](https://wpt.fyi/results/css/css-pseudo/first-line-animate.html) | Pass | 3 / 3 |  |  |
 | [`focus-visible-originating-element.html`](https://wpt.fyi/results/css/css-pseudo/focus-visible-originating-element.html) | Pass | 1 / 1 |  |  |
 | [`highlight-cascade/highlight-cascade-007.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-cascade-007.html) | Pass | 12 / 12 |  |  |
@@ -75,7 +74,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`placeholder-inherit.html`](https://wpt.fyi/results/css/css-pseudo/placeholder-inherit.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-element-removal.html`](https://wpt.fyi/results/css/css-pseudo/pseudo-element-removal.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-replaced-elements.html`](https://wpt.fyi/results/css/css-pseudo/pseudo-replaced-elements.html) | Pass | 24 / 24 |  |  |
-| [`scroll-button-pseudo-element-click.html`](https://wpt.fyi/results/css/css-pseudo/scroll-button-pseudo-element-click.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`scroll-button-pseudo-element-click.html`](https://wpt.fyi/results/css/css-pseudo/scroll-button-pseudo-element-click.html) | Fail | 0 / 1 | NOT IMPLEMENTED | a distinct `CSSPseudoElement` for each physical direction of `::scroll-button()` (`up`, `left`...): `pseudo()` returns the object of the logical direction it maps to, so its `selectorText` is the logical direction (the previous behavior of the test) |
 | [`selection-universal-shadow-dom.html`](https://wpt.fyi/results/css/css-pseudo/selection-universal-shadow-dom.html) | Pass | 1 / 1 |  |  |
 | [`text-selection.html`](https://wpt.fyi/results/css/css-pseudo/text-selection.html) | Pass | 6 / 6 |  |  |
 

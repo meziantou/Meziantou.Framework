@@ -18,14 +18,14 @@ description: "The results of the web-platform-tests of css/mediaqueries, and why
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 1
 - **NOT IMPLEMENTED**: 8
-- *No reason documented*: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`aspect-ratio-calc-negative.html`](https://wpt.fyi/results/css/mediaqueries/aspect-ratio-calc-negative.html) | Fail | 9 / 18 |  | *No reason documented* |
+| [`aspect-ratio-calc-negative.html`](https://wpt.fyi/results/css/mediaqueries/aspect-ratio-calc-negative.html) | Fail | 9 / 18 | BUG | a negative `calc()` in a `<ratio>` of a media or container query makes the feature unknown instead of being clamped to 0 (https://drafts.csswg.org/css-values-4/#calc-range) |
 | [`aspect-ratio-serialization.html`](https://wpt.fyi/results/css/mediaqueries/aspect-ratio-serialization.html) | Pass | 1 / 1 |  |  |
 | [`at-custom-media-cssom.html`](https://wpt.fyi/results/css/mediaqueries/at-custom-media-cssom.html) | Pass | 10 / 10 |  |  |
 | [`at-custom-media-parsing.html`](https://wpt.fyi/results/css/mediaqueries/at-custom-media-parsing.html) | Pass | 14 / 14 |  |  |

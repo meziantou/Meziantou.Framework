@@ -39,51 +39,28 @@
     "total": 1
   },
   "speculation-rules/prefetch/anonymous/anonymous-client.https.html": {
-    "total": 1,
-    "failures": {
-      "test anonymous-client url prefetch for cross origin pages": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/anonymous/cross-origin-cookies-anonymous-client-ip-duplicate.https.html": {
-    "total": 1,
-    "failures": {
-      "speculation rules based prefetch should not use cookies for cross origin urls and should issue only the IP-anonymized request if that one is first.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/clear-prefetch-cache-after-clear-site-data-cache.https.html": {
     "total": 3,
     "failures": {
-      "clear-site-data cache headers should prevent it from being fetched": "FAIL",
-      "clear-site-data prefetchCache headers should prevent it from being fetched": "FAIL",
       "clear-site-data prefetchCache in same window should clear its prefetch cache": "FAIL"
     }
   },
   "speculation-rules/prefetch/client-hints/basic.https.sub.html": {
-    "total": 9,
-    "failures": {
-      "Client Hints headers (cross-site)": "FAIL",
-      "Client Hints headers (same-origin)": "FAIL",
-      "Client Hints headers (same-site)": "FAIL"
-    }
+    "total": 9
   },
   "speculation-rules/prefetch/client-hints/redirect.https.sub.html": {
-    "total": 5,
-    "failures": {
-      "Client Hints headers should be updated on redirects (add)": "FAIL",
-      "Client Hints headers should be updated on redirects (drop)": "FAIL"
-    }
+    "total": 5
   },
   "speculation-rules/prefetch/cross-origin-cookies.https.html": {
-    "total": 1,
-    "failures": {
-      "speculation rules based prefetch should not use cookies for cross origin urls.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/different-initiators-2.https.html": {
-    "total": 1,
-    "failures": {
-      "Prefetches from different initiator Documents with same RenderFrameHost": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/different-initiators.sub.https.html?cross-site-1": {
     "total": 1
@@ -172,44 +149,22 @@
     "total": 1
   },
   "speculation-rules/prefetch/initiators-a-element.sub.https.html?cross-site": {
-    "total": 2,
-    "failures": {
-      "<a target=\"blank\">": "FAIL",
-      "<a>": "FAIL"
-    }
+    "total": 2
   },
   "speculation-rules/prefetch/initiators-a-element.sub.https.html?same-site": {
-    "total": 2,
-    "failures": {
-      "<a target=\"blank\">": "FAIL",
-      "<a>": "FAIL"
-    }
+    "total": 2
   },
   "speculation-rules/prefetch/initiators-iframe-location-href.sub.https.html?cross-site": {
-    "total": 1,
-    "failures": {
-      "location.href across iframe": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/initiators-iframe-location-href.sub.https.html?same-site": {
-    "total": 1,
-    "failures": {
-      "location.href across iframe": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/initiators-window-open.sub.https.html?cross-site": {
-    "total": 2,
-    "failures": {
-      "window.open()": "FAIL",
-      "window.open(noopener)": "FAIL"
-    }
+    "total": 2
   },
   "speculation-rules/prefetch/initiators-window-open.sub.https.html?same-site": {
-    "total": 2,
-    "failures": {
-      "window.open()": "FAIL",
-      "window.open(noopener)": "FAIL"
-    }
+    "total": 2
   },
   "speculation-rules/prefetch/inline-speculation-rules-after-stylesheet.https.html": {
     "total": 1
@@ -230,11 +185,7 @@
     "total": 1
   },
   "speculation-rules/prefetch/mutate-rules.https.html": {
-    "total": 3,
-    "failures": {
-      "Removing a rule from the <script type=speculationrules> must not cancel the prefetch": "FAIL",
-      "Removing the <script type=speculationrules> must cancel the prefetch": "FAIL"
-    }
+    "total": 3
   },
   "speculation-rules/prefetch/navigation-timing-delivery-type.https.html?prefetch=false&bypass_cache=false": {
     "total": 1
@@ -243,22 +194,13 @@
     "total": 1
   },
   "speculation-rules/prefetch/navigation-timing-delivery-type.https.html?prefetch=true&bypass_cache=false": {
-    "total": 1,
-    "failures": {
-      "PerformanceNavigationTiming.deliveryType test, same origin prefetch.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/navigation-timing-delivery-type.https.html?prefetch=true&bypass_cache=true": {
-    "total": 1,
-    "failures": {
-      "PerformanceNavigationTiming.deliveryType test, same origin prefetch.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/navigation-timing-requestStart-responseStart.https.html?include=afterResponse": {
-    "total": 1,
-    "failures": {
-      "PerformanceNavigationTiming data should show 'instantaneous' events completed beforehand": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/navigation-timing-requestStart-responseStart.https.html?include=noPrefetch": {
     "total": 1
@@ -276,16 +218,10 @@
     "total": 1
   },
   "speculation-rules/prefetch/navigation-timing-sizes.https.html?prefetch=true": {
-    "total": 1,
-    "failures": {
-      "PerformanceNavigationTiming.transferSize/encodedBodySize/decodedBodySize test, same origin prefetch.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/navigation-timing-sizes.https.html?prefetch=true&bypass_cache=true": {
-    "total": 1,
-    "failures": {
-      "PerformanceNavigationTiming.transferSize/encodedBodySize/decodedBodySize test, same origin prefetch.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-http-cache-interference-inflight.https.html": {
     "harness": "TIMEOUT",
@@ -302,16 +238,10 @@
     }
   },
   "speculation-rules/prefetch/no-http-cache-interference.https.html": {
-    "total": 1,
-    "failures": {
-      "Check that the HTTP cache doesn't cache when the server conditionally responds with 503 for prefetch requests.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-prefetch-for-post.https.html": {
-    "total": 1,
-    "failures": {
-      "post navigations should not use cached prefetch": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single-with-hint.https.html?1-1": {
     "total": 1
@@ -398,184 +328,94 @@
     "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?1-1": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as query parameter b has the same value.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?10-10": {
-    "total": 1,
-    "failures": {
-      "Don't use prefetched response as key-order is set to false and the URLs are not identical.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?11-11": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as query parameter c can be ignored.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?12-12": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as query parameter a can be ignored.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?13-13": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as query parameter a can be ignored.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?14-14": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as all query parameters except c can be ignored.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?15-15": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as all query parameters except c can be ignored. Only the last except matters.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?16-16": {
-    "total": 1,
-    "failures": {
-      "Don't use prefetched response as even though all query parameters except c can be ignored, c has different value.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?17-17": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as even though all query parameters except c and d can be ignored, c value matches and d value matches.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?18-18": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as even though all query parameters except c and d can be ignored, c value matches and d value matches. Some query parameters to be ignored appear multiple times in the query.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?19-19": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as all query parameters except c can be ignored. Allow extension via parameters.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?2-2": {
-    "total": 1,
-    "failures": {
-      "Don't use prefetched response as query parameter b has different value.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?20-20": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as query parameter c can be ignored. Allow extension via parameters.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?21-21": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as the URLs have the values in different order for a. Allow extension via parameters.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?22-22": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as the URLs do not vary on any query parameters. Allow extension via parameters.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?23-23": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as all query parameters except c can be ignored. Allow extension via parameters.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?24-24": {
-    "total": 1,
-    "failures": {
-      "Don't use the prefetched URL. Empty No-Vary-Search means default URL variance. The prefetched and the navigated URLs have to be the same.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?25-25": {
-    "total": 1,
-    "failures": {
-      "Use the prefetched URL. Empty No-Vary-Search means default URL variance. The prefetched and the navigated URLs have to be the same.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?26-26": {
-    "total": 1,
-    "failures": {
-      "Use the prefetched URL. Empty No-Vary-Search means default URL variance. The prefetched and the navigated URLs have to be the same.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?27-27": {
-    "total": 1,
-    "failures": {
-      "Use the prefetched URL. Non-ASCII key - 2 UTF-8 code units. Don't vary the response on the non-ASCII key.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?28-28": {
-    "total": 1,
-    "failures": {
-      "Use the prefetched URL. Non-ASCII key - 2 UTF-8 code units. Don't vary the response on the non-ASCII key.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?29-29": {
-    "total": 1,
-    "failures": {
-      "Don't use the prefetched URL. Non-ASCII key - 2 UTF-8 code units. Vary the response on the non-ASCII key.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?3-3": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as the URLs do not vary by a and b.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?30-last": {
-    "total": 1,
-    "failures": {
-      "Use the prefetched URL. Non-ASCII key - 2 UTF-8 code units. Vary the response on the non-ASCII key.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?4-4": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as the URLs do not vary on any query parameters.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?5-5": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as the URLs do not vary on any query parameters.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?6-6": {
-    "total": 1,
-    "failures": {
-      "Don't use prefetched response as the URLs have different value for c.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?7-7": {
-    "total": 1,
-    "failures": {
-      "Don't use prefetched response as the URLs have the values in different order for a.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?8-8": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as the URLs have the same values for a.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/no-vary-search/prefetch-single.https.html?9-9": {
-    "total": 1,
-    "failures": {
-      "Use prefetched response as the URLs have the same values for a.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=BaseCase": {
     "total": 1
@@ -629,72 +469,37 @@
     "total": 1
   },
   "speculation-rules/prefetch/prefetch-single.https.html?from_protocol=http&to_protocol=http": {
-    "total": 1,
-    "failures": {
-      "test single http url prefetch from a http url": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/prefetch-single.https.html?from_protocol=http&to_protocol=https": {
-    "total": 1,
-    "failures": {
-      "test single https url prefetch from a http url": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/prefetch-single.https.html?from_protocol=https&to_protocol=http": {
-    "total": 1,
-    "failures": {
-      "test single http url prefetch from a https url": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/prefetch-single.https.html?from_protocol=https&to_protocol=https": {
-    "total": 1,
-    "failures": {
-      "test single https url prefetch from a https url": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/prefetch-status.https.html?status=200&should_prefetch=true": {
-    "total": 1,
-    "failures": {
-      "Check that only prefetched requests with status in 200-299 range are used.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/prefetch-status.https.html?status=250&should_prefetch=true": {
-    "total": 1,
-    "failures": {
-      "Check that only prefetched requests with status in 200-299 range are used.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/prefetch-status.https.html?status=299&should_prefetch=true": {
-    "total": 1,
-    "failures": {
-      "Check that only prefetched requests with status in 200-299 range are used.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/prefetch-status.https.html?status=400&should_prefetch=false": {
-    "total": 1,
-    "failures": {
-      "Check that only prefetched requests with status in 200-299 range are used.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/prefetch-status.https.html?status=500&should_prefetch=false": {
-    "total": 1,
-    "failures": {
-      "Check that only prefetched requests with status in 200-299 range are used.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/prefetch-traverse-reload.sub.html": {
-    "total": 3,
-    "failures": {
-      "History's Document is used for traversal navigations": "FAIL",
-      "prefetches can be used for reload navigations": "FAIL",
-      "prefetches can be used for traversal navigations": "FAIL"
-    }
+    "total": 3
   },
   "speculation-rules/prefetch/prefetch-uses-cache.sub.https.html?cross-site": {
-    "total": 1,
-    "failures": {
-      "Test that prefetches use/store responses to/from the HTTP cache.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/prefetch-uses-cache.sub.https.html?same-site": {
     "total": 1,
@@ -703,25 +508,13 @@
     }
   },
   "speculation-rules/prefetch/redirect-middle-of-prefetch.https.html?origin=cross-site-initial": {
-    "total": 2,
-    "failures": {
-      "Navigate to the final URL of the prefetch": "FAIL",
-      "Navigation is redirected to the final URL of the prefetch": "FAIL"
-    }
+    "total": 2
   },
   "speculation-rules/prefetch/redirect-middle-of-prefetch.https.html?origin=cross-site-redirect": {
-    "total": 2,
-    "failures": {
-      "Navigate to the final URL of the prefetch": "FAIL",
-      "Navigation is redirected to the final URL of the prefetch": "FAIL"
-    }
+    "total": 2
   },
   "speculation-rules/prefetch/redirect-middle-of-prefetch.https.html?origin=same-origin": {
-    "total": 2,
-    "failures": {
-      "Navigate to the final URL of the prefetch": "FAIL",
-      "Navigation is redirected to the final URL of the prefetch": "FAIL"
-    }
+    "total": 2
   },
   "speculation-rules/prefetch/redirect-to-prefetch-url.https.html?origin=cross-site-initial": {
     "total": 2
@@ -733,49 +526,28 @@
     "total": 2
   },
   "speculation-rules/prefetch/redirect-url.https.html?origin=cross-site-initial": {
-    "total": 2,
-    "failures": {
-      "redirect-received-before-navigation-start": "FAIL"
-    }
+    "total": 2
   },
   "speculation-rules/prefetch/redirect-url.https.html?origin=cross-site-redirect": {
-    "total": 2,
-    "failures": {
-      "redirect-received-before-navigation-start": "FAIL"
-    }
+    "total": 2
   },
   "speculation-rules/prefetch/redirect-url.https.html?origin=same-origin": {
-    "total": 2,
-    "failures": {
-      "redirect-received-before-navigation-start": "FAIL"
-    }
+    "total": 2
   },
   "speculation-rules/prefetch/referrer-policy-from-rules.https.html?1-1": {
-    "total": 1,
-    "failures": {
-      "with \"strict-origin\" referrer policy in rule set overriding \"strict-origin-when-cross-origin\" of referring page": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/referrer-policy-from-rules.https.html?2-2": {
-    "total": 1,
-    "failures": {
-      "with \"strict-origin\" referrer policy in rule set override \"no-referrer\" of link": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/referrer-policy-from-rules.https.html?3-3": {
-    "total": 1,
-    "failures": {
-      "with \"no-referrer\" referrer policy in rule set overriding \"unsafe-url\" of cross-site referring page": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/referrer-policy-from-rules.https.html?4-4": {
     "total": 1
   },
   "speculation-rules/prefetch/referrer-policy-from-rules.https.html?5-5": {
-    "total": 1,
-    "failures": {
-      "unrecognized policies in link referrerpolicy attribute are ignored": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/referrer-policy-from-rules.https.html?6-6": {
     "total": 1
@@ -784,16 +556,10 @@
     "total": 1
   },
   "speculation-rules/prefetch/referrer-policy-from-rules.https.html?8-last": {
-    "total": 1,
-    "failures": {
-      "with empty string referrer policy in rule set defaulting to \"strict-origin\" of referring page": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/referrer-policy-not-accepted.https.html?1-1": {
-    "total": 1,
-    "failures": {
-      "with \"unsafe-url\" referrer policy on same-site referring page": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/referrer-policy-not-accepted.https.html?2-2": {
     "total": 1
@@ -802,49 +568,25 @@
     "total": 1
   },
   "speculation-rules/prefetch/referrer-policy.https.html?1-1": {
-    "total": 1,
-    "failures": {
-      "with \"strict-origin-when-cross-origin\" referrer policy": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/referrer-policy.https.html?2-2": {
-    "total": 1,
-    "failures": {
-      "with \"strict-origin\" referrer policy": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/referrer-policy.https.html?3-3": {
-    "total": 1,
-    "failures": {
-      "with \"no-referrer\" referrer policy": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/referrer-policy.https.html?4-last": {
-    "total": 1,
-    "failures": {
-      "with \"strict-origin\" link referrer policy overriding \"no-referrer\" of referring page": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/same-origin-cookies.https.html?1-1": {
-    "total": 1,
-    "failures": {
-      "speculation rules based prefetch should use cookies for same origin urls.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/same-origin-cookies.https.html?2-last": {
-    "total": 1,
-    "failures": {
-      "same origin prefetch with no referrer works when cookies are present.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/sec-fetch-headers.https.html": {
-    "total": 4,
-    "failures": {
-      "Sec-Fetch-Dest": "FAIL",
-      "Sec-Fetch-Dest with redirects": "FAIL",
-      "Sec-Fetch-Mode": "FAIL",
-      "Sec-Fetch-Mode with redirects": "FAIL"
-    }
+    "total": 4
   },
   "speculation-rules/prefetch/tentative/cookie-indices.https.html?include=changed": {
     "total": 1,
@@ -865,9 +607,10 @@
     }
   },
   "speculation-rules/prefetch/tentative/cookie-indices.https.html?include=changedWithRedirect3": {
+    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "If the redirect needs to be rerequested and goes elsewhere, we cannot can use the prefetched final response.": "FAIL"
+      "If the redirect needs to be rerequested and goes elsewhere, we cannot can use the prefetched final response.": "TIMEOUT"
     }
   },
   "speculation-rules/prefetch/tentative/cookie-indices.https.html?include=unchanged": {
@@ -883,172 +626,88 @@
     }
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=fetch-handler": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=fetch-handler&clientId": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=fetch-handler-to-fallback": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-to-fallback)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=fetch-handler-to-fallback&clientId": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-to-fallback)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=no-controller": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (no-controller)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=no-controller&clientId": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (no-controller)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=no-fetch-handler": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (no-fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=cross-site&sw=no-fetch-handler&clientId": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (no-fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler&clientId": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler-modify-referrer": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-modify-referrer)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler-modify-referrer&clientId": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-modify-referrer)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler-modify-url": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-modify-url)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler-modify-url&clientId": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-modify-url)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler-navigation-preload": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-navigation-preload)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler-to-fallback": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-to-fallback)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=fetch-handler-to-fallback&clientId": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-to-fallback)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=no-controller": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (no-controller)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=no-controller&clientId": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (no-controller)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=no-fetch-handler": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (no-fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=no-fetch-handler&clientId": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (no-fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=race-fetch-handler": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (race-fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=race-fetch-handler-modify-url": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (race-fetch-handler-modify-url)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html?origin=same-site&sw=race-fetch-handler-to-fallback": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (race-fetch-handler-to-fallback)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-in&sw=fetch-handler": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-in&sw=fetch-handler-synthetic": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-synthetic)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-in&sw=fetch-handler-to-fallback": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-to-fallback)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-in&sw=no-fetch-handler": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (no-fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-out&sw=fetch-handler": {
     "total": 1,
@@ -1075,22 +734,13 @@
     }
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=out-in&sw=fetch-handler": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=out-in&sw=fetch-handler-to-fallback": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-to-fallback)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=out-in&sw=no-fetch-handler": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (no-fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/user-pass.https.html?cross-origin=false": {
     "harness": "TIMEOUT",

@@ -19,8 +19,7 @@ description: "The results of the web-platform-tests of css/css-conditional, and 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 3
-- *No reason documented*: 2
+- **NOT IMPLEMENTED**: 5
 
 ## Stable tests
 
@@ -214,7 +213,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`container-queries/style-query-attr-change-svg.html`](https://wpt.fyi/results/css/css-conditional/container-queries/style-query-attr-change-svg.html) | Pass | 3 / 3 |  |  |
 | [`container-queries/style-query-change-with-ancestor-zoom.html`](https://wpt.fyi/results/css/css-conditional/container-queries/style-query-change-with-ancestor-zoom.html) | Pass | 3 / 3 |  |  |
 | [`container-queries/style-query-container-name-change.html`](https://wpt.fyi/results/css/css-conditional/container-queries/style-query-container-name-change.html) | Pass | 1 / 1 |  |  |
-| [`container-queries/style-query-custom-attr-braces-change.html`](https://wpt.fyi/results/css/css-conditional/container-queries/style-query-custom-attr-braces-change.html) | Fail | 2 / 4 |  | *No reason documented* |
+| [`container-queries/style-query-custom-attr-braces-change.html`](https://wpt.fyi/results/css/css-conditional/container-queries/style-query-custom-attr-braces-change.html) | Fail | 2 / 4 | NOT IMPLEMENTED | the first argument of `attr()` written in a `{}` block (https://drafts.csswg.org/css-values-5/#component-function-commas): `attr({data-untyped})` is not unwrapped, so it never matches |
 | [`container-queries/style-query-custom-attr-change-named-container.html`](https://wpt.fyi/results/css/css-conditional/container-queries/style-query-custom-attr-change-named-container.html) | Pass | 2 / 2 |  |  |
 | [`container-queries/style-query-custom-attr-change.html`](https://wpt.fyi/results/css/css-conditional/container-queries/style-query-custom-attr-change.html) | Pass | 2 / 2 |  |  |
 | [`container-queries/style-query-custom-attr-nested-name-change.html`](https://wpt.fyi/results/css/css-conditional/container-queries/style-query-custom-attr-nested-name-change.html) | Pass | 2 / 2 |  |  |
@@ -265,7 +264,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`container-queries/style-query-guaranteed-invalid.tentative.html`](https://wpt.fyi/results/css/css-conditional/container-queries/style-query-guaranteed-invalid.tentative.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/style-query-registered-custom-invalid.tentative.html`](https://wpt.fyi/results/css/css-conditional/container-queries/style-query-registered-custom-invalid.tentative.html) | Pass | 1 / 1 |  |  |
 | [`match-container-change-event.tentative.html`](https://wpt.fyi/results/css/css-conditional/match-container-change-event.tentative.html) | Pass | 17 / 17 |  |  |
-| [`match-container.tentative.html`](https://wpt.fyi/results/css/css-conditional/match-container.tentative.html) | Fail | 28 / 29 |  | *No reason documented* |
+| [`match-container.tentative.html`](https://wpt.fyi/results/css/css-conditional/match-container.tentative.html) | Fail | 28 / 29 | NOT IMPLEMENTED | `matchContainer()` throwing a `SyntaxError` for an unparsable query (changed upstream): it returns a `ContainerQueryList` that does not match, with an empty `query` |
 
 ## Reftests
 

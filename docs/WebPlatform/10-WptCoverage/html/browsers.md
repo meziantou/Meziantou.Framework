@@ -18,14 +18,13 @@ description: "The results of the web-platform-tests of html/browsers, and why th
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 5
 - **TEST BUG**: 31
 - **NOT IMPLEMENTED**: 7
 - **REQUIRES**: 5
   - `layout`: 5
 - **TEST RUNNER**: 9
 - **OUT OF SCOPE**: 1
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -248,7 +247,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`browsing-the-web/navigating-across-documents/source/navigate-child-function.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/source/navigate-child-function.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/navigating-across-documents/source/navigate-child-src-about-blank.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/source/navigate-child-src-about-blank.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/navigating-across-documents/top-level-data-url.window.js`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/top-level-data-url.window.js) | Fail | 4 / 8 | TEST BUG | the test expects a popup navigated to a `data:` URL (directly or through a redirect) to be closed; the HTML Standard navigates it, and the browsers that block the top-level `data:` navigations keep the popup open on its initial `about:blank` document (fails in every browser) |
-| [`browsing-the-web/navigating-across-documents/window-stop-in-image-load-handler.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/window-stop-in-image-load-handler.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`browsing-the-web/navigating-across-documents/window-stop-in-image-load-handler.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/window-stop-in-image-load-handler.html) | Fail | 0 / 1 | BUG | the load task is queued as soon as the parsing is finished, before the `DOMContentLoaded` listeners run, and only checks again the child navigables: an image inserted by a `DOMContentLoaded` listener does not delay the `load` event (https://html.spec.whatwg.org/multipage/parsing.html#the-end), which fires before the image's `load` and its `window.stop()` |
 | [`browsing-the-web/overlapping-navigations-and-traversals/anchor-fragment-history-back-on-click.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/overlapping-navigations-and-traversals/anchor-fragment-history-back-on-click.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/overlapping-navigations-and-traversals/cross-document-nav-cross-document-nav.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/overlapping-navigations-and-traversals/cross-document-nav-cross-document-nav.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/overlapping-navigations-and-traversals/cross-document-nav-cross-document-traversal.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/overlapping-navigations-and-traversals/cross-document-nav-cross-document-traversal.html) | Pass | 1 / 1 |  |  |

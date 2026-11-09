@@ -19,9 +19,8 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 2
-- **TEST BUG**: 5
+- **TEST BUG**: 7
 - **NOT IMPLEMENTED**: 1
-- *No reason documented*: 2
 
 ## Stable tests
 
@@ -278,8 +277,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`filter-3d-child-spanning-eye-plane.html`](https://wpt.fyi/results/css/filter-effects/filter-3d-child-spanning-eye-plane.html) | Pass | 1 / 1 |  |  |
 | [`filter-3d-children-crossing-eye-plane.html`](https://wpt.fyi/results/css/filter-effects/filter-3d-children-crossing-eye-plane.html) | Pass | 1 / 1 |  |  |
 | [`filter-ancestor-border-radius-overflow-hidden-border.html`](https://wpt.fyi/results/css/filter-effects/filter-ancestor-border-radius-overflow-hidden-border.html) | Pass | 1 / 1 |  |  |
-| [`filter-cb-abspos-inline-001.html`](https://wpt.fyi/results/css/filter-effects/filter-cb-abspos-inline-001.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`filter-cb-abspos-inline-002.html`](https://wpt.fyi/results/css/filter-effects/filter-cb-abspos-inline-002.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`filter-cb-abspos-inline-001.html`](https://wpt.fyi/results/css/filter-effects/filter-cb-abspos-inline-001.html) | Fail | 0 / 1 | TEST BUG | the test now renders the sentence in Ahem (`div { font-family: Ahem }`), but its reference, `filter-cb-abspos-inline-001-ref.html`, was not updated and still uses the default font (fails in every browser) |
+| [`filter-cb-abspos-inline-002.html`](https://wpt.fyi/results/css/filter-effects/filter-cb-abspos-inline-002.html) | Fail | 0 / 1 | TEST BUG | the test now renders the sentence in Ahem (`div { font-family: Ahem }`), but its reference, `filter-cb-abspos-inline-001-ref.html`, was not updated and still uses the default font (fails in every browser) |
 | [`filter-cb-abspos-inline-003.html`](https://wpt.fyi/results/css/filter-effects/filter-cb-abspos-inline-003.html) | Pass | 1 / 1 |  |  |
 | [`filter-cb-dynamic-1a.html`](https://wpt.fyi/results/css/filter-effects/filter-cb-dynamic-1a.html) | Pass | 1 / 1 |  |  |
 | [`filter-cb-dynamic-1b.html`](https://wpt.fyi/results/css/filter-effects/filter-cb-dynamic-1b.html) | Pass | 1 / 1 |  |  |

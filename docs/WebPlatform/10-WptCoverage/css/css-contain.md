@@ -19,8 +19,7 @@ description: "The results of the web-platform-tests of css/css-contain, and why 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 2
-- **NOT IMPLEMENTED**: 2
-- *No reason documented*: 4
+- **NOT IMPLEMENTED**: 6
 
 ## Stable tests
 
@@ -522,10 +521,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`content-visibility/content-visibility-paint-containment-003.html`](https://wpt.fyi/results/css/css-contain/content-visibility/content-visibility-paint-containment-003.html) | Pass | 1 / 1 |  |  |
 | [`content-visibility/content-visibility-paint-containment-004.html`](https://wpt.fyi/results/css/css-contain/content-visibility/content-visibility-paint-containment-004.html) | Pass | 1 / 1 |  |  |
 | [`content-visibility/content-visibility-resize-observer-no-error.html`](https://wpt.fyi/results/css/css-contain/content-visibility/content-visibility-resize-observer-no-error.html) | Pass | 1 / 1 |  |  |
-| [`content-visibility/content-visibility-svg-forced-layout.html`](https://wpt.fyi/results/css/css-contain/content-visibility/content-visibility-svg-forced-layout.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`content-visibility/content-visibility-svg-gradient-unlock.html`](https://wpt.fyi/results/css/css-contain/content-visibility/content-visibility-svg-gradient-unlock.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`content-visibility/content-visibility-svg-gradient.html`](https://wpt.fyi/results/css/css-contain/content-visibility/content-visibility-svg-gradient.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`content-visibility/content-visibility-svg-resources.html`](https://wpt.fyi/results/css/css-contain/content-visibility/content-visibility-svg-resources.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`content-visibility/content-visibility-svg-forced-layout.html`](https://wpt.fyi/results/css/css-contain/content-visibility/content-visibility-svg-forced-layout.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the SVG resources of a skipped subtree (`content-visibility: hidden`) are still used by the references from outside of it: the paint servers (gradients, patterns), filters, markers, masks, the paths of `offset-path` and `textPath` and the targets of `feImage` are applied, where the test expects them to be ignored as missing resources |
+| [`content-visibility/content-visibility-svg-gradient-unlock.html`](https://wpt.fyi/results/css/css-contain/content-visibility/content-visibility-svg-gradient-unlock.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `foreignObject` elements in the image of an `feImage` primitive that references an element (`Painter.Svg`: a `foreignObject` is not painted in the content of a resource): the two `feImage` filters of the `<g>` that contains a `foreignObject` produce nothing, so the red rectangle under them shows (the resources of the subtree that was hidden are repainted correctly) |
+| [`content-visibility/content-visibility-svg-gradient.html`](https://wpt.fyi/results/css/css-contain/content-visibility/content-visibility-svg-gradient.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the SVG resources of a skipped subtree (`content-visibility: hidden`) are still used by the references from outside of it: the paint servers (gradients, patterns), filters, markers, masks, the paths of `offset-path` and `textPath` and the targets of `feImage` are applied, where the test expects them to be ignored as missing resources |
+| [`content-visibility/content-visibility-svg-resources.html`](https://wpt.fyi/results/css/css-contain/content-visibility/content-visibility-svg-resources.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the SVG resources of a skipped subtree (`content-visibility: hidden`) are still used by the references from outside of it: the paint servers (gradients, patterns), filters, markers, masks, the paths of `offset-path` and `textPath` and the targets of `feImage` are applied, where the test expects them to be ignored as missing resources |
 | [`content-visibility/content-visibility-video.html`](https://wpt.fyi/results/css/css-contain/content-visibility/content-visibility-video.html) | Pass | 1 / 1 |  |  |
 | [`content-visibility/content-visibility-vs-scrollIntoView-001.html`](https://wpt.fyi/results/css/css-contain/content-visibility/content-visibility-vs-scrollIntoView-001.html) | Pass | 1 / 1 |  |  |
 | [`content-visibility/content-visibility-vs-scrollIntoView-002.html`](https://wpt.fyi/results/css/css-contain/content-visibility/content-visibility-vs-scrollIntoView-002.html) | Pass | 1 / 1 |  |  |

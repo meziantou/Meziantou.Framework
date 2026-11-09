@@ -18,13 +18,13 @@ description: "The results of the web-platform-tests of hr-time, and why the test
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- *No reason documented*: 1
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`audioworklet.https.html`](https://wpt.fyi/results/hr-time/audioworklet.https.html) | Fail | 1 / 6 |  | *No reason documented* |
+| [`audioworklet.https.html`](https://wpt.fyi/results/hr-time/audioworklet.https.html) | Fail | 1 / 6 | NOT IMPLEMENTED | `performance` (`WorkletPerformance`) in `AudioWorkletGlobalScope` |
 | [`basic.any.js`](https://wpt.fyi/results/hr-time/basic.any.js) | Pass | 10 / 10 |  |  |
 | [`clamped-time-origin-isolated.https.html`](https://wpt.fyi/results/hr-time/clamped-time-origin-isolated.https.html) | Pass | 1 / 1 |  |  |
 | [`clamped-time-origin.html`](https://wpt.fyi/results/hr-time/clamped-time-origin.html) | Pass | 1 / 1 |  |  |

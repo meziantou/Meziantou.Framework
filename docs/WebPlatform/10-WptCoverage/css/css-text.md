@@ -20,9 +20,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 45
-- **NOT IMPLEMENTED**: 4
+- **NOT IMPLEMENTED**: 9
 - **TEST RUNNER**: 3
-- *No reason documented*: 5
 
 ## Stable tests
 
@@ -289,9 +288,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`parsing/text-align-valid.html`](https://wpt.fyi/results/css/css-text/parsing/text-align-valid.html) | Pass | 8 / 8 |  |  |
 | [`parsing/text-autospace-computed.html`](https://wpt.fyi/results/css/css-text/parsing/text-autospace-computed.html) | Pass | 32 / 32 |  |  |
 | [`parsing/text-autospace-invalid.html`](https://wpt.fyi/results/css/css-text/parsing/text-autospace-invalid.html) | Pass | 15 / 15 |  |  |
-| [`parsing/text-autospace-size-computed.html`](https://wpt.fyi/results/css/css-text/parsing/text-autospace-size-computed.html) | Fail | 0 / 5 |  | *No reason documented* |
+| [`parsing/text-autospace-size-computed.html`](https://wpt.fyi/results/css/css-text/parsing/text-autospace-size-computed.html) | Fail | 0 / 5 | NOT IMPLEMENTED | the `text-autospace-size` property (w3c/csswg-drafts#8510) |
 | [`parsing/text-autospace-size-invalid.html`](https://wpt.fyi/results/css/css-text/parsing/text-autospace-size-invalid.html) | Pass | 5 / 5 |  |  |
-| [`parsing/text-autospace-size-valid.html`](https://wpt.fyi/results/css/css-text/parsing/text-autospace-size-valid.html) | Fail | 0 / 4 |  | *No reason documented* |
+| [`parsing/text-autospace-size-valid.html`](https://wpt.fyi/results/css/css-text/parsing/text-autospace-size-valid.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the `text-autospace-size` property (w3c/csswg-drafts#8510) |
 | [`parsing/text-autospace-valid.html`](https://wpt.fyi/results/css/css-text/parsing/text-autospace-valid.html) | Pass | 31 / 31 |  |  |
 | [`parsing/text-fit-computed.html`](https://wpt.fyi/results/css/css-text/parsing/text-fit-computed.html) | Pass | 10 / 10 |  |  |
 | [`parsing/text-fit-invalid.html`](https://wpt.fyi/results/css/css-text/parsing/text-fit-invalid.html) | Pass | 6 / 6 |  |  |
@@ -329,9 +328,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`parsing/white-space-collapse-valid.html`](https://wpt.fyi/results/css/css-text/parsing/white-space-collapse-valid.html) | Pass | 9 / 9 |  |  |
 | [`parsing/white-space-computed.html`](https://wpt.fyi/results/css/css-text/parsing/white-space-computed.html) | Pass | 6 / 6 |  |  |
 | [`parsing/white-space-invalid.html`](https://wpt.fyi/results/css/css-text/parsing/white-space-invalid.html) | Pass | 6 / 6 |  |  |
-| [`parsing/white-space-shorthand-longhands.html`](https://wpt.fyi/results/css/css-text/parsing/white-space-shorthand-longhands.html) | Fail | 11 / 19 |  | *No reason documented* |
+| [`parsing/white-space-shorthand-longhands.html`](https://wpt.fyi/results/css/css-text/parsing/white-space-shorthand-longhands.html) | Fail | 11 / 19 | NOT IMPLEMENTED | `<'white-space-trim'>` as a component of the `white-space` shorthand (https://drafts.csswg.org/css-text-4/#propdef-white-space): `white-space` sets only `white-space-collapse` and `text-wrap-mode` |
 | [`parsing/white-space-shorthand-text-wrap.html`](https://wpt.fyi/results/css/css-text/parsing/white-space-shorthand-text-wrap.html) | Pass | 6 / 6 |  |  |
-| [`parsing/white-space-shorthand.html`](https://wpt.fyi/results/css/css-text/parsing/white-space-shorthand.html) | Fail | 52 / 96 |  | *No reason documented* |
+| [`parsing/white-space-shorthand.html`](https://wpt.fyi/results/css/css-text/parsing/white-space-shorthand.html) | Fail | 52 / 96 | NOT IMPLEMENTED | `<'white-space-trim'>` as a component of the `white-space` shorthand (https://drafts.csswg.org/css-text-4/#propdef-white-space): `white-space` sets only `white-space-collapse` and `text-wrap-mode` |
 | [`parsing/white-space-trim-computed.html`](https://wpt.fyi/results/css/css-text/parsing/white-space-trim-computed.html) | Pass | 7 / 7 |  |  |
 | [`parsing/white-space-trim-invalid.html`](https://wpt.fyi/results/css/css-text/parsing/white-space-trim-invalid.html) | Pass | 7 / 7 |  |  |
 | [`parsing/white-space-trim-valid.html`](https://wpt.fyi/results/css/css-text/parsing/white-space-trim-valid.html) | Pass | 11 / 11 |  |  |
@@ -1145,7 +1144,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`text-autospace/text-autospace-mixed-001.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-mixed-001.html) | Pass | 1 / 1 |  |  |
 | [`text-autospace/text-autospace-no-001.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-no-001.html) | Pass | 1 / 1 |  |  |
 | [`text-autospace/text-autospace-preformatted-001.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-preformatted-001.html) | Pass | 1 / 1 |  |  |
-| [`text-autospace/text-autospace-size-001.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-size-001.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`text-autospace/text-autospace-size-001.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-size-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `text-autospace-size` property (a proposal of csswg-drafts#8510, not in the specification): the inter-script spacing of `text-autospace` is always 1/8ic |
 | [`text-autospace/text-autospace-supplementary-ideograph.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-supplementary-ideograph.html) | Pass | 1 / 1 |  |  |
 | [`text-autospace/text-autospace-vertical-combine-001.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-vertical-combine-001.html) | Pass | 1 / 1 |  |  |
 | [`text-autospace/text-autospace-vertical-upright-001.html`](https://wpt.fyi/results/css/css-text/text-autospace/text-autospace-vertical-upright-001.html) | Pass | 1 / 1 |  |  |

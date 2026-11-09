@@ -18,11 +18,11 @@ description: "The results of the web-platform-tests of css/css-view-transitions,
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 1
 - **TEST BUG**: 9
-- **NOT IMPLEMENTED**: 9
+- **NOT IMPLEMENTED**: 14
 - **TEST RUNNER**: 3
 - **OUT OF SCOPE**: 1
-- *No reason documented*: 6
 
 ## Stable tests
 
@@ -279,7 +279,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`iframe-and-main-frame-transition-old-main-old-iframe.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-and-main-frame-transition-old-main-old-iframe.html) | Pass | 1 / 1 |  |  |
 | [`iframe-and-main-frame-transition-old-main.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-and-main-frame-transition-old-main.html) | Pass | 1 / 1 |  |  |
 | [`iframe-and-main-frame-transition-with-name-on-iframe.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-and-main-frame-transition-with-name-on-iframe.html) | Pass | 1 / 1 |  |  |
-| [`iframe-cross-origin-svg-filter-dynamic.tentative.sub.https.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-cross-origin-svg-filter-dynamic.tentative.sub.https.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`iframe-cross-origin-svg-filter-dynamic.tentative.sub.https.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-cross-origin-svg-filter-dynamic.tentative.sub.https.html) | Fail | 0 / 1 | BUG | only the SVG filters of the filter of `::view-transition-group(frame)` are dropped over the cross-origin frame (`Painter.Effects`: the `url(#late)` reference, resolved after the transition started): its `blur(5px)` still applies to the images of the frame, where the tentative test expects the whole filter not to be applied to the cross-origin content |
 | [`iframe-cross-origin-svg-filter.tentative.sub.https.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-cross-origin-svg-filter.tentative.sub.https.html) | Pass | 1 / 1 |  |  |
 | [`iframe-new-has-scrollbar.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-new-has-scrollbar.html) | Pass | 1 / 1 |  |  |
 | [`iframe-old-has-scrollbar.html`](https://wpt.fyi/results/css/css-view-transitions/iframe-old-has-scrollbar.html) | Pass | 1 / 1 |  |  |
@@ -288,8 +288,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`inline-child-with-filter.html`](https://wpt.fyi/results/css/css-view-transitions/inline-child-with-filter.html) | Pass | 1 / 1 |  |  |
 | [`inline-child-with-overflow-shadow.html`](https://wpt.fyi/results/css/css-view-transitions/inline-child-with-overflow-shadow.html) | Pass | 1 / 1 |  |  |
 | [`inline-element-size.html`](https://wpt.fyi/results/css/css-view-transitions/inline-element-size.html) | Pass | 1 / 1 |  |  |
-| [`inline-with-block-child-new.html`](https://wpt.fyi/results/css/css-view-transitions/inline-with-block-child-new.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`inline-with-block-child-old.html`](https://wpt.fyi/results/css/css-view-transitions/inline-with-block-child-old.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`inline-with-block-child-new.html`](https://wpt.fyi/results/css/css-view-transitions/inline-with-block-child-new.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the capture of an inline box split by a block child (its fragments before the block, the block and after it): only its first fragment is painted in the image, whose size is the bounding box of the fragments |
+| [`inline-with-block-child-old.html`](https://wpt.fyi/results/css/css-view-transitions/inline-with-block-child-old.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the capture of an inline box split by a block child (its fragments before the block, the block and after it): only its first fragment is painted in the image, whose size is the bounding box of the fragments |
 | [`inline-with-offset-from-containing-block.html`](https://wpt.fyi/results/css/css-view-transitions/inline-with-offset-from-containing-block.html) | Pass | 1 / 1 |  |  |
 | [`japanese-tag.html`](https://wpt.fyi/results/css/css-view-transitions/japanese-tag.html) | Fail | 0 / 1 | TEST BUG | the test has no encoding declaration and its view transition names are Japanese: decoded as windows-1252 (UTF-8 is not detected for a document of the network, as in the browsers: `encoding-detection/utf-8.html`), the names contain code points that are not identifier code points (U+00A0, U+0081…), so the declarations and the selectors are invalid; the browsers pass with the same decoding because they accept every non-ASCII code point in an identifier |
 | [`massive-element-below-and-on-top-of-viewport-partially-onscreen-new.html`](https://wpt.fyi/results/css/css-view-transitions/massive-element-below-and-on-top-of-viewport-partially-onscreen-new.html) | Pass | 1 / 1 |  |  |
@@ -489,9 +489,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scoped/rotation-on-scoped-element.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/rotation-on-scoped-element.html) | Pass | 1 / 1 |  |  |
 | [`scoped/scope-containment-pseudo-border.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/scope-containment-pseudo-border.html) | Pass | 1 / 1 |  |  |
 | [`scoped/scope-during-transition-2.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/scope-during-transition-2.html) | Pass | 1 / 1 |  |  |
-| [`scoped/scope-mathml-root.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/scope-mathml-root.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`scoped/scope-replaced-elements.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/scope-replaced-elements.html) | Fail | 0 / 1 |  | *No reason documented* |
-| [`scoped/scope-svg-root.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/scope-svg-root.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`scoped/scope-mathml-root.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/scope-mathml-root.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `::view-transition` pseudo-element tree of a scoped view transition whose root element is a MathML `math` element or an outer `svg` element: the layer is only built for the elements whose children are CSS boxes (`BoxTreeBuilder.BuildScopedViewTransitionLayer`), so the yellow element is painted instead of the green overlay |
+| [`scoped/scope-replaced-elements.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/scope-replaced-elements.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `::view-transition` pseudo-element tree of a scoped view transition whose root element is a replaced element (`img`, `canvas`, `video`, `iframe`, `embed`, `audio`): the layer is only built for the elements whose children are CSS boxes (`BoxTreeBuilder.BuildScopedViewTransitionLayer`), and the captured element is not painted, so the blue backing shows instead of the green overlay |
+| [`scoped/scope-svg-root.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/scope-svg-root.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `::view-transition` pseudo-element tree of a scoped view transition whose root element is a MathML `math` element or an outer `svg` element: the layer is only built for the elements whose children are CSS boxes (`BoxTreeBuilder.BuildScopedViewTransitionLayer`), so the yellow element is painted instead of the green overlay |
 | [`scoped/scrolled-target-position-rtl.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/scrolled-target-position-rtl.html) | Pass | 1 / 1 |  |  |
 | [`scoped/scrolled-target-position.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/scrolled-target-position.html) | Pass | 1 / 1 |  |  |
 | [`scoped/scroller-with-child.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/scroller-with-child.html) | Pass | 1 / 1 |  |  |

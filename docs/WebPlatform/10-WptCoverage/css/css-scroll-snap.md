@@ -18,9 +18,9 @@ description: "The results of the web-platform-tests of css/css-scroll-snap, and 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 1
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 4
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -174,7 +174,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`snap-to-visible-areas-margin-both.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-to-visible-areas-margin-both.html) | Pass | 1 / 1 |  |  |
 | [`snap-to-visible-areas-margin-x-axis.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-to-visible-areas-margin-x-axis.html) | Pass | 1 / 1 |  |  |
 | [`snap-to-visible-areas-margin-y-axis.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-to-visible-areas-margin-y-axis.html) | Pass | 1 / 1 |  |  |
-| [`snap-to-visible-areas-unreachable.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-to-visible-areas-unreachable.html) | Fail | 2 / 4 |  | *No reason documented* |
+| [`snap-to-visible-areas-unreachable.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-to-visible-areas-unreachable.html) | Fail | 2 / 4 | BUG | a snap area that can never intersect the snapport in the cross axis (in the negative overflow, or clipped past the scrollable overflow) is still a snap target: the range of the cross-axis scroll positions where it is visible is clamped to the scroll range instead of being empty |
 | [`snap-to-visible-areas-x-axis.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-to-visible-areas-x-axis.html) | Pass | 1 / 1 |  |  |
 | [`snap-to-visible-areas-y-axis.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-to-visible-areas-y-axis.html) | Pass | 1 / 1 |  |  |
 | [`snap-to-zero-height-interior-area.html`](https://wpt.fyi/results/css/css-scroll-snap/snap-to-zero-height-interior-area.html) | Pass | 3 / 3 |  |  |

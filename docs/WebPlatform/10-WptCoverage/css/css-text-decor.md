@@ -18,10 +18,9 @@ description: "The results of the web-platform-tests of css/css-text-decor, and w
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
-- **TEST BUG**: 2
-- **NOT IMPLEMENTED**: 2
-- *No reason documented*: 3
+- **BUG**: 4
+- **TEST BUG**: 3
+- **NOT IMPLEMENTED**: 3
 
 ## Stable tests
 
@@ -133,13 +132,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`text-decoration-inset-auto.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-auto.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-bidi-seam.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-bidi-seam.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-line-through.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-line-through.html) | Pass | 1 / 1 |  |  |
-| [`text-decoration-inset-marked-text-gap.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-marked-text-gap.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`text-decoration-inset-marked-text-gap.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-marked-text-gap.html) | Fail | 0 / 1 | TEST BUG | the reference keeps the underline blue under the selected text, but the decorations of the originating element are painted in the `color` of `::selection` in the selected part (https://drafts.csswg.org/css-pseudo-4/#highlight-painting, WPT `css/css-pseudo/selection-originating-decoration-color.html`): the middle of the underline is green; its insets are the expected ones (the line goes from 28px to 252px) |
 | [`text-decoration-inset-negative.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-negative.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-not-inherited.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-not-inherited.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-one-value.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-one-value.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-orthogonal-block-001.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-orthogonal-block-001.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-overline.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-overline.html) | Pass | 1 / 1 |  |  |
-| [`text-decoration-inset-percentage-clone.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-clone.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`text-decoration-inset-percentage-clone.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-clone.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `-webkit-box-decoration-break` alias, which the test uses for WebKit (it is in no specification): the declaration is dropped and the box keeps `slice`, so the 20% inset refers to the decorated text of both lines (200px) and only applies at the start of the first line and at the end of the last one |
 | [`text-decoration-inset-percentage-equivalence.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-equivalence.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-percentage-negative-grow.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-negative-grow.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-percentage-negative-incremental.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-negative-incremental.html) | Pass | 1 / 1 |  |  |
@@ -148,7 +147,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`text-decoration-inset-percentage-negative-propagated.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-negative-propagated.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-percentage-negative-repaint.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-negative-repaint.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-percentage-negative.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-negative.html) | Pass | 1 / 1 |  |  |
-| [`text-decoration-inset-percentage-padding.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-padding.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`text-decoration-inset-percentage-padding.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-padding.html) | Fail | 0 / 1 | BUG | the percentages of `text-decoration-inset` refer to the decorated text of the box (160px), not to the inline size of the decorating box with its paddings (240px): the underline is inset by 40px instead of 60px at each end |
 | [`text-decoration-inset-percentage-slice-multiline.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-slice-multiline.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-percentage-slice.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-percentage-slice.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-inset-svg-fragment-001.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-inset-svg-fragment-001.html) | Pass | 1 / 1 |  |  |

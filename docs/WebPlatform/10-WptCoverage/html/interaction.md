@@ -18,11 +18,10 @@ description: "The results of the web-platform-tests of html/interaction, and why
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 146
+- **NOT IMPLEMENTED**: 147
 - **REQUIRES**: 139
   - `layout`: 1
   - `user-input`: 138
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -235,7 +234,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`focus/focusreset/focusreset-moveBefore.tentative.html`](https://wpt.fyi/results/html/interaction/focus/focusreset/focusreset-moveBefore.tentative.html) | Fail | 2 / 3 | NOT IMPLEMENTED | the tentative `focusreset` event (fired at the document when the focused element is removed) |
 | [`focus/focusreset/focusreset-removal-variants.tentative.html`](https://wpt.fyi/results/html/interaction/focus/focusreset/focusreset-removal-variants.tentative.html) | Fail | 0 / 22 | NOT IMPLEMENTED | the tentative `focusreset` event (fired at the document when the focused element is removed) |
 | [`focus/focusreset/focusreset-timing.tentative.html`](https://wpt.fyi/results/html/interaction/focus/focusreset/focusreset-timing.tentative.html) | Fail | 0 / 9 | NOT IMPLEMENTED | the tentative `focusreset` event (fired at the document when the focused element is removed) |
-| [`focus/processing-model/focus-fixup-rule-disabled.tentative.html`](https://wpt.fyi/results/html/interaction/focus/processing-model/focus-fixup-rule-disabled.tentative.html) | Fail | 0 / 7 |  | *No reason documented* |
+| [`focus/processing-model/focus-fixup-rule-disabled.tentative.html`](https://wpt.fyi/results/html/interaction/focus/processing-model/focus-fixup-rule-disabled.tentative.html) | Fail | 0 / 7 | NOT IMPLEMENTED | the tentative change of the focus fixup rule (whatwg/html#13159): a focused form control that becomes disabled keeps the focus and matches `:focus`; the library unfocuses it (the focused area becomes the body) |
 | [`focus/sequential-focus-navigation-starting-point.tentative.html`](https://wpt.fyi/results/html/interaction/focus/sequential-focus-navigation-starting-point.tentative.html) | Pass | 20 / 20 |  |  |
 | [`focus/setSequentialFocusStartingPoint.tentative.html`](https://wpt.fyi/results/html/interaction/focus/setSequentialFocusStartingPoint.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `document.setSequentialFocusStartingPoint()` |
 

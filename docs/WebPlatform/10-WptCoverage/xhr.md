@@ -20,8 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 2
-- **TEST RUNNER**: 5
-- *No reason documented*: 1
+- **TEST RUNNER**: 6
 
 ## Stable tests
 
@@ -105,7 +104,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`content-type-unmodified.any.js`](https://wpt.fyi/results/xhr/content-type-unmodified.any.js) | Pass | 2 / 2 |  |  |
 | [`cookies.http.html`](https://wpt.fyi/results/xhr/cookies.http.html) | Fail | 0 / 1 | TEST RUNNER | `xhr/resources/get-set-cookie.py` is not emulated (404) |
 | [`cors-expose-star.sub.any.js`](https://wpt.fyi/results/xhr/cors-expose-star.sub.any.js) | Pass | 6 / 6 |  |  |
-| [`cors-upload-listener-timing.any.js`](https://wpt.fyi/results/xhr/cors-upload-listener-timing.any.js) | Error | 0 / 12 |  | *No reason documented* |
+| [`cors-upload-listener-timing.any.js`](https://wpt.fyi/results/xhr/cors-upload-listener-timing.any.js) | Error | 0 / 12 | TEST RUNNER | `xhr/resources/cors-upload-listener-timing.py` is not emulated |
 | [`cors-upload.any.js`](https://wpt.fyi/results/xhr/cors-upload.any.js) | Pass | 4 / 4 |  |  |
 | [`data-uri.htm`](https://wpt.fyi/results/xhr/data-uri.htm) | Pass | 10 / 10 |  |  |
 | [`event-abort.any.js`](https://wpt.fyi/results/xhr/event-abort.any.js) | Pass | 2 / 2 |  |  |

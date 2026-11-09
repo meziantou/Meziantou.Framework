@@ -48,30 +48,29 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,324 | 29,911 | 2,117 | 95% |
-| [Tentative](#tentative-tests) | 1,379 | 3,169 | 698 | 56% |
+| [Stable](#stable-tests) | 26,350 | 29,911 | 2,117 | 95% |
+| [Tentative](#tentative-tests) | 1,380 | 3,169 | 698 | 56% |
 | [Reftests](#reftests) | 28,112 | 29,507 | 171 | 96% |
-| **All** | **55,815** | **62,587** | **2,986** | **94%** |
+| **All** | **55,842** | **62,587** | **2,986** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 171
-- **TEST BUG**: 1,008
-- **NOT IMPLEMENTED**: 4,338
-- **REQUIRES**: 764
+- **BUG**: 257
+- **TEST BUG**: 1,017
+- **NOT IMPLEMENTED**: 4,492
+- **REQUIRES**: 765
   - `hardware`: 573
   - `layout`: 23
-  - `media`: 20
+  - `media`: 21
   - `service-workers`: 1
   - `user-input`: 154
   - `workers`: 3
-- **TEST RUNNER**: 309
+- **TEST RUNNER**: 320
 - **OUT OF SCOPE**: 206
 - **FLAKY**: 17
 - **PERFORMANCE**: 7
-- *No reason documented*: 286
 
 ## Stable tests
 
@@ -357,7 +356,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`shadow-dom`](shadow-dom.md) | 218 | 254 | 0 | 86% |
 | [`shape-detection`](shape-detection.md) | 0 | 25 | 0 | 0% |
 | [`soft-navigation-heuristics`](soft-navigation-heuristics.md) | 1 | 1 | 0 | 100% |
-| [`speculation-rules`](speculation-rules.md) | 105 | 185 | 1 | 57% |
+| [`speculation-rules`](speculation-rules.md) | 131 | 185 | 1 | 71% |
 | [`speech-api`](speech-api.md) | 0 | 16 | 16 | – |
 | [`storage`](storage.md) | 11 | 14 | 0 | 79% |
 | [`storage-access-api`](storage-access-api.md) | 0 | 37 | 37 | – |
@@ -420,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 320 | 331 | 0 | 97% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,324** | **29,911** | **2,117** | **95%** |
+| **Total (343 sections)** | **26,350** | **29,911** | **2,117** | **95%** |
 
 ## Tentative tests
 
@@ -558,7 +557,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`shadow-dom`](shadow-dom.md#tentative-tests) | 33 | 113 | 0 | 29% |
 | [`signed-exchange`](signed-exchange.md#tentative-tests) | 0 | 60 | 60 | – |
 | [`soft-navigation-heuristics`](soft-navigation-heuristics.md#tentative-tests) | 91 | 95 | 0 | 96% |
-| [`speculation-rules`](speculation-rules.md#tentative-tests) | 5 | 26 | 0 | 19% |
+| [`speculation-rules`](speculation-rules.md#tentative-tests) | 6 | 26 | 0 | 23% |
 | [`speech-api`](speech-api.md#tentative-tests) | 0 | 2 | 2 | – |
 | [`storage`](storage.md#tentative-tests) | 0 | 13 | 0 | 0% |
 | [`storage-access-api`](storage-access-api.md#tentative-tests) | 0 | 5 | 5 | – |
@@ -592,7 +591,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 1 | 8 | 0 | 13% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 0 | 2 | 2 | – |
-| **Total (166 sections)** | **1,379** | **3,169** | **698** | **56%** |
+| **Total (166 sections)** | **1,380** | **3,169** | **698** | **56%** |
 
 ## Reftests
 

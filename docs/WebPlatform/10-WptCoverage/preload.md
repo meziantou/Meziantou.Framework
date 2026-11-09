@@ -20,7 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **TEST BUG**: 4
 - **NOT IMPLEMENTED**: 3
-- *No reason documented*: 1
+- **TEST RUNNER**: 1
 
 ## Stable tests
 
@@ -46,7 +46,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`link-header-preload-nonce.html`](https://wpt.fyi/results/preload/link-header-preload-nonce.html) | Pass | 2 / 2 |  |  |
 | [`link-header-preload.html`](https://wpt.fyi/results/preload/link-header-preload.html) | Pass | 1 / 1 |  |  |
 | [`link-preload-as-case-insensitive.html`](https://wpt.fyi/results/preload/link-preload-as-case-insensitive.html) | Pass | 7 / 7 |  |  |
-| [`link-url-encoding.html`](https://wpt.fyi/results/preload/link-url-encoding.html) | Fail | 0 / 3 |  | *No reason documented* |
+| [`link-url-encoding.html`](https://wpt.fyi/results/preload/link-url-encoding.html) | Fail | 0 / 3 | TEST RUNNER | `preload/resources/stash-url.py` and `preload/resources/stash-read.py` are not emulated |
 | [`modulepreload-already-in-module-map.html`](https://wpt.fyi/results/preload/modulepreload-already-in-module-map.html) | Pass | 5 / 5 |  |  |
 | [`modulepreload-as.html`](https://wpt.fyi/results/preload/modulepreload-as.html) | Pass | 28 / 28 |  |  |
 | [`modulepreload-consumed-by-script.html`](https://wpt.fyi/results/preload/modulepreload-consumed-by-script.html) | Pass | 1 / 1 |  |  |

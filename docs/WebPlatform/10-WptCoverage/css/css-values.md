@@ -18,12 +18,11 @@ description: "The results of the web-platform-tests of css/css-values, and why t
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
+- **BUG**: 3
 - **TEST BUG**: 10
-- **NOT IMPLEMENTED**: 1
+- **NOT IMPLEMENTED**: 2
 - **REQUIRES**: 2
   - `layout`: 2
-- *No reason documented*: 3
 
 ## Stable tests
 
@@ -37,11 +36,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animations/line-height-lh-transition.html`](https://wpt.fyi/results/css/css-values/animations/line-height-lh-transition.html) | Pass | 1 / 1 |  |  |
 | [`attr-IACVT.html`](https://wpt.fyi/results/css/css-values/attr-IACVT.html) | Pass | 1 / 1 |  |  |
 | [`attr-all-types.html`](https://wpt.fyi/results/css/css-values/attr-all-types.html) | Pass | 175 / 175 |  |  |
-| [`attr-argument-grammar.html`](https://wpt.fyi/results/css/css-values/attr-argument-grammar.html) | Fail | 15 / 18 |  | *No reason documented* |
+| [`attr-argument-grammar.html`](https://wpt.fyi/results/css/css-values/attr-argument-grammar.html) | Fail | 15 / 18 | BUG | an `attr()` whose first argument does not parse as `<attr-name> <attr-type>?` (e.g. `attr(data-foo &, 30)`) is invalid instead of substituting its fallback: step 2 of https://drafts.csswg.org/css-values-5/#replace-an-attr-function jumps to the FAILURE step |
 | [`attr-container-style-query.html`](https://wpt.fyi/results/css/css-values/attr-container-style-query.html) | Pass | 1 / 1 |  |  |
 | [`attr-css-wide-keywords.html`](https://wpt.fyi/results/css/css-values/attr-css-wide-keywords.html) | Pass | 21 / 21 |  |  |
 | [`attr-cycle.html`](https://wpt.fyi/results/css/css-values/attr-cycle.html) | Pass | 37 / 37 |  |  |
-| [`attr-fallback-braces.html`](https://wpt.fyi/results/css/css-values/attr-fallback-braces.html) | Fail | 0 / 6 |  | *No reason documented* |
+| [`attr-fallback-braces.html`](https://wpt.fyi/results/css/css-values/attr-fallback-braces.html) | Fail | 0 / 6 | NOT IMPLEMENTED | an argument of `attr()` written in a `{}` block (https://drafts.csswg.org/css-values-5/#component-function-commas): the fallback is not unwrapped (a block alone) nor rejected when the block is mixed with other values |
 | [`attr-invalidation-after-stylesheet-change.html`](https://wpt.fyi/results/css/css-values/attr-invalidation-after-stylesheet-change.html) | Pass | 1 / 1 |  |  |
 | [`attr-invalidation-after-view-transition.html`](https://wpt.fyi/results/css/css-values/attr-invalidation-after-view-transition.html) | Pass | 1 / 1 |  |  |
 | [`attr-invalidation.html`](https://wpt.fyi/results/css/css-values/attr-invalidation.html) | Pass | 1 / 1 |  |  |
@@ -58,7 +57,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`attr-security-transition-interpolated.html`](https://wpt.fyi/results/css/css-values/attr-security-transition-interpolated.html) | Pass | 3 / 3 |  |  |
 | [`attr-security-transition-retarget-taint.html`](https://wpt.fyi/results/css/css-values/attr-security-transition-retarget-taint.html) | Pass | 1 / 1 |  |  |
 | [`attr-security-transition.html`](https://wpt.fyi/results/css/css-values/attr-security-transition.html) | Pass | 1 / 1 |  |  |
-| [`attr-security.html`](https://wpt.fyi/results/css/css-values/attr-security.html) | Fail | 31 / 32 |  | *No reason documented* |
+| [`attr-security.html`](https://wpt.fyi/results/css/css-values/attr-security.html) | Fail | 31 / 32 | BUG | the computed value of `src()` with a string is serialized as `src(url("..."))` instead of `url("...")` (https://drafts.csswg.org/cssom/#serialize-a-url) |
 | [`attr-serialization.html`](https://wpt.fyi/results/css/css-values/attr-serialization.html) | Pass | 1 / 1 |  |  |
 | [`attr-universal-selector.html`](https://wpt.fyi/results/css/css-values/attr-universal-selector.html) | Pass | 1 / 1 |  |  |
 | [`calc-angle-values.html`](https://wpt.fyi/results/css/css-values/calc-angle-values.html) | Pass | 27 / 27 |  |  |

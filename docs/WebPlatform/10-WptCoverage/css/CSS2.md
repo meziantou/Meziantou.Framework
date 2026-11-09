@@ -18,9 +18,9 @@ description: "The results of the web-platform-tests of css/CSS2, and why the tes
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 1
 - **TEST BUG**: 45
 - **TEST RUNNER**: 16
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -37,7 +37,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`floats/float-in-block-in-inline-position-001.html`](https://wpt.fyi/results/css/CSS2/floats/float-in-block-in-inline-position-001.html) | Pass | 6 / 6 |  |  |
 | [`floats/float-in-self-painting-inline.html`](https://wpt.fyi/results/css/CSS2/floats/float-in-self-painting-inline.html) | Pass | 1 / 1 |  |  |
 | [`floats/float-no-interpolation.html`](https://wpt.fyi/results/css/CSS2/floats/float-no-interpolation.html) | Pass | 66 / 66 |  |  |
-| [`floats/floats-in-inline-content-intrinsic-size-001.html`](https://wpt.fyi/results/css/CSS2/floats/floats-in-inline-content-intrinsic-size-001.html) | Fail | 15 / 16 |  | *No reason documented* |
+| [`floats/floats-in-inline-content-intrinsic-size-001.html`](https://wpt.fyi/results/css/CSS2/floats/floats-in-inline-content-intrinsic-size-001.html) | Fail | 15 / 16 | BUG | under a max-content constraint, the text that follows a float that clears the floats before it is measured next to that float (70px) instead of next to the floats before it on the first line (90px): the clearing float goes below them, the text stays on the first line |
 | [`floats/hit-test-floats-001.html`](https://wpt.fyi/results/css/CSS2/floats/hit-test-floats-001.html) | Pass | 1 / 1 |  |  |
 | [`floats/hit-test-floats-002.html`](https://wpt.fyi/results/css/CSS2/floats/hit-test-floats-002.html) | Pass | 1 / 1 |  |  |
 | [`floats/hit-test-floats-003.html`](https://wpt.fyi/results/css/CSS2/floats/hit-test-floats-003.html) | Pass | 1 / 1 |  |  |

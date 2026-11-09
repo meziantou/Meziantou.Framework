@@ -18,9 +18,9 @@ description: "The results of the web-platform-tests of css/css-overflow, and why
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
+- **BUG**: 5
 - **TEST BUG**: 19
-- *No reason documented*: 6
+- **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
@@ -524,13 +524,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`line-clamp/line-clamp-form-output-003.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-form-output-003.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-form-output-004.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-form-output-004.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-form-output-005.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-form-output-005.tentative.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-form-select-001.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-form-select-001.tentative.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`line-clamp/line-clamp-form-select-001.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-form-select-001.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `line-clamp` on a list box `select` (`size` or `multiple`): its options and option groups are not clamped (the options after the second line are shown and the last line kept has no ellipsis); the drop-down `select` is not affected |
 | [`line-clamp/line-clamp-form-select-002.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-form-select-002.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-form-select-003.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-form-select-003.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-form-select-004.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-form-select-004.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-form-textarea-001.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-form-textarea-001.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-form-textarea-002.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-form-textarea-002.tentative.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-form-textarea-003.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-form-textarea-003.tentative.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`line-clamp/line-clamp-form-textarea-003.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-form-textarea-003.tentative.html) | Fail | 0 / 1 | BUG | the `textarea` alone on the last line before the clamp point does not fit with the ellipsis (221px + 25px in 240px): the line is broken again as if wrapping and the `textarea` is displaced, which leaves the `…` alone on the line; wrapping keeps the first atomic inline of a line, so the textarea is expected on the line with the ellipsis overflowing it (as in Chrome) |
 | [`line-clamp/line-clamp-form-textarea-004.tentative.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-form-textarea-004.tentative.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-fragmentation-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-fragmentation-001.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-intrinsic-size-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-intrinsic-size-001.html) | Pass | 1 / 1 |  |  |
@@ -605,9 +605,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`line-clamp/line-clamp-with-popover-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-popover-001.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-text-overflow-bidi-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-bidi-001.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-text-overflow-first-character-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-first-character-001.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-with-text-overflow-first-line-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-first-line-001.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`line-clamp/line-clamp-with-text-overflow-first-line-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-first-line-001.html) | Fail | 0 / 1 | BUG | `text-overflow` truncates the block ellipsis of the first line (`line-clamp: 1 "very long block ellipsis"`) as if it had the `letter-spacing` of the `::first-line` style: one more character is hidden (`very lon…` instead of `very long…`) |
 | [`line-clamp/line-clamp-with-text-overflow-grapheme-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-grapheme-001.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-with-text-overflow-hanging-punctuation-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-hanging-punctuation-001.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`line-clamp/line-clamp-with-text-overflow-hanging-punctuation-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-hanging-punctuation-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the hanging of the block overflow ellipsis (`hanging-punctuation: last`): the closing quote of the block ellipsis `0123456789”` does not hang, so `text-overflow` truncates it (`012345678…`) where it fits with the quote hanging |
 | [`line-clamp/line-clamp-with-text-overflow-string-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-001.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-text-overflow-string-002.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-002.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-text-overflow-string-003.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-003.html) | Pass | 1 / 1 |  |  |
@@ -939,7 +939,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`text-overflow-ellipsis-changing-scroll.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-ellipsis-changing-scroll.html) | Pass | 1 / 1 |  |  |
 | [`text-overflow-ellipsis-editable-div-with-caret.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-ellipsis-editable-div-with-caret.html) | Pass | 1 / 1 |  |  |
 | [`text-overflow-ellipsis-editing-input.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-ellipsis-editing-input.html) | Pass | 1 / 1 |  |  |
-| [`text-overflow-ellipsis-first-line.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-ellipsis-first-line.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`text-overflow-ellipsis-first-line.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-ellipsis-first-line.html) | Fail | 0 / 1 | BUG | the `text-overflow` ellipsis of the first line is shaped in the `::first-line` style of the block (`LineEllipsis.Create`: the style of the root inline box of the line), so it is a 32px Ahem square that hides the third `X`, instead of a 16px square in the font of the block after three 32px `X` |
 | [`text-overflow-ellipsis-indent-001.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-ellipsis-indent-001.html) | Pass | 1 / 1 |  |  |
 | [`text-overflow-ellipsis-multiline-001.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-ellipsis-multiline-001.html) | Pass | 1 / 1 |  |  |
 | [`text-overflow-ellipsis-rtl-001.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-ellipsis-rtl-001.html) | Pass | 1 / 1 |  |  |
@@ -994,6 +994,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`text-overflow-string-in-textarea-not-inherited.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-string-in-textarea-not-inherited.html) | Pass | 1 / 1 |  |  |
 | [`text-overflow-string-in-textarea-scrolled-back.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-string-in-textarea-scrolled-back.html) | Pass | 1 / 1 |  |  |
 | [`text-overflow-string-in-textarea-scrolled.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-string-in-textarea-scrolled.html) | Pass | 1 / 1 |  |  |
-| [`text-overflow-with-selection-first-line.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-with-selection-first-line.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`text-overflow-with-selection-first-line.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-with-selection-first-line.html) | Fail | 0 / 1 | BUG | the `text-overflow` ellipsis of the first line is shaped in the `::first-line` style of the block (32px instead of the 16px of the block, `LineEllipsis.Create`), and no selection highlight is painted behind it (the reference highlights its `…` text) |
 | [`text-overflow-with-selection.html`](https://wpt.fyi/results/css/css-overflow/text-overflow-with-selection.html) | Pass | 1 / 1 |  |  |
 | [`text-overflow.html`](https://wpt.fyi/results/css/css-overflow/text-overflow.html) | Pass | 1 / 1 |  |  |

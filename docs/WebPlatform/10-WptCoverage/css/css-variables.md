@@ -19,7 +19,7 @@ description: "The results of the web-platform-tests of css/css-variables, and wh
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- *No reason documented*: 1
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -36,7 +36,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`test_variable_legal_values.html`](https://wpt.fyi/results/css/css-variables/test_variable_legal_values.html) | Pass | 23 / 23 |  |  |
 | [`transition-with-attribute-taint.html`](https://wpt.fyi/results/css/css-variables/transition-with-attribute-taint.html) | Pass | 1 / 1 |  |  |
 | [`url-token-serialization.html`](https://wpt.fyi/results/css/css-variables/url-token-serialization.html) | Pass | 6 / 6 |  |  |
-| [`var-fallback-braces.html`](https://wpt.fyi/results/css/css-variables/var-fallback-braces.html) | Fail | 0 / 6 |  | *No reason documented* |
+| [`var-fallback-braces.html`](https://wpt.fyi/results/css/css-variables/var-fallback-braces.html) | Fail | 0 / 6 | NOT IMPLEMENTED | an argument of `var()` written in a `{}` block (https://drafts.csswg.org/css-values-5/#component-function-commas): the fallback is not unwrapped (a block alone) nor rejected when the block is mixed with other values |
 | [`var-ident-function.html`](https://wpt.fyi/results/css/css-variables/var-ident-function.html) | Pass | 5 / 5 |  |  |
 | [`var-parsing.html`](https://wpt.fyi/results/css/css-variables/var-parsing.html) | Pass | 18 / 18 |  |  |
 | [`variable-animation-from-to.html`](https://wpt.fyi/results/css/css-variables/variable-animation-from-to.html) | Pass | 4 / 4 |  |  |

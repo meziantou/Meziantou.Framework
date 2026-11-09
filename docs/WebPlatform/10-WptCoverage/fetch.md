@@ -19,14 +19,13 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **TEST BUG**: 22
+- **TEST BUG**: 23
 - **NOT IMPLEMENTED**: 91
 - **REQUIRES**: 3
   - `layout`: 2
   - `workers`: 1
-- **TEST RUNNER**: 79
+- **TEST RUNNER**: 80
 - **FLAKY**: 1
-- *No reason documented*: 2
 
 ## Stable tests
 
@@ -381,7 +380,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`metadata/generated/svg-image.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/svg-image.sub.html) | Pass | 18 / 18 |  |  |
 | [`metadata/generated/window-history.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/window-history.https.sub.html) | Pass | 16 / 16 |  |  |
 | [`metadata/generated/window-history.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/window-history.sub.html) | Pass | 30 / 30 |  |  |
-| [`metadata/generated/window-location.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/window-location.https.sub.html) | Fail | 80 / 84 |  | *No reason documented* |
+| [`metadata/generated/window-location.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/window-location.https.sub.html) | Fail | 80 / 84 | TEST BUG | the `with user activation` subtests now bless the popup (`test_driver.bless(..., win)`, changed with the `element-a`/`element-area` templates), but the navigation is started by the script of the test window (`win.location = url`): the source document of the Location-object navigate is the incumbent document (https://html.spec.whatwg.org/multipage/nav-history-apis.html#location-object-navigate), which has no transient activation, so the request has no `Sec-Fetch-User` header (it passed when the test window was blessed) |
 | [`metadata/generated/window-location.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/window-location.sub.html) | Pass | 72 / 72 |  |  |
 | [`metadata/generated/worker-dedicated-constructor.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/worker-dedicated-constructor.https.sub.html) | Pass | 6 / 6 |  |  |
 | [`metadata/generated/worker-dedicated-constructor.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/worker-dedicated-constructor.sub.html) | Pass | 5 / 5 |  |  |
@@ -512,7 +511,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`orb/tentative/img-mime-types-coverage.tentative.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/img-mime-types-coverage.tentative.sub.html) | Fail | 18 / 64 | NOT IMPLEMENTED | Opaque Response Blocking (ORB) of no-cors responses: the `<img>` of a cross-origin response whose MIME type is not an image, a script, a style sheet or a media type (with `X-Content-Type-Options: nosniff`) loads instead of firing `error` |
 | [`orb/tentative/known-mime-type.sub.any.js`](https://wpt.fyi/results/fetch/orb/tentative/known-mime-type.sub.any.js) | Error | 36 / 51 | NOT IMPLEMENTED | Opaque Response Blocking (ORB) of no-cors responses |
 | [`orb/tentative/nosniff.sub.any.js`](https://wpt.fyi/results/fetch/orb/tentative/nosniff.sub.any.js) | Fail | 15 / 21 | NOT IMPLEMENTED | Opaque Response Blocking (ORB) of no-cors responses |
-| [`orb/tentative/ping.optional.html`](https://wpt.fyi/results/fetch/orb/tentative/ping.optional.html) | Fail | 0 / 4 |  | *No reason documented* |
+| [`orb/tentative/ping.optional.html`](https://wpt.fyi/results/fetch/orb/tentative/ping.optional.html) | Fail | 0 / 4 | TEST RUNNER | `fetch/orb/resources/ping.py` is not emulated |
 | [`orb/tentative/script-js-unlabeled-gzipped.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/script-js-unlabeled-gzipped.sub.html) | Pass | 1 / 1 |  |  |
 | [`orb/tentative/script-unlabeled.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/script-unlabeled.sub.html) | Pass | 1 / 1 |  |  |
 | [`orb/tentative/script-utf16-without-bom-hint-charset.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/script-utf16-without-bom-hint-charset.sub.html) | Pass | 1 / 1 |  |  |

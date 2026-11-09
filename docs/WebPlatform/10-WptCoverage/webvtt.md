@@ -18,9 +18,8 @@ description: "The results of the web-platform-tests of webvtt, and why the tests
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 67
+- **TEST BUG**: 68
 - **NOT IMPLEMENTED**: 2
-- *No reason documented*: 1
 
 ## Stable tests
 
@@ -354,7 +353,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`rendering/cues-with-video/processing-model/selectors/default_styles/italic_object_default_font-style.html`](https://wpt.fyi/results/webvtt/rendering/cues-with-video/processing-model/selectors/default_styles/italic_object_default_font-style.html) | Pass | 1 / 1 |  |  |
 | [`rendering/cues-with-video/processing-model/selectors/default_styles/underline_object_default_font-style.html`](https://wpt.fyi/results/webvtt/rendering/cues-with-video/processing-model/selectors/default_styles/underline_object_default_font-style.html) | Pass | 1 / 1 |  |  |
 | [`rendering/cues-with-video/processing-model/size_50.html`](https://wpt.fyi/results/webvtt/rendering/cues-with-video/processing-model/size_50.html) | Pass | 1 / 1 |  |  |
-| [`rendering/cues-with-video/processing-model/snap-to-line-wrap.html`](https://wpt.fyi/results/webvtt/rendering/cues-with-video/processing-model/snap-to-line-wrap.html) | Fail | 0 / 1 |  | *No reason documented* |
+| [`rendering/cues-with-video/processing-model/snap-to-line-wrap.html`](https://wpt.fyi/results/webvtt/rendering/cues-with-video/processing-model/snap-to-line-wrap.html) | Fail | 0 / 1 | TEST BUG | the reference puts the `<span>` of the cue on its own line in a `white-space: pre-line` box (`support/webvtt-ref.css`): the preserved segment break adds an empty first line, so the reference text is one line (9px) below 50%; the cue of the test is rendered with its top at 50% of the video, where the other references (span on the same line) put it |
 | [`rendering/cues-with-video/processing-model/snap-to-line.html`](https://wpt.fyi/results/webvtt/rendering/cues-with-video/processing-model/snap-to-line.html) | Pass | 1 / 1 |  |  |
 | [`rendering/cues-with-video/processing-model/too_many_cues.html`](https://wpt.fyi/results/webvtt/rendering/cues-with-video/processing-model/too_many_cues.html) | Pass | 1 / 1 |  |  |
 | [`rendering/cues-with-video/processing-model/too_many_cues_wrapped.html`](https://wpt.fyi/results/webvtt/rendering/cues-with-video/processing-model/too_many_cues_wrapped.html) | Pass | 1 / 1 |  |  |

@@ -55,7 +55,8 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 
 - No mesh gradients.
 - Text lines are broken greedily.
-- No subpixel (LCD) rendering, no ruby in vertical text.
-- Hinting is opt-in and horizontal only.
+- Hinting and subpixel (LCD) rendering are opt-in. Subpixel rendering applies to a layout filled at a point with a
+  solid color on an 8- or 16-bit RGB image; other text is drawn with grayscale antialiasing.
+- A ruby annotation is set over its base only, without overhang over the text around it.
 - Installed fonts are used only when you ask for them ([Font.LoadInstalled](cref:Meziantou.Framework.Imaging.Typography.Font.LoadInstalled), [FontStack.WithInstalledFallback](cref:Meziantou.Framework.Imaging.Typography.FontStack.WithInstalledFallback)).
 - No SVG glyphs, Type 1 fonts or fonts without outlines.

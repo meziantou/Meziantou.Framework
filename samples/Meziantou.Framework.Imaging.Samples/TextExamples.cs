@@ -158,4 +158,51 @@ internal static class TextExamples
         return hit;
     }
     #endregion
+
+    /// <summary>Subpixel rendering: small hinted text for an LCD screen whose pixels are red, green and blue stripes.</summary>
+    #region Imaging_DrawSubpixelText
+    public static void DrawSubpixelText(string fontPath, string outputPath)
+    {
+        // Each color of a pixel gets the coverage of its stripe of the screen: three times the horizontal resolution.
+        // Use TextSubpixelRendering.Bgr for a screen whose stripes are blue, green and red from left to right.
+        var options = new TextLayoutOptions { Hinting = TextHinting.Light, SubpixelRendering = TextSubpixelRendering.Rgb };
+        var layout = TextLayout.Create("Settings and preferences", new TextStyle(Font.Load(fontPath), size: 12), options);
+
+        // A solid color on opaque pixels: on a transparent pixel, the colors would get fringes on any background
+        using var image = new Image<Rgb24>((int)layout.Width + 8, (int)Math.Ceiling(layout.Height) + 8, new Rgb24(255, 255, 255));
+        image.Draw(canvas => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(4, 4)));
+        image.Save(outputPath);
+    }
+    #endregion
+
+    /// <summary>Ruby: the reading of Japanese words in kana beside them, in a horizontal and a vertical layout.</summary>
+    #region Imaging_DrawRuby
+    public static void DrawRuby(string fontPath, string outputPath)
+    {
+        var font = Font.Load(fontPath);
+        var text = new TextStyle(font, size: 28);
+        var reading = new TextStyle(font, size: 14);
+
+        // The base is part of the text; the annotation is set beside it, at half the size, and a line never ends inside the base
+        var rubyText = new RichTextBuilder()
+            .AppendRuby("東京", text, "とうきょう", reading)
+            .Append("の", text)
+            .AppendRuby("日本語", text, "にほんご", reading)
+            .Build();
+
+        // Above the base in a horizontal layout, on its right in a vertical one
+        var horizontal = TextLayout.Create(rubyText);
+        var vertical = TextLayout.Create(rubyText, new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft });
+
+        var width = (int)Math.Ceiling(horizontal.Width + vertical.Width) + 40;
+        var height = (int)Math.Ceiling(Math.Max(horizontal.Height, vertical.Height)) + 20;
+        using var image = new Image<Rgba32>(width, height, new Rgba32(255, 255, 255));
+        image.Draw(canvas =>
+        {
+            canvas.FillText(new Rgba32(0, 0, 0), horizontal, new PointD(10, 10));
+            canvas.FillText(new Rgba32(0, 0, 0), vertical, new PointD(horizontal.Width + 30, 10));
+        });
+        image.Save(outputPath);
+    }
+    #endregion
 }

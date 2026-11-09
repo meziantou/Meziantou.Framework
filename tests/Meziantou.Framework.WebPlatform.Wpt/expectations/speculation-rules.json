@@ -45,10 +45,7 @@
     "total": 1
   },
   "speculation-rules/prefetch/clear-prefetch-cache-after-clear-site-data-cache.https.html": {
-    "total": 3,
-    "failures": {
-      "clear-site-data prefetchCache in same window should clear its prefetch cache": "FAIL"
-    }
+    "total": 3
   },
   "speculation-rules/prefetch/client-hints/basic.https.sub.html": {
     "total": 9

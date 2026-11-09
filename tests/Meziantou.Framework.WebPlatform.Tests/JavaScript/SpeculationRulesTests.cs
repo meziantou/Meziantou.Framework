@@ -439,6 +439,31 @@ public sealed class SpeculationRulesTests : IDisposable
         Assert.Null(Header(requests[1], "Sec-Purpose"));
     }
 
+    [Fact]
+    public async Task ClearSiteData_PrefetchCacheOfAFetchResponse_DiscardsThePrefetches()
+    {
+        _loader.Resources["https://example.com/next.html"] = new DocumentResource("<title>next</title>");
+        _loader.Resources["https://example.com/clear"] = new DocumentResource("") { Headers = [new("Clear-Site-Data", "\"prefetchCache\"")] };
+        var context = Load("""
+            <script type="speculationrules">{ "prefetch": [{ "urls": ["next.html"] }] }</script>
+            <button id="clear" onclick="fetch('/clear').then(() => location.href = 'next.html')"></button>
+            """);
+        await _contexts.EventLoop.RunUntilIdleAsync(TestContext.Current.CancellationToken);
+        Assert.Single(RequestsOf("https://example.com/next.html"));
+
+        // The navigation starts as soon as the response is received (a change of the document would consider the rules
+        // again, and prefetch the URL again), and fetches the URL itself
+        ((HtmlElement)context.Document.GetElementById("clear")!).Click();
+        await _contexts.EventLoop.RunUntilIdleAsync(TestContext.Current.CancellationToken);
+
+        Assert.Single(RequestsOf("https://example.com/clear"));
+        Assert.Equal("next", context.Document.Title);
+        var requests = RequestsOf("https://example.com/next.html");
+        Assert.Equal(2, requests.Count);
+        Assert.Null(Header(requests[1], "Sec-Purpose"));
+        Assert.Empty(_errors);
+    }
+
     private sealed class CookieLoader : DocumentLoader
     {
         public Dictionary<string, string> Cookies { get; } = new(StringComparer.Ordinal);

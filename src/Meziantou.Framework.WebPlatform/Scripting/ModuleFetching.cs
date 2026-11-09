@@ -44,18 +44,22 @@ internal static class ModuleFetching
         };
 
         // https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-module-worker-script-tree: the static imports of a
-        // module worker are fetched with the destination of the worker (worker-src applies) and the environment that created
-        // it as fetch client (the client of the job that installs a service worker), whose content security policies apply
-        // (the dynamic imports use the environment of the worker)
+        // module worker are fetched with the environment that created it as fetch client (the client of the job that installs
+        // a service worker), whose content security policies apply (e.g. connect-src for the JSON modules), and the JavaScript
+        // modules with the destination of the worker (worker-src applies). The dynamic imports use the environment of the worker.
         Document? policyClient = null;
-        if (type == ModuleType.JavaScript && window is WorkerGlobalScope { IsFetchingModuleScriptGraph: true } worker)
+        if (window is WorkerGlobalScope { IsFetchingModuleScriptGraph: true } worker)
         {
-            destination = worker.Agent.Kind switch
+            if (type == ModuleType.JavaScript)
             {
-                WorkerKind.Shared => RequestDestination.SharedWorker,
-                WorkerKind.Service => RequestDestination.ServiceWorker,
-                _ => RequestDestination.Worker,
-            };
+                destination = worker.Agent.Kind switch
+                {
+                    WorkerKind.Shared => RequestDestination.SharedWorker,
+                    WorkerKind.Service => RequestDestination.ServiceWorker,
+                    _ => RequestDestination.Worker,
+                };
+            }
+
             policyClient = worker.Agent.CreatorDocument ?? worker.Agent.ServiceWorker?.UpdateJobClient;
         }
 

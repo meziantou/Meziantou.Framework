@@ -567,9 +567,18 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             (DependencyType.JavaPackage, "org.apache.maven.plugins:maven-compiler-plugin", "3.11.0", 36, 10),
             (DependencyType.JavaPackage, "org.example:example-core", "1.2.3", 2, 46),
             (DependencyType.JavaPackage, "org.example:example-aar", "1.0.0", 3, 45));
-        Assert.False(Assert.Single(result, d => d.Name == "org.example:example-property").VersionLocation!.IsUpdatable);
         Assert.Null(Assert.Single(result, d => d.Name == "org.example:example-bom-managed").VersionLocation);
-        Assert.DoesNotContain(result, d => d.Name is "com.acme:app" or "org.excluded:excluded" or "org.example:maven-compiler-plugin" or "org.example:example-interpolated");
+        Assert.DoesNotContain(result, d => d.Name is "com.acme:app" or "org.excluded:excluded" or "org.example:maven-compiler-plugin");
+
+        // A property or a variable that is not defined in the file is reported as written, and is not resolved
+        foreach (var (name, rawVersion) in new[] { ("org.example:example-property", "${example.version}"), ("org.example:example-interpolated", "$exampleVersion") })
+        {
+            var dependency = Assert.Single(result, d => d.Name == name);
+            Assert.Equal(rawVersion, dependency.Version);
+            Assert.Equal(rawVersion, dependency.RawVersion);
+            Assert.Null(dependency.ResolvedVersion);
+            Assert.False(dependency.VersionLocation!.IsUpdatable);
+        }
     }
 
     [Fact]
@@ -683,7 +692,14 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             (DependencyType.JavaPackage, "org.in-profile:in-profile", "9.0.0", 0, 0));
         Assert.HasCount(11, result);
         Assert.Equal("single.version", Assert.Single(result, d => d.Name == "org.single:single").Metadata["property"]);
-        Assert.DoesNotContain(result, d => d.Name is "org.shared:a" or "org.shared:b" or "org.profile:profile" && d.VersionLocation!.IsUpdatable);
+        Assert.Equal("${single.version}", Assert.Single(result, d => d.Name == "org.single:single").RawVersion);
+        Assert.False(Assert.Single(result, d => d.Name == "org.profile:profile").VersionLocation!.IsUpdatable);
+
+        // The dependencies that share a property share the location of its definition, so one update changes all of them
+        var sharedA = Assert.Single(result, d => d.Name == "org.shared:a");
+        var sharedB = Assert.Single(result, d => d.Name == "org.shared:b");
+        Assert.True(sharedA.VersionLocation!.IsUpdatable);
+        Assert.Same(sharedA.VersionLocation, sharedB.VersionLocation);
 
         foreach (var dependency in result.Where(d => d.VersionLocation is { IsUpdatable: true }))
         {
@@ -693,6 +709,7 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         AssertFileContentEqual("pom.xml", Original
             .Replace("<version>1.0.0</version><groupId>org.parent</groupId>", "<version>10.0.0</version><groupId>org.parent</groupId>", StringComparison.Ordinal)
             .Replace("<single.version>2.0.0</single.version>", "<single.version>10.0.0</single.version>", StringComparison.Ordinal)
+            .Replace("<shared.version> 3.0.0 </shared.version>", "<shared.version> 10.0.0 </shared.version>", StringComparison.Ordinal)
             .Replace("<version>5.0.0</version>", "<version>10.0.0</version>", StringComparison.Ordinal)
             .Replace("<version>6.0.0</version>", "<version>10.0.0</version>", StringComparison.Ordinal)
             .Replace("<version> 7.0.0 </version>", "<version> 10.0.0 </version>", StringComparison.Ordinal)
@@ -757,11 +774,17 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             (DependencyType.JavaPackage, "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin", "1.9.22", 3, 28),
             (DependencyType.JavaPackage, "org.i:i", "7.0.0", 11, 60),
             (DependencyType.JavaPackage, "org.j:j", "8.0.0", 12, 29),
-            (DependencyType.JavaPackage, "org.k:k", "9.0.0", 12, 62));
-        Assert.HasCount(13, result);
+            (DependencyType.JavaPackage, "org.k:k", "9.0.0", 12, 62),
+            (DependencyType.JavaPackage, "org.g:g", "gVersion", 0, 0),
+            (DependencyType.JavaPackage, "org.h:h", "$hVersion", 0, 0),
+            (DependencyType.JavaPackage, "org.l:l", "${lVersion}", 0, 0));
+        Assert.HasCount(16, result);
+
+        // The variables are not defined in the files
+        Assert.All(result.Where(d => d.Name is "org.g:g" or "org.h:h" or "org.l:l"), d => Assert.True(d.ResolvedVersion is null && !d.VersionLocation!.IsUpdatable));
         Assert.Equal("org.jetbrains.kotlin.jvm", Assert.Single(result, d => d.Name == "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin").Metadata["pluginId"]);
 
-        foreach (var dependency in result.Where(d => d.VersionLocation!.FilePath.EndsWith("build.gradle", StringComparison.Ordinal)).OrderByDescending(d => ((ILocationLineInfo)d.VersionLocation!).LinePosition))
+        foreach (var dependency in result.Where(d => d.VersionLocation is { IsUpdatable: true } && d.VersionLocation.FilePath.EndsWith("build.gradle", StringComparison.Ordinal)).OrderByDescending(d => ((ILocationLineInfo)d.VersionLocation!).LinePosition))
         {
             await dependency.UpdateVersionAsync("10.0.0");
         }
@@ -790,6 +813,92 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
     }
 
     [Fact]
+    public async Task JavaGradleDependencies_VariablesAreResolved()
+    {
+        const string Original = """
+            def junitVersion = '5.10.0'
+            ext.guavaVersion = "33.0.0"
+            ext {
+                slf4jVersion = '2.0.9'
+                twiceVersion = '1.0.0'
+            }
+            ext['mockitoVersion'] = '5.8.0'
+            twiceVersion = '1.1.0'
+            def computedVersion = '1.0.' + patch
+
+            dependencies {
+                testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+                testImplementation "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
+                implementation "com.google.guava:guava:${project.ext.guavaVersion}"
+                implementation group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
+                implementation "org.mockito:mockito-core:$mockitoVersion"
+                implementation "org.example:composite:$junitVersion-$slf4jVersion"
+                implementation "org.example:twice:$twiceVersion"
+                implementation "org.example:computed:$computedVersion"
+                implementation "org.example:property-path:$project.version"
+                implementation "org.example:undefined:${undefinedVersion}"
+            }
+            """;
+
+        AddFile("build.gradle", Original);
+        AddFile("build.gradle.kts", """
+            val kotlinxVersion = "1.7.3"
+            val ktorVersion: String = "2.3.7"
+            val koinVersion by extra("3.5.3")
+            extra["arrowVersion"] = "1.2.1"
+
+            dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxVersion")
+                implementation("io.ktor:ktor-server-core:${ktorVersion}")
+                implementation("io.insert-koin:koin-core:$koinVersion")
+                implementation("io.arrow-kt:arrow-core:$arrowVersion")
+                implementation(group = "org.example", name = "kotlin-named", version = kotlinxVersion)
+            }
+            """);
+
+        var result = await GetDependencies<JavaDependencyScanner>();
+        AssertContainDependency(result,
+            (DependencyType.JavaPackage, "org.junit.jupiter:junit-jupiter-api", "5.10.0", 1, 21),
+            (DependencyType.JavaPackage, "org.junit.jupiter:junit-jupiter-engine", "5.10.0", 1, 21),
+            (DependencyType.JavaPackage, "com.google.guava:guava", "33.0.0", 2, 21),
+            (DependencyType.JavaPackage, "org.slf4j:slf4j-api", "2.0.9", 4, 21),
+            (DependencyType.JavaPackage, "org.mockito:mockito-core", "5.8.0", 7, 26),
+            (DependencyType.JavaPackage, "org.example:composite", "5.10.0-2.0.9", 0, 0),
+            (DependencyType.JavaPackage, "org.example:twice", "$twiceVersion", 0, 0),
+            (DependencyType.JavaPackage, "org.example:computed", "$computedVersion", 0, 0),
+            (DependencyType.JavaPackage, "org.example:property-path", "$project.version", 0, 0),
+            (DependencyType.JavaPackage, "org.example:undefined", "${undefinedVersion}", 0, 0),
+            (DependencyType.JavaPackage, "org.jetbrains.kotlinx:kotlinx-coroutines-core", "1.7.3", 1, 23),
+            (DependencyType.JavaPackage, "io.ktor:ktor-server-core", "2.3.7", 2, 28),
+            (DependencyType.JavaPackage, "io.insert-koin:koin-core", "3.5.3", 3, 27),
+            (DependencyType.JavaPackage, "io.arrow-kt:arrow-core", "1.2.1", 4, 26),
+            (DependencyType.JavaPackage, "org.example:kotlin-named", "1.7.3", 1, 23));
+        Assert.HasCount(15, result);
+
+        var junit = result.Where(d => d.Name!.StartsWith("org.junit.jupiter:", StringComparison.Ordinal)).ToArray();
+        Assert.Same(junit[0].VersionLocation, junit[1].VersionLocation);
+        Assert.Equal(("$junitVersion", "junitVersion"), (junit[0].RawVersion, junit[0].Metadata["property"]));
+        Assert.Equal((12, 61), (((ILocationLineInfo)junit[0].RawVersionLocation!).LineNumber, ((ILocationLineInfo)junit[0].RawVersionLocation!).LinePosition));
+        Assert.Equal((15, 68), (((ILocationLineInfo)Assert.Single(result, d => d.Name == "org.slf4j:slf4j-api").RawVersionLocation!).LineNumber, ((ILocationLineInfo)Assert.Single(result, d => d.Name == "org.slf4j:slf4j-api").RawVersionLocation!).LinePosition));
+        Assert.Equal("slf4jVersion", Assert.Single(result, d => d.Name == "org.slf4j:slf4j-api").RawVersion);
+        Assert.False(Assert.Single(result, d => d.Name == "org.example:composite").VersionLocation!.IsUpdatable);
+        foreach (var name in new[] { "org.example:twice", "org.example:computed", "org.example:property-path", "org.example:undefined" })
+        {
+            var dependency = Assert.Single(result, d => d.Name == name);
+            Assert.Null(dependency.ResolvedVersion);
+            Assert.False(dependency.VersionLocation!.IsUpdatable);
+        }
+
+        await junit[0].UpdateVersionAsync("5.11.0", XunitCancellationToken);
+        await Assert.Single(result, d => d.Name == "com.google.guava:guava").UpdateVersionAsync("33.1.0", XunitCancellationToken);
+        await Assert.Single(result, d => d.Name == "org.slf4j:slf4j-api").UpdateVersionAsync("2.0.10", XunitCancellationToken);
+        AssertFileContentEqual("build.gradle", Original
+            .Replace("'5.10.0'", "'5.11.0'", StringComparison.Ordinal)
+            .Replace("\"33.0.0\"", "\"33.1.0\"", StringComparison.Ordinal)
+            .Replace("'2.0.9'", "'2.0.10'", StringComparison.Ordinal), ignoreNewLines: true);
+    }
+
+    [Fact]
     public async Task JavaVersionCatalogDependencies()
     {
         AddFile("gradle/libs.versions.toml", """
@@ -813,10 +922,24 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
             (DependencyType.JavaPackage, "com.google.guava:guava", "33.0.0", 2, 10),
             (DependencyType.JavaPackage, "org.apache.commons:commons-lang3", "3.14.0", 7, 45),
             (DependencyType.JavaPackage, "org.junit.jupiter:junit-jupiter", "5.10.0", 8, 75),
-            (DependencyType.JavaPackage, "org.example:a", "1.0.0", 0, 0),
-            (DependencyType.JavaPackage, "org.example:b", "1.0.0", 0, 0),
+            (DependencyType.JavaPackage, "org.example:a", "1.0.0", 3, 11),
+            (DependencyType.JavaPackage, "org.example:b", "1.0.0", 3, 11),
             (DependencyType.JavaPackage, "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin", null, 0, 0));
-        Assert.False(Assert.Single(result, d => d.Name == "org.example:a").VersionLocation!.IsUpdatable);
+
+        // The libraries that share a version share its location, and only reference the version
+        var a = Assert.Single(result, d => d.Name == "org.example:a");
+        Assert.True(a.VersionLocation!.IsUpdatable);
+        Assert.Same(a.VersionLocation, Assert.Single(result, d => d.Name == "org.example:b").VersionLocation);
+        Assert.Null(a.RawVersion);
+        Assert.Equal("1.0.0", a.ResolvedVersion);
+        Assert.Equal("shared", a.Metadata["property"]);
+        Assert.Null(a.RawVersionLocation);
+        Assert.Same(a.VersionLocation, a.ResolvedVersionLocation);
+
+        // A version that is not defined has no location
+        var kotlin = Assert.Single(result, d => d.Name == "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin");
+        Assert.Null(kotlin.VersionLocation);
+        Assert.Null(kotlin.ResolvedVersionLocation);
         Assert.Equal(6, result.Count(d => d.Type == DependencyType.JavaPackage));
     }
 
@@ -846,11 +969,11 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         AddFile("gradle/libs.versions.toml", Original);
         var result = await GetDependencies<JavaDependencyScanner>();
         AssertContainDependency(result,
-            (DependencyType.JavaPackage, "org.jetbrains.kotlin:kotlin-stdlib", "1.9.22", 0, 0),
+            (DependencyType.JavaPackage, "org.jetbrains.kotlin:kotlin-stdlib", "1.9.22", 2, 11),
             (DependencyType.JavaPackage, "com.google.guava:guava", "33.0.0", 8, 57),
             (DependencyType.JavaPackage, "org.example:escaped", "1.0.0", 0, 0),
             (DependencyType.JavaPackage, "org.example:rich", null, 0, 0),
-            (DependencyType.JavaPackage, "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin", "1.9.22", 0, 0),
+            (DependencyType.JavaPackage, "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin", "1.9.22", 2, 11),
             (DependencyType.JavaPackage, "com.diffplug.spotless:com.diffplug.spotless.gradle.plugin", "6.25.0", 3, 13),
             (DependencyType.JavaPackage, "org.jetbrains.dokka:org.jetbrains.dokka.gradle.plugin", "1.9.20", 4, 10),
             (DependencyType.JavaPackage, "org.springframework.boot:org.springframework.boot.gradle.plugin", "3.2.0", 16, 54),
@@ -859,12 +982,14 @@ public sealed partial class ScannerTests(ITestOutputHelper testOutputHelper) : I
         Assert.Equal("com.diffplug.spotless", Assert.Single(result, d => d.Name == "com.diffplug.spotless:com.diffplug.spotless.gradle.plugin").Metadata["pluginId"]);
 
         // The kotlin version is shared by a library and a plugin, and the escaped version is not written as its value
-        Assert.False(Assert.Single(result, d => d.Name == "org.jetbrains.kotlin:kotlin-stdlib").VersionLocation!.IsUpdatable);
-        Assert.False(Assert.Single(result, d => d.Name == "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin").VersionLocation!.IsUpdatable);
+        Assert.Same(
+            Assert.Single(result, d => d.Name == "org.jetbrains.kotlin:kotlin-stdlib").VersionLocation,
+            Assert.Single(result, d => d.Name == "org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin").VersionLocation);
         Assert.False(Assert.Single(result, d => d.Name == "org.example:escaped").VersionLocation!.IsUpdatable);
 
         await UpdateDependencies(result, "dummy", "2.0.0");
         AssertFileContentEqual("gradle/libs.versions.toml", Original
+            .Replace("kotlin = \"1.9.22\"", "kotlin = \"2.0.0\"", StringComparison.Ordinal)
             .Replace("spotless = \"6.25.0\"", "spotless = \"2.0.0\"", StringComparison.Ordinal)
             .Replace("dokka = \"1.9.20\"", "dokka = \"2.0.0\"", StringComparison.Ordinal)
             .Replace("version = \"33.0.0\"", "version = \"2.0.0\"", StringComparison.Ordinal)
@@ -2508,6 +2633,109 @@ __metadata:
     }
 
     [Fact]
+    public async Task MsBuildReferencesDependencies_PropertiesAreResolved()
+    {
+        const string Original = """
+            <Project Sdk="Contoso.Sdk/$(ContosoSdkVersion)">
+              <PropertyGroup>
+                <DefaultTargetFramework>net10.0</DefaultTargetFramework>
+                <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
+                <xunitversion> 2.9.3 </xunitversion>
+                <ContosoSdkVersion>1.0.0</ContosoSdkVersion>
+                <Major>3</Major>
+                <ConditionalVersion Condition="'$(ConditionalVersion)' == ''">4.0.0</ConditionalVersion>
+                <TwiceVersion>5.0.0</TwiceVersion>
+                <TwiceVersion>5.1.0</TwiceVersion>
+                <NestedVersion>$(Major).0.0</NestedVersion>
+                <Frameworks>net8.0;net10.0</Frameworks>
+              </PropertyGroup>
+              <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+                <ReleaseVersion>6.0.0</ReleaseVersion>
+              </PropertyGroup>
+              <PropertyGroup>
+                <TargetFrameworks>$(Frameworks)</TargetFrameworks>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageVersion Include="xunit.core" Version="$(XunitVersion)" />
+                <PackageVersion Include="xunit.assert" Version="$(XunitVersion)" />
+                <PackageReference Include="PackageA;PackageB" Version="$(XunitVersion)" />
+                <PackageReference Include="Composite" Version="$(Major).1.$(Major)" />
+                <PackageReference Include="Conditional" Version="$(ConditionalVersion)" />
+                <PackageReference Include="Twice" Version="$(TwiceVersion)" />
+                <PackageReference Include="Nested" Version="$(NestedVersion)" />
+                <PackageReference Include="Release" Version="$(ReleaseVersion)" />
+                <PackageReference Include="Function" Version="$([System.String]::Copy('1.0.0'))" />
+                <PackageReference Include="Undefined" Version="$(UndefinedVersion)" />
+              </ItemGroup>
+            </Project>
+            """;
+
+        AddFile("Directory.Packages.props", Original);
+        var result = await GetDependencies<MsBuildReferencesDependencyScanner>();
+        Assert.HasCount(14, result);
+
+        // Property names are case-insensitive, and the definition is the updatable location of every dependency that uses it
+        var xunit = result.Where(d => d.RawVersion == "$(XunitVersion)").ToArray();
+        Assert.HasCount(4, xunit);
+        Assert.All(xunit, d => Assert.Equal(("2.9.3", "2.9.3"), (d.Version, d.ResolvedVersion)));
+        Assert.All(xunit, d => Assert.Same(xunit[0].VersionLocation, d.VersionLocation));
+        Assert.All(xunit, d => Assert.Equal("XunitVersion", d.Metadata["property"]));
+        Assert.True(xunit[0].VersionLocation!.IsUpdatable);
+        Assert.Equal(5, ((ILocationLineInfo)xunit[0].VersionLocation!).LineNumber);
+        Assert.All(xunit, d => Assert.Same(d.VersionLocation, d.ResolvedVersionLocation));
+
+        // The raw version location is where the reference is written, one per dependency
+        var xunitCore = Assert.Single(xunit, d => d.Name == "xunit.core");
+        var xunitAssert = Assert.Single(xunit, d => d.Name == "xunit.assert");
+        Assert.Equal(21, ((ILocationLineInfo)xunitCore.RawVersionLocation!).LineNumber);
+        Assert.NotSame(xunitCore.RawVersionLocation, xunitAssert.RawVersionLocation);
+
+        var targetFramework = Assert.Single(result, d => d.RawVersion == "$(DefaultTargetFramework)");
+        Assert.Equal("net10.0", targetFramework.Version);
+        Assert.Equal(3, ((ILocationLineInfo)targetFramework.VersionLocation!).LineNumber);
+
+        var sdk = Assert.Single(result, d => d.Name == "Contoso.Sdk");
+        Assert.Equal(("1.0.0", "$(ContosoSdkVersion)"), (sdk.Version, sdk.RawVersion));
+        Assert.True(sdk.VersionLocation!.IsUpdatable);
+
+        // A value that is not exactly one property reference is resolved, but it cannot be updated in place
+        var composite = Assert.Single(result, d => d.Name == "Composite");
+        Assert.Equal(("3.1.3", "$(Major).1.$(Major)"), (composite.Version, composite.RawVersion));
+        Assert.False(composite.VersionLocation!.IsUpdatable);
+        Assert.Null(composite.ResolvedVersionLocation);
+        Assert.True(composite.RawVersionLocation!.IsUpdatable);
+
+        // A property that is conditional, defined twice, defined from other properties, holding a list, or not
+        // defined in the file, and a property function, are not resolved
+        foreach (var rawVersion in new[] { "$(ConditionalVersion)", "$(TwiceVersion)", "$(NestedVersion)", "$(ReleaseVersion)", "$([System.String]::Copy('1.0.0'))", "$(UndefinedVersion)", "$(Frameworks)" })
+        {
+            var dependency = Assert.Single(result, d => d.RawVersion == rawVersion);
+            Assert.Equal(rawVersion, dependency.Version);
+            Assert.Null(dependency.ResolvedVersion);
+            Assert.Null(dependency.ResolvedVersionLocation);
+            Assert.False(dependency.VersionLocation!.IsUpdatable);
+        }
+
+        // Updating one dependency updates the property, so the next update of a dependency that uses it expects the new value
+        await xunit[0].UpdateVersionAsync("2.9.4", XunitCancellationToken);
+        await xunit[1].UpdateVersionAsync("2.9.5", XunitCancellationToken);
+
+        // Updating the raw version replaces the reference, so this dependency stops using the property
+        await composite.RawVersionLocation!.UpdateAsync("3.2.0", XunitCancellationToken);
+        await targetFramework.UpdateVersionAsync("net11.0", XunitCancellationToken);
+        await sdk.UpdateVersionAsync("1.1.0", XunitCancellationToken);
+        AssertFileContentEqual("Directory.Packages.props", Original
+            .Replace("<xunitversion> 2.9.3 </xunitversion>", "<xunitversion> 2.9.5 </xunitversion>", StringComparison.Ordinal)
+            .Replace("<DefaultTargetFramework>net10.0</DefaultTargetFramework>", "<DefaultTargetFramework>net11.0</DefaultTargetFramework>", StringComparison.Ordinal)
+            .Replace("<ContosoSdkVersion>1.0.0</ContosoSdkVersion>", "<ContosoSdkVersion>1.1.0</ContosoSdkVersion>", StringComparison.Ordinal)
+            .Replace("Version=\"$(Major).1.$(Major)\"", "Version=\"3.2.0\"", StringComparison.Ordinal), ignoreNewLines: true);
+
+        // A rescan finds the new values
+        var rescanned = await GetDependencies<MsBuildReferencesDependencyScanner>();
+        Assert.All(rescanned.Where(d => d.RawVersion == "$(XunitVersion)"), d => Assert.Equal("2.9.5", d.Version));
+    }
+
+    [Fact]
     public async Task MsBuildSdkReferencesDependencies()
     {
         const string Original = """
@@ -2931,6 +3159,46 @@ __metadata:
 
         await UpdateDependencies(result, "dummy", "2.0.0");
         AssertFileContentEqual("app.cs", Expected, ignoreNewLines: false);
+    }
+
+    [Fact]
+    public async Task DotNetFileBasedAppDependencies_PropertiesAreResolved()
+    {
+        const string Original =
+            "#:package xunit.v3@$(XunitVersion)\n" +
+            "#:package xunit.v3.assert Version=$(XunitVersion)\n" +
+            "#:sdk Contoso.Sdk@$(SdkVersion)\n" +
+            "#:package Undefined@$(UndefinedVersion)\n" +
+            "#:property XunitVersion=3.0.0\n" +
+            "#:property SdkVersion=$(XunitVersion)\n" +
+            "#:property TargetFramework=$(Tfm)\n" +
+            "#:property Tfm=net10.0\n" +
+            "\n" +
+            "Console.WriteLine(\"Hello, World!\");\n";
+
+        AddFile("app.cs", Original);
+        var result = await GetDependencies<DotNetFileBasedAppDependencyScanner>();
+        Assert.HasCount(5, result);
+
+        // The properties apply to the directives before them
+        var xunit = result.Where(d => d.RawVersion == "$(XunitVersion)").ToArray();
+        Assert.HasCount(2, xunit);
+        Assert.All(xunit, d => Assert.Equal("3.0.0", d.Version));
+        Assert.Same(xunit[0].VersionLocation, xunit[1].VersionLocation);
+        Assert.Equal((5, 25), (((ILocationLineInfo)xunit[0].VersionLocation!).LineNumber, ((ILocationLineInfo)xunit[0].VersionLocation!).LinePosition));
+
+        var targetFramework = Assert.Single(result, d => d.Type == DependencyType.DotNetTargetFramework);
+        Assert.Equal(("net10.0", "$(Tfm)"), (targetFramework.Version, targetFramework.RawVersion));
+
+        // A property defined from another property, or not defined, is not resolved
+        Assert.Null(Assert.Single(result, d => d.Name == "Contoso.Sdk").ResolvedVersion);
+        Assert.Null(Assert.Single(result, d => d.Name == "Undefined").ResolvedVersion);
+
+        await xunit[0].UpdateVersionAsync("3.1.0", XunitCancellationToken);
+        await targetFramework.UpdateVersionAsync("net11.0", XunitCancellationToken);
+        AssertFileContentEqual("app.cs", Original
+            .Replace("XunitVersion=3.0.0", "XunitVersion=3.1.0", StringComparison.Ordinal)
+            .Replace("Tfm=net10.0", "Tfm=net11.0", StringComparison.Ordinal), ignoreNewLines: false);
     }
 
     [Fact]
@@ -3978,20 +4246,41 @@ __metadata:
         var sdk = Assert.Single(result, d => d.Name == "mcr.microsoft.com/dotnet/sdk");
         Assert.Equal(17, ((ILocationLineInfo)sdk.NameLocation!).LinePosition);
 
-        // An argument shared by several images, or declared after the first FROM, cannot be updated
-        foreach (var (name, version) in new[] { ("alpine", "3.19"), ("busybox", "3.19"), ("python", "${NO_DEFAULT}"), ("ruby", "${STAGE_VERSION}") })
+        var node = Assert.Single(result, d => d.Name == "node");
+        Assert.Equal("${NODE_VERSION}", node.RawVersion);
+        Assert.Equal("18.20.0", node.ResolvedVersion);
+        Assert.Equal("NODE_VERSION", node.Metadata["property"]);
+        Assert.Equal((5, 11), (((ILocationLineInfo)node.RawVersionLocation!).LineNumber, ((ILocationLineInfo)node.RawVersionLocation!).LinePosition));
+        Assert.Same(node.VersionLocation, node.ResolvedVersionLocation);
+        Assert.Equal("$BASE_IMAGE", sdk.RawVersion);
+        Assert.Equal("8.0", sdk.ResolvedVersion);
+
+        // The images that share an argument share the location of its default value, so one update changes all of them
+        var alpine = Assert.Single(result, d => d.Name == "alpine");
+        var busybox = Assert.Single(result, d => d.Name == "busybox");
+        Assert.Equal(("3.19", "${SHARED}", "3.19"), (alpine.Version, alpine.RawVersion, alpine.ResolvedVersion));
+        Assert.Equal(("3.19", "$SHARED", "3.19"), (busybox.Version, busybox.RawVersion, busybox.ResolvedVersion));
+        Assert.True(alpine.VersionLocation!.IsUpdatable);
+        Assert.Same(alpine.VersionLocation, busybox.VersionLocation);
+
+        // An argument without a default value, or declared after the first FROM, cannot be resolved
+        foreach (var (name, version) in new[] { ("python", "${NO_DEFAULT}"), ("ruby", "${STAGE_VERSION}") })
         {
             var dependency = Assert.Single(result, d => d.Name == name);
             Assert.Equal(version, dependency.Version);
+            Assert.Null(dependency.ResolvedVersion);
             Assert.True(dependency.NameLocation!.IsUpdatable);
             Assert.False(dependency.VersionLocation!.IsUpdatable);
         }
 
-        await Assert.Single(result, d => d.Name == "node").UpdateVersionAsync("20.0.0", XunitCancellationToken);
+        await alpine.UpdateVersionAsync("3.20", XunitCancellationToken);
+        await busybox.UpdateVersionAsync("3.20", XunitCancellationToken);
+        await node.UpdateVersionAsync("20.0.0", XunitCancellationToken);
         await sdk.UpdateVersionAsync("9.0", XunitCancellationToken);
         await Assert.Single(result, d => d.Name == "golang").UpdateVersionAsync("1.23", XunitCancellationToken);
         AssertFileContentEqual("Dockerfile", Original
             .Replace("NODE_VERSION=18.20.0", "NODE_VERSION=20.0.0", StringComparison.Ordinal)
+            .Replace("SHARED=3.19", "SHARED=3.20", StringComparison.Ordinal)
             .Replace("sdk:8.0", "sdk:9.0", StringComparison.Ordinal)
             .Replace("golang:1.22", "golang:1.23", StringComparison.Ordinal), ignoreNewLines: false);
     }
@@ -4032,6 +4321,12 @@ __metadata:
             (DependencyType.DockerImage, "postgres", "sha256:abcdef", 0, 0),
             (DependencyType.DockerImage, "${REGISTRY:-docker.io}/worker", "${TAG}", 0, 0),
             (DependencyType.DockerImage, "busybox", null, 0, 0));
+
+        var worker = Assert.Single(result, d => d.Name == "${REGISTRY:-docker.io}/worker");
+        Assert.Equal("${TAG}", worker.RawVersion);
+        Assert.Null(worker.ResolvedVersion);
+        Assert.Null(worker.ResolvedVersionLocation);
+        Assert.False(worker.VersionLocation!.IsUpdatable);
 
         // Other scanners of YAML files do not report the images of a compose file
         Assert.Empty(await GetDependencies<AzureDevOpsScanner>());

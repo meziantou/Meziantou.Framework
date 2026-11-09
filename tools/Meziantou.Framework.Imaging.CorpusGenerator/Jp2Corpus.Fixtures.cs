@@ -36,6 +36,20 @@ internal static partial class Jp2Corpus
             CrossChecks(c, name, encoded.Data, extension, frame, planes.Depth, readers), new Expectation { BitsPerComponent = planes.Depth }, Size(pattern), notes: notes);
     }
 
+    /// <summary>
+    /// A fixture of signed samples written by opj_compress from raw samples: the pattern less half of the range of its
+    /// depth. The library, opj_decompress (whose signed samples are offset back) and FFmpeg show the pattern.
+    /// </summary>
+    private static void AddSigned(Corpus<Jp2Tools> c, string name, string function, Img pattern, string description, IReadOnlyList<string> options, int? depth = null, string? notes = null)
+    {
+        var planes = ToPlanes(pattern, depth);
+        var offset = 1 << (planes.Depth - 1);
+        var encoded = OpjRaw(c, planes.Width, planes.Height, planes.Depth, isSigned: true, [.. planes.Channels.Select(channel => (channel.Select(sample => sample - offset).ToArray(), 1, 1))], options);
+        var frame = Present(planes);
+        AddValid(c, name, function, encoded, ".j2k", frame, PatternReference("The pattern given to the encoder: " + description),
+            CrossChecks(c, name, encoded.Data, ".j2k", frame, planes.Depth), new Expectation { BitsPerComponent = planes.Depth, IsSigned = true }, Size(pattern), notes: notes);
+    }
+
     private static void BuildLossless(Corpus<Jp2Tools> c)
     {
         const string Function = nameof(BuildLossless);
@@ -56,6 +70,13 @@ internal static partial class Jp2Corpus
             "Samples (5x + 3y + 1) mod 16 of four bits, scaled to eight bits: (v * 255 + 7) / 15.", ["-n", "2"], depth: 4);
         AddLossless(c, "lossless-gray12", Function, new Img(9, 7, "gray", 16, CommonCorpus.Grid(9, 7, (x, y) => new Px(((x * 683) + (y * 1000) + 5) % 4096))),
             "Samples (683x + 1000y + 5) mod 4096 of twelve bits, scaled to sixteen bits: (v * 65535 + 2047) / 4095.", ["-n", "3"], depth: 12);
+
+        // Signed samples: the library shows a sample v of B bits as v + 2^(B-1), the unsigned sample the encoder level shifted
+        AddSigned(c, "lossless-signed-gray8", Function, CommonCorpus.PatternCheckerboardGray(11, 7), "PatternCheckerboardGray, less 128 in the file.", ["-n", "2"]);
+        AddSigned(c, "lossless-signed-gray12", Function, new Img(9, 7, "gray", 16, CommonCorpus.Grid(9, 7, (x, y) => new Px(((x * 683) + (y * 1000) + 5) % 4096))),
+            "Samples (683x + 1000y + 5) mod 4096 of twelve bits, less 2048 in the file, scaled to sixteen bits: (v * 65535 + 2047) / 4095.", ["-n", "3"], depth: 12);
+        AddSigned(c, "lossless-signed-rgb8", Function, CommonCorpus.PatternRgbOdd(13, 9), "PatternRgbOdd, less 128 in the file.", ["-n", "3"],
+            notes: "The reversible component transformation applies to the signed samples.");
 
         AddLossless(c, "lossless-no-decomposition", Function, CommonCorpus.PatternRgbOdd(13, 9), "PatternRgbOdd.", ["-n", "1"],
             notes: "No decomposition level: the code-blocks hold the samples, after the component transformation and the level shift.");
@@ -534,11 +555,6 @@ internal static partial class Jp2Corpus
 
         Encoded Assembled(Encoded codestream, byte[] file) => new(file, [.. codestream.Commands, "{output}.j2k is the codestream of the file; its boxes are written by the generator"]);
 
-        var gray = CommonCorpus.PatternCheckerboardGray(11, 7);
-        int[] samples = [.. gray.Pixels.Select(pixel => pixel[0] - 128)];
-        Add("signed-samples", OpjRaw(c, 11, 7, 8, isSigned: true, [(samples, 1, 1)], ["-n", "2"]), ".j2k", "signed samples",
-            "The samples of the component are signed: an image of the library holds unsigned samples.", file => file.Components is [{ IsSigned: true }]);
-
         var rgb = CommonCorpus.PatternRgbOdd(13, 9);
         var planes = ToPlanes(rgb);
         Add("five-components", OpjRaw(c, 13, 9, 8, isSigned: false, [(planes.Channels[0], 1, 1), (planes.Channels[1], 1, 1), (planes.Channels[2], 1, 1), (planes.Channels[0], 1, 1), (planes.Channels[1], 1, 1)], ["-n", "2", "-mct", "0"]),
@@ -570,7 +586,7 @@ internal static partial class Jp2Corpus
             ".jp2", "several codestreams", "A file of two codestreams: a compound image.", file => file.CodestreamCount == 2, "hand-authored");
 
         // The high-throughput block coder
-        var ojph = Ojph(c, ToPlanes(gray), isReversible: true, ["-num_decomps", "2"]);
+        var ojph = Ojph(c, ToPlanes(CommonCorpus.PatternCheckerboardGray(11, 7)), isReversible: true, ["-num_decomps", "2"]);
         var mixed = (byte[])ojph.Data.Clone();
         var cod = FindMarkerSegment(mixed, 0x52);
         mixed[cod + 12] = 0xC0;

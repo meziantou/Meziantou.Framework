@@ -1497,6 +1497,24 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>JPEG 2000 decoding of the first quality layers only: a preview of a layered file.</summary>
+    #region Imaging_Jpeg2000DecodeQualityLayers
+    public static Image LoadJpeg2000Preview(string path)
+    {
+        // Only the coding passes of the first quality layer are decoded: the image a reader gets from the first bytes of
+        // an LRCP file. A file of one layer decodes as a whole.
+        var options = new ImageDecodeOptions
+        {
+            Configuration = new ImageConfiguration
+            {
+                Jpeg2000Decoding = new Jpeg2000DecodingOptions { QualityLayerLimit = 1 },
+            },
+        };
+
+        return Image.Load(path, options);
+    }
+    #endregion
+
     /// <summary>JPEG 2000 with the high-throughput block coder (HTJ2K): a JPH file, and a codestream with a target size.</summary>
     #region Imaging_SaveHighThroughputJpeg2000
     public static void SaveHighThroughputJpeg2000(string inputPath, string jphPath, string codestreamPath)

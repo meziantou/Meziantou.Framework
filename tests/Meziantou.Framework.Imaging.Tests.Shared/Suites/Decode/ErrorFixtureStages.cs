@@ -38,7 +38,6 @@ internal static class ErrorFixtureStages
         "invalid/jp2/motion-jpeg-2000",
         "invalid/jp2/part-2-extensions",
         "invalid/jp2/premultiplied-opacity",
-        "invalid/jp2/signed-samples",
         "invalid/jp2/siz-image-offset",
         "invalid/jp2/siz-no-component",
         "invalid/jp2/siz-zero-tile-width",

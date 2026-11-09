@@ -232,7 +232,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                     _ => throw new InvalidOperationException("Unexpected method"),
                 };
 
-                return realm.CreateHtmlWritableStream(writer);
+                // The stream is created in the relevant realm of this (https://whatpr.org/html/12758/dynamic-markup-insertion.html#stream-html),
+                // so are the DOMExceptions with which its writes are rejected
+                return realm.GetRelevantRealm(thisValue).CreateHtmlWritableStream(writer);
             }, ceReactions);
         }
     }

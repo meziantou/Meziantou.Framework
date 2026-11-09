@@ -2903,10 +2903,7 @@
     "total": 1
   },
   "svg/scripted/script-moved-to-another-document-before-end-tag.html": {
-    "total": 1,
-    "failures": {
-      "Document parsing does not execute an SVG <script> moved to another document before its end tag": "FAIL"
-    }
+    "total": 1
   },
   "svg/scripted/script-runs-in-shadow-tree.html": {
     "total": 1

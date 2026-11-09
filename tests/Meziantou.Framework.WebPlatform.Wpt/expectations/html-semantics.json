@@ -9256,21 +9256,7 @@
     "total": 1
   },
   "html/semantics/scripting-1/the-template-element/template-for/stream-head-scope.html": {
-    "total": 13,
-    "failures": {
-      "streamAfterHTMLUnsafe targeting body does not patch markers in head": "FAIL",
-      "streamAfterHTMLUnsafe targeting body patches markers in body without touching head": "FAIL",
-      "streamAppendHTMLUnsafe targeting body does not patch markers in head": "FAIL",
-      "streamAppendHTMLUnsafe targeting body patches markers in body without touching head": "FAIL",
-      "streamBeforeHTMLUnsafe targeting body does not patch markers in head": "FAIL",
-      "streamBeforeHTMLUnsafe targeting body patches markers in body without touching head": "FAIL",
-      "streamHTMLUnsafe targeting body does not patch markers in head": "FAIL",
-      "streamHTMLUnsafe targeting body patches markers in body without touching head": "FAIL",
-      "streamPrependHTMLUnsafe targeting body does not patch markers in head": "FAIL",
-      "streamPrependHTMLUnsafe targeting body patches markers in body without touching head": "FAIL",
-      "streamReplaceWithHTMLUnsafe targeting body does not patch markers in head": "FAIL",
-      "streamReplaceWithHTMLUnsafe targeting body patches markers in body without touching head": "FAIL"
-    }
+    "total": 13
   },
   "html/semantics/scripting-1/the-template-element/template-for/template-for-append-element.html": {
     "total": 1

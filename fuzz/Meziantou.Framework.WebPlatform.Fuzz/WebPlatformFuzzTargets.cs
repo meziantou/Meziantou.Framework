@@ -55,10 +55,20 @@ public static partial class WebPlatformFuzzTargets
     // The number of round trips (parse, serialize) after which the serialization of an HTML document is the same markup
     private const int HtmlMaxRoundTrips = 16;
 
+    /// <summary>The tokens of the HTML streaming target.</summary>
+    private static readonly string[] HtmlStreamingTokens =
+    [
+        "<", ">", "</", "/>", "<!--", "-->", "<!DOCTYPE html>", "&amp;", "&lt", "\r", "\r\n", "=", "\"", "'",
+        "<template for=\"p\">", "<template for=p>", "</template>", "<?start name=\"p\">", "<?start name=p>", "<?end>", "<template shadowrootmode=open>",
+        "<style>", "</style>", "<script>", "</script>", "<svg>", "<script/>", "</svg>", "<math>", "<noscript>", "</noscript>", "<textarea>", "<plaintext>",
+        "<table>", "<tr>", "<td>", "</table>", "<select>", "<option>", "<p>", "</p>", "<head>", "<body>", "<html>", "<frameset>",
+    ];
+
     /// <summary>The targets: the text targets receive the decoded input (<see cref="FuzzText.Decode"/>), the binary targets the bytes.</summary>
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("webplatform-html", data => Html(FuzzText.Decode(data))) { Seeds = () => GetSeeds("html") },
+        new("webplatform-html-streaming", HtmlStreaming) { Seeds = () => GetSeeds("html-streaming"), Dictionary = HtmlStreamingTokens },
         new("webplatform-xml", data => Xml(FuzzText.Decode(data))) { Seeds = () => GetSeeds("xml") },
         new("webplatform-css", data => Css(FuzzText.Decode(data))) { Seeds = () => GetSeeds("css") },
         new("webplatform-selectors", data => Selectors(FuzzText.Decode(data))) { Seeds = () => GetSeeds("selectors") },
@@ -212,6 +222,101 @@ public static partial class WebPlatformFuzzTargets
             }
 
             return true;
+        }
+    }
+
+    // The document into which the HTML streaming target streams its input: markers in the head and in the body (for the
+    // template for elements), and the elements whose context changes the tokenizer and the scripting flag
+    private const string HtmlStreamingDocumentMarkup = """
+        <!DOCTYPE html><html><head><?start name="p"><?end></head>
+        <body><div id="target"><?start name="p">old<?end></div><template id="template"></template><style id="style">p { color: r</style>
+        <table id="table"><tr><td>cell</td></tr></table><noscript id="noscript"></noscript><p id="anchor">anchor</p></body></html>
+        """;
+
+    /// <summary>
+    /// Streams HTML (https://github.com/whatwg/html/pull/12758) into several targets, at once and in chunks: the first byte
+    /// sets the length of the chunks. The tree does not depend on where the chunks end (unless a write is rejected: each
+    /// write checks the reference node, which a template for element of a previous chunk can remove), and a streamed style
+    /// element has its style sheet once the stream is closed.
+    /// </summary>
+    public static void HtmlStreaming(ReadOnlySpan<byte> data)
+    {
+        var chunkLength = FuzzInput.ReadByte(ref data) % 16 + 1;
+        var input = FuzzText.Decode(data);
+        foreach (var method in new[] { "html", "append", "prepend", "before", "after" })
+        {
+            foreach (var target in new[] { "target", "template", "style", "table", "noscript", "anchor", "body" })
+            {
+                var (whole, _) = StreamHtml(method, target, [input]);
+                var (chunked, rejected) = StreamHtml(method, target, SplitIntoChunks(input, chunkLength));
+                if (rejected)
+                    continue;
+
+                FuzzAssert.Equal(whole, chunked, $"Streaming the HTML in chunks of {chunkLength} characters ({method}, #{target}) creates another tree than streaming it at once");
+            }
+        }
+
+        static (string Html, bool Rejected) StreamHtml(string method, string target, IEnumerable<string> chunks)
+        {
+            var document = HtmlDocumentParser.ParseDocument(HtmlStreamingDocumentMarkup, new HtmlParserOptions { ScriptingEnabled = true });
+            var element = target == "body" ? document.Body! : document.GetElementById(target)!;
+            HtmlStreamWriter writer;
+            try
+            {
+                writer = method switch
+                {
+                    "html" => element.StreamHtmlUnsafe(),
+                    "append" => element.StreamAppendHtmlUnsafe(),
+                    "prepend" => element.StreamPrependHtmlUnsafe(),
+                    "before" => element.StreamBeforeHtmlUnsafe(),
+                    _ => element.StreamAfterHtmlUnsafe(),
+                };
+            }
+            catch (DomException ex)
+            {
+                // The context of a stream cannot be a script element, and the parent of the reference node cannot be a template
+                return (ex.Name, false);
+            }
+
+            try
+            {
+                foreach (var chunk in chunks)
+                {
+                    writer.Write(chunk);
+                }
+
+                writer.Close();
+            }
+            catch (DomException ex) when (ex.Name == "HierarchyRequestError")
+            {
+                // A template for element removed the reference node of the stream
+                return (document.ToHtml(), true);
+            }
+
+            if (target == "style" && method is "html" or "append" or "prepend")
+            {
+                var style = (HtmlStyleElement)element;
+                FuzzAssert.True(!style.IsConnected || style.Sheet is not null, "A style element into which HTML was streamed has no style sheet once the stream is closed");
+            }
+
+            return (document.ToHtml(), false);
+        }
+
+        static IEnumerable<string> SplitIntoChunks(string input, int length)
+        {
+            var start = 0;
+            while (start < input.Length)
+            {
+                // A surrogate pair is not split: its halves would be inserted as two lone surrogates
+                var end = Math.Min(start + length, input.Length);
+                if (end < input.Length && char.IsHighSurrogate(input[end - 1]) && char.IsLowSurrogate(input[end]))
+                {
+                    end++;
+                }
+
+                yield return input[start..end];
+                start = end;
+            }
         }
     }
 

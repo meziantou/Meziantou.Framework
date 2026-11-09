@@ -48,16 +48,16 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,352 | 29,911 | 2,117 | 95% |
+| [Stable](#stable-tests) | 26,358 | 29,911 | 2,117 | 95% |
 | [Tentative](#tentative-tests) | 1,383 | 3,169 | 698 | 56% |
 | [Reftests](#reftests) | 28,112 | 29,507 | 171 | 96% |
-| **All** | **55,847** | **62,587** | **2,986** | **94%** |
+| **All** | **55,853** | **62,587** | **2,986** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 253
+- **BUG**: 246
 - **TEST BUG**: 1,017
 - **NOT IMPLEMENTED**: 4,491
 - **REQUIRES**: 765
@@ -206,7 +206,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`document-picture-in-picture`](document-picture-in-picture.md) | 0 | 22 | 22 | – |
 | [`document-policy`](document-policy.md) | 6 | 7 | 0 | 86% |
 | [`dom`](dom.md) | 668 | 687 | 6 | 98% |
-| [`domparsing`](domparsing.md) | 82 | 94 | 0 | 87% |
+| [`domparsing`](domparsing.md) | 86 | 94 | 0 | 91% |
 | [`domxpath`](domxpath.md) | 29 | 29 | 0 | 100% |
 | [`dpub-aam`](dpub-aam.md) | 0 | 1 | 1 | – |
 | [`ecmascript`](ecmascript.md) | 0 | 2 | 2 | – |
@@ -253,7 +253,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/rendering`](html/rendering.md) | 145 | 151 | 0 | 96% |
 | [`html/scripting`](html/scripting.md) | 3 | 3 | 0 | 100% |
 | [`html/select`](html/select.md) | 1 | 1 | 0 | 100% |
-| [`html/semantics`](html/semantics.md) | 2,112 | 2,208 | 31 | 97% |
+| [`html/semantics`](html/semantics.md) | 2,113 | 2,208 | 31 | 97% |
 | [`html/syntax`](html/syntax.md) | 105 | 106 | 0 | 99% |
 | [`html/the-xhtml-syntax`](html/the-xhtml-syntax.md) | 13 | 13 | 0 | 100% |
 | [`html/user-activation`](html/user-activation.md) | 15 | 18 | 0 | 83% |
@@ -362,7 +362,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`storage-access-api`](storage-access-api.md) | 0 | 37 | 37 | – |
 | [`streams`](streams.md) | 70 | 85 | 4 | 86% |
 | [`subresource-integrity`](subresource-integrity.md) | 0 | 5 | 5 | – |
-| [`svg`](svg.md) | 719 | 746 | 2 | 97% |
+| [`svg`](svg.md) | 720 | 746 | 2 | 97% |
 | [`svg-aam`](svg-aam.md) | 5 | 5 | 0 | 100% |
 | [`timing-entrytypes-registry`](timing-entrytypes-registry.md) | 2 | 2 | 0 | 100% |
 | [`touch-events`](touch-events.md) | 9 | 12 | 0 | 75% |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 320 | 331 | 0 | 97% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,352** | **29,911** | **2,117** | **95%** |
+| **Total (343 sections)** | **26,358** | **29,911** | **2,117** | **95%** |
 
 ## Tentative tests
 

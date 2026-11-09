@@ -1762,6 +1762,7 @@ public static partial class ImageProcessingExtensions
     public static void DetectCannyEdges(this Image image, CannyEdgeOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(DetectCannyEdges));
         image.DetectCannyEdgesFrames(frames: null, options ?? CannyEdgeOptions.Default, cancellationToken);
     }
 
@@ -1781,6 +1782,7 @@ public static partial class ImageProcessingExtensions
     public static void DetectCannyEdges(this ImageFrame frame, CannyEdgeOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(DetectCannyEdges));
         _ = frame.GetStorage();
         frame.OwnerImage.DetectCannyEdgesFrames([frame], options ?? CannyEdgeOptions.Default, cancellationToken);
     }

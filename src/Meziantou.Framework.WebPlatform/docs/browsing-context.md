@@ -321,7 +321,8 @@ contexts), until `URL.revokeObjectURL(url)` or the destruction of the document t
 Content-Type (`text/plain` when it is empty); a URL that is not in the store is a network error. The loader is not
 called. The blob of a navigation is resolved when the navigation starts: revoking the URL afterwards does not prevent the
 document from loading. `URL.revokeObjectURL(url)` only revokes the URLs without fragment (as in the browsers, revoking
-`blob:...#fragment` does nothing).
+`blob:...#fragment` does nothing). The blob of the `src` of a `track` element is resolved when the attribute is set:
+revoking the URL afterwards does not prevent the track from loading.
 
 `FileReader` reads a blob as text (decoded with the BOM, the `encoding` argument, the `charset` of the type of the blob,
 else UTF-8), a `data:` URL, an `ArrayBuffer` or a binary string. The events (`loadstart`, `progress`, `load`, `loadend`,

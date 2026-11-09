@@ -1629,10 +1629,7 @@
     "total": 3
   },
   "html/semantics/embedded-content/media-elements/track/track-element/track-blob-url-revoked.window.js": {
-    "total": 3,
-    "failures": {
-      "track loads from a blob: URL revoked after src is set": "FAIL"
-    }
+    "total": 3
   },
   "html/semantics/embedded-content/media-elements/track/track-element/track-change-event.html": {
     "total": 1

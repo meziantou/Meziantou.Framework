@@ -548,6 +548,18 @@ public sealed class LayoutTests
     }
 
     [Fact]
+    public void PackSiblings_TinyCirclesNextToAHugeOne()
+    {
+        // Next to a huge circle, the coordinates of the tiny ones are too imprecise for the tolerance: a new circle
+        // intersected the pair it is tangent to, and the front chain of these two restarted forever
+        double[] radii = [Math.Sqrt(21), Math.Sqrt(60), Math.Sqrt(120), 0, 0, 2, 0, Math.Sqrt(2), 1e15, 0, 2, 0, Math.Sqrt(2)];
+        var circles = radii.Select(radius => new PackCircle(0, 0, radius)).ToArray();
+        var radius = CirclePacking.PackSiblings(circles, CirclePacking.CreateRandom());
+        Assert.True(radius >= 1e15 && radius < 1.000001e15, radius.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Assert.All(circles, circle => Assert.True(double.IsFinite(circle.X) && double.IsFinite(circle.Y)));
+    }
+
+    [Fact]
     public void Sum_InfiniteAndHugeValues()
     {
         var root = Hierarchy.FromPaths([("a", double.PositiveInfinity), ("b/x", 1e308), ("b/y", 1e308), ("c", 1), ("d", double.NaN), ("e", -1)], row => row.Item1, row => row.Item2);

@@ -3286,10 +3286,20 @@ the properties: the decorations take no space.
     from the areas of the items (the cells an item covers, the cells without item).
   - **Grid lanes**: the gutters between the tracks run across the stacking axis; the gutters of the stacking axis are confined to
     their track, just before their item (after it with `fill-reverse`), so the gutter before a spanning item has one segment per
-    track. A portion of a gutter between two tracks is blocked when the same item is on its two sides, and empty on a side
-    beyond the extent of its item (its area and the halves of the gutters around it: after the last item of a track, before
-    a spanning item placed after an empty space; `GapIntersection.IsOccupancyChange`, for `*-rule-visibility-items`). The gutters of the two
-    tracks that overlap one another are one junction (`GapOverlapWindow`).
+    track. The occupancy of a portion of a gutter between two tracks comes from the margin boxes of the items once aligned
+    (`GridItem.LanesBoxStart`, `LanesGridBoxStart`), and the portion is split where it changes (`GapIntersection.IsOccupancyChange`,
+    cap segment endpoints that are not junctions):
+    - It is blocked when a spanning item is on its two sides, from the margin box of the item extended by the gap of the
+      stacking axis on each side: the decorations continue into the empty space before and after it, also its alignment
+      space ([w3c/csswg-drafts#14648](https://github.com/w3c/csswg-drafts/issues/14648): "Gap decorations all the way to a
+      spanning element (minus gap distance in crossing direction), even into alignment space post-alignment of the item").
+    - A side is occupied by the margin box of its item (only when the margin box reaches the track in the grid axis), in the
+      alignment space of the item elsewhere in its alignment container (`AlignmentSpaceBefore`/`AlignmentSpaceAfter`), and empty
+      beyond it. `between` paints the rules only beside items on both sides, so they stop at the shorter track
+      ([w3c/csswg-drafts#14489](https://github.com/w3c/csswg-drafts/issues/14489): "we drop and/or shorten lines *post
+      alignment* to only appear strictly between two items"); `around` treats the alignment space as occupied.
+
+    The gutters of the two tracks that overlap one another are one junction (`GapOverlapWindow`).
   - **Flex** (`FlexLayoutAlgorithm.Gaps.cs`): the gaps between the items run across their line (from the gap before the line to
     the gap after it); the gaps between the lines run across the container and are abutted by the gaps of the two lines (the
     gaps of the two lines that overlap are one junction).
@@ -3308,8 +3318,9 @@ the properties: the decorations take no space.
   and for the row gaps of a multi-column container, `intersection` for its column gaps. `*-rule-visibility-items` hides the
   portions next to empty areas (`normal` is `all` in the grids; in the flex and multi-column containers it is `between`, as in
   Blink: the specification says `all` for the row gaps of a multi-column container). The ends of a segment are moved by the
-  insets: the cap insets at the bounds of the gap (and, when the rules are painted `between` the items, at the junctions where
-  the crossing gap has no decoration, as in Blink), the junction insets elsewhere; `overlap-join` extends the segment by half
+  insets: the cap insets at the bounds of the gap and at the points where the occupancy of a gap of a grid lanes container
+  changes (with a percentage basis of 0), and, when the rules are painted `between` the items, at the junctions where the
+  crossing gap has no decoration, as in Blink; the junction insets elsewhere; `overlap-join` extends the segment by half
   the junction plus half the width of the crossing rule (only half the junction for the gaps between the flex lines and the rows
   of columns, which the crossing gaps abut). The rectangle of a decoration is centered on the gap, as wide as the rule.
 - **Painting**: `Painter.PaintGapDecorations` paints them just above the border of the container (`BorderPainter.PaintRule`:

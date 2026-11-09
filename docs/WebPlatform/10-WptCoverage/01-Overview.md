@@ -50,14 +50,14 @@ The features of `REQUIRES`:
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 26,350 | 29,911 | 2,117 | 95% |
 | [Tentative](#tentative-tests) | 1,380 | 3,169 | 698 | 56% |
-| [Reftests](#reftests) | 28,112 | 29,507 | 171 | 96% |
-| **All** | **55,842** | **62,587** | **2,986** | **94%** |
+| [Reftests](#reftests) | 28,142 | 29,507 | 171 | 96% |
+| **All** | **55,872** | **62,587** | **2,986** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 257
+- **BUG**: 227
 - **TEST BUG**: 1,017
 - **NOT IMPLEMENTED**: 4,492
 - **REQUIRES**: 765
@@ -626,7 +626,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-font-loading`](css/css-font-loading.md#reftests) | 7 | 7 | 0 | 100% |
 | [`css/css-fonts`](css/css-fonts.md#reftests) | 363 | 389 | 1 | 94% |
 | [`css/css-forms`](css/css-forms.md#reftests) | 6 | 17 | 0 | 35% |
-| [`css/css-gaps`](css/css-gaps.md#reftests) | 515 | 549 | 0 | 94% |
+| [`css/css-gaps`](css/css-gaps.md#reftests) | 545 | 549 | 0 | 99% |
 | [`css/css-grid`](css/css-grid.md#reftests) | 1,739 | 1,792 | 0 | 97% |
 | [`css/css-highlight-api`](css/css-highlight-api.md#reftests) | 113 | 118 | 0 | 96% |
 | [`css/css-image-animation`](css/css-image-animation.md#reftests) | 0 | 22 | 22 | – |
@@ -728,4 +728,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 182 | 252 | 0 | 72% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (131 sections)** | **28,112** | **29,507** | **171** | **96%** |
+| **Total (131 sections)** | **28,142** | **29,507** | **171** | **96%** |

@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.WebPlatform.Css.Layout;
 
 // The geometry of the gaps of a grid container, for the painting of the gap decorations (https://drafts.csswg.org/css-gaps-1/)
@@ -225,7 +227,7 @@ internal sealed partial class GridLayoutAlgorithm
         // The items of each track from the start of the stacking axis, and the centers of the gutters before them (after them
         // with fill-reverse: the gutter is on the side of the item where the stacking comes from)
         var occupants = new List<GridItem>[lanes.Length];
-        var extents = new (double Start, double End)[lanes.Length][];
+        var extents = new LaneExtent[lanes.Length][];
         var gutters = new double[lanes.Length][];
         for (var lane = 0; lane < lanes.Length; lane++)
         {
@@ -254,15 +256,21 @@ internal sealed partial class GridLayoutAlgorithm
                 Array.Reverse(centers);
             }
 
-            // The portion of the stacking axis that each item occupies: its area and the halves of the gutters around it
-            var laneExtents = new (double Start, double End)[ordered.Count];
+            // The portion of the stacking axis that each item occupies: its margin box once aligned, and its alignment container
+            var laneExtents = new LaneExtent[ordered.Count];
             for (var i = 0; i < ordered.Count; i++)
             {
-                var areaStart = ordered[i].LanesAreaStart - (stackGap / 2);
-                var areaEnd = ordered[i].LanesAreaStart + ordered[i].LanesAreaSize + (stackGap / 2);
-                laneExtents[i] = fillReverse
-                    ? (stackOffset + _stackingContainerSize - areaEnd, stackOffset + _stackingContainerSize - areaStart)
-                    : (stackOffset + areaStart, stackOffset + areaEnd);
+                var item = ordered[i];
+                var areaStart = item.LanesAreaStart;
+                var areaEnd = item.LanesAreaStart + item.LanesAreaSize;
+                if (fillReverse)
+                {
+                    (areaStart, areaEnd) = (_stackingContainerSize - areaEnd, _stackingContainerSize - areaStart);
+                }
+
+                // (an item aligned in the grid axis does not occupy the tracks of its area that its margin box does not reach)
+                var reachesTrack = item.LanesGridBoxEnd > tracks[track].Position + 1e-9 && item.LanesGridBoxStart < tracks[track].End - 1e-9;
+                laneExtents[i] = new LaneExtent(stackOffset + item.LanesBoxStart, stackOffset + item.LanesBoxEnd, stackOffset + areaStart, stackOffset + areaEnd, reachesTrack);
             }
 
             occupants[lane] = ordered;
@@ -336,15 +344,27 @@ internal sealed partial class GridLayoutAlgorithm
     /// <summary>The gutter index of a portion of a gap of a grid lanes container that ends where the occupancy of a side changes.</summary>
     private const int OccupancyChange = -2;
 
+    /// <summary>The portion of the stacking axis of a grid lanes container that an item occupies in one of its tracks: its margin box once aligned, its alignment container, and whether its margin box reaches the track in the grid axis.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct LaneExtent(double BoxStart, double BoxEnd, double AreaStart, double AreaEnd, bool ReachesTrack);
+
     /// <summary>
     /// Returns the intersections of the gutter between two tracks of a grid lanes container: the bounds of the stacking axis, and
     /// the gutters of the stacking axis of the two tracks (the gutters at the same position are one intersection). The gutters of
     /// the two tracks that overlap one another are one gap junction (see <see cref="GapOverlapWindow"/>): its opening has the state
-    /// of the portions inside the junction. A portion is also split where the item of one side ends before the next gutter (the
-    /// last item of a track, an item placed after an empty space before a spanning item): the area beyond it is empty
-    /// (https://drafts.csswg.org/css-gaps-1/#visibility).
+    /// of the portions inside the junction. A portion between two gutters is also split where the occupancy of a side changes,
+    /// from the margin boxes of the items once aligned (<see cref="GridItem.LanesBoxStart"/>):
+    /// <list type="bullet">
+    /// <item>Where the item of a side starts or ends: the alignment space around an item smaller than its alignment container and
+    /// the empty space after the last item of a track are empty (https://github.com/w3c/csswg-drafts/issues/14489: "in grid lanes,
+    /// when doing 'between', we drop and/or shorten lines post alignment to only appear strictly between two items").</item>
+    /// <item>Where a spanning item, extended by the gap of the stacking axis on each side, starts or ends: the decorations continue
+    /// in the empty space around it (https://github.com/w3c/csswg-drafts/issues/14648: "Gap decorations all the way to a spanning
+    /// element (minus gap distance in crossing direction), even into alignment space post-alignment of the item").</item>
+    /// </list>
+    /// These points are not gap junctions: their endpoints are cap segment endpoints, at the point itself.
     /// </summary>
-    private static GapIntersection[] CreateLaneGapIntersections(List<GridItem> before, (double Start, double End)[] beforeExtents, double[] beforeGutters, int firstBeforeGutter, List<GridItem> after, (double Start, double End)[] afterExtents, double[] afterGutters, int firstAfterGutter, double start, double end, double stackGap)
+    private static GapIntersection[] CreateLaneGapIntersections(List<GridItem> before, LaneExtent[] beforeExtents, double[] beforeGutters, int firstBeforeGutter, List<GridItem> after, LaneExtent[] afterExtents, double[] afterGutters, int firstAfterGutter, double start, double end, double stackGap)
     {
         var empty = GapSegmentState.None;
         if (before.Count == 0)
@@ -386,7 +406,10 @@ internal sealed partial class GridLayoutAlgorithm
             var offset = NextOffset();
             if (!overlaps && empty != (GapSegmentState.EmptyBefore | GapSegmentState.EmptyAfter))
             {
-                state = AddOccupancySplits(portionStart, Math.Min(offset, end));
+                // (the portion between the gutters: the gutters are centered on their offsets)
+                var partStart = portionStart > start ? portionStart + (stackGap / 2) : start;
+                var partEnd = offset < end ? offset - (stackGap / 2) : end;
+                state = AddOccupancySplits(partStart, partEnd);
             }
 
             portionStart = offset;
@@ -426,9 +449,7 @@ internal sealed partial class GridLayoutAlgorithm
             }
             else if (segment.Gutter == OccupancyChange)
             {
-                // (the bound of the extent of an item is the center of the gutter before or after it, which the gutter would cross:
-                // the decorations end at the edge of the item)
-                var change = GapIntersection.Junction(segment.End, stackGap, -1, outgoing);
+                var change = GapIntersection.Junction(segment.End, crossWidth: 0, crossGapIndex: -1, outgoing);
                 change.IsOccupancyChange = true;
                 result.Add(change);
             }
@@ -476,13 +497,21 @@ internal sealed partial class GridLayoutAlgorithm
 
         return [.. result];
 
-        // Splits the portion between two offsets where the item of a side starts or ends inside it, and returns the state of its
-        // last part
+        // Splits the portion between two offsets where the occupancy of a side changes inside it, and returns the state of its last
+        // part
         GapSegmentState AddOccupancySplits(double portionStart, double portionEnd)
         {
-            var beforeExtent = before.Count > 0 ? beforeExtents[beforeIndex] : default;
-            var afterExtent = after.Count > 0 ? afterExtents[afterIndex] : default;
-            Span<double> points = [beforeExtent.Start, beforeExtent.End, afterExtent.Start, afterExtent.End];
+            var beforeItem = before.Count > 0 ? before[beforeIndex] : null;
+            var afterItem = after.Count > 0 ? after[afterIndex] : null;
+            var beforeExtent = beforeItem is not null ? beforeExtents[beforeIndex] : default;
+            var afterExtent = afterItem is not null ? afterExtents[afterIndex] : default;
+            var isSpanner = beforeItem is not null && ReferenceEquals(beforeItem, afterItem);
+            if (portionEnd <= portionStart)
+                return GetState((portionStart + portionEnd) / 2);
+
+            Span<double> points = isSpanner
+                ? [beforeExtent.BoxStart - stackGap, beforeExtent.BoxEnd + stackGap, beforeExtent.AreaStart, beforeExtent.AreaEnd]
+                : [beforeExtent.BoxStart, beforeExtent.BoxEnd, beforeExtent.AreaStart, beforeExtent.AreaEnd, afterExtent.BoxStart, afterExtent.BoxEnd, afterExtent.AreaStart, afterExtent.AreaEnd];
             points.Sort();
             var partStart = portionStart;
             foreach (var point in points)
@@ -498,12 +527,19 @@ internal sealed partial class GridLayoutAlgorithm
 
             GapSegmentState GetState(double position)
             {
-                var beforeCovers = before.Count > 0 && beforeExtent.Start <= position && position <= beforeExtent.End;
-                var afterCovers = after.Count > 0 && afterExtent.Start <= position && position <= afterExtent.End;
-                if (beforeCovers && afterCovers && ReferenceEquals(before[beforeIndex], after[afterIndex]))
+                if (isSpanner && beforeExtent.BoxStart - stackGap <= position && position <= beforeExtent.BoxEnd + stackGap)
                     return GapSegmentState.Blocked;
 
-                return (beforeCovers ? GapSegmentState.None : GapSegmentState.EmptyBefore) | (afterCovers ? GapSegmentState.None : GapSegmentState.EmptyAfter);
+                return GetSideState(beforeItem, beforeExtent, position, GapSegmentState.EmptyBefore, GapSegmentState.AlignmentSpaceBefore)
+                    | GetSideState(afterItem, afterExtent, position, GapSegmentState.EmptyAfter, GapSegmentState.AlignmentSpaceAfter);
+            }
+
+            static GapSegmentState GetSideState(GridItem? item, in LaneExtent extent, double position, GapSegmentState empty, GapSegmentState alignmentSpace)
+            {
+                if (item is null || position < extent.AreaStart || position > extent.AreaEnd)
+                    return empty;
+
+                return extent.ReachesTrack && extent.BoxStart <= position && position <= extent.BoxEnd ? GapSegmentState.None : alignmentSpace;
             }
         }
 

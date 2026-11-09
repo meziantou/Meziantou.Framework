@@ -1112,6 +1112,12 @@
   "mathml/relations/css-styling/mi-fontstyle-fontweight.html": {
     "reftest": "PASS"
   },
+  "mathml/relations/css-styling/min-max-width-001.html": {
+    "total": 6
+  },
+  "mathml/relations/css-styling/min-max-width-002.html": {
+    "total": 128
+  },
   "mathml/relations/css-styling/mozilla-393760-1.xml": {
     "reftest": "FAIL"
   },

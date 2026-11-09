@@ -41,6 +41,9 @@
   "css/css-view-transitions/backdrop-filter-captured.html": {
     "reftest": "PASS"
   },
+  "css/css-view-transitions/backdrop-filter-in-root-old-snapshot.html": {
+    "reftest": "PASS"
+  },
   "css/css-view-transitions/backdrop-filter-while-promise-pending.html": {
     "reftest": "PASS"
   },
@@ -260,6 +263,9 @@
   "css/css-view-transitions/iframe-and-main-frame-transition-with-name-on-iframe.html": {
     "reftest": "PASS"
   },
+  "css/css-view-transitions/iframe-cross-origin-svg-filter-dynamic.tentative.sub.https.html": {
+    "reftest": "FAIL"
+  },
   "css/css-view-transitions/iframe-cross-origin-svg-filter.tentative.sub.https.html": {
     "reftest": "PASS"
   },
@@ -283,6 +289,12 @@
   },
   "css/css-view-transitions/inline-element-size.html": {
     "reftest": "PASS"
+  },
+  "css/css-view-transitions/inline-with-block-child-new.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-view-transitions/inline-with-block-child-old.html": {
+    "reftest": "FAIL"
   },
   "css/css-view-transitions/inline-with-offset-from-containing-block.html": {
     "reftest": "PASS"
@@ -806,6 +818,9 @@
   "css/css-view-transitions/new-content-with-overflow.html": {
     "reftest": "PASS"
   },
+  "css/css-view-transitions/new-element-hidden-during-animation-skips-transition.html": {
+    "total": 1
+  },
   "css/css-view-transitions/new-element-on-start.html": {
     "reftest": "PASS"
   },
@@ -936,6 +951,30 @@
     "total": 1
   },
   "css/css-view-transitions/outer-padding-inner-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/paint-holding-in-iframe-ancestor-opacity.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/paint-holding-in-iframe-named-element.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/paint-holding-in-iframe-no-captured-elements.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/paint-holding-in-iframe-overlap.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/paint-holding-in-iframe-scrolled-into-view.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/paint-holding-in-iframe-skipped.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/paint-holding-in-iframe-transformed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/paint-holding-in-iframe-transparent.html": {
     "reftest": "PASS"
   },
   "css/css-view-transitions/paint-holding-in-iframe.html": {
@@ -1268,6 +1307,15 @@
   },
   "css/css-view-transitions/scoped/scope-during-transition-2.html": {
     "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/scope-mathml-root.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-view-transitions/scoped/scope-replaced-elements.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-view-transitions/scoped/scope-svg-root.html": {
+    "reftest": "FAIL"
   },
   "css/css-view-transitions/scoped/scrolled-target-position-rtl.html": {
     "reftest": "PASS"

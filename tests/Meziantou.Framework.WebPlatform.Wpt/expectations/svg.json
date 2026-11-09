@@ -236,6 +236,9 @@
   "svg/animations/animateMotion-calcMode-discrete-accumulate.html": {
     "total": 1
   },
+  "svg/animations/animateMotion-calcMode-discrete-from-to-trailing-junk.html": {
+    "total": 1
+  },
   "svg/animations/animateMotion-calcMode-discrete-from-to.html": {
     "total": 1
   },
@@ -940,6 +943,21 @@
     "reftest": "PASS"
   },
   "svg/animations/use-animate-display-none-symbol.html": {
+    "reftest": "PASS"
+  },
+  "svg/animations/use-external-resource-animate-href.html": {
+    "reftest": "PASS"
+  },
+  "svg/animations/use-external-resource-animate.html": {
+    "reftest": "PASS"
+  },
+  "svg/animations/use-instance-animate-begin-element.html": {
+    "reftest": "PASS"
+  },
+  "svg/animations/use-instance-animate-event-base.html": {
+    "reftest": "PASS"
+  },
+  "svg/animations/use-instance-animate-inherits-begin.html": {
     "reftest": "PASS"
   },
   "svg/as-image/external-resource-data-url-import.sub.html": {
@@ -2491,7 +2509,7 @@
     "reftest": "PASS"
   },
   "svg/path/distance/pathLength-zero-percentage.svg": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "svg/path/distance/pathLength-zero.svg": {
     "reftest": "PASS"
@@ -2844,6 +2862,21 @@
   "svg/render/reftests/nested-svg-overflow-clip.html": {
     "reftest": "PASS"
   },
+  "svg/render/reftests/outer-svg-mask.html": {
+    "reftest": "PASS"
+  },
+  "svg/render/reftests/outer-svg-outline.html": {
+    "reftest": "PASS"
+  },
+  "svg/render/reftests/outer-svg-transform-box-shadow.html": {
+    "reftest": "PASS"
+  },
+  "svg/render/reftests/outer-svg-transform-outline.html": {
+    "reftest": "PASS"
+  },
+  "svg/render/reftests/outer-svg-transform-overflow-clip.html": {
+    "reftest": "PASS"
+  },
   "svg/render/reftests/overflow-clip.html": {
     "reftest": "PASS"
   },
@@ -2863,8 +2896,17 @@
       "fetchpriority attribute on SVG <script> elements should reflect valid IDL values": "FAIL"
     }
   },
+  "svg/scripted/script-ancestor-disconnected-before-end-tag.html": {
+    "total": 1
+  },
   "svg/scripted/script-invalid-script-type.html": {
     "total": 1
+  },
+  "svg/scripted/script-moved-to-another-document-before-end-tag.html": {
+    "total": 1,
+    "failures": {
+      "Document parsing does not execute an SVG <script> moved to another document before its end tag": "FAIL"
+    }
   },
   "svg/scripted/script-runs-in-shadow-tree.html": {
     "total": 1
@@ -3218,8 +3260,10 @@
     "total": 1
   },
   "svg/struct/scripted/switch_reentrant_removal.html": {
-    "harness": "ERROR",
-    "total": 1
+    "total": 1,
+    "failures": {
+      "SVG switch active child during reentrant removal": "FAIL"
+    }
   },
   "svg/struct/scripted/use-composedpath-closed-shadow-tree.html": {
     "total": 2
@@ -3286,11 +3330,17 @@
   "svg/styling/css-linked-parameters/css-linked-parameters-precedence-2.html": {
     "reftest": "FAIL"
   },
+  "svg/styling/css-linked-parameters/img-with-custom-property-dynamic.html": {
+    "reftest": "FAIL"
+  },
   "svg/styling/css-linked-parameters/img-with-linked-parameters-1.html": {
     "reftest": "FAIL"
   },
   "svg/styling/css-linked-parameters/img-with-linked-parameters-2.html": {
     "reftest": "FAIL"
+  },
+  "svg/styling/css-linked-parameters/img-with-linked-parameters-cleared-dynamic.html": {
+    "reftest": "PASS"
   },
   "svg/styling/css-linked-parameters/img-with-url-fragment-identifiers-1.html": {
     "reftest": "FAIL"
@@ -3413,7 +3463,13 @@
   "svg/styling/invalidation/opacity-style-invalidation.html": {
     "total": 1
   },
+  "svg/styling/invalidation/pct-filter-grow.html": {
+    "reftest": "PASS"
+  },
   "svg/styling/invalidation/pct-filter.html": {
+    "reftest": "PASS"
+  },
+  "svg/styling/invalidation/pct-marker-grow.html": {
     "reftest": "PASS"
   },
   "svg/styling/invalidation/pct-marker.html": {
@@ -3557,6 +3613,9 @@
   "svg/styling/svg-filter-render-srcdoc-frame.tentative.https.html": {
     "reftest": "PASS"
   },
+  "svg/styling/svg-filter-render-swap-content-visibility.tentative.https.html": {
+    "reftest": "PASS"
+  },
   "svg/styling/svg-filter-render-swap.tentative.https.html": {
     "reftest": "PASS"
   },
@@ -3607,6 +3666,9 @@
   },
   "svg/styling/vector-effect-invalid.html": {
     "total": 10
+  },
+  "svg/text/dominant-baseline.historical.html": {
+    "total": 3
   },
   "svg/text/inheritance.svg": {
     "total": 10,

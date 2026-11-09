@@ -338,6 +338,30 @@
   "xhr/cors-expose-star.sub.any.js#dedicatedworker": {
     "total": 3
   },
+  "xhr/cors-upload-listener-timing.any.js": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "CORS allow, upload listeners early": "NOTRUN",
+      "CORS allow, upload listeners late": "FAIL",
+      "CORS allow, upload listeners late with upload object": "NOTRUN",
+      "CORS deny, upload listeners early": "NOTRUN",
+      "CORS deny, upload listeners late": "NOTRUN",
+      "CORS deny, upload listeners late with upload object": "NOTRUN"
+    }
+  },
+  "xhr/cors-upload-listener-timing.any.js#dedicatedworker": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "CORS allow, upload listeners early": "NOTRUN",
+      "CORS allow, upload listeners late": "FAIL",
+      "CORS allow, upload listeners late with upload object": "NOTRUN",
+      "CORS deny, upload listeners early": "NOTRUN",
+      "CORS deny, upload listeners late": "NOTRUN",
+      "CORS deny, upload listeners late with upload object": "NOTRUN"
+    }
+  },
   "xhr/cors-upload.any.js": {
     "total": 2
   },

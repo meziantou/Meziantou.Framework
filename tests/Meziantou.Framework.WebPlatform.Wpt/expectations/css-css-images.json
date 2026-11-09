@@ -59,6 +59,9 @@
   "css/css-images/conic-gradient-line-height-relative-units-004.html": {
     "reftest": "PASS"
   },
+  "css/css-images/conic-gradient-math-function-percentage.html": {
+    "reftest": "PASS"
+  },
   "css/css-images/cross-fade-basic.html": {
     "reftest": "PASS"
   },
@@ -66,6 +69,12 @@
     "total": 7
   },
   "css/css-images/cross-fade-cross-origin-orientation.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-images/cross-fade-natural-size-gradients.html": {
+    "reftest": "PASS"
+  },
+  "css/css-images/cross-fade-natural-size-image-and-gradient.html": {
     "reftest": "PASS"
   },
   "css/css-images/cross-fade-natural-size.html": {
@@ -458,10 +467,22 @@
   "css/css-images/image-orientation/image-orientation-mask-image.html": {
     "reftest": "PASS"
   },
+  "css/css-images/image-orientation/image-orientation-none-background-repeat.html": {
+    "reftest": "PASS"
+  },
+  "css/css-images/image-orientation/image-orientation-none-border-image-repeat.html": {
+    "reftest": "PASS"
+  },
   "css/css-images/image-orientation/image-orientation-none-computed-style.html": {
     "total": 1
   },
   "css/css-images/image-orientation/image-orientation-none-content-images.html": {
+    "reftest": "PASS"
+  },
+  "css/css-images/image-orientation/image-orientation-none-cross-origin-background-repeat.sub.html": {
+    "reftest": "PASS"
+  },
+  "css/css-images/image-orientation/image-orientation-none-cross-origin-border-image-repeat.sub.html": {
     "reftest": "PASS"
   },
   "css/css-images/image-orientation/image-orientation-none-cross-origin-border-image.sub.html": {
@@ -1349,6 +1370,9 @@
   "css/css-images/object-view-box-fit-contain-img.html": {
     "reftest": "PASS"
   },
+  "css/css-images/object-view-box-fit-contain-svg-object.html": {
+    "reftest": "FAIL"
+  },
   "css/css-images/object-view-box-fit-contain-svg.html": {
     "reftest": "PASS"
   },
@@ -1360,6 +1384,9 @@
   },
   "css/css-images/object-view-box-fit-cover-img.html": {
     "reftest": "PASS"
+  },
+  "css/css-images/object-view-box-fit-cover-svg-object.html": {
+    "reftest": "FAIL"
   },
   "css/css-images/object-view-box-fit-cover-svg.html": {
     "reftest": "PASS"
@@ -1373,6 +1400,9 @@
   "css/css-images/object-view-box-fit-fill-img.html": {
     "reftest": "PASS"
   },
+  "css/css-images/object-view-box-fit-fill-svg-object.html": {
+    "reftest": "FAIL"
+  },
   "css/css-images/object-view-box-fit-fill-svg.html": {
     "reftest": "PASS"
   },
@@ -1384,6 +1414,9 @@
   },
   "css/css-images/object-view-box-fit-none-img.html": {
     "reftest": "PASS"
+  },
+  "css/css-images/object-view-box-fit-none-svg-object.html": {
+    "reftest": "FAIL"
   },
   "css/css-images/object-view-box-fit-none-svg.html": {
     "reftest": "PASS"

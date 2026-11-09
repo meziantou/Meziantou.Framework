@@ -12,36 +12,16 @@
     }
   },
   "html/cross-origin-embedder-policy/cache-storage-reporting-dedicated-worker.https.html": {
-    "harness": "ERROR",
-    "total": 2,
-    "failures": {
-      "COEP support on DedicatedWorker.": "TIMEOUT",
-      "COEP-Report-Only support on DedicatedWorker.": "NOTRUN"
-    }
+    "total": 2
   },
   "html/cross-origin-embedder-policy/cache-storage-reporting-document.https.html": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "COEP support on document.": "TIMEOUT",
-      "COEP-Report-Only support on document.": "NOTRUN"
-    }
+    "total": 2
   },
   "html/cross-origin-embedder-policy/cache-storage-reporting-service-worker.https.html": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "COEP support on ServiceWorker.": "TIMEOUT",
-      "COEP-Report-Only support on ServiceWorker.": "NOTRUN"
-    }
+    "total": 2
   },
   "html/cross-origin-embedder-policy/cache-storage-reporting-shared-worker.https.html": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "COEP support on SharedWorker.": "TIMEOUT",
-      "COEP-Report-Only support on SharedWorker.": "NOTRUN"
-    }
+    "total": 2
   },
   "html/cross-origin-embedder-policy/coep-frame-javascript.https.html": {
     "total": 1
@@ -116,24 +96,10 @@
     "total": 5
   },
   "html/cross-origin-embedder-policy/credentialless/reporting-navigation.https.window.js": {
-    "harness": "TIMEOUT",
-    "total": 13,
-    "failures": {
-      "parent: |header(cross-origin-embedder-policy,credentialless), target: (none), ": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy,credentialless), target: |header(cross-origin-embedder-policy,credentialless), ": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy,credentialless), target: |header(cross-origin-embedder-policy-report-only,credentialless)|header(cross-origin-resource-policy,cross-origin), ": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy,credentialless), target: |header(cross-origin-resource-policy,cross-origin), ": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy-report-only,credentialless), target: (none), ": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy-report-only,credentialless), target: |header(cross-origin-embedder-policy,credentialless), ": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy-report-only,credentialless), target: |header(cross-origin-resource-policy,cross-origin), ": "TIMEOUT"
-    }
+    "total": 13
   },
   "html/cross-origin-embedder-policy/credentialless/reporting-subresource-corp.https.window.js": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "reporting-subresource-corp": "TIMEOUT"
-    }
+    "total": 1
   },
   "html/cross-origin-embedder-policy/credentialless/script.https.window.js": {
     "total": 7
@@ -212,10 +178,7 @@
     "total": 1
   },
   "html/cross-origin-embedder-policy/multi-globals/workers-coep-report.https.html": {
-    "total": 1,
-    "failures": {
-      "Multiple globals for Worker constructor: COEP reports": "FAIL"
-    }
+    "total": 1
   },
   "html/cross-origin-embedder-policy/no-secure-context-https-iframe.html": {
     "total": 2
@@ -314,77 +277,32 @@
     "total": 4
   },
   "html/cross-origin-embedder-policy/reporting-cached-and-service-worker-responses.https.html": {
-    "harness": "TIMEOUT",
     "total": 12,
     "failures": {
-      "Cross-Origin-Embedder-Policy reports a Cache API response a service worker responds with by its URL": "NOTRUN",
-      "Cross-Origin-Embedder-Policy reports a cross-origin response a service worker responds with": "NOTRUN",
-      "Cross-Origin-Embedder-Policy reports a redirected response a service worker fetched from another URL by that URL": "NOTRUN",
-      "Cross-Origin-Embedder-Policy reports a redirected response a service worker responds with by its first URL": "NOTRUN",
-      "Cross-Origin-Embedder-Policy reports a response a service worker fetched from another URL by that URL": "NOTRUN",
-      "Cross-Origin-Embedder-Policy reports an image that a document of another site loaded before": "NOTRUN",
-      "Cross-Origin-Embedder-Policy reports an image that another document loaded before": "NOTRUN",
-      "Cross-Origin-Embedder-Policy-Report-Only reports an image that another document loaded before": "TIMEOUT",
-      "Cross-Origin-Embedder-Policy-Report-Only reports an image the document is still loading with CORS once": "NOTRUN",
-      "Cross-Origin-Embedder-Policy-Report-Only reports an image the document loaded with CORS before": "NOTRUN",
-      "Cross-Origin-Embedder-Policy-Report-Only reports an image the document uses twice once": "NOTRUN",
-      "Cross-Origin-Embedder-Policy-Report-Only reports an image without the fragment of its URL": "NOTRUN"
+      "Cross-Origin-Embedder-Policy reports a Cache API response a service worker responds with by its URL": "FAIL",
+      "Cross-Origin-Embedder-Policy reports a redirected response a service worker fetched from another URL by that URL": "FAIL",
+      "Cross-Origin-Embedder-Policy reports a response a service worker fetched from another URL by that URL": "FAIL",
+      "Cross-Origin-Embedder-Policy-Report-Only reports an image the document is still loading with CORS once": "FAIL"
     }
   },
   "html/cross-origin-embedder-policy/reporting-navigation.https.html": {
-    "harness": "TIMEOUT",
     "total": 30,
     "failures": {
-      "parent: |header(cross-origin-embedder-policy,require-corp), target: (none), with empty frame: false": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy,require-corp), target: (none), with empty frame: true": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-embedder-policy,require-corp), with empty frame: false": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-embedder-policy,require-corp), with empty frame: true": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-embedder-policy-report-only,require-corp)|header(cross-origin-resource-policy,cross-origin), with empty frame: false": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-embedder-policy-report-only,require-corp)|header(cross-origin-resource-policy,cross-origin), with empty frame: true": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-resource-policy,cross-origin), with empty frame: false": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-resource-policy,cross-origin), with empty frame: true": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-resource-policy,cross-origin)|header(x-frame-options,deny), with empty frame: false": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-resource-policy,cross-origin)|header(x-frame-options,deny), with empty frame: true": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: (none), with empty frame: false": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: (none), with empty frame: true": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: |header(cross-origin-embedder-policy,require-corp), with empty frame: false": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: |header(cross-origin-embedder-policy,require-corp), with empty frame: true": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: |header(cross-origin-resource-policy,cross-origin), with empty frame: false": "TIMEOUT",
-      "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: |header(cross-origin-resource-policy,cross-origin), with empty frame: true": "TIMEOUT"
+      "parent: |header(cross-origin-embedder-policy,require-corp), target: (none), with empty frame: true": "FAIL",
+      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-embedder-policy,require-corp), with empty frame: true": "FAIL",
+      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-embedder-policy-report-only,require-corp)|header(cross-origin-resource-policy,cross-origin), with empty frame: true": "FAIL",
+      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-resource-policy,cross-origin), with empty frame: true": "FAIL",
+      "parent: |header(cross-origin-embedder-policy,require-corp), target: |header(cross-origin-resource-policy,cross-origin)|header(x-frame-options,deny), with empty frame: true": "FAIL",
+      "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: (none), with empty frame: true": "FAIL",
+      "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: |header(cross-origin-embedder-policy,require-corp), with empty frame: true": "FAIL",
+      "parent: |header(cross-origin-embedder-policy-report-only,require-corp), target: |header(cross-origin-resource-policy,cross-origin), with empty frame: true": "FAIL"
     }
   },
   "html/cross-origin-embedder-policy/reporting-report-to-must-be-string.https.window.js": {
     "total": 4
   },
   "html/cross-origin-embedder-policy/reporting-subresource-corp.https.html": {
-    "harness": "TIMEOUT",
-    "total": 26,
-    "failures": {
-      "[between service worker and page] blocked by CORP: same-origin": "NOTRUN",
-      "[between service worker and page] blocked due to COEP": "NOTRUN",
-      "[between service worker and page] blocked due to COEP (with fragment)": "NOTRUN",
-      "[between service worker and page] blocked during redirect": "NOTRUN",
-      "[between service worker and page] same-origin": "NOTRUN",
-      "[dedicated worker] blocked by CORP: same-origin": "NOTRUN",
-      "[dedicated worker] blocked due to COEP": "NOTRUN",
-      "[dedicated worker] blocked due to COEP (with fragment)": "NOTRUN",
-      "[dedicated worker] blocked during redirect": "NOTRUN",
-      "[dedicated worker] same-origin": "NOTRUN",
-      "[document] blocked due to COEP": "TIMEOUT",
-      "[document] blocked due to COEP (with fragment)": "NOTRUN",
-      "[document] blocked during redirect": "NOTRUN",
-      "[service worker] blocked by CORP: same-origin": "NOTRUN",
-      "[service worker] blocked due to COEP": "NOTRUN",
-      "[service worker] blocked due to COEP (with fragment)": "NOTRUN",
-      "[service worker] blocked during redirect": "NOTRUN",
-      "[service worker] same-origin": "NOTRUN",
-      "[shared worker] blocked by CORP: same-origin": "NOTRUN",
-      "[shared worker] blocked due to COEP": "NOTRUN",
-      "[shared worker] blocked due to COEP (with fragment)": "NOTRUN",
-      "[shared worker] blocked during redirect": "NOTRUN",
-      "[shared worker] same-origin": "NOTRUN",
-      "destination: script": "NOTRUN"
-    }
+    "total": 26
   },
   "html/cross-origin-embedder-policy/reporting-to-document-reporting-endpoint.https.window.js": {
     "total": 3
@@ -400,28 +318,10 @@
     }
   },
   "html/cross-origin-embedder-policy/reporting-to-frame-owner.https.html": {
-    "harness": "TIMEOUT",
-    "total": 9,
-    "failures": {
-      "Reporting to coep-report-only frame with coep-none worker": "TIMEOUT",
-      "Reporting to coep-report-only frame with coep-report-only worker": "NOTRUN",
-      "Reporting to coep-report-only frame with coep-require-corp worker": "NOTRUN",
-      "Reporting to coep-require-corp frame with coep-none worker": "NOTRUN",
-      "Reporting to coep-require-corp frame with coep-report-only worker": "NOTRUN",
-      "Reporting to coep-require-corp frame with coep-require-corp worker": "NOTRUN"
-    }
+    "total": 9
   },
   "html/cross-origin-embedder-policy/reporting-to-worker-owner.https.html": {
-    "harness": "ERROR",
-    "total": 9,
-    "failures": {
-      "Reporting to coep-report-only worker with coep-none worker": "TIMEOUT",
-      "Reporting to coep-report-only worker with coep-report-only worker": "NOTRUN",
-      "Reporting to coep-report-only worker with coep-require-corp worker": "NOTRUN",
-      "Reporting to coep-require-corp worker with coep-none worker": "NOTRUN",
-      "Reporting to coep-require-corp worker with coep-report-only worker": "NOTRUN",
-      "Reporting to coep-require-corp worker with coep-require-corp worker": "NOTRUN"
-    }
+    "total": 9
   },
   "html/cross-origin-embedder-policy/require-corp-about-blank.https.html": {
     "total": 3

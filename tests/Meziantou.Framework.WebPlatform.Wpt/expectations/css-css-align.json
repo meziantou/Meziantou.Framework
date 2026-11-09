@@ -659,6 +659,9 @@
   "css/css-align/gaps/gap-parsing-002.html": {
     "total": 16
   },
+  "css/css-align/gaps/gap-serialization-cssom.html": {
+    "total": 3
+  },
   "css/css-align/gaps/grid-column-gap-parsing-001.html": {
     "total": 18
   },

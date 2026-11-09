@@ -48,6 +48,12 @@
   "performance-timeline/get-invalid-entries.html": {
     "total": 1
   },
+  "performance-timeline/getEntriesByName-sort.html": {
+    "total": 1
+  },
+  "performance-timeline/getEntriesByName-type.html": {
+    "total": 1
+  },
   "performance-timeline/idlharness.any.js": {
     "total": 58
   },
@@ -96,6 +102,51 @@
   "performance-timeline/not-restored-reasons/abort-block-bfcache.window.js": {
     "harness": "TIMEOUT",
     "total": 0
+  },
+  "performance-timeline/not-restored-reasons/attributes.window.js": {
+    "total": 1,
+    "failures": {
+      "Ensure that empty attributes are reported as empty strings and missing attributes are reported as null.": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/bfcache-reasons-stay.window.js": {
+    "total": 1,
+    "failures": {
+      "Ensure that notRestoredReasons are only updated after non BFCache navigation.": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/bfcache.window.js": {
+    "total": 1,
+    "failures": {
+      "Ensure that notRestoredReasons is empty for successful BFCache restore.": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/cross-origin-bfcache.window.js": {
+    "total": 1,
+    "failures": {
+      "Ensure that cross-origin subtree's reasons are not exposed to notRestoredReasons.": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/fetch.window.js": {
+    "total": 1,
+    "failures": {
+      "Ensure that ongoing fetch upon entering bfcache blocks bfcache and recorded.": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/iframes-without-attributes.window.js": {
+    "total": 1,
+    "failures": {
+      "Ensure that empty attributes are reported as empty strings and missing attributes are reported as null": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/navigation-failure.window.js": {
+    "total": 1
+  },
+  "performance-timeline/not-restored-reasons/not-bfcached.window.js": {
+    "total": 1,
+    "failures": {
+      "Ensure that notRestoredReasons is populated when not restored.": "FAIL"
+    }
   },
   "performance-timeline/not-restored-reasons/performance-navigation-timing-attributes.tentative.window.js": {
     "total": 1,
@@ -161,6 +212,30 @@
     }
   },
   "performance-timeline/not-restored-reasons/performance-navigation-timing-same-origin-replace.tentative.window.js": {
+    "total": 1,
+    "failures": {
+      "Ensure that notRestoredReasons are accessible after history replace.": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/redirect-on-history.window.js": {
+    "total": 1,
+    "failures": {
+      "Ensure that notRestoredReasons reset after the server redirect.": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/reload.window.js": {
+    "total": 1,
+    "failures": {
+      "Ensure that notRestoredReasons reset after a reload": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/same-origin-bfcache.window.js": {
+    "total": 1,
+    "failures": {
+      "Ensure that same-origin subtree's reasons are exposed to notRestoredReasons.": "FAIL"
+    }
+  },
+  "performance-timeline/not-restored-reasons/same-origin-replace.window.js": {
     "total": 1,
     "failures": {
       "Ensure that notRestoredReasons are accessible after history replace.": "FAIL"

@@ -2000,6 +2000,9 @@
   "css/css-text/line-breaking/line-breaking-atomic-nowrap-002.html": {
     "total": 1
   },
+  "css/css-text/line-breaking/line-breaking-dynamic-text-removal-001.html": {
+    "reftest": "PASS"
+  },
   "css/css-text/line-breaking/line-breaking-ic-001.html": {
     "reftest": "PASS"
   },
@@ -2273,6 +2276,9 @@
   "css/css-text/overflow-wrap/overflow-wrap-anywhere-inline-004.tentative.html": {
     "reftest": "PASS"
   },
+  "css/css-text/overflow-wrap/overflow-wrap-anywhere-nowrap-span-001.html": {
+    "total": 11
+  },
   "css/css-text/overflow-wrap/overflow-wrap-anywhere-span-001.html": {
     "reftest": "PASS"
   },
@@ -2314,6 +2320,9 @@
   },
   "css/css-text/overflow-wrap/overflow-wrap-break-word-keep-all-001.html": {
     "total": 2
+  },
+  "css/css-text/overflow-wrap/overflow-wrap-break-word-nowrap-span-001.html": {
+    "total": 3
   },
   "css/css-text/overflow-wrap/overflow-wrap-break-word-span-001.html": {
     "reftest": "PASS"
@@ -2492,6 +2501,28 @@
   "css/css-text/parsing/text-autospace-invalid.html": {
     "total": 15
   },
+  "css/css-text/parsing/text-autospace-size-computed.html": {
+    "total": 5,
+    "failures": {
+      "Property text-autospace-size value '-0.25'": "FAIL",
+      "Property text-autospace-size value '0'": "FAIL",
+      "Property text-autospace-size value '0.5'": "FAIL",
+      "Property text-autospace-size value 'calc(1 / 4)'": "FAIL",
+      "Property text-autospace-size value 'initial'": "FAIL"
+    }
+  },
+  "css/css-text/parsing/text-autospace-size-invalid.html": {
+    "total": 5
+  },
+  "css/css-text/parsing/text-autospace-size-valid.html": {
+    "total": 4,
+    "failures": {
+      "e.style['text-autospace-size'] = \"-0.25\" should set the property value": "FAIL",
+      "e.style['text-autospace-size'] = \"0\" should set the property value": "FAIL",
+      "e.style['text-autospace-size'] = \"0.5\" should set the property value": "FAIL",
+      "e.style['text-autospace-size'] = \"calc(1 / 7)\" should set the property value": "FAIL"
+    }
+  },
   "css/css-text/parsing/text-autospace-valid.html": {
     "total": 31
   },
@@ -2613,11 +2644,70 @@
   "css/css-text/parsing/white-space-invalid.html": {
     "total": 6
   },
+  "css/css-text/parsing/white-space-shorthand-longhands.html": {
+    "total": 19,
+    "failures": {
+      "`white-space` should overwrite a previously set `white-space-trim`": "FAIL",
+      "white-space: collapse wrap discard-before discard-after discard-inner": "FAIL",
+      "white-space: discard-after": "FAIL",
+      "white-space: discard-before": "FAIL",
+      "white-space: discard-before discard-after": "FAIL",
+      "white-space: discard-inner": "FAIL",
+      "white-space: discard-inner discard-after discard-before": "FAIL",
+      "white-space: preserve nowrap discard-inner": "FAIL"
+    }
+  },
   "css/css-text/parsing/white-space-shorthand-text-wrap.html": {
     "total": 6
   },
   "css/css-text/parsing/white-space-shorthand.html": {
-    "total": 45
+    "total": 96,
+    "failures": {
+      "Property white-space value 'collapse wrap discard-after discard-before'": "FAIL",
+      "Property white-space value 'collapse wrap discard-before discard-after discard-inner'": "FAIL",
+      "Property white-space value 'collapse wrap discard-before'": "FAIL",
+      "Property white-space value 'discard-after discard-before'": "FAIL",
+      "Property white-space value 'discard-after discard-inner discard-before preserve nowrap'": "FAIL",
+      "Property white-space value 'discard-after discard-inner discard-before'": "FAIL",
+      "Property white-space value 'discard-after nowrap'": "FAIL",
+      "Property white-space value 'discard-after'": "FAIL",
+      "Property white-space value 'discard-before collapse wrap'": "FAIL",
+      "Property white-space value 'discard-before discard-after discard-inner'": "FAIL",
+      "Property white-space value 'discard-before preserve'": "FAIL",
+      "Property white-space value 'discard-before'": "FAIL",
+      "Property white-space value 'discard-inner discard-after discard-before'": "FAIL",
+      "Property white-space value 'discard-inner discard-before discard-after collapse wrap'": "FAIL",
+      "Property white-space value 'discard-inner nowrap preserve'": "FAIL",
+      "Property white-space value 'discard-inner preserve nowrap'": "FAIL",
+      "Property white-space value 'discard-inner'": "FAIL",
+      "Property white-space value 'nowrap discard-after'": "FAIL",
+      "Property white-space value 'preserve discard-before'": "FAIL",
+      "Property white-space value 'preserve nowrap discard-inner discard-before discard-after'": "FAIL",
+      "Property white-space value 'preserve nowrap discard-inner'": "FAIL",
+      "Property white-space value 'wrap collapse discard-before'": "FAIL",
+      "e.style['white-space'] = \"collapse wrap discard-after discard-before\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"collapse wrap discard-before discard-after discard-inner\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"collapse wrap discard-before\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"discard-after discard-before\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"discard-after discard-inner discard-before preserve nowrap\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"discard-after discard-inner discard-before\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"discard-after nowrap\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"discard-after\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"discard-before collapse wrap\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"discard-before discard-after discard-inner\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"discard-before preserve\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"discard-before\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"discard-inner discard-after discard-before\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"discard-inner discard-before discard-after collapse wrap\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"discard-inner nowrap preserve\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"discard-inner preserve nowrap\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"discard-inner\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"nowrap discard-after\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"preserve discard-before\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"preserve nowrap discard-inner discard-before discard-after\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"preserve nowrap discard-inner\" should set the property value": "FAIL",
+      "e.style['white-space'] = \"wrap collapse discard-before\" should set the property value": "FAIL"
+    }
   },
   "css/css-text/parsing/white-space-trim-computed.html": {
     "total": 7
@@ -3227,6 +3317,9 @@
   },
   "css/css-text/text-autospace/text-autospace-preformatted-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/text-autospace/text-autospace-size-001.html": {
+    "reftest": "FAIL"
   },
   "css/css-text/text-autospace/text-autospace-supplementary-ideograph.html": {
     "reftest": "PASS"
@@ -4638,6 +4731,9 @@
   "css/css-text/white-space/pre-line-with-space-and-newline.html": {
     "reftest": "PASS"
   },
+  "css/css-text/white-space/pre-tab-001.html": {
+    "reftest": "PASS"
+  },
   "css/css-text/white-space/pre-wrap-001.html": {
     "reftest": "PASS"
   },
@@ -5452,7 +5548,7 @@
     "reftest": "PASS"
   },
   "css/css-text/white-space/white-space-trim-discard-inner-001.xht": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/white-space/white-space-trim-discard-inner.html": {
     "reftest": "PASS"

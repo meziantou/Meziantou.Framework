@@ -799,13 +799,13 @@
     "total": 10
   },
   "fetch/api/redirect/redirect-empty-location.any.js": {
-    "total": 2
+    "total": 11
   },
   "fetch/api/redirect/redirect-empty-location.any.js#dedicatedworker": {
-    "total": 2
+    "total": 11
   },
   "fetch/api/redirect/redirect-empty-location.any.js#sharedworker": {
-    "total": 2
+    "total": 11
   },
   "fetch/api/redirect/redirect-keepalive.any.js": {
     "total": 12
@@ -918,7 +918,6 @@
     "harness": "TIMEOUT",
     "total": 30,
     "failures": {
-      "AudioWorklet module fetches with a \"audioworklet\" Request.destination": "FAIL",
       "HTMLLinkElement with rel=preload and as=audio fetches with a \"audio\" Request.destination": "NOTRUN",
       "HTMLLinkElement with rel=preload and as=document fetches with a \"document\" Request.destination": "NOTRUN",
       "HTMLLinkElement with rel=preload and as=font fetches with a \"font\" Request.destination": "NOTRUN",
@@ -2824,19 +2823,13 @@
     }
   },
   "fetch/metadata/generated/element-a.https.sub.html": {
-    "total": 23,
-    "failures": {
-      "sec-fetch-user - no attributes with user activation": "FAIL"
-    }
+    "total": 23
   },
   "fetch/metadata/generated/element-a.sub.html": {
     "total": 18
   },
   "fetch/metadata/generated/element-area.https.sub.html": {
-    "total": 23,
-    "failures": {
-      "sec-fetch-user - no attributes with user activation": "FAIL"
-    }
+    "total": 23
   },
   "fetch/metadata/generated/element-area.sub.html": {
     "total": 18
@@ -3195,7 +3188,13 @@
     "total": 30
   },
   "fetch/metadata/generated/window-location.https.sub.html": {
-    "total": 84
+    "total": 84,
+    "failures": {
+      "sec-fetch-user - location with user activation": "FAIL",
+      "sec-fetch-user - location.assign with user activation": "FAIL",
+      "sec-fetch-user - location.href with user activation": "FAIL",
+      "sec-fetch-user - location.replace with user activation": "FAIL"
+    }
   },
   "fetch/metadata/generated/window-location.sub.html": {
     "total": 72
@@ -3436,6 +3435,15 @@
       "ORB should block opaque response with empty Content-Type and nosniff: fetch(..., {mode: \"no-cors\"})": "FAIL",
       "ORB should block opaque text/plain with nosniff: fetch(..., {mode: \"no-cors\"})": "FAIL",
       "ORB should block opaque-response-blocklisted MIME type with nosniff: fetch(..., {mode: \"no-cors\"})": "FAIL"
+    }
+  },
+  "fetch/orb/tentative/ping.optional.html": {
+    "total": 4,
+    "failures": {
+      "Cross-origin ping reaches the server and navigation succeeds with a 200 application/json nosniff response": "FAIL",
+      "Cross-origin ping reaches the server and navigation succeeds with a 200 text/html nosniff response": "FAIL",
+      "Cross-origin ping reaches the server and navigation succeeds with a 200 text/plain nosniff response": "FAIL",
+      "Cross-origin ping reaches the server and navigation succeeds with a 204 text/plain nosniff response": "FAIL"
     }
   },
   "fetch/orb/tentative/script-js-unlabeled-gzipped.sub.html": {

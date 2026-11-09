@@ -116,6 +116,9 @@
   "navigation-api/navigate-event/cross-window/click-samedocument-crossorigin.html": {
     "total": 1
   },
+  "navigation-api/navigate-event/cross-window/click-samedocument-crosssite.html": {
+    "total": 1
+  },
   "navigation-api/navigate-event/cross-window/click-samedocument-sameorigin.html": {
     "total": 1
   },
@@ -132,6 +135,9 @@
     "total": 1
   },
   "navigation-api/navigate-event/cross-window/location-samedocument-crossorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/location-samedocument-crosssite.html": {
     "total": 1
   },
   "navigation-api/navigate-event/cross-window/location-samedocument-sameorigin.html": {
@@ -152,6 +158,9 @@
   "navigation-api/navigate-event/cross-window/open-samedocument-crossorigin.html": {
     "total": 1
   },
+  "navigation-api/navigate-event/cross-window/open-samedocument-crosssite.html": {
+    "total": 1
+  },
   "navigation-api/navigate-event/cross-window/open-samedocument-sameorigin.html": {
     "total": 1
   },
@@ -168,6 +177,9 @@
     "total": 1
   },
   "navigation-api/navigate-event/cross-window/submit-samedocument-crossorigin.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/cross-window/submit-samedocument-crosssite.html": {
     "total": 1
   },
   "navigation-api/navigate-event/cross-window/submit-samedocument-sameorigin.html": {
@@ -506,6 +518,9 @@
   "navigation-api/navigate-event/navigation-traverseTo-in-cross-site-iframe-same-document-preventDefault.html": {
     "total": 1
   },
+  "navigation-api/navigate-event/navigation-traverseTo-in-iframe-same-document-preventDefault-then-retry.html": {
+    "total": 2
+  },
   "navigation-api/navigate-event/navigation-traverseTo-in-iframe-same-document-preventDefault.html": {
     "total": 1
   },
@@ -667,6 +682,9 @@
   },
   "navigation-api/navigation-history-entry/entries-after-cross-document-forward-pruning.html": {
     "total": 1
+  },
+  "navigation-api/navigation-history-entry/entries-after-cross-document-replace-with-forward-entries.html": {
+    "total": 2
   },
   "navigation-api/navigation-history-entry/entries-after-javascript-url-navigation.html": {
     "total": 1

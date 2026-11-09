@@ -2144,23 +2144,21 @@
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/anchor-positioning.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/animated-clip-path.tentative.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/animated-gif-pinned-to-element-image.tentative.html": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "Canvas.drawElementImage: animated gif advances and repaints the canvas": "TIMEOUT"
+      "Canvas.drawElementImage: animated gif advances and repaints the canvas": "FAIL"
     }
   },
   "html/canvas/element/manual/draw-element-image/animated-gif.tentative.html": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "Canvas.drawElementImage: animated gif advances and repaints the canvas": "TIMEOUT"
+      "Canvas.drawElementImage: animated gif advances and repaints the canvas": "FAIL"
     }
   },
   "html/canvas/element/manual/draw-element-image/backdrop-filter-bounds-expansion.tentative.html": {
@@ -2170,28 +2168,28 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/backdrop-filter-nested.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/backdrop-filter-rounded-bounds.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/basic-rect-zoom.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/basic-rect.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/broken-image.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/canvas-content-drawable-stacking-context.tentative.html": {
     "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/canvas-in-custom-element-multiple.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/canvas-in-custom-element.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/canvas-transform-get-bounding-client-rect.tentative.html": {
     "total": 7,
@@ -2268,22 +2266,22 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/changes-in-paint-event.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/changing-size-in-paint-event.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/child-overflow.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/compositing-descendant-filter.tentative.html": {
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/compositing-op-basic.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/compositing-op-non-opaque-element.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/containment.tentative.html": {
     "total": 1,
@@ -2295,91 +2293,91 @@
     "total": 3
   },
   "html/canvas/element/manual/draw-element-image/content-not-culled.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-backdrop-filter-and-mask.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-backdrop-filter-image.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-backdrop-filter-on-div.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-backdrop-filter-with-blend-mode-over-content.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-backdrop-filter-with-mix-blend-mode-and-opacity.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-backdrop-filter-with-mix-blend-mode.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-backdrop-filter-with-sibling.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-backdrop-filter.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-blend-mode-over-both.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-blend-mode-over-content.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-blend-mode.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-blur-filter-on-div.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-clip-path-on-div.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-filter-image.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-filter-on-div.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-filter-reference-on-div.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-mask-on-div.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-object-fit-contain-tall.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-object-fit-contain-wide.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-object-fit-cover-tall.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-object-fit-cover-wide.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-object-fit-fill-tall.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-object-fit-fill-wide.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-object-fit-nested-canvas.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-object-fit-none-tall.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-object-fit-none-wide.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-opacity-on-div.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/css-transform-on-div.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/descendant-filter.tentative.html": {
     "reftest": "PASS"
@@ -2433,7 +2431,7 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/draw-element-image-scale-variant.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/drawElementImage-dest-rect-non-finite.tentative.html": {
     "total": 1,
@@ -2480,7 +2478,7 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/element-shadow.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/error-conditions.tentative.html": {
     "total": 1,
@@ -2489,10 +2487,10 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/filtered-basic.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/fullscreen-canvas.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/get-element-transform.tentative.html": {
     "total": 12,
@@ -2512,7 +2510,7 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/global-alpha-basic.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/hit-test/elementsFromPoint-no-content-drawable.tentative.html": {
     "total": 1
@@ -2616,12 +2614,11 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/hit-test/low-dpi-hit-test.tentative.html": {
-    "harness": "ERROR",
     "total": 3,
     "failures": {
-      "multiple targets, should only hit first": "NOTRUN",
-      "single target": "TIMEOUT",
-      "single target miss": "NOTRUN"
+      "multiple targets, should only hit first": "FAIL",
+      "single target": "FAIL",
+      "single target miss": "FAIL"
     }
   },
   "html/canvas/element/manual/draw-element-image/hit-test/selection.tentative.html": {
@@ -2637,25 +2634,25 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/iframe-local.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/iframe.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/ink-overflow.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/inline-drawable.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/inline-fixed-containment.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/inline-fragments-drawable.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/inline-size-change.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/intersection-observer-visibility.tentative.html": {
     "total": 1,
@@ -2664,7 +2661,7 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/invalidation-during-onpaint.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/layout-canvas-children.tentative.html": {
     "total": 1,
@@ -2685,19 +2682,19 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/nested-canvas-filter.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/nested-canvas-invalidation.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/nested-canvas-not-rendered.tentative.html": {
     "reftest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/nested-canvas-reset.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/nested-canvas-scale.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/nested-content-drawable-canvas.tentative.html": {
     "total": 1,
@@ -2712,13 +2709,13 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/nested-drawable-filter.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/nested-drawable.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/non-opaque-element.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/onpaint-after-scroll-2.tentative.html": {
     "total": 1,
@@ -2845,13 +2842,13 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/opacity-animation.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/opacity-zero-ancestor.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/percent-sizing.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/privacy/backdrop-filter-png-images-ignored.tentative.https.sub.html": {
     "total": 1,
@@ -3224,13 +3221,13 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/privacy/selection-alone-with-decorations-painted.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/privacy/selection-colors-default.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/privacy/selection-painted-overlay-path.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/privacy/shape-image-png-ignored.tentative.https.sub.html": {
     "total": 1,
@@ -3377,7 +3374,7 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/privacy/target-text-ignored-overlay-path.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/privacy/video-ignored.tentative.https.sub.html": {
     "total": 1,
@@ -3410,7 +3407,7 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/privacy/visited-link/visited-link-decorating-box.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/privacy/visited-link/visited-link-decoration-color-ignored.tentative.html": {
     "total": 1,
@@ -3469,31 +3466,31 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/scale.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/shadow-basic.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/shadow-dom-slot-canvas-child.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/shadow-dom-slotted-moveBefore.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/shadow-dom-slotted.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/shadow-non-opaque-element.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/svg-foreign-object.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/svg-rect.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/top-layer-not-painted-in-canvas.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/element/manual/draw-element-image/triple-nested-content-drawable-canvas.tentative.html": {
     "total": 1,
@@ -3513,10 +3510,9 @@
     }
   },
   "html/canvas/element/manual/draw-element-image/video.tentative.html": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "drawElementImage repaints video frames": "TIMEOUT"
+      "drawElementImage repaints video frames": "FAIL"
     }
   },
   "html/canvas/element/manual/drawing-images-to-the-canvas/drawimage_canvas.html": {
@@ -5750,6 +5746,208 @@
   },
   "html/canvas/element/text/2d.text.setFont.mathFont.html": {
     "total": 1
+  },
+  "html/canvas/element/text/2d.text.shape.actualBoundingBox-exceptions.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Check that ShapedText::actualBoundingBox() throws when using invalid indexes.": "FAIL"
+    }
+  },
+  "html/canvas/element/text/2d.text.shape.actualBoundingBox-full-text.tentative.html": {
+    "total": 4,
+    "failures": {
+      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction ltr and directional-override": "FAIL",
+      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction ltr and no-directional-override": "FAIL",
+      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction rtl and directional-override": "FAIL",
+      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction rtl and no-directional-override": "FAIL"
+    }
+  },
+  "html/canvas/element/text/2d.text.shape.actualBoundingBox.tentative.html": {
+    "total": 6,
+    "failures": {
+      "Test ShapedText::actualBoundingBox(), with text align center , and 0px letter spacing.": "FAIL",
+      "Test ShapedText::actualBoundingBox(), with text align center , and 10px letter spacing.": "FAIL",
+      "Test ShapedText::actualBoundingBox(), with text align left , and 0px letter spacing.": "FAIL",
+      "Test ShapedText::actualBoundingBox(), with text align left , and 10px letter spacing.": "FAIL",
+      "Test ShapedText::actualBoundingBox(), with text align right , and 0px letter spacing.": "FAIL",
+      "Test ShapedText::actualBoundingBox(), with text align right , and 10px letter spacing.": "FAIL"
+    }
+  },
+  "html/canvas/element/text/2d.text.shape.advance-to-position-edge-cases.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Test the edge cases for advanceToPosition, where the point is at the edge of glyph and at the midpoint.": "FAIL"
+    }
+  },
+  "html/canvas/element/text/2d.text.shape.advance-to-position-edges.tentative.html": {
+    "total": 10,
+    "failures": {
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align center.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align end.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align left.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align right.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align start.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align center.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align end.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align left.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align right.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align start.": "FAIL"
+    }
+  },
+  "html/canvas/element/text/2d.text.shape.advance-to-position.tentative.html": {
+    "total": 40,
+    "failures": {
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 10px letter spacing and no-directional-override.": "FAIL"
+    }
+  },
+  "html/canvas/element/text/2d.text.shape.fillGlyphRun-align.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/element/text/2d.text.shape.fillGlyphRun-baseline.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/element/text/2d.text.shape.fillGlyphRun-direction-change.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/element/text/2d.text.shape.fillGlyphRun-drawing-styles-change.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/element/text/2d.text.shape.fillGlyphRun-font-change.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/element/text/2d.text.shape.fillGlyphRun-range.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Test that glyphClusters(start, end) and fillGlyphRuns() correctly render different ranges of the input text.": "FAIL"
+    }
+  },
+  "html/canvas/element/text/2d.text.shape.fillGlyphRuns-and-strokeGlyphRuns.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/element/text/2d.text.shape.glyph-clusters-exceptions.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Check that ShapedText::glyphClusters() throws when using invalid indexes.": "FAIL"
+    }
+  },
+  "html/canvas/element/text/2d.text.shape.glyph-clusters-position.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Test that ShapedText::glyphClusters() and ShapedText::glyphRuns() return GlyphRun objects positioned according to the context textAlign and textBaseline at shapeText() time, and expose per-run TextMetrics.": "FAIL"
+    }
+  },
+  "html/canvas/element/text/2d.text.shape.glyph-clusters-split.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Test that glyphClusters() splits the input correctly into the minimal clusters, keeping emojis together.": "FAIL"
+    }
+  },
+  "html/canvas/element/text/2d.text.shape.position-to-advance.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Test ShapedText::positionToAdvance() and its symmetry with advanceToPosition() and glyphClusters().": "FAIL"
+    }
+  },
+  "html/canvas/element/text/2d.text.shape.selection-rects-baselines.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Check that ShapedText::selectionRects() works correctly with textBaseline.": "FAIL"
+    }
+  },
+  "html/canvas/element/text/2d.text.shape.selection-rects-exceptions.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Check that ShapedText::selectionRects() throws when using invalid indexes.": "FAIL"
+    }
+  },
+  "html/canvas/element/text/2d.text.shape.selection-rects.tentative.html": {
+    "total": 24,
+    "failures": {
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 0px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 0px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 10px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 10px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 0px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 0px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 10px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 10px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 0px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 0px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 10px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 10px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 0px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 0px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 10px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 10px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 0px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 0px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 10px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 10px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 0px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 0px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 10px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 10px letter spacing, and no-directional-override.": "FAIL"
+    }
+  },
+  "html/canvas/element/text/2d.text.shape.strokeGlyphRun-align.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/element/text/2d.text.shape.strokeGlyphRun-baseline.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/element/text/2d.text.shape.strokeGlyphRun-direction-change.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/element/text/2d.text.shape.strokeGlyphRun-drawing-styles-change.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/element/text/2d.text.shape.strokeGlyphRun-font-change.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/element/text/2d.text.shape.strokeGlyphRun-range.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Test that glyphClusters(start, end) and strokeGlyphRuns() correctly render different ranges of the input text.": "FAIL"
+    }
   },
   "html/canvas/element/text/2d.text.variationSelectors.html": {
     "total": 1,
@@ -9890,7 +10088,7 @@
     }
   },
   "html/canvas/offscreen/manual/draw-element-image/scale-worker.tentative.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "FAIL"
   },
   "html/canvas/offscreen/manual/draw-element-image/video-worker.tentative.html": {
     "harness": "TIMEOUT",
@@ -9991,6 +10189,14 @@
       "Test that getContext twice with different context type returns null the second time": "FAIL",
       "Test that getContext with supported string returns correct results": "FAIL",
       "Test that webglcontext.canvas should return the original OffscreenCanvas": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.placeholder.size.html": {
+    "total": 4,
+    "failures": {
+      "The width and height content attributes do not change the aspect ratio of a placeholder canvas": "FAIL",
+      "The width and height content attributes do not resize a placeholder canvas": "FAIL",
+      "Transferring the OffscreenCanvas preserves the placeholder size": "FAIL"
     }
   },
   "html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.resize.html": {
@@ -13117,6 +13323,336 @@
   },
   "html/canvas/offscreen/text/2d.text.setFont.mathFont.worker.js": {
     "total": 1
+  },
+  "html/canvas/offscreen/text/2d.text.shape.actualBoundingBox-exceptions.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Check that ShapedText::actualBoundingBox() throws when using invalid indexes.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.actualBoundingBox-exceptions.tentative.worker.js": {
+    "total": 1,
+    "failures": {
+      "Check that ShapedText::actualBoundingBox() throws when using invalid indexes.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.actualBoundingBox-full-text.tentative.html": {
+    "total": 4,
+    "failures": {
+      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction ltr and directional-override": "FAIL",
+      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction ltr and no-directional-override": "FAIL",
+      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction rtl and directional-override": "FAIL",
+      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction rtl and no-directional-override": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.actualBoundingBox-full-text.tentative.worker.js": {
+    "total": 4,
+    "failures": {
+      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction ltr and directional-override": "FAIL",
+      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction ltr and no-directional-override": "FAIL",
+      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction rtl and directional-override": "FAIL",
+      "Test ShapedText::actualBoundingBox() for the full length of the string for some edge cases, with direction rtl and no-directional-override": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.actualBoundingBox.tentative.html": {
+    "total": 6,
+    "failures": {
+      "Test ShapedText::actualBoundingBox(), with text align center , and 0px letter spacing.": "FAIL",
+      "Test ShapedText::actualBoundingBox(), with text align center , and 10px letter spacing.": "FAIL",
+      "Test ShapedText::actualBoundingBox(), with text align left , and 0px letter spacing.": "FAIL",
+      "Test ShapedText::actualBoundingBox(), with text align left , and 10px letter spacing.": "FAIL",
+      "Test ShapedText::actualBoundingBox(), with text align right , and 0px letter spacing.": "FAIL",
+      "Test ShapedText::actualBoundingBox(), with text align right , and 10px letter spacing.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.actualBoundingBox.tentative.worker.js": {
+    "total": 6,
+    "failures": {
+      "Test ShapedText::actualBoundingBox(), with text align center , and 0px letter spacing.": "FAIL",
+      "Test ShapedText::actualBoundingBox(), with text align center , and 10px letter spacing.": "FAIL",
+      "Test ShapedText::actualBoundingBox(), with text align left , and 0px letter spacing.": "FAIL",
+      "Test ShapedText::actualBoundingBox(), with text align left , and 10px letter spacing.": "FAIL",
+      "Test ShapedText::actualBoundingBox(), with text align right , and 0px letter spacing.": "FAIL",
+      "Test ShapedText::actualBoundingBox(), with text align right , and 10px letter spacing.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.advance-to-position-edge-cases.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Test the edge cases for advanceToPosition, where the point is at the edge of glyph and at the midpoint.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.advance-to-position-edge-cases.tentative.worker.js": {
+    "total": 1,
+    "failures": {
+      "Test the edge cases for advanceToPosition, where the point is at the edge of glyph and at the midpoint.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.advance-to-position-edges.tentative.html": {
+    "total": 10,
+    "failures": {
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align center.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align end.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align left.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align right.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align start.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align center.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align end.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align left.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align right.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align start.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.advance-to-position-edges.tentative.worker.js": {
+    "total": 10,
+    "failures": {
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align center.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align end.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align left.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align right.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction ltr and text align start.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align center.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align end.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align left.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align right.": "FAIL",
+      "Check that ShapedText::advanceToPosition() gives correct edges when the requested point is outside the range, with direction rtl and text align start.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.advance-to-position.tentative.html": {
+    "total": 40,
+    "failures": {
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align center, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align end, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align left, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align right, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction ltr, text align start, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align center, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align end, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align left, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align right, 10px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 0px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 0px letter spacing and no-directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 10px letter spacing and directional-override.": "FAIL",
+      "Check that ShapedText::advanceToPosition() matches its DOM equivalent, where possible, with direction rtl, text align start, 10px letter spacing and no-directional-override.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-align.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-align.tentative.w.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-baseline.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-baseline.tentative.w.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-direction-change.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-direction-change.tentative.w.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-drawing-styles-change.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-drawing-styles-change.tentative.w.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-font-change.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-font-change.tentative.w.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-range.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Test that glyphClusters(start, end) and fillGlyphRuns() correctly render different ranges of the input text.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-range.tentative.worker.js": {
+    "total": 1,
+    "failures": {
+      "Test that glyphClusters(start, end) and fillGlyphRuns() correctly render different ranges of the input text.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRuns-and-strokeGlyphRuns.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRuns-and-strokeGlyphRuns.tentative.w.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.glyph-clusters-exceptions.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Check that ShapedText::glyphClusters() throws when using invalid indexes.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.glyph-clusters-exceptions.tentative.worker.js": {
+    "total": 1,
+    "failures": {
+      "Check that ShapedText::glyphClusters() throws when using invalid indexes.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.glyph-clusters-position.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Test that ShapedText::glyphClusters() and ShapedText::glyphRuns() return GlyphRun objects positioned according to the context textAlign and textBaseline at shapeText() time, and expose per-run TextMetrics.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.glyph-clusters-position.tentative.worker.js": {
+    "total": 1,
+    "failures": {
+      "Test that ShapedText::glyphClusters() and ShapedText::glyphRuns() return GlyphRun objects positioned according to the context textAlign and textBaseline at shapeText() time, and expose per-run TextMetrics.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.glyph-clusters-split.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Test that glyphClusters() splits the input correctly into the minimal clusters, keeping emojis together.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.glyph-clusters-split.tentative.worker.js": {
+    "total": 1,
+    "failures": {
+      "Test that glyphClusters() splits the input correctly into the minimal clusters, keeping emojis together.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.position-to-advance.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Test ShapedText::positionToAdvance() and its symmetry with advanceToPosition() and glyphClusters().": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.position-to-advance.tentative.worker.js": {
+    "total": 1,
+    "failures": {
+      "Test ShapedText::positionToAdvance() and its symmetry with advanceToPosition() and glyphClusters().": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.selection-rects-baselines.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Check that ShapedText::selectionRects() works correctly with textBaseline.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.selection-rects-baselines.tentative.worker.js": {
+    "total": 1,
+    "failures": {
+      "Check that ShapedText::selectionRects() works correctly with textBaseline.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.selection-rects-exceptions.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Check that ShapedText::selectionRects() throws when using invalid indexes.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.selection-rects-exceptions.tentative.worker.js": {
+    "total": 1,
+    "failures": {
+      "Check that ShapedText::selectionRects() throws when using invalid indexes.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.selection-rects.tentative.html": {
+    "total": 24,
+    "failures": {
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 0px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 0px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 10px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align center, 10px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 0px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 0px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 10px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align left, 10px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 0px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 0px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 10px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction ltr, text align right, 10px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 0px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 0px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 10px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align center, 10px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 0px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 0px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 10px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align left, 10px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 0px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 0px letter spacing, and no-directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 10px letter spacing, and directional-override.": "FAIL",
+      "Check that ShapedText::selectionRects() matches its DOM equivalent, with direction rtl, text align right, 10px letter spacing, and no-directional-override.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-align.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-align.tentative.w.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-baseline.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-baseline.tentative.w.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-direction-change.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-direction-change.tentative.w.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-drawing-styles-change.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-drawing-styles-change.tentative.w.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-font-change.tentative.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-font-change.tentative.w.html": {
+    "reftest": "FAIL"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-range.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Test that glyphClusters(start, end) and strokeGlyphRuns() correctly render different ranges of the input text.": "FAIL"
+    }
+  },
+  "html/canvas/offscreen/text/2d.text.shape.strokeGlyphRun-range.tentative.worker.js": {
+    "total": 1,
+    "failures": {
+      "Test that glyphClusters(start, end) and strokeGlyphRuns() correctly render different ranges of the input text.": "FAIL"
+    }
   },
   "html/canvas/offscreen/text/canvas.2d.fontStretch.condensed.html": {
     "reftest": "PASS"

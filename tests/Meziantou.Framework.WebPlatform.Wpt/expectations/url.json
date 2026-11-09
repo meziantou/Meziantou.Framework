@@ -6,13 +6,13 @@
     "total": 2676
   },
   "url/a-element-origin-xhtml.xhtml": {
-    "total": 415
+    "total": 417
   },
   "url/a-element-origin.html": {
-    "total": 415
+    "total": 417
   },
   "url/a-element-xhtml.xhtml?exclude=(file|javascript|mailto)": {
-    "total": 738
+    "total": 741
   },
   "url/a-element-xhtml.xhtml?include=file": {
     "total": 137
@@ -24,7 +24,7 @@
     "total": 14
   },
   "url/a-element.html?exclude=(file|javascript|mailto)": {
-    "total": 739
+    "total": 742
   },
   "url/a-element.html?include=file": {
     "total": 138
@@ -39,7 +39,7 @@
     "total": 1
   },
   "url/failure.html": {
-    "total": 1175
+    "total": 1177
   },
   "url/historical.any.js": {
     "total": 8
@@ -63,7 +63,7 @@
     "total": 784
   },
   "url/url-constructor.any.js#dedicatedworker?exclude=(file|javascript|mailto)": {
-    "total": 740
+    "total": 743
   },
   "url/url-constructor.any.js#dedicatedworker?include=file": {
     "total": 137
@@ -75,7 +75,7 @@
     "total": 14
   },
   "url/url-constructor.any.js?exclude=(file|javascript|mailto)": {
-    "total": 740
+    "total": 743
   },
   "url/url-constructor.any.js?include=file": {
     "total": 137
@@ -87,10 +87,10 @@
     "total": 14
   },
   "url/url-origin.any.js": {
-    "total": 416
+    "total": 418
   },
   "url/url-origin.any.js#dedicatedworker": {
-    "total": 416
+    "total": 418
   },
   "url/url-searchparams.any.js": {
     "total": 4

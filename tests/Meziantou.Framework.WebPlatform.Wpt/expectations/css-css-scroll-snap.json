@@ -571,6 +571,12 @@
   "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-user-scroll.tentative.html": {
     "total": 7
   },
+  "css/css-scroll-snap/snap-events/snap-events-with-disposed-pseudo-target.tentative.html": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-events/snap-events-with-nested-pseudo-target.tentative.html": {
+    "total": 2
+  },
   "css/css-scroll-snap/snap-events/snap-events-with-pseudo-target.tentative.html": {
     "total": 2
   },
@@ -627,6 +633,13 @@
   },
   "css/css-scroll-snap/snap-to-visible-areas-margin-y-axis.html": {
     "total": 1
+  },
+  "css/css-scroll-snap/snap-to-visible-areas-unreachable.html": {
+    "total": 4,
+    "failures": {
+      "Don't snap to an area clipped past the scrollable overflow that can't be scrolled into view, even when it is closer": "FAIL",
+      "Don't snap to an area in negative overflow that can't be scrolled into view, even when it is closer": "FAIL"
+    }
   },
   "css/css-scroll-snap/snap-to-visible-areas-x-axis.html": {
     "total": 1

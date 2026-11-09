@@ -595,6 +595,55 @@
   "html/editing/dnd/platform/pointerdown-add-overflow-hidden.html": {
     "total": 1
   },
+  "html/editing/dnd/reload/001.html": {
+    "total": 1,
+    "failures": {
+      "Reload during canvas drag and drop roundtrip": "FAIL"
+    }
+  },
+  "html/editing/dnd/reload/002.html": {
+    "total": 1,
+    "failures": {
+      "Reload during PNG image drag and drop roundtrip": "FAIL"
+    }
+  },
+  "html/editing/dnd/reload/003.html": {
+    "total": 1,
+    "failures": {
+      "Reload during SVG image drag and drop roundtrip": "FAIL"
+    }
+  },
+  "html/editing/dnd/reload/004.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Reload during text input selection drag and drop roundtrip": "TIMEOUT"
+    }
+  },
+  "html/editing/dnd/reload/005.html": {
+    "total": 1,
+    "failures": {
+      "Reload during selection drag and drop roundtrip": "FAIL"
+    }
+  },
+  "html/editing/dnd/reload/006.html": {
+    "total": 1,
+    "failures": {
+      "Reload during link drag and drop roundtrip": "FAIL"
+    }
+  },
+  "html/editing/dnd/reload/007.html": {
+    "total": 1,
+    "failures": {
+      "Reload during drag and drop roundtrip with text/plain data": "FAIL"
+    }
+  },
+  "html/editing/dnd/reload/008.html": {
+    "total": 1,
+    "failures": {
+      "Reload during drag and drop roundtrip with text/uri-list data": "FAIL"
+    }
+  },
   "html/editing/dnd/remove/001.html": {
     "total": 1
   },
@@ -653,6 +702,12 @@
   },
   "html/editing/editing-0/contenteditable/contentEditable-slotted-inherit.html": {
     "total": 2
+  },
+  "html/editing/editing-0/contenteditable/contenteditable-caret-rendering.html": {
+    "reftest": "PASS"
+  },
+  "html/editing/editing-0/contenteditable/contenteditable-caret-stops-rendering-when-attribute-removed.html": {
+    "reftest": "PASS"
   },
   "html/editing/editing-0/contenteditable/contenteditable-enumerated-ascii-case-insensitive.html": {
     "total": 24

@@ -83,6 +83,15 @@
   "css/css-content/parsing/content-valid.html": {
     "total": 64
   },
+  "css/css-content/parsing/quotes-computed.html": {
+    "total": 9
+  },
+  "css/css-content/parsing/quotes-invalid.html": {
+    "total": 5
+  },
+  "css/css-content/parsing/quotes-valid.html": {
+    "total": 9
+  },
   "css/css-content/pseudo-element-gradient.html": {
     "reftest": "PASS"
   },
@@ -217,6 +226,9 @@
   },
   "css/css-content/quotes-lang-dynamic-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-content/quotes-match-parent-001.html": {
+    "reftest": "FAIL"
   },
   "css/css-content/quotes-slot-scoping.html": {
     "reftest": "PASS"

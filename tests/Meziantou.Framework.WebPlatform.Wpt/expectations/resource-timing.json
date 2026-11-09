@@ -106,13 +106,13 @@
     }
   },
   "resource-timing/delivery-type.tentative.any.js": {
-    "total": 3
+    "total": 4
   },
   "resource-timing/delivery-type.tentative.any.js#dedicatedworker": {
-    "total": 3
+    "total": 4
   },
   "resource-timing/delivery-type.tentative.any.js#sharedworker": {
-    "total": 3
+    "total": 4
   },
   "resource-timing/document-domain-no-impact-opener.html": {
     "total": 1
@@ -420,6 +420,9 @@
     "total": 2
   },
   "resource-timing/supported_resource_type.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "resource-timing/tao-failure-on-redirect-hop.https.html": {
     "total": 2
   },
   "resource-timing/tentative/initiator-url/dedicated-worker-script.html": {

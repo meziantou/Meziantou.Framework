@@ -100,6 +100,15 @@
   "clipboard-apis/clipboard-copy-selection-line-break.https.html?31-last": {
     "total": 2
   },
+  "clipboard-apis/clipboard-copy-selection-style-opacity.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 3,
+    "failures": {
+      "Copying an element with important opacity in the inline style should drop opacity": "TIMEOUT",
+      "Copying an element with opacity as the only property in the inline style should drop opacity": "NOTRUN",
+      "Copying an element with opacity in the inline style should drop opacity": "FAIL"
+    }
+  },
   "clipboard-apis/clipboard-events-synthetic.html": {
     "total": 9
   },

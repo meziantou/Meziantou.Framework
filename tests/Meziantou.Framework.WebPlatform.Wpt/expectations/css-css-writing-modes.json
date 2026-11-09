@@ -1580,6 +1580,21 @@
   "css/css-writing-modes/direction-vrl-004.xht": {
     "reftest": "PASS"
   },
+  "css/css-writing-modes/dynamic-min-content-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/dynamic-min-content-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/dynamic-min-content-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/dynamic-min-content-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/dynamic-min-content-005.html": {
+    "reftest": "PASS"
+  },
   "css/css-writing-modes/dynamic-offset-rtl-001.html": {
     "reftest": "PASS"
   },
@@ -2432,6 +2447,9 @@
     "reftest": "PASS"
   },
   "css/css-writing-modes/orthogonal-child-with-padding.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/orthogonal-container-query-in-shrink-to-fit-flex.html": {
     "reftest": "PASS"
   },
   "css/css-writing-modes/orthogonal-containing-block-height-changes.html": {
@@ -3518,7 +3536,7 @@
     "reftest": "PASS"
   },
   "css/css-writing-modes/text-shadow-sideways-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-writing-modes/three-levels-of-orthogonal-flows.html": {
     "reftest": "PASS"

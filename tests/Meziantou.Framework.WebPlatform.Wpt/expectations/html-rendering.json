@@ -297,6 +297,9 @@
   "html/rendering/non-replaced-elements/tables/table-attribute-border-dynamic.html": {
     "reftest": "PASS"
   },
+  "html/rendering/non-replaced-elements/tables/table-attribute-cellspacing-dynamic-within-display-none.html": {
+    "total": 1
+  },
   "html/rendering/non-replaced-elements/tables/table-attribute-cellspacing-dynamic.html": {
     "reftest": "PASS"
   },
@@ -976,6 +979,9 @@
   },
   "html/rendering/replaced-elements/images/img-represents-nothing-style-mutation.html": {
     "total": 1
+  },
+  "html/rendering/replaced-elements/images/img-size-dynamic-while-disconnected.html": {
+    "reftest": "PASS"
   },
   "html/rendering/replaced-elements/images/img-sizes-auto.html": {
     "total": 24

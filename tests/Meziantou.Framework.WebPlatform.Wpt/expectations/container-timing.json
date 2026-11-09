@@ -1,12 +1,30 @@
 {
+  "container-timing/tentative/containertiming-ancestor-removed-and-reinserted.html": {
+    "total": 1,
+    "failures": {
+      "Paints after inserting the ancestor of the container root again are reported from scratch.": "FAIL"
+    }
+  },
   "container-timing/tentative/containertiming-and-ignore-on-img-itself.html": {
     "total": 1
   },
   "container-timing/tentative/containertiming-and-ignore-on-text-itself.html": {
     "total": 1
   },
+  "container-timing/tentative/containertiming-attribute-removed.html": {
+    "total": 2,
+    "failures": {
+      "Re-adding the attribute with the same identifier starts the container over.": "FAIL"
+    }
+  },
   "container-timing/tentative/containertiming-body-with-child-img.html": {
     "total": 1
+  },
+  "container-timing/tentative/containertiming-identifier-changed.html": {
+    "total": 1,
+    "failures": {
+      "A new identifier starts the container over, with only new paints.": "FAIL"
+    }
   },
   "container-timing/tentative/containertiming-img-already-loaded.html": {
     "total": 1
@@ -23,10 +41,38 @@
   "container-timing/tentative/containertiming-observe-after-paint-with-buffering.html": {
     "total": 1
   },
+  "container-timing/tentative/containertiming-observe-after-paint-without-buffering-then-paint.html": {
+    "total": 1
+  },
   "container-timing/tentative/containertiming-observe-after-paint-without-buffering.html": {
     "total": 1
   },
+  "container-timing/tentative/containertiming-observe-after-paints-with-buffering.html": {
+    "total": 1
+  },
   "container-timing/tentative/containertiming-observe-no-paint.html": {
+    "total": 1
+  },
+  "container-timing/tentative/containertiming-root-moved-with-movebefore.html": {
+    "total": 1,
+    "failures": {
+      "Paints after moving the container root with moveBefore() are reported from scratch.": "FAIL"
+    }
+  },
+  "container-timing/tentative/containertiming-root-moved.html": {
+    "total": 1,
+    "failures": {
+      "Paints after moving the container root are reported from scratch.": "FAIL"
+    }
+  },
+  "container-timing/tentative/containertiming-root-removed-and-reinserted.html": {
+    "total": 2,
+    "failures": {
+      "Paints after inserting the container root again are reported from scratch.": "FAIL",
+      "Text painted after inserting the container root again is reported from scratch.": "FAIL"
+    }
+  },
+  "container-timing/tentative/containertiming-root-removed-element-null.html": {
     "total": 1
   },
   "container-timing/tentative/containertiming-text-itself.html": {
@@ -70,6 +116,12 @@
   },
   "container-timing/tentative/nested-containertiming-child-img.html": {
     "total": 1
+  },
+  "container-timing/tentative/nested-containertiming-inner-root-removed-and-reinserted.html": {
+    "total": 1,
+    "failures": {
+      "Removing an inner container root only starts that container over.": "FAIL"
+    }
   },
   "container-timing/tentative/nested-containertiming-on-img-without-ignore.html": {
     "total": 1

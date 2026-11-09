@@ -26,6 +26,9 @@
   "media-source/SourceBuffer-appendWindowEnd-rounding.html": {
     "total": 3
   },
+  "media-source/SourceBuffer-mp4-elst-empty-edit.html": {
+    "total": 4
+  },
   "media-source/SourceBuffer-short-frame-endOfStream.html": {
     "total": 2
   },
@@ -278,6 +281,9 @@
   },
   "media-source/mediasource-timestamp-offset.html": {
     "total": 15
+  },
+  "media-source/mediasource-video-is-visible.html": {
+    "reftest": "FAIL"
   },
   "media-source/mse-for-webcodecs/tentative/mediasource-encrypted-webcodecs-appendencodedchunks-play.https.html": {
     "harness": "ERROR",

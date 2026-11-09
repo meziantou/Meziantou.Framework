@@ -58,7 +58,9 @@ the visual viewport has a `resize` event listener).
 
 The media queries follow [Media Queries 5](https://drafts.csswg.org/mediaqueries-5/): an unknown media feature, an invalid
 value (e.g. `(color: 1.0)`, `(resolution: -1dpi)`) or a function is a `<general-enclosed>`, which is kept and serialized as
-specified (e.g. `(--foo: bar)`), but evaluates to unknown (it never matches, and neither does its negation). The `scan`
+specified (e.g. `(--foo: bar)`), but evaluates to unknown (it never matches, and neither does its negation). A negative
+number of a `<ratio>` is invalid, but a negative math function is clamped to 0 (e.g. `(min-aspect-ratio: calc(-1)/2)` is
+`0/2`), in the media queries and in the container queries. The `scan`
 feature only applies to the `tv` devices: it never matches. The environment variables (`env()`) can be used in the values
 of the media features (e.g. `(width > env(safe-area-inset-left))`). The `@custom-media` rules are parsed and exposed in the
 CSSOM (`CSSCustomMediaRule`), and the references to the custom media queries (`(--name)`) in the media queries of the
@@ -471,8 +473,9 @@ like the imported style sheets (`DocumentRequest.Initiator` is null), when the d
   `number` or a unit, it is a number; with `type()`, whose `<syntax>` cannot contain `<url>`, the arbitrary substitution
   functions of the value are substituted, then it must match the syntax, and the values of the data types are serialized as
   specified values, e.g. `3EM` is `3em`; an attribute that is read while its value is being substituted is a cycle: the
-  `attr()` functions of the cycle use their fallback, the outermost one included; invalid arguments, such as an unknown
-  `type()` syntax, make it invalid whatever its fallback; in a `::part()` rule, the attributes are the ones of the shadow
+  `attr()` functions of the cycle use their fallback, the outermost one included; a first argument that is not
+  `<attr-name> <attr-type>?`, such as an unknown `type()` syntax or `attr(data-foo &, 30)`, uses the fallback, and is
+  invalid without fallback; in a `::part()` rule, the attributes are the ones of the shadow
   host that the rule matches), `inherit()` and `ident()` (the concatenation of its strings, idents and
   integers, e.g. `ident("--item" calc(2 * 3))` is `--item6`) are substituted, and so are the custom functions (see
   [Custom functions](#custom-functions)). `if()` substitutes the value of its first branch whose condition is true

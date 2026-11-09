@@ -154,6 +154,8 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("<style>#c { container-type: inline-size; width: 400px } div { color: red } @container (min-width: 300px) { #target { color: green } }</style><div id=c><div id=target></div></div>", "rgb(0, 128, 0)")]
     [InlineData("<style>#c { container-type: inline-size; width: 200px } div { color: green } @container (width > 300px) { #target { color: red } }</style><div id=c><div id=target></div></div>", "rgb(0, 128, 0)")]
     [InlineData("<style>#c { container-type: size; width: 100px; height: 50px } @container (orientation: landscape) and (aspect-ratio: 2) { #target { color: green } }</style><div id=c><div id=target></div></div>", "rgb(0, 128, 0)")]
+    [InlineData("<style>#c { container-type: size; width: 100px; height: 50px } @container (aspect-ratio > calc(-1)) and (min-aspect-ratio: calc(-1)/2) and (max-aspect-ratio: 2/calc(-1)) { #target { color: green } }</style><div id=c><div id=target></div></div>", "rgb(0, 128, 0)")] // A negative math function is clamped to 0
+    [InlineData("<style>#c { container-type: size; width: 100px; height: 50px } div { color: green } @container (aspect-ratio > -1) { #target { color: red } }</style><div id=c><div id=target></div></div>", "rgb(0, 128, 0)")] // A negative number is invalid
     [InlineData("<style>#c { container-type: inline-size; width: 400px } div { color: green } @container (height > 0px) { #target { color: red } }</style><div id=c><div id=target></div></div>", "rgb(0, 128, 0)")]
     [InlineData("<style>#a { container: a / inline-size; width: 400px } #b { container-type: inline-size; width: 100px } @container a (width = 400px) { #target { color: green } }</style><div id=a><div id=b><div id=target></div></div></div>", "rgb(0, 128, 0)")]
     [InlineData("<style>#c { container-type: inline-size } @container (width = 784px) { #target { color: green } }</style><div id=c><div id=target></div></div>", "rgb(0, 128, 0)")]
@@ -684,6 +686,7 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("<div id=target data-u='a.png' style='--i: attr(data-u); background-image: image-set(var(--i))'></div>", "background-image", "none")]
     [InlineData("<div id=target data-n='--i' style='--i: url(\"https://a.test/a.png\"); --j: var(attr(data-n type(*)))'></div>", "--j", "url(\"https://a.test/a.png\")")]
     [InlineData("<div id=target data-x='10px' style='width: attr(data-x type(<length>))'></div>", "width", "10px")]
+    [InlineData("<div id=target style='background-image: src(\"https://a.test/a.png\")'></div>", "background-image", "url(\"https://a.test/a.png\")")] // A computed src() is a url()
     [InlineData("<div id=target data-x='3' style='--c: 3; background-image: if(style(--c: attr(data-x type(*))): url(https://a.test/a.png))'></div>", "background-image", "none")] // An if() condition that uses a tainted value
     [InlineData("<div id=target data-x='3' style='--c: attr(data-x type(*)); background-image: if(style(--c >= 2): url(https://a.test/a.png))'></div>", "background-image", "none")]
     [InlineData("<div id=target data-x='3' style='--c: 3; --d: attr(data-x); background-image: if(style(--c: 3): url(https://a.test/a.png); style(--d): none)'></div>", "background-image", "url(\"https://a.test/a.png\")")]
@@ -698,7 +701,9 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("<div id=target data-foo='3' style='--x: attr(data-foo xx, 1px)'></div>", "--x", "1px")] // An unknown unit
     [InlineData("<div id=target data-foo='3EM' style='--x: attr(data-foo type(<length>))'></div>", "--x", "3em")]
     [InlineData("<div id=target data-foo='lighter' style='--x: attr(data-foo type(<number> | lighter), 1)'></div>", "--x", "lighter")]
-    [InlineData("<div id=target data-foo='3px' style='width: attr(data-foo &, 1px)'></div>", "width", "784px")] // Invalid arguments: the fallback is not used
+    [InlineData("<div id=target data-foo='3px' style='width: attr(data-foo &, 1px)'></div>", "width", "1px")] // Invalid arguments: the fallback is used
+    [InlineData("<div id=target data-foo='3px' style='width: attr(data-foo type(<length>) | <number>, 2px)'></div>", "width", "2px")]
+    [InlineData("<div id=target data-foo='3px' style='width: attr(!)'></div>", "width", "784px")] // Invalid arguments without fallback
     [InlineData("<div id=target style='--t: type(<length>); --x: attr(data-foo var(--t), 2px)' data-foo='1px'></div>", "--x", "1px")]
     [InlineData("<div id=target style='font-family: attr(data-foo)'></div>", "font-family", "\"\"")] // A missing attribute without type is an empty string
     [InlineData("<style>@property --b { syntax: '<length>'; inherits: false; initial-value: 4px }</style><div style='font-size: 10px'><div id=target data-foo='var(--b)' style='--b: 3em; font-size: attr(data-foo type(*))'></div></div>", "font-size", "10px")] // A cycle via the font-relative units through an attribute

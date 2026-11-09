@@ -908,13 +908,11 @@ internal static class MediaQueryEvaluator
                 // https://drafts.csswg.org/css-values-4/#ratio-value: a single <number> is n/1; 1/0 is infinite, and so is the
                 // degenerate ratio 0/0 (it behaves as 1/0)
                 case MediaFeatureType.Ratio when value is NumericValue numeric:
-                    return EvaluateAs(numeric.Expression, CalcKind.Number, environment) is >= 0 and var number ? number : null;
+                    return EvaluateRatioNumber(numeric.Expression, environment);
 
                 case MediaFeatureType.Ratio when value is RatioValue ratio:
                 {
-                    var numerator = EvaluateAs(ratio.Numerator, CalcKind.Number, environment);
-                    var denominator = EvaluateAs(ratio.Denominator, CalcKind.Number, environment);
-                    if (numerator is not >= 0 || denominator is not >= 0)
+                    if (EvaluateRatioNumber(ratio.Numerator, environment) is not { } numerator || EvaluateRatioNumber(ratio.Denominator, environment) is not { } denominator)
                         return null;
 
                     return numerator == 0 && denominator == 0 ? double.PositiveInfinity : numerator / denominator;
@@ -923,6 +921,21 @@ internal static class MediaQueryEvaluator
                 default:
                     return null;
             }
+        }
+
+        /// <summary>
+        /// Evaluates a &lt;number [0,∞]&gt; of a &lt;ratio&gt;: a negative number is invalid, but a math function is clamped to 0
+        /// (https://drafts.csswg.org/css-values-4/#calc-range).
+        /// </summary>
+        private static double? EvaluateRatioNumber(CalcNode expression, MediaEnvironment environment)
+        {
+            if (EvaluateAs(expression, CalcKind.Number, environment) is not { } number)
+                return null;
+
+            if (expression is CalcFunction)
+                return number >= 0 ? number : 0;
+
+            return number >= 0 ? number : null;
         }
 
         private static double? EvaluateAs(CalcNode expression, CalcKind kind, MediaEnvironment environment)

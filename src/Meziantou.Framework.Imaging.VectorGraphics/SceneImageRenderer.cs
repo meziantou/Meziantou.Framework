@@ -51,6 +51,29 @@ public static class SceneImageRenderer
         return image;
     }
 
+    /// <summary>Lays a source out with the fonts of the options and measures the rectangle that <see cref="DrawScene(DrawingCanvas, ISceneSource, PointD, SceneImageOptions?)"/> covers.</summary>
+    /// <remarks>The size of a diagram depends on its texts, so the source is laid out as for drawing it.</remarks>
+    /// <param name="source">The chart or the diagram.</param>
+    /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
+    /// <returns>The size of the drawing, as a rectangle located at the origin.</returns>
+    public static RectangleD MeasureScene(ISceneSource source, SceneImageOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        options ??= new SceneImageOptions();
+        return MeasureScene(source.CreateScene(CreateMeasurer(options)), options);
+    }
+
+    /// <summary>Measures the rectangle that <see cref="DrawScene(DrawingCanvas, Scene, PointD, SceneImageOptions?)"/> covers.</summary>
+    /// <param name="scene">The scene.</param>
+    /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
+    /// <returns>The size of the drawing, as a rectangle located at the origin.</returns>
+    public static RectangleD MeasureScene(Scene scene, SceneImageOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(scene);
+        var scale = (options ?? new SceneImageOptions()).Scale;
+        return new RectangleD(0, 0, scene.Width * scale, scene.Height * scale);
+    }
+
     /// <summary>Lays a source out with the fonts of the options and draws it on a canvas, as vector shapes and text.</summary>
     /// <remarks>The drawing is drawn in the coordinates of the canvas, so the transform, clip and layers of the canvas apply.</remarks>
     /// <param name="canvas">The canvas.</param>

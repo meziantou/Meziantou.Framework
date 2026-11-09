@@ -317,7 +317,6 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Iconify\Meziantou.Framework.Iconify.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging.Barcodes\Meziantou.Framework.Imaging.Barcodes.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging.Charts\Meziantou.Framework.Imaging.Charts.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging.VectorGraphics\Meziantou.Framework.Imaging.VectorGraphics.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JavaScriptEngine\Meziantou.Framework.JavaScriptEngine.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
@@ -681,7 +680,6 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Iconify" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Imaging" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Imaging.Barcodes" />
-    <TrimmerRootAssembly Include="Meziantou.Framework.Imaging.Charts" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Imaging.VectorGraphics" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JavaScriptEngine" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JsonPath" />

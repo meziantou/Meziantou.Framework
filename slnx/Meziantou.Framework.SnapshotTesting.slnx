@@ -13,7 +13,6 @@
     <Project Path="../src/Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
     <Project Path="../src/Meziantou.Framework.Hashing/Meziantou.Framework.Hashing.csproj" />
     <Project Path="../src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
-    <Project Path="../src/Meziantou.Framework.Imaging.Charts/Meziantou.Framework.Imaging.Charts.csproj" />
     <Project Path="../src/Meziantou.Framework.Imaging.VectorGraphics/Meziantou.Framework.Imaging.VectorGraphics.csproj" />
     <Project Path="../src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
     <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
@@ -36,7 +35,7 @@
     <Project Path="../tests/Meziantou.Framework.Barcodes.Tests/Meziantou.Framework.Barcodes.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Charts.Tests/Meziantou.Framework.Charts.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Diagrams.Tests/Meziantou.Framework.Diagrams.Tests.csproj" />
-    <Project Path="../tests/Meziantou.Framework.Imaging.Charts.Tests/Meziantou.Framework.Imaging.Charts.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.VectorGraphics.Tests/Meziantou.Framework.Imaging.VectorGraphics.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Pdf.TestHarness/Meziantou.Framework.Pdf.TestHarness.csproj" />
     <Project Path="../tests/Meziantou.Framework.Pdf.Tests/Meziantou.Framework.Pdf.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj" />

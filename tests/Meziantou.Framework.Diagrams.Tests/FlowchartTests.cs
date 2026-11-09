@@ -322,6 +322,32 @@ public sealed class FlowchartTests
     }
 
     [Fact]
+    public void DrawOnCanvas()
+    {
+        #region Diagrams_DrawOnCanvas
+        var flowchart = new FlowchartDiagram();
+        flowchart.AddEdge("start", "end");
+
+        // The size depends on the texts: measure the diagram to place it
+        var size = SceneImageRenderer.MeasureScene(flowchart);
+        using var report = new Image<Rgba32>(400, 400, Colors.White); // or Image.Load<Rgba32>("report.png")
+        var position = new PointD(report.Width - size.Width - 10, 10);
+        report.Draw(canvas => canvas.DrawScene(flowchart, position));
+        #endregion
+
+        var drawn = default(RectangleD);
+        using (var other = new Image<Rgba32>(400, 400, Colors.White))
+        {
+            other.Draw(canvas => drawn = canvas.DrawScene(flowchart, position));
+        }
+
+        Assert.Equal(new RectangleD(position.X, position.Y, size.Width, size.Height), drawn);
+        var scene = flowchart.CreateScene(SceneImageRenderer.CreateMeasurer());
+        Assert.Equal((scene.Width, scene.Height), (size.Width, size.Height));
+        Assert.Equal(new RectangleD(0, 0, size.Width * 2, size.Height * 2), SceneImageRenderer.MeasureScene(flowchart, new SceneImageOptions { Scale = 2 }));
+    }
+
+    [Fact]
     public void WriteSvgToStream()
     {
         var flowchart = new FlowchartDiagram();

@@ -1,14 +1,14 @@
 using Meziantou.Framework.Imaging.Formats;
 using Xunit.Sdk;
 
-namespace Meziantou.Framework.Imaging.Charts.Tests;
+namespace Meziantou.Framework.Imaging.VectorGraphics.Tests;
 
 /// <summary>
 /// Checks the images of the documentation site (docs/Charts/images): a test runs an example of the documentation and
 /// compares the pixels of its image with the committed PNG. With the environment variable <see cref="UpdateVariable"/>
 /// set to 1, a missing or different image is written instead (see docs/AGENTS.md).
 /// </summary>
-internal static class DocumentationImages
+internal static class ChartDocumentationImages
 {
     private const string UpdateVariable = "MEZIANTOU_CHARTS_UPDATE_DOCS_IMAGES";
 

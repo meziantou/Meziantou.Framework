@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 using Meziantou.Framework.SnapshotTesting;
 using Meziantou.Framework.SnapshotTesting.Imaging;
 
-namespace Meziantou.Framework.Imaging.Charts.Tests;
+namespace Meziantou.Framework.Imaging.VectorGraphics.Tests;
 
 internal static class DefaultSnapshotSettings
 {

@@ -43,8 +43,12 @@ high-density screens. The image ignores hyperlinks, tooltips, CSS classes and `d
 
 ## Charts and diagrams
 
-The same methods take an [ISceneSource](cref:Meziantou.Framework.VectorGraphics.ISceneSource), such as a chart: they
-lay it out with the fonts of the options, then draw it. See [image rendering of charts](../Charts/07-ImageRendering.md).
+The same methods take an [ISceneSource](cref:Meziantou.Framework.VectorGraphics.ISceneSource), such as a chart or a
+diagram: they lay it out with the fonts of the options, then draw it.
+[MeasureScene](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageRenderer.MeasureScene) gives the rectangle that
+[DrawScene](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageRenderer.DrawScene) covers, to place the drawing
+before drawing it. See the image rendering of [charts](../Charts/07-ImageRendering.md) and
+[diagrams](../Diagrams/06-ImageRendering.md).
 
 ## Fonts
 

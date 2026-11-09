@@ -4,16 +4,16 @@ using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.SnapshotTesting;
 
-namespace Meziantou.Framework.Imaging.Charts.Tests;
+namespace Meziantou.Framework.Imaging.VectorGraphics.Tests;
 
-public sealed class ChartImageRendererTests
+public sealed class ChartImageTests
 {
     private static readonly Fruit[] Fruits = [new("Apples", 12), new("Bananas", 7), new("Cherries", 18), new("Dates", 4), new("Figs", 9)];
 
     [Fact]
     public void ToImage()
     {
-        #region ImagingCharts_ToImage
+        #region ChartImage_ToImage
         Fruit[] fruits = [new("Apples", 12), new("Bananas", 7), new("Cherries", 18)];
         var plot = new Plot { Title = "Fruits sold", Width = 400, Height = 250 };
         plot.Add(new BarMark<Fruit>(fruits, x: fruit => fruit.Name, y: fruit => fruit.Count));
@@ -31,22 +31,22 @@ public sealed class ChartImageRendererTests
         #endregion
 
         Snapshot.Validate(ToPng(image), SnapshotType.Png);
-        DocumentationImages.AssertImage("FruitsSold", image);
+        ChartDocumentationImages.AssertImage("FruitsSold", image);
     }
 
     [Fact]
     public void DrawChart()
     {
-        #region ImagingCharts_DrawChart
+        #region ChartImage_DrawOnCanvas
         using var report = new Image<Rgba32>(500, 300, Colors.White); // or Image.Load<Rgba32>("report.png")
         var plot = new Plot { Width = 300, Height = 200, Theme = ChartTheme.Light with { Background = null } };
         plot.Add(new ArcMark<Fruit>([new("Apples", 12), new("Bananas", 7)], value: fruit => fruit.Count) { Fill = fruit => fruit.Name });
 
-        var size = ChartImageRenderer.MeasureChart(plot);
+        var size = SceneImageRenderer.MeasureScene(plot);
         Assert.Equal((300, 200), (size.Width, size.Height));
 
         // Drawn as vector shapes and text: the transform and the clip of the canvas apply
-        report.Draw(canvas => canvas.DrawChart(plot, new PointD(180, 80)));
+        report.Draw(canvas => canvas.DrawScene(plot, new PointD(180, 80)));
         #endregion
 
         Assert.Equal(Colors.White, report.Frames[0][10, 10]);
@@ -209,9 +209,10 @@ public sealed class ChartImageRendererTests
     public void InvalidArguments()
     {
         Assert.Throws<ArgumentOutOfRangeException>("value", () => new SceneImageOptions { Scale = 0 });
-        Assert.Throws<ArgumentNullException>("plot", () => ((Plot)null!).ToImage());
+        Assert.Throws<ArgumentNullException>("source", () => ((Plot)null!).ToImage());
         Assert.Throws<ArgumentNullException>("scene", () => ((Scene)null!).ToImage());
-        Assert.Throws<ArgumentNullException>("plot", () => ChartImageRenderer.MeasureChart(null!));
+        Assert.Throws<ArgumentNullException>("source", () => SceneImageRenderer.MeasureScene((ISceneSource)null!));
+        Assert.Throws<ArgumentNullException>("scene", () => SceneImageRenderer.MeasureScene((Scene)null!));
         Assert.Throws<ArgumentNullException>("regular", () => new ImageTextMeasurer(null!));
         Assert.Throws<ArgumentNullException>("text", () => SceneImageRenderer.CreateMeasurer().Measure(null!, new SceneFont(12)));
     }

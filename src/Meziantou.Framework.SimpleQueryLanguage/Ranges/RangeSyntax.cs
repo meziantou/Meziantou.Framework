@@ -274,11 +274,10 @@ internal static class RangeSyntax
                     ? timeZone.GetAmbiguousTimeOffsets(midnightDateTime).Max() // Midnight happens twice: the day starts at the first one
                     : timeZone.GetUtcOffset(midnightDateTime);
 
+                // Out of the supported instants, the offset of the local time may still disagree with the offsets of the
+                // instants: the search below decides whether the day starts before the first instant that can be represented
                 var utcTicks = midnight - offset.Ticks;
-                if (utcTicks < DateTimeOffset.MinValue.UtcTicks || utcTicks > DateTimeOffset.MaxValue.UtcTicks)
-                    return false;
-
-                if (GetUtcOffset(timeZone, utcTicks) == offset)
+                if (utcTicks >= DateTimeOffset.MinValue.UtcTicks && utcTicks <= DateTimeOffset.MaxValue.UtcTicks && GetUtcOffset(timeZone, utcTicks) == offset)
                 {
                     value = new DateTimeOffset(midnightDateTime, offset);
                     return true;

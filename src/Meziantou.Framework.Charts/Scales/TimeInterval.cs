@@ -11,6 +11,10 @@ internal sealed class TimeInterval
     private const double Month = 30 * Day;
     private const double Year = 365 * Day;
 
+    // A day inside the bounds of DateTime, so that converting the milliseconds back to a DateTime cannot round out of them
+    private static readonly double MinMilliseconds = TimeFormats.ToMilliseconds(DateTime.MinValue.AddDays(1));
+    private static readonly double MaxMilliseconds = TimeFormats.ToMilliseconds(DateTime.MaxValue.AddDays(-1));
+
     private static readonly TimeInterval[] Intervals =
     [
         new(TimeUnit.Second, 1, Second),
@@ -77,17 +81,25 @@ internal sealed class TimeInterval
         if (Unit is TimeUnit.Millisecond)
             return TickGenerator.Ticks(start, stop, Math.Max(1, (stop - start) / Step));
 
+        // The times out of the range of DateTime have no tick
+        start = Math.Max(start, MinMilliseconds);
+        stop = Math.Min(stop, MaxMilliseconds);
+        if (!(start <= stop))
+            return [];
+
         var result = new List<double>();
-        var current = Floor(TimeFormats.FromMilliseconds(start));
+        var first = TimeFormats.FromMilliseconds(start);
         var end = TimeFormats.FromMilliseconds(stop);
+        var current = TryMove(first, Floor, out var floor) ? floor : first;
         for (var guard = 0; current <= end && guard < 10_000; guard++)
         {
-            if (current >= TimeFormats.FromMilliseconds(start) && IsAligned(current))
+            if (current >= first && IsAligned(current))
             {
                 result.Add(TimeFormats.ToMilliseconds(current));
             }
 
-            current = Next(current);
+            if (!TryMove(current, Next, out current))
+                break;
         }
 
         return [.. result];
@@ -99,10 +111,14 @@ internal sealed class TimeInterval
         if (Unit is TimeUnit.Millisecond)
             return Math.Floor(milliseconds / Step) * Step;
 
-        var current = Floor(TimeFormats.FromMilliseconds(milliseconds));
+        // A time whose interval starts out of the range of DateTime stays as it is
+        if (!(milliseconds >= MinMilliseconds && milliseconds <= MaxMilliseconds) || !TryMove(TimeFormats.FromMilliseconds(milliseconds), Floor, out var current))
+            return milliseconds;
+
         while (!IsAligned(current))
         {
-            current = Previous(current);
+            if (!TryMove(current, Previous, out current))
+                return milliseconds;
         }
 
         return TimeFormats.ToMilliseconds(current);
@@ -114,19 +130,36 @@ internal sealed class TimeInterval
         if (Unit is TimeUnit.Millisecond)
             return Math.Ceiling(milliseconds / Step) * Step;
 
+        // A time whose interval ends out of the range of DateTime stays as it is
+        if (!(milliseconds >= MinMilliseconds && milliseconds <= MaxMilliseconds))
+            return milliseconds;
+
         var date = TimeFormats.FromMilliseconds(milliseconds);
-        var current = Floor(date);
-        if (current < date)
-        {
-            current = Next(current);
-        }
+        if (!TryMove(date, Floor, out var current) || (current < date && !TryMove(current, Next, out current)))
+            return milliseconds;
 
         while (!IsAligned(current))
         {
-            current = Next(current);
+            if (!TryMove(current, Next, out current))
+                return milliseconds;
         }
 
         return TimeFormats.ToMilliseconds(current);
+    }
+
+    /// <summary>Applies a move to a time, or returns <see langword="false"/> when the result is out of the range of <see cref="DateTime"/>.</summary>
+    private static bool TryMove(DateTime date, Func<DateTime, DateTime> move, out DateTime result)
+    {
+        try
+        {
+            result = move(date);
+            return true;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            result = date;
+            return false;
+        }
     }
 
     private DateTime Floor(DateTime date)

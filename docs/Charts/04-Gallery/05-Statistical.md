@@ -21,7 +21,7 @@ plot.YAxis.Label = "People";
 
 ## Box plot
 
-A [BoxMark\<T\>](cref:Meziantou.Framework.Charts.BoxMark{T}) draws the quartiles, the median, Tukey's whiskers (1.5 times the interquartile range) and the outliers of each category. [BoxStatistics](cref:Meziantou.Framework.Charts.BoxStatistics) computes them.
+A [BoxMark\<T\>](cref:Meziantou.Framework.Charts.BoxMark{T}) draws the quartiles, the median, Tukey's whiskers (1.5 times the interquartile range) and the outliers of each category. [BoxStatistics](cref:Meziantou.Framework.Charts.BoxStatistics) computes them. Infinite values count in the statistics, but have no position: a box whose quartiles or whiskers are infinite is not drawn, nor is an infinite outlier.
 
 <!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_BoxPlot;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -58,7 +58,7 @@ plot.YAxis.Label = "Density";
 
 ## Violin plot
 
-A [ViolinMark\<T\>](cref:Meziantou.Framework.Charts.ViolinMark{T}) mirrors the density of each category, from its smallest value to its largest, with a box of its quartiles and a dot at its median.
+A [ViolinMark\<T\>](cref:Meziantou.Framework.Charts.ViolinMark{T}) mirrors the density of each category, from its smallest value to its largest, with a box of its quartiles and a dot at its median. Infinite values are ignored, as missing values: they have no density. The same goes for a [RidgelineMark\<T\>](cref:Meziantou.Framework.Charts.RidgelineMark{T}).
 
 <!-- ref:../../../tests/Meziantou.Framework.Charts.Tests/StatisticalChartTests.cs;region=Charts_ViolinPlot;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -51,6 +51,24 @@ internal static class KernelDensity
         return (x, density);
     }
 
+    /// <summary>Returns the largest density of curves that alternate a value and its density, or 0 when there is none.</summary>
+    public static double MaxDensity(IEnumerable<IReadOnlyList<double>> curves)
+    {
+        var max = 0d;
+        foreach (var curve in curves)
+        {
+            for (var i = 1; i < curve.Count; i += 2)
+            {
+                if (curve[i] > max)
+                {
+                    max = curve[i];
+                }
+            }
+        }
+
+        return max;
+    }
+
     /// <summary>
     /// Evaluates the density of points with a product of Gaussian kernels on a square grid of <paramref name="size"/> points
     /// per axis, from <paramref name="cut"/> bandwidths before the smallest value to as many after the largest. The value of

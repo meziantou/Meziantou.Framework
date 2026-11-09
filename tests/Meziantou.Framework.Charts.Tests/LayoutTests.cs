@@ -136,7 +136,7 @@ public sealed class LayoutTests
     {
         // The sum of two values of 2^1023 overflows, but the nodes are laid out as for values of the same ratios
         var max = Math.ScaleB(1, 1023);
-        var bounds = new ChartRectangle(0, 0, 300, 100);
+        var bounds = new SceneBounds(0, 0, 300, 100);
         var huge = SankeyLayout.Compute([("A", "B", max), ("A", "C", max), ("B", "D", max), ("C", "D", max)], bounds, 20, 5, 6, SankeyAlignment.Justify);
         var unit = SankeyLayout.Compute([("A", "B", 1), ("A", "C", 1), ("B", "D", 1), ("C", "D", 1)], bounds, 20, 5, 6, SankeyAlignment.Justify);
         Assert.Equal(unit.Nodes.Select(node => (node.X0, node.Y0, node.X1, node.Y1)).ToArray(), huge.Nodes.Select(node => (node.X0, node.Y0, node.X1, node.Y1)).ToArray());
@@ -829,7 +829,7 @@ public sealed class LayoutTests
     {
         // The curved parallels of Albers get a point every 2.5°, but an edge between longitudes out of range gets no more
         // points than a full turn: 1e80 degrees ran out of memory
-        var system = GeoSystem.Fit(new AlbersProjection(), (-1, -1, 1, 1), new ChartRectangle(0, 0, 100, 100));
+        var system = GeoSystem.Fit(new AlbersProjection(), (-1, -1, 1, 1), new SceneBounds(0, 0, 100, 100));
         foreach (var longitude in new[] { 3_360_600, 1.8e80 })
         {
             var builder = new PathBuilder();

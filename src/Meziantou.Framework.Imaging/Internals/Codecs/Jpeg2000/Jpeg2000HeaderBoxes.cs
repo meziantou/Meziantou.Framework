@@ -207,7 +207,10 @@ internal sealed class Jpeg2000HeaderBoxes
                 if (length <= 2)
                 {
                     var value = length == 1 ? values[offset] : BinaryPrimitives.ReadUInt16BigEndian(values[offset..]);
-                    entries[(column * entryCount) + entry] = (ushort)(value & ((1 << precision) - 1));
+                    // A signed value is offset by half its range, as the signed samples of a component are
+                    var mask = (1 << precision) - 1;
+                    var signOffset = (depths[column] & 0x80) != 0 ? 1 << (precision - 1) : 0;
+                    entries[(column * entryCount) + entry] = (ushort)((value & mask) ^ signOffset);
                 }
 
                 offset += length;

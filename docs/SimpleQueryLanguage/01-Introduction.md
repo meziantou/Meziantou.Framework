@@ -16,8 +16,9 @@ parses the query, the values and the dates, and combines your handlers with `AND
 - **Give users a familiar syntax**: free text, key-value terms, comparisons, ranges, `AND`, `OR`, `NOT`, `-` and
   parentheses. See [Query syntax](03-QuerySyntax.md).
 - **Search by dates** with `created:this_week` or `created>=@today-2w`. See [Values and dates](06-ValuesAndDates.md).
-- **Accept any input**: a malformed query is never an error, and a query too complex to evaluate is reported with a
-  dedicated exception. See [Queries from users](04-InMemoryQueries.md#queries-from-users).
+- **Accept any input**: a malformed query is still read, with diagnostics that locate its problems, or rejected in
+  strict mode. A query too complex to evaluate is reported with a dedicated exception. See
+  [Malformed queries](03-QuerySyntax.md#malformed-queries) and [Queries from users](04-InMemoryQueries.md#queries-from-users).
 
 ## How it works
 

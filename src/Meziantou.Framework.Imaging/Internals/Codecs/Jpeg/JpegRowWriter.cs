@@ -77,6 +77,9 @@ internal sealed class JpegRowWriter : JpegBandWriter
 
     // Whether the rows of a three-component frame are written as opaque RGBA (the source layout of the sink) instead of RGB
     private readonly bool _opaqueRgba;
+
+    // Whether the ink amounts of a four-component frame are written as they are (Cmyk32, the source layout of the sink)
+    private readonly bool _nativeInks;
     private readonly PooledBuffer?[] _upsampled;
 
     // The column sums of the components upsampled by 2 in both directions (UpsampleBoth)
@@ -87,8 +90,8 @@ internal sealed class JpegRowWriter : JpegBandWriter
     public JpegRowWriter(JpegFrameComponent[] components, DecodedFrameSink sink, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int bandRows, AllocationScope scope)
         : this(components, sink, receiver: null, colorModel, inkConversion, width, height, bandRows, scope)
     {
-        if ((components.Length == 4) != (inkConversion is not null))
-            throw new ArgumentException("A four-component frame, and only it, needs the conversion of its inks.", nameof(inkConversion));
+        if (components.Length == 4 ? inkConversion is null && sink.SourcePixelFormat != PixelFormat.Cmyk32 : inkConversion is not null)
+            throw new ArgumentException("A four-component frame, and only it, needs the conversion of its inks, unless its rows are CMYK.", nameof(inkConversion));
     }
 
     /// <summary>Creates a writer that hands the rows to the container of an embedded datastream instead of an image.</summary>
@@ -110,6 +113,10 @@ internal sealed class JpegRowWriter : JpegBandWriter
         if (_opaqueRgba && (components.Length != 3 || inkConversion is not null))
             throw new ArgumentException("Only the rows of a three-component frame are written as RGBA.", nameof(sink));
 
+        _nativeInks = sink?.SourcePixelFormat == PixelFormat.Cmyk32;
+        if (_nativeInks && (components.Length != 4 || inkConversion is not null))
+            throw new ArgumentException("Only the rows of a four-component frame are written as CMYK.", nameof(sink));
+
         _upsampled = new PooledBuffer?[components.Length];
         _columnSums = new PooledBuffer?[components.Length];
         try
@@ -129,7 +136,7 @@ internal sealed class JpegRowWriter : JpegBandWriter
             // A sink that stores the rows as they are is written in place; a receiver is given a row of its own
             if (sink is null ? components.Length == 3 : !sink.Plan.IsIdentity && components.Length > 1)
             {
-                _sourceRow = scope.Rent(width * (_opaqueRgba ? 4 : 3), AllocationKind.DecoderState, clear: false);
+                _sourceRow = scope.Rent(width * (_opaqueRgba || _nativeInks ? 4 : 3), AllocationKind.DecoderState, clear: false);
             }
 
             if (components.Length == 4)
@@ -263,7 +270,7 @@ internal sealed class JpegRowWriter : JpegBandWriter
         var c1 = GetSamples(_components[1], y);
         var c2 = GetSamples(_components[2], y);
         var identity = sink.Plan.IsIdentity;
-        var rowLength = _width * (_opaqueRgba ? 4 : 3);
+        var rowLength = _width * (_opaqueRgba || _nativeInks ? 4 : 3);
         var row = identity ? storage.GetRowSpanCore(y)[..rowLength] : _sourceRow!.RawBuffer.AsSpan(0, rowLength);
         if (_opaqueRgba)
         {
@@ -274,6 +281,21 @@ internal sealed class JpegRowWriter : JpegBandWriter
             else
             {
                 ConvertYCbCrToRgba(c0, c1, c2, row);
+            }
+        }
+        else if (_nativeInks)
+        {
+            var black = GetSamples(_components[3], y);
+            if (_colorModel == ImageColorModel.Ycck)
+            {
+                // The ink row holds the cyan, magenta and yellow amounts given by the color conversion
+                var amounts = _inkRow!.RawBuffer.AsSpan(0, _width * 3);
+                ConvertYCbCr(c0, c1, c2, amounts);
+                InterleaveInkAmounts(amounts, black, row);
+            }
+            else
+            {
+                InterleaveStoredInks(c0, c1, c2, black, row);
             }
         }
         else if (_inkConversion is not null)

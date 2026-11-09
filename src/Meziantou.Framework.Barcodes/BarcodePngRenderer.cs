@@ -38,10 +38,11 @@ public static class BarcodePngRenderer
         ArgumentOutOfRangeException.ThrowIfNegative(options.QuietZoneModules);
 
         var width = GetTotalDimensionWithQuietZone(barcode.Width, options.QuietZoneModules, options.ModuleWidth, nameof(options.ModuleWidth));
-        var height = GetTotalDimension(barcode.Height, options.ModuleHeight, nameof(options.ModuleHeight));
+        // The rows of a stacked barcode are one module high: as high as a module is wide
+        var moduleHeight = barcode.IsStacked ? options.ModuleWidth : options.ModuleHeight;
+        var height = GetTotalDimension(barcode.Height, moduleHeight, barcode.IsStacked ? nameof(options.ModuleWidth) : nameof(options.ModuleHeight));
 
         var moduleWidth = options.ModuleWidth;
-        var moduleHeight = options.ModuleHeight;
         var quietZoneModules = options.QuietZoneModules;
         PngWriter.WritePalette(stream, width, height, options.LightColor, options.DarkColor, (row, y) =>
         {
@@ -65,7 +66,7 @@ public static class BarcodePngRenderer
                 PngWriter.SetPixels(row, (quietZoneModules + runStart) * moduleWidth, (column - runStart) * moduleWidth);
             }
 
-            return moduleHeight - (y % moduleHeight);
+            return ((BarcodeRows.CountIdenticalRows(barcode, sourceRow) - 1) * moduleHeight) + moduleHeight - (y % moduleHeight);
         });
     }
 

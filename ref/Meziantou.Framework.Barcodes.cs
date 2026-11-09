@@ -14,6 +14,7 @@ namespace Meziantou.Framework.Barcodes
     public sealed class Barcode
     {
         public int Height { get => throw null; }
+        public bool IsStacked { get => throw null; }
         public bool this[int row, int column] { get => throw null; }
         public string Text { get => throw null; }
         public Meziantou.Framework.Barcodes.BarcodeType Type { get => throw null; }
@@ -25,8 +26,15 @@ namespace Meziantou.Framework.Barcodes
         public static Meziantou.Framework.Barcodes.Barcode CreateEan13(string data, string? extension = null) => throw null;
         public static Meziantou.Framework.Barcodes.Barcode CreateEan8(string data, string? extension = null) => throw null;
         public static Meziantou.Framework.Barcodes.Barcode CreateGs1128(params System.ReadOnlySpan<Meziantou.Framework.Barcodes.Gs1Element> elements) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode CreateGs1DataBar(string data) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode CreateGs1DataBarExpanded(params System.ReadOnlySpan<Meziantou.Framework.Barcodes.Gs1Element> elements) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode CreateGs1DataBarExpandedStacked(int segmentsPerRow, params System.ReadOnlySpan<Meziantou.Framework.Barcodes.Gs1Element> elements) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode CreateGs1DataBarLimited(string data) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode CreateGs1DataBarStacked(string data) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode CreateGs1DataBarStackedOmnidirectional(string data) => throw null;
         public static Meziantou.Framework.Barcodes.Barcode CreateItf(string data) => throw null;
         public static Meziantou.Framework.Barcodes.Barcode CreateUpcA(string data, string? extension = null) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode CreateUpcE(string data, string? extension = null) => throw null;
     }
 
     public sealed class Barcode2D
@@ -125,6 +133,13 @@ namespace Meziantou.Framework.Barcodes
         Codabar = 6,
         Itf = 7,
         Gs1128 = 8,
+        UpcE = 9,
+        Gs1DataBar = 10,
+        Gs1DataBarStacked = 11,
+        Gs1DataBarStackedOmnidirectional = 12,
+        Gs1DataBarLimited = 13,
+        Gs1DataBarExpanded = 14,
+        Gs1DataBarExpandedStacked = 15,
     }
 
     public readonly struct Color : System.IEquatable<Meziantou.Framework.Barcodes.Color>

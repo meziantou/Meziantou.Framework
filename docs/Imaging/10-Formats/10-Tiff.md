@@ -12,7 +12,7 @@ destination.**
 | | Reading | Writing |
 | --- | --- | --- |
 | Container | Classic TIFF and BigTIFF, both byte orders, strips and tiles, chunky samples and separate planes, multi-page documents | Classic TIFF (default) or BigTIFF, both byte orders, strips or tiles, chunky samples, multi-page documents |
-| Samples | Bilevel, 2, 4, 8 and 16-bit gray, gray and alpha, RGB, RGBA, palette, YCbCr; signed 8 and 16-bit samples; 16, 24 and 32-bit floating-point samples; CMYK and CIE L\*a\*b\* with a color conversion | Gray, gray and alpha, RGB and RGBA at 8 or 16 bits, bilevel, palette, 32-bit floating-point |
+| Samples | Bilevel, 2, 4, 8 and 16-bit gray, gray and alpha, RGB, RGBA, palette, YCbCr; signed 8 and 16-bit samples; 16, 24 and 32-bit floating-point samples; 8 and 16-bit CMYK as CMYK pixels or with a color conversion; CIE L\*a\*b\* with a color conversion | Gray, gray and alpha, RGB and RGBA at 8 or 16 bits, CMYK at 8 or 16 bits (lossless compressions), bilevel, palette, 32-bit floating-point |
 | Compression | None, Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3, Group 4), JPEG, old-style JPEG, JPEG 2000 | None, Deflate (default), LZW, PackBits, CCITT for bilevel pages, JPEG |
 | Metadata | Resolution, orientation, ICC profile, XMP | The same |
 
@@ -116,8 +116,10 @@ store a page exactly or reject it with an [UnsupportedImageFeatureException](cre
   floating-point page without an ICC profile is read as linear light, so the image must be labeled
   [ColorTransferFunction.Linear](cref:Meziantou.Framework.Imaging.Metadata.ColorTransferFunction.Linear) (the label of a new floating-point image) or have an ICC profile. See
   [Pixel formats](../04-Concepts/05-PixelFormats.md).
-- CMYK pages load only with [ImageDecodeOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion), which converts them to RGB (see
-  [Color management](../09-Color/03-ColorManagement.md)). CMYK is never written.
+- CMYK pages without alpha load as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) or [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) pixels with `Image.Load<Cmyk32>`, and CMYK images are written
+  as separated pages (`PhotometricInterpretation` 5, `InkSet` 1) with `PixelLayout = Auto` and a lossless compression.
+  An untyped load, and a page with alpha, need [ImageDecodeOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion), which converts the page to RGB.
+  See [Color management](../09-Color/03-ColorManagement.md#keep-cmyk-images).
 - CIE L\*a\*b\* pages (`CIELab`, and 8-bit `ICCLab`) load only with
   [ImageDecodeOptions.CieLabConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CieLabConversion), which converts their colors, relative to the
   `WhitePoint` of the page (D50 without one), to an RGB profile, sRGB by default. Colors outside its gamut are

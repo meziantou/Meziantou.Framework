@@ -38,7 +38,8 @@ public sealed class AutoCropTests
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    public static TheoryData<PixelFormat> AllFormats => [.. PixelFormats.All];
+    // The CMYK formats hold inks, which these operations reject (CmykImagesOnlyMovePixelsAndRejectColorOperations)
+    public static TheoryData<PixelFormat> AllFormats => [.. PixelFormats.All.Where(format => !PixelFormats.IsCmyk(format))];
 
     // -----------------------------------------------------------------------------------------------------------------
     // Content box

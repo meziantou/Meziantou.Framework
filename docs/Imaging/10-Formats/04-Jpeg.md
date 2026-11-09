@@ -13,13 +13,15 @@ picture: an animation, transparency or 16-bit samples in a lossy file need an ex
 | --- | --- | --- |
 | Processes | Baseline, extended sequential and progressive, Huffman or arithmetic coded; lossless, Huffman or arithmetic coded; hierarchical; JPEG-LS (ITU-T T.87) | Baseline (default), extended sequential, progressive and lossless, Huffman or arithmetic coded |
 | Samples | 8 and 12 bits; 2 to 16 bits for lossless and JPEG-LS files | 8 and 12 bits; 2 to 16 bits for lossless files |
-| Colors | Gray, YCbCr and RGB; CMYK and YCCK with a color conversion | Gray (for gray pixel formats), YCbCr, or RGB for lossless files |
+| Colors | Gray, YCbCr and RGB; CMYK and YCCK as CMYK pixels or with a color conversion | Gray (for gray pixel formats), YCbCr, RGB for lossless files, or CMYK (for the CMYK pixel formats, 8-bit baseline Huffman only) |
 | Chroma subsampling | Any integral sampling | 4:4:4, 4:2:2 or 4:2:0 |
 | Metadata | EXIF, XMP, ICC profile, resolution, comments | The same |
 | Gain maps | Listed and rendered by [AuxiliaryImageCollection](cref:Meziantou.Framework.Imaging.AuxiliaryImageCollection) (Ultra HDR) | Ultra HDR, with [GainMap](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.GainMap) |
 | Reduced size | 1/2, 1/4 or 1/8 of the size, except lossless, JPEG-LS and hierarchical files | - |
 
 8-bit files load as [Gray8](cref:Meziantou.Framework.Imaging.Gray8) or [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24); 12-bit files, and lossless and JPEG-LS files of more than 8 bits, load as [Gray16](cref:Meziantou.Framework.Imaging.Gray16) or [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48).
+CMYK and YCCK files load as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) or [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) when you ask for these pixel formats (see
+[Color management](../09-Color/03-ColorManagement.md#keep-cmyk-images)), and a CMYK image is saved as an Adobe CMYK file.
 
 [ImageDecodeOptions.TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) and [ImageDecodeOptions.ScaleDenominator](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.ScaleDenominator) decode a file at a reduced size, from the
 coefficients of its blocks: the pixels are the means of the pixels of the full image they replace, and a subsampled
@@ -191,9 +193,14 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 
 ## Pitfalls
 
-- CMYK and YCCK files (from print workflows) are recognized but load only with [ImageDecodeOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion),
-  which converts them to RGB with ICC profiles; otherwise loading throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). See
+- CMYK and YCCK files (from print workflows) load as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) or [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) pixels with
+  `Image.Load<Cmyk32>`, or as RGB with [ImageDecodeOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion), which converts them with ICC profiles; an untyped
+  load without the option throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). See
   [Color management](../09-Color/03-ColorManagement.md).
+- CMYK output has four components without subsampling ([ChromaSubsampling](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.ChromaSubsampling) plays no role), the luminance
+  quantization table for all of them, and is 8-bit, Huffman-coded baseline only: [JpegEncodingProcess.Progressive](cref:Meziantou.Framework.Imaging.Formats.JpegEncodingProcess.Progressive), [JpegEncodingProcess.Lossless](cref:Meziantou.Framework.Imaging.Formats.JpegEncodingProcess.Lossless), arithmetic coding and 12-bit samples throw. Its coefficients
+  are kept in memory until the file is written (8 bytes per pixel). [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) images need
+  [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.AllowBitDepthReduction).
 - Hierarchical files are decoded frame by frame, each differential frame added to the previous one expanded, in
   integers as ITU-T T.81 describes it. The ISO reference decoder keeps fractional bits between frames, so the pixels
   can differ from its own by a few units; for the same reason, a lossless frame after a DCT-based frame restores the
@@ -207,7 +214,7 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 - The EXIF orientation is reported in `Metadata.Orientation`, never applied: call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) to rotate the pixels. See
   [Metadata and orientation](../09-Color/02-MetadataAndOrientation.md).
 - An EXIF block is limited to 65,527 bytes and an XMP packet to 65,504 bytes; extended XMP is not supported.
-- The encoder writes no CMYK files, and RGB components only in lossless files.
+- The encoder writes no hierarchical, JPEG-LS or YCCK files, and RGB components only in lossless files.
 - To store a JPEG file in a smaller file without any loss, recompress it to JPEG XL with [JpegXlTranscoder](cref:Meziantou.Framework.Imaging.JpegXlTranscoder): the original
   file can be rebuilt byte for byte. See [JPEG XL](15-JpegXl.md).
 - A progressive file can be shown while it is read, with [ReadFrameRefinementInto](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrameRefinementInto). See

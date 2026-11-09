@@ -4,14 +4,15 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.SimpleQueryLanguage.Binding;
+using Meziantou.Framework.SimpleQueryLanguage.Ranges;
 using Meziantou.Framework.SimpleQueryLanguage.Syntax;
 
 namespace Meziantou.Framework.SimpleQueryLanguage.Fuzz;
 
 /// <summary>
 /// Parsing a query never fails (except with <see cref="QueryTooComplexException"/>), and the tokens of the syntax tree cover
-/// the non-whitespace characters of the query in order. The disjunctive normal form of the bound query is equivalent to
-/// the syntax tree. <see cref="QueryBuilder{T}"/> and <see cref="ExpressionQueryBuilder{T}"/> evaluate a query as the
+/// the non-whitespace characters of the query in order. The diagnostics point at the tokens they report, and reporting
+/// them does not change the tree. The disjunctive normal form of the bound query is equivalent to the syntax tree. <see cref="QueryBuilder{T}"/> and <see cref="ExpressionQueryBuilder{T}"/> evaluate a query as the
 /// AND/OR/NOT combination of its terms, each term evaluated as a query of its own; compiling the expression, interpreting
 /// it, and applying it to an <see cref="IQueryable{T}"/> agree. The string match modes and the enum comparisons of
 /// <see cref="ExpressionQueryBuilder{T}"/> agree with the same handlers written for <see cref="QueryBuilder{T}"/>.
@@ -41,6 +42,9 @@ public static partial class SimpleQueryLanguageFuzzTargets
         new(5, "JOHN", 1, Rank: 2, new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc), new DateOnly(2026, 3, 1), 2, IsOpen: false, (QueryItemStatus)(-1), ["bug"]) { Previous = (QueryItemStatus)42 },
     ];
 
+    private static readonly string[] QueryBuilderKeys = ["name", "age", "rank", "created", "day", "score", "open", "status", "is", "tag"];
+    private static readonly string[] ExpressionQueryBuilderKeys = ["name", "age", "rank", "created", "day", "score", "open", "status", "tag"];
+
     private static readonly string[] Tokens =
     [
         "AND", "OR", "NOT", "and", "or", "not", "-", "(", ")", ":", "=", "<", "<=", ">", ">=", "<>", "\"", "\"\"", "..", "*", " ", "\t", "\u00A0", "\u3000",
@@ -55,7 +59,10 @@ public static partial class SimpleQueryLanguageFuzzTargets
         new("query-builder", Builder) { Seeds = () => GetSeeds(optionsMask: FreeTextOption | UnhandledPropertyOption), Dictionary = Tokens },
         new("query-expression", ExpressionBuilder) { Seeds = () => GetSeeds(optionsMask: FreeTextOption | UnhandledPropertyOption | IgnoreCaseOption | MatchModeOptions), Dictionary = Tokens },
         new("query-expression-operators", ExpressionOperators) { Seeds = () => GetSeeds(optionsMask: IgnoreCaseOption | MatchModeOptions), Dictionary = Tokens },
+        new("query-time-zone", TimeZoneDates) { Seeds = GetTimeZoneSeeds, Dictionary = Tokens },
     ];
+
+    private const int TimeZoneHeaderLength = 14;
 
     /// <summary>
     /// Checks the syntax tree (token positions, kinds and values, node spans), that each term parses back alone, and that
@@ -73,6 +80,11 @@ public static partial class SimpleQueryLanguageFuzzTargets
 
         var terms = CheckSyntaxTree(syntax, text);
         FuzzAssert.Equal(syntax.ToString(), QuerySyntax.Parse(text).ToString(), "Parsing the same query twice gives different trees");
+
+        var syntaxWithDiagnostics = QuerySyntax.Parse(text, out var diagnostics);
+        FuzzAssert.Equal(syntax.ToString(), syntaxWithDiagnostics.ToString(), "Reporting diagnostics changes the syntax tree");
+        CheckDiagnostics(text, diagnostics, allowUnknownKeys: false);
+        CheckDiagnosticsMatchTree(syntax, text, diagnostics);
 
         foreach (var term in terms.Take(MaxTerms))
         {
@@ -136,6 +148,11 @@ public static partial class SimpleQueryLanguageFuzzTargets
         }
 
         FuzzAssert.Equal(text, query.Text, "Query.Text is not the query");
+        CheckBuilderDiagnostics(text, query.Diagnostics, QueryBuilderKeys, hasUnhandledPropertyHandler: (options & UnhandledPropertyOption) != 0);
+        builder.Strict = true;
+        CheckStrictBuild(text, query.Diagnostics, () => builder.Build(text).Diagnostics);
+        builder.Strict = false;
+
         var oracle = CreateOracle(text, term => builder.Build(GetTermText(term)).Evaluate);
         foreach (var item in Items)
         {
@@ -169,6 +186,11 @@ public static partial class SimpleQueryLanguageFuzzTargets
         }
 
         FuzzAssert.Equal(text, query.Text, "ExpressionQuery.Text is not the query");
+        CheckBuilderDiagnostics(text, query.Diagnostics, ExpressionQueryBuilderKeys, hasUnhandledPropertyHandler: (options & UnhandledPropertyOption) != 0);
+        builder.Strict = true;
+        CheckStrictBuild(text, query.Diagnostics, () => builder.Build(text).Diagnostics);
+        builder.Strict = false;
+
         FuzzAssert.Equal(string.IsNullOrWhiteSpace(text), query.Predicate is null, "The predicate is null for a query that is not empty, or the reverse");
         if (query.Predicate is null)
         {
@@ -192,6 +214,450 @@ public static partial class SimpleQueryLanguageFuzzTargets
             if (oracle is not null)
             {
                 FuzzAssert.Equal(oracle(item), actual, $"{FuzzAssert.Format(text)} and the combination of its terms disagree on item {item.Id}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Checks that the diagnostics are sorted, within the query, and point at the text they report: a ')' for an unmatched
+    /// parenthesis, a keyword for a missing operand, an operator after a key for a missing value, ...
+    /// </summary>
+    private static void CheckDiagnostics(string text, IReadOnlyList<QueryDiagnostic> diagnostics, bool allowUnknownKeys)
+    {
+        var previousStart = 0;
+        foreach (var diagnostic in diagnostics)
+        {
+            var span = diagnostic.Span;
+            FuzzAssert.True(span.Start >= 0 && span.Length > 0 && span.End <= text.Length, $"The span {span} of the diagnostic {diagnostic.Code} is outside the query of length {text.Length}");
+            FuzzAssert.True(span.Start >= previousStart, $"The diagnostic {diagnostic} is before the previous one, which starts at {previousStart}");
+            FuzzAssert.True(!string.IsNullOrEmpty(diagnostic.Message), $"The diagnostic {diagnostic.Code} has no message");
+            previousStart = span.Start;
+
+            var spanText = text.Substring(span.Start, span.Length);
+            switch (diagnostic.Code)
+            {
+                case QueryDiagnosticCode.UnmatchedCloseParenthesis:
+                    FuzzAssert.Equal(")", spanText, "An unmatched parenthesis is not a ')'");
+                    break;
+
+                case QueryDiagnosticCode.MissingCloseParenthesis:
+                    FuzzAssert.Equal("(", spanText, "An unclosed parenthesis is not a '('");
+                    break;
+
+                case QueryDiagnosticCode.EmptyParentheses:
+                    FuzzAssert.True(spanText.Length >= 2 && spanText[0] == '(' && spanText[^1] == ')' && spanText.AsSpan(1, spanText.Length - 2).IsWhiteSpace(), $"The empty parentheses {FuzzAssert.Format(spanText)} are not '(' and ')' around whitespace");
+                    break;
+
+                case QueryDiagnosticCode.MissingOperand:
+                    FuzzAssert.True(spanText is "-" || spanText.Equals("and", StringComparison.OrdinalIgnoreCase) || spanText.Equals("or", StringComparison.OrdinalIgnoreCase) || spanText.Equals("not", StringComparison.OrdinalIgnoreCase), $"The operator without operand {FuzzAssert.Format(spanText)} is not AND, OR, NOT or '-'");
+                    break;
+
+                case QueryDiagnosticCode.MissingValue:
+                    FuzzAssert.True(spanText is ":" or "=" or "<" or "<=" or ">" or ">=" or "<>", $"The operator without value {FuzzAssert.Format(spanText)} is not an operator");
+                    FuzzAssert.True(span.Start > 0 && !char.IsWhiteSpace(text[span.Start - 1]), "The operator without value does not follow a key");
+                    FuzzAssert.True(span.End == text.Length || char.IsWhiteSpace(text[span.End]) || text[span.End] is '(' or ')' or '=' or '<' or '>', "The operator without value is followed by a value");
+                    break;
+
+                case QueryDiagnosticCode.UnterminatedQuotedText:
+                    FuzzAssert.True(spanText[0] == '"', "The unterminated quoted text does not start with a quote");
+                    FuzzAssert.Equal(text.Length, span.End, "The unterminated quoted text does not end the query");
+                    break;
+
+                case QueryDiagnosticCode.UnknownKey:
+                    FuzzAssert.True(allowUnknownKeys, "QuerySyntax.Parse reports an unknown key");
+                    break;
+
+                default:
+                    FuzzAssert.Fail($"Unexpected diagnostic code {diagnostic.Code}");
+                    break;
+            }
+        }
+
+        if (!text.Contains('(', StringComparison.Ordinal) && !text.Contains(')', StringComparison.Ordinal))
+        {
+            FuzzAssert.False(diagnostics.Any(diagnostic => diagnostic.Code is QueryDiagnosticCode.UnmatchedCloseParenthesis or QueryDiagnosticCode.MissingCloseParenthesis or QueryDiagnosticCode.EmptyParentheses), "A query without parentheses has a parenthesis diagnostic");
+        }
+
+        if (!text.Contains('"', StringComparison.Ordinal))
+        {
+            FuzzAssert.False(diagnostics.Any(diagnostic => diagnostic.Code is QueryDiagnosticCode.UnterminatedQuotedText), "A query without quotes has an unterminated quoted text");
+        }
+    }
+
+    /// <summary>
+    /// Checks that what the lenient parser reads differently from what was typed is reported: without a parenthesis diagnostic,
+    /// no parenthesis is text and every group is closed; without a missing operand, no keyword is text; without a missing
+    /// value, every key has a value.
+    /// </summary>
+    private static void CheckDiagnosticsMatchTree(QuerySyntax root, string text, IReadOnlyList<QueryDiagnostic> diagnostics)
+    {
+        var hasParenthesisDiagnostic = diagnostics.Any(diagnostic => diagnostic.Code is QueryDiagnosticCode.UnmatchedCloseParenthesis or QueryDiagnosticCode.MissingCloseParenthesis or QueryDiagnosticCode.EmptyParentheses);
+        var hasMissingOperand = diagnostics.Any(diagnostic => diagnostic.Code is QueryDiagnosticCode.MissingOperand);
+        var hasMissingValue = diagnostics.Any(diagnostic => diagnostic.Code is QueryDiagnosticCode.MissingValue);
+
+        var stack = new Stack<QuerySyntax>();
+        stack.Push(root);
+        while (stack.TryPop(out var node))
+        {
+            switch (node)
+            {
+                case TextQuerySyntax { TextToken: { Kind: QuerySyntaxKind.TextToken } token }:
+                    var tokenText = token.Text;
+                    if (tokenText is "(" or ")")
+                    {
+                        FuzzAssert.True(hasParenthesisDiagnostic, $"The parenthesis at {token.Span} of {FuzzAssert.Format(text)} is text without a diagnostic");
+                    }
+
+                    if (tokenText is "-" || tokenText.Equals("and", StringComparison.OrdinalIgnoreCase) || tokenText.Equals("or", StringComparison.OrdinalIgnoreCase) || tokenText.Equals("not", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FuzzAssert.True(hasMissingOperand, $"The operator at {token.Span} of {FuzzAssert.Format(text)} is text without a diagnostic");
+                    }
+
+                    break;
+
+                case KeyValueQuerySyntax keyValue:
+                    if (keyValue.ValueToken.Span.Length == 0)
+                    {
+                        FuzzAssert.True(hasMissingValue, $"The key at {keyValue.KeyToken.Span} of {FuzzAssert.Format(text)} has no value and no diagnostic");
+                    }
+
+                    break;
+
+                case ParenthesizedQuerySyntax parenthesized:
+                    if (parenthesized.CloseParenthesisToken.Span.Length == 0)
+                    {
+                        FuzzAssert.True(hasParenthesisDiagnostic, $"The parenthesis at {parenthesized.OpenParenthesisToken.Span} of {FuzzAssert.Format(text)} is not closed and has no diagnostic");
+                    }
+
+                    stack.Push(parenthesized.Query);
+                    break;
+
+                default:
+                    foreach (var child in node.GetChildren())
+                    {
+                        if (child is QuerySyntax childNode)
+                        {
+                            stack.Push(childNode);
+                        }
+                    }
+
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Checks the diagnostics of a built query: the syntax diagnostics of <see cref="QuerySyntax.Parse(string, out IReadOnlyList{QueryDiagnostic})"/>,
+    /// and an unknown key for each key-value query whose key has no handler, unless an unhandled property handler takes them.
+    /// </summary>
+    private static void CheckBuilderDiagnostics(string text, IReadOnlyList<QueryDiagnostic> diagnostics, string[] knownKeys, bool hasUnhandledPropertyHandler)
+    {
+        CheckDiagnostics(text, diagnostics, allowUnknownKeys: true);
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            FuzzAssert.Equal(0, diagnostics.Count, "An empty query has diagnostics");
+            return;
+        }
+
+        var syntax = QuerySyntax.Parse(text, out var syntaxDiagnostics);
+        FuzzAssert.Equal(FormatDiagnostics(syntaxDiagnostics), FormatDiagnostics(diagnostics.Where(diagnostic => diagnostic.Code is not QueryDiagnosticCode.UnknownKey)), $"The builder and the parser report different syntax diagnostics for {FuzzAssert.Format(text)}");
+
+        var expectedUnknownKeys = new List<string>();
+        if (!hasUnhandledPropertyHandler)
+        {
+            var stack = new Stack<QuerySyntax>();
+            stack.Push(syntax);
+            while (stack.TryPop(out var node))
+            {
+                if (node is KeyValueQuerySyntax keyValue)
+                {
+                    if (!knownKeys.Contains(keyValue.KeyToken.Text, StringComparer.OrdinalIgnoreCase))
+                    {
+                        expectedUnknownKeys.Add(keyValue.KeyToken.Span.ToString());
+                    }
+
+                    continue;
+                }
+
+                var children = node.GetChildren();
+                for (var i = children.Length - 1; i >= 0; i--)
+                {
+                    if (children[i] is QuerySyntax childNode)
+                    {
+                        stack.Push(childNode);
+                    }
+                }
+            }
+        }
+
+        var unknownKeys = diagnostics.Where(diagnostic => diagnostic.Code is QueryDiagnosticCode.UnknownKey).Select(diagnostic => diagnostic.Span.ToString()).ToList();
+        FuzzAssert.Equal(string.Join(", ", expectedUnknownKeys), string.Join(", ", unknownKeys), $"The unknown keys of {FuzzAssert.Format(text)} are not the keys without a handler");
+    }
+
+    /// <summary>A strict build throws <see cref="InvalidQueryException"/> with the diagnostics of the lenient build, and only when there are some.</summary>
+    private static void CheckStrictBuild(string text, IReadOnlyList<QueryDiagnostic> lenientDiagnostics, Func<IReadOnlyList<QueryDiagnostic>> buildStrict)
+    {
+        try
+        {
+            var diagnostics = buildStrict();
+            FuzzAssert.Equal(0, lenientDiagnostics.Count, $"The strict build of {FuzzAssert.Format(text)} does not throw although the query has diagnostics");
+            FuzzAssert.Equal(0, diagnostics.Count, "A strict build returns a query with diagnostics");
+        }
+        catch (InvalidQueryException ex)
+        {
+            FuzzAssert.True(lenientDiagnostics.Count > 0, $"The strict build of {FuzzAssert.Format(text)} throws although the query has no diagnostics");
+            FuzzAssert.Equal(text, ex.Query, "InvalidQueryException.Query is not the query");
+            FuzzAssert.Equal(FormatDiagnostics(lenientDiagnostics), FormatDiagnostics(ex.Diagnostics), "The strict and lenient builds report different diagnostics");
+        }
+    }
+
+    private static string FormatDiagnostics(IEnumerable<QueryDiagnostic> diagnostics) => string.Join(", ", diagnostics.Select(diagnostic => $"{diagnostic.Code}{diagnostic}"));
+
+    /// <summary>
+    /// Builds date keywords with a time zone and a current instant read from the first bytes (a base offset, an optional
+    /// daylight saving time rule whose transitions can skip or repeat midnight, and the ticks of the instant), and builds the
+    /// rest of the input as a query. <c>today</c> spans from the first instant of the local day to the first instant of the
+    /// next one, contains the current instant, and agrees with <c>yesterday</c>, <c>@today</c>, <c>@today-1d</c>,
+    /// <c>@today+1d</c>, and with the <see cref="DateTime"/> and <see cref="DateOnly"/> forms of the same keywords.
+    /// </summary>
+    private static void TimeZoneDates(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < TimeZoneHeaderLength)
+            return;
+
+        var timeZone = CreateTimeZone(data[..6]);
+        var ticks = (long)(BitConverter.ToUInt64(data[6..TimeZoneHeaderLength]) % (ulong)(DateTimeOffset.MaxValue.UtcTicks + 1));
+        var now = new DateTimeOffset(ticks, TimeSpan.Zero);
+        var text = FuzzText.Decode(data[TimeZoneHeaderLength..]);
+        var timeProvider = new FixedTimeProvider(now);
+
+        RangeSyntax<DateTimeOffset>? offsetRange = null;
+        RangeSyntax<DateTime>? dateTimeRange = null;
+        RangeSyntax<DateOnly>? dateOnlyRange = null;
+        var builder = new QueryBuilder<QueryItem>(timeProvider, timeZone);
+        builder.AddRangeHandler<DateTimeOffset>("offset", (_, range) => { offsetRange = range; return true; });
+        builder.AddRangeHandler<DateTime>("created", (_, range) => { dateTimeRange = range; return true; });
+        builder.AddRangeHandler<DateOnly>("day", (_, range) => { dateOnlyRange = range; return true; });
+
+        try
+        {
+            var query = builder.Build(text);
+            foreach (var item in Items)
+            {
+                _ = query.Evaluate(item);
+            }
+        }
+        catch (QueryTooComplexException)
+        {
+        }
+
+        var expressionBuilder = new ExpressionQueryBuilder<QueryItem>(timeProvider, timeZone);
+        expressionBuilder.AddHandler<DateTime>("created", item => item.Created);
+        expressionBuilder.AddHandler<DateOnly>("day", item => item.Day);
+        try
+        {
+            _ = expressionBuilder.Build(text).Apply(Items.AsQueryable()).Count();
+        }
+        catch (QueryTooComplexException)
+        {
+        }
+
+        RangeSyntax<T>? Get<T>(string query, Func<RangeSyntax<T>?> captured)
+        {
+            offsetRange = null;
+            dateTimeRange = null;
+            dateOnlyRange = null;
+            _ = builder.Build(query).Evaluate(Items[0]);
+            return captured();
+        }
+
+        // The local date, computed from the offset of the zone at that instant
+        long localTicks;
+        bool isAmbiguous;
+        try
+        {
+            localTicks = now.UtcTicks + timeZone.GetUtcOffset(now).Ticks;
+            isAmbiguous = timeZone.IsAmbiguousTime(now);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // TimeZoneInfo can overflow close to the bounds of DateTime
+            return;
+        }
+
+        if (localTicks < DateTime.MinValue.Ticks || localTicks > DateTime.MaxValue.Ticks)
+            return;
+
+        var today = DateOnly.FromDateTime(new DateTime(localTicks, DateTimeKind.Unspecified));
+        var zone = $"{timeZone.ToSerializedString()} at {now.UtcTicks}";
+
+        if (today > DateOnly.MinValue && today < DateOnly.MaxValue)
+        {
+            var dates = Get("day:today", () => dateOnlyRange);
+            FuzzAssert.True(dates is not null, $"day:today is not a range in {zone}");
+            FuzzAssert.True(dates.IsInRange(today) && !dates.IsInRange(today.AddDays(-1)) && !dates.IsInRange(today.AddDays(1)), $"day:today is not the local date {today} in {zone}");
+
+            var relative = Get("day:@today", () => dateOnlyRange);
+            FuzzAssert.True(relative is not null && relative.IsInRange(today) && !relative.IsInRange(today.AddDays(-1)), $"day:@today is not the local date {today} in {zone}");
+        }
+
+        if (today == DateOnly.MinValue || today == DateOnly.MaxValue)
+            return;
+
+        var start = FirstInstantOf(today, timeZone);
+        var end = FirstInstantOf(today.AddDays(1), timeZone);
+        var yesterdayStart = FirstInstantOf(today.AddDays(-1), timeZone);
+        if (start is not { } startValue || end is not { } endValue)
+            return;
+
+        FuzzAssert.True(startValue <= now, $"The oracle start of today {startValue:O} is after {now:O} in {zone}");
+
+        // When clocks go back across midnight, the local date goes back too: a day ends at the first midnight of the next one
+        if (!isAmbiguous)
+        {
+            FuzzAssert.True(now < endValue, $"The oracle end of today {endValue:O} is before {now:O} in {zone}");
+        }
+
+        var todayRange = Get("offset:today", () => offsetRange);
+        FuzzAssert.True(todayRange is not null, $"offset:today is not a range in {zone}");
+        FuzzAssert.True(todayRange.IsInRange(startValue), $"offset:today does not contain its first instant {startValue:O} in {zone}");
+        FuzzAssert.True(todayRange.IsInRange(endValue.AddTicks(-1)), $"offset:today does not contain its last instant before {endValue:O} in {zone}");
+        FuzzAssert.False(todayRange.IsInRange(endValue), $"offset:today contains the first instant of tomorrow {endValue:O} in {zone}");
+        if (startValue.UtcTicks > DateTimeOffset.MinValue.UtcTicks)
+        {
+            FuzzAssert.False(todayRange.IsInRange(startValue.AddTicks(-1)), $"offset:today contains the instant before {startValue:O} in {zone}");
+        }
+
+        var relativeToday = Get("offset:@today", () => offsetRange);
+        FuzzAssert.True(relativeToday is not null && relativeToday.IsInRange(startValue) && !relativeToday.IsInRange(startValue.AddTicks(1)), $"offset:@today is not {startValue:O} in {zone}");
+
+        var relativeTomorrow = Get("offset:@today+1d", () => offsetRange);
+        FuzzAssert.True(relativeTomorrow is not null && relativeTomorrow.IsInRange(endValue), $"offset:@today+1d is not {endValue:O} in {zone}");
+
+        var dateTimes = Get("created:today", () => dateTimeRange);
+        FuzzAssert.True(dateTimes is not null && dateTimes.IsInRange(startValue.UtcDateTime) && !dateTimes.IsInRange(endValue.UtcDateTime), $"created:today does not match offset:today in {zone}");
+
+        if (yesterdayStart is { } yesterdayValue)
+        {
+            var yesterday = Get("offset:yesterday", () => offsetRange);
+            FuzzAssert.True(yesterday is not null && yesterday.IsInRange(yesterdayValue) && !yesterday.IsInRange(startValue), $"offset:yesterday is not [{yesterdayValue:O}, {startValue:O}) in {zone}");
+
+            var relativeYesterday = Get("offset:@today-1d", () => offsetRange);
+            FuzzAssert.True(relativeYesterday is not null && relativeYesterday.IsInRange(yesterdayValue), $"offset:@today-1d is not {yesterdayValue:O} in {zone}");
+        }
+    }
+
+    /// <summary>
+    /// The oracle of the start of a day: the first instant whose local date is not before <paramref name="date"/>, found by
+    /// stepping through the instants within 15 hours of midnight read as UTC. The offsets of the fuzzed zones, and the
+    /// instants of their transitions, are multiples of 15 minutes, so the steps cannot miss it.
+    /// </summary>
+    private static DateTimeOffset? FirstInstantOf(DateOnly date, TimeZoneInfo timeZone)
+    {
+        var midnight = date.ToDateTime(TimeOnly.MinValue).Ticks;
+        var step = TimeSpan.FromMinutes(15).Ticks;
+        var skipped = false;
+        for (var ticks = midnight - TimeSpan.FromHours(15).Ticks; ticks <= midnight + TimeSpan.FromHours(15).Ticks; ticks += step)
+        {
+            if (ticks < DateTimeOffset.MinValue.UtcTicks || ticks > DateTimeOffset.MaxValue.UtcTicks)
+            {
+                skipped = true;
+                continue;
+            }
+
+            TimeSpan offset;
+            try
+            {
+                offset = timeZone.GetUtcOffset(new DateTime(ticks, DateTimeKind.Utc));
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // TimeZoneInfo can overflow close to the bounds of DateTime
+                return null;
+            }
+
+            if (ticks + offset.Ticks >= midnight)
+            {
+                // The day starts before the first instant that can be represented
+                if (skipped && ticks - step < DateTimeOffset.MinValue.UtcTicks)
+                    return null;
+
+                // The local time must be a date of its own for the instant to be representable with its offset
+                if (ticks + offset.Ticks > DateTime.MaxValue.Ticks)
+                    return null;
+
+                return new DateTimeOffset(ticks, TimeSpan.Zero).ToOffset(offset);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// A zone whose base offset is a multiple of 15 minutes, with a daylight saving time rule when the second byte is odd:
+    /// its delta (30 or 60 minutes), and the month, day and hour of both transitions, come from the other bytes. An hour of 0 moves clocks at midnight.
+    /// </summary>
+    private static TimeZoneInfo CreateTimeZone(ReadOnlySpan<byte> data)
+    {
+        var baseOffset = TimeSpan.FromMinutes(((data[0] % 113) - 56) * 15);
+        if ((data[1] & 1) == 0)
+            return TimeZoneInfo.CreateCustomTimeZone("Fuzz", baseOffset, "Fuzz", "Fuzz");
+
+        // Up to one hour, so that clocks going back at 1:00 do not go back to the previous day: the start of a day is then the only instant the local date changes to it
+        var delta = TimeSpan.FromMinutes((((data[1] >> 1) & 1) + 1) * 30);
+        if (baseOffset + delta > TimeSpan.FromHours(14))
+        {
+            baseOffset -= delta;
+        }
+
+        try
+        {
+            var start = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, data[2] % 24, 0, 0), (data[3] % 12) + 1, (data[4] % 28) + 1);
+            var end = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, (data[2] >> 3) % 24, 0, 0), (data[5] % 12) + 1, ((data[5] >> 4) % 28) + 1);
+            var rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(DateTime.MinValue.Date, DateTime.MaxValue.Date, delta, start, end);
+            return TimeZoneInfo.CreateCustomTimeZone("Fuzz", baseOffset, "Fuzz", "Standard", "Daylight", [rule]);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidTimeZoneException)
+        {
+            return TimeZoneInfo.CreateCustomTimeZone("Fuzz", baseOffset, "Fuzz", "Fuzz");
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetTimeZoneSeeds()
+    {
+        // Zones: UTC, UTC-8, UTC+14, UTC-14, zones whose clocks skip or repeat midnight, and one that moves clocks at 6:00
+        (string Name, byte[] Zone)[] zones =
+        [
+            ("utc", [56, 0, 0, 0, 0, 0]),
+            ("utc-8", [24, 0, 0, 0, 0, 0]),
+            ("utc+14", [112, 0, 0, 0, 0, 0]),
+            ("utc-14", [0, 0, 0, 0, 0, 0]),
+            ("skip-midnight", [44, 3, 0, 2, 14, 9]),
+            ("repeat-midnight", [44, 3, 8, 2, 14, 9]),
+            ("skip-hour-at-6", [80, 3, 6, 9, 0, 3]),
+        ];
+
+        DateTimeOffset[] instants =
+        [
+            Now,
+            new(2026, 3, 15, 3, 30, 0, TimeSpan.Zero),
+            new(2026, 10, 1, 2, 30, 0, TimeSpan.Zero),
+            new(2026, 12, 31, 23, 0, 0, TimeSpan.Zero),
+            DateTimeOffset.MinValue,
+            DateTimeOffset.MaxValue,
+        ];
+
+        string[] queries = ["created:today", "day:this_week offset:last_month", "created:yesterday OR created>=@today-1w", "offset:this_year day:last_year", "day:@today-2147483647d"];
+
+        var index = 0;
+        foreach (var (name, zone) in zones)
+        {
+            foreach (var instant in instants)
+            {
+                var query = queries[index % queries.Length];
+                byte[] header = [.. zone, .. BitConverter.GetBytes((ulong)instant.UtcTicks)];
+                yield return FuzzSeed.FromText(string.Create(CultureInfo.InvariantCulture, $"{index:D3}-{name}"), header, query);
+                index++;
             }
         }
     }

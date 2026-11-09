@@ -11,8 +11,6 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 
 - **No custom pixel types.** Images use the built-in pixel formats; the buffer pool has settings
   ([ImageBufferPool](cref:Meziantou.Framework.Imaging.ImageBufferPool)) but cannot be replaced by an allocator of yours.
-- **No CMYK pixel format.** CMYK JPEG and TIFF files are converted to RGB when they are loaded, with an explicit
-  `CmykConversion` option; CMYK cannot be written. See [Color management](09-Color/03-ColorManagement.md).
 - **No floating-point grayscale.** [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) and [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) are the floating-point formats. OpenEXR and TIFF read and
   write them; the other encoders need an explicit reduction to 16 bits.
 - **Scaled and region decoding are limited to some formats.** JPEG and JPEG 2000 decode at a reduced size, and JPEG 2000,
@@ -21,14 +19,14 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 - **Color profiles are never applied implicitly.** Colors change only when you convert them
   ([ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile)). See [Color management](09-Color/03-ColorManagement.md).
 - **Color management covers ICC versions 2 and 4** grayscale, RGB and CMYK profiles, and device-link and abstract
-  profiles in sequences of profiles; no iccMAX or named-color profiles. CMYK samples are not a pixel format and no
-  encoder writes them. Gamut mapping is per-channel clipping or a chroma reduction, opt-in.
+  profiles in sequences of profiles; no iccMAX or named-color profiles. Gamut mapping is per-channel clipping or a
+  chroma reduction, opt-in.
 
 ## Formats
 
 | Format | Main limitations |
 | --- | --- |
-| JPEG | JPEG-LS mapping tables (palettes) are not read. Writing has no CMYK and stores one frame. |
+| JPEG | JPEG-LS mapping tables (palettes) are not read. Writing stores one frame, and CMYK only as 8-bit Huffman-coded baseline. |
 | GIF | At most 256 colors per frame and one fully transparent color; plain-text extensions are rejected. |
 | PNG / APNG | Sub-byte grayscale requires [PngOptimization.MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) or [PngOptimization.Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) (still images), and APNG delta rectangles [OptimizeFrames](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.OptimizeFrames) or MinimumSize; palettes are selected by [MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize), [Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) or [PngPixelLayout.Indexed](cref:Meziantou.Framework.Imaging.Formats.PngPixelLayout.Indexed). Sequential writers fix their layout and palette from the first image. |
 | WebP | 8-bit RGB(A) only; lossy output is 4:2:0; animations need a seekable destination. |
@@ -55,7 +53,8 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 
 - No mesh gradients.
 - Text lines are broken greedily.
-- No subpixel (LCD) rendering, no ruby in vertical text.
-- Hinting is opt-in and horizontal only.
+- Hinting and subpixel (LCD) rendering are opt-in. Subpixel rendering applies to a layout filled at a point with a
+  solid color on an 8- or 16-bit RGB image; other text is drawn with grayscale antialiasing.
+- A ruby annotation is set over its base only, without overhang over the text around it.
 - Installed fonts are used only when you ask for them ([Font.LoadInstalled](cref:Meziantou.Framework.Imaging.Typography.Font.LoadInstalled), [FontStack.WithInstalledFallback](cref:Meziantou.Framework.Imaging.Typography.FontStack.WithInstalledFallback)).
 - No SVG glyphs, Type 1 fonts or fonts without outlines.

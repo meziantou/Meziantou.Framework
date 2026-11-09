@@ -12,7 +12,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// The JPEG encoder registration: DCT-based JPEG of 8-bit or 12-bit samples, sequential (SOF0, SOF1, or SOF9 with
 /// arithmetic coding) or progressive (SOF2, SOF10), grayscale or YCbCr, written by one streaming session; lossless JPEG
-/// (SOF3, SOF11) is written by <see cref="JpegLosslessEncoderSession"/>.
+/// (SOF3, SOF11) is written by <see cref="JpegLosslessEncoderSession"/>, and CMYK pixels by
+/// <see cref="JpegCmykEncoderSession"/>.
 /// </summary>
 internal sealed class JpegEncoderCodec : ImageEncoderCodec
 {
@@ -36,6 +37,9 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     public override ImageEncoderSession CreateSession(ImageEncoderSessionOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
+        if (PixelFormats.IsCmyk(options.PixelFormat))
+            return new JpegCmykEncoderSession(options);
+
         var encoder = (JpegEncoder)options.Encoder;
         if (encoder.GainMap is { } gainMap)
         {

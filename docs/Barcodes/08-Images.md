@@ -202,7 +202,7 @@ transform applies.
 | [BarcodeDrawingOptions](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions) | Default | Description |
 | --- | --- | --- |
 | [ModuleWidth](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.ModuleWidth) | 2 | The width of a module |
-| [ModuleHeight](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.ModuleHeight) | 80 | The height of the bars |
+| [ModuleHeight](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.ModuleHeight) | 80 | The height of the bars; the rows of a stacked GS1 DataBar symbol are `ModuleWidth` high instead |
 | [QuietZoneModules](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.QuietZoneModules) | 10 | The width of the margins on the left and on the right, in modules |
 | [DarkBrush](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.DarkBrush) | Black | The brush of the bars |
 | [LightBrush](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.LightBrush) | White | The brush of the spaces, of the margins and of the background of the text; `null` keeps the background |

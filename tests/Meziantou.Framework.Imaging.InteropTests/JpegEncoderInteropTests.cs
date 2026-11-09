@@ -264,6 +264,48 @@ public sealed class JpegEncoderInteropTests
         Assert.True(error.Psnr > 37 && error.MaxChannelBias < 0.5, error.Describe());
     }
 
+    [Theory]
+    [InlineData(90, false, 0)]
+    [InlineData(100, true, 2)]
+    public async Task CmykOutputDecodesWithFFmpeg(int quality, bool optimizeHuffmanTables, int restartInterval)
+    {
+        // FFmpeg reads the Adobe CMYK file as inks (it complements the stored samples) and converts them with its own
+        // formula (TiffIcoInteropTests.FFmpegInkToLight). Applied to the inks the library decodes from the same file, it must
+        // give FFmpeg's colors within the error of two inverse DCTs; the inks themselves stay close to the source
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var photo = JpegTestPatterns.PhotoLike(47, 29, seed: 5);
+        var inks = new Cmyk32[photo.Width * photo.Height];
+        for (var y = 0; y < photo.Height; y++)
+        {
+            for (var x = 0; x < photo.Width; x++)
+            {
+                inks[(y * photo.Width) + x] = new Cmyk32((byte)(255 - photo.GetSample(x, y, 0)), (byte)(255 - photo.GetSample(x, y, 1)), (byte)(255 - photo.GetSample(x, y, 2)), (byte)(photo.GetSample(x, y, 1) / 3));
+            }
+        }
+
+        using var image = Image.ImportPixelData<Cmyk32>(inks, photo.Width, photo.Height);
+        var path = InteropSettings.GetArtifactsDirectory(nameof(JpegEncoderInteropTests)) / $"cmyk-q{quality}-{optimizeHuffmanTables}-{restartInterval}.jpg";
+        await image.SaveAsync(path, new JpegEncoder { Quality = quality, OptimizeHuffmanTables = optimizeHuffmanTables, RestartInterval = restartInterval }, XunitCancellationToken);
+        var rgb = Assert.Single(await ffmpeg.DecodeToRawFramesAsync(path, "rgb24", photo.Width, photo.Height, XunitCancellationToken));
+        using var decoded = Image.Load<Cmyk32>(path);
+        var decodedInks = new Cmyk32[inks.Length];
+        decoded.Frames[0].CopyPixelDataTo(decodedInks);
+        var maxColorError = 0;
+        var inkError = 0L;
+        for (var i = 0; i < inks.Length; i++)
+        {
+            var ink = decodedInks[i];
+            maxColorError = Math.Max(maxColorError, Math.Abs(rgb[i * 3] - TiffIcoInteropTests.FFmpegInkToLight(ink.C, ink.K)));
+            maxColorError = Math.Max(maxColorError, Math.Abs(rgb[(i * 3) + 1] - TiffIcoInteropTests.FFmpegInkToLight(ink.M, ink.K)));
+            maxColorError = Math.Max(maxColorError, Math.Abs(rgb[(i * 3) + 2] - TiffIcoInteropTests.FFmpegInkToLight(ink.Y, ink.K)));
+            inkError += Math.Abs(ink.C - inks[i].C) + Math.Abs(ink.M - inks[i].M) + Math.Abs(ink.Y - inks[i].Y) + Math.Abs(ink.K - inks[i].K);
+        }
+
+        Assert.True(maxColorError <= 2, $"FFmpeg {ffmpeg.Version}: largest color difference {maxColorError}.");
+        var meanInkError = (double)inkError / (inks.Length * 4);
+        Assert.True(meanInkError <= (quality == 100 ? 0.5 : 2), string.Create(CultureInfo.InvariantCulture, $"Mean ink error {meanInkError:F3}."));
+    }
+
     [Fact]
     public async Task MetadataIsReadByFFmpegAndTheIndependentWalker()
     {

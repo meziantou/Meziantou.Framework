@@ -1046,6 +1046,140 @@ public sealed class QueryBuilderTests
         Assert.True(queryBuilder.Build("equals:@today-1d").Evaluate(sample));
     }
 
+    [Fact]
+    public void Documentation_TimeZone()
+    {
+        #region QueryBuilder_TimeZone
+        // 7 PM on March 17 for a user in UTC-8, but already March 18 in UTC
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 3, 18, 3, 0, 0, TimeSpan.Zero));
+        var userTimeZone = TimeZoneInfo.CreateCustomTimeZone("UTC-8", TimeSpan.FromHours(-8), "UTC-8", "UTC-8");
+        var queryBuilder = new QueryBuilder<Issue>(timeProvider, userTimeZone);
+        queryBuilder.AddRangeHandler<DateTime>("created", (issue, range) => range.IsInRange(issue.CreatedAt));
+
+        var issue = new Issue("Morning", "alice", IsOpen: true, Comments: 0, new DateTime(2026, 3, 17, 17, 0, 0, DateTimeKind.Utc));
+
+        // Day boundaries are midnight in the user's time zone: today is March 17, from 08:00 UTC to March 18 08:00 UTC
+        Assert.True(queryBuilder.Build("created:today").Evaluate(issue));
+        Assert.True(queryBuilder.Build("created>=@today").Evaluate(issue));
+        Assert.False(new QueryBuilder<Issue>(timeProvider).Build("created:today").Evaluate(issue));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("date:today", "2026-03-17T08:00:00Z", true)]
+    [InlineData("date:today", "2026-03-17T07:59:59Z", false)]
+    [InlineData("date:today", "2026-03-18T07:59:59Z", true)]
+    [InlineData("date:today", "2026-03-18T08:00:00Z", false)]
+    [InlineData("date:yesterday", "2026-03-16T08:00:00Z", true)]
+    [InlineData("date:yesterday", "2026-03-17T08:00:00Z", false)]
+    [InlineData("date:this_week", "2026-03-16T08:00:00Z", true)]
+    [InlineData("date:this_week", "2026-03-16T07:59:59Z", false)]
+    [InlineData("date:this_month", "2026-03-01T08:00:00Z", true)]
+    [InlineData("date:this_month", "2026-03-01T07:59:59Z", false)]
+    [InlineData("date:last_month", "2026-03-01T07:59:59Z", true)]
+    [InlineData("date:this_year", "2026-01-01T08:00:00Z", true)]
+    [InlineData("date:last_year", "2026-01-01T07:59:59Z", true)]
+    [InlineData("date>=@today-1d", "2026-03-16T08:00:00Z", true)]
+    [InlineData("date>=@today-1d", "2026-03-16T07:59:59Z", false)]
+    [InlineData("date<@today+1w", "2026-03-24T07:59:59Z", true)]
+    [InlineData("date<@today+1w", "2026-03-24T08:00:00Z", false)]
+    public void DateKeyword_UsesTimeZone(string query, string date, bool expectedResult)
+    {
+        // March 17, 2026 at 19:00 in UTC-8
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 3, 18, 3, 0, 0, TimeSpan.Zero));
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("UTC-8", TimeSpan.FromHours(-8), "UTC-8", "UTC-8");
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider, timeZone);
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+        var value = DateTime.Parse(date, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { DateTimeValue = value }));
+    }
+
+    [Fact]
+    public void DateKeyword_UsesTimeZone_ForEveryDateType()
+    {
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 3, 18, 3, 0, 0, TimeSpan.Zero));
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("UTC-8", TimeSpan.FromHours(-8), "UTC-8", "UTC-8");
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider, timeZone);
+        queryBuilder.AddRangeHandler<DateOnly>("dateonly", (obj, range) => range.IsInRange(obj.DateOnlyValue));
+        queryBuilder.AddRangeHandler<DateTimeOffset>("offset", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        queryBuilder.AddRangeHandler<DateTime?>("nullable", (obj, range) => range.IsInRange(obj.NullableDateTimeValue));
+        DateTimeOffset? lowerBound = null;
+        queryBuilder.AddRangeHandler<DateTimeOffset>("bound", (obj, range) =>
+        {
+            lowerBound = Assert.IsType<BinaryRangeSyntax<DateTimeOffset>>(range).LowerBound;
+            return true;
+        });
+
+        // A date is the user's date, not the UTC one
+        Assert.True(queryBuilder.Build("dateonly:today").Evaluate(new Sample { DateOnlyValue = new DateOnly(2026, 3, 17) }));
+        Assert.False(queryBuilder.Build("dateonly:today").Evaluate(new Sample { DateOnlyValue = new DateOnly(2026, 3, 18) }));
+        Assert.True(queryBuilder.Build("dateonly:@today-1d").Evaluate(new Sample { DateOnlyValue = new DateOnly(2026, 3, 16) }));
+
+        Assert.True(queryBuilder.Build("offset:today").Evaluate(new Sample { DateTimeOffsetValue = new DateTimeOffset(2026, 3, 17, 0, 0, 0, TimeSpan.FromHours(-8)) }));
+        Assert.False(queryBuilder.Build("offset:today").Evaluate(new Sample { DateTimeOffsetValue = new DateTimeOffset(2026, 3, 17, 7, 59, 0, TimeSpan.Zero) }));
+        Assert.True(queryBuilder.Build("nullable:today").Evaluate(new Sample { NullableDateTimeValue = new DateTime(2026, 3, 17, 8, 0, 0, DateTimeKind.Utc) }));
+
+        // A DateTimeOffset bound carries the offset of the time zone
+        queryBuilder.Build("bound:today").Evaluate(new Sample());
+        Assert.Equal(TimeSpan.FromHours(-8), lowerBound?.Offset);
+        Assert.Equal(new DateTime(2026, 3, 17, 0, 0, 0, DateTimeKind.Unspecified), lowerBound?.DateTime);
+    }
+
+    // Clocks go from 00:00 to 01:00 on March 15 (the day starts at 01:00 local, 03:00 UTC),
+    // and from 01:00 back to 00:00 on October 4 (the day starts at the first midnight, 02:00 UTC)
+    [Theory]
+    [InlineData("2026-03-15T14:00:00Z", "date:today", "2026-03-15T03:00:00Z", true)]
+    [InlineData("2026-03-15T14:00:00Z", "date:today", "2026-03-15T02:59:59Z", false)]
+    [InlineData("2026-03-15T14:00:00Z", "date:yesterday", "2026-03-15T02:59:59Z", true)]
+    [InlineData("2026-03-15T14:00:00Z", "date:today", "2026-03-16T01:59:59Z", true)]
+    [InlineData("2026-03-15T14:00:00Z", "date:today", "2026-03-16T02:00:00Z", false)]
+    [InlineData("2026-03-15T14:00:00Z", "date>=@today", "2026-03-15T03:00:00Z", true)]
+    [InlineData("2026-03-15T14:00:00Z", "date>=@today", "2026-03-15T02:59:59Z", false)]
+    [InlineData("2026-10-04T15:00:00Z", "date:today", "2026-10-04T02:00:00Z", true)]
+    [InlineData("2026-10-04T15:00:00Z", "date:today", "2026-10-04T01:59:59Z", false)]
+    [InlineData("2026-10-04T15:00:00Z", "date:yesterday", "2026-10-04T01:59:59Z", true)]
+    [InlineData("2026-10-04T15:00:00Z", "date:today", "2026-10-05T02:59:59Z", true)]
+    [InlineData("2026-10-04T15:00:00Z", "date:today", "2026-10-05T03:00:00Z", false)]
+    public void DateKeyword_UsesTimeZone_AcrossDaylightSavingTime(string now, string query, string date, bool expectedResult)
+    {
+        var dstStart = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 0, 0, 0), month: 3, day: 15);
+        var dstEnd = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 1, 0, 0), month: 10, day: 4);
+        var rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(new DateTime(2026, 1, 1), new DateTime(2026, 12, 31), TimeSpan.FromHours(1), dstStart, dstEnd);
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("Midnight DST", TimeSpan.FromHours(-3), "Midnight DST", "Standard", "Daylight", [rule]);
+
+        var timeProvider = new FakeTimeProvider(DateTimeOffset.Parse(now, CultureInfo.InvariantCulture));
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider, timeZone);
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+        var value = DateTime.Parse(date, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { DateTimeValue = value }));
+    }
+
+    [Theory]
+    [InlineData(-14)]
+    [InlineData(14)]
+    public void DateKeyword_UsesTimeZone_AtTheLimitsOfDates(int offsetInHours)
+    {
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("Limit", TimeSpan.FromHours(offsetInHours), "Limit", "Limit");
+        foreach (var now in new[] { DateTimeOffset.MinValue, DateTimeOffset.MaxValue })
+        {
+            var queryBuilder = new QueryBuilder<Sample>(new FakeTimeProvider(now), timeZone);
+            queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+            queryBuilder.AddRangeHandler<DateTimeOffset>("offset", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+            queryBuilder.AddRangeHandler<DateOnly>("dateonly", (obj, range) => range.IsInRange(obj.DateOnlyValue));
+            foreach (var key in new[] { "date", "offset", "dateonly" })
+            {
+                foreach (var keyword in new[] { "today", "yesterday", "this_week", "this_month", "last_month", "this_year", "last_year", "@today", "@today-1d", "@today+1d" })
+                {
+                    queryBuilder.Build($"{key}:{keyword}").Evaluate(new Sample());
+                }
+            }
+        }
+    }
+
     [Theory]
     [InlineData("stars:10..*", true)]
     [InlineData("stars:11..*", false)]
@@ -1463,6 +1597,135 @@ public sealed class QueryBuilderTests
 
         Assert.True(query.Evaluate(new Sample { StringValue = "a ) b" }));
         Assert.False(query.Evaluate(new Sample { StringValue = "a b" }));
+    }
+
+    [Theory]
+    [InlineData("a b", "")]
+    [InlineData("a OR b", "")]
+    [InlineData("a OR", "MissingOperand[2,4)")]
+    [InlineData("(a OR)", "MissingOperand[3,5)")]
+    [InlineData("a AND", "MissingOperand[2,5)")]
+    [InlineData("AND a", "MissingOperand[0,3)")]
+    [InlineData("OR a", "MissingOperand[0,2)")]
+    [InlineData("a AND OR b", "MissingOperand[2,5)")]
+    [InlineData("NOT", "MissingOperand[0,3)")]
+    [InlineData("a -", "MissingOperand[2,3)")]
+    [InlineData("(NOT)", "MissingOperand[1,4)")]
+    [InlineData("not:value", "")]
+    [InlineData("state:or", "")]
+    [InlineData("(a", "MissingCloseParenthesis[0,1)")]
+    [InlineData("a (", "MissingCloseParenthesis[2,3)")]
+    [InlineData("((a)", "MissingCloseParenthesis[0,1)")]
+    [InlineData("a OR (", "MissingCloseParenthesis[5,6)")]
+    [InlineData("(a OR", "MissingCloseParenthesis[0,1), MissingOperand[3,5)")]
+    [InlineData(")", "UnmatchedCloseParenthesis[0,1)")]
+    [InlineData("a ) b", "UnmatchedCloseParenthesis[2,3)")]
+    [InlineData("(a))", "UnmatchedCloseParenthesis[3,4)")]
+    [InlineData("()", "EmptyParentheses[0,2)")]
+    [InlineData("a (())", "EmptyParentheses[3,5)")]
+    [InlineData("key:", "MissingValue[3,4)")]
+    [InlineData("key: value", "MissingValue[3,4)")]
+    [InlineData("key>=", "MissingValue[3,5)")]
+    [InlineData("key:\"\"", "")]
+    [InlineData("\"abc", "UnterminatedQuotedText[0,4)")]
+    [InlineData("a \"b\"\"", "UnterminatedQuotedText[2,6)")]
+    [InlineData("\"a \"\" b\"", "")]
+    [InlineData("key:\"value", "UnterminatedQuotedText[4,10)")]
+    public void Parse_Diagnostics(string query, string expectedDiagnostics)
+    {
+        var syntax = QuerySyntax.Parse(query, out var diagnostics);
+
+        Assert.Equal(expectedDiagnostics, string.Join(", ", diagnostics.Select(diagnostic => $"{diagnostic.Code}{diagnostic.Span}")));
+        Assert.Equal(QuerySyntax.Parse(query).ToString(), syntax.ToString());
+        Assert.All(diagnostics, diagnostic => Assert.False(string.IsNullOrEmpty(diagnostic.Message)));
+    }
+
+    [Fact]
+    public void Diagnostics_Documentation()
+    {
+        #region QueryBuilder_Diagnostics
+        var queryBuilder = new QueryBuilder<Issue>();
+        queryBuilder.AddHandler("author", (issue, value) => issue.Author.Equals(value, StringComparison.OrdinalIgnoreCase));
+        queryBuilder.SetTextFilterHandler((issue, text) => issue.Title.Contains(text, StringComparison.OrdinalIgnoreCase));
+
+        // The query is read leniently, and the diagnostics tell the user what was not understood
+        var query = queryBuilder.Build("(author:alice OR label:bug");
+        Assert.Equal(["[0,1): '(' is not closed", "[17,22): The key 'label' is unknown"], query.Diagnostics.Select(diagnostic => diagnostic.ToString()));
+
+        // In strict mode, Build throws instead
+        queryBuilder.Strict = true;
+        var exception = Assert.Throws<InvalidQueryException>(() => queryBuilder.Build("crash AND"));
+        var diagnostic = Assert.Single(exception.Diagnostics);
+        Assert.Equal(QueryDiagnosticCode.MissingOperand, diagnostic.Code);
+        Assert.Equal(6, diagnostic.Span.Start);
+        Assert.Equal(3, diagnostic.Span.Length);
+        #endregion
+    }
+
+    [Fact]
+    public void Diagnostics_UnknownKeys()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+        queryBuilder.AddHandler("is", "open", obj => true);
+        queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
+
+        var query = queryBuilder.Build("Int32:1 other:1 (-missing>2 OR is:unknown) text");
+
+        Assert.Equal(["UnknownKey[8,13)", "UnknownKey[18,25)"], query.Diagnostics.Select(diagnostic => $"{diagnostic.Code}{diagnostic.Span}"));
+        Assert.Equal("The key 'other' is unknown", query.Diagnostics[0].Message);
+    }
+
+    [Fact]
+    public void Diagnostics_UnhandledPropertyHandler_NoUnknownKey()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetUnhandledPropertyHandler((obj, name, op, value) => true);
+
+        Assert.Empty(queryBuilder.Build("other:1").Diagnostics);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("int32:1 OR text")]
+    public void Diagnostics_ValidQuery_Empty(string text)
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+        queryBuilder.Strict = true;
+
+        var query = queryBuilder.Build(text);
+
+        Assert.Empty(query.Diagnostics);
+    }
+
+    [Fact]
+    public void Diagnostics_Lenient_QueryIsStillEvaluated()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+        queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
+
+        var query = queryBuilder.Build("int32:1 OR");
+
+        Assert.Equal(QueryDiagnosticCode.MissingOperand, Assert.Single(query.Diagnostics).Code);
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, StringValue = "OR" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 1, StringValue = "dummy" }));
+    }
+
+    [Fact]
+    public void Diagnostics_Strict_Throws()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+        queryBuilder.Strict = true;
+
+        var exception = Assert.Throws<InvalidQueryException>(() => queryBuilder.Build("other:1 (int32:1"));
+
+        Assert.Equal("other:1 (int32:1", exception.Query);
+        Assert.Equal([QueryDiagnosticCode.UnknownKey, QueryDiagnosticCode.MissingCloseParenthesis], exception.Diagnostics.Select(diagnostic => diagnostic.Code));
+        Assert.Equal("The query is not valid: [0,5): The key 'other' is unknown (and 1 more)", exception.Message);
     }
 
     [Fact]

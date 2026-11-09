@@ -88,7 +88,8 @@ Assert.False(queryBuilder.Build("label:bug").Evaluate(item));
 
 ## Queries from users
 
-A malformed query is never an error, but a query can be too complex to evaluate: thousands of nested parentheses, or
+A malformed query is read leniently, and its problems are listed in [Diagnostics](cref:Meziantou.Framework.SimpleQueryLanguage.Query{T}.Diagnostics) to show to the user; see
+[Malformed queries](03-QuerySyntax.md#malformed-queries). A query can still be too complex to evaluate: thousands of nested parentheses, or
 many `OR` groups combined with `AND`. [Build](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}.Build) then throws a [QueryTooComplexException](cref:Meziantou.Framework.SimpleQueryLanguage.QueryTooComplexException). Catch it when the query comes
 from a user:
 

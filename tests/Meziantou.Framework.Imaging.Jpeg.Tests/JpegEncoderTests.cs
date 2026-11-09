@@ -1368,6 +1368,86 @@ public sealed class JpegEncoderTests
         }
     }
 
+    [Theory]
+    [InlineData(75, false, 0)]
+    [InlineData(95, true, 0)]
+    [InlineData(50, true, 3)]
+    public void CmykPixelsAreWrittenAsAdobeInksThatMatchTheEncoderModel(int quality, bool optimizeHuffmanTables, int restartInterval)
+    {
+        foreach (var (width, height) in new[] { (1, 1), (7, 5), (16, 8), (17, 9), (33, 31) })
+        {
+            // Four planes of different content: the inks are those of a photo-like image and of its luma
+            var photo = JpegTestPatterns.PhotoLike(width, height, seed: width + (3 * height));
+            var inks = new Cmyk32[width * height];
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var (r, g, b) = ((byte)photo.GetSample(x, y, 0), (byte)photo.GetSample(x, y, 1), (byte)photo.GetSample(x, y, 2));
+                    inks[(y * width) + x] = new Cmyk32((byte)(255 - r), (byte)(255 - g), (byte)(255 - b), (byte)((r + (2 * g) + b) / 4));
+                }
+            }
+
+            using var image = Image.ImportPixelData<Cmyk32>(inks, width, height);
+            var encoder = new JpegEncoder { Quality = quality, OptimizeHuffmanTables = optimizeHuffmanTables, RestartInterval = restartInterval, ChromaSubsampling = JpegChromaSubsampling.Ratio420 };
+            var jpeg = Encode(image, encoder);
+            var context = $"{width}x{height} q{quality}";
+
+            // Four components without subsampling and the Adobe transform 0 (no color conversion), baseline
+            var reference = ReferenceJpeg.Parse(jpeg);
+            Assert.False(reference.IsProgressive);
+            Assert.Equal(restartInterval, reference.RestartInterval);
+            Assert.HasCount(4, reference.Components);
+            Assert.All(reference.Components, component => Assert.Equal((1, 1), (component.H, component.V)));
+            var adobe = Assert.Single(reference.Segments, segment => segment.Marker == 0xEE);
+            Assert.Equal((byte)'A', adobe.Payload.Span[0]);
+            Assert.Equal(0, adobe.Payload.Span[11]);
+
+            // Each component is the complement of its ink, transformed like a gray image with the luminance table
+            var table = JpegEncoderModel.ScaleTable(JpegEncoderModel.AnnexKLuminance, quality);
+            var expected = new List<ReferenceJpegModelBlocks>();
+            for (var component = 0; component < 4; component++)
+            {
+                var plane = inks.Select(ink => (byte)(255 - component switch { 0 => ink.C, 1 => ink.M, 2 => ink.Y, _ => ink.K })).ToArray();
+                expected.Add(JpegEncoderModel.ComputeCoefficients(RawPixelBuffer.Create(width, height, RawPixelLayout.Gray8, plane), 1, 1, table, table)[0]);
+            }
+
+            var comparison = JpegEncoderModel.Compare(expected, reference.DecodeCoefficients());
+            Assert.True(comparison.IsMatch, context + ": " + comparison.Describe());
+
+            // The file is read back as CMYK
+            Assert.Equal(ImageColorModel.Cmyk, Image.Identify(jpeg).ColorModel);
+            using var decoded = Image.Load<Cmyk32>(jpeg);
+            Assert.Equal(image.Size, decoded.Size);
+        }
+    }
+
+    [Fact]
+    public void CmykOutputKeepsTheProfileAndRejectsWhatItCannotStore()
+    {
+        using var image = new Image<Cmyk64>(9, 4);
+        image.Metadata.IccProfile = IccTestProfiles.CmykLabLut16();
+        Assert.Equal("Bit depth reduction", Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new JpegEncoder())).Feature);
+        Assert.Equal("Progressive CMYK JPEG", Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new JpegEncoder { AllowBitDepthReduction = true, Process = JpegEncodingProcess.Progressive })).Feature);
+        Assert.Equal("Lossless CMYK JPEG", Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new JpegEncoder { AllowBitDepthReduction = true, Process = JpegEncodingProcess.Lossless })).Feature);
+        Assert.Equal("Arithmetic-coded CMYK JPEG", Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new JpegEncoder { AllowBitDepthReduction = true, EntropyCoding = JpegEntropyCoding.Arithmetic })).Feature);
+        Assert.Equal("12-bit CMYK JPEG", Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new JpegEncoder { AllowBitDepthReduction = true, BitDepth = 12 })).Feature);
+        using (var gainMap = CreateGrayGradient(4, 2))
+        {
+            var metadata = new GainMapMetadata(0, 3, [new GainMapChannel(-0.5, 3, gamma: 1, baseOffset: 1.0 / 64, alternateOffset: 1.0 / 64)]);
+            Assert.Equal("Gain map with CMYK pixels", Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new JpegEncoder { AllowBitDepthReduction = true, GainMap = new GainMap(gainMap, metadata) })).Feature);
+        }
+
+
+        var jpeg = Encode(image, new JpegEncoder { AllowBitDepthReduction = true });
+        using var decoded = Image.Load<Cmyk64>(jpeg);
+        Assert.Equal(image.Metadata.IccProfile.Data.ToArray(), decoded.Metadata.IccProfile?.Data.ToArray());
+
+        // An RGB profile does not describe inks: it follows the metadata policy
+        image.Metadata.IccProfile = IccProfile.Srgb;
+        Assert.Throws<UnsupportedImageFeatureException>(() => Encode(image, new JpegEncoder { AllowBitDepthReduction = true, MetadataHandling = MetadataHandling.Strict }));
+    }
+
     [Fact]
     public void HarnessReadsProgressiveFilesOfAnotherEncoder()
     {

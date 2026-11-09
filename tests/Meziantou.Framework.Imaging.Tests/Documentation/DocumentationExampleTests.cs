@@ -2844,6 +2844,45 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void KeepCmykInksKeepsTheInksAndPreviewsThem()
+    {
+        // A CMYK JPEG of the corpus without profile: the inks are kept, the preview uses the device CMYK formulas
+        var path = GoldenCorpus.Default.Get("invalid/jpeg/cmyk-without-adobe-restart").InputPath;
+        var tiff = GetPath("inks.tif");
+        var preview = GetPath("preview.png");
+        Examples.KeepCmykInks(path, tiff, preview);
+        using var source = Image.Load<Cmyk32>(path);
+        using var inks = Image.Load<Cmyk32>(tiff);
+        Assert.Equal(new Size(source.Width / 2, source.Height), inks.Size);
+        Assert.Equal(source.Frames[0][1, 1], inks.Frames[0][1, 1]);
+
+        using var colors = Image.Load<Rgb24>(preview);
+        var ink = inks.Frames[0][1, 1];
+        var expected = new Cmyk(ink.C / 255.0, ink.M / 255.0, ink.Y / 255.0, ink.K / 255.0).ToRgba32();
+        Assert.Equal(new Rgb24(expected.R, expected.G, expected.B), colors.Frames[0][1, 1]);
+        Assert.Null(colors.Metadata.IccProfile);
+    }
+
+    [Fact]
+    public void SaveForPrintSeparatesTheColorsWithThePressProfile()
+    {
+        var press = IccTestProfiles.CmykLabLut16();
+        using var image = new Image<Rgba32>(16, 8, new Rgba32(200, 30, 60, 255));
+        image.Frames[0][0, 0] = new Rgba32(0, 0, 0, 0);
+        var path = GetPath("press.jpg");
+        Examples.SaveForPrint(image, press, path);
+
+        using var inks = Image.Load<Cmyk32>(path);
+        Assert.Equal(press.Data.ToArray(), inks.Metadata.IccProfile?.Data.ToArray());
+
+        // The transparent pixel is flattened on white (no error), the others get the inks of the color through the press profile
+        var expected = new byte[4];
+        IccColorTransform.Create(IccProfile.Srgb, press, new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual }).Convert([200, 30, 60], expected);
+        var actual = inks.Frames[0][8, 4];
+        Assert.True(Math.Abs(actual.C - expected[0]) <= 2 && Math.Abs(actual.M - expected[1]) <= 2 && Math.Abs(actual.Y - expected[2]) <= 2 && Math.Abs(actual.K - expected[3]) <= 2, $"{actual} vs [{string.Join(", ", expected)}]");
+    }
+
+    [Fact]
     public void ConvertSamplesToSrgbConvertsInterleavedSamples()
     {
         var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());

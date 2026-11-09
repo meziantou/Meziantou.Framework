@@ -23,10 +23,12 @@ public sealed class QueryBuilder<T>
     private static readonly Predicate<T> AlwaysTruePredicate = _ => true;
 
     private readonly TimeProvider _timeProvider;
+    private readonly TimeZoneInfo _timeZone;
 
     // Each handler turns the operator and value of a query term into a predicate when the query is built,
     // so values are parsed once per term instead of once per evaluated object.
     private readonly Dictionary<FilterKeyValue, Func<KeyValueOperator, string, Predicate<T>>> _filters = [];
+    private readonly HashSet<string> _keys = [];
     private Func<T, string, bool>? _freeTextFilter;
     private UnhandledPropertyDelegate<T>? _unhandledPropertyFilter;
 
@@ -39,14 +41,36 @@ public sealed class QueryBuilder<T>
     /// <summary>Initializes a new instance of <see cref="QueryBuilder{T}"/> with a specific time provider for date-related range keywords.</summary>
     /// <param name="timeProvider">The time provider to use, or <see langword="null"/> to use <see cref="TimeProvider.System"/>.</param>
     public QueryBuilder(TimeProvider? timeProvider)
+        : this(timeProvider, timeZone: null)
+    {
+    }
+
+    /// <summary>Initializes a new instance of <see cref="QueryBuilder{T}"/> with a specific time provider and time zone for date-related range keywords.</summary>
+    /// <param name="timeProvider">The time provider to use, or <see langword="null"/> to use <see cref="TimeProvider.System"/>.</param>
+    /// <param name="timeZone">
+    /// The time zone that gives the day boundaries of date keywords, such as <c>today</c> and <c>@today-3d</c>,
+    /// or <see langword="null"/> to use <see cref="TimeZoneInfo.Utc"/>.
+    /// </param>
+    public QueryBuilder(TimeProvider? timeProvider, TimeZoneInfo? timeZone)
     {
         _timeProvider = timeProvider ?? TimeProvider.System;
+        _timeZone = timeZone ?? TimeZoneInfo.Utc;
     }
 
     private void RegisterHandler(string key, string? value, Func<KeyValueOperator, string, Predicate<T>> handler)
     {
-        _filters.Add(new FilterKeyValue(key.ToLowerInvariant(), value?.ToLowerInvariant()), handler);
+        var lowerKey = key.ToLowerInvariant();
+        _filters.Add(new FilterKeyValue(lowerKey, value?.ToLowerInvariant()), handler);
+        _keys.Add(lowerKey);
     }
+
+    /// <summary>Gets or sets whether <see cref="Build"/> throws when the query has diagnostics.</summary>
+    /// <value>
+    /// <see langword="true"/> to throw an <see cref="InvalidQueryException"/> for a query with diagnostics, such as an unbalanced
+    /// parenthesis or an unknown key; <see langword="false"/> (the default) to read the query leniently and report the
+    /// diagnostics in <see cref="Query{T}.Diagnostics"/>.
+    /// </value>
+    public bool Strict { get; set; }
 
     /// <summary>Registers a handler for a key-value pair that evaluates based on the operator.</summary>
     /// <param name="key">The property key to handle.</param>
@@ -81,7 +105,7 @@ public sealed class QueryBuilder<T>
     /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddHandler<TValue>(string key, Func<T, KeyValueOperator, TValue, bool> predicate, ScalarParser<TValue>? tryParseValue)
     {
-        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider);
+        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider, _timeZone);
         RegisterHandler(key, value: null, (op, value) =>
         {
             if (!tryParse(value, out var parsedValue))
@@ -124,7 +148,7 @@ public sealed class QueryBuilder<T>
     /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddHandler<TValue>(string key, Func<T, TValue, bool> predicate, ScalarParser<TValue>? tryParseValue)
     {
-        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider);
+        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider, _timeZone);
         RegisterHandler(key, value: null, (op, value) =>
         {
             // The predicate only tests for a match, so only the equality operators have a meaning
@@ -142,7 +166,7 @@ public sealed class QueryBuilder<T>
     /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddRangeHandler<TValue>(string key, Func<T, RangeSyntax<TValue>, bool> predicate, ScalarParser<TValue>? tryParseValue)
     {
-        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider);
+        var tryParse = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider, _timeZone);
         RegisterHandler(key, value: null, (op, value) => CreateRangePredicate(op, value, predicate, tryParse));
     }
 
@@ -163,7 +187,7 @@ public sealed class QueryBuilder<T>
         // field<>1..10
         if (op is KeyValueOperator.EqualTo or KeyValueOperator.NotEqualTo)
         {
-            var range = RangeSyntax.TryParse(value, tryParseValue, _timeProvider);
+            var range = RangeSyntax.TryParse(value, tryParseValue, _timeProvider, _timeZone);
             if (range is null)
                 return AlwaysFalsePredicate;
 
@@ -222,20 +246,29 @@ public sealed class QueryBuilder<T>
     /// Values, including date keywords such as <c>today</c>, are parsed when the query is built. Handlers registered
     /// or changed afterward do not affect the returned query.
     /// </remarks>
+    /// <exception cref="QueryTooComplexException">The query is too complex to be evaluated.</exception>
+    /// <exception cref="InvalidQueryException"><see cref="Strict"/> is <see langword="true"/> and the query has diagnostics.</exception>
     public Query<T> Build(string query)
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        var predicate = CreatePredicate(query);
-        return new Query<T>(query, predicate);
+        if (string.IsNullOrWhiteSpace(query))
+            return new Query<T>(query, AlwaysTruePredicate, diagnostics: []);
+
+        var syntax = QuerySyntax.Parse(query, out var diagnostics);
+        diagnostics = QuerySyntax.AddUnknownKeyDiagnostics(syntax, diagnostics, IsKnownKey);
+        if (Strict && diagnostics.Count > 0)
+            throw new InvalidQueryException(query, diagnostics);
+
+        var predicate = CreatePredicate(syntax);
+        return new Query<T>(query, predicate, diagnostics);
     }
 
-    private Predicate<T> CreatePredicate(string query)
-    {
-        if (string.IsNullOrWhiteSpace(query))
-            return AlwaysTruePredicate;
+    // A key without a handler is searched as text, unless the unhandled property handler takes it
+    private bool IsKnownKey(string key) => _unhandledPropertyFilter is not null || _keys.Contains(key.ToLowerInvariant());
 
-        var syntax = QuerySyntax.Parse(query);
+    private Predicate<T> CreatePredicate(QuerySyntax syntax)
+    {
         var boundQuery = BoundQuery.Create(syntax);
 
         var context = new BuildContext(_freeTextFilter, _unhandledPropertyFilter);

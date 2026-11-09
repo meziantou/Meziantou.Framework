@@ -559,6 +559,9 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
     /// <summary>Rejects floating-point pixels before anything exists, unless the encoder stores them or says how to reduce them.</summary>
     private static void EnsureEncodable(ImageEncoder encoder, ImageOutputCapabilities capabilities, PixelFormat pixelFormat)
     {
+        if (PixelFormats.IsCmyk(pixelFormat) && !encoder.StoresCmykPixels)
+            throw CreateCmykOutputException(capabilities.Name, capabilities.Format, pixelFormat);
+
         if (PixelFormats.IsFloatingPoint(pixelFormat) && !encoder.StoresFloatingPointSamples && encoder.FloatingPointConversion is null)
         {
             throw new UnsupportedImageFeatureException(
@@ -567,6 +570,10 @@ internal sealed class ImageWriterCore : IDisposable, IAsyncDisposable
                 "Floating-point samples");
         }
     }
+
+    /// <summary>Creates the error of CMYK pixels given to an output that stores colors of light only.</summary>
+    internal static UnsupportedImageFeatureException CreateCmykOutputException(string formatName, ImageFormat format, PixelFormat pixelFormat)
+        => new($"{formatName} output does not store CMYK samples, so encoding {pixelFormat} pixels would convert their colors. Convert the image explicitly with CloneAs and PixelConversionOptions.CmykConversion, or save it as JPEG or TIFF.", format, "CMYK samples");
 
     /// <summary>
     /// Gets the frame the session encodes: the frame itself, or its reduction (the one made by <see cref="PreflightFrames"/>

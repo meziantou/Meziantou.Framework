@@ -63,11 +63,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// as one worker does. The pixels and the errors never depend on the number of workers.
 /// </description></item>
 /// <item><description>
-/// Four-component frames (CMYK, YCCK) are inks: no pixel format holds them, so they are decoded only when the request
-/// carries a <see cref="CmykConversionOptions"/>. The rows are converted to RGB by an ICC conversion from the CMYK profile
-/// of the file (or the assumed one) to the destination profile, which labels the image: the pixels and their profile
-/// change together, and the CMYK profile is not kept. Without the options, or without any source profile, the frame is
-/// an <see cref="UnsupportedImageFeatureException"/> raised before any allocation.
+/// Four-component frames (CMYK, YCCK) are inks. With a <see cref="CmykConversionOptions"/> (and a request for another
+/// format than CMYK), the rows are converted to RGB by an ICC conversion from the CMYK profile of the file (or the assumed
+/// one) to the destination profile, which labels the image: the pixels and their profile change together, and the CMYK
+/// profile is not kept. A request for CMYK pixels, or for another format with <see cref="PixelConversionOptions.CmykConversion"/>,
+/// gets the ink amounts as <see cref="PixelFormat.Cmyk32"/> or <see cref="PixelFormat.Cmyk64"/> rows labeled with the
+/// CMYK profile, which the sink converts. Otherwise the frame is an <see cref="UnsupportedImageFeatureException"/> raised
+/// before any allocation.
 /// </description></item>
 /// <item><description>
 /// Samples that do not have 8 bits are kept in 16-bit planes and written scaled to 16 bits (<see cref="JpegDeepRowWriter"/>):
@@ -290,14 +292,23 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         // The rows of the writer: 8-bit samples as they are, the other ones scaled to 16 bits (16-bit color as opaque RGBA)
         var source = PixelFormatWidening.GetWidenedFormat(DefaultPixelFormats.ForJpeg(components.Length, _precision));
         var profile = structure.Metadata.IccProfile;
-        if (components.Length == 4)
+        var requestsCmyk = request.PixelFormat is { } requested && PixelFormats.IsCmyk(requested);
+        if (components.Length == 4 && request.CmykConversion is { } conversion && !requestsCmyk)
         {
             // The walker only adopts a CMYK profile for four components. The rows are converted to the destination
             // profile, which is the one that labels the image
-            var conversion = request.CmykConversion ?? throw Unsupported("CMYK and YCCK JPEG images are only loaded with a color conversion: set the CmykConversion property of the decode or reader options.", "JPEG CMYK/YCCK");
             var transform = conversion.CreateTransform(profile) ?? throw Unsupported("The CMYK JPEG image has no CMYK color profile and CmykConversionOptions.AssumedSourceProfile is null.", "JPEG CMYK without color profile");
             _inkConversion = transform.Pipeline;
             profile = conversion.DestinationProfile;
+        }
+        else if (components.Length == 4)
+        {
+            // The ink amounts are the rows, labeled with the CMYK profile; the sink converts them when the request asks
+            // for another pixel format with a CMYK conversion
+            if (!requestsCmyk && (request.PixelFormat is null || request.Conversion.CmykConversion is null))
+                throw Unsupported("CMYK and YCCK JPEG images are only loaded as CMYK pixels (Cmyk32, Cmyk64) or with a color conversion: load them as Cmyk32 or Cmyk64, or set the CmykConversion property of the decode or reader options.", "JPEG CMYK/YCCK");
+
+            source = _precision == 8 ? PixelFormat.Cmyk32 : PixelFormat.Cmyk64;
         }
         else if (source == PixelFormat.Rgb24 && request.PixelFormat == PixelFormat.Rgba32)
         {

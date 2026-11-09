@@ -40,6 +40,9 @@ public sealed class JpegEncoder : ImageEncoder
     /// <inheritdoc />
     public override ImageFormat Format => ImageFormat.Jpeg;
 
+    /// <inheritdoc />
+    internal override bool StoresCmykPixels => true;
+
     /// <summary>Gets the quality, from 1 (smallest) to 100 (best). Defaults to 90.</summary>
     /// <remarks>
     /// The Annex K tables are scaled linearly: with <c>s = 5000 / Quality</c> below 50 and <c>s = 200 - 2 * Quality</c>

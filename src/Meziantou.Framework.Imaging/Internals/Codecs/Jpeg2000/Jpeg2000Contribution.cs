@@ -20,4 +20,7 @@ internal struct Jpeg2000Contribution
 
     /// <summary>The number of coding passes.</summary>
     public int PassCount;
+
+    /// <summary>Whether the contribution is in a quality layer that is not decoded (<see cref="Jpeg2000DecodingOptions.QualityLayerLimit"/>).</summary>
+    public bool IsSkipped;
 }

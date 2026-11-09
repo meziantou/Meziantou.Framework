@@ -1060,6 +1060,7 @@ namespace Meziantou.Framework.Imaging
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.CustomImageCodec> Codecs { get => throw null; init { } }
         public Meziantou.Framework.Imaging.DecodingStrictness DecodingStrictness { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.ImageConfiguration Default { get => throw null; }
+        public Meziantou.Framework.Imaging.Jpeg2000DecodingOptions Jpeg2000Decoding { get => throw null; init { } }
         public Meziantou.Framework.Imaging.ImageResourceLimits Limits { get => throw null; init { } }
         public int MaxDegreeOfParallelism { get => throw null; init { } }
         public Meziantou.Framework.Imaging.OpenExrDecodingOptions OpenExrDecoding { get => throw null; init { } }
@@ -1494,6 +1495,12 @@ namespace Meziantou.Framework.Imaging
         public InvalidImageContentException(string? message) { }
         public InvalidImageContentException(string? message, System.Exception? innerException) { }
         public InvalidImageContentException(string? message, Meziantou.Framework.Imaging.ImageFormat format, System.Exception? innerException = null) { }
+    }
+
+    public sealed class Jpeg2000DecodingOptions
+    {
+        public static Meziantou.Framework.Imaging.Jpeg2000DecodingOptions Default { get => throw null; }
+        public int? QualityLayerLimit { get => throw null; init { } }
     }
 
     public sealed class JpegXlTranscodeOptions

@@ -1094,6 +1094,10 @@ internal sealed class TiffBlockReader : IDisposable
             {
                 if (component.Precision != page.BitsPerSample)
                     throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 data of the TIFF block {_index} of page {page.Index} has samples of {component.Precision} bits; the page declares {page.BitsPerSample}."));
+
+                // The pages of this compression have unsigned samples
+                if (component.IsSigned)
+                    throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 data of the TIFF block {_index} of page {page.Index} has signed samples; the page declares unsigned samples."));
             }
 
             // A block holds at least the rows of the page it covers, and never more than the rows of a block

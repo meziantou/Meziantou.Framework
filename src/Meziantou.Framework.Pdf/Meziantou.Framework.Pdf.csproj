@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <!-- The CMS signed data of the signatures and the RFC 3161 time stamps (Signing) -->
-    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
   </ItemGroup>
 
   <ItemGroup>

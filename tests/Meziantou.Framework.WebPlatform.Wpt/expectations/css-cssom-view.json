@@ -572,12 +572,7 @@
     "total": 1
   },
   "css/cssom-view/scroll-target-into-view-fragment-in-same-origin-subframe.html": {
-    "total": 3,
-    "failures": {
-      "Scrolling to the fragment of an HTML document in an <embed> scrolls the parent document to the <embed>": "FAIL",
-      "Scrolling to the fragment of an HTML document in an <iframe> scrolls the parent document to the <iframe>": "FAIL",
-      "Scrolling to the fragment of an HTML document in an <object> scrolls the parent document to the <object>": "FAIL"
-    }
+    "total": 3
   },
   "css/cssom-view/scroll-width-with-over-constrained-block-in-inline.html": {
     "total": 2

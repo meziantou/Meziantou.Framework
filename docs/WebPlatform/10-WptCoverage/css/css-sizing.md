@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 205 | 210 | 0 | 98% |
+| [Stable](#stable-tests) | 208 | 210 | 0 | 99% |
 | [Tentative](#tentative-tests) | 7 | 7 | 0 | 100% |
 | [Reftests](#reftests) | 565 | 569 | 0 | 99% |
-| **All** | **777** | **786** | **0** | **99%** |
+| **All** | **780** | **786** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 6
+- **BUG**: 3
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 1
 - **REQUIRES**: 1
@@ -63,7 +63,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`aspect-ratio/flex-aspect-ratio-shrink-to-fit-ancestor-relayout.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/flex-aspect-ratio-shrink-to-fit-ancestor-relayout.html) | Pass | 8 / 8 |  |  |
 | [`aspect-ratio/fractional-aspect-ratio.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/fractional-aspect-ratio.html) | Pass | 2 / 2 |  |  |
 | [`aspect-ratio/inheritance.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/inheritance.html) | Pass | 2 / 2 |  |  |
-| [`aspect-ratio/intrinsic-contribution-transferred-min-width-001.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/intrinsic-contribution-transferred-min-width-001.html) | Fail | 1 / 3 | BUG | in the intrinsic width contributions, the minimum width transferred from `min-height` through the aspect ratio is capped by a `max-width` of `min-content` or `max-content`, which is not definite (https://drafts.csswg.org/css-sizing-4/#aspect-ratio-size-transfers): only a definite maximum caps it |
+| [`aspect-ratio/intrinsic-contribution-transferred-min-width-001.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/intrinsic-contribution-transferred-min-width-001.html) | Pass | 3 / 3 |  |  |
 | [`aspect-ratio/parsing/aspect-ratio-computed.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/parsing/aspect-ratio-computed.html) | Pass | 13 / 13 |  |  |
 | [`aspect-ratio/parsing/aspect-ratio-invalid.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/parsing/aspect-ratio-invalid.html) | Pass | 11 / 11 |  |  |
 | [`aspect-ratio/parsing/aspect-ratio-valid.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/parsing/aspect-ratio-valid.html) | Pass | 14 / 14 |  |  |
@@ -75,9 +75,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`aspect-ratio/replaced-element-042.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-042.html) | Pass | 4 / 4 |  |  |
 | [`aspect-ratio/replaced-element-043.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-043.html) | Pass | 180 / 180 |  |  |
 | [`aspect-ratio/replaced-element-044.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-044.html) | Pass | 4 / 4 |  |  |
-| [`aspect-ratio/replaced-element-intrinsic-contribution-transferred-min-width-001.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-intrinsic-contribution-transferred-min-width-001.html) | Fail | 1 / 3 | BUG | in the intrinsic width contributions, the minimum width transferred from `min-height` through the aspect ratio is capped by a `max-width` of `min-content` or `max-content`, which is not definite (https://drafts.csswg.org/css-sizing-4/#aspect-ratio-size-transfers): only a definite maximum caps it |
+| [`aspect-ratio/replaced-element-intrinsic-contribution-transferred-min-width-001.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-intrinsic-contribution-transferred-min-width-001.html) | Pass | 3 / 3 |  |  |
 | [`aspect-ratio/sign-function-aspect-ratio.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/sign-function-aspect-ratio.html) | Pass | 1 / 1 |  |  |
-| [`aspect-ratio/table-element-intrinsic-contribution-001.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/table-element-intrinsic-contribution-001.html) | Fail | 0 / 1 | BUG | the `min-height` of a table is not transferred through its `aspect-ratio` to its min-content and max-content contributions (10px, the width of its content, instead of 200px) |
+| [`aspect-ratio/table-element-intrinsic-contribution-001.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/table-element-intrinsic-contribution-001.html) | Pass | 1 / 1 |  |  |
 | [`available-height-for-replaced-content-001.html`](https://wpt.fyi/results/css/css-sizing/available-height-for-replaced-content-001.html) | Pass | 1 / 1 |  |  |
 | [`button-min-width.html`](https://wpt.fyi/results/css/css-sizing/button-min-width.html) | Pass | 1 / 1 |  |  |
 | [`contain-intrinsic-size/animation/contain-intrinsic-size-interpolation.html`](https://wpt.fyi/results/css/css-sizing/contain-intrinsic-size/animation/contain-intrinsic-size-interpolation.html) | Pass | 432 / 432 |  |  |

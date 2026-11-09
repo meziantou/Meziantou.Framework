@@ -635,11 +635,7 @@
     "total": 1
   },
   "css/css-scroll-snap/snap-to-visible-areas-unreachable.html": {
-    "total": 4,
-    "failures": {
-      "Don't snap to an area clipped past the scrollable overflow that can't be scrolled into view, even when it is closer": "FAIL",
-      "Don't snap to an area in negative overflow that can't be scrolled into view, even when it is closer": "FAIL"
-    }
+    "total": 4
   },
   "css/css-scroll-snap/snap-to-visible-areas-x-axis.html": {
     "total": 1

@@ -1,5 +1,6 @@
 using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Css.Layout;
@@ -35,6 +36,36 @@ public sealed class ScrollingTests : IDisposable
             _clock.Advance(TimeSpan.FromMilliseconds(17));
             _contexts.EventLoop.RunUntilIdle();
         }
+    }
+
+    [Fact]
+    public void FragmentOfAFrame_ScrollsTheSameOriginParentDocumentToTheFrame()
+    {
+        // https://drafts.csswg.org/cssom-view/#scroll-a-target-into-view: the frame document is laid out by the next rendering
+        // update, which scrolls the parent document to the frame even when nothing reads the geometry of the frame document
+        var loader = new RecordingLoader();
+        loader.Resources["https://example.com/frame.html#t"] = new DocumentResource("<!DOCTYPE html><body style='margin: 0'><div id=t style='height: 10px'></div>");
+        var context = _contexts.Create(new BrowsingContextOptions { TimeProvider = _clock, DocumentLoader = loader, Viewport = new ViewportOptions { Width = 800, Height = 600 } });
+        var document = context.Navigate("https://example.com/", _ => "<!DOCTYPE html><body style='margin: 0'><div style='height: 3000px'></div><iframe src='frame.html#t' style='display: block; border: 0'></iframe><div style='height: 3000px'></div>");
+        _contexts.EventLoop.RunUntilIdle();
+        RunFrames();
+
+        Assert.Equal(3000, document.DefaultView!.ScrollY);
+    }
+
+    [Fact]
+    public void Focus_ScrollsEachAxisOnlyWhenNeeded()
+    {
+        // As in Blink, the target hidden in the block axis is centered in it, and the target partially visible in the inline axis
+        // is aligned with the nearest edge (the scrollport is 185px wide with the vertical scrollbar)
+        var document = Parse("<div id=s style='position: relative; width: 200px; height: 200px; overflow: scroll'><div style='width: 1000px; height: 1000px'></div>"
+            + "<div id=t tabindex=0 style='position: absolute; left: 150px; top: 0; width: 50px; height: 50px'></div></div>");
+        var scroller = Get(document, "s");
+        scroller.ScrollTop = 150;
+
+        ((HtmlElement)Get(document, "t")).Focus();
+
+        Assert.Equal((15d, 0d), (scroller.ScrollLeft, scroller.ScrollTop));
     }
 
     [Fact]

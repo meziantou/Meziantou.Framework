@@ -277,18 +277,16 @@ internal static class ScrollIntoView
     /// <param name="block">The alignment in the block flow direction.</param>
     /// <param name="inline">The alignment in the inline base direction.</param>
     /// <param name="visibleTarget">
-    /// The target border box when the target is scrolled into view only when needed (the focus), or null. As in the browsers, a
-    /// target whose border box is visible in the scrollport is not aligned as requested: the scrolling box is not scrolled in the
-    /// axes where the target is entirely in the scrollport or is larger than it, and else the target is aligned with the nearest
-    /// edge (WPT scroll-margin-focus.html, scroll-margin-visibility-check.html, focus-large-element-in-overflow-hidden-container.html).
+    /// The target border box when the target is scrolled into view only when needed (the focus), or null. As in Blink, each axis
+    /// is aligned as requested only when the border box is outside of the scrollport in that axis: the scrolling box is not
+    /// scrolled in the axes where the target is entirely in the scrollport or is larger than it, and else the target is aligned
+    /// with the nearest edge (WPT scroll-margin-focus.html, scroll-margin-visibility-check.html,
+    /// focus-large-element-in-overflow-hidden-container.html, css/css-scroll-snap/snap-after-relayout/layout-follows-focused-targeted-block.html).
     /// </param>
     public static PhysicalOffset GetScrollDelta(PhysicalRect target, PhysicalRect scrollport, WritingDirection writingDirection, ScrollLogicalPosition block, ScrollLogicalPosition inline, PhysicalRect? visibleTarget = null)
     {
         var dx = 0d;
         var dy = 0d;
-        var isVisible = visibleTarget is { } visible
-            && Intersects(visible.Left, visible.Right, scrollport.Left, scrollport.Right)
-            && Intersects(visible.Top, visible.Bottom, scrollport.Top, scrollport.Bottom);
         Align(writingDirection.BlockStart, block);
         Align(writingDirection.InlineStart, inline);
         return new PhysicalOffset(dx, dy);
@@ -298,7 +296,7 @@ internal static class ScrollIntoView
             var horizontal = startSide is PhysicalSide.Left or PhysicalSide.Right;
             var reversed = startSide is PhysicalSide.Right or PhysicalSide.Bottom;
             var (low, high, boxLow, boxHigh) = horizontal ? (target.Left, target.Right, scrollport.Left, scrollport.Right) : (target.Top, target.Bottom, scrollport.Top, scrollport.Bottom);
-            if (isVisible)
+            if (visibleTarget is { } visible && (horizontal ? Intersects(visible.Left, visible.Right, boxLow, boxHigh) : Intersects(visible.Top, visible.Bottom, boxLow, boxHigh)))
             {
                 if ((low >= boxLow && high <= boxHigh) || high - low >= boxHigh - boxLow)
                     return;

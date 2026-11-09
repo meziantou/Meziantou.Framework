@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="535.74" height="302.8" viewBox="0 0 535.74 302.8" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="535.74" height="302.8" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+<g class="composite-state" data-id="Active">
+<rect x="0" y="0" width="519.74" height="286.8" rx="5" fill="#ececff" stroke="#9370db"/>
+<rect x="1" y="31.2" width="517.74" height="254.6" fill="#ffffff"/>
+<line x1="0" y1="31.2" x2="519.74" y2="31.2" stroke="#9370db"/>
+<text x="259.87" y="19.69" text-anchor="middle" font-size="16" fill="#333333">Active</text>
+</g>
+<rect x="33" y="56.2" width="200.98" height="205.6" fill="none" stroke="#9370db" stroke-dasharray="5 5" class="region"/>
+<rect x="283.98" y="56.2" width="202.76" height="205.6" fill="none" stroke="#9370db" stroke-dasharray="5 5" class="region"/>
+</g>
+<g class="edges">
+<g class="edge transition">
+<path d="M122.19,120.4 L118.48,126.83 C114.77,133.27 107.35,146.13 106.68,157.84 C106.02,169.56 112.1,180.11 115.15,185.39 L118.19,190.67" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M122.19,197.6 L121.65,188.67 L114.72,192.67 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge transition">
+<path d="M144.79,197.6 L148.5,191.17 C152.21,184.73 159.63,171.87 160.29,160.16 C160.96,148.44 154.87,137.89 151.83,132.61 L148.79,127.33" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M144.79,120.4 L145.32,129.33 L152.25,125.33 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge transition">
+<path d="M374.05,120.4 L370.34,126.83 C366.63,133.27 359.22,146.13 358.55,157.84 C357.88,169.56 363.97,180.11 367.01,185.39 L370.06,190.67" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M374.05,197.6 L373.52,188.67 L366.59,192.67 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge transition">
+<path d="M396.66,197.6 L400.37,191.17 C404.08,184.73 411.5,171.87 412.16,160.16 C412.83,148.44 406.74,137.89 403.7,132.61 L400.65,127.33" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M396.66,120.4 L397.19,129.33 L404.12,125.33 Z" fill="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+<g class="edge-label">
+<rect x="76.37" y="145.4" width="47.12" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="99.93" y="163.09" text-anchor="middle" font-size="16" fill="#333333">press</text>
+</g>
+<g class="edge-label">
+<rect x="143.49" y="145.4" width="47.12" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="167.05" y="163.09" text-anchor="middle" font-size="16" fill="#333333">press</text>
+</g>
+<g class="edge-label">
+<rect x="328.24" y="145.4" width="47.12" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="351.8" y="163.09" text-anchor="middle" font-size="16" fill="#333333">press</text>
+</g>
+<g class="edge-label">
+<rect x="395.36" y="145.4" width="47.12" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="418.92" y="163.09" text-anchor="middle" font-size="16" fill="#333333">press</text>
+</g>
+</g>
+<g class="nodes">
+<g class="state" data-id="NumLockOff">
+<g transform="translate(133.49 100.8)">
+<path d="M-54.3,-19.6 L54.3,-19.6 C57.06,-19.6 59.3,-17.36 59.3,-14.6 L59.3,14.6 C59.3,17.36 57.06,19.6 54.3,19.6 L-54.3,19.6 C-57.06,19.6 -59.3,17.36 -59.3,14.6 L-59.3,-14.6 C-59.3,-17.36 -57.06,-19.6 -54.3,-19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="133.49" y="104.89" text-anchor="middle" font-size="16" fill="#333333">NumLockOff</text>
+</g>
+<g class="state" data-id="NumLockOn">
+<g transform="translate(133.49 217.2)">
+<path d="M-54.3,-19.6 L54.3,-19.6 C57.06,-19.6 59.3,-17.36 59.3,-14.6 L59.3,14.6 C59.3,17.36 57.06,19.6 54.3,19.6 L-54.3,19.6 C-57.06,19.6 -59.3,17.36 -59.3,14.6 L-59.3,-14.6 C-59.3,-17.36 -57.06,-19.6 -54.3,-19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="133.49" y="221.29" text-anchor="middle" font-size="16" fill="#333333">NumLockOn</text>
+</g>
+<g class="state" data-id="CapsLockOff">
+<g transform="translate(385.36 100.8)">
+<path d="M-56.08,-19.6 L56.08,-19.6 C58.84,-19.6 61.08,-17.36 61.08,-14.6 L61.08,14.6 C61.08,17.36 58.84,19.6 56.08,19.6 L-56.08,19.6 C-58.84,19.6 -61.08,17.36 -61.08,14.6 L-61.08,-14.6 C-61.08,-17.36 -58.84,-19.6 -56.08,-19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="385.36" y="104.89" text-anchor="middle" font-size="16" fill="#333333">CapsLockOff</text>
+</g>
+<g class="state" data-id="CapsLockOn">
+<g transform="translate(385.36 217.2)">
+<path d="M-56.08,-19.6 L56.08,-19.6 C58.84,-19.6 61.08,-17.36 61.08,-14.6 L61.08,14.6 C61.08,17.36 58.84,19.6 56.08,19.6 L-56.08,19.6 C-58.84,19.6 -61.08,17.36 -61.08,14.6 L-61.08,-14.6 C-61.08,-17.36 -58.84,-19.6 -56.08,-19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="385.36" y="221.29" text-anchor="middle" font-size="16" fill="#333333">CapsLockOn</text>
+</g>
+</g>
+</g>
+</svg>

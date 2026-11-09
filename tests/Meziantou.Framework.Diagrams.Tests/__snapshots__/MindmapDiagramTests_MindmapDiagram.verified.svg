@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="719.16" height="267.5" viewBox="0 0 719.16 267.5" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="719.16" height="267.5" fill="#ffffff"/>
+<g class="diagram" transform="translate(306.68 133)">
+<g class="edges">
+<path d="M0,0 C76.11,0 76.11,-53 152.22,-53" fill="none" stroke="#ffff78" stroke-width="11" class="edge edge-depth-1 section-edge-0"/>
+<path d="M152.22,-53 C230.73,-53 230.73,-106 309.24,-106" fill="none" stroke="#ffff78" stroke-width="8" class="edge edge-depth-2 section-edge-0"/>
+<path d="M152.22,-53 C238.77,-53 238.77,-53 325.33,-53" fill="none" stroke="#ffff78" stroke-width="8" class="edge edge-depth-2 section-edge-0"/>
+<path d="M152.22,-53 C238.11,-53 238.11,0 324.01,0" fill="none" stroke="#ffff78" stroke-width="8" class="edge edge-depth-2 section-edge-0"/>
+<path d="M0,0 C71.64,0 71.64,79.5 143.29,79.5" fill="none" stroke="#d7ff86" stroke-width="11" class="edge edge-depth-1 section-edge-1"/>
+<path d="M143.29,79.5 C219.85,79.5 219.85,53 296.41,53" fill="none" stroke="#d7ff86" stroke-width="8" class="edge edge-depth-2 section-edge-1"/>
+<path d="M143.29,79.5 C233.39,79.5 233.39,106 323.5,106" fill="none" stroke="#d7ff86" stroke-width="8" class="edge edge-depth-2 section-edge-1"/>
+<path d="M0,0 C-64.78,0 -64.78,0 -129.56,0" fill="none" stroke="#c286ff" stroke-width="11" class="edge edge-depth-1 section-edge-2"/>
+<path d="M-129.56,0 C-183.09,0 -183.09,-26.5 -236.62,-26.5" fill="none" stroke="#c286ff" stroke-width="8" class="edge edge-depth-2 section-edge-2"/>
+<path d="M-129.56,0 C-190.49,0 -190.49,26.5 -251.42,26.5" fill="none" stroke="#c286ff" stroke-width="8" class="edge edge-depth-2 section-edge-2"/>
+</g>
+<g class="nodes">
+<g class="mindmap-node section-root section--1">
+<circle cx="0" cy="0" r="44.06" fill="#8686ff"/>
+<text x="0" y="4.09" text-anchor="middle" font-size="16" fill="#000000">Diagrams</text>
+</g>
+<g class="mindmap-node section-0">
+<path d="M106.06,-77 L198.37,-77 L210.37,-53 L198.37,-29 L106.06,-29 L94.06,-53 Z" fill="#ffff78"/>
+<text x="152.22" y="-48.91" text-anchor="middle" font-size="16" fill="#000000">Graphs</text>
+</g>
+<g class="mindmap-node section-0">
+<path d="M260.37,-92 L260.37,-120 Q260.37,-125 265.37,-125 L353.11,-125 Q358.11,-125 358.11,-120 L358.11,-87 L260.37,-87 Z" fill="#ffff78"/>
+<line x1="260.37" y1="-87" x2="358.11" y2="-87" stroke="#b3b354" stroke-width="3"/>
+<text x="309.24" y="-101.91" text-anchor="middle" font-size="16" fill="#000000">Flowcharts</text>
+</g>
+<g class="mindmap-node section-0">
+<path d="M260.37,-39 L260.37,-67 Q260.37,-72 265.37,-72 L385.29,-72 Q390.29,-72 390.29,-67 L390.29,-34 L260.37,-34 Z" fill="#ffff78"/>
+<line x1="260.37" y1="-34" x2="390.29" y2="-34" stroke="#b3b354" stroke-width="3"/>
+<text x="325.33" y="-48.91" text-anchor="middle" font-size="16" fill="#000000">Class diagrams</text>
+</g>
+<g class="mindmap-node section-0">
+<path d="M260.37,14 L260.37,-14 Q260.37,-19 265.37,-19 L382.65,-19 Q387.65,-19 387.65,-14 L387.65,19 L260.37,19 Z" fill="#ffff78"/>
+<line x1="260.37" y1="19" x2="387.65" y2="19" stroke="#b3b354" stroke-width="3"/>
+<text x="324.01" y="4.09" text-anchor="middle" font-size="16" fill="#000000">State diagrams</text>
+</g>
+<g class="mindmap-node section-1">
+<rect x="94.06" y="58" width="98.45" height="43" rx="15" fill="#d7ff86"/>
+<text x="143.29" y="83.59" text-anchor="middle" font-size="16" fill="#000000">Timelines</text>
+</g>
+<g class="mindmap-node section-1">
+<path d="M242.51,67 L242.51,39 Q242.51,34 247.51,34 L345.3,34 Q350.3,34 350.3,39 L350.3,72 L242.51,72 Z" fill="#d7ff86"/>
+<line x1="242.51" y1="72" x2="350.3" y2="72" stroke="#97b35e" stroke-width="3"/>
+<text x="296.41" y="57.09" text-anchor="middle" font-size="16" fill="#000000">Gantt charts</text>
+</g>
+<g class="mindmap-node section-1">
+<path d="M242.51,120 L242.51,92 Q242.51,87 247.51,87 L399.48,87 Q404.48,87 404.48,92 L404.48,125 L242.51,125 Z" fill="#d7ff86"/>
+<line x1="242.51" y1="125" x2="404.48" y2="125" stroke="#97b35e" stroke-width="3"/>
+<text x="323.5" y="110.09" text-anchor="middle" font-size="16" fill="#000000">Sequence diagrams</text>
+</g>
+<g class="mindmap-node section-2">
+<rect x="-165.06" y="-19" width="70.99" height="38" fill="#c286ff"/>
+<text x="-129.56" y="4.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">Charts</text>
+</g>
+<g class="mindmap-node section-2">
+<path d="M-258.18,-45.5 A6.47,6.47 1 0,1 -247.4,-49.81 A15.09,15.09 1 0,1 -230.15,-54.12 A10.78,10.78 1 0,1 -215.06,-45.5 A6.47,6.47 1 0,1 -208.59,-32.2 A8.62,8.62 1 0,1 -215.06,-7.5 A10.78,6.47 1 0,1 -225.84,-1.03 A15.09,15.09 1 0,1 -247.4,-1.03 A6.47,6.47 1 0,1 -258.18,-7.5 A6.47,6.47 1 0,1 -262.49,-20.8 A8.62,8.62 1 0,1 -258.18,-45.5 L-258.18,-45.5 L-258.18,-45.5 Z" fill="#c286ff"/>
+<text x="-236.62" y="-22.41" text-anchor="middle" font-size="16" fill="#000000">Pie</text>
+</g>
+<g class="mindmap-node section-2">
+<path d="M-287.78,7.5 A10.91,10.91 1 0,0 -269.6,3.7 A10.91,10.91 1 0,0 -251.42,3.7 A10.91,10.91 1 0,0 -233.24,3.7 A10.91,10.91 1 0,0 -215.06,7.5 A10.91,10.91 1 0,0 -204.15,20.04 A8.73,8.73 1 0,0 -204.15,32.96 A10.91,10.91 1 0,0 -215.06,45.5 A10.91,10.91 1 0,0 -233.24,51.2 A10.91,10.91 1 0,0 -251.42,51.2 A10.91,10.91 1 0,0 -269.6,51.2 A10.91,10.91 1 0,0 -287.78,45.5 A10.91,10.91 1 0,0 -295.05,32.96 A8.73,8.73 1 0,0 -295.05,20.04 A10.91,10.91 1 0,0 -287.78,7.5 L-287.78,7.5 L-287.78,7.5 Z" fill="#c286ff"/>
+<text x="-251.42" y="30.59" text-anchor="middle" font-size="16" fill="#000000">Sankey</text>
+</g>
+</g>
+</g>
+</svg>

@@ -81,7 +81,7 @@ public sealed class TreemapMark<T> : HierarchyMark<T>
         }
     }
 
-    private static bool AddLabel(RenderContext context, SceneGroup group, string text, double x, double top, double maxWidth, ChartColor color, ChartFont font)
+    private static bool AddLabel(RenderContext context, SceneGroup group, string text, double x, double top, double maxWidth, SceneColor color, SceneFont font)
     {
         if (maxWidth <= 0)
             return false;

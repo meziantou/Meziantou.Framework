@@ -65,7 +65,7 @@ public sealed class PartitionMark<T> : HierarchyMark<T>
         }
     }
 
-    private static void AddShape(RenderContext context, MarkData data, SceneGroup group, int index, SceneShape shape, ChartColor fill)
+    private static void AddShape(RenderContext context, MarkData data, SceneGroup group, int index, SceneShape shape, SceneColor fill)
     {
         shape.Fill = fill;
         shape.Stroke = context.Theme.MarkStrokeColor;

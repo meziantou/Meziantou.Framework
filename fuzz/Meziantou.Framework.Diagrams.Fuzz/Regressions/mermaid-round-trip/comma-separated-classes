@@ -1,0 +1,3 @@
+flowchart LR
+    A --> B
+    class B one,two

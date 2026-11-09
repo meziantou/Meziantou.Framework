@@ -1,0 +1,3 @@
+classDiagram
+    class `Name `
+    cssClass "Name" hot

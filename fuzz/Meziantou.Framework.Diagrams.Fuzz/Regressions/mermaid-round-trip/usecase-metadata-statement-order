@@ -1,0 +1,12 @@
+usecase-beta
+actor User
+actor Support
+Start
+Finish@{ business: true }
+User --> Start
+Start <-- Support
+Start -- Finish
+User --o Start
+Start o-- Suprport
+User --x Finish
+Finish x-- Support

@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="236" height="152.75" viewBox="0 0 236 152.75" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="236" height="152.75" fill="#333333"/>
+<g class="diagram" transform="translate(8 20)">
+<g class="commit-arrows">
+<path d="M10,-2 L10,28 A20,20 0 0,0 30,48 L60,48" fill="none" stroke="#ff0000" stroke-width="8" stroke-linecap="round" class="arrow"/>
+<path d="M10,-2 L60,-2" fill="none" stroke="#797d7d" stroke-width="8" stroke-linecap="round" class="arrow"/>
+<path d="M60,-2 L110,-2" fill="none" stroke="#797d7d" stroke-width="8" stroke-linecap="round" class="arrow"/>
+<path d="M60,48 L90,48 A20,20 0 0,0 110,28 L110,-2" fill="none" stroke="#ff0000" stroke-width="8" stroke-linecap="round" class="arrow"/>
+<path d="M110,-2 L110,78 A20,20 0 0,0 130,98 L160,98" fill="none" stroke="#6a8993" stroke-width="8" stroke-linecap="round" class="arrow"/>
+<path d="M60,48 L110,48" fill="none" stroke="#ff0000" stroke-width="8" stroke-linecap="round" class="arrow"/>
+<path d="M160,98 L210,98" fill="none" stroke="#6a8993" stroke-width="8" stroke-linecap="round" class="arrow"/>
+<path d="M110,48 L190,48 A20,20 0 0,1 210,68 L210,98" fill="none" stroke="#ff0000" stroke-width="8" stroke-linecap="round" class="arrow"/>
+</g>
+<g class="commit-bullets">
+<g class="commit" data-id="a">
+<circle cx="10" cy="-2" r="10" fill="#797d7d" stroke="#797d7d" class="commit-normal"/>
+</g>
+<g class="commit" data-id="b">
+<circle cx="60" cy="48" r="10" fill="#ff0000" stroke="#ff0000" class="commit-normal"/>
+</g>
+<g class="commit" data-id="c">
+<circle cx="60" cy="-2" r="10" fill="#797d7d" stroke="#797d7d" class="commit-normal"/>
+</g>
+<g class="commit" data-id="3-8dde6c4">
+<circle cx="110" cy="-2" r="10" fill="#797d7d" stroke="#797d7d" class="commit-merge"/>
+<circle cx="110" cy="-2" r="6" fill="#1f2020" stroke="#1f2020"/>
+</g>
+<g class="commit" data-id="d">
+<rect x="150" y="88" width="20" height="20" fill="#95766c" stroke="#95766c" class="commit-highlight"/>
+<rect x="154" y="92" width="12" height="12" fill="#1f2020" stroke="#1f2020"/>
+</g>
+<g class="commit" data-id="e">
+<circle cx="110" cy="48" r="10" fill="#ff0000" stroke="#ff0000" class="commit-normal"/>
+</g>
+<g class="commit" data-id="6-38453d7">
+<circle cx="210" cy="98" r="10" fill="#6a8993" stroke="#6a8993" class="commit-merge"/>
+<circle cx="210" cy="98" r="6" fill="#1f2020" stroke="#1f2020"/>
+</g>
+</g>
+<g class="commit-labels">
+<g class="commit-label">
+<rect x="5.22" y="11.5" width="9.56" height="13.25" fill="#00ff00" opacity="0.5"/>
+<text x="7.22" y="20.68" font-size="10" fill="#b8b6b6">a</text>
+</g>
+<g class="commit-label">
+<rect x="55.22" y="61.5" width="9.56" height="13.25" fill="#00ff00" opacity="0.5"/>
+<text x="57.22" y="70.68" font-size="10" fill="#b8b6b6">b</text>
+</g>
+<g class="tag">
+<path d="M38.27,30.8 L38.27,26.8 L46.27,22.18 L73.73,22.18 L73.73,35.42 L46.27,35.42 Z" fill="#1f2020" stroke="#cccccc"/>
+<circle cx="42.27" cy="28.8" r="1.5" fill="#cccccc"/>
+<text x="50.27" y="32" font-size="10" fill="#e0dfdf">beta</text>
+</g>
+<g class="commit-label">
+<rect x="55.5" y="11.5" width="9" height="13.25" fill="#00ff00" opacity="0.5"/>
+<text x="57.5" y="20.68" font-size="10" fill="#b8b6b6">c</text>
+</g>
+<g class="commit-label">
+<rect x="155.22" y="111.5" width="9.56" height="13.25" fill="#00ff00" opacity="0.5"/>
+<text x="157.22" y="120.68" font-size="10" fill="#b8b6b6">d</text>
+</g>
+<g class="commit-label">
+<rect x="105.22" y="61.5" width="9.56" height="13.25" fill="#00ff00" opacity="0.5"/>
+<text x="107.22" y="70.68" font-size="10" fill="#b8b6b6">e</text>
+</g>
+</g>
+</g>
+</svg>

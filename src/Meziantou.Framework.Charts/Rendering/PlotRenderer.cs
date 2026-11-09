@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Charts;
 
-/// <summary>Lays a <see cref="Plot"/> out into a <see cref="ChartScene"/>: resolves the scales, measures the titles, the legend and the axes, computes the plot area, then draws the grid, the marks, the axes and the legend.</summary>
+/// <summary>Lays a <see cref="Plot"/> out into a <see cref="Scene"/>: resolves the scales, measures the titles, the legend and the axes, computes the plot area, then draws the grid, the marks, the axes and the legend.</summary>
 internal sealed class PlotRenderer
 {
     private const double Padding = 10;
@@ -18,7 +18,7 @@ internal sealed class PlotRenderer
     private readonly ResolvedColorScale? _color;
     private readonly ResolvedSizeScale? _size;
     private readonly Coordinates _coordinates;
-    private readonly ChartScene _scene;
+    private readonly Scene _scene;
 
     private PlotRenderer(Plot plot, ITextMeasurer measurer)
     {
@@ -53,7 +53,7 @@ internal sealed class PlotRenderer
 
         _color = ScaleResolver.ResolveColor(plot.ColorScale, Collect(data => [data.Fill, data.Stroke, .. data.ExtraColor]), _theme);
         _size = ScaleResolver.ResolveSize(plot.SizeScale, Collect(data => [data.Size]));
-        _scene = new ChartScene(plot.Width, plot.Height, _theme.FontFamily ?? measurer.FontFamily)
+        _scene = new Scene(plot.Width, plot.Height, _theme.FontFamily ?? measurer.FontFamily)
         {
             Title = plot.Title,
             Description = plot.Description,
@@ -61,17 +61,17 @@ internal sealed class PlotRenderer
         };
     }
 
-    private ChartFont TickFont => new(_theme.TickFontSize);
+    private SceneFont TickFont => new(_theme.TickFontSize);
 
-    private ChartFont LabelFont => new(_theme.FontSize);
+    private SceneFont LabelFont => new(_theme.FontSize);
 
-    public static ChartScene Render(Plot plot, ITextMeasurer measurer)
+    public static Scene Render(Plot plot, ITextMeasurer measurer)
     {
         ArgumentNullException.ThrowIfNull(measurer);
         return new PlotRenderer(plot, measurer).Render();
     }
 
-    private ChartScene Render()
+    private Scene Render()
     {
         var width = _plot.Width;
         var height = _plot.Height;
@@ -79,8 +79,8 @@ internal sealed class PlotRenderer
         var bottom = Padding;
         var right = Padding;
         var titles = new List<SceneText>();
-        top = AddTitle(titles, _plot.Title, new ChartFont(_theme.TitleFontSize, Bold: true), _theme.Foreground, top);
-        top = AddTitle(titles, _plot.Subtitle, new ChartFont(_theme.SubtitleFontSize), _theme.MutedForeground, top);
+        top = AddTitle(titles, _plot.Title, new SceneFont(_theme.TitleFontSize, Bold: true), _theme.Foreground, top);
+        top = AddTitle(titles, _plot.Subtitle, new SceneFont(_theme.SubtitleFontSize), _theme.MutedForeground, top);
         if (titles.Count > 0)
         {
             top += 6;
@@ -160,7 +160,7 @@ internal sealed class PlotRenderer
             }
         }
 
-        var area = new ChartRectangle(Padding, top, Math.Max(1, width - Padding - right), Math.Max(1, height - top - bottom));
+        var area = new SceneBounds(Padding, top, Math.Max(1, width - Padding - right), Math.Max(1, height - top - bottom));
         var grid = new SceneGroup { CssClass = "grid" };
         var axes = new SceneGroup { CssClass = "axes" };
         var marks = new SceneGroup { CssClass = "marks" };
@@ -168,7 +168,7 @@ internal sealed class PlotRenderer
 
         // The scales are mapped to the frame of a chart of the grid before the chart is drawn
         var lateColorsResolved = false;
-        void RenderCell(FacetCell cell, CoordinateSystem system, ChartRectangle frame)
+        void RenderCell(FacetCell cell, CoordinateSystem system, SceneBounds frame)
         {
             if (!lateColorsResolved)
             {
@@ -246,7 +246,7 @@ internal sealed class PlotRenderer
         return _scene;
     }
 
-    private double AddTitle(List<SceneText> titles, string? text, ChartFont font, ChartColor color, double top)
+    private double AddTitle(List<SceneText> titles, string? text, SceneFont font, SceneColor color, double top)
     {
         if (string.IsNullOrEmpty(text))
             return top;
@@ -256,11 +256,11 @@ internal sealed class PlotRenderer
         return top + metrics.Height + 2;
     }
 
-    private ChartRectangle FromMargin(ChartMargin margin) => new(margin.Left, margin.Top, Math.Max(1, _plot.Width - margin.Left - margin.Right), Math.Max(1, _plot.Height - margin.Top - margin.Bottom));
+    private SceneBounds FromMargin(ChartMargin margin) => new(margin.Left, margin.Top, Math.Max(1, _plot.Width - margin.Left - margin.Right), Math.Max(1, _plot.Height - margin.Top - margin.Bottom));
 
-    private ChartFont HeaderFont => new(_theme.FontSize, Bold: true);
+    private SceneFont HeaderFont => new(_theme.FontSize, Bold: true);
 
-    private void LayoutCartesianCells(ChartRectangle area, FacetGrid facets, SceneGroup grid, SceneGroup axes, Action<FacetCell, CoordinateSystem, ChartRectangle> renderCell)
+    private void LayoutCartesianCells(SceneBounds area, FacetGrid facets, SceneGroup grid, SceneGroup axes, Action<FacetCell, CoordinateSystem, SceneBounds> renderCell)
     {
         var transposed = _coordinates.Transposed;
         var vertical = transposed ? _x : _y;
@@ -288,7 +288,7 @@ internal sealed class PlotRenderer
         {
             gridArea = _plot.Margin is { } margin
                 ? FromMargin(margin)
-                : new ChartRectangle(area.X + verticalWidth + extraLeft, area.Y, Math.Max(1, area.Width - verticalWidth - extraLeft - extraRight - rowLabelWidth - secondaryWidth), Math.Max(1, area.Height - horizontalHeight));
+                : new SceneBounds(area.X + verticalWidth + extraLeft, area.Y, Math.Max(1, area.Width - verticalWidth - extraLeft - extraRight - rowLabelWidth - secondaryWidth), Math.Max(1, area.Height - horizontalHeight));
 
             var frame = GetCellFrame(gridArea, facets, facets.Cells[0], gapX, gapY, headerHeight);
             Configure(vertical, frame.Bottom, frame.Y, frame.Height / 40);
@@ -392,7 +392,7 @@ internal sealed class PlotRenderer
         if (!single)
         {
             // The titles of the axes, once for the grid
-            var titleArea = new ChartRectangle(gridArea.X, gridArea.Y + headerHeight, gridArea.Width, gridArea.Height - headerHeight);
+            var titleArea = new SceneBounds(gridArea.X, gridArea.Y + headerHeight, gridArea.Width, gridArea.Height - headerHeight);
             if (verticalVisible)
             {
                 RenderVerticalTitle(verticalAxis, titleArea, axes);
@@ -411,7 +411,7 @@ internal sealed class PlotRenderer
     }
 
     // The secondary scale has the range of the y scale: vertical in Cartesian coordinates, horizontal when transposed
-    private void ConfigureSecondary(ChartRectangle frame, bool transposed)
+    private void ConfigureSecondary(SceneBounds frame, bool transposed)
     {
         if (transposed)
         {
@@ -423,7 +423,7 @@ internal sealed class PlotRenderer
         }
     }
 
-    private void RenderSecondaryAxis(ResolvedScale scale, Axis axis, ChartRectangle frame, SceneGroup grid, SceneGroup axes, bool drawLabels, ChartRectangle? titleArea, double axisWidth)
+    private void RenderSecondaryAxis(ResolvedScale scale, Axis axis, SceneBounds frame, SceneGroup grid, SceneGroup axes, bool drawLabels, SceneBounds? titleArea, double axisWidth)
     {
         var showGrid = axis.Grid ?? false;
         var lastLabel = double.NaN;
@@ -463,7 +463,7 @@ internal sealed class PlotRenderer
         }
     }
 
-    private void RenderSecondaryTitle(Axis axis, ChartRectangle area, SceneGroup axes, double axisWidth)
+    private void RenderSecondaryTitle(Axis axis, SceneBounds area, SceneGroup axes, double axisWidth)
     {
         if (axis.Label is { Length: > 0 } text)
         {
@@ -478,7 +478,7 @@ internal sealed class PlotRenderer
         }
     }
 
-    private static ChartRectangle GetCellFrame(ChartRectangle gridArea, FacetGrid facets, FacetCell cell, double gapX, double gapY, double headerHeight)
+    private static SceneBounds GetCellFrame(SceneBounds gridArea, FacetGrid facets, FacetCell cell, double gapX, double gapY, double headerHeight)
     {
         var headers = facets.Wraps ? facets.Rows * headerHeight : headerHeight;
         var width = Math.Max(1, (gridArea.Width - (gapX * (facets.Columns - 1))) / facets.Columns);
@@ -487,10 +487,10 @@ internal sealed class PlotRenderer
         var y = facets.Wraps
             ? gridArea.Y + (cell.Row * (height + gapY + headerHeight)) + headerHeight
             : gridArea.Y + headerHeight + (cell.Row * (height + gapY));
-        return new ChartRectangle(x, y, width, height);
+        return new SceneBounds(x, y, width, height);
     }
 
-    private void RenderFacetLabels(FacetGrid facets, FacetCell cell, ChartRectangle frame, SceneGroup axes, double rightOffset = 0)
+    private void RenderFacetLabels(FacetGrid facets, FacetCell cell, SceneBounds frame, SceneGroup axes, double rightOffset = 0)
     {
         var font = HeaderFont;
         if (cell.HasHeader && cell.XKey is { } header)
@@ -542,7 +542,7 @@ internal sealed class PlotRenderer
 
     private bool HidesAxis(bool isX) => _traits.HasFlag(isX ? MarkTraits.HideXAxis : MarkTraits.HideYAxis);
 
-    private void RenderVerticalAxis(ResolvedScale scale, Axis axis, List<AxisLabel> labels, ChartRectangle frame, SceneGroup grid, SceneGroup axes, bool isYScale, bool drawLabels, ChartRectangle? titleArea)
+    private void RenderVerticalAxis(ResolvedScale scale, Axis axis, List<AxisLabel> labels, SceneBounds frame, SceneGroup grid, SceneGroup axes, bool isYScale, bool drawLabels, SceneBounds? titleArea)
     {
         var showGrid = axis.Grid ?? HasGridByDefault(scale, isYScale);
         var lastLabel = double.NaN;
@@ -584,7 +584,7 @@ internal sealed class PlotRenderer
         }
     }
 
-    private void RenderVerticalTitle(Axis axis, ChartRectangle area, SceneGroup axes)
+    private void RenderVerticalTitle(Axis axis, SceneBounds area, SceneGroup axes)
     {
         if (axis.Label is { Length: > 0 } text)
         {
@@ -598,7 +598,7 @@ internal sealed class PlotRenderer
         }
     }
 
-    private void RenderHorizontalAxis(ResolvedScale scale, Axis axis, HorizontalAxisLayout layout, ChartRectangle frame, SceneGroup grid, SceneGroup axes, bool isYScale, bool drawLabels, ChartRectangle? titleArea)
+    private void RenderHorizontalAxis(ResolvedScale scale, Axis axis, HorizontalAxisLayout layout, SceneBounds frame, SceneGroup grid, SceneGroup axes, bool isYScale, bool drawLabels, SceneBounds? titleArea)
     {
         var showGrid = axis.Grid ?? HasGridByDefault(scale, isYScale);
         var baseline = frame.Bottom + axis.TickSize + TickLabelGap;
@@ -652,7 +652,7 @@ internal sealed class PlotRenderer
         }
     }
 
-    private void RenderHorizontalTitle(Axis axis, HorizontalAxisLayout layout, ChartRectangle area, SceneGroup axes)
+    private void RenderHorizontalTitle(Axis axis, HorizontalAxisLayout layout, SceneBounds area, SceneGroup axes)
     {
         if (axis.Label is { Length: > 0 } text)
         {
@@ -665,7 +665,7 @@ internal sealed class PlotRenderer
         }
     }
 
-    private void LayoutPolarCells(PolarCoordinates polar, ChartRectangle area, FacetGrid facets, SceneGroup grid, SceneGroup axes, Action<FacetCell, CoordinateSystem, ChartRectangle> renderCell)
+    private void LayoutPolarCells(PolarCoordinates polar, SceneBounds area, FacetGrid facets, SceneGroup grid, SceneGroup axes, Action<FacetCell, CoordinateSystem, SceneBounds> renderCell)
     {
         if (!facets.IsFaceted)
         {
@@ -677,7 +677,7 @@ internal sealed class PlotRenderer
 
         var headerHeight = facets.HasHeaders ? _measurer.Measure("Xg", HeaderFont).Height + 6 : 0;
         var rowLabelWidth = facets.HasRowLabels ? _measurer.Measure("Xg", HeaderFont).Height + 6 : 0;
-        var gridArea = new ChartRectangle(area.X, area.Y, Math.Max(1, area.Width - rowLabelWidth), area.Height);
+        var gridArea = new SceneBounds(area.X, area.Y, Math.Max(1, area.Width - rowLabelWidth), area.Height);
         foreach (var cell in facets.Cells)
         {
             var frame = GetCellFrame(gridArea, facets, cell, _plot.Facets.Gap, _plot.Facets.Gap, headerHeight);
@@ -688,7 +688,7 @@ internal sealed class PlotRenderer
         }
     }
 
-    private void LayoutGeoCells(GeoCoordinates geo, ChartRectangle area, FacetGrid facets, SceneGroup grid, SceneGroup axes, Action<FacetCell, CoordinateSystem, ChartRectangle> renderCell)
+    private void LayoutGeoCells(GeoCoordinates geo, SceneBounds area, FacetGrid facets, SceneGroup grid, SceneGroup axes, Action<FacetCell, CoordinateSystem, SceneBounds> renderCell)
     {
         // The map fits the extent, else the shapes and the positions of the marks (and the outline of the globe when it
         // is drawn), else the whole world
@@ -722,7 +722,7 @@ internal sealed class PlotRenderer
 
         var headerHeight = facets.HasHeaders ? _measurer.Measure("Xg", HeaderFont).Height + 6 : 0;
         var rowLabelWidth = facets.HasRowLabels ? _measurer.Measure("Xg", HeaderFont).Height + 6 : 0;
-        var gridArea = new ChartRectangle(area.X, area.Y, Math.Max(1, area.Width - rowLabelWidth), area.Height);
+        var gridArea = new SceneBounds(area.X, area.Y, Math.Max(1, area.Width - rowLabelWidth), area.Height);
         foreach (var cell in facets.Cells)
         {
             var frame = GetCellFrame(gridArea, facets, cell, _plot.Facets.Gap, _plot.Facets.Gap, headerHeight);
@@ -737,7 +737,7 @@ internal sealed class PlotRenderer
     private static List<GeoPosition> SampleWorld(GeoProjection projection) => GeoSystem.SampleBox(projection, projection.CenterLongitude - 180, -projection.MaxLatitude, projection.CenterLongitude + 180, projection.MaxLatitude);
 
     /// <summary>Draws the graticule around a region (with a margin of one step) and the outline of the globe, clipped to the frame.</summary>
-    private void RenderGeoGrid(GeoCoordinates geo, GeoSystem system, ChartRectangle frame, (double West, double South, double East, double North) region, SceneGroup grid)
+    private void RenderGeoGrid(GeoCoordinates geo, GeoSystem system, SceneBounds frame, (double West, double South, double East, double North) region, SceneGroup grid)
     {
         var projection = geo.Projection;
         var group = new SceneGroup { CssClass = "graticule", Clip = frame };
@@ -800,7 +800,7 @@ internal sealed class PlotRenderer
         }
     }
 
-    private PolarSystem LayoutPolar(PolarCoordinates polar, ChartRectangle area)
+    private PolarSystem LayoutPolar(PolarCoordinates polar, SceneBounds area)
     {
 
         var transposed = polar.Transposed;

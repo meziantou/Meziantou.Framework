@@ -1,0 +1,30 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Diagrams</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Diagrams written as deterministic SVG, inspired by Mermaid: flowcharts, swimlanes, class, state, entity relationship, requirement, use case, C4, block and architecture diagrams, laid out automatically, with the themes of Mermaid.</Description>
+    <PackageTags>diagram;diagrams;svg;flowchart;uml;class-diagram;state-diagram;er-diagram;c4;architecture;graph-layout;mermaid</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.VectorGraphics/Meziantou.Framework.VectorGraphics.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Meziantou.Framework.VectorGraphics" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The tests check the layout algorithms with exact values -->
+    <InternalsVisibleTo Include="Meziantou.Framework.Diagrams.Tests" />
+
+    <!-- The fuzz targets check the invariants of the layout -->
+    <InternalsVisibleTo Include="Meziantou.Framework.Diagrams.Fuzz" />
+  </ItemGroup>
+
+</Project>

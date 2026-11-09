@@ -1,0 +1,5 @@
+stateDiagram-v2
+    A
+    note right of A
+    <br> text
+    end note

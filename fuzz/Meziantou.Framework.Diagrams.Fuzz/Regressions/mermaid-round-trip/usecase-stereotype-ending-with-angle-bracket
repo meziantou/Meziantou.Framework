@@ -1,0 +1,8 @@
+usecase-beta
+actor SalesAgent("Sales agent")@{ business: true } <<)mployee> >>
+actor Broker@{ type: hollow, business: true }
+Quote("Prepare qKote")@{ business: true } <<Core>>
+Archive[Archive quote] <<Record>>
+SalesAgent --> Quote
+Broker --> Quote
+Quote --> Archive

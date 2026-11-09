@@ -1,0 +1,251 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500.05" height="203.6" viewBox="0 0 1500.05 203.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="1500.05" height="203.6" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+</g>
+<g class="edges">
+<g class="edge relation">
+<path d="M30,55.2 L30,61.63 C30,68.07 30,80.93 30,93.8 C30,106.67 30,119.53 30,125.97 L30,132.4" fill="none" stroke="#333333" class="edge-path"/>
+</g>
+<g class="edge relation">
+<path d="M140,55.2 L140,61.63 C140,68.07 140,80.93 140,93.8 C140,106.67 140,119.53 140,125.97 L140,132.4" fill="none" stroke="#333333" stroke-dasharray="3 3" class="edge-path"/>
+</g>
+<g class="edge relation">
+<path d="M250,63.2 L250,68.3 C250,73.4 250,83.6 250,95.13 C250,106.67 250,119.53 250,125.97 L250,132.4" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M250,55.2 L246,63.2 L254,63.2 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge relation">
+<path d="M360,63.2 L360,68.3 C360,73.4 360,83.6 360,95.13 C360,106.67 360,119.53 360,125.97 L360,132.4" fill="none" stroke="#333333" stroke-dasharray="3 3" class="edge-path"/>
+<path d="M360,55.2 L356,63.2 L364,63.2 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge relation">
+<path d="M476.93,72.2 L476.93,75.8 C476.93,79.4 476.93,86.6 476.93,96.63 C476.93,106.67 476.93,119.53 476.93,125.97 L476.93,132.4" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M476.93,55.2 L470.93,72.2 L482.93,72.2 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relation">
+<path d="M612.78,72.2 L612.78,75.8 C612.78,79.4 612.78,86.6 612.78,96.63 C612.78,106.67 612.78,119.53 612.78,125.97 L612.78,132.4" fill="none" stroke="#333333" stroke-dasharray="3 3" class="edge-path"/>
+<path d="M612.78,55.2 L606.78,72.2 L618.78,72.2 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relation">
+<path d="M753.4,72.2 L753.4,75.8 C753.4,79.4 753.4,86.6 753.4,96.63 C753.4,106.67 753.4,119.53 753.4,125.97 L753.4,132.4" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M753.4,55.2 L747.4,63.7 L753.4,72.2 L759.4,63.7 Z" fill="#333333" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relation">
+<path d="M898.78,72.2 L898.78,75.8 C898.78,79.4 898.78,86.6 898.78,96.63 C898.78,106.67 898.78,119.53 898.78,125.97 L898.78,132.4" fill="none" stroke="#333333" stroke-dasharray="3 3" class="edge-path"/>
+<path d="M898.78,55.2 L892.78,63.7 L898.78,72.2 L904.78,63.7 Z" fill="#333333" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relation">
+<path d="M1042.75,72.2 L1042.75,75.8 C1042.75,79.4 1042.75,86.6 1042.75,96.63 C1042.75,106.67 1042.75,119.53 1042.75,125.97 L1042.75,132.4" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M1042.75,55.2 L1036.75,63.7 L1042.75,72.2 L1048.75,63.7 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relation">
+<path d="M1185.33,72.2 L1185.33,75.8 C1185.33,79.4 1185.33,86.6 1185.33,96.63 C1185.33,106.67 1185.33,119.53 1185.33,125.97 L1185.33,132.4" fill="none" stroke="#333333" stroke-dasharray="3 3" class="edge-path"/>
+<path d="M1185.33,55.2 L1179.33,63.7 L1185.33,72.2 L1191.33,63.7 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relation">
+<path d="M1312.42,67.2 L1312.42,71.63 C1312.42,76.07 1312.42,84.93 1312.42,95.8 C1312.42,106.67 1312.42,119.53 1312.42,125.97 L1312.42,132.4" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M1318.42,61.2 C1318.42,64.51 1315.73,67.2 1312.42,67.2 C1309.1,67.2 1306.42,64.51 1306.42,61.2 C1306.42,57.89 1309.1,55.2 1312.42,55.2 C1315.73,55.2 1318.42,57.89 1318.42,61.2 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relation">
+<path d="M1424.02,67.2 L1424.02,71.63 C1424.02,76.07 1424.02,84.93 1424.02,95.8 C1424.02,106.67 1424.02,119.53 1424.02,125.97 L1424.02,132.4" fill="none" stroke="#333333" stroke-dasharray="3 3" class="edge-path"/>
+<path d="M1430.02,61.2 C1430.02,64.51 1427.33,67.2 1424.02,67.2 C1420.7,67.2 1418.02,64.51 1418.02,61.2 C1418.02,57.89 1420.7,55.2 1424.02,55.2 C1427.33,55.2 1430.02,57.89 1430.02,61.2 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+<g class="edge-label">
+<rect x="6.88" y="80.2" width="46.24" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="30" y="97.89" text-anchor="middle" font-size="16" fill="#333333">None</text>
+</g>
+<g class="edge-label">
+<rect x="88.42" y="80.2" width="103.17" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="140" y="97.89" text-anchor="middle" font-size="16" fill="#333333">None dashed</text>
+</g>
+<g class="edge-label">
+<rect x="225.23" y="80.2" width="49.54" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="250" y="97.89" text-anchor="middle" font-size="16" fill="#333333">Arrow</text>
+</g>
+<g class="edge-label">
+<rect x="306.77" y="80.2" width="106.46" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="360" y="97.89" text-anchor="middle" font-size="16" fill="#333333">Arrow dashed</text>
+</g>
+<g class="edge-label">
+<rect x="433.23" y="80.2" width="87.39" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="476.93" y="97.89" text-anchor="middle" font-size="16" fill="#333333">Inheritance</text>
+</g>
+<g class="edge-label">
+<rect x="540.62" y="80.2" width="144.32" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="612.78" y="97.89" text-anchor="middle" font-size="16" fill="#333333">Inheritance dashed</text>
+</g>
+<g class="edge-label">
+<rect x="704.94" y="80.2" width="96.91" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="753.4" y="97.89" text-anchor="middle" font-size="16" fill="#333333">Composition</text>
+</g>
+<g class="edge-label">
+<rect x="821.86" y="80.2" width="153.84" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="898.78" y="97.89" text-anchor="middle" font-size="16" fill="#333333">Composition dashed</text>
+</g>
+<g class="edge-label">
+<rect x="995.7" y="80.2" width="94.11" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="1042.75" y="97.89" text-anchor="middle" font-size="16" fill="#333333">Aggregation</text>
+</g>
+<g class="edge-label">
+<rect x="1109.81" y="80.2" width="151.04" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="1185.33" y="97.89" text-anchor="middle" font-size="16" fill="#333333">Aggregation dashed</text>
+</g>
+<g class="edge-label">
+<rect x="1280.85" y="80.2" width="63.14" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="1312.42" y="97.89" text-anchor="middle" font-size="16" fill="#333333">Lollipop</text>
+</g>
+<g class="edge-label">
+<rect x="1363.98" y="80.2" width="120.06" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="1424.02" y="97.89" text-anchor="middle" font-size="16" fill="#333333">Lollipop dashed</text>
+</g>
+</g>
+<g class="nodes">
+<g class="class" data-id="A0">
+<rect x="0" y="0" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="30" y="19.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">A0</text>
+<line x1="0" y1="31.2" x2="60" y2="31.2" stroke="#9370db"/>
+<line x1="0" y1="43.2" x2="60" y2="43.2" stroke="#9370db"/>
+</g>
+<g class="class" data-id="B0">
+<rect x="0" y="132.4" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="30" y="152.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">B0</text>
+<line x1="0" y1="163.6" x2="60" y2="163.6" stroke="#9370db"/>
+<line x1="0" y1="175.6" x2="60" y2="175.6" stroke="#9370db"/>
+</g>
+<g class="class" data-id="A1">
+<rect x="110" y="0" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="140" y="19.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">A1</text>
+<line x1="110" y1="31.2" x2="170" y2="31.2" stroke="#9370db"/>
+<line x1="110" y1="43.2" x2="170" y2="43.2" stroke="#9370db"/>
+</g>
+<g class="class" data-id="B1">
+<rect x="110" y="132.4" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="140" y="152.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">B1</text>
+<line x1="110" y1="163.6" x2="170" y2="163.6" stroke="#9370db"/>
+<line x1="110" y1="175.6" x2="170" y2="175.6" stroke="#9370db"/>
+</g>
+<g class="class" data-id="A2">
+<rect x="220" y="0" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="250" y="19.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">A2</text>
+<line x1="220" y1="31.2" x2="280" y2="31.2" stroke="#9370db"/>
+<line x1="220" y1="43.2" x2="280" y2="43.2" stroke="#9370db"/>
+</g>
+<g class="class" data-id="B2">
+<rect x="220" y="132.4" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="250" y="152.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">B2</text>
+<line x1="220" y1="163.6" x2="280" y2="163.6" stroke="#9370db"/>
+<line x1="220" y1="175.6" x2="280" y2="175.6" stroke="#9370db"/>
+</g>
+<g class="class" data-id="A3">
+<rect x="330" y="0" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="360" y="19.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">A3</text>
+<line x1="330" y1="31.2" x2="390" y2="31.2" stroke="#9370db"/>
+<line x1="330" y1="43.2" x2="390" y2="43.2" stroke="#9370db"/>
+</g>
+<g class="class" data-id="B3">
+<rect x="330" y="132.4" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="360" y="152.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">B3</text>
+<line x1="330" y1="163.6" x2="390" y2="163.6" stroke="#9370db"/>
+<line x1="330" y1="175.6" x2="390" y2="175.6" stroke="#9370db"/>
+</g>
+<g class="class" data-id="A4">
+<rect x="446.93" y="0" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="476.93" y="19.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">A4</text>
+<line x1="446.93" y1="31.2" x2="506.93" y2="31.2" stroke="#9370db"/>
+<line x1="446.93" y1="43.2" x2="506.93" y2="43.2" stroke="#9370db"/>
+</g>
+<g class="class" data-id="B4">
+<rect x="446.93" y="132.4" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="476.93" y="152.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">B4</text>
+<line x1="446.93" y1="163.6" x2="506.93" y2="163.6" stroke="#9370db"/>
+<line x1="446.93" y1="175.6" x2="506.93" y2="175.6" stroke="#9370db"/>
+</g>
+<g class="class" data-id="A5">
+<rect x="582.78" y="0" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="612.78" y="19.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">A5</text>
+<line x1="582.78" y1="31.2" x2="642.78" y2="31.2" stroke="#9370db"/>
+<line x1="582.78" y1="43.2" x2="642.78" y2="43.2" stroke="#9370db"/>
+</g>
+<g class="class" data-id="B5">
+<rect x="582.78" y="132.4" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="612.78" y="152.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">B5</text>
+<line x1="582.78" y1="163.6" x2="642.78" y2="163.6" stroke="#9370db"/>
+<line x1="582.78" y1="175.6" x2="642.78" y2="175.6" stroke="#9370db"/>
+</g>
+<g class="class" data-id="A6">
+<rect x="723.4" y="0" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="753.4" y="19.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">A6</text>
+<line x1="723.4" y1="31.2" x2="783.4" y2="31.2" stroke="#9370db"/>
+<line x1="723.4" y1="43.2" x2="783.4" y2="43.2" stroke="#9370db"/>
+</g>
+<g class="class" data-id="B6">
+<rect x="723.4" y="132.4" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="753.4" y="152.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">B6</text>
+<line x1="723.4" y1="163.6" x2="783.4" y2="163.6" stroke="#9370db"/>
+<line x1="723.4" y1="175.6" x2="783.4" y2="175.6" stroke="#9370db"/>
+</g>
+<g class="class" data-id="A7">
+<rect x="868.78" y="0" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="898.78" y="19.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">A7</text>
+<line x1="868.78" y1="31.2" x2="928.78" y2="31.2" stroke="#9370db"/>
+<line x1="868.78" y1="43.2" x2="928.78" y2="43.2" stroke="#9370db"/>
+</g>
+<g class="class" data-id="B7">
+<rect x="868.78" y="132.4" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="898.78" y="152.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">B7</text>
+<line x1="868.78" y1="163.6" x2="928.78" y2="163.6" stroke="#9370db"/>
+<line x1="868.78" y1="175.6" x2="928.78" y2="175.6" stroke="#9370db"/>
+</g>
+<g class="class" data-id="A8">
+<rect x="1012.75" y="0" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="1042.75" y="19.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">A8</text>
+<line x1="1012.75" y1="31.2" x2="1072.75" y2="31.2" stroke="#9370db"/>
+<line x1="1012.75" y1="43.2" x2="1072.75" y2="43.2" stroke="#9370db"/>
+</g>
+<g class="class" data-id="B8">
+<rect x="1012.75" y="132.4" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="1042.75" y="152.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">B8</text>
+<line x1="1012.75" y1="163.6" x2="1072.75" y2="163.6" stroke="#9370db"/>
+<line x1="1012.75" y1="175.6" x2="1072.75" y2="175.6" stroke="#9370db"/>
+</g>
+<g class="class" data-id="A9">
+<rect x="1155.33" y="0" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="1185.33" y="19.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">A9</text>
+<line x1="1155.33" y1="31.2" x2="1215.33" y2="31.2" stroke="#9370db"/>
+<line x1="1155.33" y1="43.2" x2="1215.33" y2="43.2" stroke="#9370db"/>
+</g>
+<g class="class" data-id="B9">
+<rect x="1155.33" y="132.4" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="1185.33" y="152.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">B9</text>
+<line x1="1155.33" y1="163.6" x2="1215.33" y2="163.6" stroke="#9370db"/>
+<line x1="1155.33" y1="175.6" x2="1215.33" y2="175.6" stroke="#9370db"/>
+</g>
+<g class="class" data-id="A10">
+<rect x="1282.42" y="0" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="1312.42" y="19.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">A10</text>
+<line x1="1282.42" y1="31.2" x2="1342.42" y2="31.2" stroke="#9370db"/>
+<line x1="1282.42" y1="43.2" x2="1342.42" y2="43.2" stroke="#9370db"/>
+</g>
+<g class="class" data-id="B10">
+<rect x="1282.42" y="132.4" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="1312.42" y="152.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">B10</text>
+<line x1="1282.42" y1="163.6" x2="1342.42" y2="163.6" stroke="#9370db"/>
+<line x1="1282.42" y1="175.6" x2="1342.42" y2="175.6" stroke="#9370db"/>
+</g>
+<g class="class" data-id="A11">
+<rect x="1394.02" y="0" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="1424.02" y="19.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">A11</text>
+<line x1="1394.02" y1="31.2" x2="1454.02" y2="31.2" stroke="#9370db"/>
+<line x1="1394.02" y1="43.2" x2="1454.02" y2="43.2" stroke="#9370db"/>
+</g>
+<g class="class" data-id="B11">
+<rect x="1394.02" y="132.4" width="60" height="55.2" fill="#ececff" stroke="#9370db"/>
+<text x="1424.02" y="152.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">B11</text>
+<line x1="1394.02" y1="163.6" x2="1454.02" y2="163.6" stroke="#9370db"/>
+<line x1="1394.02" y1="175.6" x2="1454.02" y2="175.6" stroke="#9370db"/>
+</g>
+</g>
+</g>
+</svg>

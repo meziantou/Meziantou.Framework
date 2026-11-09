@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="648" height="525.8" viewBox="0 0 648 525.8" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Internet banking</title>
+<rect width="648" height="525.8" fill="#ffffff"/>
+<g class="title">
+<text x="324" y="23.4" text-anchor="middle" font-size="18" fill="#333333">Internet banking</text>
+</g>
+<g class="diagram" transform="translate(-142 -80.4)">
+<g class="boundaries">
+<g class="boundary" data-id="bank">
+<rect x="150" y="350.6" width="632" height="247.6" fill="none" stroke="#333333" stroke-dasharray="7 7"/>
+<text x="223.12" y="372.29" text-anchor="middle" font-size="16" font-weight="bold" fill="#333333">Internet Banking</text>
+<text x="192.68" y="394.78" text-anchor="middle" font-size="14" fill="#333333">[SYSTEM]</text>
+</g>
+</g>
+<g class="elements">
+<g class="c4-person" data-id="customer">
+<g transform="translate(258 192.8)">
+<path d="M-96,-48.8 L96,-48.8 C102.63,-48.8 108,-43.43 108,-36.8 L108,36.8 C108,43.43 102.63,48.8 96,48.8 L-96,48.8 C-102.63,48.8 -108,43.43 -108,36.8 L-108,-36.8 C-108,-43.43 -102.63,-48.8 -96,-48.8 Z" fill="#08427b" stroke="#073b6f"/>
+</g>
+<circle cx="258" cy="136" r="16" fill="#08427b" stroke="#073b6f"/>
+<text x="258" y="174.27" text-anchor="middle" font-size="12" fill="#ffffff">[Person]</text>
+<text x="258" y="194.38" text-anchor="middle" font-size="14" font-weight="bold" fill="#ffffff">Customer</text>
+<text x="258" y="217.47" text-anchor="middle" font-size="12" fill="#ffffff">A customer of the bank</text>
+</g>
+<g class="c4-system c4-external" data-id="mail">
+<g transform="translate(574 157.6)">
+<path d="M-96,-37.6 L96,-37.6 C102.63,-37.6 108,-32.23 108,-25.6 L108,25.6 C108,32.23 102.63,37.6 96,37.6 L-96,37.6 C-102.63,37.6 -108,32.23 -108,25.6 L-108,-25.6 C-108,-32.23 -102.63,-37.6 -96,-37.6 Z" fill="#999999" stroke="#8a8a8a"/>
+</g>
+<text x="574" y="150.27" text-anchor="middle" font-size="12" fill="#ffffff">[Software System]</text>
+<text x="574" y="170.38" text-anchor="middle" font-size="14" font-weight="bold" fill="#ffffff">E-mail system</text>
+</g>
+<g class="c4-container" data-id="web">
+<g transform="translate(308 499.4)">
+<path d="M-96,-48.8 L96,-48.8 C102.63,-48.8 108,-43.43 108,-36.8 L108,36.8 C108,43.43 102.63,48.8 96,48.8 L-96,48.8 C-102.63,48.8 -108,43.43 -108,36.8 L-108,-36.8 C-108,-43.43 -102.63,-48.8 -96,-48.8 Z" fill="#438dd5" stroke="#3c7fc0"/>
+</g>
+<text x="308" y="480.87" text-anchor="middle" font-size="12" fill="#ffffff">[Container: ASP.NET Core]</text>
+<text x="308" y="500.98" text-anchor="middle" font-size="14" font-weight="bold" fill="#ffffff">Web Application</text>
+<text x="308" y="524.07" text-anchor="middle" font-size="12" fill="#ffffff">Serves the pages</text>
+</g>
+<g class="c4-container_db" data-id="db">
+<g transform="translate(624 498.2)">
+<path d="M-108,-37.6 C-108,-46.35 -59.65,-53.44 0,-53.44 C59.65,-53.44 108,-46.35 108,-37.6 L108,37.6 C108,46.35 59.65,53.44 0,53.44 C-59.65,53.44 -108,46.35 -108,37.6 Z" fill="#438dd5" stroke="#3c7fc0"/>
+<path d="M-108,-37.6 C-108,-28.85 -59.65,-21.76 0,-21.76 C59.65,-21.76 108,-28.85 108,-37.6" fill="none" stroke="#3c7fc0"/>
+</g>
+<text x="624" y="500.87" text-anchor="middle" font-size="12" fill="#ffffff">[Container: SQL Server]</text>
+<text x="624" y="520.98" text-anchor="middle" font-size="14" font-weight="bold" fill="#ffffff">Database</text>
+</g>
+</g>
+<g class="relationships">
+<g class="relationship">
+<path d="M267.54,241.6 L299.1,442.7" fill="none" stroke="#333333"/>
+<path d="M300.34,450.6 L303.05,442.08 L295.15,443.32 Z" fill="#333333" class="marker"/>
+<text x="283.94" y="349.17" text-anchor="middle" font-size="12" fill="#333333">Uses</text>
+<text x="283.94" y="368.57" text-anchor="middle" font-size="12" font-style="italic" fill="#333333">[HTTPS]</text>
+</g>
+<g class="relationship">
+<path d="M416,498.99 Q441,498.8 508,498.63" fill="none" stroke="#333333"/>
+<path d="M516,498.61 L507.99,494.63 L508.01,502.63 Z" fill="#333333" class="marker"/>
+<text x="466" y="501.87" text-anchor="middle" font-size="12" fill="#333333">Reads and writes</text>
+<text x="466" y="521.27" text-anchor="middle" font-size="12" font-style="italic" fill="#333333">[SQL]</text>
+</g>
+<g class="relationship">
+<path d="M348.88,443.14 Q395.67,322.9 538.66,200.4" fill="none" stroke="#333333"/>
+<path d="M345.98,450.6 L352.61,444.6 L345.15,441.69 Z" fill="#333333" class="marker"/>
+<path d="M544.74,195.2 L536.06,197.37 L541.27,203.44 Z" fill="#333333" class="marker"/>
+<text x="445.36" y="325.97" text-anchor="middle" font-size="12" fill="#333333">Sends e-mails</text>
+</g>
+</g>
+</g>
+</svg>

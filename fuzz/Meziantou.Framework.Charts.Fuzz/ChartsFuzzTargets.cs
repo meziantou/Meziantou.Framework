@@ -10,8 +10,7 @@ namespace Meziantou.Framework.Charts.Fuzz;
 /// Drawing a chart never throws for the content of its data, apart from the documented cases (a cycle in the links of a
 /// Sankey diagram), and gives a well-formed SVG document whose root is <c>svg</c>. The output is deterministic, and the
 /// scene it comes from only holds finite coordinates: the SVG writer replaces a non-finite number with 0, which would
-/// hide a shape drawn at the wrong place. The GeoJSON reader only throws a <see cref="FormatException"/>, and a color
-/// parses back from its notation.
+/// hide a shape drawn at the wrong place. The GeoJSON reader only throws a <see cref="FormatException"/>.
 /// </summary>
 public static class ChartsFuzzTargets
 {
@@ -36,14 +35,12 @@ public static class ChartsFuzzTargets
         "\"FeatureCollection\"", "\"Feature\"", "\"Point\"", "\"MultiPoint\"", "\"LineString\"", "\"MultiLineString\"", "\"Polygon\"", "\"MultiPolygon\"", "\"GeometryCollection\"",
     ];
 
-    private static readonly string[] ColorTokens = ["#", "0", "9", "a", "f", "A", "F", "g", " ", "\t", "\u00A0", "\uFF10", "steelblue", "red", "black", "white", "transparent", "rebeccapurple"];
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("charts-plot", PlotTarget) { Seeds = GetPlotSeeds, Dictionary = Tokens },
         new("charts-hierarchy", HierarchyTarget) { Seeds = GetHierarchySeeds, Dictionary = Tokens },
         new("charts-geojson", GeoJsonTarget) { Seeds = GetGeoJsonSeeds, Dictionary = GeoJsonTokens },
-        new("charts-color", ColorTarget) { Seeds = GetColorSeeds, Dictionary = ColorTokens },
     ];
 
     private enum PlotKind
@@ -212,60 +209,6 @@ public static class ChartsFuzzTargets
         }
     }
 
-    /// <summary>
-    /// <see cref="ChartColor.Parse"/> and <see cref="ChartColor.TryParse"/> agree; a hexadecimal notation is accepted
-    /// exactly when it has 3, 4, 6 or 8 ASCII hexadecimal digits, and gives their channels; the notation of a color
-    /// (<see cref="ChartColor.ToString"/>) parses back to it.
-    /// </summary>
-    private static void ColorTarget(ReadOnlySpan<byte> data)
-    {
-        var text = FuzzText.Decode(data);
-        var succeeded = ChartColor.TryParse(text, out var color);
-
-        ChartColor? parsed;
-        try
-        {
-            parsed = ChartColor.Parse(text);
-        }
-        catch (FormatException)
-        {
-            parsed = null;
-        }
-
-        FuzzAssert.Equal(succeeded ? color : (ChartColor?)null, parsed, $"Parse and TryParse disagree on {FuzzAssert.Format(text)}");
-
-        var trimmed = text.Trim();
-        if (trimmed.StartsWith('#', StringComparison.Ordinal))
-        {
-            var digits = trimmed[1..];
-            var isValid = digits.Length is 3 or 4 or 6 or 8 && digits.All(char.IsAsciiHexDigit);
-            FuzzAssert.Equal(isValid, succeeded, $"TryParse({FuzzAssert.Format(text)}) is wrong");
-            if (isValid)
-            {
-                FuzzAssert.Equal(DecodeHex(digits), color, $"The channels of {FuzzAssert.Format(text)} are wrong");
-            }
-        }
-
-        if (succeeded)
-        {
-            var notation = color.ToString();
-            FuzzAssert.Equal(color, ChartColor.Parse(notation), $"The notation {FuzzAssert.Format(notation)} of {FuzzAssert.Format(text)} does not parse back to the color");
-            FuzzAssert.Equal(color with { A = 255 }, ChartColor.Parse(color.ToHexRgb()), $"The #rrggbb notation of {FuzzAssert.Format(text)} does not parse back to the color");
-        }
-    }
-
-    private static ChartColor DecodeHex(string digits)
-    {
-        var channels = new byte[] { 0, 0, 0, 255 };
-        var width = digits.Length <= 4 ? 1 : 2;
-        for (var i = 0; i < digits.Length / width; i++)
-        {
-            var value = byte.Parse(digits.AsSpan(i * width, width), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
-            channels[i] = width == 1 ? (byte)(value * 17) : value;
-        }
-
-        return new ChartColor(channels[0], channels[1], channels[2], channels[3]);
-    }
 
     private static Plot CreatePlot(string title, byte size, byte options)
     {
@@ -365,7 +308,7 @@ public static class ChartsFuzzTargets
 
         var svg = plot.ToSvg();
         FuzzAssert.Equal(svg, plot.ToSvg(), $"Drawing the {description} chart twice gives different outputs");
-        FuzzAssert.Equal(svg, SvgChartRenderer.Render(scene), $"The SVG of the {description} chart differs from the SVG of its scene");
+        FuzzAssert.Equal(svg, SvgSceneRenderer.Render(scene, new SvgRenderOptions { IdPrefix = "chart" }), $"The SVG of the {description} chart differs from the SVG of its scene");
 
         try
         {
@@ -384,7 +327,7 @@ public static class ChartsFuzzTargets
         return svg;
     }
 
-    private static void CheckScene(ChartScene scene, string description)
+    private static void CheckScene(Scene scene, string description)
     {
         var stack = new Stack<(SceneElement Element, string Path)>();
         stack.Push((scene.Root, "root"));
@@ -573,14 +516,6 @@ public static class ChartsFuzzTargets
         }
     }
 
-    private static IEnumerable<FuzzSeed> GetColorSeeds()
-    {
-        string[] colors = ["#fff", "#FFFA", "#336699", "#33669980", " #abc ", "#ggg", "#12345", "#", "", " ", "steelblue", "SteelBlue", "transparent", "notacolor", "#+12345", "#\uFF10\uFF10\uFF10", "\u00A0red\u00A0", "#0x1234"];
-        for (var i = 0; i < colors.Length; i++)
-        {
-            yield return FuzzSeed.FromText("color-" + i.ToString(CultureInfo.InvariantCulture), colors[i]);
-        }
-    }
 
     /// <summary>A row of the data: its fields, parsed as numbers, times or categories.</summary>
     private sealed class Row(int index, object?[] fields)

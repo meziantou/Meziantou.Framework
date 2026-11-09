@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="227.68" height="233.6" viewBox="0 0 227.68 233.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="227.68" height="233.6" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+</g>
+<g class="edges">
+<g class="edge solid">
+<path d="M105.84,39.2 L105.84,43.37 C105.84,47.53 105.84,55.87 105.84,62.87 C105.84,69.87 105.84,75.53 105.84,78.37 L105.84,81.2" fill="none" stroke="#dc2626" stroke-width="2" class="edge-path"/>
+<path d="M105.84,89.2 L109.84,81.2 L101.84,81.2 Z" fill="#dc2626" class="marker"/>
+</g>
+<g class="edge solid">
+<path d="M105.84,128.4 L105.84,132.57 C105.84,136.73 105.84,145.07 105.84,152.07 C105.84,159.07 105.84,164.73 105.84,167.57 L105.84,170.4" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M105.84,178.4 L109.84,170.4 L101.84,170.4 Z" fill="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+</g>
+<g class="nodes">
+<g class="node" data-id="start">
+<g transform="translate(105.84 19.6)">
+<path d="M-32.22,-19.6 L32.22,-19.6 L32.22,19.6 L-32.22,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="105.84" y="23.69" text-anchor="middle" font-size="16" fill="#333333">Start</text>
+</g>
+<g class="node important" data-id="alert">
+<g transform="translate(105.84 108.8)">
+<path d="M-105.84,-19.6 L105.84,-19.6 L105.84,19.6 L-105.84,19.6 Z" fill="#fde68a" stroke="#b45309" stroke-width="2"/>
+</g>
+<text x="105.84" y="112.89" text-anchor="middle" font-size="16" fill="#333333">Page the on-call engineer</text>
+</g>
+<g class="node" data-id="done">
+<g transform="translate(105.84 198)">
+<path d="M-35,-19.6 L35,-19.6 L35,19.6 L-35,19.6 Z" fill="#bbf7d0" stroke="#9370db"/>
+</g>
+<text x="105.84" y="202.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#14532d">Done</text>
+</g>
+</g>
+</g>
+</svg>

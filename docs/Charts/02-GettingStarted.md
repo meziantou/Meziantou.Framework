@@ -51,7 +51,7 @@ amounts, the ticks, the margins and the axes.
 [WriteSvg](cref:Meziantou.Framework.Charts.Plot.WriteSvg) writes it to a `TextWriter` or to a `Stream`, in UTF-8. The
 document can be saved as a `.svg` file, served with the `image/svg+xml` content type, or written inline in an HTML
 page. When a page shows several charts, give each one its own
-[SvgRenderOptions.IdPrefix](cref:Meziantou.Framework.Charts.SvgRenderOptions.IdPrefix), so the identifiers of their
+[SvgRenderOptions.IdPrefix](cref:Meziantou.Framework.VectorGraphics.SvgRenderOptions.IdPrefix), so the identifiers of their
 gradients and clip paths do not collide.
 
 To get an image instead, see [Image rendering](07-ImageRendering.md).

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="258.5" height="203.6" viewBox="0 0 258.5 203.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="258.5" height="203.6" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+</g>
+<g class="edges">
+<g class="edge solid">
+<path d="M81.58,93.8 L85.75,93.8 C89.92,93.8 98.25,93.8 105.25,93.8 C112.25,93.8 117.92,93.8 120.75,93.8 L123.58,93.8" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M131.58,93.8 L123.58,89.8 L123.58,97.8 Z" fill="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+</g>
+<g class="nodes">
+<g class="node" data-id="outside">
+<g transform="translate(40.79 93.8)">
+<path d="M-40.79,-19.6 L40.79,-19.6 L40.79,19.6 L-40.79,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="40.79" y="97.89" text-anchor="middle" font-size="16" fill="#333333">outside</text>
+</g>
+<g class="cluster" data-id="inner">
+<rect x="131.58" y="0" width="110.91" height="187.6" fill="#ffffde" stroke="#aaaa33"/>
+<text x="187.04" y="17.69" text-anchor="middle" font-size="16" fill="#333333">Inner</text>
+</g>
+<g transform="translate(147.58 43.2)">
+<g class="clusters">
+</g>
+<g class="edges">
+<g class="edge solid">
+<path d="M39.46,39.2 L39.46,43.37 C39.46,47.53 39.46,55.87 39.46,62.87 C39.46,69.87 39.46,75.53 39.46,78.37 L39.46,81.2" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M39.46,89.2 L43.46,81.2 L35.46,81.2 Z" fill="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+</g>
+<g class="nodes">
+<g class="node" data-id="top">
+<g transform="translate(39.46 19.6)">
+<path d="M-26.12,-19.6 L26.12,-19.6 L26.12,19.6 L-26.12,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="39.46" y="23.69" text-anchor="middle" font-size="16" fill="#333333">top</text>
+</g>
+<g class="node" data-id="bottom">
+<g transform="translate(39.46 108.8)">
+<path d="M-39.46,-19.6 L39.46,-19.6 L39.46,19.6 L-39.46,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="39.46" y="112.89" text-anchor="middle" font-size="16" fill="#333333">bottom</text>
+</g>
+</g>
+</g>
+</g>
+</g>
+</svg>

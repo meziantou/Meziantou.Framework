@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="402" height="141" viewBox="0 0 402 141" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="402" height="141" fill="#333333"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="packet-field">
+<rect x="289" y="15" width="91" height="40" fill="#1f2020" stroke="#cccccc" class="packet-block"/>
+<text x="334.5" y="38.07" text-anchor="middle" font-size="12" fill="#cccccc">Version</text>
+<text x="289" y="13" font-size="10" fill="#cccccc" class="packet-bit start">3</text>
+<text x="380" y="13" text-anchor="end" font-size="10" fill="#cccccc" class="packet-bit end">0</text>
+</g>
+<g class="packet-field">
+<rect x="1" y="15" width="283" height="40" fill="#1f2020" stroke="#cccccc" class="packet-block"/>
+<text x="142.5" y="38.07" text-anchor="middle" font-size="12" fill="#cccccc">Field across two rows</text>
+<text x="1" y="13" font-size="10" fill="#cccccc" class="packet-bit start">15</text>
+<text x="284" y="13" text-anchor="end" font-size="10" fill="#cccccc" class="packet-bit end">4</text>
+<rect x="193" y="70" width="187" height="40" fill="#1f2020" stroke="#cccccc" class="packet-block"/>
+<text x="286.5" y="93.07" text-anchor="middle" font-size="12" fill="#cccccc">Field across two rows</text>
+<text x="193" y="68" font-size="10" fill="#cccccc" class="packet-bit start">23</text>
+<text x="380" y="68" text-anchor="end" font-size="10" fill="#cccccc" class="packet-bit end">16</text>
+</g>
+<g class="packet-field">
+<rect x="169" y="70" width="19" height="40" fill="#1f2020" stroke="#cccccc" class="packet-block"/>
+<text x="178.5" y="93.07" text-anchor="middle" font-size="12" fill="#cccccc">F</text>
+<text x="178.5" y="68" text-anchor="middle" font-size="10" fill="#cccccc" class="packet-bit">24</text>
+</g>
+</g>
+</svg>

@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="972.68" height="580.4" viewBox="0 0 972.68 580.4" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="972.68" height="580.4" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="swimlanes">
+<g class="em-swimlane">
+<rect x="0" y="0" width="956.68" height="130" rx="3" fill="#fafafa" stroke="#f0f0f0"/>
+<text x="84.42" y="32.2" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">UI/Automation</text>
+</g>
+<g class="em-swimlane">
+<rect x="0" y="140" width="956.68" height="137.2" rx="3" fill="#fafafa" stroke="#f0f0f0"/>
+<text x="116.23" y="172.2" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">Command/Read Model</text>
+</g>
+<g class="em-swimlane">
+<rect x="0" y="287.2" width="956.68" height="137.2" rx="3" fill="#fafafa" stroke="#f0f0f0"/>
+<text x="56.23" y="319.4" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">Events</text>
+</g>
+<g class="em-swimlane">
+<rect x="0" y="434.4" width="956.68" height="130" rx="3" fill="#fafafa" stroke="#f0f0f0"/>
+<text x="97.46" y="466.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">Stream: Inventory</text>
+</g>
+</g>
+<g class="boxes">
+<g class="em-box" data-id="01">
+<rect x="250" y="15" width="100" height="100" rx="3" fill="#ffffff" stroke="#dbdada"/>
+<text x="300" y="69.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">CartUI</text>
+</g>
+<g class="em-box" data-id="02">
+<rect x="280" y="155" width="133.79" height="107.2" rx="3" fill="#bcd6fe" stroke="#679ac3"/>
+<text x="346.9" y="188.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">AddItem</text>
+<text x="300" y="223.67" font-size="12" fill="#000000">description: string</text>
+<text x="300" y="238.07" font-size="12" fill="#000000">price: number</text>
+</g>
+<g class="em-box" data-id="03">
+<rect x="343.79" y="302.2" width="133.79" height="107.2" rx="3" fill="#ffb778" stroke="#c19a0f"/>
+<text x="410.69" y="335.89" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">ItemAdded</text>
+<text x="363.79" y="370.87" font-size="12" fill="#000000">description: string</text>
+<text x="363.79" y="385.27" font-size="12" fill="#000000">price: number</text>
+</g>
+<g class="em-box" data-id="04">
+<rect x="407.58" y="449.4" width="180.14" height="100" rx="3" fill="#ffb778" stroke="#c19a0f"/>
+<text x="497.66" y="503.49" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">InventoryChanged</text>
+</g>
+<g class="em-box" data-id="05">
+<rect x="517.73" y="15" width="189.47" height="100" rx="3" fill="#edb3f6" stroke="#b88cbf"/>
+<text x="612.46" y="69.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">InventoryProcessor</text>
+</g>
+<g class="em-box" data-id="06">
+<rect x="637.2" y="155" width="170.37" height="100" rx="3" fill="#bcd6fe" stroke="#679ac3"/>
+<text x="722.38" y="209.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">ChangeInventory</text>
+</g>
+<g class="em-box" data-id="07">
+<rect x="817.57" y="155" width="114.11" height="100" rx="3" fill="#d3f1a2" stroke="#a3b732"/>
+<text x="874.62" y="209.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">CartItems</text>
+</g>
+</g>
+<g class="relations">
+<g class="em-relation">
+<line x1="316.67" y1="115" x2="323.04" y2="147.15" stroke="#000000"/>
+<path d="M324.6,155 L326.97,146.37 L319.12,147.93 Z" fill="#000000" class="marker"/>
+</g>
+<g class="em-relation">
+<line x1="369.19" y1="262.2" x2="384.93" y2="294.99" stroke="#000000"/>
+<path d="M388.39,302.2 L388.53,293.26 L381.32,296.72 Z" fill="#000000" class="marker"/>
+</g>
+<g class="em-relation">
+<line x1="527.68" y1="449.4" x2="579.63" y2="122.9" stroke="#000000"/>
+<path d="M580.89,115 L575.68,122.27 L583.58,123.53 Z" fill="#000000" class="marker"/>
+</g>
+<g class="em-relation">
+<line x1="644.04" y1="115" x2="687.74" y2="150" stroke="#000000"/>
+<path d="M693.99,155 L690.25,146.88 L685.24,153.12 Z" fill="#000000" class="marker"/>
+</g>
+<g class="em-relation">
+<line x1="432.99" y1="302.2" x2="847.65" y2="255.89" stroke="#000000"/>
+<path d="M855.61,255 L847.21,251.91 L848.1,259.86 Z" fill="#000000" class="marker"/>
+</g>
+<g class="em-relation">
+<line x1="527.68" y1="449.4" x2="848.72" y2="259.08" stroke="#000000"/>
+<path d="M855.61,255 L846.68,255.64 L850.76,262.52 Z" fill="#000000" class="marker"/>
+</g>
+</g>
+</g>
+</svg>

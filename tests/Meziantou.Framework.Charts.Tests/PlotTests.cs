@@ -10,8 +10,8 @@ public sealed class PlotTests
         Assert.Throws<ArgumentNullException>("mark", () => new Plot().Add(null!));
         Assert.Throws<ArgumentNullException>("stream", () => new Plot().WriteSvg((Stream)null!));
         Assert.Throws<ArgumentOutOfRangeException>("value", () => new SvgRenderOptions { Precision = 16 });
-        Assert.Throws<ArgumentNullException>("scene", () => SvgChartRenderer.Render(null!));
-        Assert.Throws<ArgumentNullException>("writer", () => SvgChartRenderer.Render(new ChartScene(1, 1, "a"), (TextWriter)null!));
+        Assert.Throws<ArgumentNullException>("scene", () => SvgSceneRenderer.Render(null!));
+        Assert.Throws<ArgumentNullException>("writer", () => SvgSceneRenderer.Render(new Scene(1, 1, "a"), (TextWriter)null!));
         Assert.Throws<ArgumentNullException>("data", () => new BarMark<int>(null!, x: i => i, y: i => i));
         Assert.Throws<ArgumentNullException>("x", () => new BarMark<int>([], x: null!, y: i => i));
         Assert.Throws<ArgumentNullException>("root", () => new PackMark<int>(null!));
@@ -83,16 +83,16 @@ public sealed class PlotTests
         #endregion
 
         Assert.Equal("Sales", scene.Title);
-        Assert.Equal(ChartColor.White, scene.Background);
-        Assert.Equal(SvgChartRenderer.Render(scene), plot.ToSvg());
+        Assert.Equal(SceneColor.White, scene.Background);
+        Assert.Equal(SvgSceneRenderer.Render(scene), plot.ToSvg());
     }
 
     [Fact]
     public void Svg_EscapesTextAndRemovesInvalidCharacters()
     {
-        var scene = new ChartScene(100, 50, "\"Font\" & <co>") { Title = "a < b & \"c\"", Description = "d\u0001e\uD800f😀" };
-        scene.Root.Add(new SceneText(0, 10, "x > y\u0000", new ChartFont(10), ChartColor.Black) { Tooltip = "tip & <tip>" });
-        var svg = SvgChartRenderer.Render(scene);
+        var scene = new Scene(100, 50, "\"Font\" & <co>") { Title = "a < b & \"c\"", Description = "d\u0001e\uD800f😀" };
+        scene.Root.Add(new SceneText(0, 10, "x > y\u0000", new SceneFont(10), SceneColor.Black) { Tooltip = "tip & <tip>" });
+        var svg = SvgSceneRenderer.Render(scene);
         Assert.Contains("font-family=\"&quot;Font&quot; &amp; &lt;co&gt;\"", svg);
         Assert.Contains("<title>a &lt; b &amp; &quot;c&quot;</title>", svg);
         Assert.Contains("<desc>def😀</desc>", svg);
@@ -103,7 +103,7 @@ public sealed class PlotTests
     [Fact]
     public void Svg_WritesDataAttributesSortedAndEscaped()
     {
-        var scene = new ChartScene(100, 50, "sans-serif");
+        var scene = new Scene(100, 50, "sans-serif");
         var group = scene.Root.Add(new SceneGroup { CssClass = "g" });
         group.SetDataAttribute("series", "a");
         var circle = group.Add(new SceneCircle(5, 5, 5) { Tooltip = "circle" });
@@ -113,9 +113,9 @@ public sealed class PlotTests
         circle.SetDataAttribute("removed", value: null);
         circle.SetDataAttribute("replaced", "1");
         circle.SetDataAttribute("replaced", "2");
-        scene.Root.Add(new SceneText(0, 10, "text", new ChartFont(10), ChartColor.Black)).SetDataAttribute("kind", "label");
+        scene.Root.Add(new SceneText(0, 10, "text", new SceneFont(10), SceneColor.Black)).SetDataAttribute("kind", "label");
 
-        var svg = SvgChartRenderer.Render(scene);
+        var svg = SvgSceneRenderer.Render(scene);
         Assert.Contains("<g class=\"g\" data-series=\"a\">", svg);
         Assert.Contains("data-a.b_c-1=\"1\" data-replaced=\"2\" data-value=\"x &amp; &quot;y&quot; &lt;z&gt;\"><title>circle</title></circle>", svg);
         Assert.Contains("data-kind=\"label\">text</text>", svg);
@@ -142,19 +142,19 @@ public sealed class PlotTests
     [Fact]
     public void Svg_WritesEveryPrimitive()
     {
-        var scene = new ChartScene(100, 100, "sans-serif");
-        var gradient = new LinearGradientPaint(0, 0, 100, 0, [new SceneGradientStop(0, ChartColor.Black), new SceneGradientStop(1, ChartColor.White.WithOpacity(0.5))]);
-        var group = scene.Root.Add(new SceneGroup { Clip = new ChartRectangle(0, 0, 50, 50), Transform = SceneTransform.Rotate(45), Opacity = 0.5, CssClass = "g", Tooltip = "group" });
+        var scene = new Scene(100, 100, "sans-serif");
+        var gradient = new LinearGradientPaint(0, 0, 100, 0, [new SceneGradientStop(0, SceneColor.Black), new SceneGradientStop(1, SceneColor.White.WithOpacity(0.5))]);
+        var group = scene.Root.Add(new SceneGroup { Clip = new SceneBounds(0, 0, 50, 50), Transform = SceneTransform.Rotate(45), Opacity = 0.5, CssClass = "g", Tooltip = "group" });
         group.Add(new SceneRectangle(0, 0, 10, 10) { Fill = gradient, Stroke = gradient, StrokeWidth = 2, StrokeDashArray = [1, 2], LineCap = SceneLineCap.Square, LineJoin = SceneLineJoin.Bevel, CornerRadius = 2 });
-        group.Add(new SceneCircle(5, 5, 5) { Fill = ChartColor.Black.WithOpacity(0.25), Stroke = (ChartColor)"#ff0000", LineCap = SceneLineCap.Round, LineJoin = SceneLineJoin.Round, Tooltip = "circle" });
-        group.Add(new SceneLine(0, 0, 1, 1) { Stroke = (ChartColor)"#00ff00" });
-        group.Add(new ScenePath(new PathBuilder().AddCircle(5, 5, 2).Build()) { FillRule = SceneFillRule.EvenOdd, Fill = (ChartColor)"#0000ff" });
-        scene.Root.Add(new SceneGroup { Clip = new ChartRectangle(1, 2, 3, 4) });
+        group.Add(new SceneCircle(5, 5, 5) { Fill = SceneColor.Black.WithOpacity(0.25), Stroke = (SceneColor)"#ff0000", LineCap = SceneLineCap.Round, LineJoin = SceneLineJoin.Round, Tooltip = "circle" });
+        group.Add(new SceneLine(0, 0, 1, 1) { Stroke = (SceneColor)"#00ff00" });
+        group.Add(new ScenePath(new PathBuilder().AddCircle(5, 5, 2).Build()) { FillRule = SceneFillRule.EvenOdd, Fill = (SceneColor)"#0000ff" });
+        scene.Root.Add(new SceneGroup { Clip = new SceneBounds(1, 2, 3, 4) });
         scene.Root.Add(new SceneGroup { Transform = SceneTransform.Translate(1, 2) });
-        scene.Root.Add(new SceneText(10, 10, "rotated", new ChartFont(10, Bold: true), ChartColor.Black) { Rotation = 30, Anchor = SceneTextAnchor.End, Opacity = 0.5, CssClass = "label" });
-        scene.Root.Add(new SceneText(10, 10, "middle", new ChartFont(10), ChartColor.Black) { Anchor = SceneTextAnchor.Middle });
+        scene.Root.Add(new SceneText(10, 10, "rotated", new SceneFont(10, Bold: true), SceneColor.Black) { Rotation = 30, Anchor = SceneTextAnchor.End, Opacity = 0.5, CssClass = "label" });
+        scene.Root.Add(new SceneText(10, 10, "middle", new SceneFont(10), SceneColor.Black) { Anchor = SceneTextAnchor.Middle });
 
-        var svg = SvgChartRenderer.Render(scene, new SvgRenderOptions { IdPrefix = "p", Precision = 3 });
+        var svg = SvgSceneRenderer.Render(scene, new SvgRenderOptions { IdPrefix = "p", Precision = 3 });
         Assert.Contains("<linearGradient id=\"p-gradient0\" gradientUnits=\"userSpaceOnUse\" x1=\"0\" y1=\"0\" x2=\"100\" y2=\"0\">", svg);
         Assert.Contains("<stop offset=\"1\" stop-color=\"#ffffff\" stop-opacity=\"0.502\"/>", svg);
         Assert.Contains("<g clip-path=\"url(#p-clip0)\">\n<g opacity=\"0.5\" class=\"g\" transform=\"matrix(0.707107 0.707107 -0.707107 0.707107 0 0)\">\n<title>group</title>\n", svg);

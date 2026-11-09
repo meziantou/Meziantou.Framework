@@ -1,0 +1,5 @@
+title: Diagrams
+description: Draw flowcharts and other diagrams as SVG or images, laid out automatically, and read and write the Mermaid text format.
+packageIds:
+- Meziantou.Framework.Diagrams
+- Meziantou.Framework.Diagrams.Mermaid

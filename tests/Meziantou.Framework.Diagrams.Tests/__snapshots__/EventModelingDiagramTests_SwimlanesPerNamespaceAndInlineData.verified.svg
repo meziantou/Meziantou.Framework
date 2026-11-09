@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="927" height="674" viewBox="0 0 927 674" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="927" height="674" fill="#333333"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="swimlanes">
+<g class="em-swimlane">
+<rect x="0" y="0" width="911" height="238" rx="3" fill="#fafafa" stroke="#f0f0f0"/>
+<text x="77.25" y="32.2" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">UI/A: Screen</text>
+</g>
+<g class="em-swimlane">
+<rect x="0" y="248" width="911" height="130" rx="3" fill="#fafafa" stroke="#f0f0f0"/>
+<text x="116.23" y="280.2" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">Command/Read Model</text>
+</g>
+<g class="em-swimlane">
+<rect x="0" y="388" width="911" height="130" rx="3" fill="#fafafa" stroke="#f0f0f0"/>
+<text x="77.85" y="420.2" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">Stream: Cart</text>
+</g>
+<g class="em-swimlane">
+<rect x="0" y="528" width="911" height="130" rx="3" fill="#fafafa" stroke="#f0f0f0"/>
+<text x="97.46" y="560.2" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">Stream: Inventory</text>
+</g>
+</g>
+<g class="boxes">
+<g class="em-box" data-id="1">
+<rect x="250" y="403" width="100" height="100" rx="3" fill="#ffb778" stroke="#c19a0f"/>
+<text x="300" y="440.29" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">Created</text>
+<text x="277.54" y="475.27" font-size="12" fill="#000000">id: string</text>
+</g>
+<g class="em-box" data-id="2">
+<rect x="280" y="543" width="108.61" height="100" rx="3" fill="#ffb778" stroke="#c19a0f"/>
+<text x="334.3" y="597.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">Changed</text>
+</g>
+<g class="em-box" data-id="3">
+<rect x="360" y="403" width="100" height="100" rx="3" fill="#ffb778" stroke="#c19a0f"/>
+<text x="410" y="457.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">Cleared</text>
+</g>
+<g class="em-box" data-id="4">
+<rect x="390" y="263" width="100" height="100" rx="3" fill="#d3f1a2" stroke="#a3b732"/>
+<text x="440" y="317.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">A.B.C</text>
+</g>
+<g class="em-box" data-id="5">
+<rect x="420" y="15" width="466" height="208" rx="3" fill="#ffffff" stroke="#dbdada"/>
+<text x="653" y="48.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">Main</text>
+<text x="440" y="83.67" font-size="12" fill="#000000">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</text>
+<text x="440" y="98.07" font-size="12" fill="#000000">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</text>
+<text x="440" y="112.47" font-size="12" fill="#000000">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</text>
+<text x="440" y="126.87" font-size="12" fill="#000000">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</text>
+<text x="440" y="141.27" font-size="12" fill="#000000">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</text>
+<text x="440" y="155.67" font-size="12" fill="#000000">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</text>
+<text x="440" y="170.07" font-size="12" fill="#000000">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</text>
+<text x="440" y="184.47" font-size="12" fill="#000000">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</text>
+<text x="440" y="198.87" font-size="12" fill="#000000">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</text>
+</g>
+</g>
+<g class="relations">
+<g class="em-relation">
+<line x1="316.67" y1="503" x2="316.3" y2="535" stroke="#000000"/>
+<path d="M316.2,543 L320.3,535.05 L312.3,534.95 Z" fill="#000000" class="marker"/>
+</g>
+<g class="em-relation">
+<line x1="352.41" y1="543" x2="387.61" y2="508.59" stroke="#000000"/>
+<path d="M393.33,503 L384.82,505.73 L390.41,511.45 Z" fill="#000000" class="marker"/>
+</g>
+<g class="em-relation">
+<line x1="426.67" y1="403" x2="424" y2="370.97" stroke="#000000"/>
+<path d="M423.33,363 L420.01,371.3 L427.98,370.64 Z" fill="#000000" class="marker"/>
+</g>
+<g class="em-relation">
+<line x1="456.67" y1="263" x2="567.75" y2="225.56" stroke="#000000"/>
+<path d="M575.33,223 L566.47,221.76 L569.03,229.35 Z" fill="#000000" class="marker"/>
+</g>
+</g>
+</g>
+</svg>

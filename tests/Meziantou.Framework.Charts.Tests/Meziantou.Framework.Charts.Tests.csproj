@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <Using Include="Meziantou.Framework.Geo" />
+    <Using Include="Meziantou.Framework.VectorGraphics" />
   </ItemGroup>
 
 </Project>

@@ -4,33 +4,10 @@
 
 namespace Meziantou.Framework.Imaging.Charts
 {
-    public static class ChartFonts
-    {
-        public static Meziantou.Framework.Imaging.Typography.Font Sans { get => throw null; }
-        public static Meziantou.Framework.Imaging.Typography.Font SansBold { get => throw null; }
-    }
-
-    public sealed class ChartImageOptions
-    {
-        public Meziantou.Framework.Imaging.Typography.Font? BoldFont { get => throw null; set { } }
-        public Meziantou.Framework.Imaging.Typography.Font? Font { get => throw null; set { } }
-        public double Scale { get => throw null; set { } }
-    }
-
     public static class ChartImageRenderer
     {
-        public static Meziantou.Framework.Imaging.Charts.ImageTextMeasurer CreateMeasurer(Meziantou.Framework.Imaging.Charts.ChartImageOptions? options = null) => throw null;
-        public static Meziantou.Framework.Imaging.RectangleD DrawChart(this Meziantou.Framework.Imaging.Drawing.DrawingCanvas canvas, Meziantou.Framework.Charts.Plot plot, Meziantou.Framework.Imaging.PointD position, Meziantou.Framework.Imaging.Charts.ChartImageOptions? options = null) => throw null;
-        public static Meziantou.Framework.Imaging.RectangleD DrawChartScene(this Meziantou.Framework.Imaging.Drawing.DrawingCanvas canvas, Meziantou.Framework.Charts.ChartScene scene, Meziantou.Framework.Imaging.PointD position, Meziantou.Framework.Imaging.Charts.ChartImageOptions? options = null) => throw null;
-        public static Meziantou.Framework.Imaging.RectangleD MeasureChart(Meziantou.Framework.Charts.Plot plot, Meziantou.Framework.Imaging.Charts.ChartImageOptions? options = null) => throw null;
-        public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> ToImage(this Meziantou.Framework.Charts.ChartScene scene, Meziantou.Framework.Imaging.Charts.ChartImageOptions? options = null) => throw null;
-        public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> ToImage(this Meziantou.Framework.Charts.Plot plot, Meziantou.Framework.Imaging.Charts.ChartImageOptions? options = null) => throw null;
-    }
-
-    public sealed class ImageTextMeasurer : Meziantou.Framework.Charts.ITextMeasurer
-    {
-        public string FontFamily { get => throw null; }
-        public ImageTextMeasurer(Meziantou.Framework.Imaging.Typography.Font regular, Meziantou.Framework.Imaging.Typography.Font? bold = null) { }
-        public Meziantou.Framework.Charts.TextMetrics Measure(string text, Meziantou.Framework.Charts.ChartFont font) => throw null;
+        public static Meziantou.Framework.Imaging.RectangleD DrawChart(this Meziantou.Framework.Imaging.Drawing.DrawingCanvas canvas, Meziantou.Framework.Charts.Plot plot, Meziantou.Framework.Imaging.PointD position, Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.RectangleD MeasureChart(Meziantou.Framework.Charts.Plot plot, Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> ToImage(this Meziantou.Framework.Charts.Plot plot, Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions? options = null) => throw null;
     }
 }

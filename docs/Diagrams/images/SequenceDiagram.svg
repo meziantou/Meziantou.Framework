@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="569.58" height="540.4" viewBox="0 0 569.58 540.4" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="569.58" height="540.4" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="boxes">
+</g>
+<g class="rects">
+</g>
+<g class="lifelines">
+<line x1="75" y1="64.8" x2="75" y2="459.4" stroke="#333333" stroke-width="0.5" class="lifeline"/>
+<line x1="278.58" y1="65" x2="278.58" y2="459.4" stroke="#333333" stroke-width="0.5" class="lifeline"/>
+<line x1="478.58" y1="64.8" x2="478.58" y2="459.4" stroke="#333333" stroke-width="0.5" class="lifeline"/>
+</g>
+<g class="activations">
+<rect x="273.58" y="112.2" width="10" height="268.4" fill="#f0f0f0" stroke="#9370db" class="activation"/>
+</g>
+<g class="blocks">
+<g class="block alt">
+<path d="M0,134.2 L50,134.2 L50,149 L44,155 L0,155 Z" fill="#ececff" stroke="#9370db"/>
+<text x="25" y="148.18" text-anchor="middle" font-size="14" font-weight="bold" fill="#333333">alt</text>
+<text x="301.79" y="150.18" text-anchor="middle" font-size="14" fill="#333333">[card accepted]</text>
+<text x="276.79" y="279.38" text-anchor="middle" font-size="14" fill="#333333">[card declined]</text>
+<rect x="0" y="134.2" width="553.58" height="209.2" fill="none" stroke="#9370db" stroke-width="2" stroke-dasharray="2 2"/>
+<line x1="0" y1="263.4" x2="553.58" y2="263.4" stroke="#9370db" stroke-width="2" stroke-dasharray="3 3"/>
+</g>
+</g>
+<g class="messages">
+<g class="message">
+<line x1="75" y1="112.2" x2="278.58" y2="112.2" stroke="#333333" stroke-width="1.5"/>
+<path d="M278.58,112.2 L268.58,107.2 L268.58,117.2 Z" fill="#333333" class="arrowhead"/>
+<text x="176.79" y="98.69" text-anchor="middle" font-size="16" fill="#333333">Place order</text>
+<circle cx="75" cy="112.2" r="9" fill="#333333" class="sequence-number"/>
+<text x="75" y="115.27" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffffff">1</text>
+</g>
+<g class="message">
+<line x1="283.58" y1="192.2" x2="478.58" y2="192.2" stroke="#333333" stroke-width="1.5"/>
+<path d="M478.58,192.2 L468.58,187.2 L468.58,197.2 Z" fill="#333333" class="arrowhead"/>
+<text x="381.08" y="178.69" text-anchor="middle" font-size="16" fill="#333333">Charge card</text>
+<circle cx="283.58" cy="192.2" r="9" fill="#333333" class="sequence-number"/>
+<text x="283.58" y="195.27" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffffff">2</text>
+</g>
+<g class="message dotted">
+<line x1="478.58" y1="241.4" x2="283.58" y2="241.4" stroke="#333333" stroke-width="1.5" stroke-dasharray="3 3"/>
+<path d="M283.58,241.4 L293.58,246.4 L293.58,236.4 Z" fill="#333333" class="arrowhead"/>
+<text x="381.08" y="227.89" text-anchor="middle" font-size="16" fill="#333333">Approved</text>
+<circle cx="478.58" cy="241.4" r="9" fill="#333333" class="sequence-number"/>
+<text x="478.58" y="244.47" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffffff">3</text>
+</g>
+<g class="message">
+<line x1="273.58" y1="321.4" x2="75" y2="321.4" stroke="#333333" stroke-width="1.5"/>
+<path d="M85,326.4 L75,321.4 L85,316.4" fill="none" stroke="#333333" stroke-width="1.5" class="arrowhead"/>
+<text x="174.29" y="307.89" text-anchor="middle" font-size="16" fill="#333333">Ask for another card</text>
+<circle cx="273.58" cy="321.4" r="9" fill="#333333" class="sequence-number"/>
+<text x="273.58" y="324.47" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffffff">4</text>
+</g>
+<g class="message dotted">
+<line x1="273.58" y1="380.6" x2="75" y2="380.6" stroke="#333333" stroke-width="1.5" stroke-dasharray="3 3"/>
+<path d="M75,380.6 L85,385.6 L85,375.6 Z" fill="#333333" class="arrowhead"/>
+<text x="174.29" y="367.09" text-anchor="middle" font-size="16" fill="#333333">Order confirmed</text>
+<circle cx="273.58" cy="380.6" r="9" fill="#333333" class="sequence-number"/>
+<text x="273.58" y="383.67" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffffff">5</text>
+</g>
+</g>
+<g class="notes">
+<g class="note">
+<rect x="50" y="402.6" width="453.58" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="276.79" y="424.58" text-anchor="middle" font-size="14" fill="#000000">One order, one payment</text>
+</g>
+</g>
+<g class="participants">
+<g class="participant participant-top" data-id="customer">
+<circle cx="75" cy="9" r="8" fill="#ececff" stroke="#9370db" stroke-width="1.5"/>
+<path d="M75,17 L75,32 M61,22 L89,22 M64,44 L75,32 L86,44" fill="none" stroke="#9370db" stroke-width="1.5"/>
+<text x="75" y="59.98" text-anchor="middle" font-size="14" fill="#333333">Customer</text>
+</g>
+<g class="participant participant-top" data-id="shop">
+<g transform="translate(278.58 32.5)">
+<path d="M-72,-32.5 L72,-32.5 C73.66,-32.5 75,-31.16 75,-29.5 L75,29.5 C75,31.16 73.66,32.5 72,32.5 L-72,32.5 C-73.66,32.5 -75,31.16 -75,29.5 L-75,-29.5 C-75,-31.16 -73.66,-32.5 -72,-32.5 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="278.58" y="36.08" text-anchor="middle" font-size="14" fill="#333333">Web shop</text>
+</g>
+<g class="participant participant-top" data-id="bank">
+<g transform="translate(478.58 22)">
+<path d="M-20,-17 C-20,-20.35 -11.05,-23.06 0,-23.06 C11.05,-23.06 20,-20.35 20,-17 L20,17 C20,20.35 11.05,23.06 0,23.06 C-11.05,23.06 -20,20.35 -20,17 Z" fill="#ececff" stroke="#9370db" stroke-width="1.5"/>
+<path d="M-20,-17 C-20,-13.65 -11.05,-10.94 0,-10.94 C11.05,-10.94 20,-13.65 20,-17" fill="none" stroke="#9370db" stroke-width="1.5"/>
+</g>
+<text x="478.58" y="59.98" text-anchor="middle" font-size="14" fill="#333333">Bank</text>
+</g>
+<g class="participant participant-bottom" data-id="customer">
+<circle cx="75" cy="468.4" r="8" fill="#ececff" stroke="#9370db" stroke-width="1.5"/>
+<path d="M75,476.4 L75,491.4 M61,481.4 L89,481.4 M64,503.4 L75,491.4 L86,503.4" fill="none" stroke="#9370db" stroke-width="1.5"/>
+<text x="75" y="519.38" text-anchor="middle" font-size="14" fill="#333333">Customer</text>
+</g>
+<g class="participant participant-bottom" data-id="shop">
+<g transform="translate(278.58 491.9)">
+<path d="M-72,-32.5 L72,-32.5 C73.66,-32.5 75,-31.16 75,-29.5 L75,29.5 C75,31.16 73.66,32.5 72,32.5 L-72,32.5 C-73.66,32.5 -75,31.16 -75,29.5 L-75,-29.5 C-75,-31.16 -73.66,-32.5 -72,-32.5 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="278.58" y="495.48" text-anchor="middle" font-size="14" fill="#333333">Web shop</text>
+</g>
+<g class="participant participant-bottom" data-id="bank">
+<g transform="translate(478.58 481.4)">
+<path d="M-20,-17 C-20,-20.35 -11.05,-23.06 0,-23.06 C11.05,-23.06 20,-20.35 20,-17 L20,17 C20,20.35 11.05,23.06 0,23.06 C-11.05,23.06 -20,20.35 -20,17 Z" fill="#ececff" stroke="#9370db" stroke-width="1.5"/>
+<path d="M-20,-17 C-20,-13.65 -11.05,-10.94 0,-10.94 C11.05,-10.94 20,-13.65 20,-17" fill="none" stroke="#9370db" stroke-width="1.5"/>
+</g>
+<text x="478.58" y="519.38" text-anchor="middle" font-size="14" fill="#333333">Bank</text>
+</g>
+</g>
+</g>
+</svg>

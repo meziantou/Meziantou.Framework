@@ -47,7 +47,7 @@ categories (strings, and anything else, formatted with the invariant culture). `
 values: the row is not drawn, and a line breaks around it.
 
 A constant color is a property: [FillColor](cref:Meziantou.Framework.Charts.Mark{T}.FillColor) and
-[StrokeColor](cref:Meziantou.Framework.Charts.Mark{T}.StrokeColor) take a [ChartColor](cref:Meziantou.Framework.Charts.ChartColor),
+[StrokeColor](cref:Meziantou.Framework.Charts.Mark{T}.StrokeColor) take a [SceneColor](cref:Meziantou.Framework.VectorGraphics.SceneColor),
 which converts from `#rrggbb` or a CSS color name such as `"steelblue"`. A channel such as
 [Fill](cref:Meziantou.Framework.Charts.Mark{T}.Fill) goes through the color scale instead.
 
@@ -150,7 +150,7 @@ they are rotated by -45 degrees, and only some of them are drawn when they still
 ## The scene
 
 [CreateScene](cref:Meziantou.Framework.Charts.Plot.CreateScene) lays the plot out into a
-[ChartScene](cref:Meziantou.Framework.Charts.ChartScene): rectangles, circles, lines, paths, texts and groups, in
+[Scene](cref:Meziantou.Framework.VectorGraphics.Scene): rectangles, circles, lines, paths, texts and groups, in
 pixels. The SVG renderer and the image renderer both draw this scene, so they share the layout. You can also read it to
 draw the chart with your own renderer:
 

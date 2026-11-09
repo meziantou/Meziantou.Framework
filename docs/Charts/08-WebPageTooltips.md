@@ -158,4 +158,4 @@ The tooltip is built with `textContent`, never `innerHTML`, so the texts of the 
   the Sankey, chord and network marks have none.
 
 To build a scene by hand, set the attributes of an element with
-[SetDataAttribute](cref:Meziantou.Framework.Charts.SceneElement.SetDataAttribute).
+[SetDataAttribute](cref:Meziantou.Framework.VectorGraphics.SceneElement.SetDataAttribute).

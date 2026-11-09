@@ -98,7 +98,7 @@ public sealed class LayoutTests
     public void Sankey_TwoNodes()
     {
         // A single link fills the height; the nodes are at the two ends
-        var layout = SankeyLayout.Compute([("A", "B", 10)], new ChartRectangle(0, 0, 100, 100), nodeWidth: 10, nodePadding: 10, iterations: 6, SankeyAlignment.Justify);
+        var layout = SankeyLayout.Compute([("A", "B", 10)], new SceneBounds(0, 0, 100, 100), nodeWidth: 10, nodePadding: 10, iterations: 6, SankeyAlignment.Justify);
         var (a, b) = (layout.Nodes[0], layout.Nodes[1]);
         Assert.Equal((0.0, 10.0, 0.0, 100.0), (a.X0, a.X1, a.Y0, a.Y1));
         Assert.Equal((90.0, 100.0, 0.0, 100.0), (b.X0, b.X1, b.Y0, b.Y1));
@@ -109,7 +109,7 @@ public sealed class LayoutTests
     public void Sankey_DepthsValuesAndAlignment()
     {
         (string, string, double)[] links = [("A", "B", 4), ("B", "C", 3), ("B", "D", 1), ("E", "C", 2)];
-        var layout = SankeyLayout.Compute(links, new ChartRectangle(0, 0, 300, 100), nodeWidth: 20, nodePadding: 5, iterations: 6, SankeyAlignment.Justify);
+        var layout = SankeyLayout.Compute(links, new SceneBounds(0, 0, 300, 100), nodeWidth: 20, nodePadding: 5, iterations: 6, SankeyAlignment.Justify);
         var nodes = layout.Nodes.ToDictionary(node => node.Name);
         Assert.Equal([0, 1, 2, 2, 0], layout.Nodes.Select(node => node.Depth).ToArray());
         Assert.Equal([2, 1, 0, 0, 1], layout.Nodes.Select(node => node.Height).ToArray());
@@ -119,16 +119,16 @@ public sealed class LayoutTests
         Assert.Equal([0, 1, 2, 2, 0], layout.Nodes.Select(node => node.Layer).ToArray());
         Assert.Equal(280, nodes["C"].X0);
 
-        var right = SankeyLayout.Compute(links, new ChartRectangle(0, 0, 300, 100), 20, 5, 6, SankeyAlignment.Right);
+        var right = SankeyLayout.Compute(links, new SceneBounds(0, 0, 300, 100), 20, 5, 6, SankeyAlignment.Right);
         Assert.Equal(1, right.Nodes.Single(node => node.Name == "E").Layer);
-        var center = SankeyLayout.Compute(links, new ChartRectangle(0, 0, 300, 100), 20, 5, 6, SankeyAlignment.Center);
+        var center = SankeyLayout.Compute(links, new SceneBounds(0, 0, 300, 100), 20, 5, 6, SankeyAlignment.Center);
         Assert.Equal(1, center.Nodes.Single(node => node.Name == "E").Layer);
 
         // Each node is as tall as its value, at the same scale, and the nodes of a column do not overlap
         var scale = (nodes["A"].Y1 - nodes["A"].Y0) / 4;
         Assert.Equal(5 * scale, nodes["C"].Y1 - nodes["C"].Y0, 1e-9);
         Assert.True(nodes["D"].Y0 >= nodes["C"].Y1 + 5 - 1e-9 || nodes["C"].Y0 >= nodes["D"].Y1 + 5 - 1e-9);
-        Assert.Empty(SankeyLayout.Compute([], new ChartRectangle(0, 0, 10, 10), 1, 1, 6, SankeyAlignment.Justify).Nodes);
+        Assert.Empty(SankeyLayout.Compute([], new SceneBounds(0, 0, 10, 10), 1, 1, 6, SankeyAlignment.Justify).Nodes);
     }
 
     [Fact]
@@ -644,17 +644,17 @@ public sealed class LayoutTests
     [Fact]
     public void ColorConversions()
     {
-        var (l, a, b) = OkLab.FromColor(ChartColor.White);
+        var (l, a, b) = OkLab.FromColor(SceneColor.White);
         Assert.Equal(1, l, 1e-6);
         Assert.Equal(0, a, 1e-6);
         Assert.Equal(0, b, 1e-6);
-        Assert.Equal(ChartColor.Parse("#336699"), OkLab.ToColor(OkLab.FromColor("#336699").L, OkLab.FromColor("#336699").A, OkLab.FromColor("#336699").B, 255));
-        Assert.Equal((ChartColor)"#ff0000", OkLab.Interpolate("#ff0000", "#0000ff", 0));
-        Assert.Equal((ChartColor)"#0000ff", OkLab.Interpolate("#ff0000", "#0000ff", 1));
+        Assert.Equal(SceneColor.Parse("#336699"), OkLab.ToColor(OkLab.FromColor("#336699").L, OkLab.FromColor("#336699").A, OkLab.FromColor("#336699").B, 255));
+        Assert.Equal((SceneColor)"#ff0000", OkLab.Interpolate("#ff0000", "#0000ff", 0));
+        Assert.Equal((SceneColor)"#0000ff", OkLab.Interpolate("#ff0000", "#0000ff", 1));
 
         // OKLab passes through a purple, not a dark muddy color
-        Assert.Equal((ChartColor)"#8c53a2", OkLab.Interpolate("#ff0000", "#0000ff", 0.5));
-        Assert.Equal(new ChartColor(0, 0, 0, 128), OkLab.Interpolate(new ChartColor(0, 0, 0, 255), new ChartColor(0, 0, 0, 0), 0.5));
+        Assert.Equal((SceneColor)"#8c53a2", OkLab.Interpolate("#ff0000", "#0000ff", 0.5));
+        Assert.Equal(new SceneColor(0, 0, 0, 128), OkLab.Interpolate(new SceneColor(0, 0, 0, 255), new SceneColor(0, 0, 0, 0), 0.5));
 
         Assert.Equal(ColorScheme.Blues.Stops[0], ColorScheme.Blues.Interpolate(-1));
         Assert.Equal(ColorScheme.Blues.Stops[^1], ColorScheme.Blues.Interpolate(2));
@@ -662,32 +662,32 @@ public sealed class LayoutTests
         Assert.Equal(ColorScheme.Blues.Stops[2], ColorScheme.Blues.Interpolate(0.5));
         Assert.Equal("Viridis", ColorScheme.Viridis.ToString());
         Assert.HasCount(9, new[] { ColorScheme.Viridis, ColorScheme.Magma, ColorScheme.Blues, ColorScheme.Greens, ColorScheme.Oranges, ColorScheme.Reds, ColorScheme.Greys, ColorScheme.RedBlue, ColorScheme.RedYellowGreen }.Distinct());
-        Assert.Throws<ArgumentException>("stops", () => new ColorScheme("one", [ChartColor.Black]));
+        Assert.Throws<ArgumentException>("stops", () => new ColorScheme("one", [SceneColor.Black]));
     }
 
     [Fact]
     public void ChartColors()
     {
-        Assert.Equal(new ChartColor(0x11, 0x22, 0x33), ChartColor.Parse("#123"));
-        Assert.Equal(new ChartColor(0x11, 0x22, 0x33, 0x44), ChartColor.Parse("#1234"));
-        Assert.Equal(new ChartColor(0x12, 0x34, 0x56), ChartColor.Parse(" #123456 "));
-        Assert.Equal(new ChartColor(0x12, 0x34, 0x56, 0x78), ChartColor.Parse("#12345678"));
-        Assert.Equal(new ChartColor(70, 130, 180), ChartColor.Parse("SteelBlue"));
-        Assert.Equal("#123456", new ChartColor(0x12, 0x34, 0x56).ToString());
-        Assert.Equal("#12345678", new ChartColor(0x12, 0x34, 0x56, 0x78).ToString());
-        Assert.Equal("#123456", new ChartColor(0x12, 0x34, 0x56, 0x78).ToHexRgb());
-        Assert.Equal(128, ChartColor.White.WithOpacity(0.5).A);
-        Assert.Equal(0, ChartColor.Transparent.Opacity);
-        Assert.False(ChartColor.TryParse(null, out _));
-        Assert.False(ChartColor.TryParse("#12", out _));
-        Assert.False(ChartColor.TryParse("#12g", out _));
-        Assert.False(ChartColor.TryParse("#12345g", out _));
-        Assert.False(ChartColor.TryParse("#FFF\0\0\0\0\0", out _));
-        Assert.False(ChartColor.TryParse("#123456\0\0", out _));
-        Assert.False(ChartColor.TryParse("#+12345", out _));
-        Assert.False(ChartColor.TryParse("not-a-color", out _));
-        Assert.Throws<FormatException>(() => ChartColor.Parse("nope"));
-        Assert.Throws<ArgumentNullException>("value", () => ChartColor.Parse(null!));
+        Assert.Equal(new SceneColor(0x11, 0x22, 0x33), SceneColor.Parse("#123"));
+        Assert.Equal(new SceneColor(0x11, 0x22, 0x33, 0x44), SceneColor.Parse("#1234"));
+        Assert.Equal(new SceneColor(0x12, 0x34, 0x56), SceneColor.Parse(" #123456 "));
+        Assert.Equal(new SceneColor(0x12, 0x34, 0x56, 0x78), SceneColor.Parse("#12345678"));
+        Assert.Equal(new SceneColor(70, 130, 180), SceneColor.Parse("SteelBlue"));
+        Assert.Equal("#123456", new SceneColor(0x12, 0x34, 0x56).ToString());
+        Assert.Equal("#12345678", new SceneColor(0x12, 0x34, 0x56, 0x78).ToString());
+        Assert.Equal("#123456", new SceneColor(0x12, 0x34, 0x56, 0x78).ToHexRgb());
+        Assert.Equal(128, SceneColor.White.WithOpacity(0.5).A);
+        Assert.Equal(0, SceneColor.Transparent.Opacity);
+        Assert.False(SceneColor.TryParse(null, out _));
+        Assert.False(SceneColor.TryParse("#12", out _));
+        Assert.False(SceneColor.TryParse("#12g", out _));
+        Assert.False(SceneColor.TryParse("#12345g", out _));
+        Assert.False(SceneColor.TryParse("#FFF\0\0\0\0\0", out _));
+        Assert.False(SceneColor.TryParse("#123456\0\0", out _));
+        Assert.False(SceneColor.TryParse("#+12345", out _));
+        Assert.False(SceneColor.TryParse("not-a-color", out _));
+        Assert.Throws<FormatException>(() => SceneColor.Parse("nope"));
+        Assert.Throws<ArgumentNullException>("value", () => SceneColor.Parse(null!));
     }
 
     [Fact]
@@ -723,21 +723,6 @@ public sealed class LayoutTests
     }
 
     [Fact]
-    public void SvgNumbers()
-    {
-        Assert.Equal("0", SvgNumber.Format(-0.001, 2));
-        Assert.Equal("1.13", SvgNumber.Format(1.125, 2));
-        Assert.Equal("1", SvgNumber.Format(1.005, 2)); // 1.005 is 1.00499999999999989 in binary
-        Assert.Equal("-1.5", SvgNumber.Format(-1.5, 2));
-        Assert.Equal("2", SvgNumber.Format(1.6, 0));
-        Assert.Equal("0", SvgNumber.Format(double.NaN, 2));
-        var path = new PathBuilder().MoveTo(0, 0).LineTo(1, 1).CubicTo(1, 2, 3, 4, 5, 6).QuadraticTo(7, 8, 9, 10).ArcTo(5, 5, 30, largeArc: true, sweep: false, 11, 12).Close().Build();
-        Assert.Equal("M0,0 L1,1 C1,2 3,4 5,6 Q7,8 9,10 A5,5 30 1,0 11,12 Z", path.ToString());
-        Assert.Equal(6, path.Commands.Count);
-        Assert.Equal("M0,0 L1,0 L1,1 L0,1 Z", new PathBuilder().AddRectangle(0, 0, 1, 1).Build().ToString());
-    }
-
-    [Fact]
     public void Transforms()
     {
         Assert.True(SceneTransform.Identity.IsTranslation);
@@ -768,16 +753,16 @@ public sealed class LayoutTests
     public void GeoSystem_Fit()
     {
         // The bounds are scaled to fit the frame and centered in it, as d3's fitExtent
-        var system = GeoSystem.Fit(new EquirectangularProjection(), (-1, -0.5, 1, 0.5), new ChartRectangle(10, 20, 200, 100));
+        var system = GeoSystem.Fit(new EquirectangularProjection(), (-1, -0.5, 1, 0.5), new SceneBounds(10, 20, 200, 100));
         Assert.Equal((110.0, 70.0), system.Project(0, 0));
         var (x, y) = system.Project(180 / Math.PI, 90 / Math.PI);
         Assert.Equal(210, x, 1e-9);
         Assert.Equal(20, y, 1e-9);
 
         // A line fits its length; a point shows a region of 10 degrees around it
-        var line = GeoSystem.Fit(new EquirectangularProjection(), (0, 0, 2, 0), new ChartRectangle(0, 0, 100, 50));
+        var line = GeoSystem.Fit(new EquirectangularProjection(), (0, 0, 2, 0), new SceneBounds(0, 0, 100, 50));
         Assert.Equal(100, line.Project(2 * 180 / Math.PI, 0).X, 1e-9);
-        var point = GeoSystem.Fit(new EquirectangularProjection(), (0, 0, 0, 0), new ChartRectangle(0, 0, 100, 50));
+        var point = GeoSystem.Fit(new EquirectangularProjection(), (0, 0, 0, 0), new SceneBounds(0, 0, 100, 50));
         Assert.Equal(75, point.Project(5, 0).X, 1e-9);
 
         var bounds = GeoSystem.GetProjectedBounds(new MercatorProjection(), [new(-180, 0), new(double.NaN, 0), new(180, 90)]);

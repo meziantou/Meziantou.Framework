@@ -5,12 +5,14 @@ description: How the layout measures texts, the default Helvetica metrics, and m
 
 The layout measures every text: the width of the tick labels gives the margins, decides whether the labels of the
 horizontal axis are rotated, and whether a label fits in its slice, its circle or its rectangle. An
-[ITextMeasurer](cref:Meziantou.Framework.Charts.ITextMeasurer) measures them, and gives the CSS `font-family` of the SVG.
+[ITextMeasurer](cref:Meziantou.Framework.VectorGraphics.ITextMeasurer) measures them, and gives the CSS `font-family` of the SVG.
+The measurers are in the `Meziantou.Framework.VectorGraphics` package, which Charts uses to draw: see
+[Vector graphics](../VectorGraphics/01-Introduction.md).
 
 ## The default: Helvetica metrics
 
-[AfmTextMeasurer](cref:Meziantou.Framework.Charts.AfmTextMeasurer) measures texts with the metrics of Helvetica and
-Helvetica-Bold, which `Meziantou.Framework.Fonts` embeds. It needs no font file and gives the same result on every
+[AfmTextMeasurer](cref:Meziantou.Framework.VectorGraphics.AfmTextMeasurer) measures texts with the metrics of Helvetica,
+Helvetica-Bold, Helvetica-Oblique and Helvetica-BoldOblique, which `Meziantou.Framework.Fonts` embeds. It needs no font file and gives the same result on every
 machine. It applies the kerning of the font, and measures by grapheme cluster: a character the font does not have counts
 as 1 em when it is wide (CJK ideographs, most emoji), as nothing when it is a combining mark, and as the average width of
 the font otherwise. The SVG asks for `Helvetica, Arial, sans-serif`: Arial and Liberation Sans have the same widths, so
@@ -19,7 +21,7 @@ the texts fit when the browser draws them.
 ## Measure with a font file
 
 When the texts are in other scripts, or the SVG uses another font, measure with that font.
-[FontFaceTextMeasurer](cref:Meziantou.Framework.Charts.FontFaceTextMeasurer) shapes the texts with a font of
+[FontFaceTextMeasurer](cref:Meziantou.Framework.VectorGraphics.FontFaceTextMeasurer) shapes the texts with a font of
 `Meziantou.Framework.Fonts` (TrueType, OpenType, WOFF or WOFF2), so ligatures, kerning and every script are taken into
 account:
 

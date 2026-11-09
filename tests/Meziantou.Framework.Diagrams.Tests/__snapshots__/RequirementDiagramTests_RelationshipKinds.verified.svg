@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="511.39" height="794.8" viewBox="0 0 511.39 794.8" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="511.39" height="794.8" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 -10.28)">
+<g class="clusters">
+</g>
+<g class="edges">
+<g class="edge relationship contains">
+<path d="M87.35,360.52 L108.38,309.18 C129.41,257.84 171.48,155.16 205.42,103.82 C239.37,52.48 265.2,52.48 278.11,52.48 L291.02,52.48" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M91.7,367 C91.7,370.87 88.56,374 84.7,374 C80.83,374 77.7,370.87 77.7,367 C77.7,363.14 80.83,360 84.7,360 C88.56,360 91.7,363.14 91.7,367 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+<path d="M82.42,372.55 L86.97,361.45" fill="none" stroke="#333333" class="marker"/>
+<path d="M90.25,369.28 L79.14,364.73" fill="none" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relationship copies">
+<path d="M89.05,373.48 L109.8,339.71 C130.55,305.95 172.05,238.41 205.71,204.65 C239.37,170.88 265.2,170.88 278.11,170.88 L291.02,170.88" fill="none" stroke="#333333" stroke-dasharray="10 7" class="edge-path"/>
+<path d="M282.02,165.88 L291.02,170.88 L282.02,175.88" fill="none" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relationship derives">
+<path d="M110.06,373.48 L127.31,359.45 C144.56,345.41 179.05,317.35 209.21,303.31 C239.37,289.28 265.2,289.28 278.11,289.28 L291.02,289.28" fill="none" stroke="#333333" stroke-dasharray="10 7" class="edge-path"/>
+<path d="M282.02,284.28 L291.02,289.28 L282.02,294.28" fill="none" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relationship satisfies">
+<path d="M136.06,407.68 L148.98,407.68 C161.89,407.68 187.72,407.68 213.54,407.68 C239.37,407.68 265.2,407.68 278.11,407.68 L291.02,407.68" fill="none" stroke="#333333" stroke-dasharray="10 7" class="edge-path"/>
+<path d="M282.02,402.68 L291.02,407.68 L282.02,412.68" fill="none" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relationship verifies">
+<path d="M110.06,441.88 L127.31,455.91 C144.56,469.95 179.05,498.01 209.21,512.05 C239.37,526.08 265.2,526.08 278.11,526.08 L291.02,526.08" fill="none" stroke="#333333" stroke-dasharray="10 7" class="edge-path"/>
+<path d="M282.02,521.08 L291.02,526.08 L282.02,531.08" fill="none" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relationship refines">
+<path d="M89.05,441.88 L109.8,475.65 C130.55,509.41 172.05,576.95 205.71,610.71 C239.37,644.48 265.2,644.48 278.11,644.48 L291.02,644.48" fill="none" stroke="#333333" stroke-dasharray="10 7" class="edge-path"/>
+<path d="M282.02,639.48 L291.02,644.48 L282.02,649.48" fill="none" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relationship traces">
+<path d="M82.04,441.88 L103.96,495.38 C125.88,548.88 169.71,655.88 204.54,709.38 C239.37,762.88 265.2,762.88 278.11,762.88 L291.02,762.88" fill="none" stroke="#333333" stroke-dasharray="10 7" class="edge-path"/>
+<path d="M282.02,757.88 L291.02,762.88 L282.02,767.88" fill="none" stroke="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+<g class="edge-label">
+<rect x="161.06" y="38.88" width="104.96" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="213.54" y="56.57" text-anchor="middle" font-size="16" fill="#333333">&lt;&lt;contains&gt;&gt;</text>
+</g>
+<g class="edge-label">
+<rect x="167.74" y="157.28" width="91.62" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="213.54" y="174.97" text-anchor="middle" font-size="16" fill="#333333">&lt;&lt;copies&gt;&gt;</text>
+</g>
+<g class="edge-label">
+<rect x="165.15" y="275.68" width="96.78" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="213.54" y="293.37" text-anchor="middle" font-size="16" fill="#333333">&lt;&lt;derives&gt;&gt;</text>
+</g>
+<g class="edge-label">
+<rect x="161.96" y="394.08" width="103.17" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="213.54" y="411.77" text-anchor="middle" font-size="16" fill="#333333">&lt;&lt;satisfies&gt;&gt;</text>
+</g>
+<g class="edge-label">
+<rect x="165.6" y="512.48" width="95.89" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="213.54" y="530.17" text-anchor="middle" font-size="16" fill="#333333">&lt;&lt;verifies&gt;&gt;</text>
+</g>
+<g class="edge-label">
+<rect x="166.85" y="630.88" width="93.39" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="213.54" y="648.57" text-anchor="middle" font-size="16" fill="#333333">&lt;&lt;refines&gt;&gt;</text>
+</g>
+<g class="edge-label">
+<rect x="169.15" y="749.28" width="88.78" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="213.54" y="766.97" text-anchor="middle" font-size="16" fill="#333333">&lt;&lt;traces&gt;&gt;</text>
+</g>
+</g>
+<g class="nodes">
+<g class="requirement" data-id="Contains">
+<rect x="291.02" y="18.28" width="204.37" height="68.4" fill="#eeeeee" stroke="#9370db"/>
+<text x="393.21" y="41.97" text-anchor="middle" font-size="16" fill="#131300">&lt;&lt;Design Constraint&gt;&gt;</text>
+<text x="393.21" y="61.17" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Contains</text>
+<line x1="291.02" y1="76.68" x2="495.39" y2="76.68" stroke="#9370db"/>
+</g>
+<g class="requirement" data-id="Copies">
+<rect x="291.02" y="136.68" width="204.37" height="68.4" fill="#eeeeee" stroke="#9370db"/>
+<text x="393.21" y="160.37" text-anchor="middle" font-size="16" fill="#131300">&lt;&lt;Design Constraint&gt;&gt;</text>
+<text x="393.21" y="179.57" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Copies</text>
+<line x1="291.02" y1="195.08" x2="495.39" y2="195.08" stroke="#9370db"/>
+</g>
+<g class="requirement" data-id="Derives">
+<rect x="291.02" y="255.08" width="204.37" height="68.4" fill="#eeeeee" stroke="#9370db"/>
+<text x="393.21" y="278.77" text-anchor="middle" font-size="16" fill="#131300">&lt;&lt;Design Constraint&gt;&gt;</text>
+<text x="393.21" y="297.97" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Derives</text>
+<line x1="291.02" y1="313.48" x2="495.39" y2="313.48" stroke="#9370db"/>
+</g>
+<g class="requirement" data-id="Satisfies">
+<rect x="291.02" y="373.48" width="204.37" height="68.4" fill="#eeeeee" stroke="#9370db"/>
+<text x="393.21" y="397.17" text-anchor="middle" font-size="16" fill="#131300">&lt;&lt;Design Constraint&gt;&gt;</text>
+<text x="393.21" y="416.37" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Satisfies</text>
+<line x1="291.02" y1="431.88" x2="495.39" y2="431.88" stroke="#9370db"/>
+</g>
+<g class="requirement" data-id="Verifies">
+<rect x="291.02" y="491.88" width="204.37" height="68.4" fill="#eeeeee" stroke="#9370db"/>
+<text x="393.21" y="515.57" text-anchor="middle" font-size="16" fill="#131300">&lt;&lt;Design Constraint&gt;&gt;</text>
+<text x="393.21" y="534.77" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Verifies</text>
+<line x1="291.02" y1="550.28" x2="495.39" y2="550.28" stroke="#9370db"/>
+</g>
+<g class="requirement" data-id="Refines">
+<rect x="291.02" y="610.28" width="204.37" height="68.4" fill="#eeeeee" stroke="#9370db"/>
+<text x="393.21" y="633.97" text-anchor="middle" font-size="16" fill="#131300">&lt;&lt;Design Constraint&gt;&gt;</text>
+<text x="393.21" y="653.17" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Refines</text>
+<line x1="291.02" y1="668.68" x2="495.39" y2="668.68" stroke="#9370db"/>
+</g>
+<g class="requirement" data-id="Traces">
+<rect x="291.02" y="728.68" width="204.37" height="68.4" fill="#eeeeee" stroke="#9370db"/>
+<text x="393.21" y="752.37" text-anchor="middle" font-size="16" fill="#131300">&lt;&lt;Design Constraint&gt;&gt;</text>
+<text x="393.21" y="771.57" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Traces</text>
+<line x1="291.02" y1="787.08" x2="495.39" y2="787.08" stroke="#9370db"/>
+</g>
+<g class="element" data-id="source">
+<rect x="0" y="373.48" width="136.06" height="68.4" fill="#eeeeee" stroke="#9370db"/>
+<text x="68.03" y="397.17" text-anchor="middle" font-size="16" fill="#131300">&lt;&lt;Element&gt;&gt;</text>
+<text x="68.03" y="416.37" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">source</text>
+<line x1="0" y1="431.88" x2="136.06" y2="431.88" stroke="#9370db"/>
+</g>
+</g>
+</g>
+</svg>

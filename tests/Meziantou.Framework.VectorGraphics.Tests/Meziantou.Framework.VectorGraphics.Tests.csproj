@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.VectorGraphics.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- An OFL font for the tests of FontFaceTextMeasurer: the Liberation Sans subset of Meziantou.Framework.Pdf -->
+    <None Include="../../src/Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationSans-Regular.woff2" Link="TestData/LiberationSans-Regular.woff2" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../src/Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationSans-Italic.woff2" Link="TestData/LiberationSans-Italic.woff2" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.VectorGraphics/Meziantou.Framework.VectorGraphics.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -3,7 +3,7 @@ namespace Meziantou.Framework.Charts;
 /// <summary>Conversions between sRGB and OKLab (Björn Ottosson, 2020), for perceptually even color interpolation.</summary>
 internal static class OkLab
 {
-    public static (double L, double A, double B) FromColor(ChartColor color)
+    public static (double L, double A, double B) FromColor(SceneColor color)
     {
         var r = ToLinear(color.R / 255.0);
         var g = ToLinear(color.G / 255.0);
@@ -19,7 +19,7 @@ internal static class OkLab
             (0.0259040371 * l) + (0.7827717662 * m) - (0.8086757660 * s));
     }
 
-    public static ChartColor ToColor(double lightness, double a, double b, byte alpha)
+    public static SceneColor ToColor(double lightness, double a, double b, byte alpha)
     {
         var l = lightness + (0.3963377774 * a) + (0.2158037573 * b);
         var m = lightness - (0.1055613458 * a) - (0.0638541728 * b);
@@ -31,10 +31,10 @@ internal static class OkLab
         var red = (4.0767416621 * l) - (3.3077115913 * m) + (0.2309699292 * s);
         var green = (-1.2684380046 * l) + (2.6097574011 * m) - (0.3413193965 * s);
         var blue = (-0.0041960863 * l) - (0.7034186147 * m) + (1.7076147010 * s);
-        return new ChartColor(ToByte(FromLinear(red)), ToByte(FromLinear(green)), ToByte(FromLinear(blue)), alpha);
+        return new SceneColor(ToByte(FromLinear(red)), ToByte(FromLinear(green)), ToByte(FromLinear(blue)), alpha);
     }
 
-    public static ChartColor Interpolate(ChartColor start, ChartColor end, double t)
+    public static SceneColor Interpolate(SceneColor start, SceneColor end, double t)
     {
         var (l0, a0, b0) = FromColor(start);
         var (l1, a1, b1) = FromColor(end);

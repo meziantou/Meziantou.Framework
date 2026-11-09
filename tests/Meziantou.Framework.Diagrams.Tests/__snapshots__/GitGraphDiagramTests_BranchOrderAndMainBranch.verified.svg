@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="254.81" height="262.42" viewBox="0 0 254.81 262.42" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="254.81" height="262.42" fill="#ffffff"/>
+<g class="diagram" transform="translate(96.81 20)">
+<g class="branches">
+<g class="branch" data-branch="first">
+<line x1="0" y1="-2" x2="150" y2="-2" stroke="#333333" stroke-dasharray="2"/>
+<rect x="-78.78" y="-11.4" width="43.78" height="18.8" rx="4" fill="#0000ec" class="branch-label-background"/>
+<text x="-56.89" y="2.09" text-anchor="middle" font-size="16" fill="#ffffff">first</text>
+</g>
+<g class="branch" data-branch="trunk">
+<line x1="0" y1="88" x2="150" y2="88" stroke="#333333" stroke-dasharray="2"/>
+<rect x="-88.81" y="78.6" width="53.81" height="18.8" rx="4" fill="#dede00" class="branch-label-background"/>
+<text x="-61.9" y="92.09" text-anchor="middle" font-size="16" fill="#000000">trunk</text>
+</g>
+<g class="branch" data-branch="third">
+<line x1="0" y1="178" x2="150" y2="178" stroke="#333333" stroke-dasharray="2"/>
+<rect x="-84.12" y="168.6" width="49.12" height="18.8" rx="4" fill="#9dec00" class="branch-label-background"/>
+<text x="-59.56" y="182.09" text-anchor="middle" font-size="16" fill="#000000">third</text>
+</g>
+</g>
+<g class="commit-arrows">
+<path d="M10,88 L10,18 A20,20 0 0,1 30,-2 L60,-2" fill="none" stroke="#0000ec" stroke-width="8" stroke-linecap="round" class="arrow"/>
+<path d="M10,88 L10,158 A20,20 0 0,0 30,178 L110,178" fill="none" stroke="#9dec00" stroke-width="8" stroke-linecap="round" class="arrow"/>
+</g>
+<g class="commit-bullets">
+<g class="commit" data-id="0-e3779b1">
+<circle cx="10" cy="88" r="10" fill="#dede00" stroke="#dede00" class="commit-normal"/>
+</g>
+<g class="commit" data-id="1-c6ef362">
+<circle cx="60" cy="-2" r="10" fill="#0000ec" stroke="#0000ec" class="commit-normal"/>
+</g>
+<g class="commit" data-id="2-aa66d13">
+<circle cx="110" cy="178" r="10" fill="#9dec00" stroke="#9dec00" class="commit-normal"/>
+</g>
+</g>
+<g class="commit-labels">
+<g class="commit-label" transform="matrix(0.707107 -0.707107 0.707107 0.707107 -91.693197 52.030003)">
+<rect x="-15.91" y="101.5" width="51.81" height="13.25" fill="#ffffde" opacity="0.5"/>
+<text x="-13.91" y="110.68" font-size="10" fill="#000021">0-e3779b1</text>
+</g>
+<g class="commit-label" transform="matrix(0.707107 -0.707107 0.707107 0.707107 -12.139725 59.889353)">
+<rect x="35.77" y="11.5" width="48.47" height="13.25" fill="#ffffde" opacity="0.5"/>
+<text x="37.77" y="20.68" font-size="10" fill="#000021">1-c6ef362</text>
+</g>
+<g class="commit-label" transform="matrix(0.707107 -0.707107 0.707107 0.707107 -126.043485 149.101071)">
+<rect x="84.1" y="191.5" width="51.81" height="13.25" fill="#ffffde" opacity="0.5"/>
+<text x="86.1" y="200.68" font-size="10" fill="#000021">2-aa66d13</text>
+</g>
+</g>
+</g>
+</svg>

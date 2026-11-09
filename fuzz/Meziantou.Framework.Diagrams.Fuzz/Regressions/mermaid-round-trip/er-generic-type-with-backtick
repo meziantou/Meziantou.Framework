@@ -1,0 +1,11 @@
+erDiagram
+    p["A per†on"]:::big {
+        string? middleName
+]       `my type` *id PK, FK "ThAe key"
+        Map~s`ring, int~ values UK
+     int a int b
+    }
+    "Quote,d name" ||--|| p : "haÊ a"
+    classDef big fill:#f0
+    class p small
+    style p stroke:#00f

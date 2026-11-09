@@ -26,7 +26,7 @@ public sealed class ChartImageRendererTests
         image.Save(png, new PngEncoder());
 
         // Twice the pixels, for high-density screens
-        using var retina = plot.ToImage(new ChartImageOptions { Scale = 2 });
+        using var retina = plot.ToImage(new SceneImageOptions { Scale = 2 });
         Assert.Equal((800, 500), (retina.Width, retina.Height));
         #endregion
 
@@ -149,8 +149,8 @@ public sealed class ChartImageRendererTests
     public void DoubleScaleAndDarkTheme()
     {
         var plot = new Plot { Title = "2x", Width = 240, Height = 160, Theme = ChartTheme.Dark };
-        plot.Add(new DotMark<Fruit>(Fruits, x: fruit => fruit.Name, y: fruit => fruit.Count) { Symbol = DotSymbol.Diamond, Radius = 5, StrokeColor = ChartColor.White });
-        using var image = plot.ToImage(new ChartImageOptions { Scale = 2 });
+        plot.Add(new DotMark<Fruit>(Fruits, x: fruit => fruit.Name, y: fruit => fruit.Count) { Symbol = DotSymbol.Diamond, Radius = 5, StrokeColor = SceneColor.White });
+        using var image = plot.ToImage(new SceneImageOptions { Scale = 2 });
         Assert.Equal((480, 320), (image.Width, image.Height));
         Snapshot.Validate(ToPng(image), SnapshotType.Png);
     }
@@ -158,10 +158,7 @@ public sealed class ChartImageRendererTests
     [Fact]
     public void CustomFonts()
     {
-        var options = new ChartImageOptions { Font = ChartFonts.SansBold };
-        Assert.Same(ChartFonts.SansBold, options.BoldOrRegularFont);
-        options.BoldFont = ChartFonts.Sans;
-        Assert.Same(ChartFonts.Sans, options.BoldOrRegularFont);
+        var options = new SceneImageOptions { Font = SceneFonts.SansBold, BoldFont = SceneFonts.Sans };
 
         var plot = new Plot { Title = "Bold body, regular title", Width = 300, Height = 160 };
         plot.Add(new BarMark<Fruit>(Fruits, x: fruit => fruit.Name, y: fruit => fruit.Count));
@@ -174,7 +171,7 @@ public sealed class ChartImageRendererTests
     {
         var plot = new Plot { Width = 300, Height = 200 };
         plot.Add(new BarMark<Fruit>(Fruits, x: fruit => fruit.Name, y: fruit => fruit.Count));
-        var scene = plot.CreateScene(ChartImageRenderer.CreateMeasurer());
+        var scene = plot.CreateScene(SceneImageRenderer.CreateMeasurer());
         Assert.Equal("Liberation Sans", scene.FontFamily);
 
         using var image = scene.ToImage();
@@ -183,40 +180,40 @@ public sealed class ChartImageRendererTests
 
         using var canvasImage = new Image<Rgba32>(320, 220, Colors.Transparent);
         var bounds = default(RectangleD);
-        canvasImage.Draw(canvas => bounds = canvas.DrawChartScene(scene, new PointD(10, 10), new ChartImageOptions()));
+        canvasImage.Draw(canvas => bounds = canvas.DrawScene(scene, new PointD(10, 10), new SceneImageOptions()));
         Assert.Equal(new RectangleD(10, 10, 300, 200), bounds);
     }
 
     [Fact]
     public void LiberationSansHasTheWidthsOfHelvetica()
     {
-        var image = ChartImageRenderer.CreateMeasurer();
+        var image = SceneImageRenderer.CreateMeasurer();
         var afm = AfmTextMeasurer.Default;
         // Kerning differs: Helvetica kerns pairs such as AV more than Liberation Sans, so the texts have few kerned pairs
         foreach (var text in new[] { "Sales by region", "0123456789", "Height (cm)", "The quick brown fox jumps over the lazy dog" })
         {
-            var expected = afm.Measure(text, new ChartFont(12)).Width;
-            var actual = image.Measure(text, new ChartFont(12)).Width;
+            var expected = afm.Measure(text, new SceneFont(12)).Width;
+            var actual = image.Measure(text, new SceneFont(12)).Width;
             Assert.True(Math.Abs(expected - actual) <= expected * 0.02, $"{text}: {expected} vs {actual}");
 
-            var expectedBold = afm.Measure(text, new ChartFont(16, Bold: true)).Width;
-            var actualBold = image.Measure(text, new ChartFont(16, Bold: true)).Width;
+            var expectedBold = afm.Measure(text, new SceneFont(16, Bold: true)).Width;
+            var actualBold = image.Measure(text, new SceneFont(16, Bold: true)).Width;
             Assert.True(Math.Abs(expectedBold - actualBold) <= expectedBold * 0.02, $"{text}: {expectedBold} vs {actualBold}");
         }
 
-        Assert.Equal(0, image.Measure(string.Empty, new ChartFont(12)).Width);
-        Assert.True(image.Measure("x", new ChartFont(12)).Ascent > 0);
+        Assert.Equal(0, image.Measure(string.Empty, new SceneFont(12)).Width);
+        Assert.True(image.Measure("x", new SceneFont(12)).Ascent > 0);
     }
 
     [Fact]
     public void InvalidArguments()
     {
-        Assert.Throws<ArgumentOutOfRangeException>("value", () => new ChartImageOptions { Scale = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new SceneImageOptions { Scale = 0 });
         Assert.Throws<ArgumentNullException>("plot", () => ((Plot)null!).ToImage());
-        Assert.Throws<ArgumentNullException>("scene", () => ((ChartScene)null!).ToImage());
+        Assert.Throws<ArgumentNullException>("scene", () => ((Scene)null!).ToImage());
         Assert.Throws<ArgumentNullException>("plot", () => ChartImageRenderer.MeasureChart(null!));
         Assert.Throws<ArgumentNullException>("regular", () => new ImageTextMeasurer(null!));
-        Assert.Throws<ArgumentNullException>("text", () => ChartImageRenderer.CreateMeasurer().Measure(null!, new ChartFont(12)));
+        Assert.Throws<ArgumentNullException>("text", () => SceneImageRenderer.CreateMeasurer().Measure(null!, new SceneFont(12)));
     }
 
     internal static byte[] ToPng(Image<Rgba32> image)

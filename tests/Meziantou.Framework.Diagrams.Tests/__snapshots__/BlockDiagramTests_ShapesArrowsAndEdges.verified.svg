@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="580.96" height="126.56" viewBox="0 0 580.96 126.56" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="580.96" height="126.56" fill="#ffffff"/>
+<g class="diagram" transform="translate(-19.84 0)">
+<g class="composites">
+<g class="composite" data-id="empty">
+<rect x="482.24" y="8" width="110.56" height="110.56" fill="#ffffde" stroke="#aaaa33"/>
+</g>
+</g>
+<g class="blocks">
+<g class="block" data-id="circle">
+<g transform="translate(63.28 63.28)">
+<path d="M35.44,0 C35.44,19.57 19.57,35.44 0,35.44 C-19.57,35.44 -35.44,19.57 -35.44,0 C-35.44,-19.57 -19.57,-35.44 0,-35.44 C19.57,-35.44 35.44,-19.57 35.44,0 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="63.28" y="67.37" text-anchor="middle" font-size="16" fill="#333333">Circle</text>
+</g>
+<g class="block blue" data-id="diamond">
+<g transform="translate(181.84 63.28)">
+<path d="M0,-55.28 L55.28,0 L0,55.28 L-55.28,0 Z" fill="#6e6ce6" stroke="#9370db"/>
+</g>
+<text x="181.84" y="67.37" text-anchor="middle" font-size="16" fill="#333333">diamond</text>
+</g>
+<g class="block" data-id="hexagon">
+<g transform="translate(300.4 63.28)">
+<path d="M-45.48,-55.28 L45.48,-55.28 L73.12,0 L45.48,55.28 L-45.48,55.28 L-73.12,0 Z" fill="#ececff" stroke="#ff0000"/>
+</g>
+<text x="300.4" y="67.37" text-anchor="middle" font-size="16" font-weight="bold" fill="#333333">Hex</text>
+</g>
+<g class="block-arrow" data-id="both">
+<g transform="translate(418.96 63.28)">
+<path d="M-27.64,-16.58 L27.64,-16.58 L27.64,-27.64 L55.28,0 L27.64,27.64 L27.64,16.58 L-27.64,16.58 L-27.64,27.64 L-55.28,0 L-27.64,-27.64 Z" fill="#ececff" stroke="#9370db"/>
+<path d="M-16.58,-55.28 L-16.58,27.64 L-27.64,27.64 L0,55.28 L27.64,27.64 L16.58,27.64 L16.58,-55.28 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="418.96" y="67.37" text-anchor="middle" font-size="16" fill="#333333">x</text>
+</g>
+</g>
+<g class="edges">
+<g class="edge">
+<line x1="98.72" y1="63.28" x2="118.56" y2="63.28" stroke="#333333" stroke-dasharray="3 3"/>
+<path d="M126.56,63.28 L118.56,59.28 L118.56,67.28 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge">
+<line x1="229.12" y1="63.28" x2="235.28" y2="63.28" stroke="#333333" stroke-width="3.5"/>
+<path d="M237.12,63.28 L229.12,59.28 L229.12,67.28 Z" fill="#333333" class="marker"/>
+<path d="M227.28,63.28 L235.28,67.28 L235.28,59.28 Z" fill="#333333" class="marker"/>
+<rect x="213.91" y="53.68" width="36.58" height="19.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="232.2" y="67.37" text-anchor="middle" font-size="16" fill="#333333">thick</text>
+</g>
+</g>
+</g>
+</svg>

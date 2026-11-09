@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300.91" height="396" viewBox="0 0 300.91 396" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="300.91" height="396" fill="#ffffff"/>
+<g class="diagram" transform="translate(35.34 8)">
+<g class="branches">
+<g class="branch" data-branch="main">
+<line x1="0" y1="30" x2="0" y2="380" stroke="#333333" stroke-dasharray="2"/>
+<rect x="-27.34" y="0" width="52.67" height="18.8" rx="4" fill="#0000ec" class="branch-label-background"/>
+<text x="-1" y="13.49" text-anchor="middle" font-size="16" fill="#ffffff">main</text>
+</g>
+<g class="branch" data-branch="develop">
+<line x1="107.34" y1="30" x2="107.34" y2="380" stroke="#333333" stroke-dasharray="2"/>
+<rect x="69.76" y="0" width="73.15" height="18.8" rx="4" fill="#dede00" class="branch-label-background"/>
+<text x="106.34" y="13.49" text-anchor="middle" font-size="16" fill="#000000">develop</text>
+</g>
+<g class="branch" data-branch="feature">
+<line x1="224.91" y1="30" x2="224.91" y2="380" stroke="#333333" stroke-dasharray="2"/>
+<rect x="190.25" y="0" width="67.33" height="18.8" rx="4" fill="#9dec00" class="branch-label-background"/>
+<text x="223.91" y="13.49" text-anchor="middle" font-size="16" fill="#000000">feature</text>
+</g>
+</g>
+<g class="commit-arrows">
+<path d="M0,40 L87.34,40 A20,20 0 0,1 107.34,60 L107.34,90" fill="none" stroke="#dede00" stroke-width="8" stroke-linecap="round" class="arrow"/>
+<path d="M0,40 L0,140" fill="none" stroke="#0000ec" stroke-width="8" stroke-linecap="round" class="arrow"/>
+<path d="M0,140 L0,190" fill="none" stroke="#0000ec" stroke-width="8" stroke-linecap="round" class="arrow"/>
+<path d="M107.34,90 L107.34,170 A20,20 0 0,1 87.34,190 L0,190" fill="none" stroke="#dede00" stroke-width="8" stroke-linecap="round" class="arrow"/>
+<path d="M0,190 L204.91,190 A20,20 0 0,1 224.91,210 L224.91,240" fill="none" stroke="#9dec00" stroke-width="8" stroke-linecap="round" class="arrow"/>
+<path d="M107.34,90 L107.34,290" fill="none" stroke="#dede00" stroke-width="8" stroke-linecap="round" class="arrow"/>
+<path d="M224.91,240 L224.91,340" fill="none" stroke="#9dec00" stroke-width="8" stroke-linecap="round" class="arrow"/>
+<path d="M107.34,290 L107.34,320 A20,20 0 0,0 127.34,340 L224.91,340" fill="none" stroke="#dede00" stroke-width="8" stroke-linecap="round" class="arrow"/>
+</g>
+<g class="commit-bullets">
+<g class="commit" data-id="a">
+<circle cx="0" cy="40" r="10" fill="#0000ec" stroke="#0000ec" class="commit-normal"/>
+</g>
+<g class="commit" data-id="b">
+<circle cx="107.34" cy="90" r="10" fill="#dede00" stroke="#dede00" class="commit-normal"/>
+</g>
+<g class="commit" data-id="c">
+<circle cx="0" cy="140" r="10" fill="#0000ec" stroke="#0000ec" class="commit-normal"/>
+</g>
+<g class="commit" data-id="3-8dde6c4">
+<circle cx="0" cy="190" r="10" fill="#0000ec" stroke="#0000ec" class="commit-merge"/>
+<circle cx="0" cy="190" r="6" fill="#ececff" stroke="#ececff"/>
+</g>
+<g class="commit" data-id="d">
+<rect x="214.91" y="230" width="20" height="20" fill="#310093" stroke="#310093" class="commit-highlight"/>
+<rect x="218.91" y="234" width="12" height="12" fill="#ececff" stroke="#ececff"/>
+</g>
+<g class="commit" data-id="e">
+<circle cx="107.34" cy="290" r="10" fill="#dede00" stroke="#dede00" class="commit-normal"/>
+</g>
+<g class="commit" data-id="6-38453d7">
+<circle cx="224.91" cy="340" r="10" fill="#9dec00" stroke="#9dec00" class="commit-merge"/>
+<circle cx="224.91" cy="340" r="6" fill="#ececff" stroke="#ececff"/>
+</g>
+</g>
+<g class="commit-labels">
+<g class="commit-label" transform="matrix(0.707107 -0.707107 0.707107 0.707107 -28.284271 11.715729)">
+<rect x="-26.56" y="28" width="9.56" height="13.25" fill="#ffffde" opacity="0.5"/>
+<text x="-21.56" y="37.18" font-size="10" fill="#000021">a</text>
+</g>
+<g class="commit-label" transform="matrix(0.707107 -0.707107 0.707107 0.707107 -32.201624 102.258403)">
+<rect x="80.78" y="78" width="9.56" height="13.25" fill="#ffffde" opacity="0.5"/>
+<text x="85.78" y="87.18" font-size="10" fill="#000021">b</text>
+</g>
+<g class="tag" transform="matrix(0.707107 0.707107 -0.707107 0.707107 100.006529 -40.466556)">
+<path d="M107.34,82 L107.34,78 L117.34,73.38 L140.8,73.38 L140.8,86.63 L117.34,86.63 Z" fill="#ececff" stroke="#c7c7f1"/>
+<circle cx="109.34" cy="80" r="1.5" fill="#333333"/>
+<g transform="translate(2 2)">
+<text x="112.34" y="83" font-size="10" fill="#131300">beta</text>
+</g>
+</g>
+<g class="commit-label" transform="matrix(0.707107 -0.707107 0.707107 0.707107 -98.994949 41.005051)">
+<rect x="-26" y="128" width="9" height="13.25" fill="#ffffde" opacity="0.5"/>
+<text x="-21" y="137.18" font-size="10" fill="#000021">c</text>
+</g>
+<g class="commit-label" transform="matrix(0.707107 -0.707107 0.707107 0.707107 -103.830428 229.331173)">
+<rect x="198.35" y="228" width="9.56" height="13.25" fill="#ffffde" opacity="0.5"/>
+<text x="203.35" y="237.18" font-size="10" fill="#000021">d</text>
+</g>
+<g class="commit-label" transform="matrix(0.707107 -0.707107 0.707107 0.707107 -173.62298 160.837047)">
+<rect x="80.78" y="278" width="9.56" height="13.25" fill="#ffffde" opacity="0.5"/>
+<text x="85.78" y="287.18" font-size="10" fill="#000021">e</text>
+</g>
+</g>
+</g>
+</svg>

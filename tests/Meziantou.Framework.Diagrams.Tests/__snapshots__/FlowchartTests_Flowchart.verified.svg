@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="344.77" height="452.7" viewBox="0 0 344.77 452.7" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Order processing</title>
+<rect width="344.77" height="452.7" fill="#ffffff"/>
+<g class="title">
+<text x="172.38" y="23.4" text-anchor="middle" font-size="18" fill="#333333">Order processing</text>
+</g>
+<g class="diagram" transform="translate(8 39.6)">
+<g class="clusters">
+</g>
+<g class="edges">
+<g class="edge solid">
+<path d="M159.94,39.2 L159.94,43.37 C159.94,47.53 159.94,55.87 159.94,62.87 C159.94,69.87 159.94,75.53 159.94,78.37 L159.94,81.2" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M159.94,89.2 L163.94,81.2 L155.94,81.2 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge solid">
+<path d="M119.41,248.17 L110.38,261.36 C101.35,274.55 83.3,300.93 74.27,319.22 C65.25,337.5 65.25,347.7 65.25,352.8 L65.25,357.9" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M65.25,365.9 L69.25,357.9 L61.25,357.9 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge solid">
+<path d="M200.47,248.17 L209.5,261.36 C218.53,274.55 236.58,300.93 245.61,319.22 C254.63,337.5 254.63,347.7 254.63,352.8 L254.63,357.9" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M254.63,365.9 L258.63,357.9 L250.63,357.9 Z" fill="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+<g class="edge-label">
+<rect x="48.96" y="313.7" width="32.58" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="65.25" y="331.39" text-anchor="middle" font-size="16" fill="#333333">yes</text>
+</g>
+<g class="edge-label">
+<rect x="241.74" y="313.7" width="25.79" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="254.63" y="331.39" text-anchor="middle" font-size="16" fill="#333333">no</text>
+</g>
+</g>
+<g class="nodes">
+<g class="node" data-id="start">
+<g transform="translate(159.94 19.6)">
+<path d="M-60.2,-19.6 L60.2,-19.6 C71.03,-19.6 79.8,-10.82 79.8,0 L79.8,0 C79.8,10.82 71.03,19.6 60.2,19.6 L-60.2,19.6 C-71.03,19.6 -79.8,10.82 -79.8,0 L-79.8,0 C-79.8,-10.82 -71.03,-19.6 -60.2,-19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="159.94" y="23.69" text-anchor="middle" font-size="16" fill="#333333">Order received</text>
+</g>
+<g class="node" data-id="check">
+<g transform="translate(159.94 188.95)">
+<path d="M0,-99.75 L99.75,0 L0,99.75 L-99.75,0 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="159.94" y="193.04" text-anchor="middle" font-size="16" fill="#333333">Is the payment valid?</text>
+</g>
+<g class="node" data-id="ship">
+<g transform="translate(65.25 385.5)">
+<path d="M-65.25,-19.6 L65.25,-19.6 L65.25,19.6 L-65.25,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="65.25" y="389.59" text-anchor="middle" font-size="16" fill="#333333">Ship the order</text>
+</g>
+<g class="node" data-id="cancel">
+<g transform="translate(254.63 385.5)">
+<path d="M-74.14,-19.6 L74.14,-19.6 L74.14,19.6 L-74.14,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="254.63" y="389.59" text-anchor="middle" font-size="16" fill="#333333">Cancel the order</text>
+</g>
+</g>
+</g>
+</svg>

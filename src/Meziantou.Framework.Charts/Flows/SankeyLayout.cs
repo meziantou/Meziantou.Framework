@@ -32,7 +32,7 @@ internal sealed class SankeyLayout
     public List<SankeyLink> Links { get; } = [];
 
     /// <exception cref="InvalidOperationException">The links have a cycle.</exception>
-    public static SankeyLayout Compute(IReadOnlyList<(string Source, string Target, double Value)> links, ChartRectangle bounds, double nodeWidth, double nodePadding, int iterations, SankeyAlignment alignment)
+    public static SankeyLayout Compute(IReadOnlyList<(string Source, string Target, double Value)> links, SceneBounds bounds, double nodeWidth, double nodePadding, int iterations, SankeyAlignment alignment)
     {
         var layout = new SankeyLayout(bounds.X, bounds.Y, bounds.Right, bounds.Bottom, nodeWidth, nodePadding, iterations, alignment);
         var nodes = new Dictionary<string, SankeyNode>(StringComparer.Ordinal);

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="714.34" height="158.1" viewBox="0 0 714.34 158.1" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="714.34" height="158.1" fill="#333333"/>
+<g class="diagram" transform="translate(104.45 78.3)">
+<g class="edges">
+<path d="M0,0 C58.23,0 58.23,-24.5 116.46,-24.5" fill="none" stroke="#0b0000" stroke-width="11" class="edge edge-depth-1 section-edge-0"/>
+<path d="M116.46,-24.5 C174.02,-24.5 174.02,-24.5 231.58,-24.5" fill="none" stroke="#4d1037" stroke-width="8" class="edge edge-depth-2 section-edge-1"/>
+<path d="M231.58,-24.5 C283.48,-24.5 283.48,-24.5 335.38,-24.5" fill="none" stroke="#3f5258" stroke-width="5" class="edge edge-depth-3 section-edge-2"/>
+<path d="M335.38,-24.5 C394.4,-24.5 394.4,-24.5 453.41,-24.5" fill="none" stroke="#4f2f1b" stroke-width="2" class="edge edge-depth-4 section-edge-3"/>
+<path d="M453.41,-24.5 C511.98,-24.5 511.98,-24.5 570.54,-24.5" fill="none" stroke="#6e0a0a" stroke-width="3" class="edge edge-depth-5 section-edge-4"/>
+<path d="M0,0 C42.12,0 42.12,53.3 84.23,53.3" fill="none" stroke="#0b0000" stroke-width="11" class="edge edge-depth-1 section-edge-0"/>
+<path d="M0,0 C-42.34,0 -42.34,0 -84.67,0" fill="none" stroke="#0b0000" stroke-width="11" class="edge edge-depth-1 section-edge-0"/>
+</g>
+<g class="nodes">
+<g class="mindmap-node section-root section--1 important">
+<path d="M-22.9,12 L-22.9,-12 Q-22.9,-17 -17.9,-17 L17.9,-17 Q22.9,-17 22.9,-12 L22.9,17 L-22.9,17 Z" fill="#1f2020"/>
+<line x1="-22.9" y1="17" x2="22.9" y2="17" stroke="#626363" stroke-width="3"/>
+<text x="0" y="4.09" text-anchor="middle" font-size="16" fill="#ffffff">Root</text>
+</g>
+<g class="mindmap-node section-0">
+<path d="M72.9,16.3 L72.9,-65.3 Q72.9,-70.3 77.9,-70.3 L155.02,-70.3 Q160.02,-70.3 160.02,-65.3 L160.02,21.3 L72.9,21.3 Z" fill="#0b0000"/>
+<line x1="72.9" y1="21.3" x2="160.02" y2="21.3" stroke="#544d4d" stroke-width="3"/>
+<text x="116.46" y="-49.21" text-anchor="middle" font-size="16" fill="#ffffff">A long text</text>
+<text x="116.46" y="-30.01" text-anchor="middle" font-size="16" fill="#ffffff">that wraps</text>
+<text x="116.46" y="-10.81" text-anchor="middle" font-size="16" fill="#ffffff">on several</text>
+<text x="116.46" y="8.39" text-anchor="middle" font-size="16" fill="#ffffff">lines</text>
+</g>
+<g class="mindmap-node section-1">
+<path d="M210.02,-12.5 L210.02,-36.5 Q210.02,-41.5 215.02,-41.5 L248.15,-41.5 Q253.15,-41.5 253.15,-36.5 L253.15,-7.5 L210.02,-7.5 Z" fill="#4d1037"/>
+<line x1="210.02" y1="-7.5" x2="253.15" y2="-7.5" stroke="#825873" stroke-width="3"/>
+<text x="231.58" y="-20.41" text-anchor="middle" font-size="16" fill="#ffffff">Leaf</text>
+</g>
+<g class="mindmap-node section-2">
+<path d="M303.15,-12.5 L303.15,-36.5 Q303.15,-41.5 308.15,-41.5 L362.62,-41.5 Q367.62,-41.5 367.62,-36.5 L367.62,-7.5 L303.15,-7.5 Z" fill="#3f5258"/>
+<line x1="303.15" y1="-7.5" x2="367.62" y2="-7.5" stroke="#79868a" stroke-width="3"/>
+<text x="335.38" y="-20.41" text-anchor="middle" font-size="16" fill="#ffffff">Deeper</text>
+</g>
+<g class="mindmap-node section-3">
+<path d="M417.62,-12.5 L417.62,-36.5 Q417.62,-41.5 422.62,-41.5 L484.2,-41.5 Q489.2,-41.5 489.2,-36.5 L489.2,-7.5 L417.62,-7.5 Z" fill="#4f2f1b"/>
+<line x1="417.62" y1="-7.5" x2="489.2" y2="-7.5" stroke="#846d5f" stroke-width="3"/>
+<text x="453.41" y="-20.41" text-anchor="middle" font-size="16" fill="#ffffff">Deepest</text>
+</g>
+<g class="mindmap-node section-4">
+<path d="M539.2,-12.5 L539.2,-36.5 Q539.2,-41.5 544.2,-41.5 L596.89,-41.5 Q601.89,-41.5 601.89,-36.5 L601.89,-7.5 L539.2,-7.5 Z" fill="#6e0a0a"/>
+<line x1="539.2" y1="-7.5" x2="601.89" y2="-7.5" stroke="#9a5454" stroke-width="3"/>
+<text x="570.54" y="-20.41" text-anchor="middle" font-size="16" fill="#ffffff">Bottom</text>
+</g>
+<g class="mindmap-node section-0">
+<path d="M72.9,65.3 L72.9,41.3 Q72.9,36.3 77.9,36.3 L90.57,36.3 Q95.57,36.3 95.57,41.3 L95.57,70.3 L72.9,70.3 Z" fill="#0b0000"/>
+<line x1="72.9" y1="70.3" x2="95.57" y2="70.3" stroke="#544d4d" stroke-width="3"/>
+<text x="84.23" y="57.39" text-anchor="middle" font-size="16" fill="#ffffff">B</text>
+</g>
+<g class="mindmap-node section-0">
+<path d="M-96.45,12 L-96.45,-12 Q-96.45,-17 -91.45,-17 L-77.9,-17 Q-72.9,-17 -72.9,-12 L-72.9,17 L-96.45,17 Z" fill="#0b0000"/>
+<line x1="-96.45" y1="17" x2="-72.9" y2="17" stroke="#544d4d" stroke-width="3"/>
+<text x="-84.67" y="4.09" text-anchor="middle" font-size="16" fill="#ffffff">C</text>
+</g>
+</g>
+</g>
+</svg>

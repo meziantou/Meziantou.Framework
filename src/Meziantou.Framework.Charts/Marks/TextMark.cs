@@ -57,7 +57,7 @@ public sealed class TextMark<T> : Mark<T>
 
     internal override void Render(RenderContext context, MarkData data, SceneGroup group)
     {
-        var font = new ChartFont(FontSize ?? context.Theme.FontSize, Bold);
+        var font = new SceneFont(FontSize ?? context.Theme.FontSize, Bold);
         for (var i = 0; i < data.Count; i++)
         {
             var text = data.Text![i];

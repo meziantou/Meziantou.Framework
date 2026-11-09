@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="321" height="234.6" viewBox="0 0 321 234.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="321" height="234.6" fill="#333333"/>
+<g class="diagram" transform="translate(-67 8)">
+<g class="sections">
+<g class="section section-1" data-id="column">
+<rect x="75" y="0" width="150" height="218.6" rx="5" fill="#230719" stroke="#230719"/>
+<text x="150" y="18.69" text-anchor="middle" font-size="16" fill="#ffffff">column</text>
+</g>
+<g class="section section-2" data-id="empty">
+<rect x="230" y="0" width="150" height="54.2" rx="5" fill="#2a363a" stroke="#2a363a"/>
+<text x="305" y="18.69" text-anchor="middle" font-size="16" fill="#ffffff">Empty column</text>
+</g>
+</g>
+<g class="items">
+<g class="column-items">
+<g class="kanban-item" data-id="long">
+<rect x="82.5" y="29.2" width="135" height="135.2" rx="5" fill="#333333" stroke="#cccccc"/>
+<line x1="84.5" y1="31.2" x2="84.5" y2="162.4" stroke="#add8e6" stroke-width="4" class="priority"/>
+<text x="92.5" y="52.89" font-size="16" fill="#cccccc">A card with a</text>
+<text x="92.5" y="72.09" font-size="16" fill="#cccccc">long text, which</text>
+<text x="92.5" y="91.29" font-size="16" fill="#cccccc">wraps on</text>
+<text x="92.5" y="110.49" font-size="16" fill="#cccccc">several lines in</text>
+<text x="92.5" y="129.69" font-size="16" fill="#cccccc">the narrow</text>
+<text x="92.5" y="148.89" font-size="16" fill="#cccccc">column</text>
+</g>
+<g class="kanban-item" data-id="medium">
+<rect x="82.5" y="169.4" width="135" height="39.2" rx="5" fill="#333333" stroke="#cccccc"/>
+<text x="92.5" y="193.09" font-size="16" fill="#cccccc">medium</text>
+</g>
+</g>
+<g class="column-items">
+</g>
+</g>
+</g>
+</svg>

@@ -162,7 +162,7 @@ public sealed class ViolinMark<T> : Mark<T>
                 box.Fill = context.Theme.Foreground;
                 violin.Add(box);
                 var (mx, my) = context.Coordinates.Project(center, context.MapYNumber(data.Extra[Median].Numbers[i]));
-                violin.Add(new SceneCircle(mx, my, Math.Max(2, boxHalf * 1.2)) { Fill = context.Theme.Background ?? ChartColor.White });
+                violin.Add(new SceneCircle(mx, my, Math.Max(2, boxHalf * 1.2)) { Fill = context.Theme.Background ?? SceneColor.White });
             }
 
             group.Add(Decorate(violin, data, i));

@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="816" height="164" viewBox="0 0 816 164" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="816" height="164" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="grid">
+<line x1="75" y1="98" x2="75" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="75" y="109.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-01</text>
+<line x1="129" y1="98" x2="129" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="129" y="109.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-02</text>
+<line x1="183" y1="98" x2="183" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="183" y="109.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-03</text>
+<line x1="238" y1="98" x2="238" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="238" y="109.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-04</text>
+<line x1="292" y1="98" x2="292" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="292" y="109.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-05</text>
+<line x1="346" y1="98" x2="346" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="346" y="109.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-06</text>
+<line x1="400" y1="98" x2="400" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="400" y="109.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-07</text>
+<line x1="454" y1="98" x2="454" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="454" y="109.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-08</text>
+<line x1="508" y1="98" x2="508" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="508" y="109.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-09</text>
+<line x1="563" y1="98" x2="563" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="563" y="109.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-10</text>
+<line x1="617" y1="98" x2="617" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="617" y="109.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-11</text>
+<line x1="671" y1="98" x2="671" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="671" y="109.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-12</text>
+<line x1="725" y1="98" x2="725" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="725" y="109.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-13</text>
+</g>
+<g class="grid">
+<line x1="75" y1="50" x2="75" y2="113" stroke="#d3d3d3" opacity="0.8"/>
+<text x="75" y="43.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-01</text>
+<line x1="129" y1="50" x2="129" y2="113" stroke="#d3d3d3" opacity="0.8"/>
+<text x="129" y="43.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-02</text>
+<line x1="183" y1="50" x2="183" y2="113" stroke="#d3d3d3" opacity="0.8"/>
+<text x="183" y="43.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-03</text>
+<line x1="238" y1="50" x2="238" y2="113" stroke="#d3d3d3" opacity="0.8"/>
+<text x="238" y="43.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-04</text>
+<line x1="292" y1="50" x2="292" y2="113" stroke="#d3d3d3" opacity="0.8"/>
+<text x="292" y="43.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-05</text>
+<line x1="346" y1="50" x2="346" y2="113" stroke="#d3d3d3" opacity="0.8"/>
+<text x="346" y="43.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-06</text>
+<line x1="400" y1="50" x2="400" y2="113" stroke="#d3d3d3" opacity="0.8"/>
+<text x="400" y="43.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-07</text>
+<line x1="454" y1="50" x2="454" y2="113" stroke="#d3d3d3" opacity="0.8"/>
+<text x="454" y="43.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-08</text>
+<line x1="508" y1="50" x2="508" y2="113" stroke="#d3d3d3" opacity="0.8"/>
+<text x="508" y="43.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-09</text>
+<line x1="563" y1="50" x2="563" y2="113" stroke="#d3d3d3" opacity="0.8"/>
+<text x="563" y="43.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-10</text>
+<line x1="617" y1="50" x2="617" y2="113" stroke="#d3d3d3" opacity="0.8"/>
+<text x="617" y="43.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-11</text>
+<line x1="671" y1="50" x2="671" y2="113" stroke="#d3d3d3" opacity="0.8"/>
+<text x="671" y="43.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-12</text>
+<line x1="725" y1="50" x2="725" y2="113" stroke="#d3d3d3" opacity="0.8"/>
+<text x="725" y="43.56" text-anchor="middle" font-size="10" fill="#333333">2024-01-13</text>
+</g>
+<g class="sections">
+<rect x="0" y="48" width="762.5" height="24" fill="#6666ff" fill-opacity="0.49" opacity="0.2" class="section section0"/>
+<rect x="0" y="72" width="762.5" height="24" fill="#6666ff" fill-opacity="0.49" opacity="0.2" class="section section0"/>
+</g>
+<g class="tasks">
+<g class="task">
+<rect x="75" y="50" width="271" height="20" rx="3" fill="#8a90dd" stroke="#534fbc" stroke-width="2"/>
+</g>
+<g class="task">
+<rect x="183" y="74" width="542" height="20" rx="3" fill="#8a90dd" stroke="#534fbc" stroke-width="2"/>
+</g>
+<g class="task">
+<rect x="454" y="50" width="271" height="20" rx="3" fill="#8a90dd" stroke="#534fbc" stroke-width="2"/>
+</g>
+<g class="task vert">
+<rect x="563" y="35" width="1.6" height="88" fill="#534fbc" stroke="#534fbc"/>
+<text x="563" y="141.86" text-anchor="middle" font-size="11" fill="#333333">Freeze</text>
+</g>
+</g>
+<g class="task-texts">
+<g class="task-text">
+<text x="210.5" y="62.81" text-anchor="middle" font-size="11" fill="#ffffff">A</text>
+</g>
+<g class="task-text">
+<text x="454" y="86.81" text-anchor="middle" font-size="11" fill="#ffffff">C</text>
+</g>
+<g class="task-text">
+<text x="589.5" y="62.81" text-anchor="middle" font-size="11" fill="#ffffff">B</text>
+</g>
+</g>
+<g class="section-titles">
+<text x="10" y="76.81" font-size="11" fill="#333333">Work</text>
+</g>
+<line x1="671" y1="25" x2="671" y2="123" stroke="#00ff00" stroke-width="5" class="today"/>
+</g>
+</svg>

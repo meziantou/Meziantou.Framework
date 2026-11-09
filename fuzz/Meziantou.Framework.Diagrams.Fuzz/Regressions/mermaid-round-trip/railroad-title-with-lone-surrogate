@@ -1,0 +1,7 @@
+railroad-abnf-beta
+title "Repet‚tions"
+; a comment
+rule = 2json*4a 3b *c 1*d *1e 2*f [ g ] ; another comm
+nt
+  / %x30-39 / "text"
+;

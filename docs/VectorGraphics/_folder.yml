@@ -1,0 +1,5 @@
+title: Vector graphics
+description: Describe a drawing as shapes, paths and texts, write it as deterministic SVG or draw it as an image, and measure and wrap texts.
+packageIds:
+- Meziantou.Framework.Imaging.VectorGraphics
+- Meziantou.Framework.VectorGraphics

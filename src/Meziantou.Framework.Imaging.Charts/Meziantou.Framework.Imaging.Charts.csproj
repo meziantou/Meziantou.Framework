@@ -12,14 +12,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Liberation Sans 2.1.5 (SIL Open Font License 1.1, see THIRD-PARTY-NOTICES.md), the subsets Meziantou.Framework.Pdf bundles -->
-    <EmbeddedResource Include="../Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationSans-Regular.woff2" Link="Fonts/LiberationSans-Regular.woff2" LogicalName="Meziantou.Framework.Imaging.Charts.Fonts.LiberationSans-Regular.woff2" />
-    <EmbeddedResource Include="../Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationSans-Bold.woff2" Link="Fonts/LiberationSans-Bold.woff2" LogicalName="Meziantou.Framework.Imaging.Charts.Fonts.LiberationSans-Bold.woff2" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
-    <ProjectReference Include="../Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Imaging.VectorGraphics/Meziantou.Framework.Imaging.VectorGraphics.csproj" />
   </ItemGroup>
 
   <ItemGroup>

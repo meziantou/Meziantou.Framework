@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="489.87" height="512.8" viewBox="0 0 489.87 512.8" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="489.87" height="512.8" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+<g class="cluster" data-id="sales">
+<rect x="0" y="0" width="473.87" height="281.8" fill="#ffffde" stroke="#aaaa33"/>
+<text x="236.94" y="17.69" text-anchor="middle" font-size="16" fill="#333333">Sales</text>
+</g>
+</g>
+<g class="edges">
+<g class="edge relationship">
+<path d="M160.91,156.21 L174.39,153.96 C187.88,151.7 214.84,147.2 242.74,144.95 C270.63,142.7 299.46,142.7 313.87,142.7 L328.29,142.7" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M171.27,163.6 L168.31,145.85" fill="none" stroke="#333333" class="marker"/>
+<path d="M177.19,162.61 L174.23,144.86" fill="none" stroke="#333333" class="marker"/>
+<path d="M328.29,133.7 L313.29,142.7" fill="none" stroke="#333333" class="marker"/>
+<path d="M328.29,142.7 L313.29,142.7" fill="none" stroke="#333333" class="marker"/>
+<path d="M328.29,151.7 L313.29,142.7" fill="none" stroke="#333333" class="marker"/>
+<path d="M310.29,142.7 C310.29,146.01 307.6,148.7 304.29,148.7 C300.97,148.7 298.29,146.01 298.29,142.7 C298.29,139.39 300.97,136.7 304.29,136.7 C307.6,136.7 310.29,139.39 310.29,142.7 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relationship non-identifying">
+<path d="M281.79,281.8 L357.9,421.8" fill="none" stroke="#333333" stroke-dasharray="8 8" class="edge-path"/>
+<path d="M273.89,286.1 L288.96,294.98" fill="none" stroke="#333333" class="marker"/>
+<path d="M281.79,281.8 L288.96,294.98" fill="none" stroke="#333333" class="marker"/>
+<path d="M289.7,277.5 L288.96,294.98" fill="none" stroke="#333333" class="marker"/>
+<path d="M282.48,301.91 L298.3,293.32" fill="none" stroke="#333333" class="marker"/>
+<path d="M361.51,409.59 L345.7,418.19" fill="none" stroke="#333333" class="marker"/>
+<path d="M353.87,403.35 C353.87,406.66 351.19,409.35 347.87,409.35 C344.56,409.35 341.87,406.66 341.87,403.35 C341.87,400.04 344.56,397.35 347.87,397.35 C351.19,397.35 353.87,400.04 353.87,403.35 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+<g class="edge-label">
+<rect x="214.69" y="129.1" width="54.24" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="241.81" y="146.79" text-anchor="middle" font-size="16" fill="#333333">places</text>
+</g>
+<g class="edge-label">
+<rect x="278.95" y="338.2" width="81.79" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="319.85" y="355.89" text-anchor="middle" font-size="16" fill="#333333">ships from</text>
+</g>
+</g>
+<g class="nodes">
+<g class="entity" data-id="CUSTOMER">
+<rect x="40" y="128.8" width="120.91" height="75" fill="#ececff" stroke="#9370db"/>
+<text x="100.46" y="170.39" text-anchor="middle" font-size="16" fill="#131300">CUSTOMER</text>
+</g>
+<g class="entity" data-id="ORDER">
+<rect x="328.29" y="105.2" width="100" height="75" fill="#ececff" stroke="#9370db"/>
+<text x="378.29" y="146.79" text-anchor="middle" font-size="16" fill="#131300">ORDER</text>
+</g>
+<g class="entity" data-id="WAREHOUSE">
+<rect x="322.7" y="421.8" width="111.17" height="75" fill="#ececff" stroke="#9370db"/>
+<text x="378.29" y="463.39" text-anchor="middle" font-size="16" fill="#131300">Warehouse</text>
+</g>
+</g>
+</g>
+</svg>

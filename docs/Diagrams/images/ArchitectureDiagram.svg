@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="496" height="432.4" viewBox="0 0 496 432.4" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="496" height="432.4" fill="#ffffff"/>
+<g class="diagram" transform="translate(48 118)">
+<g class="groups">
+<g class="group" data-id="api">
+<rect x="100" y="-110" width="340" height="416.4" fill="#ffffde" stroke="#aaaa33" stroke-width="2" stroke-dasharray="8 4"/>
+<g class="icon" transform="matrix(0.375 0 0 0.375 104 -106)">
+<rect x="0" y="0" width="80" height="80" fill="#087ebf"/>
+<path d="M65,47.5 C65,50.26 62.76,52.5 60,52.5 L20,52.5 C17.24,52.5 15,50.26 15,47.5 C15,45.63 16.03,43.99 17.56,43.14 C17.52,42.93 17.5,42.72 17.5,42.5 C17.5,39.9 19.98,37.76 23.15,37.53 C24.8,33.02 29.49,29.77 35,29.77 C35.86,29.77 36.69,29.85 37.5,30 C39.59,28.43 42.19,27.5 45,27.5 C51.1,27.5 56.19,31.88 57.28,37.67 C59.42,38.23 61,40.18 61,42.5 C61,42.53 61,42.57 60.99,42.6 C63.28,43.06 65,45.08 65,47.5 Z" fill="none" stroke="#ffffff" stroke-width="2"/>
+</g>
+<text x="151.34" y="-86.91" text-anchor="middle" font-size="16" font-weight="bold" fill="#333333">API</text>
+</g>
+</g>
+<g class="services">
+<g class="service" data-id="internet">
+<g class="icon" transform="translate(-40 -40)">
+<rect x="0" y="0" width="80" height="80" fill="#087ebf"/>
+<path d="M62.5,40 C62.5,52.43 52.43,62.5 40,62.5 C27.57,62.5 17.5,52.43 17.5,40 C17.5,27.57 27.57,17.5 40,17.5 C52.43,17.5 62.5,27.57 62.5,40 Z" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M40,17.5 L40,62.5" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M17.5,40 L62.5,40" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M39.99,17.51 C24.71,28.61 24.71,51.39 39.99,62.49" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M40.01,17.51 C55.29,28.61 55.29,51.39 40.01,62.49" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M19.75,30.1 L60.25,30.1" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M19.75,49.9 L60.25,49.9" fill="none" stroke="#ffffff" stroke-width="2"/>
+</g>
+<text x="0" y="57.69" text-anchor="middle" font-size="16" fill="#333333">Internet</text>
+</g>
+<g class="service" data-id="server">
+<g class="icon" transform="translate(140 -40)">
+<rect x="0" y="0" width="80" height="80" fill="#087ebf"/>
+<path d="M17.5,17.5 L62.5,17.5 L62.5,62.5 L17.5,62.5 Z" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M17.5,32.5 L62.5,32.5" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M17.5,47.5 L62.5,47.5" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M56.25,25 C56.25,25.27 55.8,25.5 55.25,25.5 L44.75,25.5 C44.2,25.5 43.75,25.27 43.75,25 C43.75,24.73 44.2,24.5 44.75,24.5 L55.25,24.5 C55.8,24.5 56.25,24.73 56.25,25 Z" fill="#ffffff"/>
+<path d="M56.25,25 C56.25,25.27 55.8,25.5 55.25,25.5 L44.75,25.5 C44.2,25.5 43.75,25.27 43.75,25 C43.75,24.73 44.2,24.5 44.75,24.5 L55.25,24.5 C55.8,24.5 56.25,24.73 56.25,25 Z" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M56.25,40 C56.25,40.27 55.8,40.5 55.25,40.5 L44.75,40.5 C44.2,40.5 43.75,40.27 43.75,40 C43.75,39.73 44.2,39.5 44.75,39.5 L55.25,39.5 C55.8,39.5 56.25,39.73 56.25,40 Z" fill="#ffffff"/>
+<path d="M56.25,40 C56.25,40.27 55.8,40.5 55.25,40.5 L44.75,40.5 C44.2,40.5 43.75,40.27 43.75,40 C43.75,39.73 44.2,39.5 44.75,39.5 L55.25,39.5 C55.8,39.5 56.25,39.73 56.25,40 Z" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M56.25,55 C56.25,55.27 55.8,55.5 55.25,55.5 L44.75,55.5 C44.2,55.5 43.75,55.27 43.75,55 C43.75,54.73 44.2,54.5 44.75,54.5 L55.25,54.5 C55.8,54.5 56.25,54.73 56.25,55 Z" fill="#ffffff"/>
+<path d="M56.25,55 C56.25,55.27 55.8,55.5 55.25,55.5 L44.75,55.5 C44.2,55.5 43.75,55.27 43.75,55 C43.75,54.73 44.2,54.5 44.75,54.5 L55.25,54.5 C55.8,54.5 56.25,54.73 56.25,55 Z" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M33.25,25 C33.25,25.41 32.91,25.75 32.5,25.75 C32.09,25.75 31.75,25.41 31.75,25 C31.75,24.59 32.09,24.25 32.5,24.25 C32.91,24.25 33.25,24.59 33.25,25 Z" fill="#ffffff"/>
+<path d="M28.25,25 C28.25,25.41 27.91,25.75 27.5,25.75 C27.09,25.75 26.75,25.41 26.75,25 C26.75,24.59 27.09,24.25 27.5,24.25 C27.91,24.25 28.25,24.59 28.25,25 Z" fill="#ffffff"/>
+<path d="M23.25,25 C23.25,25.41 22.91,25.75 22.5,25.75 C22.09,25.75 21.75,25.41 21.75,25 C21.75,24.59 22.09,24.25 22.5,24.25 C22.91,24.25 23.25,24.59 23.25,25 Z" fill="#ffffff"/>
+<path d="M33.25,40 C33.25,40.41 32.91,40.75 32.5,40.75 C32.09,40.75 31.75,40.41 31.75,40 C31.75,39.59 32.09,39.25 32.5,39.25 C32.91,39.25 33.25,39.59 33.25,40 Z" fill="#ffffff"/>
+<path d="M28.25,40 C28.25,40.41 27.91,40.75 27.5,40.75 C27.09,40.75 26.75,40.41 26.75,40 C26.75,39.59 27.09,39.25 27.5,39.25 C27.91,39.25 28.25,39.59 28.25,40 Z" fill="#ffffff"/>
+<path d="M23.25,40 C23.25,40.41 22.91,40.75 22.5,40.75 C22.09,40.75 21.75,40.41 21.75,40 C21.75,39.59 22.09,39.25 22.5,39.25 C22.91,39.25 23.25,39.59 23.25,40 Z" fill="#ffffff"/>
+<path d="M33.25,55 C33.25,55.41 32.91,55.75 32.5,55.75 C32.09,55.75 31.75,55.41 31.75,55 C31.75,54.59 32.09,54.25 32.5,54.25 C32.91,54.25 33.25,54.59 33.25,55 Z" fill="#ffffff"/>
+<path d="M28.25,55 C28.25,55.41 27.91,55.75 27.5,55.75 C27.09,55.75 26.75,55.41 26.75,55 C26.75,54.59 27.09,54.25 27.5,54.25 C27.91,54.25 28.25,54.59 28.25,55 Z" fill="#ffffff"/>
+<path d="M23.25,55 C23.25,55.41 22.91,55.75 22.5,55.75 C22.09,55.75 21.75,55.41 21.75,55 C21.75,54.59 22.09,54.25 22.5,54.25 C22.91,54.25 23.25,54.59 23.25,55 Z" fill="#ffffff"/>
+</g>
+<text x="180" y="57.69" text-anchor="middle" font-size="16" fill="#333333">Server</text>
+</g>
+<g class="service" data-id="db">
+<g class="icon" transform="translate(320 -40)">
+<rect x="0" y="0" width="80" height="80" fill="#087ebf"/>
+<path d="M20,57.86 C20,61.8 28.95,65 40,65 C51.05,65 60,61.8 60,57.86" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M20,45.95 C20,49.89 28.95,53.09 40,53.09 C51.05,53.09 60,49.89 60,45.95" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M20,34.05 C20,37.99 28.95,41.19 40,41.19 C51.05,41.19 60,37.99 60,34.05" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M60,22.14 C60,26.08 51.05,29.28 40,29.28 C28.95,29.28 20,26.08 20,22.14 C20,18.2 28.95,15 40,15 C51.05,15 60,18.2 60,22.14 Z" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M20,57.86 L20,22.14" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M60,57.86 L60,22.14" fill="none" stroke="#ffffff" stroke-width="2"/>
+</g>
+<text x="360" y="57.69" text-anchor="middle" font-size="16" fill="#333333">Database</text>
+</g>
+<g class="service" data-id="disk">
+<g class="icon" transform="translate(140 163.2)">
+<rect x="0" y="0" width="80" height="80" fill="#087ebf"/>
+<path d="M20,15 L60,15 L60,65 L20,65 Z" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M24.8,19.17 C24.8,19.63 24.44,20 24,20 C23.56,20 23.2,19.63 23.2,19.17 C23.2,18.71 23.56,18.34 24,18.34 C24.44,18.34 24.8,18.71 24.8,19.17 Z" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M56.8,19.17 C56.8,19.63 56.44,20 56,20 C55.56,20 55.2,19.63 55.2,19.17 C55.2,18.71 55.56,18.34 56,18.34 C56.44,18.34 56.8,18.71 56.8,19.17 Z" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M24.8,60.83 C24.8,61.29 24.44,61.66 24,61.66 C23.56,61.66 23.2,61.29 23.2,60.83 C23.2,60.37 23.56,60 24,60 C24.44,60 24.8,60.37 24.8,60.83 Z" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M56.8,60.83 C56.8,61.29 56.44,61.66 56,61.66 C55.56,61.66 55.2,61.29 55.2,60.83 C55.2,60.37 55.56,60 56,60 C56.44,60 56.8,60.37 56.8,60.83 Z" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M54,33.75 C54,41.8 47.73,48.33 40,48.33 C32.27,48.33 26,41.8 26,33.75 C26,25.7 32.27,19.17 40,19.17 C47.73,19.17 54,25.7 54,33.75 Z" fill="none" stroke="#ffffff" stroke-width="2"/>
+<path d="M44,33.75 C44,36.05 42.21,37.92 40,37.92 C37.79,37.92 36,36.05 36,33.75 C36,31.45 37.79,29.58 40,29.58 C42.21,29.58 44,31.45 44,33.75 Z" fill="#ffffff"/>
+<path d="M37.51,42.52 L32.68,55.74 C32.42,56.45 31.58,56.76 30.92,56.38 L26.74,53.96 C26.08,53.58 25.93,52.7 26.41,52.12 L35.42,41.32 C36.3,40.27 37.98,41.24 37.51,42.52 Z" fill="#ffffff"/>
+</g>
+<text x="180" y="260.89" text-anchor="middle" font-size="16" fill="#333333">Storage</text>
+</g>
+</g>
+<g class="edges">
+<g class="edge">
+<path d="M220,0 L312,0" fill="none" stroke="#333333" stroke-width="2"/>
+<path d="M320,0 L312,-4 L312,4 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge">
+<path d="M180,163.2 L180,63.2" fill="none" stroke="#333333" stroke-width="2"/>
+</g>
+<g class="edge">
+<path d="M40,0 L140,0" fill="none" stroke="#333333" stroke-width="2"/>
+<rect x="61.78" y="-9.6" width="56.45" height="19.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="90" y="4.09" text-anchor="middle" font-size="16" fill="#333333">HTTPS</text>
+</g>
+</g>
+</g>
+</svg>

@@ -7,5 +7,5 @@ public sealed class OrdinalColorScale : ColorScale
     public IReadOnlyList<string>? Domain { get; set; }
 
     /// <summary>Gets or sets the colors, or <see langword="null"/> for the palette of the theme (<see cref="ChartTheme.Palette"/>). They are reused when there are more categories than colors.</summary>
-    public IReadOnlyList<ChartColor>? Palette { get; set; }
+    public IReadOnlyList<SceneColor>? Palette { get; set; }
 }

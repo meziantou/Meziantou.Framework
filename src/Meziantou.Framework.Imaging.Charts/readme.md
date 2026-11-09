@@ -18,14 +18,14 @@ using var png = new MemoryStream();
 image.Save(png, new PngEncoder());
 
 // Twice the pixels, for high-density screens
-using var retina = plot.ToImage(new ChartImageOptions { Scale = 2 });
+using var retina = plot.ToImage(new SceneImageOptions { Scale = 2 });
 Assert.Equal((800, 500), (retina.Width, retina.Height));
 ```
 <!-- endref -->
 
 The plot is laid out with the fonts that draw it, so the margins and the labels fit the text. The package embeds
-Liberation Sans (`ChartFonts`), whose widths are those of Helvetica and Arial: an image lays out like the SVG of the same
-plot. Pass another font in `ChartImageOptions.Font` for other scripts.
+Liberation Sans (`SceneFonts`), whose widths are those of Helvetica and Arial: an image lays out like the SVG of the same
+plot. Pass another font in `SceneImageOptions.Font` for other scripts.
 
 ## Draw on a canvas
 

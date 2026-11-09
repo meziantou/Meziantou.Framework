@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="404.32" height="320.8" viewBox="0 0 404.32 320.8" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="404.32" height="320.8" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="lanes">
+<g class="lane" data-id="first">
+<rect x="0" y="0" width="121.79" height="304.8" fill="#ffffde" stroke="#aaaa33"/>
+<line x1="0" y1="47.2" x2="121.79" y2="47.2" stroke="#aaaa33"/>
+<text x="60.9" y="27.69" text-anchor="middle" font-size="16" fill="#333333">First lane</text>
+</g>
+<g class="lane" data-id="second">
+<rect x="121.79" y="0" width="144.94" height="304.8" fill="#ffffde" fill-opacity="0.502" stroke="#aaaa33"/>
+<line x1="121.79" y1="47.2" x2="266.74" y2="47.2" stroke="#aaaa33"/>
+<text x="194.26" y="27.69" text-anchor="middle" font-size="16" fill="#333333">Second lane</text>
+</g>
+<g class="cluster" data-id="nested">
+<rect x="166.82" y="210.4" width="54.9" height="82.4" fill="#ffffde" stroke="#aaaa33"/>
+<text x="194.26" y="228.09" text-anchor="middle" font-size="16" fill="#333333">Nested</text>
+</g>
+</g>
+<g class="edges">
+<g class="edge solid">
+<path d="M60.9,195.6 L60.9,199.77 C60.9,203.93 60.9,212.27 83.12,216.43 C105.35,220.6 149.81,220.6 172.04,223.43 C194.26,226.27 194.26,231.93 194.26,234.77 L194.26,237.6" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M194.26,245.6 L198.26,237.6 L190.26,237.6 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge solid">
+<path d="M213.71,245.6 L216.21,245.6 C218.71,245.6 223.71,245.6 228.71,248.87 C233.71,252.13 238.71,258.67 238.71,265.2 C238.71,271.73 233.71,278.27 230.05,281.53 C226.38,284.8 224.05,284.8 222.88,284.8 L221.71,284.8" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M213.71,284.8 L221.71,288.8 L221.71,280.8 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge solid">
+<path d="M327.53,106.4 L327.53,110.57 C327.53,114.73 327.53,123.07 283.09,127.23 C238.65,131.4 149.77,131.4 105.33,134.23 C60.9,137.07 60.9,142.73 60.9,145.57 L60.9,148.4" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M60.9,156.4 L64.9,148.4 L56.9,148.4 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge solid">
+<path d="M80.34,176 L101.83,176 C123.32,176 166.29,176 187.78,172.07 C209.26,168.13 209.26,160.27 217.51,156.33 C225.75,152.4 242.25,152.4 250.49,152.4 L258.74,152.4" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M266.74,152.4 L258.74,148.4 L258.74,156.4 Z" fill="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+</g>
+<g class="nodes">
+<g class="node" data-id="outside">
+<g transform="translate(327.53 86.8)">
+<path d="M-40.79,-19.6 L40.79,-19.6 L40.79,19.6 L-40.79,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="327.53" y="90.89" text-anchor="middle" font-size="16" fill="#333333">outside</text>
+</g>
+<g class="node" data-id="a">
+<g transform="translate(60.9 176)">
+<path d="M-19.45,-19.6 L19.45,-19.6 L19.45,19.6 L-19.45,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="60.9" y="180.09" text-anchor="middle" font-size="16" fill="#333333">a</text>
+</g>
+<g class="node" data-id="b">
+<g transform="translate(194.26 265.2)">
+<path d="M-19.45,-19.6 L19.45,-19.6 L19.45,19.6 L-19.45,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="194.26" y="269.29" text-anchor="middle" font-size="16" fill="#333333">b</text>
+</g>
+</g>
+</g>
+</svg>

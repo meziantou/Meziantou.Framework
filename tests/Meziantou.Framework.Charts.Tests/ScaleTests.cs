@@ -313,7 +313,7 @@ public sealed class ScaleTests
         var diverging = Assert.IsType<ResolvedContinuousColorScale>(ScaleResolver.ResolveColor(new DivergingColorScale { Midpoint = 0 }, [ChannelValues.FromNumbers([-5, 20])], theme));
         Assert.Equal(0.25, diverging.GetPosition(-2.5));
         Assert.Equal(0.75, diverging.GetPosition(10));
-        var flat = new ResolvedContinuousColorScale(ColorScheme.Blues, 0, 0, 0, null, ChartColor.Black);
+        var flat = new ResolvedContinuousColorScale(ColorScheme.Blues, 0, 0, 0, null, SceneColor.Black);
         Assert.Equal(0.5, flat.GetPosition(0));
         Assert.Equal(0.5, flat.GetPosition(-1));
 

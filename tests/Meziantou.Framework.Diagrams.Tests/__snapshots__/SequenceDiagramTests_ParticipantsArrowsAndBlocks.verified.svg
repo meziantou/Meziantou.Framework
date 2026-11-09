@@ -1,0 +1,282 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1801" height="2262.9" viewBox="0 0 1801 2262.9" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="1801" height="2262.9" fill="#ffffff"/>
+<g class="diagram" transform="translate(18 8)">
+<g class="boxes">
+<g class="box">
+<rect x="-10" y="0" width="370" height="2246.9" fill="#eeeeff" stroke="#9370db" stroke-opacity="0.502"/>
+<text x="175" y="16.98" text-anchor="middle" font-size="14" font-weight="bold" fill="#333333">Group</text>
+</g>
+</g>
+<g class="rects">
+<rect x="1000" y="1906" width="375" height="123.6" fill="#808080" fill-opacity="0.251" class="rect"/>
+</g>
+<g class="lifelines">
+<line x1="75" y1="96.8" x2="75" y2="2236.9" stroke="#333333" stroke-width="0.5" class="lifeline"/>
+<line x1="275" y1="96.6" x2="275" y2="2236.9" stroke="#333333" stroke-width="0.5" class="lifeline"/>
+<line x1="475" y1="96.6" x2="475" y2="2236.9" stroke="#333333" stroke-width="0.5" class="lifeline"/>
+<line x1="675" y1="96.6" x2="675" y2="2236.9" stroke="#333333" stroke-width="0.5" class="lifeline"/>
+<line x1="875" y1="96.6" x2="875" y2="2236.9" stroke="#333333" stroke-width="0.5" class="lifeline"/>
+<line x1="1075" y1="96.6" x2="1075" y2="2236.9" stroke="#333333" stroke-width="0.5" class="lifeline"/>
+<line x1="1300" y1="96.8" x2="1300" y2="2236.9" stroke="#333333" stroke-width="0.5" class="lifeline"/>
+<line x1="1500" y1="96.8" x2="1500" y2="2236.9" stroke="#333333" stroke-width="0.5" class="lifeline"/>
+<line x1="1700" y1="2099.3" x2="1700" y2="2146.5" stroke="#333333" stroke-width="0.5" class="lifeline"/>
+</g>
+<g class="activations">
+<rect x="1495" y="2029.6" width="10" height="197.3" fill="#f0f0f0" stroke="#9370db" class="activation"/>
+</g>
+<g class="blocks">
+<g class="block loop">
+<path d="M1000,609.6 L1050,609.6 L1050,624.4 L1044,630.4 L1000,630.4 Z" fill="#ececff" stroke="#9370db"/>
+<text x="1025" y="623.58" text-anchor="middle" font-size="14" font-weight="bold" fill="#333333">loop</text>
+<text x="1212.5" y="625.58" text-anchor="middle" font-size="14" fill="#333333">[Loop]</text>
+<text x="1187.5" y="713.18" text-anchor="middle" font-size="14" fill="#333333">[Second]</text>
+<rect x="1000" y="609.6" width="375" height="175.2" fill="none" stroke="#9370db" stroke-width="2" stroke-dasharray="2 2"/>
+<line x1="1000" y1="697.2" x2="1375" y2="697.2" stroke="#9370db" stroke-width="2" stroke-dasharray="3 3"/>
+</g>
+<g class="block alt">
+<path d="M1000,794.8 L1050,794.8 L1050,809.6 L1044,815.6 L1000,815.6 Z" fill="#ececff" stroke="#9370db"/>
+<text x="1025" y="808.78" text-anchor="middle" font-size="14" font-weight="bold" fill="#333333">alt</text>
+<text x="1212.5" y="810.78" text-anchor="middle" font-size="14" fill="#333333">[Alternative]</text>
+<text x="1187.5" y="898.38" text-anchor="middle" font-size="14" fill="#333333">[Second]</text>
+<rect x="1000" y="794.8" width="375" height="175.2" fill="none" stroke="#9370db" stroke-width="2" stroke-dasharray="2 2"/>
+<line x1="1000" y1="882.4" x2="1375" y2="882.4" stroke="#9370db" stroke-width="2" stroke-dasharray="3 3"/>
+</g>
+<g class="block opt">
+<path d="M1000,980 L1050,980 L1050,994.8 L1044,1000.8 L1000,1000.8 Z" fill="#ececff" stroke="#9370db"/>
+<text x="1025" y="993.98" text-anchor="middle" font-size="14" font-weight="bold" fill="#333333">opt</text>
+<text x="1212.5" y="995.98" text-anchor="middle" font-size="14" fill="#333333">[Optional]</text>
+<text x="1187.5" y="1083.58" text-anchor="middle" font-size="14" fill="#333333">[Second]</text>
+<rect x="1000" y="980" width="375" height="175.2" fill="none" stroke="#9370db" stroke-width="2" stroke-dasharray="2 2"/>
+<line x1="1000" y1="1067.6" x2="1375" y2="1067.6" stroke="#9370db" stroke-width="2" stroke-dasharray="3 3"/>
+</g>
+<g class="block par">
+<path d="M1000,1165.2 L1050,1165.2 L1050,1180 L1044,1186 L1000,1186 Z" fill="#ececff" stroke="#9370db"/>
+<text x="1025" y="1179.18" text-anchor="middle" font-size="14" font-weight="bold" fill="#333333">par</text>
+<text x="1212.5" y="1181.18" text-anchor="middle" font-size="14" fill="#333333">[Parallel]</text>
+<text x="1187.5" y="1268.78" text-anchor="middle" font-size="14" fill="#333333">[Second]</text>
+<rect x="1000" y="1165.2" width="375" height="175.2" fill="none" stroke="#9370db" stroke-width="2" stroke-dasharray="2 2"/>
+<line x1="1000" y1="1252.8" x2="1375" y2="1252.8" stroke="#9370db" stroke-width="2" stroke-dasharray="3 3"/>
+</g>
+<g class="block par">
+<path d="M1000,1350.4 L1050,1350.4 L1050,1365.2 L1044,1371.2 L1000,1371.2 Z" fill="#ececff" stroke="#9370db"/>
+<text x="1025" y="1364.38" text-anchor="middle" font-size="14" font-weight="bold" fill="#333333">par</text>
+<text x="1212.5" y="1366.38" text-anchor="middle" font-size="14" fill="#333333">[ParallelOverlap]</text>
+<text x="1187.5" y="1453.98" text-anchor="middle" font-size="14" fill="#333333">[Second]</text>
+<rect x="1000" y="1350.4" width="375" height="175.2" fill="none" stroke="#9370db" stroke-width="2" stroke-dasharray="2 2"/>
+<line x1="1000" y1="1438" x2="1375" y2="1438" stroke="#9370db" stroke-width="2" stroke-dasharray="3 3"/>
+</g>
+<g class="block critical">
+<path d="M1000,1535.6 L1061.14,1535.6 L1061.14,1550.4 L1055.14,1556.4 L1000,1556.4 Z" fill="#ececff" stroke="#9370db"/>
+<text x="1030.57" y="1549.58" text-anchor="middle" font-size="14" font-weight="bold" fill="#333333">critical</text>
+<text x="1218.07" y="1551.58" text-anchor="middle" font-size="14" fill="#333333">[Critical]</text>
+<text x="1187.5" y="1639.18" text-anchor="middle" font-size="14" fill="#333333">[Second]</text>
+<rect x="1000" y="1535.6" width="375" height="175.2" fill="none" stroke="#9370db" stroke-width="2" stroke-dasharray="2 2"/>
+<line x1="1000" y1="1623.2" x2="1375" y2="1623.2" stroke="#9370db" stroke-width="2" stroke-dasharray="3 3"/>
+</g>
+<g class="block break">
+<path d="M1000,1720.8 L1053.35,1720.8 L1053.35,1735.6 L1047.35,1741.6 L1000,1741.6 Z" fill="#ececff" stroke="#9370db"/>
+<text x="1026.68" y="1734.78" text-anchor="middle" font-size="14" font-weight="bold" fill="#333333">break</text>
+<text x="1214.18" y="1736.78" text-anchor="middle" font-size="14" fill="#333333">[Break]</text>
+<text x="1187.5" y="1824.38" text-anchor="middle" font-size="14" fill="#333333">[Second]</text>
+<rect x="1000" y="1720.8" width="375" height="175.2" fill="none" stroke="#9370db" stroke-width="2" stroke-dasharray="2 2"/>
+<line x1="1000" y1="1808.4" x2="1375" y2="1808.4" stroke="#9370db" stroke-width="2" stroke-dasharray="3 3"/>
+</g>
+</g>
+<g class="messages">
+<g class="message">
+<line x1="75" y1="144" x2="475" y2="144" stroke="#333333" stroke-width="1.5"/>
+<text x="275" y="130.49" text-anchor="middle" font-size="16" fill="#333333">None</text>
+</g>
+<g class="message">
+<line x1="75" y1="193.2" x2="475" y2="193.2" stroke="#333333" stroke-width="1.5"/>
+<path d="M475,193.2 L465,188.2 L465,198.2 Z" fill="#333333" class="arrowhead"/>
+<path d="M75,193.2 L85,198.2 L85,188.2 Z" fill="#333333" class="arrowhead"/>
+<text x="275" y="179.69" text-anchor="middle" font-size="16" fill="#333333">Arrow</text>
+</g>
+<g class="message">
+<line x1="75" y1="242.4" x2="475" y2="242.4" stroke="#333333" stroke-width="1.5"/>
+<path d="M465,237.4 L475,242.4 L465,247.4" fill="none" stroke="#333333" stroke-width="1.5" class="arrowhead"/>
+<path d="M85,247.4 L75,242.4 L85,237.4" fill="none" stroke="#333333" stroke-width="1.5" class="arrowhead"/>
+<text x="275" y="228.89" text-anchor="middle" font-size="16" fill="#333333">OpenArrow</text>
+</g>
+<g class="message">
+<line x1="75" y1="291.6" x2="475" y2="291.6" stroke="#333333" stroke-width="1.5"/>
+<path d="M466,287.1 L475,296.1 M466,296.1 L475,287.1" fill="none" stroke="#333333" stroke-width="1.5" class="arrowhead"/>
+<path d="M84,296.1 L75,287.1 M84,287.1 L75,296.1" fill="none" stroke="#333333" stroke-width="1.5" class="arrowhead"/>
+<text x="275" y="278.09" text-anchor="middle" font-size="16" fill="#333333">Cross</text>
+</g>
+<g class="message">
+<line x1="75" y1="340.8" x2="475" y2="340.8" stroke="#333333" stroke-width="1.5"/>
+<path d="M475,340.8 L465,335.8 L465,340.8 Z" fill="#333333" class="arrowhead"/>
+<path d="M75,340.8 L85,345.8 L85,340.8 Z" fill="#333333" class="arrowhead"/>
+<text x="275" y="327.29" text-anchor="middle" font-size="16" fill="#333333">HalfArrowTop</text>
+</g>
+<g class="message">
+<line x1="75" y1="390" x2="475" y2="390" stroke="#333333" stroke-width="1.5"/>
+<path d="M475,390 L465,395 L465,390 Z" fill="#333333" class="arrowhead"/>
+<path d="M75,390 L85,385 L85,390 Z" fill="#333333" class="arrowhead"/>
+<text x="275" y="376.49" text-anchor="middle" font-size="16" fill="#333333">HalfArrowBottom</text>
+</g>
+<g class="message">
+<line x1="75" y1="439.2" x2="475" y2="439.2" stroke="#333333" stroke-width="1.5"/>
+<line x1="475" y1="439.2" x2="465" y2="434.2" stroke="#333333" stroke-width="1.5" class="arrowhead"/>
+<line x1="75" y1="439.2" x2="85" y2="444.2" stroke="#333333" stroke-width="1.5" class="arrowhead"/>
+<text x="275" y="425.69" text-anchor="middle" font-size="16" fill="#333333">StickTop</text>
+</g>
+<g class="message">
+<line x1="75" y1="488.4" x2="475" y2="488.4" stroke="#333333" stroke-width="1.5"/>
+<line x1="475" y1="488.4" x2="465" y2="493.4" stroke="#333333" stroke-width="1.5" class="arrowhead"/>
+<line x1="75" y1="488.4" x2="85" y2="483.4" stroke="#333333" stroke-width="1.5" class="arrowhead"/>
+<text x="275" y="474.89" text-anchor="middle" font-size="16" fill="#333333">StickBottom</text>
+</g>
+<g class="message">
+<path d="M475,537.6 C535,527.6 535,567.6 475,557.6" fill="none" stroke="#333333" stroke-width="1.5"/>
+<path d="M475,557.6 L484.65,563.25 L485.31,553.28 Z" fill="#333333" class="arrowhead"/>
+<text x="493.78" y="524.09" text-anchor="middle" font-size="16" fill="#333333">Self</text>
+</g>
+<g class="message">
+<circle cx="675" cy="587.6" r="4" fill="#333333" class="connection"/>
+<circle cx="875" cy="587.6" r="4" fill="#333333" class="connection"/>
+<line x1="679" y1="587.6" x2="871" y2="587.6" stroke="#333333" stroke-width="1.5"/>
+</g>
+<g class="message">
+<line x1="1505" y1="2066.8" x2="1625" y2="2066.8" stroke="#333333" stroke-width="1.5"/>
+<path d="M1625,2066.8 L1615,2061.8 L1615,2071.8 Z" fill="#333333" class="arrowhead"/>
+<text x="1565" y="2053.29" text-anchor="middle" font-size="16" fill="#333333">Create</text>
+</g>
+<g class="message">
+<line x1="1505" y1="2146.5" x2="1700" y2="2146.5" stroke="#333333" stroke-width="1.5"/>
+<path d="M1691,2142 L1700,2151 M1691,2151 L1700,2142" fill="none" stroke="#333333" stroke-width="1.5" class="arrowhead"/>
+<text x="1602.5" y="2132.99" text-anchor="middle" font-size="16" fill="#333333">Destroy</text>
+<path d="M1691,2137.5 L1709,2155.5 M1691,2155.5 L1709,2137.5" fill="none" stroke="#333333" stroke-width="2" class="destroy"/>
+</g>
+<g class="message">
+<line x1="1495" y1="2214.9" x2="75" y2="2214.9" stroke="#333333" stroke-width="1.5"/>
+<text x="785" y="2182.19" text-anchor="middle" font-size="16" fill="#333333">Numbered</text>
+<text x="785" y="2201.39" text-anchor="middle" font-size="16" fill="#333333">message</text>
+<circle cx="1495" cy="2214.9" r="9.67" fill="#333333" class="sequence-number"/>
+<text x="1495" y="2217.97" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffffff">10</text>
+</g>
+</g>
+<g class="notes">
+<g class="note">
+<rect x="1100" y="640.4" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1150" y="662.38" text-anchor="middle" font-size="14" fill="#000000">Note</text>
+</g>
+<g class="note">
+<rect x="1175" y="728" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1225" y="749.98" text-anchor="middle" font-size="14" fill="#000000">Left</text>
+</g>
+<g class="note">
+<rect x="1100" y="825.6" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1150" y="847.58" text-anchor="middle" font-size="14" fill="#000000">Note</text>
+</g>
+<g class="note">
+<rect x="1175" y="913.2" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1225" y="935.18" text-anchor="middle" font-size="14" fill="#000000">Left</text>
+</g>
+<g class="note">
+<rect x="1100" y="1010.8" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1150" y="1032.78" text-anchor="middle" font-size="14" fill="#000000">Note</text>
+</g>
+<g class="note">
+<rect x="1175" y="1098.4" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1225" y="1120.38" text-anchor="middle" font-size="14" fill="#000000">Left</text>
+</g>
+<g class="note">
+<rect x="1100" y="1196" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1150" y="1217.98" text-anchor="middle" font-size="14" fill="#000000">Note</text>
+</g>
+<g class="note">
+<rect x="1175" y="1283.6" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1225" y="1305.58" text-anchor="middle" font-size="14" fill="#000000">Left</text>
+</g>
+<g class="note">
+<rect x="1100" y="1381.2" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1150" y="1403.18" text-anchor="middle" font-size="14" fill="#000000">Note</text>
+</g>
+<g class="note">
+<rect x="1175" y="1468.8" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1225" y="1490.78" text-anchor="middle" font-size="14" fill="#000000">Left</text>
+</g>
+<g class="note">
+<rect x="1100" y="1566.4" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1150" y="1588.38" text-anchor="middle" font-size="14" fill="#000000">Note</text>
+</g>
+<g class="note">
+<rect x="1175" y="1654" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1225" y="1675.98" text-anchor="middle" font-size="14" fill="#000000">Left</text>
+</g>
+<g class="note">
+<rect x="1100" y="1751.6" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1150" y="1773.58" text-anchor="middle" font-size="14" fill="#000000">Note</text>
+</g>
+<g class="note">
+<rect x="1175" y="1839.2" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1225" y="1861.18" text-anchor="middle" font-size="14" fill="#000000">Left</text>
+</g>
+<g class="note">
+<rect x="1100" y="1916" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1150" y="1937.98" text-anchor="middle" font-size="14" fill="#000000">Note</text>
+</g>
+<g class="note">
+<rect x="1175" y="1972.8" width="100" height="36.8" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="1225" y="1994.78" text-anchor="middle" font-size="14" fill="#000000">Left</text>
+</g>
+</g>
+<g class="participants">
+<g class="participant participant-top" data-id="Participant">
+<g transform="translate(75 64.3)">
+<path d="M-72,-32.5 L72,-32.5 C73.66,-32.5 75,-31.16 75,-29.5 L75,29.5 C75,31.16 73.66,32.5 72,32.5 L-72,32.5 C-73.66,32.5 -75,31.16 -75,29.5 L-75,-29.5 C-75,-31.16 -73.66,-32.5 -72,-32.5 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="75" y="67.88" text-anchor="middle" font-size="14" fill="#333333">Participant</text>
+</g>
+<g class="participant participant-top" data-id="Actor">
+<circle cx="275" cy="40.8" r="8" fill="#ececff" stroke="#9370db" stroke-width="1.5"/>
+<path d="M275,48.8 L275,63.8 M261,53.8 L289,53.8 M264,75.8 L275,63.8 L286,75.8" fill="none" stroke="#9370db" stroke-width="1.5"/>
+<text x="275" y="91.78" text-anchor="middle" font-size="14" fill="#333333">Actor</text>
+</g>
+<g class="participant participant-top" data-id="Boundary">
+<line x1="451" y1="37.8" x2="451" y2="69.8" stroke="#9370db" stroke-width="1.5"/>
+<line x1="451" y1="53.8" x2="465" y2="53.8" stroke="#9370db" stroke-width="1.5"/>
+<circle cx="480" cy="53.8" r="15" fill="#ececff" stroke="#9370db" stroke-width="1.5"/>
+<text x="475" y="91.78" text-anchor="middle" font-size="14" fill="#333333">Boundary</text>
+</g>
+<g class="participant participant-top" data-id="Control">
+<circle cx="675" cy="55.8" r="15" fill="#ececff" stroke="#9370db" stroke-width="1.5"/>
+<path d="M680,35.8 L672,40.8 L680,45.8" fill="none" stroke="#9370db" stroke-width="1.5"/>
+<text x="675" y="91.78" text-anchor="middle" font-size="14" fill="#333333">Control</text>
+</g>
+<g class="participant participant-top" data-id="Entity">
+<circle cx="875" cy="51.8" r="15" fill="#ececff" stroke="#9370db" stroke-width="1.5"/>
+<line x1="860" y1="69.8" x2="890" y2="69.8" stroke="#9370db" stroke-width="1.5"/>
+<text x="875" y="91.78" text-anchor="middle" font-size="14" fill="#333333">Entity</text>
+</g>
+<g class="participant participant-top" data-id="Database">
+<g transform="translate(1075 53.8)">
+<path d="M-20,-17 C-20,-20.35 -11.05,-23.06 0,-23.06 C11.05,-23.06 20,-20.35 20,-17 L20,17 C20,20.35 11.05,23.06 0,23.06 C-11.05,23.06 -20,20.35 -20,17 Z" fill="#ececff" stroke="#9370db" stroke-width="1.5"/>
+<path d="M-20,-17 C-20,-13.65 -11.05,-10.94 0,-10.94 C11.05,-10.94 20,-13.65 20,-17" fill="none" stroke="#9370db" stroke-width="1.5"/>
+</g>
+<text x="1075" y="91.78" text-anchor="middle" font-size="14" fill="#333333">Database</text>
+</g>
+<g class="participant participant-top" data-id="Collections">
+<rect x="1231" y="25.8" width="150" height="65" fill="#ececff" stroke="#9370db"/>
+<rect x="1225" y="31.8" width="150" height="65" fill="#ececff" stroke="#9370db"/>
+<text x="1300" y="67.88" text-anchor="middle" font-size="14" fill="#333333">Collections</text>
+</g>
+<g class="participant participant-top" data-id="Queue">
+<g transform="translate(1500 64.3)">
+<path d="M-65,-32.5 L65,-32.5 C69.72,-32.5 73.55,-17.95 73.55,0 C73.55,17.95 69.72,32.5 65,32.5 L-65,32.5 C-69.72,32.5 -73.55,17.95 -73.55,0 C-73.55,-17.95 -69.72,-32.5 -65,-32.5 Z" fill="#ececff" stroke="#9370db"/>
+<path d="M65,-32.5 C60.28,-32.5 56.45,-17.95 56.45,0 C56.45,17.95 60.28,32.5 65,32.5" fill="none" stroke="#9370db"/>
+</g>
+<text x="1500" y="67.88" text-anchor="middle" font-size="14" fill="#333333">Queue</text>
+</g>
+<g class="participant participant-top" data-id="created">
+<g transform="translate(1700 2066.8)">
+<path d="M-72,-32.5 L72,-32.5 C73.66,-32.5 75,-31.16 75,-29.5 L75,29.5 C75,31.16 73.66,32.5 72,32.5 L-72,32.5 C-73.66,32.5 -75,31.16 -75,29.5 L-75,-29.5 C-75,-31.16 -73.66,-32.5 -72,-32.5 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="1700" y="2070.38" text-anchor="middle" font-size="14" fill="#333333">created</text>
+</g>
+</g>
+</g>
+</svg>

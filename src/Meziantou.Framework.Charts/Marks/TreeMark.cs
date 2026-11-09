@@ -74,7 +74,7 @@ public sealed class TreeMark<T> : HierarchyMark<T>
             var index = indexes[point.Node];
             var (x, y) = map(point.X, point.Y);
             var fill = point.Node.Depth is 0 ? context.Theme.Foreground : GetFill(context, data, index);
-            group.Add(Decorate(new SceneCircle(x, y, NodeRadius) { Fill = fill, Stroke = context.Theme.Background ?? ChartColor.White }, data, index));
+            group.Add(Decorate(new SceneCircle(x, y, NodeRadius) { Fill = fill, Stroke = context.Theme.Background ?? SceneColor.White }, data, index));
             if (data.Text?[index] is { Length: > 0 } text)
             {
                 AddLabel(context, group, point, text, x, y, gap);

@@ -1,0 +1,28 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.VectorGraphics</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Retained vector scene (shapes, paths, texts, groups, gradients), deterministic SVG writer and text measurement with the metrics of Helvetica or any OpenType font. The drawing model of Meziantou.Framework.Charts and Meziantou.Framework.Diagrams.</Description>
+    <PackageTags>svg;vector;graphics;scene;drawing;path;text-measurement;font</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The Adobe Glyph List (BSD-3-Clause, see THIRD-PARTY-NOTICES.md): maps characters to the glyph names of the AFM metrics -->
+    <EmbeddedResource Include="../Meziantou.Framework.Pdf/Fonts/GlyphList/glyphlist.txt" Link="Text/glyphlist.txt" LogicalName="Meziantou.Framework.VectorGraphics.glyphlist.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The AFM metrics of Helvetica, and the shaper of FontFaceTextMeasurer; brings Meziantou.Framework.Unicode -->
+    <ProjectReference Include="../Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.VectorGraphics.Tests" />
+  </ItemGroup>
+
+</Project>

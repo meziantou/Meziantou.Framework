@@ -33,7 +33,7 @@ public sealed class StatisticalChartTests
     public void HistogramWithExplicitEdges()
     {
         var plot = new Plot { Width = 400, Height = 250 };
-        plot.Add(new RectMark<Measurement>(SampleData.Measurements) { X = measurement => measurement.Value, Transform = new BinTransform { Edges = [0, 25, 50, 75, 100] }, Inset = 0, StrokeColor = ChartColor.White });
+        plot.Add(new RectMark<Measurement>(SampleData.Measurements) { X = measurement => measurement.Value, Transform = new BinTransform { Edges = [0, 25, 50, 75, 100] }, Inset = 0, StrokeColor = SceneColor.White });
         ChartAssert.Svg(plot);
     }
 
@@ -56,7 +56,7 @@ public sealed class StatisticalChartTests
     public void HorizontalBoxPlot()
     {
         var plot = new Plot { Height = 260, Coordinates = new CartesianCoordinates { Transposed = true } };
-        plot.Add(new BoxMark<Measurement>(SampleData.Measurements, x: measurement => measurement.Group, y: measurement => measurement.Value) { BoxWidth = 0.4, StrokeColor = ChartColor.Black });
+        plot.Add(new BoxMark<Measurement>(SampleData.Measurements, x: measurement => measurement.Group, y: measurement => measurement.Value) { BoxWidth = 0.4, StrokeColor = SceneColor.Black });
         ChartAssert.Svg(plot);
     }
 
@@ -296,7 +296,7 @@ public sealed class StatisticalChartTests
     {
         var measurements = SampleData.Measurements.Append(new Measurement("D", 50)).ToArray();
         var plot = new Plot { Height = 260, Coordinates = new CartesianCoordinates { Transposed = true } };
-        plot.Add(new ViolinMark<Measurement>(measurements, x: measurement => measurement.Group, y: measurement => measurement.Value) { ShowBox = false, Bandwidth = 4, Samples = 20, ViolinWidth = 0.6, StrokeColor = ChartColor.Black });
+        plot.Add(new ViolinMark<Measurement>(measurements, x: measurement => measurement.Group, y: measurement => measurement.Value) { ShowBox = false, Bandwidth = 4, Samples = 20, ViolinWidth = 0.6, StrokeColor = SceneColor.Black });
         ChartAssert.Svg(plot);
 
         var lines = new Plot { Height = 220 };
@@ -336,7 +336,7 @@ public sealed class StatisticalChartTests
             Cut = 1,
             Overlap = 0.8,
             Curve = Curve.Linear,
-            StrokeColor = ChartColor.Black,
+            StrokeColor = SceneColor.Black,
             StrokeWidth = 0.5,
             Title = measurement => measurement.Group,
         });
@@ -378,7 +378,7 @@ public sealed class StatisticalChartTests
         {
             Radius = 12,
             FacetX = point => point.Group,
-            StrokeColor = ChartColor.Black,
+            StrokeColor = SceneColor.Black,
             StrokeWidth = 1,
             Title = point => point.Group,
         });
@@ -430,7 +430,7 @@ public sealed class StatisticalChartTests
         ChartAssert.Svg(plot);
 
         var stroked = new Plot { Width = 300, Height = 300 };
-        stroked.Add(new ContourMark<(double First, double Second)>(points, x: point => point.First, y: point => point.Second) { StrokeColor = ChartColor.White, Thresholds = 3 });
+        stroked.Add(new ContourMark<(double First, double Second)>(points, x: point => point.First, y: point => point.Second) { StrokeColor = SceneColor.White, Thresholds = 3 });
         Assert.Contains("stroke=\"#ffffff\"", stroked.ToSvg());
 
         // Without points, or with categories, there is nothing to draw
@@ -813,9 +813,9 @@ public sealed class StatisticalChartTests
             StrokeColor = "#ffffff",
             Title = canton => (string?)canton.Properties["name"],
         });
-        plot.Add(new GeoMark<GeoFeature>(lakes, lake => lake.Geometry) { FillColor = "#a9cbe8", StrokeColor = ChartColor.Transparent });
+        plot.Add(new GeoMark<GeoFeature>(lakes, lake => lake.Geometry) { FillColor = "#a9cbe8", StrokeColor = SceneColor.Transparent });
         plot.Add(new GeoMark<GeoFeature>(rivers, river => river.Geometry) { StrokeColor = "#6fa5d6" });
-        plot.Add(new GeoMark<GeoFeature>(borders, border => border.Geometry) { FillColor = ChartColor.Transparent, StrokeColor = "#6b6255", StrokeWidth = 1 });
+        plot.Add(new GeoMark<GeoFeature>(borders, border => border.Geometry) { FillColor = SceneColor.Transparent, StrokeColor = "#6b6255", StrokeWidth = 1 });
         plot.Add(new DotMark<(string Name, GeoPosition Position)>(cities, x: city => city.Position.Longitude, y: city => city.Position.Latitude) { FillColor = "#2b2b2b", Radius = 3 });
         plot.Add(new TextMark<(string Name, GeoPosition Position)>(cities, text: city => city.Name, x: city => city.Position.Longitude, y: city => city.Position.Latitude) { OffsetY = -10 });
         #endregion

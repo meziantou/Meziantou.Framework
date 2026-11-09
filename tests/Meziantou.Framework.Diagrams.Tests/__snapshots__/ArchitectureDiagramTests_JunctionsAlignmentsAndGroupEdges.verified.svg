@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="336" height="267.6" viewBox="0 0 336 267.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="336" height="267.6" fill="#ffffff"/>
+<g class="diagram" transform="translate(-82 116.4)">
+<g class="groups">
+<g class="group" data-id="left">
+<rect x="310" y="-50" width="100" height="100" fill="#ffffde" stroke="#aaaa33" stroke-width="2" stroke-dasharray="8 4"/>
+</g>
+<g class="group" data-id="right">
+<rect x="170" y="-108.4" width="140" height="201.6" fill="#ffffde" stroke="#aaaa33" stroke-width="2" stroke-dasharray="8 4"/>
+<text x="194.44" y="-90.71" text-anchor="middle" font-size="16" font-weight="bold" fill="#333333">Right</text>
+</g>
+<g class="group" data-id="nested">
+<rect x="190" y="-69.2" width="100" height="142.4" fill="#ffffde" stroke="#aaaa33" stroke-width="2" stroke-dasharray="8 4"/>
+<g class="icon" transform="matrix(0.1875 0 0 0.1875 194 -65.2)">
+<rect x="0" y="0" width="80" height="80" fill="#087ebf"/>
+<text x="40" y="53.23" text-anchor="middle" font-size="48" font-weight="bold" fill="#ffffff">?</text>
+</g>
+<text x="239.67" y="-51.51" text-anchor="middle" font-size="16" font-weight="bold" fill="#333333">Nested</text>
+</g>
+</g>
+<g class="services">
+<g class="service" data-id="c">
+<g class="icon" transform="matrix(0.75 0 0 0.75 90 -30)">
+<rect x="0" y="0" width="80" height="80" fill="#087ebf"/>
+</g>
+</g>
+<g class="service" data-id="a">
+<rect x="330" y="-30" width="60" height="60" fill="#087ebf"/>
+<text x="360" y="4.09" text-anchor="middle" font-size="16" fill="#ffffff">A</text>
+</g>
+<g class="service" data-id="b">
+<g class="icon" transform="matrix(0.75 0 0 0.75 210 -30)">
+<rect x="0" y="0" width="80" height="80" fill="#087ebf"/>
+<text x="40" y="53.23" text-anchor="middle" font-size="48" font-weight="bold" fill="#ffffff">?</text>
+</g>
+<text x="240" y="47.69" text-anchor="middle" font-size="16" fill="#333333">B</text>
+</g>
+</g>
+<g class="edges">
+<g class="edge">
+<path d="M410,0 L190,0" fill="none" stroke="#333333" stroke-width="2"/>
+<path d="M410,0 L402,-4 L402,4 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge">
+<path d="M120,30 L120,143.2" fill="none" stroke="#333333" stroke-width="2"/>
+</g>
+<g class="edge">
+<path d="M120,143.2 L240,143.2 L240,53.2" fill="none" stroke="#333333" stroke-width="2"/>
+</g>
+</g>
+</g>
+</svg>

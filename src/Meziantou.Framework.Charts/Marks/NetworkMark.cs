@@ -129,7 +129,7 @@ public sealed class NetworkMark<T> : Mark<T>
             group.Add(new SceneCircle(x, y, NodeRadius)
             {
                 Fill = context.GetColor(fills, i, FillColor),
-                Stroke = context.Theme.Background ?? ChartColor.White,
+                Stroke = context.Theme.Background ?? SceneColor.White,
                 StrokeWidth = 1.5,
                 Tooltip = names[i],
             });

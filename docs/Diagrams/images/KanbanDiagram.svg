@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="626" height="179.6" viewBox="0 0 626 179.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="626" height="179.6" fill="#ffffff"/>
+<g class="diagram" transform="translate(-92 8)">
+<g class="sections">
+<g class="section section-1" data-id="todo">
+<rect x="100" y="0" width="200" height="163.6" rx="5" fill="#e8ffb9" stroke="#e8ffb9"/>
+<text x="200" y="18.69" text-anchor="middle" font-size="16" fill="#000000">To do</text>
+</g>
+<g class="section section-2" data-id="doing">
+<rect x="305" y="0" width="200" height="100.2" rx="5" fill="#dcb9ff" stroke="#dcb9ff"/>
+<text x="405" y="18.69" text-anchor="middle" font-size="16" fill="#000000">In progress</text>
+</g>
+<g class="section section-3" data-id="done">
+<rect x="510" y="0" width="200" height="78.4" rx="5" fill="#ffb9ff" stroke="#ffb9ff"/>
+<text x="610" y="18.69" text-anchor="middle" font-size="16" fill="#000000">Done</text>
+</g>
+</g>
+<g class="items">
+<g class="column-items">
+<g class="kanban-item" data-id="docs">
+<rect x="107.5" y="29.2" width="185" height="58.4" rx="5" fill="#ffffff" stroke="#9370db"/>
+<text x="117.5" y="52.89" font-size="16" fill="#333333">Write the</text>
+<text x="117.5" y="72.09" font-size="16" fill="#333333">documentation</text>
+</g>
+<g class="kanban-item" data-id="parser">
+<rect x="107.5" y="92.6" width="185" height="61" rx="5" fill="#ffffff" stroke="#9370db"/>
+<line x1="109.5" y1="94.6" x2="109.5" y2="151.6" stroke="#ffa500" stroke-width="4" class="priority"/>
+<text x="117.5" y="116.29" font-size="16" fill="#333333">Write the parser</text>
+<a href="https://tracker.example.com/browse/DIA-12">
+<g class="kanban-ticket">
+<text x="139.28" y="138.78" text-anchor="middle" font-size="14" fill="#333333">DIA-12</text>
+<line x1="117.5" y1="142.6" x2="161.07" y2="142.6" stroke="#333333"/>
+</g>
+</a>
+</g>
+</g>
+<g class="column-items">
+<g class="kanban-item" data-id="renderer">
+<rect x="312.5" y="29.2" width="185" height="61" rx="5" fill="#ffffff" stroke="#9370db"/>
+<line x1="314.5" y1="31.2" x2="314.5" y2="88.2" stroke="#ff0000" stroke-width="4" class="priority"/>
+<text x="322.5" y="52.89" font-size="16" fill="#333333">Draw the </text>
+<text x="390.48" y="52.89" font-size="16" font-weight="bold" fill="#333333">cards</text>
+<text x="472.33" y="75.38" text-anchor="middle" font-size="14" fill="#333333">Alice</text>
+</g>
+</g>
+<g class="column-items">
+<g class="kanban-item" data-id="model">
+<rect x="517.5" y="29.2" width="185" height="39.2" rx="5" fill="#ffffff" stroke="#9370db"/>
+<line x1="519.5" y1="31.2" x2="519.5" y2="66.4" stroke="#0000ff" stroke-width="4" class="priority"/>
+<text x="527.5" y="52.89" font-size="16" fill="#333333">Design the model</text>
+</g>
+</g>
+</g>
+</g>
+</svg>

@@ -45,7 +45,7 @@ public sealed class ParallelCoordinatesMark<T> : Mark<T>
     internal override void Render(RenderContext context, MarkData data, SceneGroup group)
     {
         var font = context.LabelFont;
-        var nameFont = new ChartFont(context.Theme.FontSize, Bold: true);
+        var nameFont = new SceneFont(context.Theme.FontSize, Bold: true);
         var frame = context.Frame;
         var nameMetrics = Dimensions.Select(dimension => context.Measurer.Measure(dimension.Name, nameFont)).ToArray();
         var top = frame.Y + nameMetrics.Max(metrics => metrics.Height) + 8;

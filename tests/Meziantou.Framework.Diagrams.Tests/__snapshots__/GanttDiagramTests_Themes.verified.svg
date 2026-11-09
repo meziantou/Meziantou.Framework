@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1216" height="188" viewBox="0 0 1216 188" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="1216" height="188" fill="#333333"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="grid">
+<line x1="75" y1="122" x2="75" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="75" y="133.56" text-anchor="middle" font-size="10" fill="#cccccc">2024-01-01</text>
+<line x1="163" y1="122" x2="163" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="163" y="133.56" text-anchor="middle" font-size="10" fill="#cccccc">2024-01-01</text>
+<line x1="250" y1="122" x2="250" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="250" y="133.56" text-anchor="middle" font-size="10" fill="#cccccc">2024-01-02</text>
+<line x1="338" y1="122" x2="338" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="338" y="133.56" text-anchor="middle" font-size="10" fill="#cccccc">2024-01-02</text>
+<line x1="425" y1="122" x2="425" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="425" y="133.56" text-anchor="middle" font-size="10" fill="#cccccc">2024-01-03</text>
+<line x1="513" y1="122" x2="513" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="513" y="133.56" text-anchor="middle" font-size="10" fill="#cccccc">2024-01-03</text>
+<line x1="600" y1="122" x2="600" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="600" y="133.56" text-anchor="middle" font-size="10" fill="#cccccc">2024-01-04</text>
+<line x1="688" y1="122" x2="688" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="688" y="133.56" text-anchor="middle" font-size="10" fill="#cccccc">2024-01-04</text>
+<line x1="775" y1="122" x2="775" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="775" y="133.56" text-anchor="middle" font-size="10" fill="#cccccc">2024-01-05</text>
+<line x1="863" y1="122" x2="863" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="863" y="133.56" text-anchor="middle" font-size="10" fill="#cccccc">2024-01-05</text>
+<line x1="950" y1="122" x2="950" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="950" y="133.56" text-anchor="middle" font-size="10" fill="#cccccc">2024-01-06</text>
+<line x1="1038" y1="122" x2="1038" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="1038" y="133.56" text-anchor="middle" font-size="10" fill="#cccccc">2024-01-06</text>
+<line x1="1125" y1="122" x2="1125" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="1125" y="133.56" text-anchor="middle" font-size="10" fill="#cccccc">2024-01-07</text>
+</g>
+<g class="sections">
+<rect x="0" y="48" width="1162.5" height="24" fill="#b4ac76" opacity="0.2" class="section section0"/>
+<rect x="0" y="72" width="1162.5" height="24" fill="#b4ac76" opacity="0.2" class="section section0"/>
+<rect x="0" y="96" width="1162.5" height="24" fill="#b4ac76" opacity="0.2" class="section section0"/>
+</g>
+<g class="tasks">
+<g class="task done">
+<rect x="75" y="50" width="350" height="20" rx="3" fill="#d3d3d3" stroke="#808080" stroke-width="2"/>
+</g>
+<g class="task active">
+<rect x="425" y="74" width="350" height="20" rx="3" fill="#81b1db" stroke="#ffffff" stroke-width="2"/>
+</g>
+<g class="task crit">
+<rect x="775" y="98" width="350" height="20" rx="3" fill="#e83737" stroke="#e83737" stroke-width="2"/>
+</g>
+</g>
+<g class="task-texts">
+<g class="task-text">
+<text x="250" y="62.81" text-anchor="middle" font-size="11" fill="#2c2c2c">Done</text>
+</g>
+<g class="task-text">
+<text x="600" y="86.81" text-anchor="middle" font-size="11" fill="#2c2c2c">Active</text>
+</g>
+<g class="task-text">
+<text x="950" y="110.81" text-anchor="middle" font-size="11" fill="#2c2c2c">Critical</text>
+</g>
+</g>
+<g class="section-titles">
+</g>
+</g>
+</svg>

@@ -438,13 +438,13 @@
     "total": 2
   },
   "css/css-tables/parsing/border-spacing-computed.html": {
-    "total": 4
+    "total": 6
   },
   "css/css-tables/parsing/border-spacing-invalid.html": {
     "total": 4
   },
   "css/css-tables/parsing/border-spacing-valid.html": {
-    "total": 3
+    "total": 4
   },
   "css/css-tables/parsing/caption-side-computed.html": {
     "total": 2
@@ -631,6 +631,12 @@
   },
   "css/css-tables/table-intrinsic-size-004.html": {
     "reftest": "PASS"
+  },
+  "css/css-tables/table-min-max-width-intrinsic-contribution-border-padding.html": {
+    "total": 5
+  },
+  "css/css-tables/table-min-max-width-intrinsic-contribution.html": {
+    "total": 4
   },
   "css/css-tables/table-model-fixup-2.html": {
     "total": 40

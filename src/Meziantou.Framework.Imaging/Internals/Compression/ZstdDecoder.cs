@@ -1,7 +1,13 @@
 using System.Buffers.Binary;
 using System.Numerics;
 
+// Compiled into Meziantou.Framework.Imaging and Meziantou.Framework.Geo.GeoParquet, internal to each, in the namespace of
+// each library.
+#if MEZIANTOU_FRAMEWORK_IMAGING
 namespace Meziantou.Framework.Imaging.Internals;
+#else
+namespace Meziantou.Framework.Geo.Internals;
+#endif
 
 /// <summary>
 /// A decoder of Zstandard frames (RFC 8878) into a buffer that holds the whole output, so that a match reads the bytes

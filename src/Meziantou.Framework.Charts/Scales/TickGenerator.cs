@@ -87,7 +87,8 @@ internal static class TickGenerator
     /// <summary>The ticks of a log scale of positive values: the powers of the base, with the multiples 2 and 5 when the domain spans few powers.</summary>
     public static double[] LogTicks(double start, double stop, double logBase, int count)
     {
-        if (!(start > 0) || !(stop > 0))
+        // An infinite bound would have an infinite number of powers
+        if (!(start > 0) || !(stop > 0) || !double.IsFinite(start) || !double.IsFinite(stop))
             return [];
 
         var reverse = stop < start;

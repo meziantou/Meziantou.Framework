@@ -956,6 +956,9 @@
   "css/css-multicol/multicol-overflowing-001.xht": {
     "reftest": "PASS"
   },
+  "css/css-multicol/multicol-percent-height-in-flex-item-001.html": {
+    "total": 1
+  },
   "css/css-multicol/multicol-reduce-000.xht": {
     "reftest": "PASS"
   },

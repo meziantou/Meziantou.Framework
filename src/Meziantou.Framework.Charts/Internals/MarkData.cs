@@ -141,7 +141,7 @@ internal sealed class MarkData
             Text = ConcatArrays(parts, part => part.Text),
             Titles = ConcatArrays(parts, part => part.Titles),
             DataAttributes = ConcatArrays(parts, part => part.DataAttributes),
-            Sets = parts.Any(part => part.Sets is not null) ? [.. parts.SelectMany(part => part.Sets ?? new IReadOnlyList<double>[part.Count])] : null,
+            Sets = parts.Any(part => part.Sets is not null) ? [.. parts.SelectMany(part => part.Sets ?? Enumerable.Repeat<IReadOnlyList<double>>([], part.Count))] : null,
         };
 
         foreach (var name in parts.SelectMany(part => part.Extra.Keys).Distinct(StringComparer.Ordinal))

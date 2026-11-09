@@ -668,11 +668,14 @@
   "css/filter-effects/filter-3d-children-crossing-eye-plane.html": {
     "reftest": "PASS"
   },
-  "css/filter-effects/filter-cb-abspos-inline-001.html": {
+  "css/filter-effects/filter-ancestor-border-radius-overflow-hidden-border.html": {
     "reftest": "PASS"
   },
+  "css/filter-effects/filter-cb-abspos-inline-001.html": {
+    "reftest": "FAIL"
+  },
   "css/filter-effects/filter-cb-abspos-inline-002.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/filter-effects/filter-cb-abspos-inline-003.html": {
     "reftest": "PASS"

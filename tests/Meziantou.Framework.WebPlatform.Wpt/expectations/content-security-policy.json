@@ -95,6 +95,15 @@
   "content-security-policy/connect-src/connect-src-json-import-blocked.sub.html": {
     "total": 1
   },
+  "content-security-policy/connect-src/connect-src-json-import-in-worker-and-worklet-blocked.https.html": {
+    "harness": "TIMEOUT",
+    "total": 3,
+    "failures": {
+      "AudioWorklet: a JSON module import is reported on the creator.": "NOTRUN",
+      "DedicatedWorker: a JSON module import is reported on the creator.": "TIMEOUT",
+      "SharedWorker: a JSON module import is reported on the creator.": "NOTRUN"
+    }
+  },
   "content-security-policy/connect-src/connect-src-syncxmlhttprequest-allowed.sub.html": {
     "total": 1
   },
@@ -1745,6 +1754,9 @@
   "content-security-policy/reporting-api/dedicated-worker-correct-url-in-report.html": {
     "total": 4
   },
+  "content-security-policy/reporting-api/report-body-dictionary.https.html": {
+    "total": 1
+  },
   "content-security-policy/reporting-api/report-to-directive-allowed-in-meta.https.sub.html": {
     "total": 4
   },
@@ -2039,6 +2051,9 @@
   "content-security-policy/script-src/javascript-window-open-blocked.html": {
     "total": 1
   },
+  "content-security-policy/script-src/non-nonceable-elements-attr-name.html": {
+    "total": 10
+  },
   "content-security-policy/script-src/non-nonceable-elements.html": {
     "total": 10
   },
@@ -2128,6 +2143,15 @@
   },
   "content-security-policy/script-src/script-src-strict_dynamic_meta_tag.html": {
     "total": 4
+  },
+  "content-security-policy/script-src/script-src-strict_dynamic_modulepreload_integrity_mismatch.html": {
+    "total": 6,
+    "failures": {
+      "Parser-inserted data: module script with unverified integrity hitting a `modulepreload` entry is blocked with `strict-dynamic`.": "FAIL",
+      "Parser-inserted external module script with dummy integrity hitting a `modulepreload` entry with dummy integrity is blocked with `strict-dynamic`.": "FAIL",
+      "Parser-inserted external module script with policy hash hitting a `modulepreload` entry with dummy integrity is blocked with `strict-dynamic`.": "FAIL",
+      "Parser-inserted external module script with unverified integrity hitting a `modulepreload` entry is blocked with `strict-dynamic`.": "FAIL"
+    }
   },
   "content-security-policy/script-src/script-src-strict_dynamic_modulepreload_parser_inserted_module.html": {
     "total": 3
@@ -2294,10 +2318,9 @@
     }
   },
   "content-security-policy/script-src/tentative/script-url-blocked-report-contains-hash-service-worker.https.html": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "script-specific violation report contains correct urlHash in service worker": "TIMEOUT"
+      "script-specific violation report contains correct urlHash in service worker": "FAIL"
     }
   },
   "content-security-policy/script-src/tentative/script-url-blocked-report-contains-hash-shared-worker.https.html": {
@@ -2307,10 +2330,9 @@
     }
   },
   "content-security-policy/script-src/tentative/script-url-blocked-report-contains-hash.https.html": {
-    "harness": "ERROR",
     "total": 1,
     "failures": {
-      "script-specific violation report contains correct urlHash": "TIMEOUT"
+      "script-specific violation report contains correct urlHash": "FAIL"
     }
   },
   "content-security-policy/script-src/tentative/url-hash-in-header-and-meta.https.html": {
@@ -2353,6 +2375,12 @@
   "content-security-policy/securitypolicyviolation/constructor-required-fields.html": {
     "total": 14
   },
+  "content-security-policy/securitypolicyviolation/embed-src-multihop-redirect.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/embed-src-redirect.sub.html": {
+    "total": 1
+  },
   "content-security-policy/securitypolicyviolation/idlharness.window.js": {
     "total": 34
   },
@@ -2379,6 +2407,12 @@
   },
   "content-security-policy/securitypolicyviolation/no-violation-for-inline-handler-in-document-without-browsing-context.html": {
     "total": 5
+  },
+  "content-security-policy/securitypolicyviolation/object-src-multihop-redirect.sub.html": {
+    "total": 1
+  },
+  "content-security-policy/securitypolicyviolation/object-src-redirect.sub.html": {
+    "total": 1
   },
   "content-security-policy/securitypolicyviolation/script-sample-no-opt-in.html": {
     "total": 4

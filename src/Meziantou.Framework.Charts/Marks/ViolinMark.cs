@@ -76,7 +76,8 @@ public sealed class ViolinMark<T> : Mark<T>
         var curves = new List<IReadOnlyList<double>>();
         foreach (var rows in MarkData.GroupBy(data.Count, data.X))
         {
-            var values = rows.Select(row => y.Numbers[row]).Where(value => !double.IsNaN(value)).Order().ToArray();
+            // An infinite value has no position on the axis and no density: it is ignored, as a missing value
+            var values = rows.Select(row => y.Numbers[row]).Where(double.IsFinite).Order().ToArray();
             if (values.Length is 0 || data.X.IsMissing(rows[0]))
                 continue;
 
@@ -117,27 +118,35 @@ public sealed class ViolinMark<T> : Mark<T>
         if (data.X is null || context.X is null || context.Y is null || data.Sets is null)
             return;
 
-        var maxDensity = data.Sets.Max(curve => Enumerable.Range(0, curve.Count / 2).Max(i => curve[(2 * i) + 1]));
+        var maxDensity = KernelDensity.MaxDensity(data.Sets);
         var bandwidth = BarMark<T>.GetBandwidth(context.X, data);
         for (var i = 0; i < data.Count; i++)
         {
+            // The rows of a facet whose values are not numbers are not summarized: they have no curve
             var start = context.MapX(data.X, i);
-            if (double.IsNaN(start) || !(maxDensity > 0))
+            var curve = data.Sets[i];
+            var count = curve.Count / 2;
+            if (double.IsNaN(start) || !(maxDensity > 0) || count is 0)
                 continue;
 
             var center = start + (bandwidth / 2);
             var half = bandwidth * ViolinWidth / 2;
-            var curve = data.Sets[i];
-            var count = curve.Count / 2;
             var left = new List<(double X, double Y)>(count);
             var right = new List<(double X, double Y)>(count);
             for (var j = 0; j < count; j++)
             {
+                // A point the scale cannot place (a value out of the domain of a log scale...) is left out of the outline
                 var y = context.MapYNumber(curve[2 * j]);
                 var offset = curve[(2 * j) + 1] / maxDensity * half;
+                if (double.IsNaN(y) || !double.IsFinite(offset))
+                    continue;
+
                 left.Add(context.Coordinates.Project(center - offset, y));
                 right.Add(context.Coordinates.Project(center + offset, y));
             }
+
+            if (left.Count is 0)
+                continue;
 
             right.Reverse();
             var builder = new PathBuilder();
@@ -155,13 +164,16 @@ public sealed class ViolinMark<T> : Mark<T>
                 LineJoin = SceneLineJoin.Round,
             });
 
-            if (ShowBox)
+            var lowerQuartile = context.MapYNumber(data.Extra[LowerQuartile].Numbers[i]);
+            var upperQuartile = context.MapYNumber(data.Extra[UpperQuartile].Numbers[i]);
+            var median = context.MapYNumber(data.Extra[Median].Numbers[i]);
+            if (ShowBox && !double.IsNaN(lowerQuartile) && !double.IsNaN(upperQuartile) && !double.IsNaN(median))
             {
                 var boxHalf = Math.Max(1.5, half * 0.08);
-                var box = context.Coordinates.Rectangle(center - boxHalf, center + boxHalf, context.MapYNumber(data.Extra[LowerQuartile].Numbers[i]), context.MapYNumber(data.Extra[UpperQuartile].Numbers[i]));
+                var box = context.Coordinates.Rectangle(center - boxHalf, center + boxHalf, lowerQuartile, upperQuartile);
                 box.Fill = context.Theme.Foreground;
                 violin.Add(box);
-                var (mx, my) = context.Coordinates.Project(center, context.MapYNumber(data.Extra[Median].Numbers[i]));
+                var (mx, my) = context.Coordinates.Project(center, median);
                 violin.Add(new SceneCircle(mx, my, Math.Max(2, boxHalf * 1.2)) { Fill = context.Theme.Background ?? SceneColor.White });
             }
 

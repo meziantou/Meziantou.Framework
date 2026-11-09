@@ -1439,6 +1439,9 @@
   "html/semantics/embedded-content/media-elements/readyState_initial.html": {
     "total": 2
   },
+  "html/semantics/embedded-content/media-elements/replay.html": {
+    "total": 6
+  },
   "html/semantics/embedded-content/media-elements/seeking/seek-to-currentTime.html": {
     "total": 1
   },
@@ -1625,6 +1628,12 @@
   "html/semantics/embedded-content/media-elements/track/track-element/track-api-texttracks.html": {
     "total": 3
   },
+  "html/semantics/embedded-content/media-elements/track/track-element/track-blob-url-revoked.window.js": {
+    "total": 3,
+    "failures": {
+      "track loads from a blob: URL revoked after src is set": "FAIL"
+    }
+  },
   "html/semantics/embedded-content/media-elements/track/track-element/track-change-event.html": {
     "total": 1
   },
@@ -1665,10 +1674,10 @@
     "total": 1
   },
   "html/semantics/embedded-content/media-elements/track/track-element/track-cue-rendering-line-doesnt-fit.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "html/semantics/embedded-content/media-elements/track/track-element/track-cue-rendering-transformed-video.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "html/semantics/embedded-content/media-elements/track/track-element/track-cues-add-new-track.html": {
     "total": 1
@@ -2455,6 +2464,9 @@
       "Below-viewport blob url iframes load lazily": "FAIL"
     }
   },
+  "html/semantics/embedded-content/the-iframe-element/iframe-modify-scrolling-attr-to-no.html": {
+    "reftest": "PASS"
+  },
   "html/semantics/embedded-content/the-iframe-element/iframe-modify-scrolling-attr-to-yes.html": {
     "reftest": "PASS"
   },
@@ -2879,6 +2891,9 @@
   "html/semantics/embedded-content/the-img-element/delay-load-event.html": {
     "total": 3
   },
+  "html/semantics/embedded-content/the-img-element/dimension-getter-transform.html": {
+    "total": 2
+  },
   "html/semantics/embedded-content/the-img-element/disconnected-image-loading-lazy.html": {
     "total": 3
   },
@@ -3269,8 +3284,40 @@
   "html/semantics/embedded-content/the-img-element/srcset/parse-a-srcset-attribute.html": {
     "total": 236
   },
+  "html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-cached.optional.html": {
+    "total": 13,
+    "failures": {
+      "keeps element's already-loaded 2x candidate when iframe zoom decreases from 2 to 1": "FAIL",
+      "keeps element's already-loaded 2x srcset candidate when an uncached src (1x default source) is set": "FAIL",
+      "keeps element's already-loaded higher-density srcset candidate when an uncached 1x candidate is added": "FAIL",
+      "keeps element's already-loaded src when srcset is added with that URL at higher density": "FAIL",
+      "keeps element's already-loaded wider w-descriptor candidate when sizes shrinks": "FAIL",
+      "picture: prefers already-loaded higher-density source candidate over uncached DPR-matching candidate": "FAIL",
+      "prefers already-loaded higher-density candidate over uncached DPR-matching candidate": "FAIL",
+      "prefers already-loaded higher-density candidate when multiple higher-density candidates are cached": "FAIL",
+      "prefers already-loaded higher-density candidate without fetching even higher uncached candidate": "FAIL",
+      "prefers higher-density candidate preloaded via <link rel=preload as=image>": "FAIL",
+      "prefers higher-density data: URL candidate over uncached DPR-matching candidate": "FAIL",
+      "w descriptors: prefers already-loaded higher-density candidate over uncached DPR-matching candidate": "FAIL"
+    }
+  },
+  "html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-zoom-change.optional.html": {
+    "total": 1,
+    "failures": {
+      "dynamic zoom change on the iframe re-selects the x-descriptor image source": "FAIL"
+    }
+  },
+  "html/semantics/embedded-content/the-img-element/srcset/select-an-image-source-zoom.html": {
+    "total": 4,
+    "failures": {
+      "link rel=preload imagesrcset in zoomed iframe selects candidate matching zoomed devicePixelRatio": "FAIL",
+      "zoomed-in iframe (zoom: 2) selects x-descriptor matching zoomed devicePixelRatio": "FAIL",
+      "zoomed-in iframe (zoom: 2) with w descriptors and sizes selects normalized density matching zoomed devicePixelRatio": "FAIL",
+      "zoomed-out iframe (zoom: 0.5) selects x-descriptor matching zoomed devicePixelRatio": "FAIL"
+    }
+  },
   "html/semantics/embedded-content/the-img-element/srcset/select-an-image-source.html": {
-    "total": 13
+    "total": 46
   },
   "html/semantics/embedded-content/the-img-element/srcset/srcset-media-dynamic.html": {
     "total": 1
@@ -3766,7 +3813,7 @@
     "total": 1
   },
   "html/semantics/forms/form-submission-0/form-submission-algorithm.html": {
-    "total": 11
+    "total": 12
   },
   "html/semantics/forms/form-submission-0/form-submit-action.html": {
     "total": 10
@@ -3988,7 +4035,10 @@
     "total": 2
   },
   "html/semantics/forms/the-button-element/button-type.html": {
-    "total": 2
+    "total": 5,
+    "failures": {
+      "a button in auto state with a command or commandfor attribute should return button type": "FAIL"
+    }
   },
   "html/semantics/forms/the-button-element/button-untrusted-key-event.html": {
     "total": 6
@@ -5393,6 +5443,13 @@
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-color.html": {
     "reftest": "PASS"
   },
+  "html/semantics/forms/the-select-element/customizable-select/selectedcontent-custom-element-reactions.html": {
+    "total": 6,
+    "failures": {
+      "Removing the selected option updates selectedcontent and runs the clones' reactions after remove() returns": "FAIL",
+      "The parser's clone of a custom element is upgraded and connected before the next script runs": "FAIL"
+    }
+  },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-insertion-removal.html": {
     "total": 4
   },
@@ -5414,10 +5471,23 @@
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-nested.html": {
     "total": 1
   },
+  "html/semantics/forms/the-select-element/customizable-select/selectedcontent-omits-scripts-frames-and-plugins.html": {
+    "total": 2,
+    "failures": {
+      "Cloning a selected option into selectedcontent omits script, frame, iframe, embed, and object elements": "FAIL",
+      "Selecting an option does not clone its frame and iframe elements into selectedcontent": "FAIL"
+    }
+  },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-option-insertion.html": {
     "total": 8
   },
+  "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-csp-strict-dynamic.html": {
+    "total": 1
+  },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-csp-strict-dynamic.tentative.html": {
+    "total": 1
+  },
+  "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-script-runs-once.html": {
     "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-script-runs-once.tentative.html": {
@@ -5427,7 +5497,10 @@
     "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-script-runs-once.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "A parser-inserted script in a selected option isn't cloned into selectedcontent before it runs": "FAIL"
+    }
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html": {
     "total": 10
@@ -5439,7 +5512,10 @@
     "total": 3
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent.html": {
-    "total": 11
+    "total": 11,
+    "failures": {
+      "Setting option.selected without changing selectedness does not update the <selectedcontent>.": "FAIL"
+    }
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontentelement-attr.tentative.html": {
     "total": 1,
@@ -5559,6 +5635,9 @@
       "Clicking label opens select picker: appearance:base-select with custom button and label[for]": "FAIL",
       "Clicking label opens select picker: appearance:base-select with label[for]": "FAIL"
     }
+  },
+  "html/semantics/forms/the-select-element/select-listbox-abspos-child-dynamic-insertion.html": {
+    "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/select-listbox-selected-hscroll.html": {
     "reftest": "PASS"
@@ -9164,6 +9243,35 @@
   "html/semantics/scripting-1/the-template-element/template-element/template-descendant-head.html": {
     "total": 1
   },
+  "html/semantics/scripting-1/the-template-element/template-for/chained-streaming-templates-with-custom-element.html": {
+    "total": 1
+  },
+  "html/semantics/scripting-1/the-template-element/template-for/stream-append-has-invalidation.html": {
+    "total": 1
+  },
+  "html/semantics/scripting-1/the-template-element/template-for/stream-append-positional-pseudo-class-invalidation.html": {
+    "total": 1
+  },
+  "html/semantics/scripting-1/the-template-element/template-for/stream-append-with-template-for.html": {
+    "total": 1
+  },
+  "html/semantics/scripting-1/the-template-element/template-for/stream-head-scope.html": {
+    "total": 13,
+    "failures": {
+      "streamAfterHTMLUnsafe targeting body does not patch markers in head": "FAIL",
+      "streamAfterHTMLUnsafe targeting body patches markers in body without touching head": "FAIL",
+      "streamAppendHTMLUnsafe targeting body does not patch markers in head": "FAIL",
+      "streamAppendHTMLUnsafe targeting body patches markers in body without touching head": "FAIL",
+      "streamBeforeHTMLUnsafe targeting body does not patch markers in head": "FAIL",
+      "streamBeforeHTMLUnsafe targeting body patches markers in body without touching head": "FAIL",
+      "streamHTMLUnsafe targeting body does not patch markers in head": "FAIL",
+      "streamHTMLUnsafe targeting body patches markers in body without touching head": "FAIL",
+      "streamPrependHTMLUnsafe targeting body does not patch markers in head": "FAIL",
+      "streamPrependHTMLUnsafe targeting body patches markers in body without touching head": "FAIL",
+      "streamReplaceWithHTMLUnsafe targeting body does not patch markers in head": "FAIL",
+      "streamReplaceWithHTMLUnsafe targeting body patches markers in body without touching head": "FAIL"
+    }
+  },
   "html/semantics/scripting-1/the-template-element/template-for/template-for-append-element.html": {
     "total": 1
   },
@@ -9180,6 +9288,9 @@
     "total": 1
   },
   "html/semantics/scripting-1/the-template-element/template-for/template-for-empty-hash.html": {
+    "total": 1
+  },
+  "html/semantics/scripting-1/the-template-element/template-for/template-for-empty.html": {
     "total": 1
   },
   "html/semantics/scripting-1/the-template-element/template-for/template-for-foster-parenting.html": {

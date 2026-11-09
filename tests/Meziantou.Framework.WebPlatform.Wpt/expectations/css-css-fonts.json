@@ -316,8 +316,26 @@
   "css/css-fonts/font-feature-values-map-live.html": {
     "total": 2
   },
+  "css/css-fonts/font-feature-values-map-order.html": {
+    "total": 6
+  },
   "css/css-fonts/font-feature-values-sameobject.tentative.html": {
     "total": 1
+  },
+  "css/css-fonts/font-feature-values-serialization-order.html": {
+    "total": 10,
+    "failures": {
+      "A repeated name takes its last value without moving its first position": "FAIL",
+      "An empty rule serializes with one space between its braces": "FAIL",
+      "Block types serialize in a fixed order rather than source order": "FAIL",
+      "Distinct names retain source order rather than alphabetical order": "FAIL",
+      "Empty blocks are omitted without changing the order of nonempty blocks": "FAIL",
+      "Invalid declarations neither reserve a name's position nor replace its value": "FAIL",
+      "Merging separated blocks preserves first name positions across and within blocks": "FAIL",
+      "Names are case-sensitive and escaped spellings update the same name in place": "FAIL",
+      "The font-display descriptor serializes before feature value blocks": "FAIL",
+      "The historical-forms block serializes after the other block types": "FAIL"
+    }
   },
   "css/css-fonts/font-features-across-space-1.html": {
     "reftest": "PASS"
@@ -1048,6 +1066,15 @@
   "css/css-fonts/italic-oblique-fallback.html": {
     "reftest": "PASS"
   },
+  "css/css-fonts/lang-attribute-affects-rendering-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/lang-attribute-affects-rendering-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/lang-attribute-affects-rendering-003.html": {
+    "reftest": "PASS"
+  },
   "css/css-fonts/lang-attribute-affects-rendering-of-second-text-run.html": {
     "reftest": "PASS"
   },
@@ -1119,6 +1146,9 @@
   },
   "css/css-fonts/metrics-override-normal-keyword.html": {
     "reftest": "PASS"
+  },
+  "css/css-fonts/metrics-override-small-lineheight.html": {
+    "reftest": "FAIL"
   },
   "css/css-fonts/mvs-shaping.html": {
     "total": 5
@@ -1580,12 +1610,7 @@
     "total": 2232
   },
   "css/css-fonts/test_font_feature_values_parsing.html": {
-    "total": 302,
-    "failures": {
-      "basic parse tests - @font-feature-values bongo { @blah } @styleset { abc: 1 2 3; } }": "FAIL",
-      "serialization check - @font-feature-values bongo { @styleset { blah: 1; blah: 1; } }": "FAIL",
-      "serialization check - @font-feature-values bongo { @styleset { blah: 1; de-blah: 1; blah: 2; } }": "FAIL"
-    }
+    "total": 302
   },
   "css/css-fonts/variable-in-font-variation-settings.html": {
     "total": 1
@@ -1594,10 +1619,7 @@
     "reftest": "PASS"
   },
   "css/css-fonts/variations/at-font-face-descriptors.html": {
-    "total": 88,
-    "failures": {
-      "font-style(valid): Simple range with former default angle for both bounds: oblique 20deg 20deg": "FAIL"
-    }
+    "total": 88
   },
   "css/css-fonts/variations/at-font-face-font-matching.html": {
     "total": 107,
@@ -1636,10 +1658,7 @@
     "reftest": "PASS"
   },
   "css/css-fonts/variations/font-stretch.html": {
-    "total": 51,
-    "failures": {
-      "@getComputedStyle: 1e9% - huge legal percentage": "FAIL"
-    }
+    "total": 50
   },
   "css/css-fonts/variations/font-style-interpolation.html": {
     "total": 2

@@ -29,6 +29,16 @@
       "compressedTexSubImage2D": "FAIL"
     }
   },
+  "webgl/copyTexImage2D-unsized-effective-format.html": {
+    "total": 5,
+    "failures": {
+      "An unsized RGB copy of an RGBA8 image is an RGB8 source": "FAIL",
+      "An unsized RGBA copy of an RGBA4 image is an RGBA4 source": "FAIL",
+      "An unsized RGBA copy of an RGBA8 image is an RGBA8 source": "FAIL",
+      "An unsized RGBA copy of an RGBA8 image reads back as RGBA/UNSIGNED_BYTE": "FAIL",
+      "WebGL 1 texSubImage2D updates an unsized copyTexImage2D image": "FAIL"
+    }
+  },
   "webgl/drawingBufferToneMapping.html": {
     "total": 8,
     "failures": {
@@ -70,6 +80,15 @@
       "STENCIL_VALUE_MASK is an unsigned integer of all ones": "FAIL",
       "STENCIL_WRITEMASK is an unsigned integer of all ones": "FAIL",
       "the stencil value masks read back exactly as set": "FAIL"
+    }
+  },
+  "webgl/getParameter-texture-binding-webgl1.html": {
+    "total": 5,
+    "failures": {
+      "getParameter with TEXTURE_BINDING_2D returns bound texture on webgl1 context": "FAIL",
+      "getParameter with TEXTURE_BINDING_2D_ARRAY on webgl1 context returns null and sets INVALID_ENUM": "FAIL",
+      "getParameter with TEXTURE_BINDING_3D on webgl1 context returns null and sets INVALID_ENUM": "FAIL",
+      "getParameter with valid texture binding targets on webgl1 context returns null and sets NO_ERROR": "FAIL"
     }
   },
   "webgl/getUniformLocation-uniform-block-member.html": {

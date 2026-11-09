@@ -150,7 +150,7 @@
     "total": 100
   },
   "wasm/core/gc/array_copy.wast.js.html": {
-    "total": 43
+    "total": 54
   },
   "wasm/core/gc/array_fill.wast.js.html": {
     "total": 37

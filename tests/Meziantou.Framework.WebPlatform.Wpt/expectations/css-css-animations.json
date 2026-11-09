@@ -147,6 +147,9 @@
   "css/css-animations/animation-important-with-transition.html": {
     "total": 5
   },
+  "css/css-animations/animation-in-offscreen-iframe.html": {
+    "total": 1
+  },
   "css/css-animations/animation-iteration-count-009.html": {
     "total": 4
   },

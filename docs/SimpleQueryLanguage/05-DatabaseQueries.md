@@ -85,7 +85,11 @@ Pass a [StringMatchMode](cref:Meziantou.Framework.SimpleQueryLanguage.StringMatc
 | `StartsWith` | `x.Text != null && x.Text.StartsWith(value)` |
 | `EndsWith` | `x.Text != null && x.Text.EndsWith(value)` |
 
-Entity Framework Core translates all of them, to `=` and `LIKE` for most databases:
+In memory, `Contains` and `Exact` are ordinal, but `string.StartsWith(string)` and `string.EndsWith(string)` compare
+with the current culture, which ignores some characters such as `\0`: a value made only of them matches every text.
+Pass a `StringComparison` to choose the comparison of a query that runs in memory.
+
+Entity Framework Core translates all the modes, to `=` and `LIKE` for most databases:
 
 <!-- ref:../../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/ExpressionQueryBuilderTests.cs;region=ExpressionQueryBuilder_StringMatchMode;format=md-fenced-code-block;dedent=true -->
 ```csharp

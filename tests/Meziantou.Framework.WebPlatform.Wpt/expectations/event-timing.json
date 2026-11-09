@@ -65,6 +65,9 @@
   "event-timing/first-input-interactionid-tap.html": {
     "total": 1
   },
+  "event-timing/first-input-retrievable-from-timeline.html": {
+    "total": 1
+  },
   "event-timing/first-input-shadow-dom.html": {
     "total": 1
   },

@@ -41,6 +41,17 @@
   "css/css-variables/url-token-serialization.html": {
     "total": 6
   },
+  "css/css-variables/var-fallback-braces.html": {
+    "total": 6,
+    "failures": {
+      "Property color value 'var(--missing, { rgb(1, 2, 3) })'": "FAIL",
+      "Property color value 'var(--missing, {rgb(1, 2, 3)} )'": "FAIL",
+      "Property color value 'var(--missing, {rgb(1, 2, 3)})'": "FAIL",
+      "Property font-family value 'var(--missing, {Arial, sans-serif})'": "FAIL",
+      "e.style['color'] = \"var(--missing, {rgb(1, 2, 3)} rgb(4, 5, 6))\" should not set the property value": "FAIL",
+      "e.style['font-family'] = \"var(--missing, {Arial}, sans-serif)\" should not set the property value": "FAIL"
+    }
+  },
   "css/css-variables/var-ident-function.html": {
     "total": 5
   },

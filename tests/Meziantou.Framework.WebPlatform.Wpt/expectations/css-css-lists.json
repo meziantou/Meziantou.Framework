@@ -554,16 +554,61 @@
   "css/css-lists/ol-change-display-type.html": {
     "reftest": "PASS"
   },
+  "css/css-lists/outside-marker-after-empty-writing-mode-root.html": {
+    "reftest": "PASS"
+  },
   "css/css-lists/outside-marker-alignment-with-block-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-container-becomes-boundary.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-container-changed-by-float-style.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-container-changed-by-inline-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-container-changed-by-inserted-block.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-container-changed-by-inserted-text.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-container-changed-in-nested-block.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-container-moves-deeper.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-container-removed.html": {
     "reftest": "PASS"
   },
   "css/css-lists/outside-marker-covered-by-relpos-block-link.html": {
     "reftest": "PASS"
   },
+  "css/css-lists/outside-marker-from-inside-position.html": {
+    "reftest": "PASS"
+  },
   "css/css-lists/outside-marker-in-multicol-relpos-content.html": {
     "reftest": "PASS"
   },
+  "css/css-lists/outside-marker-list-item-becomes-multicol.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-multicol-destroyed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-nested-shared-container.html": {
+    "reftest": "PASS"
+  },
   "css/css-lists/outside-marker-position-with-cached-line-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-skips-out-of-flow-first-child.html": {
     "reftest": "PASS"
   },
   "css/css-lists/outside-marker-taller-than-content.html": {
@@ -579,6 +624,9 @@
     "reftest": "PASS"
   },
   "css/css-lists/outside-marker-with-float-in-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-lists/outside-marker-with-hr-content.html": {
     "reftest": "PASS"
   },
   "css/css-lists/outside-marker-with-relpos-block-content.html": {

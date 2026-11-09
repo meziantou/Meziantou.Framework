@@ -206,6 +206,9 @@
   "css/css-inline/animation/initial-letter-no-interpolation.html": {
     "total": 42
   },
+  "css/css-inline/atomic-inline-intrinsic-size-001.html": {
+    "total": 12
+  },
   "css/css-inline/baseline-shift/baseline-shift-bottom-svg.html": {
     "reftest": "PASS"
   },
@@ -298,6 +301,21 @@
     "reftest": "PASS"
   },
   "css/css-inline/br-line-height-inherited-quirks.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/br-line-height-shrink-quirks.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/br-line-height-shrink.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/br-line-height-stretch-quirks.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/br-line-height-zero-quirks.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-inline/br-line-height-zero.html": {
     "reftest": "PASS"
   },
   "css/css-inline/br-line-height.html": {

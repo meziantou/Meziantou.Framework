@@ -8,6 +8,7 @@ namespace Meziantou.Framework.SimpleQueryLanguage
     {
         public bool Strict { get => throw null; set { } }
         public ExpressionQueryBuilder(System.TimeProvider? timeProvider) { }
+        public ExpressionQueryBuilder(System.TimeProvider? timeProvider, System.TimeZoneInfo? timeZone) { }
         public void AddHandler(string key, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }
         public void AddHandler(string key, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator op, System.Func<string, System.Linq.Expressions.Expression<System.Func<T, bool>>> handler) { }
         public void AddHandler(string key, System.Linq.Expressions.Expression<System.Func<T, string?>> selector, System.StringComparison? comparisonType = null) { }
@@ -51,6 +52,7 @@ namespace Meziantou.Framework.SimpleQueryLanguage
     {
         public bool Strict { get => throw null; set { } }
         public QueryBuilder(System.TimeProvider? timeProvider) { }
+        public QueryBuilder(System.TimeProvider? timeProvider, System.TimeZoneInfo? timeZone) { }
         public void AddHandler(string key, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, string, bool> predicate) { }
         public void AddHandler(string key, System.Func<T, string, bool> predicate) { }
         public void AddHandler(string key, string? value, System.Func<T, Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator, bool> predicate) { }

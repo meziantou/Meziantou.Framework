@@ -10,4 +10,5 @@ description: What the library does not do, so you can plan around it.
 - **One syntax.** The operators, keywords and date keywords are fixed, and in English.
 - **Size limits.** Deeply nested queries, and queries whose `OR` groups expand too much, throw a
   [QueryTooComplexException](cref:Meziantou.Framework.SimpleQueryLanguage.QueryTooComplexException); see [Queries from users](04-InMemoryQueries.md#queries-from-users).
-- **Dates in UTC.** Date keywords and relative dates use UTC days; there is no time zone option.
+- **Dates written in a query are in UTC.** A date without an offset, such as `2026-03-18`, is read as UTC, even when the
+  builder has a [time zone](06-ValuesAndDates.md#time-zone) for the date keywords.

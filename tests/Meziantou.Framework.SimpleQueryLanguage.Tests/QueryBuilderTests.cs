@@ -1046,6 +1046,140 @@ public sealed class QueryBuilderTests
         Assert.True(queryBuilder.Build("equals:@today-1d").Evaluate(sample));
     }
 
+    [Fact]
+    public void Documentation_TimeZone()
+    {
+        #region QueryBuilder_TimeZone
+        // 7 PM on March 17 for a user in UTC-8, but already March 18 in UTC
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 3, 18, 3, 0, 0, TimeSpan.Zero));
+        var userTimeZone = TimeZoneInfo.CreateCustomTimeZone("UTC-8", TimeSpan.FromHours(-8), "UTC-8", "UTC-8");
+        var queryBuilder = new QueryBuilder<Issue>(timeProvider, userTimeZone);
+        queryBuilder.AddRangeHandler<DateTime>("created", (issue, range) => range.IsInRange(issue.CreatedAt));
+
+        var issue = new Issue("Morning", "alice", IsOpen: true, Comments: 0, new DateTime(2026, 3, 17, 17, 0, 0, DateTimeKind.Utc));
+
+        // Day boundaries are midnight in the user's time zone: today is March 17, from 08:00 UTC to March 18 08:00 UTC
+        Assert.True(queryBuilder.Build("created:today").Evaluate(issue));
+        Assert.True(queryBuilder.Build("created>=@today").Evaluate(issue));
+        Assert.False(new QueryBuilder<Issue>(timeProvider).Build("created:today").Evaluate(issue));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("date:today", "2026-03-17T08:00:00Z", true)]
+    [InlineData("date:today", "2026-03-17T07:59:59Z", false)]
+    [InlineData("date:today", "2026-03-18T07:59:59Z", true)]
+    [InlineData("date:today", "2026-03-18T08:00:00Z", false)]
+    [InlineData("date:yesterday", "2026-03-16T08:00:00Z", true)]
+    [InlineData("date:yesterday", "2026-03-17T08:00:00Z", false)]
+    [InlineData("date:this_week", "2026-03-16T08:00:00Z", true)]
+    [InlineData("date:this_week", "2026-03-16T07:59:59Z", false)]
+    [InlineData("date:this_month", "2026-03-01T08:00:00Z", true)]
+    [InlineData("date:this_month", "2026-03-01T07:59:59Z", false)]
+    [InlineData("date:last_month", "2026-03-01T07:59:59Z", true)]
+    [InlineData("date:this_year", "2026-01-01T08:00:00Z", true)]
+    [InlineData("date:last_year", "2026-01-01T07:59:59Z", true)]
+    [InlineData("date>=@today-1d", "2026-03-16T08:00:00Z", true)]
+    [InlineData("date>=@today-1d", "2026-03-16T07:59:59Z", false)]
+    [InlineData("date<@today+1w", "2026-03-24T07:59:59Z", true)]
+    [InlineData("date<@today+1w", "2026-03-24T08:00:00Z", false)]
+    public void DateKeyword_UsesTimeZone(string query, string date, bool expectedResult)
+    {
+        // March 17, 2026 at 19:00 in UTC-8
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 3, 18, 3, 0, 0, TimeSpan.Zero));
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("UTC-8", TimeSpan.FromHours(-8), "UTC-8", "UTC-8");
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider, timeZone);
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+        var value = DateTime.Parse(date, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { DateTimeValue = value }));
+    }
+
+    [Fact]
+    public void DateKeyword_UsesTimeZone_ForEveryDateType()
+    {
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 3, 18, 3, 0, 0, TimeSpan.Zero));
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("UTC-8", TimeSpan.FromHours(-8), "UTC-8", "UTC-8");
+
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider, timeZone);
+        queryBuilder.AddRangeHandler<DateOnly>("dateonly", (obj, range) => range.IsInRange(obj.DateOnlyValue));
+        queryBuilder.AddRangeHandler<DateTimeOffset>("offset", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+        queryBuilder.AddRangeHandler<DateTime?>("nullable", (obj, range) => range.IsInRange(obj.NullableDateTimeValue));
+        DateTimeOffset? lowerBound = null;
+        queryBuilder.AddRangeHandler<DateTimeOffset>("bound", (obj, range) =>
+        {
+            lowerBound = Assert.IsType<BinaryRangeSyntax<DateTimeOffset>>(range).LowerBound;
+            return true;
+        });
+
+        // A date is the user's date, not the UTC one
+        Assert.True(queryBuilder.Build("dateonly:today").Evaluate(new Sample { DateOnlyValue = new DateOnly(2026, 3, 17) }));
+        Assert.False(queryBuilder.Build("dateonly:today").Evaluate(new Sample { DateOnlyValue = new DateOnly(2026, 3, 18) }));
+        Assert.True(queryBuilder.Build("dateonly:@today-1d").Evaluate(new Sample { DateOnlyValue = new DateOnly(2026, 3, 16) }));
+
+        Assert.True(queryBuilder.Build("offset:today").Evaluate(new Sample { DateTimeOffsetValue = new DateTimeOffset(2026, 3, 17, 0, 0, 0, TimeSpan.FromHours(-8)) }));
+        Assert.False(queryBuilder.Build("offset:today").Evaluate(new Sample { DateTimeOffsetValue = new DateTimeOffset(2026, 3, 17, 7, 59, 0, TimeSpan.Zero) }));
+        Assert.True(queryBuilder.Build("nullable:today").Evaluate(new Sample { NullableDateTimeValue = new DateTime(2026, 3, 17, 8, 0, 0, DateTimeKind.Utc) }));
+
+        // A DateTimeOffset bound carries the offset of the time zone
+        queryBuilder.Build("bound:today").Evaluate(new Sample());
+        Assert.Equal(TimeSpan.FromHours(-8), lowerBound?.Offset);
+        Assert.Equal(new DateTime(2026, 3, 17, 0, 0, 0, DateTimeKind.Unspecified), lowerBound?.DateTime);
+    }
+
+    // Clocks go from 00:00 to 01:00 on March 15 (the day starts at 01:00 local, 03:00 UTC),
+    // and from 01:00 back to 00:00 on October 4 (the day starts at the first midnight, 02:00 UTC)
+    [Theory]
+    [InlineData("2026-03-15T14:00:00Z", "date:today", "2026-03-15T03:00:00Z", true)]
+    [InlineData("2026-03-15T14:00:00Z", "date:today", "2026-03-15T02:59:59Z", false)]
+    [InlineData("2026-03-15T14:00:00Z", "date:yesterday", "2026-03-15T02:59:59Z", true)]
+    [InlineData("2026-03-15T14:00:00Z", "date:today", "2026-03-16T01:59:59Z", true)]
+    [InlineData("2026-03-15T14:00:00Z", "date:today", "2026-03-16T02:00:00Z", false)]
+    [InlineData("2026-03-15T14:00:00Z", "date>=@today", "2026-03-15T03:00:00Z", true)]
+    [InlineData("2026-03-15T14:00:00Z", "date>=@today", "2026-03-15T02:59:59Z", false)]
+    [InlineData("2026-10-04T15:00:00Z", "date:today", "2026-10-04T02:00:00Z", true)]
+    [InlineData("2026-10-04T15:00:00Z", "date:today", "2026-10-04T01:59:59Z", false)]
+    [InlineData("2026-10-04T15:00:00Z", "date:yesterday", "2026-10-04T01:59:59Z", true)]
+    [InlineData("2026-10-04T15:00:00Z", "date:today", "2026-10-05T02:59:59Z", true)]
+    [InlineData("2026-10-04T15:00:00Z", "date:today", "2026-10-05T03:00:00Z", false)]
+    public void DateKeyword_UsesTimeZone_AcrossDaylightSavingTime(string now, string query, string date, bool expectedResult)
+    {
+        var dstStart = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 0, 0, 0), month: 3, day: 15);
+        var dstEnd = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 1, 0, 0), month: 10, day: 4);
+        var rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(new DateTime(2026, 1, 1), new DateTime(2026, 12, 31), TimeSpan.FromHours(1), dstStart, dstEnd);
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("Midnight DST", TimeSpan.FromHours(-3), "Midnight DST", "Standard", "Daylight", [rule]);
+
+        var timeProvider = new FakeTimeProvider(DateTimeOffset.Parse(now, CultureInfo.InvariantCulture));
+        var queryBuilder = new QueryBuilder<Sample>(timeProvider, timeZone);
+        queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+        var value = DateTime.Parse(date, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample { DateTimeValue = value }));
+    }
+
+    [Theory]
+    [InlineData(-14)]
+    [InlineData(14)]
+    public void DateKeyword_UsesTimeZone_AtTheLimitsOfDates(int offsetInHours)
+    {
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("Limit", TimeSpan.FromHours(offsetInHours), "Limit", "Limit");
+        foreach (var now in new[] { DateTimeOffset.MinValue, DateTimeOffset.MaxValue })
+        {
+            var queryBuilder = new QueryBuilder<Sample>(new FakeTimeProvider(now), timeZone);
+            queryBuilder.AddRangeHandler<DateTime>("date", (obj, range) => range.IsInRange(obj.DateTimeValue));
+            queryBuilder.AddRangeHandler<DateTimeOffset>("offset", (obj, range) => range.IsInRange(obj.DateTimeOffsetValue));
+            queryBuilder.AddRangeHandler<DateOnly>("dateonly", (obj, range) => range.IsInRange(obj.DateOnlyValue));
+            foreach (var key in new[] { "date", "offset", "dateonly" })
+            {
+                foreach (var keyword in new[] { "today", "yesterday", "this_week", "this_month", "last_month", "this_year", "last_year", "@today", "@today-1d", "@today+1d" })
+                {
+                    queryBuilder.Build($"{key}:{keyword}").Evaluate(new Sample());
+                }
+            }
+        }
+    }
+
     [Theory]
     [InlineData("stars:10..*", true)]
     [InlineData("stars:11..*", false)]

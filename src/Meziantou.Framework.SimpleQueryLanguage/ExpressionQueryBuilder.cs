@@ -30,6 +30,7 @@ public sealed class ExpressionQueryBuilder<T>
     private readonly Dictionary<ExpressionFilterKey, Func<string, Expression<Func<T, bool>>>> _handlers = [];
     private readonly HashSet<string> _keys = [];
     private readonly TimeProvider _timeProvider;
+    private readonly TimeZoneInfo _timeZone;
     private FreeTextExpressionHandler<T>? _freeTextHandler;
     private UnhandledPropertyExpressionHandler<T>? _unhandledPropertyHandler;
 
@@ -42,8 +43,20 @@ public sealed class ExpressionQueryBuilder<T>
     /// <summary>Initializes a new instance of <see cref="ExpressionQueryBuilder{T}"/> with a specific time provider for date-related range keywords.</summary>
     /// <param name="timeProvider">The time provider to use, or <see langword="null"/> to use <see cref="TimeProvider.System"/>.</param>
     public ExpressionQueryBuilder(TimeProvider? timeProvider)
+        : this(timeProvider, timeZone: null)
+    {
+    }
+
+    /// <summary>Initializes a new instance of <see cref="ExpressionQueryBuilder{T}"/> with a specific time provider and time zone for date-related range keywords.</summary>
+    /// <param name="timeProvider">The time provider to use, or <see langword="null"/> to use <see cref="TimeProvider.System"/>.</param>
+    /// <param name="timeZone">
+    /// The time zone that gives the day boundaries of date keywords, such as <c>today</c> and <c>@today-3d</c>,
+    /// or <see langword="null"/> to use <see cref="TimeZoneInfo.Utc"/>.
+    /// </param>
+    public ExpressionQueryBuilder(TimeProvider? timeProvider, TimeZoneInfo? timeZone)
     {
         _timeProvider = timeProvider ?? TimeProvider.System;
+        _timeZone = timeZone ?? TimeZoneInfo.Utc;
     }
 
     private void AddHandlerCore(string key, KeyValueOperator op, Func<string, Expression<Func<T, bool>>> handler)
@@ -143,11 +156,11 @@ public sealed class ExpressionQueryBuilder<T>
     /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddHandler<TValue>(string key, Expression<Func<T, TValue>> selector, ScalarParser<TValue>? tryParseValue = null)
     {
-        var parser = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider);
+        var parser = RangeSyntax.WithRelativeDates<TValue>(tryParseValue ?? ValueConverter.TryParseValue, _timeProvider, _timeZone);
         if (IsComparisonType<TValue>())
         {
             // Register range handler for equality (handles both simple equality and range syntax)
-            AddHandlerCore(key, KeyValueOperator.EqualTo, value => CreateRangeExpression(value, selector, parser, _timeProvider));
+            AddHandlerCore(key, KeyValueOperator.EqualTo, value => CreateRangeExpression(value, selector, parser, _timeProvider, _timeZone));
 
             // Register comparison operators
             AddHandlerCore(key, KeyValueOperator.LessThan, value => CreateComparisonExpression(value, selector, ExpressionType.LessThan, parser));
@@ -420,11 +433,12 @@ public sealed class ExpressionQueryBuilder<T>
         string value,
         Expression<Func<T, TValue>> selector,
         ScalarParser<TValue> parser,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        TimeZoneInfo timeZone)
     {
 
         // Try to parse as range
-        var range = RangeSyntax.TryParse(value, parser, timeProvider);
+        var range = RangeSyntax.TryParse(value, parser, timeProvider, timeZone);
         if (range is BinaryRangeSyntax<TValue> binary)
         {
             var lowerExpression = CreateComparisonExpressionCore(

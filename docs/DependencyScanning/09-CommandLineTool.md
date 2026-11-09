@@ -75,6 +75,9 @@ The new version must be compatible with the current one:
 - A Docker tag keeps its shape: `8.0` is only updated to tags with two numbers, such as `8.1`, and a suffix such as
   `-alpine` must be the same.
 - A GitHub Actions version keeps its `v` prefix and its number of components: `v4` is updated to `v5`, not to `v5.0.1`.
+- A version that comes from a property, such as `$(XunitVersion)`, is updated where the property is defined. The
+  dependencies that share the property are updated once, with the version chosen for the first of them. See
+  [Properties and variables](05-SupportedFiles/01-Overview.md#properties-and-variables).
 
 ## Package sources
 

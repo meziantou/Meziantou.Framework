@@ -70,6 +70,7 @@ Assert.Contains("    None Meziantou.Framework.PublicApiGenerator.PublicApiReadOp
   arguments.
 - Type references ([PublicApiTypeReference](cref:Meziantou.Framework.PublicApiGenerator.PublicApiTypeReference)) that preserve nested types, type arguments, arrays, pointers, function
   pointers, ref kinds, nullable annotations, tuple element names and the referenced assembly.
+- The names of all the referenced assemblies, including the assemblies of the framework ([PublicApiAssembly.AssemblyReferences](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAssembly.AssemblyReferences)), without versions.
 - The `new` modifier of the members and nested types that hide an inherited member ([PublicApiMember.IsNew](cref:Meziantou.Framework.PublicApiGenerator.PublicApiMember.IsNew) and
   [PublicApiType.IsNew](cref:Meziantou.Framework.PublicApiGenerator.PublicApiType.IsNew)).
 

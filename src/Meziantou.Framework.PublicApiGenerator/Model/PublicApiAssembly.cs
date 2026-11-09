@@ -24,6 +24,7 @@ public sealed class PublicApiAssembly
         string? inputIdentity,
         bool usesUpdatedMemorySafetyRules,
         ImmutableArray<PublicApiAttribute> attributes,
+        ImmutableArray<string> assemblyReferences,
         ImmutableArray<PublicApiType> types)
     {
         Name = name;
@@ -36,6 +37,7 @@ public sealed class PublicApiAssembly
         InputIdentity = inputIdentity;
         UsesUpdatedMemorySafetyRules = usesUpdatedMemorySafetyRules;
         Attributes = attributes;
+        AssemblyReferences = assemblyReferences;
         Types = types;
         Scope = inputIdentity ?? FullName + "; " + module.ModuleVersionId.ToString("D", CultureInfo.InvariantCulture);
         _symbols = PublicApiSymbolLinker.Link(this);
@@ -90,6 +92,9 @@ public sealed class PublicApiAssembly
 
     /// <summary>Gets the custom attributes applied to the assembly.</summary>
     public ImmutableArray<PublicApiAttribute> Attributes { get; }
+
+    /// <summary>Gets the simple names of the assemblies referenced by the assembly, sorted and without duplicates (e.g. <c>System.Runtime</c>).</summary>
+    public ImmutableArray<string> AssemblyReferences { get; }
 
     /// <summary>Gets the top-level types, sorted by namespace and metadata name. Nested types are available from <see cref="PublicApiType.NestedTypes"/> and <see cref="GetAllTypes"/>.</summary>
     public ImmutableArray<PublicApiType> Types { get; }

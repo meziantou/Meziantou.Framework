@@ -5441,11 +5441,7 @@
     "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-custom-element-reactions.html": {
-    "total": 6,
-    "failures": {
-      "Removing the selected option updates selectedcontent and runs the clones' reactions after remove() returns": "FAIL",
-      "The parser's clone of a custom element is upgraded and connected before the next script runs": "FAIL"
-    }
+    "total": 6
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-insertion-removal.html": {
     "total": 4

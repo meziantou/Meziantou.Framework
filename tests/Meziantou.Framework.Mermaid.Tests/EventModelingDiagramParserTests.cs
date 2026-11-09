@@ -17,7 +17,7 @@ public sealed class EventModelingDiagramParserTests
               description: string
               price: number
             }
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal(["01", "02", "03", "04", "05"], diagram.Frames.Select(frame => frame.Id));
@@ -46,7 +46,7 @@ public sealed class EventModelingDiagramParserTests
             gwt 3 given evt Item when cmd Add then rmo Cart
             gwt 3 given evt Item then evt Done
             """);
-        var diagram = (EventModelingDiagram)document.Diagram;
+        var diagram = (EventModelingDiagram)document.Content;
         Assert.Equal((EventModelingEntityKind.ReadModel, "A.B.C"), (diagram.Frames[0].Kind, diagram.Frames[0].Entity));
         Assert.Equal((EventModelingEntityKind.Processor, true), (diagram.Frames[1].Kind, diagram.Frames[1].IsReset));
         Assert.Equal(("quoted { text }", EventModelingDataFormat.Json), (diagram.Frames[2].Data?.Content, diagram.Frames[2].Data?.Format));
@@ -104,8 +104,8 @@ public sealed class EventModelingDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (EventModelingDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (EventModelingDiagram)parsed.Content;
         Assert.Equal(("Cart", null), (result.Title, result.Description));
         var resultCommand = result.Find("02")!;
         Assert.Equal(("Cart.AddItem", "inline } data", EventModelingDataFormat.Text), (resultCommand.Entity, resultCommand.Data?.Content, resultCommand.Data?.Format));

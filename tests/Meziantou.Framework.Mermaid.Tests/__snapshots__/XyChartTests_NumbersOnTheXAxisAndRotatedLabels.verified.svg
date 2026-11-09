@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="500" viewBox="0 0 700 500" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="700" height="500" fill="#333333"/>
+<g class="grid">
+<line x1="44.12" y1="436.28" x2="690" y2="436.28" stroke="#3a3f47"/>
+<line x1="44.12" y1="405.83" x2="690" y2="405.83" stroke="#3a3f47"/>
+<line x1="44.12" y1="375.39" x2="690" y2="375.39" stroke="#3a3f47"/>
+<line x1="44.12" y1="344.94" x2="690" y2="344.94" stroke="#3a3f47"/>
+<line x1="44.12" y1="314.49" x2="690" y2="314.49" stroke="#3a3f47"/>
+<line x1="44.12" y1="284.04" x2="690" y2="284.04" stroke="#3a3f47"/>
+<line x1="44.12" y1="253.59" x2="690" y2="253.59" stroke="#3a3f47"/>
+<line x1="44.12" y1="223.14" x2="690" y2="223.14" stroke="#3a3f47"/>
+<line x1="44.12" y1="192.69" x2="690" y2="192.69" stroke="#3a3f47"/>
+<line x1="44.12" y1="162.24" x2="690" y2="162.24" stroke="#3a3f47"/>
+<line x1="44.12" y1="131.8" x2="690" y2="131.8" stroke="#3a3f47"/>
+<line x1="44.12" y1="101.35" x2="690" y2="101.35" stroke="#3a3f47"/>
+<line x1="44.12" y1="70.9" x2="690" y2="70.9" stroke="#3a3f47"/>
+<line x1="44.12" y1="40.45" x2="690" y2="40.45" stroke="#3a3f47"/>
+<line x1="44.12" y1="10" x2="690" y2="10" stroke="#3a3f47"/>
+</g>
+<g class="marks">
+<g class="line-plot-0">
+<path d="M44.12,177.47 L205.59,284.04 L367.06,10 L528.53,427.15 L690,223.14" fill="none" stroke="#3498db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+<g class="axes">
+<line x1="39.12" y1="436.28" x2="44.12" y2="436.28" stroke="#d3d3d3"/>
+<text x="36.12" y="439.86" text-anchor="end" font-size="14" fill="#a7adb5">-0.4</text>
+<line x1="39.12" y1="405.83" x2="44.12" y2="405.83" stroke="#d3d3d3"/>
+<text x="36.12" y="409.41" text-anchor="end" font-size="14" fill="#a7adb5">-0.2</text>
+<line x1="39.12" y1="375.39" x2="44.12" y2="375.39" stroke="#d3d3d3"/>
+<text x="36.12" y="378.96" text-anchor="end" font-size="14" fill="#a7adb5">0.0</text>
+<line x1="39.12" y1="344.94" x2="44.12" y2="344.94" stroke="#d3d3d3"/>
+<text x="36.12" y="348.51" text-anchor="end" font-size="14" fill="#a7adb5">0.2</text>
+<line x1="39.12" y1="314.49" x2="44.12" y2="314.49" stroke="#d3d3d3"/>
+<text x="36.12" y="318.06" text-anchor="end" font-size="14" fill="#a7adb5">0.4</text>
+<line x1="39.12" y1="284.04" x2="44.12" y2="284.04" stroke="#d3d3d3"/>
+<text x="36.12" y="287.62" text-anchor="end" font-size="14" fill="#a7adb5">0.6</text>
+<line x1="39.12" y1="253.59" x2="44.12" y2="253.59" stroke="#d3d3d3"/>
+<text x="36.12" y="257.17" text-anchor="end" font-size="14" fill="#a7adb5">0.8</text>
+<line x1="39.12" y1="223.14" x2="44.12" y2="223.14" stroke="#d3d3d3"/>
+<text x="36.12" y="226.72" text-anchor="end" font-size="14" fill="#a7adb5">1.0</text>
+<line x1="39.12" y1="192.69" x2="44.12" y2="192.69" stroke="#d3d3d3"/>
+<text x="36.12" y="196.27" text-anchor="end" font-size="14" fill="#a7adb5">1.2</text>
+<line x1="39.12" y1="162.24" x2="44.12" y2="162.24" stroke="#d3d3d3"/>
+<text x="36.12" y="165.82" text-anchor="end" font-size="14" fill="#a7adb5">1.4</text>
+<line x1="39.12" y1="131.8" x2="44.12" y2="131.8" stroke="#d3d3d3"/>
+<text x="36.12" y="135.37" text-anchor="end" font-size="14" fill="#a7adb5">1.6</text>
+<line x1="39.12" y1="101.35" x2="44.12" y2="101.35" stroke="#d3d3d3"/>
+<text x="36.12" y="104.92" text-anchor="end" font-size="14" fill="#a7adb5">1.8</text>
+<line x1="39.12" y1="70.9" x2="44.12" y2="70.9" stroke="#d3d3d3"/>
+<text x="36.12" y="74.47" text-anchor="end" font-size="14" fill="#a7adb5">2.0</text>
+<line x1="39.12" y1="40.45" x2="44.12" y2="40.45" stroke="#d3d3d3"/>
+<text x="36.12" y="44.03" text-anchor="end" font-size="14" fill="#a7adb5">2.2</text>
+<line x1="39.12" y1="10" x2="44.12" y2="10" stroke="#d3d3d3"/>
+<text x="36.12" y="13.58" text-anchor="end" font-size="14" fill="#a7adb5">2.4</text>
+<line x1="44.12" y1="10" x2="44.12" y2="436.28" stroke="#d3d3d3"/>
+<line x1="44.12" y1="436.28" x2="44.12" y2="441.28" stroke="#d3d3d3"/>
+<text x="49.15" y="449.31" text-anchor="end" font-size="14" fill="#a7adb5" transform="rotate(-45 49.15 449.31)">1.0</text>
+<line x1="124.86" y1="436.28" x2="124.86" y2="441.28" stroke="#d3d3d3"/>
+<text x="129.88" y="449.31" text-anchor="end" font-size="14" fill="#a7adb5" transform="rotate(-45 129.88 449.31)">1.5</text>
+<line x1="205.59" y1="436.28" x2="205.59" y2="441.28" stroke="#d3d3d3"/>
+<text x="210.62" y="449.31" text-anchor="end" font-size="14" fill="#a7adb5" transform="rotate(-45 210.62 449.31)">2.0</text>
+<line x1="286.33" y1="436.28" x2="286.33" y2="441.28" stroke="#d3d3d3"/>
+<text x="291.35" y="449.31" text-anchor="end" font-size="14" fill="#a7adb5" transform="rotate(-45 291.35 449.31)">2.5</text>
+<line x1="367.06" y1="436.28" x2="367.06" y2="441.28" stroke="#d3d3d3"/>
+<text x="372.09" y="449.31" text-anchor="end" font-size="14" fill="#a7adb5" transform="rotate(-45 372.09 449.31)">3.0</text>
+<line x1="447.8" y1="436.28" x2="447.8" y2="441.28" stroke="#d3d3d3"/>
+<text x="452.82" y="449.31" text-anchor="end" font-size="14" fill="#a7adb5" transform="rotate(-45 452.82 449.31)">3.5</text>
+<line x1="528.53" y1="436.28" x2="528.53" y2="441.28" stroke="#d3d3d3"/>
+<text x="533.56" y="449.31" text-anchor="end" font-size="14" fill="#a7adb5" transform="rotate(-45 533.56 449.31)">4.0</text>
+<line x1="609.27" y1="436.28" x2="609.27" y2="441.28" stroke="#d3d3d3"/>
+<text x="614.29" y="449.31" text-anchor="end" font-size="14" fill="#a7adb5" transform="rotate(-45 614.29 449.31)">4.5</text>
+<line x1="690" y1="436.28" x2="690" y2="441.28" stroke="#d3d3d3"/>
+<text x="695.03" y="449.31" text-anchor="end" font-size="14" fill="#a7adb5" transform="rotate(-45 695.03 449.31)">5.0</text>
+<line x1="44.12" y1="436.28" x2="690" y2="436.28" stroke="#d3d3d3"/>
+<text x="367.06" y="484.69" text-anchor="middle" font-size="16" fill="#cccccc">Day</text>
+</g>
+</svg>

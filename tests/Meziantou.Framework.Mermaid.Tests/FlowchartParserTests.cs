@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class FlowchartParserTests
 {
-    private static FlowchartDiagram Parse(string text) => (FlowchartDiagram)MermaidDocument.Parse(text).Diagram;
+    private static FlowchartDiagram Parse(string text) => (FlowchartDiagram)MermaidDocument.Parse(text).Content;
 
     [Theory]
     [InlineData("A[text]", FlowchartNodeShape.Rectangle)]
@@ -226,7 +226,7 @@ public sealed class FlowchartParserTests
         var text = MermaidWriter.Write(flowchart);
         var parsed = MermaidDocument.Parse(text);
         Assert.Empty(parsed.Warnings);
-        var result = (FlowchartDiagram)parsed.Diagram;
+        var result = (FlowchartDiagram)parsed.Content;
         Assert.Equal(text, MermaidWriter.Write(result));
         Assert.Equal(flowchart.Title, result.Title);
         Assert.Same(DiagramTheme.Dark, result.Theme);

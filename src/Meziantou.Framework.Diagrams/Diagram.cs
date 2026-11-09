@@ -64,7 +64,7 @@ public abstract class Diagram : ISceneSource
             bounds = default;
         }
 
-        TextBlock? title = DrawsTitle || string.IsNullOrEmpty(Title) ? null : context.Text(Title, Theme.TitleFontSize);
+        TextBlock? title = string.IsNullOrEmpty(Title) ? null : context.Text(Title, Theme.TitleFontSize);
         const double TitleGap = 10;
         var titleHeight = title is null ? 0 : title.Height + TitleGap;
         var contentWidth = Math.Max(bounds.Width, title?.Width ?? 0);
@@ -107,9 +107,6 @@ public abstract class Diagram : ISceneSource
         using var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 4096, leaveOpen: true);
         WriteSvg(writer, options);
     }
-
-    /// <summary>Gets a value that indicates whether <see cref="Render"/> draws the <see cref="Title"/> itself, inside the diagram, instead of above it.</summary>
-    private protected virtual bool DrawsTitle => false;
 
     /// <summary>Draws the content of the diagram into a group.</summary>
     /// <returns>The rectangle the content covers.</returns>

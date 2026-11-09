@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class ErDiagramParserTests
 {
-    private static ErDiagram Parse(string text) => (ErDiagram)MermaidDocument.Parse(text).Diagram;
+    private static ErDiagram Parse(string text) => (ErDiagram)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void EntitiesAndRelationships()
@@ -17,7 +17,7 @@ public sealed class ErDiagramParserTests
                     string email PK
                     string name "Full name"
                 }
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal(["CUSTOMER", "ORDER", "LINE-ITEM", "DELIVERY-ADDRESS"], diagram.Entities.Select(entity => entity.Id));
@@ -129,8 +129,8 @@ public sealed class ErDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (ErDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (ErDiagram)parsed.Content;
         var resultCustomer = (ErEntity)result.Find("CUSTOMER")!;
         Assert.Equal("The customer", resultCustomer.Label?.Text);
         Assert.Equal(("List~int~", "PK", ErAttributeKeys.PrimaryKey | ErAttributeKeys.UniqueKey, "a comment"), (resultCustomer.Attributes[0].Type, resultCustomer.Attributes[0].Name, resultCustomer.Attributes[0].Keys, resultCustomer.Attributes[0].Comment));

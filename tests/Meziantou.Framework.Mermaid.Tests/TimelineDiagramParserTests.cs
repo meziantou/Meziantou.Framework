@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class TimelineDiagramParserTests
 {
-    private static TimelineDiagram Parse(string text) => (TimelineDiagram)MermaidDocument.Parse(text).Diagram;
+    private static TimelineDiagram Parse(string text) => (TimelineDiagram)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void PeriodsAndEvents()
@@ -16,7 +16,7 @@ public sealed class TimelineDiagramParserTests
                      : Google
                 2005 : YouTube : Twitch
                 2006
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal("History of Social Media Platform", diagram.Title);
@@ -81,8 +81,8 @@ public sealed class TimelineDiagramParserTests
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
         Assert.Empty(parsed.Warnings);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (TimelineDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (TimelineDiagram)parsed.Content;
         Assert.Equal(("History", TimelineDirection.TopToBottom, true), (result.Title, result.Direction, result.DisableMulticolor));
         Assert.Equal("Before & <after>", result.Periods[0].Label.Text);
         Assert.Equal(["An event: with a colon", " Spaces "], result.Periods[0].Events.Select(item => item.Text));
@@ -115,7 +115,7 @@ public sealed class TimelineDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         Assert.Equal("timeline\n    title: event\n    Section\n    sectionX : other\n", text);
-        Assert.Equal(text, MermaidWriter.Write(MermaidDocument.Parse(text).Diagram));
+        Assert.Equal(text, MermaidWriter.Write(MermaidDocument.Parse(text).Content));
     }
 
     [Fact]

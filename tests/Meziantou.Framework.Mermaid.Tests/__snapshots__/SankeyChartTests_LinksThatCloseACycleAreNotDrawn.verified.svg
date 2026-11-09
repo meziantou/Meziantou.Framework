@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="420" viewBox="0 0 620 420" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="620" height="420" fill="#ffffff"/>
+<g class="marks">
+<g>
+<path d="M20,210 C162.5,210 162.5,210 305,210" fill="none" stroke="#4e79a7" stroke-opacity="0.502" stroke-width="400"><title>A → B: 10</title></path>
+<path d="M315,70 C457.5,70 457.5,70 600,70" fill="none" stroke="#f28e2c" stroke-opacity="0.502" stroke-width="120"><title>B → D: 3</title></path>
+<rect x="10" y="10" width="10" height="400" fill="#4e79a7"><title>A: 10</title></rect>
+<text x="26" y="213.58" font-size="14" fill="#333333">A</text>
+<rect x="305" y="10" width="10" height="400" fill="#f28e2c"><title>B: 10</title></rect>
+<text x="321" y="213.58" font-size="14" fill="#333333">B</text>
+<rect x="600" y="10" width="10" height="120" fill="#e15759"><title>D: 3</title></rect>
+<text x="594" y="73.58" text-anchor="end" font-size="14" fill="#333333">D</text>
+</g>
+</g>
+</svg>

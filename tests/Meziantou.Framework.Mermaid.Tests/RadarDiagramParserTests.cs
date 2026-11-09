@@ -2,13 +2,13 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class RadarDiagramParserTests
 {
-    private static RadarDiagram Parse(string text) => (RadarDiagram)MermaidDocument.Parse(text).Diagram;
+    private static RadarChart Parse(string text) => (RadarChart)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void AxesAndCurves()
     {
         #region Mermaid_RadarDiagram
-        var diagram = (RadarDiagram)MermaidDocument.Parse("""
+        var diagram = (RadarChart)MermaidDocument.Parse("""
             radar-beta
               title Restaurant Comparison
               axis food["Food Quality"], service["Service"], price["Price"]
@@ -17,7 +17,7 @@ public sealed class RadarDiagramParserTests
               curve b["Restaurant B"]{ price: 3, service: 4, ambiance: 3, food: 3 }
               graticule polygon
               max 5
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal("Restaurant Comparison", diagram.Title);
@@ -83,7 +83,7 @@ public sealed class RadarDiagramParserTests
               axis A, B, C
               curve c1{1,2,3}
             """);
-        var diagram = (RadarDiagram)document.Diagram;
+        var diagram = (RadarChart)document.Content;
         Assert.Empty(document.Warnings);
         Assert.Equal((400.0, 300.0, 10.0, 20.0, 30.0, 40.0), (diagram.Width, diagram.Height, diagram.MarginTop, diagram.MarginRight, diagram.MarginBottom, diagram.MarginLeft));
         Assert.Equal((0.25, 1.2, 0.1), (diagram.AxisScaleFactor, diagram.AxisLabelFactor, diagram.CurveTension));
@@ -96,11 +96,11 @@ public sealed class RadarDiagramParserTests
     public void TicksAreLimited()
     {
         var document = MermaidDocument.Parse("radar-beta\naxis a\nticks 40");
-        Assert.Equal(32, ((RadarDiagram)document.Diagram).Ticks);
+        Assert.Equal(32, ((RadarChart)document.Content).Ticks);
         Assert.Single(document.Warnings);
 
         var fraction = MermaidDocument.Parse("radar-beta\nticks 2.5");
-        Assert.Equal(3, ((RadarDiagram)fraction.Diagram).Ticks);
+        Assert.Equal(3, ((RadarChart)fraction.Content).Ticks);
         Assert.Single(fraction.Warnings);
     }
 
@@ -138,7 +138,7 @@ public sealed class RadarDiagramParserTests
     [Fact]
     public void Write()
     {
-        var diagram = new RadarDiagram
+        var diagram = new RadarChart
         {
             Title = "Grades",
             AccessibleTitle = "Accessible",
@@ -175,8 +175,8 @@ public sealed class RadarDiagramParserTests
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
         Assert.Empty(parsed.Warnings);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (RadarDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (RadarChart)parsed.Content;
         Assert.Equal(("Grades", "Accessible", false, 0, (double?)100.5, 0.000001, RadarGraticule.Polygon), (result.Title, result.AccessibleTitle, result.ShowLegend, result.Ticks, result.Maximum, result.Minimum, result.Graticule));
         Assert.Equal((500.0, 400.0, 1.0, 2.0, 3.0, 4.0, 0.5, 1.5, 0.0), (result.Width, result.Height, result.MarginTop, result.MarginRight, result.MarginBottom, result.MarginLeft, result.AxisScaleFactor, result.AxisLabelFactor, result.CurveTension));
         Assert.Equal((SceneColor.Parse("#112233"), (double?)1, (double?)10, (double?)0.25, (double?)5), (result.AxisColor, result.AxisStrokeWidth, result.AxisLabelFontSize, result.CurveOpacity, result.CurveStrokeWidth));
@@ -196,7 +196,7 @@ public sealed class RadarDiagramParserTests
     [InlineData("accTitle")]
     public void WriteRejectsInvalidNames(string name)
     {
-        var diagram = new RadarDiagram();
+        var diagram = new RadarChart();
         diagram.AddAxis(name);
         Assert.Throws<ArgumentException>("diagram", () => MermaidWriter.Write(diagram));
     }
@@ -204,11 +204,11 @@ public sealed class RadarDiagramParserTests
     [Fact]
     public void WriteRejectsWhatMermaidCannotRead()
     {
-        var empty = new RadarDiagram();
+        var empty = new RadarChart();
         empty.AddCurve("c", null);
         Assert.Throws<ArgumentException>("diagram", () => MermaidWriter.Write(empty));
 
-        var negative = new RadarDiagram();
+        var negative = new RadarChart();
         negative.AddCurve("c", null, -1);
         Assert.Throws<ArgumentException>("diagram", () => MermaidWriter.Write(negative));
     }

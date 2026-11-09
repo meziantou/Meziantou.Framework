@@ -14,7 +14,7 @@ internal sealed class RadarDiagramParser
 
     private readonly ParseContext _context;
     private readonly Scanner _scanner;
-    private readonly RadarDiagram _diagram = new();
+    private readonly RadarChart _diagram = new();
     private readonly List<PendingCurve> _curves = [];
     private readonly Dictionary<string, (double Value, int Position)> _options = new(StringComparer.Ordinal);
 
@@ -24,9 +24,9 @@ internal sealed class RadarDiagramParser
         _scanner = new Scanner(context, position);
     }
 
-    public static RadarDiagram Parse(ParseContext context, int position) => new RadarDiagramParser(context, position).Parse();
+    public static RadarChart Parse(ParseContext context, int position) => new RadarDiagramParser(context, position).Parse();
 
-    private RadarDiagram Parse()
+    private RadarChart Parse()
     {
         var keywordStart = _scanner.Position;
         if (!_scanner.TryConsume("radar-beta"))

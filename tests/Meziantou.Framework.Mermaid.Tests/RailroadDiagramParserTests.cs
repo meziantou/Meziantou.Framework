@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class RailroadDiagramParserTests
 {
-    private static RailroadDiagram Parse(string text) => (RailroadDiagram)MermaidDocument.Parse(text).Diagram;
+    private static RailroadDiagram Parse(string text) => (RailroadDiagram)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void Ebnf()
@@ -13,7 +13,7 @@ public sealed class RailroadDiagramParserTests
             title "Numbers"
             number = [ "+" | "-" ] digit+ ( "." digit* )? ;
             digit = ? a digit from 0 to 9 ? ;
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal((RailroadNotation.Ebnf, "Numbers"), (diagram.Notation, diagram.Title));
@@ -154,8 +154,8 @@ public sealed class RailroadDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (RailroadDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (RailroadDiagram)parsed.Content;
         Assert.Equal((notation, "Grammar"), (result.Notation, result.Title));
         var choice = Assert.IsType<RailroadChoice>(result.Rules[0].Definition);
         Assert.HasCount(4, choice.Alternatives);
@@ -169,7 +169,7 @@ public sealed class RailroadDiagramParserTests
         ebnf.AddRule("a", RailroadExpression.Sequence(RailroadExpression.Terminal("q\"\\\n"), RailroadExpression.Special("text")));
         var ebnfText = MermaidWriter.Write(ebnf);
         Assert.Contains("a = \"q\\\"\\\\\\n\" ? text ? ;", ebnfText, StringComparison.Ordinal);
-        Assert.Equal("q\"\\\n", ((RailroadTerminal)((RailroadSequence)((RailroadDiagram)MermaidDocument.Parse(ebnfText).Diagram).Rules[0].Definition).Items[0]).Value);
+        Assert.Equal("q\"\\\n", ((RailroadTerminal)((RailroadSequence)((RailroadDiagram)MermaidDocument.Parse(ebnfText).Content).Rules[0].Definition).Items[0]).Value);
 
         var abnf = new RailroadDiagram { Notation = RailroadNotation.Abnf };
         abnf.AddRule("a", RailroadExpression.Sequence(new RailroadRepetition(RailroadExpression.Terminal("%x41"), 2, 5), new RailroadRepetition(RailroadExpression.Nonterminal("b"), 0, 1)));
@@ -179,7 +179,7 @@ public sealed class RailroadDiagramParserTests
         peg.AddRule("A", RailroadExpression.Sequence(RailroadExpression.Special("!Keyword"), RailroadExpression.Special("&\"x\""), RailroadExpression.Special("!(...)"), RailroadExpression.Special("&!b"), RailroadExpression.Special(".")));
         var pegText = MermaidWriter.Write(peg);
         Assert.Contains("A <- !Keyword &\"x\" !(. .) &(!b) . ;", pegText, StringComparison.Ordinal);
-        Assert.Equal(pegText, MermaidWriter.Write(MermaidDocument.Parse(pegText).Diagram));
+        Assert.Equal(pegText, MermaidWriter.Write(MermaidDocument.Parse(pegText).Content));
     }
 
     [Fact]

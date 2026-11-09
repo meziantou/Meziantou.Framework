@@ -19,7 +19,7 @@ public sealed class MermaidDocumentTests
             """;
 
         var document = MermaidDocument.Parse(text);
-        var flowchart = (FlowchartDiagram)document.Diagram;
+        var flowchart = (FlowchartDiagram)document.Content;
         var svg = flowchart.ToSvg();
         #endregion
 
@@ -81,7 +81,7 @@ public sealed class MermaidDocumentTests
                 %% A comment
                 A --> B
             """);
-        var flowchart = (FlowchartDiagram)document.Diagram;
+        var flowchart = (FlowchartDiagram)document.Content;
         Assert.Same(DiagramTheme.Dark, flowchart.Theme);
         Assert.Equal(EdgeCurve.Linear, flowchart.Curve);
         Assert.Equal(80, flowchart.NodeSpacing);
@@ -99,7 +99,7 @@ public sealed class MermaidDocumentTests
             """);
 
         // The base theme derives the other colors from primaryColor, as Mermaid does
-        var theme = document.Diagram.Theme;
+        var theme = ((FlowchartDiagram)document.Content).Theme;
         Assert.Equal((SceneColor)"#bbf7d0", theme.NodeBackground);
         Assert.Equal((SceneColor)"#166534", theme.LineColor);
         Assert.Equal(14, theme.FontSize);
@@ -108,11 +108,12 @@ public sealed class MermaidDocumentTests
         Assert.NotEqual(theme.PrimaryColor, theme.SecondaryColor);
         Assert.NotEqual(theme.PrimaryColor, theme.PrimaryBorderColor);
 
-        var overridden = MermaidDocument.Parse("""
+        var overriddenDiagram = MermaidDocument.Parse("""
             %%{init: {'theme': 'default', 'themeVariables': {'mainBkg': 'rgb(255, 0, 0)', 'nodeBorder': 'blue', 'fontFamily': 'Arial', 'cScale0': 'hsl(0, 0%, 50%)'}}}%%
             flowchart LR
                 A
-            """).Diagram.Theme;
+            """).Content;
+        var overridden = ((Diagram)overriddenDiagram).Theme;
         Assert.Equal((SceneColor)"#ff0000", overridden.NodeBackground);
         Assert.Equal((SceneColor)"#0000ff", overridden.NodeBorderColor);
         Assert.Equal("Arial", overridden.FontFamily);
@@ -138,7 +139,7 @@ public sealed class MermaidDocumentTests
                 "(5, 5): The link 'javascript:alert(1)' is not allowed: only http, https, mailto and relative addresses are.",
             ],
             document.Warnings.Select(warning => warning.ToString()));
-        var flowchart = (FlowchartDiagram)document.Diagram;
+        var flowchart = (FlowchartDiagram)document.Content;
         Assert.Equal("Tooltip", flowchart.Nodes[0].Tooltip);
         Assert.Null(flowchart.Nodes[1].Link);
     }
@@ -159,7 +160,7 @@ public sealed class MermaidDocumentTests
     public void DefaultTheme()
     {
         var document = MermaidDocument.Parse("graph TD\nA", new MermaidParseOptions { DefaultTheme = DiagramTheme.Neutral });
-        Assert.Same(DiagramTheme.Neutral, document.Diagram.Theme);
+        Assert.Same(DiagramTheme.Neutral, ((Diagram)document.Content).Theme);
         Assert.Contains("flowchart", MermaidDocument.SupportedDiagramTypes);
     }
 
@@ -174,7 +175,7 @@ public sealed class MermaidDocumentTests
                     on two lines
                 }
                 A --> B
-            """).Diagram;
+            """).Content;
         Assert.Equal("The title", flowchart.AccessibleTitle);
         Assert.Equal("A description\non two lines", flowchart.Description);
         var svg = flowchart.ToSvg();
@@ -203,7 +204,7 @@ public sealed class MermaidDocumentTests
 
             """.ReplaceLineEndings("\n"),
             text);
-        Assert.Equal(text, MermaidWriter.Write(MermaidDocument.Parse(text).Diagram));
+        Assert.Equal(text, MermaidWriter.Write(MermaidDocument.Parse(text).Content));
     }
 
     [Fact]
@@ -240,7 +241,7 @@ public sealed class MermaidDocumentTests
         var diagram = new FlowchartDiagram { Title = "a\uD800b" };
         diagram.AddNode("A");
         var text = MermaidWriter.Write(diagram);
-        Assert.Equal("a\uFFFDb", MermaidDocument.Parse(text).Diagram.Title);
+        Assert.Equal("a\uFFFDb", ((Diagram)MermaidDocument.Parse(text).Content).Title);
     }
 
     [Fact]
@@ -250,7 +251,7 @@ public sealed class MermaidDocumentTests
         diagram.AddNode("A");
         var text = MermaidWriter.Write(diagram);
         Assert.DoesNotContain("title", text, StringComparison.Ordinal);
-        Assert.Equal(text, MermaidWriter.Write(MermaidDocument.Parse(text).Diagram));
+        Assert.Equal(text, MermaidWriter.Write(MermaidDocument.Parse(text).Content));
     }
 
     [Theory]
@@ -264,6 +265,6 @@ public sealed class MermaidDocumentTests
         diagram.AddNode("A");
         var text = MermaidWriter.Write(diagram);
         Assert.DoesNotContain("%%", text, StringComparison.Ordinal);
-        Assert.Equal(title, MermaidDocument.Parse(text).Diagram.Title);
+        Assert.Equal(title, ((Diagram)MermaidDocument.Parse(text).Content).Title);
     }
 }

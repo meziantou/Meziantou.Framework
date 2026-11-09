@@ -14,7 +14,7 @@ The types are in the [Meziantou.Framework.Mermaid](cref:Meziantou.Framework.Merm
 ## Read and draw a diagram
 
 [MermaidDocument.Parse](cref:Meziantou.Framework.Mermaid.MermaidDocument.Parse) reads a text and returns its
-[Diagram](cref:Meziantou.Framework.Mermaid.MermaidDocument.Diagram). Cast it to the type of the diagram, such as
+[Content](cref:Meziantou.Framework.Mermaid.MermaidDocument.Content). Cast it to the type of the diagram, such as
 [FlowchartDiagram](cref:Meziantou.Framework.Diagrams.FlowchartDiagram), to read or change it, and write it as SVG:
 
 <!-- ref:../../tests/Meziantou.Framework.Mermaid.Tests/MermaidDocumentTests.cs;region=Mermaid_Parse;format=md-fenced-code-block;dedent=true -->

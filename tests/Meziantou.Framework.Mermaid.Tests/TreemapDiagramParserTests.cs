@@ -2,13 +2,13 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class TreemapDiagramParserTests
 {
-    private static TreemapDiagram Parse(string text) => (TreemapDiagram)MermaidDocument.Parse(text).Diagram;
+    private static TreemapChart Parse(string text) => (TreemapChart)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void Hierarchy()
     {
         #region Mermaid_TreemapDiagram
-        var diagram = (TreemapDiagram)MermaidDocument.Parse("""
+        var diagram = (TreemapChart)MermaidDocument.Parse("""
             treemap
               title Sales by product
               "Electronics"
@@ -18,7 +18,7 @@ public sealed class TreemapDiagramParserTests
               "Clothing"
                   "Men's": 40
                   "Women's": 40
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal("Sales by product", diagram.Title);
@@ -70,7 +70,7 @@ public sealed class TreemapDiagramParserTests
             classDef section_1 fill:red,color:blue,stroke:#FFD600;
             classDef leaf fill:rgb(1\,2\,3)
             """);
-        Assert.Equal((4.0, 50.0, 50.0, false, "$0,0", 20.0), (diagram.InnerPadding, diagram.NodeWidth, diagram.NodeHeight, diagram.ShowValues, diagram.ValueFormat, diagram.Padding));
+        Assert.Equal((4.0, 50.0, 50.0, false, "$0,0", 20.0), (diagram.InnerPadding, diagram.NodeWidth, diagram.NodeHeight, diagram.ShowValues, diagram.ValueFormat, diagram.DiagramPadding));
         Assert.Equal(("Accessible", "Described"), (diagram.AccessibleTitle, diagram.Description));
         var section = Assert.Single(diagram.Nodes);
         Assert.Equal(("Quote \"1\"", "section_1"), (section.Name, section.CssClass));
@@ -129,7 +129,7 @@ public sealed class TreemapDiagramParserTests
     [Fact]
     public void Write()
     {
-        var diagram = new TreemapDiagram { Title = "Budget", Description = "The budget", InnerPadding = 5, NodeWidth = 80, ValueFormat = ".1f", ShowValues = false, Theme = DiagramTheme.Forest };
+        var diagram = new TreemapChart { Title = "Budget", Description = "The budget", InnerPadding = 5, NodeWidth = 80, ValueFormat = ".1f", ShowValues = false, DiagramPadding = 0, Theme = DiagramTheme.Forest };
         diagram.ClassDefinitions["important"] = new DiagramStyle { Fill = SceneColor.Parse("#ff9966"), StrokeWidth = 2 };
         diagram.ClassDefinitions["empty"] = new DiagramStyle();
         var operations = diagram.AddNode("Operations \"main\"");
@@ -144,9 +144,9 @@ public sealed class TreemapDiagramParserTests
         Assert.Contains("\"It's small\": 0.00000015\n", text, StringComparison.Ordinal);
         Assert.Contains("'Operations \"main\"':::important\n", text, StringComparison.Ordinal);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (TreemapDiagram)parsed.Diagram;
-        Assert.Equal(("Budget", "The budget", 5.0, 80.0, ".1f", false), (result.Title, result.Description, result.InnerPadding, result.NodeWidth, result.ValueFormat, result.ShowValues));
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (TreemapChart)parsed.Content;
+        Assert.Equal(("Budget", "The budget", 5.0, 80.0, ".1f", false, 0.0), (result.Title, result.Description, result.InnerPadding, result.NodeWidth, result.ValueFormat, result.ShowValues, result.DiagramPadding));
         Assert.Same(DiagramTheme.Forest, result.Theme);
         Assert.Equal([1e21, 1.5e-7, 0], result.Nodes[0].Children.Select(node => node.Value!.Value));
         Assert.Equal("Line\nbreak", result.Nodes[0].Children[2].Name);
@@ -156,19 +156,19 @@ public sealed class TreemapDiagramParserTests
     [Fact]
     public void WriteRejectsWhatMermaidCannotRead()
     {
-        var both = new TreemapDiagram();
+        var both = new TreemapChart();
         both.AddNode("\"double\" and 'single'");
         Assert.Throws<ArgumentException>("name", () => MermaidWriter.Write(both));
 
-        var leafWithChildren = new TreemapDiagram();
+        var leafWithChildren = new TreemapChart();
         leafWithChildren.AddNode("Leaf", 1).AddChild("Child", 2);
         Assert.Throws<ArgumentException>("node", () => MermaidWriter.Write(leafWithChildren));
 
-        var comment = new TreemapDiagram();
+        var comment = new TreemapChart();
         comment.AddNode("a\n  %% b");
         Assert.Throws<ArgumentException>("name", () => MermaidWriter.Write(comment));
 
-        var className = new TreemapDiagram();
+        var className = new TreemapChart();
         className.ClassDefinitions["x"] = new DiagramStyle();
         Assert.Throws<ArgumentException>("diagram", () => MermaidWriter.Write(className));
     }

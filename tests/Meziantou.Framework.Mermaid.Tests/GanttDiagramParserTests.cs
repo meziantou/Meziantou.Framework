@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class GanttDiagramParserTests
 {
-    private static GanttDiagram Parse(string text) => (GanttDiagram)MermaidDocument.Parse(text).Diagram;
+    private static GanttDiagram Parse(string text) => (GanttDiagram)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void SectionsAndTasks()
@@ -19,7 +19,7 @@ public sealed class GanttDiagramParserTests
                 section Another
                     Task in sec  :crit, 2014-01-12, 12d
                     Release      :milestone, 2014-02-20, 0d
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal("A Gantt Diagram", diagram.Title);
@@ -130,7 +130,7 @@ public sealed class GanttDiagramParserTests
             warning => Assert.Contains("callbacks are not supported", warning.Message, StringComparison.Ordinal),
             warning => Assert.Contains("is not allowed", warning.Message, StringComparison.Ordinal),
             warning => Assert.Contains("'missing' is not declared", warning.Message, StringComparison.Ordinal));
-        var task = ((GanttDiagram)document.Diagram).Tasks[0];
+        var task = ((GanttDiagram)document.Content).Tasks[0];
         Assert.Equal((new GanttDuration(0, GanttTimeUnit.Day), null), (task.Duration, task.Link));
     }
 
@@ -204,8 +204,8 @@ public sealed class GanttDiagramParserTests
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
         Assert.Empty(parsed.Warnings);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (GanttDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (GanttDiagram)parsed.Content;
         Assert.Equal(("Plan", "DD/MM/YYYY", "%d/%m", new GanttTickInterval(1, GanttTimeUnit.Week)), (result.Title, result.DateFormat, result.AxisFormat, result.TickInterval));
         Assert.Equal((DayOfWeek.Monday, DayOfWeek.Friday, true, true, true, 900.0), (result.WeekStart, result.WeekendStart, result.InclusiveEndDates, result.TopAxis, result.Compact, result.Width));
         Assert.Equal(["weekends"], result.Excludes);

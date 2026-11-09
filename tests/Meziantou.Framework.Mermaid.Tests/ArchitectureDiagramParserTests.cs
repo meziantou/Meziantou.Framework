@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class ArchitectureDiagramParserTests
 {
-    private static ArchitectureDiagram Parse(string text) => (ArchitectureDiagram)MermaidDocument.Parse(text).Diagram;
+    private static ArchitectureDiagram Parse(string text) => (ArchitectureDiagram)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void GroupsServicesAndEdges()
@@ -16,7 +16,7 @@ public sealed class ArchitectureDiagramParserTests
                 service server(server)[Server] in api
                 db:L -- R:server
                 disk:T --> B:server
-            """).Diagram;
+            """).Content;
         #endregion
 
         var api = Assert.Single(diagram.Groups);
@@ -91,8 +91,8 @@ public sealed class ArchitectureDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (ArchitectureDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (ArchitectureDiagram)parsed.Content;
         Assert.Equal(60, result.IconSize);
         var resultOuter = Assert.Single(result.Groups);
         Assert.Equal(("Outer [x]", "cloud", "Inner \"quoted\""), (resultOuter.Title?.Text, resultOuter.Icon, resultOuter.Groups[0].Title?.Text));

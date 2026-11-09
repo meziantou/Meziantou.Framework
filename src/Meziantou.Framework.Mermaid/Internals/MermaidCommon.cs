@@ -60,14 +60,15 @@ internal static class MermaidCommon
     /// Reads the accessibility statements: <c>accTitle: text</c>, <c>accDescr: text</c> and <c>accDescr { lines }</c>.
     /// </summary>
     /// <returns><see langword="true"/> when the scanner was on one of them.</returns>
-    public static bool TryParseAccessibility(Scanner scanner, Diagram diagram)
+    public static bool TryParseAccessibility(Scanner scanner, ISceneSource diagram)
     {
+        var content = new MermaidContent(diagram);
         if (scanner.StartsWith("accTitle") && IsFollowedBy(scanner, "accTitle".Length, ':'))
         {
             scanner.Position += "accTitle".Length;
             scanner.SkipSpaces();
             scanner.Expect(":");
-            diagram.AccessibleTitle = scanner.ReadLine().Trim();
+            content.AccessibleTitle = scanner.ReadLine().Trim();
             return true;
         }
 
@@ -78,7 +79,7 @@ internal static class MermaidCommon
             scanner.SkipSpaces();
             if (scanner.TryConsume(":"))
             {
-                diagram.Description = scanner.ReadLine().Trim();
+                content.Description = scanner.ReadLine().Trim();
                 return true;
             }
 
@@ -90,7 +91,7 @@ internal static class MermaidCommon
 
                 // The %% comments of the block are not part of the description
                 var lines = scanner.Text[scanner.Position..end].Split('\n').Select(line => line.Trim()).Where(line => !line.StartsWith("%%", StringComparison.Ordinal));
-                diagram.Description = string.Join('\n', lines).Trim();
+                content.Description = string.Join('\n', lines).Trim();
                 scanner.Position = end + 1;
                 return true;
             }
@@ -113,17 +114,18 @@ internal static class MermaidCommon
     }
 
     /// <summary>Applies the configuration that every diagram shares: the theme, the title and the padding.</summary>
-    public static void ApplyCommonConfiguration(Diagram diagram, ParseContext context, string section)
+    public static void ApplyCommonConfiguration(ISceneSource diagram, ParseContext context, string section)
     {
+        var content = new MermaidContent(diagram);
         MermaidTheme.Apply(diagram, context);
         if (context.Title is { Length: > 0 } title)
         {
-            diagram.Title = title;
+            content.Title = title;
         }
 
         if (context.Configuration.GetNumber(section, "diagramPadding") is >= 0 and <= 1000 and var padding)
         {
-            diagram.Padding = padding;
+            content.SetPadding(padding);
         }
     }
 

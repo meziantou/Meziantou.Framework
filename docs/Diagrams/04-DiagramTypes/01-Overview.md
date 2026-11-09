@@ -27,17 +27,14 @@ description: The types of diagrams, and the Mermaid keyword of each.
 | [Mindmap](21-Mindmaps.md) | [MindmapDiagram](cref:Meziantou.Framework.Diagrams.MindmapDiagram) | `mindmap` |
 | [Tree view](22-TreeViews.md) | [TreeViewDiagram](cref:Meziantou.Framework.Diagrams.TreeViewDiagram) | `treeView-beta` |
 | [Ishikawa diagram](23-IshikawaDiagrams.md) | [IshikawaDiagram](cref:Meziantou.Framework.Diagrams.IshikawaDiagram) | `ishikawa-beta`, `ishikawa` |
-| [Treemap](24-Treemaps.md) | [TreemapDiagram](cref:Meziantou.Framework.Diagrams.TreemapDiagram) | `treemap`, `treemap-beta` |
-| [Pie chart](25-PieCharts.md) | [PieDiagram](cref:Meziantou.Framework.Diagrams.PieDiagram) | `pie` |
-| [XY chart](26-XyCharts.md) | [XyChartDiagram](cref:Meziantou.Framework.Diagrams.XyChartDiagram) | `xychart`, `xychart-beta` |
-| [Quadrant chart](27-QuadrantCharts.md) | [QuadrantChartDiagram](cref:Meziantou.Framework.Diagrams.QuadrantChartDiagram) | `quadrantChart` |
-| [Sankey diagram](28-SankeyDiagrams.md) | [SankeyDiagram](cref:Meziantou.Framework.Diagrams.SankeyDiagram) | `sankey`, `sankey-beta` |
-| [Radar chart](29-RadarCharts.md) | [RadarDiagram](cref:Meziantou.Framework.Diagrams.RadarDiagram) | `radar-beta` |
-| [Venn diagram](30-VennDiagrams.md) | [VennDiagram](cref:Meziantou.Framework.Diagrams.VennDiagram) | `venn-beta` |
-| [Wardley map](31-WardleyMaps.md) | [WardleyDiagram](cref:Meziantou.Framework.Diagrams.WardleyDiagram) | `wardley-beta` |
-| [Cynefin diagram](32-CynefinDiagrams.md) | [CynefinDiagram](cref:Meziantou.Framework.Diagrams.CynefinDiagram) | `cynefin-beta` |
+| [Venn diagram](24-VennDiagrams.md) | [VennDiagram](cref:Meziantou.Framework.Diagrams.VennDiagram) | `venn-beta` |
+| [Wardley map](25-WardleyMaps.md) | [WardleyDiagram](cref:Meziantou.Framework.Diagrams.WardleyDiagram) | `wardley-beta` |
+| [Cynefin diagram](26-CynefinDiagrams.md) | [CynefinDiagram](cref:Meziantou.Framework.Diagrams.CynefinDiagram) | `cynefin-beta` |
 
 Every diagram derives from [Diagram](cref:Meziantou.Framework.Diagrams.Diagram), which gives it a
 [Title](cref:Meziantou.Framework.Diagrams.Diagram.Title), an accessible
 [Description](cref:Meziantou.Framework.Diagrams.Diagram.Description), a [Theme](cref:Meziantou.Framework.Diagrams.Diagram.Theme)
 and the SVG output.
+
+The charts of Mermaid (pie, XY, quadrant, sankey, radar charts and treemaps) are drawn with Meziantou.Framework.Charts by
+the `Meziantou.Framework.Mermaid` package: see [Mermaid charts](../../Mermaid/04-Charts/01-Overview.md).

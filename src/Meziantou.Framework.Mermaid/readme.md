@@ -1,8 +1,10 @@
 # Meziantou.Framework.Mermaid
 
 Reads the text format of [Mermaid](https://mermaid.js.org) into the diagrams of
-[Meziantou.Framework.Diagrams](https://www.nuget.org/packages/Meziantou.Framework.Diagrams), and writes them back as
-Mermaid: the diagrams, their front matter, their `%%{init}%%` directives, their themes and their accessibility statements.
+[Meziantou.Framework.Diagrams](https://www.nuget.org/packages/Meziantou.Framework.Diagrams) and into charts drawn with
+[Meziantou.Framework.Charts](https://www.nuget.org/packages/Meziantou.Framework.Charts) (pie, XY, quadrant, sankey and
+radar charts, treemaps), and writes them back as Mermaid: the diagrams, their front matter, their `%%{init}%%`
+directives, their themes and their accessibility statements.
 
 ## Usage
 

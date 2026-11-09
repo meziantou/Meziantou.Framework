@@ -17,7 +17,7 @@ internal sealed class SankeyDiagramParser
 {
     private readonly ParseContext _context;
     private readonly string _text;
-    private readonly SankeyDiagram _diagram = new();
+    private readonly SankeyChart _diagram = new();
     private readonly List<int> _linkOffsets = [];
     private int _position;
 
@@ -28,7 +28,7 @@ internal sealed class SankeyDiagramParser
         _position = position;
     }
 
-    public static SankeyDiagram Parse(ParseContext context, int position) => new SankeyDiagramParser(context, position).Parse();
+    public static SankeyChart Parse(ParseContext context, int position) => new SankeyDiagramParser(context, position).Parse();
 
     /// <summary>Indicates whether a character is white space for the <c>trim</c> of JavaScript.</summary>
     public static bool IsJavaScriptWhiteSpace(char c) => c is '\t' or '\n' or '\v' or '\f' or '\r' or ' ' or '\u00A0' or '\u1680' or (>= '\u2000' and <= '\u200A') or '\u2028' or '\u2029' or '\u202F' or '\u205F' or '\u3000' or '\uFEFF';
@@ -103,7 +103,7 @@ internal sealed class SankeyDiagramParser
         return double.Parse(text.AsSpan(start, i - start), NumberStyles.Float, CultureInfo.InvariantCulture);
     }
 
-    private SankeyDiagram Parse()
+    private SankeyChart Parse()
     {
         var keywordStart = _position;
         if (!TryConsume("sankey-beta") && !TryConsume("sankey"))

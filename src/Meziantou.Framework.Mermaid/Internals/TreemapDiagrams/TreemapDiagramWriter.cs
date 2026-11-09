@@ -3,15 +3,15 @@ using System.Text;
 
 namespace Meziantou.Framework.Mermaid.Internals.TreemapDiagrams;
 
-/// <summary>Writes a <see cref="TreemapDiagram"/> as Mermaid: a quoted name per line, indented by 4 spaces per level, then the classes.</summary>
+/// <summary>Writes a <see cref="TreemapChart"/> as Mermaid: a quoted name per line, indented by 4 spaces per level, then the classes.</summary>
 internal static class TreemapDiagramWriter
 {
-    public static void Write(StringBuilder builder, TreemapDiagram diagram)
+    public static void Write(StringBuilder builder, TreemapChart diagram)
     {
         var configuration = new List<string>();
-        if (diagram.Padding != 8)
+        if (diagram.DiagramPadding != 8)
         {
-            configuration.Add("diagramPadding: " + MermaidStyle.Number(diagram.Padding));
+            configuration.Add("diagramPadding: " + MermaidStyle.Number(diagram.DiagramPadding));
         }
 
         if (diagram.InnerPadding != 10)

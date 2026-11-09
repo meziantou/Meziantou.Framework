@@ -34,21 +34,25 @@ using Meziantou.Framework.Mermaid.Internals;
 namespace Meziantou.Framework.Mermaid;
 
 /// <summary>
-/// A diagram read from the Mermaid text format: the diagram, and the warnings about the valid parts that the diagrams do
-/// not support. The front matter (<c>title</c>, <c>config</c>), the <c>%%{init: ...}%%</c> directives, the <c>%%</c>
+/// A diagram read from the Mermaid text format: its content, and the warnings about the valid parts that are not
+/// supported. The front matter (<c>title</c>, <c>config</c>), the <c>%%{init: ...}%%</c> directives, the <c>%%</c>
 /// comments and the accessibility statements are read for every type of diagram.
 /// </summary>
 public sealed class MermaidDocument
 {
-    private MermaidDocument(Diagram diagram, string diagramType, IReadOnlyList<MermaidWarning> warnings)
+    private MermaidDocument(ISceneSource content, string diagramType, IReadOnlyList<MermaidWarning> warnings)
     {
-        Diagram = diagram;
+        Content = content;
         DiagramType = diagramType;
         Warnings = warnings;
     }
 
-    /// <summary>Gets the diagram.</summary>
-    public Diagram Diagram { get; }
+    /// <summary>
+    /// Gets what the text describes: a <see cref="Diagram"/> of Meziantou.Framework.Diagrams, such as a
+    /// <see cref="FlowchartDiagram"/>, or a <see cref="MermaidChart"/> drawn with Meziantou.Framework.Charts, such as a
+    /// <see cref="PieChart"/>. Cast it to its type to read or change it.
+    /// </summary>
+    public ISceneSource Content { get; }
 
     /// <summary>Gets the keyword that declares the type of the diagram, such as <c>flowchart</c> or <c>classDiagram</c>.</summary>
     public string DiagramType { get; }
@@ -85,7 +89,7 @@ public sealed class MermaidDocument
         }
 
         var keyword = context.Text[position..end];
-        Diagram diagram = keyword switch
+        ISceneSource content = keyword switch
         {
             "flowchart" or "graph" or "flowchart-elk" or "flowchart-v2" or "swimlane-beta" => FlowchartParser.Parse(context, position),
             "classDiagram" or "classDiagram-v2" => ClassDiagramParser.Parse(context, position),
@@ -123,7 +127,7 @@ public sealed class MermaidDocument
             _ => throw context.Error(position, IsKnownType(keyword) ? $"The diagram type '{keyword}' is not supported yet." : $"No diagram type was found: '{(keyword.Length is 0 ? context.Text[position].ToString() : keyword)}' is not a type of Mermaid diagram."),
         };
 
-        return new MermaidDocument(diagram, keyword, context.Warnings.ToArray());
+        return new MermaidDocument(content, keyword, context.Warnings.ToArray());
     }
 
     /// <summary>Tries to read a Mermaid text.</summary>

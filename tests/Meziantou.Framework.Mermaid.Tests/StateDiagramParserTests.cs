@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class StateDiagramParserTests
 {
-    private static StateDiagram Parse(string text) => (StateDiagram)MermaidDocument.Parse(text).Diagram;
+    private static StateDiagram Parse(string text) => (StateDiagram)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void StatesAndTransitions()
@@ -15,7 +15,7 @@ public sealed class StateDiagramParserTests
                 Moving --> Still
                 Moving --> Crash
                 Crash --> [*]
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal([StateKind.Start, StateKind.Normal, StateKind.Normal, StateKind.Normal, StateKind.End], diagram.States.Select(state => state.Kind));
@@ -125,8 +125,8 @@ public sealed class StateDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (StateDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (StateDiagram)parsed.Content;
         var resultComposite = result.Find("Composite")!;
         Assert.Equal("The composite", resultComposite.Label?.Text);
         Assert.HasCount(2, resultComposite.Regions);

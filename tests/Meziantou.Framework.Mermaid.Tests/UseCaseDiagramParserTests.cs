@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class UseCaseDiagramParserTests
 {
-    private static UseCaseDiagram Parse(string text) => (UseCaseDiagram)MermaidDocument.Parse(text).Diagram;
+    private static UseCaseDiagram Parse(string text) => (UseCaseDiagram)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void ActorsUseCasesAndBoundaries()
@@ -18,7 +18,7 @@ public sealed class UseCaseDiagramParserTests
             end
             Customer --> Checkout
             Checkout ..> : include Pay
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal("Customer", Assert.Single(diagram.Actors).Label?.Text);
@@ -67,7 +67,7 @@ public sealed class UseCaseDiagramParserTests
             style Agent stroke:#00f
             opens@{ animation: fast }
             """);
-        var diagram = (UseCaseDiagram)document.Diagram;
+        var diagram = (UseCaseDiagram)document.Content;
         var agent = (UseCaseActor)diagram.Find("Agent")!;
         Assert.Equal((true, "Employee", (SceneColor)"#0000ff"), (agent.IsBusiness, agent.Stereotype, agent.Style?.Stroke));
         Assert.Equal(UseCaseActorKind.Hollow, ((UseCaseActor)diagram.Find("Broker")!).Kind);
@@ -131,8 +131,8 @@ public sealed class UseCaseDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (UseCaseDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (UseCaseDiagram)parsed.Content;
         var resultCustomer = Assert.Single(result.Actors);
         Assert.Equal(("The \"customer\"", UseCaseActorKind.Hollow, true, "Person"), (resultCustomer.Label?.Text, resultCustomer.Kind, resultCustomer.IsBusiness, resultCustomer.Stereotype));
         var resultBoundary = Assert.Single(result.Boundaries);

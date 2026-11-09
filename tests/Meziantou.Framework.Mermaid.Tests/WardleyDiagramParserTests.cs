@@ -27,7 +27,7 @@ public sealed class WardleyDiagramParserTests
             evolve Power 0.89
 
             note "Standardising power allows Kettles to evolve faster" [0.30, 0.49]
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal("Tea Shop Value Chain", map.Title);
@@ -60,7 +60,7 @@ public sealed class WardleyDiagramParserTests
             "A" "B"
             A->B
             foo-bar->baz
-            """).Diagram;
+            """).Content;
         Assert.Equal(
             [
                 (false, WardleyFlow.None, null),
@@ -93,7 +93,7 @@ public sealed class WardleyDiagramParserTests
             component real-time processing [55.5, 40.0]
             component byte pair encoding (BPE) [0.1, 0.1]
             component _id [0.5, 0.5]
-            """).Diagram;
+            """).Content;
         Assert.Equal(["Mobile App", "API", "Cache", "real-time processing", "byte pair encoding (BPE)", "_id"], map.Components.Select(component => component.Name));
         Assert.Equal([WardleySourcing.Build, WardleySourcing.Buy, WardleySourcing.Market, WardleySourcing.None, WardleySourcing.None, WardleySourcing.None], map.Components.Select(component => component.Sourcing));
         Assert.Equal([true, true, false, false, false, false], map.Components.Select(component => component.Inertia));
@@ -131,7 +131,7 @@ public sealed class WardleyDiagramParserTests
             deaccelerator Legacy Constraints [0.15, 0.75]
             accTitle: Kettles
             accDescr: The evolution of the kettles
-            """).Diagram;
+            """).Content;
         Assert.Equal((1100.0, 800.0, 20.0, 4.0, true), (map.Width, map.Height, map.MapPadding, map.NodeRadius, map.ShowGrid));
         Assert.Equal(["Genesis / Concept", "Custom Built", "Product", "Commodity / Accepted"], map.Stages.Select(stage => stage.Label));
         Assert.Equal([0.25, 0.5, null, null], map.Stages.Select(stage => stage.Boundary));
@@ -152,7 +152,7 @@ public sealed class WardleyDiagramParserTests
         // The lexer of Mermaid tries the keywords before the names: "builder" is "build" followed by "er"
         Assert.False(MermaidDocument.TryParse("wardley-beta\ncomponent builder [0.5, 0.5]", out _));
         Assert.False(MermaidDocument.TryParse("wardley-beta\ncomponent notebook [0.5, 0.5]", out _));
-        var map = (WardleyDiagram)MermaidDocument.Parse("wardley-beta\ncomponent \"builder\" [0.5, 0.5]\ncomponent Notebook [0.5, 0.5]\ntitles -> x").Diagram;
+        var map = (WardleyDiagram)MermaidDocument.Parse("wardley-beta\ncomponent \"builder\" [0.5, 0.5]\ncomponent Notebook [0.5, 0.5]\ntitles -> x").Content;
         Assert.Equal(["builder", "Notebook"], map.Components.Select(component => component.Name));
         Assert.Equal(("titles", "x"), (map.Links[0].Source, map.Links[0].Target));
     }
@@ -161,7 +161,7 @@ public sealed class WardleyDiagramParserTests
     public void QuirksOfTheGrammarOfMermaid()
     {
         // Checked against the parser of Mermaid 12.3.0
-        var map = (WardleyDiagram)MermaidDocument.Parse("wardley-beta component A [0.1, 0.1]\naccTitle x\nA title -> B\nfoo- -> x\nA -> B;   \naccDescr\n  {\n  first\n  second\n  }").Diagram;
+        var map = (WardleyDiagram)MermaidDocument.Parse("wardley-beta component A [0.1, 0.1]\naccTitle x\nA title -> B\nfoo- -> x\nA -> B;   \naccDescr\n  {\n  first\n  second\n  }").Content;
         Assert.Equal("A", Assert.Single(map.Components).Name);
         Assert.Equal([("accTitle", "x", (string?)null), ("A title", "B", null), ("foo-", "x", null), ("A", "B", null)], map.Links.Select(link => (link.Source, link.Target, link.Label)));
         Assert.Null(map.AccessibleTitle);
@@ -173,7 +173,7 @@ public sealed class WardleyDiagramParserTests
     {
         // Mermaid checks the target of a movement only when the component is on the map
         var document = MermaidDocument.Parse("wardley-beta\nevolve Missing 0.5\nevolve Unknown 500.0\ncomponent A [0.1, 0.1]\nevolve A 50.0");
-        var map = (WardleyDiagram)document.Diagram;
+        var map = (WardleyDiagram)document.Content;
         Assert.Equal([("Missing", 0.5), ("A", 0.5)], map.Evolves.Select(evolve => (evolve.Component, evolve.Evolution)));
         Assert.Contains(document.Warnings, warning => warning.Message.Contains("Unknown", StringComparison.Ordinal));
     }
@@ -236,8 +236,8 @@ public sealed class WardleyDiagramParserTests
 
         var text = MermaidWriter.Write(map);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (WardleyDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (WardleyDiagram)parsed.Content;
         Assert.Equal(("Map", "Accessible", 1000.0, 700.0, 5.0, true), (result.Title, result.AccessibleTitle, result.Width, result.Height, result.NodeLabelOffset, result.ShowGrid));
         Assert.Equal(["Genesis / Concept", "custom build"], result.Stages.Select(stage => stage.Label));
         Assert.Equal(["size matters", "Database #1 %% \"quoted\"\n"], result.Components.Select(component => component.Name));
@@ -257,8 +257,8 @@ public sealed class WardleyDiagramParserTests
     {
         var map = new WardleyDiagram { Width = 900.5, Padding = 10, MapPadding = 30, NodeRadius = 7, AxisFontSize = 13, LabelFontSize = 11, Theme = DiagramTheme.Forest, Title = "  spaced  title" };
         var text = MermaidWriter.Write(map);
-        Assert.Equal(text, MermaidWriter.Write(MermaidDocument.Parse(text).Diagram));
-        var result = (WardleyDiagram)MermaidDocument.Parse(text).Diagram;
+        Assert.Equal(text, MermaidWriter.Write(MermaidDocument.Parse(text).Content));
+        var result = (WardleyDiagram)MermaidDocument.Parse(text).Content;
         Assert.Equal((900.5, 600.0, 10.0, 30.0, 7.0, 13.0, 11.0, "  spaced  title"), (result.Width, result.Height, result.Padding, result.MapPadding, result.NodeRadius, result.AxisFontSize, result.LabelFontSize, result.Title));
         Assert.Same(DiagramTheme.Forest, result.Theme);
     }

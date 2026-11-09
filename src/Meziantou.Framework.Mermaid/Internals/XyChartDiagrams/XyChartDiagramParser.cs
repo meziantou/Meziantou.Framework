@@ -12,7 +12,7 @@ internal sealed class XyChartDiagramParser
 {
     private readonly ParseContext _context;
     private readonly XyChartLexer _lexer;
-    private readonly XyChartDiagram _diagram = new();
+    private readonly XyChart _diagram = new();
     private XyChartToken _token;
     private bool _warnedBarLabels;
 
@@ -22,9 +22,9 @@ internal sealed class XyChartDiagramParser
         _lexer = new XyChartLexer(context, position);
     }
 
-    public static XyChartDiagram Parse(ParseContext context, int position) => new XyChartDiagramParser(context, position).Parse();
+    public static XyChart Parse(ParseContext context, int position) => new XyChartDiagramParser(context, position).Parse();
 
-    private XyChartDiagram Parse()
+    private XyChart Parse()
     {
         ApplyConfiguration();
         Advance();

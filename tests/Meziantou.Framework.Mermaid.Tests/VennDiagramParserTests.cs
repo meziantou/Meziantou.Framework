@@ -19,7 +19,7 @@ public sealed class VennDiagramParserTests
               style A fill:#ff6b6b
               style A,B color:#333
               style A1 color:red
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal("Team skills", diagram.Title);
@@ -44,7 +44,7 @@ public sealed class VennDiagramParserTests
               set C[""]
               set D["  "]
               union B,"Foo Bar"
-            """).Diagram;
+            """).Content;
         Assert.Equal(["Foo Bar", "B", "C", "D", "B, Foo Bar"], diagram.Areas.Select(area => area.ToString()));
 
         // A label is trimmed; [""] has no label, but [" "] is an empty label, as in Mermaid
@@ -56,7 +56,7 @@ public sealed class VennDiagramParserTests
     [Fact]
     public void StatementsNeedNoLineBreaks()
     {
-        var diagram = (VennDiagram)MermaidDocument.Parse("venn-beta set A set B union A,B[\"AB\"] style A,B fill:red").Diagram;
+        var diagram = (VennDiagram)MermaidDocument.Parse("venn-beta set A set B union A,B[\"AB\"] style A,B fill:red").Content;
         Assert.HasCount(3, diagram.Areas);
         Assert.Equal("AB", diagram.Areas[2].Label);
         Assert.Single(diagram.Styles);
@@ -65,7 +65,7 @@ public sealed class VennDiagramParserTests
     [Fact]
     public void KeywordsIgnoreTheCase()
     {
-        var diagram = (VennDiagram)MermaidDocument.Parse("venn-beta\n  SET A\n  Set settings\n  UNION A,settings\n  TITLE Title\n").Diagram;
+        var diagram = (VennDiagram)MermaidDocument.Parse("venn-beta\n  SET A\n  Set settings\n  UNION A,settings\n  TITLE Title\n").Content;
         Assert.Equal(["A", "settings", "A, settings"], diagram.Areas.Select(area => area.ToString()));
         Assert.Equal("Title", diagram.Title);
     }
@@ -84,7 +84,7 @@ public sealed class VennDiagramParserTests
             union A,B
                 text ab
             text A,B z
-            """).Diagram;
+            """).Content;
 
         // A text at the start of a line names its sets, and ends the indented texts
         Assert.Equal(["a1:A", "b 1:B", "42:B", "x:A", "ab:A,B", "z:A,B"], diagram.TextNodes.Select(node => node.Id + ":" + string.Join(',', node.Sets)));
@@ -94,7 +94,7 @@ public sealed class VennDiagramParserTests
     [Fact]
     public void Comments()
     {
-        var diagram = (VennDiagram)MermaidDocument.Parse("venn-beta\n  %% a comment\n  set A %% a comment\n  set B[\"B %% not a comment\"]\n  set C %% a comment\n").Diagram;
+        var diagram = (VennDiagram)MermaidDocument.Parse("venn-beta\n  %% a comment\n  set A %% a comment\n  set B[\"B %% not a comment\"]\n  set C %% a comment\n").Content;
 
         Assert.Equal(["A", "B", "C"], diagram.Areas.Select(area => area.ToString()));
         Assert.Equal("B %% not a comment", diagram.Areas[1].Label);
@@ -103,7 +103,7 @@ public sealed class VennDiagramParserTests
     [Fact]
     public void TitleAndEntities()
     {
-        var diagram = (VennDiagram)MermaidDocument.Parse("venn-beta\n  title \"Team #quot;overlap#quot;\" #35;1\n  set \"a#quot;b\"[\"x #amp; y\"]\ntext \"a#quot;b\" t[\"#59;\"]\n").Diagram;
+        var diagram = (VennDiagram)MermaidDocument.Parse("venn-beta\n  title \"Team #quot;overlap#quot;\" #35;1\n  set \"a#quot;b\"[\"x #amp; y\"]\ntext \"a#quot;b\" t[\"#59;\"]\n").Content;
         Assert.Equal("\"Team \"overlap\"\" #1", diagram.Title);
         Assert.Equal("a\"b", diagram.Areas[0].Sets[0]);
         Assert.Equal("x & y", diagram.Areas[0].Label);
@@ -121,7 +121,7 @@ public sealed class VennDiagramParserTests
               style B fill:#f00;
               style B stroke-width: "4px", fill-opacity: "50%", font-size: 12, fill: notacolor
             """);
-        var diagram = (VennDiagram)document.Diagram;
+        var diagram = (VennDiagram)document.Content;
         var a = diagram.Styles[0].Style;
         Assert.Equal((SceneColor)"#ff0000", a.Fill);
         Assert.Equal(0.5, a.FillOpacity);
@@ -154,7 +154,7 @@ public sealed class VennDiagramParserTests
             ---
             venn-beta
               set A
-            """).Diagram;
+            """).Content;
         Assert.Equal(("From the front matter", 1600.0, 900.0), (diagram.Title, diagram.Width, diagram.Height));
         Assert.Same(DiagramTheme.Forest, diagram.Theme);
         Assert.Equal((SceneColor)"#ff0000", diagram.SetColors[0]);
@@ -215,7 +215,7 @@ public sealed class VennDiagramParserTests
         diagram.AddStyle(["Text"], new VennStyle());
 
         var text = MermaidWriter.Write(diagram);
-        var parsed = (VennDiagram)MermaidDocument.Parse(text).Diagram;
+        var parsed = (VennDiagram)MermaidDocument.Parse(text).Content;
         Assert.Equal(text, MermaidWriter.Write(parsed));
         Assert.Equal((diagram.Title, 1000.0, 500.0, 4.0), (parsed.Title, parsed.Width, parsed.Height, parsed.Padding));
         Assert.Equal((SceneColor)"#123456", parsed.SetColors[2]);
@@ -258,7 +258,7 @@ public sealed class VennDiagramParserTests
         diagram.AddText(["A"], "a");
         var text = MermaidWriter.Write(diagram);
         Assert.Contains("\ntext A a\n", text, StringComparison.Ordinal);
-        var parsed = (VennDiagram)MermaidDocument.Parse(text).Diagram;
+        var parsed = (VennDiagram)MermaidDocument.Parse(text).Content;
         Assert.Equal(["b", "a"], parsed.TextNodes.Select(node => node.Id));
     }
 

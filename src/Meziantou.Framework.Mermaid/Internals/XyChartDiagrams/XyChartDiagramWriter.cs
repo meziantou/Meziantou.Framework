@@ -4,19 +4,15 @@ using System.Text;
 namespace Meziantou.Framework.Mermaid.Internals.XyChartDiagrams;
 
 /// <summary>
-/// Writes an <see cref="XyChartDiagram"/> as Mermaid: its options in the front matter, its colors in a directive, then
+/// Writes an <see cref="XyChart"/> as Mermaid: its options in the front matter, its colors in a directive, then
 /// the title, the axes and the series.
 /// </summary>
 internal static class XyChartDiagramWriter
 {
-    public static void Write(StringBuilder builder, XyChartDiagram diagram)
+    public static void Write(StringBuilder builder, XyChart diagram)
     {
         Validate(diagram);
         var configuration = new List<string>();
-        if (diagram.Padding != 8)
-        {
-            configuration.Add("diagramPadding: " + MermaidStyle.Number(diagram.Padding));
-        }
 
         AddNumber(configuration, "width", diagram.Width, 700);
         AddNumber(configuration, "height", diagram.Height, 500);
@@ -78,7 +74,7 @@ internal static class XyChartDiagramWriter
         }
     }
 
-    private static void Validate(XyChartDiagram diagram)
+    private static void Validate(XyChart diagram)
     {
         if (diagram.YAxis.Categories.Count > 0)
             throw new ArgumentException("The y axis of an XY chart cannot have categories in Mermaid.", nameof(diagram));

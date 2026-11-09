@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="500" viewBox="0 0 700 500" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Balance</title>
+<rect width="700" height="500" fill="#ffffff"/>
+<g class="grid">
+<line x1="53.25" y1="446.25" x2="605.19" y2="446.25" stroke="#e3e6ea"/>
+<line x1="53.25" y1="409" x2="605.19" y2="409" stroke="#e3e6ea"/>
+<line x1="53.25" y1="371.75" x2="605.19" y2="371.75" stroke="#e3e6ea"/>
+<line x1="53.25" y1="334.5" x2="605.19" y2="334.5" stroke="#e3e6ea"/>
+<line x1="53.25" y1="297.25" x2="605.19" y2="297.25" stroke="#e3e6ea"/>
+<line x1="53.25" y1="260" x2="605.19" y2="260" stroke="#e3e6ea"/>
+<line x1="53.25" y1="222.75" x2="605.19" y2="222.75" stroke="#e3e6ea"/>
+<line x1="53.25" y1="185.5" x2="605.19" y2="185.5" stroke="#e3e6ea"/>
+<line x1="53.25" y1="148.25" x2="605.19" y2="148.25" stroke="#e3e6ea"/>
+<line x1="53.25" y1="111" x2="605.19" y2="111" stroke="#e3e6ea"/>
+<line x1="53.25" y1="73.75" x2="605.19" y2="73.75" stroke="#e3e6ea"/>
+<line x1="53.25" y1="36.5" x2="605.19" y2="36.5" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g class="bar-plot-0">
+<rect x="75.32" y="334.5" width="66.23" height="111.75" fill="#ececff"/>
+<rect x="185.71" y="148.25" width="66.23" height="186.25" fill="#ececff"/>
+<rect x="296.1" y="334.5" width="66.23" height="55.88" fill="#ececff"/>
+<rect x="406.49" y="36.5" width="66.23" height="298" fill="#ececff"/>
+<rect x="516.88" y="260" width="66.23" height="74.5" fill="#ececff"/>
+</g>
+<g class="line-plot-1">
+<path d="M108.44,409 L218.83,297.25 L329.22,260 L439.61,185.5 L550,111" fill="none" stroke="#8493a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g class="data-labels">
+<text x="218.83" y="162.83" text-anchor="middle" font-size="14" fill="#333333">5</text>
+<text x="439.61" y="51.08" text-anchor="middle" font-size="14" fill="#333333">8</text>
+<text x="550" y="274.58" text-anchor="middle" font-size="14" fill="#333333">2</text>
+</g>
+<g class="data-labels">
+<text x="108.44" y="438.83" text-anchor="middle" font-size="14" fill="#333333">-3</text>
+<text x="329.22" y="382.95" text-anchor="middle" font-size="14" fill="#333333">-1.5</text>
+</g>
+</g>
+<g class="axes">
+<line x1="48.25" y1="446.25" x2="53.25" y2="446.25" stroke="#333333"/>
+<text x="45.25" y="449.83" text-anchor="end" font-size="14" fill="#59636e">-3</text>
+<line x1="48.25" y1="409" x2="53.25" y2="409" stroke="#333333"/>
+<text x="45.25" y="412.58" text-anchor="end" font-size="14" fill="#59636e">-2</text>
+<line x1="48.25" y1="371.75" x2="53.25" y2="371.75" stroke="#333333"/>
+<text x="45.25" y="375.33" text-anchor="end" font-size="14" fill="#59636e">-1</text>
+<line x1="48.25" y1="334.5" x2="53.25" y2="334.5" stroke="#333333"/>
+<text x="45.25" y="338.08" text-anchor="end" font-size="14" fill="#59636e">0</text>
+<line x1="48.25" y1="297.25" x2="53.25" y2="297.25" stroke="#333333"/>
+<text x="45.25" y="300.83" text-anchor="end" font-size="14" fill="#59636e">1</text>
+<line x1="48.25" y1="260" x2="53.25" y2="260" stroke="#333333"/>
+<text x="45.25" y="263.58" text-anchor="end" font-size="14" fill="#59636e">2</text>
+<line x1="48.25" y1="222.75" x2="53.25" y2="222.75" stroke="#333333"/>
+<text x="45.25" y="226.33" text-anchor="end" font-size="14" fill="#59636e">3</text>
+<line x1="48.25" y1="185.5" x2="53.25" y2="185.5" stroke="#333333"/>
+<text x="45.25" y="189.08" text-anchor="end" font-size="14" fill="#59636e">4</text>
+<line x1="48.25" y1="148.25" x2="53.25" y2="148.25" stroke="#333333"/>
+<text x="45.25" y="151.83" text-anchor="end" font-size="14" fill="#59636e">5</text>
+<line x1="48.25" y1="111" x2="53.25" y2="111" stroke="#333333"/>
+<text x="45.25" y="114.58" text-anchor="end" font-size="14" fill="#59636e">6</text>
+<line x1="48.25" y1="73.75" x2="53.25" y2="73.75" stroke="#333333"/>
+<text x="45.25" y="77.33" text-anchor="end" font-size="14" fill="#59636e">7</text>
+<line x1="48.25" y1="36.5" x2="53.25" y2="36.5" stroke="#333333"/>
+<text x="45.25" y="40.08" text-anchor="end" font-size="14" fill="#59636e">8</text>
+<line x1="53.25" y1="36.5" x2="53.25" y2="446.25" stroke="#333333"/>
+<text x="21.49" y="241.38" text-anchor="middle" font-size="16" fill="#333333" transform="rotate(-90 21.49 241.38)">Amount</text>
+<line x1="108.44" y1="446.25" x2="108.44" y2="451.25" stroke="#333333"/>
+<text x="108.44" y="464.3" text-anchor="middle" font-size="14" fill="#59636e">10</text>
+<line x1="218.83" y1="446.25" x2="218.83" y2="451.25" stroke="#333333"/>
+<text x="218.83" y="464.3" text-anchor="middle" font-size="14" fill="#59636e">20</text>
+<line x1="329.22" y1="446.25" x2="329.22" y2="451.25" stroke="#333333"/>
+<text x="329.22" y="464.3" text-anchor="middle" font-size="14" fill="#59636e">30</text>
+<line x1="439.61" y1="446.25" x2="439.61" y2="451.25" stroke="#333333"/>
+<text x="439.61" y="464.3" text-anchor="middle" font-size="14" fill="#59636e">40</text>
+<line x1="550" y1="446.25" x2="550" y2="451.25" stroke="#333333"/>
+<text x="550" y="464.3" text-anchor="middle" font-size="14" fill="#59636e">50</text>
+<line x1="53.25" y1="446.25" x2="605.19" y2="446.25" stroke="#333333"/>
+<text x="329.22" y="484.69" text-anchor="middle" font-size="16" fill="#333333">Week</text>
+</g>
+<g class="legend">
+<rect x="617.19" y="38.9" width="10" height="10" rx="2" fill="#ececff"/>
+<text x="632.19" y="47.99" font-size="16" fill="#333333">Balance</text>
+<rect x="617.19" y="57.7" width="10" height="10" rx="2" fill="#8493a6"/>
+<text x="632.19" y="66.79" font-size="16" fill="#333333">Trend</text>
+</g>
+<text x="10" y="24.36" font-size="20" font-weight="bold" fill="#333333">Balance</text>
+</svg>

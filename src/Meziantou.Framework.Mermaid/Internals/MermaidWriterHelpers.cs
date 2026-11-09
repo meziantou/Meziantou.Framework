@@ -6,11 +6,12 @@ namespace Meziantou.Framework.Mermaid.Internals;
 internal static class MermaidWriterHelpers
 {
     /// <summary>Writes the front matter: the title, the theme when it is one of the themes of Mermaid, and the configuration of the diagram.</summary>
-    public static void WriteFrontMatter(StringBuilder builder, Diagram diagram, string section, List<string> configuration, bool includeTitle = true)
+    public static void WriteFrontMatter(StringBuilder builder, ISceneSource diagram, string section, List<string> configuration, bool includeTitle = true)
     {
+        var content = new MermaidContent(diagram);
         // An empty title is read back as no title
-        var title = includeTitle && !string.IsNullOrEmpty(diagram.Title) ? diagram.Title : null;
-        var themeName = diagram.Theme switch
+        var title = includeTitle && !string.IsNullOrEmpty(content.Title) ? content.Title : null;
+        var themeName = content.Theme switch
         {
             var theme when ReferenceEquals(theme, DiagramTheme.Dark) => "dark",
             var theme when ReferenceEquals(theme, DiagramTheme.Forest) => "forest",
@@ -49,14 +50,15 @@ internal static class MermaidWriterHelpers
         builder.Append("---\n");
     }
 
-    public static void WriteAccessibility(StringBuilder builder, Diagram diagram, int indent)
+    public static void WriteAccessibility(StringBuilder builder, ISceneSource diagram, int indent)
     {
-        if (diagram.AccessibleTitle is { } title)
+        var content = new MermaidContent(diagram);
+        if (content.AccessibleTitle is { } title)
         {
-            builder.AppendIndent(indent).Append("accTitle: ").Append(SingleLine(title, nameof(diagram.AccessibleTitle))).Append('\n');
+            builder.AppendIndent(indent).Append("accTitle: ").Append(SingleLine(title, nameof(content.AccessibleTitle))).Append('\n');
         }
 
-        if (diagram.Description is { } description)
+        if (content.Description is { } description)
         {
             if (description.Contains('\n', StringComparison.Ordinal))
             {
@@ -66,14 +68,14 @@ internal static class MermaidWriterHelpers
                 builder.AppendIndent(indent).Append("accDescr {\n");
                 foreach (var line in description.Split('\n'))
                 {
-                    builder.AppendIndent(indent + 1).Append(SingleLine(line, nameof(diagram.Description))).Append('\n');
+                    builder.AppendIndent(indent + 1).Append(SingleLine(line, nameof(content.Description))).Append('\n');
                 }
 
                 builder.AppendIndent(indent).Append("}\n");
             }
             else
             {
-                builder.AppendIndent(indent).Append("accDescr: ").Append(SingleLine(description, nameof(diagram.Description))).Append('\n');
+                builder.AppendIndent(indent).Append("accDescr: ").Append(SingleLine(description, nameof(content.Description))).Append('\n');
             }
         }
     }

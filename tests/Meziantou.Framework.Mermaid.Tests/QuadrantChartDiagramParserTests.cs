@@ -4,13 +4,13 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class QuadrantChartDiagramParserTests
 {
-    private static QuadrantChartDiagram Parse(string text) => (QuadrantChartDiagram)MermaidDocument.Parse(text).Diagram;
+    private static QuadrantChart Parse(string text) => (QuadrantChart)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void QuadrantChart()
     {
         #region Mermaid_QuadrantChartDiagram
-        var diagram = (QuadrantChartDiagram)MermaidDocument.Parse("""
+        var diagram = (QuadrantChart)MermaidDocument.Parse("""
             quadrantChart
                 title Reach and engagement of campaigns
                 x-axis Low Reach --> High Reach
@@ -22,7 +22,7 @@ public sealed class QuadrantChartDiagramParserTests
                 Campaign A: [0.3, 0.6]
                 Campaign B:::important: [0.45, 0.23] radius: 12, color: #ff3300
                 classDef important stroke-color: #310085, stroke-width: 2px
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal("Reach and engagement of campaigns", diagram.Title);
@@ -140,7 +140,7 @@ public sealed class QuadrantChartDiagramParserTests
     [Fact]
     public void Write()
     {
-        var diagram = new QuadrantChartDiagram
+        var diagram = new QuadrantChart
         {
             Title = "Title",
             Description = "Description",
@@ -161,8 +161,8 @@ public sealed class QuadrantChartDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (QuadrantChartDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (QuadrantChart)parsed.Content;
         Assert.Equal(("Title", "Description", 300.0, QuadrantChartXAxisPosition.Bottom), (result.Title, result.Description, result.Width, result.XAxisPosition));
         Assert.Null(result.XAxisLeftLabel);
         Assert.Equal(["Only the right text", "--> is not a delimiter in quotes", "Markdown", "title is a keyword", "trimmed"], new[] { result.XAxisRightLabel, result.YAxisBottomLabel, result.YAxisTopLabel, result.Quadrant1Label, result.Quadrant2Label }.Select(label => label?.Text));
@@ -187,20 +187,20 @@ public sealed class QuadrantChartDiagramParserTests
     [Fact]
     public void WriteRejectsWhatMermaidCannotRead()
     {
-        var quote = new QuadrantChartDiagram { Quadrant1Label = "a \"quote\"" };
+        var quote = new QuadrantChart { Quadrant1Label = "a \"quote\"" };
         Assert.Throws<ArgumentException>("label", () => MermaidWriter.Write(quote));
         // Mermaid reads "%% as a comment that also takes the quote
-        var comment = new QuadrantChartDiagram { Quadrant1Label = "%%]" };
+        var comment = new QuadrantChart { Quadrant1Label = "%%]" };
         Assert.Throws<ArgumentException>("label", () => MermaidWriter.Write(comment));
-        var backquote = new QuadrantChartDiagram { Quadrant1Label = new DiagramText("a `b`", DiagramTextFormat.Markdown) };
+        var backquote = new QuadrantChart { Quadrant1Label = new DiagramText("a `b`", DiagramTextFormat.Markdown) };
         Assert.Throws<ArgumentException>("label", () => MermaidWriter.Write(backquote));
-        var className = new QuadrantChartDiagram();
+        var className = new QuadrantChart();
         className.AddPoint("p", 0, 0).ClassName = "a-b";
         Assert.Throws<ArgumentException>("diagram", () => MermaidWriter.Write(className));
-        var classDefinition = new QuadrantChartDiagram();
+        var classDefinition = new QuadrantChart();
         classDefinition.ClassDefinitions["a b"] = new QuadrantChartPointStyle { Radius = 1 };
         Assert.Throws<ArgumentException>("diagram", () => MermaidWriter.Write(classDefinition));
-        var transparent = new QuadrantChartDiagram();
+        var transparent = new QuadrantChart();
         transparent.AddPoint("p", 0, 0).Style.Color = SceneColor.Transparent;
         Assert.Throws<ArgumentException>("color", () => MermaidWriter.Write(transparent));
     }

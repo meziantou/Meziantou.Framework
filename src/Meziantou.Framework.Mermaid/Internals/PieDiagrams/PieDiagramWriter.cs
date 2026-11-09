@@ -4,16 +4,12 @@ using Meziantou.Framework.Mermaid.Internals.GitGraphDiagrams;
 
 namespace Meziantou.Framework.Mermaid.Internals.PieDiagrams;
 
-/// <summary>Writes a <see cref="PieDiagram"/> as Mermaid: its configuration in the front matter, its colors in a directive, then a line per slice.</summary>
+/// <summary>Writes a <see cref="PieChart"/> as Mermaid: its configuration in the front matter, its colors in a directive, then a line per slice.</summary>
 internal static class PieDiagramWriter
 {
-    public static void Write(StringBuilder builder, PieDiagram diagram)
+    public static void Write(StringBuilder builder, PieChart diagram)
     {
         var configuration = new List<string>();
-        if (diagram.Padding != 8)
-        {
-            configuration.Add("diagramPadding: " + MermaidStyle.Number(diagram.Padding));
-        }
 
         if (diagram.TextPosition != 0.75)
         {

@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class BlockDiagramParserTests
 {
-    private static BlockDiagram Parse(string text) => (BlockDiagram)MermaidDocument.Parse(text).Diagram;
+    private static BlockDiagram Parse(string text) => (BlockDiagram)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void BlocksColumnsAndComposites()
@@ -18,7 +18,7 @@ public sealed class BlockDiagramParserTests
                 database[("Database")] cache("Cache")
               end
               backend --> database
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal(3, diagram.Columns);
@@ -111,8 +111,8 @@ public sealed class BlockDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (BlockDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (BlockDiagram)parsed.Content;
         var resultA = result.Find("a")!;
         Assert.Equal(("The \"first\"", FlowchartNodeShape.RoundedRectangle, 2), (resultA.Label?.Text, resultA.Shape, resultA.Span));
         var resultGroup = (BlockDiagramComposite)result.Find("group")!;

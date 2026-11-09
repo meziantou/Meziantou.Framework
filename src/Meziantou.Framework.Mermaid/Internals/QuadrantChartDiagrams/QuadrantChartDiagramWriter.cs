@@ -4,21 +4,17 @@ using System.Text;
 namespace Meziantou.Framework.Mermaid.Internals.QuadrantChartDiagrams;
 
 /// <summary>
-/// Writes a <see cref="QuadrantChartDiagram"/> as Mermaid: its configuration in the front matter, its colors in a
+/// Writes a <see cref="QuadrantChart"/> as Mermaid: its configuration in the front matter, its colors in a
 /// directive, then the axes, the quadrants, the points and the classes. A text is written as is when it reads back the
 /// same, between quotes otherwise; Mermaid has no escapes, so a text with a double quote cannot be written.
 /// </summary>
 internal static class QuadrantChartDiagramWriter
 {
-    private static readonly QuadrantChartDiagram Defaults = new();
+    private static readonly QuadrantChart Defaults = new();
 
-    public static void Write(StringBuilder builder, QuadrantChartDiagram diagram)
+    public static void Write(StringBuilder builder, QuadrantChart diagram)
     {
         var configuration = new List<string>();
-        if (diagram.Padding != 8)
-        {
-            configuration.Add("diagramPadding: " + MermaidStyle.Number(diagram.Padding));
-        }
 
         AddNumber("chartWidth", diagram.Width, Defaults.Width);
         AddNumber("chartHeight", diagram.Height, Defaults.Height);

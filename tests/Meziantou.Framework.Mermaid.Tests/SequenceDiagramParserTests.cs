@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class SequenceDiagramParserTests
 {
-    private static SequenceDiagram Parse(string text) => (SequenceDiagram)MermaidDocument.Parse(text).Diagram;
+    private static SequenceDiagram Parse(string text) => (SequenceDiagram)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void ParticipantsAndMessages()
@@ -22,7 +22,7 @@ public sealed class SequenceDiagramParserTests
                 end
                 Shop-->>-Customer: Order confirmed
                 Note over Customer,Bank: One order, one payment
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal([SequenceParticipantKind.Actor, SequenceParticipantKind.Participant, SequenceParticipantKind.Database], diagram.Participants.Select(participant => participant.Kind));
@@ -97,7 +97,7 @@ public sealed class SequenceDiagramParserTests
                     A->>A: wrap:Self
                 end
             """);
-        var diagram = (SequenceDiagram)document.Diagram;
+        var diagram = (SequenceDiagram)document.Content;
         Assert.Equal("Sequence title", diagram.Title);
         Assert.Equal((SceneColor)"aqua", diagram.Boxes[0].Color);
         Assert.Equal("Alice & John", diagram.Boxes[0].Title?.Text);
@@ -162,8 +162,8 @@ public sealed class SequenceDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (SequenceDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (SequenceDiagram)parsed.Content;
         Assert.Equal(("Title", false), (result.Title, result.MirrorParticipants));
         Assert.Equal(("Alice; the #1", SequenceParticipantKind.Queue), (result.Find("Alice")!.Label?.Text, result.Find("Alice")!.Kind));
         Assert.Equal(("Team (A)", SceneColor.Parse("rgba(10, 20, 30, 0.5)")), (result.Boxes[0].Title?.Text, result.Boxes[0].Color));

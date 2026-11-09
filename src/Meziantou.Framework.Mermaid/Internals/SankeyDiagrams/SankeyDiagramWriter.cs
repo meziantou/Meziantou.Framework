@@ -2,20 +2,16 @@ using System.Text;
 
 namespace Meziantou.Framework.Mermaid.Internals.SankeyDiagrams;
 
-/// <summary>Writes a <see cref="SankeyDiagram"/> as Mermaid: a row <c>source,target,value</c> per link, the names quoted when needed.</summary>
+/// <summary>Writes a <see cref="SankeyChart"/> as Mermaid: a row <c>source,target,value</c> per link, the names quoted when needed.</summary>
 internal static class SankeyDiagramWriter
 {
-    public static void Write(StringBuilder builder, SankeyDiagram diagram)
+    public static void Write(StringBuilder builder, SankeyChart diagram)
     {
         // The grammar has no accessibility statements: Mermaid would read them as rows
         if (diagram.AccessibleTitle is not null || diagram.Description is not null)
             throw new ArgumentException("A sankey diagram cannot have an accessible title nor a description in Mermaid.", nameof(diagram));
 
         var configuration = new List<string>();
-        if (diagram.Padding != 8)
-        {
-            configuration.Add("diagramPadding: " + MermaidStyle.Number(diagram.Padding));
-        }
 
         if (diagram.Width != 600)
         {

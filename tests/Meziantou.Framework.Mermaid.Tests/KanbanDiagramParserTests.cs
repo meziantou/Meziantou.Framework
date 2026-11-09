@@ -20,7 +20,7 @@ public sealed class KanbanDiagramParserTests
                 renderer[Draw the cards]@{ assigned: 'Alice', priority: 'Very High' }
               [Done]
                 [Design the model]
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal("https://tracker.example.com/browse/#TICKET#", diagram.TicketLinkFormat);
@@ -50,7 +50,7 @@ public sealed class KanbanDiagramParserTests
                 e[Deeper is a card of the column]
               f[Card]@{ label: 'Label', icon: 'book', other: 1 }
             """);
-        var diagram = (KanbanDiagram)document.Diagram;
+        var diagram = (KanbanDiagram)document.Content;
         var column = diagram.Columns.Single();
         Assert.Equal(["urgent", "wide"], column.CssClasses);
         Assert.Equal(["a", "b", "c", "d", "e", "f"], column.Cards.Select(card => card.Id));
@@ -93,8 +93,8 @@ public sealed class KanbanDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (KanbanDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (KanbanDiagram)parsed.Content;
         Assert.Equal(("Board", 250.0, "https://example.com/#TICKET#"), (result.Title, result.ColumnWidth, result.TicketLinkFormat));
         Assert.Equal(["todo", " odd [id] "], result.Columns.Select(column => column.Id));
         Assert.Equal(("To [do]", ["hot"]), (result.Columns[0].Label?.Text, result.Columns[0].CssClasses.ToArray()));

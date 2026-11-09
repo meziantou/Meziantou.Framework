@@ -14,7 +14,7 @@ internal sealed class QuadrantChartDiagramParser
 
     private readonly ParseContext _context;
     private readonly List<QuadrantChartToken> _tokens;
-    private readonly QuadrantChartDiagram _diagram = new();
+    private readonly QuadrantChart _diagram = new();
     private int _index;
 
     private QuadrantChartDiagramParser(ParseContext context, int position)
@@ -25,9 +25,9 @@ internal sealed class QuadrantChartDiagramParser
 
     private QuadrantChartToken Current => _tokens[_index];
 
-    public static QuadrantChartDiagram Parse(ParseContext context, int position) => new QuadrantChartDiagramParser(context, position).Parse();
+    public static QuadrantChart Parse(ParseContext context, int position) => new QuadrantChartDiagramParser(context, position).Parse();
 
-    private QuadrantChartDiagram Parse()
+    private QuadrantChart Parse()
     {
         if (Current.Kind is not QuadrantChartTokenKind.Keyword)
             throw Error("'quadrantChart' is expected.");

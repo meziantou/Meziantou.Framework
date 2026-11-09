@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class RequirementDiagramParserTests
 {
-    private static RequirementDiagram Parse(string text) => (RequirementDiagram)MermaidDocument.Parse(text).Diagram;
+    private static RequirementDiagram Parse(string text) => (RequirementDiagram)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void RequirementsElementsAndRelationships()
@@ -20,7 +20,7 @@ public sealed class RequirementDiagramParserTests
                     type: simulation
                 }
                 test_entity - satisfies -> test_req
-            """).Diagram;
+            """).Content;
         #endregion
 
         var requirement = Assert.Single(diagram.Requirements);
@@ -67,7 +67,7 @@ public sealed class RequirementDiagramParserTests
     public void RelationshipsToUndefinedNodesAreIgnored()
     {
         var document = MermaidDocument.Parse("requirementDiagram\na - traces -> b");
-        Assert.Empty(((RequirementDiagram)document.Diagram).Relationships);
+        Assert.Empty(((RequirementDiagram)document.Content).Relationships);
         Assert.Contains("'a' is not defined", Assert.Single(document.Warnings).Message, StringComparison.Ordinal);
     }
 
@@ -103,8 +103,8 @@ public sealed class RequirementDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (RequirementDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (RequirementDiagram)parsed.Content;
         var resultRequirement = Assert.Single(result.Requirements);
         Assert.Equal(("test req", "1.2", "test the speed, quickly"), (resultRequirement.Name, resultRequirement.RequirementId, resultRequirement.Text?.Text));
         Assert.Equal(DiagramText.Markdown("**suite**"), result.Elements[0].Type);

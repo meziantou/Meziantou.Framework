@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class CynefinDiagramParserTests
 {
-    private static CynefinDiagram Parse(string text) => (CynefinDiagram)MermaidDocument.Parse(text).Diagram;
+    private static CynefinDiagram Parse(string text) => (CynefinDiagram)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void Cynefin()
@@ -21,7 +21,7 @@ public sealed class CynefinDiagramParserTests
                 "Crisis management"
               complex --> complicated : "Pattern identified"
               clear --> chaotic : "Complacency"
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal("Strategy categorization", diagram.Title);
@@ -72,7 +72,7 @@ public sealed class CynefinDiagramParserTests
               clear --> chaotic : ""
               title   Collapsed    spaces
             """);
-        var diagram = (CynefinDiagram)document.Diagram;
+        var diagram = (CynefinDiagram)document.Content;
         Assert.Equal([(CynefinDomain.Complex, "c\nd"), (CynefinDomain.Complex, "e\\f"), (CynefinDomain.Confusion, "x")], diagram.Items.Select(item => (item.Domain, item.Label.Text)).OrderBy(item => item.Domain));
         Assert.Equal([(CynefinDomain.Chaotic, CynefinDomain.Complex, "Stabilized"), (CynefinDomain.Clear, CynefinDomain.Chaotic, null)], diagram.Transitions.Select(transition => (transition.From, transition.To, transition.Label?.Text)));
         Assert.Equal("Collapsed spaces", diagram.Title);
@@ -112,8 +112,8 @@ public sealed class CynefinDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (CynefinDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (CynefinDiagram)parsed.Content;
         Assert.Equal(("Title", "Two\nlines", 640.0, 20.0, false, 2.5, -3), (result.Title, result.Description, result.Width, result.Padding, result.ShowDomainDescriptions, result.BoundaryAmplitude, result.Seed));
         Assert.Equal([(CynefinDomain.Clear, "Quote \" and backslash \\"), (CynefinDomain.Clear, "Line\nbreak"), (CynefinDomain.Complex, "%%{init: {}}%% is not a directive")], result.Items.Select(item => (item.Domain, item.Label.Text)));
         Assert.Equal([(CynefinDomain.Chaotic, CynefinDomain.Complex, "Stabilized"), (CynefinDomain.Confusion, CynefinDomain.Clear, null)], result.Transitions.Select(transition => (transition.From, transition.To, transition.Label?.Text)));

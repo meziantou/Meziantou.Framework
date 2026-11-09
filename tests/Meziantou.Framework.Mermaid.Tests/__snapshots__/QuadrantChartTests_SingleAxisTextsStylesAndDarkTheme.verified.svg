@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="500" height="500" fill="#333333"/>
+<g class="marks">
+<g class="quadrant">
+<rect x="237" y="5" width="232" height="232" fill="#336633"/>
+</g>
+<g class="quadrant">
+<rect x="5" y="5" width="232" height="232" fill="#242525"/>
+</g>
+<g class="quadrant">
+<rect x="5" y="237" width="232" height="232" fill="#292a2a"/>
+</g>
+<g class="quadrant">
+<rect x="237" y="237" width="232" height="232" fill="#2e2f2f"/>
+</g>
+<g class="quadrant-label">
+<text x="353" y="21.49" text-anchor="middle" font-size="16" fill="#e0dfdf">Quick wins</text>
+</g>
+<g class="border">
+<line x1="237" y1="469" x2="237" y2="5" stroke="#cccccc"/>
+</g>
+<g class="border">
+<line x1="5" y1="237" x2="469" y2="237" stroke="#cccccc"/>
+</g>
+<g class="border">
+<rect x="5" y="5" width="464" height="464" fill="#000000" fill-opacity="0" stroke="#cccccc" stroke-width="2"/>
+</g>
+<g class="data-point">
+<circle cx="237" cy="237" r="5" fill="#e0dfdf"/>
+</g>
+<g class="data-point">
+<circle cx="469" cy="469" r="400" fill="#446688"/>
+</g>
+<g class="data-point">
+<circle cx="5" cy="5" r="25" fill="#e0dfdf" stroke="#10f0f0" stroke-width="5"/>
+</g>
+<g class="data-point-label">
+<text x="5" y="18.62" text-anchor="middle" font-size="12" fill="#ffcc00">Bordered</text>
+<text x="469" y="482.62" text-anchor="middle" font-size="12" fill="#ffcc00">Huge radius</text>
+<text x="237" y="250.62" text-anchor="middle" font-size="12" fill="#ffcc00">markdown</text>
+</g>
+<g class="axis-label">
+<text x="5" y="490.49" font-size="16" fill="#e0dfdf">Effort ⟶</text>
+</g>
+<g class="axis-label">
+<text x="490.49" y="469" font-size="16" fill="#e0dfdf" transform="rotate(-90 490.49 469)">Value</text>
+</g>
+</g>
+</svg>

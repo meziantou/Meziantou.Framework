@@ -5,16 +5,12 @@ using Meziantou.Framework.Mermaid.Internals.PieDiagrams;
 
 namespace Meziantou.Framework.Mermaid.Internals.RadarDiagrams;
 
-/// <summary>Writes a <see cref="RadarDiagram"/> as Mermaid: its configuration in the front matter, its style in a directive, the axes, the curves and the options.</summary>
+/// <summary>Writes a <see cref="RadarChart"/> as Mermaid: its configuration in the front matter, its style in a directive, the axes, the curves and the options.</summary>
 internal static class RadarDiagramWriter
 {
-    public static void Write(StringBuilder builder, RadarDiagram diagram)
+    public static void Write(StringBuilder builder, RadarChart diagram)
     {
         var configuration = new List<string>();
-        if (diagram.Padding != 8)
-        {
-            configuration.Add("diagramPadding: " + MermaidStyle.Number(diagram.Padding));
-        }
 
         Add("width", diagram.Width, 600);
         Add("height", diagram.Height, 600);

@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class MindmapDiagramParserTests
 {
-    private static MindmapDiagram Parse(string text) => (MindmapDiagram)MermaidDocument.Parse(text).Diagram;
+    private static MindmapDiagram Parse(string text) => (MindmapDiagram)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void NodesAndIndentation()
@@ -19,7 +19,7 @@ public sealed class MindmapDiagramParserTests
                 Tools
                   Pen and paper
                   Mermaid
-            """).Diagram;
+            """).Content;
         #endregion
 
         var root = diagram.Root!;
@@ -68,7 +68,7 @@ public sealed class MindmapDiagramParserTests
               %% a comment
                 D
             """);
-        var diagram = (MindmapDiagram)document.Diagram;
+        var diagram = (MindmapDiagram)document.Content;
         Assert.Equal((MindmapColorMode.Depth, 12.0, 150.0), (diagram.ColorBy, diagram.NodePadding, diagram.MaxNodeWidth));
         var root = diagram.Root!;
         Assert.Equal("Root", root.Label.Text);
@@ -136,8 +136,8 @@ public sealed class MindmapDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (MindmapDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (MindmapDiagram)parsed.Content;
         Assert.Equal((MindmapColorMode.Depth, 5.0, 120.0, "Ideas"), (result.ColorBy, result.NodePadding, result.MaxNodeWidth, result.Title));
         var resultRoot = result.Root!;
         Assert.Equal(("root", "Root (main)", MindmapNodeShape.Circle), (resultRoot.Id, resultRoot.Label.Text, resultRoot.Shape));

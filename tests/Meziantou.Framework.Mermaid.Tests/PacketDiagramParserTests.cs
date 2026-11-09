@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class PacketDiagramParserTests
 {
-    private static PacketDiagram Parse(string text) => (PacketDiagram)MermaidDocument.Parse(text).Diagram;
+    private static PacketDiagram Parse(string text) => (PacketDiagram)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void Fields()
@@ -16,7 +16,7 @@ public sealed class PacketDiagramParserTests
               +16: "Length"
               +16: "Checksum"
               64-127: "Data (variable length)"
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal("UDP packet", diagram.Title);
@@ -73,8 +73,8 @@ public sealed class PacketDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (PacketDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (PacketDiagram)parsed.Content;
         Assert.Equal(("Header", "The header", 8, false, true), (result.Title, result.Description, result.BitsPerRow, result.ShowBits, result.DescendingBitOrder));
         Assert.Equal([(0, 0, "Flag \"F\""), (1, 7, "Line\nbreak"), (8, 31, "Payload")], result.Fields.Select(field => (field.Start, field.End, field.Label.Text)));
     }

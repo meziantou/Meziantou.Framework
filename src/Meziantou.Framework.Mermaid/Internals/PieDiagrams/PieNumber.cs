@@ -3,7 +3,10 @@ using System.Text;
 
 namespace Meziantou.Framework.Mermaid.Internals.PieDiagrams;
 
-/// <summary>Reads and writes the numbers of the Langium grammars of the pie and radar charts: digits and an optional fraction, without exponent.</summary>
+/// <summary>
+/// Reads and writes the numbers of the Langium grammars of the pie and radar charts: digits and an optional fraction,
+/// without exponent. Also writes the values of the legend of the pie charts as JavaScript does.
+/// </summary>
 internal static class PieNumber
 {
     /// <summary>Writes a finite number with all its digits, without exponent: the shortest digits that read back to the same number.</summary>
@@ -12,23 +15,7 @@ internal static class PieNumber
         if (value == 0)
             return "0";
 
-        var text = Math.Abs(value).ToString("R", CultureInfo.InvariantCulture);
-        var exponent = 0;
-        var exponentIndex = text.IndexOf('E', StringComparison.Ordinal);
-        if (exponentIndex >= 0)
-        {
-            exponent = int.Parse(text.AsSpan(exponentIndex + 1), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
-            text = text[..exponentIndex];
-        }
-
-        var dot = text.IndexOf('.', StringComparison.Ordinal);
-        var integer = dot < 0 ? text : text[..dot];
-        var all = dot < 0 ? text : integer + text[(dot + 1)..];
-        var leadingZeros = all.Length - all.TrimStart('0').Length;
-        var digits = all.Trim('0');
-
-        // The number is 0.digits × 10^n
-        var n = integer.Length - leadingZeros + exponent;
+        var (digits, n) = Decompose(value);
         var builder = new StringBuilder();
         if (value < 0)
         {
@@ -50,6 +37,7 @@ internal static class PieNumber
 
         return builder.ToString();
     }
+
 
     /// <summary>
     /// Reads a number: digits, and a fraction after a dot. As the terminals of Mermaid, an integer cannot start with a
@@ -100,5 +88,24 @@ internal static class PieNumber
             throw scanner.Error(start, $"The number '{text}' is too large.");
 
         return value;
+    }
+
+    /// <summary>Splits the absolute value of a non-zero finite number into its shortest significant digits and the exponent n of 0.digits × 10^n.</summary>
+    private static (string Digits, int Exponent) Decompose(double value)
+    {
+        var text = Math.Abs(value).ToString("R", CultureInfo.InvariantCulture);
+        var exponent = 0;
+        var exponentIndex = text.IndexOf('E', StringComparison.Ordinal);
+        if (exponentIndex >= 0)
+        {
+            exponent = int.Parse(text.AsSpan(exponentIndex + 1), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
+            text = text[..exponentIndex];
+        }
+
+        var dot = text.IndexOf('.', StringComparison.Ordinal);
+        var integer = dot < 0 ? text : text[..dot];
+        var all = dot < 0 ? text : integer + text[(dot + 1)..];
+        var leadingZeros = all.Length - all.TrimStart('0').Length;
+        return (all.Trim('0'), integer.Length - leadingZeros + exponent);
     }
 }

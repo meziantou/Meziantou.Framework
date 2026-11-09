@@ -2,19 +2,19 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class PieDiagramParserTests
 {
-    private static PieDiagram Parse(string text) => (PieDiagram)MermaidDocument.Parse(text).Diagram;
+    private static PieChart Parse(string text) => (PieChart)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void Slices()
     {
         #region Mermaid_PieDiagram
-        var diagram = (PieDiagram)MermaidDocument.Parse("""
+        var diagram = (PieChart)MermaidDocument.Parse("""
             pie showData
                 title Pets adopted by volunteers
                 "Dogs" : 386
                 "Cats" : 85
                 "Rats" : 15
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal("Pets adopted by volunteers", diagram.Title);
@@ -65,7 +65,7 @@ public sealed class PieDiagramParserTests
                 accDescr: The description
                 "Potassium" : 50.05
             """);
-        var diagram = (PieDiagram)document.Diagram;
+        var diagram = (PieChart)document.Content;
         Assert.Empty(document.Warnings);
         Assert.Equal((0.5, 0.2, PieLegendPosition.Bottom, "Potassium"), (diagram.TextPosition, diagram.DonutHole, diagram.LegendPosition, diagram.HighlightedSlice));
         Assert.Equal(SceneColor.Parse("#ff0000"), diagram.SliceColors[0]);
@@ -92,7 +92,7 @@ public sealed class PieDiagramParserTests
                 "a" : 1
                 "a" : 2
             """);
-        var diagram = (PieDiagram)document.Diagram;
+        var diagram = (PieChart)document.Content;
         Assert.Equal((0.75, 0.0, PieLegendPosition.Right, null), (diagram.TextPosition, diagram.DonutHole, diagram.LegendPosition, diagram.HighlightedSlice));
         Assert.Equal(4, document.Warnings.Count);
 
@@ -131,7 +131,7 @@ public sealed class PieDiagramParserTests
     [Fact]
     public void Write()
     {
-        var diagram = new PieDiagram
+        var diagram = new PieChart
         {
             Title = "Elements",
             Description = "Line 1\nLine 2",
@@ -161,8 +161,8 @@ public sealed class PieDiagramParserTests
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
         Assert.Empty(parsed.Warnings);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (PieDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (PieChart)parsed.Content;
         Assert.Equal(("Elements", "Line 1\nLine 2", true, 0.5, 0.3, PieLegendPosition.Center, "Iron \"Fe\""), (result.Title, result.Description, result.ShowData, result.TextPosition, result.DonutHole, result.LegendPosition, result.HighlightedSlice));
         Assert.Equal((SceneColor.White, 1.5, SceneColor.Parse("#123456"), 4.0, 0.9), (result.StrokeColor, result.StrokeWidth, result.OuterStrokeColor, result.OuterStrokeWidth, result.Opacity));
         Assert.Equal((SceneColor.Black, 12.0, SceneColor.Parse("#336699"), 15.0), (result.SectionTextColor, result.SectionTextSize, result.LegendTextColor, result.LegendTextSize));
@@ -175,14 +175,14 @@ public sealed class PieDiagramParserTests
     [Fact]
     public void WriteRejectsWhatMermaidCannotRead()
     {
-        var duplicate = new PieDiagram();
+        var duplicate = new PieChart();
         duplicate.AddSlice("a", 1);
         duplicate.AddSlice("a", 2);
         Assert.Throws<ArgumentException>("diagram", () => MermaidWriter.Write(duplicate));
 
-        Assert.Throws<ArgumentException>("diagram", () => MermaidWriter.Write(new PieDiagram { HighlightedSlice = "hover" }));
+        Assert.Throws<ArgumentException>("diagram", () => MermaidWriter.Write(new PieChart { HighlightedSlice = "hover" }));
 
-        var color = new PieDiagram();
+        var color = new PieChart();
         color.SliceColors[12] = SceneColor.Black;
         Assert.Throws<ArgumentException>("diagram", () => MermaidWriter.Write(color));
     }

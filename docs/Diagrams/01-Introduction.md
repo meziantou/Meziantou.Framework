@@ -18,8 +18,9 @@ library measures and draws its own texts, and does not run a browser.
 - **Draw diagrams** in C#: flowcharts with 53 shapes of nodes, swimlanes, class, state, entity relationship,
   requirement, use case, C4, block, architecture and sequence diagrams, Gantt charts, timelines, git graphs, kanban
   boards, packet diagrams, user journeys, event models, railroad diagrams, mind maps, tree views, Ishikawa diagrams,
-  treemaps, pie charts, XY charts, quadrant charts, sankey diagrams, radar charts, Venn diagrams, Wardley maps and
-  Cynefin diagrams. See [diagram types](04-DiagramTypes/01-Overview.md).
+  Venn diagrams, Wardley maps and Cynefin diagrams. See [diagram types](04-DiagramTypes/01-Overview.md). The charts of
+  Mermaid (pie, XY, quadrant, sankey and radar charts, treemaps) are drawn with Meziantou.Framework.Charts: see
+  [Mermaid charts](../Mermaid/04-Charts/01-Overview.md).
 - **Read Mermaid text**, with its front matter, its directives and its themes, and **write diagrams as Mermaid**, for
   instance to embed them in a Markdown page of GitHub. See [Mermaid](../Mermaid/01-Introduction.md).
 - **Theme the diagrams** with the themes of Mermaid, or your own colors. See [themes](05-Theming.md).

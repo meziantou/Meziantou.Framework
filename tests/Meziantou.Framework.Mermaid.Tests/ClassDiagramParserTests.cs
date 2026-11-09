@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class ClassDiagramParserTests
 {
-    private static ClassDiagram Parse(string text) => (ClassDiagram)MermaidDocument.Parse(text).Diagram;
+    private static ClassDiagram Parse(string text) => (ClassDiagram)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void Classes()
@@ -116,7 +116,7 @@ public sealed class ClassDiagramParserTests
                 link B "https://example.com/b"
                 callback A "fn" "Callback tooltip"
             """);
-        var diagram = (ClassDiagram)document.Diagram;
+        var diagram = (ClassDiagram)document.Content;
         Assert.True(diagram.HideEmptyMembersBox);
         Assert.Equal(DiagramDirection.RightToLeft, diagram.Direction);
         Assert.Equal(["warm"], diagram.Classes[0].CssClasses);
@@ -165,8 +165,8 @@ public sealed class ClassDiagramParserTests
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
         Assert.Empty(parsed.Warnings);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (ClassDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (ClassDiagram)parsed.Content;
         var resultService = (ClassDiagramClass)result.Find("Service")!;
         Assert.Equal(("The service", "T", "interface"), (resultService.Label?.Text, resultService.GenericType, resultService.Annotations[0]));
         Assert.Equal(["+run() : bool", "-count"], resultService.Members.Select(member => member.GetDisplayText()));

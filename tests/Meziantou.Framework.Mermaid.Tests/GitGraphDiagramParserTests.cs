@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class GitGraphDiagramParserTests
 {
-    private static GitGraphDiagram Parse(string text) => (GitGraphDiagram)MermaidDocument.Parse(text).Diagram;
+    private static GitGraphDiagram Parse(string text) => (GitGraphDiagram)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void CommitsBranchesAndMerges()
@@ -19,7 +19,7 @@ public sealed class GitGraphDiagramParserTests
               merge develop id: "release" tag: "v1.0.0"
               branch support order: 2
               cherry-pick id: "feature"
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.HasCount(9, diagram.Operations);
@@ -150,8 +150,8 @@ public sealed class GitGraphDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (GitGraphDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (GitGraphDiagram)parsed.Content;
         Assert.Equal(("History", GitGraphOrientation.BottomToTop, "trunk", true, false), (result.Title, result.Orientation, result.MainBranchName, result.ParallelCommits, result.RotateCommitLabels));
         Assert.Same(DiagramTheme.Forest, result.Theme);
         Assert.Equal((SceneColor)"#ff0000", result.BranchColors[3]);

@@ -71,4 +71,4 @@ keyword (`end`, `style`...). It writes the theme when it is one of the themes of
 
 [SupportedDiagramTypes](cref:Meziantou.Framework.Mermaid.MermaidDocument.SupportedDiagramTypes) lists the
 keywords the parser reads. A text of another type of Mermaid diagram throws an error that says the type is not
-supported yet. See [diagram types](../Diagrams/04-DiagramTypes/01-Overview.md).
+supported yet. See the [diagram types](../Diagrams/04-DiagramTypes/01-Overview.md) and the [charts](04-Charts/01-Overview.md).

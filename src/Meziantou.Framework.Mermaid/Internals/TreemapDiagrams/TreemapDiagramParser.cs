@@ -17,7 +17,7 @@ internal sealed class TreemapDiagramParser
 {
     private readonly ParseContext _context;
     private readonly Scanner _scanner;
-    private readonly TreemapDiagram _diagram = new();
+    private readonly TreemapChart _diagram = new();
     private readonly List<(int Level, TreemapNode Node)> _stack = [];
     private int _count;
 
@@ -27,7 +27,7 @@ internal sealed class TreemapDiagramParser
         _scanner = new Scanner(context, position);
     }
 
-    public static TreemapDiagram Parse(ParseContext context, int position) => new TreemapDiagramParser(context, position).Parse();
+    public static TreemapChart Parse(ParseContext context, int position) => new TreemapDiagramParser(context, position).Parse();
 
     /// <summary>Indicates whether a text is a class name of the <c>:::class</c> of the rows.</summary>
     public static bool IsClassName(string name, int minimumLength = 1)
@@ -44,7 +44,7 @@ internal sealed class TreemapDiagramParser
         return true;
     }
 
-    private TreemapDiagram Parse()
+    private TreemapChart Parse()
     {
         var keywordStart = _scanner.Position;
         if (!_scanner.TryConsume("treemap-beta") && !_scanner.TryConsume("treemap"))
@@ -86,6 +86,13 @@ internal sealed class TreemapDiagramParser
     {
         MermaidCommon.ApplyCommonConfiguration(_diagram, _context, "treemap");
         var configuration = _context.Configuration;
+
+        // As the diagramPadding of the other diagrams, a value out of range is ignored
+        if (configuration.GetNumber("treemap", "diagramPadding") is >= 0 and <= 1000 and var diagramPadding)
+        {
+            _diagram.DiagramPadding = diagramPadding;
+        }
+
         if (configuration.GetNumber("treemap", "padding") is { } padding)
         {
             if (padding is >= 0 and <= 1000)

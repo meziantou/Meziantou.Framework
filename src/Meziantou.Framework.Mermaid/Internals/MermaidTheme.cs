@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Mermaid.Internals;
 /// <summary>Builds the theme of a diagram from the <c>theme</c> and <c>themeVariables</c> of the configuration.</summary>
 internal static class MermaidTheme
 {
-    public static void Apply(Diagram diagram, ParseContext context)
+    public static void Apply(ISceneSource diagram, ParseContext context)
     {
         var configuration = context.Configuration;
         var name = configuration.GetString("theme")?.Trim();
@@ -68,7 +68,7 @@ internal static class MermaidTheme
             context.Warn(0, "The hand-drawn look is not supported; the classic look is used.");
         }
 
-        diagram.Theme = theme;
+        new MermaidContent(diagram).Theme = theme;
     }
 
     private static DiagramTheme Override(DiagramTheme theme, Dictionary<string, string> variables, ParseContext context)

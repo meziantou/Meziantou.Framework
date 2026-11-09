@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="437.8" viewBox="0 0 1040 437.8" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Disk usage</title>
+<rect width="1040" height="437.8" fill="#ffffff"/>
+<g class="marks">
+<g>
+<rect x="30" y="52.8" width="727.23" height="355" fill="#555555" fill-opacity="0.251"><title>home: 35</title></rect>
+<text x="33" y="73.11" font-size="11" fill="#000000">home (35)</text>
+<rect x="40" y="87.8" width="399.85" height="310" fill="#555555"><title>home / Pictures: 20</title></rect>
+<text x="44" y="98.7" font-size="11" fill="#ffffff">Pictures</text>
+<text x="44" y="108.87" font-size="11" fill="#ffffff" fill-opacity="0.749">20</text>
+<rect x="449.85" y="87.8" width="297.39" height="310" fill="#f4f4f4" fill-opacity="0.251"><title>home / Documents: 15</title></rect>
+<text x="452.85" y="108.11" font-size="11" fill="#000000">Documents (15)</text>
+<rect x="459.85" y="122.8" width="219.91" height="265" fill="#f4f4f4"><title>home / Documents / Reports: 12</title></rect>
+<text x="463.85" y="133.7" font-size="11" fill="#1f2328">Reports</text>
+<text x="463.85" y="143.87" font-size="11" fill="#1f2328" fill-opacity="0.749">12</text>
+<rect x="689.76" y="122.8" width="47.48" height="265" fill="#f4f4f4"><title>home / Documents / Invoices: 3</title></rect>
+<text x="693.76" y="133.7" font-size="11" fill="#1f2328">Invoic…</text>
+<text x="693.76" y="143.87" font-size="11" fill="#1f2328" fill-opacity="0.749">3</text>
+<rect x="767.23" y="52.8" width="242.77" height="233.33" fill="#555555"><title>Swap: 8</title></rect>
+<text x="771.23" y="63.7" font-size="11" fill="#ffffff">Swap</text>
+<text x="771.23" y="73.87" font-size="11" fill="#ffffff" fill-opacity="0.749">8</text>
+<rect x="767.23" y="296.13" width="242.77" height="111.67" fill="#bbbbbb"><title>Logs: 4</title></rect>
+<text x="771.23" y="307.03" font-size="11" fill="#1f2328">Logs</text>
+<text x="771.23" y="317.21" font-size="11" fill="#1f2328" fill-opacity="0.749">4</text>
+</g>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#000000">Disk usage</text>
+</svg>

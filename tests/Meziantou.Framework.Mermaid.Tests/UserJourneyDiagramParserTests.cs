@@ -16,7 +16,7 @@ public sealed class UserJourneyDiagramParserTests
                 section Go home
                   Go downstairs: 5: Me
                   Sit down: 5: Me
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal("My working day", diagram.Title);
@@ -36,7 +36,7 @@ public sealed class UserJourneyDiagramParserTests
               SECTION Later %% comment
               Last: -1;%% after a semicolon
             """);
-        var diagram = (UserJourneyDiagram)document.Diagram;
+        var diagram = (UserJourneyDiagram)document.Content;
         Assert.Equal(string.Empty, diagram.Sections[0].Name);
         Assert.Equal((4.5, 0.0, 2.0), (diagram.Sections[0].Tasks[0].Score, diagram.Sections[0].Tasks[1].Score, diagram.Sections[0].Tasks[2].Score));
         Assert.Equal(["A"], diagram.Sections[0].Tasks[1].Actors);
@@ -69,8 +69,8 @@ public sealed class UserJourneyDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (UserJourneyDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (UserJourneyDiagram)parsed.Content;
         Assert.Equal(("A #title", "Journey"), (result.Title, result.AccessibleTitle));
         Assert.Equal(["", "Section", "Empty"], result.Sections.Select(item => item.Name));
         Assert.Equal(["Me", "You"], result.Sections[1].Tasks[0].Actors);

@@ -11,7 +11,7 @@ internal sealed class PieDiagramParser
 {
     private readonly ParseContext _context;
     private readonly Scanner _scanner;
-    private readonly PieDiagram _diagram = new();
+    private readonly PieChart _diagram = new();
     private readonly HashSet<string> _labels = new(StringComparer.Ordinal);
 
     private PieDiagramParser(ParseContext context, int position)
@@ -20,9 +20,9 @@ internal sealed class PieDiagramParser
         _scanner = new Scanner(context, position);
     }
 
-    public static PieDiagram Parse(ParseContext context, int position) => new PieDiagramParser(context, position).Parse();
+    public static PieChart Parse(ParseContext context, int position) => new PieDiagramParser(context, position).Parse();
 
-    private PieDiagram Parse()
+    private PieChart Parse()
     {
         var keywordStart = _scanner.Position;
         if (!TryConsumeKeyword("pie"))

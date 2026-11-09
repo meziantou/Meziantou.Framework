@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="400" height="300" fill="#ffffff"/>
+<g class="marks">
+<g class="quadrant">
+<rect x="187" y="5" width="182" height="132" fill="#ff0000"/>
+</g>
+<g class="quadrant">
+<rect x="5" y="5" width="182" height="132" fill="#f1f1ff"/>
+</g>
+<g class="quadrant">
+<rect x="5" y="137" width="182" height="132" fill="#f6f6ff"/>
+</g>
+<g class="quadrant">
+<rect x="187" y="137" width="182" height="132" fill="#fbfbff"/>
+</g>
+<g class="quadrant-label">
+<text x="278" y="21.49" text-anchor="middle" font-size="16" fill="#131300">Best</text>
+</g>
+<g class="border">
+<line x1="187" y1="269" x2="187" y2="5" stroke="#c7c7f1"/>
+</g>
+<g class="border">
+<line x1="5" y1="137" x2="369" y2="137" stroke="#c7c7f1"/>
+</g>
+<g class="border">
+<rect x="5" y="5" width="364" height="264" fill="#000000" fill-opacity="0" stroke="#c7c7f1" stroke-width="2"/>
+</g>
+<g class="data-point">
+<circle cx="332.6" cy="31.4" r="12" fill="#00ff00" stroke="#0000ff" stroke-width="3"/>
+</g>
+<g class="data-point-label">
+<text x="332.6" y="45.02" text-anchor="middle" font-size="12" fill="#131300">A</text>
+</g>
+<g class="axis-label">
+<text x="96" y="290.49" text-anchor="middle" font-size="16" fill="#131300">Low</text>
+</g>
+<g class="axis-label">
+<text x="278" y="290.49" text-anchor="middle" font-size="16" fill="#131300">High</text>
+</g>
+<g class="axis-label">
+<text x="390.49" y="203" text-anchor="middle" font-size="16" fill="#131300" transform="rotate(-90 390.49 203)">Bad</text>
+</g>
+<g class="axis-label">
+<text x="390.49" y="71" text-anchor="middle" font-size="16" fill="#131300" transform="rotate(-90 390.49 71)">Good</text>
+</g>
+</g>
+</svg>

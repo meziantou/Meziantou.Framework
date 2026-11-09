@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="400" height="400" fill="#ffffff"/>
+<g class="marks">
+<g class="quadrant">
+<rect x="213" y="31" width="182" height="182" fill="#ececff"/>
+</g>
+<g class="quadrant">
+<rect x="31" y="31" width="182" height="182" fill="#f1f1ff"/>
+</g>
+<g class="quadrant">
+<rect x="31" y="213" width="182" height="182" fill="#f6f6ff"/>
+</g>
+<g class="quadrant">
+<rect x="213" y="213" width="182" height="182" fill="#fbfbff"/>
+</g>
+<g class="quadrant-label">
+<text x="304" y="126.09" text-anchor="middle" font-size="16" fill="#131300">Plan</text>
+</g>
+<g class="quadrant-label">
+<text x="122" y="126.09" text-anchor="middle" font-size="16" fill="#0e0e00">Do</text>
+</g>
+<g class="quadrant-label">
+<text x="122" y="308.09" text-anchor="middle" font-size="16" fill="#090900">Delegate</text>
+</g>
+<g class="quadrant-label">
+<text x="304" y="308.09" text-anchor="middle" font-size="16" fill="#040400">Delete</text>
+</g>
+<g class="border">
+<line x1="213" y1="395" x2="213" y2="31" stroke="#c7c7f1"/>
+</g>
+<g class="border">
+<line x1="31" y1="213" x2="395" y2="213" stroke="#c7c7f1"/>
+</g>
+<g class="border">
+<rect x="31" y="31" width="364" height="364" fill="#000000" fill-opacity="0" stroke="#c7c7f1" stroke-width="2"/>
+</g>
+<g class="axis-label">
+<text x="122" y="16.49" text-anchor="middle" font-size="16" fill="#131300">Urgent</text>
+</g>
+<g class="axis-label">
+<text x="304" y="16.49" text-anchor="middle" font-size="16" fill="#131300">Not Urgent</text>
+</g>
+<g class="axis-label">
+<text x="16.49" y="304" text-anchor="middle" font-size="16" fill="#131300" transform="rotate(-90 16.49 304)">Not Important</text>
+</g>
+<g class="axis-label">
+<text x="16.49" y="122" text-anchor="middle" font-size="16" fill="#131300" transform="rotate(-90 16.49 122)">Important</text>
+</g>
+</g>
+</svg>

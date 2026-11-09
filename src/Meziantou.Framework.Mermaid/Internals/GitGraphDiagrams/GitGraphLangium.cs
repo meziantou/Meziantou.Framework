@@ -72,7 +72,7 @@ internal static class GitGraphLangium
     }
 
     /// <summary>Reads a <c>title</c> statement: the rest of the line, its runs of spaces collapsed, as the common grammar of Mermaid.</summary>
-    public static bool TryParseTitle(Scanner scanner, Diagram diagram)
+    public static bool TryParseTitle(Scanner scanner, ISceneSource diagram)
     {
         if (!scanner.StartsWith("title") || (scanner.Peek(5) is not (' ' or '\t' or '\n' or '\0') && scanner.Position + 5 < scanner.Text.Length))
             return false;
@@ -99,7 +99,7 @@ internal static class GitGraphLangium
         }
 
         // The title is written in the YAML front matter, which cannot hold a lone surrogate
-        diagram.Title = builder.Length is 0 ? null : ReplaceLoneSurrogates(builder.ToString());
+        new MermaidContent(diagram).Title = builder.Length is 0 ? null : ReplaceLoneSurrogates(builder.ToString());
         return true;
     }
 

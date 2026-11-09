@@ -21,10 +21,10 @@ public sealed class CorpusTests
         var document = MermaidDocument.Parse(text);
 
         // Written back, the example reads to the same diagram
-        var written = MermaidWriter.Write(document.Diagram);
-        Assert.Equal(written, MermaidWriter.Write(MermaidDocument.Parse(written).Diagram));
+        var written = MermaidWriter.Write(document.Content);
+        Assert.Equal(written, MermaidWriter.Write(MermaidDocument.Parse(written).Content));
 
-        var svg = document.Diagram.ToSvg();
+        var svg = SvgSceneRenderer.Render(document.Content.CreateScene());
         Assert.StartsWith("<svg", svg, StringComparison.Ordinal);
         Assert.DoesNotContain("NaN", svg, StringComparison.Ordinal);
     }

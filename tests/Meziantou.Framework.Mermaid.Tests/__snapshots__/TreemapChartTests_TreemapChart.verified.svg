@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="996" height="395.8" viewBox="0 0 996 395.8" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Sales by product</title>
+<rect width="996" height="395.8" fill="#ffffff"/>
+<g class="marks">
+<g>
+<rect x="8" y="32.8" width="540" height="355" fill="#8686ff" fill-opacity="0.251"><title>Electronics: 100</title></rect>
+<text x="11" y="53.11" font-size="11" fill="#333333">Electronics (100)</text>
+<rect x="18" y="67.8" width="255" height="310" fill="#8686ff"><title>Electronics / Phones: 50</title></rect>
+<text x="22" y="78.7" font-size="11" fill="#1f2328">Phones</text>
+<text x="22" y="88.87" font-size="11" fill="#1f2328" fill-opacity="0.749">50</text>
+<rect x="283" y="67.8" width="149" height="310" fill="#8686ff"><title>Electronics / Computers: 30</title></rect>
+<text x="287" y="78.7" font-size="11" fill="#1f2328">Computers</text>
+<text x="287" y="88.87" font-size="11" fill="#1f2328" fill-opacity="0.749">30</text>
+<rect x="442" y="67.8" width="96" height="310" fill="#8686ff"><title>Electronics / Accessories: 20</title></rect>
+<text x="446" y="78.7" font-size="11" fill="#1f2328">Accessories</text>
+<text x="446" y="88.87" font-size="11" fill="#1f2328" fill-opacity="0.749">20</text>
+<rect x="558" y="32.8" width="430" height="355" fill="#ffff78" fill-opacity="0.251"><title>Clothing: 80</title></rect>
+<text x="561" y="53.11" font-size="11" fill="#333333">Clothing (80)</text>
+<rect x="568" y="67.8" width="410" height="150" fill="#ffff78"><title>Clothing / Men's: 40</title></rect>
+<text x="572" y="78.7" font-size="11" fill="#1f2328">Men's</text>
+<text x="572" y="88.87" font-size="11" fill="#1f2328" fill-opacity="0.749">40</text>
+<rect x="568" y="227.8" width="410" height="150" fill="#ffff78"><title>Clothing / Women's: 40</title></rect>
+<text x="572" y="238.7" font-size="11" fill="#1f2328">Women's</text>
+<text x="572" y="248.87" font-size="11" fill="#1f2328" fill-opacity="0.749">40</text>
+</g>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#333333">Sales by product</text>
+</svg>

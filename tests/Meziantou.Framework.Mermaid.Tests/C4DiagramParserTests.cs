@@ -18,7 +18,7 @@ public sealed class C4DiagramParserTests
                 Rel(customer, web, "Uses", "HTTPS")
                 Rel(web, db, "Reads and writes")
                 BiRel(web, mail, "Sends e-mails")
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal((C4DiagramKind.Container, "Internet banking"), (diagram.Kind, diagram.Title));
@@ -51,7 +51,7 @@ public sealed class C4DiagramParserTests
                 UpdateRelStyle(api, queue, $textColor="green", $offsetX="-40", $offsetY="10px")
                 UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
             """);
-        var diagram = (C4Diagram)document.Diagram;
+        var diagram = (C4Diagram)document.Content;
         var node = diagram.Boundaries[0];
         Assert.Equal(("Ubuntu", "The main server", "v1"), (node.Type, node.Description?.Text, node.Tags));
         var api = (C4Element)diagram.Find("api")!;
@@ -107,8 +107,8 @@ public sealed class C4DiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (C4Diagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (C4Diagram)parsed.Content;
         Assert.Equal((C4DiagramKind.Component, "A; title", false, 2), (result.Kind, result.Title, result.Wrap, result.ShapesPerRow));
         var resultPerson = (C4Element)result.Find("person,1")!;
         Assert.Equal(("The \"person\"", "Line 1\nLine 2", "Human", "tag"), (resultPerson.Label.Text, resultPerson.Description?.Text, resultPerson.Technology, resultPerson.Tags));

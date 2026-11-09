@@ -123,14 +123,14 @@ public static partial class DiagramsFuzzTargets
         if (!MermaidDocument.TryParse(text, Options, out var document, out _))
             return;
 
-        var written = MermaidWriter.Write(document.Diagram);
+        var written = MermaidWriter.Write(document.Content);
         if (!MermaidDocument.TryParse(written, Options, out var reparsed, out var error))
         {
             FuzzAssert.Fail($"The text written from {FuzzAssert.Format(text)} does not read back: {error}\n{written}");
             return;
         }
 
-        var again = MermaidWriter.Write(reparsed.Diagram);
+        var again = MermaidWriter.Write(reparsed.Content);
         FuzzAssert.Equal(written, again, $"Writing the diagram of {FuzzAssert.Format(text)} twice gives different texts");
     }
 
@@ -141,11 +141,11 @@ public static partial class DiagramsFuzzTargets
         if (!MermaidDocument.TryParse(text, Options, out var document, out _))
             return;
 
-        var scene = document.Diagram.CreateScene();
+        var scene = document.Content.CreateScene();
         FuzzAssert.True(double.IsFinite(scene.Width) && double.IsFinite(scene.Height) && scene.Width > 0 && scene.Height > 0, $"The size of the scene is {scene.Width}x{scene.Height}");
         CheckFinite(scene.Root, "root");
         var svg = SvgSceneRenderer.Render(scene);
-        FuzzAssert.Equal(svg, document.Diagram.ToSvg(new SvgRenderOptions { IdPrefix = "scene" }), "Drawing the diagram twice gives different outputs");
+        FuzzAssert.Equal(svg, SvgSceneRenderer.Render(document.Content.CreateScene()), "Drawing the diagram twice gives different outputs");
         try
         {
             var settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null };

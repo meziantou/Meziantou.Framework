@@ -3,9 +3,9 @@
 Draws diagrams as deterministic SVG, inspired by [Mermaid](https://mermaid.js.org): flowcharts with the 53 shapes of
 Mermaid, swimlanes, class, state, entity relationship, requirement, use case, C4, block, architecture and sequence
 diagrams, Gantt charts, timelines, git graphs, kanban boards, packet diagrams, user journeys, event models, railroad
-diagrams, mind maps, tree views, Ishikawa diagrams, treemaps, pie charts, XY charts, quadrant charts, sankey diagrams,
-radar charts, Venn diagrams, Wardley maps and Cynefin diagrams, with styles and classes, in the themes of Mermaid. [Meziantou.Framework.Mermaid](https://www.nuget.org/packages/Meziantou.Framework.Mermaid)
-reads and writes the Mermaid text format, and [Meziantou.Framework.Imaging.VectorGraphics](https://www.nuget.org/packages/Meziantou.Framework.Imaging.VectorGraphics)
+diagrams, mind maps, tree views, Ishikawa diagrams, Venn diagrams, Wardley maps and Cynefin diagrams, with styles and
+classes, in the themes of Mermaid. [Meziantou.Framework.Mermaid](https://www.nuget.org/packages/Meziantou.Framework.Mermaid)
+reads and writes the Mermaid text format, and draws the charts of Mermaid with Meziantou.Framework.Charts, and [Meziantou.Framework.Imaging.VectorGraphics](https://www.nuget.org/packages/Meziantou.Framework.Imaging.VectorGraphics)
 renders the diagrams as images.
 
 ## Usage

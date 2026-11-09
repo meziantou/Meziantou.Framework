@@ -2,20 +2,20 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class XyChartDiagramParserTests
 {
-    private static XyChartDiagram Parse(string text) => (XyChartDiagram)MermaidDocument.Parse(text).Diagram;
+    private static XyChart Parse(string text) => (XyChart)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void BarsAndLine()
     {
         #region Mermaid_XyChartDiagram
-        var diagram = (XyChartDiagram)MermaidDocument.Parse("""
+        var diagram = (XyChart)MermaidDocument.Parse("""
             xychart
                 title "Sales Revenue"
                 x-axis [jan, feb, mar, apr, may, jun]
                 y-axis "Revenue (in $)" 4000 --> 11000
                 bar [5000, 6000, 7500, 8200, 9500, 10500]
                 line [5000, 6000, 7500, 8200, 9500, 10500]
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal("Sales Revenue", diagram.Title);
@@ -119,7 +119,7 @@ public sealed class XyChartDiagramParserTests
 
         var invalid = MermaidDocument.Parse("---\nconfig:\n  xyChart:\n    width: -5\n  themeVariables:\n    xyChart:\n      plotColorPalette: 'red, nope'\n---\nxychart\nbar [1]");
         Assert.HasCount(2, invalid.Warnings);
-        Assert.Empty(((XyChartDiagram)invalid.Diagram).PlotColors);
+        Assert.Empty(((XyChart)invalid.Content).PlotColors);
     }
 
     [Theory]
@@ -150,7 +150,7 @@ public sealed class XyChartDiagramParserTests
     [Fact]
     public void Write()
     {
-        var diagram = new XyChartDiagram
+        var diagram = new XyChart
         {
             Title = "  Revenue #1 \"2024\" %%{  ",
             Description = "Line one\nLine two",
@@ -176,10 +176,10 @@ public sealed class XyChartDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
         Assert.Contains("1000000000000000000000", text, StringComparison.Ordinal);
         Assert.Contains("-0.0000001 --> 10000000000000000000000", text, StringComparison.Ordinal);
-        var result = (XyChartDiagram)parsed.Diagram;
+        var result = (XyChart)parsed.Content;
         Assert.Equal((diagram.Title, diagram.Description, XyChartOrientation.Horizontal, 640.0, true), (result.Title, result.Description, result.Orientation, result.Width, result.ShowDataLabels));
         Assert.Equal((diagram.TitleColor, diagram.YAxis.LineColor), (result.TitleColor, result.YAxis.LineColor));
         Assert.Equal(diagram.PlotColors, result.PlotColors);
@@ -194,19 +194,19 @@ public sealed class XyChartDiagramParserTests
     [Fact]
     public void WriteRejectsWhatMermaidCannotRead()
     {
-        var withCategories = new XyChartDiagram();
+        var withCategories = new XyChart();
         withCategories.YAxis.Categories.Add("a");
         Assert.Throws<ArgumentException>("diagram", () => MermaidWriter.Write(withCategories));
 
-        var empty = new XyChartDiagram();
+        var empty = new XyChart();
         empty.AddLine([]);
         Assert.Throws<ArgumentException>("diagram", () => MermaidWriter.Write(empty));
 
-        var notFinite = new XyChartDiagram();
+        var notFinite = new XyChart();
         notFinite.AddBars([double.NaN]);
         Assert.Throws<ArgumentException>("diagram", () => MermaidWriter.Write(notFinite));
 
-        var range = new XyChartDiagram();
+        var range = new XyChart();
         range.YAxis.Range = new XyChartAxisRange(0, double.PositiveInfinity);
         Assert.Throws<ArgumentException>("diagram", () => MermaidWriter.Write(range));
     }

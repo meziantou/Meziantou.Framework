@@ -21,6 +21,11 @@ The diagrams are the models of [Meziantou.Framework.Diagrams](../Diagrams/01-Int
 Mermaid is a [FlowchartDiagram](cref:Meziantou.Framework.Diagrams.FlowchartDiagram) that you can also build in C#.
 See the [diagram types](../Diagrams/04-DiagramTypes/01-Overview.md) for what each type supports.
 
+The charts of Mermaid (pie, XY, quadrant, sankey and radar charts, treemaps) are models of this package, drawn with
+[Meziantou.Framework.Charts](../Charts/01-Introduction.md): a pie chart read from Mermaid is a
+[PieChart](cref:Meziantou.Framework.Mermaid.PieChart), and its [ToPlot](cref:Meziantou.Framework.Mermaid.MermaidChart.ToPlot)
+method returns the plot that draws it. See the [charts](04-Charts/01-Overview.md).
+
 ## Namespaces
 
 The reader and the writer are in the [Meziantou.Framework.Mermaid](cref:Meziantou.Framework.Mermaid) namespace, and
@@ -30,3 +35,4 @@ the diagrams in [Meziantou.Framework.Diagrams](cref:Meziantou.Framework.Diagrams
 
 - [Getting started](02-GettingStarted.md): install the package, read a diagram and draw it.
 - [Reading and writing](03-ReadingAndWriting.md): the shared syntax, the errors, the warnings and the writer.
+- [Charts](04-Charts/01-Overview.md): the charts of Mermaid, drawn with Meziantou.Framework.Charts.

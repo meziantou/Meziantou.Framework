@@ -2,13 +2,13 @@ namespace Meziantou.Framework.Mermaid.Tests;
 
 public sealed class SankeyDiagramParserTests
 {
-    private static SankeyDiagram Parse(string text) => (SankeyDiagram)MermaidDocument.Parse(text).Diagram;
+    private static SankeyChart Parse(string text) => (SankeyChart)MermaidDocument.Parse(text).Content;
 
     [Fact]
     public void Links()
     {
         #region Mermaid_SankeyDiagram
-        var diagram = (SankeyDiagram)MermaidDocument.Parse("""
+        var diagram = (SankeyChart)MermaidDocument.Parse("""
             sankey
 
             Solar,Electricity,60
@@ -18,7 +18,7 @@ public sealed class SankeyDiagramParserTests
             Electricity,"Homes, offices",110
             Electricity,Industry,140
             Heating,"Homes, offices",80
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.HasCount(7, diagram.Links);
@@ -101,7 +101,7 @@ public sealed class SankeyDiagramParserTests
     [Fact]
     public void Write()
     {
-        var diagram = new SankeyDiagram { Title = "Flows", Width = 700, NodeAlignment = SankeyNodeAlignment.Right, LinkColoring = SankeyLinkColoring.Target, ValuePrefix = "\"$\"", LabelStyle = SankeyLabelStyle.Outlined, NodePadding = 5 };
+        var diagram = new SankeyChart { Title = "Flows", Width = 700, NodeAlignment = SankeyNodeAlignment.Right, LinkColoring = SankeyLinkColoring.Target, ValuePrefix = "\"$\"", LabelStyle = SankeyLabelStyle.Outlined, NodePadding = 5 };
         diagram.NodeColors["Quote \"q\""] = SceneColor.Parse("#123456");
         diagram.AddLink("Quote \"q\"", "comma, here", 1e21);
         diagram.AddLink("comma, here", "%start", 5e-324);
@@ -112,8 +112,8 @@ public sealed class SankeyDiagramParserTests
         Assert.Contains("\"Quote \"\"q\"\"\",\"comma, here\",1E+21\n", text, StringComparison.Ordinal);
         Assert.Contains("\" \",empty,1.5\n", text, StringComparison.Ordinal);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (SankeyDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (SankeyChart)parsed.Content;
         Assert.Equal([("Quote \"q\"", "comma, here", 1e21), ("comma, here", "%start", 5e-324), ("%start", "line\nbreak", 0), ("", "empty", 1.5)], result.Links.Select(link => (link.Source, link.Target, link.Value)));
         Assert.Equal(("Flows", 700.0, SankeyNodeAlignment.Right, SankeyLinkColoring.Target, "\"$\"", SankeyLabelStyle.Outlined, 5.0), (result.Title, result.Width, result.NodeAlignment, result.LinkColoring, result.ValuePrefix, result.LabelStyle, result.NodePadding));
         Assert.Equal(SceneColor.Parse("#123456"), result.NodeColors["Quote \"q\""]);
@@ -122,14 +122,14 @@ public sealed class SankeyDiagramParserTests
     [Fact]
     public void WriteRejectsWhatMermaidCannotRead()
     {
-        var accessible = new SankeyDiagram { Description = "Description" };
+        var accessible = new SankeyChart { Description = "Description" };
         Assert.Throws<ArgumentException>("diagram", () => MermaidWriter.Write(accessible));
 
-        var spaces = new SankeyDiagram();
+        var spaces = new SankeyChart();
         spaces.AddLink(" A", "B", 1);
         Assert.Throws<ArgumentException>("name", () => MermaidWriter.Write(spaces));
 
-        var directive = new SankeyDiagram();
+        var directive = new SankeyChart();
         directive.AddLink("%%{init}%%", "B", 1);
         Assert.Throws<ArgumentException>("name", () => MermaidWriter.Write(directive));
     }

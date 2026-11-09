@@ -23,7 +23,7 @@ public sealed class IshikawaDiagramParserTests
                 Environment
                     Subject moved too quickly
                     Too dark
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.Equal("Blurry photo", diagram.Effect?.Text);
@@ -45,7 +45,7 @@ public sealed class IshikawaDiagramParserTests
                   Odd
               Less
                 Back
-            """).Diagram;
+            """).Content;
         Assert.Equal("Effect", diagram.Effect?.Text);
         Assert.Equal(["Cause A", "Less", "Back"], diagram.Causes.Select(cause => cause.Label.Text));
         Assert.Equal(["Sub A1", "Odd"], diagram.Causes[0].Causes.Select(cause => cause.Label.Text));
@@ -55,7 +55,7 @@ public sealed class IshikawaDiagramParserTests
     [Fact]
     public void TabsCountAsOneCharacter()
     {
-        var diagram = (IshikawaDiagram)MermaidDocument.Parse("ishikawa-beta\n  Effect\n\tTab\n    Four\n  Two\n").Diagram;
+        var diagram = (IshikawaDiagram)MermaidDocument.Parse("ishikawa-beta\n  Effect\n\tTab\n    Four\n  Two\n").Content;
         var tab = diagram.Causes.Single();
         Assert.Equal("Tab", tab.Label.Text);
         Assert.Equal(["Four", "Two"], tab.Causes.Select(cause => cause.Label.Text));
@@ -64,7 +64,7 @@ public sealed class IshikawaDiagramParserTests
     [Fact]
     public void TextsCommentsAndKeyword()
     {
-        var diagram = (IshikawaDiagram)MermaidDocument.Parse("ISHIKAWA Effect on the keyword line\n  %% comment\n\n  A %% not a comment   \n  B<br/>line<br />three<br>four\n").Diagram;
+        var diagram = (IshikawaDiagram)MermaidDocument.Parse("ISHIKAWA Effect on the keyword line\n  %% comment\n\n  A %% not a comment   \n  B<br/>line<br />three<br>four\n").Content;
         Assert.Equal("Effect on the keyword line", diagram.Effect?.Text);
         Assert.Equal(["A %% not a comment", "B\nline\nthree\nfour"], diagram.Causes.Select(cause => cause.Label.Text));
     }
@@ -72,7 +72,7 @@ public sealed class IshikawaDiagramParserTests
     [Fact]
     public void EmptyDiagram()
     {
-        var diagram = (IshikawaDiagram)MermaidDocument.Parse("ishikawa\n").Diagram;
+        var diagram = (IshikawaDiagram)MermaidDocument.Parse("ishikawa\n").Content;
         Assert.Null(diagram.Effect);
         Assert.Empty(diagram.Causes);
     }
@@ -89,7 +89,7 @@ public sealed class IshikawaDiagramParserTests
             ---
             ishikawa-beta
               Effect
-            """).Diagram;
+            """).Content;
         Assert.Equal(("Causes", 8.0), (diagram.Title, diagram.Padding));
     }
 
@@ -120,8 +120,8 @@ public sealed class IshikawaDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (IshikawaDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (IshikawaDiagram)parsed.Content;
         Assert.Equal(("Causes", 12.0, "Effect\non two lines"), (result.Title, result.Padding, result.Effect?.Text));
         Assert.Equal(["Cause %% with a percent", "Sub-cause", "Deep cause", "<b>raw</b> #quot;"], result.EnumerateCauses().Select(cause => cause.Label.Text));
         Assert.Equal("Deep cause", result.Causes[0].Causes[0].Causes.Single().Label.Text);

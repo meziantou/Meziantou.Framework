@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="400" height="300" fill="#fafafa"/>
+<g class="grid">
+<line x1="30.57" y1="267.05" x2="390" y2="267.05" stroke="#e3e6ea"/>
+<line x1="30.57" y1="215.64" x2="390" y2="215.64" stroke="#e3e6ea"/>
+<line x1="30.57" y1="164.23" x2="390" y2="164.23" stroke="#e3e6ea"/>
+<line x1="30.57" y1="112.82" x2="390" y2="112.82" stroke="#e3e6ea"/>
+<line x1="30.57" y1="61.41" x2="390" y2="61.41" stroke="#e3e6ea"/>
+<line x1="30.57" y1="10" x2="390" y2="10" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g class="bar-plot-0">
+<rect x="47.68" y="189.94" width="154.04" height="77.11" fill="#4e79a7"/>
+<rect x="218.84" y="87.12" width="154.04" height="179.94" fill="#4e79a7"/>
+</g>
+<g class="data-labels">
+<text x="124.7" y="182.51" text-anchor="middle" font-size="14" fill="#c00000">3</text>
+<text x="295.86" y="79.69" text-anchor="middle" font-size="14" fill="#c00000">7</text>
+</g>
+</g>
+<g class="axes">
+<text x="27.57" y="270.63" text-anchor="end" font-size="14" fill="#59636e">0</text>
+<text x="27.57" y="219.22" text-anchor="end" font-size="14" fill="#59636e">2</text>
+<text x="27.57" y="167.81" text-anchor="end" font-size="14" fill="#59636e">4</text>
+<text x="27.57" y="116.4" text-anchor="end" font-size="14" fill="#59636e">6</text>
+<text x="27.57" y="64.99" text-anchor="end" font-size="14" fill="#59636e">8</text>
+<text x="27.57" y="13.58" text-anchor="end" font-size="14" fill="#59636e">10</text>
+<line x1="30.57" y1="10" x2="30.57" y2="267.05" stroke="#ff0000"/>
+<line x1="124.7" y1="267.05" x2="124.7" y2="272.05" stroke="#ff0000"/>
+<text x="124.7" y="285.1" text-anchor="middle" font-size="14" fill="#59636e">a</text>
+<line x1="295.86" y1="267.05" x2="295.86" y2="272.05" stroke="#ff0000"/>
+<text x="295.86" y="285.1" text-anchor="middle" font-size="14" fill="#59636e">b</text>
+<line x1="30.57" y1="267.05" x2="390" y2="267.05" stroke="#ff0000"/>
+</g>
+</svg>

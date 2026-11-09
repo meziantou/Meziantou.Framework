@@ -18,7 +18,7 @@ public sealed class TreeViewDiagramParserTests
                     index.ts ## entry point
                 "my notes.txt"
                 package.json
-            """).Diagram;
+            """).Content;
         #endregion
 
         Assert.True(diagram.ShowIcons);
@@ -46,7 +46,7 @@ public sealed class TreeViewDiagramParserTests
             ┣━━ heavy/
             ┃   ┗━━ child
             └── README.md ## read me
-            """).Diagram;
+            """).Content;
         Assert.Equal(["packages", "heavy", "README.md"], diagram.Nodes.Select(node => node.Name));
         var mermaid = diagram.Nodes[0].Children[0];
         Assert.Equal(["src", "package.json"], mermaid.Children.Select(node => node.Name));
@@ -59,7 +59,7 @@ public sealed class TreeViewDiagramParserTests
     [Fact]
     public void BoxDrawingNodesWithoutBranches()
     {
-        var diagram = (TreeViewDiagram)MermaidDocument.Parse("treeView-beta\nroot/\n\t├── a\n\t│\t└── b\nSection ─ A.txt\n").Diagram;
+        var diagram = (TreeViewDiagram)MermaidDocument.Parse("treeView-beta\nroot/\n\t├── a\n\t│\t└── b\nSection ─ A.txt\n").Content;
         Assert.Equal(["root", "Section ─ A.txt"], diagram.Nodes.Select(node => node.Name));
         Assert.Equal("b", diagram.Nodes[0].Children.Single().Children.Single().Name);
     }
@@ -81,7 +81,7 @@ public sealed class TreeViewDiagramParserTests
                 "dir/"
                 %% a comment line
                 j ::: 1
-            """).Diagram;
+            """).Content;
         Assert.Equal(["a  b", "it\"s", "c", "d", "e", "f", "", "g:::h", "i #j", "dir", "j ::: 1"], diagram.Nodes.Select(node => node.Name));
         Assert.Equal(("cls", "first ## second"), (diagram.Nodes[1].CssClass, diagram.Nodes[1].Description));
         Assert.Equal(("last", "none"), (diagram.Nodes[2].CssClass, diagram.Nodes[2].Icon));
@@ -93,7 +93,7 @@ public sealed class TreeViewDiagramParserTests
     [Fact]
     public void NestingFollowsTheIndentation()
     {
-        var diagram = (TreeViewDiagram)MermaidDocument.Parse("treeView-beta\n  a\n      b\n    c\n d\n\t\te\n").Diagram;
+        var diagram = (TreeViewDiagram)MermaidDocument.Parse("treeView-beta\n  a\n      b\n    c\n d\n\t\te\n").Content;
         Assert.Equal(["a", "d"], diagram.Nodes.Select(node => node.Name));
         Assert.Equal(["b", "c"], diagram.Nodes[0].Children.Select(node => node.Name));
         Assert.Equal("e", diagram.Nodes[1].Children.Single().Name);
@@ -134,7 +134,7 @@ public sealed class TreeViewDiagramParserTests
                     Line 2
                 }
                 a
-            """).Diagram;
+            """).Content;
         Assert.Equal(("Files", "Accessible title", "Line 1\nLine 2"), (diagram.Title, diagram.AccessibleTitle, diagram.Description));
         Assert.Equal((80.0, 2.0, 3.0, 3.0, 12.0), (diagram.RowIndent, diagram.PaddingX, diagram.PaddingY, diagram.LineThickness, diagram.Padding));
         Assert.Equal("material-icon-theme", diagram.DefaultIconPack);
@@ -154,7 +154,7 @@ public sealed class TreeViewDiagramParserTests
     public void UnsupportedValuesAreWarnings()
     {
         var document = MermaidDocument.Parse("---\nconfig:\n  treeView:\n    rowIndent: -5\n  themeVariables:\n    treeView:\n      labelColor: not-a-color\n---\ntreeView-beta\n    a\n");
-        Assert.Equal(10.0, ((TreeViewDiagram)document.Diagram).RowIndent);
+        Assert.Equal(10.0, ((TreeViewDiagram)document.Content).RowIndent);
         Assert.Contains("not a supported color", document.Warnings.Single().Message, StringComparison.Ordinal);
     }
 
@@ -228,8 +228,8 @@ public sealed class TreeViewDiagramParserTests
         var text = MermaidWriter.Write(diagram);
         var parsed = MermaidDocument.Parse(text);
         Assert.Empty(parsed.Warnings);
-        Assert.Equal(text, MermaidWriter.Write(parsed.Diagram));
-        var result = (TreeViewDiagram)parsed.Diagram;
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (TreeViewDiagram)parsed.Content;
         Assert.Equal(("Files", "Accessible", "Line 1\nLine 2"), (result.Title, result.AccessibleTitle, result.Description));
         Assert.Equal((20.0, 4.0, 6.0, 2.0, 10.0, true, "material-icon-theme"), (result.RowIndent, result.PaddingX, result.PaddingY, result.LineThickness, result.Padding, result.ShowIcons, result.DefaultIconPack));
         Assert.Equal(("docker", "typescript"), (result.FileNameIcons["Docker file"], result.ExtensionIcons[".ts"]));
@@ -252,7 +252,7 @@ public sealed class TreeViewDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         Assert.Equal("treeView-beta\n├── a/\n│   ├── \"Section ─ A.txt\"\n│   │   └── \"├── x\"\n│   └── b ## │ described\n└── c\td\n", text);
-        var result = (TreeViewDiagram)MermaidDocument.Parse(text).Diagram;
+        var result = (TreeViewDiagram)MermaidDocument.Parse(text).Content;
         Assert.Equal(text, MermaidWriter.Write(result));
         Assert.Equal("├── x", result.Nodes[0].Children[0].Children.Single().Name);
         Assert.Equal("c\td", result.Nodes[1].Name);
@@ -267,7 +267,7 @@ public sealed class TreeViewDiagramParserTests
 
         var text = MermaidWriter.Write(diagram);
         Assert.Equal("treeView-beta\n├── title \"a'\n└── \"titles\"\n", text);
-        Assert.Equal(["title \"a'", "titles"], ((TreeViewDiagram)MermaidDocument.Parse(text).Diagram).Nodes.Select(node => node.Name));
+        Assert.Equal(["title \"a'", "titles"], ((TreeViewDiagram)MermaidDocument.Parse(text).Content).Nodes.Select(node => node.Name));
     }
 
     [Fact]

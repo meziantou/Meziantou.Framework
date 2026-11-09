@@ -32,19 +32,19 @@ using Meziantou.Framework.Mermaid.Internals.VennDiagrams;
 
 namespace Meziantou.Framework.Mermaid;
 
-/// <summary>Writes diagrams as Mermaid text, which <see cref="MermaidDocument.Parse(string, MermaidParseOptions?)"/> reads back.</summary>
+/// <summary>Writes diagrams and charts as Mermaid text, which <see cref="MermaidDocument.Parse(string, MermaidParseOptions?)"/> reads back.</summary>
 /// <remarks>
 /// The theme is written when it is one of the themes of Mermaid (<see cref="DiagramTheme.Dark"/>...); a modified theme is
 /// not written. The text measurer is not written.
 /// </remarks>
 public static class MermaidWriter
 {
-    /// <summary>Writes a diagram as Mermaid text.</summary>
-    /// <param name="diagram">The diagram.</param>
+    /// <summary>Writes a diagram or a chart as Mermaid text.</summary>
+    /// <param name="diagram">The diagram, such as a <see cref="FlowchartDiagram"/>, or the chart, such as a <see cref="PieChart"/>: the <see cref="MermaidDocument.Content"/> of a document.</param>
     /// <returns>The Mermaid text, with line feeds.</returns>
     /// <exception cref="ArgumentException">The diagram has an element that Mermaid cannot express, such as an identifier with spaces.</exception>
     /// <exception cref="NotSupportedException">The type of the diagram cannot be written.</exception>
-    public static string Write(Diagram diagram)
+    public static string Write(ISceneSource diagram)
     {
         ArgumentNullException.ThrowIfNull(diagram);
         var builder = new StringBuilder();
@@ -107,7 +107,7 @@ public static class MermaidWriter
             case IshikawaDiagram ishikawaDiagram:
                 IshikawaDiagramWriter.Write(builder, ishikawaDiagram);
                 break;
-            case XyChartDiagram xyChartDiagram:
+            case XyChart xyChartDiagram:
                 XyChartDiagramWriter.Write(builder, xyChartDiagram);
                 break;
             case MindmapDiagram mindmapDiagram:
@@ -116,25 +116,25 @@ public static class MermaidWriter
             case TreeViewDiagram treeViewDiagram:
                 TreeViewDiagramWriter.Write(builder, treeViewDiagram);
                 break;
-            case PieDiagram pieDiagram:
+            case PieChart pieDiagram:
                 PieDiagramWriter.Write(builder, pieDiagram);
                 break;
-            case RadarDiagram radarDiagram:
+            case RadarChart radarDiagram:
                 RadarDiagramWriter.Write(builder, radarDiagram);
                 break;
             case WardleyDiagram wardleyDiagram:
                 WardleyDiagramWriter.Write(builder, wardleyDiagram);
                 break;
-            case QuadrantChartDiagram quadrantChartDiagram:
+            case QuadrantChart quadrantChartDiagram:
                 QuadrantChartDiagramWriter.Write(builder, quadrantChartDiagram);
                 break;
             case CynefinDiagram cynefinDiagram:
                 CynefinDiagramWriter.Write(builder, cynefinDiagram);
                 break;
-            case TreemapDiagram treemapDiagram:
+            case TreemapChart treemapDiagram:
                 TreemapDiagramWriter.Write(builder, treemapDiagram);
                 break;
-            case SankeyDiagram sankeyDiagram:
+            case SankeyChart sankeyDiagram:
                 SankeyDiagramWriter.Write(builder, sankeyDiagram);
                 break;
             case VennDiagram vennDiagram:

@@ -9,7 +9,9 @@ public enum TextHinting
     /// <summary>
     /// The outlines are fitted along the vertical axis only, without the instructions of the font: the baseline, the
     /// x-height, the cap height, the ascenders and the descenders on whole pixels, and the horizontal stems a whole
-    /// number of pixels thick. The advances and the horizontal positions do not change. Works with every font.
+    /// number of pixels thick. The advances and the horizontal positions do not change. Works with every font. In a
+    /// vertical layout, an upright glyph starts on a whole pixel down the column, and a glyph on its side is fitted
+    /// along the x axis of the image, where the y axis of its outline is.
     /// </summary>
     Light = 1,
 

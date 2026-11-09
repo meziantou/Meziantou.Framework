@@ -356,7 +356,7 @@ public sealed class DecodeInteropTests
         {
             var (main, addOn) = SplitAddOn(barcode);
             var expected = GetExpectedZXingText(barcode.Type, main, addOn);
-            var found = results.Where(result => result.FilePath == path).Select(result => barcode.Type is BarcodeType.Gs1128 ? result.HumanReadableText : result.Text).ToList();
+            var found = results.Where(result => result.FilePath == path).Select(result => IsGs1(barcode.Type) ? result.HumanReadableText : result.Text).ToList();
             Assert.Contains(expected, found);
         }
     }
@@ -391,6 +391,40 @@ public sealed class DecodeInteropTests
         }
     }
 
+    // A reader reports a GS1 DataBar symbol with the symbology identifier ]e0, and its FNC1 separators as GS (U+001D)
+    [Theory]
+    [MemberData(nameof(DrawingVariants))]
+    public async Task Gs1DataBar_IsReadAsGs1(string variant)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        Gs1Element[] elements = [new("01", "09501101530003"), new("17", "250101"), new("10", "ABC123"), new("21", "XY")];
+        (Barcode Barcode, string Format, string Data)[] samples =
+        [
+            (Barcode.CreateGs1DataBar("0950110153000"), "DataBar Omni", "0109501101530003"),
+            (Barcode.CreateGs1DataBarStacked("0950110153000"), "DataBar Stacked", "0109501101530003"),
+            (Barcode.CreateGs1DataBarStackedOmnidirectional("2997220033224"), "DataBar Stacked", "0129972200332241"),
+            (Barcode.CreateGs1DataBarLimited("1501234567890"), "DataBar Limited", "0115012345678907"),
+            (Barcode.CreateGs1DataBarExpanded(elements), "DataBar Expanded", "01095011015300031725010110ABC123\u001D21XY"),
+            (Barcode.CreateGs1DataBarExpanded(new Gs1Element("01", "98898765432106"), new Gs1Element("3202", "012345"), new Gs1Element("15", "991231")), "DataBar Expanded", "0198898765432106320201234515991231"),
+            (Barcode.CreateGs1DataBarExpandedStacked(4, elements), "DataBar Expanded Stacked", "01095011015300031725010110ABC123\u001D21XY"),
+            (Barcode.CreateGs1DataBarExpandedStacked(6, elements), "DataBar Expanded Stacked", "01095011015300031725010110ABC123\u001D21XY"),
+        ];
+
+        foreach (var (barcode, format, data) in samples)
+        {
+            var path = directory.FullPath / "databar.png";
+            await File.WriteAllBytesAsync(path, RenderBarcode(barcode, variant), XunitCancellationToken);
+
+            var result = Assert.Single(await tools.ReadWithZXingAsync([path]));
+            Assert.Equal(format, result.Format);
+            Assert.Equal("]e0", result.SymbologyIdentifier);
+            Assert.Equal("GS1", result.ContentType);
+            Assert.Equal(data, result.Text);
+            Assert.Equal(barcode.Text, result.HumanReadableText);
+        }
+    }
+
     [Fact]
     public async Task Code128_IsNotReadAsGs1()
     {
@@ -402,6 +436,239 @@ public sealed class DecodeInteropTests
         var result = Assert.Single(await tools.ReadWithZXingAsync([path]));
         Assert.Equal("]C0", result.SymbologyIdentifier);
         Assert.Equal("0109521234543213", result.Text);
+    }
+
+    public static TheoryData<Barcode2DType, string> Barcode2DVariants()
+    {
+        var data = new TheoryData<Barcode2DType, string>();
+        foreach (var type in Enum.GetValues<Barcode2DType>())
+        {
+            foreach (var variant in new[] { "ToPng", "ToImage", "Canvas", "CanvasFractional", "CanvasGradient", "CanvasRotated" })
+            {
+                data.Add(type, variant);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(Barcode2DVariants))]
+    public async Task Barcode2D_AreDecoded(Barcode2DType type, string variant)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, string Data)>();
+        foreach (var (barcode, data) in GetSampleBarcode2D(type))
+        {
+            Assert.Equal(type, barcode.Type);
+            var path = directory.FullPath / $"2d-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
+            await File.WriteAllBytesAsync(path, RenderBarcode2D(barcode, variant), XunitCancellationToken);
+            cases.Add((path, data));
+        }
+
+        Assert.NotEmpty(cases);
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, data) in cases)
+        {
+            // ZXingReader can also see a linear barcode in the modules of a large symbol
+            var result = Assert.Single(results, result => result.FilePath == path && result.Format == GetZXingFormat(type), message: $"{type} {Escape(data)}");
+            Assert.Equal(data, result.Text, message: $"{type} {Escape(data)}");
+        }
+    }
+
+    [Theory]
+    [InlineData(Barcode2DType.DataMatrix)]
+    [InlineData(Barcode2DType.Pdf417)]
+    [InlineData(Barcode2DType.Aztec)]
+    public async Task RandomBarcode2DPayloads_AreDecoded(Barcode2DType type)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var random = new Random(20261108 + (int)type);
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, string Data)>();
+        while (cases.Count < RandomPayloadsPerType)
+        {
+            var data = CreateRandomText(random, 300);
+            Barcode2D barcode;
+            try
+            {
+                barcode = type switch
+                {
+                    Barcode2DType.DataMatrix => Barcode2D.CreateDataMatrix(data),
+                    Barcode2DType.Pdf417 => Barcode2D.CreatePdf417(data),
+                    _ => Barcode2D.CreateAztec(data),
+                };
+            }
+            catch (InvalidOperationException)
+            {
+                // The data does not fit: another payload is drawn
+                continue;
+            }
+
+            var path = directory.FullPath / $"random-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
+            await File.WriteAllBytesAsync(path, barcode.ToPng(new Barcode2DPngOptions { ModuleSize = 3 }), XunitCancellationToken);
+            cases.Add((path, data));
+        }
+
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, data) in cases)
+        {
+            var result = results.SingleOrDefault(result => result.FilePath == path && result.Format == GetZXingFormat(type));
+            Assert.NotNull(result, message: $"{type} {Escape(data)}");
+            Assert.Equal(data, result.Text, message: $"{type} {Escape(data)}");
+        }
+    }
+
+    // A reader reports a GS1 Data Matrix symbol with the symbology identifier ]d2, and its FNC1 separators as GS (U+001D)
+    [Fact]
+    public async Task Gs1DataMatrix_IsReadAsGs1()
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        (Barcode2D Barcode, string Data, string HumanReadableText)[] samples =
+        [
+            (Barcode2D.CreateGs1DataMatrix(new Gs1Element("01", "09521234543213"), new Gs1Element("17", "250101"), new Gs1Element("10", "ABC123")), "01095212345432131725010110ABC123", "(01)09521234543213(17)250101(10)ABC123"),
+            (Barcode2D.CreateGs1DataMatrix(new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC123"), new Gs1Element("21", "XY")), "010952123454321310ABC123\u001D21XY", "(01)09521234543213(10)ABC123(21)XY"),
+            (Barcode2D.CreateGs1DataMatrix([new Gs1Element("10", "1234"), new Gs1Element("21", "abc-def"), new Gs1Element("3103", "000123")], new DataMatrixOptions { Shape = DataMatrixShape.Rectangle }), "101234\u001D21abc-def\u001D3103000123", "(10)1234(21)abc-def(3103)000123"),
+        ];
+
+        foreach (var (barcode, data, humanReadableText) in samples)
+        {
+            var path = directory.FullPath / "gs1-datamatrix.png";
+            await File.WriteAllBytesAsync(path, barcode.ToPng(new Barcode2DPngOptions { ModuleSize = 4 }), XunitCancellationToken);
+
+            var result = Assert.Single(await tools.ReadWithZXingAsync([path]), result => result.Format == "Data Matrix");
+            Assert.Equal("]d2", result.SymbologyIdentifier);
+            Assert.Equal("GS1", result.ContentType);
+            Assert.Equal(data, result.Text);
+            Assert.Equal(humanReadableText, result.HumanReadableText);
+        }
+    }
+
+    [Fact]
+    public async Task DataMatrix_IsNotReadAsGs1()
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var path = directory.FullPath / "datamatrix.png";
+        await File.WriteAllBytesAsync(path, Barcode2D.CreateDataMatrix("0109521234543213").ToPng(), XunitCancellationToken);
+
+        var result = Assert.Single(await tools.ReadWithZXingAsync([path]), result => result.Format == "Data Matrix");
+        Assert.Equal("]d1", result.SymbologyIdentifier);
+        Assert.Equal("0109521234543213", result.Text);
+    }
+
+    private static IEnumerable<(Barcode2D Barcode, string Data)> GetSampleBarcode2D(Barcode2DType type) => type switch
+    {
+        Barcode2DType.DataMatrix => GetSampleDataMatrixCodes(),
+        Barcode2DType.Pdf417 => GetSamplePdf417Codes(),
+        _ => GetSampleAztecCodes(),
+    };
+
+    private static IEnumerable<(Barcode2D Barcode, string Data)> GetSampleDataMatrixCodes()
+    {
+        // ASCII and digit pairs, C40, Text, X12, EDIFACT, Base 256, UTF-8 with ECI, rectangular and fixed sizes, several blocks
+        string[] values =
+        [
+            "https://www.meziantou.net/", "0123456789012345678901234567890123456789", "HELLO WORLD 2026 DATA MATRIX", "hello world from a data matrix",
+            "ABC>123*DEF\rXYZ>", ".A.C1.3.DATA.123DATA.123DATA", "\u00E9\u00E8\u00E0\u00FC\u00DF\u00FF\u0080\u00A9", "Ελληνικά, кириллица, 漢字 😀",
+            "Mixed: abc ABC 123 *>\r @^_ \u00E9 \u0001\u007F",
+        ];
+
+        foreach (var value in values)
+        {
+            yield return (Barcode2D.CreateDataMatrix(value), value);
+        }
+
+        yield return (Barcode2D.CreateDataMatrix("RECTANGLE 12345", new DataMatrixOptions { Shape = DataMatrixShape.Rectangle }), "RECTANGLE 12345");
+        yield return (Barcode2D.CreateDataMatrix("16x48", new DataMatrixOptions { Height = 16, Width = 48 }), "16x48");
+        yield return (Barcode2D.CreateDataMatrix("Padded", new DataMatrixOptions { Height = 52, Width = 52 }), "Padded");
+        yield return (Barcode2D.CreateDataMatrix(string.Concat(Enumerable.Repeat("Data Matrix, 144 x 144 modules. ", 30))), string.Concat(Enumerable.Repeat("Data Matrix, 144 x 144 modules. ", 30)));
+    }
+
+    private static IEnumerable<(Barcode2D Barcode, string Data)> GetSamplePdf417Codes()
+    {
+        (string Data, Pdf417Options? Options)[] samples =
+        [
+            ("HELLO WORLD", null),
+            ("01234567890123456789012345678901234567890123456789", null),
+            ("Invoice #2026-11-08: 3 items, total $42.50 (paid)", null),
+            ("lowercase text; with [punctuation] & symbols: ~!@{}|\"'\t\r\n", new Pdf417Options { Columns = 4 }),
+            ("Ab1cD2 ef3GH4 1234567890123 x", new Pdf417Options { SecurityLevel = 6, Columns = 8 }),
+            ("héllo wörld, Ελληνικά, 漢字", new Pdf417Options { SecurityLevel = 3 }),
+            ("a\u0001b\u007fc\u001fd", new Pdf417Options { SecurityLevel = 0, Columns = 2 }),
+            (string.Concat(Enumerable.Repeat("PDF417 is a stacked barcode. ", 12)), new Pdf417Options { Columns = 12, RowHeight = 4 }),
+            ("TALL", new Pdf417Options { Columns = 1, SecurityLevel = 4, RowHeight = 8 }),
+            ("Hello World! 123 #tag; a@b.c\t[x]\n", null),
+
+            // A single byte between texts is a shift from the Text compaction, after a padding value in each sub-mode
+            ("HELLO\u0001WORLD hello\u0002world AB1;;\u0003CDEFG", new Pdf417Options { Columns = 5 }),
+        ];
+
+        foreach (var (data, options) in samples)
+        {
+            yield return (Barcode2D.CreatePdf417(data, options), data);
+        }
+    }
+
+    private static IEnumerable<(Barcode2D Barcode, string Data)> GetSampleAztecCodes()
+    {
+        yield return (Barcode2D.CreateAztec("Hello"), "Hello");
+        yield return (Barcode2D.CreateAztec("0123456789012345678901234567890123456789"), "0123456789012345678901234567890123456789");
+        yield return (Barcode2D.CreateAztec("Hello, World! It's 10:30. Mixed CASE, punctuation: {[(<>)]} @#$%^&*_~|\\\r\n"), "Hello, World! It's 10:30. Mixed CASE, punctuation: {[(<>)]} @#$%^&*_~|\\\r\n");
+        yield return (Barcode2D.CreateAztec("NUL\0\0\0 is a binary shift"), "NUL\0\0\0 is a binary shift");
+        yield return (Barcode2D.CreateAztec([0x00, 0x01, 0xE9, 0xFF, 0x41, 0x42]), "\0\u0001\u00E9\u00FFAB");
+        yield return (Barcode2D.CreateAztec("héllo wörld, 漢字 Ελληνικά"), "héllo wörld, 漢字 Ελληνικά");
+        yield return (Barcode2D.CreateAztec("COMPACT", new AztecOptions { Compact = true, Layers = 4 }), "COMPACT");
+        yield return (Barcode2D.CreateAztec("FULL RANGE", new AztecOptions { Compact = false }), "FULL RANGE");
+        yield return (Barcode2D.CreateAztec("Ten layers", new AztecOptions { Layers = 10 }), "Ten layers");
+        yield return (Barcode2D.CreateAztec("More error correction", new AztecOptions { ErrorCorrectionPercent = 80 }), "More error correction");
+        yield return (Barcode2D.CreateAztec(string.Concat(Enumerable.Repeat("The quick brown fox jumps over the lazy dog. ", 40))), string.Concat(Enumerable.Repeat("The quick brown fox jumps over the lazy dog. ", 40)));
+    }
+
+    private static string GetZXingFormat(Barcode2DType type) => type switch
+    {
+        Barcode2DType.DataMatrix => "Data Matrix",
+        Barcode2DType.Pdf417 => "PDF417",
+        _ => "Aztec",
+    };
+
+    private static byte[] RenderBarcode2D(Barcode2D barcode, string variant)
+    {
+        if (variant is "ToPng")
+            return barcode.ToPng(new Barcode2DPngOptions { ModuleSize = 4 });
+
+        if (variant is "ToImage")
+        {
+            using var image = barcode.ToImage(new Barcode2DDrawingOptions { ModuleSize = 4 });
+            return Encode(image);
+        }
+
+        var options = variant switch
+        {
+            "CanvasFractional" => new Barcode2DDrawingOptions { ModuleSize = 3.5, SnapToPixels = false },
+            "CanvasGradient" => new Barcode2DDrawingOptions { ModuleSize = 4, DarkBrush = new LinearGradientBrush(new PointD(0, 0), new PointD(400, 400), [new GradientStop(0, Colors.Black), new GradientStop(1, new Rgba32(0x00, 0x33, 0x66))]) },
+            _ => new Barcode2DDrawingOptions { ModuleSize = 4 },
+        };
+
+        var size = Barcode2DImageRenderer.MeasureBarcode2D(barcode, options);
+        if (variant is "CanvasRotated")
+        {
+            var side = (int)Math.Ceiling(Math.Max(size.Width, size.Height)) + 80;
+            using var rotated = new Image<Rgba32>(side, side, Colors.White);
+            rotated.Draw((barcode, options, size, side), static (canvas, state) =>
+            {
+                var center = new PointD(state.side / 2.0, state.side / 2.0);
+                var angle = state.barcode.Type is Barcode2DType.Pdf417 ? 3 : 10;
+                canvas.Transform(AffineTransform.CreateRotation(angle, center), state, static (canvas, state) => canvas.DrawBarcode2D(state.barcode, new PointD((state.side - state.size.Width) / 2, (state.side - state.size.Height) / 2), state.options));
+            });
+            return Encode(rotated);
+        }
+
+        using var canvas = new Image<Rgba32>((int)Math.Ceiling(size.Width) + 60, (int)Math.Ceiling(size.Height) + 60, Colors.White);
+        canvas.Draw((barcode, options), static (canvas, state) => canvas.DrawBarcode2D(state.barcode, new PointD(30.3, 30.6), state.options));
+        return Encode(canvas);
     }
 
     private static IEnumerable<(QRCode QRCode, string Data)> GetSampleQRCodes()
@@ -431,6 +698,8 @@ public sealed class DecodeInteropTests
         yield return Barcode.CreateUpcA("03600029145", extension: "12");
         yield return Barcode.CreateCodabar("40156");
         yield return Barcode.CreateItf("12345678");
+        yield return Barcode.CreateUpcE("0425261");
+        yield return Barcode.CreateUpcE("0123456", extension: "12");
     }
 
     private static byte[] RenderQRCode(QRCode qr, string variant)
@@ -518,13 +787,28 @@ public sealed class DecodeInteropTests
     private static (string Main, string? AddOn) SplitAddOn(Barcode barcode)
     {
         var text = barcode.Text;
-        var index = barcode.Type is BarcodeType.Ean8 or BarcodeType.Ean13 or BarcodeType.UpcA ? text.IndexOf(' ', StringComparison.Ordinal) : -1;
+        var index = barcode.Type is BarcodeType.Ean8 or BarcodeType.Ean13 or BarcodeType.UpcA or BarcodeType.UpcE ? text.IndexOf(' ', StringComparison.Ordinal) : -1;
         return index < 0 ? (text, null) : (text[..index], text[(index + 1)..]);
     }
 
     // ZXingReader reads a UPC-A symbol as the EAN-13 number it is part of, with a leading 0, and gives a symbol with an
-    // add-on as its main digits followed by the add-on digits (sometimes with a second result of the main digits alone)
-    private static string GetExpectedZXingText(BarcodeType type, string main, string? addOn) => (type is BarcodeType.UpcA ? "0" + main : main) + addOn;
+    // add-on as its main digits followed by the add-on digits (sometimes with a second result of the main digits alone).
+    // It reads a UPC-E symbol as the EAN-13 number of the UPC-A number it stands for.
+    private static string GetExpectedZXingText(BarcodeType type, string main, string? addOn) => type switch
+    {
+        BarcodeType.UpcA => "0" + main,
+        BarcodeType.UpcE => "0" + ExpandUpcE(main),
+        _ => main,
+    } + addOn;
+
+    // The UPC-A number of the 8 digits of a UPC-E number (GS1 General Specifications, section 5.2.2.4.2)
+    private static string ExpandUpcE(string upcE) => upcE[6] switch
+    {
+        '0' or '1' or '2' => upcE[..3] + upcE[6] + "0000" + upcE[3..6],
+        '3' => upcE[..4] + "00000" + upcE[4..6],
+        '4' => upcE[..5] + "00000" + upcE[5],
+        _ => upcE[..6] + "0000" + upcE[6],
+    } + upcE[7];
 
     private static string GetZBarText(BarcodeType type, string text) => type switch
     {
@@ -534,6 +818,7 @@ public sealed class DecodeInteropTests
         BarcodeType.Ean8 => "EAN-8:" + text,
         BarcodeType.Ean13 => "EAN-13:" + text,
         BarcodeType.UpcA => "EAN-13:0" + text,
+        BarcodeType.UpcE => "EAN-13:0" + ExpandUpcE(text),
         BarcodeType.Codabar => "Codabar:" + text,
         BarcodeType.Itf => "I2/5:" + text,
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, message: null),
@@ -585,9 +870,19 @@ public sealed class DecodeInteropTests
             // ZXingReader reads ITF symbols of 6 digits or more
             BarcodeType.Itf => Barcode.CreateItf(Digits(2 * random.Next(3, 10))),
             BarcodeType.Gs1128 => Barcode.CreateGs1128([.. ZintMatrixTests.ParseGs1(ZintMatrixTests.CreateRandomGs1Data(random))]),
+            // A last digit of 5 to 9 after a 5th digit other than 0 is a valid UPC-E form
+            BarcodeType.UpcE => Barcode.CreateUpcE("0" + Digits(4) + (char)('1' + random.Next(9)) + (char)('5' + random.Next(5)), AddOn()),
+            BarcodeType.Gs1DataBar => Barcode.CreateGs1DataBar(Digits(13)),
+            BarcodeType.Gs1DataBarStacked => Barcode.CreateGs1DataBarStacked(Digits(13)),
+            BarcodeType.Gs1DataBarStackedOmnidirectional => Barcode.CreateGs1DataBarStackedOmnidirectional(Digits(13)),
+            BarcodeType.Gs1DataBarLimited => Barcode.CreateGs1DataBarLimited((char)('0' + random.Next(2)) + Digits(12)),
+            BarcodeType.Gs1DataBarExpanded => Barcode.CreateGs1DataBarExpanded([.. ZintMatrixTests.ParseGs1(ZintMatrixTests.CreateRandomGs1Data(random))]),
+            BarcodeType.Gs1DataBarExpandedStacked => Barcode.CreateGs1DataBarExpandedStacked(2 * random.Next(1, 11), [.. ZintMatrixTests.ParseGs1(ZintMatrixTests.CreateRandomGs1Data(random))]),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, message: null),
         };
     }
+
+    private static bool IsGs1(BarcodeType type) => type is BarcodeType.Gs1128 or BarcodeType.Gs1DataBar or BarcodeType.Gs1DataBarStacked or BarcodeType.Gs1DataBarStackedOmnidirectional or BarcodeType.Gs1DataBarLimited or BarcodeType.Gs1DataBarExpanded or BarcodeType.Gs1DataBarExpandedStacked;
 
     private static string Escape(string value) => string.Concat(value.Select(c => c < 0x20 || c > 0x7E ? $"\\u{(int)c:X4}" : c.ToString()));
 }

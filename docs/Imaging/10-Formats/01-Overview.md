@@ -12,13 +12,13 @@ is read, what is written, how to save with its encoder and its options, and the 
 | --- | --- | --- | --- |
 | [PNG and APNG](02-Png.md) | Every color type and bit depth, palettes, interlacing, Apple CgBI files | Lossless: gray, RGB and RGBA at 8 or 16 bits, palettes on request | Read and written |
 | [GIF](03-Gif.md) | GIF87a and GIF89a, interlacing, transparency, comments | Lossy by design: 256 colors per frame, one transparent color | Read and written |
-| [JPEG](04-Jpeg.md) | Baseline, progressive, arithmetic coded, 12-bit, lossless; CMYK with a color conversion | Lossy, 8 bits, baseline or progressive, gray or YCbCr | No |
+| [JPEG](04-Jpeg.md) | Baseline, progressive, arithmetic coded, 12-bit, lossless; CMYK as CMYK pixels or with a color conversion | Lossy, 8 bits, baseline or progressive, gray or YCbCr; baseline CMYK | No |
 | [WebP](05-WebP.md) | Lossless, lossy, alpha | Lossless (default) or lossy, alpha | Read and written |
 | [QOI](06-Qoi.md) | Every file | Lossless 8-bit RGB and RGBA | No |
 | [BMP](07-Bmp.md) | Windows and OS/2 bitmaps, 1 to 32 bits, bit fields, run-length | 24 or 32 bits by default; indexed, run-length and 16 bits on request | No |
 | [TGA](08-Tga.md) | True-color, grayscale and color-mapped, uncompressed or run-length | True-color and grayscale, uncompressed or run-length | No |
 | [Netpbm](09-Netpbm.md) | PBM, PGM, PPM and PAM, 8 and 16 bits | Lossless; PBM on request | No |
-| [TIFF and BigTIFF](10-Tiff.md) | Multi-page documents, most compressions and sample layouts, floating-point samples, CMYK with a color conversion | Multi-page documents, lossless compressions or JPEG, bilevel, palette, 32-bit floating-point | No (pages) |
+| [TIFF and BigTIFF](10-Tiff.md) | Multi-page documents, most compressions and sample layouts, floating-point samples, CMYK as CMYK pixels or with a color conversion | Multi-page documents, lossless compressions or JPEG, bilevel, palette, 32-bit floating-point, CMYK | No (pages) |
 | [ICO and CUR](11-IcoAndCur.md) | PNG and bitmap representations, cursor hotspots | PNG or 32-bit bitmap representations, hotspots | No (representations) |
 | [ANI](12-Ani.md) | Animated cursors | Animated cursors | Read and written |
 | [AVIF](13-Avif.md) | 8 to 12 bits, alpha, grids, HDR descriptions | Lossless (default) or lossy, 8 to 12 bits, alpha, grids | Read and written |

@@ -63,19 +63,14 @@ public sealed partial class JavaDependencyScanner
                 continue;
             }
 
-            if (GetMavenPropertyReference(version) is { } propertyName && properties.TryGetValue(propertyName, out var property))
+            // A property reference, such as ${junit.version}, must be updated where the property is defined
+            if (version.Contains("${", StringComparison.Ordinal))
             {
-                context.ReportDependency(this, name, property.Value, DependencyType.JavaPackage,
-                    new NonUpdatableLocation(context), property.Location,
-                    tags: [], metadata: [KeyValuePair.Create<string, object?>("property", propertyName)]);
+                context.ReportDependency(this, name, version, properties.Resolve(version, GetMavenPropertyReferences(version)), DependencyType.JavaPackage, new NonUpdatableLocation(context), CreateMavenLocation(context, versionElement));
                 continue;
             }
 
-            // A property reference, such as ${junit.version}, must be updated where the property is defined
-            var versionLocation = version.Contains("${", StringComparison.Ordinal)
-                ? new NonUpdatableLocation(context)
-                : CreateMavenLocation(context, versionElement);
-            context.ReportDependency(this, name, version, DependencyType.JavaPackage, new NonUpdatableLocation(context), versionLocation);
+            context.ReportDependency(this, name, version, DependencyType.JavaPackage, new NonUpdatableLocation(context), CreateMavenLocation(context, versionElement));
         }
     }
 
@@ -107,34 +102,27 @@ public sealed partial class JavaDependencyScanner
 
     /// <summary>Gets the properties of the project that a version can be resolved from, with the location to update them.</summary>
     /// <remarks>
-    /// A property is only resolved when the project defines it once, outside any profile, as a profile can override it.
-    /// It is updatable only when the pom references it once, so that updating one dependency does not change another one.
+    /// A property is only resolved when the project defines it once, outside any profile, as a profile can override it,
+    /// and when its value does not reference another property.
     /// </remarks>
-    private static Dictionary<string, (string Value, Location Location)> GetMavenProperties(ScanFileContext context, XElement root, XNamespace ns)
+    private static VariableDefinitions GetMavenProperties(ScanFileContext context, XElement root, XNamespace ns)
     {
-        var result = new Dictionary<string, (string Value, Location Location)>(StringComparer.Ordinal);
+        var result = new VariableDefinitions(StringComparer.Ordinal);
         var definitions = root.Elements(ns + "properties").Elements()
-            .Concat(root.Elements(ns + "profiles").Elements(ns + "profile").Elements(ns + "properties").Elements())
-            .GroupBy(element => element.Name);
+            .Concat(root.Elements(ns + "profiles").Elements(ns + "profile").Elements(ns + "properties").Elements());
 
-        Dictionary<string, int>? referenceCounts = null;
-        foreach (var group in definitions)
+        foreach (var element in definitions)
         {
-            if (group.Key.Namespace != ns)
+            if (element.Name.Namespace != ns)
                 continue;
 
-            var element = group.First();
-            if (element.Parent?.Parent != root || group.Skip(1).Any())
-                continue;
+            var value = element.Parent?.Parent == root ? GetMavenValue(element) : null;
+            if (value is not null && value.Contains("${", StringComparison.Ordinal))
+            {
+                value = null;
+            }
 
-            var value = GetMavenValue(element);
-            if (value is null || value.Contains("${", StringComparison.Ordinal))
-                continue;
-
-            referenceCounts ??= CountMavenPropertyReferences(root);
-            var propertyName = element.Name.LocalName;
-            var isReferencedOnce = referenceCounts.TryGetValue(propertyName, out var count) && count == 1;
-            result[propertyName] = (value, isReferencedOnce ? CreateMavenLocation(context, element) : new NonUpdatableLocation(context));
+            result.Add(element.Name.LocalName, value, () => CreateMavenLocation(context, element));
         }
 
         return result;
@@ -153,57 +141,27 @@ public sealed partial class JavaDependencyScanner
         return new XmlLocation(context.FileSystem, context.FullPath, element, trimmedStart, trimmedLength);
     }
 
-    private static Dictionary<string, int> CountMavenPropertyReferences(XElement root)
+    /// <summary>Gets the property references of a value, such as <c>${junit.version}</c>.</summary>
+    private static List<VariableReference> GetMavenPropertyReferences(string value)
     {
-        var result = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (var node in root.DescendantNodes())
+        var result = new List<VariableReference>();
+        var index = 0;
+        while ((index = value.IndexOf("${", index, StringComparison.Ordinal)) >= 0)
         {
-            switch (node)
+            var end = value.IndexOf('}', index + 2, StringComparison.Ordinal);
+            if (end < 0)
             {
-                case XText text:
-                    Count(text.Value);
-                    break;
-
-                case XElement element:
-                    foreach (var attribute in element.Attributes())
-                    {
-                        Count(attribute.Value);
-                    }
-
-                    break;
+                result.Add(new VariableReference(index, value.Length - index, Name: null));
+                break;
             }
-        }
 
-        foreach (var attribute in root.Attributes())
-        {
-            Count(attribute.Value);
+            var name = value[(index + 2)..end];
+            var isName = name.Length > 0 && !name.Contains('{', StringComparison.Ordinal);
+            result.Add(new VariableReference(index, end + 1 - index, isName ? name : null));
+            index = end + 1;
         }
 
         return result;
-
-        void Count(string text)
-        {
-            var index = 0;
-            while ((index = text.IndexOf("${", index, StringComparison.Ordinal)) >= 0)
-            {
-                var end = text.IndexOf('}', index + 2, StringComparison.Ordinal);
-                if (end < 0)
-                    return;
-
-                var name = text[(index + 2)..end];
-                result[name] = result.GetValueOrDefault(name) + 1;
-                index = end + 1;
-            }
-        }
-    }
-
-    /// <summary>Gets the value of <c>${name}</c>, or <see langword="null"/> when the version is not exactly a property reference.</summary>
-    private static string? GetMavenPropertyReference(string version)
-    {
-        if (version is ['$', '{', .. var name, '}'] && name.Length > 0 && !name.Contains('{', StringComparison.Ordinal) && !name.Contains('}', StringComparison.Ordinal))
-            return name;
-
-        return null;
     }
 
     /// <summary>Gets the value of an element as Maven reads it, trimmed, or <see langword="null"/> when it is missing or empty.</summary>

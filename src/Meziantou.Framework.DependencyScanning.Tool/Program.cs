@@ -183,6 +183,9 @@ internal static class Program
         var updaters = CreatePackageUpdaters(minimumAge);
 
         var updatedDependencies = new ConcurrentQueue<Dependency>();
+
+        // Dependencies that use the same property share its location: the first update sets the version of all of them
+        var updatedLocations = new ConcurrentDictionary<Location, bool>(ReferenceEqualityComparer.Instance);
         var failureCount = 0;
         var updatableDependencies = filteredDependencies.Where(static dependency => dependency.VersionLocation?.IsUpdatable is true);
         await Parallel.ForEachAsync(
@@ -191,6 +194,9 @@ internal static class Program
             async (dependency, localCancellationToken) =>
             {
                 if (dependencyTypeSet is not null && !dependencyTypeSet.Contains(dependency.Type))
+                    return;
+
+                if (dependency.VersionLocation is { } versionLocation && updatedLocations.ContainsKey(versionLocation))
                     return;
 
                 string? updatedVersion;
@@ -213,6 +219,7 @@ internal static class Program
 
                 if (updatedVersion is not null)
                 {
+                    updatedLocations.TryAdd(dependency.VersionLocation!, value: true);
                     output.WriteLine($"Updated {dependency} -> {updatedVersion}");
                     updatedDependencies.Enqueue(dependency);
                 }

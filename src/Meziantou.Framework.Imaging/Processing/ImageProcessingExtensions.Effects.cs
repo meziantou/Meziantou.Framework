@@ -47,6 +47,7 @@ public static partial class ImageProcessingExtensions
     public static void Vignette(this Image image, Rgba64 color, double radiusX, double radiusY, Rectangle? rectangle = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Vignette));
         var (brush, area) = CreateRadialEffect(color, radiusX, radiusY, rectangle, image.Size, vignette: true);
         image.Draw((brush, area), static (canvas, state) => canvas.FillRectangle(state.brush, state.area), cancellationToken);
     }
@@ -67,6 +68,7 @@ public static partial class ImageProcessingExtensions
     public static void Vignette(this ImageFrame frame, Rgba64 color, double radiusX, double radiusY, Rectangle? rectangle = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Vignette));
         var (brush, area) = CreateRadialEffect(color, radiusX, radiusY, rectangle, frame.Size, vignette: true);
         frame.Draw((brush, area), static (canvas, state) => canvas.FillRectangle(state.brush, state.area), cancellationToken);
     }
@@ -105,6 +107,7 @@ public static partial class ImageProcessingExtensions
     public static void Glow(this Image image, Rgba64 color, double radiusX, double radiusY, Rectangle? rectangle = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Glow));
         var (brush, area) = CreateRadialEffect(color, radiusX, radiusY, rectangle, image.Size, vignette: false);
         image.Draw((brush, area), static (canvas, state) => canvas.FillRectangle(state.brush, state.area), cancellationToken);
     }
@@ -125,6 +128,7 @@ public static partial class ImageProcessingExtensions
     public static void Glow(this ImageFrame frame, Rgba64 color, double radiusX, double radiusY, Rectangle? rectangle = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Glow));
         var (brush, area) = CreateRadialEffect(color, radiusX, radiusY, rectangle, frame.Size, vignette: false);
         frame.Draw((brush, area), static (canvas, state) => canvas.FillRectangle(state.brush, state.area), cancellationToken);
     }
@@ -160,6 +164,7 @@ public static partial class ImageProcessingExtensions
     public static void Pixelate(this Image image, int size, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Pixelate));
         ValidatePixelateSize(size);
         if (size == 1)
         {
@@ -187,6 +192,7 @@ public static partial class ImageProcessingExtensions
     public static void Pixelate(this ImageFrame frame, int size, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Pixelate));
         ValidatePixelateSize(size);
         _ = frame.GetStorage();
         if (size == 1)
@@ -232,6 +238,7 @@ public static partial class ImageProcessingExtensions
     public static void OilPaint(this Image image, int levels, int radius, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(OilPaint));
         ValidateOilPaint(levels, radius);
         if (radius == 0)
         {
@@ -260,6 +267,7 @@ public static partial class ImageProcessingExtensions
     public static void OilPaint(this ImageFrame frame, int levels, int radius, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(OilPaint));
         ValidateOilPaint(levels, radius);
         _ = frame.GetStorage();
         if (radius == 0)
@@ -302,6 +310,7 @@ public static partial class ImageProcessingExtensions
     public static void Flatten(this Image image, Rgba64 backgroundColor, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Flatten));
         ValidateFlattenBackground(backgroundColor);
         image.FlattenFrames(frames: null, backgroundColor, cancellationToken);
     }
@@ -322,6 +331,7 @@ public static partial class ImageProcessingExtensions
     public static void Flatten(this ImageFrame frame, Rgba64 backgroundColor, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Flatten));
         ValidateFlattenBackground(backgroundColor);
         _ = frame.GetStorage();
         frame.OwnerImage.FlattenFrames([frame], backgroundColor, cancellationToken);

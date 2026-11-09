@@ -11,6 +11,9 @@ internal sealed class TextLayoutData
     /// <summary>Gets the hinted outlines of the glyphs, or <see langword="null"/> for a text that is not hinted: the layout records them instead of decoding the glyphs.</summary>
     public HintedOutlines? HintedOutlines { get; init; }
 
+    /// <summary>Gets how the glyphs are antialiased when the layout is filled at a point.</summary>
+    public TextSubpixelRendering SubpixelRendering { get; init; }
+
     /// <summary>Gets the paints of the layout; <see langword="null"/> is the brush of the draw call.</summary>
     public required Brush?[] Brushes { get; init; }
 

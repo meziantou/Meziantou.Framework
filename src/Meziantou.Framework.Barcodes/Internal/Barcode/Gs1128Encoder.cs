@@ -60,7 +60,7 @@ internal static class Gs1128Encoder
 
     // The application identifiers whose element strings have a predefined length (GS1 General Specifications,
     // Figure 7.8.5-2): a reader knows where they end, so no FNC1 follows them. Returns -1 for the other identifiers.
-    private static int GetPredefinedValueLength(string applicationIdentifier)
+    internal static int GetPredefinedValueLength(string applicationIdentifier)
     {
         return applicationIdentifier[..2] switch
         {

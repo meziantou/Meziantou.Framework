@@ -1508,6 +1508,24 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>JPEG 2000 decoding of the first quality layers only: a preview of a layered file.</summary>
+    #region Imaging_Jpeg2000DecodeQualityLayers
+    public static Image LoadJpeg2000Preview(string path)
+    {
+        // Only the coding passes of the first quality layer are decoded: the image a reader gets from the first bytes of
+        // an LRCP file. A file of one layer decodes as a whole.
+        var options = new ImageDecodeOptions
+        {
+            Configuration = new ImageConfiguration
+            {
+                Jpeg2000Decoding = new Jpeg2000DecodingOptions { QualityLayerLimit = 1 },
+            },
+        };
+
+        return Image.Load(path, options);
+    }
+    #endregion
+
     /// <summary>JPEG 2000 with the high-throughput block coder (HTJ2K): a JPH file, and a codestream with a target size.</summary>
     #region Imaging_SaveHighThroughputJpeg2000
     public static void SaveHighThroughputJpeg2000(string inputPath, string jphPath, string codestreamPath)
@@ -1828,6 +1846,46 @@ internal static class Examples
 
         // The pixels are RGB, labeled with the destination profile (image.Metadata.IccProfile)
         return Image.Load(path, new ImageDecodeOptions { CmykConversion = conversion });
+    }
+    #endregion
+
+    /// <summary>A CMYK JPEG keeps its inks when it is loaded as CMYK pixels.</summary>
+    #region Imaging_LoadCmykPixels
+    public static void KeepCmykInks(string jpegPath, string tiffPath, string previewPath)
+    {
+        // The ink amounts as they are (0 is no ink), labeled with the CMYK profile of the file
+        using var inks = Image.Load<Cmyk32>(jpegPath);
+
+        // Crop, Flip, Rotate by quarter turns and AutoOrient keep CMYK pixels; JPEG and TIFF store them
+        inks.Crop(new Rectangle(0, 0, inks.Width / 2, inks.Height));
+        inks.Save(tiffPath, new TiffEncoder());
+
+        // Colors of light are an explicit conversion: from the CMYK profile of the image when it has one,
+        // otherwise with the device CMYK formulas
+        var conversion = new PixelConversionOptions { CmykConversion = new CmykPixelConversionOptions() };
+        using var preview = inks.CloneAs<Rgb24>(conversion);
+        preview.Save(previewPath);
+    }
+    #endregion
+
+    /// <summary>Separation of an RGB image into the inks of a printing condition.</summary>
+    #region Imaging_ConvertToCmyk
+    public static void SaveForPrint(Image image, IccProfile pressProfile, string path)
+    {
+        // The press profile (a CMYK output profile) describes the inks and labels them; the colors of the image are
+        // those of its own profile, or sRGB when it has none. CMYK has no alpha: flatten transparent pixels on white
+        var conversion = new PixelConversionOptions
+        {
+            BackgroundColor = new Rgba64(65535, 65535, 65535),
+            CmykConversion = new CmykPixelConversionOptions
+            {
+                CmykProfile = pressProfile,
+                Transform = new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual },
+            },
+        };
+
+        using var inks = image.CloneAs<Cmyk32>(conversion);
+        inks.Save(path, new JpegEncoder { Quality = 90 });
     }
     #endregion
 

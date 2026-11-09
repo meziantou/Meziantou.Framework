@@ -1,6 +1,6 @@
 ---
 title: Values and dates
-description: How values are parsed, the date keywords and relative dates, the current time in tests, and parsing your own values.
+description: How values are parsed, the date keywords and relative dates, the time zone of days, the current time in tests, and parsing your own values.
 ---
 
 The handlers that take a `TValue`, in both builders, parse the value of the term before calling your handler. A value
@@ -34,13 +34,13 @@ When `TValue` is `DateTime`, `DateTimeOffset` or `DateOnly`, or their nullable v
 | `this_year` or `"this year"` | The current year. |
 | `last_year` or `"last year"` | The previous year. |
 
-Days, weeks, months and years are in UTC, and the keywords are case-insensitive. They work with [AddRangeHandler](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}.AddRangeHandler) and
+Days, weeks, months and years are in UTC unless you [choose a time zone](#time-zone), and the keywords are case-insensitive. They work with [AddRangeHandler](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}.AddRangeHandler) and
 with [ExpressionQueryBuilder\<T\>.AddHandler\<TValue\>](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}.AddHandler). The other handlers of [QueryBuilder\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}) receive a single date, not
 a range, so they do not accept them.
 
 ## Relative dates
 
-`@today` is the start of the current day in UTC. Follow it with an offset in days (`d`) or weeks (`w`): `@today-3d`,
+`@today` is the start of the current day, in UTC or in the [time zone](#time-zone) of the builder. Follow it with an offset in days (`d`) or weeks (`w`): `@today-3d`,
 `@today+1w`. A relative date is a value like any other date, so it works with every operator and as a bound of a range:
 `created>=@today-1w`, `created:@today-4w..@today-2w`.
 
@@ -82,6 +82,43 @@ Assert.Equal(["March 1", "February 20"], Search("created:@today-4w..@today-2w"))
 builders use `TimeProvider.System`.
 
 A query built yesterday still means yesterday's `today`: build the query again when it is kept for a long time.
+
+## Time zone
+
+By default, a day runs from midnight to midnight UTC. For a user in another time zone, the evening already belongs to
+the next UTC day, so `created:today` would miss the issues of their morning. Pass their time zone to the constructor of
+the builder, with the `TimeProvider` (or `null` for `TimeProvider.System`):
+
+<!-- ref:../../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/QueryBuilderTests.cs;region=QueryBuilder_TimeZone;format=md-fenced-code-block;dedent=true -->
+```csharp
+// 7 PM on March 17 for a user in UTC-8, but already March 18 in UTC
+var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 3, 18, 3, 0, 0, TimeSpan.Zero));
+var userTimeZone = TimeZoneInfo.CreateCustomTimeZone("UTC-8", TimeSpan.FromHours(-8), "UTC-8", "UTC-8");
+var queryBuilder = new QueryBuilder<Issue>(timeProvider, userTimeZone);
+queryBuilder.AddRangeHandler<DateTime>("created", (issue, range) => range.IsInRange(issue.CreatedAt));
+
+var issue = new Issue("Morning", "alice", IsOpen: true, Comments: 0, new DateTime(2026, 3, 17, 17, 0, 0, DateTimeKind.Utc));
+
+// Day boundaries are midnight in the user's time zone: today is March 17, from 08:00 UTC to March 18 08:00 UTC
+Assert.True(queryBuilder.Build("created:today").Evaluate(issue));
+Assert.True(queryBuilder.Build("created>=@today").Evaluate(issue));
+Assert.False(new QueryBuilder<Issue>(timeProvider).Build("created:today").Evaluate(issue));
+```
+<!-- endref -->
+
+In a web application, read the time zone from the user's settings, for instance with
+`TimeZoneInfo.FindSystemTimeZoneById("America/Los_Angeles")`. The time zone changes how the keywords and relative dates
+are turned into values:
+
+| Type | Value |
+| --- | --- |
+| `DateTime` | The instant the day starts in the time zone, in UTC (`DateTimeKind.Utc`), like the dates written in a query. |
+| `DateTimeOffset` | The instant the day starts, with the offset of the time zone at that instant. |
+| `DateOnly` | The date in the time zone. |
+
+Days follow the daylight saving time of the zone: a day can last 23 or 25 hours, and when clocks skip midnight the day
+starts at the first time that exists. The dates written in a query, such as `2026-03-18`, are not affected: a value
+without an offset is still read as UTC.
 
 ## Parse your own values
 

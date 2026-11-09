@@ -88,6 +88,10 @@ internal sealed partial class DrawingSession : IDisposable
     /// <exception cref="ImageResourceLimitException">The scratch exceeds the allocation limit.</exception>
     public static DrawingSession Begin(Image image, ImageFrame[] frames, PixelStorage[] storages, CancellationToken cancellationToken)
     {
+        // The paints are colors of light, which CMYK inks are not
+        if (PixelFormats.IsCmyk(image.PixelFormat))
+            throw new UnsupportedImageFeatureException($"Drawing paints colors of light, and the {image.PixelFormat} pixels of the image are CMYK inks. Convert the image first with CloneAs and PixelConversionOptions.CmykConversion.", ImageFormat.Unknown, "CMYK pixels");
+
         var session = new DrawingSession(image, frames, storages, cancellationToken);
         try
         {
@@ -731,6 +735,9 @@ internal sealed partial class DrawingSession : IDisposable
         ArgumentNullException.ThrowIfNull(brush);
         ArgumentNullException.ThrowIfNull(layout);
         DrawingGuard.Point(origin, nameof(origin));
+        if (layout.SubpixelRendering != TextSubpixelRendering.None && TryFillSubpixelText(brush, layout, origin))
+            return;
+
         if (layout.BrushCount <= 1 && !layout.HasColorGlyphs && !layout.HasBackgrounds && layout.OutlineCount == 0)
         {
             var glyphSink = _glyphSink ??= new GlyphPathSink();
@@ -907,6 +914,7 @@ internal sealed partial class DrawingSession : IDisposable
     {
         IsActive = false;
         DisposeRendering();
+        DisposeSubpixelText();
         DisposeLayers();
         DisposeClips();
         DisposePatterns();

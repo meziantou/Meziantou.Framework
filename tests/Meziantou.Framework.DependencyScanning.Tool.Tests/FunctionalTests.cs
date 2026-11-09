@@ -39,6 +39,36 @@ public sealed class FunctionalTests
     }
 
     [Fact]
+    public async Task UpdateNuGetPackage_SharedProperty()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        var path = tempDir.CreateEmptyFile("test.csproj");
+        await File.WriteAllTextAsync(path, """
+            <Project>
+                <PropertyGroup>
+                    <MeziantouVersion>1.0.0</MeziantouVersion>
+                </PropertyGroup>
+                <ItemGroup>
+                    <PackageReference Include="Meziantou.Framework" Version="$(MeziantouVersion)" />
+                    <PackageReference Include="Meziantou.Framework.FullPath" Version="$(MeziantouVersion)" />
+                </ItemGroup>
+            </Project>
+            """, XunitCancellationToken);
+
+        var console = new ConsoleHelper(_testOutputHelper);
+        var result = await Program.MainImpl(["update", "--directory", tempDir.FullPath], console.ConfigureConsole);
+        Assert.Equal(0, result);
+
+        // The first dependency updates the property, so the second one, which shares it, is not updated again
+        Assert.Contains("1 dependencies updated", console.Output);
+        var deps = await ScanDependencies(tempDir);
+        Assert.All(deps, dep => Assert.Equal("$(MeziantouVersion)", dep.RawVersion));
+        Assert.Single(deps.Select(dep => dep.Version).Distinct(StringComparer.Ordinal));
+        Assert.True(SemanticVersion.Parse(deps[0].Version!) > SemanticVersion.Parse("1.0.700"));
+    }
+
+    [Fact]
     public async Task UpdateDotNetSdk()
     {
         await using var tempDir = TemporaryDirectory.Create();

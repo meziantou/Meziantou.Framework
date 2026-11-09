@@ -219,9 +219,11 @@ internal static partial class Jp2Corpus
             for (var i = 0; File.Exists(directory / $"output_{CommonCorpus.Str(i)}.pgx"); i++)
                 channels.Add(PgxImage.Parse(File.ReadAllBytes(directory / $"output_{CommonCorpus.Str(i)}.pgx")));
 
+            // A signed sample is shown offset by half its range, as the library shows it
             var first = channels[0];
-            Py.Assert(channels.All(channel => channel.Width == first.Width && channel.Height == first.Height && channel.Precision == first.Precision && !channel.IsSigned), "opj_decompress: the channels differ");
-            return new Planes(first.Width, first.Height, first.Precision, [.. channels.Select(channel => channel.Samples.ToArray())],
+            Py.Assert(channels.All(channel => channel.Width == first.Width && channel.Height == first.Height && channel.Precision == first.Precision && channel.IsSigned == first.IsSigned), "opj_decompress: the channels differ");
+            var offset = first.IsSigned ? 1 << (first.Precision - 1) : 0;
+            return new Planes(first.Width, first.Height, first.Precision, [.. channels.Select(channel => channel.Samples.ToArray().Select(sample => sample + offset).ToArray())],
                 CommonCorpus.Display(command, c.Tools, [(input.Value, "{input}"), (output.Value, "{output}.pgx")]));
         }
         finally
@@ -473,6 +475,9 @@ internal static partial class Jp2Corpus
 
         /// <summary>The color model the library reports, when it is not the one of the reference frame: a palette, sYCC components.</summary>
         public string? ColorModel { get; init; }
+
+        /// <summary>Whether the components have signed samples, which the library offsets by half their range.</summary>
+        public bool IsSigned { get; init; }
     }
 
     private static Obj PatternReference(string description) => new() { ["method"] = "hand-computed", ["description"] = description };
@@ -495,7 +500,7 @@ internal static partial class Jp2Corpus
         Py.Assert((file.Xmp is null) == (expectation.Xmp is null) && (file.Xmp is null || file.Xmp.Value.Span.SequenceEqual(expectation.Xmp)), $"{fixtureId}: XMP");
         var bits = expectation.BitsPerComponent ?? frame.Depth;
         if (file.PaletteEntryCount == 0)
-            Py.Assert(file.Components.All(component => component.Precision == bits && !component.IsSigned), $"{fixtureId}: {file.Components[0].Precision} bits");
+            Py.Assert(file.Components.All(component => component.Precision == bits && component.IsSigned == expectation.IsSigned), $"{fixtureId}: {file.Components[0].Precision} bits");
         else
             Py.Assert(file.PaletteDepths.All(depth => depth == bits), $"{fixtureId}: palette of {file.PaletteDepths[0]} bits");
 
@@ -625,6 +630,8 @@ internal static partial class Jp2Corpus
             features.Add("jp2.ppt");
         if (file.ProgressionChangeCount > 0)
             features.Add("jp2.poc");
+        if (file.Components.Any(component => component.IsSigned))
+            features.Add("jp2.signed");
         if (file.Regions.Count > 0)
             features.Add("jp2.roi");
         if (file.CodingStyles.Any(style => style.Component >= 0))

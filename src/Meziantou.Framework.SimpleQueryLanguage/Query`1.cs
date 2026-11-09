@@ -17,10 +17,15 @@ public sealed class Query<T>
     /// <summary>Gets the original query text.</summary>
     public string Text { get; }
 
-    internal Query(string text, Predicate<T> predicate)
+    /// <summary>Gets the problems found in the query, such as unbalanced parentheses or unknown keys, in the order they appear in it.</summary>
+    /// <remarks>The query is still evaluated: the parts the diagnostics report are read leniently, mostly as text.</remarks>
+    public IReadOnlyList<QueryDiagnostic> Diagnostics { get; }
+
+    internal Query(string text, Predicate<T> predicate, IReadOnlyList<QueryDiagnostic> diagnostics)
     {
         Text = text ?? throw new ArgumentNullException(nameof(text));
         _predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
+        Diagnostics = diagnostics;
     }
 
     /// <summary>Evaluates the query against an object.</summary>

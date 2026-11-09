@@ -82,6 +82,74 @@ public sealed class TiffEncoderTests
     }
 
     [Theory]
+    [InlineData(TiffCompression.None, false, TiffPredictor.None, 0)]
+    [InlineData(TiffCompression.Deflate, true, TiffPredictor.HorizontalDifferencing, 0)]
+    [InlineData(TiffCompression.Lzw, false, TiffPredictor.HorizontalDifferencing, 16)]
+    [InlineData(TiffCompression.PackBits, true, TiffPredictor.None, 16)]
+    public void CmykPixelsAreWrittenAsSeparatedSamples(TiffCompression compression, bool bigEndian, TiffPredictor predictor, int tileSize)
+    {
+        var encoder = new TiffEncoder { Compression = compression, BigEndian = bigEndian, Predictor = predictor, TileWidth = tileSize, TileHeight = tileSize };
+        var inks = new Cmyk32[21 * 18];
+        var deepInks = new Cmyk64[21 * 18];
+        for (var i = 0; i < inks.Length; i++)
+        {
+            inks[i] = new Cmyk32((byte)(i * 7), (byte)(i * 13), (byte)(255 - i), (byte)(i * i));
+            deepInks[i] = new Cmyk64((ushort)(i * 977), (ushort)(i * 13001), (ushort)(65535 - (i * 31)), (ushort)(i * i * 7));
+        }
+
+        using var image = Image.ImportPixelData<Cmyk32>(inks, 21, 18);
+        image.Metadata.IccProfile = IccTestProfiles.CmykLabLut16();
+        using (var decoded = RoundTripAs<Cmyk32>(image, encoder))
+        {
+            TestImages.AssertSamePixels(image, decoded);
+            Assert.Equal(image.Metadata.IccProfile.Data.ToArray(), decoded.Metadata.IccProfile?.Data.ToArray());
+        }
+
+        using var deep = Image.ImportPixelData<Cmyk64>(deepInks, 21, 18);
+        using (var decoded = RoundTripAs<Cmyk64>(deep, encoder))
+        {
+            TestImages.AssertSamePixels(deep, decoded);
+        }
+
+        static Image<TPixel> RoundTripAs<TPixel>(Image source, TiffEncoder encoder)
+            where TPixel : unmanaged
+        {
+            using var stream = new MemoryStream();
+            source.Save(stream, encoder);
+            stream.Position = 0;
+            return Image.Load<TPixel>(stream);
+        }
+    }
+
+    [Fact]
+    public void CmykPixelsAreReadBackByTheConversionOfCmykPages()
+    {
+        using var image = Image.ImportPixelData<Cmyk32>([new Cmyk32(0, 0, 0, 0), new Cmyk32(255, 0, 0, 0), new Cmyk32(10, 200, 30, 40)], 3, 1);
+        using var stream = new MemoryStream();
+        image.Save(stream, new TiffEncoder());
+        var data = stream.ToArray();
+        var info = Image.Identify(data);
+        Assert.Equal(ImageColorModel.Cmyk, info.ColorModel);
+        Assert.Equal(8, info.BitsPerComponent);
+        Assert.False(info.MayHaveTransparency is true);
+
+        using var decoded = Image.Load(data, new ImageDecodeOptions { CmykConversion = CmykConversionOptions.Default });
+        using var converted = image.CloneAs<Rgb24>(new PixelConversionOptions { CmykConversion = new CmykPixelConversionOptions { CmykProfile = IccProfile.Cgats001CompatibleCmyk } });
+        TestImages.AssertSamePixels(converted, (Image<Rgb24>)decoded);
+    }
+
+    [Fact]
+    public void CmykPixelsNeedTheSeparatedLayout()
+    {
+        using var image = new Image<Cmyk32>(16, 16);
+        foreach (var encoder in new[] { new TiffEncoder { Compression = TiffCompression.Jpeg }, new TiffEncoder { PixelLayout = TiffPixelLayout.Bilevel }, new TiffEncoder { PixelLayout = TiffPixelLayout.Indexed } })
+        {
+            using var stream = new MemoryStream();
+            Assert.Equal("CMYK with this layout or compression", Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(stream, encoder)).Feature);
+        }
+    }
+
+    [Theory]
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(3)]

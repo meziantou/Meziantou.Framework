@@ -52,6 +52,28 @@ public sealed class ImageRendererTests
     }
 
     [Fact]
+    public void ReadmeExample_Barcode2DToImage()
+    {
+        #region ImagingBarcodes_Barcode2DToImage
+        var dataMatrix = Barcode2D.CreateDataMatrix("https://www.meziantou.net");
+
+        // Default options: 4 pixels per module and a 2-module quiet zone
+        using var image = dataMatrix.ToImage();
+        Assert.Equal((104, 104), (image.Width, image.Height));
+
+        // Draw a PDF417 symbol at the bottom of a ticket
+        var pdf417 = Barcode2D.CreatePdf417("TICKET 0042", new Pdf417Options { Columns = 3 });
+        var options = new Barcode2DDrawingOptions { ModuleSize = 2 };
+        var size = Barcode2DImageRenderer.MeasureBarcode2D(pdf417, options);
+        using var ticket = new Image<Rgba32>(400, 200, Colors.White);
+        ticket.Draw(canvas => canvas.DrawBarcode2D(pdf417, new PointD((400 - size.Width) / 2, 200 - 16 - size.Height), options));
+        #endregion
+
+        Assert.Equal(((17 * (3 + 4)) + 1 + 4) * 2, size.Width);
+        Assert.Equal(Colors.Black, ticket.Frames[0][(int)((400 - size.Width) / 2) + 4, 200 - 16 - 4 - 1]);
+    }
+
+    [Fact]
     public void ReadmeExample_DrawQRCode()
     {
         #region ImagingBarcodes_DrawQRCode
@@ -792,6 +814,13 @@ public sealed class ImageRendererTests
             BarcodeType.Codabar => Barcode.CreateCodabar("40156"),
             BarcodeType.Itf => Barcode.CreateItf("12345678"),
             BarcodeType.Gs1128 => Barcode.CreateGs1128(new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC123")),
+            BarcodeType.UpcE => Barcode.CreateUpcE("0425261", extension: "12"),
+            BarcodeType.Gs1DataBar => Barcode.CreateGs1DataBar("0950110153000"),
+            BarcodeType.Gs1DataBarStacked => Barcode.CreateGs1DataBarStacked("0950110153000"),
+            BarcodeType.Gs1DataBarStackedOmnidirectional => Barcode.CreateGs1DataBarStackedOmnidirectional("0950110153000"),
+            BarcodeType.Gs1DataBarLimited => Barcode.CreateGs1DataBarLimited("1501234567890"),
+            BarcodeType.Gs1DataBarExpanded => Barcode.CreateGs1DataBarExpanded(new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC123")),
+            BarcodeType.Gs1DataBarExpandedStacked => Barcode.CreateGs1DataBarExpandedStacked(4, new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC123"), new Gs1Element("21", "XY")),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, message: null),
         };
     }

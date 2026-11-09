@@ -1579,6 +1579,81 @@ public sealed class JpegDecoderTests
         });
     }
 
+    [Theory]
+    [InlineData("Cmyk")]
+    [InlineData("Ycck")]
+    [InlineData("CmykWithoutAdobe")]
+    public void InksAreLoadedAsCmykPixels(string inkCoding)
+    {
+        // The ink amounts as they are: the complement of the stored samples (CMYK), or of the converted ones (YCCK)
+        var coding = Enum.Parse<JpegTestInkCoding>(inkCoding);
+        foreach (var layout in new[] { "full", "chroma-2x2", "mixed" })
+        {
+            var image = JpegTestImage.CreateRandom(23, 18, InkLayouts[layout], seed: 71 + layout.Length + (int)coding, inks: coding);
+            var data = image.Encode(new JpegTestEncodeOptions { RestartInterval = 3 });
+            var inks = image.GetExpectedInks();
+            using (var decoded = Image.Load<Cmyk32>(data))
+            {
+                Assert.Equal(inks, GetBytes(decoded));
+                Assert.Null(decoded.Metadata.IccProfile);
+            }
+
+            using (var deep = Image.Load<Cmyk64>(data))
+            {
+                Assert.Equal(inks.Select(static ink => (ushort)(ink * 257)), unsafe(MemoryMarshal.Cast<byte, ushort>(GetBytes(deep).AsSpan())).ToArray());
+            }
+
+            // Several workers give the same inks, and so does a reader
+            using (var parallel = Image.Load<Cmyk32>(data, WorkerOptions(4)))
+            {
+                Assert.Equal(inks, GetBytes(parallel));
+            }
+
+            using var reader = Image.OpenReader<Cmyk32>(new MemoryStream(data));
+            using var frame = reader.ReadFrame();
+            Assert.NotNull(frame);
+            Assert.Equal(inks, GetBytes(frame));
+        }
+    }
+
+    [Theory]
+    [InlineData("Cmyk")]
+    [InlineData("Ycck")]
+    public void TwelveBitInksAreLoadedAsCmyk64Pixels(string inkCoding)
+    {
+        var coding = Enum.Parse<JpegTestInkCoding>(inkCoding);
+        var image = JpegTestImage.CreateRandom(21, 17, InkLayouts["chroma-2x2"], seed: 83 + (int)coding, inks: coding, precision: 12);
+        var data = image.Encode();
+        var inks = image.GetExpectedDeepInks();
+        using var deep = Image.Load<Cmyk64>(data);
+        Assert.Equal(inks, unsafe(MemoryMarshal.Cast<byte, ushort>(GetBytes(deep).AsSpan())).ToArray());
+
+        // 8-bit inks are rounded to nearest
+        using var narrow = Image.Load<Cmyk32>(data);
+        Assert.Equal(inks.Select(static ink => (byte)(((ink * 255) + 32767) / 65535)), GetBytes(narrow));
+    }
+
+    [Fact]
+    public void InksLoadedAsCmykKeepTheirProfileAndConvertLikeTheDecoder()
+    {
+        var profile = IccTestProfiles.CmykLabLut16().Data.ToArray();
+        var image = JpegTestImage.CreateRandom(19, 13, InkLayouts["chroma-2x2"], seed: 89, inks: JpegTestInkCoding.Ycck);
+        var data = image.Encode(new JpegTestEncodeOptions { SegmentsBeforeFrame = [JpegTestImage.Segment(0xE2, [.. "ICC_PROFILE\0"u8, 1, 1, .. profile])] });
+        using var cmyk = Image.Load<Cmyk32>(data);
+        Assert.Equal(profile, cmyk.Metadata.IccProfile?.Data.ToArray());
+
+        // The conversion of the CMYK pixels, during the load or afterward, is the one of the decoder
+        var pixelConversion = new PixelConversionOptions { CmykConversion = CmykPixelConversionOptions.Default };
+        using var decoded = Image.Load(data, new ImageDecodeOptions { CmykConversion = CmykConversionOptions.Default });
+        using var converted = cmyk.CloneAs<Rgb24>(pixelConversion);
+        using var loaded = Image.Load<Rgb24>(data, new ImageDecodeOptions { Conversion = pixelConversion });
+        Assert.Equal(PixelFormat.Rgb24, decoded.PixelFormat);
+        Assert.Equal(GetBytes(decoded), GetBytes(converted));
+        Assert.Equal(GetBytes(decoded), GetBytes(loaded));
+        Assert.Same(IccProfile.Srgb, converted.Metadata.IccProfile);
+        Assert.Equal(IccProfile.Srgb.Data.ToArray(), loaded.Metadata.IccProfile?.Data.ToArray());
+    }
+
     [Fact]
     public void ATruncatedFrameIsShownAsFarAsItWasDecodedThenReported()
     {

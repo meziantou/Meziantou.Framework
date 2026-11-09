@@ -25,6 +25,16 @@ public readonly struct TextSpan : IEquatable<TextSpan>
         PlaceholderBaseline = baseline;
     }
 
+    /// <summary>Creates the span of the base of a ruby: a text with an annotation set beside it.</summary>
+    internal TextSpan(int start, int length, TextStyle style, string rubyText, TextStyle rubyStyle)
+    {
+        Start = start;
+        Length = length;
+        Style = style;
+        RubyText = rubyText;
+        RubyStyle = rubyStyle;
+    }
+
     /// <summary>Gets the index of the first character of the span in the text.</summary>
     public int Start { get; }
 
@@ -40,6 +50,16 @@ public readonly struct TextSpan : IEquatable<TextSpan>
     /// </summary>
     public bool IsPlaceholder { get; }
 
+    /// <summary>
+    /// Gets the annotation of the span when it is the base of a ruby, or <see langword="null"/>: a text set beside the
+    /// text of the span, above it in a horizontal line and on its right in a vertical one. See
+    /// <see cref="RichTextBuilder.AppendRuby(string, TextStyle, string, TextStyle)"/>.
+    /// </summary>
+    public string? RubyText { get; }
+
+    /// <summary>Gets the style of the annotation of a ruby, or <see langword="null"/> for a span that is not the base of a ruby.</summary>
+    public TextStyle? RubyStyle { get; }
+
     /// <summary>Gets the width of the placeholder, in pixels; 0 for a span of text.</summary>
     internal double PlaceholderWidth { get; }
 
@@ -52,7 +72,8 @@ public readonly struct TextSpan : IEquatable<TextSpan>
     /// <inheritdoc />
     public bool Equals(TextSpan other)
         => Start == other.Start && Length == other.Length && ReferenceEquals(Style, other.Style) && IsPlaceholder == other.IsPlaceholder
-            && PlaceholderWidth == other.PlaceholderWidth && PlaceholderHeight == other.PlaceholderHeight && PlaceholderBaseline == other.PlaceholderBaseline;
+            && PlaceholderWidth == other.PlaceholderWidth && PlaceholderHeight == other.PlaceholderHeight && PlaceholderBaseline == other.PlaceholderBaseline
+            && string.Equals(RubyText, other.RubyText, StringComparison.Ordinal) && ReferenceEquals(RubyStyle, other.RubyStyle);
 
     /// <inheritdoc />
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is TextSpan other && Equals(other);

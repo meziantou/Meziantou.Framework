@@ -2437,9 +2437,11 @@ public sealed class TiffCodecTests
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(5, 3, 3, 2, strip[..^2])));
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(5, 3, 3, 2, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])));
 
+        // A codestream of signed samples is not the one of a page of unsigned samples
+        var signed = Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(5, 3, 1, 1, Jpeg2000TestFiles.Signed)));
+        Assert.Equal(ImageFormat.Tiff, signed.Format);
+
         // What the codestream cannot be: a JPEG 2000 feature that is not supported is one of the page
-        var signed = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(5, 3, 1, 1, Jpeg2000TestFiles.Signed)));
-        Assert.Equal((ImageFormat.Tiff, "Compression: signed samples"), (signed.Format, signed.Feature));
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Page(6, 4, 3, 2, Jpeg2000TestFiles.Subsampled)));
 
         // What the page cannot declare with this compression: these are known from the directory, without reading a block
@@ -2850,6 +2852,97 @@ public sealed class TiffCodecTests
         Assert.Equal(PixelFormat.Rgb24, image.PixelFormat);
         Assert.Equal(IccProfile.Srgb.Data.ToArray(), image.Metadata.IccProfile?.Data.ToArray());
         Assert.Empty(InkReference.Compare(inks, GetBytes(image)));
+    }
+
+    [Theory]
+    [InlineData(1, false, 1, null)]
+    [InlineData(5, false, 3, null)]
+    [InlineData(5, true, 3, null)]
+    [InlineData(8, false, 2, 2)]
+    [InlineData(32773, true, 1, null)]
+    public void CmykSamplesAreLoadedAsCmykPixels(int compression, bool tiled, int rowsPerStrip, int? planarConfiguration)
+    {
+        // The ink amounts are the pixels, without conversion
+        const int Width = 19;
+        const int Height = 17;
+        var inks = new byte[Width * Height * 4];
+        Noise(inks, seed: compression + 100);
+        var data = new TiffFileBuilder().AddPage(new TiffPageSpec
+        {
+            Width = Width,
+            Height = Height,
+            SamplesPerPixel = 4,
+            Photometric = 5,
+            Compression = compression,
+            RowsPerStrip = rowsPerStrip,
+            TileWidth = tiled ? 16 : null,
+            TileLength = tiled ? 16 : null,
+            PlanarConfiguration = planarConfiguration,
+            Samples = inks,
+        }).Build();
+
+        using (var image = Image.Load<Cmyk32>(data))
+        {
+            Assert.Equal(inks, GetBytes(image));
+            Assert.Null(image.Metadata.IccProfile);
+        }
+
+        Assert.Equal(inks.Select(static ink => (ushort)(ink * 257)), Decode<Cmyk64>(data).SelectMany(static pixel => new[] { pixel.C, pixel.M, pixel.Y, pixel.K }));
+
+        // A region has the inks of that area
+        foreach (var region in GetRegions(Width, Height))
+        {
+            var area = Rectangle.Intersect(region, new Rectangle(0, 0, Width, Height));
+            using var cropped = Image.Load<Cmyk32>(data, new ImageDecodeOptions { Region = region });
+            Assert.Equal(area.Size, cropped.Size);
+            Assert.Equal(Crop(inks, Width, 4, area), GetBytes(cropped));
+        }
+
+        // Another pixel format converts the inks with the conversion of the pixels, which is the one of the decoder
+        using var direct = Image.Load(data, InkOptions);
+        using var converted = Image.Load<Rgb24>(data, new ImageDecodeOptions { Conversion = new PixelConversionOptions { CmykConversion = new CmykPixelConversionOptions { CmykProfile = IccProfile.Cgats001CompatibleCmyk } } });
+        Assert.Equal(GetBytes(direct), GetBytes(converted));
+    }
+
+    [Fact]
+    public void SixteenBitCmykSamplesAreLoadedAsCmyk64PixelsAndAlphaIsNeverDropped()
+    {
+        foreach (var bigEndian in new[] { false, true })
+        {
+            var words = new ushort[5 * 3 * 4];
+            for (var i = 0; i < words.Length; i++)
+            {
+                words[i] = (ushort)((i * 7919) + (i % 4 * 12345));
+            }
+
+            var bytes = new byte[words.Length * 2];
+            for (var i = 0; i < words.Length; i++)
+            {
+                if (bigEndian)
+                {
+                    BinaryPrimitives.WriteUInt16BigEndian(bytes.AsSpan(i * 2), words[i]);
+                }
+                else
+                {
+                    BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(i * 2), words[i]);
+                }
+            }
+
+            var profile = IccTestProfiles.CmykLabLut16();
+            var page = new TiffPageSpec { Width = 5, Height = 3, SamplesPerPixel = 4, BitsPerSample = 16, Photometric = 5, Compression = 5, Samples = bytes };
+            page.ExtraFields.Add(TiffFieldSpec.Bytes(34675, 7, profile.Data.ToArray()));
+            var deep = new TiffFileBuilder { BigEndian = bigEndian }.AddPage(page).Build();
+            using var image = Image.Load<Cmyk64>(deep);
+            Assert.Equal(words, unsafe(MemoryMarshal.Cast<byte, ushort>(GetBytes(image).AsSpan())).ToArray());
+            Assert.Equal(profile.Data.ToArray(), image.Metadata.IccProfile?.Data.ToArray());
+        }
+
+        // CMYK pixels have no alpha: a page with alpha is only loaded with a conversion that keeps it
+        var withAlpha = new byte[4 * 2 * 5];
+        Noise(withAlpha, seed: 41);
+        var data = new TiffFileBuilder().AddPage(new TiffPageSpec { Width = 4, Height = 2, SamplesPerPixel = 5, Photometric = 5, ExtraSamples = [2], Samples = withAlpha }).Build();
+        Assert.Equal("PhotometricInterpretation: 5 with alpha as CMYK pixels", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load<Cmyk32>(data)).Feature);
+        Assert.Equal("PhotometricInterpretation: 5 without color conversion", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data)).Feature);
     }
 
     [Fact]

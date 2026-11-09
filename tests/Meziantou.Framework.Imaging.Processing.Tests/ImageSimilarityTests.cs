@@ -481,7 +481,7 @@ public sealed class ImageSimilarityTests
         // The same pixels in every format: the conversion of CloneAs<Rgba32> gives the same 8-bit values
         // An alpha mask has no color to compare, and Bgr565 keeps 5-bit and 6-bit colors only
         using var reference = CreatePatternImage(23, 19, inverted: false);
-        foreach (var format in PixelFormats.All.Where(format => PixelFormats.HasColor(format) && format != PixelFormat.Bgr565))
+        foreach (var format in PixelFormats.All.Where(format => PixelFormats.HasColor(format) && !PixelFormats.IsCmyk(format) && format != PixelFormat.Bgr565))
         {
             using var converted = ConvertTo(reference, format);
             Assert.Equal(1d, ImageSimilarity.ComputeSsim(reference.Frames[0], converted.Frames[0], Ct));

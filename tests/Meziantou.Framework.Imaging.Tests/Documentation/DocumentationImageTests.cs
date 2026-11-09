@@ -259,6 +259,20 @@ public sealed class DocumentationImageTests : IDisposable
     }
 
     [Fact]
+    public void DrawRuby()
+    {
+        var japanese = FixtureRoot.GetDirectory() / "fonts" / "noto-sans-cjk" / "NotoSansCJKjp-Regular.subset.otf";
+        AssertImage(Text, nameof(TextExamples.DrawRuby), output => TextExamples.DrawRuby(japanese, output));
+    }
+
+    [Fact]
+    public void DrawSubpixelText()
+    {
+        var font = FixtureRoot.GetDirectory() / "font-suites" / "truetype-hinting" / "DroidSans.subset.ttf";
+        AssertImage(Text, nameof(TextExamples.DrawSubpixelText), output => TextExamples.DrawSubpixelText(font, output));
+    }
+
+    [Fact]
     public void DrawSyntheticStyles() => AssertImage(Text, nameof(TextExamples.DrawSyntheticStyles), output => TextExamples.DrawSyntheticStyles(RegularFont, output));
 
     [Fact]

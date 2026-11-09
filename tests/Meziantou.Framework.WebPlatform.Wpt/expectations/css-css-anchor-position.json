@@ -1433,7 +1433,7 @@
     "reftest": "PASS"
   },
   "css/css-anchor-position/scroll-to-anchored-fixed-006.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/scrollable-containing-block-position-area.html": {
     "total": 4

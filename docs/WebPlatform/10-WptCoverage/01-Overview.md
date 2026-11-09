@@ -50,15 +50,15 @@ The features of `REQUIRES`:
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 26,379 | 29,911 | 2,117 | 95% |
 | [Tentative](#tentative-tests) | 1,383 | 3,169 | 698 | 56% |
-| [Reftests](#reftests) | 28,162 | 29,507 | 171 | 96% |
-| **All** | **55,924** | **62,587** | **2,986** | **94%** |
+| [Reftests](#reftests) | 28,163 | 29,507 | 171 | 96% |
+| **All** | **55,925** | **62,587** | **2,986** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 172
-- **TEST BUG**: 1,020
+- **TEST BUG**: 1,019
 - **NOT IMPLEMENTED**: 4,491
 - **REQUIRES**: 765
   - `hardware`: 573
@@ -607,7 +607,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`contenteditable`](contenteditable.md#reftests) | 0 | 1 | 1 | – |
 | [`css/compositing`](css/compositing.md#reftests) | 58 | 60 | 0 | 97% |
 | [`css/css-align`](css/css-align.md#reftests) | 62 | 64 | 0 | 97% |
-| [`css/css-anchor-position`](css/css-anchor-position.md#reftests) | 236 | 242 | 0 | 98% |
+| [`css/css-anchor-position`](css/css-anchor-position.md#reftests) | 237 | 242 | 0 | 98% |
 | [`css/css-animations`](css/css-animations.md#reftests) | 36 | 36 | 0 | 100% |
 | [`css/css-backgrounds`](css/css-backgrounds.md#reftests) | 709 | 720 | 1 | 99% |
 | [`css/css-borders`](css/css-borders.md#reftests) | 110 | 122 | 0 | 90% |
@@ -728,4 +728,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 182 | 252 | 0 | 72% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (131 sections)** | **28,162** | **29,507** | **171** | **96%** |
+| **Total (131 sections)** | **28,163** | **29,507** | **171** | **96%** |

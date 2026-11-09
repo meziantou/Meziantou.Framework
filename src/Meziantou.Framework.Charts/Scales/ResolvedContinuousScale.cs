@@ -185,7 +185,7 @@ internal sealed class ResolvedContinuousScale : ResolvedScale
         {
             ContinuousTransformKind.Log => value > 0 ? Math.Log(value) : double.NaN,
             ContinuousTransformKind.Pow => value < 0 ? -Math.Pow(-value, _parameter) : Math.Pow(value, _parameter),
-            ContinuousTransformKind.Symlog => Math.Sign(value) * Math.Log(1 + Math.Abs(value / _parameter)),
+            ContinuousTransformKind.Symlog => double.IsNaN(value) ? double.NaN : Math.Sign(value) * Math.Log(1 + Math.Abs(value / _parameter)),
             _ => value,
         };
     }

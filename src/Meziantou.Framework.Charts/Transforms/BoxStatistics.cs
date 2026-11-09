@@ -16,9 +16,11 @@ public static class BoxStatistics
         var q1 = Quantile(sorted, 0.25);
         var median = Quantile(sorted, 0.5);
         var q3 = Quantile(sorted, 0.75);
+
+        // The fences are NaN when the quartiles are infinite: the whiskers then reach the extremes
         var fence = 1.5 * (q3 - q1);
-        var lower = sorted.First(value => value >= q1 - fence);
-        var upper = sorted.Last(value => value <= q3 + fence);
+        var lower = sorted.FirstOrDefault(value => value >= q1 - fence, sorted[0]);
+        var upper = sorted.LastOrDefault(value => value <= q3 + fence, sorted[^1]);
         var outliers = sorted.Where(value => value < lower || value > upper).ToArray();
         return new BoxSummary(sorted.Length, q1, median, q3, lower, upper, outliers);
     }
@@ -26,7 +28,7 @@ public static class BoxStatistics
     /// <summary>Computes a quantile of sorted values, by linear interpolation between the closest ranks (R's type 7).</summary>
     /// <param name="sortedValues">The values, in increasing order.</param>
     /// <param name="probability">The probability, from 0 to 1.</param>
-    /// <returns>The quantile, or NaN when there is no value.</returns>
+    /// <returns>The quantile, or NaN when there is no value or when it lies between negative and positive infinity.</returns>
     public static double Quantile(IReadOnlyList<double> sortedValues, double probability)
     {
         ArgumentNullException.ThrowIfNull(sortedValues);
@@ -39,6 +41,17 @@ public static class BoxStatistics
         if (low >= sortedValues.Count - 1)
             return sortedValues[^1];
 
-        return sortedValues[low] + ((h - low) * (sortedValues[low + 1] - sortedValues[low]));
+        var fraction = h - low;
+        var lower = sortedValues[low];
+        var upper = sortedValues[low + 1];
+        if (fraction is 0 || lower == upper)
+            return lower;
+
+        // The difference overflows for values of opposite signs near the limits of double, and is NaN between infinities
+        var difference = upper - lower;
+        if (double.IsFinite(difference))
+            return lower + (fraction * difference);
+
+        return ((1 - fraction) * lower) + (fraction * upper);
     }
 }

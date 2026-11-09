@@ -92,7 +92,8 @@ public sealed class RidgelineMark<T> : Mark<T>
         var titles = new List<string?>();
         foreach (var rows in MarkData.GroupBy(data.Count, data.Y))
         {
-            var values = rows.Select(row => x.Numbers[row]).Where(value => !double.IsNaN(value)).Order().ToArray();
+            // An infinite value has no position on the axis and no density: it is ignored, as a missing value
+            var values = rows.Select(row => x.Numbers[row]).Where(double.IsFinite).Order().ToArray();
             if (values.Length is 0 || data.Y.IsMissing(rows[0]))
                 continue;
 
@@ -127,7 +128,7 @@ public sealed class RidgelineMark<T> : Mark<T>
         if (data.Y is null || data.Sets is null || data.Sets.Length is 0 || context.X is not ResolvedContinuousScale xScale || context.Y is not ResolvedOrdinalScale scale)
             return;
 
-        var maxDensity = data.Sets.Max(curve => Enumerable.Range(0, curve.Count / 2).Max(i => curve[(2 * i) + 1]));
+        var maxDensity = KernelDensity.MaxDensity(data.Sets);
         if (!(maxDensity > 0))
             return;
 
@@ -139,17 +140,33 @@ public sealed class RidgelineMark<T> : Mark<T>
             if (double.IsNaN(baseline))
                 continue;
 
-            baseline += scale.Bandwidth / 2;
             var curve = data.Sets[i];
             var count = curve.Count / 2;
+            if (count is 0)
+                continue;
+
+            baseline += scale.Bandwidth / 2;
             var top = new List<(double X, double Y)>(count);
+            var first = double.NaN;
+            var last = double.NaN;
             for (var j = 0; j < count; j++)
             {
-                top.Add(context.Coordinates.Project(xScale.MapNumber(curve[2 * j]), baseline - (curve[(2 * j) + 1] / maxDensity * height)));
+                // A point the scale cannot place (a value out of the domain of a log scale...) is left out of the outline
+                var x = xScale.MapNumber(curve[2 * j]);
+                var y = baseline - (curve[(2 * j) + 1] / maxDensity * height);
+                if (double.IsNaN(x) || !double.IsFinite(y))
+                    continue;
+
+                top.Add(context.Coordinates.Project(x, y));
+                first = double.IsNaN(first) ? x : first;
+                last = x;
             }
 
-            var start = context.Coordinates.Project(xScale.MapNumber(curve[0]), baseline);
-            var end = context.Coordinates.Project(xScale.MapNumber(curve[^2]), baseline);
+            if (top.Count is 0)
+                continue;
+
+            var start = context.Coordinates.Project(first, baseline);
+            var end = context.Coordinates.Project(last, baseline);
             var area = new PathBuilder();
             CurveBuilder.Append(area, top, Curve);
             area.LineTo(end.X, end.Y).LineTo(start.X, start.Y).Close();

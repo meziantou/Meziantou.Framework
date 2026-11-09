@@ -155,7 +155,13 @@ public sealed class ContourMark<T> : Mark<T>
                     continue;
                 }
 
-                var (px, py) = context.Coordinates.Project(xScale.MapNumber(points[j]), yScale.MapNumber(points[j + 1]));
+                // A point the scales cannot place (out of the domain of a log scale...) is left out of the ring
+                var x = xScale.MapNumber(points[j]);
+                var y = yScale.MapNumber(points[j + 1]);
+                if (double.IsNaN(x) || double.IsNaN(y))
+                    continue;
+
+                var (px, py) = context.Coordinates.Project(x, y);
                 if (start)
                 {
                     builder.MoveTo(px, py);

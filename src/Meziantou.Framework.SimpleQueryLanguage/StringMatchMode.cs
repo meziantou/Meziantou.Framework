@@ -9,9 +9,9 @@ public enum StringMatchMode
     /// <summary>The property is equal to the value.</summary>
     Exact,
 
-    /// <summary>The property starts with the value (<see cref="string.StartsWith(string)"/>).</summary>
+    /// <summary>The property starts with the value (<see cref="string.StartsWith(string)"/>, which uses the current culture in memory).</summary>
     StartsWith,
 
-    /// <summary>The property ends with the value (<see cref="string.EndsWith(string)"/>).</summary>
+    /// <summary>The property ends with the value (<see cref="string.EndsWith(string)"/>, which uses the current culture in memory).</summary>
     EndsWith,
 }

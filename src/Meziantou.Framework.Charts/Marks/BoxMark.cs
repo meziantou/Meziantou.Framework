@@ -53,8 +53,15 @@ public sealed class BoxMark<T> : Mark<T>
         var bandwidth = BarMark<T>.GetBandwidth(context.X, data);
         for (var i = 0; i < data.Count; i++)
         {
+            // A box is not drawn when one of its statistics has no position: an infinite value, a value the scale does
+            // not accept, or a row of a facet whose values are not numbers, which is not summarized
             var start = context.MapX(data.X, i);
-            if (double.IsNaN(start))
+            var lowerWhisker = context.MapY(data.Y1, i);
+            var upperWhisker = context.MapY(data.Y2, i);
+            var lowerQuartile = MapNumber(context, q1.Numbers[i]);
+            var upperQuartile = MapNumber(context, q3.Numbers[i]);
+            var middle = MapNumber(context, median.Numbers[i]);
+            if (double.IsNaN(start) || double.IsNaN(lowerWhisker) || double.IsNaN(upperWhisker) || double.IsNaN(lowerQuartile) || double.IsNaN(upperQuartile) || double.IsNaN(middle))
                 continue;
 
             var center = start + (bandwidth / 2);
@@ -62,20 +69,24 @@ public sealed class BoxMark<T> : Mark<T>
             var color = GetFill(context, data, i);
             var stroke = data.Stroke is null && StrokeColor is null ? color : GetStroke(context, data, i);
             var box = new SceneGroup();
-            AddLine(box, context.Segment(center, context.MapY(data.Y1, i), center, MapNumber(context, q1.Numbers[i])), stroke);
-            AddLine(box, context.Segment(center, MapNumber(context, q3.Numbers[i]), center, context.MapY(data.Y2, i)), stroke);
-            AddLine(box, context.Segment(center - (half / 2), context.MapY(data.Y1, i), center + (half / 2), context.MapY(data.Y1, i)), stroke);
-            AddLine(box, context.Segment(center - (half / 2), context.MapY(data.Y2, i), center + (half / 2), context.MapY(data.Y2, i)), stroke);
-            var rectangle = context.Coordinates.Rectangle(center - half, center + half, MapNumber(context, q1.Numbers[i]), MapNumber(context, q3.Numbers[i]));
+            AddLine(box, context.Segment(center, lowerWhisker, center, lowerQuartile), stroke);
+            AddLine(box, context.Segment(center, upperQuartile, center, upperWhisker), stroke);
+            AddLine(box, context.Segment(center - (half / 2), lowerWhisker, center + (half / 2), lowerWhisker), stroke);
+            AddLine(box, context.Segment(center - (half / 2), upperWhisker, center + (half / 2), upperWhisker), stroke);
+            var rectangle = context.Coordinates.Rectangle(center - half, center + half, lowerQuartile, upperQuartile);
             rectangle.Fill = color.WithOpacity(color.Opacity * 0.35);
             rectangle.Stroke = stroke;
             box.Add(rectangle);
-            var medianLine = context.Segment(center - half, MapNumber(context, median.Numbers[i]), center + half, MapNumber(context, median.Numbers[i]));
+            var medianLine = context.Segment(center - half, middle, center + half, middle);
             AddLine(box, medianLine, stroke);
             medianLine.StrokeWidth = 2;
             foreach (var outlier in outliers[i])
             {
-                var (px, py) = context.Coordinates.Project(center, MapNumber(context, outlier));
+                var position = MapNumber(context, outlier);
+                if (double.IsNaN(position))
+                    continue;
+
+                var (px, py) = context.Coordinates.Project(center, position);
                 box.Add(new SceneCircle(px, py, 2.5) { Stroke = stroke, Fill = null });
             }
 

@@ -98,8 +98,10 @@ public sealed class ExpressionQueryBuilder<T>
     /// (or the <c>==</c> operator for <see cref="StringMatchMode.Exact"/>).
     /// Most LINQ providers, including Entity Framework Core, cannot translate the <see cref="StringComparison"/> overloads,
     /// so passing a value here makes the query usable in memory only.
-    /// When left <see langword="null"/>, case sensitivity is decided by the underlying provider — the database collation for EF Core,
-    /// and an ordinal comparison for LINQ to Objects.
+    /// When left <see langword="null"/>, the comparison is decided by the underlying provider — the database collation for EF Core.
+    /// For LINQ to Objects, <see cref="StringMatchMode.Contains"/> and <see cref="StringMatchMode.Exact"/> are ordinal, while
+    /// <see cref="StringMatchMode.StartsWith"/> and <see cref="StringMatchMode.EndsWith"/> use the current culture, as
+    /// <see cref="string.StartsWith(string)"/> and <see cref="string.EndsWith(string)"/> do.
     /// </param>
     public void AddHandler(string key, Expression<Func<T, string?>> selector, StringMatchMode matchMode, StringComparison? comparisonType = null)
     {

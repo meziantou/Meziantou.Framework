@@ -9,10 +9,10 @@ namespace Meziantou.Framework.Imaging;
 /// </summary>
 /// <remarks>
 /// <para>
-/// No pixel format holds CMYK samples: the decoder converts them with an <see cref="IccColorTransform"/> from the CMYK
-/// profile embedded in the file, or from <see cref="AssumedSourceProfile"/> when the file has none, to
-/// <see cref="DestinationProfile"/>. The loaded image holds RGB pixels labeled with <see cref="DestinationProfile"/>;
-/// the CMYK profile is not kept. An alpha sample of a TIFF page is not a color: it is copied unchanged.
+/// Loaded as another pixel format than <see cref="Cmyk32"/> and <see cref="Cmyk64"/>, which keep them, the CMYK samples are
+/// converted by the decoder with an <see cref="IccColorTransform"/> from the CMYK profile embedded in the file, or from
+/// <see cref="AssumedSourceProfile"/> when the file has none, to <see cref="DestinationProfile"/>. The loaded image holds
+/// RGB pixels labeled with <see cref="DestinationProfile"/>; the CMYK profile is not kept. An alpha sample of a TIFF page is not a color: it is copied unchanged.
 /// </para>
 /// <para>
 /// An embedded CMYK profile that is malformed or not supported is an error: it is never replaced by

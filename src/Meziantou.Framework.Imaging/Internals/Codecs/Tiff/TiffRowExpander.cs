@@ -22,7 +22,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// The samples of a CMYK page are ink amounts (0 is no ink), which is what the ICC conversion of the inks expects. An
-/// alpha sample is copied unchanged.
+/// alpha sample is copied unchanged. When the page is loaded as CMYK pixels, the inks are the expanded rows
+/// (<see cref="PixelFormat.Cmyk32"/> or <see cref="PixelFormat.Cmyk64"/>), without conversion.
 /// </para>
 /// <para>
 /// Floating-point samples keep their bits: a half-precision sample is a component of <see cref="PixelFormat.RgbaHalf"/>,
@@ -36,6 +37,7 @@ internal sealed class TiffRowExpander : IDisposable
     private readonly TiffPage _page;
     private readonly int _width;
     private readonly IccPipeline? _inkConversion;
+    private readonly bool _nativeInks;
     private PooledBuffer? _palette;
     private PooledBuffer? _inks;
 
@@ -47,7 +49,7 @@ internal sealed class TiffRowExpander : IDisposable
     /// </param>
     /// <param name="scope">The scope charged for the lookup table of a palette and the scratch rows of the conversions.</param>
     public TiffRowExpander(TiffPage page, IccPipeline? inkConversion, AllocationScope scope)
-        : this(page, inkConversion, scope, page.Size.Width)
+        : this(page, inkConversion, scope, page.Size.Width, nativeInks: false)
     {
     }
 
@@ -56,23 +58,26 @@ internal sealed class TiffRowExpander : IDisposable
     /// <param name="inkConversion">The conversion of the inks of a CMYK page to RGB; <see langword="null"/> for the other pages.</param>
     /// <param name="scope">The scope charged for the lookup table of a palette and the scratch row of 16-bit inks.</param>
     /// <param name="width">The number of pixels of a row to expand, at most the width of the page.</param>
-    public TiffRowExpander(TiffPage page, IccPipeline? inkConversion, AllocationScope scope, int width)
+    /// <param name="nativeInks">Whether the inks of a CMYK page without alpha are expanded as CMYK pixels instead of being converted.</param>
+    public TiffRowExpander(TiffPage page, IccPipeline? inkConversion, AllocationScope scope, int width, bool nativeInks = false)
     {
         ArgumentNullException.ThrowIfNull(page);
         ArgumentNullException.ThrowIfNull(scope);
-        if ((page.IsCmyk || page.IsCieLab) != (inkConversion is not null))
-            throw new ArgumentException("A CMYK or L*a*b* page, and only it, needs the conversion of its colors.", nameof(inkConversion));
+        if (nativeInks ? !page.IsCmyk || page.HasAlpha || inkConversion is not null : (page.IsCmyk || page.IsCieLab) != (inkConversion is not null))
+            throw new ArgumentException("A CMYK or L*a*b* page, and only it, needs the conversion of its colors, unless the inks of a CMYK page are expanded as CMYK pixels.", nameof(inkConversion));
 
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(width, page.Size.Width);
         _page = page;
         _width = width;
         _inkConversion = inkConversion;
+        _nativeInks = nativeInks;
+        SourcePixelFormat = nativeInks ? GetCmykPixelFormat(page) : page.SourcePixelFormat;
         if (page.IsPalette)
         {
             _palette = CreatePalette(page, scope);
         }
-        else if (page.IsCmyk && page.DecodedBitsPerSample == 16)
+        else if (page.IsCmyk && page.DecodedBitsPerSample == 16 && !nativeInks)
         {
             // Five 16-bit samples per pixel in native byte order: the inks and the alpha sample, opaque when the page has none
             _inks = scope.Rent(checked(_width * 5 * sizeof(ushort)), AllocationKind.DecoderState, clear: false);
@@ -84,12 +89,20 @@ internal sealed class TiffRowExpander : IDisposable
         }
     }
 
+    /// <summary>Gets the layout of the expanded rows: <see cref="TiffPage.SourcePixelFormat"/>, or the CMYK format of native inks.</summary>
+    public PixelFormat SourcePixelFormat { get; }
+
     /// <summary>Gets the number of bytes of one expanded row.</summary>
-    public int ExpandedRowLength => _width * PixelFormats.GetBytesPerPixel(_page.SourcePixelFormat);
+    public int ExpandedRowLength => _width * PixelFormats.GetBytesPerPixel(SourcePixelFormat);
+
+    /// <summary>Gets the CMYK pixel format that holds the inks of a CMYK page as they are.</summary>
+    /// <param name="page">The CMYK page.</param>
+    /// <returns><see cref="PixelFormat.Cmyk32"/> for 8-bit samples, <see cref="PixelFormat.Cmyk64"/> for 16-bit ones.</returns>
+    public static PixelFormat GetCmykPixelFormat(TiffPage page) => page.DecodedBitsPerSample == 16 ? PixelFormat.Cmyk64 : PixelFormat.Cmyk32;
 
     /// <summary>Expands one decoded row.</summary>
     /// <param name="stored">The decoded samples of the row; only the first <c>width</c> pixels are read (a tile row is padded).</param>
-    /// <param name="destination">Exactly <c>width</c> pixels of <see cref="TiffPage.SourcePixelFormat"/>.</param>
+    /// <param name="destination">Exactly <c>width</c> pixels of <see cref="SourcePixelFormat"/>.</param>
     public void Expand(ReadOnlySpan<byte> stored, Span<byte> destination)
     {
         var page = _page;
@@ -206,6 +219,21 @@ internal sealed class TiffRowExpander : IDisposable
     {
         var page = _page;
         var samplesPerPixel = page.SamplesPerPixel;
+        if (_nativeInks)
+        {
+            // The ink amounts as they are: four samples per pixel, 16-bit ones in native byte order
+            if (page.BitsPerSample == 8)
+            {
+                stored[..(_width * 4)].CopyTo(destination);
+            }
+            else
+            {
+                ReadWords(stored, unsafe(MemoryMarshal.Cast<byte, ushort>(destination))[..(_width * 4)]);
+            }
+
+            return;
+        }
+
         if (page.BitsPerSample == 8)
         {
             // Rgb24 without alpha, Rgba32 with the alpha sample copied

@@ -814,6 +814,13 @@ public sealed class ImageRendererTests
             BarcodeType.Codabar => Barcode.CreateCodabar("40156"),
             BarcodeType.Itf => Barcode.CreateItf("12345678"),
             BarcodeType.Gs1128 => Barcode.CreateGs1128(new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC123")),
+            BarcodeType.UpcE => Barcode.CreateUpcE("0425261", extension: "12"),
+            BarcodeType.Gs1DataBar => Barcode.CreateGs1DataBar("0950110153000"),
+            BarcodeType.Gs1DataBarStacked => Barcode.CreateGs1DataBarStacked("0950110153000"),
+            BarcodeType.Gs1DataBarStackedOmnidirectional => Barcode.CreateGs1DataBarStackedOmnidirectional("0950110153000"),
+            BarcodeType.Gs1DataBarLimited => Barcode.CreateGs1DataBarLimited("1501234567890"),
+            BarcodeType.Gs1DataBarExpanded => Barcode.CreateGs1DataBarExpanded(new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC123")),
+            BarcodeType.Gs1DataBarExpandedStacked => Barcode.CreateGs1DataBarExpandedStacked(4, new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC123"), new Gs1Element("21", "XY")),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, message: null),
         };
     }

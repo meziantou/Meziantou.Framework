@@ -30,6 +30,9 @@ QR and barcode generation library with SVG and PNG renderers, plus a console ren
 | EAN-8 | `Barcode.CreateEan8(...)` | Supports 7/8-digit payloads and optional 2/5-digit add-on extension |
 | EAN-13 | `Barcode.CreateEan13(...)` | Supports 12/13-digit payloads and optional 2/5-digit add-on extension |
 | UPC-A | `Barcode.CreateUpcA(...)` | Supports 11/12-digit payloads and optional 2/5-digit add-on extension |
+| UPC-E | `Barcode.CreateUpcE(...)` | Supports 6/7/8-digit payloads, compression of 11/12-digit UPC-A numbers, and optional 2/5-digit add-on extension |
+| GS1 DataBar | `Barcode.CreateGs1DataBar(...)`, `CreateGs1DataBarStacked(...)`, `CreateGs1DataBarStackedOmnidirectional(...)`, `CreateGs1DataBarLimited(...)` | Supports 13/14-digit GTINs; the stacked variants have one matrix row per module of height |
+| GS1 DataBar Expanded | `Barcode.CreateGs1DataBarExpanded(...)`, `CreateGs1DataBarExpandedStacked(...)` | Supports GS1 element strings, with the compressed encodations of GTINs, weights, dates and prices |
 | Codabar | `Barcode.CreateCodabar(...)` | Supports standard Codabar payload characters and configurable start/stop guards |
 | ITF | `Barcode.CreateItf(...)` | Supports numeric payloads with an even number of digits |
 
@@ -69,6 +72,8 @@ var ean13 = Barcode.CreateEan13("400638133393");
 var upcA = Barcode.CreateUpcA("03600029145", extension: "12");
 var codabar = Barcode.CreateCodabar("40156", startCharacter: 'A', stopCharacter: 'B');
 var itf = Barcode.CreateItf("12345678");
+var upcE = Barcode.CreateUpcE("0425261");
+var dataBar = Barcode.CreateGs1DataBar("0950110153000");
 
 // Type, width in modules and height (a linear barcode is one module high)
 Assert.Equal((BarcodeType.Code39, 129, 1), (code39.Type, code39.Width, code39.Height));
@@ -79,6 +84,8 @@ Assert.Equal((BarcodeType.Ean13, 95, 1), (ean13.Type, ean13.Width, ean13.Height)
 Assert.Equal((BarcodeType.UpcA, 124, 1), (upcA.Type, upcA.Width, upcA.Height));
 Assert.Equal((BarcodeType.Codabar, 71, 1), (codabar.Type, codabar.Width, codabar.Height));
 Assert.Equal((BarcodeType.Itf, 81, 1), (itf.Type, itf.Width, itf.Height));
+Assert.Equal((BarcodeType.UpcE, 51, 1), (upcE.Type, upcE.Width, upcE.Height));
+Assert.Equal((BarcodeType.Gs1DataBar, 96, 1), (dataBar.Type, dataBar.Width, dataBar.Height));
 
 // The human-readable text, with the characters the barcode adds (check digits, add-on, Codabar guards)
 Assert.Equal("ABC-123W", code39.Text);
@@ -86,6 +93,8 @@ Assert.Equal("55123457", ean8.Text);
 Assert.Equal("4006381333931", ean13.Text);
 Assert.Equal("036000291452 12", upcA.Text);
 Assert.Equal("A40156B", codabar.Text);
+Assert.Equal("04252614", upcE.Text);
+Assert.Equal("(01)09501101530003", dataBar.Text);
 ```
 <!-- endref -->
 

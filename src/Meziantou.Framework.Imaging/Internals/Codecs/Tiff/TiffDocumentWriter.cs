@@ -1067,6 +1067,11 @@ internal sealed class TiffDocumentWriter : IDisposable
             fields.Add(Scalar(TiffFormat.ExtraSamplesTag, TiffFieldType.Short, TiffFormat.ExtraSampleUnassociatedAlpha));
         }
 
+        if (layout.IsCmyk)
+        {
+            fields.Add(Scalar(TiffFormat.InkSetTag, TiffFieldType.Short, TiffFormat.InkSetCmyk));
+        }
+
         if (_page.Palette is { } palette)
         {
             // Three values for each of the 256 indexes: the red values, then the green and the blue ones

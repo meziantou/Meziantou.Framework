@@ -61,6 +61,7 @@ public static partial class ImageProcessingExtensions
     public static void ApplyToneCurve(this Image image, ToneCurve curve, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(ApplyToneCurve));
         ArgumentNullException.ThrowIfNull(curve);
         image.ApplyToneCurves(curve, curve, curve, cancellationToken);
     }
@@ -80,6 +81,7 @@ public static partial class ImageProcessingExtensions
     public static void ApplyToneCurve(this ImageFrame frame, ToneCurve curve, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(ApplyToneCurve));
         ArgumentNullException.ThrowIfNull(curve);
         frame.ApplyToneCurves(curve, curve, curve, cancellationToken);
     }
@@ -110,6 +112,7 @@ public static partial class ImageProcessingExtensions
     public static void ApplyToneCurves(this Image image, ToneCurve red, ToneCurve green, ToneCurve blue, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(ApplyToneCurves));
         ValidateToneCurves(red, green, blue);
         if (red.IsIdentity && green.IsIdentity && blue.IsIdentity)
         {
@@ -137,6 +140,7 @@ public static partial class ImageProcessingExtensions
     public static void ApplyToneCurves(this ImageFrame frame, ToneCurve red, ToneCurve green, ToneCurve blue, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(ApplyToneCurves));
         ValidateToneCurves(red, green, blue);
         _ = frame.GetStorage();
         if (red.IsIdentity && green.IsIdentity && blue.IsIdentity)
@@ -213,6 +217,7 @@ public static partial class ImageProcessingExtensions
     public static void ApplyLut(this Image image, CubeLut lut, LutInterpolation interpolation = LutInterpolation.Tetrahedral, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(ApplyLut));
         ValidateLut(lut, interpolation);
         image.ApplyColorLookupFrames(frames: null, new CubeLutLookup(lut, interpolation), "apply a lookup table", cancellationToken);
     }
@@ -234,6 +239,7 @@ public static partial class ImageProcessingExtensions
     public static void ApplyLut(this ImageFrame frame, CubeLut lut, LutInterpolation interpolation = LutInterpolation.Tetrahedral, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(ApplyLut));
         ValidateLut(lut, interpolation);
         _ = frame.GetStorage();
         frame.OwnerImage.ApplyColorLookupFrames([frame], new CubeLutLookup(lut, interpolation), "apply a lookup table", cancellationToken);

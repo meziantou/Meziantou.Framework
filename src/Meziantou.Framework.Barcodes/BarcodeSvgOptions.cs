@@ -9,6 +9,7 @@ public sealed class BarcodeSvgOptions
     public int ModuleWidth { get; set; } = 2;
 
     /// <summary>Gets or sets the height of each module in SVG units. Default is 80.</summary>
+    /// <remarks>The rows of a stacked barcode (<see cref="Barcode.IsStacked"/>) are <see cref="ModuleWidth"/> high instead.</remarks>
     public int ModuleHeight { get; set; } = 80;
 
     /// <summary>Gets or sets the number of quiet zone modules on the left and right sides of the barcode. Default is 10.</summary>

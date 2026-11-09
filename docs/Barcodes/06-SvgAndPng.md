@@ -100,7 +100,7 @@ draw the code on an image, see [Images](08-Images.md).
 | Barcode ([BarcodeSvgOptions](cref:Meziantou.Framework.Barcodes.BarcodeSvgOptions), [BarcodePngOptions](cref:Meziantou.Framework.Barcodes.BarcodePngOptions)) | Default | Description |
 | --- | --- | --- |
 | `ModuleWidth` | 2 | The width of a module |
-| `ModuleHeight` | 80 | The height of the bars |
+| `ModuleHeight` | 80 | The height of the bars; the rows of a stacked GS1 DataBar symbol are `ModuleWidth` high instead |
 | `QuietZoneModules` | 10 | The width of the margins on the left and on the right, in modules |
 | `DarkColor` | [Color.Black](cref:Meziantou.Framework.Barcodes.Color.Black) | The color of the bars |
 | `LightColor` | [Color.White](cref:Meziantou.Framework.Barcodes.Color.White) | The color of the spaces and of the margins |

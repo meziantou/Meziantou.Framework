@@ -91,6 +91,7 @@ public static partial class ImageProcessingExtensions
     public static void CorrectPerspective(this Image image, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft, Size? size = null, TransformOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(CorrectPerspective));
         options ??= TransformOptions.Default;
         if (size is { IsEmpty: true })
             throw new ArgumentException("The size must not be empty.", nameof(size));

@@ -1772,6 +1772,48 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void CmykImagesAreWrittenAsDeviceCmyk()
+    {
+        // The ink amounts are the samples of DeviceCMYK (0 is no ink), and a CMYK profile becomes an ICCBased color space
+        using var image = Image.ImportPixelData<Cmyk32>([new Cmyk32(1, 2, 3, 4), new Cmyk32(250, 0, 128, 255)], 2, 1);
+        var (data, colorSpace, components) = GetImage(PdfImage.FromImage(image));
+        Assert.Equal([1, 2, 3, 4, 250, 0, 128, 255], data);
+        Assert.Equal("DeviceCMYK", colorSpace);
+        Assert.Equal(4, components);
+
+        using var deep = Image.ImportPixelData<Cmyk64>([new Cmyk64(0x0102, 0x0304, 0x0506, 0xFFFF)], 1, 1);
+        deep.Metadata.IccProfile = Imaging.Metadata.IccProfile.Cgats001CompatibleCmyk;
+        (data, colorSpace, components) = GetImage(PdfImage.FromImage(deep));
+        Assert.Equal([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0xFF, 0xFF], data);
+        Assert.Equal("ICCBased", colorSpace);
+        Assert.Equal(4, components);
+
+        // As JPEG: an Adobe CMYK file, whose inverted samples the Decode array restores
+        var jpeg = PdfImage.FromImageAsJpeg(deep);
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A5).CreateContentBuilder().DrawImage(jpeg, 0, 0, 1, 1);
+        var read = PdfDocument.Open(document.ToByteArray());
+        var xobject = read.Pages[0].Resources!.Get<PdfDictionary>(PdfName.Create("XObject"))!.Get<PdfStream>(PdfName.Create("Im1"))!;
+        Assert.Equal("DCTDecode", xobject.Filters.Single().Value);
+        Assert.HasCount(8, xobject.Dictionary.Get<PdfArray>(PdfName.Create("Decode"))!);
+
+        static (byte[] Data, string ColorSpace, long Components) GetImage(PdfImage pdfImage)
+        {
+            var document = new PdfDocument();
+            document.Pages.Add(PdfSize.A5).CreateContentBuilder().DrawImage(pdfImage, 0, 0, 1, 1);
+            var read = PdfDocument.Open(document.ToByteArray());
+            var xobject = read.Pages[0].Resources!.Get<PdfDictionary>(PdfName.Create("XObject"))!.Get<PdfStream>(PdfName.Create("Im1"))!;
+            var decodeParameters = xobject.Dictionary.Get<PdfDictionary>(PdfName.Create("DecodeParms"));
+            var space = xobject.Dictionary.GetName(PdfName.Create("ColorSpace"))?.Value ?? xobject.Dictionary.Get<PdfArray>(PdfName.Create("ColorSpace"))![0] switch
+            {
+                PdfName name => name.Value,
+                var other => other.ToString()!,
+            };
+            return (xobject.GetDecodedData(), space, decodeParameters?.GetInteger(PdfName.Create("Colors")) ?? 4);
+        }
+    }
+
+    [Fact]
     public void ImageIsSharedByThePagesOfADocument()
     {
         using var image = Image.ImportPixelData<Rgb24>([new Rgb24(1, 2, 3)], 1, 1);

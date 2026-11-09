@@ -64,6 +64,13 @@ public abstract class ImageEncoder
     internal virtual bool StoresFloatingPointSamples => false;
 
     /// <summary>
+    /// Gets a value indicating whether the output stores CMYK pixels (<see cref="PixelFormat.Cmyk32"/>,
+    /// <see cref="PixelFormat.Cmyk64"/>) as they are. The other outputs reject them: converting inks to RGB converts colors,
+    /// which is explicit (<see cref="PixelConversionOptions.CmykConversion"/>).
+    /// </summary>
+    internal virtual bool StoresCmykPixels => false;
+
+    /// <summary>
     /// Creates a copy of the settings that writes the image of a gain map: the same settings, without gain map, and with a
     /// metadata policy of its own.
     /// </summary>

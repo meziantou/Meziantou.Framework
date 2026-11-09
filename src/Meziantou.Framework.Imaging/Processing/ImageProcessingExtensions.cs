@@ -149,6 +149,7 @@ public static partial class ImageProcessingExtensions
     public static AutoCropAnalysis AnalyzeAutoCrop(this Image image, AutoCropOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(AnalyzeAutoCrop));
         return image.AnalyzeAutoCropCore(options ?? AutoCropOptions.Default, cancellationToken);
     }
 
@@ -202,6 +203,7 @@ public static partial class ImageProcessingExtensions
     public static bool AutoCrop(this Image image, AutoCropOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(AutoCrop));
         return image.AutoCropCore(analysis: null, options ?? AutoCropOptions.Default, cancellationToken);
     }
 
@@ -227,6 +229,7 @@ public static partial class ImageProcessingExtensions
     public static bool AutoCrop(this Image image, AutoCropAnalysis analysis, AutoCropOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(AutoCrop));
         ArgumentNullException.ThrowIfNull(analysis);
         var size = image.Size;
         if (analysis.CanvasSize != size)
@@ -295,6 +298,7 @@ public static partial class ImageProcessingExtensions
     public static void Resize(this Image image, ResizeOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Resize));
         ArgumentNullException.ThrowIfNull(options);
         var geometry = ResizeGeometry.Compute(image.Size, options);
         image.Resize(geometry, options, cancellationToken);
@@ -333,6 +337,7 @@ public static partial class ImageProcessingExtensions
     public static void Pad(this Image image, int left, int top, int right, int bottom, Rgba64? backgroundColor = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Pad));
         ArgumentOutOfRangeException.ThrowIfNegative(left);
         ArgumentOutOfRangeException.ThrowIfNegative(top);
         ArgumentOutOfRangeException.ThrowIfNegative(right);
@@ -372,6 +377,7 @@ public static partial class ImageProcessingExtensions
     public static void ExtendCanvas(this Image image, Size size, ResizeAnchor anchor = ResizeAnchor.Center, Rgba64? backgroundColor = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(ExtendCanvas));
         if (!Enum.IsDefined(anchor))
             throw new ArgumentOutOfRangeException(nameof(anchor), anchor, "The anchor is not valid.");
 
@@ -437,6 +443,7 @@ public static partial class ImageProcessingExtensions
     public static void Rotate(this Image image, double degrees, TransformOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Rotate));
         var rotation = AffineTransform.CreateRotation(degrees);
         options = ValidateTransformOptions(options);
         var size = image.Size;
@@ -469,6 +476,7 @@ public static partial class ImageProcessingExtensions
     public static void Skew(this Image image, double degreesX, double degreesY, TransformOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Skew));
         var skew = AffineTransform.CreateSkew(degreesX, degreesY);
         options = ValidateTransformOptions(options);
         var size = image.Size;
@@ -496,6 +504,7 @@ public static partial class ImageProcessingExtensions
     public static void Transform(this Image image, AffineTransform transform, TransformOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Transform));
         options = ValidateTransformOptions(options);
         image.Warp(transform, options, centered: false, nameof(transform), cancellationToken);
     }
@@ -557,6 +566,7 @@ public static partial class ImageProcessingExtensions
     public static void Transform(this Image image, ProjectiveTransform transform, TransformOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Transform));
         options = ValidateTransformOptions(options);
         image.Warp(transform, options, centered: false, nameof(transform), cancellationToken);
     }
@@ -646,6 +656,7 @@ public static partial class ImageProcessingExtensions
     public static void Grayscale(this Image image, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Grayscale));
         image.GrayscaleAllFrames(cancellationToken);
     }
 
@@ -658,6 +669,7 @@ public static partial class ImageProcessingExtensions
     public static void Grayscale(this ImageFrame frame, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Grayscale));
         var storage = frame.GetStorage();
         var image = frame.OwnerImage;
         image.EnsureColorProfileCompatible();
@@ -740,6 +752,7 @@ public static partial class ImageProcessingExtensions
     public static void Quantize(this Image image, QuantizeOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Quantize));
         image.QuantizeFrames(frames: null, options ?? QuantizeOptions.Default, cancellationToken);
     }
 
@@ -757,6 +770,7 @@ public static partial class ImageProcessingExtensions
     public static void Quantize(this ImageFrame frame, QuantizeOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Quantize));
         _ = frame.GetStorage();
         frame.OwnerImage.QuantizeFrames([frame], options ?? QuantizeOptions.Default, cancellationToken);
     }
@@ -792,6 +806,7 @@ public static partial class ImageProcessingExtensions
     public static void ApplyColorMatrix(this Image image, ColorMatrix matrix, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(ApplyColorMatrix));
         ArgumentNullException.ThrowIfNull(matrix);
         image.Draw(matrix, static (canvas, matrix) => canvas.FilterBackdrop(matrix), cancellationToken);
     }
@@ -808,6 +823,7 @@ public static partial class ImageProcessingExtensions
     public static void ApplyColorMatrix(this ImageFrame frame, ColorMatrix matrix, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(ApplyColorMatrix));
         ArgumentNullException.ThrowIfNull(matrix);
         frame.Draw(matrix, static (canvas, matrix) => canvas.FilterBackdrop(matrix), cancellationToken);
     }
@@ -849,6 +865,7 @@ public static partial class ImageProcessingExtensions
     public static void ReplaceColor(this Image image, Rgba64 color, Rgba64 replacement, double tolerance = 0, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(ReplaceColor));
         ValidateTolerance(tolerance);
         image.ReplaceColorFrames(frames: null, color, replacement, tolerance, cancellationToken);
     }
@@ -868,6 +885,7 @@ public static partial class ImageProcessingExtensions
     public static void ReplaceColor(this ImageFrame frame, Rgba64 color, Rgba64 replacement, double tolerance = 0, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(ReplaceColor));
         ValidateTolerance(tolerance);
         _ = frame.GetStorage();
         frame.OwnerImage.ReplaceColorFrames([frame], color, replacement, tolerance, cancellationToken);
@@ -897,6 +915,7 @@ public static partial class ImageProcessingExtensions
     public static ImageHistogram ComputeHistogram(this Image image, HistogramChannel channel, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(ComputeHistogram));
         ValidateHistogramChannel(channel);
         return image.ComputeHistogramCore(frames: null, channel, cancellationToken);
     }
@@ -916,6 +935,7 @@ public static partial class ImageProcessingExtensions
     public static ImageHistogram ComputeHistogram(this ImageFrame frame, HistogramChannel channel, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(ComputeHistogram));
         ValidateHistogramChannel(channel);
         _ = frame.GetStorage();
         return frame.OwnerImage.ComputeHistogramCore([frame], channel, cancellationToken);
@@ -995,6 +1015,7 @@ public static partial class ImageProcessingExtensions
     public static void Equalize(this Image image, HistogramEqualizationOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Equalize));
         image.EqualizeFrames(frames: null, options ?? HistogramEqualizationOptions.Default, cancellationToken);
     }
 
@@ -1011,6 +1032,7 @@ public static partial class ImageProcessingExtensions
     public static void Equalize(this ImageFrame frame, HistogramEqualizationOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Equalize));
         _ = frame.GetStorage();
         frame.OwnerImage.EqualizeFrames([frame], options ?? HistogramEqualizationOptions.Default, cancellationToken);
     }
@@ -1047,6 +1069,7 @@ public static partial class ImageProcessingExtensions
     public static void AutoLevels(this Image image, AutoLevelsOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(AutoLevels));
         options ??= AutoLevelsOptions.Default;
         ValidateAutoLevels(options);
         image.AutoLevelsFrames(frames: null, options, cancellationToken);
@@ -1066,6 +1089,7 @@ public static partial class ImageProcessingExtensions
     public static void AutoLevels(this ImageFrame frame, AutoLevelsOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(AutoLevels));
         options ??= AutoLevelsOptions.Default;
         ValidateAutoLevels(options);
         _ = frame.GetStorage();
@@ -1145,6 +1169,7 @@ public static partial class ImageProcessingExtensions
     public static void Threshold(this Image image, ThresholdOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Threshold));
         image.ThresholdFrames(frames: null, options ?? ThresholdOptions.Default, cancellationToken);
     }
 
@@ -1162,8 +1187,21 @@ public static partial class ImageProcessingExtensions
     public static void Threshold(this ImageFrame frame, ThresholdOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Threshold));
         _ = frame.GetStorage();
         frame.OwnerImage.ThresholdFrames([frame], options ?? ThresholdOptions.Default, cancellationToken);
+    }
+
+    /// <summary>
+    /// Rejects the CMYK pixel formats, which hold inks rather than colors of light: the operations work on red, green and
+    /// blue (or gray) samples, and only <see cref="Crop"/>, <see cref="Flip(Image, FlipMode, CancellationToken)"/>,
+    /// <see cref="Rotate(Image, RotateMode, CancellationToken)"/> and <see cref="AutoOrient"/>, which move pixels without
+    /// computing new ones, keep CMYK pixels.
+    /// </summary>
+    private static void ThrowIfCmyk(PixelFormat format, string operation)
+    {
+        if (PixelFormats.IsCmyk(format))
+            throw new UnsupportedImageFeatureException($"{operation} works on colors of light, and the {format} pixels of the image are CMYK inks. Convert the image first with CloneAs and PixelConversionOptions.CmykConversion; Crop, Flip, Rotate by quarter turns and AutoOrient keep CMYK pixels.", ImageFormat.Unknown, "CMYK pixels");
     }
 
     private static void ValidateHistogramChannel(HistogramChannel channel)
@@ -1205,8 +1243,9 @@ public static partial class ImageProcessingExtensions
     /// <para>
     /// The pixel format is kept, so the destination profile must be able to label it: an RGB profile for color formats, a
     /// grayscale profile for <see cref="Gray8"/> and <see cref="Gray16"/>. To change the color model, convert the pixel
-    /// format with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>, or convert sample buffers with
-    /// <see cref="IccColorTransform"/> (the only way to reach CMYK).
+    /// format with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> (to or from CMYK pixels with
+    /// <see cref="PixelConversionOptions.CmykConversion"/>), or convert sample buffers with <see cref="IccColorTransform"/>.
+    /// CMYK images are rejected.
     /// </para>
     /// <para>
     /// Colors are converted at the storage precision (16-bit formats are never reduced to 8 bits) by the scalar reference
@@ -1249,6 +1288,7 @@ public static partial class ImageProcessingExtensions
     public static void ConvertColorProfile(this Image image, IccProfile destinationProfile, IccColorTransformOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(ConvertColorProfile));
         ArgumentNullException.ThrowIfNull(destinationProfile);
         image.ConvertAllFramesToColorProfile(destinationProfile, options ?? IccColorTransformOptions.Default, cancellationToken);
     }
@@ -1294,6 +1334,7 @@ public static partial class ImageProcessingExtensions
     public static void Convolve(this Image image, ConvolutionOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Convolve));
         ArgumentNullException.ThrowIfNull(options);
         image.ConvolveAllFrames(options, cancellationToken);
     }
@@ -1312,6 +1353,7 @@ public static partial class ImageProcessingExtensions
     public static void Convolve(this ImageFrame frame, ConvolutionOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Convolve));
         ArgumentNullException.ThrowIfNull(options);
         var storage = frame.GetStorage();
         frame.OwnerImage.ConvolveFrame(frame, storage, options, cancellationToken);
@@ -1350,6 +1392,7 @@ public static partial class ImageProcessingExtensions
     public static void GaussianBlur(this Image image, double sigma, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(GaussianBlur));
         GaussianKernel.Validate(sigma, nameof(sigma));
         ValidateBlur(edgeMode, workingSpace);
         if (sigma == 0)
@@ -1379,6 +1422,7 @@ public static partial class ImageProcessingExtensions
     public static void GaussianBlur(this ImageFrame frame, double sigma, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(GaussianBlur));
         GaussianKernel.Validate(sigma, nameof(sigma));
         ValidateBlur(edgeMode, workingSpace);
         var storage = frame.GetStorage();
@@ -1424,6 +1468,7 @@ public static partial class ImageProcessingExtensions
     public static void BoxBlur(this Image image, int radius, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(BoxBlur));
         ValidateRadius(radius, MaxBoxBlurRadius);
         ValidateBlur(edgeMode, workingSpace);
         if (radius == 0)
@@ -1452,6 +1497,7 @@ public static partial class ImageProcessingExtensions
     public static void BoxBlur(this ImageFrame frame, int radius, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(BoxBlur));
         ValidateRadius(radius, MaxBoxBlurRadius);
         ValidateBlur(edgeMode, workingSpace);
         var storage = frame.GetStorage();
@@ -1497,6 +1543,7 @@ public static partial class ImageProcessingExtensions
     public static void Sharpen(this Image image, double sigma, double amount = 1, double threshold = 0, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(Sharpen));
         ValidateSharpen(sigma, amount, threshold);
         ValidateBlur(edgeMode, workingSpace);
         if (sigma == 0 || amount == 0)
@@ -1528,6 +1575,7 @@ public static partial class ImageProcessingExtensions
     public static void Sharpen(this ImageFrame frame, double sigma, double amount = 1, double threshold = 0, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, ConvolutionWorkingSpace workingSpace = ConvolutionWorkingSpace.Encoded, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(Sharpen));
         ValidateSharpen(sigma, amount, threshold);
         ValidateBlur(edgeMode, workingSpace);
         var storage = frame.GetStorage();
@@ -1570,6 +1618,7 @@ public static partial class ImageProcessingExtensions
     public static void MedianBlur(this Image image, int radius, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(MedianBlur));
         ValidateRadius(radius, MaxMedianRadius);
         ValidateBlur(edgeMode, ConvolutionWorkingSpace.Encoded);
         if (radius == 0)
@@ -1596,6 +1645,7 @@ public static partial class ImageProcessingExtensions
     public static void MedianBlur(this ImageFrame frame, int radius, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(MedianBlur));
         ValidateRadius(radius, MaxMedianRadius);
         ValidateBlur(edgeMode, ConvolutionWorkingSpace.Encoded);
         var storage = frame.GetStorage();
@@ -1650,6 +1700,7 @@ public static partial class ImageProcessingExtensions
     public static void DetectEdges(this Image image, EdgeDetector detector, bool grayscale = true, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(DetectEdges));
         ValidateEdgeDetection(detector, edgeMode);
         image.DetectEdgesAllFrames(detector, grayscale, edgeMode, cancellationToken);
     }
@@ -1671,6 +1722,7 @@ public static partial class ImageProcessingExtensions
     public static void DetectEdges(this ImageFrame frame, EdgeDetector detector, bool grayscale = true, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(DetectEdges));
         ValidateEdgeDetection(detector, edgeMode);
         var storage = frame.GetStorage();
         frame.OwnerImage.DetectEdgesFrame(frame, storage, detector, grayscale, edgeMode, cancellationToken);

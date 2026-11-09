@@ -45,6 +45,8 @@ internal static class EanUpcEncoder
     ];
 
     private static readonly int[] Ean13FirstDigitEncodings = [0x00, 0x0B, 0x0D, 0x0E, 0x13, 0x19, 0x1C, 0x15, 0x16, 0x1A];
+    // The parities of the 6 digits of a UPC-E symbol of number system 0, by check digit (1 for G); number system 1 has the complement
+    private static readonly int[] UpcENumberSystem0Encodings = [0x38, 0x34, 0x32, 0x31, 0x2C, 0x26, 0x23, 0x2A, 0x29, 0x25];
     private static readonly int[] Extension5CheckDigitEncodings = [0x18, 0x14, 0x12, 0x11, 0x0C, 0x06, 0x03, 0x0A, 0x09, 0x05];
 
     public static Barcode EncodeEan8(string data, string? extension)
@@ -121,6 +123,89 @@ internal static class EanUpcEncoder
         AppendExtension(modules, extension, gapModules: 9);
 
         return BarcodeEncoderHelper.CreateBarcode(BarcodeType.UpcA, modules, GetText(normalized, extension));
+    }
+
+    // GS1 General Specifications, section 5.2.2.4.2: a UPC-E symbol holds a UPC-A number (number system 0 or 1) without
+    // some of its zeros. Its 6 digits are encoded with parities that give the number system and the check digit.
+    public static Barcode EncodeUpcE(string data, string? extension)
+    {
+        ValidateDigits(data, nameof(data), "UPC-E");
+        var upcA = data.Length switch
+        {
+            6 => ExpandUpcE('0', data),
+            7 => ExpandUpcE(data[0], data[1..]),
+            8 => ExpandUpcE(data[0], data[1..7]) + data[7],
+            11 or 12 => data,
+            _ => throw new ArgumentException("The data should be 6, 7 or 8 digits long for UPC-E, or 11 or 12 digits long for a UPC-A number to compress.", nameof(data)),
+        };
+
+        if (upcA[0] is not ('0' or '1'))
+            throw new ArgumentException("The number system of a UPC-E number must be 0 or 1.", nameof(data));
+
+        var normalized = NormalizeAndValidate(upcA, 11, 12, "UPC-E");
+        var compressed = CompressUpcA(normalized) ?? throw new ArgumentException($"The UPC-A number '{normalized}' has no UPC-E form: it does not have the zeros UPC-E removes.", nameof(data));
+
+        // A UPC-A number has a single UPC-E form: the other digits that expand to it are not valid
+        if (data.Length <= 8 && !data.AsSpan(data.Length == 6 ? 0 : 1, 6).SequenceEqual(compressed))
+            throw new ArgumentException($"The UPC-E number is not valid: the UPC-A number it stands for, '{normalized}', is written '{compressed}' in UPC-E.", nameof(data));
+        var numberSystem = normalized[0] - '0';
+        var checkDigit = normalized[11] - '0';
+
+        var modules = new List<bool>(51 + GetExtensionModuleCount(extension));
+        AppendPattern(modules, "101");
+
+        var parity = UpcENumberSystem0Encodings[checkDigit];
+        for (var i = 0; i < 6; i++)
+        {
+            var digit = compressed[i] - '0';
+            var useGPattern = (((parity >> (5 - i)) & 1) == 1) == (numberSystem == 0);
+            AppendPattern(modules, useGPattern ? GPatterns[digit] : LPatterns[digit]);
+        }
+
+        AppendPattern(modules, "010101");
+        AppendExtension(modules, extension, gapModules: 9);
+
+        var text = string.Concat(normalized.AsSpan(0, 1), compressed, normalized.AsSpan(11, 1));
+        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.UpcE, modules, GetText(text, extension));
+    }
+
+    // Returns the 11 digits of the UPC-A number (without check digit) of the number system and the 6 digits of a UPC-E number
+    private static string ExpandUpcE(char numberSystem, string digits)
+    {
+        return digits[5] switch
+        {
+            '0' or '1' or '2' => string.Concat(numberSystem.ToString(), digits[..2], digits[5..], "0000", digits[2..5]),
+            '3' => string.Concat(numberSystem.ToString(), digits[..3], "00000", digits[3..5]),
+            '4' => string.Concat(numberSystem.ToString(), digits[..4], "00000", digits[4..5]),
+            _ => string.Concat(numberSystem.ToString(), digits[..5], "0000", digits[5..]),
+        };
+    }
+
+    // Returns the 6 digits of the UPC-E number of a UPC-A number (number system, 10 digits and check digit), or null when
+    // the UPC-A number has no UPC-E form
+    private static string? CompressUpcA(string upcA)
+    {
+        var manufacturer = upcA.AsSpan(1, 5);
+        var product = upcA.AsSpan(6, 5);
+        string? result = null;
+        if (manufacturer[2] is '0' or '1' or '2' && manufacturer[3..].SequenceEqual("00") && product[..2].SequenceEqual("00"))
+        {
+            result = string.Concat(manufacturer[..2], product[2..], manufacturer.Slice(2, 1));
+        }
+        else if (manufacturer[3..].SequenceEqual("00") && product[..3].SequenceEqual("000"))
+        {
+            result = string.Concat(manufacturer[..3], product[3..], "3");
+        }
+        else if (manufacturer[4] == '0' && product[..4].SequenceEqual("0000"))
+        {
+            result = string.Concat(manufacturer[..4], product[4..], "4");
+        }
+        else if (product[..4].SequenceEqual("0000") && product[4] >= '5')
+        {
+            result = string.Concat(manufacturer, product[4..]);
+        }
+
+        return result;
     }
 
     private static string NormalizeAndValidate(string data, int lengthWithoutChecksum, int lengthWithChecksum, string symbology)

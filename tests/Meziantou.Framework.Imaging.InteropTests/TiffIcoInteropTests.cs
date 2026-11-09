@@ -82,6 +82,47 @@ public sealed class TiffIcoInteropTests
     }
 
     [Theory]
+    [InlineData("None", false, "None")]
+    [InlineData("Deflate", true, "HorizontalDifferencing")]
+    [InlineData("Lzw", false, "HorizontalDifferencing")]
+    [InlineData("PackBits", true, "None")]
+    public async Task CmykPagesDecodeExactlyInFFmpeg(string compression, bool bigEndian, string predictor)
+    {
+        // FFmpeg reads separated pages as inks and converts them with its own formula, R = ((255 - C) (255 - K) 257) >> 16
+        // (likewise for M and Y), which the test applies to the written inks: every pixel must match
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var inks = CreateInks(Width, Height);
+        using var image = Image.ImportPixelData<Cmyk32>(inks, Width, Height);
+        var encoder = new TiffEncoder { Compression = Enum.Parse<TiffCompression>(compression), BigEndian = bigEndian, Predictor = Enum.Parse<TiffPredictor>(predictor) };
+        var path = await SaveAsync(image, encoder, $"cmyk-{compression}-{(bigEndian ? "be" : "le")}-{predictor}.tif");
+        var decoded = Assert.Single(await ffmpeg.DecodeToRawFramesAsync(path, "rgb24", Width, Height, XunitCancellationToken));
+        for (var i = 0; i < inks.Length; i++)
+        {
+            var ink = inks[i];
+            var expected = new[] { FFmpegInkToLight(ink.C, ink.K), FFmpegInkToLight(ink.M, ink.K), FFmpegInkToLight(ink.Y, ink.K) };
+            Assert.Equal(expected, decoded.AsSpan(i * 3, 3).ToArray());
+        }
+    }
+
+    /// <summary>The conversion of FFmpeg's TIFF and JPEG decoders from an 8-bit ink and the black ink to an 8-bit color.</summary>
+    internal static byte FFmpegInkToLight(int ink, int black) => (byte)(((255 - ink) * (255 - black) * 257) >> 16);
+
+    /// <summary>Inks that cover the range of every component, the black included.</summary>
+    internal static Cmyk32[] CreateInks(int width, int height)
+    {
+        var inks = new Cmyk32[width * height];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                inks[(y * width) + x] = new Cmyk32((byte)(x * 255 / Math.Max(1, width - 1)), (byte)(y * 255 / Math.Max(1, height - 1)), (byte)(255 - (x * 255 / Math.Max(1, width - 1))), (byte)((x + y) * 7));
+            }
+        }
+
+        return inks;
+    }
+
+    [Theory]
     [MemberData(nameof(TiffEncoderCases))]
     public async Task AppleImageIOReadsEveryByteOrderAndOffsetSize(string compression, bool bigEndian, bool bigTiff)
     {

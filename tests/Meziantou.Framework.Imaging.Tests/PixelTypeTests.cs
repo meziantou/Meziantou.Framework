@@ -23,6 +23,8 @@ public sealed class PixelTypeTests
         Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.Abgr32), Unsafe.SizeOf<Abgr32>());
         Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.Bgr565), Unsafe.SizeOf<Bgr565>());
         Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.Rgba1010102), Unsafe.SizeOf<Rgba1010102>());
+        Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.Cmyk32), Unsafe.SizeOf<Cmyk32>());
+        Assert.Equal(PixelFormats.GetBytesPerPixel(PixelFormat.Cmyk64), Unsafe.SizeOf<Cmyk64>());
     }
 
     [Theory]
@@ -42,6 +44,8 @@ public sealed class PixelTypeTests
     [InlineData(PixelFormat.Abgr32, 4, 8, 4, true, false, true)]
     [InlineData(PixelFormat.Bgr565, 2, 6, 3, false, false, true)]
     [InlineData(PixelFormat.Rgba1010102, 4, 10, 4, true, false, true)]
+    [InlineData(PixelFormat.Cmyk32, 4, 8, 4, false, false, true)]
+    [InlineData(PixelFormat.Cmyk64, 8, 16, 4, false, false, true)]
     public void PixelFormatsDescribeEveryFormat(PixelFormat format, int bytesPerPixel, int bitsPerComponent, int componentCount, bool hasAlpha, bool isGrayscale, bool hasColor)
     {
         Assert.Contains(format, PixelFormats.All);
@@ -52,6 +56,7 @@ public sealed class PixelTypeTests
         Assert.Equal(isGrayscale, PixelFormats.IsGrayscale(format));
         Assert.Equal(hasColor, PixelFormats.HasColor(format));
         Assert.Equal(format is PixelFormat.RgbaFloat or PixelFormat.RgbaHalf, PixelFormats.IsFloatingPoint(format));
+        Assert.Equal(format is PixelFormat.Cmyk32 or PixelFormat.Cmyk64, PixelFormats.IsCmyk(format));
     }
 
     [Fact]
@@ -87,6 +92,19 @@ public sealed class PixelTypeTests
         Assert.Equal("Abgr32(R: 1, G: 2, B: 3, A: 255)", new Abgr32(1, 2, 3).ToString());
         Assert.Equal("Bgr565(R: 31, G: 63, B: 0)", new Bgr565(31, 63, 0).ToString());
         Assert.Equal("Rgba1010102(R: 1023, G: 512, B: 0, A: 3)", new Rgba1010102(1023, 512, 0).ToString());
+    }
+
+    [Fact]
+    public void CmykPixelStructsCompareTheirComponents()
+    {
+        Assert.Equal(new Cmyk32(1, 2, 3, 4), new Cmyk32(1, 2, 3, 4));
+        Assert.NotEqual(new Cmyk32(1, 2, 3, 4), new Cmyk32(1, 2, 3, 5));
+        Assert.True(new Cmyk64(1, 2, 3, 4) == new Cmyk64(1, 2, 3, 4));
+        Assert.True(new Cmyk64(1, 2, 3, 4) != new Cmyk64(0, 2, 3, 4));
+        Assert.Equal(new Cmyk32(1, 2, 3, 4).GetHashCode(), new Cmyk32(1, 2, 3, 4).GetHashCode());
+        Assert.Equal("Cmyk32(1, 2, 3, 4)", new Cmyk32(1, 2, 3, 4).ToString());
+        Assert.Equal("Cmyk64(1000, 2000, 3000, 65535)", new Cmyk64(1000, 2000, 3000, 65535).ToString());
+        Assert.Throws<ArgumentOutOfRangeException>(() => PixelFormats.IsCmyk(PixelFormat.Unknown));
     }
 
     [Fact]

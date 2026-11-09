@@ -16,7 +16,8 @@ namespace Meziantou.Framework.Imaging;
 /// Integer to <see cref="RgbaFloat"/> and back is exact for every integer pixel format, and so is 8-bit to <see cref="RgbaHalf"/> and back.
 /// </para>
 /// <para>
-/// Layout conversion is not color management: no ICC transform is applied (use
+/// Layout conversion is not color management: no ICC transform is applied, except between CMYK and the other formats with
+/// <see cref="CmykConversion"/> (use
 /// <see cref="ImageProcessingExtensions.ConvertColorProfile"/> to convert colors). A retained ICC profile whose color space is
 /// incompatible with the converted pixels (for example an RGB profile on grayscale pixels) causes an
 /// <see cref="UnsupportedImageFeatureException"/> unless <see cref="DiscardIncompatibleColorProfile"/> is <see langword="true"/>.
@@ -47,6 +48,18 @@ public sealed class PixelConversionOptions
 
     /// <summary>Gets a value indicating whether an ICC profile incompatible with the converted pixels is removed instead of causing an error.</summary>
     public bool DiscardIncompatibleColorProfile { get; init; }
+
+    /// <summary>
+    /// Gets the color conversion between CMYK pixels (<see cref="Cmyk32"/>, <see cref="Cmyk64"/>) and the other pixel
+    /// formats, or <see langword="null"/> (the default) to reject such conversions with an
+    /// <see cref="UnsupportedImageFeatureException"/>.
+    /// </summary>
+    /// <remarks>
+    /// Inks are not light: converting them is a color conversion, so it is explicit, like
+    /// <see cref="ImageProcessingExtensions.ConvertColorProfile"/>. The conversion between <see cref="Cmyk32"/> and
+    /// <see cref="Cmyk64"/> only changes the precision and does not need it. See <see cref="CmykPixelConversionOptions"/>.
+    /// </remarks>
+    public CmykPixelConversionOptions? CmykConversion { get; init; }
 
     /// <summary>
     /// Gets what happens to the floating-point samples that the destination pixel format cannot store: outside [0, 1] for

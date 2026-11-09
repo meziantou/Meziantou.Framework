@@ -75,10 +75,7 @@
     "total": 17
   },
   "css/css-color/canvas-srgb-gamut-mapping.html": {
-    "total": 20,
-    "failures": {
-      "oklch(0.0001220703125 0.4 19.75) painted on an sRGB canvas": "FAIL"
-    }
+    "total": 20
   },
   "css/css-color/clip-opacity-out-of-flow.html": {
     "reftest": "PASS"

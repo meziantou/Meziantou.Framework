@@ -445,6 +445,31 @@ public sealed class PaintingTests : IDisposable
         }
     }
 
+    [Fact]
+    public void Borders_RoundedDottedBorderFollowsTheCurves()
+    {
+        // The dots are on the line in the middle of the whole border (the curves of the corners included), not on straight
+        // lines along the sides
+        var dump = Dump(Parse("<div style='width: 100px; height: 100px; border: 20px dotted rgb(255, 0, 0); border-radius: 40px'></div>"));
+        Assert.DoesNotContain("draw-line", dump, StringComparison.Ordinal);
+        Assert.Contains("stroke #ff0000 width=20 dashes=0,", dump, StringComparison.Ordinal);
+        Assert.Contains("cap=round", dump, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("dotted", 20, 428.5, 11)] // the line in the middle of a 140px box with 20px borders and 40px radii
+    [InlineData("dashed", 4, 200, 17)]
+    public void Borders_ClosedDashesAreAWholeNumberOfDashes(string style, double width, double length, int dashes)
+    {
+        var stroke = BorderPainter.GetClosedDashes(style == "dotted" ? BorderStyle.Dotted : BorderStyle.Dashed, width, length);
+        Assert.NotNull(stroke);
+        Assert.NotNull(stroke.Dashes);
+        Assert.Equal(length, (stroke.Dashes[0] + stroke.Dashes[1]) * dashes, 9);
+    }
+
+    [Fact]
+    public void Borders_ClosedDashesOfAShortLineAreSolid() => Assert.Null(BorderPainter.GetClosedDashes(BorderStyle.Dotted, 20, 70));
+
     [Theory]
     [InlineData(10, "(0, 0, 10x20) - (3, 0, 7x20)", "(7, 0, 3x20) - (10, 0, 0x20)")] // 3 + 4 + 3
     [InlineData(5, "(0, 0, 5x20) - (2, 0, 3x20)", "(3, 0, 2x20) - (5, 0, 0x20)")] // 2 + 1 + 2

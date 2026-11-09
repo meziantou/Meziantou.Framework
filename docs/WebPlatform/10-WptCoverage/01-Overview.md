@@ -48,17 +48,17 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,350 | 29,911 | 2,117 | 95% |
+| [Stable](#stable-tests) | 26,351 | 29,911 | 2,117 | 95% |
 | [Tentative](#tentative-tests) | 1,380 | 3,169 | 698 | 56% |
-| [Reftests](#reftests) | 28,112 | 29,507 | 171 | 96% |
-| **All** | **55,842** | **62,587** | **2,986** | **94%** |
+| [Reftests](#reftests) | 28,115 | 29,507 | 171 | 96% |
+| **All** | **55,846** | **62,587** | **2,986** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 257
-- **TEST BUG**: 1,017
+- **BUG**: 250
+- **TEST BUG**: 1,020
 - **NOT IMPLEMENTED**: 4,492
 - **REQUIRES**: 765
   - `hardware`: 573
@@ -122,7 +122,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-box`](css/css-box.md) | 53 | 81 | 0 | 65% |
 | [`css/css-break`](css/css-break.md) | 42 | 46 | 0 | 91% |
 | [`css/css-cascade`](css/css-cascade.md) | 94 | 94 | 0 | 100% |
-| [`css/css-color`](css/css-color.md) | 66 | 69 | 0 | 96% |
+| [`css/css-color`](css/css-color.md) | 67 | 69 | 0 | 97% |
 | [`css/css-color-adjust`](css/css-color-adjust.md) | 15 | 15 | 0 | 100% |
 | [`css/css-color-hdr`](css/css-color-hdr.md) | 3 | 4 | 0 | 75% |
 | [`css/css-conditional`](css/css-conditional.md) | 225 | 229 | 0 | 98% |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 320 | 331 | 0 | 97% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,350** | **29,911** | **2,117** | **95%** |
+| **Total (343 sections)** | **26,351** | **29,911** | **2,117** | **95%** |
 
 ## Tentative tests
 
@@ -609,8 +609,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-align`](css/css-align.md#reftests) | 62 | 64 | 0 | 97% |
 | [`css/css-anchor-position`](css/css-anchor-position.md#reftests) | 236 | 242 | 0 | 98% |
 | [`css/css-animations`](css/css-animations.md#reftests) | 36 | 36 | 0 | 100% |
-| [`css/css-backgrounds`](css/css-backgrounds.md#reftests) | 708 | 720 | 1 | 98% |
-| [`css/css-borders`](css/css-borders.md#reftests) | 109 | 122 | 0 | 89% |
+| [`css/css-backgrounds`](css/css-backgrounds.md#reftests) | 709 | 720 | 1 | 99% |
+| [`css/css-borders`](css/css-borders.md#reftests) | 110 | 122 | 0 | 90% |
 | [`css/css-box`](css/css-box.md#reftests) | 42 | 72 | 0 | 58% |
 | [`css/css-break`](css/css-break.md#reftests) | 1,154 | 1,178 | 0 | 98% |
 | [`css/css-cascade`](css/css-cascade.md#reftests) | 51 | 51 | 0 | 100% |
@@ -666,7 +666,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-ui`](css/css-ui.md#reftests) | 960 | 964 | 0 | 99.5% |
 | [`css/css-values`](css/css-values.md#reftests) | 211 | 214 | 0 | 99% |
 | [`css/css-variables`](css/css-variables.md#reftests) | 183 | 183 | 0 | 100% |
-| [`css/css-view-transitions`](css/css-view-transitions.md#reftests) | 317 | 333 | 0 | 95% |
+| [`css/css-view-transitions`](css/css-view-transitions.md#reftests) | 318 | 333 | 0 | 95% |
 | [`css/css-viewport`](css/css-viewport.md#reftests) | 110 | 110 | 0 | 100% |
 | [`css/css-will-change`](css/css-will-change.md#reftests) | 47 | 47 | 0 | 100% |
 | [`css/css-writing-modes`](css/css-writing-modes.md#reftests) | 1,156 | 1,165 | 0 | 99% |
@@ -728,4 +728,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 182 | 252 | 0 | 72% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (131 sections)** | **28,112** | **29,507** | **171** | **96%** |
+| **Total (131 sections)** | **28,115** | **29,507** | **171** | **96%** |

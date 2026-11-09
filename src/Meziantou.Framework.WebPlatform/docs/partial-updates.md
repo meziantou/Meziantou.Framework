@@ -56,8 +56,16 @@ writer.Close();
   as for the document parser. The sanitizer is applied while parsing, with a copy of the
   configuration taken when the method is called; the elements that it removes are created in an inert document, so
   neither they nor their descendants have side effects (e.g. an image fetch).
-- The scripts run only with `RunScripts` in a connected target: a streamed script runs when its end tag is parsed, as a
-  script inserted by a script. The parser does not pause for an external script, and the `defer` attribute is ignored.
+- The scripts run only with `RunScripts` in a connected target: a streamed script (HTML or SVG) runs when its end tag is
+  parsed, as a script inserted by a script. The parser does not pause for an external script, and the `defer` attribute
+  is ignored. A script runs only in the node document of the target when the method was called: a script moved to
+  another document before its end tag, or created after the target was adopted into another document, does not run.
+- A streamed `style` element gets its style sheet when the parser pops it off its stack of open elements (its end tag, or
+  `Close()`), as for the document parser (https://html.spec.whatwg.org/multipage/semantics.html#update-a-style-block),
+  and the text streamed into a `style` element updates its style sheet.
+- The tokenizer state and the scripting flag come from the context (the target, or the host of a shadow root): a
+  `noscript` element streamed into a `template` is parsed as text when scripting is enabled in the node document of the
+  template (`innerHTML` parses the template contents with scripting disabled, as in the browsers).
 - Streaming into a `script` element throws a `NotSupportedError`.
 - When Trusted Types are enforced, the unsafe streaming methods require a `TrustedHtmlParserOptions` or a default policy
   with a `createParserOptions` callback, which is called before the target is checked (see
@@ -72,7 +80,9 @@ template, the range is emptied, and the content of the template is inserted at t
 the template contents; the markers are removed when the template is closed. The markers are found in the tree into
 which the parser inserts the template: the document for the document parser and `document.write()`, the fragment for
 `innerHTML`, `setHTMLUnsafe()`, the positional methods and `createContextualFragment()` (the markers of the document
-are not patched), and the target for the streaming methods, so a document can be updated out of order:
+are not patched), and the target for the streaming methods, so a document can be updated out of order. The markers of
+the head are in scope of a template inserted in the body by the document parser, or by a stream into the `html` element,
+but not of a template streamed into the body (or before one of its children):
 
 ```csharp
 var writer = document.Body!.StreamAppendHtmlUnsafe();

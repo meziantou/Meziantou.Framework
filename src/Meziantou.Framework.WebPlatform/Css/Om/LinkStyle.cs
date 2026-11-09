@@ -17,7 +17,10 @@ public partial class Element
             return null;
 
         var rareData = ElementRareData;
-        if (!rareData.StyleSheetUpToDate)
+
+        // The style block of an element on the stack of open elements of a parser is updated when it is popped: until then,
+        // the element keeps its previous style sheet (none for a new element), e.g. a style element streamed in several chunks
+        if (!rareData.StyleSheetUpToDate && !rareData.IsOnStackOfOpenElements)
         {
             // The load event was already queued when the style block changed, unless the document has no browsing context. The
             // style block was not checked by the content security policies, which the document did not have when it changed.
@@ -54,13 +57,14 @@ public partial class Element
     /// </summary>
     private protected void OnStyleBlockChanged()
     {
-        // When the document has a content security policy, the style block of an element of the parser is updated when it is
-        // popped off the stack of open elements, with its whole text (as in the browsers), and the style sheet is computed
-        // eagerly, so that the inline check runs (and reports its violations) when the style block changes
-        var hasContentSecurityPolicy = ContentSecurityPolicy.GetInlineCheckDocument(this) is not null;
-        if (hasContentSecurityPolicy && RareDataOrNull is ElementRareData { IsOnStackOfOpenElements: true })
+        // The style block of an element of the parser is updated when it is popped off the stack of open elements, with its
+        // whole text (https://html.spec.whatwg.org/multipage/semantics.html#update-a-style-block). When the document has a
+        // content security policy, the style sheet is computed eagerly, so that the inline check runs (and reports its
+        // violations) when the style block changes.
+        if (RareDataOrNull is ElementRareData { IsOnStackOfOpenElements: true })
             return;
 
+        var hasContentSecurityPolicy = ContentSecurityPolicy.GetInlineCheckDocument(this) is not null;
         if (RareDataOrNull is ElementRareData { StyleSheetUpToDate: true } rareData)
         {
             UpdateStyleBlock(rareData, queueLoadEvent: true);
@@ -100,8 +104,8 @@ public partial class Element
 
     /// <summary>
     /// Called when a style element is pushed onto (<paramref name="onStack"/> true) or popped off the stack of open elements of
-    /// a parser (https://html.spec.whatwg.org/multipage/semantics.html#update-a-style-block): the style block of a document
-    /// that has a content security policy is updated when it is popped.
+    /// a parser (https://html.spec.whatwg.org/multipage/semantics.html#update-a-style-block): the style block is updated when
+    /// it is popped.
     /// </summary>
     internal void OnStyleElementStackOfOpenElementsChanged(bool onStack)
     {
@@ -115,19 +119,7 @@ public partial class Element
             return;
 
         rareData.IsOnStackOfOpenElements = false;
-        if (ContentSecurityPolicy.GetInlineCheckDocument(this) is not null)
-        {
-            OnStyleBlockChanged();
-        }
-    }
-
-    /// <summary>Called when the parser appends text to the last text node of the element, which does not run the children changed steps.</summary>
-    internal void OnParserAppendedText()
-    {
-        if (RareDataOrNull is ElementRareData { StyleSheetUpToDate: true })
-        {
-            OnStyleBlockChanged();
-        }
+        OnStyleBlockChanged();
     }
 
     /// <summary>Whether the type of the style element denotes a CSS style sheet: it is missing, empty or <c>text/css</c>.</summary>

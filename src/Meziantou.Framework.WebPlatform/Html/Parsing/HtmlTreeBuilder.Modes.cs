@@ -429,8 +429,10 @@ internal sealed partial class HtmlTreeBuilder
             {
                 scope = scopeTemplate.TemplateContents;
             }
-            else if (scope is Element scopeElement && ReferenceEquals(scopeElement, GetBodyElement(scopeElement.NodeDocument)))
+            else if (scope is Element scopeElement && ReferenceEquals(scopeElement, GetBodyElement(scopeElement.NodeDocument)) && !ReferenceEquals(scopeElement, RootInsertionTarget))
             {
+                // The markers of the head are in scope of the body, except for the HTML streamed into the body (or before one
+                // of its children): the scope does not extend outside of the target of the stream
                 scope = scopeElement.ParentNode!;
             }
 
@@ -833,6 +835,15 @@ internal sealed partial class HtmlTreeBuilder
                     // (approximating https://whatpr.org/html/12758/parsing.html#scriptEndTag, which pauses the parser)
                     if (IsStreaming && ScriptingMode == ParserScriptingMode.Fragment)
                     {
+                        // A script moved to another document while it was parsed, or created in the new node document of an
+                        // adopted target, does not run: its node document is not the document of the stream (the parser
+                        // document of the other parsed scripts)
+                        if (script.IsConnected && !IsInScriptDocument(script))
+                        {
+                            script.AlreadyStarted = true;
+                            return ProcessResult.Done;
+                        }
+
                         script.ParserDocument = null;
                         (_streamedScripts ??= []).Add(script);
                     }

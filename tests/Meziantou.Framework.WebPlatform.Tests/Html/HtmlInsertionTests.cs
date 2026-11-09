@@ -157,6 +157,62 @@ public sealed class HtmlInsertionTests
     }
 
     [Fact]
+    public void StreamAppendHtml_TemplateForInTheBody_DoesNotPatchTheMarkersOfTheHead()
+    {
+        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html>");
+        document.Head!.InnerHtml = "<?start name=\"p\">old<?end>";
+        var writer = document.Body!.StreamAppendHtmlUnsafe();
+        writer.Write("<template for=\"p\">new</template>");
+        writer.Close();
+        Assert.Equal("old", document.Head!.TextContent);
+        Assert.NotNull(document.Body.QuerySelector("template[for=p]"));
+    }
+
+    [Fact]
+    public void StreamHtml_IntoATemplate_ParsesNoscriptWithTheScriptingOfTheDocument()
+    {
+        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><template></template>", new HtmlParserOptions { ScriptingEnabled = true });
+        var template = (HtmlTemplateElement)document.QuerySelector("template")!;
+        var writer = template.StreamHtmlUnsafe();
+        writer.Write("<noscript><p>hidden</p></noscript>");
+        writer.Close();
+        Assert.Equal("<noscript>&lt;p&gt;hidden&lt;/p&gt;</noscript>", template.InnerHtml);
+
+        // innerHTML parses the template contents with scripting disabled, as in the browsers
+        template.InnerHtml = "<noscript><p>shown</p></noscript>";
+        Assert.Equal("<noscript><p>shown</p></noscript>", template.InnerHtml);
+    }
+
+    [Fact]
+    public void StreamAppendHtml_StyleElement_GetsItsStyleSheetWhenItIsPopped()
+    {
+        var container = CreateContainer("");
+        var writer = container.StreamAppendHtmlUnsafe();
+        writer.Write("<style>p { color: red; }");
+        var style = (HtmlStyleElement)container.QuerySelector("style")!;
+        Assert.Null(style.Sheet);
+
+        writer.Write("div { color: blue; }");
+        Assert.Null(style.Sheet);
+
+        writer.Close();
+        Assert.Equal(2u, style.Sheet!.CssRules.Length);
+    }
+
+    [Fact]
+    public void StreamAppendHtml_IntoANonEmptyStyleElement_UpdatesItsStyleSheet()
+    {
+        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><style>p { color: r</style>");
+        var style = (HtmlStyleElement)document.QuerySelector("style")!;
+        Assert.Equal(1u, style.Sheet!.CssRules.Length);
+
+        var writer = style.StreamAppendHtml();
+        writer.Write("ed; } div { color: blue; }");
+        writer.Close();
+        Assert.Equal(2u, style.Sheet!.CssRules.Length);
+    }
+
+    [Fact]
     public void StreamHtml_IntoAScriptElement_Throws()
     {
         var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><script></script>");

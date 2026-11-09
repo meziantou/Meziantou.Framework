@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 2,114 | 2,208 | 31 | 97% |
+| [Stable](#stable-tests) | 2,117 | 2,208 | 31 | 97% |
 | [Tentative](#tentative-tests) | 65 | 203 | 32 | 38% |
 | [Reftests](#reftests) | 330 | 434 | 67 | 90% |
-| **All** | **2,509** | **2,845** | **130** | **92%** |
+| **All** | **2,512** | **2,845** | **130** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 1
 - **TEST BUG**: 56
 - **NOT IMPLEMENTED**: 270
 - **REQUIRES**: 2
@@ -2097,7 +2097,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scripting-1/the-template-element/template-for/stream-append-has-invalidation.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/stream-append-has-invalidation.html) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-template-element/template-for/stream-append-positional-pseudo-class-invalidation.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/stream-append-positional-pseudo-class-invalidation.html) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-template-element/template-for/stream-append-with-template-for.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/stream-append-with-template-for.html) | Pass | 1 / 1 |  |  |
-| [`scripting-1/the-template-element/template-for/stream-head-scope.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/stream-head-scope.html) | Fail | 1 / 13 | BUG | a `<template for>` whose insertion parent is the body element looks up its markers in the `html` element, as for the parsing of the document, also when it is streamed into the body (`streamHTMLUnsafe()`, `streamAppendHTMLUnsafe()`, `streamPrependHTMLUnsafe()` of the body, `streamBeforeHTMLUnsafe()` of its child): it patches the markers of the head instead of being inserted into the body |
+| [`scripting-1/the-template-element/template-for/stream-head-scope.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/stream-head-scope.html) | Pass | 13 / 13 |  |  |
 | [`scripting-1/the-template-element/template-for/template-for-append-element.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/template-for-append-element.html) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-template-element/template-for/template-for-append-text-and-element.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/template-for-append-text-and-element.html) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-template-element/template-for/template-for-append-to-head.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-template-element/template-for/template-for-append-to-head.html) | Pass | 1 / 1 |  |  |

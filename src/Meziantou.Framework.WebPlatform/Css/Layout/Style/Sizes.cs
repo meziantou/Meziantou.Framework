@@ -171,6 +171,9 @@ internal readonly struct Size : IEquatable<Size>
     /// <summary>Whether the size is an intrinsic size keyword (min-content, max-content, fit-content, fit-content()).</summary>
     public bool IsIntrinsic => Kind is SizeKind.MinContent or SizeKind.MaxContent or SizeKind.FitContent or SizeKind.FitContentFunction;
 
+    /// <summary>Whether the size behaves as an intrinsic size keyword (see <see cref="IsIntrinsic"/>), directly or as the basis of a <c>calc-size()</c>.</summary>
+    public bool BehavesAsIntrinsic => BehavesAs is SizeKind.MinContent or SizeKind.MaxContent or SizeKind.FitContent or SizeKind.FitContentFunction;
+
     /// <summary>The <c>calc-size()</c> function of <see cref="SizeKind.CalcSize"/>, resolved by the intrinsic sizing.</summary>
     public CssFunction? CalcSizeFunction => Kind == SizeKind.CalcSize ? _value.Calc?.Function : null;
 

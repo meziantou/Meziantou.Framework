@@ -43,6 +43,14 @@ internal readonly record struct ConstraintSpace
     public bool IsInlineSizeIndefinite { get; init; }
 
     /// <summary>
+    /// Whether the box is laid out to measure its min-content or max-content contribution to the inline size of its containing
+    /// block (see <see cref="IntrinsicSizing.GetContribution"/>): an intrinsic size keyword of its maximum inline size is not
+    /// definite, so it does not cap the minimum transferred from the block axis through the aspect ratio
+    /// (https://drafts.csswg.org/css-sizing-4/#aspect-ratio-size-transfers).
+    /// </summary>
+    public bool MeasuresInlineContribution { get; init; }
+
+    /// <summary>
     /// Whether the block-start margin of the box is treated as zero for its stretch-fit block size
     /// (https://drafts.csswg.org/css-sizing-4/#stretch-fit-sizing): "if the ancestor element percentages resolve against does not
     /// have a block-start border or padding and is not an independent formatting context, treat the element's block-start

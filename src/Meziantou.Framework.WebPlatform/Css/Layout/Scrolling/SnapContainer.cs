@@ -60,6 +60,9 @@ internal readonly record struct SnapPosition(bool Found, PhysicalOffset Position
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct SnapRange(double Start, double End)
 {
+    /// <summary>A range that contains no position and is bounded by no range (its bounds are NaN).</summary>
+    public static SnapRange Never => new(double.NaN, double.NaN);
+
     public double Min => Math.Min(Start, End);
 
     public double Max => Math.Max(Start, End);
@@ -105,7 +108,12 @@ internal sealed class SnapSearchResult
 
     public bool HasFocusWithin => Area is { HasFocusWithin: true };
 
-    /// <summary>The range of the scroll positions in the cross axis at which the snap area intersects the snapport.</summary>
+    /// <summary>
+    /// The range of the scroll positions in the cross axis at which the snap area intersects the snapport (a snap area that only
+    /// touches it is visible), or <see cref="SnapRange.Never"/> when no scroll position does: the snap area is outside of the
+    /// scrollable overflow in that axis (in the negative overflow, or clipped past the scrollable overflow), so it cannot be
+    /// scrolled into view (https://drafts.csswg.org/css-scroll-snap-1/#snap-scope).
+    /// </summary>
     public SnapRange VisibleRange
     {
         get
@@ -113,11 +121,14 @@ internal sealed class SnapSearchResult
             if (Rect is not { } rect)
                 return CrossAxisScrollRange;
 
-            var start = Axis == SnapSearchAxis.X ? rect.Top : rect.Left;
-            var end = Axis == SnapSearchAxis.X ? rect.Bottom : rect.Right;
+            var start = (Axis == SnapSearchAxis.X ? rect.Top : rect.Left) - SnapportVisibleRange.End;
+            var end = (Axis == SnapSearchAxis.X ? rect.Bottom : rect.Right) - SnapportVisibleRange.Start;
+            if (end < CrossAxisScrollRange.Start || start > CrossAxisScrollRange.End)
+                return SnapRange.Never;
+
             return new SnapRange(
-                Math.Clamp(start - SnapportVisibleRange.End, CrossAxisScrollRange.Start, CrossAxisScrollRange.End),
-                Math.Clamp(end - SnapportVisibleRange.Start, CrossAxisScrollRange.Start, CrossAxisScrollRange.End));
+                Math.Clamp(start, CrossAxisScrollRange.Start, CrossAxisScrollRange.End),
+                Math.Clamp(end, CrossAxisScrollRange.Start, CrossAxisScrollRange.End));
         }
     }
 

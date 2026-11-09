@@ -779,7 +779,7 @@ internal abstract class FormattingContext
                 }
             }
 
-            var clamped = inlineSizing.Clamp(inlineSize, transferredMin, transferredMax);
+            var clamped = inlineSizing.Clamp(inlineSize, transferredMin, transferredMax, space.MeasuresInlineContribution && !isOrthogonal);
 
             // https://drafts.csswg.org/css-sizing-4/#aspect-ratio-minimum: the automatic minimum size in the ratio-dependent axis
             // of a non-replaced box that is not a scroll container is its min-content size (capped by its maximum size)

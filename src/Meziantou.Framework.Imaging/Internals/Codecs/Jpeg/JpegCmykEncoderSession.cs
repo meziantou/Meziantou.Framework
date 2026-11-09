@@ -64,6 +64,15 @@ internal sealed class JpegCmykEncoderSession : ImageEncoderSession
         if (_encoder.Process == JpegEncodingProcess.Progressive)
             throw new UnsupportedImageFeatureException("CMYK JPEG output is baseline sequential: set JpegEncoder.Process to Baseline.", ImageFormat.Jpeg, "Progressive CMYK JPEG");
 
+        if (_encoder.Process == JpegEncodingProcess.Lossless)
+            throw new UnsupportedImageFeatureException("CMYK JPEG output is baseline sequential: set JpegEncoder.Process to Baseline.", ImageFormat.Jpeg, "Lossless CMYK JPEG");
+
+        if (_encoder.EntropyCoding != JpegEntropyCoding.Huffman)
+            throw new UnsupportedImageFeatureException("CMYK JPEG output is Huffman coded: set JpegEncoder.EntropyCoding to Huffman.", ImageFormat.Jpeg, "Arithmetic-coded CMYK JPEG");
+
+        if (_encoder.BitDepth is not (null or 8))
+            throw new UnsupportedImageFeatureException("CMYK JPEG output stores 8-bit samples: leave JpegEncoder.BitDepth unset or set it to 8.", ImageFormat.Jpeg, "12-bit CMYK JPEG");
+
         // A gain map maps an RGB rendition to another one: inks have no such rendition
         if (_encoder.GainMap is not null)
             throw new UnsupportedImageFeatureException("A gain map cannot be written next to CMYK pixels: convert the image to RGB first, or remove JpegEncoder.GainMap.", ImageFormat.Jpeg, "Gain map with CMYK pixels");

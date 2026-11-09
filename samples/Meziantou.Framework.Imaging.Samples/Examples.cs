@@ -889,6 +889,33 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>A lossless JPEG: the decoded samples are exactly those of the image, 16 bits for a 16-bit image.</summary>
+    #region Imaging_SaveLosslessJpeg
+    public static void SaveLosslessJpeg(string sourcePath, string jpegPath)
+    {
+        using var image = Image.Load(sourcePath);
+        image.Save(jpegPath, new JpegEncoder
+        {
+            Process = JpegEncodingProcess.Lossless,
+            LosslessPredictor = 7,
+        });
+    }
+    #endregion
+
+    /// <summary>A 12-bit arithmetic-coded JPEG of a 16-bit image.</summary>
+    #region Imaging_SaveTwelveBitJpeg
+    public static void SaveTwelveBitJpeg(string sourcePath, string jpegPath)
+    {
+        using var image = Image.Load<Rgb48>(sourcePath);
+        image.Save(jpegPath, new JpegEncoder
+        {
+            Quality = 90,
+            BitDepth = 12,
+            EntropyCoding = JpegEntropyCoding.Arithmetic,
+        });
+    }
+    #endregion
+
     /// <summary>WebP output: a lossy photo with its alpha kept losslessly, and a lossless animation published atomically.</summary>
     #region Imaging_SaveWebp
     public static void SaveWebP(string photoPath, string webpPath, string animatedPath, string animatedWebPPath)

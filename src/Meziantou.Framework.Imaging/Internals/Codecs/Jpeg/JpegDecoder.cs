@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -6,7 +7,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The JPEG pixel decoder plugged into the <see cref="JpegStructureParser"/> marker walk, shared by eager loads
 /// and sequential readers: sequential frames (baseline SOF0 and extended
 /// sequential SOF1) and progressive frames (SOF2), of 8-bit or 12-bit samples, Huffman coded or arithmetic coded (SOF9
-/// and SOF10), and lossless frames (SOF3, Huffman coded) of 2-bit to 16-bit samples. The walker validates the container (markers, segment lengths,
+/// and SOF10), and lossless frames (SOF3, or SOF11 with arithmetic coding) of 2-bit to 16-bit samples. The walker validates the container (markers, segment lengths,
 /// frame and scan headers, progressive scan parameters and coefficient progression, unsupported modes, metadata, limits);
 /// this observer parses the tables, decodes every scan and writes the rows through the frame sink.
 /// </summary>
@@ -82,6 +83,24 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// no quantization table. Subsampled components are upsampled and three components are converted like the ones of the
 /// other frames.
 /// </description></item>
+/// <item><description>
+/// JPEG-LS frames (ITU-T T.87, SOF55) have the geometry of the lossless frames, and full planes: the entropy-coded data of
+/// each scan is buffered and decoded at its end (<see cref="JpegLsScanDecoder"/>), with the coding parameters of the last
+/// LSE segment of type 1 before it, and the rows are written once every component is decoded. The HP color transforms
+/// (APP8 <c>mrfx</c>, from HP's LOCO-I implementation, which CharLS writes) of three 8-bit components of an interleaved
+/// scan are undone before.
+/// </description></item>
+/// <item><description>
+/// Hierarchical images (T.81 Annex J): each frame is decoded with the procedures of its process into full planes (no row
+/// is streamed, and no rendering is given), then reconstructed into a reference plane per component (16-bit samples,
+/// charged as decoder state): the samples of the first frame, then for each differential frame its differences added to
+/// the reference of the previous frame, expanded by 2 horizontally or vertically (the new samples are the floored means
+/// of their two neighbors, the last one repeated, horizontally first; J.1.1.2), and clamped to the samples. The blocks
+/// of a differential DCT-based frame have no DC prediction and an inverse DCT without level shift or clamping (planes of
+/// <c>P + 1</c> bits offset by <c>2^P</c>); the differences of a differential lossless frame are not predicted, and are
+/// added modulo 2^16. The frames before the last one count as pixels that are not shown. At EOI, the reference of the last
+/// frame, which has the size of the image, is written like the samples of a lossless frame.
+/// </description></item>
 /// </list>
 /// </remarks>
 internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
@@ -91,6 +110,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     private const byte MarkerSos = 0xDA;
     private const byte MarkerDqt = 0xDB;
     private const byte MarkerDri = 0xDD;
+    private const byte MarkerJpegLsExtension = 0xF8;
     private const int EntropyBufferCapacity = 64 * 1024;
     private const int FastAcMinimumPixels = 128 * 128;
 
@@ -120,6 +140,23 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     private bool _progressive;
     private bool _arithmetic;
     private bool _lossless;
+    private bool _jpegLs;
+
+    // Hierarchical images: whether the image is one, whether the current frame is a differential frame, its size and the
+    // expansion of its reference, and the reconstruction of the previous frames (one 16-bit plane per component)
+    private bool _hierarchical;
+    private bool _differential;
+    private int _frameWidth;
+    private int _frameHeight;
+    private bool _expandsHorizontally;
+    private bool _expandsVertically;
+    private PooledBuffer?[] _references = [];
+    private (int Width, int Height)[] _referenceSizes = [];
+
+    // JPEG-LS: the preset coding parameters of the last LSE segment (zero for the defaults), the scan being decoded and its components
+    private (int MaxValue, int T1, int T2, int T3, int Reset) _jpegLsPreset;
+    private JpegLsScanDecoder? _jpegLsScan;
+    private JpegFrameComponent[] _jpegLsComponents = [];
 
     // The number of samples of a side of a data unit: 8, or 1 for a lossless frame
     private int _dataUnitSize = 8;
@@ -198,8 +235,23 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
                 _restartInterval = BinaryPrimitives.ReadUInt16BigEndian(payload);
                 break;
 
+            case MarkerJpegLsExtension:
+                // The walker accepts the preset coding parameters only (type 1, T.87 C.2.4.1.1)
+                _jpegLsPreset = (BinaryPrimitives.ReadUInt16BigEndian(payload[1..]), BinaryPrimitives.ReadUInt16BigEndian(payload[3..]), BinaryPrimitives.ReadUInt16BigEndian(payload[5..]), BinaryPrimitives.ReadUInt16BigEndian(payload[7..]), BinaryPrimitives.ReadUInt16BigEndian(payload[9..]));
+                break;
+
             case MarkerSos:
                 StartScan(payload);
+                break;
+
+            case 0xC5 or 0xC6 or 0xC7 or 0xCD or 0xCE or 0xCF:
+                // A differential frame of a hierarchical image (the walker validated its header): the previous frame ends
+                if (_structure is { } structure)
+                {
+                    EndHierarchicalFrame(isLast: false);
+                    ConfigureFrame(structure);
+                }
+
                 break;
         }
     }
@@ -208,10 +260,10 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     {
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
-        _progressive = structure.IsProgressive;
-        _arithmetic = structure.IsArithmetic;
-        _lossless = structure.IsLossless;
-        _dataUnitSize = _lossless ? 1 : 8;
+        _hierarchical = structure.IsHierarchical;
+        if (_hierarchical && _receiver is not null)
+            throw Unsupported("Hierarchical JPEG datastreams embedded in another format are not supported.", "JPEG hierarchical");
+
         _precision = structure.Precision;
         _colorModel = structure.ColorModel;
 
@@ -219,39 +271,16 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         // (fewer reductions for the subsampled components, which then need less upsampling)
         if (_request is { IsScaled: true } scaledRequest)
         {
-            _scaleDenominator = scaledRequest.GetScaleDenominator(structure.Size, _lossless ? 1 : 8, ImageFormat.Jpeg, _lossless ? "a lossless JPEG frame has no DCT blocks to scale" : "a JPEG frame is reduced to 1/8 of its size at most");
+            var dctFrame = !structure.IsLossless && !structure.IsJpegLs;
+            _scaleDenominator = scaledRequest.GetScaleDenominator(structure.Size, dctFrame && !_hierarchical ? 8 : 1, ImageFormat.Jpeg, _hierarchical ? "the frames of a hierarchical JPEG image are not scaled" : dctFrame ? "a JPEG frame is reduced to 1/8 of its size at most" : "a lossless JPEG frame has no DCT blocks to scale");
         }
 
-        _blockSize = _dataUnitSize / _scaleDenominator;
         _outputSize = new Size(ImageDecodeRequest.GetScaledLength(structure.Width, _scaleDenominator), ImageDecodeRequest.GetScaledLength(structure.Height, _scaleDenominator));
-
-        var frameComponents = structure.Components;
-        var components = new JpegFrameComponent[frameComponents.Count];
-        for (var i = 0; i < components.Length; i++)
-        {
-            var component = frameComponents[i];
-
-            // The only component of a grayscale frame is coded in a non-interleaved scan: its sampling factors play no role
-            components[i] = components.Length == 1
-                ? new JpegFrameComponent(i, component.Id, 1, 1, component.QuantizationTable, _precision, _dataUnitSize)
-                : new JpegFrameComponent(i, component.Id, component.HorizontalSampling, component.VerticalSampling, component.QuantizationTable, _precision, _dataUnitSize);
-        }
-
-        var maxHorizontal = components.Max(component => component.HorizontalSampling);
-        var maxVertical = components.Max(component => component.VerticalSampling);
-        foreach (var component in components)
-        {
-            // The walker rejects sampling factors that do not divide the maximum factors
-            component.SetGeometry(structure.Width, structure.Height, maxHorizontal, maxVertical, _scaleDenominator);
-        }
-
-        _components = components;
-        _maxVertical = maxVertical;
-        _mcusX = (structure.Width + (_dataUnitSize * maxHorizontal) - 1) / (_dataUnitSize * maxHorizontal);
-        _mcusY = (structure.Height + (_dataUnitSize * maxVertical) - 1) / (_dataUnitSize * maxVertical);
+        ConfigureFrame(structure);
+        var components = _components;
 
         // The container of an embedded datastream receives the rows on the calling thread, one at a time
-        _workers = _receiver is null && !_lossless ? JpegReconstruction.GetWorkerCount(_outputSize, _mcusY, _context.Configuration.MaxDegreeOfParallelism) : 1;
+        _workers = _receiver is null && _dataUnitSize == 8 && !_hierarchical ? JpegReconstruction.GetWorkerCount(_outputSize, _mcusY, _context.Configuration.MaxDegreeOfParallelism) : 1;
         if (_receiver is not null)
         {
             _colorModel = _embeddedColorModel;
@@ -298,8 +327,265 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _sink.SetPartialFrameRenderer(this);
     }
 
+    /// <summary>
+    /// Sets the process and the geometry of the frame whose header the walker just read: the first one, or the next frame
+    /// of a hierarchical image. The samples of a differential frame are differences: those of a DCT-based frame are kept on
+    /// <c>P + 1</c> bits (offset by <c>2^P</c>), those of a lossless frame on 16 bits (modulo 2^16).
+    /// </summary>
+    private void ConfigureFrame(JpegStructureParser structure)
+    {
+        _progressive = structure.IsProgressive;
+        _arithmetic = structure.IsArithmetic;
+        _lossless = structure.IsLossless;
+        _jpegLs = structure.IsJpegLs;
+        _differential = structure.IsDifferential;
+        _frameWidth = structure.FrameWidth;
+        _frameHeight = structure.FrameHeight;
+        _expandsHorizontally = structure.ExpandsHorizontally;
+        _expandsVertically = structure.ExpandsVertically;
+        _scanCount = 0;
+        _completedScans = 0;
+        _hasAcCoefficients = false;
+
+        // The data unit of a lossless or a JPEG-LS frame is a sample
+        _dataUnitSize = _lossless || _jpegLs ? 1 : 8;
+        _blockSize = _dataUnitSize / _scaleDenominator;
+        var precision = !_differential ? _precision : _lossless ? 16 : _precision + 1;
+        var frameComponents = structure.Components;
+        var components = new JpegFrameComponent[frameComponents.Count];
+        for (var i = 0; i < components.Length; i++)
+        {
+            var component = frameComponents[i];
+
+            // The only component of a grayscale frame is coded in a non-interleaved scan: its sampling factors play no role
+            components[i] = components.Length == 1
+                ? new JpegFrameComponent(i, component.Id, 1, 1, component.QuantizationTable, precision, _dataUnitSize)
+                : new JpegFrameComponent(i, component.Id, component.HorizontalSampling, component.VerticalSampling, component.QuantizationTable, precision, _dataUnitSize);
+        }
+
+        var maxHorizontal = components.Max(component => component.HorizontalSampling);
+        var maxVertical = components.Max(component => component.VerticalSampling);
+        foreach (var component in components)
+        {
+            // The walker rejects sampling factors that do not divide the maximum factors
+            component.SetGeometry(_frameWidth, _frameHeight, maxHorizontal, maxVertical, _scaleDenominator);
+        }
+
+        _components = components;
+        _maxVertical = maxVertical;
+        _mcusX = (_frameWidth + (_dataUnitSize * maxHorizontal) - 1) / (_dataUnitSize * maxHorizontal);
+        _mcusY = (_frameHeight + (_dataUnitSize * maxVertical) - 1) / (_dataUnitSize * maxVertical);
+    }
+
+    /// <summary>
+    /// Ends a frame of a hierarchical image: every component must be decoded; the coefficients of a progressive frame are
+    /// transformed into full planes, and the samples become the reference of the next frame (see the remarks of the class).
+    /// </summary>
+    /// <param name="isLast">Whether the frame is the last one, whose reference is the image (the other ones are not shown).</param>
+    private void EndHierarchicalFrame(bool isLast)
+    {
+        foreach (var component in _components)
+        {
+            if (!component.IsDecoded)
+                throw Invalid(string.Create(CultureInfo.InvariantCulture, $"A frame of the hierarchical JPEG image has no scan for the component {component.Id}."));
+        }
+
+        if (_progressive)
+        {
+            _reader?.Dispose();
+            _reader = null;
+            var block = new double[64];
+            var scales = new double[64];
+            foreach (var component in _components)
+            {
+                component.AllocatePlane(_context.Scope, _mcusX, _mcusY, _context.Limits);
+            }
+
+            for (var row = 0; row < _mcusY; row++)
+            {
+                foreach (var component in _components)
+                {
+                    JpegReconstruction.TransformMcuRow(component, row, component.LatchedQuantization!, block, scales);
+                }
+            }
+        }
+
+        var maxValue = (1 << _precision) - 1;
+        var offset = 1 << _precision;
+        var references = new PooledBuffer?[_components.Length];
+        var sizes = new (int Width, int Height)[_components.Length];
+        try
+        {
+            for (var i = 0; i < _components.Length; i++)
+            {
+                var component = _components[i];
+                var (width, height) = (component.CodedWidth, component.CodedHeight);
+                var buffer = references[i] = _context.Scope.Rent(checked(width * height * sizeof(ushort)), AllocationKind.DecoderState, clear: false);
+                sizes[i] = (width, height);
+                var reference = unsafe(MemoryMarshal.Cast<byte, ushort>(buffer.RawBuffer.AsSpan(0, width * height * sizeof(ushort))));
+                var previous = _references.Length == 0 ? default : unsafe(MemoryMarshal.Cast<byte, ushort>(_references[i]!.RawBuffer.AsSpan()));
+                var (previousWidth, previousHeight) = _referenceSizes.Length == 0 ? default : _referenceSizes[i];
+                for (var y = 0; y < height; y++)
+                {
+                    var row = component.GetRowOffset(y);
+                    var line = reference.Slice(y * width, width);
+                    for (var x = 0; x < width; x++)
+                    {
+                        int sample = component.HasDeepSamples ? component.DeepSamples[row + x] : component.Samples[row + x];
+                        if (_differential)
+                        {
+                            // Lossless differences are added modulo 2^16 (16-bit samples) or as signed 16-bit values
+                            var expanded = GetExpandedReference(previous, previousWidth, previousHeight, x, y);
+                            sample = _lossless && _precision == 16
+                                ? (expanded + sample) & 0xFFFF
+                                : Math.Clamp(expanded + (_lossless ? (short)sample : sample - offset), 0, maxValue);
+                        }
+
+                        line[x] = (ushort)sample;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            foreach (var reference in references)
+            {
+                reference?.Dispose();
+            }
+
+            throw;
+        }
+
+        ReleaseReferences();
+        _references = references;
+        _referenceSizes = sizes;
+        ReleaseDecoderState();
+        if (!isLast)
+        {
+            // A frame that is not shown, like the renderings of the frames of other formats
+            _context.Tracker.ChargeHiddenPixels((long)_frameWidth * _frameHeight);
+        }
+    }
+
+    /// <summary>
+    /// Gets a sample of the reference of a differential frame (T.81 J.1.1.2, as the reference decoder computes it): the
+    /// reference expanded by 2 horizontally, then vertically, as the EXP segment of the frame says. An expanded sample of an
+    /// even position is the reference sample, one of an odd position the floored mean of its two neighbors, the last
+    /// reference sample being repeated after the end.
+    /// </summary>
+    private int GetExpandedReference(ReadOnlySpan<ushort> reference, int width, int height, int x, int y)
+    {
+        if (!_expandsVertically)
+            return GetHorizontallyExpandedReference(reference, width, Math.Min(y, height - 1), x);
+
+        var line = y >> 1;
+        var top = GetHorizontallyExpandedReference(reference, width, Math.Min(line, height - 1), x);
+        if ((y & 1) == 0)
+            return top;
+
+        return (top + GetHorizontallyExpandedReference(reference, width, Math.Min(line + 1, height - 1), x)) >> 1;
+    }
+
+    private int GetHorizontallyExpandedReference(ReadOnlySpan<ushort> reference, int width, int y, int x)
+    {
+        var row = reference.Slice(y * width, width);
+        if (!_expandsHorizontally)
+            return row[Math.Min(x, width - 1)];
+
+        var column = x >> 1;
+        var left = row[Math.Min(column, width - 1)];
+        if ((x & 1) == 0)
+            return left;
+
+        return (left + row[Math.Min(column + 1, width - 1)]) >> 1;
+    }
+
+    /// <summary>
+    /// Writes the image of a hierarchical file: the reference of its last frame, which has the size of the image, in planes
+    /// of the geometry of a lossless frame (one sample per data unit, the samples that complete the MCUs repeating the last
+    /// ones), through the row writers of the other frames.
+    /// </summary>
+    private void WriteHierarchicalImage()
+    {
+        var structure = _structure!;
+        var frameComponents = structure.Components;
+        var components = new JpegFrameComponent[frameComponents.Count];
+        for (var i = 0; i < components.Length; i++)
+        {
+            var component = frameComponents[i];
+            components[i] = components.Length == 1
+                ? new JpegFrameComponent(i, component.Id, 1, 1, 0, _precision, dataUnitSize: 1)
+                : new JpegFrameComponent(i, component.Id, component.HorizontalSampling, component.VerticalSampling, 0, _precision, dataUnitSize: 1);
+        }
+
+        var maxHorizontal = components.Max(component => component.HorizontalSampling);
+        var maxVertical = components.Max(component => component.VerticalSampling);
+        _dataUnitSize = 1;
+        _blockSize = 1;
+        _maxVertical = maxVertical;
+        _mcusX = (structure.Width + maxHorizontal - 1) / maxHorizontal;
+        _mcusY = (structure.Height + maxVertical - 1) / maxVertical;
+        _components = components;
+        for (var i = 0; i < components.Length; i++)
+        {
+            var component = components[i];
+            component.SetGeometry(structure.Width, structure.Height, maxHorizontal, maxVertical);
+            component.AllocatePlane(_context.Scope, _mcusX, _mcusY, _context.Limits);
+            var (width, height) = _referenceSizes[i];
+            var reference = unsafe(MemoryMarshal.Cast<byte, ushort>(_references[i]!.RawBuffer.AsSpan(0, width * height * sizeof(ushort))));
+            for (var y = 0; y < component.BandRows * _mcusY; y++)
+            {
+                var line = reference.Slice(Math.Min(y, height - 1) * width, width);
+                var offset = component.GetRowOffset(y);
+                if (component.HasDeepSamples)
+                {
+                    var samples = component.DeepSamples.Slice(offset, component.Stride);
+                    line.CopyTo(samples);
+                    samples[width..].Fill(line[width - 1]);
+                }
+                else
+                {
+                    var samples = component.Samples.AsSpan(offset, component.Stride);
+                    for (var x = 0; x < width; x++)
+                    {
+                        samples[x] = (byte)line[x];
+                    }
+
+                    samples[width..].Fill((byte)line[width - 1]);
+                }
+            }
+        }
+
+        ReleaseReferences();
+        CreateRowWriters(_context.Scope, 1);
+        var writer = _writer!;
+        while (writer.BandsWritten < _mcusY)
+        {
+            writer.WriteNextBand(_context.CancellationToken);
+        }
+
+        ReleaseDecoderState();
+    }
+
+    private void ReleaseReferences()
+    {
+        foreach (var reference in _references)
+        {
+            reference?.Dispose();
+        }
+
+        _references = [];
+        _referenceSizes = [];
+    }
+
     public override void OnEntropyData(ReadOnlySpan<byte> data)
     {
+        if (_jpegLsScan is { } jpegLsScan)
+        {
+            jpegLsScan.Feed(data);
+            return;
+        }
+
         var scan = _scan ?? throw new InvalidOperationException("No JPEG scan was started.");
         scan.Feed(data);
     }
@@ -315,6 +601,12 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
 
     private bool EndScan(bool endOfInput)
     {
+        if (_jpegLsScan is { } jpegLsScan)
+        {
+            EndJpegLsScan(jpegLsScan);
+            return true;
+        }
+
         var scan = _scan ?? throw new InvalidOperationException("No JPEG scan was started.");
         scan.Finish(endOfInput);
         _scan = null;
@@ -329,7 +621,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             // The coefficients are complete at EOI only: a rendering shows the ones decoded so far
             _completedScans++;
             _hasAcCoefficients |= _scanHasAc;
-            if (_sink is { WantsRefinement: true } sink && _components.All(component => component.IsDecoded))
+            if (_sink is { WantsRefinement: true } sink && !_hierarchical && _components.All(component => component.IsDecoded))
             {
                 // A rendering counts like the pixels of a frame that is not shown
                 _context.Tracker.ChargeHiddenPixels(_outputSize.Area);
@@ -339,7 +631,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             return true;
         }
 
-        if (_components.All(component => component.IsDecoded))
+        if (!_hierarchical && _components.All(component => component.IsDecoded))
         {
             // Streaming: the last MCU row (no lower neighbor) is still pending; several scans: every row is written now
             var writer = _writer!;
@@ -368,6 +660,16 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     public override void OnEnd(JpegStructureParser structure)
     {
         ArgumentNullException.ThrowIfNull(structure);
+        if (_hierarchical)
+        {
+            EndHierarchicalFrame(isLast: true);
+            WriteHierarchicalImage();
+            var hierarchicalSink = _sink ?? throw new InvalidOperationException("The JPEG header was not parsed.");
+            hierarchicalSink.UpdateMetadata(structure.Metadata);
+            hierarchicalSink.EndImage();
+            return;
+        }
+
         foreach (var component in _components)
         {
             if (!component.IsDecoded)
@@ -402,6 +704,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         if (disposing)
         {
             ReleaseDecoderState();
+            ReleaseReferences();
             _sink?.Dispose();
             _sink = null;
         }
@@ -417,6 +720,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     {
         // Planes, coefficients, entropy buffer and rows
         _scan = null;
+        _jpegLsScan?.Dispose();
+        _jpegLsScan = null;
         _reconstruction = null;
         DisposeWriters();
         _reader?.Dispose();
@@ -547,7 +852,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     /// <param name="selectors">The table selectors of each component: the DC table in the high bits, the AC table in the low bits.</param>
     /// <param name="dc">Whether the scan codes DC differences.</param>
     /// <param name="ac">Whether the scan codes AC coefficients.</param>
-    private JpegArithmeticConditioning[] CreateArithmeticConditioning(ReadOnlySpan<byte> selectors, bool dc, bool ac)
+    /// <param name="dcBinCount">The number of bins of a DC statistics area: more for the differences of a lossless frame.</param>
+    private JpegArithmeticConditioning[] CreateArithmeticConditioning(ReadOnlySpan<byte> selectors, bool dc, bool ac, int dcBinCount = JpegArithmeticConditioning.DcBinCount)
     {
         var dcStatistics = new byte[]?[4];
         var acStatistics = new byte[]?[4];
@@ -562,7 +868,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             // The selector of a table the scan does not use has no meaning
             var (lower, upper) = dc ? _dcConditioning[dcId] : default;
             result[i] = new JpegArithmeticConditioning(
-                dc ? dcStatistics[dcId] ??= new byte[JpegArithmeticConditioning.DcBinCount] : [],
+                dc ? dcStatistics[dcId] ??= new byte[dcBinCount] : [],
                 ac ? acStatistics[acId] ??= new byte[JpegArithmeticConditioning.AcBinCount] : [],
                 lower,
                 upper,
@@ -574,6 +880,12 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
 
     private void StartScan(ReadOnlySpan<byte> payload)
     {
+        if (_jpegLs)
+        {
+            StartJpegLsScan(payload);
+            return;
+        }
+
         if (_progressive)
         {
             StartProgressiveScan(payload);
@@ -643,8 +955,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         }
 
         _scan = _arithmetic
-            ? new JpegArithmeticSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken) { AcceptsGarbledRestartNumbers = IsLenient }
-            : new JpegSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken, deferTransforms: _reconstruction is not null) { AcceptsGarbledRestartNumbers = IsLenient };
+            ? new JpegArithmeticSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken) { AcceptsGarbledRestartNumbers = IsLenient, Differential = _differential }
+            : new JpegSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken, deferTransforms: _reconstruction is not null) { AcceptsGarbledRestartNumbers = IsLenient, Differential = _differential };
 
         // The blocks are decoded with FastLookup but the last MCUs of each segment (most of them when the segments are short)
         // and the stored coefficients of the workers
@@ -663,12 +975,30 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         var count = payload[0];
         var parameters = payload[(1 + (2 * count))..];
         var scanComponents = new JpegScanDecoder.ScanComponent[count];
+        JpegArithmeticConditioning[]? conditioning = null;
+        if (_arithmetic)
+        {
+            Span<byte> selectors = stackalloc byte[count];
+            for (var i = 0; i < count; i++)
+            {
+                selectors[i] = payload[2 + (2 * i)];
+            }
+
+            conditioning = CreateArithmeticConditioning(selectors, dc: true, ac: false, JpegArithmeticConditioning.LosslessBinCount);
+        }
+
         for (var i = 0; i < count; i++)
         {
             var id = payload[1 + (2 * i)];
             var component = _components.First(component => component.Id == id);
             if (component.IsDecoded)
                 throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG component {id} is coded in several lossless scans."));
+
+            if (conditioning is not null)
+            {
+                scanComponents[i] = new JpegScanDecoder.ScanComponent(component, dcTable: null, acTable: null, quantization: []) { Arithmetic = conditioning[i] };
+                continue;
+            }
 
             var dcId = payload[2 + (2 * i)] >> 4;
             if (dcId > 3)
@@ -690,7 +1020,117 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _scanCount++;
         var reader = _reader ?? throw new InvalidOperationException("The JPEG decoder state is not allocated.");
         _scanComponents = scanComponents;
-        _scan = new JpegLosslessScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, predictor: parameters[0], pointTransform: parameters[2] & 0x0F, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken) { AcceptsGarbledRestartNumbers = IsLenient };
+        _scan = new JpegLosslessScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, predictor: parameters[0], pointTransform: parameters[2] & 0x0F, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken, _arithmetic) { AcceptsGarbledRestartNumbers = IsLenient };
+    }
+
+    /// <summary>
+    /// Starts a scan of a JPEG-LS frame (T.87 C.2.3; the walker validated the interleave mode, the mapping table selectors
+    /// and the point transform). Its data is buffered until the scan ends; a scan of one component is never interleaved.
+    /// </summary>
+    private void StartJpegLsScan(ReadOnlySpan<byte> payload)
+    {
+        var count = payload[0];
+        var parameters = payload[(1 + (2 * count))..];
+        var components = new JpegFrameComponent[count];
+        for (var i = 0; i < count; i++)
+        {
+            var id = payload[1 + (2 * i)];
+            var component = _components.First(component => component.Id == id);
+            if (component.IsDecoded)
+                throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG component {id} is coded in several JPEG-LS scans."));
+
+            components[i] = component;
+        }
+
+        // CharLS and FFmpeg apply the HP color transforms to the components of an interleaved scan only
+        if (count == 1 && _structure!.JpegLsColorTransform != 0)
+            throw Unsupported("The HP color transforms of JPEG-LS components coded in separate scans are not supported.", "JPEG-LS HP color transform");
+
+        var coding = JpegLsParameters.Create(_precision, near: parameters[0], _jpegLsPreset);
+        if (_scanCount == 0)
+        {
+            AllocateDecoderState(streaming: false);
+        }
+
+        _scanCount++;
+        _jpegLsComponents = components;
+        _jpegLsScan = new JpegLsScanDecoder(components, coding, count == 1 ? 0 : parameters[1], _restartInterval, _context.Scope, _context.Limits, _context.CancellationToken);
+    }
+
+    /// <summary>Decodes a JPEG-LS scan at its end, and writes every row once each component is decoded.</summary>
+    private void EndJpegLsScan(JpegLsScanDecoder scan)
+    {
+        _jpegLsScan = null;
+        scan.Finish();
+        foreach (var component in _jpegLsComponents)
+        {
+            component.IsDecoded = true;
+        }
+
+        _jpegLsComponents = [];
+        if (!_components.All(component => component.IsDecoded))
+            return;
+
+        if (_structure!.JpegLsColorTransform != 0)
+        {
+            UndoJpegLsColorTransform(_structure.JpegLsColorTransform);
+        }
+
+        if (_writers.Length > 1)
+        {
+            JpegBandWriter.WriteBands(_writers, _mcusY, _context.CancellationToken);
+        }
+        else
+        {
+            var writer = _writer!;
+            while (writer.BandsWritten < _mcusY)
+            {
+                writer.WriteNextBand(_context.CancellationToken);
+            }
+        }
+
+        ReleaseDecoderState();
+    }
+
+    /// <summary>
+    /// Undoes the HP color transform of the three 8-bit components of a JPEG-LS frame, modulo 2^8 (as CharLS does): the
+    /// transform 1 codes <c>R - G</c>, <c>G</c> and <c>B - G</c> (offset by half the range), the transform 2 <c>R - G</c>,
+    /// <c>G</c> and <c>B - (R + G) / 2</c>, and the transform 3 the reversible transform <c>G + (R - G + B - G) / 4</c>,
+    /// <c>B - G</c> and <c>R - G</c>.
+    /// </summary>
+    private void UndoJpegLsColorTransform(int transform)
+    {
+        // The walker checked that the three planes have the same geometry
+        var first = _components[0].Samples;
+        var second = _components[1].Samples;
+        var third = _components[2].Samples;
+        var length = _components[0].Stride * _components[0].BandRows * _mcusY;
+        for (var i = 0; i < length; i++)
+        {
+            int v1 = first[i];
+            int v2 = second[i];
+            int v3 = third[i];
+            switch (transform)
+            {
+                case 1:
+                    first[i] = (byte)(v1 + v2 - 128);
+                    third[i] = (byte)(v3 + v2 - 128);
+                    break;
+
+                case 2:
+                    var red = (byte)(v1 + v2 - 128);
+                    first[i] = red;
+                    third[i] = (byte)(v3 + ((red + v2) >> 1) - 128);
+                    break;
+
+                default:
+                    var green = v1 - ((v3 + v2) >> 2) + 64;
+                    first[i] = (byte)(v3 + green - 128);
+                    second[i] = (byte)green;
+                    third[i] = (byte)(v2 + green - 128);
+                    break;
+            }
+        }
     }
 
     /// <summary>
@@ -759,8 +1199,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         // Only a DC first scan makes a component decodable: its other coefficients may legitimately stay zero
         _scanComponents = start == 0 && high == 0 ? scanComponents : [];
         _scan = _arithmetic
-            ? new JpegArithmeticProgressiveScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, start, end, high, low, _context.CancellationToken)
-            : new JpegProgressiveScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, start, end, high, low, _context.CancellationToken);
+            ? new JpegArithmeticProgressiveScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, start, end, high, low, _context.CancellationToken) { Differential = _differential }
+            : new JpegProgressiveScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, start, end, high, low, _context.CancellationToken) { Differential = _differential };
         PrepareFastAc(scanComponents);
     }
 
@@ -787,7 +1227,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             component.AllocateCoefficients(scope, _mcusX, _mcusY, _context.Limits);
         }
 
-        _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10, _precision, _arithmetic)));
+        _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10, _components[0].Precision, _arithmetic)));
     }
 
     /// <summary>
@@ -806,7 +1246,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     /// <summary>The frame as far as it was decoded, when the input ends before it.</summary>
     public bool TryRenderPartialFrame()
     {
-        if (_sink is not { } sink || _scanCount == 0)
+        if (_sink is not { } sink || _scanCount == 0 || _hierarchical)
             return false;
 
         if (_progressive)
@@ -927,6 +1367,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
 
     private void AllocateDecoderState(bool streaming)
     {
+        // The frames of a hierarchical image keep full planes, which become the reference of the next frame
+        streaming &= !_hierarchical;
         var scope = _context.Scope;
         _streaming = streaming;
 
@@ -944,8 +1386,11 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             }
         }
 
-        _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10, _precision, _arithmetic, _lossless)));
-        CreateRowWriters(scope, !streaming || deferred ? _workers : 1);
+        _reader = new JpegEntropyReader(scope, Math.Max(EntropyBufferCapacity, 2 * JpegScanDecoder.GetRequiredBufferCapacity(10, _components[0].Precision, _arithmetic, _lossless)));
+        if (!_hierarchical)
+        {
+            CreateRowWriters(scope, !streaming || deferred ? _workers : 1);
+        }
     }
 
     /// <summary>Creates the writer of the rows, and the ones of the other workers when several write them.</summary>

@@ -1259,6 +1259,104 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveLosslessJpegKeepsEverySampleOfA16BitImage()
+    {
+        var source = GetPath("lossless-source.png");
+        using (var image = new Image<Rgb48>(40, 24))
+        {
+            image.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgb48((ushort)((x * 1601) + y), (ushort)(y * 2711), (ushort)(((x + y) * 997) ^ 0x5A5A));
+                    }
+                }
+            });
+            image.Save(source);
+        }
+
+        var output = GetPath("lossless.jpg");
+        Examples.SaveLosslessJpeg(source, output);
+
+        // A lossless frame (SOF3) of 16-bit samples, which loads as Rgb48 with the pixels of the source
+        var data = File.ReadAllBytes(output);
+        var frame = data.AsSpan().IndexOf([(byte)0xFF, (byte)0xC3]);
+        Assert.True(frame > 0);
+        Assert.Equal(16, data[frame + 4]);
+        using var expected = Image.Load<Rgb48>(source);
+        using var decoded = Image.Load(output);
+        Assert.Equal(PixelFormat.Rgb48, decoded.PixelFormat);
+        using var pixels = decoded.CloneAs<Rgb48>();
+        for (var y = 0; y < 24; y++)
+        {
+            for (var x = 0; x < 40; x++)
+            {
+                Assert.Equal(expected.Frames[0][x, y], pixels.Frames[0][x, y]);
+            }
+        }
+    }
+
+    [Fact]
+    public void SaveTwelveBitJpegWritesAnArithmeticCodedFrameOf12BitSamples()
+    {
+        var source = GetPath("twelve-bit-source.png");
+        using (var image = new Image<Rgb48>(40, 24))
+        {
+            image.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgb48((ushort)(x * 1600), (ushort)(y * 2700), (ushort)((x + y) * 1000));
+                    }
+                }
+            });
+            image.Save(source);
+        }
+
+        var output = GetPath("twelve-bit.jpg");
+        Examples.SaveTwelveBitJpeg(source, output);
+
+        // A sequential arithmetic-coded frame (SOF9) of precision 12, without Huffman tables, which loads as Rgb48
+        var data = File.ReadAllBytes(output);
+        var frame = data.AsSpan().IndexOf([(byte)0xFF, (byte)0xC9]);
+        Assert.True(frame > 0);
+        Assert.Equal(12, data[frame + 4]);
+        Assert.Equal(-1, data.AsSpan().IndexOf([(byte)0xFF, (byte)0xC4]));
+        using var expected = Image.Load<Rgb48>(source);
+        using var decoded = Image.Load<Rgb48>(output);
+
+        // Closer to the 16-bit source than the same settings with 8-bit samples
+        var eightBitPath = GetPath("eight-bit.jpg");
+        expected.Save(eightBitPath, new JpegEncoder { Quality = 90, AllowBitDepthReduction = true });
+        using var eightBit = Image.Load<Rgb48>(eightBitPath);
+        var twelveBitError = GetMeanError(expected, decoded);
+        var eightBitError = GetMeanError(expected, eightBit);
+        Assert.True(twelveBitError < eightBitError, $"Mean error {twelveBitError} with 12 bits, {eightBitError} with 8 bits.");
+
+        static double GetMeanError(Image<Rgb48> a, Image<Rgb48> b)
+        {
+            var error = 0L;
+            for (var y = 0; y < a.Height; y++)
+            {
+                for (var x = 0; x < a.Width; x++)
+                {
+                    var p = a.Frames[0][x, y];
+                    var q = b.Frames[0][x, y];
+                    error += Math.Abs(p.R - q.R) + Math.Abs(p.G - q.G) + Math.Abs(p.B - q.B);
+                }
+            }
+
+            return error / (a.Width * a.Height * 3.0);
+        }
+    }
+
+    [Fact]
     public void SaveOptimizedJpegWritesTheSamePixelsInFewerBytes()
     {
         var source = GetPath("optimized-source.png");

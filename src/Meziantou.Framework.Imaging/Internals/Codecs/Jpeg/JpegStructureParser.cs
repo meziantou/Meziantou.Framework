@@ -16,18 +16,36 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </list>
 /// Supported: baseline (SOF0), extended sequential (SOF1, or SOF9 with arithmetic coding) and progressive (SOF2, or
 /// SOF10 with arithmetic coding) frames of 8-bit or
-/// 12-bit samples, and lossless frames (SOF3, Huffman coded) of 2-bit to 16-bit samples, with 1, 3 or 4 components (a
+/// 12-bit samples, and lossless frames (SOF3, or SOF11 with arithmetic coding) of 2-bit to 16-bit samples, with 1, 3 or 4 components (a
 /// 4-component frame is CMYK or YCCK: it is identified here, and decoded only
 /// with a color conversion, see <see cref="JpegDecoder"/>). A baseline frame only has 8-bit samples by definition; a
 /// 12-bit one is read as an extended sequential frame, as common decoders do. Recognized and rejected with
-/// <see cref="UnsupportedImageFeatureException"/>: arithmetic-coded lossless frames (SOF11), hierarchical (SOF5-7, SOF13-15, DHP, EXP),
-/// JPEG-LS, other precisions than 8 and 12 bits of the frames that are not lossless, DNL-defined heights, other component counts and sampling factors that do not divide the largest factors.
+/// <see cref="UnsupportedImageFeatureException"/>: other precisions than 8 and 12 bits of the frames that are not lossless, DNL-defined heights, other component counts and sampling factors that do not divide the largest factors.
 /// Malformed or misplaced markers and segments, a missing frame header or scan, interleaved scans of more than 10 blocks
 /// per MCU, progressive scans with invalid spectral selection, successive approximation or coefficient progression (see
 /// <see cref="ValidateProgressiveScan"/>), a lossless frame whose precision is not between 2 and 16 bits, lossless scans
 /// with an invalid predictor or point transform (see <see cref="ValidateLosslessScan"/>), and truncation (including a
 /// missing EOI) are
 /// <see cref="InvalidImageContentException"/>. Table contents (DQT/DHT/DAC) are validated by the decoder only.
+/// <para>
+/// Hierarchical images (T.81 Annex J, B.3): a DHP segment gives the size, the precision and the components of the image,
+/// then a non-differential frame (of any other process) codes a reduced image, and each differential frame (SOF5-7,
+/// SOF13-15) the difference from the reconstruction of the previous one, expanded by 2 horizontally or vertically as the
+/// EXP segment before it says. Each frame codes every component of the DHP segment, with its sampling factors, at the
+/// precision of the image; it has the size of the previous frame expanded, and the last one has the size of the image.
+/// A frame that codes other components is <see cref="UnsupportedImageFeatureException"/>; the other inconsistencies are
+/// <see cref="InvalidImageContentException"/>. <see cref="FrameMarker"/>, <see cref="Components"/>,
+/// <see cref="FrameWidth"/> and <see cref="FrameHeight"/> describe the current frame, <see cref="Width"/> and
+/// <see cref="Height"/> the image.
+/// </para>
+/// <para>
+/// JPEG-LS (ITU-T T.87): a frame of the SOF55 marker (0xF7) of 2-bit to 16-bit samples, whose scans give the NEAR
+/// parameter and the interleave mode (see <see cref="ValidateJpegLsScan"/>), and whose entropy-coded data stuffs a zero
+/// bit after each byte 0xFF instead of a zero byte: a byte below 0x80 after 0xFF is data. LSE segments (0xF8) of preset
+/// coding parameters are read by the decoder; mapping tables (palettes), the dimensions of LSE segments of type 4, the
+/// extensions of T.870 are <see cref="UnsupportedImageFeatureException"/>, and so are the HP color transforms (APP8
+/// <c>mrfx</c>) other than 1, 2 and 3 of three 8-bit components of the same size.
+/// </para>
 /// <para>
 /// Lenient decoding (<see cref="ImageCodecContext.IsLenient"/>, JPEG files only): the input may end without EOI marker, or
 /// with its first byte only, once the frame is complete (<see cref="IsFrameComplete"/>). The walk then ends the last scan
@@ -44,6 +62,12 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     private const byte MarkerSof9 = 0xC9;
     private const byte MarkerSof10 = 0xCA;
     private const byte MarkerSof11 = 0xCB;
+    private const byte MarkerSof5 = 0xC5;
+    private const byte MarkerSof6 = 0xC6;
+    private const byte MarkerSof7 = 0xC7;
+    private const byte MarkerSof13 = 0xCD;
+    private const byte MarkerSof14 = 0xCE;
+    private const byte MarkerSof15 = 0xCF;
     private const byte MarkerDht = 0xC4;
     private const byte MarkerJpg = 0xC8;
     private const byte MarkerDac = 0xCC;
@@ -58,6 +82,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     private const byte MarkerApp0 = 0xE0;
     private const byte MarkerApp1 = 0xE1;
     private const byte MarkerApp2 = 0xE2;
+    private const byte MarkerApp8 = 0xE8;
     private const byte MarkerApp14 = 0xEE;
     private const byte MarkerJpegLsFrame = 0xF7;
     private const byte MarkerJpegLsExtension = 0xF8;
@@ -76,6 +101,11 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     private State _state;
     private int _scanCount;
     private bool _firstScanReached;
+
+    // Hierarchical images: the components of the DHP segment, and the expansion of the EXP segment for the next frame
+    private JpegComponent[]? _imageComponents;
+    private (bool Horizontal, bool Vertical) _pendingExpansion;
+
 
     // The components coded by a scan (bit i for the component i of the frame header)
     private int _scannedComponents;
@@ -113,21 +143,55 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     }
 
     /// <summary>
-    /// Gets the SOF marker of the frame (0xC0 baseline, 0xC1 extended sequential, 0xC2 progressive, 0xC3 lossless, 0xC9 and
-    /// 0xCA the extended sequential and progressive ones with arithmetic coding), or 0 before the frame header.
+    /// Gets the SOF marker of the frame (0xC0 baseline, 0xC1 extended sequential, 0xC2 progressive, 0xC3 lossless, 0xC9,
+    /// 0xCA and 0xCB the extended sequential, progressive and lossless ones with arithmetic coding), or 0 before the frame
+    /// header.
     /// </summary>
     public byte FrameMarker { get; private set; }
 
-    public bool IsProgressive => FrameMarker is MarkerSof2 or MarkerSof10;
+    public bool IsProgressive => FrameMarker is MarkerSof2 or MarkerSof10 or MarkerSof6 or MarkerSof14;
 
     /// <summary>Gets a value indicating whether the scans are arithmetic coded rather than Huffman coded.</summary>
-    public bool IsArithmetic => FrameMarker is MarkerSof9 or MarkerSof10;
+    public bool IsArithmetic => FrameMarker is MarkerSof9 or MarkerSof10 or MarkerSof11 or MarkerSof13 or MarkerSof14 or MarkerSof15;
 
     /// <summary>
     /// Gets a value indicating whether the frame is lossless (T.81 Annex H): its scans code the samples themselves, from
     /// their prediction, instead of the coefficients of their transform.
     /// </summary>
-    public bool IsLossless => FrameMarker == MarkerSof3;
+    public bool IsLossless => FrameMarker is MarkerSof3 or MarkerSof11 or MarkerSof7 or MarkerSof15;
+
+    /// <summary>Gets a value indicating whether the image is hierarchical (a DHP segment precedes its frames).</summary>
+    public bool IsHierarchical { get; private set; }
+
+    /// <summary>
+    /// Gets a value indicating whether the current frame is a differential frame of a hierarchical image (T.81 J.1.3): it
+    /// codes the difference from the reconstruction of the previous frame, without DC prediction or sample prediction.
+    /// </summary>
+    public bool IsDifferential => FrameMarker is MarkerSof5 or MarkerSof6 or MarkerSof7 or MarkerSof13 or MarkerSof14 or MarkerSof15;
+
+    /// <summary>Gets the width of the current frame: the width of the image, or of a frame of a hierarchical image.</summary>
+    public int FrameWidth { get; private set; }
+
+    /// <summary>Gets the height of the current frame.</summary>
+    public int FrameHeight { get; private set; }
+
+    /// <summary>Gets a value indicating whether the reference of the current differential frame is expanded horizontally (EXP).</summary>
+    public bool ExpandsHorizontally { get; private set; }
+
+    /// <summary>Gets a value indicating whether the reference of the current differential frame is expanded vertically (EXP).</summary>
+    public bool ExpandsVertically { get; private set; }
+
+    /// <summary>Gets the number of frames that have started (one, or more in a hierarchical image).</summary>
+    public int FrameCount { get; private set; }
+
+    /// <summary>Gets a value indicating whether the frame is a JPEG-LS frame (ITU-T T.87, SOF55).</summary>
+    public bool IsJpegLs => FrameMarker == MarkerJpegLsFrame;
+
+    /// <summary>
+    /// Gets the HP color transform of a JPEG-LS frame (APP8 <c>mrfx</c>, from the LOCO-I implementation of HP, which CharLS
+    /// writes): 0 for none, or 1, 2 or 3, which the decoder undoes.
+    /// </summary>
+    public byte JpegLsColorTransform { get; private set; }
 
     /// <summary>Gets the number of bits of a sample (8 or 12, or 2 to 16 for a lossless frame), or 0 before the frame header.</summary>
     public int Precision { get; private set; }
@@ -166,6 +230,11 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
 
             if (AdobeTransform is { } transform)
                 return transform == 0 ? ImageColorModel.Rgb : ImageColorModel.YCbCr;
+
+            // T.87 defines no color transform: the components of a JPEG-LS file are the samples, which is what its
+            // encoders write (CharLS, FFmpeg, the ISO reference software)
+            if (IsJpegLs)
+                return ImageColorModel.Rgb;
 
             if (!HasJfif && Components.Count == 3 && Components[0].Id == 'R' && Components[1].Id == 'G' && Components[2].Id == 'B')
                 return ImageColorModel.Rgb;
@@ -319,9 +388,10 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
                     }
 
                     var next = remaining[1];
-                    if (next == 0x00 || next is >= 0xD0 and <= 0xD7)
+                    if (next == 0x00 || next is >= 0xD0 and <= 0xD7 || (next < 0x80 && IsJpegLs))
                     {
-                        // Stuffed 0xFF or restart marker: part of the entropy-coded segment
+                        // Stuffed 0xFF or restart marker: part of the entropy-coded segment. In JPEG-LS data, a zero bit
+                        // is stuffed after 0xFF: any byte below 0x80 follows it
                         _observer?.OnEntropyData(remaining[..2]);
                         consumed += 2;
                         break;
@@ -359,6 +429,13 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         if (FrameMarker == 0)
             throw Invalid("The JPEG scan is not preceded by a frame header (SOF).");
 
+        if (IsJpegLs && JpegLsColorTransform != 0)
+        {
+            // The transforms of three components of the same size, modulo 2^8
+            if (JpegLsColorTransform > 3 || Components.Count != 3 || Precision != 8 || Components.Any(component => component.HorizontalSampling != Components[0].HorizontalSampling || component.VerticalSampling != Components[0].VerticalSampling))
+                throw Unsupported(string.Create(CultureInfo.InvariantCulture, $"The HP color transform {JpegLsColorTransform} of JPEG-LS (APP8 mrfx) is only supported for the transforms 1, 2 and 3 of three 8-bit components of the same size."), "JPEG-LS HP color transform");
+        }
+
         _firstScanReached = true;
 
         // The ICC chunks found before the first scan form the profile that labels the decoded pixels
@@ -390,7 +467,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     /// </summary>
     private bool IsFrameComplete()
     {
-        if (IsArithmetic || Components.Count == 0)
+        if (IsArithmetic || Components.Count == 0 || IsHierarchical)
             return false;
 
         if (_coefficientBits is not null)
@@ -424,6 +501,9 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         if (_scanCount == 0)
             throw Invalid("The JPEG data has no scan.");
 
+        if (IsHierarchical && (FrameWidth != Width || FrameHeight != Height))
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The last frame of the hierarchical JPEG image is {FrameWidth}x{FrameHeight}, not the {Width}x{Height} of the image."));
+
         _state = State.Done;
         _result = CreateInfo(ImageIdentifyMode.FullScan);
         _observer?.OnEnd(this);
@@ -439,20 +519,34 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
             case MarkerSof3:
             case MarkerSof9:
             case MarkerSof10:
+            case MarkerSof11:
+            case MarkerSof5 or MarkerSof6 or MarkerSof7 or MarkerSof13 or MarkerSof14 or MarkerSof15:
+            case MarkerDhp:
                 ProcessFrameHeader(marker, payload);
                 break;
 
-            case MarkerSof11:
-                throw Unsupported("Lossless JPEG with arithmetic coding (SOF11) is not supported.", "JPEG lossless with arithmetic coding");
-
-            case 0xC5 or 0xC6 or 0xC7 or 0xCD or 0xCE or 0xCF or MarkerDhp or MarkerExp:
-                throw Unsupported("Hierarchical JPEG is not supported.", "JPEG hierarchical");
+            case MarkerExp:
+                ProcessExpansion(payload);
+                break;
 
             case MarkerJpg:
                 throw Unsupported("The JPEG extension marker JPG (0xFFC8) is not supported.", "JPEG extensions");
 
-            case MarkerJpegLsFrame or MarkerJpegLsExtension:
-                throw Unsupported("JPEG-LS is not supported.", "JPEG-LS");
+            case MarkerJpegLsFrame:
+                ProcessFrameHeader(marker, payload);
+                break;
+
+            case MarkerJpegLsExtension:
+                ProcessJpegLsExtension(payload);
+                break;
+
+            case MarkerApp8:
+                if (payload.Length >= 5 && payload.StartsWith("mrfx"u8))
+                {
+                    JpegLsColorTransform = payload[4];
+                }
+
+                break;
 
             case MarkerSos:
                 ProcessScanHeader(payload);
@@ -515,9 +609,34 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         }
     }
 
+    /// <summary>Reads an EXP segment (T.81 B.3.3): the expansion of the reference of the next differential frame.</summary>
+    private void ProcessExpansion(ReadOnlySpan<byte> payload)
+    {
+        if (!IsHierarchical || FrameCount == 0)
+            throw Invalid("A JPEG EXP segment is not between the frames of a hierarchical image.");
+
+        if (payload.Length != 1)
+            throw Invalid("The JPEG EXP segment must be 3 bytes long.");
+
+        var horizontal = payload[0] >> 4;
+        var vertical = payload[0] & 0x0F;
+        if (horizontal > 1 || vertical > 1)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG EXP segment expands by Eh = {horizontal}, Ev = {vertical}; each is 0 or 1."));
+
+        _pendingExpansion = (horizontal == 1, vertical == 1);
+    }
+
     private void ProcessFrameHeader(byte marker, ReadOnlySpan<byte> payload)
     {
-        if (FrameMarker != 0)
+        var differential = marker is MarkerSof5 or MarkerSof6 or MarkerSof7 or MarkerSof13 or MarkerSof14 or MarkerSof15;
+        if (marker == MarkerDhp)
+        {
+            if (IsHierarchical || FrameMarker != 0)
+                throw Invalid("The JPEG DHP segment is not the only one, before the frames.");
+        }
+        else if (differential && !IsHierarchical)
+            throw Invalid("A differential JPEG frame is not in a hierarchical image (no DHP segment precedes it).");
+        else if (FrameMarker != 0 && !IsHierarchical)
             throw Invalid("The JPEG data has several frame headers.");
 
         if (payload.Length < 6)
@@ -553,7 +672,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         if (width == 0)
             throw Invalid("The JPEG frame width is zero.");
 
-        if (marker == MarkerSof3)
+        if (marker is MarkerSof3 or MarkerSof11 or MarkerSof7 or MarkerSof15 or MarkerJpegLsFrame or MarkerDhp)
         {
             if (precision is < 2 or > 16)
                 throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The precision of the lossless JPEG frame is {precision} bits; it must be between 2 and 16."));
@@ -576,10 +695,46 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
                 throw Unsupported("JPEG images whose sampling factors do not divide the largest factors (non-integral sampling ratios) are not supported.", "JPEG non-integral sampling ratios");
         }
 
+        if (marker == MarkerDhp)
+        {
+            // The image: its frames follow
+            IsHierarchical = true;
+            Precision = precision;
+            Width = width;
+            Height = height;
+            Components = components;
+            _context.Limits.EnsureCanvasWithinLimits(Width, Height);
+            return;
+        }
+
+        if (IsHierarchical)
+        {
+            ValidateHierarchicalFrame(differential, precision, width, height, components);
+            FrameMarker = marker;
+            FrameWidth = width;
+            FrameHeight = height;
+            (ExpandsHorizontally, ExpandsVertically) = _pendingExpansion;
+            _pendingExpansion = default;
+            Components = components;
+            FrameCount++;
+            _scannedComponents = 0;
+            _coefficientBits = null;
+            if (IsProgressive)
+            {
+                _coefficientBits = new sbyte[64 * count];
+                _coefficientBits.AsSpan().Fill(-1);
+            }
+
+            return;
+        }
+
         FrameMarker = marker;
+        FrameCount = 1;
         Precision = precision;
         Width = width;
         Height = height;
+        FrameWidth = width;
+        FrameHeight = height;
         Components = components;
         if (marker is MarkerSof2 or MarkerSof10)
         {
@@ -588,6 +743,38 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         }
 
         _context.Limits.EnsureCanvasWithinLimits(Width, Height);
+    }
+
+    /// <summary>
+    /// Validates a frame of a hierarchical image against the DHP segment and the previous frame: the precision and the
+    /// components of the image, a non-differential first frame and differential other frames, and the size of the
+    /// previous frame expanded as the EXP segment says.
+    /// </summary>
+    private void ValidateHierarchicalFrame(bool differential, int precision, int width, int height, JpegComponent[] components)
+    {
+        if (precision != Precision)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"A frame of the hierarchical JPEG image has {precision}-bit samples; the image has {Precision}-bit samples."));
+
+        var image = _imageComponents ??= [.. Components];
+        if (components.Length != image.Length || components.Where((component, i) => component.Id != image[i].Id || component.HorizontalSampling != image[i].HorizontalSampling || component.VerticalSampling != image[i].VerticalSampling).Any())
+            throw Unsupported("The frames of a hierarchical JPEG image that do not code every component of the image, with its sampling factors, are not supported.", "JPEG hierarchical partial frames");
+
+        if (FrameCount == 0 && differential)
+            throw Invalid("The first frame of the hierarchical JPEG image is a differential frame.");
+
+        if (FrameCount > 0 && !differential)
+            throw Invalid("A frame after the first one of the hierarchical JPEG image is not a differential frame.");
+
+        if (width > Width || height > Height)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"A frame of the hierarchical JPEG image is {width}x{height}, larger than the {Width}x{Height} of the image."));
+
+        if (FrameCount > 0)
+        {
+            // The reference is the previous frame, expanded by 2 in the directions of the EXP segment
+            var (horizontal, vertical) = _pendingExpansion;
+            if ((horizontal ? (width + 1) / 2 : width) != FrameWidth || (vertical ? (height + 1) / 2 : height) != FrameHeight)
+                throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The differential frame of {width}x{height} does not have the size of its reference, a frame of {FrameWidth}x{FrameHeight}{(horizontal || vertical ? " expanded" : "")}."));
+        }
     }
 
     private void ProcessScanHeader(ReadOnlySpan<byte> payload)
@@ -622,7 +809,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
             }
         }
 
-        if (count > 1)
+        if (count > 1 && !IsJpegLs)
         {
             // T.81 B.2.3: an interleaved MCU has at most 10 blocks
             var blocks = 0;
@@ -645,6 +832,81 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         {
             ValidateLosslessScan(payload, count);
         }
+        else if (IsJpegLs)
+        {
+            ValidateJpegLsScan(payload, count);
+        }
+    }
+
+    /// <summary>
+    /// Validates the parameters of a JPEG-LS scan (ITU-T T.87 C.2.3): the interleave mode <c>ILV</c> is 0 (one component),
+    /// 1 (lines) or 2 (samples, of components of the same size). <c>NEAR</c> is checked by the decoder, against MAXVAL. A
+    /// mapping table selector and a point transform are <see cref="UnsupportedImageFeatureException"/>.
+    /// </summary>
+    private void ValidateJpegLsScan(ReadOnlySpan<byte> payload, int count)
+    {
+        var parameters = payload[(1 + (2 * count))..];
+        var interleave = parameters[1];
+        if (interleave > 2)
+            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG-LS interleave mode {interleave} is not 0, 1 or 2."));
+
+        if (interleave == 0 && count != 1)
+            throw Invalid("A JPEG-LS scan of several components is not interleaved (ILV = 0).");
+
+        if ((parameters[2] & 0x0F) != 0)
+            throw Unsupported("The point transform of JPEG-LS scans is not supported.", "JPEG-LS point transform");
+
+        for (var i = 0; i < count; i++)
+        {
+            if (payload[2 + (2 * i)] != 0)
+                throw Unsupported("JPEG-LS mapping tables (palettes) are not supported.", "JPEG-LS mapping tables");
+        }
+
+        if (interleave == 2 && Components.Count > 1)
+        {
+            // The samples of the components are coded in turn: they have the same size
+            var firstId = payload[1];
+            var first = Components.First(component => component.Id == firstId);
+            for (var i = 1; i < count; i++)
+            {
+                var id = payload[1 + (2 * i)];
+                var component = Components.First(component => component.Id == id);
+                if (component.HorizontalSampling != first.HorizontalSampling || component.VerticalSampling != first.VerticalSampling)
+                    throw Invalid("A sample-interleaved JPEG-LS scan (ILV = 2) codes components of different sizes.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Validates a JPEG-LS preset parameters segment (LSE, ITU-T T.87 C.2.4.1): the coding parameters (type 1, read by the
+    /// decoder) are accepted; mapping tables (types 2 and 3), oversize dimensions (type 4) and the types of T.870 are
+    /// <see cref="UnsupportedImageFeatureException"/>.
+    /// </summary>
+    private void ProcessJpegLsExtension(ReadOnlySpan<byte> payload)
+    {
+        if (FrameMarker != 0 && !IsJpegLs)
+            throw Invalid("A JPEG-LS LSE segment is in a frame that is not a JPEG-LS frame.");
+
+        if (payload.IsEmpty)
+            throw Invalid("The JPEG-LS LSE segment is empty.");
+
+        switch (payload[0])
+        {
+            case 1:
+                if (payload.Length != 11)
+                    throw Invalid("The JPEG-LS LSE segment of preset coding parameters must be 13 bytes long.");
+
+                break;
+
+            case 2 or 3:
+                throw Unsupported("JPEG-LS mapping tables (palettes) are not supported.", "JPEG-LS mapping tables");
+
+            case 4:
+                throw Unsupported("JPEG-LS images whose dimensions are given by an LSE segment are not supported.", "JPEG-LS oversize dimensions");
+
+            default:
+                throw Unsupported(string.Create(CultureInfo.InvariantCulture, $"The JPEG-LS LSE segment of type {payload[0]} (ITU-T T.870 extensions) is not supported."), "JPEG-LS extensions");
+        }
     }
 
     /// <summary>
@@ -658,7 +920,16 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         var parameters = payload[(1 + (2 * count))..];
         var predictor = parameters[0];
         var pointTransform = parameters[2] & 0x0F;
-        if (predictor is < 1 or > 7)
+        if (IsDifferential)
+        {
+            // T.81 J.1.3: the differences of a differential frame are coded without prediction
+            if (predictor != 0)
+                throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG differential lossless scan selects the predictor {predictor}; it must be 0."));
+
+            if (pointTransform != 0)
+                throw Unsupported("The point transform of the differential lossless frames of hierarchical JPEG images is not supported.", "JPEG hierarchical point transform");
+        }
+        else if (predictor is < 1 or > 7)
             throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG lossless scan selects the predictor {predictor}; it must be between 1 and 7."));
 
         if (pointTransform >= Precision)

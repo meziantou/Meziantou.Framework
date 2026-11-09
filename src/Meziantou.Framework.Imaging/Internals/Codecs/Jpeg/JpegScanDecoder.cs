@@ -50,6 +50,10 @@ internal abstract class JpegScanDecoder
     // The difference of a sample of a lossless frame: a 16-bit code and at most 15 bits (T.81 table H.2)
     private const int MaxBytesPerLosslessSample = 4;
 
+    // The same with arithmetic coding: at most 32 decisions (zero, sign, magnitude 1, 15 categories, 14 bits) of at most 15
+    // bits each, 60 bytes
+    private const int MaxBytesPerArithmeticLosslessSample = 64;
+
     private readonly ScanComponent[] _components;
     private readonly JpegEntropyReader _reader;
     private readonly bool _interleaved;
@@ -122,7 +126,7 @@ internal abstract class JpegScanDecoder
     /// <param name="arithmetic">Whether the scans are arithmetic coded.</param>
     /// <param name="lossless">Whether the scans code the samples of a lossless frame.</param>
     public static int GetRequiredBufferCapacity(int blocksPerMcu, int precision, bool arithmetic, bool lossless = false)
-        => (blocksPerMcu * (lossless ? MaxBytesPerLosslessSample : arithmetic ? MaxBytesPerArithmeticBlock : precision > 8 ? MaxBytesPerDeepBlock : MaxBytesPerBlock)) + 24;
+        => (blocksPerMcu * (lossless ? (arithmetic ? MaxBytesPerArithmeticLosslessSample : MaxBytesPerLosslessSample) : arithmetic ? MaxBytesPerArithmeticBlock : precision > 8 ? MaxBytesPerDeepBlock : MaxBytesPerBlock)) + 24;
 
     /// <summary>Gets a value indicating whether every MCU of the scan was decoded.</summary>
     public bool IsComplete => _mcu >= _totalMcus;
@@ -132,6 +136,12 @@ internal abstract class JpegScanDecoder
     /// expected marker (lenient decoding) instead of being an error.
     /// </summary>
     public bool AcceptsGarbledRestartNumbers { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the scan is a scan of a differential frame of a hierarchical image (T.81 J.1.5.1):
+    /// its DC coefficients are coded without prediction, and its blocks are decoded one at a time.
+    /// </summary>
+    public bool Differential { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether the MCU being decoded is in the buffer with 16 more bytes, before the end of its
@@ -416,7 +426,7 @@ internal abstract class JpegScanDecoder
     {
         // Before the end of the segment, an MCU is only decoded when _safeBytes are available: its bytes and 16 more are
         // then buffered (the accumulator holds at most 7 whole bytes)
-        UncheckedReads = !endOfSegment && _uncheckedBytes != int.MaxValue;
+        UncheckedReads = !endOfSegment && _uncheckedBytes != int.MaxValue && !Differential;
         while (_mcu < _totalMcus)
         {
             if (_restartInterval > 0 && _intervalRemaining == 0)
@@ -504,6 +514,11 @@ internal abstract class JpegScanDecoder
         if (!_interleaved)
         {
             DecodeBlock(_components[0], mcuY, mcuX);
+            if (Differential)
+            {
+                _components[0].Predictor = 0;
+            }
+
             return;
         }
 
@@ -517,6 +532,11 @@ internal abstract class JpegScanDecoder
                 for (var bx = 0; bx < h; bx++)
                 {
                     DecodeBlock(scanComponent, (mcuY * v) + by, (mcuX * h) + bx);
+                    if (Differential)
+                    {
+                        // The DC coefficient of the next block is not predicted from this one
+                        scanComponent.Predictor = 0;
+                    }
                 }
             }
         }
@@ -612,6 +632,18 @@ internal abstract class JpegScanDecoder
 
         /// <summary>Gets the statistics and the conditioning of the component in an arithmetic-coded scan, or <see langword="null"/>.</summary>
         public JpegArithmeticConditioning? Arithmetic { get; init; }
+
+        /// <summary>
+        /// Gets or sets, for an arithmetic-coded lossless scan, the last difference of each line of the MCU row of the
+        /// component (<c>Da</c> of the next sample of the line).
+        /// </summary>
+        public int[] LeftDifferences { get; set; } = [];
+
+        /// <summary>
+        /// Gets or sets, for an arithmetic-coded lossless scan, the last difference of each column of the component
+        /// (<c>Db</c> of the next sample of the column).
+        /// </summary>
+        public int[] AboveDifferences { get; set; } = [];
 
         private static int[] CreateZigZagQuantization(ushort[] quantization)
         {

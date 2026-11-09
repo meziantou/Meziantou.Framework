@@ -488,6 +488,12 @@ internal static class BorderPainter
                     break;
                 }
 
+                // The stroke around an elliptical curve of the middle line is not between the curves of the border edge and the
+                // padding edge (the parallel curve of an ellipse is not an ellipse): it is clipped to the ring of the border
+                var ring = new DisplayPath { FillRule = FillRule.EvenOdd };
+                ring.AddRoundedRect(outer);
+                ring.AddRoundedRect(inner);
+                builder.Add(new ClipPathItem(ring) { Source = source });
                 builder.Add(new DrawPathItem(DisplayPath.FromRoundedRect(centerline), DisplayPaint.ForStroke(color, stroke)) { Source = source });
                 break;
             }

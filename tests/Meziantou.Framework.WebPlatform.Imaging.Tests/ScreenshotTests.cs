@@ -80,6 +80,36 @@ public sealed class ScreenshotTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData("dashed")]
+    [InlineData("dotted")]
+    public void RoundedDashedBorder_DoesNotPaintOutsideOfTheCurves(string style)
+    {
+        // The stroke along the middle of a border with unequal radii goes up to 3px past the curves of the border edge (the
+        // parallel curve of an ellipse is not an ellipse): nothing is painted more than 1px outside of them
+        var context = _pages.Load($"<style>body {{ margin: 0 }}</style><div style='width: 200px; height: 40px; border: 20px {style} rgb(255, 0, 0); border-radius: 100px / 20px'></div>", width: 240, height: 80);
+
+        using var screenshot = context.TakeScreenshot();
+        var painted = 0;
+        for (var y = 0; y < 80; y++)
+        {
+            for (var x = 0; x < 240; x++)
+            {
+                // The distance to the curve of the corner (radii 100 and 20, centered 100px and 20px from the corner of the box)
+                var dx = Math.Max(0, Math.Abs(x + 0.5 - 120) - 20);
+                var dy = Math.Max(0, Math.Abs(y + 0.5 - 40) - 20);
+                var f = ((dx / 100) * (dx / 100)) + ((dy / 20) * (dy / 20));
+                var gradient = Math.Sqrt(((2 * dx / 10000) * (2 * dx / 10000)) + ((2 * dy / 400) * (2 * dy / 400)));
+                if (f > 1 && (f - 1) / gradient > 1 && screenshot.GetPixel(x, y) != Colors.White)
+                {
+                    painted++;
+                }
+            }
+        }
+
+        Assert.Equal(0, painted);
+    }
+
     [Fact]
     public void DevicePixelRatio()
     {

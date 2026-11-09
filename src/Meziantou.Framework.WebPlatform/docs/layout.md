@@ -5154,7 +5154,8 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   and `border-shape` makes the radii ignored. The styles: solid, double, dotted/dashed as strokes along the side with the dash lengths of Blink adjusted to
   the length of the side (`BorderPainter.GetDashes`: dashes of 3 widths and gaps of 2, 2 and 1 from 3px, dots of one width,
   whole dashes at both ends; around a rounded border, as in Blink, the stroke of the line in the middle of the whole border, the
-  curves of the corners included, with a whole number of dashes along it, `BorderPainter.GetClosedDashes`), groove/ridge/inset/outset darkened by 2/3. `border-image` replaces them: the nine slices of the
+  curves of the corners included, with a whole number of dashes along it, `BorderPainter.GetClosedDashes`, clipped to the ring
+  between the border edge and the padding edge: around elliptical corners the stroke goes past their curves), groove/ridge/inset/outset darkened by 2/3. `border-image` replaces them: the nine slices of the
   image (`border-image-slice`, `fill`) in the regions of the border image area (`border-image-outset`, `border-image-width`
   reduced when they overlap; the lines between the regions are snapped to the device pixels), the sides stretched, repeated
   (centered), rounded or spaced (`TiledShader` of the slice: the pixels of the slice of a raster image, the display list of

@@ -50,7 +50,7 @@ internal static class VennDiagramRenderer
         {
             if (!string.IsNullOrEmpty(area.Label))
             {
-                labels[VennLayout.GetLabelKey(area.Sets)] = area.Label;
+                labels[VennLayout.GetAreaKey(area.Sets)] = area.Label;
             }
         }
 
@@ -61,7 +61,7 @@ internal static class VennDiagramRenderer
             var isSet = area.Sets.Count is 1;
             var areaGroup = group.Add(new SceneGroup { CssClass = isSet ? "venn-area venn-circle" : "venn-area venn-intersection" });
             areaGroup.SetDataAttribute("venn-sets", string.Join('_', area.Sets));
-            var style = styles.GetValueOrDefault(GetStyleKey(area.Sets));
+            var style = styles.GetValueOrDefault(VennLayout.GetAreaKey(area.Sets));
             var areaCircles = area.Sets.Select(set => circles[set]).ToArray();
 
             SceneColor textColor;
@@ -96,7 +96,7 @@ internal static class VennDiagramRenderer
                 textColor = style?.TextColor ?? colors.TextColor;
             }
 
-            var key = VennLayout.GetLabelKey(area.Sets);
+            var key = VennLayout.GetAreaKey(area.Sets);
             var label = labels.TryGetValue(key, out var value) ? value : isSet ? area.Sets[0] : null;
             label = label is null ? null : CollapseWhiteSpace(label);
             if (!string.IsNullOrEmpty(label) && textCentres.TryGetValue(key, out var centre) && !centre.Disjoint && double.IsFinite(centre.X) && double.IsFinite(centre.Y))
@@ -123,14 +123,14 @@ internal static class VennDiagramRenderer
         var areasByKey = new Dictionary<string, VennRenderArea>(StringComparer.Ordinal);
         foreach (var area in data)
         {
-            areasByKey[GetStyleKey(area.Sets)] = area;
+            areasByKey[VennLayout.GetAreaKey(area.Sets)] = area;
         }
 
         var nodesByKey = new List<(string Key, List<VennTextNode> Nodes)>();
         var nodeIndices = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var node in diagram.TextNodes)
         {
-            var key = GetStyleKey(node.Sets);
+            var key = VennLayout.GetAreaKey(node.Sets);
             if (!nodeIndices.TryGetValue(key, out var index))
             {
                 index = nodesByKey.Count;
@@ -145,7 +145,7 @@ internal static class VennDiagramRenderer
         var fontSize = 40 * scale;
         foreach (var (key, nodes) in nodesByKey)
         {
-            if (!areasByKey.TryGetValue(key, out var area) || !textCentres.TryGetValue(VennLayout.GetLabelKey(area.Sets), out var centre) || centre.Disjoint)
+            if (!areasByKey.TryGetValue(key, out var area) || !textCentres.TryGetValue(VennLayout.GetAreaKey(area.Sets), out var centre) || centre.Disjoint)
                 continue;
 
             // The radius of the largest circle around the center that stays inside the circles of the area
@@ -183,7 +183,7 @@ internal static class VennDiagramRenderer
                 if (text.Length is 0)
                     continue;
 
-                var color = styles.TryGetValue(node.Id, out var style) && style.TextColor is { } textColor ? textColor : colors.TextColor;
+                var color = styles.TryGetValue(VennLayout.GetAreaKey([node.Id]), out var style) && style.TextColor is { } textColor ? textColor : colors.TextColor;
                 var block = TextBlock.Create(new DiagramText(text), context.Measurer, fontSize, maxWidth: cellWidth * 0.9);
                 var nodeGroup = areaGroup.Add(new SceneGroup { CssClass = "venn-text-node" });
                 nodeGroup.SetDataAttribute("id", node.Id);
@@ -220,14 +220,12 @@ internal static class VennDiagramRenderer
         var styles = new Dictionary<string, VennStyle>(StringComparer.Ordinal);
         foreach (var rule in diagram.Styles)
         {
-            var key = GetStyleKey(rule.Targets);
+            var key = VennLayout.GetAreaKey(rule.Targets);
             styles[key] = styles.TryGetValue(key, out var existing) ? existing.Merge(rule.Style) : rule.Style;
         }
 
         return styles;
     }
-
-    private static string GetStyleKey(IReadOnlyList<string> sets) => string.Join('|', sets);
 
     /// <summary>
     /// Adds the overlaps of the pairs of sets of the overlaps of three sets or more, which Mermaid adds to lay them out,
@@ -236,7 +234,7 @@ internal static class VennDiagramRenderer
     private static List<VennRenderArea> EnsurePairwiseOverlaps(IList<VennArea> areas)
     {
         var result = areas.Select(area => new VennRenderArea(area.Sets, area.EffectiveSize, area.Label)).ToList();
-        var existingKeys = new HashSet<string>(result.Select(area => GetStyleKey(area.Sets)), StringComparer.Ordinal);
+        var existingKeys = new HashSet<string>(result.Select(area => VennLayout.GetAreaKey(area.Sets)), StringComparer.Ordinal);
         var setSizes = new Dictionary<string, double>(StringComparer.Ordinal);
         foreach (var area in result)
         {
@@ -257,7 +255,7 @@ internal static class VennDiagramRenderer
                 for (var j = i + 1; j < area.Sets.Count; j++)
                 {
                     string[] pair = [area.Sets[i], area.Sets[j]];
-                    if (existingKeys.Add(GetStyleKey(pair)))
+                    if (existingKeys.Add(VennLayout.GetAreaKey(pair)))
                     {
                         var size = setSizes.TryGetValue(pair[0], out var sizeA) && setSizes.TryGetValue(pair[1], out var sizeB) ? Math.Min(sizeA, sizeB) / 4 : 2.5;
                         synthetic.Add(new VennRenderArea(pair, size, Label: ""));

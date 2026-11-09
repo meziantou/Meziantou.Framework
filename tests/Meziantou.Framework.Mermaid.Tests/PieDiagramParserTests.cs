@@ -129,6 +129,23 @@ public sealed class PieDiagramParserTests
     }
 
     [Fact]
+    public void WriteEscapesDirectivesInLabels()
+    {
+        var diagram = new PieChart();
+        diagram.AddSlice("Revenue %%{init: {theme: dark}}%%", 1);
+        diagram.AddSlice("Unclosed %%{", 2);
+        diagram.AddSlice("%%%", 3);
+
+        var text = MermaidWriter.Write(diagram);
+        Assert.DoesNotContain("%%", text, StringComparison.Ordinal);
+        var parsed = MermaidDocument.Parse(text);
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (PieChart)parsed.Content;
+        Assert.Equal(["Revenue %%{init: {theme: dark}}%%", "Unclosed %%{", "%%%"], result.Slices.Select(slice => slice.Label));
+        Assert.Same(DiagramTheme.Default, result.Theme);
+    }
+
+    [Fact]
     public void Write()
     {
         var diagram = new PieChart

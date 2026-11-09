@@ -99,6 +99,24 @@ public sealed class SankeyDiagramParserTests
     }
 
     [Fact]
+    public void LinksAreLimitedByMaxEdges()
+    {
+        var options = new MermaidParseOptions { MaxEdges = 1 };
+        Assert.Single(((SankeyChart)MermaidDocument.Parse("sankey\nA,B,1", options).Content).Links);
+        var exception = Assert.Throws<MermaidParseException>(() => MermaidDocument.Parse("sankey\nA,B,1\nB,C,1", options));
+        Assert.Contains("(3, 1): The diagram has more than 1 links.", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NodesAreLimitedByMaxNodes()
+    {
+        var options = new MermaidParseOptions { MaxNodes = 3 };
+        Assert.HasCount(3, ((SankeyChart)MermaidDocument.Parse("sankey\nA,B,1\nB,C,1\nA,C,1", options).Content).Links);
+        var exception = Assert.Throws<MermaidParseException>(() => MermaidDocument.Parse("sankey\nA,B,1\nC,D,1", options));
+        Assert.Contains("(3, 1): The diagram has more than 3 nodes.", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Write()
     {
         var diagram = new SankeyChart { Title = "Flows", Width = 700, NodeAlignment = SankeyNodeAlignment.Right, LinkColoring = SankeyLinkColoring.Target, ValuePrefix = "\"$\"", LabelStyle = SankeyLabelStyle.Outlined, NodePadding = 5 };

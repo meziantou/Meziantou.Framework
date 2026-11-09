@@ -26,7 +26,7 @@ internal static class VennLayout
     /// <param name="width">The width of the drawing.</param>
     /// <param name="height">The height of the drawing.</param>
     /// <param name="padding">The space between the circles and the sides of the drawing.</param>
-    /// <returns>The circles by identifier of set, and the centers of the labels by key of area (<see cref="GetLabelKey"/>).</returns>
+    /// <returns>The circles by identifier of set, and the centers of the labels by key of area (<see cref="GetAreaKey"/>).</returns>
     public static (VennKeyedMap<VennCircle> Circles, Dictionary<string, VennTextCentre> TextCentres) Compute(IReadOnlyList<VennLayoutArea> data, double width, double height, double padding)
     {
         var circles = new VennKeyedMap<VennCircle>();
@@ -48,9 +48,6 @@ internal static class VennLayout
         textCentres = ComputeTextCentres(circles, data);
         return (circles, textCentres);
     }
-
-    /// <summary>Returns the key of the label of an area: its sets joined by commas, as venn.js indexes them.</summary>
-    public static string GetLabelKey(IReadOnlyList<string> sets) => string.Join(',', sets);
 
     /// <summary>Lays the circles out so their overlaps have the requested areas (venn.js <c>venn</c>).</summary>
     internal static VennKeyedMap<VennCircle> Venn(IReadOnlyList<VennLayoutArea> sets)
@@ -118,7 +115,7 @@ internal static class VennLayout
         var groups = new Dictionary<string, (int Index, double SizeSum, int Count)>(StringComparer.Ordinal);
         foreach (var area in data)
         {
-            var key = GetMergeKey(area.Sets);
+            var key = GetAreaKey(area.Sets);
             if (area.Sets.Count is 1)
             {
                 if (groups.TryGetValue(key, out var set))
@@ -150,8 +147,12 @@ internal static class VennLayout
         return result;
     }
 
-    /// <summary>Returns a key that identifies the sets of an area: each identifier prefixed by its length, so no two lists of identifiers share a key.</summary>
-    private static string GetMergeKey(IReadOnlyList<string> sets) => string.Concat(sets.Select(set => set.Length.ToString(CultureInfo.InvariantCulture) + ":" + set));
+    /// <summary>
+    /// Returns the key of the sets of an area, which indexes its label, its center and its style: each identifier prefixed
+    /// by its length, so no two lists of identifiers share a key (venn.js joins them with commas, so a set named <c>A,B</c>
+    /// shares the key of the overlap of <c>A</c> and <c>B</c>).
+    /// </summary>
+    public static string GetAreaKey(IReadOnlyList<string> sets) => string.Concat(sets.Select(set => set.Length.ToString(CultureInfo.InvariantCulture) + ":" + set));
 
     /// <summary>Adds the missing overlaps of two sets with a size of 0, so the sets without an overlap are laid out apart.</summary>
     private static List<VennLayoutArea> AddMissingAreas(IReadOnlyList<VennLayoutArea> areas)
@@ -167,8 +168,8 @@ internal static class VennLayout
             }
             else if (area.Sets.Count is 2)
             {
-                pairs.Add(area.Sets[0] + ";" + area.Sets[1]);
-                pairs.Add(area.Sets[1] + ";" + area.Sets[0]);
+                pairs.Add(GetAreaKey(area.Sets));
+                pairs.Add(GetAreaKey([area.Sets[1], area.Sets[0]]));
             }
         }
 
@@ -177,7 +178,7 @@ internal static class VennLayout
         {
             for (var j = i + 1; j < ids.Count; j++)
             {
-                if (!pairs.Contains(ids[i] + ";" + ids[j]))
+                if (!pairs.Contains(GetAreaKey([ids[i], ids[j]])))
                 {
                     result.Add(new VennLayoutArea([ids[i], ids[j]], 0));
                 }
@@ -802,7 +803,7 @@ internal static class VennLayout
         var last = new Dictionary<string, int>(StringComparer.Ordinal);
         for (var i = 0; i < areas.Count; i++)
         {
-            last[GetLabelKey(areas[i].Sets)] = i;
+            last[GetAreaKey(areas[i].Sets)] = i;
         }
 
         var result = new Dictionary<string, VennTextCentre>(StringComparer.Ordinal);

@@ -47,14 +47,19 @@ internal static class GitGraphLangium
         }
     }
 
-    /// <summary>Writes a string between double quotes, which <see cref="ReadString"/> reads back.</summary>
+    /// <summary>
+    /// Writes a string between double quotes, which <see cref="ReadString"/> reads back. A <c>%</c> after a <c>%</c> is
+    /// written <c>\%</c>, as <c>%%</c> starts a directive or a comment anywhere in the text, quoted strings included.
+    /// </summary>
     public static string Quote(string value)
     {
         var builder = new StringBuilder(value.Length + 2).Append('"');
-        foreach (var c in value)
+        for (var i = 0; i < value.Length; i++)
         {
+            var c = value[i];
             builder.Append(c switch
             {
+                '%' when i > 0 && value[i - 1] is '%' => "\\%",
                 '"' => "\\\"",
                 '\\' => "\\\\",
                 '\n' => "\\n",

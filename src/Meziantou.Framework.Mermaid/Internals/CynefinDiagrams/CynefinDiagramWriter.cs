@@ -81,7 +81,7 @@ internal static class CynefinDiagramWriter
             {
                 if (item.Domain == domain)
                 {
-                    builder.Append("        ").Append(Quote(item.Label.Text)).Append('\n');
+                    builder.Append("        ").Append(GitGraphLangium.Quote(item.Label.Text)).Append('\n');
                 }
             }
         }
@@ -95,7 +95,7 @@ internal static class CynefinDiagramWriter
             builder.Append("    ").Append(CynefinDiagramParser.GetName(transition.From)).Append(" --> ").Append(CynefinDiagramParser.GetName(transition.To));
             if (transition.Label is { IsEmpty: false } label)
             {
-                builder.Append(" : ").Append(Quote(label.Text));
+                builder.Append(" : ").Append(GitGraphLangium.Quote(label.Text));
             }
 
             builder.Append('\n');
@@ -116,26 +116,5 @@ internal static class CynefinDiagramWriter
                 variables.Add("\"" + name + "\": " + MermaidStyle.Number(number));
             }
         }
-    }
-
-    /// <summary>Writes a string between double quotes with the escapes of Langium; a <c>%</c> after a <c>%</c> is written <c>\%</c>, as <c>%%{</c> would start a directive.</summary>
-    private static string Quote(string value)
-    {
-        var quoted = GitGraphLangium.Quote(value);
-        if (!quoted.Contains("%%", StringComparison.Ordinal))
-            return quoted;
-
-        var builder = new StringBuilder(quoted.Length + 4);
-        foreach (var c in quoted)
-        {
-            if (c == '%' && builder.Length > 0 && builder[^1] == '%')
-            {
-                builder.Append('\\');
-            }
-
-            builder.Append(c);
-        }
-
-        return builder.ToString();
     }
 }

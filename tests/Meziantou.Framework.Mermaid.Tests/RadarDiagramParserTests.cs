@@ -187,6 +187,24 @@ public sealed class RadarDiagramParserTests
         Assert.Same(DiagramTheme.Neutral, result.Theme);
     }
 
+    [Fact]
+    public void WriteEscapesDirectivesInLabels()
+    {
+        var diagram = new RadarChart();
+        diagram.AddAxis("a", "Axis %%{init: {theme: dark}}%%");
+        diagram.AddAxis("b", "Unclosed %%{");
+        diagram.AddCurve("c", "100%%", 1, 2);
+
+        var text = MermaidWriter.Write(diagram);
+        Assert.DoesNotContain("%%", text, StringComparison.Ordinal);
+        var parsed = MermaidDocument.Parse(text);
+        Assert.Equal(text, MermaidWriter.Write(parsed.Content));
+        var result = (RadarChart)parsed.Content;
+        Assert.Equal(["Axis %%{init: {theme: dark}}%%", "Unclosed %%{"], result.Axes.Select(axis => axis.Label));
+        Assert.Equal("100%%", result.Curves[0].Label);
+        Assert.Same(DiagramTheme.Default, result.Theme);
+    }
+
     [Theory]
     [InlineData("1a")]
     [InlineData("a b")]

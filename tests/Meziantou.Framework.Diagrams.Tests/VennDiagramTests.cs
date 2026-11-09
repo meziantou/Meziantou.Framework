@@ -136,6 +136,28 @@ public sealed class VennDiagramTests
     }
 
     [Fact]
+    public void SetsNamedAsOverlapsAreDistinctAreas()
+    {
+        // A set named "A,B" or "A|B" is not the overlap of A and B: each keeps its label and its style
+        var diagram = new VennDiagram();
+        diagram.AddSet("A");
+        diagram.AddSet("B");
+        diagram.AddSet("A,B", "Named set");
+        diagram.AddSet("A|B");
+        diagram.AddOverlap(["A", "B"], "Overlap", size: 0.5);
+        diagram.AddStyle(["A", "B"], new VennStyle { Fill = "#abcdef" });
+        var svg = diagram.ToSvg();
+        Assert.Contains("Named set", svg, StringComparison.Ordinal);
+        Assert.Contains("Overlap", svg, StringComparison.Ordinal);
+
+        var start = svg.IndexOf("data-venn-sets=\"A|B\"", StringComparison.Ordinal);
+        Assert.True(start >= 0);
+        var setGroup = svg[start..svg.IndexOf("</g>", start, StringComparison.Ordinal)];
+        Assert.DoesNotContain("abcdef", setGroup, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("abcdef", svg, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ManyTextsInAnArea()
     {
         var diagram = new VennDiagram { Title = "Languages" };
@@ -189,10 +211,10 @@ public sealed class VennDiagramTests
         AssertCircle(circles["Desirable"], 314.2616, 299.2511, 135.7489);
         AssertCircle(circles["Feasible"], 485.7384, 299.2511, 135.7489);
         AssertCircle(circles["Viable"], 399.9997, 150.7489, 135.7489);
-        AssertCentre(centres["Desirable"], 268.583, 325.625);
-        AssertCentre(centres["Viable"], 400.000, 98.002);
-        AssertCentre(centres["Desirable,Feasible,Viable"], 400.000, 249.751);
-        AssertCentre(centres["Desirable,Viable"], 329.752, 209.193);
+        AssertCentre(centres[VennLayout.GetAreaKey(["Desirable"])], 268.583, 325.625);
+        AssertCentre(centres[VennLayout.GetAreaKey(["Viable"])], 400.000, 98.002);
+        AssertCentre(centres[VennLayout.GetAreaKey(["Desirable", "Feasible", "Viable"])], 400.000, 249.751);
+        AssertCentre(centres[VennLayout.GetAreaKey(["Desirable", "Viable"])], 329.752, 209.193);
     }
 
     [Fact]
@@ -201,7 +223,7 @@ public sealed class VennDiagramTests
         var (circles, centres) = VennLayout.Compute([new(["A"], 20), new(["B"], 12), new(["A", "B"], 3)], 800, 450, 15);
         AssertCircle(circles["A"], 294.2164, 225.0000, 210.0000);
         AssertCircle(circles["B"], 553.1183, 225.0000, 162.6653);
-        AssertCentre(centres["A,B"], 447.335, 225.000);
+        AssertCentre(centres[VennLayout.GetAreaKey(["A", "B"])], 447.335, 225.000);
     }
 
     [Fact]

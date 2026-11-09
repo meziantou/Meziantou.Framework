@@ -19,6 +19,7 @@ internal sealed class SankeyDiagramParser
     private readonly string _text;
     private readonly SankeyChart _diagram = new();
     private readonly List<int> _linkOffsets = [];
+    private readonly HashSet<string> _nodeNames = new(StringComparer.Ordinal);
     private int _position;
 
     private SankeyDiagramParser(ParseContext context, int position)
@@ -296,10 +297,18 @@ internal sealed class SankeyDiagramParser
         if (value > 1e300)
             throw _context.Error(valueStart, "The value is too large.");
 
-        if (_diagram.Links.Count >= _context.Options.MaxNodes)
-            throw _context.Error(rowStart, $"The diagram has more than {_context.Options.MaxNodes} links.");
+        if (_diagram.Links.Count >= _context.Options.MaxEdges)
+            throw _context.Error(rowStart, $"The diagram has more than {_context.Options.MaxEdges} links.");
 
-        _diagram.Links.Add(new SankeyLink(Trim(source), Trim(target), value));
+        var sourceName = Trim(source);
+        var targetName = Trim(target);
+        var newNodes = (_nodeNames.Contains(sourceName) ? 0 : 1) + ((string.Equals(sourceName, targetName, StringComparison.Ordinal) || _nodeNames.Contains(targetName)) ? 0 : 1);
+        if (_nodeNames.Count + newNodes > _context.Options.MaxNodes)
+            throw _context.Error(rowStart, $"The diagram has more than {_context.Options.MaxNodes} nodes.");
+
+        _nodeNames.Add(sourceName);
+        _nodeNames.Add(targetName);
+        _diagram.Links.Add(new SankeyLink(sourceName, targetName, value));
         _linkOffsets.Add(rowStart);
     }
 

@@ -48,16 +48,16 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,352 | 29,911 | 2,117 | 95% |
+| [Stable](#stable-tests) | 26,355 | 29,911 | 2,117 | 95% |
 | [Tentative](#tentative-tests) | 1,383 | 3,169 | 698 | 56% |
 | [Reftests](#reftests) | 28,112 | 29,507 | 171 | 96% |
-| **All** | **55,847** | **62,587** | **2,986** | **94%** |
+| **All** | **55,850** | **62,587** | **2,986** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 253
+- **BUG**: 250
 - **TEST BUG**: 1,017
 - **NOT IMPLEMENTED**: 4,491
 - **REQUIRES**: 765
@@ -240,7 +240,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html-aam`](html-aam.md) | 25 | 26 | 0 | 96% |
 | [`html-media-capture`](html-media-capture.md) | 0 | 2 | 2 | – |
 | [`html/browsers`](html/browsers.md) | 696 | 748 | 0 | 93% |
-| [`html/canvas`](html/canvas.md) | 3,088 | 3,166 | 0 | 98% |
+| [`html/canvas`](html/canvas.md) | 3,089 | 3,166 | 0 | 98% |
 | [`html/cross-origin-embedder-policy`](html/cross-origin-embedder-policy.md) | 66 | 73 | 0 | 90% |
 | [`html/cross-origin-opener-policy`](html/cross-origin-opener-policy.md) | 68 | 115 | 0 | 59% |
 | [`html/dom`](html/dom.md) | 212 | 216 | 0 | 98% |
@@ -253,7 +253,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/rendering`](html/rendering.md) | 145 | 151 | 0 | 96% |
 | [`html/scripting`](html/scripting.md) | 3 | 3 | 0 | 100% |
 | [`html/select`](html/select.md) | 1 | 1 | 0 | 100% |
-| [`html/semantics`](html/semantics.md) | 2,112 | 2,208 | 31 | 97% |
+| [`html/semantics`](html/semantics.md) | 2,114 | 2,208 | 31 | 97% |
 | [`html/syntax`](html/syntax.md) | 105 | 106 | 0 | 99% |
 | [`html/the-xhtml-syntax`](html/the-xhtml-syntax.md) | 13 | 13 | 0 | 100% |
 | [`html/user-activation`](html/user-activation.md) | 15 | 18 | 0 | 83% |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 320 | 331 | 0 | 97% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,352** | **29,911** | **2,117** | **95%** |
+| **Total (343 sections)** | **26,355** | **29,911** | **2,117** | **95%** |
 
 ## Tentative tests
 

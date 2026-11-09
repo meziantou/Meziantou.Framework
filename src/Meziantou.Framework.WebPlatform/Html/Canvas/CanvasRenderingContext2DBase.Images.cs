@@ -195,14 +195,15 @@ public abstract partial class CanvasRenderingContext2DBase
 
             case HtmlCanvasElement canvas:
             {
-                if (canvas.Width == 0 || canvas.Height == 0)
+                var (canvasWidth, canvasHeight) = canvas.BitmapSize;
+                if (canvasWidth == 0 || canvasHeight == 0)
                     throw new DomException("The canvas has no pixels", "InvalidStateError");
 
                 // A placeholder canvas draws the last frame committed by its OffscreenCanvas
                 if (canvas.PlaceholderFrame is { Image: { } frame } placeholder)
                     return new UsableImage(frame, placeholder.Pixels.Width, placeholder.Pixels.Height, placeholder.Pixels.IsOriginClean);
 
-                return GetCanvasImage(canvas.RenderingContext, (int)canvas.Width, (int)canvas.Height, backend);
+                return GetCanvasImage(canvas.RenderingContext, canvasWidth, canvasHeight, backend);
             }
 
             case OffscreenCanvas offscreen:

@@ -232,8 +232,9 @@ internal sealed class ReplacedContent
                 return input.GetImageButtonNaturalSize(layout.Replaced.ImageOrientation.FromImage);
 
             case HtmlCanvasElement canvas:
-                // https://html.spec.whatwg.org/multipage/canvas.html#the-canvas-element: the natural dimensions of the bitmap
-                return ImageNaturalSize.FromPixels(canvas.Width, canvas.Height);
+                // https://html.spec.whatwg.org/multipage/canvas.html#the-canvas-element: the natural dimensions of the bitmap (the
+                // bitmap of the OffscreenCanvas for a placeholder canvas, whatever its width and height attributes)
+                return ImageNaturalSize.FromPixels((uint)canvas.BitmapSize.Width, (uint)canvas.BitmapSize.Height);
 
             case HtmlVideoElement video:
                 // https://html.spec.whatwg.org/multipage/media.html#the-video-element: the natural size of the poster frame when

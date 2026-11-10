@@ -4863,8 +4863,456 @@ public sealed class TdsQueryEngineTests
     {
         await ExecuteQueryExpectingServerError(
             CreateQueryEngineOptions(),
-            command => command.CommandText = "SELECT Id FROM customers; DELETE FROM customers",
-            expectedMessageContains: "Only SELECT statements are supported.");
+            command => command.CommandText = "SELECT Id FROM customers; DECLARE @x int",
+            expectedMessageContains: "Only SELECT, INSERT, UPDATE and DELETE statements are supported.");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RecursiveCte_WalksAHierarchy()
+    {
+        await ExecuteQuery(
+            CreateQueryEngineOptions(),
+            command =>
+            {
+                command.CommandText = """
+                    WITH chain AS (
+                        SELECT Id, Name, 0 AS Level FROM employees WHERE ManagerId IS NULL
+                        UNION ALL
+                        SELECT e.Id, e.Name, c.Level + 1 FROM employees e INNER JOIN chain c ON e.ManagerId = c.Id
+                    )
+                    SELECT Id, Name, Level FROM chain ORDER BY Level, Id
+                    """;
+            },
+            """
+            Id Name Level
+            1 Alice 0
+            2 Bob 1
+            3 Carol 1
+            4 Dave 2
+            5 Eve 3
+            """,
+            expectedMaterializedQueries: "chain.OrderBy(projection => projection.Level).ThenBy(projection2 => projection2.Id).Select(projection3 => new TdsProjection() {Id = projection3.Id, Name = projection3.Name, Level = projection3.Level})");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RecursiveCte_WithColumnListAndParameter_GeneratesASequence()
+    {
+        await ExecuteQuery(
+            CreateQueryEngineOptions(),
+            command =>
+            {
+                command.CommandText = """
+                    WITH numbers (n) AS (
+                        SELECT Id FROM customers WHERE Id = 1
+                        UNION ALL
+                        SELECT n + 1 FROM numbers WHERE n < @max
+                    )
+                    SELECT n FROM numbers ORDER BY n DESC
+                    """;
+                _ = command.Parameters.Add(new SqlParameter("@max", SqlDbType.Int) { Value = 5 });
+            },
+            """
+            n
+            5
+            4
+            3
+            2
+            1
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RecursiveCte_ReadTwice_ReturnsTheSameRows()
+    {
+        // A self join enumerates the expression again while the first enumeration is in progress
+        await ExecuteQuery(
+            CreateQueryEngineOptions(),
+            command =>
+            {
+                command.CommandText = """
+                    WITH numbers (n) AS (
+                        SELECT Id FROM customers WHERE Id = 1
+                        UNION ALL
+                        SELECT n + 1 FROM numbers WHERE n < 3
+                    )
+                    SELECT a.n AS A, b.n AS B FROM numbers a INNER JOIN numbers b ON a.n = b.n ORDER BY a.n
+                    """;
+            },
+            """
+            A B
+            1 1
+            2 2
+            3 3
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RecursiveCte_NullableRecursiveColumn_MakesTheColumnNullable()
+    {
+        await ExecuteQuery(
+            CreateQueryEngineOptions(),
+            command =>
+            {
+                command.CommandText = """
+                    WITH tree AS (
+                        SELECT Id, Id AS ParentId FROM employees WHERE ManagerId IS NULL
+                        UNION ALL
+                        SELECT e.Id, e.ManagerId FROM employees e INNER JOIN tree t ON e.ManagerId = t.Id
+                    )
+                    SELECT Id, ParentId FROM tree WHERE Id < 4 ORDER BY Id
+                    """;
+            },
+            """
+            Id ParentId
+            1 1
+            2 1
+            3 1
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RecursiveCte_MaxRecursion_AllowsTheLevelsOfTheHint()
+    {
+        await ExecuteQuery(
+            CreateQueryEngineOptions(),
+            command =>
+            {
+                command.CommandText = """
+                    WITH numbers (n) AS (
+                        SELECT Id FROM customers WHERE Id = 1
+                        UNION ALL
+                        SELECT n + 1 FROM numbers WHERE n < 5
+                    )
+                    SELECT n FROM numbers ORDER BY n
+                    OPTION (MAXRECURSION 4)
+                    """;
+            },
+            """
+            n
+            1
+            2
+            3
+            4
+            5
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Theory]
+    [InlineData("OPTION (MAXRECURSION 3)")]
+    [InlineData("")]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The SQL query comes from the test data and is not user-controlled.")]
+    public async Task SqlClient_QueryEngine_RecursiveCte_ExceedingMaxRecursion_ReturnsError(string hint)
+    {
+        await ExecuteQueryExpectingServerError(
+            CreateQueryEngineOptions(),
+            command => command.CommandText = $"WITH numbers (n) AS (SELECT Id FROM customers WHERE Id = 1 UNION ALL SELECT n + 1 FROM numbers WHERE n < 1000) SELECT n FROM numbers {hint}",
+            expectedErrorNumber: 530,
+            expectedMessageContains: "The maximum recursion");
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RecursiveCte_ExceedingMaxRows_ReturnsError()
+    {
+        var queryEngineOptions = CreateQueryEngineOptions();
+        queryEngineOptions.MaxRecursiveCommonTableExpressionRows = 3;
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command => command.CommandText = "WITH numbers (n) AS (SELECT Id FROM customers WHERE Id = 1 UNION ALL SELECT n + 1 FROM numbers WHERE n < 10) SELECT n FROM numbers OPTION (MAXRECURSION 0)",
+            expectedMessageContains: "returned more than 3 rows");
+    }
+
+    [Theory]
+    [InlineData("WITH c AS (SELECT Id FROM customers UNION SELECT c.Id FROM c) SELECT Id FROM c", 252)]
+    [InlineData("WITH c AS (SELECT Id FROM c) SELECT Id FROM c", 246)]
+    [InlineData("WITH c AS (SELECT Id FROM customers UNION ALL SELECT a.Id FROM c a INNER JOIN c b ON a.Id = b.Id) SELECT Id FROM c", 253)]
+    [InlineData("WITH c AS (SELECT Id FROM customers UNION ALL SELECT x.Name FROM customers x INNER JOIN c ON x.Id = c.Id) SELECT Id FROM c", 240)]
+    [InlineData("WITH c AS (SELECT Id, Name FROM customers UNION ALL SELECT Id FROM c) SELECT Id FROM c", 205)]
+    [InlineData("WITH c AS (SELECT Id FROM customers UNION ALL SELECT DISTINCT Id FROM c) SELECT Id FROM c", 460)]
+    [InlineData("WITH c AS (SELECT Id FROM customers UNION ALL SELECT TOP 1 Id FROM c) SELECT Id FROM c", 461)]
+    [InlineData("WITH c AS (SELECT Id FROM customers UNION ALL SELECT c.Id FROM c LEFT JOIN orders o ON o.Id = c.Id) SELECT Id FROM c", 462)]
+    [InlineData("WITH c AS (SELECT Id FROM customers UNION ALL SELECT Id FROM orders WHERE Id IN (SELECT Id FROM c)) SELECT Id FROM c", 465)]
+    [InlineData("WITH c AS (SELECT Id FROM customers UNION ALL SELECT MAX(Id) FROM c) SELECT Id FROM c", 467)]
+    [InlineData("WITH c AS (SELECT Id FROM customers UNION ALL SELECT Id + 1 FROM c) SELECT Id FROM c OPTION (MAXRECURSION 40000)", 310)]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The SQL query comes from the test data and is not user-controlled.")]
+    public async Task SqlClient_QueryEngine_RecursiveCte_Invalid_ReturnsSqlServerError(string commandText, int expectedErrorNumber)
+    {
+        await ExecuteQueryExpectingServerError(
+            CreateQueryEngineOptions(),
+            command => command.CommandText = commandText,
+            expectedErrorNumber);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Insert_Values_CallsTheInsertHandler()
+    {
+        var products = CreateProducts();
+        var recordsAffected = await ExecuteNonQuery(
+            CreateWritableQueryEngineOptions(products),
+            command =>
+            {
+                command.CommandText = """
+                    INSERT INTO dbo.products (Id, Name, Price) VALUES (3, 'Webcam', 39.9), (4, @name, @price + 1)
+                    """;
+                _ = command.Parameters.Add(new SqlParameter("@name", SqlDbType.NVarChar, 50) { Value = "Cable" });
+                _ = command.Parameters.Add(new SqlParameter("@price", SqlDbType.Decimal) { Value = 4m });
+            });
+
+        Assert.Equal(2, recordsAffected);
+        Assert.Equal(["1 Keyboard 49.90 5", "2 Mouse 19.50 NULL", "3 Webcam 39.9 NULL", "4 Cable 5 NULL"], products.Select(FormatProduct));
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Insert_WithoutColumnList_UsesTheWritableColumnsInOrder()
+    {
+        var products = CreateProducts();
+        var recordsAffected = await ExecuteNonQuery(
+            CreateWritableQueryEngineOptions(products),
+            command => command.CommandText = "INSERT INTO products VALUES (3, 'Pen', DEFAULT, 7); INSERT INTO products DEFAULT VALUES");
+
+        Assert.Equal(2, recordsAffected);
+        Assert.Equal(["1 Keyboard 49.90 5", "2 Mouse 19.50 NULL", "3 Pen 0 7", "0  0 NULL"], products.Select(FormatProduct));
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Insert_Select_InsertsTheRowsOfTheQuery()
+    {
+        var products = CreateProducts();
+        await ExecuteQuery(
+            CreateWritableQueryEngineOptions(products),
+            command =>
+            {
+                command.CommandText = """
+                    INSERT INTO products (Id, Name, Price) SELECT Id + 10, Name, Id FROM customers WHERE Id > 1;
+                    SELECT Id, Name, Price FROM products ORDER BY Id
+                    """;
+            },
+            """
+            Id Name Price
+            1 Keyboard 49.90
+            2 Mouse 19.50
+            12 Bob 2.00
+            14 David 4.00
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Theory]
+    [InlineData("INSERT INTO products (Id, Name) VALUES (3, NULL)", 515)]
+    [InlineData("INSERT INTO products (Id, Price) VALUES (3, NULL)", 515)]
+    [InlineData("INSERT INTO products (Id, Unknown) VALUES (3, 1)", 207)]
+    [InlineData("INSERT INTO products (Id, Id) VALUES (3, 1)", 264)]
+    [InlineData("INSERT INTO products (Id, Name) VALUES (3)", 109)]
+    [InlineData("INSERT INTO products (Id) VALUES (3, 'x')", 110)]
+    [InlineData("INSERT INTO products (Id) SELECT Id, Name FROM customers", 121)]
+    [InlineData("INSERT INTO products (Id, Name) VALUES ('x', 'y')", 50004)]
+    [InlineData("INSERT INTO products (Id, Name) OUTPUT inserted.Id VALUES (3, 'y')", 50004)]
+    [InlineData("INSERT INTO customers (Id, Name) VALUES (3, 'x')", 50004)]
+    [InlineData("UPDATE products SET Price = NULLIF(Id, 2)", 515)]
+    [InlineData("UPDATE products SET Name = 'x', Name = 'y'", 264)]
+    [InlineData("UPDATE products SET Total = 1", 207)]
+    [InlineData("UPDATE products SET Price = Price / (Id - 2)", 8134)]
+    [InlineData("UPDATE p SET Price = 1 FROM products p INNER JOIN customers c ON c.Id = p.Id", 50004)]
+    [InlineData("UPDATE customers SET Name = 'x'", 50004)]
+    [InlineData("DELETE FROM customers", 50004)]
+    [InlineData("WITH c AS (SELECT Id FROM products) DELETE FROM c", 50004)]
+    [InlineData("INSERT INTO products (Id, Name) VALUES (3, 'x'); SELECT Id FROM unknown_table", 50004)]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The SQL query comes from the test data and is not user-controlled.")]
+    public async Task SqlClient_QueryEngine_DataModification_Invalid_ReturnsErrorAndChangesNothing(string commandText, int expectedErrorNumber)
+    {
+        var products = CreateProducts();
+        await ExecuteQueryExpectingServerError(
+            CreateWritableQueryEngineOptions(products),
+            command => command.CommandText = commandText,
+            expectedErrorNumber);
+
+        Assert.Equal(["1 Keyboard 49.90 5", "2 Mouse 19.50 NULL"], products.Select(FormatProduct));
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Update_AssignsTheNewValuesOfTheMatchingRows()
+    {
+        var products = CreateProducts();
+        List<Product> updatedRows = [];
+        var queryEngineOptions = CreateWritableQueryEngineOptions(products, updated: rows => updatedRows.AddRange(rows));
+        var recordsAffected = await ExecuteNonQuery(
+            queryEngineOptions,
+            command => command.CommandText = "UPDATE products SET Price = Price * 2, Stock += 1, Name = UPPER(Name) WHERE Name LIKE 'K%'");
+
+        Assert.Equal(1, recordsAffected);
+        Assert.Equal(["1 KEYBOARD 99.80 6", "2 Mouse 19.50 NULL"], products.Select(FormatProduct));
+        Assert.Same(products[0], Assert.Single(updatedRows));
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Update_SetExpressionsReadTheValuesBeforeTheStatement()
+    {
+        var products = CreateProducts();
+        var recordsAffected = await ExecuteNonQuery(
+            CreateWritableQueryEngineOptions(products),
+            command => command.CommandText = "UPDATE p SET Stock = p.Id, Id = Stock FROM products AS p WHERE p.Id = 1");
+
+        Assert.Equal(1, recordsAffected);
+        Assert.Equal(["5 Keyboard 49.90 1", "2 Mouse 19.50 NULL"], products.Select(FormatProduct));
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Delete_RemovesTheMatchingRows()
+    {
+        var products = CreateProducts();
+        await ExecuteQuery(
+            CreateWritableQueryEngineOptions(products),
+            command =>
+            {
+                command.CommandText = """
+                    DELETE FROM products WHERE Price > @maxPrice;
+                    SELECT Id, Name FROM products
+                    """;
+                _ = command.Parameters.Add(new SqlParameter("@maxPrice", SqlDbType.Decimal) { Value = 20m });
+            },
+            """
+            Id Name
+            2 Mouse
+            """,
+            expectedMaterializedQueries: """
+                System.Collections.Generic.List`1[Product].Where(product => (product.Price > 20))
+                System.Collections.Generic.List`1[Product].Select(product => new TdsProjection() {Id = product.Id, Name = product.Name})
+                """);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_DeleteTop_RemovesTheGivenNumberOfRows()
+    {
+        var products = CreateProducts();
+        var recordsAffected = await ExecuteNonQuery(
+            CreateWritableQueryEngineOptions(products),
+            command => command.CommandText = "DELETE TOP (1) products");
+
+        Assert.Equal(1, recordsAffected);
+        Assert.Single(products);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Delete_WithRecursiveCte_RemovesTheRowsOfTheExpression()
+    {
+        var products = CreateProducts();
+        products.Add(new Product { Id = 3, Name = "Webcam", Price = 39.9m });
+        var recordsAffected = await ExecuteNonQuery(
+            CreateWritableQueryEngineOptions(products),
+            command =>
+            {
+                command.CommandText = """
+                    WITH ids (n) AS (SELECT Id FROM products WHERE Id = 2 UNION ALL SELECT n + 1 FROM ids WHERE n < 3)
+                    DELETE FROM products WHERE Id IN (SELECT n FROM ids)
+                    """;
+            });
+
+        Assert.Equal(2, recordsAffected);
+        Assert.Equal(["1 Keyboard 49.90 5"], products.Select(FormatProduct));
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_DataModification_Statements_ReturnTheSumOfTheirCounts()
+    {
+        var products = CreateProducts();
+        var recordsAffected = await ExecuteNonQuery(
+            CreateWritableQueryEngineOptions(products),
+            command =>
+            {
+                command.CommandText = """
+                    INSERT INTO products (Id, Name) VALUES (3, 'Pen'), (4, 'Ink');
+                    UPDATE products SET Stock = 0 WHERE Stock IS NULL;
+                    SELECT Id FROM products;
+                    DELETE FROM products WHERE Id = 1;
+                    """;
+            });
+
+        Assert.Equal(6, recordsAffected);
+        Assert.Equal(["2 Mouse 19.50 0", "3 Pen 0 0", "4 Ink 0 0"], products.Select(FormatProduct));
+    }
+
+    [Theory]
+    [InlineData(TdsQueryEngineResourceKind.QueryRootInsert, "INSERT INTO products (Id, Name) VALUES (3, 'x')", "INSERT")]
+    [InlineData(TdsQueryEngineResourceKind.QueryRootUpdate, "UPDATE products SET Name = 'x'", "UPDATE")]
+    [InlineData(TdsQueryEngineResourceKind.QueryRootDelete, "DELETE FROM products", "DELETE")]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The SQL query comes from the test data and is not user-controlled.")]
+    public async Task SqlClient_QueryEngine_DataModification_Denied_ReturnsPermissionError(TdsQueryEngineResourceKind deniedResourceKind, string commandText, string permission)
+    {
+        var products = CreateProducts();
+        var queryEngineOptions = CreateWritableQueryEngineOptions(products);
+        queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) => resourceKind != deniedResourceKind;
+        await ExecuteQueryExpectingServerError(
+            queryEngineOptions,
+            command => command.CommandText = commandText,
+            expectedErrorNumber: 229,
+            expectedMessageContains: $"The {permission} permission was denied on the object 'products'.");
+
+        Assert.HasCount(2, products);
+    }
+
+    [Fact]
+    public async Task Documentation_QueryEngineDataModification()
+    {
+        #region TdsServer_QueryEngineDataModification
+        var products = new List<Product>
+        {
+            new() { Id = 1, Name = "Keyboard", Price = 49.90m },
+        };
+        var productsLock = new Lock();
+
+        var queryEngineOptions = new TdsQueryEngineOptions();
+        queryEngineOptions.AddQueryRoot(
+            "products",
+            context => products.AsQueryable(),
+            new TdsQueryRootWriteHandlers<Product>
+            {
+                Insert = (context, rows, cancellationToken) =>
+                {
+                    lock (productsLock)
+                    {
+                        products.AddRange(rows);
+                    }
+
+                    return ValueTask.CompletedTask;
+                },
+
+                // The engine has already assigned the new values to the rows, so there is nothing to save
+                Update = (context, rows, cancellationToken) => ValueTask.CompletedTask,
+                Delete = (context, rows, cancellationToken) =>
+                {
+                    lock (productsLock)
+                    {
+                        products.RemoveAll(rows.Contains);
+                    }
+
+                    return ValueTask.CompletedTask;
+                },
+            });
+
+        var options = new TdsServerOptions();
+        options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback);
+        using var server = new TdsServer(
+            options,
+            authenticationHandler: (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+            queryHandler: TdsQueryEngine.CreateQueryHandler(queryEngineOptions));
+        await server.StartAsync();
+
+        await using var connection = new SqlConnection($"Server=127.0.0.1,{server.Ports[0]};User ID=app;Password=Password123!;Encrypt=Optional");
+        await connection.OpenAsync();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            INSERT INTO products (Id, Name, Price) VALUES (2, 'Mouse', 19.50);
+            UPDATE products SET Price = Price * 0.9 WHERE Price > 40;
+            """;
+        var recordsAffected = await command.ExecuteNonQueryAsync();
+
+        Assert.Equal(2, recordsAffected);
+        Assert.Equal(44.910m, products[0].Price);
+        #endregion
     }
 
     private static TdsQueryEngineOptions CreateQueryEngineOptions()
@@ -4875,7 +5323,58 @@ public sealed class TdsQueryEngineTests
         options.AddQueryRoot("nullable_customers", context => GetNullableCustomers().AsQueryable());
         options.AddQueryRoot("json_docs", context => GetJsonDocuments().AsQueryable());
         options.AddQueryRoot("xml_docs", context => GetXmlDocuments().AsQueryable());
+        options.AddQueryRoot("employees", context => GetEmployees().AsQueryable());
         return options;
+    }
+
+    private static TdsQueryEngineOptions CreateWritableQueryEngineOptions(List<Product> products, Action<IReadOnlyList<Product>>? updated = null)
+    {
+        var options = CreateQueryEngineOptions();
+        options.AddQueryRoot("products", context => products.AsQueryable(), new TdsQueryRootWriteHandlers<Product>
+        {
+            Insert = (context, rows, cancellationToken) =>
+            {
+                products.AddRange(rows);
+                return ValueTask.CompletedTask;
+            },
+            Update = (context, rows, cancellationToken) =>
+            {
+                updated?.Invoke(rows);
+                return ValueTask.CompletedTask;
+            },
+            Delete = (context, rows, cancellationToken) =>
+            {
+                products.RemoveAll(rows.Contains);
+                return ValueTask.CompletedTask;
+            },
+        });
+        return options;
+    }
+
+    private static List<Product> CreateProducts()
+    {
+        return
+        [
+            new Product { Id = 1, Name = "Keyboard", Price = 49.90m, Stock = 5 },
+            new Product { Id = 2, Name = "Mouse", Price = 19.50m },
+        ];
+    }
+
+    private static string FormatProduct(Product product)
+    {
+        return string.Join(' ', FormatValue(product.Id), product.Name, FormatValue(product.Price), FormatValue(product.Stock));
+    }
+
+    private static Employee[] GetEmployees()
+    {
+        return
+        [
+            new Employee(1, "Alice", null),
+            new Employee(2, "Bob", 1),
+            new Employee(3, "Carol", 1),
+            new Employee(4, "Dave", 2),
+            new Employee(5, "Eve", 4),
+        ];
     }
 
     private static ClaimsPrincipal CreateUserContext(string userId)
@@ -4977,6 +5476,30 @@ public sealed class TdsQueryEngineTests
             var actualMaterializedQueries = NormalizeMultilineString(string.Join('\n', materializedQueries));
             AssertMaterializedQueries(expectedMaterializedQueries, actualMaterializedQueries);
         }
+    }
+
+    private static async Task<int> ExecuteNonQuery(TdsQueryEngineOptions queryEngineOptions, Action<SqlCommand> configureCommand)
+    {
+        var options = new TdsServerOptions();
+        options.AddTcpListener(0, IPAddress.Loopback);
+
+        using var server = new TdsServer(
+            options,
+            (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success("master")),
+            TdsQueryEngine.CreateQueryHandler(queryEngineOptions));
+
+        await server.StartAsync();
+        var port = Assert.Single(server.Ports);
+
+        return await ExecuteWithTransientSqlRetry(async () =>
+        {
+            await using var connection = new SqlConnection(CreateConnectionString(port));
+            await connection.OpenAsync();
+
+            await using var command = connection.CreateCommand();
+            configureCommand(command);
+            return await command.ExecuteNonQueryAsync();
+        });
     }
 
     private static async Task ExecuteQueryExpectingServerError(TdsQueryEngineOptions queryEngineOptions, Action<SqlCommand> configureCommand, int expectedErrorNumber = 50004, string? expectedMessageContains = null, ClaimsPrincipal? userContext = null)
@@ -5129,6 +5652,19 @@ public sealed class TdsQueryEngineTests
     private sealed record Order(int Id, string Region, int Amount);
 
     private sealed record NullableCustomer(int Id, string? Name, int? Score);
+
+    private sealed record Employee(int Id, string Name, int? ManagerId);
+
+    private sealed class Product
+    {
+        public int Id { get; set; }
+
+        public string Name { get; set; } = "";
+
+        public decimal Price { get; set; }
+
+        public int? Stock { get; set; }
+    }
 
     private sealed record JsonDocumentRow(int Id, string? Payload);
 

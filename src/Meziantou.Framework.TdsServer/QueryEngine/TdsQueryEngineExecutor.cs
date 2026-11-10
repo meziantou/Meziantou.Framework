@@ -18,21 +18,24 @@ namespace Meziantou.Framework.Tds.QueryEngine;
 [SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Query translation helpers intentionally use abstract return types for flexibility.")]
 [RequiresUnreferencedCode(TdsQueryEngine.RequiresUnreferencedCodeMessage)]
 [RequiresDynamicCode(TdsQueryEngine.RequiresDynamicCodeMessage)]
-internal sealed class TdsQueryEngineExecutor
+internal sealed partial class TdsQueryEngineExecutor
 {
     private sealed class QueryExecutionContext
     {
-        public QueryExecutionContext(TdsQueryContext queryContext, IReadOnlyDictionary<string, TdsQueryRoot> queryRoots)
+        public QueryExecutionContext(TdsQueryContext queryContext, IReadOnlyDictionary<string, TdsQueryRoot> queryRoots, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(queryContext);
             ArgumentNullException.ThrowIfNull(queryRoots);
 
             QueryContext = queryContext;
             QueryRoots = queryRoots;
+            CancellationToken = cancellationToken;
             ResolvedQueryRoots = new Dictionary<string, IQueryable>(StringComparer.OrdinalIgnoreCase);
         }
 
         public TdsQueryContext QueryContext { get; }
+
+        public CancellationToken CancellationToken { get; }
 
         public IReadOnlyDictionary<string, TdsQueryRoot> QueryRoots { get; }
 
@@ -82,7 +85,7 @@ internal sealed class TdsQueryEngineExecutor
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var queryExecutionContext = CreateQueryExecutionContext(context);
+        var queryExecutionContext = CreateQueryExecutionContext(context, cancellationToken);
         try
         {
             if (!context.HasCompleteParameters)
@@ -117,9 +120,9 @@ internal sealed class TdsQueryEngineExecutor
         }
     }
 
-    private QueryExecutionContext CreateQueryExecutionContext(TdsQueryContext queryContext)
+    private QueryExecutionContext CreateQueryExecutionContext(TdsQueryContext queryContext, CancellationToken cancellationToken)
     {
-        return new QueryExecutionContext(queryContext, _queryRoots);
+        return new QueryExecutionContext(queryContext, _queryRoots, cancellationToken);
     }
 
     private async ValueTask<TdsQueryResult> ExecuteStoredProcedureAsync(TdsQueryContext context, CancellationToken cancellationToken)
@@ -221,14 +224,22 @@ internal sealed class TdsQueryEngineExecutor
     private async ValueTask<TdsQueryResult> ExecuteTextQueryAsync(string commandText, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext, CancellationToken cancellationToken)
     {
         // All the statements are translated before the first one runs, so an invalid statement runs none of them
-        var translatedQueries = TranslateQueries(commandText, parameters, queryExecutionContext);
+        var translatedStatements = TranslateStatements(commandText, parameters, queryExecutionContext);
         var result = new TdsQueryResult();
-        foreach (var translatedQuery in translatedQueries)
+        foreach (var translatedStatement in translatedStatements)
         {
-            IReadOnlyList<object?> rows;
+            IReadOnlyList<object?>? rows = null;
+            long recordsAffected = 0;
             try
             {
-                rows = await _options.MaterializeAsync(translatedQuery, cancellationToken).ConfigureAwait(false);
+                if (translatedStatement.Query is not null)
+                {
+                    rows = await _options.MaterializeAsync(translatedStatement.Query, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    recordsAffected = await translatedStatement.ExecuteAsync!(cancellationToken).ConfigureAwait(false);
+                }
             }
             catch (Exception ex) when (ex is ArithmeticException or FormatException or InvalidCastException or XPathException)
             {
@@ -236,7 +247,15 @@ internal sealed class TdsQueryEngineExecutor
                 throw CreateEvaluationError(ex);
             }
 
-            result.ResultSets.Add(TdsQueryResultBuilder.CreateResultSet(rows, translatedQuery.ElementType));
+            if (translatedStatement.Query is not null)
+            {
+                result.ResultSets.Add(TdsQueryResultBuilder.CreateResultSet(rows!, translatedStatement.Query.ElementType));
+            }
+            else
+            {
+                // As SQL Server, the count of the request is the sum of the rows modified by its statements
+                result.RecordsAffected = (result.RecordsAffected ?? 0) + recordsAffected;
+            }
         }
 
         return result;
@@ -263,7 +282,7 @@ internal sealed class TdsQueryEngineExecutor
         return SqlParser.Parse(sql, options, out _);
     }
 
-    private List<IQueryable> TranslateQueries(string commandText, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext)
+    private List<TranslatedStatement> TranslateStatements(string commandText, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext)
     {
         SqlParseResult parseResult;
         try
@@ -285,43 +304,51 @@ internal sealed class TdsQueryEngineExecutor
         // "GO" separates batches in client tools and is not part of T-SQL, so a request holds one batch
         if (parseResult.Script.Batches.Count != 1 || parseResult.Script.Batches[0].Statements.Count == 0)
         {
-            throw new TdsQueryEngineException("Only SELECT statements are supported.");
+            throw new TdsQueryEngineException(UnsupportedStatementMessage);
         }
 
-        var queries = new List<IQueryable>(parseResult.Script.Batches[0].Statements.Count);
+        var statements = new List<TranslatedStatement>(parseResult.Script.Batches[0].Statements.Count);
         foreach (var statement in parseResult.Script.Batches[0].Statements)
         {
-            if (statement is not SqlSelectStatement selectStatement)
+            statements.Add(statement switch
             {
-                throw new TdsQueryEngineException("Only SELECT statements are supported.");
-            }
-
-            queries.Add(TranslateSelectStatement(selectStatement, parameters, queryExecutionContext));
+                SqlSelectStatement selectStatement => new TranslatedStatement(TranslateSelectStatement(selectStatement, parameters, queryExecutionContext), ExecuteAsync: null),
+                SqlInsertStatement insertStatement => new TranslatedStatement(Query: null, TranslateInsertStatement(insertStatement, parameters, queryExecutionContext)),
+                SqlUpdateStatement updateStatement => new TranslatedStatement(Query: null, TranslateUpdateStatement(updateStatement, parameters, queryExecutionContext)),
+                SqlDeleteStatement deleteStatement => new TranslatedStatement(Query: null, TranslateDeleteStatement(deleteStatement, parameters, queryExecutionContext)),
+                _ => throw new TdsQueryEngineException(UnsupportedStatementMessage),
+            });
         }
 
-        return queries;
+        return statements;
     }
 
     private IQueryable TranslateSelectStatement(SqlSelectStatement selectStatement, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext)
     {
-        if (selectStatement.SelectSpecification.ForClause is not null)
+        var cteRoots = BuildCteRoots(selectStatement.QueryWithClause, GetMaxRecursion(selectStatement), parameters, queryExecutionContext);
+        return TranslateSelectSpecification(selectStatement.SelectSpecification, parameters, cteRoots, queryExecutionContext);
+    }
+
+    /// <param name="columnNames">The names of the selected columns, by position, when they come from another statement (the column list of an INSERT statement).</param>
+    private IQueryable TranslateSelectSpecification(SqlSelectSpecification selectSpecification, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, IReadOnlyList<string>? columnNames = null)
+    {
+        if (selectSpecification.ForClause is not null)
         {
             throw new TdsQueryEngineException("The SQL query uses a SELECT feature that is not supported.");
         }
 
-        var cteRoots = BuildCteRoots(selectStatement.QueryWithClause, parameters, queryExecutionContext);
         IQueryable query;
-        if (selectStatement.SelectSpecification.QueryExpression is SqlQuerySpecification querySpecification)
+        if (selectSpecification.QueryExpression is SqlQuerySpecification querySpecification)
         {
-            query = TranslateQuerySpecification(querySpecification, selectStatement.SelectSpecification.OrderByClause, parameters, cteRoots, queryExecutionContext);
+            query = TranslateQuerySpecification(querySpecification, selectSpecification.OrderByClause, parameters, cteRoots, queryExecutionContext, columnNames);
         }
         else
         {
-            query = TranslateQueryExpression(selectStatement.SelectSpecification.QueryExpression, parameters, cteRoots, queryExecutionContext);
-            if (selectStatement.SelectSpecification.OrderByClause is not null)
+            query = TranslateQueryExpression(selectSpecification.QueryExpression, parameters, cteRoots, queryExecutionContext);
+            if (selectSpecification.OrderByClause is not null)
             {
-                query = ApplyOrderBy(CreateProjectionSource(query), selectStatement.SelectSpecification.OrderByClause, parameters, cteRoots, queryExecutionContext).Query;
-                query = ApplyOffsetFetch(query, selectStatement.SelectSpecification.OrderByClause, parameters);
+                query = ApplyOrderBy(CreateProjectionSource(query), selectSpecification.OrderByClause, parameters, cteRoots, queryExecutionContext).Query;
+                query = ApplyOffsetFetch(query, selectSpecification.OrderByClause, parameters);
             }
         }
 
@@ -335,7 +362,7 @@ internal sealed class TdsQueryEngineExecutor
         return expression is null ? query : query.Provider.CreateQuery(expression);
     }
 
-    private IReadOnlyDictionary<string, TdsQueryRoot> BuildCteRoots(SqlQueryWithClause? withClause, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext)
+    private IReadOnlyDictionary<string, TdsQueryRoot> BuildCteRoots(SqlQueryWithClause? withClause, int maxRecursion, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext)
     {
         var result = new Dictionary<string, TdsQueryRoot>(StringComparer.OrdinalIgnoreCase);
         if (withClause is null)
@@ -346,10 +373,18 @@ internal sealed class TdsQueryEngineExecutor
         foreach (var cte in withClause.CommonTableExpressions)
         {
             var cteName = cte.Name.Value;
-            var query = TranslateQueryExpression(cte.QueryExpression, parameters, result, queryExecutionContext);
-            if (cte.ColumnList is not null && cte.ColumnList.Count > 0)
+            IQueryable query;
+            if (IsRecursiveCommonTableExpression(cte))
             {
-                query = ApplyColumnList(query, cte.ColumnList, scopeName: "CTE");
+                query = TranslateRecursiveCommonTableExpression(cte, maxRecursion, parameters, result, queryExecutionContext);
+            }
+            else
+            {
+                query = TranslateQueryExpression(cte.QueryExpression, parameters, result, queryExecutionContext);
+                if (cte.ColumnList is not null && cte.ColumnList.Count > 0)
+                {
+                    query = ApplyColumnList(query, cte.ColumnList, scopeName: "CTE");
+                }
             }
 
             // The SQL parser only reports syntax errors, and a repeated CTE name is a semantic one, so the
@@ -439,7 +474,8 @@ internal sealed class TdsQueryEngineExecutor
         return left.Provider.CreateQuery(call);
     }
 
-    private IQueryable TranslateQuerySpecification(SqlQuerySpecification querySpecification, SqlOrderByClause? orderByOverride, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
+    /// <param name="columnNames">The names of the selected columns, by position, when they come from another query (the anchor of a recursive common table expression).</param>
+    private IQueryable TranslateQuerySpecification(SqlQuerySpecification querySpecification, SqlOrderByClause? orderByOverride, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, IReadOnlyList<string>? columnNames = null)
     {
         if (querySpecification.IntoClause is not null ||
             querySpecification.WindowClause is not null ||
@@ -493,7 +529,7 @@ internal sealed class TdsQueryEngineExecutor
             source = ApplyOrderBy(source, orderByClause, parameters, cteRoots, queryExecutionContext);
         }
 
-        var query = ApplySelect(source, querySpecification.SelectClause, parameters, cteRoots, queryExecutionContext);
+        var query = ApplySelect(source, querySpecification.SelectClause, parameters, cteRoots, queryExecutionContext, columnNames);
         if (querySpecification.SelectClause.IsDistinct)
         {
             query = ApplyDistinct(query);
@@ -1131,7 +1167,7 @@ internal sealed class TdsQueryEngineExecutor
         return source.Query.Provider.CreateQuery(call);
     }
 
-    private IQueryable ApplySelect(QuerySource source, SqlSelectClause selectClause, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
+    private IQueryable ApplySelect(QuerySource source, SqlSelectClause selectClause, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, IReadOnlyList<string>? columnNames = null)
     {
         if (selectClause.SelectExpressions.Count == 1 && selectClause.SelectExpressions[0] is SqlSelectStarExpression)
         {
@@ -1141,6 +1177,11 @@ internal sealed class TdsQueryEngineExecutor
             }
 
             return source.Query;
+        }
+
+        if (columnNames is not null && columnNames.Count != selectClause.SelectExpressions.Count)
+        {
+            throw CreateColumnCountMismatchError();
         }
 
         var parameter = Expression.Parameter(source.RowType, "row");
@@ -1155,7 +1196,7 @@ internal sealed class TdsQueryEngineExecutor
             }
 
             var value = BuildScalar(scalarExpression.Expression, source.Aliases, parameter, parameters, cteRoots, queryExecutionContext);
-            var name = scalarExpression.Alias?.Value ?? GetColumnName(scalarExpression.Expression);
+            var name = columnNames is not null ? columnNames[values.Count] : scalarExpression.Alias?.Value ?? GetColumnName(scalarExpression.Expression);
             if (!names.Add(name))
             {
                 throw new TdsQueryEngineException($"Duplicate SELECT column name '{name}'.");
@@ -3429,6 +3470,9 @@ internal sealed class TdsQueryEngineExecutor
     }
 
     private sealed record QuerySource(IQueryable Query, Type RowType, IReadOnlyDictionary<string, AliasBinding> Aliases);
+
+    /// <summary>A translated statement: a query that returns a result set, or a statement that modifies rows and returns their count.</summary>
+    private sealed record TranslatedStatement(IQueryable? Query, Func<CancellationToken, ValueTask<long>>? ExecuteAsync);
 
     private sealed record GroupedQuerySource(IQueryable Query, Type GroupType, Type SourceRowType, IReadOnlyDictionary<string, AliasBinding> Keys, IReadOnlyDictionary<string, AliasBinding> Aliases);
 

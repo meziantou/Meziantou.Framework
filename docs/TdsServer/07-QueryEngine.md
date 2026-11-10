@@ -1,12 +1,13 @@
 ---
 title: The query engine
-description: Answer SELECT statements from IQueryable sources and stored procedure calls from .NET delegates, with per-user filtering and authorization.
+description: Answer SELECT statements from IQueryable sources, apply INSERT, UPDATE and DELETE statements with your handlers, and answer stored procedure calls from .NET delegates, with per-user filtering and authorization.
 ---
 
 The query engine is a ready-made query handler. It answers two kinds of requests:
 
 - **SQL text** (`SELECT` statements, with or without parameters): it translates the statement to a LINQ query over the
-  `IQueryable` sources you register as tables, called query roots, and returns the rows.
+  `IQueryable` sources you register as tables, called query roots, and returns the rows. `INSERT`, `UPDATE` and
+  `DELETE` statements call the handlers you register for the query root they target. See [Modify data](#modify-data).
 - **Stored procedure calls**: it calls the .NET delegate registered under the name of the procedure, with the
   parameters of the call, and returns what the delegate returns.
 
@@ -127,6 +128,97 @@ Table names are matched without their schema and database, ignoring case: `custo
 
 The statements the engine can translate are listed in [Supported SQL](08-SupportedSql.md).
 
+## Modify data
+
+A query root is read-only unless you register the handlers of the statements that change it. Pass a
+[TdsQueryRootWriteHandlers\<T\>](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryRootWriteHandlers{T}) to `AddQueryRoot`. Here, `Product` is a class with settable `Id`, `Name` and
+`Price` properties:
+
+<!-- ref:../../tests/Meziantou.Framework.TdsServer.Tests/TdsQueryEngineTests.cs;region=TdsServer_QueryEngineDataModification;format=md-fenced-code-block;dedent=true -->
+```csharp
+var products = new List<Product>
+{
+    new() { Id = 1, Name = "Keyboard", Price = 49.90m },
+};
+var productsLock = new Lock();
+
+var queryEngineOptions = new TdsQueryEngineOptions();
+queryEngineOptions.AddQueryRoot(
+    "products",
+    context => products.AsQueryable(),
+    new TdsQueryRootWriteHandlers<Product>
+    {
+        Insert = (context, rows, cancellationToken) =>
+        {
+            lock (productsLock)
+            {
+                products.AddRange(rows);
+            }
+
+            return ValueTask.CompletedTask;
+        },
+
+        // The engine has already assigned the new values to the rows, so there is nothing to save
+        Update = (context, rows, cancellationToken) => ValueTask.CompletedTask,
+        Delete = (context, rows, cancellationToken) =>
+        {
+            lock (productsLock)
+            {
+                products.RemoveAll(rows.Contains);
+            }
+
+            return ValueTask.CompletedTask;
+        },
+    });
+
+var options = new TdsServerOptions();
+options.AddTcpListener(port: 0, bindAddress: IPAddress.Loopback);
+using var server = new TdsServer(
+    options,
+    authenticationHandler: (context, cancellationToken) => ValueTask.FromResult(TdsAuthenticationResult.Success()),
+    queryHandler: TdsQueryEngine.CreateQueryHandler(queryEngineOptions));
+await server.StartAsync();
+
+await using var connection = new SqlConnection($"Server=127.0.0.1,{server.Ports[0]};User ID=app;Password=Password123!;Encrypt=Optional");
+await connection.OpenAsync();
+
+await using var command = connection.CreateCommand();
+command.CommandText = """
+    INSERT INTO products (Id, Name, Price) VALUES (2, 'Mouse', 19.50);
+    UPDATE products SET Price = Price * 0.9 WHERE Price > 40;
+    """;
+var recordsAffected = await command.ExecuteNonQueryAsync();
+
+Assert.Equal(2, recordsAffected);
+Assert.Equal(44.910m, products[0].Price);
+```
+<!-- endref -->
+
+The engine prepares the rows, and your handlers save them:
+
+| Statement | What the handler receives |
+| --- | --- |
+| `INSERT` | New rows, created with the public parameterless constructor of `T`. The columns of the statement are set; the other properties keep the values of the constructor. |
+| `UPDATE` | The rows of the query root that match the statement, with their new values already assigned. |
+| `DELETE` | The rows of the query root that match the statement. |
+
+- The engine computes and converts the new values of every row before it changes the first row, so an invalid value
+  changes nothing. A handler is called once per statement, only when the statement changes at least one row.
+- The rows of `UPDATE` and `DELETE` are read with the query root, filtered by the `WHERE` clause, and
+  materialized with [MaterializeAsync](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions.MaterializeAsync). With Entity Framework Core, the rows are tracked entities: the
+  `Update` handler calls `SaveChangesAsync`, and the `Delete` handler calls `RemoveRange`, then `SaveChangesAsync`.
+- A property of a non-nullable value type, or of a reference type annotated as non-nullable (`string`, not `string?`),
+  is a `NOT NULL` column: setting it to `NULL` returns the error 515. Read-only properties cannot be set, and are not
+  part of an `INSERT` without a column list.
+- `SqlCommand.ExecuteNonQuery` returns the number of rows the statements changed. The statements of a request run in
+  order, so a `SELECT` after an `INSERT` reads the new rows when the query root returns them.
+- A handler is `null` by default: the statement returns an error, as it does on a query root registered without
+  handlers.
+
+The handlers receive the [TdsQueryContext](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext) of the request, which gives the user and the
+[TransactionId](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.TransactionId) of the transaction the request runs in. The engine does not undo the changes of a rolled back
+transaction: track them by transaction if you need to. See [Transactions](05-HandlingQueries.md#transactions).
+
 ## Stored procedures
 
 [StoredProcedures](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions.StoredProcedures) maps procedure names (case-insensitive) to delegates. The parameters of the delegate receive the
@@ -176,7 +268,9 @@ runs its SQL text as a query.
 ## Authorization
 
 [IsAuthorized](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions.IsAuthorized) is called before a stored procedure or a query root is used, with the request, the kind of resource and
-its name. Return `false` to deny access:
+its name. The kind of a query root is [QueryRoot](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineResourceKind.QueryRoot) when a statement reads it, and
+[QueryRootInsert](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineResourceKind.QueryRootInsert), [QueryRootUpdate](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineResourceKind.QueryRootUpdate) or [QueryRootDelete](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineResourceKind.QueryRootDelete) when it is the target of an `INSERT`,
+`UPDATE` or `DELETE` statement. Return `false` to deny access:
 
 <!-- ref:../../samples/Meziantou.Framework.TdsServer.Samples/ReadmeExamples.cs;region=TdsServer_Authorization;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -202,7 +296,7 @@ queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) =>
 <!-- endref -->
 
 A denied access returns the SQL Server permission error 229 (class 14), for instance "The SELECT permission was denied
-on the object 'admin_customers'." Replace [NotAuthorizedErrorFactory](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions.NotAuthorizedErrorFactory) to return another [TdsQueryError](cref:Meziantou.Framework.Tds.Handler.TdsQueryError). The name is
+on the object 'admin_customers'.", or "The DELETE permission …" for a `DELETE` statement. Replace [NotAuthorizedErrorFactory](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions.NotAuthorizedErrorFactory) to return another [TdsQueryError](cref:Meziantou.Framework.Tds.Handler.TdsQueryError). The name is
 the table name without its schema or database, so a qualified name cannot reach a denied query root.
 
 ## Run the queries with your provider
@@ -235,10 +329,14 @@ The engine returns SQL Server-style errors instead of throwing:
 | Number | Cause |
 | --- | --- |
 | 229 | The authorization callback denied access. |
+| 515 | `NULL` assigned to a column that does not allow it, by an `INSERT` or an `UPDATE`. |
+| 530 | A recursive common table expression ran more recursion levels than `MAXRECURSION` allows. |
 | 8134 | Division by zero. |
 | 8115 | Arithmetic overflow. |
 | 50004 | Any other error: a syntax error, an unsupported statement, an unknown table, column or procedure, a missing parameter, incomplete parameters. |
 
-The message of the error describes the problem. Arithmetic and conversion exceptions thrown while the rows of a SQL
+Invalid statements return the number SQL Server uses when the engine models the error, for instance 207 for an unknown
+column in an `INSERT` or 252 for a recursive common table expression without `UNION ALL`. The message of the error
+describes the problem. Arithmetic and conversion exceptions thrown while the rows of a SQL
 query are read become these errors too. Other exceptions thrown by your query roots, delegates or provider become the
 error 50002 of the server. See [Returning results](06-ReturningResults.md#errors-sent-by-the-server).

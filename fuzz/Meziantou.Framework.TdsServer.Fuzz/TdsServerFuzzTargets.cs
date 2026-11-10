@@ -39,7 +39,8 @@ public static partial class TdsServerFuzzTargets
         "COUNT(*)", "COUNT(", "SUM(", "AVG(", "MIN(", "MAX(", "CAST(", "CONVERT(", "TRY_CAST(", "COALESCE(", "ISNULL(", "NULLIF(", "IIF(", "LEN(", "UPPER(", "LOWER(", "LTRIM(", "RTRIM(", "TRIM(", "SUBSTRING(", "REPLACE(", "CHARINDEX(", "CONCAT(",
         "ABS(", "ROUND(", "FLOOR(", "CEILING(", "DATEADD(", "DATEDIFF(", "YEAR(", "MONTH(", "DAY(", "GETDATE()", "SYSDATETIME()", "JSON_VALUE(", "JSON_QUERY(", "ISJSON(", "OPENJSON(", ".value(", ".query(", ".exist(", ".nodes(", "'lax $.name'", "'strict $.items[0]'",
         " AS int)", " AS nvarchar(max))", " AS bigint)", " AS decimal(38, 10))", " AS float)", " AS date)", " AS datetime2)", " AS xml)", " AS bit)", " AS uniqueidentifier)",
-        "customers", "orders", "nullable_customers", "json_docs", "xml_docs", "Id", "Name", "Region", "Amount", "Score", "Payload", "c.", "o.", "*", ", ", "(", ")", "'", "''", "N'", "[", "]", "\"", "@p0", "@id", "--", "/*", "*/", ";",
+        "customers", "orders", "nullable_customers", "json_docs", "xml_docs", "employees", "products", "Id", "Name", "Region", "Amount", "Score", "Payload", "ManagerId", "Price", "Stock",
+        "INSERT INTO ", " VALUES ", " DEFAULT VALUES", "DEFAULT", "UPDATE ", " SET ", "+=", "DELETE ", "DELETE FROM ", " OUTPUT ", " OPTION (MAXRECURSION ", "WITH c AS (", "WITH c (n) AS (", " FROM c",  "c.", "o.", "*", ", ", "(", ")", "'", "''", "N'", "[", "]", "\"", "@p0", "@id", "--", "/*", "*/", ";",
         "=", "<>", "!=", "<", "<=", ">", ">=", "+", "-", "/", "%", "&", "|", "^", "~", "0", "1", "-1", "2147483647", "-2147483648", "9223372036854775807", "1.5", "1e308", "0x1F", "NULL", "'2024-01-31'", "'12:34:56'", "'/root/item'", "'(/root/item/@id)[1]'",
     ];
 
@@ -70,6 +71,10 @@ public static partial class TdsServerFuzzTargets
     private static readonly UInt128 MaxDecimalMagnitude = UInt128.Parse(new string('9', 38), CultureInfo.InvariantCulture);
 
     private static readonly Customer[] Customers = [new(1, "Alice"), new(2, "Bob"), new(4, "David")];
+
+    /// <summary>The rows the write handlers of the query engine received during the current input.</summary>
+    [ThreadStatic]
+    private static long s_modifiedRows;
 
     // Queries over these rows mirror the query engine tests. Each authorization mode gets its own handler, as the
     // options are snapshotted when the handler is created.
@@ -289,7 +294,13 @@ public static partial class TdsServerFuzzTargets
         };
 
         // Unsupported SQL is reported as an error result (50004): an exception escaping the engine is a failure
+        s_modifiedRows = 0;
         var result = QueryEngineHandler(context, CancellationToken.None).AsTask().GetAwaiter().GetResult();
+        if (result.Error is null)
+        {
+            // The handlers are called only for statements that modify at least one row, with the rows they count
+            FuzzAssert.Equal(s_modifiedRows, result.RecordsAffected ?? 0, "The count of modified rows must be the number of rows passed to the write handlers");
+        }
 
         // The engine builds the result sets from the query, so the serializer must accept them
         _ = TdsWire.ReadTabularResult(TdsResponseSerializer.CreateQueryResponse(result, PayloadSizePerPacket), PayloadSizePerPacket);
@@ -774,7 +785,7 @@ public static partial class TdsServerFuzzTargets
         var options = new TdsQueryEngineOptions();
         options.IsAuthorized = authorization switch
         {
-            QueryEngineAuthorization.DenyOrders => (_, resourceKind, resourceName) => !string.Equals(resourceName, resourceKind is TdsQueryEngineResourceKind.QueryRoot ? "orders" : DeniedProcedureName, StringComparison.OrdinalIgnoreCase),
+            QueryEngineAuthorization.DenyOrders => (_, resourceKind, resourceName) => !string.Equals(resourceName, resourceKind is TdsQueryEngineResourceKind.StoredProcedure ? DeniedProcedureName : "orders", StringComparison.OrdinalIgnoreCase),
             QueryEngineAuthorization.DenyAll => (_, _, _) => false,
             QueryEngineAuthorization.DenyStoredProcedures => (_, resourceKind, _) => resourceKind is not TdsQueryEngineResourceKind.StoredProcedure,
             _ => options.IsAuthorized,
@@ -804,7 +815,18 @@ public static partial class TdsServerFuzzTargets
             ? Expression.Coalesce(first, second)
             : arguments.Count > 0 ? arguments[0] : Expression.Constant(null, typeof(object)));
 
+        // A recursive common table expression can grow exponentially, or without end with MAXRECURSION 0
+        options.MaxRecursiveCommonTableExpressionRows = 1000;
         options.AddQueryRoot("customers", _ => Customers.AsQueryable());
+        options.AddQueryRoot("employees", _ => new[] { new Employee(1, "Alice", null), new Employee(2, "Bob", 1), new Employee(3, "Carol", 1), new Employee(4, "Dave", 2), new Employee(5, "Eve", 4) }.AsQueryable());
+
+        // Each request reads new rows, so an UPDATE does not change the rows of the next input
+        options.AddQueryRoot("products", _ => new[] { new Product { Id = 1, Name = "Keyboard", Price = 49.90m, Stock = 5 }, new Product { Id = 2, Name = "Mouse", Price = 19.50m } }.AsQueryable(), new TdsQueryRootWriteHandlers<Product>
+        {
+            Insert = (_, rows, _) => CountModifiedRows(rows),
+            Update = (_, rows, _) => CountModifiedRows(rows),
+            Delete = (_, rows, _) => CountModifiedRows(rows),
+        });
         options.AddQueryRoot("orders", _ => new[] { new Order(1, "North", 10), new Order(2, "North", 20), new Order(3, "South", 5) }.AsQueryable());
         options.AddQueryRoot("nullable_customers", _ => new[] { new NullableCustomer(1, "Alice", 100), new NullableCustomer(2, "Bob", 5), new NullableCustomer(3, null, null) }.AsQueryable());
         options.AddQueryRoot("json_docs", _ => new[]
@@ -820,6 +842,19 @@ public static partial class TdsServerFuzzTargets
             new XmlDocumentRow(2, "<root><item id=\"3\">Gamma</item></root>"),
         }.AsQueryable());
         return options;
+    }
+
+    private static ValueTask CountModifiedRows(IReadOnlyList<Product> rows)
+    {
+        FuzzAssert.True(rows.Count > 0, "A write handler must not be called without rows");
+        foreach (var row in rows)
+        {
+            FuzzAssert.True(row is not null, "A write handler must not receive a null row");
+            FuzzAssert.True(row!.Name is not null, "A non-nullable column must not be set to NULL");
+        }
+
+        s_modifiedRows += rows.Count;
+        return ValueTask.CompletedTask;
     }
 
     private static IEnumerable<FuzzSeed> GetSessionSeeds()
@@ -929,6 +964,18 @@ public static partial class TdsServerFuzzTargets
         yield return FuzzSeed.FromText("divide", "SELECT Id / 2 AS Half, Amount % 3 AS Remainder FROM orders WHERE Amount > 0");
         yield return FuzzSeed.FromText("cast", "SELECT CAST(Id AS nvarchar(10)) AS Text, CAST('12' AS int) AS Number FROM customers");
         yield return FuzzSeed.FromText("not-a-select", "UPDATE customers SET Name = 'x'");
+        yield return FuzzSeed.FromText("not-supported", "DECLARE @x int");
+        yield return FuzzSeed.FromText("insert", "INSERT INTO products (Id, Name, Price) VALUES (3, 'Pen', 1.5), (4, 'Ink', DEFAULT); INSERT INTO products VALUES (5, 'Cable', 2, NULL); INSERT INTO products DEFAULT VALUES");
+        yield return FuzzSeed.FromText("insert-select", "INSERT INTO products (Id, Name) SELECT Id + 10, Name FROM customers WHERE Id > 1");
+        yield return FuzzSeed.FromText("insert-null", "INSERT INTO products (Id, Name) VALUES (3, NULL)");
+        yield return FuzzSeed.FromText("update", "UPDATE p SET Price = Price * 2, Stock += 1, Name = UPPER(Name) FROM products AS p WHERE p.Name LIKE 'K%'");
+        yield return FuzzSeed.FromText("update-null", "UPDATE products SET Price = NULLIF(Id, 2)");
+        yield return FuzzSeed.FromText("delete", "DELETE TOP (1) FROM products WHERE Id NOT IN (SELECT Id FROM orders); DELETE products");
+        yield return FuzzSeed.FromText("recursive", "WITH c (n) AS (SELECT Id FROM customers WHERE Id = 1 UNION ALL SELECT n + 1 FROM c WHERE n < 10) SELECT n FROM c OPTION (MAXRECURSION 5)");
+        yield return FuzzSeed.FromText("recursive-unbounded", "WITH c (n) AS (SELECT Id FROM customers WHERE Id = 1 UNION ALL SELECT n + 1 FROM c) SELECT n FROM c OPTION (MAXRECURSION 0)");
+        yield return FuzzSeed.FromText("recursive-exponential", "WITH c AS (SELECT Id, Region FROM orders UNION ALL SELECT o.Id, o.Region FROM orders o INNER JOIN c ON o.Region = c.Region) SELECT Id FROM c");
+        yield return FuzzSeed.FromText("recursive-errors", "WITH c AS (SELECT Id FROM customers UNION SELECT c.Id FROM c) SELECT Id FROM c; WITH d AS (SELECT Id FROM d) SELECT Id FROM d");
+        yield return FuzzSeed.FromText("recursive-delete", "WITH ids (n) AS (SELECT Id FROM products WHERE Id = 1 UNION ALL SELECT n + 1 FROM ids WHERE n < 2) DELETE FROM products WHERE Id IN (SELECT n FROM ids)");
         yield return FuzzSeed.FromText("invalid", "SELECT FROM WHERE");
         yield return FuzzSeed.FromText("custom-functions", "SELECT FUZZ_TEXT(Id) AS Text, FUZZ_COALESCE(Name, 'x') AS Name, FUZZ_TEXT() AS Empty FROM customers");
     }
@@ -1121,6 +1168,19 @@ public static partial class TdsServerFuzzTargets
     private sealed record Order(int Id, string Region, int Amount);
 
     private sealed record NullableCustomer(int Id, string? Name, int? Score);
+
+    private sealed record Employee(int Id, string Name, int? ManagerId);
+
+    private sealed class Product
+    {
+        public int Id { get; set; }
+
+        public string Name { get; set; } = "";
+
+        public decimal Price { get; set; }
+
+        public int? Stock { get; set; }
+    }
 
     private sealed record JsonDocumentRow(int Id, string? Payload);
 

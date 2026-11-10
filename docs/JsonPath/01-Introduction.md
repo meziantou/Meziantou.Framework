@@ -17,6 +17,10 @@ queries such as `$.store.book[?@.price < 10].title`. It implements the JSONPath 
   [Register custom functions](05-Functions.md#register-custom-functions).
 - **Evaluate on the type you already have**: `JsonNode`, `JsonDocument` or `JsonElement`. Every match comes with its
   normalized path, such as `$['store']['book'][0]`. See [Evaluating queries](06-EvaluatingQueries.md).
+- **Read large documents without loading them**: evaluate a query on a `Stream` or a `Utf8JsonReader`, which only
+  parses the selected values. See [Read a document without loading it](06-EvaluatingQueries.md#read-a-document-without-loading-it).
+- **Change documents by path**: set, add and remove the values a query selects in a `JsonNode`. See
+  [Set, add and remove values by path](06-EvaluatingQueries.md#set-add-and-remove-values-by-path).
 - **Choose how missing data is reported**: by default a member or an element that does not exist selects nothing; in
   strict mode it throws. See [Errors and evaluation modes](07-ErrorsAndEvaluationModes.md).
 - **Query your own object model** without converting it to JSON first. See

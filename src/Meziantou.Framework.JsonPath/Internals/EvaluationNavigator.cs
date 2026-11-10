@@ -91,6 +91,18 @@ internal sealed class EvaluationNavigator<TValue> : JsonPathNavigator<TValue>
         return _inner.TryGetNumber(value, out result);
     }
 
+    public override bool TryGetNumberText(TValue? value, [NotNullWhen(true)] out string? result)
+    {
+        Check();
+        return _inner.TryGetNumberText(value, out result);
+    }
+
+    internal override bool TryGetNumberUtf8(TValue? value, Span<byte> buffer, out ReadOnlySpan<byte> result)
+    {
+        Check();
+        return _inner.TryGetNumberUtf8(value, buffer, out result);
+    }
+
     public override bool TryGetBoolean(TValue? value, out bool result)
     {
         Check();

@@ -338,6 +338,107 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
         return result.Found ? result.Value : null;
     }
 
+    /// <summary>Evaluates this JSONPath expression on the JSON value that a reader holds, reading it once from start to end.</summary>
+    /// <param name="reader">
+    /// A reader that holds a complete JSON value. When it is positioned on a value, the evaluation starts from that value;
+    /// otherwise it reads the next one. When the method returns, the reader is positioned on the last token of the value.
+    /// </param>
+    /// <returns>The matches, in document order.</returns>
+    /// <remarks>
+    /// Only the selected values, and the values that a filter tests, are parsed into <see cref="JsonNode"/> instances, so the
+    /// document does not have to be loaded in memory. The matches are the ones of
+    /// <see cref="Evaluate(JsonNode?)"/>, in document order rather than in the order of the selectors. A query whose filters
+    /// use <c>$</c> parses the whole document.
+    /// </remarks>
+    /// <exception cref="ArgumentException">The reader uses <see cref="JsonCommentHandling.Allow"/>. Use <see cref="JsonCommentHandling.Skip"/> instead.</exception>
+    /// <exception cref="JsonException">The data is not valid JSON, or the reader does not hold a complete value.</exception>
+    /// <exception cref="JsonPathEvaluationException">The evaluation exceeds a depth limit.</exception>
+    public JsonPathResult Evaluate(ref Utf8JsonReader reader)
+    {
+        var evaluator = new StreamingEvaluator(_ast);
+        evaluator.ProcessValue(ref reader);
+        return new JsonPathResult(evaluator.Matches);
+    }
+
+    /// <summary>Evaluates this JSONPath expression on a JSON document read from a stream, without loading it in memory.</summary>
+    /// <param name="utf8Json">The UTF-8 JSON data. The stream is read up to its end, and is not disposed.</param>
+    /// <param name="readerOptions">The options of the reader, such as the maximum depth or whether comments are allowed.</param>
+    /// <returns>The matches, in document order. They are returned as soon as they are read, and the stream is read as they are enumerated.</returns>
+    /// <remarks>
+    /// Only the selected values, and the values that a filter tests, are parsed into <see cref="JsonNode"/> instances. The
+    /// matches are the ones of <see cref="Evaluate(JsonNode?)"/>, in document order rather than in the order of the
+    /// selectors. A query whose filters use <c>$</c> parses the whole document.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="utf8Json"/> is <see langword="null"/>.</exception>
+    /// <exception cref="JsonException">The data is not valid JSON. It is thrown during the enumeration.</exception>
+    /// <exception cref="JsonPathEvaluationException">The evaluation exceeds a depth limit. It is thrown during the enumeration.</exception>
+    public IEnumerable<JsonPathMatch> EvaluateStream(Stream utf8Json, JsonReaderOptions readerOptions = default)
+    {
+        ArgumentNullException.ThrowIfNull(utf8Json);
+        return StreamingEvaluation.Evaluate(_ast, utf8Json, readerOptions);
+    }
+
+    /// <summary>Evaluates this JSONPath expression on a JSON document read asynchronously from a stream, without loading it in memory.</summary>
+    /// <param name="utf8Json">The UTF-8 JSON data. The stream is read up to its end, and is not disposed.</param>
+    /// <param name="readerOptions">The options of the reader, such as the maximum depth or whether comments are allowed.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The matches, in document order. They are returned as soon as they are read, and the stream is read as they are enumerated.</returns>
+    /// <inheritdoc cref="EvaluateStream(Stream, JsonReaderOptions)" path="/remarks"/>
+    /// <exception cref="ArgumentNullException"><paramref name="utf8Json"/> is <see langword="null"/>.</exception>
+    /// <exception cref="JsonException">The data is not valid JSON. It is thrown during the enumeration.</exception>
+    /// <exception cref="JsonPathEvaluationException">The evaluation exceeds a depth limit. It is thrown during the enumeration.</exception>
+    public IAsyncEnumerable<JsonPathMatch> EvaluateStreamAsync(Stream utf8Json, JsonReaderOptions readerOptions = default, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(utf8Json);
+        return StreamingEvaluation.EvaluateAsync(_ast, utf8Json, readerOptions, cancellationToken);
+    }
+
+    /// <summary>Replaces the values that this query selects in a JSON value.</summary>
+    /// <param name="root">The root JSON value to change. May be <see langword="null"/>.</param>
+    /// <param name="value">The new value. Each location receives a copy, so <paramref name="value"/> is never attached to <paramref name="root"/>.</param>
+    /// <returns>The number of locations set.</returns>
+    /// <remarks>
+    /// <para>
+    /// When the query ends with a name, such as <c>$.users[*].active</c>, the member is set on every object the rest of the
+    /// query selects, whether the member exists or not. When the query is a path of names and indexes, such as
+    /// <c>$.logging.level</c>, the objects missing on the path are created too. Indexes out of range are never created.
+    /// </para>
+    /// <para>The query is evaluated in <see cref="JsonPathEvaluationMode.Lax"/> mode before anything changes.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// The query selects the root value, or a location is part of a <see cref="JsonValue"/> that wraps an object or an array.
+    /// </exception>
+    public int Set(JsonNode? root, JsonNode? value)
+    {
+        return JsonNodeModifier.Set(_ast, root, value);
+    }
+
+    /// <summary>Appends a value to the arrays that this query selects in a JSON value.</summary>
+    /// <param name="root">The root JSON value to change. May be <see langword="null"/>.</param>
+    /// <param name="value">The value to append. Each array receives a copy, so <paramref name="value"/> is never attached to <paramref name="root"/>.</param>
+    /// <returns>The number of arrays changed. Selected values that are not arrays are ignored.</returns>
+    /// <remarks>The query is evaluated in <see cref="JsonPathEvaluationMode.Lax"/> mode before anything changes.</remarks>
+    /// <exception cref="InvalidOperationException">A location is part of a <see cref="JsonValue"/> that wraps an object or an array.</exception>
+    public int Add(JsonNode? root, JsonNode? value)
+    {
+        return JsonNodeModifier.Add(_ast, root, value);
+    }
+
+    /// <summary>Removes the values that this query selects from a JSON value.</summary>
+    /// <param name="root">The root JSON value to change. May be <see langword="null"/>.</param>
+    /// <returns>The number of values removed.</returns>
+    /// <remarks>
+    /// The query is evaluated in <see cref="JsonPathEvaluationMode.Lax"/> mode before anything changes, so removing an
+    /// array element does not change which elements the other indexes of the query select.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// The query selects the root value, or a location is part of a <see cref="JsonValue"/> that wraps an object or an array.
+    /// </exception>
+    public int Remove(JsonNode? root)
+    {
+        return JsonNodeModifier.Remove(_ast, root);
+    }
+
     /// <summary>Returns the original JSONPath expression string.</summary>
     public override string ToString() => _expression;
 

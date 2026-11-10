@@ -37,10 +37,12 @@ Filters written as `[?(@.price < 10)]`, with parentheses, are valid RFC 9535 and
 
 ## Other features
 
-- **No changes through paths.** There is no method to set, add or remove values by path. With `JsonNode`, change the
-  matched nodes yourself; see [Change the matched values](06-EvaluatingQueries.md#change-the-matched-values).
-- **No streaming.** The query runs on a parsed document (`JsonNode`, `JsonDocument`, `JsonElement`) or on your own
-  model, not on a `Utf8JsonReader` or a stream.
+- **Changes through paths need a `JsonNode`.** [Set](cref:Meziantou.Framework.Json.JsonPath.Set), [Add](cref:Meziantou.Framework.Json.JsonPath.Add) and [Remove](cref:Meziantou.Framework.Json.JsonPath.Remove) change a `JsonNode`; `JsonDocument`,
+  `JsonElement` and custom object models are read-only. See
+  [Set, add and remove values by path](06-EvaluatingQueries.md#set-add-and-remove-values-by-path).
+- **Streaming is lax and returns the document order.** The evaluation of a stream or a `Utf8JsonReader` has no strict
+  mode and no [JsonPathEvaluationOptions](cref:Meziantou.Framework.Json.JsonPathEvaluationOptions), and some queries parse more of the document than others. See
+  [Read a document without loading it](06-EvaluatingQueries.md#read-a-document-without-loading-it).
 - **Regular expressions are I-Regexp only.** `match()` and `search()` do not accept .NET-specific syntax, and `^` and
   `$` are not anchors. See [Write the patterns](05-Functions.md#write-the-patterns).
 
@@ -62,14 +64,27 @@ silently truncating results and do not replace the structural limits below.
 
 ## Number precision
 
-Filters compare numbers, the literals of the query and the values of the document, as `double` values. Every integer
-between -(2^53)+1 and 2^53-1 and every number that a `double` represents exactly compare exactly. Outside that range,
-distinct numbers can compare as equal:
+Filters compare numbers, the literals of the query and the values of the document, by their exact value. Integers
+beyond 2^53, decimals with more digits than a `double` holds, and numbers beyond the range of a `double` all compare
+exactly:
 
-- Integers beyond ±(2^53)-1 are rounded: `$[?@ == 9007199254740993]` matches `9007199254740992`.
-- Decimals are rounded to the nearest `double`: `$[?@ == 0.1]` matches `0.10000000000000001`.
-- Numbers too large for a `double` become infinity: `$[?@ == 1e400]` matches `1e500`.
-- Numbers too small for a `double` become zero: `$[?@ < 0]` does not match `-1e-400`.
+<!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_ExactNumbers;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = JsonNode.Parse("""{"ids":[9007199254740992,9007199254740993],"amounts":[0.1,0.10000000000000001]}""");
 
-When exact values matter, such as identifiers or amounts of money, store them as strings in the document, or compare
-them in your code after the query.
+// Numbers that round to the same double still compare by their exact value
+Assert.Equal("[9007199254740993]", JsonPath.Parse("$.ids[?@ == 9007199254740993]").Evaluate(document).ToJsonArray().ToJsonString());
+Assert.Equal("[0.10000000000000001]", JsonPath.Parse("$.amounts[?@ > 0.1]").Evaluate(document).ToJsonArray().ToJsonString());
+```
+<!-- endref -->
+
+- Numbers are compared as `double` values first. Only the numbers that round to the same `double` are compared by
+  their text, so the exact comparison costs nothing for most values.
+- `JsonNode` values created from CLR numbers compare by their value: a `long` or a `decimal` exactly, a `float` as the
+  `double` it converts to.
+- The numbers that functions return, such as `length()` and `count()`, are exact. A custom function returns a
+  `double`, which is compared exactly as it is.
+- A custom navigator gives the exact text of its numbers by overriding
+  [TryGetNumberText](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetNumberText). Without it, its numbers
+  compare as `double` values, and distinct numbers that round to the same `double` compare as equal. See
+  [Custom object models](08-CustomObjectModels.md#rules-for-a-navigator).

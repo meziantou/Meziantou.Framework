@@ -25,6 +25,6 @@ internal sealed class LiteralComparable : Comparable
 
     public override ComparableKind Kind => ComparableKind.Literal;
 
-    /// <summary>The literal value: null, bool, string, or double/long.</summary>
+    /// <summary>The literal value: null, bool, string, or <see cref="NumberLiteral"/>.</summary>
     public object? Value { get; }
 }

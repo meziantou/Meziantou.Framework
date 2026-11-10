@@ -1,6 +1,6 @@
 ---
 title: Evaluating queries
-description: Parse a query, evaluate it on JsonNode, JsonDocument or JsonElement, and read the values and paths it matches.
+description: Parse a query, evaluate it on JsonNode, JsonDocument, JsonElement or a stream, read the values and paths it matches, and change them.
 ---
 
 ## Parse the query
@@ -42,6 +42,8 @@ extension methods of the JSON value:
 - Use `JsonNode` when you also want to change the document.
 - When a `JsonValue` wraps a CLR object or array, its matches are detached copies of the serialized value; changes to
   the wrapped object are reflected by the next evaluation, but changing a match does not change the wrapped object.
+- Use a `Stream` or a `Utf8JsonReader` to read a large document without loading it in memory; see
+  [Read a document without loading it](#read-a-document-without-loading-it).
 - For other object models, see [Custom object models](08-CustomObjectModels.md).
 
 ## Read the matches
@@ -202,4 +204,107 @@ Assert.Equal("""{"items":[{"price":8},{"price":12,"discounted":true}]}""", docum
 <!-- endref -->
 
 The result is computed before [Evaluate](cref:Meziantou.Framework.Json.JsonPath.Evaluate) returns, so changing the document while you enumerate it does not change the
-matches. The library itself has no method to set, add or remove values by path.
+matches.
+
+## Set, add and remove values by path
+
+[Set](cref:Meziantou.Framework.Json.JsonPath.Set), [Add](cref:Meziantou.Framework.Json.JsonPath.Add) and
+[Remove](cref:Meziantou.Framework.Json.JsonPath.Remove) change a `JsonNode` at the locations a query selects, and return
+how many locations they changed:
+
+<!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_ChangeValuesByPath;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = JsonNode.Parse("""
+    {
+      "logging": { "level": "info" },
+      "users": [
+        { "name": "Alice", "password": "secret", "roles": [] },
+        { "name": "Bob", "password": "hunter2", "roles": ["admin"] }
+      ]
+    }
+    """);
+
+// Set replaces the selected values. The objects missing on a path of names are created.
+JsonPath.Parse("$.logging.level").Set(document, "debug");
+JsonPath.Parse("$.logging.file.path").Set(document, "app.log");
+
+// A query that ends with a name sets the member on every selected object
+JsonPath.Parse("$.users[*].active").Set(document, true);
+
+// Add appends a value to the selected arrays
+JsonPath.Parse("$.users[?@.name == 'Alice'].roles").Add(document, "reader");
+
+// Remove deletes the selected values, and returns how many it removed
+int removed = JsonPath.Parse("$..password").Remove(document);
+Assert.Equal(2, removed);
+
+Assert.Equal(
+    """{"logging":{"level":"debug","file":{"path":"app.log"}},"users":[{"name":"Alice","roles":["reader"],"active":true},{"name":"Bob","roles":["admin"],"active":true}]}""",
+    document!.ToJsonString());
+```
+<!-- endref -->
+
+- [Set](cref:Meziantou.Framework.Json.JsonPath.Set) replaces every selected value. When the query ends with a name, such as `$.users[*].active`, it sets the
+  member on every object that the rest of the query selects, whether the member exists or not. When the query is a
+  path of names and indexes, such as `$.logging.file.path`, it also creates the objects missing on the path. It never
+  creates an array element: an index out of range changes nothing.
+- [Add](cref:Meziantou.Framework.Json.JsonPath.Add) appends the value to every selected array, and ignores the selected values that are not arrays.
+- [Remove](cref:Meziantou.Framework.Json.JsonPath.Remove) removes every selected value from its object or array.
+- Each location receives a copy of the value, so you can pass the same value again, and the value never becomes part
+  of the document. `JsonNode` converts strings, numbers and Booleans implicitly, so `Set(document, "debug")` works.
+- The query is evaluated before anything changes: `$[0,1]` removes the first two elements, not the first and the
+  third. The query runs in lax mode, so a missing member selects nothing.
+- The root value has no parent: [Set](cref:Meziantou.Framework.Json.JsonPath.Set) and [Remove](cref:Meziantou.Framework.Json.JsonPath.Remove) throw an `InvalidOperationException` for the query `$`. Replace the
+  root yourself instead.
+- A `JsonValue` that wraps a CLR object or array cannot change: the values inside it are detached copies. Changing
+  them throws an `InvalidOperationException`; replacing the whole `JsonValue` works.
+
+## Read a document without loading it
+
+[EvaluateStream](cref:Meziantou.Framework.Json.JsonPath.EvaluateStream) and
+[EvaluateStreamAsync](cref:Meziantou.Framework.Json.JsonPath.EvaluateStreamAsync) read a document from a `Stream` once,
+from start to end, and return the matches as they find them:
+
+<!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_EvaluateStream;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Any stream, such as a file or the body of an HTTP response
+using var stream = new MemoryStream("""{"orders":[{"id":1,"total":8},{"id":2,"total":120},{"id":3,"total":40}]}"""u8.ToArray());
+
+// Only the selected values, and the values a filter tests, are parsed: the document is never loaded in memory
+var ids = new List<int>();
+foreach (var match in JsonPath.Parse("$.orders[?@.total > 10].id").EvaluateStream(stream))
+{
+    ids.Add(match.Value!.GetValue<int>());
+}
+
+Assert.Equal([2, 3], ids);
+```
+<!-- endref -->
+
+[Evaluate(ref Utf8JsonReader)](cref:Meziantou.Framework.Json.JsonPath.Evaluate) does the same on a reader that holds the whole value, such as a reader over a
+buffer or a value inside a larger document:
+
+<!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_EvaluateReader;format=md-fenced-code-block;dedent=true -->
+```csharp
+var reader = new Utf8JsonReader("""{"store":{"book":[{"title":"A"},{"title":"B"}]}}"""u8);
+
+JsonPathResult result = JsonPath.Parse("$.store.book[*].title").Evaluate(ref reader);
+Assert.Equal(["$['store']['book'][0]['title']", "$['store']['book'][1]['title']"], result.Select(match => match.Path));
+```
+<!-- endref -->
+
+- Only the selected values are parsed into `JsonNode` instances. The other values are read and skipped, so the memory
+  the evaluation needs depends on the size of the selected values, not on the size of the document.
+- A filter tests each candidate value, which is then parsed: `$.orders[?@.total > 10]` parses the orders one at a
+  time. Negative indexes and some slices, such as `[-1]` and `[::-1]`, need the length of the array, which is then
+  parsed whole. A filter that uses `$` needs the root value, so the whole document is parsed.
+- The matches are the ones of [Evaluate](cref:Meziantou.Framework.Json.JsonPath.Evaluate), in document order rather than in the order of the selectors: `$['b','a']`
+  returns the member `a` first when it comes first in the document. A value that several selectors select is
+  returned as many times.
+- The enumeration reads the stream as it goes: stop it early, with `First()` or `break`, to read only the start of the
+  document. Invalid JSON throws a `JsonException` when the enumeration reaches it.
+- Pass `JsonReaderOptions` to allow comments or trailing commas, or to raise the maximum depth. The stream is not
+  disposed. A UTF-8 byte order mark is skipped. A `Utf8JsonReader` must skip comments rather than return them
+  (`JsonCommentHandling.Skip`), as for `JsonNode.Parse`.
+- The streaming methods always use lax mode, and do not take [JsonPathEvaluationOptions](cref:Meziantou.Framework.Json.JsonPathEvaluationOptions). Pass a cancellation token to
+  [EvaluateStreamAsync](cref:Meziantou.Framework.Json.JsonPath.EvaluateStreamAsync), or stop the enumeration, to end an evaluation early.

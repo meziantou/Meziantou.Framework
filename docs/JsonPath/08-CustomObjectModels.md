@@ -135,6 +135,7 @@ A navigator answers the questions the evaluator asks about a value:
 | [CopyElements](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.CopyElements) | Copies array elements in index order when indexed access is not constant time |
 | [HasConstantTimePropertyLookup](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.HasConstantTimePropertyLookup) | Whether looking up an object member by name takes constant time |
 | [TryGetString](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetString), [TryGetNumber](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetNumber), [TryGetBoolean](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetBoolean) | The scalar value, and whether the value has that type |
+| [TryGetNumberText](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetNumberText) | Optional: the exact text of a number, to compare numbers that round to the same `double` |
 
 ## Rules for a navigator
 
@@ -143,7 +144,10 @@ A navigator answers the questions the evaluator asks about a value:
 - **Return `false` for what does not exist.** [TryGetPropertyValue](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetPropertyValue) and [TryGetElement](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetElement) return `false` for a missing
   member or an index outside the array; this is what lax mode turns into "no match" and strict mode into an exception.
 - **Keep the order stable.** The order of [GetProperties](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.GetProperties) is the order of the wildcard, descendant and filter results.
-- **Numbers are `double`.** [TryGetNumber](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetNumber) returns a `double`, so filters compare your numbers as `double` values; see
+- **Give the text of numbers that a `double` does not hold.** [TryGetNumber](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetNumber) returns a `double`. When your model holds
+  numbers that a `double` rounds, such as `long`, `decimal` or `BigInteger` values, also override
+  [TryGetNumberText](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetNumberText) to return their exact text, such as `value.ToString(CultureInfo.InvariantCulture)`. Filters use it
+  to compare the numbers that round to the same `double`; without it, they compare as equal. See
   [Number precision](09-Limitations.md#number-precision).
 - **Expose a tree, not a graph.** A cycle, such as a back-reference to the parent, is reported as a depth error
   ([JsonPathEvaluationException](cref:Meziantou.Framework.Json.JsonPathEvaluationException)) when a descendant segment or a comparison walks it, instead of looping forever.

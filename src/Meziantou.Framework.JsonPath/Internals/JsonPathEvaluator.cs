@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -15,7 +16,7 @@ internal static class JsonPathEvaluator
     /// The value leaves ample room above the default <see cref="System.Text.Json.JsonDocumentOptions.MaxDepth"/>
     /// of 64 that bounds any document produced by System.Text.Json's own parsers.
     /// </summary>
-    private const int MaxRecursionDepth = 256;
+    internal const int MaxRecursionDepth = 256;
     private const int MaxDirectSliceElements = 4;
 
     /// <summary>
@@ -665,6 +666,31 @@ internal static class JsonPathEvaluator
         throw new JsonPathEvaluationException($"Path error at {NormalizedPathBuilder.Build(path)}: {error}");
     }
 
+    /// <summary>Tests a filter expression on a node, as a filter selector does.</summary>
+    internal static bool EvaluateFilter<TValue>(LogicalExpression expression, TValue? currentNode, TValue? root, EvaluationNavigator<TValue> navigator)
+    {
+        return EvaluateLogicalExpression(expression, currentNode, root, navigator);
+    }
+
+    /// <summary>Gets whether an expression uses <c>$</c>, the root value.</summary>
+    internal static bool ContainsAbsoluteQuery(object? expression)
+    {
+        return expression switch
+        {
+            FilterQuery query => query.Kind is FilterQueryKind.Absolute || query.Segments.Any(segment => segment.Selectors.Any(selector =>
+                selector is FilterSelector filter && ContainsAbsoluteQuery(filter.Expression))),
+            SingularQueryComparable singular => !singular.Query.IsRelative,
+            FunctionCallExpression function => function.Arguments.Any(argument => ContainsAbsoluteQuery(argument.Value)),
+            OrExpression or => or.Operands.Any(ContainsAbsoluteQuery),
+            AndExpression and => and.Operands.Any(ContainsAbsoluteQuery),
+            NotExpression not => ContainsAbsoluteQuery(not.Operand),
+            ComparisonExpression comparison => ContainsAbsoluteQuery(comparison.Left) || ContainsAbsoluteQuery(comparison.Right),
+            ExistenceTestExpression existence => ContainsAbsoluteQuery(existence.Query),
+            FunctionCallComparable comparable => ContainsAbsoluteQuery(comparable.FunctionCall),
+            _ => false,
+        };
+    }
+
     private static bool EvaluateLogicalExpression<TValue>(
         LogicalExpression expr,
         TValue? currentNode,
@@ -792,12 +818,13 @@ internal static class JsonPathEvaluator
 
     private readonly struct ScalarValue
     {
-        private ScalarValue(JsonPathNodeKind kind, string? stringValue, double numberValue, bool booleanValue)
+        private ScalarValue(JsonPathNodeKind kind, string? stringValue, double numberValue, bool booleanValue, byte[]? numberText = null)
         {
             Kind = kind;
             StringValue = stringValue;
             NumberValue = numberValue;
             BooleanValue = booleanValue;
+            NumberText = numberText;
         }
 
         public JsonPathNodeKind Kind { get; }
@@ -806,6 +833,9 @@ internal static class JsonPathEvaluator
 
         public double NumberValue { get; }
 
+        /// <summary>Gets the UTF-8 text of a number literal, or <see langword="null"/> when <see cref="NumberValue"/> is exact.</summary>
+        public byte[]? NumberText { get; }
+
         public bool BooleanValue { get; }
 
         public static ScalarValue Null() => new(JsonPathNodeKind.Null, stringValue: null, numberValue: 0, booleanValue: false);
@@ -813,6 +843,8 @@ internal static class JsonPathEvaluator
         public static ScalarValue FromBoolean(bool value) => new(JsonPathNodeKind.Boolean, stringValue: null, numberValue: 0, booleanValue: value);
 
         public static ScalarValue FromNumber(double value) => new(JsonPathNodeKind.Number, stringValue: null, numberValue: value, booleanValue: false);
+
+        public static ScalarValue FromNumber(NumberLiteral value) => new(JsonPathNodeKind.Number, stringValue: null, numberValue: value.Value, booleanValue: false, value.Utf8Text);
 
         public static ScalarValue FromString(string value) => new(JsonPathNodeKind.String, value, numberValue: 0, booleanValue: false);
     }
@@ -832,7 +864,7 @@ internal static class JsonPathEvaluator
                     true => ResolvedValue<TValue>.FromScalar(ScalarValue.FromBoolean(value: true)),
                     false => ResolvedValue<TValue>.FromScalar(ScalarValue.FromBoolean(value: false)),
                     string s => ResolvedValue<TValue>.FromScalar(ScalarValue.FromString(s)),
-                    double d => ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(d)),
+                    NumberLiteral number => ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(number)),
                     _ => ResolvedValue<TValue>.FromNothing(),
                 };
 
@@ -896,7 +928,7 @@ internal static class JsonPathEvaluator
 
         if (TryGetNumber(left, navigator, out var leftNumber) && TryGetNumber(right, navigator, out var rightNumber))
         {
-            return leftNumber < rightNumber;
+            return !double.IsNaN(leftNumber.Value) && !double.IsNaN(rightNumber.Value) && CompareNumbers(leftNumber, rightNumber, navigator) < 0;
         }
 
         if (TryGetString(left, navigator, out var leftString) && TryGetString(right, navigator, out var rightString))
@@ -953,7 +985,7 @@ internal static class JsonPathEvaluator
         {
             JsonPathNodeKind.Null => true,
             JsonPathNodeKind.Boolean => left.BooleanValue == right.BooleanValue,
-            JsonPathNodeKind.Number => left.NumberValue.CompareTo(right.NumberValue) is 0,
+            JsonPathNodeKind.Number => CompareNumbers(NumberOperand<TValue>.FromScalar(left), NumberOperand<TValue>.FromScalar(right), navigator) is 0,
             JsonPathNodeKind.String => StringsEqual(left.StringValue, right.StringValue, navigator),
             _ => false,
         };
@@ -971,7 +1003,8 @@ internal static class JsonPathEvaluator
         {
             JsonPathNodeKind.Null => true,
             JsonPathNodeKind.Boolean => navigator.TryGetBoolean(node, out var value) && scalar.BooleanValue == value,
-            JsonPathNodeKind.Number => navigator.TryGetNumber(node, out var value) && scalar.NumberValue.CompareTo(value) is 0,
+            JsonPathNodeKind.Number => navigator.TryGetNumber(node, out var value)
+                                       && CompareNumbers(NumberOperand<TValue>.FromScalar(scalar), NumberOperand<TValue>.FromNode(node, value), navigator) is 0,
             JsonPathNodeKind.String => navigator.TryGetString(node, out var value) && StringsEqual(scalar.StringValue, value, navigator),
             _ => false,
         };
@@ -1004,7 +1037,7 @@ internal static class JsonPathEvaluator
             case JsonPathNodeKind.Number:
                 return navigator.TryGetNumber(left, out var leftNumber)
                        && navigator.TryGetNumber(right, out var rightNumber)
-                       && leftNumber.CompareTo(rightNumber) is 0;
+                       && CompareNumbers(NumberOperand<TValue>.FromNode(left, leftNumber), NumberOperand<TValue>.FromNode(right, rightNumber), navigator) is 0;
 
             case JsonPathNodeKind.String:
                 return navigator.TryGetString(left, out var leftString)
@@ -1110,27 +1143,108 @@ internal static class JsonPathEvaluator
         return true;
     }
 
-    private static bool TryGetNumber<TValue>(ResolvedValue<TValue> value, JsonPathNavigator<TValue> navigator, out double result)
+    private static bool TryGetNumber<TValue>(ResolvedValue<TValue> value, JsonPathNavigator<TValue> navigator, out NumberOperand<TValue> result)
     {
         if (value.Kind is ResolvedValueKind.Scalar)
         {
             if (value.Scalar.Kind is JsonPathNodeKind.Number)
             {
-                result = value.Scalar.NumberValue;
+                result = NumberOperand<TValue>.FromScalar(value.Scalar);
                 return true;
             }
 
-            result = 0;
+            result = default;
             return false;
         }
 
-        if (navigator.GetKind(value.Node) is JsonPathNodeKind.Number)
+        if (navigator.GetKind(value.Node) is JsonPathNodeKind.Number && navigator.TryGetNumber(value.Node, out var number))
         {
-            return navigator.TryGetNumber(value.Node, out result);
+            result = NumberOperand<TValue>.FromNode(value.Node, number);
+            return true;
         }
 
-        result = 0;
+        result = default;
         return false;
+    }
+
+    /// <summary>
+    /// Compares two numbers exactly. Rounding to the nearest <see cref="double"/> keeps the order of numbers, so two numbers
+    /// whose <see cref="double"/> values differ compare like them. Only numbers that round to the same <see cref="double"/>
+    /// need their texts to be told apart.
+    /// </summary>
+    /// <returns>
+    /// A negative number, zero or a positive number. A <see cref="double.NaN"/>, which only a custom function returns, is
+    /// smaller than every number and equal to itself, as <see cref="double.CompareTo(double)"/> orders it.
+    /// </returns>
+    private static int CompareNumbers<TValue>(in NumberOperand<TValue> left, in NumberOperand<TValue> right, JsonPathNavigator<TValue> navigator)
+    {
+        var comparison = left.Value.CompareTo(right.Value);
+        if (comparison is not 0 || double.IsNaN(left.Value))
+            return comparison;
+
+        return CompareNumberTexts(left, right, navigator);
+    }
+
+    // Kept apart from CompareNumbers so that its buffers are only allocated on the stack when the doubles are equal
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CompareNumberTexts<TValue>(in NumberOperand<TValue> left, in NumberOperand<TValue> right, JsonPathNavigator<TValue> navigator)
+    {
+        Span<byte> leftBuffer = stackalloc byte[JsonNodeNavigator.NumberBufferLength];
+        Span<byte> rightBuffer = stackalloc byte[JsonNodeNavigator.NumberBufferLength];
+        if (left.TryGetText(navigator, leftBuffer, out var leftText)
+            && right.TryGetText(navigator, rightBuffer, out var rightText)
+            && JsonNumberComparer.TryCompare(leftText, rightText, out var result))
+        {
+            return result;
+        }
+
+        // The text of a number is unknown, or is not a number: the doubles are all there is to compare
+        return 0;
+    }
+
+    /// <summary>A number to compare: a value of the document, or a literal or the result of a function.</summary>
+    private readonly struct NumberOperand<TValue>
+    {
+        private readonly TValue? _node;
+        private readonly byte[]? _text;
+        private readonly bool _isNode;
+
+        private NumberOperand(double value, TValue? node, byte[]? text, bool isNode)
+        {
+            Value = value;
+            _node = node;
+            _text = text;
+            _isNode = isNode;
+        }
+
+        /// <summary>Gets the number rounded to the nearest <see cref="double"/>.</summary>
+        public double Value { get; }
+
+        public static NumberOperand<TValue> FromNode(TValue? node, double value) => new(value, node, text: null, isNode: true);
+
+        public static NumberOperand<TValue> FromScalar(ScalarValue scalar) => new(scalar.NumberValue, node: default, scalar.NumberText, isNode: false);
+
+        public bool TryGetText(JsonPathNavigator<TValue> navigator, Span<byte> buffer, out ReadOnlySpan<byte> result)
+        {
+            if (_isNode)
+                return navigator.TryGetNumberUtf8(_node, buffer, out result);
+
+            if (_text is not null)
+            {
+                result = _text;
+                return true;
+            }
+
+            // A number computed by a function, such as length(), is exactly its double. Infinity and NaN have no text.
+            if (Value.TryFormat(buffer, out var written, "R", CultureInfo.InvariantCulture))
+            {
+                result = buffer[..written];
+                return true;
+            }
+
+            result = default;
+            return false;
+        }
     }
 
     private static bool TryGetString<TValue>(ResolvedValue<TValue> value, JsonPathNavigator<TValue> navigator, out string? result)
@@ -1625,7 +1739,7 @@ internal static class JsonPathEvaluator
                     true => ResolvedValue<TValue>.FromScalar(ScalarValue.FromBoolean(value: true)),
                     false => ResolvedValue<TValue>.FromScalar(ScalarValue.FromBoolean(value: false)),
                     string s => ResolvedValue<TValue>.FromScalar(ScalarValue.FromString(s)),
-                    double d => ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(d)),
+                    NumberLiteral number => ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(number)),
                     _ => ResolvedValue<TValue>.FromNothing(),
                 };
 

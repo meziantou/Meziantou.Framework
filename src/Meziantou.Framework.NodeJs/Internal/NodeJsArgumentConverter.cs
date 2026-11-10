@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Meziantou.Framework.NodeJs.Internal;
 
-/// <summary>Prevents <see cref="JSValue"/> and <see cref="JSReference"/> from being serialized as JSON, as only the arguments of a call can represent them.</summary>
+/// <summary>Prevents <see cref="JSValue"/>, <see cref="JSReference"/>, and <see cref="JSCallback"/> from being serialized as JSON, as only the arguments of a call can represent them.</summary>
 internal sealed class NodeJsArgumentConverter<T> : JsonConverter<T>
 {
     public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

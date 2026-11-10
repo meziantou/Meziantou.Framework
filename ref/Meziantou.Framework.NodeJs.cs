@@ -4,6 +4,17 @@
 
 namespace Meziantou.Framework.NodeJs
 {
+    [System.Text.Json.Serialization.JsonConverter(typeof(Meziantou.Framework.NodeJs.Internal.NodeJsArgumentConverter<Meziantou.Framework.NodeJs.JSCallback>))]
+    public sealed class JSCallback
+    {
+        public static Meziantou.Framework.NodeJs.JSCallback Create(System.Action<System.Collections.Generic.IReadOnlyList<System.Text.Json.JsonElement>> callback) => throw null;
+        public static Meziantou.Framework.NodeJs.JSCallback Create(System.Func<System.Collections.Generic.IReadOnlyList<System.Text.Json.JsonElement>, System.Text.Json.Nodes.JsonNode?> callback) => throw null;
+        public static Meziantou.Framework.NodeJs.JSCallback Create(System.Func<System.Collections.Generic.IReadOnlyList<System.Text.Json.JsonElement>, System.Threading.CancellationToken, System.Threading.Tasks.Task<System.Text.Json.Nodes.JsonNode?>> callback) => throw null;
+        public static Meziantou.Framework.NodeJs.JSCallback Create(System.Func<System.Collections.Generic.IReadOnlyList<System.Text.Json.JsonElement>, System.Threading.CancellationToken, System.Threading.Tasks.Task> callback) => throw null;
+        public System.Text.Json.Nodes.JsonNode ToJsonNode() => throw null;
+        public static implicit operator System.Text.Json.Nodes.JsonNode?(Meziantou.Framework.NodeJs.JSCallback? value) => throw null;
+    }
+
     [System.Text.Json.Serialization.JsonConverter(typeof(Meziantou.Framework.NodeJs.Internal.NodeJsArgumentConverter<Meziantou.Framework.NodeJs.JSReference>))]
     public sealed class JSReference : System.IAsyncDisposable, System.IDisposable
     {

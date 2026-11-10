@@ -30,4 +30,4 @@ prove that it was started by the host.
 
 To keep secrets out of the JavaScript code, remove the environment variables it does not need with
 [EnvironmentVariables](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.EnvironmentVariables) (a `null` value removes a variable). See
-[Configuring the Node.js process](07-ConfiguringTheProcess.md).
+[Configuring the Node.js process](08-ConfiguringTheProcess.md).

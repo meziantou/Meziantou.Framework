@@ -79,6 +79,8 @@ Assert.True(types[2].GetBoolean());
 A [JSValue](cref:Meziantou.Framework.NodeJs.JSValue) can only be used in the arguments of a call. It cannot be a member of an object serialized using
 reflection, and a `JsonNode` created from it cannot be serialized or cloned.
 
+To pass a function, wrap a .NET delegate in a [JSCallback](cref:Meziantou.Framework.NodeJs.JSCallback). See [Calling .NET from JavaScript](07-CallingDotNet.md).
+
 ## Read the values that JSON cannot represent
 
 A result is serialized with `JSON.stringify`, after converting the values that JSON does not support, or supports with

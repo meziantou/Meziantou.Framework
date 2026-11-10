@@ -18,7 +18,7 @@ as rendering or parsing documents, use worker threads or a pool of processes.
 | A canceled call blocks the event loop | The process is killed | The worker thread is restarted | The process is killed and replaced |
 
 The last row applies when [UnresponsiveTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.UnresponsiveTimeout) is set (see
-[Cancellation and timeouts](09-CancellationAndTimeouts.md)). Both can be combined: each process of a pool can run worker
+[Cancellation and timeouts](10-CancellationAndTimeouts.md)). Both can be combined: each process of a pool can run worker
 threads.
 
 ## Worker threads

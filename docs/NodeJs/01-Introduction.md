@@ -18,10 +18,12 @@ code, without writing a web service around it.
   [Arguments and results](05-ArgumentsAndResults.md).
 - **Keep JavaScript objects alive**: keep a value that cannot be converted to JSON, such as a class instance or a
   database client, in Node.js, and call its methods. See [Keeping values in Node.js](06-References.md).
+- **Call .NET from JavaScript**: pass a .NET delegate that JavaScript code calls as an async function, to report
+  progress, log, or resolve resources from your application. See [Calling .NET from JavaScript](07-CallingDotNet.md).
 - **Run calls in parallel**: on the worker threads of one process, or on a pool of processes. See
-  [Running calls in parallel](10-ParallelCalls.md).
+  [Running calls in parallel](11-ParallelCalls.md).
 - **Stop runaway code**: kill a process blocked by a canceled call, such as an infinite loop. See
-  [Cancellation and timeouts](09-CancellationAndTimeouts.md).
+  [Cancellation and timeouts](10-CancellationAndTimeouts.md).
 
 ## How it works
 
@@ -30,15 +32,15 @@ named pipe on Windows, a Unix domain socket elsewhere). This has a few consequen
 
 - **Node.js must be installed.** The package does not include it: it uses Node.js 16.9 or later, found in the `PATH` or
   at the path you set. Returning `BigInt` values requires Node.js 21 or later. See
-  [Configuring the Node.js process](07-ConfiguringTheProcess.md).
+  [Configuring the Node.js process](08-ConfiguringTheProcess.md).
 - **The code runs in another process.** A JavaScript error, or the exit of the Node.js process, fails the calls with a
-  [NodeJsException](cref:Meziantou.Framework.NodeJs.NodeJsException), not your application. See [Handling errors](08-HandlingErrors.md).
-- **Data crosses the boundary as JSON.** Arguments and results are serialized, and JavaScript code cannot call back into
-  .NET.
+  [NodeJsException](cref:Meziantou.Framework.NodeJs.NodeJsException), not your application. See [Handling errors](09-HandlingErrors.md).
+- **Data crosses the boundary as JSON.** Arguments and results are serialized, including the arguments and results of
+  the .NET delegates that JavaScript code calls.
 - **The process belongs to the host.** It exits when the host is disposed, and everything it keeps (global variables,
   loaded modules, references) is lost with it.
 
-The JavaScript code runs with the permissions of your application: only run code you trust. See [Security](11-Security.md).
+The JavaScript code runs with the permissions of your application: only run code you trust. See [Security](12-Security.md).
 
 ## Namespaces
 
@@ -59,4 +61,4 @@ objects serialized using reflection.
 
 - [Getting started](02-GettingStarted.md): install the package and call your first JavaScript function.
 - [Calling modules](04-CallingModules.md): call your own files and npm packages.
-- [Limitations](12-Limitations.md): what the library does not do.
+- [Limitations](13-Limitations.md): what the library does not do.

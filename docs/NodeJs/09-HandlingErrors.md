@@ -59,19 +59,19 @@ Assert.Equal(3, next.ExitCode);
 - The message includes the last lines written to the standard error, which usually tell why the process exited, such
   as running out of memory.
 - A host whose process exited cannot be restarted: start a new host. [NodeJsHostPool](cref:Meziantou.Framework.NodeJs.NodeJsHostPool) replaces a process that exits; see
-  [Running calls in parallel](10-ParallelCalls.md#a-pool-of-processes).
+  [Running calls in parallel](11-ParallelCalls.md#a-pool-of-processes).
 
 The process is not stopped by an error thrown outside of a call, such as by a timer callback, or by a promise rejection
 that is never handled: the error is written to the standard error, which you can capture with [StandardErrorReceived](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.StandardErrorReceived)
-(see [Configuring the Node.js process](07-ConfiguringTheProcess.md#output)).
+(see [Configuring the Node.js process](08-ConfiguringTheProcess.md#output)).
 
 ## The process or a worker thread is killed
 
 [ExitCode](cref:Meziantou.Framework.NodeJs.NodeJsException.ExitCode) is `null` when the error does not come from an exit of the process:
 
 - The process was killed because a canceled call blocked its event loop for longer than [UnresponsiveTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.UnresponsiveTimeout). See
-  [Cancellation and timeouts](09-CancellationAndTimeouts.md).
-- With [worker threads](10-ParallelCalls.md#worker-threads), a worker thread exited or was terminated: its calls, and
+  [Cancellation and timeouts](10-CancellationAndTimeouts.md).
+- With [worker threads](11-ParallelCalls.md#worker-threads), a worker thread exited or was terminated: its calls, and
   the calls made through its references, fail, while the process keeps running.
 
 ## Other exceptions
@@ -81,5 +81,5 @@ that is never handled: the error is written to the standard error, which you can
 | [NodeJsException](cref:Meziantou.Framework.NodeJs.NodeJsException) | [StartAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.StartAsync) cannot find or start `node`, or the process does not start within [StartupTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.StartupTimeout) |
 | `ArgumentOutOfRangeException` | [StartAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.StartAsync) receives an option that is zero or negative |
 | `JsonException` (or another exception of `System.Text.Json`) | The result cannot be deserialized to the requested type |
-| `OperationCanceledException` | The cancellation token of the call is canceled. See [Cancellation and timeouts](09-CancellationAndTimeouts.md). |
+| `OperationCanceledException` | The cancellation token of the call is canceled. See [Cancellation and timeouts](10-CancellationAndTimeouts.md). |
 | `ObjectDisposedException` | The host is disposed: the calls in progress and the later calls fail |

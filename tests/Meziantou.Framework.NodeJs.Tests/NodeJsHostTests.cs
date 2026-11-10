@@ -245,6 +245,322 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task DocumentationExample_JSCallback()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        #region JSCallback_Example
+        await using var node = await NodeJsHost.StartAsync();
+
+        // A .NET delegate that JavaScript code calls as an async function, e.g. to report progress
+        var progress = new ConcurrentQueue<int>();
+        var onProgress = JSCallback.Create(args => progress.Enqueue(args[0].GetInt32()));
+
+        // An asynchronous delegate: the promise resolves with its result
+        var getPrice = JSCallback.Create(async (args, cancellationToken) =>
+        {
+            await Task.Delay(10, cancellationToken);
+            return args[0].GetString() is "apple" ? 3 : 5;
+        });
+
+        var total = await node.EvaluateAsync("""
+            const [items, onProgress, getPrice] = args;
+            let total = 0;
+            for (let i = 0; i < items.length; i++) {
+                total += await getPrice(items[i]);
+                await onProgress(i + 1);
+            }
+
+            return total;
+            """, [new JsonArray("apple", "pear"), onProgress, getPrice]);
+
+        Assert.Equal(8, total.GetInt32());
+        Assert.Equal(new[] { 1, 2 }, progress.ToArray());
+        #endregion
+    }
+
+    [Fact]
+    public async Task JSCallback_ExceptionRejectsPromise()
+    {
+        await using var node = await StartNodeAsync();
+        var callback = JSCallback.Create(ThrowNotSupported);
+
+        var result = await node.EvaluateAsync("try { await args[0](); return null; } catch (error) { return [error instanceof Error, error.name, error.message]; }", [callback], XunitCancellationToken);
+
+        Assert.True(result[0].GetBoolean());
+        Assert.Equal("InvalidOperationException", result[1].GetString());
+        Assert.Equal("Not supported", result[2].GetString());
+    }
+
+    [Fact]
+    public async Task JSCallback_UncaughtExceptionFailsCall()
+    {
+        await using var node = await StartNodeAsync();
+        var callback = JSCallback.Create(ThrowNotSupported);
+
+        var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateVoidAsync("await args[0]();", [callback], XunitCancellationToken));
+
+        Assert.Equal("InvalidOperationException", exception.JavaScriptErrorName);
+        Assert.Equal("InvalidOperationException: Not supported", exception.Message);
+    }
+
+    [Fact]
+    public async Task JSCallback_ArgumentsAreConvertedLikeResults()
+    {
+        await using var node = await StartNodeAsync();
+        JsonElement[]? received = null;
+        var callback = JSCallback.Create(args => { received = [.. args.Select(arg => arg.Clone())]; });
+
+        await node.EvaluateVoidAsync("await args[0](undefined, 'text', new Map([['a', 1]]), new Uint8Array([1, 2]), NaN, () => 1);", [callback], XunitCancellationToken);
+
+        Assert.NotNull(received);
+        Assert.HasCount(6, received);
+        Assert.Equal(JsonValueKind.Null, received[0].ValueKind);
+        Assert.Equal("text", received[1].GetString());
+        Assert.Equal(1, received[2].GetProperty("a").GetInt32());
+        Assert.Equal(new byte[] { 1, 2 }, received[3].GetBytesFromBase64());
+        Assert.Equal("NaN", received[4].GetString());
+        Assert.Equal(JsonValueKind.Null, received[5].ValueKind);
+    }
+
+    [Fact]
+    public async Task JSCallback_ArgumentsThatCannotBeSerializedRejectPromise()
+    {
+        await using var node = await StartNodeAsync();
+        var called = false;
+        var callback = JSCallback.Create(_ => { called = true; });
+
+        var result = await node.EvaluateAsync<string>("const value = {}; value.self = value; try { await args[0](value); return null; } catch (error) { return error.name; }", [callback], cancellationToken: XunitCancellationToken);
+
+        Assert.Equal("TypeError", result);
+        Assert.False(called);
+    }
+
+    [Fact]
+    public async Task JSCallback_ResultCanContainJavaScriptValues()
+    {
+        await using var node = await StartNodeAsync();
+        await using var reference = await node.EvaluateReferenceAsync("return { name: 'referenced' };", XunitCancellationToken);
+        var nested = JSCallback.Create(_ => 42);
+        var callback = JSCallback.Create(_ => new JsonObject
+        {
+            ["bigint"] = JSValue.BigInt(long.MaxValue),
+            ["undefined"] = JSValue.Undefined,
+            ["reference"] = reference,
+            ["callback"] = nested,
+        });
+
+        var result = await node.EvaluateAsync("""
+            const value = await args[0]();
+            return [typeof value.bigint, value.bigint.toString(), 'undefined' in value && value.undefined === undefined, value.reference.name, await value.callback()];
+            """, [callback], XunitCancellationToken);
+
+        Assert.Equal("bigint", result[0].GetString());
+        Assert.Equal("9223372036854775807", result[1].GetString());
+        Assert.True(result[2].GetBoolean());
+        Assert.Equal("referenced", result[3].GetString());
+        Assert.Equal(42, result[4].GetInt32());
+    }
+
+    [Fact]
+    public async Task JSCallback_ResultThatCannotBeWrittenRejectsPromise()
+    {
+        await using var node = await StartNodeAsync();
+        var reference = await node.EvaluateReferenceAsync("return {};", XunitCancellationToken);
+        await reference.DisposeAsync();
+        var callback = JSCallback.Create(_ => reference);
+
+        var name = await node.EvaluateAsync<string>("try { await args[0](); return null; } catch (error) { return error.name; }", [callback], cancellationToken: XunitCancellationToken);
+
+        Assert.Equal("ObjectDisposedException", name);
+    }
+
+    [Fact]
+    public async Task JSCallback_SameInstanceIsSameFunctionInCall()
+    {
+        await using var node = await StartNodeAsync();
+        var callback = JSCallback.Create(_ => { });
+
+        var same = await node.EvaluateAsync<bool>("return args[0] === args[1].nested[0];", [callback, new JsonObject { ["nested"] = new JsonArray(callback) }], cancellationToken: XunitCancellationToken);
+
+        Assert.True(same);
+    }
+
+    [Fact]
+    public async Task JSCallback_CanBeCalledAfterTheCallCompletes()
+    {
+        await using var node = await StartNodeAsync();
+        var values = new ConcurrentQueue<string>();
+        var callback = JSCallback.Create(args => values.Enqueue(args[0].GetString()!));
+
+        await node.EvaluateVoidAsync("globalThis.handler = args[0];", [callback], XunitCancellationToken);
+        await node.EvaluateVoidAsync("await globalThis.handler('first'); await globalThis.handler('second');", XunitCancellationToken);
+
+        Assert.Equal(new[] { "first", "second" }, values.ToArray());
+    }
+
+    [Fact]
+    public async Task JSCallback_ConcurrentCalls()
+    {
+        await using var node = await StartNodeAsync();
+        var callback = JSCallback.Create(async (args, cancellationToken) =>
+        {
+            var value = args[0].GetInt32();
+
+            // The calls complete in the reverse order
+            await Task.Delay((10 - value) * 10, cancellationToken);
+            return value * 2;
+        });
+
+        var result = await node.EvaluateAsync<int[]>("return await Promise.all(Array.from({ length: 10 }, (_, i) => args[0](i)));", [callback], cancellationToken: XunitCancellationToken);
+
+        Assert.Equal(Enumerable.Range(0, 10).Select(i => i * 2).ToArray(), result);
+    }
+
+    [Fact]
+    public async Task JSCallback_ReflectionBasedArguments()
+    {
+        await using var node = await StartNodeAsync();
+        var callback = JSCallback.Create(args => args[0].GetInt32() + 1);
+
+        // The arguments are an array of objects, serialized using reflection
+        var result = await node.EvaluateAsync<int>("return await args[0](args[1]);", [callback, 41], cancellationToken: XunitCancellationToken);
+
+        Assert.Equal(42, result);
+    }
+
+    [Fact]
+    public async Task JSCallback_IsReleasedOnceTheFunctionIsCollected()
+    {
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { NodeArguments = { "--expose-gc" } });
+        var callback = JSCallback.Create(_ => { });
+
+        await node.EvaluateVoidAsync("globalThis.handler = args[0];", [callback], XunitCancellationToken);
+        Assert.Equal(1, node.CallbackCount);
+
+        await node.EvaluateVoidAsync("delete globalThis.handler;", XunitCancellationToken);
+        await WaitUntilAsync(async () =>
+        {
+            // Finalization callbacks run after the collection, in a later task
+            await node.EvaluateVoidAsync("globalThis.gc(); await new Promise(resolve => setTimeout(resolve, 10));", XunitCancellationToken);
+            return node.CallbackCount is 0;
+        });
+    }
+
+    [Fact]
+    public async Task JSCallback_IsUnregisteredWhenTheMessageIsNotSent()
+    {
+        await using var node = await StartNodeAsync();
+        var reference = await node.EvaluateReferenceAsync("return {};", XunitCancellationToken);
+        await reference.DisposeAsync();
+        var callback = JSCallback.Create(_ => { });
+
+        // The callback is registered before the disposed reference fails the serialization
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => node.EvaluateVoidAsync("", [callback, reference], XunitCancellationToken));
+
+        Assert.Equal(0, node.CallbackCount);
+    }
+
+    [Fact]
+    public async Task JSCallback_CancellationTokenIsCanceledWhenTheHostIsDisposed()
+    {
+        var node = await StartNodeAsync();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var canceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var callback = JSCallback.Create(async (_, cancellationToken) =>
+        {
+            using var registration = cancellationToken.Register(canceled.SetResult);
+            started.SetResult();
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+        });
+
+        var call = node.EvaluateVoidAsync("await args[0]();", [callback], XunitCancellationToken);
+        await started.Task.WaitAsync(HangTimeout, XunitCancellationToken);
+        await node.DisposeAsync();
+
+        await canceled.Task.WaitAsync(HangTimeout, XunitCancellationToken);
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => call);
+    }
+
+    [Fact]
+    public async Task JSCallback_CancellationCallbackThatThrowsDoesNotStopDisposal()
+    {
+        var node = await StartNodeAsync();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var callback = JSCallback.Create(async (_, cancellationToken) =>
+        {
+            cancellationToken.Register(() => throw new InvalidOperationException("Cancellation callback failed"));
+            started.SetResult();
+            await Task.Delay(Timeout.Infinite, CancellationToken.None).WaitAsync(cancellationToken);
+        });
+
+        using var process = Process.GetProcessById(node.ProcessId);
+        var call = node.EvaluateVoidAsync("await args[0]();", [callback], XunitCancellationToken);
+        await started.Task.WaitAsync(HangTimeout, XunitCancellationToken);
+        await node.DisposeAsync().AsTask().WaitAsync(HangTimeout, XunitCancellationToken);
+
+        Assert.True(process.HasExited);
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => call);
+    }
+
+    [Fact]
+    public async Task JSCallback_CallsOnTheHostDoNotWaitForTheConcurrencyLimit()
+    {
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { MaxConcurrentCalls = 1 });
+        var callback = JSCallback.Create(async (args, cancellationToken) =>
+        {
+            // The call waiting for the delegate holds the only slot
+            var nested = await node.EvaluateAsync("return args[0] * 2;", [args[0].GetInt32()], cancellationToken);
+            return nested.GetInt32();
+        });
+
+        var result = await node.EvaluateAsync("return await args[0](21);", [callback], XunitCancellationToken).WaitAsync(HangTimeout, XunitCancellationToken);
+
+        Assert.Equal(42, result.GetInt32());
+    }
+
+    [Fact]
+    public async Task JSCallback_CallsOnThePoolDoNotWaitForTheConcurrencyLimit()
+    {
+        SkipIfNodeIsNotInstalled();
+        await using var pool = await NodeJsHostPool.StartAsync(1, new NodeJsHostOptions { MaxConcurrentCalls = 1 }, XunitCancellationToken);
+        var callback = JSCallback.Create(async (args, cancellationToken) =>
+        {
+            var nested = await pool.EvaluateAsync("return args[0] * 2;", [args[0].GetInt32()], cancellationToken);
+            return nested.GetInt32();
+        });
+
+        var result = await pool.EvaluateAsync("return await args[0](21);", [callback], XunitCancellationToken).WaitAsync(HangTimeout, XunitCancellationToken);
+
+        Assert.Equal(42, result.GetInt32());
+    }
+
+    [Fact]
+    public async Task JSCallback_WorkerThreads()
+    {
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { WorkerThreads = 2 });
+        var callback = JSCallback.Create(args => args[0].GetInt32() * 2);
+
+        var results = await Task.WhenAll(Enumerable.Range(0, 8).Select(i => node.EvaluateAsync("return await args[0](args[1]);", [callback, i], XunitCancellationToken)));
+
+        Assert.Equal(Enumerable.Range(0, 8).Select(i => i * 2).ToArray(), results.Select(result => result.GetInt32()).ToArray());
+    }
+
+    [Fact]
+    public async Task JSCallback_Pool()
+    {
+        SkipIfNodeIsNotInstalled();
+        await using var pool = await NodeJsHostPool.StartAsync(2, cancellationToken: XunitCancellationToken);
+        var callback = JSCallback.Create(args => args[0].GetString() + "!");
+
+        var result = await pool.EvaluateAsync("return await args[0](args[1]);", [callback, "hello"], XunitCancellationToken);
+
+        Assert.Equal("hello!", result.GetString());
+    }
+
+    private static void ThrowNotSupported(IReadOnlyList<JsonElement> arguments) => throw new InvalidOperationException("Not supported");
+
+    [Fact]
     public async Task Evaluate_ReturnsValue()
     {
         await using var node = await StartNodeAsync();

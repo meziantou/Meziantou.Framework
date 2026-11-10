@@ -8,7 +8,7 @@ using System.Text.Json.Nodes;
 namespace Meziantou.Framework.NodeJs.Internal;
 
 /// <summary>
-/// Writes the arguments of a call. Values that JSON cannot represent (<see cref="JSValue"/> and <see cref="JSReference"/>) are written as <see langword="null"/>,
+/// Writes the arguments of a call. Values that JSON cannot represent (<see cref="JSValue"/>, <see cref="JSReference"/>, and <see cref="JSCallback"/>) are written as <see langword="null"/>,
 /// and listed with their location in the <c>values</c> property, so the JSON provided by the caller never needs to be escaped.
 /// </summary>
 internal sealed class ArgumentWriter : IDisposable
@@ -18,6 +18,9 @@ internal sealed class ArgumentWriter : IDisposable
     private readonly List<PathSegment> _path = [];
     private ArrayBufferWriter<byte>? _valuesBuffer;
     private Utf8JsonWriter? _valuesWriter;
+
+    // The same callback is the same function in a message
+    private Dictionary<JSCallback, long>? _callbackIds;
 
     private readonly string _parameterName;
 
@@ -31,6 +34,7 @@ internal sealed class ArgumentWriter : IDisposable
     /// <summary>Writes the <c>args</c> and <c>values</c> properties of a message sent on <paramref name="channel"/>.</summary>
     /// <exception cref="ArgumentException">A <see cref="JSReference"/> belongs to another host, or to another worker thread.</exception>
     /// <exception cref="ObjectDisposedException">A <see cref="JSReference"/> is disposed.</exception>
+    /// <remarks>The <see cref="JSCallback"/> instances are registered on <paramref name="channel"/>, as the message will create their functions.</remarks>
     public static void Write(Utf8JsonWriter writer, NodeJsChannel channel, IReadOnlyList<JsonNode?>? arguments)
     {
         using var argumentWriter = new ArgumentWriter(writer, channel, nameof(arguments));
@@ -101,7 +105,7 @@ internal sealed class ArgumentWriter : IDisposable
         return channel;
     }
 
-    /// <summary>Converts arguments to JSON nodes using reflection. <see cref="JsonNode"/>, <see cref="JSValue"/>, and <see cref="JSReference"/> arguments are used as is.</summary>
+    /// <summary>Converts arguments to JSON nodes using reflection. <see cref="JsonNode"/>, <see cref="JSValue"/>, <see cref="JSReference"/>, and <see cref="JSCallback"/> arguments are used as is.</summary>
     /// <param name="arguments">The arguments.</param>
     /// <param name="options">The serialization options. When <see langword="null"/>, the web defaults are used, so property names are camelCase like in JavaScript.</param>
     [RequiresUnreferencedCode("JSON serialization might require types that cannot be statically analyzed.")]
@@ -120,6 +124,7 @@ internal sealed class ArgumentWriter : IDisposable
                 JsonNode node => node,
                 JSValue value => value.ToJsonNode(),
                 JSReference reference => reference.ToJsonNode(),
+                JSCallback callback => callback.ToJsonNode(),
                 var argument => JsonSerializer.SerializeToNode(argument, argument.GetType(), options ?? NodeJsHost.DefaultArgumentSerializerOptions),
             };
         }
@@ -231,6 +236,10 @@ internal sealed class ArgumentWriter : IDisposable
                 WriteReference(reference);
                 break;
 
+            case JsonValue value when value.TryGetValue(out JSCallback? callback):
+                WriteCallback(callback);
+                break;
+
             default:
                 node.WriteTo(_writer);
                 break;
@@ -303,6 +312,19 @@ internal sealed class ArgumentWriter : IDisposable
             throw new ArgumentException("The reference belongs to another worker thread of the Node.js process.", _parameterName);
 
         StartValue("reference").WriteNumber("value", reference.Id);
+        EndValue();
+    }
+
+    private void WriteCallback(JSCallback callback)
+    {
+        _callbackIds ??= [];
+        if (!_callbackIds.TryGetValue(callback, out var id))
+        {
+            id = _channel.RegisterCallback(callback);
+            _callbackIds.Add(callback, id);
+        }
+
+        StartValue("callback").WriteNumber("value", id);
         EndValue();
     }
 

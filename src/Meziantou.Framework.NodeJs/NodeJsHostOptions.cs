@@ -26,7 +26,7 @@ public sealed class NodeJsHostOptions
     /// <remarks>
     /// <para>Limiting the number of calls bounds the memory and the work queued in the Node.js process. With <see cref="NodeJsHostPool"/>, calls wait in the pool and run on the first process that becomes available, which balances calls of different durations; <c>1</c> is a good value for CPU-bound code.</para>
     /// <para>With <see cref="WorkerThreads"/>, the limit applies to the calls of all the worker threads of the process, and each call that can run is sent to the worker thread with the fewest calls in progress. Use the number of worker threads for CPU-bound code, so a call runs on a worker thread that becomes available instead of waiting for a long call.</para>
-    /// <para>A canceled call no longer counts, even if its JavaScript code is still running. A call made using <see cref="NodeJsHostPool.RunAsync{T}(Func{NodeJsHost, Task{T}}, CancellationToken)"/> counts as one call of the pool, and each call it makes on the host counts as one call of the host.</para>
+    /// <para>A canceled call no longer counts, even if its JavaScript code is still running. A call made using <see cref="NodeJsHostPool.RunAsync{T}(Func{NodeJsHost, Task{T}}, CancellationToken)"/> counts as one call of the pool, and each call it makes on the host counts as one call of the host. The calls made by a <see cref="JSCallback"/> delegate on the host that called it, or on its pool, do not wait, as the call waiting for the delegate may hold the limit.</para>
     /// </remarks>
     public int? MaxConcurrentCalls { get; set; }
 

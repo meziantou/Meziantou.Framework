@@ -151,6 +151,43 @@ JsonElement value = await client.GetValueAsync();
 
 The value is kept until the reference is disposed or the process exits. A reference can only be used with the process that created it: once the process exits, calls that use it fail with a `NodeJsException` whose `ExitCode` is set. With [worker threads](#worker-threads), the value is kept by the worker thread that created it, and is lost when this worker thread exits.
 
+### Callbacks
+
+A `JSCallback` wraps a .NET delegate. JavaScript code receives it as an async function: calling it runs the delegate in the .NET process, and the returned promise resolves with the result of the delegate. Use it to report progress, log, resolve resources from the host, or pass a callback to a library.
+
+<!-- ref:../../tests/Meziantou.Framework.NodeJs.Tests/NodeJsHostTests.cs;region=JSCallback_Example;format=md-fenced-code-block;dedent=true -->
+```csharp
+await using var node = await NodeJsHost.StartAsync();
+
+// A .NET delegate that JavaScript code calls as an async function, e.g. to report progress
+var progress = new ConcurrentQueue<int>();
+var onProgress = JSCallback.Create(args => progress.Enqueue(args[0].GetInt32()));
+
+// An asynchronous delegate: the promise resolves with its result
+var getPrice = JSCallback.Create(async (args, cancellationToken) =>
+{
+    await Task.Delay(10, cancellationToken);
+    return args[0].GetString() is "apple" ? 3 : 5;
+});
+
+var total = await node.EvaluateAsync("""
+    const [items, onProgress, getPrice] = args;
+    let total = 0;
+    for (let i = 0; i < items.length; i++) {
+        total += await getPrice(items[i]);
+        await onProgress(i + 1);
+    }
+
+    return total;
+    """, [new JsonArray("apple", "pear"), onProgress, getPrice]);
+
+Assert.Equal(8, total.GetInt32());
+Assert.Equal(new[] { 1, 2 }, progress.ToArray());
+```
+<!-- endref -->
+
+The delegate receives the JSON representation of the arguments, converted as results are. Its result is converted as arguments are, so it can contain `JSValue`, `JSReference`, and `JSCallback` values. When the delegate throws, the promise is rejected with an `Error` whose `name` is the name of the type of the exception. The delegate runs on the thread pool, can be called concurrently, and can be called after the call that passed it completes. The host keeps it until Node.js garbage collects the function, or until the process exits.
+
 ### Errors
 
 JavaScript errors are thrown as `NodeJsException`, with `JavaScriptErrorName` (e.g. `TypeError`), `JavaScriptStack`, and `JavaScriptErrorCode` (the `code` property of the error, e.g. `ENOENT`). The `cause` of the error is the `InnerException`. A thrown value that is not an `Error` is described by its JSON representation when it is an object. If the Node.js process exits, pending and future calls throw a `NodeJsException` whose `ExitCode` is set, including calls made through its references and calls made once `NodeJsHostPool` has replaced the process. When the process is killed because of `UnresponsiveTimeout`, calls throw a `NodeJsException` whose `ExitCode` is `null`. With [worker threads](#worker-threads), when a worker thread exits or is terminated, its calls and the calls made through its references throw a `NodeJsException` whose `ExitCode` is `null`, as the process keeps running. Calls made once you dispose the host throw an `ObjectDisposedException`.
@@ -259,7 +296,7 @@ Such code is never stopped. A call that runs a loop processing jobs for other ca
 
 - Arguments and results are serialized as JSON. Use `JSValue` to pass values that JSON cannot represent, and `JSReference` to keep values in the Node.js process. See [Results](#results) for the conversion of results.
 - A message (arguments or result) cannot exceed the maximum length of a JavaScript string (about 512 million UTF-16 characters). A larger message fails its call.
-- `JSValue` and `JSReference` can only be used in the arguments of a call. A `JsonNode` created from them cannot be serialized or cloned, and they cannot be members of objects serialized using reflection.
+- `JSValue`, `JSReference`, and `JSCallback` can only be used in the arguments of a call, or in the result of a `JSCallback`. A `JsonNode` created from them cannot be serialized or cloned, and they cannot be members of objects serialized using reflection.
 - Cancelling a call only stops waiting for the result; the JavaScript code keeps running. Set `UnresponsiveTimeout` to kill the process when the code blocks its event loop (see [Cancellation](#cancellation)).
-- JavaScript code cannot call back into .NET.
+- JavaScript code can only call the .NET delegates it receives as `JSCallback` arguments, and their arguments and results are serialized as JSON.
 - A synchronous infinite loop blocks all the other calls, or all the other calls of its worker thread with `WorkerThreads`. Disposing the host kills the process.

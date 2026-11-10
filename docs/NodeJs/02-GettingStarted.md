@@ -17,7 +17,7 @@ node --version
 ```
 
 When `node` is not in the `PATH`, set [NodeJsHostOptions.NodeExecutablePath](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.NodeExecutablePath), as described in
-[Configuring the Node.js process](07-ConfiguringTheProcess.md#locate-nodejs).
+[Configuring the Node.js process](08-ConfiguringTheProcess.md#locate-nodejs).
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.NodeJs;`, and
 `using System.Text.Json;` or `using System.Text.Json.Nodes;` for the JSON types.
@@ -91,5 +91,5 @@ Assert.Equal("hello-world", slug);
 
 - [Running JavaScript code](03-RunningCode.md) and [Calling modules](04-CallingModules.md): the details of the two kinds
   of calls, and how npm packages are found.
-- [Handling errors](08-HandlingErrors.md): what happens when the JavaScript code throws.
-- [Running calls in parallel](10-ParallelCalls.md): run CPU-bound code on several threads or processes.
+- [Handling errors](09-HandlingErrors.md): what happens when the JavaScript code throws.
+- [Running calls in parallel](11-ParallelCalls.md): run CPU-bound code on several threads or processes.

@@ -93,10 +93,17 @@ public sealed class NodeJsHostPool : IAsyncDisposable
     /// <summary>Runs a function with one host of the pool. Use it to run several calls on the same Node.js process.</summary>
     /// <param name="action">The function to run. The host must not be used after the returned task completes.</param>
     /// <param name="cancellationToken">A token to stop waiting for a host to be available.</param>
-    /// <remarks>Calls made on the pool by the function, instead of on the host, do not wait for <see cref="NodeJsHostOptions.MaxConcurrentCalls"/>: the function already counts as a call, and waiting would never end when all the calls of the pool are such functions.</remarks>
+    /// <remarks>Calls made on the pool by the function, instead of on the host, do not wait for <see cref="NodeJsHostOptions.MaxConcurrentCalls"/>: the function already counts as a call, and waiting would never end when all the calls of the pool are such functions. Likewise, calls made on the pool by a <see cref="JSCallback"/> delegate run on the host that called the delegate, without waiting.</remarks>
     public async Task<T> RunAsync<T>(Func<NodeJsHost, Task<T>> action, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(action);
+
+        // A JSCallback delegate of a host of the pool runs while the JavaScript code that calls it holds capacity, so its calls run on that host without waiting
+        if (NodeJsHost.RunningCallbackHost is { } callbackHost && ContainsHost(callbackHost))
+        {
+            RunningPool.Value = this;
+            return await RunOnHostAsync(callbackHost, action).ConfigureAwait(false);
+        }
 
         // Calls wait here instead of being queued on a host, so they run on the first host that becomes available
         var capacity = RunningPool.Value == this ? null : _capacity;
@@ -344,6 +351,20 @@ public sealed class NodeJsHostPool : IAsyncDisposable
             await action(host).ConfigureAwait(false);
             return null;
         }, cancellationToken).ConfigureAwait(false);
+    }
+
+    private bool ContainsHost(NodeJsHost host)
+    {
+        lock (_lock)
+        {
+            foreach (var slot in _slots)
+            {
+                if (slot.Host.IsCompletedSuccessfully && slot.Host.Result == host)
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     // Runs a call that uses a reference on the host that keeps the referenced value

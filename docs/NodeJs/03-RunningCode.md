@@ -34,11 +34,11 @@ Assert.Equal(JsonValueKind.Null, nothing.ValueKind);
   returns a promise, its value is the result.
 - The arguments are in the `args` array. Pass the values your code works on as arguments instead of inserting them in
   the code: they need no escaping, and an untrusted value cannot change the code that runs (see
-  [Security](11-Security.md)).
+  [Security](12-Security.md)).
 - `require` follows the rules of CommonJS: it loads built-in modules (`node:path`), npm packages and files, and the file
   extension is optional.
 - Values stored on `globalThis` persist across calls of the same process, so a call can prepare a value that later calls
-  use. With [worker threads](10-ParallelCalls.md#worker-threads) or a [pool](10-ParallelCalls.md#a-pool-of-processes),
+  use. With [worker threads](11-ParallelCalls.md#worker-threads) or a [pool](11-ParallelCalls.md#a-pool-of-processes),
   each thread or process has its own `globalThis`.
 - A result of `undefined`, or no `return`, gives a JSON `null`.
 

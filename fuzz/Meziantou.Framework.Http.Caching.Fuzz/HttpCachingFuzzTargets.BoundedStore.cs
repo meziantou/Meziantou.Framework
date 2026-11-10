@@ -90,7 +90,7 @@ public static partial class HttpCachingFuzzTargets
 
             var usage = store.GetUsage();
             FuzzAssert.True(usage is not null, "A bounded store reports no usage");
-            var (entryCount, totalSize) = usage!.Value;
+            var (entryCount, totalSize) = usage.Value;
             FuzzAssert.Equal(model.Count, entryCount, "The entry count of the store");
             FuzzAssert.Equal(model.Sum(item => (long)item.Size), totalSize, "The total size of the store");
             FuzzAssert.True(entryCount <= (maximumEntryCount ?? long.MaxValue), $"The store holds {entryCount} entries, more than {maximumEntryCount}");

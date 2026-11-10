@@ -211,7 +211,7 @@ public static partial class HttpCachingFuzzTargets
 
         var contentRange = response.Content.Headers.ContentRange;
         FuzzAssert.True(contentRange is { Length: not null } && string.Equals(contentRange.Unit, "bytes", StringComparison.Ordinal), $"The {(int)response.StatusCode} response has no complete Content-Range: {contentRange}");
-        var length = contentRange!.Length!.Value;
+        var length = contentRange.Length.Value;
         if (response.StatusCode is HttpStatusCode.RequestedRangeNotSatisfiable)
         {
             FuzzAssert.False(contentRange.HasRange, "The Content-Range of a 416 response has a range");
@@ -220,8 +220,8 @@ public static partial class HttpCachingFuzzTargets
         }
 
         FuzzAssert.True(contentRange.From is { } from && contentRange.To is { } to && from <= to && to < length, $"The Content-Range of the 206 response is not within the representation: {contentRange}");
-        var first = (int)contentRange.From!.Value;
-        var last = (int)contentRange.To!.Value;
+        var first = (int)contentRange.From.Value;
+        var last = (int)contentRange.To.Value;
         FuzzAssert.Equal(last - first + 1, body.Length, "The body of the 206 response does not have the length of its Content-Range");
 
         if (seeded is not null && seeded.Payload.StatusCode is HttpStatusCode.OK && seeded.Payload.Body.Length == length && seeded.Payload.Body.AsSpan(first, body.Length).SequenceEqual(body))

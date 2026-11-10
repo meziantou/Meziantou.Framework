@@ -70,13 +70,15 @@ internal static class WebApisScript
           // prototypes or the iteration protocol, which the scripts can replace
           const test = (regExp, text) => apply(regExpExec, regExp, [text]) !== null;
           const indexOf = (text, search) => apply(stringIndexOf, text, [search]);
-          const collect = (iterator, next) => {
+          const collect = (iterator, next, limit) => {
             const items = [];
-            for (;;) {
+            while (items.length < limit) {
               const result = apply(next, iterator, []);
               if (result.done) return items;
               append(items, result.value);
             }
+
+            return items;
           };
 
           // ---------------------------------------------------------------------------------------------------------
@@ -618,13 +620,6 @@ internal static class WebApisScript
               return `${prefix}${open} ${body} ${close}`;
             };
 
-            const appendLimited = (items, values, format) => {
-              for (let i = 0; i < values.length; i++) {
-                if (items.length >= maxItems) { append(items, `... ${values.length - maxItems} more items`); break; }
-                append(items, format(values[i]));
-              }
-            };
-
             const inspectObject = (value, kind, depth, seen) => {
               const items = [];
               switch (kind) {
@@ -653,16 +648,21 @@ internal static class WebApisScript
 
                 case 'map': {
                   if (depth > maxDepth) return '[Map]';
-                  const entries = collect(apply(mapEntries, value, []), mapIteratorNext);
-                  appendLimited(items, entries, (entry) => `${inspect(entry[0], depth + 1, seen, true)} => ${inspect(entry[1], depth + 1, seen, true)}`);
-                  return wrap(`Map(${entries.length}) `, items, '{', '}');
+                  // Only the entries that are shown are read: the size gives the number of the other ones
+                  const size = apply(mapSize, value, []);
+                  const entries = collect(apply(mapEntries, value, []), mapIteratorNext, maxItems);
+                  for (let i = 0; i < entries.length; i++) append(items, `${inspect(entries[i][0], depth + 1, seen, true)} => ${inspect(entries[i][1], depth + 1, seen, true)}`);
+                  if (size > entries.length) append(items, `... ${size - entries.length} more items`);
+                  return wrap(`Map(${size}) `, items, '{', '}');
                 }
 
                 case 'set': {
                   if (depth > maxDepth) return '[Set]';
-                  const values = collect(apply(setValues, value, []), setIteratorNext);
-                  appendLimited(items, values, (item) => inspect(item, depth + 1, seen, true));
-                  return wrap(`Set(${values.length}) `, items, '{', '}');
+                  const size = apply(setSize, value, []);
+                  const values = collect(apply(setValues, value, []), setIteratorNext, maxItems);
+                  for (let i = 0; i < values.length; i++) append(items, inspect(values[i], depth + 1, seen, true));
+                  if (size > values.length) append(items, `... ${size - values.length} more items`);
+                  return wrap(`Set(${size}) `, items, '{', '}');
                 }
 
                 case 'weakmap': return 'WeakMap { <items unknown> }';

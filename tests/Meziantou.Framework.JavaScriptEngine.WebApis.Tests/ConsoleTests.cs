@@ -129,6 +129,26 @@ public sealed class ConsoleTests
     }
 
     [Fact]
+    public void Console_LargeCollectionsShowTheirFirstItems()
+    {
+        using var context = new WebApisTestContext();
+        context.Run("""
+            const map = new Map();
+            const set = new Set();
+            for (let i = 0; i < 150; i++) { map.set(i, i); set.add(i); }
+            console.log(map);
+            console.log(set);
+            console.log(Array.from({ length: 150 }, (_, i) => i));
+            """);
+        Assert.HasCount(3, context.Messages);
+        Assert.StartsWith("Map(150) { 0 => 0, 1 => 1,", context.Messages[0].Text);
+        Assert.EndsWith("99 => 99, ... 50 more items }", context.Messages[0].Text);
+        Assert.StartsWith("Set(150) { 0, 1,", context.Messages[1].Text);
+        Assert.EndsWith("99, ... 50 more items }", context.Messages[1].Text);
+        Assert.EndsWith("99, ... 50 more items ]", context.Messages[2].Text);
+    }
+
+    [Fact]
     public void Console_DoesNotUseTheModifiedBuiltIns()
     {
         using var context = new WebApisTestContext();

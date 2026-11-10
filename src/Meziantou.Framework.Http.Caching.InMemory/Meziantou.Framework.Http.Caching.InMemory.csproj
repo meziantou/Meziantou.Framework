@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Http.Caching.Fuzz" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.Http.Caching/Meziantou.Framework.Http.Caching.csproj" />
   </ItemGroup>
 

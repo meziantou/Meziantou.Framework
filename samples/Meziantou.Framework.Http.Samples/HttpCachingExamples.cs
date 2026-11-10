@@ -157,4 +157,54 @@ public static class HttpCachingExamples
         await cacheStore.PruneObsoleteEntriesAsync();
         #endregion
     }
+
+    public static async Task RangeRequest()
+    {
+        #region HttpCaching_RangeRequest
+        using var cachingHandler = new HttpCachingDelegateHandler(new SocketsHttpHandler(), new InMemoryHttpCacheStore());
+        using var httpClient = new HttpClient(cachingHandler);
+
+        // The server answers with a complete response, which the cache stores
+        using var response = await httpClient.GetAsync("https://example.com/file.txt");
+
+        // While the stored response is fresh, the cache serves the range from it without contacting the server:
+        // 206 Partial Content, with Content-Range: bytes 5-11/<length of the response>
+        using var rangeRequest = new HttpRequestMessage(HttpMethod.Get, "https://example.com/file.txt");
+        rangeRequest.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(5, 11);
+        using var rangeResponse = await httpClient.SendAsync(rangeRequest);
+        #endregion
+    }
+
+    public static async Task CoalesceRequests()
+    {
+        #region HttpCaching_CoalesceRequests
+        var options = new HttpCachingOptions
+        {
+            // Concurrent requests for the same URL share a single request to the server
+            CoalesceRequests = true,
+        };
+
+        using var cachingHandler = new HttpCachingDelegateHandler(new SocketsHttpHandler(), new InMemoryHttpCacheStore(), options);
+        using var httpClient = new HttpClient(cachingHandler);
+
+        // Only one of these requests goes to the server. The others wait for it, then are served from the cache.
+        var responses = await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => httpClient.GetStringAsync("https://example.com/data")));
+        #endregion
+    }
+
+    public static async Task BoundedStore()
+    {
+        #region HttpCaching_BoundedStore
+        var cacheStore = new InMemoryHttpCacheStore(new HttpCacheStoreLimits
+        {
+            // Keep at most 1,000 responses, and at most 50 MB of responses
+            MaximumEntryCount = 1000,
+            MaximumTotalSize = 50 * 1024 * 1024,
+        });
+
+        using var cachingHandler = new HttpCachingDelegateHandler(new SocketsHttpHandler(), cacheStore);
+        using var httpClient = new HttpClient(cachingHandler);
+        using var response = await httpClient.GetAsync("https://example.com/data");
+        #endregion
+    }
 }

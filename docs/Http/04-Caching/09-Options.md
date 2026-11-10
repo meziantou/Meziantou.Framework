@@ -1,6 +1,6 @@
 ---
 title: Options
-description: Limit the size of the stored responses, choose which ones to store, control the clock of the cache, and observe the store failures.
+description: Limit the size of the stored responses, choose which ones to store, share the cache between users, coalesce concurrent requests, control the clock of the cache, and observe the store failures.
 ---
 
 [HttpCachingOptions](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions) configures a [HttpCachingDelegateHandler](cref:Meziantou.Framework.Http.Caching.HttpCachingDelegateHandler). Pass it as the last argument of the constructor:
@@ -22,6 +22,8 @@ var options = new HttpCachingOptions
 | --- | --- | --- |
 | [MaximumResponseSize](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.MaximumResponseSize) | 5 MB (5,242,880 bytes) | The largest response stored, in bytes. `null` removes the limit |
 | [ShouldCacheResponse](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.ShouldCacheResponse) | `null` | A predicate that can prevent storing a response |
+| [IsSharedCache](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.IsSharedCache) | `false` | Follow the rules of a shared cache, which serves several users |
+| [CoalesceRequests](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.CoalesceRequests) | `false` | Send a single request to the server for concurrent requests for the same URL |
 | [TimeProvider](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.TimeProvider) | `TimeProvider.System` | The clock used to compute the age and the freshness of the responses |
 | [OnStoreError](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.OnStoreError) | `null` | A callback invoked when the store fails |
 
@@ -37,11 +39,72 @@ The cache reads the body of a response to store it, so a large response costs me
 
 In every case, the caller receives the full response. Only the storage is skipped.
 
+This limit applies to each response. To bound the number of entries or their total size, give limits to the store. See
+[Bounding the size of a store](03-CacheStores.md#bounding-the-size-of-a-store).
+
 ## Choose which responses to store
 
 [ShouldCacheResponse](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.ShouldCacheResponse) is called for each response the HTTP caching rules allow to store. When it returns `false`, the
 response is not stored. It cannot make the cache store a response that the rules do not allow, such as one with
 `Cache-Control: no-store`.
+
+## Share the cache between users
+
+By default, the cache is private: it belongs to a single user. Set [IsSharedCache](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.IsSharedCache) when one cache serves
+several users, for instance in a proxy or in a service that forwards the requests of its own clients:
+
+<!-- ref:../../../tests/Meziantou.Framework.Http.Caching.Tests/ComprehensiveRFC7234Tests.cs;region=HttpCaching_SharedCache;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new HttpCachingOptions
+{
+    // Follow the rules of a shared cache: the cache serves several users
+    IsSharedCache = true,
+};
+```
+<!-- endref -->
+
+A shared cache follows the rules of RFC 9111 for shared caches:
+
+- A response with `Cache-Control: private` is not stored. With `private="<field>"`, the response is stored without the
+  listed header fields.
+- The response to a request with an `Authorization` header is only stored when the response has `public`, `s-maxage` or
+  `must-revalidate`.
+- `s-maxage` gives the freshness lifetime, before `max-age` and `Expires`, and makes the response storable on its own.
+- `proxy-revalidate` and `s-maxage` mean the same as `must-revalidate`: a stale response is never served without a
+  successful revalidation, even for `max-stale` or `stale-if-error`.
+
+The stores keep an entry until it is stale for both kinds of cache, so they do not need to know which one wrote it.
+
+## Coalesce concurrent requests
+
+When a popular response expires, every concurrent request for it goes to the server, multiplying the load on the server
+when the cache should protect it. Set [CoalesceRequests](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.CoalesceRequests) to send a single request instead:
+
+<!-- ref:../../../samples/Meziantou.Framework.Http.Samples/HttpCachingExamples.cs;region=HttpCaching_CoalesceRequests;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new HttpCachingOptions
+{
+    // Concurrent requests for the same URL share a single request to the server
+    CoalesceRequests = true,
+};
+
+using var cachingHandler = new HttpCachingDelegateHandler(new SocketsHttpHandler(), new InMemoryHttpCacheStore(), options);
+using var httpClient = new HttpClient(cachingHandler);
+
+// Only one of these requests goes to the server. The others wait for it, then are served from the cache.
+var responses = await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => httpClient.GetStringAsync("https://example.com/data")));
+```
+<!-- endref -->
+
+- When a request must go to the server (nothing stored, or a stale response to revalidate), the concurrent requests with
+  the same method and URL wait for it, then look up the cache again. A stale response is revalidated once, with a single
+  conditional request.
+- A waiting request that the stored response cannot answer, because the response could not be stored or varies on a
+  header the request sends differently, goes to the server itself. It does not wait a second time, so requests whose
+  responses are never stored are not queued behind each other.
+- Fresh responses are served from the cache without waiting, and requests with a `Range` header are not coalesced.
+- Coalescing happens within one [HttpCachingDelegateHandler](cref:Meziantou.Framework.Http.Caching.HttpCachingDelegateHandler). Handlers that share a store, in other processes
+  or with `IHttpClientFactory`, which creates a handler per `HttpClient` lifetime, still send their own requests.
 
 ## Control the clock
 

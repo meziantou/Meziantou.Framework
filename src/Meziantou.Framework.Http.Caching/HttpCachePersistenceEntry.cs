@@ -138,10 +138,31 @@ public sealed class HttpCachePersistenceEntry
         };
     }
 
-    /// <summary>Computes the freshness lifetime of the entry, as defined by RFC 7234 Section 4.2.1.</summary>
+    /// <summary>Computes the freshness lifetime of the entry for a private cache, as defined by RFC 9111 Section 4.2.1.</summary>
     public TimeSpan GetFreshnessLifetime()
     {
-        return CacheFreshness.GetFreshnessLifetime(MaxAge, Expires, ResponseDate, LastModified);
+        return GetFreshnessLifetime(isSharedCache: false);
+    }
+
+    /// <summary>Computes the freshness lifetime of the entry, as defined by RFC 9111 Section 4.2.1.</summary>
+    /// <param name="isSharedCache">Whether the entry belongs to a shared cache, for which <c>s-maxage</c> overrides <c>max-age</c> and <c>Expires</c>.</param>
+    public TimeSpan GetFreshnessLifetime(bool isSharedCache)
+    {
+        return CacheFreshness.GetFreshnessLifetime(SharedMaxAge, MaxAge, Expires, ResponseDate, LastModified, isSharedCache);
+    }
+
+    /// <summary>
+    /// The freshness lifetime used to decide whether the entry can be removed: a store does not know whether the cache that
+    /// wrote the entry is shared, so the entry is kept for as long as either kind of cache could still use it.
+    /// </summary>
+    private TimeSpan GetRetentionFreshnessLifetime()
+    {
+        var privateLifetime = GetFreshnessLifetime(isSharedCache: false);
+        if (SharedMaxAge is null)
+            return privateLifetime;
+
+        var sharedLifetime = GetFreshnessLifetime(isSharedCache: true);
+        return sharedLifetime > privateLifetime ? sharedLifetime : privateLifetime;
     }
 
     /// <summary>Computes the age of the entry at the specified time, as defined by RFC 7234 Section 4.2.3.</summary>
@@ -153,13 +174,14 @@ public sealed class HttpCachePersistenceEntry
 
     /// <summary>Gets the time at which the entry becomes stale.</summary>
     /// <remarks>
-    /// The result is clamped to the range of <see cref="DateTimeOffset"/>. Stores can index this value to
+    /// When the entry has an <c>s-maxage</c> directive, this is the later of the times at which it becomes stale for a private
+    /// cache and for a shared cache. The result is clamped to the range of <see cref="DateTimeOffset"/>. Stores can index this value to
     /// remove obsolete entries without deserializing them.
     /// </remarks>
     public DateTimeOffset GetStaleTime()
     {
         var correctedInitialAge = CacheFreshness.GetCorrectedInitialAge(RequestTime, ResponseTime, ResponseDate, AgeValue);
-        var freshnessLifetime = GetFreshnessLifetime();
+        var freshnessLifetime = GetRetentionFreshnessLifetime();
 
         long ticks;
         try
@@ -211,9 +233,13 @@ public sealed class HttpCachePersistenceEntry
     /// Indicates whether the entry is stale and cannot be reused, and can therefore be removed by a store.
     /// </summary>
     /// <param name="now">The time at which staleness is evaluated.</param>
+    /// <remarks>
+    /// When the entry has an <c>s-maxage</c> directive, it is obsolete once it is stale for both a private cache and a shared
+    /// cache: a store does not know which kind of cache wrote it.
+    /// </remarks>
     public bool IsObsolete(DateTimeOffset now)
     {
-        return IsUnusableWhenStale && GetCurrentAge(now) >= GetFreshnessLifetime();
+        return IsUnusableWhenStale && GetCurrentAge(now) >= GetRetentionFreshnessLifetime();
     }
 
     /// <summary>Computes a stable hash of the secondary key, suitable for use as a storage key.</summary>

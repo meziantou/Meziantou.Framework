@@ -10,10 +10,17 @@ internal sealed class CacheEntry
     }
 
     /// <summary>Creates an entry, or returns <see langword="null"/> when the response exceeds <paramref name="maximumSize"/>.</summary>
-    public static async Task<CacheEntry?> CreateAsync(HttpRequestMessage request, HttpResponseMessage response,
+    public static Task<CacheEntry?> CreateAsync(HttpRequestMessage request, HttpResponseMessage response,
         DateTimeOffset requestTime, DateTimeOffset responseTime, long? maximumSize, CancellationToken cancellationToken)
     {
-        var serializedResponse = await ResponseSerializer.SerializeAsync(response, maximumSize, cancellationToken).ConfigureAwait(false);
+        return CreateAsync(request, response, requestTime, responseTime, maximumSize, excludedHeaders: null, cancellationToken);
+    }
+
+    /// <summary>Creates an entry without the <paramref name="excludedHeaders"/>, or returns <see langword="null"/> when the response exceeds <paramref name="maximumSize"/>.</summary>
+    public static async Task<CacheEntry?> CreateAsync(HttpRequestMessage request, HttpResponseMessage response,
+        DateTimeOffset requestTime, DateTimeOffset responseTime, long? maximumSize, ICollection<string>? excludedHeaders, CancellationToken cancellationToken)
+    {
+        var serializedResponse = await ResponseSerializer.SerializeAsync(response, maximumSize, excludedHeaders, cancellationToken).ConfigureAwait(false);
         if (serializedResponse is null)
             return null;
 
@@ -315,18 +322,31 @@ internal sealed class CacheEntry
         return string.Equals(VariationConfig.NormalizeQuery(uri.Query), NormalizedQuery, StringComparison.Ordinal);
     }
 
-    /// <summary>Calculates the freshness lifetime per RFC 7234 Section 4.2.1.</summary>
-    public TimeSpan FreshnessLifetime => CacheFreshness.GetFreshnessLifetime(MaxAge, Expires, ResponseDate, LastModified);
+    /// <summary>Calculates the freshness lifetime of a private cache per RFC 9111 Section 4.2.1.</summary>
+    public TimeSpan FreshnessLifetime => GetFreshnessLifetime(isSharedCache: false);
+
+    /// <summary>Calculates the freshness lifetime per RFC 9111 Section 4.2.1.</summary>
+    public TimeSpan GetFreshnessLifetime(bool isSharedCache) => CacheFreshness.GetFreshnessLifetime(SharedMaxAge, MaxAge, Expires, ResponseDate, LastModified, isSharedCache);
 
     /// <summary>Gets whether heuristic expiration was used to calculate the freshness lifetime.</summary>
-    public bool UsesHeuristicExpiration
+    public bool UsesHeuristicExpiration(bool isSharedCache)
     {
-        get
-        {
-            // RFC 7234 Section 4.2.2: Heuristic expiration is used when there's no explicit expiration
-            // (no max-age, no s-maxage, no Expires) but Last-Modified is present
-            return !SharedMaxAge.HasValue && !MaxAge.HasValue && !Expires.HasValue && LastModified.HasValue;
-        }
+        // RFC 9111 Section 4.2.2: heuristic expiration is used when there is no explicit expiration (no max-age, no
+        // Expires, and no s-maxage for a shared cache) but Last-Modified is present
+        if (isSharedCache && SharedMaxAge.HasValue)
+            return false;
+
+        return !MaxAge.HasValue && !Expires.HasValue && LastModified.HasValue;
+    }
+
+    /// <summary>Gets whether the entry must not be served stale without a successful revalidation.</summary>
+    /// <remarks>
+    /// RFC 9111 Section 5.2.2.2: <c>must-revalidate</c>. Sections 5.2.2.8 and 5.2.2.10: <c>proxy-revalidate</c> and
+    /// <c>s-maxage</c> have the same meaning for a shared cache, and none for a private one.
+    /// </remarks>
+    public bool MustRevalidateWhenStale(bool isSharedCache)
+    {
+        return MustRevalidate || (isSharedCache && (ProxyRevalidate || SharedMaxAge.HasValue));
     }
 
     /// <summary>Calculates the current age per RFC 7234 Section 4.2.3.</summary>
@@ -336,7 +356,15 @@ internal sealed class CacheEntry
     }
 
     /// <summary>Updates this cache entry from a 304 Not Modified validation response.</summary>
-    public async ValueTask UpdateFromValidationResponse(HttpResponseMessage validationResponse, DateTimeOffset requestTime, DateTimeOffset responseTime, CancellationToken cancellationToken)
+    /// <returns>
+    /// <see langword="false"/> when the updated response has the unqualified <c>private</c> directive and
+    /// <paramref name="isSharedCache"/> is set: a shared cache must not store it any more.
+    /// </returns>
+    /// <remarks>
+    /// RFC 9111 Section 5.2.2.7: for a shared cache, the fields listed by a qualified <c>private</c> directive of the updated
+    /// response (whether it comes from the 304 or was already stored) are not stored.
+    /// </remarks>
+    public async ValueTask<bool> UpdateFromValidationResponse(HttpResponseMessage validationResponse, DateTimeOffset requestTime, DateTimeOffset responseTime, bool isSharedCache, CancellationToken cancellationToken)
     {
         // RFC 7234 Section 4.3.4: Update metadata from 304 response
 
@@ -401,10 +429,10 @@ internal sealed class CacheEntry
         }
 
         // RFC 9111 Section 4.3.4: Update stored response headers with headers from 304 response.
-        await UpdateSerializedResponseHeaders(validationResponse, cancellationToken);
+        return await UpdateSerializedResponseHeaders(validationResponse, isSharedCache, cancellationToken);
     }
 
-    private async ValueTask UpdateSerializedResponseHeaders(HttpResponseMessage validationResponse, CancellationToken cancellationToken)
+    private async ValueTask<bool> UpdateSerializedResponseHeaders(HttpResponseMessage validationResponse, bool isSharedCache, CancellationToken cancellationToken)
     {
         // Deserialize the stored response
         var storedResponse = ResponseSerializer.Deserialize(SerializedResponse);
@@ -475,9 +503,18 @@ internal sealed class CacheEntry
         // Remove Age header as it's calculated dynamically in CreateCachedResponse
         storedResponse.Headers.Remove("Age");
 
+        // The directives of the merged response decide what a shared cache can keep: a 304 without Cache-Control
+        // leaves the stored one in place, while its other fields are still added.
+        var mergedCacheControl = storedResponse.Headers.CacheControl;
+        // A response that became unqualified private is not stored any more, but still answers the current request with
+        // all the updated headers, so none is excluded.
+        var isStorable = !(isSharedCache && mergedCacheControl?.Private is true && mergedCacheControl.PrivateHeaders.Count is 0);
+
         // Re-serialize the updated response
-        SerializedResponse = await ResponseSerializer.SerializeAsync(storedResponse, cancellationToken);
+        var excludedHeaders = isSharedCache && isStorable ? mergedCacheControl?.PrivateHeaders : null;
+        SerializedResponse = (await ResponseSerializer.SerializeAsync(storedResponse, maximumSize: null, excludedHeaders, cancellationToken))!;
 
         storedResponse.Dispose();
+        return isStorable;
     }
 }

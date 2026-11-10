@@ -33,9 +33,16 @@ namespace Meziantou.Framework.Http.Caching
         public string ComputeSecondaryKeyHash() => throw null;
         public System.TimeSpan GetCurrentAge(System.DateTimeOffset now) => throw null;
         public System.TimeSpan GetFreshnessLifetime() => throw null;
+        public System.TimeSpan GetFreshnessLifetime(bool isSharedCache) => throw null;
         public System.DateTimeOffset GetStaleTime() => throw null;
         public static bool HasSameSecondaryKey(Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry left, Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry right) => throw null;
         public bool IsObsolete(System.DateTimeOffset now) => throw null;
+    }
+
+    public sealed class HttpCacheStoreLimits
+    {
+        public long? MaximumEntryCount { get => throw null; set { } }
+        public long? MaximumTotalSize { get => throw null; set { } }
     }
 
     public sealed class HttpCachingDelegateHandler : System.Net.Http.DelegatingHandler
@@ -48,6 +55,8 @@ namespace Meziantou.Framework.Http.Caching
 
     public sealed class HttpCachingOptions
     {
+        public bool CoalesceRequests { get => throw null; set { } }
+        public bool IsSharedCache { get => throw null; set { } }
         public long? MaximumResponseSize { get => throw null; set { } }
         public System.Action<System.Exception>? OnStoreError { get => throw null; set { } }
         public System.Func<System.Net.Http.HttpResponseMessage, bool>? ShouldCacheResponse { get => throw null; set { } }

@@ -7,6 +7,7 @@ internal sealed class HttpCache
 {
     private readonly IHttpCacheStore _persistenceProvider;
     private readonly HttpCachingOptions _options;
+    private readonly bool _isSharedCache;
 
     public HttpCache(IHttpCacheStore persistenceProvider, HttpCachingOptions options)
     {
@@ -15,12 +16,13 @@ internal sealed class HttpCache
 
         _persistenceProvider = persistenceProvider;
         _options = options;
+        _isSharedCache = options.IsSharedCache;
     }
 
     // RFC 9111 Section 2: the primary cache key is composed of the request method and the target URI.
     // GET and HEAD must not share a key, otherwise a stored HEAD response (which has no body) could be
     // served for a subsequent GET.
-    private static string ComputePrimaryKey(HttpMethod method, Uri uri)
+    internal static string ComputePrimaryKey(HttpMethod method, Uri uri)
     {
         return method.Method + " " + uri.GetLeftPart(UriPartial.Query);
     }
@@ -127,7 +129,7 @@ internal sealed class HttpCache
             return;
 
         // RFC 7234 Section 3: Determine if response is cacheable
-        if (!IsCacheable(request, response))
+        if (!IsCacheable(request, response, _isSharedCache))
             return;
 
         // Check if response should be cached based on custom predicate
@@ -142,7 +144,9 @@ internal sealed class HttpCache
             return;
 
         // The size limit applies to the serialized entry, which includes headers and metadata.
-        var entry = await CacheEntry.CreateAsync(request, response, requestTime, responseTime, maximumResponseSize, cancellationToken).ConfigureAwait(false);
+        // RFC 9111 Section 5.2.2.7: a shared cache must not store the fields listed by a qualified private directive
+        var excludedHeaders = _isSharedCache ? response.Headers.CacheControl?.PrivateHeaders : null;
+        var entry = await CacheEntry.CreateAsync(request, response, requestTime, responseTime, maximumResponseSize, excludedHeaders, cancellationToken).ConfigureAwait(false);
         if (entry is null)
             return;
 
@@ -155,6 +159,15 @@ internal sealed class HttpCache
             return ValueTask.CompletedTask;
 
         return _persistenceProvider.SetEntryAsync(ComputeStorageKey(method, uri, entry), entry.ToPersistenceEntry(), cancellationToken);
+    }
+
+    /// <summary>Removes the entries stored under the key of <paramref name="entry"/>, its other variants included.</summary>
+    public ValueTask RemoveEntriesAsync(HttpMethod method, Uri? uri, CacheEntry entry, CancellationToken cancellationToken)
+    {
+        if (uri is null)
+            return ValueTask.CompletedTask;
+
+        return _persistenceProvider.RemoveEntriesAsync(ComputeStorageKey(method, uri, entry), cancellationToken);
     }
 
     private static string ComputeStorageKey(HttpMethod method, Uri uri, CacheEntry entry)
@@ -179,7 +192,7 @@ internal sealed class HttpCache
         await _persistenceProvider.RemoveEntriesAsync(ComputeNoVarySearchKey(HttpMethod.Head, uri), cancellationToken).ConfigureAwait(false);
     }
 
-    private static bool IsCacheable(HttpRequestMessage request, HttpResponseMessage response)
+    private static bool IsCacheable(HttpRequestMessage request, HttpResponseMessage response, bool isSharedCache)
     {
         // RFC 7234 Section 3: A cache MUST NOT store a response unless:
 
@@ -208,16 +221,33 @@ internal sealed class HttpCache
         if ((responseCacheControl?.NoStore) is true)
             return false;
 
-        // RFC 9111 Section 3.5: the restriction on responses to a request carrying an Authorization header
-        // applies to shared caches only. This is a private cache attached to a single HttpClient, so such a
-        // response is stored under the same rules as any other. It remains the caller's responsibility not
-        // to share one HttpClient, and therefore one cache, between users.
+        if (isSharedCache)
+        {
+            // RFC 9111 Section 3: a shared cache must not store a response with the unqualified private directive. The
+            // qualified form only excludes the listed fields, which are removed when the response is stored.
+            if (responseCacheControl?.Private is true && responseCacheControl.PrivateHeaders.Count is 0)
+                return false;
 
-        // Check if the response is explicitly cacheable by this private cache or is cacheable by default.
-        // s-maxage only applies to shared caches, so it cannot make a response storable here.
+            // RFC 9111 Section 3.5: a shared cache must not store the response to a request with an Authorization
+            // header, unless the response explicitly allows it.
+            if (request.Headers.Authorization is not null &&
+                responseCacheControl?.MustRevalidate is not true &&
+                responseCacheControl?.Public is not true &&
+                responseCacheControl?.SharedMaxAge is null)
+            {
+                return false;
+            }
+        }
+
+        // RFC 9111 Section 3.5: in a private cache, the restriction on responses to a request carrying an Authorization
+        // header does not apply. It remains the caller's responsibility not to share one HttpClient, and therefore one
+        // private cache, between users.
+
+        // Check if the response is explicitly cacheable by this cache or is cacheable by default. s-maxage only applies
+        // to shared caches, and private only makes a response storable by a private cache.
         var isExplicitlyCacheable = responseCacheControl?.MaxAge is not null ||
                                     responseCacheControl?.Public is true ||
-                                    responseCacheControl?.Private is true;
+                                    (isSharedCache ? responseCacheControl?.SharedMaxAge is not null : responseCacheControl?.Private is true);
 
         // Validate Expires header if present and no Cache-Control freshness
         if (!isExplicitlyCacheable && HasExpiresHeader(response))
@@ -243,8 +273,8 @@ internal sealed class HttpCache
     {
         // RFC 7234 Section 3: Cacheable status codes
         // RFC 7231 Section 6.1: These can be cached with explicit caching directives
-        // 206 is excluded: Range requests bypass the cache, so a stored partial response could only ever
-        // be replayed to a request that asked for the full representation.
+        // 206 is excluded: the cache answers range requests from stored complete responses, and does not store
+        // or combine partial ones (RFC 9111 Section 3.3 allows, but does not require, storing them).
         return status switch
         {
             HttpStatusCode.OK => true,

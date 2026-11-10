@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Headers;
 
@@ -9,6 +10,9 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
     private readonly HttpCache _cache;
     private readonly TimeProvider _timeProvider;
     private readonly Action<Exception>? _onStoreError;
+    private readonly bool _isSharedCache;
+    private readonly bool _coalesceRequests;
+    private readonly ConcurrentDictionary<string, InFlightRequest> _inFlightRequests = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HttpCachingDelegateHandler"/> class.
@@ -22,6 +26,8 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
         _timeProvider = resolvedOptions.TimeProvider;
         _onStoreError = resolvedOptions.OnStoreError;
+        _isSharedCache = resolvedOptions.IsSharedCache;
+        _coalesceRequests = resolvedOptions.CoalesceRequests;
         _cache = new HttpCache(store, resolvedOptions);
     }
 
@@ -39,6 +45,8 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
         _timeProvider = resolvedOptions.TimeProvider;
         _onStoreError = resolvedOptions.OnStoreError;
+        _isSharedCache = resolvedOptions.IsSharedCache;
+        _coalesceRequests = resolvedOptions.CoalesceRequests;
         _cache = new HttpCache(store, resolvedOptions);
     }
 
@@ -85,15 +93,6 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             return response;
         }
 
-        // RFC 7233: Range requests should bypass cache
-        // Cache doesn't support serving partial content, so forward to origin
-        if (request.Headers.Range is not null)
-        {
-            var rangeResponse = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            rangeResponse.RequestMessage ??= request;
-            return rangeResponse;
-        }
-
         // RFC 9111 Section 4.3.2: the caller is performing its own validation. Evaluating the precondition
         // against the stored response would turn a conditional request into an unconditional 200, and adding
         // our own validators on top of the caller's would send conflicting preconditions. Forward to origin
@@ -105,17 +104,72 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             return conditionalPassthroughResponse;
         }
 
-        // Check request-level cache directives
-        var requestCacheControl = request.Headers.CacheControl;
-        var hasPragmaNoCache = HasPragmaNoCache(request.Headers);
-
         // RFC 7234 Section 5.2.1.5: no-store request directive
-        if ((requestCacheControl?.NoStore) is true)
+        if ((request.Headers.CacheControl?.NoStore) is true)
         {
             var noStoreResponse = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
             noStoreResponse.RequestMessage ??= request;
             return noStoreResponse;
         }
+
+        var coalescing = CreateCoalescingState(request);
+        if (coalescing is not null)
+        {
+            try
+            {
+                var coalescedResponse = await SendThroughCacheAsync(request, requestTime, coalescing, cancellationToken).ConfigureAwait(false);
+
+                // This request has just registered as the one going to the server. A concurrent request may have stored a
+                // response between the lookup and the registration, so the cache is looked up again before going.
+                if (coalescedResponse is null && coalescing.HasStarted)
+                {
+                    coalescedResponse = await SendThroughCacheAsync(request, _timeProvider.GetUtcNow(), coalescing, cancellationToken).ConfigureAwait(false);
+                }
+
+                if (coalescedResponse is not null)
+                    return coalescedResponse;
+            }
+            finally
+            {
+                // The response is stored by now, so the requests waiting for this one can look it up
+                coalescing.Complete();
+            }
+
+            // A concurrent request for the same URL went to the server while this one waited. Its response is now stored,
+            // unless it could not be, or varies on a header this request sends differently: look up the cache again, and go
+            // to the server if it still has nothing to serve. That second attempt does not wait again, so that requests
+            // whose responses are never stored are not serialized behind each other.
+            requestTime = _timeProvider.GetUtcNow();
+        }
+
+        var cachedResponse = await SendThroughCacheAsync(request, requestTime, coalescing: null, cancellationToken).ConfigureAwait(false);
+        return cachedResponse!;
+    }
+
+    /// <summary>Returns the state that lets concurrent requests share a single request to the server, or <see langword="null"/> when the request is not coalesced.</summary>
+    private CoalescingState? CreateCoalescingState(HttpRequestMessage request)
+    {
+        if (!_coalesceRequests || request.RequestUri is null)
+            return null;
+
+        // A range request asks the server for part of the representation, whose response is not stored: the requests that
+        // wait for it would gain nothing.
+        if (request.Headers.Range is not null)
+            return null;
+
+        return new CoalescingState(_inFlightRequests, HttpCache.ComputePrimaryKey(request.Method, request.RequestUri));
+    }
+
+    /// <summary>
+    /// Serves the request from the cache, or from the server. Returns <see langword="null"/> when the request had to go to the
+    /// server, but waited for a concurrent request to do it instead, or has just registered as the one going to the server
+    /// (<see cref="CoalescingState.HasStarted"/>) and must look the cache up again first.
+    /// </summary>
+    private async Task<HttpResponseMessage?> SendThroughCacheAsync(HttpRequestMessage request, DateTimeOffset requestTime, CoalescingState? coalescing, CancellationToken cancellationToken)
+    {
+        // Check request-level cache directives
+        var requestCacheControl = request.Headers.CacheControl;
+        var hasPragmaNoCache = HasPragmaNoCache(request.Headers);
 
         // Try to get a cached response
         CacheEntry? cacheResult;
@@ -133,7 +187,8 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         if (cacheResult is not null)
         {
             var currentAge = cacheResult.CalculateCurrentAge(requestTime);
-            var freshnessLifetime = cacheResult.FreshnessLifetime;
+            var freshnessLifetime = cacheResult.GetFreshnessLifetime(_isSharedCache);
+            var mustRevalidateWhenStale = cacheResult.MustRevalidateWhenStale(_isSharedCache);
             var isFresh = freshnessLifetime > currentAge;
 
             // RFC 8246: immutable directive indicates response will not change
@@ -169,9 +224,8 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
             // RFC 7234 Section 5.2.2.1: must-revalidate response directive
             // RFC 8246: must-revalidate takes precedence over immutable when stale
-            // RFC 9111 Section 5.2.2.8: proxy-revalidate applies to shared caches only, so it is not
-            // considered here.
-            if (cacheResult.MustRevalidate && !isFresh)
+            // RFC 9111 Sections 5.2.2.8 and 5.2.2.10: proxy-revalidate and s-maxage mean the same for a shared cache only.
+            if (mustRevalidateWhenStale && !isFresh)
             {
                 requiresValidation = true;
             }
@@ -185,7 +239,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
             // RFC 7234 Section 5.2.1.2: max-stale request directive allows stale responses
             var allowStale = false;
-            if ((requestCacheControl?.MaxStale) is true && !cacheResult.MustRevalidate)
+            if ((requestCacheControl?.MaxStale) is true && !mustRevalidateWhenStale)
             {
                 if (requestCacheControl.MaxStaleLimit is not null)
                 {
@@ -233,6 +287,9 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             // Attempt conditional validation
             if (cacheResult.ETag is not null || cacheResult.LastModified is not null)
             {
+                if (coalescing is not null && !await coalescing.TryStartAsync(cancellationToken).ConfigureAwait(false))
+                    return null;
+
                 var conditionalRequest = CloneRequest(request);
                 try
                 {
@@ -282,10 +339,21 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
                         }
 
                         // Update cached entry with new headers from 304 response
-                        await cacheResult.UpdateFromValidationResponse(conditionalResponse, validationRequestTime, responseTime, cancellationToken).ConfigureAwait(false);
+                        var isStorable = await cacheResult.UpdateFromValidationResponse(conditionalResponse, validationRequestTime, responseTime, _isSharedCache, cancellationToken).ConfigureAwait(false);
+
+                        // RFC 9111 Sections 3 and 3.5: the updated response may no longer be storable by a shared cache. It
+                        // still answers this request, but the stored entry must not answer the next users.
+                        isStorable &= !_isSharedCache || request.Headers.Authorization is null || cacheResult.MustRevalidate || cacheResult.Public || cacheResult.SharedMaxAge is not null;
                         try
                         {
-                            await _cache.PersistEntryAsync(request.Method, request.RequestUri, cacheResult, cancellationToken).ConfigureAwait(false);
+                            if (isStorable)
+                            {
+                                await _cache.PersistEntryAsync(request.Method, request.RequestUri, cacheResult, cancellationToken).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                await _cache.RemoveEntriesAsync(request.Method, request.RequestUri, cacheResult, cancellationToken).ConfigureAwait(false);
+                            }
                         }
                         catch (Exception ex) when (IsStoreFailure(ex, cancellationToken))
                         {
@@ -335,6 +403,9 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             };
         }
 
+        if (coalescing is not null && !await coalescing.TryStartAsync(cancellationToken).ConfigureAwait(false))
+            return null;
+
         // No suitable cached response, send request to origin
         HttpResponseMessage freshResponse;
         try
@@ -343,7 +414,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         }
         catch (Exception ex) when (cacheResult is not null &&
                                    IsOriginUnreachable(ex, cancellationToken) &&
-                                   CanServeStaleOnError(cacheResult, cacheResult.CalculateCurrentAge(_timeProvider.GetUtcNow()), cacheResult.FreshnessLifetime))
+                                   CanServeStaleOnError(cacheResult, cacheResult.CalculateCurrentAge(_timeProvider.GetUtcNow()), cacheResult.GetFreshnessLifetime(_isSharedCache)))
         {
             // RFC 5861: serve the stale entry rather than propagating the transport failure.
             var staleAge = cacheResult.CalculateCurrentAge(_timeProvider.GetUtcNow());
@@ -358,7 +429,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         if (cacheResult is not null && IsStaleIfErrorStatus(freshResponse.StatusCode))
         {
             var errorAge = cacheResult.CalculateCurrentAge(freshResponseTime);
-            if (CanServeStaleOnError(cacheResult, errorAge, cacheResult.FreshnessLifetime))
+            if (CanServeStaleOnError(cacheResult, errorAge, cacheResult.GetFreshnessLifetime(_isSharedCache)))
             {
                 freshResponse.Dispose();
 
@@ -479,12 +550,22 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         return string.Equals(uri1.Host, uri2.Host, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static HttpResponseMessage CreateCachedResponse(HttpRequestMessage request, CacheEntry entry, TimeSpan currentAge, string? warningHeaders = null)
+    private HttpResponseMessage CreateCachedResponse(HttpRequestMessage request, CacheEntry entry, TimeSpan currentAge, string? warningHeaders = null)
     {
-        var response = ResponseSerializer.Deserialize(entry.SerializedResponse);
+        var response = ResponseSerializer.Deserialize(entry.SerializedResponse, out var content);
+
+        // RFC 9110 Section 14.2: a range request is answered from the stored complete response. The Range header only
+        // applies to GET, and to a 200 response; otherwise, and when If-Range does not hold, the complete response is sent.
+        if (request.Method == HttpMethod.Get &&
+            request.Headers.Range is { } range &&
+            response.StatusCode is HttpStatusCode.OK &&
+            ByteRanges.EvaluateIfRange(request, entry))
+        {
+            ByteRanges.Apply(response, content ?? [], range);
+        }
 
         // RFC 7234 Section 5.5.4: Add Warning 113 for heuristic expiration exceeding 24 hours
-        if (entry.UsesHeuristicExpiration && entry.FreshnessLifetime >= TimeSpan.FromHours(24))
+        if (entry.UsesHeuristicExpiration(_isSharedCache) && entry.GetFreshnessLifetime(_isSharedCache) >= TimeSpan.FromHours(24))
         {
             var warning113 = "113 - \"Heuristic Expiration\"";
             warningHeaders = warningHeaders is not null
@@ -535,11 +616,11 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         return clone;
     }
 
-    private static bool CanServeStaleOnError(CacheEntry entry, TimeSpan currentAge, TimeSpan freshnessLifetime)
+    private bool CanServeStaleOnError(CacheEntry entry, TimeSpan currentAge, TimeSpan freshnessLifetime)
     {
         // RFC 5861: stale-if-error allows a stale response to be served for the given amount of time past
         // the point at which it became stale.
-        if (entry.StaleIfError is null || entry.MustRevalidate || entry.ResponseNoCache)
+        if (entry.StaleIfError is null || entry.MustRevalidateWhenStale(_isSharedCache) || entry.ResponseNoCache)
             return false;
 
         var staleness = currentAge - freshnessLifetime;
@@ -567,12 +648,12 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
     private static bool HasConditionalHeaders(HttpRequestHeaders headers)
     {
-        // RFC 9110 Section 13.1: preconditions issued by the caller
+        // RFC 9110 Section 13.1: preconditions issued by the caller. If-Range is not one of them: it decides between a
+        // partial and a complete response, which the cache evaluates against the stored response.
         return headers.IfNoneMatch.Count > 0 ||
                headers.IfMatch.Count > 0 ||
                headers.IfModifiedSince is not null ||
-               headers.IfUnmodifiedSince is not null ||
-               headers.IfRange is not null;
+               headers.IfUnmodifiedSince is not null;
     }
 
     private static bool HasMismatchedValidator(CacheEntry entry, HttpResponseMessage validationResponse)
@@ -592,5 +673,55 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
         }
 
         return lastModified is not null && entry.LastModified != lastModified;
+    }
+
+    /// <summary>A request to the server that the concurrent requests with the same key wait for.</summary>
+    private sealed class InFlightRequest
+    {
+        private readonly TaskCompletionSource _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task Completion => _completion.Task;
+
+        public void Complete() => _completion.TrySetResult();
+    }
+
+    /// <summary>Coalesces the requests to the server of one request with those of the concurrent requests with the same key.</summary>
+    private sealed class CoalescingState(ConcurrentDictionary<string, InFlightRequest> inFlightRequests, string key)
+    {
+        private InFlightRequest? _inFlightRequest;
+
+        /// <summary>Gets a value indicating whether the request is registered as the one the concurrent requests wait for.</summary>
+        public bool HasStarted => _inFlightRequest is not null;
+
+        /// <summary>
+        /// Returns <see langword="true"/> when the request is registered as the one the concurrent requests wait for, and can go to
+        /// the server. Otherwise, returns <see langword="false"/>: after registering it, so that the caller looks the cache up again
+        /// first (see <see cref="HasStarted"/>), or after waiting for the concurrent request that is going to the server.
+        /// </summary>
+        public async ValueTask<bool> TryStartAsync(CancellationToken cancellationToken)
+        {
+            if (_inFlightRequest is not null)
+                return true;
+
+            var inFlightRequest = new InFlightRequest();
+            var existing = inFlightRequests.GetOrAdd(key, inFlightRequest);
+            if (ReferenceEquals(existing, inFlightRequest))
+            {
+                _inFlightRequest = inFlightRequest;
+                return false;
+            }
+
+            await existing.Completion.WaitAsync(cancellationToken).ConfigureAwait(false);
+            return false;
+        }
+
+        public void Complete()
+        {
+            if (_inFlightRequest is null)
+                return;
+
+            inFlightRequests.TryRemove(new KeyValuePair<string, InFlightRequest>(key, _inFlightRequest));
+            _inFlightRequest.Complete();
+        }
     }
 }

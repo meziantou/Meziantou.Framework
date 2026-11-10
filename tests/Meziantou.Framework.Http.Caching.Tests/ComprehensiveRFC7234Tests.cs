@@ -1008,6 +1008,189 @@ public sealed class ComprehensiveRFC7234Tests
             """);
     }
 
+    #region Shared cache (RFC 9111)
+
+    [Fact]
+    public async Task Documentation_SharedCache()
+    {
+        #region HttpCaching_SharedCache
+        var options = new HttpCachingOptions
+        {
+            // Follow the rules of a shared cache: the cache serves several users
+            IsSharedCache = true,
+        };
+        #endregion
+
+        await using var context = new HttpTestContext(options);
+        context.AddResponse(HttpStatusCode.OK, "private", ("Cache-Control", "private, max-age=3600"));
+        context.AddResponse(HttpStatusCode.OK, "private again", ("Cache-Control", "private, max-age=3600"));
+
+        using var response1 = await context.HttpClient.GetAsync("https://example.com/profile", XunitCancellationToken);
+        using var response2 = await context.HttpClient.GetAsync("https://example.com/profile", XunitCancellationToken);
+        Assert.Null(response2.Headers.Age);
+        Assert.Equal("private again", await response2.Content.ReadAsStringAsync(XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task WhenSharedCacheAndResponseHasSMaxAgeThenSMaxAgeDecides()
+    {
+        await using var context = new HttpTestContext(new HttpCachingOptions { IsSharedCache = true });
+        context.AddResponse(HttpStatusCode.OK, "v1", ("Cache-Control", "max-age=3600, s-maxage=2"));
+        context.AddResponse(HttpStatusCode.OK, "v2", ("Cache-Control", "max-age=3600, s-maxage=2"));
+
+        Assert.Equal("v1", await context.HttpClient.GetStringAsync("http://example.com/resource", XunitCancellationToken));
+
+        context.TimeProvider.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal("v1", await context.HttpClient.GetStringAsync("http://example.com/resource", XunitCancellationToken));
+
+        // RFC 9111 Section 5.2.2.10: s-maxage overrides max-age in a shared cache
+        context.TimeProvider.Advance(TimeSpan.FromSeconds(2));
+        Assert.Equal("v2", await context.HttpClient.GetStringAsync("http://example.com/resource", XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task WhenSharedCacheAndResponseHasOnlySMaxAgeThenItIsStored()
+    {
+        await using var context = new HttpTestContext(new HttpCachingOptions { IsSharedCache = true });
+        context.AddResponse(HttpStatusCode.NoContent, ("Cache-Control", "s-maxage=60"));
+
+        using var response1 = await context.HttpClient.GetAsync("http://example.com/resource", XunitCancellationToken);
+        using var response2 = await context.HttpClient.GetAsync("http://example.com/resource", XunitCancellationToken);
+        Assert.Equal(HttpStatusCode.NoContent, response2.StatusCode);
+        Assert.NotNull(response2.Headers.Age);
+    }
+
+    [Fact]
+    public async Task WhenSharedCacheAndRequestHasAuthorizationThenResponseIsNotStored()
+    {
+        await using var context = new HttpTestContext(new HttpCachingOptions { IsSharedCache = true });
+        context.AddResponse(HttpStatusCode.OK, "alice", ("Cache-Control", "max-age=3600"));
+        context.AddResponse(HttpStatusCode.OK, "bob", ("Cache-Control", "max-age=3600"));
+
+        using var request1 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request1.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "alice");
+        using var response1 = await context.HttpClient.SendAsync(request1, XunitCancellationToken);
+        Assert.Equal("alice", await response1.Content.ReadAsStringAsync(XunitCancellationToken));
+
+        // RFC 9111 Section 3.5: a shared cache does not store the response to a request with Authorization
+        using var request2 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request2.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "bob");
+        using var response2 = await context.HttpClient.SendAsync(request2, XunitCancellationToken);
+        Assert.Equal("bob", await response2.Content.ReadAsStringAsync(XunitCancellationToken));
+    }
+
+    [Theory]
+    [InlineData("public, max-age=3600")]
+    [InlineData("s-maxage=3600")]
+    [InlineData("must-revalidate, max-age=3600")]
+    public async Task WhenSharedCacheAndRequestHasAuthorizationAndResponseAllowsItThenResponseIsStored(string cacheControl)
+    {
+        await using var context = new HttpTestContext(new HttpCachingOptions { IsSharedCache = true });
+        context.AddResponse(HttpStatusCode.OK, "shared", ("Cache-Control", cacheControl));
+
+        using var request1 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request1.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "alice");
+        using var response1 = await context.HttpClient.SendAsync(request1, XunitCancellationToken);
+
+        using var request2 = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request2.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "bob");
+        using var response2 = await context.HttpClient.SendAsync(request2, XunitCancellationToken);
+        Assert.NotNull(response2.Headers.Age);
+        Assert.Equal("shared", await response2.Content.ReadAsStringAsync(XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task WhenSharedCacheAndResponseIsQualifiedPrivateThenListedFieldsAreNotStored()
+    {
+        await using var context = new HttpTestContext(new HttpCachingOptions { IsSharedCache = true });
+        context.AddResponse(HttpStatusCode.OK, "content",
+            ("Cache-Control", "max-age=3600, private=\"Set-Cookie\""),
+            ("Set-Cookie", "session=alice"),
+            ("X-Other", "kept"));
+
+        using var response1 = await context.HttpClient.GetAsync("http://example.com/resource", XunitCancellationToken);
+        Assert.True(response1.Headers.Contains("Set-Cookie"));
+
+        // RFC 9111 Section 5.2.2.7: the response is stored, without the fields the private directive lists
+        using var response2 = await context.HttpClient.GetAsync("http://example.com/resource", XunitCancellationToken);
+        Assert.NotNull(response2.Headers.Age);
+        Assert.False(response2.Headers.Contains("Set-Cookie"));
+        Assert.True(response2.Headers.Contains("X-Other"));
+    }
+
+    [Fact]
+    public async Task WhenSharedCacheAndRevalidationMakesResponsePrivateThenItIsNoLongerStored()
+    {
+        await using var context = new HttpTestContext(new HttpCachingOptions { IsSharedCache = true });
+        context.AddResponse(HttpStatusCode.OK, "v1", ("Cache-Control", "max-age=1"), ("ETag", "\"v1\""));
+        context.AddResponse(HttpStatusCode.NotModified, ("Cache-Control", "private, max-age=600"), ("ETag", "\"v1\""), ("Set-Cookie", "session=alice"));
+        context.AddResponse(HttpStatusCode.OK, "v2", ("Cache-Control", "max-age=600"));
+
+        Assert.Equal("v1", await context.HttpClient.GetStringAsync("http://example.com/resource", XunitCancellationToken));
+        context.TimeProvider.Advance(TimeSpan.FromSeconds(5));
+
+        // The 304 still validates the response for this request, which gets the updated headers
+        using (var revalidated = await context.HttpClient.GetAsync("http://example.com/resource", XunitCancellationToken))
+        {
+            Assert.Equal("v1", await revalidated.Content.ReadAsStringAsync(XunitCancellationToken));
+            Assert.True(revalidated.Headers.CacheControl?.Private);
+            Assert.True(revalidated.Headers.Contains("Set-Cookie"));
+        }
+
+        // The response is private now, so the shared cache does not serve it to the next request
+        Assert.Equal("v2", await context.HttpClient.GetStringAsync("http://example.com/resource", XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task WhenSharedCacheAndRevalidationAddsAPrivateFieldThenItIsNotStored()
+    {
+        await using var context = new HttpTestContext(new HttpCachingOptions { IsSharedCache = true });
+        context.AddResponse(HttpStatusCode.OK, "v1", ("Cache-Control", "max-age=1, private=\"Set-Cookie\""), ("ETag", "\"v1\""));
+        context.AddResponse(HttpStatusCode.NotModified, ("ETag", "\"v1\""), ("Set-Cookie", "session=alice"), ("X-Other", "kept"));
+
+        Assert.Equal("v1", await context.HttpClient.GetStringAsync("http://example.com/resource", XunitCancellationToken));
+        context.TimeProvider.Advance(TimeSpan.FromSeconds(5));
+
+        // The 304 has no Cache-Control, so the stored private="Set-Cookie" still applies to the fields it adds
+        using var revalidated = await context.HttpClient.GetAsync("http://example.com/resource", XunitCancellationToken);
+        Assert.False(revalidated.Headers.Contains("Set-Cookie"));
+        Assert.True(revalidated.Headers.Contains("X-Other"));
+    }
+
+    [Fact]
+    public async Task WhenSharedCacheAndResponseHasProxyRevalidateThenMaxStaleIsNotHonored()
+    {
+        await using var context = new HttpTestContext(new HttpCachingOptions { IsSharedCache = true });
+        context.AddResponse(HttpStatusCode.OK, "v1", ("Cache-Control", "max-age=2, proxy-revalidate"));
+        context.AddResponse(HttpStatusCode.OK, "v2", ("Cache-Control", "max-age=2, proxy-revalidate"));
+
+        Assert.Equal("v1", await context.HttpClient.GetStringAsync("http://example.com/resource", XunitCancellationToken));
+        context.TimeProvider.Advance(TimeSpan.FromSeconds(10));
+
+        // RFC 9111 Section 5.2.2.8: proxy-revalidate means must-revalidate for a shared cache
+        using var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/resource");
+        request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { MaxStale = true };
+        using var response = await context.HttpClient.SendAsync(request, XunitCancellationToken);
+        Assert.Equal("v2", await response.Content.ReadAsStringAsync(XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task WhenSharedCacheAndResponseHasSMaxAgeThenStaleIfErrorIsNotHonored()
+    {
+        await using var context = new HttpTestContext(new HttpCachingOptions { IsSharedCache = true });
+        context.AddResponse(HttpStatusCode.OK, "v1", ("Cache-Control", "s-maxage=2, stale-if-error=3600"));
+        context.AddResponse(HttpStatusCode.ServiceUnavailable, "unavailable");
+
+        Assert.Equal("v1", await context.HttpClient.GetStringAsync("http://example.com/resource", XunitCancellationToken));
+        context.TimeProvider.Advance(TimeSpan.FromSeconds(10));
+
+        // RFC 9111 Section 5.2.2.10: s-maxage implies proxy-revalidate, so the stale response is not served on error
+        using var response = await context.HttpClient.GetAsync("http://example.com/resource", XunitCancellationToken);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+    }
+
+    #endregion
+
     [Fact]
     public async Task WhenResponseHasNoTransformThenPreservedInCache()
     {

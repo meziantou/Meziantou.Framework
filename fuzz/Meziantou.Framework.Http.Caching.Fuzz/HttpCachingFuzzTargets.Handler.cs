@@ -17,7 +17,7 @@ public static partial class HttpCachingFuzzTargets
     ];
 
     private static readonly string[] Urls = ["/", "/a", "/a?x=1", "/a?x=2", "/a?x=1&y=2", "/a?y=2&x=1", "/a?utm_source=z&x=1", "/b", "/b/c?q"];
-    private static readonly string[] RequestHeaderNames = ["Cache-Control", "Pragma", "Accept", "Accept-Language", "Range", "If-None-Match", "If-Modified-Since", "Authorization", "X-Custom", "Cookie"];
+    private static readonly string[] RequestHeaderNames = ["Cache-Control", "Pragma", "Accept", "Accept-Language", "Range", "If-None-Match", "If-Modified-Since", "Authorization", "X-Custom", "Cookie", "If-Range"];
     private static readonly string[] ResponseHeaderNames =
     [
         "Cache-Control", "Expires", "Date", "Age", "Vary", "ETag", "Last-Modified", "No-Vary-Search", "Location", "Content-Location", "Content-Type", "Warning", "Pragma", "Set-Cookie",
@@ -31,15 +31,15 @@ public static partial class HttpCachingFuzzTargets
         "max-age=", "s-maxage=", "no-cache", "no-store", "must-revalidate", "proxy-revalidate", "public", "private", "immutable", "stale-if-error=", "max-stale", "max-stale=",
         "min-fresh=", "only-if-cached", "no-transform", ", ", "=", "\"", "W/\"", "*", "0", "1", "60", "3600", "2147483647", "2147483648", "-1",
         "Wed, 01 Jan 2025 00:00:00 GMT", "Wed, 01 Jan 2025 01:00:00 GMT", "Thu, 01 Jan 1970 00:00:00 GMT", "Fri, 31 Dec 9999 23:59:59 GMT", "Mon, 01 Jan 0001 00:00:00 GMT",
-        "Wednesday, 01-Jan-25 00:00:00 GMT", "Wed Jan  1 00:00:00 2025", "bytes=0-1", "params", "except=(\"x\")", "key-order", "params=(\"utm_source\")", "Accept-Language", "en", "\n", "/a", "?x=1", "https://example.com/",
+        "Wednesday, 01-Jan-25 00:00:00 GMT", "Wed Jan  1 00:00:00 2025", "bytes=0-1", "bytes=-3", "bytes=5-", ", 3-4", "private=\"Set-Cookie\"", "Bearer a", "params", "except=(\"x\")", "key-order", "params=(\"utm_source\")", "Accept-Language", "en", "\n", "/a", "?x=1", "https://example.com/",
     ];
 
     /// <summary>
     /// An <see cref="HttpCachingDelegateHandler"/> over an in-memory store and a fake origin, with a fake clock. The first
     /// byte selects the maximum response size and whether the store corrupts the payloads it returns (two bytes for the
     /// offset, one for the value or a truncation), whether a <see cref="HttpCachingOptions.ShouldCacheResponse"/> predicate
-    /// rejects the responses (one byte, whose bit <c>n % 8</c> rejects the n-th response of the origin), and whether the
-    /// store starts with an entry whose metadata is fuzzed (as an external store could return it: see the
+    /// rejects the responses (one byte, whose bit <c>n % 8</c> rejects the n-th response of the origin), whether the cache
+    /// is shared (bit 5) and coalesces requests (bit 6), and whether the store starts with an entry whose metadata is fuzzed (as an external store could return it: see the
     /// <c>http-caching-persistence-entry</c> target) and whose payload is valid. Then each step is a request (method, URL, headers, time elapsed since
     /// the previous step) and the response the origin gives to it (status, headers among Cache-Control, Expires, Date,
     /// Age, Vary, ETag, Last-Modified, No-Vary-Search, ..., and body); the origin can also be unreachable.
@@ -48,7 +48,10 @@ public static partial class HttpCachingFuzzTargets
     /// it answers a GET or HEAD request, has an Age, and (when the store is not corrupted) has the status and the body of a
     /// response the origin sent for the same method and path, and for the same query unless that response declared a
     /// <c>No-Vary-Search</c>. That response was not marked <c>no-store</c>, nor was its request, and its status was neither
-    /// 206 nor 304, nor did the predicate reject it. A response served from the entry the store started with answers the
+    /// 206 nor 304, nor did the predicate reject it. A shared cache never serves a response marked <c>private</c>, nor the
+    /// response to a request with <c>Authorization</c> that did not allow it. A 206 or 416 response that does not come
+    /// from the origin answers a GET request with a <c>Range</c> header, from a stored 200 response: its body is the range of
+    /// that response that <c>Content-Range</c> describes. A response served from the entry the store started with answers the
     /// method and the URL of its key (only the path for a <c>No-Vary-Search</c> key), and that entry does not have
     /// <c>Vary: *</c>.
     /// </summary>
@@ -59,6 +62,7 @@ public static partial class HttpCachingFuzzTargets
         var corruption = (options & 4) is 0 ? null : new StoreCorruption(reader.ReadByte() | (reader.ReadByte() << 8), reader.ReadByte());
         var rejectionMask = (options & 8) is 0 ? (byte?)null : reader.ReadByte();
         var seeded = (options & 16) is 0 ? null : ReadSeededEntry(reader);
+        var isSharedCache = (options & 32) is not 0;
 
         var time = new ManualTimeProvider(StartTime);
         var store = new MemoryCacheStore(corruption);
@@ -75,6 +79,8 @@ public static partial class HttpCachingFuzzTargets
             MaximumResponseSize = MaximumResponseSizes[options & 3],
             OnStoreError = storeErrors.Add,
             ShouldCacheResponse = rejectionMask is null ? null : origin.ShouldCache,
+            IsSharedCache = isSharedCache,
+            CoalesceRequests = (options & 64) is not 0,
         };
 
         using var handler = new HttpCachingDelegateHandler(origin, store, cachingOptions);
@@ -110,7 +116,7 @@ public static partial class HttpCachingFuzzTargets
             using (response)
             {
                 CheckStoreErrors(storeErrors);
-                CheckResponse(origin, seeded, request, response, corruption is not null);
+                CheckResponse(origin, seeded, request, response, corruption is not null, isSharedCache);
             }
         }
     }
@@ -121,7 +127,7 @@ public static partial class HttpCachingFuzzTargets
         return invoker.SendAsync(request, CancellationToken.None).GetAwaiter().GetResult();
     }
 
-    private static void CheckResponse(FakeOrigin origin, SeededEntry? seeded, HttpRequestMessage request, HttpResponseMessage response, bool isStoreCorrupted)
+    private static void CheckResponse(FakeOrigin origin, SeededEntry? seeded, HttpRequestMessage request, HttpResponseMessage response, bool isStoreCorrupted, bool isSharedCache)
     {
         if (origin.HasReturned(response))
             return;
@@ -138,6 +144,12 @@ public static partial class HttpCachingFuzzTargets
             return;
 
         var uri = request.RequestUri!;
+        if (response.StatusCode is HttpStatusCode.PartialContent or HttpStatusCode.RequestedRangeNotSatisfiable)
+        {
+            CheckRangeResponse(origin, seeded, request, response, body, isSharedCache);
+            return;
+        }
+
         if (seeded is not null && body.AsSpan().SequenceEqual(seeded.Payload.Body))
         {
             FuzzAssert.Equal(seeded.Method, request.Method, "The seeded entry answers another method");
@@ -167,6 +179,64 @@ public static partial class HttpCachingFuzzTargets
         FuzzAssert.False(stored.IsNoStore, "A response marked no-store, or the response to a no-store request, is served from the cache");
         FuzzAssert.False(stored.StatusCode is HttpStatusCode.PartialContent or HttpStatusCode.NotModified, $"A {(int)stored.StatusCode} response is served from the cache");
         FuzzAssert.False(stored.IsRejected, "A response that ShouldCacheResponse rejected is served from the cache");
+        CheckStoredResponse(stored, request, isSharedCache);
+    }
+
+    private static void CheckStoredResponse(OriginResponse stored, HttpRequestMessage request, bool isSharedCache)
+    {
+        var uri = request.RequestUri!;
+        FuzzAssert.Equal(stored.Method, request.Method, "The cached response was stored for another method");
+        FuzzAssert.Equal(stored.Uri.GetLeftPart(UriPartial.Path), uri.GetLeftPart(UriPartial.Path), "The cached response was stored for another path");
+        FuzzAssert.False(stored.IsNoStore, "A response marked no-store, or the response to a no-store request, is served from the cache");
+        FuzzAssert.False(stored.IsRejected, "A response that ShouldCacheResponse rejected is served from the cache");
+        if (isSharedCache)
+        {
+            FuzzAssert.False(stored.IsPrivate, "A shared cache serves a response marked private");
+            FuzzAssert.False(stored.IsAuthorizationRestricted, "A shared cache serves the response to a request with Authorization that did not allow it");
+        }
+    }
+
+    /// <summary>A 206 or 416 response the cache built from a stored 200 response, to answer a range request.</summary>
+    private static void CheckRangeResponse(FakeOrigin origin, SeededEntry? seeded, HttpRequestMessage request, HttpResponseMessage response, byte[] body, bool isSharedCache)
+    {
+        FuzzAssert.Equal(HttpMethod.Get, request.Method, $"A {(int)response.StatusCode} response that does not come from the origin answers a {request.Method} request");
+        FuzzAssert.True(request.Headers.Range is not null, $"A {(int)response.StatusCode} response that does not come from the origin answers a request without a valid Range header");
+
+        // A multipart/byteranges body holds several ranges, whose positions are checked by the http-caching-byte-ranges target
+        if (response.Content.Headers.ContentType?.MediaType is "multipart/byteranges")
+        {
+            FuzzAssert.Equal(HttpStatusCode.PartialContent, response.StatusCode, "A multipart/byteranges response is not a 206 response");
+            return;
+        }
+
+        var contentRange = response.Content.Headers.ContentRange;
+        FuzzAssert.True(contentRange is { Length: not null } && string.Equals(contentRange.Unit, "bytes", StringComparison.Ordinal), $"The {(int)response.StatusCode} response has no complete Content-Range: {contentRange}");
+        var length = contentRange.Length.Value;
+        if (response.StatusCode is HttpStatusCode.RequestedRangeNotSatisfiable)
+        {
+            FuzzAssert.False(contentRange.HasRange, "The Content-Range of a 416 response has a range");
+            FuzzAssert.Equal(0, body.Length, "A 416 response has a body");
+            return;
+        }
+
+        FuzzAssert.True(contentRange.From is { } from && contentRange.To is { } to && from <= to && to < length, $"The Content-Range of the 206 response is not within the representation: {contentRange}");
+        var first = (int)contentRange.From.Value;
+        var last = (int)contentRange.To.Value;
+        FuzzAssert.Equal(last - first + 1, body.Length, "The body of the 206 response does not have the length of its Content-Range");
+
+        if (seeded is not null && seeded.Payload.StatusCode is HttpStatusCode.OK && seeded.Payload.Body.Length == length && seeded.Payload.Body.AsSpan(first, body.Length).SequenceEqual(body))
+            return;
+
+        foreach (var (completeBody, stored) in origin.GetResponses())
+        {
+            if (stored.StatusCode is not HttpStatusCode.OK || completeBody.Length != length || !completeBody.AsSpan(first, body.Length).SequenceEqual(body))
+                continue;
+
+            CheckStoredResponse(stored, request, isSharedCache);
+            return;
+        }
+
+        FuzzAssert.Fail($"The body of the 206 response is not the range {contentRange} of a 200 response of the origin");
     }
 
     /// <summary>Reads the method and the kind of key (bits 0 and 1), the URL, the payload, and the metadata of the entry the store starts with.</summary>
@@ -273,6 +343,28 @@ public static partial class HttpCachingFuzzTargets
             0, 0, 1, 1, 4, "bytes=0-1", 5, 1, 0, "max-age=60", "partial",
             0, 0, 1, 1, 5, "\"v1\"", 9, 0, "",
             0, 0, 1, 1, 6, "Wed, 01 Jan 2025 00:00:00 GMT", 0, 0, "unconditional");
+        yield return HandlerSeed("range-from-cache", 0,
+            0, 0, 1, 0, 0, 2, 0, "max-age=60", 5, "\"v1\"", "hello world",
+            0, 1, 1, 1, 4, "bytes=0-1", 0, 0, "unused",
+            0, 1, 1, 1, 4, "bytes=-3", 0, 0, "unused",
+            0, 1, 1, 1, 4, "bytes=100-", 0, 0, "unused",
+            0, 1, 1, 1, 4, "bytes=0-1, 3-4", 0, 0, "unused",
+            0, 1, 1, 2, 4, "bytes=0-1", 10, "\"v1\"", 0, 0, "unused",
+            0, 1, 1, 2, 4, "bytes=0-1", 10, "W/\"v1\"", 0, 0, "unused",
+            0, 120, 1, 1, 4, "bytes=2-4", 9, 2, 0, "max-age=60", 5, "\"v1\"", "");
+        yield return HandlerSeed("shared-cache", 32,
+            0, 0, 1, 0, 0, 1, 0, "private, max-age=60", "private",
+            0, 1, 1, 0, 0, 1, 0, "max-age=3600, s-maxage=5", "s-maxage",
+            0, 10, 1, 1, 0, "max-stale", 0, 0, "unused",
+            0, 0, 2, 1, 7, "Bearer a", 0, 1, 0, "max-age=60", "authorized",
+            0, 1, 2, 1, 7, "Bearer b", 0, 1, 0, "public, max-age=60", "public",
+            0, 1, 2, 1, 7, "Bearer b", 0, 0, "unused",
+            0, 1, 3, 0, 0, 2, 0, "max-age=60, private=\"Set-Cookie\"", 13, "a=b", "qualified",
+            0, 1, 3, 0, 0, 0, "unused");
+        yield return HandlerSeed("coalescing", 64,
+            0, 0, 1, 0, 0, 2, 0, "max-age=1", 5, "\"v1\"", "hello",
+            0, 5, 1, 0, 9, 2, 5, "\"v1\"", 0, "max-age=60", "",
+            0, 1, 1, 0, 0, 0, "unused");
         yield return HandlerSeed("immutable", 0,
             0, 0, 1, 0, 0, 2, 0, "max-age=60, immutable, no-cache", 3, "10", "immutable",
             0, 1, 1, 1, 0, "no-cache", 0, 0, "unused");
@@ -346,7 +438,7 @@ public static partial class HttpCachingFuzzTargets
 
     private sealed record ResponseSpec(bool IsUnreachable, HttpStatusCode StatusCode, List<(string Name, string Value)> Headers, string Body);
 
-    private sealed record OriginResponse(HttpMethod Method, Uri Uri, HttpStatusCode StatusCode, bool HasNoVarySearch, bool IsNoStore, bool IsRejected);
+    private sealed record OriginResponse(HttpMethod Method, Uri Uri, HttpStatusCode StatusCode, bool HasNoVarySearch, bool IsNoStore, bool IsRejected, bool IsPrivate, bool IsAuthorizationRestricted);
 
     private sealed record SeededEntry(HttpMethod Method, Uri Uri, bool IsNoVarySearchKey, string PrimaryKey, SeededPayload Payload, HttpCachePersistenceEntry Entry);
 
@@ -435,6 +527,7 @@ public static partial class HttpCachingFuzzTargets
         private readonly Queue<ResponseSpec> _pending = new();
         private readonly Dictionary<HttpResponseMessage, OriginResponse> _returned = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<string, OriginResponse> _responses = new(StringComparer.Ordinal);
+        private readonly List<(byte[] Body, OriginResponse Response)> _bodies = [];
         private int _counter;
 
         public bool IsUnreachable { get; private set; }
@@ -455,6 +548,8 @@ public static partial class HttpCachingFuzzTargets
         }
 
         public bool TryGetResponse(byte[] body, out OriginResponse response) => _responses.TryGetValue(Convert.ToHexString(body), out response!);
+
+        public List<(byte[] Body, OriginResponse Response)> GetResponses() => _bodies;
 
         protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) => throw new NotSupportedException();
 
@@ -485,8 +580,15 @@ public static partial class HttpCachingFuzzTargets
 
             var isNoStore = response.Headers.CacheControl?.NoStore is true || request.Headers.CacheControl?.NoStore is true;
             var isRejected = rejectionMask is { } mask && ((mask >> (index % 8)) & 1) is not 0;
-            var originResponse = new OriginResponse(request.Method, request.RequestUri!, response.StatusCode, response.Headers.Contains("No-Vary-Search"), isNoStore, isRejected);
+            var cacheControl = response.Headers.CacheControl;
+            var isPrivate = cacheControl?.Private is true && cacheControl.PrivateHeaders.Count is 0;
+            var isAuthorizationRestricted = request.Headers.Authorization is not null &&
+                                            cacheControl?.Public is not true &&
+                                            cacheControl?.MustRevalidate is not true &&
+                                            cacheControl?.SharedMaxAge is null;
+            var originResponse = new OriginResponse(request.Method, request.RequestUri!, response.StatusCode, response.Headers.Contains("No-Vary-Search"), isNoStore, isRejected, isPrivate, isAuthorizationRestricted);
             _responses[Convert.ToHexString(body)] = originResponse;
+            _bodies.Add((body, originResponse));
             _returned.Add(response, originResponse);
             return Task.FromResult(response);
         }

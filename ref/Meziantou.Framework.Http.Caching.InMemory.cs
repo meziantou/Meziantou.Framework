@@ -8,6 +8,7 @@ namespace Meziantou.Framework.Http.Caching.InMemory
 {
     public sealed class InMemoryHttpCacheStore : Meziantou.Framework.Http.Caching.IHttpCacheStore
     {
+        public InMemoryHttpCacheStore(Meziantou.Framework.Http.Caching.HttpCacheStoreLimits? limits) { }
         public System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Http.Caching.HttpCachePersistenceEntry>> GetEntriesAsync(string primaryKey, System.Threading.CancellationToken cancellationToken) => throw null;
         public System.Threading.Tasks.ValueTask LoadFromFileAsync(string filePath, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.ValueTask PruneObsoleteEntriesAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;

@@ -962,12 +962,332 @@ public class PersistenceProvidersTests
         }
     }
 
+    [Fact]
+    public async Task WhenStoreIsBoundedThenLeastRecentlyUsedResponseIsEvicted()
+    {
+        var originRequestCount = 0;
+        using var originHandler = new MockResponseHandler(request =>
+        {
+            originRequestCount++;
+            return CreateCacheableResponse(request.RequestUri!.AbsolutePath);
+        });
+
+        var cacheStore = new InMemoryHttpCacheStore(new HttpCacheStoreLimits
+        {
+            // Keep at most 1,000 responses, and at most 50 MB of responses
+            MaximumEntryCount = 1000,
+            MaximumTotalSize = 50 * 1024 * 1024,
+        });
+
+        using var cachingHandler = new HttpCachingDelegateHandler(originHandler, cacheStore);
+        using var httpClient = new HttpClient(cachingHandler);
+
+        for (var i = 0; i < 1001; i++)
+        {
+            using var response = await httpClient.GetAsync("https://example.com/" + i.ToString(CultureInfo.InvariantCulture), CancellationToken.None);
+        }
+
+        // The first response is the least recently used one, so it was evicted to store the last one
+        using var lastResponse = await httpClient.GetAsync("https://example.com/1000", CancellationToken.None);
+        Assert.NotNull(lastResponse.Headers.Age);
+        using var firstResponse = await httpClient.GetAsync("https://example.com/0", CancellationToken.None);
+        Assert.Null(firstResponse.Headers.Age);
+        Assert.Equal(1002, originRequestCount);
+    }
+
+    [Theory]
+    [InlineData(0L)]
+    [InlineData(-1L)]
+    public void HttpCacheStoreLimitsRejectsNonPositiveValues(long limit)
+    {
+        var limits = new HttpCacheStoreLimits();
+
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => limits.MaximumEntryCount = limit);
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => limits.MaximumTotalSize = limit);
+        Assert.Null(limits.MaximumEntryCount);
+        Assert.Null(limits.MaximumTotalSize);
+    }
+
+    public static TheoryData<string> BoundedStoreKinds => ["InMemory", "Sqlite"];
+
+    [Theory]
+    [MemberData(nameof(BoundedStoreKinds))]
+    public async Task BoundedProviderEvictsTheLeastRecentlyUsedEntryWhenTheEntryCountIsExceeded(string storeKind)
+    {
+        await using var store = CreateBoundedStore(storeKind, new HttpCacheStoreLimits { MaximumEntryCount = 2 });
+        var provider = store.Store;
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        await provider.SetEntryAsync("a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+        await provider.SetEntryAsync("b", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+
+        // Reading "a" makes "b" the least recently used entry
+        Assert.Single(await provider.GetEntriesAsync("a", CancellationToken.None));
+        await provider.SetEntryAsync("c", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+
+        Assert.Single(await provider.GetEntriesAsync("a", CancellationToken.None));
+        Assert.Empty(await provider.GetEntriesAsync("b", CancellationToken.None));
+        Assert.Single(await provider.GetEntriesAsync("c", CancellationToken.None));
+    }
+
+    [Theory]
+    [MemberData(nameof(BoundedStoreKinds))]
+    public async Task BoundedProviderEvictsEntriesWhenTheTotalSizeIsExceeded(string storeKind)
+    {
+        await using var store = CreateBoundedStore(storeKind, new HttpCacheStoreLimits { MaximumTotalSize = 10 });
+        var provider = store.Store;
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        await provider.SetEntryAsync("a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false, size: 4), CancellationToken.None);
+        await provider.SetEntryAsync("b", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false, size: 4), CancellationToken.None);
+        await provider.SetEntryAsync("c", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false, size: 4), CancellationToken.None);
+
+        Assert.Empty(await provider.GetEntriesAsync("a", CancellationToken.None));
+        Assert.Single(await provider.GetEntriesAsync("b", CancellationToken.None));
+        Assert.Single(await provider.GetEntriesAsync("c", CancellationToken.None));
+
+        // An entry larger than the limit is not kept, and evicts every other entry
+        await provider.SetEntryAsync("d", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false, size: 11), CancellationToken.None);
+
+        Assert.Empty(await provider.GetEntriesAsync("b", CancellationToken.None));
+        Assert.Empty(await provider.GetEntriesAsync("c", CancellationToken.None));
+        Assert.Empty(await provider.GetEntriesAsync("d", CancellationToken.None));
+    }
+
+    [Theory]
+    [MemberData(nameof(BoundedStoreKinds))]
+    public async Task BoundedProviderCountsEachVariantAndReplacementsOnce(string storeKind)
+    {
+        await using var store = CreateBoundedStore(storeKind, new HttpCacheStoreLimits { MaximumEntryCount = 3, MaximumTotalSize = 9 });
+        var provider = store.Store;
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        // Replacing an entry releases the size of the previous one
+        await provider.SetEntryAsync("a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false, size: 3), CancellationToken.None);
+        await provider.SetEntryAsync("a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false, size: 3), CancellationToken.None);
+        await provider.SetEntryAsync("a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false, size: 3), CancellationToken.None);
+        await provider.SetEntryAsync("a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false, languageVariant: "fr", size: 3), CancellationToken.None);
+        await provider.SetEntryAsync("b", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false, size: 3), CancellationToken.None);
+
+        Assert.HasCount(2, await provider.GetEntriesAsync("a", CancellationToken.None));
+        Assert.Single(await provider.GetEntriesAsync("b", CancellationToken.None));
+
+        // Each variant is an entry: storing a fourth one evicts the least recently used variant
+        await provider.SetEntryAsync("b", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false, languageVariant: "fr", size: 3), CancellationToken.None);
+
+        var remainingEntries = await provider.GetEntriesAsync("a", CancellationToken.None);
+        Assert.Single(remainingEntries);
+        Assert.HasCount(2, await provider.GetEntriesAsync("b", CancellationToken.None));
+    }
+
+    [Theory]
+    [MemberData(nameof(BoundedStoreKinds))]
+    public async Task BoundedProviderRemoveAndPruneReleaseTheirEntries(string storeKind)
+    {
+        await using var store = CreateBoundedStore(storeKind, new HttpCacheStoreLimits { MaximumEntryCount = 2 });
+        var provider = store.Store;
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        await provider.SetEntryAsync("removed", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+        await provider.SetEntryAsync("obsolete", CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(1), mustRevalidate: false), CancellationToken.None);
+        await provider.RemoveEntriesAsync("removed", CancellationToken.None);
+        await provider.PruneObsoleteEntriesAsync(CancellationToken.None);
+
+        // Nothing is left to evict, so both new entries are kept
+        await provider.SetEntryAsync("a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+        await provider.SetEntryAsync("b", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+
+        Assert.Single(await provider.GetEntriesAsync("a", CancellationToken.None));
+        Assert.Single(await provider.GetEntriesAsync("b", CancellationToken.None));
+        Assert.Empty(await provider.GetEntriesAsync("removed", CancellationToken.None));
+        Assert.Empty(await provider.GetEntriesAsync("obsolete", CancellationToken.None));
+    }
+
+    [Theory]
+    [MemberData(nameof(BoundedStoreKinds))]
+    public async Task BoundedProviderStaysWithinItsLimitsUnderConcurrentWrites(string storeKind)
+    {
+        await using var store = CreateBoundedStore(storeKind, new HttpCacheStoreLimits { MaximumEntryCount = 8 });
+        var provider = store.Store;
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        var writes = Enumerable.Range(0, 64).Select(i => Task.Run(async () =>
+        {
+            var primaryKey = "http://example.com/" + i.ToString(CultureInfo.InvariantCulture);
+            await provider.SetEntryAsync(primaryKey, CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+            await provider.GetEntriesAsync(primaryKey, CancellationToken.None);
+        }));
+        await Task.WhenAll(writes);
+
+        var remainingEntryCount = 0;
+        for (var i = 0; i < 64; i++)
+        {
+            remainingEntryCount += (await provider.GetEntriesAsync("http://example.com/" + i.ToString(CultureInfo.InvariantCulture), CancellationToken.None)).Count;
+        }
+
+        Assert.Equal(8, remainingEntryCount);
+    }
+
+    [Fact]
+    public async Task InMemoryProviderLoadingAFileEnforcesTheLimits()
+    {
+        var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        var filePath = Path.Combine(tempDirectory, "http-cache.json");
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        try
+        {
+            var unboundedProvider = new InMemoryHttpCacheStore();
+            for (var i = 0; i < 5; i++)
+            {
+                await unboundedProvider.SetEntryAsync("http://example.com/" + i.ToString(CultureInfo.InvariantCulture), CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+            }
+
+            await unboundedProvider.SaveToFileAsync(filePath, CancellationToken.None);
+
+            var boundedProvider = new InMemoryHttpCacheStore(new HttpCacheStoreLimits { MaximumEntryCount = 2 });
+            await boundedProvider.LoadFromFileAsync(filePath, CancellationToken.None);
+
+            var remainingEntryCount = 0;
+            for (var i = 0; i < 5; i++)
+            {
+                remainingEntryCount += (await boundedProvider.GetEntriesAsync("http://example.com/" + i.ToString(CultureInfo.InvariantCulture), CancellationToken.None)).Count;
+            }
+
+            Assert.Equal(2, remainingEntryCount);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task SqliteProviderBoundsCountTheRowsOfAnUnboundedStoreAndOfAnEarlierVersion()
+    {
+        var tempDirectory = Path.Combine(Path.GetTempPath(), "meziantou-http-cache", Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+        var databasePath = Path.Combine(tempDirectory, "http-cache.db");
+        var connectionString = CreateSqliteConnectionString(databasePath);
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        try
+        {
+            Directory.CreateDirectory(tempDirectory);
+
+            // A database written by a version that had neither LastAccess nor the statistics
+            using (var connection = new SqliteConnection(connectionString))
+            {
+                await connection.OpenAsync(CancellationToken.None);
+                using var createCommand = connection.CreateCommand();
+                createCommand.CommandText =
+                    "CREATE TABLE HttpCacheEntries (" +
+                    "PrimaryKey TEXT NOT NULL, " +
+                    "SecondaryKey TEXT NOT NULL, " +
+                    "Payload BLOB NULL, " +
+                    "PRIMARY KEY(PrimaryKey, SecondaryKey))";
+                await createCommand.ExecuteNonQueryAsync(CancellationToken.None);
+
+                using var insertCommand = connection.CreateCommand();
+                insertCommand.CommandText = "INSERT INTO HttpCacheEntries (PrimaryKey, SecondaryKey, Payload) VALUES ('legacy', 'legacy-row', $payload)";
+                insertCommand.Parameters.AddWithValue("$payload", JsonSerializer.SerializeToUtf8Bytes(CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false)));
+                await insertCommand.ExecuteNonQueryAsync(CancellationToken.None);
+            }
+
+            using (var unboundedProvider = new SqliteHttpCacheStore(connectionString))
+            {
+                await unboundedProvider.SetEntryAsync("a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+                await unboundedProvider.SetEntryAsync("b", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+            }
+
+            using var boundedProvider = new SqliteHttpCacheStore(connectionString, new HttpCacheStoreLimits { MaximumEntryCount = 2 });
+            await boundedProvider.SetEntryAsync("c", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+
+            // The row without a recency goes first, then the least recently used one
+            Assert.Empty(await boundedProvider.GetEntriesAsync("legacy", CancellationToken.None));
+            Assert.Empty(await boundedProvider.GetEntriesAsync("a", CancellationToken.None));
+            Assert.Single(await boundedProvider.GetEntriesAsync("b", CancellationToken.None));
+            Assert.Single(await boundedProvider.GetEntriesAsync("c", CancellationToken.None));
+        }
+        finally
+        {
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, recursive: true);
+            }
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Linux)]
+    public async Task RedisProviderEvictsTheLeastRecentlyUsedEntries()
+    {
+        await using var redisContainer = await StartRedisContainerAsync();
+
+        using var connection = await ConnectionMultiplexer.ConnectAsync(redisContainer.GetConnectionString());
+        var keyPrefix = "meziantou-http-cache-tests:" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
+        var provider = new RedisHttpCacheStore(connection, keyPrefix, new HttpCacheStoreLimits { MaximumEntryCount = 2, MaximumTotalSize = 10 });
+        var now = new DateTimeOffset(2026, 03, 12, 12, 00, 00, TimeSpan.Zero);
+
+        await provider.SetEntryAsync("a", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+        await provider.SetEntryAsync("b", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+        Assert.Single(await provider.GetEntriesAsync("a", CancellationToken.None));
+        await provider.SetEntryAsync("c", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+
+        Assert.Single(await provider.GetEntriesAsync("a", CancellationToken.None));
+        Assert.Empty(await provider.GetEntriesAsync("b", CancellationToken.None));
+        Assert.Single(await provider.GetEntriesAsync("c", CancellationToken.None));
+
+        // 8 bytes exceed the size limit with any other entry
+        await provider.SetEntryAsync("d", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false, size: 8), CancellationToken.None);
+        Assert.Empty(await provider.GetEntriesAsync("a", CancellationToken.None));
+        Assert.Empty(await provider.GetEntriesAsync("c", CancellationToken.None));
+        Assert.Single(await provider.GetEntriesAsync("d", CancellationToken.None));
+
+        // Removing and pruning release their entries
+        await provider.RemoveEntriesAsync("d", CancellationToken.None);
+        await provider.SetEntryAsync("obsolete", CreatePersistenceEntry(now, maxAge: TimeSpan.FromMinutes(1), mustRevalidate: false), CancellationToken.None);
+        await provider.PruneObsoleteEntriesAsync(CancellationToken.None);
+        await provider.SetEntryAsync("e", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+        await provider.SetEntryAsync("f", CreatePersistenceEntry(now, maxAge: TimeSpan.FromHours(1), mustRevalidate: false), CancellationToken.None);
+        Assert.Single(await provider.GetEntriesAsync("e", CancellationToken.None));
+        Assert.Single(await provider.GetEntriesAsync("f", CancellationToken.None));
+
+        var database = connection.GetDatabase();
+        Assert.Equal(2L, (long)await database.HashGetAsync(keyPrefix + ":statistics", "count"));
+        Assert.Equal(6L, (long)await database.HashGetAsync(keyPrefix + ":statistics", "size"));
+        Assert.Equal(2L, await database.SetLengthAsync(keyPrefix + ":primary-keys"));
+    }
+
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership is transferred to the caller")]
+    private static BoundedStore CreateBoundedStore(string storeKind, HttpCacheStoreLimits limits)
+    {
+        return storeKind switch
+        {
+            "InMemory" => new BoundedStore(new InMemoryHttpCacheStore(limits)),
+            "Sqlite" => new BoundedStore(new SqliteHttpCacheStore(CreateInMemorySqliteConnectionString(), limits)),
+            _ => throw new ArgumentOutOfRangeException(nameof(storeKind), storeKind, message: null),
+        };
+    }
+
+    private sealed record BoundedStore(IHttpCacheStore Store) : IAsyncDisposable
+    {
+        public ValueTask DisposeAsync()
+        {
+            (Store as IDisposable)?.Dispose();
+            return ValueTask.CompletedTask;
+        }
+    }
+
     private static HttpCachePersistenceEntry CreatePersistenceEntry(
         DateTimeOffset now,
         TimeSpan maxAge,
         bool mustRevalidate,
         string? eTag = null,
-        TimeSpan? staleIfError = null)
+        TimeSpan? staleIfError = null,
+        string? languageVariant = null,
+        int size = 3)
     {
         var requestTime = now - TimeSpan.FromMinutes(3);
         var responseTime = now - TimeSpan.FromMinutes(2);
@@ -982,7 +1302,8 @@ public class PersistenceProvidersTests
             MustRevalidate = mustRevalidate,
             ETag = eTag,
             StaleIfError = staleIfError,
-            SerializedResponse = new byte[] { 1, 2, 3 },
+            SecondaryKeyHeaders = languageVariant is null ? null : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["Accept-Language"] = languageVariant },
+            SerializedResponse = Enumerable.Range(1, size).Select(i => (byte)i).ToArray(),
         };
     }
 

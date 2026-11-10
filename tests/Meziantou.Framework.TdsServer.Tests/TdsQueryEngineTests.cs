@@ -5276,6 +5276,55 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_Insert_OrderedSelect_KeepsTheSelectedNamesForOrderBy()
+    {
+        var products = CreateProducts();
+        var recordsAffected = await ExecuteNonQuery(
+            CreateWritableQueryEngineOptions(products),
+            command =>
+            {
+                command.CommandText = """
+                    INSERT INTO products (Id, Stock) SELECT TOP (1) MAX(Id) AS LastId, SUM(Amount) AS Total FROM orders GROUP BY Region ORDER BY Total DESC;
+                    INSERT INTO products (Id, Name) SELECT Id + 10 AS NewId, Name FROM customers WHERE Id = 4 UNION ALL SELECT Id + 20 AS NewId, Name FROM customers WHERE Id = 4 ORDER BY NewId DESC;
+                    INSERT INTO products (Id, Name) SELECT Id + 30, Name FROM customers WHERE Id = 1 ORDER BY Name;
+                    INSERT INTO products (Name, Id) SELECT Name, Id + 40 FROM customers WHERE Id = 2;
+                    """;
+            });
+
+        Assert.Equal(5, recordsAffected);
+        Assert.Equal(["1 Keyboard 49.90 5", "2 Mouse 19.50 NULL", "2  0 30", "24 David 0 NULL", "14 David 0 NULL", "31 Alice 0 NULL", "42 Bob 0 NULL"], products.Select(FormatProduct));
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RecursiveCte_StarAnchorMembers_AreCombined()
+    {
+        await ExecuteQuery(
+            CreateQueryEngineOptions(),
+            command =>
+            {
+                command.CommandText = """
+                    WITH c (n, label) AS (
+                        SELECT * FROM customers WHERE Id = 1
+                        UNION ALL
+                        SELECT * FROM customers WHERE Id = 2
+                        UNION ALL
+                        SELECT n + 1, label FROM c WHERE n < 3
+                    )
+                    SELECT n, label FROM c ORDER BY n, label
+                    """;
+            },
+            """
+            n label
+            1 Alice
+            2 Alice
+            2 Bob
+            3 Alice
+            3 Bob
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_RecursiveCte_AnchorMembersWithDifferentNames_MatchColumnsByPosition()
     {
         await ExecuteQuery(

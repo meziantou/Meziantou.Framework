@@ -110,10 +110,16 @@ internal sealed partial class TdsQueryEngineExecutor
             anchorQuery = ApplyColumnList(anchorQuery, cte.ColumnList, scopeName: "CTE");
         }
 
-        var anchorColumnNames = new PositionalColumnNames([.. GetReadableMembers(anchorQuery.ElementType).Select(member => member.Name)], _ => CreateColumnCountMismatchError());
+        var anchorColumnNames = new PositionalColumnNames([.. GetReadableMembers(anchorQuery.ElementType).Select(member => member.Name)], _ => CreateColumnCountMismatchError(), ReplaceSelectedNames: true);
         for (var i = 1; i < firstRecursiveMember; i++)
         {
             var anchorMember = TranslateQueryExpression(members[i].Query, parameters, cteRoots, queryExecutionContext, anchorColumnNames);
+            if (anchorMember.ElementType != anchorQuery.ElementType && CanConvertRows(anchorMember.ElementType, anchorQuery.ElementType))
+            {
+                // SELECT * keeps the row type of its table, whatever the names
+                anchorMember = ConvertRows(anchorMember, anchorQuery.ElementType);
+            }
+
             anchorQuery = CombineUnion(anchorQuery, anchorMember, members[i].Operator!.Value);
         }
 
@@ -323,6 +329,20 @@ internal sealed partial class TdsQueryEngineExecutor
         }
 
         return false;
+    }
+
+    /// <summary>Tells whether <see cref="ConvertRows"/> converts every row of <paramref name="sourceType"/>: the columns have the same types, or the target is the nullable version of the source.</summary>
+    private static bool CanConvertRows(Type sourceType, Type targetType)
+    {
+        var sourceMembers = GetReadableMembers(sourceType);
+        var targetMembers = GetReadableMembers(targetType);
+        return sourceMembers.Count == targetMembers.Count &&
+            sourceMembers.Zip(targetMembers).All(pair =>
+            {
+                var source = GetMemberType(pair.First);
+                var target = GetMemberType(pair.Second);
+                return source == target || MakeNullableType(source) == target;
+            });
     }
 
     /// <summary>Converts the rows of <paramref name="query"/> to <paramref name="targetType"/>, whose members have the same position and the same type, or its nullable version.</summary>

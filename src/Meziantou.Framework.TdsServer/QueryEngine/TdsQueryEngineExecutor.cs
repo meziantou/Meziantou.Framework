@@ -1139,7 +1139,7 @@ internal sealed partial class TdsQueryEngineExecutor
 
     private IQueryable ApplyGroupSelect(GroupedQuerySource source, SqlSelectClause selectClause, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, PositionalColumnNames? columnNames)
     {
-        columnNames?.EnsureCount(selectClause.SelectExpressions.Count);
+        var projectionNames = GetProjectionNames(selectClause, columnNames, GetGroupColumnName);
         var parameter = Expression.Parameter(source.GroupType, "group");
         var members = new List<TdsProjectionMember>();
         var values = new List<Expression>();
@@ -1152,7 +1152,7 @@ internal sealed partial class TdsQueryEngineExecutor
             }
 
             var value = BuildGroupScalar(scalarExpression.Expression, source, parameter, parameters, cteRoots, queryExecutionContext);
-            var name = columnNames is not null ? columnNames.Names[values.Count] : scalarExpression.Alias?.Value ?? GetGroupColumnName(scalarExpression.Expression);
+            var name = projectionNames[values.Count]!;
             if (!names.Add(name))
             {
                 throw new TdsQueryEngineException($"Duplicate SELECT column name '{name}'.");
@@ -1187,8 +1187,7 @@ internal sealed partial class TdsQueryEngineExecutor
             return source.Query;
         }
 
-        columnNames?.EnsureCount(selectClause.SelectExpressions.Count);
-
+        var projectionNames = GetProjectionNames(selectClause, columnNames, GetColumnName);
         var parameter = Expression.Parameter(source.RowType, "row");
         var members = new List<TdsProjectionMember>();
         var values = new List<Expression>();
@@ -1201,7 +1200,7 @@ internal sealed partial class TdsQueryEngineExecutor
             }
 
             var value = BuildScalar(scalarExpression.Expression, source.Aliases, parameter, parameters, cteRoots, queryExecutionContext);
-            var name = columnNames is not null ? columnNames.Names[values.Count] : scalarExpression.Alias?.Value ?? GetColumnName(scalarExpression.Expression);
+            var name = projectionNames[values.Count]!;
             if (!names.Add(name))
             {
                 throw new TdsQueryEngineException($"Duplicate SELECT column name '{name}'.");
@@ -3476,8 +3475,64 @@ internal sealed partial class TdsQueryEngineExecutor
 
     private sealed record QuerySource(IQueryable Query, Type RowType, IReadOnlyDictionary<string, AliasBinding> Aliases);
 
+    /// <summary>Gets the names of the columns of a projection. Expressions that are not scalar get no name, as the projection rejects them.</summary>
+    private static string?[] GetProjectionNames(SqlSelectClause selectClause, PositionalColumnNames? columnNames, Func<SqlScalarExpression, string> getDefaultName)
+    {
+        var expressions = selectClause.SelectExpressions.Select(expression => expression as SqlSelectScalarExpression).ToArray();
+        if (columnNames is null)
+        {
+            return [.. expressions.Select(expression => expression is null ? null : expression.Alias?.Value ?? getDefaultName(expression.Expression))];
+        }
+
+        columnNames.EnsureCount(expressions.Length);
+        if (columnNames.ReplaceSelectedNames)
+        {
+            return [.. columnNames.Names];
+        }
+
+        // The selected names stay, so ORDER BY can use them. The other columns, and the ones whose name is taken, get
+        // the name at their position, made unique: the values are matched to their columns by position.
+        var result = new string?[expressions.Length];
+        var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < expressions.Length; i++)
+        {
+            var selectedName = expressions[i] switch
+            {
+                { Alias: { } alias } => alias.Value,
+                { Expression: SqlScalarRefExpression column } => GetColumnName(column),
+                _ => null,
+            };
+            if (selectedName is not null && usedNames.Add(selectedName))
+            {
+                result[i] = selectedName;
+            }
+        }
+
+        for (var i = 0; i < expressions.Length; i++)
+        {
+            if (result[i] is not null)
+            {
+                continue;
+            }
+
+            var name = columnNames.Names[i];
+            for (var suffix = 2; !usedNames.Add(name); suffix++)
+            {
+                name = string.Create(CultureInfo.InvariantCulture, $"{columnNames.Names[i]}{suffix}");
+            }
+
+            result[i] = name;
+        }
+
+        return result;
+    }
+
     /// <summary>The names of the selected columns, by position, and the error to report when the number of columns differs.</summary>
-    private sealed record PositionalColumnNames(IReadOnlyList<string> Names, Func<int, TdsQueryEngineException> CreateCountMismatchError)
+    /// <param name="ReplaceSelectedNames">
+    /// <see langword="true"/> to replace the names of the selected columns (the recursive members of a common table
+    /// expression, named by the anchor), <see langword="false"/> to name only the columns without a name (INSERT ... SELECT).
+    /// </param>
+    private sealed record PositionalColumnNames(IReadOnlyList<string> Names, Func<int, TdsQueryEngineException> CreateCountMismatchError, bool ReplaceSelectedNames)
     {
         public void EnsureCount(int count)
         {

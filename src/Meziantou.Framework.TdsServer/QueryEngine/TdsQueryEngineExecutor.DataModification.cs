@@ -146,7 +146,7 @@ internal sealed partial class TdsQueryEngineExecutor
     private Func<CancellationToken, ValueTask<IReadOnlyList<object?[]>>> TranslateInsertSelect(SqlSelectSpecification selectSpecification, string[] columnNames, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         // The values are matched to the columns by position, so the selected expressions do not need names, as in SQL Server
-        var namesByPosition = new PositionalColumnNames(columnNames, CreateCountMismatchError);
+        var namesByPosition = new PositionalColumnNames(columnNames, CreateCountMismatchError, ReplaceSelectedNames: false);
         var query = TranslateSelectSpecification(selectSpecification, parameters, cteRoots, queryExecutionContext, namesByPosition);
         var members = GetReadableMembers(query.ElementType);
         namesByPosition.EnsureCount(members.Count);

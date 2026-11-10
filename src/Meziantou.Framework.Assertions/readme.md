@@ -187,10 +187,9 @@ Assert.StartsWith("""
 var architecture = ArchitectureModel.FromAssemblyContaining<Order>();
 var repositories = architecture.Types.Where(t => t.IsClass && t.Implements<IOrderRepository>());
 
-Assert.NotEmpty(repositories);
-Assert.All(repositories, t => t.Name.EndsWith("Repository", StringComparison.Ordinal));
-Assert.All(repositories, t => t.IsSealed);
-Assert.All(architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp.Domain") && !t.IsInterface), t => t.IsImmutable);
+Assert.Architecture.AllMatch(repositories, t => t.Name.EndsWith("Repository", StringComparison.Ordinal));
+Assert.Architecture.AllMatch(repositories, t => t.IsSealed);
+Assert.Architecture.AllMatch(architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp.Domain") && !t.IsInterface), t => t.IsImmutable);
 ```
 <!-- endref -->
 

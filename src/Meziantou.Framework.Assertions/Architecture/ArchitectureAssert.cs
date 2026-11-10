@@ -8,17 +8,17 @@ using Meziantou.Framework.Assertions.Architecture.Reading;
 namespace Meziantou.Framework.Assertions.Architecture;
 
 /// <summary>
-/// The assertions on the dependencies of the types of an <see cref="ArchitectureModel"/>, available as <c>Assert.Architecture</c>.
-/// Each assertion throws an <see cref="AssertionException"/> that lists every type that breaks it, with the statements that cause it.
-/// To check the names or the shape of types, use <c>Assert.All</c> with the members of <see cref="TypeElement"/>.
+/// The assertions on the types and the members of an <see cref="ArchitectureModel"/>, available as <c>Assert.Architecture</c>.
+/// Each assertion throws an <see cref="AssertionException"/> that lists every type or member that breaks it, with the statements that cause it.
+/// To check the names or the shape of types and members, use <see cref="AllMatch(IEnumerable{TypeElement}, Func{TypeElement, bool}, string?, string?, string?)"/>.
 /// </summary>
 /// <remarks>
-/// Each assertion fails when the types to check are empty, so that a typo in a namespace does not make it pass silently.
+/// Each assertion fails when the types or the members to check are empty, so that a typo in a namespace does not make it pass silently.
 /// Add your own assertions with an extension block on <see cref="ArchitectureAssert"/>.
 /// </remarks>
 [StackTraceHidden]
 [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "The assertions are called on the Assert.Architecture instance")]
-public sealed class ArchitectureAssert
+public sealed partial class ArchitectureAssert
 {
     internal static ArchitectureAssert Instance { get; } = new();
 
@@ -55,7 +55,7 @@ public sealed class ArchitectureAssert
 
         var checkedTypes = typeList.ToHashSet();
         var forbidden = forbiddenList.ToHashSet();
-        var violations = FindDependencies(typeList, dependency => dependency.Target.Definition is { } target && forbidden.Contains(target) && !checkedTypes.Contains(target));
+        var violations = FindDependencies(typeList, type => type.Dependencies, dependency => dependency.Target.Definition is { } target && forbidden.Contains(target) && !checkedTypes.Contains(target));
         ThrowIfViolations(Name, violations, "{0} type depends on a forbidden type", "{0} types depend on forbidden types", message, rows);
     }
 
@@ -113,7 +113,7 @@ public sealed class ArchitectureAssert
         EnsureNotEmpty(Name, typeList, message, rows, "No type to check");
 
         allowed.UnionWith(typeList);
-        var violations = FindDependencies(typeList, dependency => dependency.Target.Definition is { } target && !allowed.Contains(target));
+        var violations = FindDependencies(typeList, type => type.Dependencies, dependency => dependency.Target.Definition is { } target && !allowed.Contains(target));
         ThrowIfViolations(Name, violations, "{0} type depends on a type that is not allowed", "{0} types depend on types that are not allowed", message, rows);
     }
 
@@ -142,7 +142,7 @@ public sealed class ArchitectureAssert
         EnsureNotEmpty(Name, typeList, message, rows, "No type to check");
 
         var checkedTypes = typeList.ToHashSet();
-        var violations = FindDependencies(typeList, dependency => !(dependency.Target.Definition is { } target && checkedTypes.Contains(target)) && !predicate(dependency.Target));
+        var violations = FindDependencies(typeList, type => type.Dependencies, dependency => !(dependency.Target.Definition is { } target && checkedTypes.Contains(target)) && !predicate(dependency.Target));
         ThrowIfViolations(Name, violations, "{0} type depends on a type that is not allowed", "{0} types depend on types that are not allowed", message, rows);
     }
 
@@ -163,21 +163,7 @@ public sealed class ArchitectureAssert
         var rows = new (string, string?)[] { ("Types expression", typesExpression), ("Member", fullName + "." + memberName) };
         EnsureNotEmpty(Name, typeList, message, rows, "No type to check");
 
-        string[] names = [memberName, "get_" + memberName, "set_" + memberName, "add_" + memberName, "remove_" + memberName];
-        var violations = new List<ArchitectureViolation>();
-        foreach (var checkedType in typeList)
-        {
-            var dependencies = checkedType.Dependencies.Where(dependency => dependency.TargetMember is { } member
-                && string.Equals(member.DeclaringType.FullName, fullName, StringComparison.Ordinal)
-                && string.Equals(dependency.Target.FullName, fullName, StringComparison.Ordinal)
-                && names.Contains(member.Name, StringComparer.Ordinal)).ToList();
-            if (dependencies.Count > 0)
-            {
-                var members = string.Join(", ", dependencies.Select(dependency => dependency.TargetMember!.ToString()).Distinct(StringComparer.Ordinal));
-                violations.Add(new ArchitectureViolation($"{checkedType} accesses {members}", checkedType, dependencies));
-            }
-        }
-
+        var violations = FindMemberAccesses(typeList, type => type.Dependencies, fullName, memberName);
         ThrowIfViolations(Name, violations, "{0} type accesses the member", "{0} types access the member", message, rows);
     }
 
@@ -239,7 +225,7 @@ public sealed class ArchitectureAssert
                 dependencies.AddRange(graph.Edges[(cycle[i], cycle[i + 1])]);
             }
 
-            violations.Add(new ArchitectureViolation(string.Join(" -> ", cycle), type: null, dependencies));
+            violations.Add(new ArchitectureViolation(string.Join(" -> ", cycle), dependencies));
         }
 
         ThrowIfViolations(Name, violations, "{0} cycle between slices", "{0} cycles between slices", message, rows);
@@ -259,7 +245,7 @@ public sealed class ArchitectureAssert
         EnsureNotEmpty(Name, graph.SliceNames, message, rows, "No slice to check");
 
         var violations = graph.TypeDependencies
-            .Select(item => new ArchitectureViolation($"{item.Type} in slice '{item.Slice}' depends on slice '{item.TargetSlice}'", item.Type, item.Dependencies))
+            .Select(item => new ArchitectureViolation($"{item.Type} in slice '{item.Slice}' depends on slice '{item.TargetSlice}'", item.Dependencies))
             .ToList();
         ThrowIfViolations(Name, violations, "{0} type depends on another slice", "{0} types depend on other slices", message, rows);
     }
@@ -269,32 +255,72 @@ public sealed class ArchitectureAssert
         const string Name = nameof(DoesNotDependOn);
         var typeList = GetTypes(types, nameof(types));
         EnsureNotEmpty(Name, typeList, message, rows, "No type to check");
-        var violations = FindDependencies(typeList, dependency => isForbidden(dependency.Target));
+        var violations = FindDependencies(typeList, type => type.Dependencies, dependency => isForbidden(dependency.Target));
         ThrowIfViolations(Name, violations, "{0} type depends on a forbidden type", "{0} types depend on forbidden types", message, rows);
     }
 
-    private static List<TypeElement> GetTypes(IEnumerable<TypeElement> types, string paramName)
+    private static List<TypeElement> GetTypes(IEnumerable<TypeElement> types, string paramName) => GetItems(types, paramName);
+
+    private static List<T> GetItems<T>(IEnumerable<T> items, string paramName)
+        where T : class
     {
-        ArgumentNullException.ThrowIfNull(types, paramName);
-        var result = types.ToList();
-        foreach (var type in result)
+        ArgumentNullException.ThrowIfNull(items, paramName);
+        var result = items.ToList();
+        foreach (var item in result)
         {
-            ArgumentNullException.ThrowIfNull(type, paramName);
+            ArgumentNullException.ThrowIfNull(item, paramName);
         }
 
         return result;
     }
 
-    private static List<ArchitectureViolation> FindDependencies(List<TypeElement> types, Func<Dependency, bool> isViolation)
+    private static List<ArchitectureViolation> FindDependencies<T>(List<T> items, Func<T, IReadOnlyList<Dependency>> getDependencies, Func<Dependency, bool> isViolation)
+        where T : class
     {
         var violations = new List<ArchitectureViolation>();
-        foreach (var type in types)
+        foreach (var item in items)
         {
-            var dependencies = type.Dependencies.Where(isViolation).ToList();
+            var dependencies = getDependencies(item).Where(isViolation).ToList();
             if (dependencies.Count > 0)
             {
                 var targets = string.Join(", ", dependencies.Select(dependency => dependency.Target.ToString()).Distinct(StringComparer.Ordinal));
-                violations.Add(new ArchitectureViolation($"{type} depends on {targets}", type, dependencies));
+                violations.Add(new ArchitectureViolation($"{item} depends on {targets}", dependencies));
+            }
+        }
+
+        return violations;
+    }
+
+    private static List<ArchitectureViolation> FindMemberAccesses<T>(List<T> items, Func<T, IReadOnlyList<Dependency>> getDependencies, string fullName, string memberName)
+        where T : class
+    {
+        string[] names = [memberName, "get_" + memberName, "set_" + memberName, "add_" + memberName, "remove_" + memberName];
+        var violations = new List<ArchitectureViolation>();
+        foreach (var item in items)
+        {
+            var dependencies = getDependencies(item).Where(dependency => dependency.TargetMember is { } member
+                && string.Equals(member.DeclaringType.FullName, fullName, StringComparison.Ordinal)
+                && string.Equals(dependency.Target.FullName, fullName, StringComparison.Ordinal)
+                && names.Contains(member.Name, StringComparer.Ordinal)).ToList();
+            if (dependencies.Count > 0)
+            {
+                var members = string.Join(", ", dependencies.Select(dependency => dependency.TargetMember!.ToString()).Distinct(StringComparer.Ordinal));
+                violations.Add(new ArchitectureViolation($"{item} accesses {members}", dependencies));
+            }
+        }
+
+        return violations;
+    }
+
+    private static List<ArchitectureViolation> FindMismatches<T>(List<T> items, Func<T, bool> predicate, Func<T, SourceLocation?> getLocation)
+        where T : class
+    {
+        var violations = new List<ArchitectureViolation>();
+        foreach (var item in items)
+        {
+            if (!predicate(item))
+            {
+                violations.Add(new ArchitectureViolation(getLocation(item) is { } location ? $"{item} ({location})" : item.ToString()!, []));
             }
         }
 

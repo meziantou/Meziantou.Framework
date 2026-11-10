@@ -15,8 +15,6 @@ The library reads the compiled code, so it does not see the uses that leave no t
 
 Other limits:
 
-- The assertions of `Assert.Architecture` apply to types. To check members, query the model and use `Assert.All`, as
-  shown in [Type rules](03-TypeRules.md#check-the-names-and-the-shape).
 - The types marked with `CompilerGeneratedAttribute` are not part of the architecture, including the types a source
   generator marks with it.
 - The source locations require a portable PDB. Windows PDBs, produced by old projects with `DebugType` set to `full` or

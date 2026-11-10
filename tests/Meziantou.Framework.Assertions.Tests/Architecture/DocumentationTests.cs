@@ -51,10 +51,9 @@ public sealed class DocumentationTests
         var architecture = ArchitectureModel.FromAssemblyContaining<Order>();
         var repositories = architecture.Types.Where(t => t.IsClass && t.Implements<IOrderRepository>());
 
-        Assert.NotEmpty(repositories);
-        Assert.All(repositories, t => t.Name.EndsWith("Repository", StringComparison.Ordinal));
-        Assert.All(repositories, t => t.IsSealed);
-        Assert.All(architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp.Domain") && !t.IsInterface), t => t.IsImmutable);
+        Assert.Architecture.AllMatch(repositories, t => t.Name.EndsWith("Repository", StringComparison.Ordinal));
+        Assert.Architecture.AllMatch(repositories, t => t.IsSealed);
+        Assert.Architecture.AllMatch(architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp.Domain") && !t.IsInterface), t => t.IsImmutable);
         #endregion
     }
 
@@ -64,8 +63,45 @@ public sealed class DocumentationTests
         #region Architecture_MemberRules
         var architecture = ArchitectureModel.FromAssemblyContaining<Order>();
         var handlers = architecture.Types.Where(t => t.IsInNamespace("SampleApp.Application") && t.Name.EndsWith("Handler", StringComparison.Ordinal));
+        var controllers = architecture.Types.Where(t => t.IsInNamespace("SampleApp.Web") && t.Name.EndsWith("Controller", StringComparison.Ordinal));
 
-        Assert.All(handlers.SelectMany(t => t.Methods).Where(method => method.Accessibility == ElementAccessibility.Public), method => method.IsAsync);
+        Assert.Architecture.AllMatch(handlers.SelectMany(t => t.Methods).Where(method => method.IsPublic), method => method.IsAsync);
+        var domain = architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp.Domain"));
+        Assert.Architecture.AllMatch(domain.SelectMany(t => t.Properties), property => property.Setter is null || property.IsInitOnly, "the domain is immutable");
+
+        // OrdersController.CreateRepository is a public method that does not return a Task
+        var actions = controllers.SelectMany(t => t.Methods).Where(method => method.IsPublic);
+        var exception = Assert.Throws<AssertionException>(() => Assert.Architecture.AllMatch(actions, method => method.ReturnType.Is(typeof(Task<>))));
+        Assert.StartsWith("""
+            Assert.Architecture.AllMatch() assertion failed: 1 member does not match the predicate.
+            Members expression:   actions
+            Predicate expression: method => method.ReturnType.Is(typeof(Task<>))
+            - SampleApp.Web.OrdersController.CreateRepository()
+            """.ReplaceLineEndings("\n"), exception.Message);
+        #endregion
+    }
+
+    [Fact]
+    public void MemberDependencies()
+    {
+        #region Architecture_MemberDependencies
+        var architecture = ArchitectureModel.FromAssemblyContaining<Order>();
+        var publicMembers = architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp") && t.IsPublic).SelectMany(t => t.Members).Where(member => member.IsPublic);
+        var infrastructure = architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp.Infrastructure"));
+
+        // The signatures and the code of the public members do not use Entity Framework Core
+        Assert.Architecture.DoesNotDependOn(publicMembers, t => t.IsInNamespaceOrChildren("Microsoft.EntityFrameworkCore"));
+
+        // The controllers get the infrastructure by injection: OrdersController.CreateRepository breaks the rule
+        var controllerMethods = architecture.Types.Where(t => t.IsInNamespace("SampleApp.Web")).SelectMany(t => t.Methods);
+        var exception = Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotDependOn(controllerMethods, infrastructure));
+        Assert.StartsWith("""
+            Assert.Architecture.DoesNotDependOn() assertion failed: 1 member depends on a forbidden type.
+            Members expression:   controllerMethods
+            Forbidden expression: infrastructure
+            - SampleApp.Web.OrdersController.CreateRepository() depends on SampleApp.Infrastructure.SqlOrderRepository
+                SampleApp.Web.OrdersController.CreateRepository creates SampleApp.Infrastructure.SqlOrderRepository..ctor
+            """.ReplaceLineEndings("\n"), exception.Message);
         #endregion
     }
 

@@ -3618,6 +3618,29 @@ public sealed class TiffCodecTests
     }
 
     [Fact]
+    public void TheMetadataOfAReducedResolutionImageIsNotRead()
+    {
+        // Every image of the pyramid embeds the same profile: only the one of the page is read and charged, so a budget
+        // that fits the metadata of the page fits a decode of a level, which has the profile of the page
+        var profile = IccProfile.Srgb.Data.ToArray();
+        TiffPageSpec WithProfile(TiffPageSpec spec)
+        {
+            spec.ExtraFields.Add(TiffFieldSpec.Bytes(34675, 7, profile));
+            return spec;
+        }
+
+        var data = new TiffFileBuilder()
+            .AddPage(WithProfile(CreatePyramidPage()))
+            .AddPage(WithProfile(CreatePyramidLevel(150, 100, 2)))
+            .AddPage(WithProfile(CreatePyramidLevel(75, 50, 4)))
+            .Build();
+        var configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxMetadataBytes = profile.Length + (profile.Length / 2) } };
+        using var decoded = Image.Load(data, new ImageDecodeOptions { Configuration = configuration, TargetSize = new Size(70, 50) });
+        Assert.Equal(new Size(75, 50), decoded.Size);
+        Assert.Equal(profile, decoded.Metadata.IccProfile!.Data.ToArray());
+    }
+
+    [Fact]
     public void ImagesThatAreNotReducedResolutionVersionsOfThePageAreNotUsed()
     {
         // Masks, sizes that are not a power-of-two reduction, other pixel formats, images that cannot be decoded, images of

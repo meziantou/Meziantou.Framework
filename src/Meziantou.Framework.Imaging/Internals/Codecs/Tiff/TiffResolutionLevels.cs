@@ -15,7 +15,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// that does not fit: the page has the levels it can use.
 /// </para>
 /// <para>
-/// The image is the level, with the metadata of the page (its color profile labels the samples of every level). A region is
+/// The image is the level, with the metadata of the page (its color profile labels the samples of every level): the metadata
+/// of the levels is neither read nor charged to <see cref="ImageResourceLimits.MaxMetadataBytes"/>. A region is
 /// in pixels of the page: it becomes the pixels of the level that cover it (left and top edges divided by <c>n</c> and
 /// rounded down, right and bottom edges rounded up, at least one pixel).
 /// </para>
@@ -106,7 +107,8 @@ internal static class TiffResolutionLevels
             TiffPage level;
             try
             {
-                level = TiffPage.Resolve(directory, page.Index, context);
+                // The metadata of a level is not read: the image has the metadata of the page
+                level = TiffPage.Resolve(directory, page.Index, context, readMetadata: false);
             }
             catch (Exception exception) when (exception is InvalidImageContentException or UnsupportedImageFeatureException)
             {

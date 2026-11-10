@@ -10,10 +10,20 @@ namespace Meziantou.Framework.Win32
         public static Meziantou.Framework.Win32.AmsiContext Create(string applicationName) => throw null;
         public Meziantou.Framework.Win32.AmsiSession CreateSession() => throw null;
         public void Dispose() { }
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Win32.AmsiProvider> GetRegisteredProviders() => throw null;
         public bool IsMalware(byte[] payload, string contentName) => throw null;
         public bool IsMalware(string payload, string contentName) => throw null;
+        public static bool IsProviderRegistered() => throw null;
         public Meziantou.Framework.Win32.AmsiResult Scan(byte[] payload, string contentName) => throw null;
         public Meziantou.Framework.Win32.AmsiResult Scan(string payload, string contentName) => throw null;
+    }
+
+    public sealed class AmsiProvider
+    {
+        public string? DisplayName { get => throw null; }
+        public System.Guid Id { get => throw null; }
+        public string? ModulePath { get => throw null; }
+        public override string ToString() => throw null;
     }
 
     public enum AmsiResult

@@ -1,4 +1,6 @@
+using System.Runtime.Versioning;
 using Meziantou.Xunit;
+using Microsoft.Win32;
 
 namespace Meziantou.Framework.Win32.AmsiTests;
 
@@ -252,5 +254,112 @@ public class AmsiContextTests
         Assert.True(CanRun("Write-Host 'Hello'"));
         Assert.False(CanRun(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"));
         #endregion
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void IsProviderRegistered_MatchesTheRegisteredProviders()
+    {
+        var providers = AmsiContext.GetRegisteredProviders();
+        Assert.Equal(providers.Count > 0, AmsiContext.IsProviderRegistered());
+        Assert.All(providers, provider => Assert.NotEqual(Guid.Empty, provider.Id));
+        Assert.HasCount(providers.Count, providers.Select(provider => provider.Id).Distinct());
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetRegisteredProviders_ReturnsAnEmptyListWhenTheProvidersKeyIsMissing()
+    {
+        using var root = CreateTemporaryRegistryRoot();
+
+        Assert.Empty(AmsiContext.GetRegisteredProviders(root.Key));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetRegisteredProviders_ReturnsAnEmptyListWhenNoProviderIsRegistered()
+    {
+        using var root = CreateTemporaryRegistryRoot();
+        root.Key.CreateSubKey(@"SOFTWARE\Microsoft\AMSI\Providers").Dispose();
+
+        Assert.Empty(AmsiContext.GetRegisteredProviders(root.Key));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetRegisteredProviders_ReadsTheProvidersAndTheirComRegistration()
+    {
+        var registered = new Guid("11111111-2222-3333-4444-555555555555");
+        var unregistered = new Guid("66666666-7777-8888-9999-AAAAAAAAAAAA");
+
+        using var root = CreateTemporaryRegistryRoot();
+        using (var providers = root.Key.CreateSubKey(@"SOFTWARE\Microsoft\AMSI\Providers"))
+        {
+            providers.CreateSubKey(registered.ToString("B")).Dispose();
+            providers.CreateSubKey(unregistered.ToString("B")).Dispose();
+            providers.CreateSubKey("not-a-guid").Dispose();
+        }
+
+        using (var classKey = root.Key.CreateSubKey(@"SOFTWARE\Classes\CLSID\" + registered.ToString("B")))
+        {
+            classKey.SetValue(name: null, "Sample provider");
+            using var server = classKey.CreateSubKey("InprocServer32");
+            server.SetValue(name: null, @"""C:\Program Files\Sample\provider.dll""");
+        }
+
+        var result = AmsiContext.GetRegisteredProviders(root.Key);
+
+        Assert.HasCount(2, result);
+        var provider = Assert.Single(result, provider => provider.Id == registered);
+        Assert.Equal("Sample provider", provider.DisplayName);
+        Assert.Equal(@"C:\Program Files\Sample\provider.dll", provider.ModulePath);
+        Assert.Equal("Sample provider", provider.ToString());
+
+        var withoutComRegistration = Assert.Single(result, provider => provider.Id == unregistered);
+        Assert.Null(withoutComRegistration.DisplayName);
+        Assert.Null(withoutComRegistration.ModulePath);
+        Assert.Equal(unregistered.ToString("B"), withoutComRegistration.ToString());
+    }
+
+    // Microsoft Defender is the provider of the machines that run the scan tests
+    [Fact, RunIf(TestOperatingSystems.Windows), SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
+    public void GetRegisteredProviders_ReturnsMicrosoftDefender()
+    {
+        var defender = Assert.Single(AmsiContext.GetRegisteredProviders(), provider => provider.Id == new Guid("2781761E-28E0-4109-99FE-B9D127C57AFE"));
+        Assert.NotNull(defender.DisplayName);
+        Assert.NotNull(defender.ModulePath);
+        Assert.True(File.Exists(defender.ModulePath));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows), SkipIf(ContinuousIntegration = ContinuousIntegrationEnvironments.GitHubActions)]
+    public void AmsiContext_IsProviderRegisteredDocumentationExample()
+    {
+        #region AmsiContext_IsProviderRegistered
+        // Without a provider, every content is reported as not detected
+        if (!AmsiContext.IsProviderRegistered())
+            throw new InvalidOperationException("No antimalware product is registered with AMSI");
+
+        foreach (var provider in AmsiContext.GetRegisteredProviders())
+        {
+            // e.g. {2781761E-28E0-4109-99FE-B9D127C57AFE} Windows Defender IOfficeAntiVirus implementation
+            Assert.NotEqual(Guid.Empty, provider.Id);
+        }
+        #endregion
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static TemporaryRegistryKey CreateTemporaryRegistryRoot()
+    {
+        var path = @"Software\Meziantou.Framework.Win32.AmsiTests-" + Guid.NewGuid().ToString("N");
+        return new TemporaryRegistryKey(path, Registry.CurrentUser.CreateSubKey(path));
+    }
+
+    // Stands in for HKLM: the providers and the COM classes are read under it
+    [SupportedOSPlatform("windows")]
+    private sealed class TemporaryRegistryKey(string path, RegistryKey key) : IDisposable
+    {
+        public RegistryKey Key { get; } = key;
+
+        public void Dispose()
+        {
+            Key.Dispose();
+            Registry.CurrentUser.DeleteSubKeyTree(path, throwOnMissingSubKey: false);
+        }
     }
 }

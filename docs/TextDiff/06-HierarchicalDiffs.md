@@ -71,4 +71,4 @@ the [comparison options](05-ComparisonOptions.md) for every level.
 A hierarchical diff is also the efficient way to compare long texts character by character: the character diff only
 runs on the chunks that changed, instead of on every character of the texts.
 
-To show a hierarchical diff, see [Highlight the changed words](08-DisplayingADiff.md#highlight-the-changed-words).
+To show a hierarchical diff, see [Highlight the changed words](09-DisplayingADiff.md#highlight-the-changed-words).

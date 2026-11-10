@@ -1,6 +1,7 @@
 # Meziantou.Framework.TextDiff
 
-Compute text differences at line, word, or character level with configurable comparison options.
+Compute text differences at line, word, character or grapheme level with configurable comparison options, detect
+moved blocks, write, read and apply unified diffs, and merge two versions of a text.
 
 Install the NuGet package `Meziantou.Framework.TextDiff` ([NuGet](https://www.nuget.org/packages/Meziantou.Framework.TextDiff/))
 
@@ -78,6 +79,50 @@ single chunk each and still differ.
 `IgnoreEndOfLine` normalizes line terminators *before* chunking, so the entries of the
 result carry `\n` rather than the original `\r\n`.
 
+Set `CompareOptions` (and optionally `Culture`) for a culture-aware comparison, such as one that ignores accents:
+
+<!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_CompareOptions;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new TextDiffOptions { CompareOptions = CompareOptions.IgnoreNonSpace };
+
+// The accents are ignored
+Assert.False(TextDiff.ComputeDiff("Caf\u00E9 cr\u00E8me\n", "Cafe creme\n", options).HasDifferences);
+```
+<!-- endref -->
+
+`TextChunker.Graphemes` keeps each user-perceived character (an emoji, a letter and its combining accents) in one chunk:
+
+<!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_GraphemeChunks;format=md-fenced-code-block;dedent=true -->
+```csharp
+// "e" followed by a combining acute accent, an emoji (a surrogate pair), and "\r\n"
+var chunks = TextChunker.Graphemes.Chunk("e\u0301\U0001F600!\r\n");
+
+Assert.Equal(["e\u0301", "\U0001F600", "!", "\r\n"], chunks);
+```
+<!-- endref -->
+
+## Detect moved blocks
+
+<!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_DetectMoves;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new TextDiffOptions { DetectMoves = true };
+
+var result = TextDiff.ComputeDiff("a\nb\nc\nd\n", "a\nc\nd\nb\n", options);
+
+// The deleted "b" and the inserted "b" share move 0
+Assert.Equal(
+    [
+        new TextDiffEntry(TextDiffOperation.Equal, "a\n"),
+        new TextDiffEntry(TextDiffOperation.Delete, "b\n", null, moveId: 0),
+        new TextDiffEntry(TextDiffOperation.Equal, "c\n"),
+        new TextDiffEntry(TextDiffOperation.Equal, "d\n"),
+        new TextDiffEntry(TextDiffOperation.Insert, null, "b\n", moveId: 0),
+        new TextDiffEntry(TextDiffOperation.Equal, ""),
+    ],
+    result.Entries);
+```
+<!-- endref -->
+
 ## Compute a hierarchical diff with multiple chunking levels
 
 <!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_HierarchyDiff;format=md-fenced-code-block;dedent=true -->
@@ -150,3 +195,63 @@ part that actually differs — two revisions of the same file are cheap whatever
 There is no work limit: a diff of two large, unrelated texts runs to completion however long it
 takes. Character-level diffs reach these sizes quickly, since every character is a chunk — prefer
 `ComputeHierarchyDiff` so the character diff only runs on chunks that already changed.
+
+## Write, read and apply unified diffs
+
+<!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_UnifiedDiffUsage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var oldText = "a\nb\nc\nd\ne\nf\ng\nh\n";
+var newText = "a\nb\nC\nd\ne\nf\ng\nh\ni\n";
+
+var diff = UnifiedDiff.Create(oldText, newText, new UnifiedDiffOptions
+{
+    OldFileName = "old.txt",
+    NewFileName = "new.txt",
+    ContextLines = 1,
+});
+
+Assert.Equal(
+    "--- old.txt\n" +
+    "+++ new.txt\n" +
+    "@@ -2,3 +2,3 @@\n" +
+    " b\n" +
+    "-c\n" +
+    "+C\n" +
+    " d\n" +
+    "@@ -8 +8,2 @@\n" +
+    " h\n" +
+    "+i\n",
+    diff.ToString());
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_ApplyPatch;format=md-fenced-code-block;dedent=true -->
+```csharp
+var patch = UnifiedDiff.Create("one\ntwo\nthree\n", "one\n2\nthree\n").ToString();
+
+// A line was added at the start since the patch was made: the hunk still applies, one line further down
+var patched = UnifiedDiff.Apply("zero\none\ntwo\nthree\n", patch);
+
+Assert.Equal("zero\none\n2\nthree\n", patched);
+```
+<!-- endref -->
+
+`UnifiedDiff.Parse` reads every file of a patch, such as the output of `git diff`.
+
+## Merge two versions of a text
+
+<!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextMerge_Merge;format=md-fenced-code-block;dedent=true -->
+```csharp
+var baseText = "red\ngreen\nblue\n";
+var oursText = "red\nGREEN\nblue\n";            // Changes a line
+var theirsText = "red\ngreen\nblue\nyellow\n";   // Adds a line
+
+var result = TextMerge.Merge(baseText, oursText, theirsText);
+
+Assert.False(result.HasConflicts);
+Assert.Equal("red\nGREEN\nblue\nyellow\n", result.Text);
+```
+<!-- endref -->
+
+Conflicts are written between `<<<<<<<`, `=======` and `>>>>>>>` markers, and `Chunks` gives the text of each region
+in the three versions.

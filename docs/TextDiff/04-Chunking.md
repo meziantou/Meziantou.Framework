@@ -11,6 +11,7 @@ precise the result is. Set the chunker in [TextDiffOptions.Chunker](cref:Meziant
 | [TextChunker.Lines](cref:Meziantou.Framework.TextChunker.Lines) (default) | One line, with its line terminator | Source code, configuration files, logs |
 | [TextChunker.Words](cref:Meziantou.Framework.TextChunker.Words) | Runs of non-whitespace and runs of whitespace | Prose, one-line values |
 | [TextChunker.Characters](cref:Meziantou.Framework.TextChunker.Characters) | One `char` | Short strings, such as identifiers or names |
+| [TextChunker.Graphemes](cref:Meziantou.Framework.TextChunker.Graphemes) | One user-perceived character | Short strings with emoji, accents or non-Latin scripts |
 | Your own [TextChunker](cref:Meziantou.Framework.TextChunker) | Whatever you choose: sentences, CSV fields, tokens | Texts with their own structure |
 
 ## Lines
@@ -65,11 +66,28 @@ Line terminators are whitespace, so a word chunker also cuts at the end of each 
 
 [TextChunker.Characters](cref:Meziantou.Framework.TextChunker.Characters) gives one chunk per `char`. Chunks are UTF-16 code units, not what the user sees as a
 character: an emoji or another character outside the Basic Multilingual Plane is two chunks, and a letter followed by a
-combining accent is two chunks too.
+combining accent is two chunks too. Use [Graphemes](#graphemes) to keep them in one chunk.
 
 Every character is a chunk, so a character diff of a long text compares many chunks. To find the changed characters of
 a long text, use a [hierarchical diff](06-HierarchicalDiffs.md): it compares characters only inside the lines or the
 words that changed.
+
+## Graphemes
+
+[TextChunker.Graphemes](cref:Meziantou.Framework.TextChunker.Graphemes) gives one chunk per grapheme cluster: what a user sees as one character. An emoji, a letter
+followed by combining accents, a flag or `\r\n` is one chunk:
+
+<!-- ref:../../tests/Meziantou.Framework.TextDiff.Tests/TextDiffTests.cs;region=TextDiff_GraphemeChunks;format=md-fenced-code-block;dedent=true -->
+```csharp
+// "e" followed by a combining acute accent, an emoji (a surrogate pair), and "\r\n"
+var chunks = TextChunker.Graphemes.Chunk("e\u0301\U0001F600!\r\n");
+
+Assert.Equal(["e\u0301", "\U0001F600", "!", "\r\n"], chunks);
+```
+<!-- endref -->
+
+A changed emoji is then one deleted chunk and one inserted chunk, rather than a change in the middle of a surrogate pair.
+The clusters are the extended grapheme clusters of Unicode (UAX #29); they do not depend on the culture or on ICU.
 
 ## Write your own chunker
 

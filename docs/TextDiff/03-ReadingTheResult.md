@@ -60,5 +60,11 @@ terminators. See [Comparison options](05-ComparisonOptions.md#line-terminators).
 ## Compare entries
 
 [TextDiffEntry](cref:Meziantou.Framework.TextDiffEntry) is a value type with value equality: two entries are equal when they have the same operation, the same
-[OldText](cref:Meziantou.Framework.TextDiffEntry.OldText) and the same [NewText](cref:Meziantou.Framework.TextDiffEntry.NewText). This is what lets the examples of this documentation compare [Entries](cref:Meziantou.Framework.TextDiffResult.Entries) with a list of
+[OldText](cref:Meziantou.Framework.TextDiffEntry.OldText), the same [NewText](cref:Meziantou.Framework.TextDiffEntry.NewText) and the same [MoveId](cref:Meziantou.Framework.TextDiffEntry.MoveId). This is what lets the examples of this documentation compare [Entries](cref:Meziantou.Framework.TextDiffResult.Entries) with a list of
 expected entries, created with the `TextDiffEntry(operation, text)` constructor.
+
+## Moved blocks
+
+With [DetectMoves](cref:Meziantou.Framework.TextDiffOptions.DetectMoves), the entries of a moved block carry a [MoveId](cref:Meziantou.Framework.TextDiffEntry.MoveId): the [Delete](cref:Meziantou.Framework.TextDiffOperation.Delete) entries where the block was and the
+[Insert](cref:Meziantou.Framework.TextDiffOperation.Insert) entries where it is now share the same identifier. The operations do not change, so the entries rebuild
+the texts the same way. See [Detecting moves](07-DetectingMoves.md).

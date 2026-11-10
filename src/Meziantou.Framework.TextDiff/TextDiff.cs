@@ -3,9 +3,6 @@ namespace Meziantou.Framework;
 /// <summary>Computes the differences between two texts.</summary>
 public static class TextDiff
 {
-    private static readonly IEqualityComparer<string> OrdinalWhitespaceComparer = new WhitespaceTrimmingComparer(StringComparison.Ordinal);
-    private static readonly IEqualityComparer<string> OrdinalIgnoreCaseWhitespaceComparer = new WhitespaceTrimmingComparer(StringComparison.OrdinalIgnoreCase);
-
 
     /// <summary>Computes the differences between <paramref name="oldText"/> and <paramref name="newText"/>.</summary>
     /// <param name="oldText">The original text.</param>
@@ -35,8 +32,34 @@ public static class TextDiff
         var budget = DiffBudget.Create(options, cancellationToken);
         var diff = DiffAlgorithmDispatcher.Compute(options.Algorithm, oldChunks, newChunks, comparer, budget);
 
-        return BuildResult(oldChunks, newChunks, diff);
+        var result = BuildResult(oldChunks, newChunks, diff);
+        if (options.DetectMoves && result.HasDifferences)
+        {
+            MoveDetector.Apply(result.MutableEntries, comparer, budget);
+        }
+
+        return result;
     }
+
+    internal static TextDiffOptions ValidateAndGetOptions(TextDiffOptions? options)
+    {
+        options ??= new TextDiffOptions();
+        ValidateOptions(options);
+        return options;
+    }
+
+    /// <summary>Chunks both texts and diffs them, for the features built on top of a diff.</summary>
+    internal static (string[] OldChunks, string[] NewChunks, DiffComputationResult Diff) ComputeChunkDiff(string oldText, string newText, TextDiffOptions options, IEqualityComparer<string> comparer, DiffBudget budget)
+    {
+        var oldChunks = ToArray(options.Chunker.Chunk(oldText));
+        var newChunks = ToArray(options.Chunker.Chunk(newText));
+        var diff = DiffAlgorithmDispatcher.Compute(options.Algorithm, oldChunks, newChunks, comparer, budget);
+        return (oldChunks, newChunks, diff);
+    }
+
+    internal static IEqualityComparer<string> CreateComparer(TextDiffOptions options) => BuildComparer(options);
+
+    internal static string Normalize(string text, TextDiffOptions options) => options.IgnoreEndOfLine ? NormalizeLineEndings(text) : text;
 
 
     /// <summary>
@@ -88,15 +111,12 @@ public static class TextDiff
 
         if (options.MaxEditCost is < 0)
             throw new ArgumentOutOfRangeException(nameof(options), options.MaxEditCost, $"'{nameof(TextDiffOptions.MaxEditCost)}' must not be negative.");
+
+        if (!ChunkComparer.IsSupported(options.CompareOptions))
+            throw new ArgumentOutOfRangeException(nameof(options), options.CompareOptions, $"'{nameof(TextDiffOptions.CompareOptions)}' only supports the IgnoreCase, IgnoreNonSpace, IgnoreSymbols, IgnoreKanaType and IgnoreWidth flags.");
     }
 
-    private static IEqualityComparer<string> BuildComparer(TextDiffOptions options)
-    {
-        if (!options.IgnoreWhitespace)
-            return options.IgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-
-        return options.IgnoreCase ? OrdinalIgnoreCaseWhitespaceComparer : OrdinalWhitespaceComparer;
-    }
+    private static IEqualityComparer<string> BuildComparer(TextDiffOptions options) => ChunkComparer.Create(options);
 
     private static TextDiffResult BuildResult(string[] oldChunks, string[] newChunks, DiffComputationResult diff)
     {
@@ -281,28 +301,5 @@ public static class TextDiff
         }
 
         return chunkerArray;
-    }
-
-    private sealed class WhitespaceTrimmingComparer(StringComparison comparison) : IEqualityComparer<string>
-    {
-        private readonly StringComparison _comparison = comparison;
-
-        public bool Equals(string? x, string? y)
-        {
-            if (x is null)
-                return y is null;
-
-            if (y is null)
-                return false;
-
-            return x.AsSpan().Trim().Equals(y.AsSpan().Trim(), _comparison);
-        }
-
-        public int GetHashCode(string obj)
-        {
-            ArgumentNullException.ThrowIfNull(obj);
-            var trimmed = obj.AsSpan().Trim();
-            return string.GetHashCode(trimmed, _comparison);
-        }
     }
 }

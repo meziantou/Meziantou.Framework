@@ -64,6 +64,10 @@ public sealed partial class PdfPage
 
         var annotations = options.RemoveAnnotations ? FindAnnotations(list) : [];
 
+        // The resources of the page tree that only this page inherits: found before the page changes, as reading the other
+        // pages can fail
+        var unusedInheritedResources = content is not null ? FindUnusedInheritedResources() : [];
+
         // The new content: the redacted content, then the areas painted over it. Its object is added before the page
         // changes, so that the page does not change when no object number is left.
         PdfReference? contentReference = null;
@@ -97,7 +101,12 @@ public sealed partial class PdfPage
             if (content is not null)
             {
                 content.ApplyTo(GetOrCreateResources());
-                RemoveUnusedInheritedResources();
+
+                // The page has resources of its own now: a full save would still write the redacted images through the nodes
+                foreach (var node in unusedInheritedResources)
+                {
+                    node.Remove(PdfNames.Resources);
+                }
             }
 
             Dictionary[PdfNames.Contents] = contentReference;
@@ -111,30 +120,33 @@ public sealed partial class PdfPage
     }
 
     /// <summary>
-    /// Removes the resources of the nodes of the page tree that no page inherits anymore: the resources the page inherited
-    /// were copied to the page, and a full save would still write the images and forms they hold through the node.
+    /// Finds the nodes of the page tree whose resources no page inherits once this page has resources of its own: the
+    /// resources the page inherited are copied to the page when its content changes.
     /// </summary>
-    private void RemoveUnusedInheritedResources()
+    private List<PdfDictionary> FindUnusedInheritedResources()
     {
         var inherited = new HashSet<PdfDictionary>(ReferenceEqualityComparer.Instance);
         foreach (var page in Document.Pages)
         {
-            if (page.Dictionary[PdfNames.Resources] is null && page.Resources is { } resources)
+            if (!ReferenceEquals(page.Dictionary, Dictionary) && page.Dictionary[PdfNames.Resources] is null && page.Resources is { } resources)
             {
                 inherited.Add(resources);
             }
         }
 
+        var result = new List<PdfDictionary>();
         var node = Dictionary.GetResolved(PdfNames.Parent) as PdfDictionary;
         for (var depth = 0; node is not null && depth < MaxStructureDepth; depth++)
         {
             if (node.GetResolved(PdfNames.Resources) is PdfDictionary resources && !inherited.Contains(resources))
             {
-                node.Remove(PdfNames.Resources);
+                result.Add(node);
             }
 
             node = node.GetResolved(PdfNames.Parent) as PdfDictionary;
         }
+
+        return result;
     }
 
     /// <summary>Finds the annotations whose rectangle touches an area, and the pop-up annotations of those.</summary>

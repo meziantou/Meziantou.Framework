@@ -411,6 +411,29 @@ internal static partial class ConformanceWriter
     private static void FixInlineImages(PdfDocument document, Action<string> change, List<string> violations)
     {
         var limits = document.Reader?.DecodeLimits ?? PdfDecodeLimits.Default;
+
+        // The content streams of a page are one content: an operator and its operands may be in two streams (7.8.2).
+        // A page whose content changes gets one stream; its streams may be shared with other pages.
+        foreach (var page in document.Pages)
+        {
+            byte[] data;
+            try
+            {
+                data = page.GetContentData();
+            }
+            catch (PdfException)
+            {
+                continue;
+            }
+
+            if (RewriteInlineImages(data, limits, change, violations) is { } content)
+            {
+                var stream = new PdfStream();
+                stream.SetData(content);
+                page.Dictionary[PdfNames.Contents] = document.Objects.Add(stream);
+            }
+        }
+
         foreach (var stream in GetContentStreams(document))
         {
             byte[] data;
@@ -423,39 +446,48 @@ internal static partial class ConformanceWriter
                 continue;
             }
 
-            // Only the content that has inline images with these entries is read
-            var span = data.AsSpan();
-            if (span.IndexOf("ID"u8) < 0 || (span.IndexOf("LZW"u8) < 0 && span.IndexOf("/I"u8) < 0))
-                continue;
-
-            var reader = new ContentStreamReader(data);
-            var operands = new List<PdfObject>();
-            var operations = new List<(string Name, PdfObject[] Operands, byte[]? Data)>();
-            var changed = false;
-            while (reader.TryRead(operands, out var name))
+            if (RewriteInlineImages(data, limits, change, violations) is { } content)
             {
-                if (name == "BI" && operands is [PdfDictionary inline, PdfString imageData])
-                {
-                    var (fixedDictionary, fixedData) = FixInlineImage(inline, imageData.Bytes, limits, change, violations);
-                    changed |= fixedDictionary is not null;
-                    operations.Add((name, [fixedDictionary ?? inline], fixedData ?? imageData.Bytes.ToArray()));
-                    continue;
-                }
-
-                operations.Add((name, [.. operands], null));
+                stream.SetData(content);
             }
-
-            if (!changed)
-                continue;
-
-            var writer = new Writing.PdfByteWriter(data.Length + 256);
-            foreach (var (name, values, imageData) in operations)
-            {
-                ContentStreamWriter.Write(writer, name, values, imageData);
-            }
-
-            stream.SetData(writer.WrittenSpan);
         }
+    }
+
+    /// <summary>Rewrites a content whose inline images need a fix; returns <see langword="null"/> when none does.</summary>
+    private static byte[]? RewriteInlineImages(byte[] data, PdfDecodeLimits limits, Action<string> change, List<string> violations)
+    {
+        // Only the content that has inline images with these entries is read
+        var span = data.AsSpan();
+        if (span.IndexOf("ID"u8) < 0 || (span.IndexOf("LZW"u8) < 0 && span.IndexOf("/I"u8) < 0))
+            return null;
+
+        var reader = new ContentStreamReader(data);
+        var operands = new List<PdfObject>();
+        var operations = new List<(string Name, PdfObject[] Operands, byte[]? Data)>();
+        var changed = false;
+        while (reader.TryRead(operands, out var name))
+        {
+            if (name == "BI" && operands is [PdfDictionary inline, PdfString imageData])
+            {
+                var (fixedDictionary, fixedData) = FixInlineImage(inline, imageData.Bytes, limits, change, violations);
+                changed |= fixedDictionary is not null;
+                operations.Add((name, [fixedDictionary ?? inline], fixedData ?? imageData.Bytes.ToArray()));
+                continue;
+            }
+
+            operations.Add((name, [.. operands], null));
+        }
+
+        if (!changed)
+            return null;
+
+        var writer = new Writing.PdfByteWriter(data.Length + 256);
+        foreach (var (name, values, imageData) in operations)
+        {
+            ContentStreamWriter.Write(writer, name, values, imageData);
+        }
+
+        return writer.ToArray();
     }
 
     /// <summary>Fixes an inline image; returns <see langword="null"/> values when it is kept as it is.</summary>
@@ -514,7 +546,7 @@ internal static partial class ConformanceWriter
         return (dictionary, Encoding.ASCII.GetBytes(Convert.ToHexString(decoded) + ">"));
     }
 
-    /// <summary>Gets the content streams of the pages, of the forms and tiling patterns of their resources, of the glyphs of the Type 3 fonts, and of the annotation appearances.</summary>
+    /// <summary>Gets the content streams other than those of the pages: of the forms and tiling patterns of their resources, of the glyphs of the Type 3 fonts, and of the annotation appearances.</summary>
     private static List<PdfStream> GetContentStreams(PdfDocument document)
     {
         var result = new List<PdfStream>();
@@ -529,11 +561,6 @@ internal static partial class ConformanceWriter
 
         foreach (var page in document.Pages)
         {
-            foreach (var stream in page.GetContentStreams())
-            {
-                Add(stream);
-            }
-
             foreach (var annotation in page.Annotations)
             {
                 foreach (var stream in GetAppearanceStreams(annotation))

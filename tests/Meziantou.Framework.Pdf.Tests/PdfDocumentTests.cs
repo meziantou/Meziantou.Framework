@@ -927,6 +927,28 @@ public sealed class PdfDocumentTests
         Assert.Equal(0xE0, decoded.Frames[0][1, 0].R);
     }
 
+    [Fact]
+    public void ConvertToPdfA_KeepsTheOperandsSplitBetweenTheContentStreamsOfAPage()
+    {
+        // The rectangle has its first operands in the first stream and the others in the second one, after an inline image to fix
+        var lzw = Meziantou.Framework.Pdf.Filters.LzwFilter.Encode([0x80]);
+        var first = "q BI /W 1 /H 1 /BPC 8 /CS /G /F /LZW /L " + lzw.Length.ToString(CultureInfo.InvariantCulture) + " ID " + Encoding.Latin1.GetString(lzw) + " EI Q 1 0 0 rg 0 0";
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents [4 0 R 5 0 R] >>")
+            .Add(4, HandWrittenPdf.Stream(first))
+            .Add(5, HandWrittenPdf.Stream("10 10 re f"));
+        var document = PdfDocument.Open(file.ToArray());
+
+        var result = document.ConvertToPdfA(PdfAConformance.PdfA2B);
+
+        Assert.True(result.Succeeded, string.Join('\n', result.Violations));
+        var content = Encoding.Latin1.GetString(PdfDocument.Open(document.ToByteArray()).Pages[0].GetContentData());
+        Assert.Contains("0 0 10 10 re", content);
+        Assert.DoesNotContain("/LZW", content);
+    }
+
     [Theory]
     [InlineData(PdfAConformance.PdfA1B)]
     [InlineData(PdfAConformance.PdfA2A)]

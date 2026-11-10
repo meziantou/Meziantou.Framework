@@ -407,6 +407,7 @@
     <Project Path="src/Meziantou.Framework.Imaging.VectorGraphics/Meziantou.Framework.Imaging.VectorGraphics.csproj" />
     <Project Path="src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
     <Project Path="src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
+    <Project Path="src/Meziantou.Framework.JavaScriptEngine.WebApis/Meziantou.Framework.JavaScriptEngine.WebApis.csproj" />
     <Project Path="src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
     <Project Path="src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="src/Meziantou.Framework.Language.Css/Meziantou.Framework.Language.Css.csproj" />
@@ -606,6 +607,7 @@
     <Project Path="tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/Meziantou.Framework.JavaScriptEngine.NpmPackages.csproj" />
     <Project Path="tests/Meziantou.Framework.JavaScriptEngine.Test262/Meziantou.Framework.JavaScriptEngine.Test262.csproj" />
     <Project Path="tests/Meziantou.Framework.JavaScriptEngine.Tests/Meziantou.Framework.JavaScriptEngine.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.JavaScriptEngine.WebApis.Tests/Meziantou.Framework.JavaScriptEngine.WebApis.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark.csproj" />
     <Project Path="tests/Meziantou.Framework.JsonPath.ExternalNavigator/Meziantou.Framework.JsonPath.ExternalNavigator.csproj" />
     <Project Path="tests/Meziantou.Framework.JsonPath.Tests/Meziantou.Framework.JsonPath.Tests.csproj" />
@@ -758,6 +760,7 @@
     <Project Path="fuzz/Meziantou.Framework.Http.Htpasswd.Fuzz/Meziantou.Framework.Http.Htpasswd.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Imaging.FuzzTests/Meziantou.Framework.Imaging.FuzzTests.csproj" />
     <Project Path="fuzz/Meziantou.Framework.JavaScriptEngine.Fuzz/Meziantou.Framework.JavaScriptEngine.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.JavaScriptEngine.WebApis.Fuzz/Meziantou.Framework.JavaScriptEngine.WebApis.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.JsonPath.Fuzz/Meziantou.Framework.JsonPath.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Language.Fuzz/Meziantou.Framework.Language.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Markdown.Fuzz/Meziantou.Framework.Markdown.Fuzz.csproj" />

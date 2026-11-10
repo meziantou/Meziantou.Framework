@@ -741,6 +741,73 @@ public sealed class JsEngineEmbeddingTests
     }
 
     [Fact]
+    public void EnqueueTimeoutJob_RunsOnceTheDelayHasElapsed()
+    {
+        var timeProvider = new ManualTimeProvider();
+        using var engine = new JsEngine(new JsEngineOptions { TimeProvider = timeProvider });
+        var realm = engine.CreateRealm();
+        var log = new List<string>();
+        using (engine.Enter())
+        {
+            engine.EnqueueTimeoutJob(() => log.Add("b"), TimeSpan.FromMilliseconds(20), realm);
+            engine.EnqueueTimeoutJob(() => log.Add("a"), TimeSpan.FromMilliseconds(10), realm);
+            engine.EnqueueTimeoutJob(() => log.Add("a2"), TimeSpan.FromMilliseconds(10), realm);
+            var canceled = engine.EnqueueTimeoutJob(() => log.Add("canceled"), TimeSpan.FromMilliseconds(5), realm);
+            canceled.Cancel();
+            Assert.True(canceled.IsCanceled);
+        }
+
+        engine.RunJobs();
+        Assert.Empty(log);
+
+        timeProvider.Advance(TimeSpan.FromMilliseconds(10));
+        engine.RunJobs();
+        Assert.Equal(["a", "a2"], log);
+
+        timeProvider.Advance(TimeSpan.FromMilliseconds(10));
+        engine.RunJobs();
+        Assert.Equal(["a", "a2", "b"], log);
+    }
+
+    [Fact]
+    public async Task EnqueueTimeoutJob_CanceledJobDoesNotDelayWaitForJobsAsync()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        JsTimeoutJob job;
+        using (engine.Enter())
+        {
+            job = engine.EnqueueTimeoutJob(() => throw new UnreachableException(), TimeSpan.FromHours(1), realm);
+        }
+
+        var wait = engine.WaitForJobsAsync();
+        Assert.False(wait.IsCompleted);
+
+        // Canceling the job wakes the waiter, and the next wait does not wait for the canceled job
+        job.Cancel();
+        await wait.WaitAsync(TimeSpan.FromSeconds(30));
+        engine.RunJobs();
+
+        var ran = false;
+        using (engine.Enter())
+        {
+            engine.EnqueueTimeoutJob(() => ran = true, TimeSpan.Zero, realm);
+        }
+
+        await engine.WaitForJobsAsync().WaitAsync(TimeSpan.FromSeconds(30));
+        engine.RunJobs();
+        Assert.True(ran);
+    }
+
+    [Fact]
+    public void EnqueueTimeoutJob_RequiresARealm()
+    {
+        using var engine = new JsEngine();
+        using var scope = engine.Enter();
+        Assert.Throws<InvalidOperationException>(() => engine.EnqueueTimeoutJob(() => { }, TimeSpan.Zero));
+    }
+
+    [Fact]
     public async Task Tasks_AsyncHostFunction()
     {
         #region JavaScriptEngine_TaskPromises
@@ -909,6 +976,17 @@ public sealed class JsEngineEmbeddingTests
     private sealed class FixedTimeProvider : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => new(2000, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    }
+
+    private sealed class ManualTimeProvider : TimeProvider
+    {
+        private long _timestamp;
+
+        public override long TimestampFrequency => TimeSpan.TicksPerSecond;
+
+        public override long GetTimestamp() => _timestamp;
+
+        public void Advance(TimeSpan delay) => _timestamp += delay.Ticks;
     }
 
     private sealed class NoDebugger : JsDebugger

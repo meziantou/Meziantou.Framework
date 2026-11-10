@@ -1,6 +1,4 @@
-using System.Text;
 using Meziantou.Framework.WebPlatform.Encodings;
-using Meziantou.Framework.WebPlatform.Infra;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
@@ -38,10 +36,7 @@ public sealed class TextDecodeOptions
 [IdlInterface("TextDecoder", "https://encoding.spec.whatwg.org/#textdecoder")]
 public sealed class TextDecoder
 {
-    private readonly WebEncodingId _encoding;
-    private readonly WebDecoder _decoder;
-    private bool _doNotFlush;
-    private bool _bomSeen;
+    private readonly TextDecoderCore _decoder;
 
     /// <summary>Creates a decoder for the encoding identified by the given label.</summary>
     /// <seealso href="https://encoding.spec.whatwg.org/#dom-textdecoder"/>
@@ -49,69 +44,36 @@ public sealed class TextDecoder
     public TextDecoder(string label = "utf-8", TextDecoderOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(label);
-        if (!WebEncodingRegistry.TryGetEncoding(label, out var encoding) || encoding == WebEncodingId.Replacement)
-            throw new RangeErrorException($"The encoding label '{label}' is not supported");
-
-        _encoding = encoding;
-        Fatal = options?.Fatal ?? false;
-        IgnoreBom = options?.IgnoreBom ?? false;
-        _decoder = WebEncodingRegistry.CreateDecoder(encoding, Fatal);
+        _decoder = TextDecoderCore.TryCreate(label, options?.Fatal ?? false, options?.IgnoreBom ?? false)
+            ?? throw new RangeErrorException($"The encoding label '{label}' is not supported");
     }
 
     /// <summary>Gets the encoding's name, ASCII lowercased.</summary>
     /// <seealso href="https://encoding.spec.whatwg.org/#dom-textdecoder-encoding"/>
     [IdlMember("encoding", "https://encoding.spec.whatwg.org/#dom-textdecoder-encoding")]
-    public string Encoding => InfraAscii.ToAsciiLowercase(WebEncodingRegistry.GetName(_encoding));
+    public string Encoding => _decoder.Encoding;
 
     /// <summary>
     /// Gets a value indicating whether decoding throws on invalid data instead of using replacement characters.
     /// </summary>
     /// <seealso href="https://encoding.spec.whatwg.org/#dom-textdecoder-fatal"/>
     [IdlMember("fatal", "https://encoding.spec.whatwg.org/#dom-textdecoder-fatal")]
-    public bool Fatal { get; }
+    public bool Fatal => _decoder.Fatal;
 
     /// <summary>Gets a value indicating whether the byte order mark is kept in the decoded output.</summary>
     /// <seealso href="https://encoding.spec.whatwg.org/#dom-textdecoder-ignorebom"/>
     [IdlMember("ignoreBOM", "https://encoding.spec.whatwg.org/#dom-textdecoder-ignorebom")]
-    public bool IgnoreBom { get; }
+    public bool IgnoreBom => _decoder.IgnoreBom;
 
     /// <summary>Decodes the bytes (https://encoding.spec.whatwg.org/#dom-textdecoder-decode): a missing input is an empty input.</summary>
     /// <seealso href="https://encoding.spec.whatwg.org/#dom-textdecoder-decode"/>
     [IdlMember("decode", "https://encoding.spec.whatwg.org/#dom-textdecoder-decode")]
     public string Decode(ReadOnlySpan<byte> input = default, TextDecodeOptions? options = null)
     {
-        if (!_doNotFlush)
-        {
-            _decoder.Reset();
-            _bomSeen = false;
-        }
-
-        _doNotFlush = options?.Stream ?? false;
-
-        var builder = new StringBuilder(input.Length);
-        if (!_decoder.DecodeTo(input, builder, flush: !_doNotFlush))
-        {
-            // The do not flush flag is kept: in stream mode, the next call continues with the state of the decoder (e.g. the
-            // mode of ISO-2022-JP, https://encoding.spec.whatwg.org/#dom-textdecoder-decode)
+        if (!_decoder.TryDecode(input, options?.Stream ?? false, out var result))
             throw new TypeErrorException("The encoded data is not valid");
-        }
 
-        return SerializeIOQueue(builder);
-    }
-
-    /// <summary>https://encoding.spec.whatwg.org/#concept-td-serialize</summary>
-    private string SerializeIOQueue(StringBuilder output)
-    {
-        if (output.Length > 0 && !IgnoreBom && !_bomSeen && _encoding is WebEncodingId.Utf8 or WebEncodingId.Utf16BE or WebEncodingId.Utf16LE)
-        {
-            _bomSeen = true;
-            if (output[0] == '\U0000FEFF')
-            {
-                output.Remove(0, 1);
-            }
-        }
-
-        return output.ToString();
+        return result;
     }
 }
 
@@ -162,8 +124,7 @@ public sealed class TextEncoder
     {
         ArgumentNullException.ThrowIfNull(input);
 
-        // Converting to scalar values replaces lone surrogates with U+FFFD, which is what the UTF-8 encoding of the BCL does.
-        return System.Text.Encoding.UTF8.GetBytes(input);
+        return TextEncoderCore.Encode(input);
     }
 
     /// <summary>
@@ -175,18 +136,7 @@ public sealed class TextEncoder
     {
         ArgumentNullException.ThrowIfNull(source);
 
-        ulong read = 0;
-        var written = 0;
-        foreach (var rune in source.EnumerateRunes())
-        {
-            // Lone surrogates are converted to U+FFFD by EnumerateRunes (USVString conversion).
-            if (!rune.TryEncodeToUtf8(destination[written..], out var bytesWritten))
-                break;
-
-            written += bytesWritten;
-            read += (ulong)(rune.Value >= 0x10000 ? 2 : 1);
-        }
-
-        return new TextEncoderEncodeIntoResult(read, (ulong)written);
+        TextEncoderCore.EncodeInto(source, destination, out var read, out var written);
+        return new TextEncoderEncodeIntoResult(read, written);
     }
 }

@@ -39,6 +39,7 @@ on:
           - http
           - htpasswd
           - javascript-engine
+          - javascript-engine-webapis
           - jsonpath
           - language
           - markdown
@@ -121,6 +122,7 @@ env:
       { "project": "Meziantou.Framework.Http.Fuzz",                "component": "http",                  "day": 3 },
       { "project": "Meziantou.Framework.Http.Htpasswd.Fuzz",       "component": "htpasswd",              "day": 1 },
       { "project": "Meziantou.Framework.JavaScriptEngine.Fuzz",     "component": "javascript-engine",     "day": 6 },
+      { "project": "Meziantou.Framework.JavaScriptEngine.WebApis.Fuzz", "component": "javascript-engine-webapis", "day": 0 },
       { "project": "Meziantou.Framework.JsonPath.Fuzz",            "component": "jsonpath",              "day": 1 },
       { "project": "Meziantou.Framework.Language.Fuzz",            "component": "language",              "day": 2 },
       { "project": "Meziantou.Framework.Markdown.Fuzz",            "component": "markdown",              "day": 2 },
@@ -137,7 +139,7 @@ env:
       { "project": "Meziantou.Framework.Unicode.Fuzz",             "component": "unicode",               "day": 6 },
       { "project": "Meziantou.Framework.Uri.Fuzz",                 "component": "uri",                   "day": 4 },
       { "project": "Meziantou.Framework.VectorGraphics.Fuzz",      "component": "vector-graphics",       "day": 3 },
-      { "project": "Meziantou.Framework.Versioning.Fuzz",          "component": "versioning",            "day": 4 },
+      { "project": "Meziantou.Framework.Versioning.Fuzz",          "component": "versioning",            "day": 1 },
       { "project": "Meziantou.Framework.WebPlatform.Fuzz",         "component": "webplatform",           "day": 5 },
       { "project": "Meziantou.Framework.Yaml.Fuzz",                "component": "yaml",                  "day": 6 }
     ]

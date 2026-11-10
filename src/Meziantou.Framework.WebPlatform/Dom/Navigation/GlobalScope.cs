@@ -211,16 +211,7 @@ public abstract partial class GlobalScope : EventTarget
     public string Btoa(string data)
     {
         ArgumentNullException.ThrowIfNull(data);
-        var bytes = new byte[data.Length];
-        for (var i = 0; i < data.Length; i++)
-        {
-            if (data[i] > 0xFF)
-                throw new DomException("The string contains characters outside of the Latin1 range", "InvalidCharacterError");
-
-            bytes[i] = (byte)data[i];
-        }
-
-        return Convert.ToBase64String(bytes);
+        return Infra.ForgivingBase64.Btoa(data) ?? throw new DomException("The string contains characters outside of the Latin1 range", "InvalidCharacterError");
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#dom-atob</summary>
@@ -229,85 +220,7 @@ public abstract partial class GlobalScope : EventTarget
     public string Atob(string data)
     {
         ArgumentNullException.ThrowIfNull(data);
-        var bytes = ForgivingBase64Decode(data) ?? throw new DomException("The string is not correctly encoded", "InvalidCharacterError");
-        var result = new StringBuilder(bytes.Length);
-        foreach (var b in bytes)
-        {
-            result.Append((char)b);
-        }
-
-        return result.ToString();
-    }
-
-    /// <summary>https://infra.spec.whatwg.org/#forgiving-base64-decode</summary>
-    internal static byte[]? ForgivingBase64Decode(string data)
-    {
-        var builder = new StringBuilder(data.Length);
-        foreach (var c in data)
-        {
-            if (!Infra.InfraAscii.IsAsciiWhitespace(c))
-            {
-                builder.Append(c);
-            }
-        }
-
-        if (builder.Length % 4 == 0 && builder.Length > 0)
-        {
-            if (builder[^1] == '=')
-            {
-                builder.Length--;
-                if (builder[^1] == '=')
-                {
-                    builder.Length--;
-                }
-            }
-        }
-
-        if (builder.Length % 4 == 1)
-            return null;
-
-        var bits = 0;
-        var bitCount = 0;
-        var output = new List<byte>(builder.Length * 3 / 4);
-        for (var i = 0; i < builder.Length; i++)
-        {
-            var c = builder[i];
-            int value;
-            if (c is >= 'A' and <= 'Z')
-            {
-                value = c - 'A';
-            }
-            else if (c is >= 'a' and <= 'z')
-            {
-                value = c - 'a' + 26;
-            }
-            else if (c is >= '0' and <= '9')
-            {
-                value = c - '0' + 52;
-            }
-            else if (c == '+')
-            {
-                value = 62;
-            }
-            else if (c == '/')
-            {
-                value = 63;
-            }
-            else
-            {
-                return null;
-            }
-
-            bits = (bits << 6) | value;
-            bitCount += 6;
-            if (bitCount >= 8)
-            {
-                bitCount -= 8;
-                output.Add((byte)((bits >> bitCount) & 0xFF));
-            }
-        }
-
-        return [.. output];
+        return Infra.ForgivingBase64.Atob(data) ?? throw new DomException("The string is not correctly encoded", "InvalidCharacterError");
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-queuemicrotask</summary>

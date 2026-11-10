@@ -1,0 +1,45 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.JavaScriptEngine.WebApis</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsAotCompatible>true</IsAotCompatible>
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+    <Description>Installs the common web APIs (console, timers, queueMicrotask, structuredClone, URL, URLSearchParams, TextEncoder, TextDecoder, atob, btoa, DOMException) in a realm of Meziantou.Framework.JavaScriptEngine.</Description>
+    <PackageTags>javascript;ecmascript;js;engine;wintertc;web-api;console;url;textencoder</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.JavaScriptEngine\Meziantou.Framework.JavaScriptEngine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.JavaScriptEngine.WebApis.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.JavaScriptEngine.WebApis.Fuzz" />
+  </ItemGroup>
+
+  <!-- The algorithms are shared with Meziantou.Framework.WebPlatform: the files are compiled in both assemblies, where the types are internal -->
+  <PropertyGroup>
+    <WebPlatformSourceDirectory>..\Meziantou.Framework.WebPlatform\</WebPlatformSourceDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(WebPlatformSourceDirectory)Encodings\Decoders.cs" Link="WebPlatform\Encodings\Decoders.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Encodings\Encoders.cs" Link="WebPlatform\Encodings\Encoders.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Encodings\EncodingIndexes.g.cs" Link="WebPlatform\Encodings\EncodingIndexes.g.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Encodings\TextCodecCore.cs" Link="WebPlatform\Encodings\TextCodecCore.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Encodings\WebDecoder.cs" Link="WebPlatform\Encodings\WebDecoder.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Encodings\WebEncodingRegistry.cs" Link="WebPlatform\Encodings\WebEncodingRegistry.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Encodings\WebEncodingRegistry.g.cs" Link="WebPlatform\Encodings\WebEncodingRegistry.g.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Infra\Ascii.cs" Link="WebPlatform\Infra\Ascii.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Infra\ForgivingBase64.cs" Link="WebPlatform\Infra\ForgivingBase64.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Infra\InfraString.cs" Link="WebPlatform\Infra\InfraString.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Infra\StringBuilderCache.cs" Link="WebPlatform\Infra\StringBuilderCache.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Scripting\StructuredCloneScript.cs" Link="WebPlatform\Scripting\StructuredCloneScript.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Urls\FormUrlEncoded.cs" Link="WebPlatform\Urls\FormUrlEncoded.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Urls\HostParser.cs" Link="WebPlatform\Urls\HostParser.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Urls\PercentEncoding.cs" Link="WebPlatform\Urls\PercentEncoding.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Urls\UrlApi.cs" Link="WebPlatform\Urls\UrlApi.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Urls\UrlParser.cs" Link="WebPlatform\Urls\UrlParser.cs" />
+    <Compile Include="$(WebPlatformSourceDirectory)Urls\UrlRecord.cs" Link="WebPlatform\Urls\UrlRecord.cs" />
+  </ItemGroup>
+</Project>

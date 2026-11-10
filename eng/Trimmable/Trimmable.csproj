@@ -318,6 +318,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging.Barcodes\Meziantou.Framework.Imaging.Barcodes.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging.VectorGraphics\Meziantou.Framework.Imaging.VectorGraphics.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JavaScriptEngine\Meziantou.Framework.JavaScriptEngine.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.JavaScriptEngine.WebApis\Meziantou.Framework.JavaScriptEngine.WebApis.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.LLMContext\Meziantou.Framework.LLMContext.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Language\Meziantou.Framework.Language.csproj" />
@@ -681,6 +682,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Imaging.Barcodes" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Imaging.VectorGraphics" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JavaScriptEngine" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.JavaScriptEngine.WebApis" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JsonPath" />
     <TrimmerRootAssembly Include="Meziantou.Framework.LLMContext" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Language" />

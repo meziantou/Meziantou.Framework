@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Numerics;
 using System.Text;
 using Meziantou.Framework.WebPlatform.Encodings;
-using Meziantou.Framework.WebPlatform.Unicode;
 
 namespace Meziantou.Framework.WebPlatform.Urls;
 

@@ -163,6 +163,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsRealm CreateRealm() => throw null;
         public void Dispose() { }
         public void EnqueueJob(System.Action job, Meziantou.Framework.JavaScriptEngine.JsRealm? realm = null) { }
+        public Meziantou.Framework.JavaScriptEngine.JsTimeoutJob EnqueueTimeoutJob(System.Action job, System.TimeSpan delay, Meziantou.Framework.JavaScriptEngine.JsRealm? realm = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsEngineScope Enter() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsScriptContextScope EnterActiveScriptOrModule(Meziantou.Framework.JavaScriptEngine.JsScriptOrModule? scriptOrModule) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsExecutionScope EnterExecutionScope(Meziantou.Framework.JavaScriptEngine.JsExecutionLimits? limits = null) => throw null;
@@ -706,6 +707,12 @@ namespace Meziantou.Framework.JavaScriptEngine
         Timeout = 1,
         MemoryLimit = 2,
         StatementLimit = 3,
+    }
+
+    public sealed class JsTimeoutJob
+    {
+        public bool IsCanceled { get => throw null; }
+        public void Cancel() { }
     }
 
     [System.Diagnostics.DebuggerDisplay("{DebuggerDisplay,nq}")]

@@ -2,3 +2,4 @@ title: JavaScript engine
 description: An ECMAScript engine written in .NET, to run JavaScript and ES modules inside your application.
 packageIds:
 - Meziantou.Framework.JavaScriptEngine
+- Meziantou.Framework.JavaScriptEngine.WebApis

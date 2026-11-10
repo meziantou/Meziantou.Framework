@@ -8,11 +8,12 @@ is not part of the engine.
 
 ## No host APIs
 
-A realm has the built-ins of ECMAScript only. These are not provided:
+A realm has the built-ins of ECMAScript only. The `Meziantou.Framework.JavaScriptEngine.WebApis` package adds `console`,
+`setTimeout`, `setInterval`, `queueMicrotask`, `structuredClone`, `URL`, `URLSearchParams`, `TextEncoder`,
+`TextDecoder`, `atob`, `btoa` and `DOMException`: see [Web APIs](05-Interop/09-WebApis.md). These are not provided:
 
-- `console`, `setTimeout`, `setInterval`, `queueMicrotask`, `structuredClone`;
-- `fetch`, `URL`, `TextEncoder`, `TextDecoder`, `atob`, `btoa`, and the other APIs of the web platform: the DOM,
-  `window`, `document`, workers...;
+- `fetch`, the streams, `EventTarget`, `AbortController`, `Blob`, `crypto`, and the other APIs of the web platform: the
+  DOM, `window`, `document`, workers...;
 - Node.js: `require`, `process`, `Buffer`, and the built-in modules (`fs`, `path`...);
 - `WebAssembly`.
 

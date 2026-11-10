@@ -137,6 +137,26 @@ public sealed partial class JsEngine
     }
 
     /// <summary>
+    /// Enqueues a job that runs from <see cref="RunJobs"/> once the delay has elapsed (HostEnqueueTimeoutJob), as measured
+    /// by <see cref="JsEngineOptions.TimeProvider"/>; e.g. a timer of the host (<c>setTimeout</c>). The jobs whose delay
+    /// has elapsed run in the order of their due time, then in the order they were enqueued. <see cref="WaitForJobsAsync"/>
+    /// completes when the delay of a job has elapsed.
+    /// </summary>
+    /// <param name="job">The job.</param>
+    /// <param name="delay">The delay; a negative delay is a zero delay.</param>
+    /// <param name="realm">The realm that is current while the job runs, or null to use the current realm.</param>
+    /// <returns>The job, which can be canceled.</returns>
+    /// <exception cref="InvalidOperationException"><paramref name="realm"/> is null and there is no current realm.</exception>
+    public JsTimeoutJob EnqueueTimeoutJob(Action job, TimeSpan delay, JsRealm? realm = null)
+    {
+        ArgumentNullException.ThrowIfNull(job);
+        realm ??= CurrentRealm ?? throw new InvalidOperationException("There is no current realm: specify the realm of the job");
+        var timeoutJob = new JsTimeoutJob(this, job);
+        EnqueueTimeoutJob(JsTimeoutJob.Run, timeoutJob, default, realm, delay);
+        return timeoutJob;
+    }
+
+    /// <summary>
     /// Makes the jobs enqueued from now on go to a new queue, which <see cref="RunJobs"/> runs, until the returned scope is
     /// disposed (e.g. the microtasks of a nested event loop). The jobs left in the nested queue then go to the outer queue.
     /// </summary>

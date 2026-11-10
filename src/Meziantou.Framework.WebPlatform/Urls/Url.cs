@@ -10,7 +10,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 [SuppressMessage("Naming", "CA1724:Type names should not match namespaces", Justification = "Name defined by the specification")]
 public sealed class Url
 {
-    private UrlRecord _url;
+    private readonly UrlApiObject _url;
 
     /// <summary>
     /// Creates a URL by parsing the given string against the optional base URL; throws a <c>TypeError</c> when it is
@@ -21,31 +21,17 @@ public sealed class Url
     public Url(string url, string? @base = null)
     {
         ArgumentNullException.ThrowIfNull(url);
-        _url = ApiParse(url, @base) ?? throw new TypeErrorException($"Invalid URL '{url}'");
-        SearchParams = new UrlSearchParams(this, _url.Query ?? "");
+        _url = new UrlApiObject(UrlApiObject.ApiParse(url, @base) ?? throw new TypeErrorException($"Invalid URL '{url}'"));
+        SearchParams = new UrlSearchParams(_url.SearchParams);
     }
 
     internal Url(UrlRecord url)
     {
-        _url = url;
-        SearchParams = new UrlSearchParams(this, _url.Query ?? "");
+        _url = new UrlApiObject(url);
+        SearchParams = new UrlSearchParams(_url.SearchParams);
     }
 
-    internal UrlRecord Record => _url;
-
-    /// <summary>https://url.spec.whatwg.org/#api-url-parser</summary>
-    private static UrlRecord? ApiParse(string url, string? @base)
-    {
-        UrlRecord? parsedBase = null;
-        if (@base is not null)
-        {
-            parsedBase = UrlParser.Parse(@base, baseUrl: null);
-            if (parsedBase is null)
-                return null;
-        }
-
-        return UrlParser.Parse(url, parsedBase);
-    }
+    internal UrlRecord Record => _url.Record;
 
     /// <summary>
     /// Returns the URL obtained by parsing the given string against the optional base URL, or null when it is invalid.
@@ -55,7 +41,7 @@ public sealed class Url
     public static Url? Parse(string url, string? @base = null)
     {
         ArgumentNullException.ThrowIfNull(url);
-        var parsedUrl = ApiParse(url, @base);
+        var parsedUrl = UrlApiObject.ApiParse(url, @base);
         return parsedUrl is null ? null : new Url(parsedUrl);
     }
 
@@ -65,7 +51,7 @@ public sealed class Url
     public static bool CanParse(string url, string? @base = null)
     {
         ArgumentNullException.ThrowIfNull(url);
-        return ApiParse(url, @base) is not null;
+        return UrlApiObject.ApiParse(url, @base) is not null;
     }
 
     /// <summary>
@@ -116,31 +102,30 @@ public sealed class Url
     [IdlMember("href", "https://url.spec.whatwg.org/#dom-url-href")]
     public string Href
     {
-        get => _url.Serialize();
+        get => _url.Href;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            var parsedUrl = UrlParser.Parse(value, baseUrl: null) ?? throw new TypeErrorException($"Invalid URL '{value}'");
-            _url = parsedUrl;
-            SearchParams.SetList(_url.Query is null ? [] : FormUrlEncoded.ParseString(_url.Query));
+            if (!_url.TrySetHref(value))
+                throw new TypeErrorException($"Invalid URL '{value}'");
         }
     }
 
     /// <summary>Gets the serialized origin of the URL.</summary>
     /// <seealso href="https://url.spec.whatwg.org/#dom-url-origin"/>
     [IdlMember("origin", "https://url.spec.whatwg.org/#dom-url-origin")]
-    public string Origin => _url.SerializeOrigin();
+    public string Origin => _url.Origin;
 
     /// <summary>Gets or sets the scheme of the URL followed by a colon.</summary>
     /// <seealso href="https://url.spec.whatwg.org/#dom-url-protocol"/>
     [IdlMember("protocol", "https://url.spec.whatwg.org/#dom-url-protocol")]
     public string Protocol
     {
-        get => _url.Scheme + ":";
+        get => _url.Protocol;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            UrlParser.ParseWithStateOverride(value + ":", _url, UrlParserState.SchemeStart);
+            _url.Protocol = value;
         }
     }
 
@@ -153,10 +138,7 @@ public sealed class Url
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            if (_url.CannotHaveUsernamePasswordPort)
-                return;
-
-            _url.Username = PercentEncoding.Utf8PercentEncode(value, PercentEncodeSet.Userinfo);
+            _url.Username = value;
         }
     }
 
@@ -169,10 +151,7 @@ public sealed class Url
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            if (_url.CannotHaveUsernamePasswordPort)
-                return;
-
-            _url.Password = PercentEncoding.Utf8PercentEncode(value, PercentEncodeSet.Userinfo);
+            _url.Password = value;
         }
     }
 
@@ -181,23 +160,11 @@ public sealed class Url
     [IdlMember("host", "https://url.spec.whatwg.org/#dom-url-host")]
     public string Host
     {
-        get
-        {
-            if (_url.Host is not { } host)
-                return "";
-
-            if (_url.Port < 0)
-                return host.Serialized;
-
-            return host.Serialized + ":" + _url.Port.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        }
+        get => _url.Host;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            if (_url.HasOpaquePath)
-                return;
-
-            ParseComponent(value, UrlParserState.Host);
+            _url.Host = value;
         }
     }
 
@@ -206,14 +173,11 @@ public sealed class Url
     [IdlMember("hostname", "https://url.spec.whatwg.org/#dom-url-hostname")]
     public string Hostname
     {
-        get => _url.Host?.Serialized ?? "";
+        get => _url.Hostname;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            if (_url.HasOpaquePath)
-                return;
-
-            ParseComponent(value, UrlParserState.Hostname);
+            _url.Hostname = value;
         }
     }
 
@@ -222,20 +186,11 @@ public sealed class Url
     [IdlMember("port", "https://url.spec.whatwg.org/#dom-url-port")]
     public string Port
     {
-        get => _url.Port < 0 ? "" : _url.Port.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        get => _url.Port;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            if (_url.CannotHaveUsernamePasswordPort)
-                return;
-
-            if (value.Length == 0)
-            {
-                _url.Port = -1;
-                return;
-            }
-
-            ParseComponent(value, UrlParserState.Port);
+            _url.Port = value;
         }
     }
 
@@ -244,16 +199,11 @@ public sealed class Url
     [IdlMember("pathname", "https://url.spec.whatwg.org/#dom-url-pathname")]
     public string Pathname
     {
-        get => _url.SerializePath();
+        get => _url.Pathname;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            if (_url.HasOpaquePath)
-                return;
-
-            // The path is emptied before parsing; parsing failures leave the URL with an empty path, as specified.
-            _url.Path.Clear();
-            UrlParser.ParseWithStateOverride(value, _url, UrlParserState.PathStart);
+            _url.Pathname = value;
         }
     }
 
@@ -262,21 +212,11 @@ public sealed class Url
     [IdlMember("search", "https://url.spec.whatwg.org/#dom-url-search")]
     public string Search
     {
-        get => string.IsNullOrEmpty(_url.Query) ? "" : "?" + _url.Query;
+        get => _url.Search;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            if (value.Length == 0)
-            {
-                _url.Query = null;
-                SearchParams.SetList([]);
-                return;
-            }
-
-            var input = value.StartsWith('?', StringComparison.Ordinal) ? value[1..] : value;
-            _url.Query = "";
-            UrlParser.ParseWithStateOverride(input, _url, UrlParserState.Query);
-            SearchParams.SetList(FormUrlEncoded.ParseString(_url.Query ?? ""));
+            _url.Search = value;
         }
     }
 
@@ -292,19 +232,11 @@ public sealed class Url
     [IdlMember("hash", "https://url.spec.whatwg.org/#dom-url-hash")]
     public string Hash
     {
-        get => string.IsNullOrEmpty(_url.Fragment) ? "" : "#" + _url.Fragment;
+        get => _url.Hash;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            if (value.Length == 0)
-            {
-                _url.Fragment = null;
-                return;
-            }
-
-            var input = value.StartsWith('#', StringComparison.Ordinal) ? value[1..] : value;
-            _url.Fragment = "";
-            UrlParser.ParseWithStateOverride(input, _url, UrlParserState.Fragment);
+            _url.Hash = value;
         }
     }
 
@@ -315,19 +247,4 @@ public sealed class Url
 
     /// <inheritdoc/>
     public override string ToString() => Href;
-
-    /// <summary>Called by <see cref="UrlSearchParams"/> to update the query ("update" steps).</summary>
-    internal void SetQuery(string? query) => _url.Query = query;
-
-    /// <summary>
-    /// Runs the basic URL parser with a state override on a copy of the URL, and keeps the result only on success
-    /// (the parser can modify the URL before failing, but the setters are specified to leave it unchanged in that case... see below).
-    /// </summary>
-    private void ParseComponent(string value, UrlParserState state)
-    {
-        // The spec runs the parser directly on this's URL. A failure can happen after some components were set
-        // (e.g. the host state sets the host before the port fails), which is the specified behavior, so the
-        // parser runs in place.
-        UrlParser.ParseWithStateOverride(value, _url, state);
-    }
 }

@@ -62,7 +62,11 @@ public sealed partial class JsEngine
     {
         lock (_timeoutJobsLock)
         {
-            if (_timeoutJobs is null || !_timeoutJobs.TryPeek(out _, out var priority))
+            if (_timeoutJobs is null)
+                return null;
+
+            RemoveCanceledTimeoutJobs(_timeoutJobs);
+            if (!_timeoutJobs.TryPeek(out _, out var priority))
                 return null;
 
             var now = Options.TimeProvider.GetTimestamp();
@@ -194,12 +198,27 @@ public sealed partial class JsEngine
                 return;
 
             var now = Options.TimeProvider.GetTimestamp();
-            while (_timeoutJobs.TryPeek(out _, out var priority) && priority.DueTimestamp <= now)
+            while (_timeoutJobs.TryPeek(out var job, out var priority) && priority.DueTimestamp <= now)
             {
-                queue.Tasks.Enqueue(_timeoutJobs.Dequeue());
+                _timeoutJobs.Dequeue();
+                if (!IsCanceledTimeoutJob(job))
+                {
+                    queue.Tasks.Enqueue(job);
+                }
             }
         }
     }
+
+    /// <summary>Removes the canceled jobs at the head of the queue, so that they do not delay the next timeout job.</summary>
+    private static void RemoveCanceledTimeoutJobs(PriorityQueue<JsJob, (long DueTimestamp, long Sequence)> timeoutJobs)
+    {
+        while (timeoutJobs.TryPeek(out var job, out _) && IsCanceledTimeoutJob(job))
+        {
+            timeoutJobs.Dequeue();
+        }
+    }
+
+    private static bool IsCanceledTimeoutJob(in JsJob job) => job.State is JsTimeoutJob { IsCanceled: true };
 
     internal void RunJob(in JsJob job)
     {

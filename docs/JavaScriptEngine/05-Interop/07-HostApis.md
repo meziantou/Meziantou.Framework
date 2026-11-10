@@ -8,6 +8,10 @@ A realm has the built-ins of ECMAScript only. `console`, `setTimeout`, `setInter
 `ReferenceError` until your application defines them. Define only what your scripts need: each global you add is a
 way for the scripts to reach your application.
 
+The `Meziantou.Framework.JavaScriptEngine.WebApis` package provides the common ones, implemented as the browsers do:
+`console`, the timers, `queueMicrotask`, `structuredClone`, `URL`, `TextEncoder`, `TextDecoder`, `atob` and `btoa`. See
+[Web APIs](09-WebApis.md). This page shows how to write your own, when you need a different behavior or another API.
+
 To run scripts in HTML documents, with the DOM, `console`, the timers and `fetch`, use `Meziantou.Framework.WebPlatform`
 with `Meziantou.Framework.WebPlatform.JavaScript`: it provides the APIs of a browser on top of this engine.
 
@@ -83,7 +87,8 @@ Assert.Equal("[log] total: 42 [object Array] [object Object]\n[error] failed\n",
 ## Provide timers and microtasks
 
 The engine runs code only when your application calls it, on the thread that calls it: there is no background thread
-and no timer. `queueMicrotask` is a job of the engine, which [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs) runs with the jobs of the promises. A timer is a
+and no timer. [Web APIs](09-WebApis.md) provides `setTimeout` and `setInterval` with their own event loop; this section
+shows how to write one. `queueMicrotask` is a job of the engine, which [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs) runs with the jobs of the promises. A timer is a
 callback that the host calls later: keep the callbacks and their due times, and call them from your own event loop,
 each followed by [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs):
 
@@ -209,9 +214,10 @@ To await a .NET `Task` from a script, settle a promise from the same loop: see
 
 ## Other APIs
 
-- `structuredClone`, `atob`, `btoa`, `TextEncoder`, `TextDecoder`, `URL`: implement the ones you need in .NET with
-  [Functions](04-Functions.md), or in JavaScript with a script that you run first in each realm (a polyfill). A
-  [prepared script](../04-RunningCode/02-Scripts.md#reuse-a-compiled-script) avoids parsing it for each realm.
+- `structuredClone`, `atob`, `btoa`, `TextEncoder`, `TextDecoder`, `URL`: see [Web APIs](09-WebApis.md). To provide
+  another API, implement it in .NET with [Functions](04-Functions.md), or in JavaScript with a script that you run first
+  in each realm (a polyfill). A [prepared script](../04-RunningCode/02-Scripts.md#reuse-a-compiled-script) avoids
+  parsing it for each realm.
 - `require`: see [CommonJS modules](../04-RunningCode/06-CommonJsModules.md).
 - `fetch` and the file system: expose the operations that the scripts need, not a general access. Check every URL or
   path they give, as you would check the input of a user.

@@ -32,3 +32,5 @@ A few rules hold for all of them:
 - [Console, timers and other host APIs](07-HostApis.md): give the scripts `console`, `setTimeout`, `queueMicrotask`
   and the other globals of the browsers and of Node.js.
 - [Converting .NET values](08-DotNetValues.md): convert .NET values, collections and JSON, and expose typed delegates.
+- [Web APIs](09-WebApis.md): install `console`, the timers, `structuredClone`, `URL`, `TextEncoder`, `TextDecoder`,
+  `atob` and `btoa` in a realm with one call.

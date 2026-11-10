@@ -28,7 +28,7 @@ internal static class DataUrl
             if (beforeBase64.EndsWith(';', StringComparison.Ordinal))
             {
                 mimeType = beforeBase64[..^1];
-                var decoded = Dom.Window.ForgivingBase64Decode(Encoding.Latin1.GetString(body));
+                var decoded = Infra.ForgivingBase64.Decode(Encoding.Latin1.GetString(body));
                 if (decoded is null)
                     return null;
 

@@ -36,7 +36,9 @@ prettier, terser... give the same results as in Node.js), and by about 60 npm pa
 ## Principles
 
 - **Only the language.** A realm has the built-ins of ECMAScript and nothing else: no `console`, no timers, no file or
-  network access. The scripts reach your application only through what you give them.
+  network access. The scripts reach your application only through what you give them. The
+  `Meziantou.Framework.JavaScriptEngine.WebApis` package adds the common web APIs (`console`, the timers, `URL`...) when
+  you want them: see [Web APIs](05-Interop/09-WebApis.md).
 - **Your application drives the execution.** A script runs on the thread that calls [Execute](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.Execute), and the promise jobs
   run when you call [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs): nothing runs in the background.
 - **Limits stop a script for good.** An exceeded limit or a cancellation throws an exception that the script cannot

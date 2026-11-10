@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/fuzz/">
+    <Project Path="../fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.JavaScriptEngine.WebApis.Fuzz/Meziantou.Framework.JavaScriptEngine.WebApis.Fuzz.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.JavaScriptEngine.WebApis/Meziantou.Framework.JavaScriptEngine.WebApis.csproj" />
+    <Project Path="../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode.Dictionaries/Meziantou.Framework.Unicode.Dictionaries.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.JavaScriptEngine.WebApis.Tests/Meziantou.Framework.JavaScriptEngine.WebApis.Tests.csproj" />
+  </Folder>
+</Solution>

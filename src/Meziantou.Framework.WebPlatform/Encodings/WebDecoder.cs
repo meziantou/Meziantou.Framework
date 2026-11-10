@@ -61,7 +61,7 @@ internal abstract class WebDecoder
 
     /// <summary>
     /// Runs the handler for one byte (or <c>-1</c>, the end of the queue) outside of "process a queue", for the encoding
-    /// detector (<see cref="LegacyEncodingDetector"/>), which scores each byte sequence and each error. The bytes that the
+    /// detector (<c>LegacyEncodingDetector</c>), which scores each byte sequence and each error. The bytes that the
     /// handler restores to the I/O queue are dropped: <paramref name="restoredCount"/> is their number.
     /// </summary>
     internal HandlerResult HandleSingle(int value, out int codePoint1, out int codePoint2, out int restoredCount)

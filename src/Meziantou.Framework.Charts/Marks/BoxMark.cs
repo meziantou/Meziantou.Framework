@@ -95,7 +95,7 @@ public sealed class BoxMark<T> : Mark<T>
 
         static double MapNumber(RenderContext context, double value) => context.Y is ResolvedContinuousScale scale ? scale.MapNumber(value) : double.NaN;
 
-        static void AddLine(SceneGroup target, SceneShape line, ChartColor color)
+        static void AddLine(SceneGroup target, SceneShape line, SceneColor color)
         {
             line.Stroke = color;
             target.Add(line);

@@ -1,0 +1,16 @@
+---
+config:
+  timeline:
+    disableMulticolor: true
+---
+timeline TD
+    # a comment
+    section 20C4Deployment23 Q1 <br> Release
+      Bullet int <br> 1a : 12:30 is a time : #3 Q2
+      Bullet 2
+int 5;hash # not a comment
+    Industrial &amp; Co # a comment
+    %% another comment
+    section Q2
+      Bullet 2
+int <br> 1a : 12:30 is a time 

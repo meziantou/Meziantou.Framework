@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="500" viewBox="0 0 700 500" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Horizontal</title>
+<rect width="700" height="500" fill="#ffffff"/>
+<g class="grid">
+<line x1="59.48" y1="36.5" x2="59.48" y2="467.05" stroke="#e3e6ea"/>
+<line x1="164.56" y1="36.5" x2="164.56" y2="467.05" stroke="#e3e6ea"/>
+<line x1="269.65" y1="36.5" x2="269.65" y2="467.05" stroke="#e3e6ea"/>
+<line x1="374.74" y1="36.5" x2="374.74" y2="467.05" stroke="#e3e6ea"/>
+<line x1="479.83" y1="36.5" x2="479.83" y2="467.05" stroke="#e3e6ea"/>
+<line x1="584.91" y1="36.5" x2="584.91" y2="467.05" stroke="#e3e6ea"/>
+<line x1="690" y1="36.5" x2="690" y2="467.05" stroke="#e3e6ea"/>
+</g>
+<g class="marks">
+<g class="bar-plot-0">
+<rect x="59.48" y="50.39" width="252.21" height="125" fill="#cde498"/>
+<rect x="59.48" y="189.28" width="630.52" height="125" fill="#cde498"/>
+<rect x="59.48" y="328.16" width="441.37" height="125" fill="#cde498"/>
+</g>
+<g class="line-plot-1">
+<path d="M269.65,112.89 L584.91,251.78 L647.97,390.66" fill="none" stroke="#ff6b6b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g class="line-plot-1-labels">
+<text x="279.65" y="115.95" font-size="12" fill="#ff6b6b">Start</text>
+</g>
+<g class="data-labels">
+<text x="307.69" y="116.46" text-anchor="end" font-size="14" fill="#000000">12</text>
+<text x="686" y="255.35" text-anchor="end" font-size="14" fill="#000000">30</text>
+<text x="496.84" y="394.24" text-anchor="end" font-size="14" fill="#000000">21</text>
+</g>
+</g>
+<g class="axes">
+<line x1="54.48" y1="112.89" x2="59.48" y2="112.89" stroke="#000000"/>
+<text x="51.48" y="116.46" text-anchor="end" font-size="14" fill="#59636e">Q1</text>
+<line x1="54.48" y1="251.78" x2="59.48" y2="251.78" stroke="#000000"/>
+<text x="51.48" y="255.35" text-anchor="end" font-size="14" fill="#59636e">Q2</text>
+<line x1="54.48" y1="390.66" x2="59.48" y2="390.66" stroke="#000000"/>
+<text x="51.48" y="394.24" text-anchor="end" font-size="14" fill="#59636e">Q3</text>
+<line x1="59.48" y1="36.5" x2="59.48" y2="467.05" stroke="#000000"/>
+<text x="21.49" y="251.78" text-anchor="middle" font-size="16" fill="#000000" transform="rotate(-90 21.49 251.78)">Quarter</text>
+<line x1="59.48" y1="467.05" x2="59.48" y2="472.05" stroke="#000000"/>
+<text x="59.48" y="485.1" text-anchor="middle" font-size="14" fill="#59636e">0</text>
+<line x1="164.56" y1="467.05" x2="164.56" y2="472.05" stroke="#000000"/>
+<text x="164.56" y="485.1" text-anchor="middle" font-size="14" fill="#59636e">5</text>
+<line x1="269.65" y1="467.05" x2="269.65" y2="472.05" stroke="#000000"/>
+<text x="269.65" y="485.1" text-anchor="middle" font-size="14" fill="#59636e">10</text>
+<line x1="374.74" y1="467.05" x2="374.74" y2="472.05" stroke="#000000"/>
+<text x="374.74" y="485.1" text-anchor="middle" font-size="14" fill="#59636e">15</text>
+<line x1="479.83" y1="467.05" x2="479.83" y2="472.05" stroke="#000000"/>
+<text x="479.83" y="485.1" text-anchor="middle" font-size="14" fill="#59636e">20</text>
+<line x1="584.91" y1="467.05" x2="584.91" y2="472.05" stroke="#000000"/>
+<text x="584.91" y="485.1" text-anchor="middle" font-size="14" fill="#59636e">25</text>
+<line x1="690" y1="467.05" x2="690" y2="472.05" stroke="#000000"/>
+<text x="690" y="485.1" text-anchor="middle" font-size="14" fill="#59636e">30</text>
+<line x1="59.48" y1="467.05" x2="690" y2="467.05" stroke="#000000"/>
+</g>
+<text x="10" y="24.36" font-size="20" font-weight="bold" fill="#000000">Horizontal</text>
+</svg>

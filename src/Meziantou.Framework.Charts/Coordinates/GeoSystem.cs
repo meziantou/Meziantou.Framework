@@ -24,7 +24,7 @@ internal sealed class GeoSystem : CoordinateSystem
     public override bool IsPolar => false;
 
     /// <summary>Scales and centers the projected bounds, in radii of the Earth, to fit a frame, as d3's <c>fitExtent</c>.</summary>
-    public static GeoSystem Fit(GeoProjection projection, (double MinX, double MinY, double MaxX, double MaxY) bounds, ChartRectangle frame)
+    public static GeoSystem Fit(GeoProjection projection, (double MinX, double MinY, double MaxX, double MaxY) bounds, SceneBounds frame)
     {
         var width = bounds.MaxX - bounds.MinX;
         var height = bounds.MaxY - bounds.MinY;

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="67.01" height="76.8" viewBox="0 0 67.01 76.8" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Empty</title>
+<rect width="67.01" height="76.8" fill="#ffffff"/>
+<g class="title">
+<text x="33.51" y="23.4" text-anchor="middle" font-size="18" fill="#333333">Empty</text>
+</g>
+<g class="diagram" transform="translate(26.78 39.6)">
+<g class="lines">
+</g>
+<g class="highlights">
+</g>
+<g class="nodes">
+<g class="node directory">
+<text x="5" y="18.69" font-size="16" font-weight="bold" fill="#333333">/</text>
+</g>
+</g>
+</g>
+</svg>

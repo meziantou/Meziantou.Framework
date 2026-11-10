@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="444" height="353.2" viewBox="0 0 444 353.2" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="444" height="353.2" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+<g class="cluster" data-id="outer">
+<rect x="0" y="0" width="188" height="182.2" fill="#ffffde" stroke="#aaaa33"/>
+<text x="94" y="17.69" text-anchor="middle" font-size="16" fill="#333333">outer</text>
+</g>
+</g>
+<g class="edges">
+<g class="edge relationship">
+<path d="M341.71,142.2 L335.26,148.87 C328.81,155.53 315.9,168.87 309.45,182.2 C303,195.53 303,208.87 307.73,222.2 C312.46,235.53 321.92,248.87 326.66,255.53 L331.39,262.2" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M328.98,142.41 L341.92,154.93" fill="none" stroke="#333333" class="marker"/>
+<path d="M324.81,146.72 L337.75,159.24" fill="none" stroke="#333333" class="marker"/>
+<path d="M333.52,249.65 L318.84,260.07" fill="none" stroke="#333333" class="marker"/>
+<path d="M330.05,244.76 L315.37,255.18" fill="none" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relationship">
+<path d="M351.39,142.2 L346.66,148.87 C341.92,155.53 332.46,168.87 327.73,182.2 C323,195.53 323,208.87 326.01,222.2 C329.02,235.53 335.04,248.87 338.05,255.53 L341.06,262.2" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M338.84,144.33 L353.52,154.75" fill="none" stroke="#333333" class="marker"/>
+<path d="M345.23,159.33 C345.23,162.64 342.55,165.33 339.23,165.33 C335.92,165.33 333.23,162.64 333.23,159.33 C333.23,156.01 335.92,153.33 339.23,153.33 C342.55,153.33 345.23,156.01 345.23,159.33 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+<path d="M345.56,250.29 L329.16,257.7" fill="none" stroke="#333333" class="marker"/>
+<path d="M338.42,243.06 C338.42,246.37 335.73,249.06 332.42,249.06 C329.11,249.06 326.42,246.37 326.42,243.06 C326.42,239.75 329.11,237.06 332.42,237.06 C335.73,237.06 338.42,239.75 338.42,243.06 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relationship">
+<path d="M368.32,142.2 L366.6,148.87 C364.88,155.53 361.44,168.87 359.72,182.2 C358,195.53 358,208.87 358,222.2 C358,235.53 358,248.87 358,255.53 L358,262.2" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M359.61,139.95 L364.57,156.72" fill="none" stroke="#333333" class="marker"/>
+<path d="M368.32,142.2 L364.57,156.72" fill="none" stroke="#333333" class="marker"/>
+<path d="M377.04,144.45 L364.57,156.72" fill="none" stroke="#333333" class="marker"/>
+<path d="M355.11,157.38 L372.54,161.88" fill="none" stroke="#333333" class="marker"/>
+<path d="M367,262.2 L358,247.2" fill="none" stroke="#333333" class="marker"/>
+<path d="M358,262.2 L358,247.2" fill="none" stroke="#333333" class="marker"/>
+<path d="M349,262.2 L358,247.2" fill="none" stroke="#333333" class="marker"/>
+<path d="M367,244.2 L349,244.2" fill="none" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relationship">
+<path d="M378,142.2 L378,148.87 C378,155.53 378,168.87 378,182.2 C378,195.53 378,208.87 376.28,222.2 C374.56,235.53 371.12,248.87 369.4,255.53 L367.68,262.2" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M369,142.2 L378,157.2" fill="none" stroke="#333333" class="marker"/>
+<path d="M378,142.2 L378,157.2" fill="none" stroke="#333333" class="marker"/>
+<path d="M387,142.2 L378,157.2" fill="none" stroke="#333333" class="marker"/>
+<path d="M384,166.2 C384,169.51 381.31,172.2 378,172.2 C374.69,172.2 372,169.51 372,166.2 C372,162.89 374.69,160.2 378,160.2 C381.31,160.2 384,162.89 384,166.2 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+<path d="M376.39,264.45 L371.43,247.68" fill="none" stroke="#333333" class="marker"/>
+<path d="M367.68,262.2 L371.43,247.68" fill="none" stroke="#333333" class="marker"/>
+<path d="M358.96,259.95 L371.43,247.68" fill="none" stroke="#333333" class="marker"/>
+<path d="M379.67,238.96 C379.67,242.28 376.99,244.96 373.67,244.96 C370.36,244.96 367.67,242.28 367.67,238.96 C367.67,235.65 370.36,232.96 373.67,232.96 C376.99,232.96 379.67,235.65 379.67,238.96 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relationship">
+<path d="M391.93,158.66 L392.94,162.58 C393.95,166.51 395.98,174.35 396.99,184.94 C398,195.53 398,208.87 395.86,219.68 C393.72,230.5 389.43,238.8 387.29,242.94 L385.15,247.09" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M387.68,142.2 L383.99,151.93 L391.93,158.66 L395.61,148.93 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+<path d="M377.35,262.2 L386.59,257.4 L385.15,247.09 L375.92,251.89 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+</g>
+<g class="nodes">
+<g class="entity important" data-id="A">
+<rect x="328" y="67.2" width="100" height="75" fill="#ffcc00" stroke="#9370db"/>
+<text x="378" y="108.79" text-anchor="middle" font-size="16" fill="#131300">A</text>
+</g>
+<g class="entity" data-id="B">
+<rect x="308" y="262.2" width="100" height="75" fill="#ececff" stroke="#ff0000"/>
+<text x="358" y="303.79" text-anchor="middle" font-size="16" fill="#131300">B</text>
+</g>
+<g class="cluster" data-id="inner">
+<rect x="78" y="75.1" width="32" height="59.2" fill="#ffffde" stroke="#aaaa33"/>
+<text x="94" y="92.79" text-anchor="middle" font-size="16" fill="#333333">inner</text>
+</g>
+<g transform="translate(94 118.3)">
+<g class="clusters">
+</g>
+<g class="edges">
+</g>
+<g class="edge-labels">
+</g>
+<g class="nodes">
+</g>
+</g>
+</g>
+</g>
+</svg>

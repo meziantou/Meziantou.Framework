@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="321.66" height="416" viewBox="0 0 321.66 416" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="321.66" height="416" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+</g>
+<g class="edges">
+<g class="edge transition">
+<path d="M152.83,14 L152.83,18.17 C152.83,22.33 152.83,30.67 152.83,37.67 C152.83,44.67 152.83,50.33 152.83,53.17 L152.83,56" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M152.83,64 L156.83,56 L148.83,56 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge transition">
+<path d="M140.86,103.2 L136.93,109.63 C132.99,116.07 125.13,128.93 113.81,140.99 C102.49,153.05 87.71,164.3 80.32,169.93 L72.93,175.55" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M66.57,180.4 L75.36,178.74 L70.51,172.37 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge transition">
+<path d="M81.42,183.99 L99.25,176.96 C117.08,169.93 152.74,155.86 167.33,143.54 C181.92,131.21 175.45,120.62 172.21,115.32 L168.98,110.03" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M164.81,103.2 L165.57,112.11 L172.39,107.94 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge transition">
+<path d="M78.09,219.36 L90.55,225.84 C103,232.31 127.92,245.25 140.37,256.83 C152.83,268.4 152.83,278.6 152.83,283.7 L152.83,288.8" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M152.83,296.8 L156.83,288.8 L148.83,288.8 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge transition">
+<path d="M152.83,336 L152.83,340.17 C152.83,344.33 152.83,352.67 152.83,359.67 C152.83,366.67 152.83,372.33 152.83,375.17 L152.83,378" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M152.83,386 L156.83,378 L148.83,378 Z" fill="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+<g class="edge-label">
+<rect x="89.71" y="128.2" width="55.12" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="117.27" y="145.89" text-anchor="middle" font-size="16" fill="#333333">submit</text>
+</g>
+<g class="edge-label">
+<rect x="164.83" y="128.2" width="47.12" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="188.39" y="145.89" text-anchor="middle" font-size="16" fill="#333333">reject</text>
+</g>
+<g class="edge-label">
+<rect x="120.25" y="244.6" width="65.17" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="152.83" y="262.29" text-anchor="middle" font-size="16" fill="#333333">approve</text>
+</g>
+</g>
+<g class="nodes">
+<g class="state" data-id="start">
+<circle cx="152.83" cy="7" r="7" fill="#333333" stroke="#333333"/>
+</g>
+<g class="state" data-id="Draft">
+<g transform="translate(152.83 83.6)">
+<path d="M-27.26,-19.6 L27.26,-19.6 C30.02,-19.6 32.26,-17.36 32.26,-14.6 L32.26,14.6 C32.26,17.36 30.02,19.6 27.26,19.6 L-27.26,19.6 C-30.02,19.6 -32.26,17.36 -32.26,14.6 L-32.26,-14.6 C-32.26,-17.36 -30.02,-19.6 -27.26,-19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="152.83" y="87.69" text-anchor="middle" font-size="16" fill="#333333">Draft</text>
+</g>
+<g class="state" data-id="Review">
+<g transform="translate(40.82 200)">
+<path d="M-35.82,-19.6 L35.82,-19.6 C38.59,-19.6 40.82,-17.36 40.82,-14.6 L40.82,14.6 C40.82,17.36 38.59,19.6 35.82,19.6 L-35.82,19.6 C-38.59,19.6 -40.82,17.36 -40.82,14.6 L-40.82,-14.6 C-40.82,-17.36 -38.59,-19.6 -35.82,-19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="40.82" y="204.09" text-anchor="middle" font-size="16" fill="#333333">Review</text>
+<line x1="81.65" y1="200" x2="97.65" y2="200" stroke="#333333" stroke-dasharray="3 3"/>
+<g class="note">
+<rect x="97.65" y="182.4" width="208.02" height="35.2" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="201.66" y="204.09" text-anchor="middle" font-size="16" fill="#000000">Two approvals are required</text>
+</g>
+</g>
+<g class="state" data-id="Published">
+<g transform="translate(152.83 316.4)">
+<path d="M-44.97,-19.6 L44.97,-19.6 C47.73,-19.6 49.97,-17.36 49.97,-14.6 L49.97,14.6 C49.97,17.36 47.73,19.6 44.97,19.6 L-44.97,19.6 C-47.73,19.6 -49.97,17.36 -49.97,14.6 L-49.97,-14.6 C-49.97,-17.36 -47.73,-19.6 -44.97,-19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="152.83" y="320.49" text-anchor="middle" font-size="16" fill="#333333">Published</text>
+</g>
+<g class="state" data-id="end">
+<circle cx="152.83" cy="393" r="7" fill="#9370db" stroke="#333333" stroke-width="1.5"/>
+<circle cx="152.83" cy="393" r="4.5" fill="#333333"/>
+</g>
+</g>
+</g>
+</svg>

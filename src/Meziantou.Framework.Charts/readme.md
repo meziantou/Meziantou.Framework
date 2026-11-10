@@ -66,5 +66,5 @@ measures with a font file instead, for other scripts or fonts.
 
 ## Images
 
-`Meziantou.Framework.Imaging.Charts` draws the same charts as PNG, WebP or JPEG images, or on an image canvas. Both
-renderers draw the `ChartScene` that `Plot.CreateScene` lays out.
+`Meziantou.Framework.Imaging.VectorGraphics` draws the same charts as PNG, WebP or JPEG images, or on an image canvas.
+Both renderers draw the `Scene` that `Plot.CreateScene` lays out.

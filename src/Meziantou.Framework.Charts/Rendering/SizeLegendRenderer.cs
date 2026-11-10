@@ -29,9 +29,9 @@ internal sealed class SizeLegendRenderer : ILegendBlock
 
     public double Height { get; private set; }
 
-    private ChartFont Font => new(_theme.FontSize);
+    private SceneFont Font => new(_theme.FontSize);
 
-    private ChartFont TickFont => new(_theme.TickFontSize);
+    private SceneFont TickFont => new(_theme.TickFontSize);
 
     /// <summary>The values of the legend: the round values of the domain of the scale, at most three, the largest first.</summary>
     public static double[] GetValues(double maximum, IReadOnlyList<double>? values)

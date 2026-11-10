@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1106" height="543.6" viewBox="0 0 1106 543.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>History of .NET</title>
+<rect width="1106" height="543.6" fill="#ffffff"/>
+<g class="title">
+<text x="553" y="23.4" text-anchor="middle" font-size="18" fill="#333333">History of .NET</text>
+</g>
+<g class="diagram" transform="translate(-42 -10.4)">
+<g class="lines">
+<line x1="195" y1="236" x2="195" y2="538" stroke="#333333" stroke-width="2" stroke-dasharray="5 5"/>
+<path d="M195,546 L199,538 L191,538 Z" fill="#333333" class="marker"/>
+<line x1="395" y1="236" x2="395" y2="538" stroke="#333333" stroke-width="2" stroke-dasharray="5 5"/>
+<path d="M395,546 L399,538 L391,538 Z" fill="#333333" class="marker"/>
+<line x1="595" y1="236" x2="595" y2="538" stroke="#333333" stroke-width="2" stroke-dasharray="5 5"/>
+<path d="M595,546 L599,538 L591,538 Z" fill="#333333" class="marker"/>
+<line x1="795" y1="236" x2="795" y2="538" stroke="#333333" stroke-width="2" stroke-dasharray="5 5"/>
+<path d="M795,546 L799,538 L791,538 Z" fill="#333333" class="marker"/>
+<line x1="995" y1="236" x2="995" y2="538" stroke="#333333" stroke-width="2" stroke-dasharray="5 5"/>
+<path d="M995,546 L999,538 L991,538 Z" fill="#333333" class="marker"/>
+<line x1="50" y1="286" x2="1130" y2="286" stroke="#333333" stroke-width="4"/>
+<path d="M1140,286 L1132,282 L1132,290 Z" fill="#333333" class="marker"/>
+</g>
+<g class="nodes">
+<g class="timeline-node section section-0">
+<path d="M100,113 L100,55 Q100,50 105,50 L685,50 Q690,50 690,55 L690,118 L100,118 Z" fill="#8686ff"/>
+<line x1="100" y1="118" x2="690" y2="118" stroke="#797900" stroke-width="3"/>
+<text x="395" y="78.49" text-anchor="middle" font-size="16" fill="#ffffff">.NET Framework</text>
+</g>
+<g class="timeline-node period section-0">
+<path d="M100,231 L100,173 Q100,168 105,168 L285,168 Q290,168 290,173 L290,236 L100,236 Z" fill="#8686ff"/>
+<line x1="100" y1="236" x2="290" y2="236" stroke="#797900" stroke-width="3"/>
+<text x="195" y="196.49" text-anchor="middle" font-size="16" fill="#ffffff">2002</text>
+</g>
+<g class="timeline-node event section-0">
+<path d="M100,413 L100,373 Q100,368 105,368 L285,368 Q290,368 290,373 L290,418 L100,418 Z" fill="#8686ff"/>
+<line x1="100" y1="418" x2="290" y2="418" stroke="#797900" stroke-width="3"/>
+<text x="195" y="396.49" text-anchor="middle" font-size="16" fill="#ffffff">Version 1.0</text>
+</g>
+<g class="timeline-node period section-0">
+<path d="M300,231 L300,173 Q300,168 305,168 L485,168 Q490,168 490,173 L490,236 L300,236 Z" fill="#8686ff"/>
+<line x1="300" y1="236" x2="490" y2="236" stroke="#797900" stroke-width="3"/>
+<text x="395" y="196.49" text-anchor="middle" font-size="16" fill="#ffffff">2005</text>
+</g>
+<g class="timeline-node event section-0">
+<path d="M300,413 L300,373 Q300,368 305,368 L485,368 Q490,368 490,373 L490,418 L300,418 Z" fill="#8686ff"/>
+<line x1="300" y1="418" x2="490" y2="418" stroke="#797900" stroke-width="3"/>
+<text x="395" y="396.49" text-anchor="middle" font-size="16" fill="#ffffff">Generics</text>
+</g>
+<g class="timeline-node event section-0">
+<path d="M300,473 L300,433 Q300,428 305,428 L485,428 Q490,428 490,433 L490,478 L300,478 Z" fill="#8686ff"/>
+<line x1="300" y1="478" x2="490" y2="478" stroke="#797900" stroke-width="3"/>
+<text x="395" y="456.49" text-anchor="middle" font-size="16" fill="#ffffff">64-bit support</text>
+</g>
+<g class="timeline-node period section-0">
+<path d="M500,231 L500,173 Q500,168 505,168 L685,168 Q690,168 690,173 L690,236 L500,236 Z" fill="#8686ff"/>
+<line x1="500" y1="236" x2="690" y2="236" stroke="#797900" stroke-width="3"/>
+<text x="595" y="196.49" text-anchor="middle" font-size="16" fill="#ffffff">2007</text>
+</g>
+<g class="timeline-node event section-0">
+<path d="M500,413 L500,373 Q500,368 505,368 L685,368 Q690,368 690,373 L690,418 L500,418 Z" fill="#8686ff"/>
+<line x1="500" y1="418" x2="690" y2="418" stroke="#797900" stroke-width="3"/>
+<text x="595" y="396.49" text-anchor="middle" font-size="16" fill="#ffffff">LINQ</text>
+</g>
+<g class="timeline-node section section-1">
+<path d="M700,113 L700,55 Q700,50 705,50 L1085,50 Q1090,50 1090,55 L1090,118 L700,118 Z" fill="#ffff78"/>
+<line x1="700" y1="118" x2="1090" y2="118" stroke="#000087" stroke-width="3"/>
+<text x="895" y="78.49" text-anchor="middle" font-size="16" fill="#000000">.NET Core and .NET</text>
+</g>
+<g class="timeline-node period section-1">
+<path d="M700,231 L700,173 Q700,168 705,168 L885,168 Q890,168 890,173 L890,236 L700,236 Z" fill="#ffff78"/>
+<line x1="700" y1="236" x2="890" y2="236" stroke="#000087" stroke-width="3"/>
+<text x="795" y="196.49" text-anchor="middle" font-size="16" fill="#000000">2016</text>
+</g>
+<g class="timeline-node event section-1">
+<path d="M700,413 L700,373 Q700,368 705,368 L885,368 Q890,368 890,373 L890,418 L700,418 Z" fill="#ffff78"/>
+<line x1="700" y1="418" x2="890" y2="418" stroke="#000087" stroke-width="3"/>
+<text x="795" y="396.49" text-anchor="middle" font-size="16" fill="#000000">.NET Core 1.0</text>
+</g>
+<g class="timeline-node period section-1">
+<path d="M900,231 L900,173 Q900,168 905,168 L1085,168 Q1090,168 1090,173 L1090,236 L900,236 Z" fill="#ffff78"/>
+<line x1="900" y1="236" x2="1090" y2="236" stroke="#000087" stroke-width="3"/>
+<text x="995" y="196.49" text-anchor="middle" font-size="16" fill="#000000">2020</text>
+</g>
+<g class="timeline-node event section-1">
+<path d="M900,430.2 L900,373 Q900,368 905,368 L1085,368 Q1090,368 1090,373 L1090,435.2 L900,435.2 Z" fill="#ffff78"/>
+<line x1="900" y1="435.2" x2="1090" y2="435.2" stroke="#000087" stroke-width="3"/>
+<text x="995" y="396.49" text-anchor="middle" font-size="16" fill="#000000">.NET 5</text>
+<text x="995" y="415.69" text-anchor="middle" font-size="16" fill="#000000">One .NET</text>
+</g>
+</g>
+</g>
+</svg>

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="816" height="466" viewBox="0 0 816 466" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="816" height="466" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="venn-area venn-circle" data-venn-sets="A">
+<circle cx="294.22" cy="225" r="210" fill="#ff6b6b" fill-opacity="0.102" stroke="#ff6b6b" stroke-opacity="0.949" stroke-width="2.5"/>
+<text x="237" y="233.4" text-anchor="middle" font-size="24" fill="#d10000">Frontend</text>
+</g>
+<g class="venn-area venn-circle" data-venn-sets="B">
+<circle cx="553.12" cy="225" r="162.67" fill="#ffff45" fill-opacity="0.102" stroke="#ffff45" stroke-opacity="0.949" stroke-width="2.5"/>
+<text x="610" y="233.4" text-anchor="middle" font-size="24" fill="#abab00">Backend</text>
+</g>
+<g class="venn-area venn-intersection" data-venn-sets="A_B">
+<path d="M457.73,356.76 A162.67,162.67 0 0,1 457.73,93.24 A210,210 0 0,1 457.73,356.76 Z" fill="#ffe08a"/>
+<text x="447" y="233.4" text-anchor="middle" font-size="24" fill="#333333">Shared</text>
+</g>
+<g class="venn-text-nodes">
+<g class="venn-text-area">
+<g class="venn-text-node" data-id="A1">
+<text x="164.6" y="261.11" text-anchor="middle" font-size="20" fill="#ff0000">React</text>
+</g>
+<g class="venn-text-node" data-id="A2">
+<text x="310.07" y="249.11" text-anchor="middle" font-size="20" fill="#333333">Design</text>
+<text x="310.07" y="273.11" text-anchor="middle" font-size="20" fill="#333333">Systems</text>
+</g>
+</g>
+<g class="venn-text-area">
+<g class="venn-text-node" data-id="B1">
+<text x="610" y="261.11" text-anchor="middle" font-size="20" fill="#333333">API</text>
+</g>
+</g>
+<g class="venn-text-area">
+<g class="venn-text-node" data-id="AB1">
+<text x="447.33" y="259.33" text-anchor="middle" font-size="20" fill="#333333">OpenAPI</text>
+</g>
+</g>
+</g>
+</g>
+</svg>

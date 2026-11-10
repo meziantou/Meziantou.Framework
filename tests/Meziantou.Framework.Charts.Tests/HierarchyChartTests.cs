@@ -48,6 +48,21 @@ public sealed class HierarchyChartTests
         Assert.All(leaves, leaf => files.Contains(leaf.Attributes.Split(';')[1]["path=".Length..]));
     }
 
+    [Fact]
+    public void Treemap_ValueFormat()
+    {
+        var root = Hierarchy.FromPaths([("a/b", 1234567.891), ("a/c", 1000000.0)], row => row.Item1, value: row => row.Item2).SortByValue();
+        var plot = new Plot { Width = 400, Height = 300 };
+        plot.Add(new TreemapMark<(string, double)>(root) { ValueFormat = value => value.ToString("N3", System.Globalization.CultureInfo.InvariantCulture) });
+        var svg = plot.ToSvg();
+        Assert.Contains(">1,234,567.891<", svg, StringComparison.Ordinal);
+        Assert.Contains(">1,000,000.000<", svg, StringComparison.Ordinal);
+
+        plot.Marks.Clear();
+        plot.Add(new TreemapMark<(string, double)>(root));
+        Assert.DoesNotContain("1,234,567.891", plot.ToSvg(), StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(TreemapTiling.Binary)]
     [InlineData(TreemapTiling.Slice)]

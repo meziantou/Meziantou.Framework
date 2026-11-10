@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="507.21" height="420.8" viewBox="0 0 507.21 420.8" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Pets adopted by volunteers</title>
+<rect width="507.21" height="420.8" fill="#ffffff"/>
+<g class="marks">
+<g class="pieOuterCircle">
+<path d="M199,36.8 A185,185 0 0,1 199,406.8 A185,185 0 0,1 199,36.8 Z" fill="none" stroke="#000000" stroke-width="2"/>
+</g>
+<g opacity="0.7" class="pieCircle">
+<path d="M199,36.8 A185,185 0 1,1 21.1,171.04 L199,221.8 Z" fill="#ececff" stroke="#000000" stroke-width="2"/>
+<path d="M21.1,171.04 A185,185 0 0,1 163.35,40.27 L199,221.8 Z" fill="#ffffde" stroke="#000000" stroke-width="2"/>
+<path d="M163.35,40.27 A185,185 0 0,1 199,36.8 L199,221.8 Z" fill="#b5ff20" stroke="#000000" stroke-width="2"/>
+</g>
+<g class="slice">
+<text x="282.57" y="336.9" text-anchor="middle" font-size="17" fill="#333333">79%</text>
+<text x="105.1" y="124" text-anchor="middle" font-size="17" fill="#333333">17%</text>
+<text x="185.57" y="88.05" text-anchor="middle" font-size="17" fill="#333333">3%</text>
+</g>
+</g>
+<g class="legend">
+<rect x="400" y="35.66" width="10" height="10" rx="2" fill="#ececff"/>
+<text x="415" y="45.01" font-size="17" fill="#000000">Dogs [386]</text>
+<rect x="400" y="55.39" width="10" height="10" rx="2" fill="#ffffde"/>
+<text x="415" y="64.73" font-size="17" fill="#000000">Cats [85]</text>
+<rect x="400" y="75.11" width="10" height="10" rx="2" fill="#b5ff20"/>
+<text x="415" y="84.46" font-size="17" fill="#000000">Rats [15]</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#000000">Pets adopted by volunteers</text>
+</svg>

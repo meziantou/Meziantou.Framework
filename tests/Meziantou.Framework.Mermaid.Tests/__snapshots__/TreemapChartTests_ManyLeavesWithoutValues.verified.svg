@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="996" height="371" viewBox="0 0 996 371" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="996" height="371" fill="#333333"/>
+<g class="marks">
+<g>
+<rect x="8" y="8" width="485" height="355" fill="#1f2020" fill-opacity="0.251"><title>Section 2</title></rect>
+<text x="11" y="28.31" font-size="11" fill="#cccccc">Section 2</text>
+<rect x="18" y="43" width="187.92" height="160.67" fill="#1f2020"><title>Section 2 / Leaf 2.7</title></rect>
+<text x="22" y="53.9" font-size="11" fill="#ffffff">Leaf 2.7</text>
+<rect x="18" y="213.67" width="187.92" height="139.33" fill="#1f2020"><title>Section 2 / Leaf 2.6</title></rect>
+<text x="22" y="224.56" font-size="11" fill="#ffffff">Leaf 2.6</text>
+<rect x="215.92" y="43" width="141.14" height="157.62" fill="#1f2020"><title>Section 2 / Leaf 2.5</title></rect>
+<text x="219.92" y="53.9" font-size="11" fill="#ffffff">Leaf 2.5</text>
+<rect x="367.05" y="43" width="115.95" height="157.62" fill="#1f2020"><title>Section 2 / Leaf 2.4</title></rect>
+<text x="371.05" y="53.9" font-size="11" fill="#ffffff">Leaf 2.4</text>
+<rect x="215.92" y="210.62" width="183.96" height="77.07" fill="#1f2020"><title>Section 2 / Leaf 2.3</title></rect>
+<text x="219.92" y="221.52" font-size="11" fill="#ffffff">Leaf 2.3</text>
+<rect x="215.92" y="297.69" width="183.96" height="55.31" fill="#1f2020"><title>Section 2 / Leaf 2.2</title></rect>
+<text x="219.92" y="308.59" font-size="11" fill="#ffffff">Leaf 2.2</text>
+<rect x="409.88" y="210.62" width="73.13" height="91.59" fill="#1f2020"><title>Section 2 / Leaf 2.1</title></rect>
+<text x="413.88" y="221.52" font-size="11" fill="#ffffff">Leaf 2.1</text>
+<rect x="409.88" y="312.21" width="73.13" height="40.79" fill="#1f2020"><title>Section 2 / Leaf 2.0</title></rect>
+<text x="413.88" y="323.1" font-size="11" fill="#ffffff">Leaf 2.0</text>
+<rect x="503" y="8" width="320" height="355" fill="#0b0000" fill-opacity="0.251"><title>Section 1</title></rect>
+<text x="506" y="28.31" font-size="11" fill="#cccccc">Section 1</text>
+<rect x="513" y="43" width="108.1" height="176.67" fill="#0b0000"><title>Section 1 / Leaf 1.7</title></rect>
+<text x="517" y="53.9" font-size="11" fill="#ffffff">Leaf 1.7</text>
+<rect x="631.1" y="43" width="93.33" height="176.67" fill="#0b0000"><title>Section 1 / Leaf 1.6</title></rect>
+<text x="635.1" y="53.9" font-size="11" fill="#ffffff">Leaf 1.6</text>
+<rect x="734.43" y="43" width="78.57" height="176.67" fill="#0b0000"><title>Section 1 / Leaf 1.5</title></rect>
+<text x="738.43" y="53.9" font-size="11" fill="#ffffff">Leaf 1.5</text>
+<rect x="513" y="229.67" width="176" height="64.07" fill="#0b0000"><title>Section 1 / Leaf 1.4</title></rect>
+<text x="517" y="240.56" font-size="11" fill="#ffffff">Leaf 1.4</text>
+<rect x="513" y="303.74" width="176" height="49.26" fill="#0b0000"><title>Section 1 / Leaf 1.3</title></rect>
+<text x="517" y="314.64" font-size="11" fill="#ffffff">Leaf 1.3</text>
+<rect x="699" y="229.67" width="64.4" height="101.11" fill="#0b0000"><title>Section 1 / Leaf 1.2</title></rect>
+<text x="703" y="240.56" font-size="11" fill="#ffffff">Leaf 1.2</text>
+<rect x="773.4" y="229.67" width="39.6" height="101.11" fill="#0b0000"><title>Section 1 / Leaf 1.1</title></rect>
+<text x="777.4" y="240.56" font-size="11" fill="#ffffff">Lea…</text>
+<rect x="699" y="340.78" width="114" height="12.22" fill="#0b0000"><title>Section 1 / Leaf 1.0</title></rect>
+<rect x="833" y="8" width="155" height="355" fill="#4d1037" fill-opacity="0.251"><title>Section 0</title></rect>
+<text x="836" y="28.31" font-size="11" fill="#cccccc">Section 0</text>
+<rect x="843" y="43" width="67.33" height="123.33" fill="#4d1037"><title>Section 0 / Leaf 0.7</title></rect>
+<text x="847" y="53.9" font-size="11" fill="#ffffff">Leaf 0.7</text>
+<rect x="920.33" y="43" width="57.67" height="123.33" fill="#4d1037"><title>Section 0 / Leaf 0.6</title></rect>
+<text x="924.33" y="53.9" font-size="11" fill="#ffffff">Leaf 0.6</text>
+<rect x="843" y="176.33" width="69.09" height="87.78" fill="#4d1037"><title>Section 0 / Leaf 0.5</title></rect>
+<text x="847" y="187.23" font-size="11" fill="#ffffff">Leaf 0.5</text>
+<rect x="922.09" y="176.33" width="55.91" height="87.78" fill="#4d1037"><title>Section 0 / Leaf 0.4</title></rect>
+<text x="926.09" y="187.23" font-size="11" fill="#ffffff">Leaf 0.4</text>
+<rect x="843" y="274.11" width="91.5" height="40.79" fill="#4d1037"><title>Section 0 / Leaf 0.3</title></rect>
+<text x="847" y="285.01" font-size="11" fill="#ffffff">Leaf 0.3</text>
+<rect x="843" y="324.9" width="91.5" height="28.1" fill="#4d1037"><title>Section 0 / Leaf 0.2</title></rect>
+<text x="847" y="335.8" font-size="11" fill="#ffffff">Leaf 0.2</text>
+<rect x="944.5" y="274.11" width="33.5" height="49.26" fill="#4d1037"><title>Section 0 / Leaf 0.1</title></rect>
+<text x="948.5" y="285.01" font-size="11" fill="#ffffff">Le…</text>
+<rect x="944.5" y="333.37" width="33.5" height="19.63" fill="#4d1037"><title>Section 0 / Leaf 0.0</title></rect>
+<text x="948.5" y="344.27" font-size="11" fill="#ffffff">Le…</text>
+</g>
+</g>
+</svg>

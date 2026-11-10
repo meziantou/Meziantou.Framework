@@ -58,7 +58,7 @@ public sealed class AnnotationMark<T> : Mark<T>
 
     internal override void Render(RenderContext context, MarkData data, SceneGroup group)
     {
-        var font = new ChartFont(FontSize ?? context.Theme.FontSize);
+        var font = new SceneFont(FontSize ?? context.Theme.FontSize);
         var metrics = context.Measurer.Measure("Xg", font);
         for (var i = 0; i < data.Count; i++)
         {
@@ -105,7 +105,7 @@ public sealed class AnnotationMark<T> : Mark<T>
         }
     }
 
-    private void AddArrow(SceneGroup group, double x1, double y1, double x2, double y2, ChartColor stroke)
+    private void AddArrow(SceneGroup group, double x1, double y1, double x2, double y2, SceneColor stroke)
     {
         // The head points at the point; the line stops a little before it
         var length = Math.Sqrt(((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)));

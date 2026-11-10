@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="411.52" height="144.4" viewBox="0 0 411.52 144.4" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="411.52" height="144.4" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+</g>
+<g class="edges">
+<g class="edge transition">
+<path d="M28,64.2 L34.88,64.2 C41.76,64.2 55.53,64.2 67.95,64.2 C80.38,64.2 91.48,64.2 97.03,64.2 L102.58,64.2" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M110.58,64.2 L102.58,60.2 L102.58,68.2 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge transition">
+<path d="M120.58,56.77 L124.74,50.57 C128.91,44.38 137.24,31.99 144.24,25.79 C151.24,19.6 156.91,19.6 159.74,19.6 L162.58,19.6" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M170.58,19.6 L162.58,15.6 L162.58,23.6 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge transition">
+<path d="M120.58,71.63 L124.74,77.83 C128.91,84.02 137.24,96.41 144.24,102.61 C151.24,108.8 156.91,108.8 159.74,108.8 L162.58,108.8" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M170.58,108.8 L162.58,104.8 L162.58,112.8 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge transition">
+<path d="M230.58,19.6 L234.74,19.6 C238.91,19.6 247.24,19.6 271.8,26.34 C296.36,33.08 337.14,46.56 357.53,53.3 L377.92,60.04" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M385.52,62.55 L379.18,56.24 L376.67,63.83 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge transition">
+<path d="M230.58,108.8 L234.74,108.8 C238.91,108.8 247.24,108.8 271.8,102.06 C296.36,95.32 337.14,81.84 357.53,75.1 L377.92,68.36" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M385.52,65.85 L376.67,64.57 L379.18,72.16 Z" fill="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+<g class="edge-label">
+<rect x="53" y="50.6" width="32.58" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="69.29" y="68.29" text-anchor="middle" font-size="16" fill="#333333">yes</text>
+</g>
+</g>
+<g class="nodes">
+<g class="state" data-id="choice">
+<g transform="translate(14 64.2)">
+<path d="M0,-14 L14,0 L0,14 L-14,0 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+</g>
+<g class="state" data-id="fork">
+<g transform="translate(115.58 64.2)">
+<path d="M-5,-35 L5,-35 L5,35 L-5,35 Z" fill="#333333" stroke="#333333"/>
+</g>
+</g>
+<g class="state" data-id="join">
+<g transform="translate(390.52 64.2)">
+<path d="M-5,-35 L5,-35 L5,35 L-5,35 Z" fill="#333333" stroke="#333333"/>
+</g>
+<line x1="385.52" y1="64.2" x2="369.52" y2="64.2" stroke="#333333" stroke-dasharray="3 3"/>
+<g class="note">
+<rect x="280.58" y="46.6" width="88.94" height="35.2" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="325.05" y="68.29" text-anchor="middle" font-size="16" fill="#000000">Both done</text>
+</g>
+</g>
+<g class="state" data-id="A">
+<g transform="translate(200.58 19.6)">
+<path d="M-25,-19.6 L25,-19.6 C27.76,-19.6 30,-17.36 30,-14.6 L30,14.6 C30,17.36 27.76,19.6 25,19.6 L-25,19.6 C-27.76,19.6 -30,17.36 -30,14.6 L-30,-14.6 C-30,-17.36 -27.76,-19.6 -25,-19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="200.58" y="23.69" text-anchor="middle" font-size="16" fill="#333333">A</text>
+</g>
+<g class="state" data-id="B">
+<g transform="translate(200.58 108.8)">
+<path d="M-25,-19.6 L25,-19.6 C27.76,-19.6 30,-17.36 30,-14.6 L30,14.6 C30,17.36 27.76,19.6 25,19.6 L-25,19.6 C-27.76,19.6 -30,17.36 -30,14.6 L-30,-14.6 C-30,-17.36 -27.76,-19.6 -25,-19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="200.58" y="112.89" text-anchor="middle" font-size="16" fill="#333333">B</text>
+</g>
+</g>
+</g>
+</svg>

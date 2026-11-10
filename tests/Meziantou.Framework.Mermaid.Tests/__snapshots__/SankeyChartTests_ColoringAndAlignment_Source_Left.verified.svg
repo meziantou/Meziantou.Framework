@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="420" viewBox="0 0 620 420" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="620" height="420" fill="#ffffff"/>
+<g class="marks">
+<g>
+<path d="M20,116.89 C162.5,116.89 162.5,116.89 305,116.89" fill="none" stroke="#4e79a7" stroke-opacity="0.502" stroke-width="213.77"><title>A → B: 30</title></path>
+<path d="M20,259.4 C162.5,259.4 162.5,286.4 305,286.4" fill="none" stroke="#4e79a7" stroke-opacity="0.502" stroke-width="71.26"><title>A → C: 10</title></path>
+<path d="M315,99.07 C457.5,99.07 457.5,107.14 600,107.14" fill="none" stroke="#f28e2c" stroke-opacity="0.502" stroke-width="178.14"><title>B → D: 25</title></path>
+<path d="M315,268.59 C457.5,268.59 457.5,214.03 600,214.03" fill="none" stroke="#e15759" stroke-opacity="0.502" stroke-width="35.63"><title>C → D: 5</title></path>
+<path d="M315,304.22 C457.5,304.22 457.5,304.22 600,304.22" fill="none" stroke="#e15759" stroke-opacity="0.502" stroke-width="35.63"><title>C → E: 5</title></path>
+<path d="M20,366.02 C310,366.02 310,366.02 600,366.02" fill="none" stroke="#edc949" stroke-opacity="0.502" stroke-width="87.97"><title>F → E: 12.35</title></path>
+<rect x="10" y="10" width="10" height="285.03" fill="#4e79a7"><title>A 40: 40</title></rect>
+<text x="26" y="156.09" font-size="14" fill="#333333">A 40</text>
+<rect x="305" y="10" width="10" height="213.77" fill="#f28e2c"><title>B 30: 30</title></rect>
+<text x="321" y="120.46" font-size="14" fill="#333333">B 30</text>
+<rect x="305" y="250.77" width="10" height="71.26" fill="#e15759"><title>C 10: 10</title></rect>
+<text x="321" y="289.98" font-size="14" fill="#333333">C 10</text>
+<rect x="600" y="18.07" width="10" height="213.77" fill="#76b7b2"><title>D 30: 30</title></rect>
+<text x="594" y="128.53" text-anchor="end" font-size="14" fill="#333333">D 30</text>
+<rect x="600" y="286.4" width="10" height="123.6" fill="#59a14f"><title>E 17.35: 17.345</title></rect>
+<text x="594" y="351.78" text-anchor="end" font-size="14" fill="#333333">E 17.35</text>
+<rect x="10" y="322.03" width="10" height="87.97" fill="#edc949"><title>F 12.35: 12.345</title></rect>
+<text x="26" y="369.59" font-size="14" fill="#333333">F 12.35</text>
+</g>
+</g>
+</svg>

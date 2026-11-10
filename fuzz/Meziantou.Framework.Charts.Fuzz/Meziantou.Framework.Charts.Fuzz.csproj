@@ -10,4 +10,8 @@
     <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Charts\Meziantou.Framework.Charts.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Meziantou.Framework.VectorGraphics" />
+  </ItemGroup>
 </Project>

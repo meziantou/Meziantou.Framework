@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="203.67" height="53.11" viewBox="0 0 203.67 53.11" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="203.67" height="53.11" fill="#ffffff"/>
+<g class="diagram" transform="translate(95.67 20)">
+<g class="branches">
+<g class="branch" data-branch="main">
+<line x1="0" y1="-2" x2="100" y2="-2" stroke="#333333" stroke-dasharray="2"/>
+<rect x="-87.67" y="-11.4" width="52.67" height="18.8" rx="4" fill="#0000ec" class="branch-label-background"/>
+<text x="-61.34" y="2.09" text-anchor="middle" font-size="16" fill="#ffffff">main</text>
+</g>
+</g>
+<g class="commit-arrows">
+<path d="M10,-2 L60,-2" fill="none" stroke="#0000ec" stroke-width="8" stroke-linecap="round" class="arrow"/>
+</g>
+<g class="commit-bullets">
+<g class="commit" data-id="a">
+<circle cx="10" cy="-2" r="10" fill="#0000ec" stroke="#0000ec" class="commit-normal"/>
+</g>
+<g class="commit" data-id="a">
+<circle cx="60" cy="-2" r="10" fill="#0000ec" stroke="#0000ec" class="commit-normal"/>
+</g>
+</g>
+<g class="commit-labels">
+<g class="commit-label" transform="matrix(0.707107 -0.707107 0.707107 0.707107 -11.998586 11.304614)">
+<rect x="5.22" y="11.5" width="9.56" height="13.25" fill="#ffffde" opacity="0.5"/>
+<text x="7.22" y="20.68" font-size="10" fill="#000021">a</text>
+</g>
+<g class="commit-label" transform="matrix(0.707107 -0.707107 0.707107 0.707107 2.646075 46.659953)">
+<rect x="55.22" y="11.5" width="9.56" height="13.25" fill="#ffffde" opacity="0.5"/>
+<text x="57.22" y="20.68" font-size="10" fill="#000021">a</text>
+</g>
+</g>
+</g>
+</svg>

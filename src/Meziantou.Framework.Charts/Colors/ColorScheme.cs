@@ -7,7 +7,7 @@ public sealed class ColorScheme
     /// <param name="name">The name of the scheme.</param>
     /// <param name="stops">The colors of the ramp, from its start to its end. At least two.</param>
     /// <exception cref="ArgumentException"><paramref name="stops"/> has fewer than two colors.</exception>
-    public ColorScheme(string name, IEnumerable<ChartColor> stops)
+    public ColorScheme(string name, IEnumerable<SceneColor> stops)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(stops);
@@ -21,7 +21,7 @@ public sealed class ColorScheme
     public string Name { get; }
 
     /// <summary>Gets the colors of the ramp.</summary>
-    public IReadOnlyList<ChartColor> Stops { get; }
+    public IReadOnlyList<SceneColor> Stops { get; }
 
     /// <summary>Gets a perceptually uniform ramp from dark purple to yellow (viridis, CC0).</summary>
     public static ColorScheme Viridis { get; } = Create("Viridis", "#440154", "#482878", "#3e4989", "#31688e", "#26828e", "#1f9e89", "#35b779", "#6ece58", "#b5de2b", "#fde725");
@@ -53,7 +53,7 @@ public sealed class ColorScheme
     /// <summary>Returns the color at a position of the ramp.</summary>
     /// <param name="t">The position, from 0 (the first stop) to 1 (the last stop). It is clamped.</param>
     /// <returns>The color.</returns>
-    public ChartColor Interpolate(double t)
+    public SceneColor Interpolate(double t)
     {
         if (double.IsNaN(t))
             return Stops[0];
@@ -67,5 +67,5 @@ public sealed class ColorScheme
     /// <inheritdoc/>
     public override string ToString() => Name;
 
-    private static ColorScheme Create(string name, params string[] colors) => new(name, colors.Select(ChartColor.Parse));
+    private static ColorScheme Create(string name, params string[] colors) => new(name, colors.Select(SceneColor.Parse));
 }

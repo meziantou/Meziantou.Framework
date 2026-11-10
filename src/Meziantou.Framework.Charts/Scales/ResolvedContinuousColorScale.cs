@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Charts;
 
 /// <summary>A sequential or diverging color scale with its domain.</summary>
-internal sealed class ResolvedContinuousColorScale(ColorScheme scheme, double minimum, double maximum, double? midpoint, Func<double, string>? format, ChartColor fallback) : ResolvedColorScale
+internal sealed class ResolvedContinuousColorScale(ColorScheme scheme, double minimum, double maximum, double? midpoint, Func<double, string>? format, SceneColor fallback) : ResolvedColorScale
 {
     public ColorScheme Scheme { get; } = scheme;
 
@@ -17,7 +17,7 @@ internal sealed class ResolvedContinuousColorScale(ColorScheme scheme, double mi
 
     public double? Midpoint { get; } = midpoint;
 
-    public override ChartColor Map(ChannelValues values, int index)
+    public override SceneColor Map(ChannelValues values, int index)
     {
         var value = values.GetNumber(index);
         return double.IsNaN(value) ? fallback : MapNumber(value);
@@ -40,7 +40,7 @@ internal sealed class ResolvedContinuousColorScale(ColorScheme scheme, double mi
         }
     }
 
-    public ChartColor MapNumber(double value) => Scheme.Interpolate(GetPosition(value));
+    public SceneColor MapNumber(double value) => Scheme.Interpolate(GetPosition(value));
 
     /// <summary>The position of a value on the ramp, from 0 to 1.</summary>
     public double GetPosition(double value)

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="112" height="113.6" viewBox="0 0 112 113.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="112" height="113.6" fill="#ffffff"/>
+<g class="diagram" transform="translate(20 -193.2)">
+<g class="ishikawa">
+<g class="spine">
+<line x1="0" y1="250" x2="0" y2="250" stroke="#333333" stroke-width="2" class="ishikawa-spine"/>
+</g>
+<g class="ishikawa-head-group" transform="translate(0 250)">
+<path d="M0,-36.8 L0,36.8 Q144,0 0,-36.8 Z" fill="#ececff" stroke="#333333" stroke-width="2" class="ishikawa-head"/>
+<text x="33" y="3.58" text-anchor="middle" font-size="14" font-weight="bold" fill="#333333">Effect</text>
+</g>
+</g>
+</g>
+</svg>

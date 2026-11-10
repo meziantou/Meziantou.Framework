@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="711.6" viewBox="0 0 880 711.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Incident response</title>
+<rect width="880" height="711.6" fill="#ffffff"/>
+<g class="title">
+<text x="440" y="55.4" text-anchor="middle" font-size="18" fill="#333333">Incident response</text>
+</g>
+<g class="diagram" transform="translate(40 71.6)">
+<g class="cynefin-backgrounds">
+<rect x="0" y="0" width="400" height="300" fill="#e8f5e9" fill-opacity="0.4" class="cynefinDomain"/>
+<rect x="400" y="0" width="400" height="300" fill="#e3f2fd" fill-opacity="0.4" class="cynefinDomain"/>
+<rect x="0" y="300" width="400" height="300" fill="#fbe9e7" fill-opacity="0.4" class="cynefinDomain"/>
+<rect x="400" y="300" width="400" height="300" fill="#fff8e1" fill-opacity="0.4" class="cynefinDomain"/>
+</g>
+<g class="cynefin-boundaries">
+<path d="M402.63,0 C404.62,42.86 398.35,42.86 400.35,85.71 C394.78,128.57 403.85,128.57 398.28,171.43 C406.14,214.29 393.24,214.29 401.1,257.14 C395.55,300 402.05,300 396.5,342.86 C402.79,385.71 394.33,385.71 400.62,428.57 C393.64,471.43 405.08,471.43 398.11,514.29 C401.29,557.14 393.76,557.14 396.95,600" fill="none" stroke="#333333" stroke-width="2" stroke-dasharray="6 3" class="cynefinBoundary"/>
+<path d="M0,299.4 C57.14,308.78 57.14,295.99 114.29,305.37 C171.43,296.37 171.43,310.91 228.57,301.91 C285.71,312.39 285.71,294.44 342.86,304.92 C400,301.09 400,298.59 457.14,294.76 C514.29,302.71 514.29,294.09 571.43,302.04 C628.57,297.85 628.57,311.64 685.71,307.44 C742.86,313.93 742.86,293.26 800,299.75" fill="none" stroke="#333333" stroke-width="2" stroke-dasharray="6 3" class="cynefinBoundary"/>
+<path d="M400,300 C424,360 364,465 412,525 C376,555 407.2,585 400,600" fill="none" stroke="#8b0000" stroke-width="4" class="cynefinCliff"/>
+</g>
+<path d="M280,300 A120,90 0 1,1 520,300 A120,90 0 1,1 280,300 Z" fill="#f3e5f5" fill-opacity="0.502" stroke="#333333" stroke-width="1.5" stroke-dasharray="4 2" class="cynefinConfusion"/>
+<g class="cynefin-labels">
+<text x="200" y="124.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Complex</text>
+<text x="200" y="142.81" text-anchor="middle" font-size="11" font-style="italic" fill="#333333">Probe → Sense → Respond</text>
+<text x="200" y="157.81" text-anchor="middle" font-size="11" font-style="italic" fill="#333333">Emergent Practices</text>
+<text x="600" y="124.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Complicated</text>
+<text x="600" y="142.81" text-anchor="middle" font-size="11" font-style="italic" fill="#333333">Sense → Analyse → Respond</text>
+<text x="600" y="157.81" text-anchor="middle" font-size="11" font-style="italic" fill="#333333">Good Practices</text>
+<text x="200" y="424.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Chaotic</text>
+<text x="200" y="442.81" text-anchor="middle" font-size="11" font-style="italic" fill="#333333">Act → Sense → Respond</text>
+<text x="200" y="457.81" text-anchor="middle" font-size="11" font-style="italic" fill="#333333">Novel Practices</text>
+<text x="600" y="424.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Clear</text>
+<text x="600" y="442.81" text-anchor="middle" font-size="11" font-style="italic" fill="#333333">Sense → Categorise → Respond</text>
+<text x="600" y="457.81" text-anchor="middle" font-size="11" font-style="italic" fill="#333333">Best Practices</text>
+<text x="400" y="294.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Confusion</text>
+<text x="400" y="310.81" text-anchor="middle" font-size="11" font-style="italic" fill="#333333">Disorder</text>
+</g>
+<g class="cynefin-items">
+<g class="cynefin-item">
+<rect x="131.57" y="175" width="136.86" height="26" rx="4" fill="#e8f5e9" fill-opacity="0.949" stroke="#333333" class="cynefinItem"/>
+<text x="200" y="191.07" text-anchor="middle" font-size="12" fill="#333333">Investigate root cause</text>
+</g>
+<g class="cynefin-item">
+<rect x="130.07" y="205" width="139.87" height="26" rx="4" fill="#e8f5e9" fill-opacity="0.949" stroke="#333333" class="cynefinItem"/>
+<text x="200" y="221.07" text-anchor="middle" font-size="12" fill="#333333">Run chaos experiment</text>
+</g>
+<g class="cynefin-item">
+<rect x="520.09" y="175" width="159.82" height="26" rx="4" fill="#e3f2fd" fill-opacity="0.949" stroke="#333333" class="cynefinItem"/>
+<text x="600" y="191.07" text-anchor="middle" font-size="12" fill="#333333">Analyze performance data</text>
+</g>
+<g class="cynefin-item">
+<rect x="123.22" y="475" width="153.56" height="26" rx="4" fill="#fbe9e7" fill-opacity="0.949" stroke="#333333" class="cynefinItem"/>
+<text x="200" y="491.07" text-anchor="middle" font-size="12" fill="#333333">Page on-call immediately</text>
+</g>
+<g class="cynefin-item">
+<rect x="549.57" y="475" width="100.86" height="26" rx="4" fill="#fff8e1" fill-opacity="0.949" stroke="#333333" class="cynefinItem"/>
+<text x="600" y="491.07" text-anchor="middle" font-size="12" fill="#333333">Restart service</text>
+</g>
+<g class="cynefin-item">
+<rect x="330.58" y="322" width="138.84" height="26" rx="4" fill="#f3e5f5" fill-opacity="0.949" stroke="#333333" class="cynefinItem"/>
+<text x="400" y="338.07" text-anchor="middle" font-size="12" fill="#333333">Unknown failure mode</text>
+</g>
+</g>
+<g class="cynefin-arrows">
+<path d="M200,150 Q400,210 600,150" fill="none" stroke="#333333" stroke-width="2" class="cynefinArrowLine"/>
+<path d="M601.15,149.66 L591.38,158.85 L587.93,147.36 Z" fill="#333333" class="cynefinArrowHead"/>
+<text x="400" y="200.21" text-anchor="middle" font-size="11" fill="#333333">Pattern identified</text>
+<path d="M600,450 Q400,390 200,450" fill="none" stroke="#333333" stroke-width="2" class="cynefinArrowLine"/>
+<path d="M198.85,450.34 L208.62,441.15 L212.07,452.64 Z" fill="#333333" class="cynefinArrowHead"/>
+<text x="400" y="380.21" text-anchor="middle" font-size="11" fill="#333333">Complacency</text>
+</g>
+</g>
+</svg>

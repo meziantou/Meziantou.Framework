@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.VectorGraphics. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The inputs of the unit tests seed the targets -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.VectorGraphics.Tests\TextMeasurerTests.cs" LogicalName="TextMeasurerTests.cs" Link="Seeds\TextMeasurerTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.VectorGraphics\Meziantou.Framework.VectorGraphics.csproj" />
+  </ItemGroup>
+</Project>

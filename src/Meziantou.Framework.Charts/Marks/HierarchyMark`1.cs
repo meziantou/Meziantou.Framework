@@ -17,7 +17,7 @@ public abstract class HierarchyMark<T> : Mark
     public Func<HierarchyNode<T>, object?>? Fill { get; set; }
 
     /// <summary>Gets or sets a single fill color for every node, used when <see cref="Fill"/> is not set.</summary>
-    public ChartColor? FillColor { get; set; }
+    public SceneColor? FillColor { get; set; }
 
     /// <summary>Gets or sets the label of a node, or <see langword="null"/> for its name. A label is drawn only when it fits.</summary>
     public Func<HierarchyNode<T>, string?>? Label { get; set; }
@@ -66,7 +66,7 @@ public abstract class HierarchyMark<T> : Mark
 
     private protected abstract void Render(RenderContext context, MarkData data, SceneGroup group, Dictionary<HierarchyNode<T>, int> indexes);
 
-    private protected ChartColor GetFill(RenderContext context, MarkData data, int index) => context.GetColor(data.Fill, index, FillColor);
+    private protected SceneColor GetFill(RenderContext context, MarkData data, int index) => context.GetColor(data.Fill, index, FillColor);
 
     private protected static T2 Decorate<T2>(T2 element, MarkData data, int index)
         where T2 : SceneElement

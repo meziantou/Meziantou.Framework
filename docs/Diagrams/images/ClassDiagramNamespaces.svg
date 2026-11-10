@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="627.57" height="183.6" viewBox="0 0 627.57 183.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="627.57" height="183.6" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+<g class="namespace" data-id="Orders">
+<rect x="0" y="0" width="456.51" height="167.6" fill="#ffffde" stroke="#aaaa33"/>
+<text x="228.26" y="17.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#333333">Orders</text>
+</g>
+</g>
+<g class="edges">
+<g class="edge relation">
+<path d="M431.51,97.4 L435.68,97.4 C439.85,97.4 448.18,97.4 456.51,97.4 C464.85,97.4 473.18,97.4 481.51,97.4 C489.85,97.4 498.18,97.4 502.35,97.4 L506.51,97.4" fill="none" stroke="#333333" class="edge-path"/>
+</g>
+<g class="edge note-link">
+<path d="M234.36,97.4 L238.53,97.4 C242.69,97.4 251.03,97.4 259.36,97.4 C267.69,97.4 276.03,97.4 280.19,97.4 L284.36,97.4" fill="none" stroke="#333333" stroke-dasharray="3 3" class="edge-path"/>
+</g>
+</g>
+<g class="edge-labels">
+</g>
+<g class="nodes">
+<g class="class" data-id="Order">
+<rect x="284.36" y="60.2" width="147.15" height="74.4" fill="#ececff" stroke="#9370db"/>
+<text x="357.94" y="79.89" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Order&lt;TItem&gt;</text>
+<line x1="284.36" y1="91.4" x2="431.51" y2="91.4" stroke="#9370db"/>
+<text x="357.94" y="111.09" text-anchor="middle" font-size="16" fill="#131300">List&lt;TItem&gt; items</text>
+<line x1="284.36" y1="122.6" x2="431.51" y2="122.6" stroke="#9370db"/>
+</g>
+<g class="interface" data-id="ISerializable">
+<circle cx="513.51" cy="97.4" r="7" fill="#ececff" stroke="#9370db"/>
+<text x="568.04" y="101.49" text-anchor="middle" font-size="16" fill="#333333">ISerializable</text>
+</g>
+<g class="note">
+<rect x="25" y="70.2" width="209.36" height="54.4" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="129.68" y="91.89" text-anchor="middle" font-size="16" fill="#000000">Orders are immutable once</text>
+<text x="129.68" y="111.09" text-anchor="middle" font-size="16" fill="#000000">paid</text>
+</g>
+</g>
+</g>
+</svg>

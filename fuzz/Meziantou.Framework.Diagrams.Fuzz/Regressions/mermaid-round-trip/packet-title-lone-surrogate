@@ -1,0 +1,7 @@
+packet
+  title UDP p­cket
+  0-15: "Source port"
+  16-31: "Destination port"
+  +16: "Length"
+  +16: "Checksum"
+  64-127: "Data (variable length)"

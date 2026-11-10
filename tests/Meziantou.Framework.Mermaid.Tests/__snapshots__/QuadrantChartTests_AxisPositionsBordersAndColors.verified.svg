@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300" viewBox="0 0 600 300" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="600" height="300" fill="#ffffff"/>
+<g class="marks">
+<g class="quadrant">
+<rect x="285" y="20" width="265" height="119" fill="#ececff"/>
+</g>
+<g class="quadrant">
+<rect x="20" y="20" width="265" height="119" fill="#ffe0e0"/>
+</g>
+<g class="quadrant">
+<rect x="20" y="139" width="265" height="119" fill="#f6f6ff"/>
+</g>
+<g class="quadrant">
+<rect x="285" y="139" width="265" height="119" fill="#fbfbff"/>
+</g>
+<g class="quadrant-label">
+<text x="417.5" y="72.31" text-anchor="middle" font-size="24" fill="#131300">Line 1</text>
+</g>
+<g class="quadrant-label">
+<text x="417.5" y="98.95" text-anchor="middle" font-size="24" fill="#131300">Line 2</text>
+</g>
+<g class="border">
+<rect x="20" y="20" width="530" height="238" fill="#000000" fill-opacity="0" stroke="#ff8800" stroke-width="6"/>
+</g>
+<g class="axis-label">
+<text x="152.5" y="291.62" text-anchor="middle" font-size="12" fill="#008000">Cheap</text>
+</g>
+<g class="axis-label">
+<text x="417.5" y="291.62" text-anchor="middle" font-size="12" fill="#008000">Expensive</text>
+</g>
+<g class="axis-label">
+<text x="589.36" y="198.5" text-anchor="middle" font-size="20" fill="#000080" transform="rotate(-90 589.36 198.5)">Slow</text>
+</g>
+<g class="axis-label">
+<text x="589.36" y="79.5" text-anchor="middle" font-size="20" fill="#000080" transform="rotate(-90 589.36 79.5)">Fast</text>
+</g>
+</g>
+</svg>

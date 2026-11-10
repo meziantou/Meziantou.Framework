@@ -1,5 +1,6 @@
 using Meziantou.Framework.Charts;
-using Meziantou.Framework.Imaging.Charts;
+using Meziantou.Framework.Imaging.VectorGraphics;
+using Meziantou.Framework.VectorGraphics;
 
 namespace Meziantou.Framework.Geo.Maps.Tool;
 
@@ -86,8 +87,8 @@ internal static class PreviewRenderer
         // Without a color, the marks get the colors of the theme: the tiles of the land and the ocean would be outlined
         plot.Add(new GeoMark<GeoGeometry>(geometries, geometry => geometry)
         {
-            FillColor = fill ?? ChartColor.Transparent,
-            StrokeColor = stroke ?? ChartColor.Transparent,
+            FillColor = fill ?? SceneColor.Transparent,
+            StrokeColor = stroke ?? SceneColor.Transparent,
             StrokeWidth = 0.75,
         });
     }

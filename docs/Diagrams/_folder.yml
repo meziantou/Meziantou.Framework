@@ -1,0 +1,4 @@
+title: Diagrams
+description: Draw flowcharts and other diagrams as SVG or images, laid out automatically.
+packageIds:
+- Meziantou.Framework.Diagrams

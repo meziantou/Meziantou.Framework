@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="311.92" height="55.2" viewBox="0 0 311.92 55.2" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="311.92" height="55.2" fill="#333333"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+</g>
+<g class="edges">
+<g class="edge solid">
+<path d="M63.47,19.6 L67.64,19.6 C71.81,19.6 80.14,19.6 87.14,19.6 C94.14,19.6 99.81,19.6 102.64,19.6 L105.47,19.6" fill="none" stroke="#d3d3d3" class="edge-path"/>
+<path d="M113.47,19.6 L105.47,15.6 L105.47,23.6 Z" fill="#d3d3d3" class="marker"/>
+</g>
+<g class="edge solid">
+<path d="M169.26,19.6 L173.43,19.6 C177.6,19.6 185.93,19.6 192.93,19.6 C199.93,19.6 205.6,19.6 208.43,19.6 L211.26,19.6" fill="none" stroke="#d3d3d3" class="edge-path"/>
+<path d="M219.26,19.6 L211.26,15.6 L211.26,23.6 Z" fill="#d3d3d3" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+</g>
+<g class="nodes">
+<g class="node" data-id="build">
+<g transform="translate(31.74 19.6)">
+<path d="M-31.74,-19.6 L31.74,-19.6 L31.74,19.6 L-31.74,19.6 Z" fill="#1f2020" stroke="#cccccc"/>
+</g>
+<text x="31.74" y="23.69" text-anchor="middle" font-size="16" fill="#cccccc">build</text>
+</g>
+<g class="node" data-id="test">
+<g transform="translate(141.37 19.6)">
+<path d="M-27.9,-19.6 L27.9,-19.6 L27.9,19.6 L-27.9,19.6 Z" fill="#1f2020" stroke="#cccccc"/>
+</g>
+<text x="141.37" y="23.69" text-anchor="middle" font-size="16" fill="#cccccc">test</text>
+</g>
+<g class="node" data-id="deploy">
+<g transform="translate(257.59 19.6)">
+<path d="M-38.33,-19.6 L38.33,-19.6 L38.33,19.6 L-38.33,19.6 Z" fill="#1f2020" stroke="#cccccc"/>
+</g>
+<text x="257.59" y="23.69" text-anchor="middle" font-size="16" fill="#cccccc">deploy</text>
+</g>
+</g>
+</g>
+</svg>

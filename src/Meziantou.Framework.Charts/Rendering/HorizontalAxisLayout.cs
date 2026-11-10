@@ -24,7 +24,7 @@ internal sealed class HorizontalAxisLayout
     /// <summary>The height the labels take under the ticks.</summary>
     public double LabelBlockHeight { get; }
 
-    public static HorizontalAxisLayout Create(IReadOnlyList<Tick> ticks, ITextMeasurer measurer, ChartFont font, double? rotation, double maxRotatedWidth)
+    public static HorizontalAxisLayout Create(IReadOnlyList<Tick> ticks, ITextMeasurer measurer, SceneFont font, double? rotation, double maxRotatedWidth)
     {
         var labels = ticks.Select(tick => new AxisLabel(tick.Position, tick.Label, measurer.Measure(tick.Label, font))).ToList();
         if (labels.Count is 0)

@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="680" viewBox="0 0 880 680" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="880" height="680" fill="#333333"/>
+<g class="diagram" transform="translate(40 40)">
+<g class="cynefin-backgrounds">
+<rect x="0" y="0" width="400" height="300" fill="#336699" fill-opacity="0.4" class="cynefinDomain"/>
+<rect x="400" y="0" width="400" height="300" fill="#0d47a1" fill-opacity="0.4" class="cynefinDomain"/>
+<rect x="0" y="300" width="400" height="300" fill="#bf360c" fill-opacity="0.4" class="cynefinDomain"/>
+<rect x="400" y="300" width="400" height="300" fill="#f57f17" fill-opacity="0.4" class="cynefinDomain"/>
+</g>
+<g class="cynefin-boundaries">
+<path d="M400,300 C424,360 364,465 412,525 C376,555 407.2,585 400,600" fill="none" stroke="#ff6b6b" stroke-width="4" class="cynefinCliff"/>
+</g>
+<path d="M280,300 A120,90 0 1,1 520,300 A120,90 0 1,1 280,300 Z" fill="#4a148c" fill-opacity="0.502" stroke="#d3d3d3" stroke-width="1.5" stroke-dasharray="4 2" class="cynefinConfusion"/>
+<g class="cynefin-labels">
+<text x="200" y="124.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#e0dfdf">Complex</text>
+<text x="200" y="143.32" text-anchor="middle" font-size="13" font-style="italic" fill="#cccccc">Probe → Sense → Respond</text>
+<text x="200" y="158.32" text-anchor="middle" font-size="13" font-style="italic" fill="#cccccc">Emergent Practices</text>
+<text x="600" y="124.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#e0dfdf">Complicated</text>
+<text x="600" y="143.32" text-anchor="middle" font-size="13" font-style="italic" fill="#cccccc">Sense → Analyse → Respond</text>
+<text x="600" y="158.32" text-anchor="middle" font-size="13" font-style="italic" fill="#cccccc">Good Practices</text>
+<text x="200" y="424.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#e0dfdf">Chaotic</text>
+<text x="200" y="443.32" text-anchor="middle" font-size="13" font-style="italic" fill="#cccccc">Act → Sense → Respond</text>
+<text x="200" y="458.32" text-anchor="middle" font-size="13" font-style="italic" fill="#cccccc">Novel Practices</text>
+<text x="600" y="424.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#e0dfdf">Clear</text>
+<text x="600" y="443.32" text-anchor="middle" font-size="13" font-style="italic" fill="#cccccc">Sense → Categorise → Respond</text>
+<text x="600" y="458.32" text-anchor="middle" font-size="13" font-style="italic" fill="#cccccc">Best Practices</text>
+<text x="400" y="294.09" text-anchor="middle" font-size="16" font-weight="bold" fill="#e0dfdf">Confusion</text>
+<text x="400" y="311.32" text-anchor="middle" font-size="13" font-style="italic" fill="#cccccc">Disorder</text>
+</g>
+<g class="cynefin-items">
+<g class="cynefin-item">
+<rect x="175.61" y="175" width="48.78" height="41.6" rx="4" fill="#336699" fill-opacity="0.949" stroke="#d3d3d3" class="cynefinItem"/>
+<text x="200" y="190.98" text-anchor="middle" font-size="14" fill="#cccccc">Two</text>
+<text x="200" y="207.78" text-anchor="middle" font-size="14" fill="#cccccc">lines</text>
+</g>
+<g class="cynefin-item">
+<rect x="355.09" y="322" width="89.82" height="26" rx="4" fill="#4a148c" fill-opacity="0.949" stroke="#d3d3d3" class="cynefinItem"/>
+<text x="400" y="338.58" text-anchor="middle" font-size="14" fill="#cccccc">Unknown 1</text>
+</g>
+<g class="cynefin-item">
+<rect x="355.09" y="352" width="89.82" height="26" rx="4" fill="#4a148c" fill-opacity="0.949" stroke="#d3d3d3" class="cynefinItem"/>
+<text x="400" y="368.58" text-anchor="middle" font-size="14" fill="#cccccc">Unknown 2</text>
+</g>
+<g class="cynefin-item">
+<rect x="355.09" y="382" width="89.82" height="26" rx="4" fill="#4a148c" fill-opacity="0.949" stroke="#d3d3d3" class="cynefinItem"/>
+<text x="400" y="398.58" text-anchor="middle" font-size="14" fill="#cccccc">Unknown 3</text>
+</g>
+<g class="cynefin-overflow">
+<rect x="364.13" y="412" width="71.74" height="26" rx="4" fill="#4a148c" fill-opacity="0.6" stroke="#d3d3d3" stroke-dasharray="3 2" class="cynefinItemOverflow"/>
+<text x="400" y="428.58" text-anchor="middle" font-size="14" fill="#cccccc">+2 more</text>
+</g>
+</g>
+<g class="cynefin-arrows">
+<path d="M200,450 Q245,300 200,150" fill="none" stroke="#d3d3d3" stroke-width="4" class="cynefinArrowLine"/>
+<path d="M199.31,147.7 L217.7,167.24 L194.71,174.14 Z" fill="#d3d3d3" class="cynefinArrowHead"/>
+<text x="245" y="289.52" text-anchor="middle" font-size="13" fill="#cccccc">Stabilized</text>
+<path d="M400,300 Q477.5,405 600,450" fill="none" stroke="#d3d3d3" stroke-width="4" class="cynefinArrowLine"/>
+<path d="M602.25,450.83 L575.59,453.82 L583.86,431.29 Z" fill="#d3d3d3" class="cynefinArrowHead"/>
+</g>
+</g>
+</svg>

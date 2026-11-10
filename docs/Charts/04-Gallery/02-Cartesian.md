@@ -230,7 +230,7 @@ plot.Add(new DotMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.M
     Size = car => car.Horsepower,
     Fill = car => car.Origin,
     FillOpacity = 0.7,
-    StrokeColor = ChartColor.White,
+    StrokeColor = SceneColor.White,
 });
 plot.SizeScale = new SizeScale { MaxRadius = 20 };
 ```
@@ -253,7 +253,7 @@ plot.Add(new DotMark<Car>(SampleData.Cars, x: car => car.Weight, y: car => car.M
     Size = car => car.Horsepower,
     Fill = car => car.Origin,
     FillOpacity = 0.7,
-    StrokeColor = ChartColor.White,
+    StrokeColor = SceneColor.White,
 });
 plot.SizeScale = new SizeScale { MaxRadius = 20 };
 plot.Legend.Position = LegendPosition.Right;

@@ -3,7 +3,7 @@ namespace Meziantou.Framework.Charts;
 /// <summary>What the marks need to draw their rows: the resolved scales, the coordinates and the theme.</summary>
 internal sealed class RenderContext
 {
-    public RenderContext(ChartTheme theme, ITextMeasurer measurer, ResolvedScale? x, ResolvedScale? y, ResolvedColorScale? color, ResolvedSizeScale? size, CoordinateSystem coordinates, ChartRectangle frame)
+    public RenderContext(ChartTheme theme, ITextMeasurer measurer, ResolvedScale? x, ResolvedScale? y, ResolvedColorScale? color, ResolvedSizeScale? size, CoordinateSystem coordinates, SceneBounds frame)
     {
         Theme = theme;
         Measurer = measurer;
@@ -30,14 +30,14 @@ internal sealed class RenderContext
     public CoordinateSystem Coordinates { get; }
 
     /// <summary>The plot area.</summary>
-    public ChartRectangle Frame { get; }
+    public SceneBounds Frame { get; }
 
-    public ChartFont LabelFont => new(Theme.TickFontSize);
+    public SceneFont LabelFont => new(Theme.TickFontSize);
 
-    public ChartColor DefaultColor => Theme.GetPaletteColor(0);
+    public SceneColor DefaultColor => Theme.GetPaletteColor(0);
 
     /// <summary>The color of a row: the channel mapped by the color scale, else the constant, else the first color of the theme.</summary>
-    public ChartColor GetColor(ChannelValues? channel, int index, ChartColor? constant)
+    public SceneColor GetColor(ChannelValues? channel, int index, SceneColor? constant)
     {
         if (channel is not null && Color is not null)
             return Color.Map(channel, index);
@@ -74,7 +74,7 @@ internal sealed class RenderContext
     }
 
     /// <summary>Adds a centered label, in a color that contrasts with the shape under it, when it fits a width and a height.</summary>
-    public void AddCenteredLabel(SceneGroup group, string? text, double x, double y, ChartColor background, double maxWidth, double maxHeight)
+    public void AddCenteredLabel(SceneGroup group, string? text, double x, double y, SceneColor background, double maxWidth, double maxHeight)
     {
         if (string.IsNullOrEmpty(text))
             return;
@@ -91,7 +91,7 @@ internal sealed class RenderContext
     }
 
     /// <summary>Adds a horizontal label centered in an annular sector, when it fits the thickness of the ring and the length of the arc at the angle of the label.</summary>
-    public void AddSectorLabel(SceneGroup group, string? text, double x, double y, ChartColor background, double angle, double thickness, double arcLength)
+    public void AddSectorLabel(SceneGroup group, string? text, double x, double y, SceneColor background, double angle, double thickness, double arcLength)
     {
         if (string.IsNullOrEmpty(text))
             return;
@@ -110,10 +110,10 @@ internal sealed class RenderContext
     }
 
     /// <summary>The color of a label drawn over a shape of a color: dark on light colors, white on dark colors.</summary>
-    public static ChartColor GetContrastingColor(ChartColor background)
+    public static SceneColor GetContrastingColor(SceneColor background)
     {
         var (lightness, _, _) = OkLab.FromColor(background);
-        return lightness > 0.65 ? (ChartColor)"#1f2328" : ChartColor.White;
+        return lightness > 0.65 ? (SceneColor)"#1f2328" : SceneColor.White;
     }
 
     private (double Start, double End) GetFrameExtent(bool isX)

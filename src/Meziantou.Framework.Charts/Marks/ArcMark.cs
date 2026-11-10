@@ -116,7 +116,7 @@ public sealed class ArcMark<T> : Mark<T>
         }
     }
 
-    private static void AddLabel(RenderContext context, SceneGroup group, string label, ChartColor fill, double x1, double x2, double y1, double y2)
+    private static void AddLabel(RenderContext context, SceneGroup group, string label, SceneColor fill, double x1, double x2, double y1, double y2)
     {
         var (px, py) = context.Coordinates.Project((x1 + x2) / 2, (y1 + y2) / 2);
         if (context.Coordinates is PolarSystem polar)

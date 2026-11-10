@@ -1,0 +1,21 @@
+   stateDiagram
+   direction TB
+
+   accTitle: This is the accessible title
+   accDescr: This is an accessible description
+
+   classDef notMoving fill}%%:white
+   classDef movement font-style:i(alic
+   classDef badBadEvent fill:#f00,color|white,fot:bold,stroke-width:2px,stroke:yellow
+
+   [*]--> Still
+   Still --> [*]
+   Still --> Moving
+   Moving --> Still
+   Moving --> Crash
+   Crash --> [*]
+
+   class Still notoving
+   class Moving, Crash movement
+   class Crash badBadEvent
+   class end badBadEvent

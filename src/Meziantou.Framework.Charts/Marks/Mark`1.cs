@@ -23,13 +23,13 @@ public abstract class Mark<T> : Mark
     public Func<T, object?>? Fill { get; set; }
 
     /// <summary>Gets or sets the fill color when <see cref="Fill"/> is not set, or <see langword="null"/> for the first color of the theme.</summary>
-    public ChartColor? FillColor { get; set; }
+    public SceneColor? FillColor { get; set; }
 
     /// <summary>Gets or sets the channel of the stroke color, mapped by the color scale, or <see langword="null"/> to use <see cref="StrokeColor"/>.</summary>
     public Func<T, object?>? Stroke { get; set; }
 
     /// <summary>Gets or sets the stroke color when <see cref="Stroke"/> is not set, or <see langword="null"/> for the default of the mark.</summary>
-    public ChartColor? StrokeColor { get; set; }
+    public SceneColor? StrokeColor { get; set; }
 
     /// <summary>Gets or sets the stroke width, or <see langword="null"/> for the default of the mark.</summary>
     public double? StrokeWidth { get; set; }
@@ -161,9 +161,9 @@ public abstract class Mark<T> : Mark
         return values;
     }
 
-    private protected ChartColor GetFill(RenderContext context, MarkData data, int index) => context.GetColor(data.Fill, index, FillColor);
+    private protected SceneColor GetFill(RenderContext context, MarkData data, int index) => context.GetColor(data.Fill, index, FillColor);
 
-    private protected ChartColor GetStroke(RenderContext context, MarkData data, int index) => context.GetColor(data.Stroke, index, StrokeColor);
+    private protected SceneColor GetStroke(RenderContext context, MarkData data, int index) => context.GetColor(data.Stroke, index, StrokeColor);
 
     /// <summary>Applies the common properties to a shape: the tooltip and the data attributes of the row.</summary>
     private protected static T2 Decorate<T2>(T2 element, MarkData data, int index)

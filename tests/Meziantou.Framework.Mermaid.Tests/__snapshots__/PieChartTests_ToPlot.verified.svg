@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="420.8" viewBox="0 0 600 420.8" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Pets adopted by volunteers</title>
+<rect width="600" height="420.8" fill="#ffffff"/>
+<g class="marks">
+<g class="pieOuterCircle">
+<path d="M266.66,49.9 A178.45,178.45 0 0,1 266.66,406.8 A178.45,178.45 0 0,1 266.66,49.9 Z" fill="none" stroke="#000000" stroke-width="2"/>
+</g>
+<g opacity="0.7" class="pieCircle">
+<path d="M266.66,49.9 A178.45,178.45 0 1,1 95.06,179.38 L266.66,228.35 Z" fill="#ececff" stroke="#000000" stroke-width="2"/>
+<path d="M95.06,179.38 A178.45,178.45 0 0,1 232.27,53.24 L266.66,228.35 Z" fill="#ffffde" stroke="#000000" stroke-width="2"/>
+<path d="M232.27,53.24 A178.45,178.45 0 0,1 266.66,49.9 L266.66,228.35 Z" fill="#b5ff20" stroke="#000000" stroke-width="2"/>
+</g>
+<g class="slice">
+<text x="347.28" y="339.53" text-anchor="middle" font-size="17" fill="#333333">79%</text>
+<text x="176.08" y="134.16" text-anchor="middle" font-size="17" fill="#333333">17%</text>
+<text x="253.7" y="99.48" text-anchor="middle" font-size="17" fill="#333333">3%</text>
+</g>
+</g>
+<g class="legend">
+<rect x="535.32" y="48.76" width="10" height="10" rx="2" fill="#ececff"/>
+<text x="550.32" y="58.11" font-size="17" fill="#000000">Dogs</text>
+<rect x="535.32" y="68.49" width="10" height="10" rx="2" fill="#ffffde"/>
+<text x="550.32" y="77.83" font-size="17" fill="#000000">Cats</text>
+<rect x="535.32" y="88.21" width="10" height="10" rx="2" fill="#b5ff20"/>
+<text x="550.32" y="97.56" font-size="17" fill="#000000">Rats</text>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#000000">Pets adopted by volunteers</text>
+<text x="10" y="35.42" font-size="12" fill="#59636e">Source: the shelter, 2025</text>
+</svg>

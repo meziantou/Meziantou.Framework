@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="254.45" height="484.8" viewBox="0 0 254.45 484.8" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="254.45" height="484.8" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+</g>
+<g class="edges">
+<g class="edge relationship">
+<path d="M119.23,84.8 L119.23,93.73 C119.23,102.67 119.23,120.53 119.23,138.4 C119.23,156.27 119.23,174.13 119.23,183.07 L119.23,192" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M110.23,93.8 L128.23,93.8" fill="none" stroke="#333333" class="marker"/>
+<path d="M110.23,99.8 L128.23,99.8" fill="none" stroke="#333333" class="marker"/>
+<path d="M128.23,192 L119.23,177" fill="none" stroke="#333333" class="marker"/>
+<path d="M119.23,192 L119.23,177" fill="none" stroke="#333333" class="marker"/>
+<path d="M110.23,192 L119.23,177" fill="none" stroke="#333333" class="marker"/>
+<path d="M125.23,168 C125.23,171.31 122.54,174 119.23,174 C115.91,174 113.23,171.31 113.23,168 C113.23,164.69 115.91,162 119.23,162 C122.54,162 125.23,164.69 125.23,168 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relationship">
+<path d="M119.23,301.6 L119.23,310.53 C119.23,319.47 119.23,337.33 119.23,355.2 C119.23,373.07 119.23,390.93 119.23,399.87 L119.23,408.8" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M110.23,310.6 L128.23,310.6" fill="none" stroke="#333333" class="marker"/>
+<path d="M110.23,316.6 L128.23,316.6" fill="none" stroke="#333333" class="marker"/>
+<path d="M128.23,408.8 L119.23,393.8" fill="none" stroke="#333333" class="marker"/>
+<path d="M119.23,408.8 L119.23,393.8" fill="none" stroke="#333333" class="marker"/>
+<path d="M110.23,408.8 L119.23,393.8" fill="none" stroke="#333333" class="marker"/>
+<path d="M128.23,390.8 L110.23,390.8" fill="none" stroke="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+<g class="edge-label">
+<rect x="92.11" y="124.8" width="54.24" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="119.23" y="142.49" text-anchor="middle" font-size="16" fill="#333333">places</text>
+</g>
+<g class="edge-label">
+<rect x="85.44" y="341.6" width="67.58" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="119.23" y="359.29" text-anchor="middle" font-size="16" fill="#333333">contains</text>
+</g>
+</g>
+<g class="nodes">
+<g class="entity" data-id="CUSTOMER">
+<rect x="51.16" y="0" width="136.13" height="84.8" fill="#ececff" stroke="#9370db"/>
+<text x="119.23" y="21.69" text-anchor="middle" font-size="16" fill="#131300">CUSTOMER</text>
+<rect x="51.16" y="35.2" width="50.44" height="24.8" fill="#ffffff" stroke="#9370db" class="attribute"/>
+<text x="76.38" y="51.18" text-anchor="middle" font-size="14" fill="#131300">string</text>
+<rect x="101.6" y="35.2" width="51.01" height="24.8" fill="#ffffff" stroke="#9370db" class="attribute"/>
+<text x="126.33" y="51.18" text-anchor="middle" font-size="14" fill="#131300">email</text>
+<rect x="152.62" y="35.2" width="34.68" height="24.8" fill="#ffffff" stroke="#9370db" class="attribute"/>
+<text x="169.95" y="51.18" text-anchor="middle" font-size="14" fill="#131300">PK</text>
+<rect x="51.16" y="60" width="50.44" height="24.8" fill="#f1f1ff" stroke="#9370db" class="attribute"/>
+<text x="76.38" y="75.98" text-anchor="middle" font-size="14" fill="#131300">string</text>
+<rect x="101.6" y="60" width="51.01" height="24.8" fill="#f1f1ff" stroke="#9370db" class="attribute"/>
+<text x="127.11" y="75.98" text-anchor="middle" font-size="14" fill="#131300">name</text>
+<rect x="152.62" y="60" width="34.68" height="24.8" fill="#f1f1ff" stroke="#9370db" class="attribute"/>
+</g>
+<g class="entity" data-id="ORDER">
+<rect x="0" y="192" width="238.45" height="109.6" fill="#ececff" stroke="#9370db"/>
+<text x="119.23" y="213.69" text-anchor="middle" font-size="16" fill="#131300">ORDER</text>
+<rect x="0" y="227.2" width="50.44" height="24.8" fill="#ffffff" stroke="#9370db" class="attribute"/>
+<text x="15.39" y="243.18" text-anchor="middle" font-size="14" fill="#131300">int</text>
+<rect x="50.44" y="227.2" width="108.57" height="24.8" fill="#ffffff" stroke="#9370db" class="attribute"/>
+<text x="63.89" y="243.18" text-anchor="middle" font-size="14" fill="#131300">id</text>
+<rect x="159.01" y="227.2" width="34.68" height="24.8" fill="#ffffff" stroke="#9370db" class="attribute"/>
+<text x="176.35" y="243.18" text-anchor="middle" font-size="14" fill="#131300">PK</text>
+<rect x="193.68" y="227.2" width="44.77" height="24.8" fill="#ffffff" stroke="#9370db" class="attribute"/>
+<rect x="0" y="252" width="50.44" height="24.8" fill="#f1f1ff" stroke="#9370db" class="attribute"/>
+<text x="25.22" y="267.98" text-anchor="middle" font-size="14" fill="#131300">string</text>
+<rect x="50.44" y="252" width="108.57" height="24.8" fill="#f1f1ff" stroke="#9370db" class="attribute"/>
+<text x="104.72" y="267.98" text-anchor="middle" font-size="14" fill="#131300">customerEmail</text>
+<rect x="159.01" y="252" width="34.68" height="24.8" fill="#f1f1ff" stroke="#9370db" class="attribute"/>
+<text x="175.95" y="267.98" text-anchor="middle" font-size="14" fill="#131300">FK</text>
+<rect x="193.68" y="252" width="44.77" height="24.8" fill="#f1f1ff" stroke="#9370db" class="attribute"/>
+<rect x="0" y="276.8" width="50.44" height="24.8" fill="#ffffff" stroke="#9370db" class="attribute"/>
+<text x="21.62" y="292.78" text-anchor="middle" font-size="14" fill="#131300">date</text>
+<rect x="50.44" y="276.8" width="108.57" height="24.8" fill="#ffffff" stroke="#9370db" class="attribute"/>
+<text x="85.68" y="292.78" text-anchor="middle" font-size="14" fill="#131300">placedAt</text>
+<rect x="159.01" y="276.8" width="34.68" height="24.8" fill="#ffffff" stroke="#9370db" class="attribute"/>
+<rect x="193.68" y="276.8" width="44.77" height="24.8" fill="#ffffff" stroke="#9370db" class="attribute"/>
+<text x="216.07" y="292.78" text-anchor="middle" font-size="14" fill="#131300">UTC</text>
+</g>
+<g class="entity" data-id="LINE-ITEM">
+<rect x="64.67" y="408.8" width="109.12" height="60" fill="#ececff" stroke="#9370db"/>
+<text x="119.23" y="430.49" text-anchor="middle" font-size="16" fill="#131300">LINE-ITEM</text>
+<rect x="64.67" y="444" width="35.06" height="24.8" fill="#ffffff" stroke="#9370db" class="attribute"/>
+<text x="80.06" y="459.98" text-anchor="middle" font-size="14" fill="#131300">int</text>
+<rect x="99.73" y="444" width="74.06" height="24.8" fill="#ffffff" stroke="#9370db" class="attribute"/>
+<text x="132.24" y="459.98" text-anchor="middle" font-size="14" fill="#131300">quantity</text>
+</g>
+</g>
+</g>
+</svg>

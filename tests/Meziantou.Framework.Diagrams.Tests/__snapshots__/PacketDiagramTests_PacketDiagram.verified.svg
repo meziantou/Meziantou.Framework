@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1042" height="250.6" viewBox="0 0 1042 250.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>UDP packet</title>
+<rect width="1042" height="250.6" fill="#ffffff"/>
+<g class="title">
+<text x="521" y="23.4" text-anchor="middle" font-size="18" fill="#333333">UDP packet</text>
+</g>
+<g class="diagram" transform="translate(8 39.6)">
+<g class="packet-field">
+<rect x="1" y="15" width="507" height="32" fill="#efefef" stroke="#000000" class="packet-block"/>
+<text x="254.5" y="34.07" text-anchor="middle" font-size="12" fill="#000000">Source port</text>
+<text x="1" y="13" font-size="10" fill="#000000" class="packet-bit start">0</text>
+<text x="508" y="13" text-anchor="end" font-size="10" fill="#000000" class="packet-bit end">15</text>
+</g>
+<g class="packet-field">
+<rect x="513" y="15" width="507" height="32" fill="#efefef" stroke="#000000" class="packet-block"/>
+<text x="766.5" y="34.07" text-anchor="middle" font-size="12" fill="#000000">Destination port</text>
+<text x="513" y="13" font-size="10" fill="#000000" class="packet-bit start">16</text>
+<text x="1020" y="13" text-anchor="end" font-size="10" fill="#000000" class="packet-bit end">31</text>
+</g>
+<g class="packet-field">
+<rect x="1" y="62" width="507" height="32" fill="#efefef" stroke="#000000" class="packet-block"/>
+<text x="254.5" y="81.07" text-anchor="middle" font-size="12" fill="#000000">Length</text>
+<text x="1" y="60" font-size="10" fill="#000000" class="packet-bit start">32</text>
+<text x="508" y="60" text-anchor="end" font-size="10" fill="#000000" class="packet-bit end">47</text>
+</g>
+<g class="packet-field">
+<rect x="513" y="62" width="507" height="32" fill="#efefef" stroke="#000000" class="packet-block"/>
+<text x="766.5" y="81.07" text-anchor="middle" font-size="12" fill="#000000">Checksum</text>
+<text x="513" y="60" font-size="10" fill="#000000" class="packet-bit start">48</text>
+<text x="1020" y="60" text-anchor="end" font-size="10" fill="#000000" class="packet-bit end">63</text>
+</g>
+<g class="packet-field">
+<rect x="1" y="109" width="1019" height="32" fill="#efefef" stroke="#000000" class="packet-block"/>
+<text x="510.5" y="128.07" text-anchor="middle" font-size="12" fill="#000000">Data (variable length)</text>
+<text x="1" y="107" font-size="10" fill="#000000" class="packet-bit start">64</text>
+<text x="1020" y="107" text-anchor="end" font-size="10" fill="#000000" class="packet-bit end">95</text>
+<rect x="1" y="156" width="1019" height="32" fill="#efefef" stroke="#000000" class="packet-block"/>
+<text x="510.5" y="175.07" text-anchor="middle" font-size="12" fill="#000000">Data (variable length)</text>
+<text x="1" y="154" font-size="10" fill="#000000" class="packet-bit start">96</text>
+<text x="1020" y="154" text-anchor="end" font-size="10" fill="#000000" class="packet-bit end">127</text>
+</g>
+</g>
+</svg>

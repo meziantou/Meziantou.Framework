@@ -12,20 +12,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The Adobe Glyph List (BSD-3-Clause, see THIRD-PARTY-NOTICES.md): maps characters to the glyph names of the AFM metrics -->
-    <EmbeddedResource Include="../Meziantou.Framework.Pdf/Fonts/GlyphList/glyphlist.txt" Link="Text/glyphlist.txt" LogicalName="Meziantou.Framework.Charts.glyphlist.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- The AFM metrics of Helvetica, and the shaper of FontFaceTextMeasurer; brings Meziantou.Framework.Unicode -->
-    <ProjectReference Include="../Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
+    <!-- The scene, the SVG writer and the text measurers -->
+    <ProjectReference Include="../Meziantou.Framework.VectorGraphics/Meziantou.Framework.VectorGraphics.csproj" />
 
     <!-- The features, geometries and projections of the maps -->
     <ProjectReference Include="../Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Rounds the numbers of the scales like the SVG writer rounds the coordinates -->
+    <Compile Include="../Meziantou.Framework.VectorGraphics/Internals/DecimalRounding.cs" Link="Internals/DecimalRounding.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Meziantou.Framework.Geo" />
+    <Using Include="Meziantou.Framework.VectorGraphics" />
   </ItemGroup>
 
   <ItemGroup>

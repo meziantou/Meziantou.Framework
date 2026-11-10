@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1216" height="267.6" viewBox="0 0 1216 267.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Release plan</title>
+<rect width="1216" height="267.6" fill="#ffffff"/>
+<g class="title">
+<text x="608" y="23.4" text-anchor="middle" font-size="18" fill="#333333">Release plan</text>
+</g>
+<g class="diagram" transform="translate(8 39.6)">
+<g class="excludes">
+<rect x="256" y="35" width="72" height="135" fill="#eeeeee" class="exclude-range"/>
+<rect x="509" y="35" width="73" height="135" fill="#eeeeee" class="exclude-range"/>
+<rect x="763" y="35" width="72" height="135" fill="#eeeeee" class="exclude-range"/>
+<rect x="1016" y="35" width="73" height="135" fill="#eeeeee" class="exclude-range"/>
+</g>
+<g class="grid">
+<line x1="292" y1="170" x2="292" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="292" y="181.56" text-anchor="middle" font-size="10" fill="#333333">Mar 10</text>
+<line x1="546" y1="170" x2="546" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="546" y="181.56" text-anchor="middle" font-size="10" fill="#333333">Mar 17</text>
+<line x1="799" y1="170" x2="799" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="799" y="181.56" text-anchor="middle" font-size="10" fill="#333333">Mar 24</text>
+<line x1="1053" y1="170" x2="1053" y2="35" stroke="#d3d3d3" opacity="0.8"/>
+<text x="1053" y="181.56" text-anchor="middle" font-size="10" fill="#333333">Mar 31</text>
+</g>
+<g class="sections">
+<rect x="0" y="48" width="1162.5" height="24" fill="#6666ff" fill-opacity="0.49" opacity="0.2" class="section section0"/>
+<rect x="0" y="72" width="1162.5" height="24" fill="#6666ff" fill-opacity="0.49" opacity="0.2" class="section section0"/>
+<rect x="0" y="96" width="1162.5" height="24" fill="#ffffff" opacity="0.2" class="section section1"/>
+<rect x="0" y="120" width="1162.5" height="24" fill="#ffffff" opacity="0.2" class="section section1"/>
+<rect x="0" y="144" width="1162.5" height="24" fill="#ffffff" opacity="0.2" class="section section1"/>
+</g>
+<g class="tasks">
+<g class="task done" data-id="spec">
+<rect x="75" y="50" width="181" height="20" rx="3" fill="#d3d3d3" stroke="#808080" stroke-width="2"/>
+</g>
+<g class="task active" data-id="review">
+<rect x="328" y="74" width="73" height="20" rx="3" fill="#bfc7ff" stroke="#534fbc" stroke-width="2"/>
+</g>
+<g class="task crit" data-id="api">
+<rect x="401" y="98" width="724" height="20" rx="3" fill="#ff0000" stroke="#ff8888" stroke-width="2"/>
+</g>
+<g class="task">
+<rect x="582" y="122" width="398" height="20" rx="3" fill="#8a90dd" stroke="#534fbc" stroke-width="2"/>
+</g>
+<g class="task milestone" data-id="release">
+<path d="M1125,144.69 L1136.31,156 L1125,167.31 L1113.69,156 Z" fill="#8a90dd" stroke="#534fbc" stroke-width="2"/>
+</g>
+</g>
+<g class="task-texts">
+<g class="task-text">
+<text x="165.5" y="62.81" text-anchor="middle" font-size="11" fill="#000000">Specification</text>
+</g>
+<g class="task-text">
+<text x="364.5" y="86.81" text-anchor="middle" font-size="11" fill="#000000">Review</text>
+</g>
+<g class="task-text">
+<text x="763" y="110.81" text-anchor="middle" font-size="11" fill="#000000">API</text>
+</g>
+<g class="task-text">
+<text x="781" y="134.81" text-anchor="middle" font-size="11" fill="#ffffff">Client</text>
+</g>
+<g class="task-text">
+<text x="1089.83" y="158.81" text-anchor="middle" font-size="11" fill="#000000">Release</text>
+</g>
+</g>
+<g class="section-titles">
+<text x="10" y="76.81" font-size="11" fill="#333333">Design</text>
+<text x="10" y="136.81" font-size="11" fill="#333333">Development</text>
+</g>
+</g>
+</svg>

@@ -1,0 +1,28 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <Import Project="../../src/Meziantou.Framework.SnapshotTesting/build/Meziantou.Framework.SnapshotTesting.targets" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Mermaid.Tests</RootNamespace>
+
+    <!-- Meziantou.Framework.Yaml reads the front matter -->
+    <GlobalizationSensitive>true</GlobalizationSensitive>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The examples of the documentation of Mermaid (MIT license, see Corpus/README.md) -->
+    <None Update="Corpus/**/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Mermaid/Meziantou.Framework.Mermaid.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Meziantou.Framework.Diagrams" />
+    <Using Include="Meziantou.Framework.VectorGraphics" />
+  </ItemGroup>
+
+</Project>

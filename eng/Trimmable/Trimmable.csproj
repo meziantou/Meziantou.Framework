@@ -31,6 +31,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.CommandLine\Meziantou.Framework.CommandLine.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Csv\Meziantou.Framework.Csv.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Diagnostics.MemoryDump\Meziantou.Framework.Diagnostics.MemoryDump.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Diagrams\Meziantou.Framework.Diagrams.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.DiffEngine\Meziantou.Framework.DiffEngine.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.DnsClient\Meziantou.Framework.DnsClient.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.DnsFilter\Meziantou.Framework.DnsFilter.csproj" />
@@ -315,7 +316,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Iconify\Meziantou.Framework.Iconify.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging\Meziantou.Framework.Imaging.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging.Barcodes\Meziantou.Framework.Imaging.Barcodes.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging.Charts\Meziantou.Framework.Imaging.Charts.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Imaging.VectorGraphics\Meziantou.Framework.Imaging.VectorGraphics.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JavaScriptEngine\Meziantou.Framework.JavaScriptEngine.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.JsonPath\Meziantou.Framework.JsonPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.LLMContext\Meziantou.Framework.LLMContext.csproj" />
@@ -329,6 +330,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Language.Xml\Meziantou.Framework.Language.Xml.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Markdown\Meziantou.Framework.Markdown.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.MediaTags\Meziantou.Framework.MediaTags.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Mermaid\Meziantou.Framework.Mermaid.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NodeJs\Meziantou.Framework.NodeJs.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpClient\Meziantou.Framework.NtpClient.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpServer\Meziantou.Framework.NtpServer.csproj" />
@@ -359,6 +361,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Uri\Meziantou.Framework.Uri.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ValueStopwatch\Meziantou.Framework.ValueStopwatch.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ValueStringBuilder\Meziantou.Framework.ValueStringBuilder.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.VectorGraphics\Meziantou.Framework.VectorGraphics.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Imaging\Meziantou.Framework.WebPlatform.Imaging.csproj" />
@@ -391,6 +394,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.CommandLine" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Csv" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Diagnostics.MemoryDump" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Diagrams" />
     <TrimmerRootAssembly Include="Meziantou.Framework.DiffEngine" />
     <TrimmerRootAssembly Include="Meziantou.Framework.DnsClient" />
     <TrimmerRootAssembly Include="Meziantou.Framework.DnsFilter" />
@@ -675,7 +679,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Iconify" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Imaging" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Imaging.Barcodes" />
-    <TrimmerRootAssembly Include="Meziantou.Framework.Imaging.Charts" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Imaging.VectorGraphics" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JavaScriptEngine" />
     <TrimmerRootAssembly Include="Meziantou.Framework.JsonPath" />
     <TrimmerRootAssembly Include="Meziantou.Framework.LLMContext" />
@@ -689,6 +693,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Language.Xml" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Markdown" />
     <TrimmerRootAssembly Include="Meziantou.Framework.MediaTags" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Mermaid" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NodeJs" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpClient" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpServer" />
@@ -719,6 +724,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Uri" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ValueStopwatch" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ValueStringBuilder" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.VectorGraphics" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Versioning" />
     <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform" />
     <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform.Imaging" />

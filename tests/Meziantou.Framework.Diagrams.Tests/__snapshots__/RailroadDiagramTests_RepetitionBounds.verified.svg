@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="555.93" height="199.6" viewBox="0 0 555.93 199.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="555.93" height="199.6" fill="#ffffff"/>
+<g class="diagram" transform="translate(18 8)">
+<g class="railroad-rule" data-name="bounded">
+<text x="40.67" y="53.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#333333">bounded =</text>
+<path d="M106.34,49.6 L121.34,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<g class="railroad-sequence">
+<g class="railroad-repetition">
+<g class="railroad-terminal">
+<rect x="141.34" y="30" width="28.9" height="39.2" rx="10" fill="#ffffde" stroke="#eeeebc" stroke-width="2"/>
+<text x="155.79" y="53.69" text-anchor="middle" font-size="16" fill="#000021">a</text>
+</g>
+<path d="M121.34,49.6 L141.34,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<path d="M170.24,49.6 L190.24,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<path d="M170.24,49.6 A10,10 0 0,1 180.24,59.6 L180.24,79.2 A10,10 0 0,1 170.24,89.2 L141.34,89.2 A10,10 0 0,1 131.34,79.2 L131.34,59.6 A10,10 0 0,1 141.34,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<text x="155.79" y="101.47" text-anchor="middle" font-size="12" fill="#333333">2..4</text>
+</g>
+<path d="M190.24,49.6 L200.24,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<g class="railroad-repetition">
+<g class="railroad-terminal">
+<rect x="220.24" y="30" width="28.9" height="39.2" rx="10" fill="#ffffde" stroke="#eeeebc" stroke-width="2"/>
+<text x="234.69" y="53.69" text-anchor="middle" font-size="16" fill="#000021">b</text>
+</g>
+<path d="M200.24,49.6 L220.24,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<path d="M249.14,49.6 L269.14,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<path d="M249.14,49.6 A10,10 0 0,1 259.14,59.6 L259.14,79.2 A10,10 0 0,1 249.14,89.2 L220.24,89.2 A10,10 0 0,1 210.24,79.2 L210.24,59.6 A10,10 0 0,1 220.24,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<text x="234.69" y="101.47" text-anchor="middle" font-size="12" fill="#333333">3</text>
+</g>
+<path d="M269.14,49.6 L279.14,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<g class="railroad-repetition">
+<g class="railroad-terminal">
+<rect x="299.14" y="30" width="28" height="39.2" rx="10" fill="#ffffde" stroke="#eeeebc" stroke-width="2"/>
+<text x="313.14" y="53.69" text-anchor="middle" font-size="16" fill="#000021">c</text>
+</g>
+<path d="M279.14,49.6 L299.14,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<path d="M327.14,49.6 L347.14,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<path d="M327.14,49.6 A10,10 0 0,1 337.14,59.6 L337.14,79.2 A10,10 0 0,1 327.14,89.2 L299.14,89.2 A10,10 0 0,1 289.14,79.2 L289.14,59.6 A10,10 0 0,1 299.14,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<text x="313.14" y="101.47" text-anchor="middle" font-size="12" fill="#333333">2+</text>
+</g>
+<path d="M347.14,49.6 L357.14,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<g class="railroad-repetition">
+<g class="railroad-terminal">
+<rect x="377.14" y="30" width="28.9" height="39.2" rx="10" fill="#ffffde" stroke="#eeeebc" stroke-width="2"/>
+<text x="391.58" y="53.69" text-anchor="middle" font-size="16" fill="#000021">d</text>
+</g>
+<path d="M357.14,49.6 L377.14,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<path d="M406.03,49.6 L426.03,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<path d="M357.14,49.6 A10,10 0 0,0 367.14,39.6 L367.14,20 A10,10 0 0,1 377.14,10 L406.03,10 A10,10 0 0,1 416.03,20 L416.03,39.6 A10,10 0 0,0 426.03,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+</g>
+<path d="M426.03,49.6 L436.03,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<g class="railroad-repetition">
+<g class="railroad-terminal">
+<rect x="456.03" y="30" width="28.9" height="39.2" rx="10" fill="#ffffde" stroke="#eeeebc" stroke-width="2"/>
+<text x="470.48" y="53.69" text-anchor="middle" font-size="16" fill="#000021">e</text>
+</g>
+<path d="M436.03,49.6 L456.03,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<path d="M484.93,49.6 L504.93,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<text x="470.48" y="81.47" text-anchor="middle" font-size="12" fill="#333333">1</text>
+</g>
+</g>
+<path d="M504.93,49.6 L509.93,49.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<circle cx="101.34" cy="49.6" r="5" fill="#333333" class="railroad-start"/>
+<circle cx="514.93" cy="49.6" r="5" fill="#333333" class="railroad-end"/>
+</g>
+<g class="railroad-rule" data-name="empty">
+<text x="30.46" y="157.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#333333">empty =</text>
+<path d="M85.91,153.6 L100.91,153.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<path d="M100.91,153.6 L105.91,153.6" fill="none" stroke="#333333" stroke-width="2" class="railroad-line"/>
+<circle cx="80.91" cy="153.6" r="5" fill="#333333" class="railroad-start"/>
+<circle cx="110.91" cy="153.6" r="5" fill="#333333" class="railroad-end"/>
+</g>
+</g>
+</svg>

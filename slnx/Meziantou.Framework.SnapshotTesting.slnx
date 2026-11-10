@@ -3,6 +3,7 @@
     <Project Path="../src/Meziantou.Framework.Avatar/Meziantou.Framework.Avatar.csproj" />
     <Project Path="../src/Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
     <Project Path="../src/Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
+    <Project Path="../src/Meziantou.Framework.Diagrams/Meziantou.Framework.Diagrams.csproj" />
     <Project Path="../src/Meziantou.Framework.DiffEngine/Meziantou.Framework.DiffEngine.csproj" />
     <Project Path="../src/Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />
@@ -12,11 +13,12 @@
     <Project Path="../src/Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
     <Project Path="../src/Meziantou.Framework.Hashing/Meziantou.Framework.Hashing.csproj" />
     <Project Path="../src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
-    <Project Path="../src/Meziantou.Framework.Imaging.Charts/Meziantou.Framework.Imaging.Charts.csproj" />
+    <Project Path="../src/Meziantou.Framework.Imaging.VectorGraphics/Meziantou.Framework.Imaging.VectorGraphics.csproj" />
     <Project Path="../src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
     <Project Path="../src/Meziantou.Framework.InlineSnapshotTesting/Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="../src/Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj" />
+    <Project Path="../src/Meziantou.Framework.Mermaid/Meziantou.Framework.Mermaid.csproj" />
     <Project Path="../src/Meziantou.Framework.Pdf/Meziantou.Framework.Pdf.csproj" />
     <Project Path="../src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
     <Project Path="../src/Meziantou.Framework.SnapshotTesting.Imaging/Meziantou.Framework.SnapshotTesting.Imaging.csproj" />
@@ -26,13 +28,18 @@
     <Project Path="../src/Meziantou.Framework.Unicode.Dictionaries/Meziantou.Framework.Unicode.Dictionaries.csproj" />
     <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
     <Project Path="../src/Meziantou.Framework.Unix.ControlGroups/Meziantou.Framework.Unix.ControlGroups.csproj" />
+    <Project Path="../src/Meziantou.Framework.VectorGraphics/Meziantou.Framework.VectorGraphics.csproj" />
     <Project Path="../src/Meziantou.Framework.Win32.Jobs/Meziantou.Framework.Win32.Jobs.csproj" />
+    <Project Path="../src/Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj" />
+    <Project Path="../src/Meziantou.Framework.Yaml/Meziantou.Framework.Yaml.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Avatar.Tests/Meziantou.Framework.Avatar.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Barcodes.Tests/Meziantou.Framework.Barcodes.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Charts.Tests/Meziantou.Framework.Charts.Tests.csproj" />
-    <Project Path="../tests/Meziantou.Framework.Imaging.Charts.Tests/Meziantou.Framework.Imaging.Charts.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Diagrams.Tests/Meziantou.Framework.Diagrams.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Imaging.VectorGraphics.Tests/Meziantou.Framework.Imaging.VectorGraphics.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Mermaid.Tests/Meziantou.Framework.Mermaid.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Pdf.TestHarness/Meziantou.Framework.Pdf.TestHarness.csproj" />
     <Project Path="../tests/Meziantou.Framework.Pdf.Tests/Meziantou.Framework.Pdf.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.SnapshotTesting.Tests/Meziantou.Framework.SnapshotTesting.Tests.csproj" />

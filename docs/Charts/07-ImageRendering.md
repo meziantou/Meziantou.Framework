@@ -3,22 +3,24 @@ title: Image rendering
 description: Render charts as PNG, WebP or JPEG images, draw them on a canvas, and choose their fonts.
 ---
 
-`Meziantou.Framework.Imaging.Charts` draws the charts with [Meziantou.Framework.Imaging](../Imaging/01-Introduction.md):
-as images in any format the library writes, or as vector shapes on an existing image.
+`Meziantou.Framework.Imaging.VectorGraphics` draws the charts with [Meziantou.Framework.Imaging](../Imaging/01-Introduction.md):
+as images in any format the library writes, or as vector shapes on an existing image. It draws any
+[ISceneSource](cref:Meziantou.Framework.VectorGraphics.ISceneSource), such as a [Plot](cref:Meziantou.Framework.Charts.Plot)
+or a diagram (see [Vector graphics](../VectorGraphics/03-ImageRendering.md)).
 
-<InstallNuGetPackage Id="Meziantou.Framework.Imaging.Charts" />
+<InstallNuGetPackage Id="Meziantou.Framework.Imaging.VectorGraphics" />
 
-The types are in the [Meziantou.Framework.Imaging.Charts](cref:Meziantou.Framework.Imaging.Charts) namespace. The
-examples also use the [Meziantou.Framework.Charts](cref:Meziantou.Framework.Charts),
+The types are in the [Meziantou.Framework.Imaging.VectorGraphics](cref:Meziantou.Framework.Imaging.VectorGraphics)
+namespace. The examples also use the [Meziantou.Framework.Charts](cref:Meziantou.Framework.Charts),
 [Meziantou.Framework.Imaging](cref:Meziantou.Framework.Imaging) and
 [Meziantou.Framework.Imaging.Formats](cref:Meziantou.Framework.Imaging.Formats) namespaces.
 
 ## Render a chart as an image
 
-[ToImage](cref:Meziantou.Framework.Imaging.Charts.ChartImageRenderer.ToImage) renders a plot as an image of its size.
-[Scale](cref:Meziantou.Framework.Imaging.Charts.ChartImageOptions.Scale) multiplies the pixels, for high-density screens:
+[ToImage](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageRenderer.ToImage) renders a plot as an image of its size.
+[Scale](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.Scale) multiplies the pixels, for high-density screens:
 
-<!-- ref:../../tests/Meziantou.Framework.Imaging.Charts.Tests/ChartImageRendererTests.cs;region=ImagingCharts_ToImage;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Imaging.VectorGraphics.Tests/ChartImageTests.cs;region=ChartImage_ToImage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 Fruit[] fruits = [new("Apples", 12), new("Bananas", 7), new("Cherries", 18)];
 var plot = new Plot { Title = "Fruits sold", Width = 400, Height = 250 };
@@ -32,7 +34,7 @@ using var png = new MemoryStream();
 image.Save(png, new PngEncoder());
 
 // Twice the pixels, for high-density screens
-using var retina = plot.ToImage(new ChartImageOptions { Scale = 2 });
+using var retina = plot.ToImage(new SceneImageOptions { Scale = 2 });
 Assert.Equal((800, 500), (retina.Width, retina.Height));
 ```
 <!-- endref -->
@@ -40,35 +42,37 @@ Assert.Equal((800, 500), (retina.Width, retina.Height));
 ![A bar chart of three fruits](images/FruitsSold.png)
 
 The image renderer and the SVG renderer draw the same layout
-([ChartScene](cref:Meziantou.Framework.Charts.ChartScene)), so an image looks like the SVG of the same plot.
+([Scene](cref:Meziantou.Framework.VectorGraphics.Scene)), so an image looks like the SVG of the same plot.
 
 ## Draw a chart on a canvas
 
-[DrawChart](cref:Meziantou.Framework.Imaging.Charts.ChartImageRenderer.DrawChart) draws a plot on a canvas at a position:
+[DrawScene](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageRenderer.DrawScene) draws a plot on a canvas at a position:
 the transform, the clip and the layers of the canvas apply.
-[MeasureChart](cref:Meziantou.Framework.Imaging.Charts.ChartImageRenderer.MeasureChart) gives its size first:
+[MeasureScene](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageRenderer.MeasureScene) gives its size first:
 
-<!-- ref:../../tests/Meziantou.Framework.Imaging.Charts.Tests/ChartImageRendererTests.cs;region=ImagingCharts_DrawChart;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Imaging.VectorGraphics.Tests/ChartImageTests.cs;region=ChartImage_DrawOnCanvas;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var report = new Image<Rgba32>(500, 300, Colors.White); // or Image.Load<Rgba32>("report.png")
 var plot = new Plot { Width = 300, Height = 200, Theme = ChartTheme.Light with { Background = null } };
 plot.Add(new ArcMark<Fruit>([new("Apples", 12), new("Bananas", 7)], value: fruit => fruit.Count) { Fill = fruit => fruit.Name });
 
-var size = ChartImageRenderer.MeasureChart(plot);
+var size = SceneImageRenderer.MeasureScene(plot);
 Assert.Equal((300, 200), (size.Width, size.Height));
 
 // Drawn as vector shapes and text: the transform and the clip of the canvas apply
-report.Draw(canvas => canvas.DrawChart(plot, new PointD(180, 80)));
+report.Draw(canvas => canvas.DrawScene(plot, new PointD(180, 80)));
 ```
 <!-- endref -->
 
 ## Fonts
 
 The plot is laid out with the font that draws it, so the margins, the rotated labels and the truncated labels fit. The
-package embeds Liberation Sans ([ChartFonts](cref:Meziantou.Framework.Imaging.Charts.ChartFonts)), subset to the Latin
+package embeds Liberation Sans ([SceneFonts](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneFonts)), subset to the Latin
 characters. Its widths are those of Helvetica and Arial, the widths the SVG renderer uses by default; their kerning
 differs a little, so a text can be slightly narrower or wider in an image than in an SVG.
 
-For other scripts, pass a font that has them in [ChartImageOptions.Font](cref:Meziantou.Framework.Imaging.Charts.ChartImageOptions.Font),
+For other scripts, pass a font that has them in [SceneImageOptions.Font](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.Font),
 for instance a font installed on the machine, from `SystemFontCollection`.
-[BoldFont](cref:Meziantou.Framework.Imaging.Charts.ChartImageOptions.BoldFont) sets the font of the bold texts.
+[BoldFont](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.BoldFont) sets the font of the bold texts,
+[ItalicFont](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.ItalicFont) and
+[BoldItalicFont](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.BoldItalicFont) the ones of the italic texts.

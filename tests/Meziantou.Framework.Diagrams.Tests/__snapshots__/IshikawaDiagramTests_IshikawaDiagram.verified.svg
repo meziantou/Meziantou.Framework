@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="447.34" height="580.33" viewBox="0 0 447.34 580.33" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="447.34" height="580.33" fill="#ffffff"/>
+<g class="diagram" transform="translate(355.34 39.19)">
+<g class="ishikawa">
+<g class="spine">
+<line x1="-335.34" y1="350" x2="0" y2="350" stroke="#333333" stroke-width="2" class="ishikawa-spine"/>
+</g>
+<g class="ishikawa-head-group" transform="translate(0 350)">
+<path d="M0,-53.6 L0,53.6 Q144,0 0,-53.6 Z" fill="#ececff" stroke="#333333" stroke-width="2" class="ishikawa-head"/>
+<text x="33" y="-4.82" text-anchor="middle" font-size="14" font-weight="bold" fill="#333333">Blurry</text>
+<text x="33" y="11.98" text-anchor="middle" font-size="14" font-weight="bold" fill="#333333">photo</text>
+</g>
+<g class="pair">
+<line x1="-20" y1="350" x2="-68.71" y2="3.41" stroke="#333333" stroke-width="2" class="ishikawa-branch"/>
+<path d="M-20,350 L-15.73,337.28 L-27.61,338.95 Z" fill="#333333" class="ishikawa-arrow"/>
+<g class="ishikawa-label-group">
+<rect x="-117.61" y="-19.19" width="97.79" height="23.2" fill="#ececff" stroke="#333333" stroke-width="2" class="ishikawa-label-box"/>
+<text x="-68.71" y="-3.51" text-anchor="middle" font-size="16" fill="#333333">Process</text>
+</g>
+<g class="ishikawa-sub-group">
+<line x1="-36.24" y1="234.47" x2="-66.24" y2="234.47" stroke="#333333" class="ishikawa-sub-branch"/>
+<path d="M-36.24,234.47 L-42.24,231.47 L-42.24,237.47 Z" fill="#333333" class="ishikawa-arrow"/>
+<text x="-66.24" y="228.96" text-anchor="end" font-size="16" fill="#333333">Shutter speed</text>
+<text x="-66.24" y="248.16" text-anchor="end" font-size="16" fill="#333333">too slow</text>
+</g>
+<g class="ishikawa-sub-group">
+<line x1="-52.47" y1="118.94" x2="-82.47" y2="118.94" stroke="#333333" class="ishikawa-sub-branch"/>
+<path d="M-52.47,118.94 L-58.47,115.94 L-58.47,121.94 Z" fill="#333333" class="ishikawa-arrow"/>
+<text x="-82.47" y="123.03" text-anchor="end" font-size="16" fill="#333333">Out of focus</text>
+</g>
+<line x1="-20" y1="350" x2="-40.88" y2="498.54" stroke="#333333" stroke-width="2" class="ishikawa-branch"/>
+<path d="M-20,350 L-27.61,361.05 L-15.73,362.72 Z" fill="#333333" class="ishikawa-arrow"/>
+<g class="ishikawa-label-group">
+<rect x="-77.76" y="497.94" width="73.78" height="23.2" fill="#ececff" stroke="#333333" stroke-width="2" class="ishikawa-label-box"/>
+<text x="-40.88" y="513.63" text-anchor="middle" font-size="16" fill="#333333">User</text>
+</g>
+<g class="ishikawa-sub-group">
+<line x1="-30.44" y1="424.27" x2="-60.44" y2="424.27" stroke="#333333" class="ishikawa-sub-branch"/>
+<path d="M-30.44,424.27 L-36.44,421.27 L-36.44,427.27 Z" fill="#333333" class="ishikawa-arrow"/>
+<text x="-60.44" y="428.36" text-anchor="end" font-size="16" fill="#333333">Shaky hands</text>
+</g>
+</g>
+<g class="pair">
+<line x1="-168.27" y1="350" x2="-216.98" y2="3.41" stroke="#333333" stroke-width="2" class="ishikawa-branch"/>
+<path d="M-168.27,350 L-163.99,337.28 L-175.88,338.95 Z" fill="#333333" class="ishikawa-arrow"/>
+<g class="ishikawa-label-group">
+<rect x="-275.22" y="-19.19" width="116.48" height="23.2" fill="#ececff" stroke="#333333" stroke-width="2" class="ishikawa-label-box"/>
+<text x="-216.98" y="-3.51" text-anchor="middle" font-size="16" fill="#333333">Equipment</text>
+</g>
+<g class="ishikawa-sub-group">
+<line x1="-176.38" y1="292.23" x2="-241.38" y2="292.23" stroke="#333333" class="ishikawa-sub-branch"/>
+<path d="M-176.38,292.23 L-182.38,289.23 L-182.38,295.23 Z" fill="#333333" class="ishikawa-arrow"/>
+<text x="-241.38" y="296.32" text-anchor="end" font-size="16" fill="#333333">Sensor</text>
+</g>
+<g class="ishikawa-sub-group">
+<line x1="-208.88" y1="292.23" x2="-217" y2="234.47" stroke="#333333" class="ishikawa-sub-branch"/>
+<path d="M-208.88,292.23 L-206.75,285.88 L-212.69,286.71 Z" fill="#333333" class="ishikawa-arrow"/>
+<text x="-217" y="233.76" text-anchor="end" font-size="16" fill="#333333">Dirty sensor</text>
+</g>
+<g class="ishikawa-sub-group">
+<line x1="-192.62" y1="176.7" x2="-262.62" y2="176.7" stroke="#333333" class="ishikawa-sub-branch"/>
+<path d="M-192.62,176.7 L-198.62,173.7 L-198.62,179.7 Z" fill="#333333" class="ishikawa-arrow"/>
+<text x="-262.62" y="180.79" text-anchor="end" font-size="16" fill="#333333">Lens</text>
+</g>
+<g class="ishikawa-sub-group">
+<line x1="-239.29" y1="176.7" x2="-247.41" y2="118.94" stroke="#333333" class="ishikawa-sub-branch"/>
+<path d="M-239.29,176.7 L-237.15,170.34 L-243.09,171.18 Z" fill="#333333" class="ishikawa-arrow"/>
+<text x="-247.41" y="118.23" text-anchor="end" font-size="16" fill="#333333">Dirty lens</text>
+</g>
+<g class="ishikawa-sub-group">
+<line x1="-215.95" y1="176.7" x2="-232.19" y2="61.17" stroke="#333333" class="ishikawa-sub-branch"/>
+<path d="M-215.95,176.7 L-213.82,170.34 L-219.76,171.18 Z" fill="#333333" class="ishikawa-arrow"/>
+<text x="-232.19" y="60.46" text-anchor="end" font-size="16" fill="#333333">Damaged lens</text>
+</g>
+<line x1="-168.27" y1="350" x2="-189.14" y2="498.54" stroke="#333333" stroke-width="2" class="ishikawa-branch"/>
+<path d="M-168.27,350 L-175.88,361.05 L-163.99,362.72 Z" fill="#333333" class="ishikawa-arrow"/>
+<g class="ishikawa-label-group">
+<rect x="-253.89" y="497.94" width="129.49" height="23.2" fill="#ececff" stroke="#333333" stroke-width="2" class="ishikawa-label-box"/>
+<text x="-189.14" y="513.63" text-anchor="middle" font-size="16" fill="#333333">Environment</text>
+</g>
+<g class="ishikawa-sub-group">
+<line x1="-175.22" y1="399.51" x2="-205.22" y2="399.51" stroke="#333333" class="ishikawa-sub-branch"/>
+<path d="M-175.22,399.51 L-181.22,396.51 L-181.22,402.51 Z" fill="#333333" class="ishikawa-arrow"/>
+<text x="-205.22" y="394" text-anchor="end" font-size="16" fill="#333333">Subject moved</text>
+<text x="-205.22" y="413.2" text-anchor="end" font-size="16" fill="#333333">too quickly</text>
+</g>
+<g class="ishikawa-sub-group">
+<line x1="-182.18" y1="449.03" x2="-212.18" y2="449.03" stroke="#333333" class="ishikawa-sub-branch"/>
+<path d="M-182.18,449.03 L-188.18,446.03 L-188.18,452.03 Z" fill="#333333" class="ishikawa-arrow"/>
+<text x="-212.18" y="453.11" text-anchor="end" font-size="16" fill="#333333">Too dark</text>
+</g>
+</g>
+</g>
+</g>
+</svg>

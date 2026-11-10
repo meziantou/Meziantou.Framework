@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="334.41" height="249.6" viewBox="0 0 334.41 249.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="334.41" height="249.6" fill="#ffffff"/>
+<g class="diagram" transform="translate(8.5 8)">
+<g class="lines">
+<line x1="5" y1="43.8" x2="15" y2="43.8" stroke="#333333"/>
+<line x1="20" y1="73" x2="30" y2="73" stroke="#333333"/>
+<line x1="20" y1="102.2" x2="30" y2="102.2" stroke="#333333"/>
+<line x1="20" y1="58.4" x2="20" y2="102.7" stroke="#333333"/>
+<line x1="5" y1="131.4" x2="15" y2="131.4" stroke="#333333"/>
+<line x1="20" y1="160.6" x2="30" y2="160.6" stroke="#333333"/>
+<line x1="20" y1="146" x2="20" y2="161.1" stroke="#333333"/>
+<line x1="5" y1="189.8" x2="15" y2="189.8" stroke="#333333"/>
+<line x1="5" y1="219" x2="15" y2="219" stroke="#333333"/>
+<line x1="5" y1="29.2" x2="5" y2="219.5" stroke="#333333"/>
+</g>
+<g class="highlights">
+<rect x="30" y="59.4" width="286.41" height="27.2" rx="3" fill="#ffc107" fill-opacity="0.149" stroke="#ffc107" class="highlight"/>
+</g>
+<g class="nodes">
+<g class="node directory">
+<g class="icon" transform="matrix(0.583333 0 0 0.583333 5 5)">
+<path d="M10.59,4.59 A2,2 0 0,0 9.17,4 L4,4 A2,2 0 0,0 2,6 L2,18 A2,2 0 0,0 4,20 L20,20 A2,2 0 0,0 22,18 L22,8 A2,2 0 0,0 20,6 L12.83,6 Z" fill="#546e7a"/>
+</g>
+<text x="23" y="18.69" font-size="16" font-weight="bold" fill="#333333">/</text>
+</g>
+<g class="node directory">
+<g class="icon" transform="matrix(0.583333 0 0 0.583333 20 34.2)">
+<path d="M10.59,4.59 A2,2 0 0,0 9.17,4 L4,4 A2,2 0 0,0 2,6 L2,18 A2,2 0 0,0 4,20 L20,20 A2,2 0 0,0 22,18 L22,8 A2,2 0 0,0 20,6 L12.83,6 Z" fill="#546e7a"/>
+</g>
+<text x="38" y="47.89" font-size="16" font-weight="bold" fill="#333333">src</text>
+</g>
+<g class="node highlight">
+<g class="icon" transform="matrix(0.583333 0 0 0.583333 35 63.4)">
+<path d="M6,2 A2,2 0 0,0 4,4 L4,20 A2,2 0 0,0 6,22 L18,22 A2,2 0 0,0 20,20 L20,8.83 A2,2 0 0,0 19.41,7.41 L14.59,2.59 A2,2 0 0,0 13.17,2 L6,2 Z M13.5,3.9 L18.1,8.5 L14.5,8.5 A1,1 0 0,1 13.5,7.5 L13.5,3.9 Z" fill-rule="evenodd" fill="#546e7a"/>
+</g>
+<text x="53" y="77.09" font-size="16" fill="#333333">App.tsx</text>
+<text x="147.71" y="77.09" font-size="16" font-style="italic" fill="#6a9955">main component</text>
+</g>
+<g class="node">
+<g class="icon" transform="matrix(0.583333 0 0 0.583333 35 92.6)">
+<path d="M6,2 A2,2 0 0,0 4,4 L4,20 A2,2 0 0,0 6,22 L18,22 A2,2 0 0,0 20,20 L20,8.83 A2,2 0 0,0 19.41,7.41 L14.59,2.59 A2,2 0 0,0 13.17,2 L6,2 Z M13.5,3.9 L18.1,8.5 L14.5,8.5 A1,1 0 0,1 13.5,7.5 L13.5,3.9 Z" fill-rule="evenodd" fill="#546e7a"/>
+</g>
+<text x="53" y="106.29" font-size="16" fill="#333333">index.ts</text>
+<text x="147.71" y="106.29" font-size="16" font-style="italic" fill="#6a9955">entry point</text>
+</g>
+<g class="node directory">
+<g class="icon" transform="matrix(0.583333 0 0 0.583333 20 121.8)">
+<path d="M10.59,4.59 A2,2 0 0,0 9.17,4 L4,4 A2,2 0 0,0 2,6 L2,18 A2,2 0 0,0 4,20 L20,20 A2,2 0 0,0 22,18 L22,8 A2,2 0 0,0 20,6 L12.83,6 Z" fill="#546e7a"/>
+</g>
+<text x="38" y="135.49" font-size="16" font-weight="bold" fill="#333333">tests</text>
+</g>
+<g class="node">
+<g class="icon" transform="matrix(0.583333 0 0 0.583333 35 151)">
+<path d="M6,2 A2,2 0 0,0 4,4 L4,20 A2,2 0 0,0 6,22 L18,22 A2,2 0 0,0 20,20 L20,8.83 A2,2 0 0,0 19.41,7.41 L14.59,2.59 A2,2 0 0,0 13.17,2 L6,2 Z M13.5,3.9 L18.1,8.5 L14.5,8.5 A1,1 0 0,1 13.5,7.5 L13.5,3.9 Z" fill-rule="evenodd" fill="#546e7a"/>
+</g>
+<text x="53" y="164.69" font-size="16" fill="#333333">app.test.ts</text>
+</g>
+<g class="node">
+<g class="icon" transform="matrix(0.583333 0 0 0.583333 20 180.2)">
+<path d="M6,2 A2,2 0 0,0 4,4 L4,20 A2,2 0 0,0 6,22 L18,22 A2,2 0 0,0 20,20 L20,8.83 A2,2 0 0,0 19.41,7.41 L14.59,2.59 A2,2 0 0,0 13.17,2 L6,2 Z M13.5,3.9 L18.1,8.5 L14.5,8.5 A1,1 0 0,1 13.5,7.5 L13.5,3.9 Z" fill-rule="evenodd" fill="#546e7a"/>
+</g>
+<text x="38" y="193.89" font-size="16" fill="#333333">.env</text>
+<text x="147.71" y="193.89" font-size="16" font-style="italic" fill="#6a9955">environment variables</text>
+</g>
+<g class="node">
+<g class="icon" transform="matrix(0.583333 0 0 0.583333 20 209.4)">
+<path d="M6,2 A2,2 0 0,0 4,4 L4,20 A2,2 0 0,0 6,22 L18,22 A2,2 0 0,0 20,20 L20,8.83 A2,2 0 0,0 19.41,7.41 L14.59,2.59 A2,2 0 0,0 13.17,2 L6,2 Z M13.5,3.9 L18.1,8.5 L14.5,8.5 A1,1 0 0,1 13.5,7.5 L13.5,3.9 Z" fill-rule="evenodd" fill="#546e7a"/>
+</g>
+<text x="38" y="223.09" font-size="16" fill="#333333">package.json</text>
+</g>
+</g>
+</g>
+</svg>

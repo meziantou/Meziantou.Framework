@@ -1,0 +1,2 @@
+classDiagram
+    class Square~ ==>Shape~

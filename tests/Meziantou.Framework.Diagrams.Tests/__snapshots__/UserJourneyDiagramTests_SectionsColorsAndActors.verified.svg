@@ -1,0 +1,196 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2265.67" height="416" viewBox="0 0 2265.67 416" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="2265.67" height="416" fill="#ffffff"/>
+<g class="diagram" transform="translate(-5 -42)">
+<g class="legend">
+<circle cx="20" cy="60" r="7" fill="#8fbc8f" stroke="#000000"/>
+<text x="198.34" y="66.69" text-anchor="middle" font-size="16" fill="#000000">A very long actor name that is wider than the</text>
+<text x="198.34" y="85.89" text-anchor="middle" font-size="16" fill="#000000">legend allows, so it wraps</text>
+<circle cx="20" cy="98.4" r="7" fill="#7cfc00" stroke="#000000"/>
+<text x="65.34" y="105.09" text-anchor="middle" font-size="16" fill="#000000">Actor 0</text>
+<circle cx="20" cy="118.4" r="7" fill="#00ffff" stroke="#000000"/>
+<text x="65.34" y="125.09" text-anchor="middle" font-size="16" fill="#000000">Actor 1</text>
+<circle cx="20" cy="138.4" r="7" fill="#20b2aa" stroke="#000000"/>
+<text x="65.34" y="145.09" text-anchor="middle" font-size="16" fill="#000000">Actor 2</text>
+<circle cx="20" cy="158.4" r="7" fill="#b0e0e6" stroke="#000000"/>
+<text x="65.34" y="165.09" text-anchor="middle" font-size="16" fill="#000000">Actor 3</text>
+<circle cx="20" cy="178.4" r="7" fill="#ffffe0" stroke="#000000"/>
+<text x="65.34" y="185.09" text-anchor="middle" font-size="16" fill="#000000">Actor 4</text>
+<circle cx="20" cy="198.4" r="7" fill="#8fbc8f" stroke="#000000"/>
+<text x="65.34" y="205.09" text-anchor="middle" font-size="16" fill="#000000">Actor 5</text>
+<circle cx="20" cy="218.4" r="7" fill="#7cfc00" stroke="#000000"/>
+<text x="65.34" y="225.09" text-anchor="middle" font-size="16" fill="#000000">Actor 6</text>
+<circle cx="20" cy="238.4" r="7" fill="#00ffff" stroke="#000000"/>
+<text x="65.34" y="245.09" text-anchor="middle" font-size="16" fill="#000000">Actor 7</text>
+<circle cx="20" cy="258.4" r="7" fill="#20b2aa" stroke="#000000"/>
+<text x="65.34" y="265.09" text-anchor="middle" font-size="16" fill="#000000">Actor 8</text>
+</g>
+<g class="tasks">
+<g class="journey-section section-type-0">
+<rect x="466.67" y="50" width="150" height="50" rx="3" fill="#cde498" stroke="#666666"/>
+<text x="541.67" y="78.58" text-anchor="middle" font-size="14" fill="#321b67">Section 0</text>
+</g>
+<g class="task">
+<line x1="541.67" y1="110" x2="541.67" y2="450" stroke="#666666" stroke-dasharray="4 2"/>
+<g class="face">
+<circle cx="541.67" cy="450" r="15" fill="#fff8dc" stroke="#999999" stroke-width="2"/>
+<circle cx="536.67" cy="445" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<circle cx="546.67" cy="445" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<path d="M534.17,457 A7.5,7.5 0 0,1 549.17,457" fill="none" stroke="#666666" stroke-width="1.5" class="mouth"/>
+</g>
+<rect x="466.67" y="110" width="150" height="50" rx="3" fill="#cde498" stroke="#666666"/>
+<circle cx="480.67" cy="110" r="7" fill="#7cfc00" stroke="#000000"><title>Actor 0</title></circle>
+<circle cx="490.67" cy="110" r="7" fill="#8fbc8f" stroke="#000000"><title>A very long actor name that is wider than the legend allows, so it wraps</title></circle>
+<text x="541.67" y="130.18" text-anchor="middle" font-size="14" fill="#321b67">A task with a long</text>
+<text x="541.67" y="146.98" text-anchor="middle" font-size="14" fill="#321b67">name that wraps</text>
+</g>
+<g class="journey-section section-type-1">
+<rect x="666.67" y="50" width="150" height="50" rx="3" fill="#cdffb2" stroke="#666666"/>
+<text x="741.67" y="78.58" text-anchor="middle" font-size="14" fill="#321b67">Section 1</text>
+</g>
+<g class="task">
+<line x1="741.67" y1="110" x2="741.67" y2="450" stroke="#666666" stroke-dasharray="4 2"/>
+<g class="face">
+<circle cx="741.67" cy="450" r="15" fill="#fff8dc" stroke="#999999" stroke-width="2"/>
+<circle cx="736.67" cy="445" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<circle cx="746.67" cy="445" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<path d="M734.17,457 A7.5,7.5 0 0,1 749.17,457" fill="none" stroke="#666666" stroke-width="1.5" class="mouth"/>
+</g>
+<rect x="666.67" y="110" width="150" height="50" rx="3" fill="#cdffb2" stroke="#666666"/>
+<circle cx="680.67" cy="110" r="7" fill="#00ffff" stroke="#000000"><title>Actor 1</title></circle>
+<circle cx="690.67" cy="110" r="7" fill="#8fbc8f" stroke="#000000"><title>A very long actor name that is wider than the legend allows, so it wraps</title></circle>
+<text x="741.67" y="130.18" text-anchor="middle" font-size="14" fill="#321b67">A task with a long</text>
+<text x="741.67" y="146.98" text-anchor="middle" font-size="14" fill="#321b67">name that wraps</text>
+</g>
+<g class="journey-section section-type-2">
+<rect x="866.67" y="50" width="150" height="50" rx="3" fill="#98e4b4" stroke="#666666"/>
+<text x="941.67" y="78.58" text-anchor="middle" font-size="14" fill="#321b67">Section 2</text>
+</g>
+<g class="task">
+<line x1="941.67" y1="110" x2="941.67" y2="450" stroke="#666666" stroke-dasharray="4 2"/>
+<g class="face">
+<circle cx="941.67" cy="450" r="15" fill="#fff8dc" stroke="#999999" stroke-width="2"/>
+<circle cx="936.67" cy="445" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<circle cx="946.67" cy="445" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<path d="M934.17,457 A7.5,7.5 0 0,1 949.17,457" fill="none" stroke="#666666" stroke-width="1.5" class="mouth"/>
+</g>
+<rect x="866.67" y="110" width="150" height="50" rx="3" fill="#98e4b4" stroke="#666666"/>
+<circle cx="880.67" cy="110" r="7" fill="#20b2aa" stroke="#000000"><title>Actor 2</title></circle>
+<circle cx="890.67" cy="110" r="7" fill="#8fbc8f" stroke="#000000"><title>A very long actor name that is wider than the legend allows, so it wraps</title></circle>
+<text x="941.67" y="130.18" text-anchor="middle" font-size="14" fill="#321b67">A task with a long</text>
+<text x="941.67" y="146.98" text-anchor="middle" font-size="14" fill="#321b67">name that wraps</text>
+</g>
+<g class="journey-section section-type-3">
+<rect x="1066.67" y="50" width="150" height="50" rx="3" fill="#b2ffe9" stroke="#666666"/>
+<text x="1141.67" y="78.58" text-anchor="middle" font-size="14" fill="#321b67">Section 3</text>
+</g>
+<g class="task">
+<line x1="1141.67" y1="110" x2="1141.67" y2="450" stroke="#666666" stroke-dasharray="4 2"/>
+<g class="face">
+<circle cx="1141.67" cy="420" r="15" fill="#fff8dc" stroke="#999999" stroke-width="2"/>
+<circle cx="1136.67" cy="415" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<circle cx="1146.67" cy="415" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<path d="M1134.17,427 A7.5,7.5 0 0,1 1149.17,427" fill="none" stroke="#666666" stroke-width="1.5" class="mouth"/>
+</g>
+<rect x="1066.67" y="110" width="150" height="50" rx="3" fill="#b2ffe9" stroke="#666666"/>
+<circle cx="1080.67" cy="110" r="7" fill="#b0e0e6" stroke="#000000"><title>Actor 3</title></circle>
+<circle cx="1090.67" cy="110" r="7" fill="#8fbc8f" stroke="#000000"><title>A very long actor name that is wider than the legend allows, so it wraps</title></circle>
+<text x="1141.67" y="130.18" text-anchor="middle" font-size="14" fill="#321b67">A task with a long</text>
+<text x="1141.67" y="146.98" text-anchor="middle" font-size="14" fill="#321b67">name that wraps</text>
+</g>
+<g class="journey-section section-type-4">
+<rect x="1266.67" y="50" width="150" height="50" rx="3" fill="#e4aa98" stroke="#666666"/>
+<text x="1341.67" y="78.58" text-anchor="middle" font-size="14" fill="#321b67">Section 4</text>
+</g>
+<g class="task">
+<line x1="1341.67" y1="110" x2="1341.67" y2="450" stroke="#666666" stroke-dasharray="4 2"/>
+<g class="face">
+<circle cx="1341.67" cy="390" r="15" fill="#fff8dc" stroke="#999999" stroke-width="2"/>
+<circle cx="1336.67" cy="385" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<circle cx="1346.67" cy="385" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<path d="M1334.17,397 A7.5,7.5 0 0,1 1349.17,397" fill="none" stroke="#666666" stroke-width="1.5" class="mouth"/>
+</g>
+<rect x="1266.67" y="110" width="150" height="50" rx="3" fill="#e4aa98" stroke="#666666"/>
+<circle cx="1280.67" cy="110" r="7" fill="#ffffe0" stroke="#000000"><title>Actor 4</title></circle>
+<circle cx="1290.67" cy="110" r="7" fill="#8fbc8f" stroke="#000000"><title>A very long actor name that is wider than the legend allows, so it wraps</title></circle>
+<text x="1341.67" y="130.18" text-anchor="middle" font-size="14" fill="#321b67">A task with a long</text>
+<text x="1341.67" y="146.98" text-anchor="middle" font-size="14" fill="#321b67">name that wraps</text>
+</g>
+<g class="journey-section section-type-5">
+<rect x="1466.67" y="50" width="150" height="50" rx="3" fill="#ffdfb2" stroke="#666666"/>
+<text x="1541.67" y="78.58" text-anchor="middle" font-size="14" fill="#321b67">Section 5</text>
+</g>
+<g class="task">
+<line x1="1541.67" y1="110" x2="1541.67" y2="450" stroke="#666666" stroke-dasharray="4 2"/>
+<g class="face">
+<circle cx="1541.67" cy="360" r="15" fill="#fff8dc" stroke="#999999" stroke-width="2"/>
+<circle cx="1536.67" cy="355" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<circle cx="1546.67" cy="355" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<line x1="1536.67" y1="367" x2="1546.67" y2="367" stroke="#666666" class="mouth"/>
+</g>
+<rect x="1466.67" y="110" width="150" height="50" rx="3" fill="#ffdfb2" stroke="#666666"/>
+<circle cx="1480.67" cy="110" r="7" fill="#8fbc8f" stroke="#000000"><title>Actor 5</title></circle>
+<circle cx="1490.67" cy="110" r="7" fill="#8fbc8f" stroke="#000000"><title>A very long actor name that is wider than the legend allows, so it wraps</title></circle>
+<text x="1541.67" y="130.18" text-anchor="middle" font-size="14" fill="#321b67">A task with a long</text>
+<text x="1541.67" y="146.98" text-anchor="middle" font-size="14" fill="#321b67">name that wraps</text>
+</g>
+<g class="journey-section section-type-6">
+<rect x="1666.67" y="50" width="150" height="50" rx="3" fill="#98c3e4" stroke="#666666"/>
+<text x="1741.67" y="78.58" text-anchor="middle" font-size="14" fill="#321b67">Section 6</text>
+</g>
+<g class="task">
+<line x1="1741.67" y1="110" x2="1741.67" y2="450" stroke="#666666" stroke-dasharray="4 2"/>
+<g class="face">
+<circle cx="1741.67" cy="330" r="15" fill="#fff8dc" stroke="#999999" stroke-width="2"/>
+<circle cx="1736.67" cy="325" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<circle cx="1746.67" cy="325" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<path d="M1734.17,332 A7.5,7.5 0 0,0 1749.17,332" fill="none" stroke="#666666" stroke-width="1.5" class="mouth"/>
+</g>
+<rect x="1666.67" y="110" width="150" height="50" rx="3" fill="#98c3e4" stroke="#666666"/>
+<circle cx="1680.67" cy="110" r="7" fill="#7cfc00" stroke="#000000"><title>Actor 6</title></circle>
+<circle cx="1690.67" cy="110" r="7" fill="#8fbc8f" stroke="#000000"><title>A very long actor name that is wider than the legend allows, so it wraps</title></circle>
+<text x="1741.67" y="130.18" text-anchor="middle" font-size="14" fill="#321b67">A task with a long</text>
+<text x="1741.67" y="146.98" text-anchor="middle" font-size="14" fill="#321b67">name that wraps</text>
+</g>
+<g class="journey-section section-type-0">
+<rect x="1866.67" y="50" width="150" height="50" rx="3" fill="#cde498" stroke="#666666"/>
+<text x="1941.67" y="78.58" text-anchor="middle" font-size="14" fill="#321b67">Section 7</text>
+</g>
+<g class="task">
+<line x1="1941.67" y1="110" x2="1941.67" y2="450" stroke="#666666" stroke-dasharray="4 2"/>
+<g class="face">
+<circle cx="1941.67" cy="300" r="15" fill="#fff8dc" stroke="#999999" stroke-width="2"/>
+<circle cx="1936.67" cy="295" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<circle cx="1946.67" cy="295" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<path d="M1934.17,302 A7.5,7.5 0 0,0 1949.17,302" fill="none" stroke="#666666" stroke-width="1.5" class="mouth"/>
+</g>
+<rect x="1866.67" y="110" width="150" height="50" rx="3" fill="#cde498" stroke="#666666"/>
+<circle cx="1880.67" cy="110" r="7" fill="#00ffff" stroke="#000000"><title>Actor 7</title></circle>
+<circle cx="1890.67" cy="110" r="7" fill="#8fbc8f" stroke="#000000"><title>A very long actor name that is wider than the legend allows, so it wraps</title></circle>
+<text x="1941.67" y="130.18" text-anchor="middle" font-size="14" fill="#321b67">A task with a long</text>
+<text x="1941.67" y="146.98" text-anchor="middle" font-size="14" fill="#321b67">name that wraps</text>
+</g>
+<g class="journey-section section-type-1">
+<rect x="2066.67" y="50" width="150" height="50" rx="3" fill="#cdffb2" stroke="#666666"/>
+<text x="2141.67" y="78.58" text-anchor="middle" font-size="14" fill="#321b67">Section 8</text>
+</g>
+<g class="task">
+<line x1="2141.67" y1="110" x2="2141.67" y2="450" stroke="#666666" stroke-dasharray="4 2"/>
+<g class="face">
+<circle cx="2141.67" cy="300" r="15" fill="#fff8dc" stroke="#999999" stroke-width="2"/>
+<circle cx="2136.67" cy="295" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<circle cx="2146.67" cy="295" r="1.5" fill="#666666" stroke="#666666" stroke-width="2"/>
+<path d="M2134.17,302 A7.5,7.5 0 0,0 2149.17,302" fill="none" stroke="#666666" stroke-width="1.5" class="mouth"/>
+</g>
+<rect x="2066.67" y="110" width="150" height="50" rx="3" fill="#cdffb2" stroke="#666666"/>
+<circle cx="2080.67" cy="110" r="7" fill="#20b2aa" stroke="#000000"><title>Actor 8</title></circle>
+<circle cx="2090.67" cy="110" r="7" fill="#8fbc8f" stroke="#000000"><title>A very long actor name that is wider than the legend allows, so it wraps</title></circle>
+<text x="2141.67" y="130.18" text-anchor="middle" font-size="14" fill="#321b67">A task with a long</text>
+<text x="2141.67" y="146.98" text-anchor="middle" font-size="14" fill="#321b67">name that wraps</text>
+</g>
+</g>
+<g class="time">
+<line x1="466.67" y1="200" x2="2250.67" y2="200" stroke="#000000" stroke-width="4"/>
+<path d="M2262.67,200 L2248.67,193 L2248.67,207 Z" fill="#000000"/>
+</g>
+</g>
+</svg>

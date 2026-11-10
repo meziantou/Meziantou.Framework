@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="890.17" height="421.77" viewBox="0 0 890.17 421.77" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="890.17" height="421.77" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+<g class="boundary package" data-id="store">
+<rect x="287.52" y="0" width="109.36" height="27.2" fill="#ffffde" stroke="#aaaa33"/>
+<rect x="287.52" y="27.2" width="586.65" height="255.37" fill="#ffffde" stroke="#aaaa33"/>
+<text x="342.2" y="17.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#333333">Online store</text>
+</g>
+</g>
+<g class="edges">
+<g class="edge association">
+<path d="M105.42,101.84 L123.6,99.71 C141.78,97.59 178.14,93.34 208.49,91.21 C238.84,89.09 263.18,89.09 278.18,89.09 C293.19,89.09 298.85,89.09 301.69,89.09 L304.52,89.09" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M312.52,89.09 L304.52,85.09 L304.52,93.09 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge association">
+<path d="M105.42,117.92 L123.6,124.23 C141.78,130.54 178.14,143.16 208.49,149.47 C238.84,155.78 263.18,155.78 287.8,160.93 C312.42,166.07 337.32,176.36 349.77,181.51 L362.22,186.66" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M369.62,189.71 L363.75,182.96 L360.7,190.35 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge include">
+<path d="M477.88,207.88 L494.55,207.88 C511.21,207.88 544.54,207.88 571.77,208.94 C599,210 620.13,212.12 630.69,213.19 L641.26,214.25" fill="none" stroke="#333333" stroke-dasharray="3 3" class="edge-path"/>
+<path d="M649.22,215.05 L641.66,210.27 L640.86,218.23 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge association">
+<path d="M461.86,332.57 L481.19,317.91 C500.53,303.26 539.2,273.94 569.57,257.97 C599.94,241.99 622.01,239.36 633.05,238.05 L644.09,236.73" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M652.03,235.78 L643.61,232.76 L644.56,240.7 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge note-link">
+<path d="M141.49,227.83 L153.66,227.83 C165.83,227.83 190.17,227.83 214.5,227.83 C238.84,227.83 263.18,227.83 286.44,226.07 C309.7,224.32 331.87,220.81 342.96,219.05 L354.05,217.3" fill="none" stroke="#333333" stroke-dasharray="3 3" class="edge-path"/>
+</g>
+</g>
+<g class="edge-labels">
+<g class="edge-label">
+<rect x="166.49" y="142.18" width="96.03" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="214.5" y="159.87" text-anchor="middle" font-size="16" fill="#333333">places order</text>
+</g>
+<g class="edge-label">
+<rect x="539.63" y="194.28" width="76.48" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="577.87" y="211.97" text-anchor="middle" font-size="16" fill="#333333">«include»</text>
+</g>
+</g>
+<g class="nodes">
+<g class="actor" data-id="customer">
+<g transform="translate(70.74 69.29)">
+<circle cx="0" cy="7" r="7" fill="#ececff" stroke="#9370db" stroke-width="1.5"/>
+<path d="M0,14 L0,33 M-14,20 L14,20 M-11,50 L0,33 L11,50" fill="none" stroke="#9370db" stroke-width="1.5"/>
+</g>
+<text x="70.74" y="136.98" text-anchor="middle" font-size="16" fill="#333333">Customer</text>
+</g>
+<g class="actor" data-id="clerk">
+<g transform="translate(413.57 332.57)">
+<circle cx="0" cy="7" r="7" fill="#ececff" stroke="#9370db" stroke-width="1.5"/>
+<path d="M-3,14 L-14,18 L-14,23 L-3,21 L-12,48 L-7,50 L0,36 L7,50 L12,48 L3,21 L14,23 L14,18 L3,14 Z" fill="#ececff" stroke="#9370db" stroke-width="1.5"/>
+</g>
+<text x="413.57" y="400.26" text-anchor="middle" font-size="16" fill="#333333">Payment clerk</text>
+</g>
+<g class="usecase" data-id="browse">
+<path d="M514.63,89.09 C514.63,102.84 469.38,113.98 413.57,113.98 C357.76,113.98 312.52,102.84 312.52,89.09 C312.52,75.34 357.76,64.2 413.57,64.2 C469.38,64.2 514.63,75.34 514.63,89.09 Z" fill="#ececff" stroke="#9370db"/>
+<text x="413.57" y="93.18" text-anchor="middle" font-size="16" fill="#131300">Browse products</text>
+</g>
+<g class="usecase" data-id="checkout">
+<path d="M477.88,207.88 C477.88,221.63 449.09,232.77 413.57,232.77 C378.06,232.77 349.27,221.63 349.27,207.88 C349.27,194.13 378.06,182.99 413.57,182.99 C449.09,182.99 477.88,194.13 477.88,207.88 Z" fill="#ececff" stroke="#9370db"/>
+<text x="413.57" y="211.97" text-anchor="middle" font-size="16" fill="#131300">Checkout</text>
+</g>
+<g class="usecase" data-id="pay">
+<path d="M849.17,224.68 C849.17,238.43 802.59,249.57 745.14,249.57 C687.68,249.57 641.11,238.43 641.11,224.68 C641.11,210.93 687.68,199.79 745.14,199.79 C802.59,199.79 849.17,210.93 849.17,224.68 Z" fill="#ececff" stroke="#9370db"/>
+<text x="745.14" y="228.77" text-anchor="middle" font-size="16" fill="#131300">Process payment</text>
+</g>
+<g class="note">
+<rect x="0" y="210.23" width="141.49" height="35.2" fill="#fff5ad" stroke="#aaaa33"/>
+<text x="8" y="231.91" font-size="16" fill="#000000">Validates the </text>
+<text x="103.82" y="231.91" font-size="16" font-weight="bold" fill="#000000">cart</text>
+</g>
+</g>
+</g>
+</svg>

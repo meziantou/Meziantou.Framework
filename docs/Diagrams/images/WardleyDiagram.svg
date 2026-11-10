@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="631.6" viewBox="0 0 900 631.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Tea Shop Value Chain</title>
+<defs>
+<clipPath id="diagram-clip0"><rect x="0" y="0" width="900" height="600"/></clipPath>
+</defs>
+<rect width="900" height="631.6" fill="#ffffff"/>
+<g class="title">
+<text x="450" y="15.4" text-anchor="middle" font-size="18" fill="#333333">Tea Shop Value Chain</text>
+</g>
+<g class="diagram" transform="translate(0 31.6)">
+<g class="wardley-map" clip-path="url(#diagram-clip0)">
+<rect x="0" y="0" width="900" height="600" fill="#ffffff" class="wardley-background"/>
+<g class="wardley-axes">
+<line x1="48" y1="552" x2="852" y2="552" stroke="#333333"/>
+<line x1="48" y1="48" x2="48" y2="552" stroke="#333333"/>
+<text x="450" y="588" text-anchor="middle" font-size="12" font-weight="bold" fill="#131300">Evolution</text>
+<g transform="matrix(0 -1 1 0 -284 316)">
+<text x="16" y="300" text-anchor="middle" font-size="12" font-weight="bold" fill="#131300">Visibility</text>
+</g>
+</g>
+<g class="wardley-stages">
+<text x="148.5" y="568" text-anchor="middle" font-size="10" fill="#131300">Genesis</text>
+<line x1="249" y1="48" x2="249" y2="552" stroke="#000000" stroke-dasharray="5 5" opacity="0.8"/>
+<text x="349.5" y="568" text-anchor="middle" font-size="10" fill="#131300">Custom Built</text>
+<line x1="450" y1="48" x2="450" y2="552" stroke="#000000" stroke-dasharray="5 5" opacity="0.8"/>
+<text x="550.5" y="568" text-anchor="middle" font-size="10" fill="#131300">Product</text>
+<line x1="651" y1="48" x2="651" y2="552" stroke="#000000" stroke-dasharray="5 5" opacity="0.8"/>
+<text x="751.5" y="568" text-anchor="middle" font-size="10" fill="#131300">Commodity</text>
+</g>
+<g class="wardley-links">
+<line x1="553.35" y1="79.08" x2="539.61" y2="147.96" stroke="#333333" class="wardley-link"/>
+<line x1="543.8" y1="156.53" x2="693.88" y2="231.79" stroke="#333333" class="wardley-link"/>
+<line x1="542.92" y1="157.83" x2="686.72" y2="285.93" stroke="#333333" class="wardley-link"/>
+<line x1="685.25" y1="290.67" x2="335.35" y2="334.53" stroke="#333333" class="wardley-link"/>
+<line x1="334.57" y1="338.33" x2="605.63" y2="498.55" stroke="#333333" class="wardley-link"/>
+<path d="M603.03,494.11 L606.07,498.8 L600.49,498.41 Z" fill="#333333"/>
+</g>
+<g class="wardley-trends">
+<line x1="329.4" y1="335.28" x2="538.48" y2="335.28" stroke="#dc3545" stroke-dasharray="4 4" class="wardley-trend"/>
+<path d="M533.08,332.28 L539.08,335.28 L533.08,338.28 Z" fill="#dc3545"/>
+<line x1="610.8" y1="501.6" x2="755.56" y2="501.6" stroke="#dc3545" stroke-dasharray="4 4" class="wardley-trend"/>
+<path d="M750.16,498.6 L756.16,501.6 L750.16,504.6 Z" fill="#dc3545"/>
+</g>
+<g class="wardley-nodes">
+<g class="wardley-node wardley-node--anchor">
+<text x="554.52" y="72.76" text-anchor="middle" font-size="10" font-weight="bold" fill="#131300">Business</text>
+</g>
+<g class="wardley-node wardley-node--component">
+<circle cx="538.44" cy="153.84" r="6" fill="#ffffff" stroke="#333333"/>
+<text x="546.44" y="145.84" font-size="10" fill="#131300">Cup of Tea</text>
+</g>
+<g class="wardley-node wardley-node--component">
+<circle cx="699.24" cy="234.48" r="6" fill="#ffffff" stroke="#333333"/>
+<text x="707.24" y="226.48" font-size="10" fill="#131300">Tea</text>
+</g>
+<g class="wardley-node wardley-node--component">
+<circle cx="691.2" cy="289.92" r="6" fill="#ffffff" stroke="#333333"/>
+<text x="699.2" y="281.92" font-size="10" fill="#131300">Hot Water</text>
+</g>
+<g class="wardley-node wardley-node--component">
+<circle cx="329.4" cy="335.28" r="6" fill="#ffffff" stroke="#333333"/>
+<line x1="350.4" y1="329.28" x2="350.4" y2="341.28" stroke="#333333" stroke-width="6" class="wardley-inertia"/>
+<text x="337.4" y="327.28" font-size="10" fill="#131300">Kettle</text>
+</g>
+<g class="wardley-node wardley-node--component">
+<circle cx="610.8" cy="501.6" r="12" fill="#666666" stroke="#333333" class="wardley-outsource-overlay"/>
+<circle cx="610.8" cy="501.6" r="6" fill="#ffffff" stroke="#333333"/>
+<text x="628.8" y="483.6" font-size="10" fill="#131300">Power</text>
+</g>
+</g>
+<g class="wardley-notes">
+<text x="441.96" y="400.8" font-size="11" font-weight="bold" fill="#131300">Standardising power allows Kettles to evolve faster</text>
+</g>
+</g>
+</g>
+</svg>

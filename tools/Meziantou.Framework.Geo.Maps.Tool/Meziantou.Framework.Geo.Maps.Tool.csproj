@@ -23,7 +23,7 @@
     <ProjectReference Include="../../src/Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.Geo.Maps.GeoPackage/Meziantou.Framework.Geo.Maps.GeoPackage.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
-    <ProjectReference Include="../../src/Meziantou.Framework.Imaging.Charts/Meziantou.Framework.Imaging.Charts.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Imaging.VectorGraphics/Meziantou.Framework.Imaging.VectorGraphics.csproj" />
   </ItemGroup>
 
   <!--

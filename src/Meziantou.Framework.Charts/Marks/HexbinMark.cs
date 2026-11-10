@@ -62,7 +62,7 @@ public sealed class HexbinMark<T> : Mark<T>
 
     internal override void Render(RenderContext context, MarkData data, SceneGroup group)
     {
-        var stroke = context.Theme.Background ?? ChartColor.White;
+        var stroke = context.Theme.Background ?? SceneColor.White;
         foreach (var (x, y, points) in Bin(context, data))
         {
             var corners = Hexbin.Hexagon(context.Frame.X + x, context.Frame.Y + y, Radius);

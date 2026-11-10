@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1042" height="58" viewBox="0 0 1042 58" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="1042" height="58" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="packet-field">
+<rect x="1" y="5" width="251" height="32" fill="#efefef" stroke="#000000" class="packet-block"/>
+<text x="126.5" y="24.07" text-anchor="middle" font-size="12" fill="#000000">Type</text>
+</g>
+<g class="packet-field">
+<rect x="257" y="5" width="251" height="32" fill="#efefef" stroke="#000000" class="packet-block"/>
+<text x="382.5" y="24.07" text-anchor="middle" font-size="12" fill="#000000">Code</text>
+</g>
+</g>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="700" viewBox="0 0 700 700" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="700" height="700" fill="#ffffff"/>
+<g class="marks">
+<g class="radarGraticule">
+<path d="M350,54 A296,296 0 0,1 350,646 A296,296 0 0,1 350,54 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
+</g>
+<g class="radarGraticule">
+<path d="M350,113.2 A236.8,236.8 0 0,1 350,586.8 A236.8,236.8 0 0,1 350,113.2 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
+</g>
+<g class="radarGraticule">
+<path d="M350,172.4 A177.6,177.6 0 0,1 350,527.6 A177.6,177.6 0 0,1 350,172.4 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
+</g>
+<g class="radarGraticule">
+<path d="M350,231.6 A118.4,118.4 0 0,1 350,468.4 A118.4,118.4 0 0,1 350,231.6 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
+</g>
+<g class="radarGraticule">
+<path d="M350,290.8 A59.2,59.2 0 0,1 350,409.2 A59.2,59.2 0 0,1 350,290.8 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
+</g>
+</g>
+</svg>

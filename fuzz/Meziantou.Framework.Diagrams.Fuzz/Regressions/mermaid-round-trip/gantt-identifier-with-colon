@@ -1,0 +1,8 @@
+gantt
+    apple  :a, 2017-07-20, 1w
+    banana :crit, btitle:, 2017-07-23, 1d
+    cherry :active, c, after b a, 1d
+    kiwi   :d, 2017-07-20, until b c
+    lemon  :2017-07-22, 2017-07ana-25
+    melon  :1d
+    Freeze :vert, v, 2017-07-21, 0d

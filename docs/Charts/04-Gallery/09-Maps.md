@@ -153,9 +153,9 @@ plot.Add(new GeoMark<GeoFeature>(cantons, canton => canton.Geometry)
     StrokeColor = "#ffffff",
     Title = canton => (string?)canton.Properties["name"],
 });
-plot.Add(new GeoMark<GeoFeature>(lakes, lake => lake.Geometry) { FillColor = "#a9cbe8", StrokeColor = ChartColor.Transparent });
+plot.Add(new GeoMark<GeoFeature>(lakes, lake => lake.Geometry) { FillColor = "#a9cbe8", StrokeColor = SceneColor.Transparent });
 plot.Add(new GeoMark<GeoFeature>(rivers, river => river.Geometry) { StrokeColor = "#6fa5d6" });
-plot.Add(new GeoMark<GeoFeature>(borders, border => border.Geometry) { FillColor = ChartColor.Transparent, StrokeColor = "#6b6255", StrokeWidth = 1 });
+plot.Add(new GeoMark<GeoFeature>(borders, border => border.Geometry) { FillColor = SceneColor.Transparent, StrokeColor = "#6b6255", StrokeWidth = 1 });
 plot.Add(new DotMark<(string Name, GeoPosition Position)>(cities, x: city => city.Position.Longitude, y: city => city.Position.Latitude) { FillColor = "#2b2b2b", Radius = 3 });
 plot.Add(new TextMark<(string Name, GeoPosition Position)>(cities, text: city => city.Name, x: city => city.Position.Longitude, y: city => city.Position.Latitude) { OffsetY = -10 });
 ```
@@ -172,7 +172,7 @@ plot.Add(new TextMark<(string Name, GeoPosition Position)>(cities, text: city =>
   For Antarctica or the Arctic, use a [map of a polar region](#map-of-a-polar-region).
 - **Style each layer**: [FillColor](cref:Meziantou.Framework.Charts.Mark{T}.FillColor) and
   [StrokeColor](cref:Meziantou.Framework.Charts.Mark{T}.StrokeColor) set the colors of a geo mark;
-  `ChartColor.Transparent` draws a border without fill, or a lake without outline. A
+  `SceneColor.Transparent` draws a border without fill, or a lake without outline. A
   [Fill](cref:Meziantou.Framework.Charts.Mark{T}.Fill) channel makes a choropleth of the subdivisions, as above.
 - **Label the largest cities**: the text marks do not move the labels that overlap. Keep a few cities, ordered by the
   `rank` of the bundle (from 0 to 14, larger for larger places) and their `population`, or keep the capitals with the

@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="483.67" height="384.4" viewBox="0 0 483.67 384.4" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="483.67" height="384.4" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+</g>
+<g class="edges">
+<g class="edge relationship contains">
+<path d="M118.1,159.6 L118.1,163.7 C118.1,167.8 118.1,176 125.57,186.53 C133.05,197.07 147.99,209.93 155.47,216.37 L162.94,222.8" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M125.1,152.6 C125.1,156.47 121.96,159.6 118.1,159.6 C114.23,159.6 111.1,156.47 111.1,152.6 C111.1,148.73 114.23,145.6 118.1,145.6 C121.96,145.6 125.1,148.73 125.1,152.6 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+<path d="M118.1,146.6 L118.1,158.6" fill="none" stroke="#333333" class="marker"/>
+<path d="M112.1,152.6 L124.1,152.6" fill="none" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relationship satisfies">
+<path d="M376.93,128.8 L376.93,138.03 C376.93,147.27 376.93,165.73 369.46,181.4 C361.98,197.07 347.04,209.93 339.56,216.37 L332.09,222.8" fill="none" stroke="#333333" stroke-dasharray="10 7" class="edge-path"/>
+<path d="M342.17,220.72 L332.09,222.8 L335.65,213.14" fill="none" stroke="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+<g class="edge-label">
+<rect x="65.62" y="170.6" width="104.96" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="118.1" y="188.29" text-anchor="middle" font-size="16" fill="#333333">&lt;&lt;contains&gt;&gt;</text>
+</g>
+<g class="edge-label">
+<rect x="325.35" y="170.6" width="103.17" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="376.93" y="188.29" text-anchor="middle" font-size="16" fill="#333333">&lt;&lt;satisfies&gt;&gt;</text>
+</g>
+</g>
+<g class="nodes">
+<g class="requirement" data-id="checkout">
+<rect x="0" y="0" width="236.2" height="145.6" fill="#ececff" stroke="#9370db"/>
+<text x="118.1" y="23.69" text-anchor="middle" font-size="16" fill="#131300">&lt;&lt;Requirement&gt;&gt;</text>
+<text x="118.1" y="42.89" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">checkout</text>
+<line x1="0" y1="58.4" x2="236.2" y2="58.4" stroke="#9370db"/>
+<text x="118.1" y="80.38" text-anchor="middle" font-size="14" fill="#131300">ID: 1</text>
+<text x="118.1" y="97.18" text-anchor="middle" font-size="14" fill="#131300">Text: Orders can be paid online.</text>
+<text x="118.1" y="113.98" text-anchor="middle" font-size="14" fill="#131300">Risk: High</text>
+<text x="118.1" y="130.78" text-anchor="middle" font-size="14" fill="#131300">Verification: Test</text>
+</g>
+<g class="requirement" data-id="payment">
+<rect x="112.74" y="222.8" width="269.54" height="145.6" fill="#ececff" stroke="#9370db"/>
+<text x="247.51" y="246.49" text-anchor="middle" font-size="16" fill="#131300">&lt;&lt;Functional Requirement&gt;&gt;</text>
+<text x="247.51" y="265.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">payment</text>
+<line x1="112.74" y1="281.2" x2="382.29" y2="281.2" stroke="#9370db"/>
+<text x="247.51" y="303.18" text-anchor="middle" font-size="14" fill="#131300">ID: 1.1</text>
+<text x="132.74" y="319.98" font-size="14" fill="#131300">Text: Card payments are </text>
+<text x="287.47" y="319.98" font-size="14" font-weight="bold" fill="#131300">authorized</text>
+<text x="358.39" y="319.98" font-size="14" fill="#131300">.</text>
+<text x="247.51" y="336.78" text-anchor="middle" font-size="14" fill="#131300">Risk: Medium</text>
+<text x="247.51" y="353.58" text-anchor="middle" font-size="14" fill="#131300">Verification: Demonstration</text>
+</g>
+<g class="element" data-id="payment_service">
+<rect x="286.2" y="16.8" width="181.47" height="112" fill="#ececff" stroke="#9370db"/>
+<text x="376.93" y="40.49" text-anchor="middle" font-size="16" fill="#131300">&lt;&lt;Element&gt;&gt;</text>
+<text x="376.93" y="59.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">payment_service</text>
+<line x1="286.2" y1="75.2" x2="467.67" y2="75.2" stroke="#9370db"/>
+<text x="376.93" y="97.18" text-anchor="middle" font-size="14" fill="#131300">Type: service</text>
+<text x="376.93" y="113.98" text-anchor="middle" font-size="14" fill="#131300">Doc Ref: src/Payments</text>
+</g>
+</g>
+</g>
+</svg>

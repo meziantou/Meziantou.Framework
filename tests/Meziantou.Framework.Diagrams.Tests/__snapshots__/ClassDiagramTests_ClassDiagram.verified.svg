@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="341.12" height="299.6" viewBox="0 0 341.12 299.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="341.12" height="299.6" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+</g>
+<g class="edges">
+<g class="edge relation">
+<path d="M83.27,129.8 L83.27,133.4 C83.27,137 83.27,144.2 90.34,154.23 C97.4,164.27 111.53,177.13 118.6,183.57 L125.66,190" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M83.27,112.8 L77.27,129.8 L89.27,129.8 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+</g>
+<g class="edge relation">
+<path d="M270.83,110.6 L270.83,117.4 C270.83,124.2 270.83,137.8 263.77,151.03 C256.7,164.27 242.57,177.13 235.51,183.57 L228.44,190" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M270.83,93.6 L264.83,102.1 L270.83,110.6 L276.83,102.1 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+<g class="edge-label">
+<rect x="247.71" y="137.8" width="46.24" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="270.83" y="155.49" text-anchor="middle" font-size="16" fill="#333333">hosts</text>
+</g>
+<g class="edge-label">
+<text x="280.61" y="119.23" text-anchor="middle" font-size="13.6" fill="#333333">1</text>
+</g>
+<g class="edge-label">
+<text x="235" y="168.82" text-anchor="middle" font-size="13.6" fill="#333333">*</text>
+</g>
+</g>
+<g class="nodes">
+<g class="class" data-id="Animal">
+<rect x="0" y="0" width="166.54" height="112.8" fill="#ececff" stroke="#9370db"/>
+<text x="83.27" y="19.69" text-anchor="middle" font-size="16" fill="#131300">«abstract»</text>
+<text x="83.27" y="38.89" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Animal</text>
+<line x1="0" y1="50.4" x2="166.54" y2="50.4" stroke="#9370db"/>
+<text x="38.69" y="70.09" text-anchor="middle" font-size="16" fill="#131300">+int age</text>
+<line x1="0" y1="81.6" x2="166.54" y2="81.6" stroke="#9370db"/>
+<text x="83.27" y="101.29" text-anchor="middle" font-size="16" font-style="italic" fill="#131300">+makeSound() : void</text>
+</g>
+<g class="class" data-id="Duck">
+<rect x="104.69" y="190" width="144.72" height="93.6" fill="#ececff" stroke="#9370db"/>
+<text x="177.05" y="209.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Duck</text>
+<line x1="104.69" y1="221.2" x2="249.41" y2="221.2" stroke="#9370db"/>
+<text x="177.05" y="240.89" text-anchor="middle" font-size="16" fill="#131300">-String beakColor</text>
+<line x1="104.69" y1="252.4" x2="249.41" y2="252.4" stroke="#9370db"/>
+<text x="142.67" y="272.09" text-anchor="middle" font-size="16" fill="#131300">+swim()</text>
+</g>
+<g class="class" data-id="Pond">
+<rect x="216.54" y="19.2" width="108.58" height="74.4" fill="#ececff" stroke="#9370db"/>
+<text x="270.83" y="38.89" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">Pond</text>
+<line x1="216.54" y1="50.4" x2="325.12" y2="50.4" stroke="#9370db"/>
+<line x1="216.54" y1="62.4" x2="325.12" y2="62.4" stroke="#9370db"/>
+<text x="270.83" y="82.09" text-anchor="middle" font-size="16" fill="#131300">+count() : int</text>
+<line x1="226.54" y1="84.09" x2="315.12" y2="84.09" stroke="#131300"/>
+</g>
+</g>
+</g>
+</svg>

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="497.35" height="398" viewBox="0 0 497.35 398" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="497.35" height="398" fill="#ffffff"/>
+<g class="marks">
+<g class="pieOuterCircle">
+<path d="M199,14 A185,185 0 0,1 199,384 A185,185 0 0,1 199,14 Z" fill="none" stroke="#123456" stroke-width="5"/>
+</g>
+<g class="pieCircle">
+<path d="M199,14 A185,185 0 0,1 309.89,347.08 L243.36,258.23 A74,74 0 0,0 199,125 Z" fill="#ff7f0e" stroke="#ffffff"/>
+<path d="M57.23,80.14 A185,185 0 0,1 145.95,21.77 L177.78,128.11 A74,74 0 0,0 142.29,151.46 Z" fill="#b5ff20" stroke="#ffffff"/>
+<path d="M145.95,21.77 A185,185 0 0,1 199,14 L199,125 A74,74 0 0,0 177.78,128.11 Z" fill="#b9b9ff" stroke="#ffffff"/>
+</g>
+<g class="pieCircle highlighted">
+<path d="M315.43,354.49 A194.25,194.25 0 0,1 50.14,74.2 L139.46,149.08 A77.7,77.7 0 0,0 245.57,261.2 Z" fill="#ffffde" stroke="#ffffff" stroke-width="1.05"/>
+</g>
+<g class="slice">
+<text x="286.76" y="172.85" text-anchor="middle" font-size="12" fill="#ff0000">40%</text>
+<text x="131.82" y="265.65" text-anchor="middle" font-size="12" fill="#ff0000">46%</text>
+<text x="148.16" y="124.79" text-anchor="middle" font-size="12" fill="#ff0000">9%</text>
+<text x="185.6" y="110.54" text-anchor="middle" font-size="12" fill="#ff0000">5%</text>
+</g>
+</g>
+<g class="legend">
+<rect x="400" y="11.48" width="10" height="10" rx="2" fill="#ff7f0e"/>
+<text x="415" y="20.05" font-size="14" fill="#1f77b4">Calcium</text>
+<rect x="400" y="28.43" width="10" height="10" rx="2" fill="#ffffde"/>
+<text x="415" y="37" font-size="14" fill="#1f77b4">Potassium</text>
+<rect x="400" y="45.38" width="10" height="10" rx="2" fill="#b5ff20"/>
+<text x="415" y="53.95" font-size="14" fill="#1f77b4">Magnesium</text>
+<rect x="400" y="62.33" width="10" height="10" rx="2" fill="#b9b9ff"/>
+<text x="415" y="70.9" font-size="14" fill="#1f77b4">Iron</text>
+</g>
+</svg>

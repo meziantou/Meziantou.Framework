@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="700" viewBox="0 0 700 700" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="700" height="700" fill="#ffffff"/>
+<g class="marks">
+<g class="radarGraticule">
+<path d="M350,54 A296,296 0 0,1 350,646 A296,296 0 0,1 350,54 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
+</g>
+<g class="radarGraticule">
+<path d="M350,152.67 A197.33,197.33 0 0,1 350,547.33 A197.33,197.33 0 0,1 350,152.67 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
+</g>
+<g class="radarGraticule">
+<path d="M350,251.33 A98.67,98.67 0 0,1 350,448.67 A98.67,98.67 0 0,1 350,251.33 Z" fill="#dedede" fill-opacity="0.302" stroke="#dedede" stroke-linejoin="round"/>
+</g>
+<g class="radarAxes">
+<line x1="350" y1="350" x2="350" y2="54" stroke="#333333" stroke-width="2"/>
+<line x1="350" y1="350" x2="631.51" y2="258.53" stroke="#333333" stroke-width="2"/>
+<line x1="350" y1="350" x2="523.98" y2="589.47" stroke="#333333" stroke-width="2"/>
+<line x1="350" y1="350" x2="176.02" y2="589.47" stroke="#333333" stroke-width="2"/>
+<line x1="350" y1="350" x2="68.49" y2="258.53" stroke="#333333" stroke-width="2"/>
+</g>
+<g class="radarCurves">
+<path d="M350,290.8 C396.17,298.07 442.7,287.95 462.61,313.41 C487.56,345.33 487.73,454.98 454.39,493.68 C415.29,539.07 273.6,572.32 210.81,541.58 C139.88,506.84 40.55,298.54 68.49,258.53 C94.91,220.69 277.47,279.38 350,290.8 Z" fill="#8686ff" fill-opacity="0.502" stroke="#8686ff" stroke-width="2" stroke-linejoin="round"/>
+<path d="M350,54 C396.69,39.8 564.09,198.63 575.21,276.82 C585.05,346.04 509.64,470.52 454.39,493.68 C407.28,513.43 303.05,479.39 280.41,445.79 C262.34,418.98 286.34,377.87 293.7,331.71 C305.25,259.2 305.85,67.43 350,54 Z" fill="#ffff78" fill-opacity="0.502" stroke="#ffff78" stroke-width="2" stroke-linejoin="round"/>
+</g>
+<g class="radarAxisLabel">
+<text x="350" y="35.2" text-anchor="middle" font-size="12" fill="#333333">a</text>
+</g>
+<g class="radarAxisLabel">
+<text x="649.39" y="252.72" font-size="12" fill="#333333">b</text>
+</g>
+<g class="radarAxisLabel">
+<text x="535.03" y="613.29" font-size="12" fill="#333333">c</text>
+</g>
+<g class="radarAxisLabel">
+<text x="164.97" y="613.29" text-anchor="end" font-size="12" fill="#333333">d</text>
+</g>
+<g class="radarAxisLabel">
+<text x="50.61" y="252.72" text-anchor="end" font-size="12" fill="#333333">e</text>
+</g>
+</g>
+<g class="legend">
+<rect x="662.33" y="10.55" width="10" height="10" rx="2" fill="#8686ff"/>
+<text x="677.33" y="18.62" font-size="12" fill="#333333">c1</text>
+<rect x="662.33" y="25.65" width="10" height="10" rx="2" fill="#ffff78"/>
+<text x="677.33" y="33.72" font-size="12" fill="#333333">c2</text>
+</g>
+</svg>

@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="398" height="800.5" viewBox="0 0 398 800.5" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="398" height="800.5" fill="#ffffff"/>
+<g class="marks">
+<g class="pieOuterCircle">
+<path d="M199,15 A185,185 0 0,1 199,385 A185,185 0 0,1 199,15 Z" fill="none" stroke="#000000" stroke-width="0"/>
+</g>
+<g opacity="0" class="pieCircle">
+<path d="M199,15 A185,185 0 0,1 211.36,15.41 L199,200 Z" fill="#ff2020" stroke="#000000" stroke-width="0"/>
+<path d="M211.36,15.41 A185,185 0 0,1 225.19,16.86 L199,200 Z" fill="#ff20ff" stroke="#000000" stroke-width="0"/>
+<path d="M225.19,16.86 A185,185 0 0,1 240.38,19.69 L199,200 Z" fill="#20ff8f" stroke="#000000" stroke-width="0"/>
+<path d="M240.38,19.69 A185,185 0 0,1 256.76,24.25 L199,200 Z" fill="#ff5353" stroke="#000000" stroke-width="0"/>
+<path d="M256.76,24.25 A185,185 0 0,1 274.06,30.91 L199,200 Z" fill="#ececff" stroke="#000000" stroke-width="0"/>
+<path d="M274.06,30.91 A185,185 0 0,1 291.95,40.04 L199,200 Z" fill="#ffffde" stroke="#000000" stroke-width="0"/>
+<path d="M291.95,40.04 A185,185 0 0,1 309.98,51.98 L199,200 Z" fill="#b5ff20" stroke="#000000" stroke-width="0"/>
+<path d="M309.98,51.98 A185,185 0 0,1 327.61,67.02 L199,200 Z" fill="#b9b9ff" stroke="#000000" stroke-width="0"/>
+<path d="M327.61,67.02 A185,185 0 0,1 344.19,85.35 L199,200 Z" fill="#ffff45" stroke="#000000" stroke-width="0"/>
+<path d="M344.19,85.35 A185,185 0 0,1 358.96,107.05 L199,200 Z" fill="#d7ff86" stroke="#000000" stroke-width="0"/>
+<path d="M358.96,107.05 A185,185 0 0,1 371.08,132.07 L199,200 Z" fill="#ff86ff" stroke="#000000" stroke-width="0"/>
+<path d="M371.08,132.07 A185,185 0 0,1 379.65,160.13 L199,200 Z" fill="#20ffff" stroke="#000000" stroke-width="0"/>
+<path d="M379.65,160.13 A185,185 0 0,1 383.77,190.73 L199,200 Z" fill="#ff2020" stroke="#000000" stroke-width="0"/>
+<path d="M383.77,190.73 A185,185 0 0,1 382.55,223.13 L199,200 Z" fill="#ff20ff" stroke="#000000" stroke-width="0"/>
+<path d="M382.55,223.13 A185,185 0 0,1 375.23,256.29 L199,200 Z" fill="#20ff8f" stroke="#000000" stroke-width="0"/>
+<path d="M375.23,256.29 A185,185 0 0,1 361.24,288.91 L199,200 Z" fill="#ff5353" stroke="#000000" stroke-width="0"/>
+<path d="M361.24,288.91 A185,185 0 0,1 340.28,319.44 L199,200 Z" fill="#ececff" stroke="#000000" stroke-width="0"/>
+<path d="M340.28,319.44 A185,185 0 0,1 312.44,346.14 L199,200 Z" fill="#ffffde" stroke="#000000" stroke-width="0"/>
+<path d="M312.44,346.14 A185,185 0 0,1 278.27,367.16 L199,200 Z" fill="#b5ff20" stroke="#000000" stroke-width="0"/>
+<path d="M278.27,367.16 A185,185 0 0,1 238.87,380.65 L199,200 Z" fill="#b9b9ff" stroke="#000000" stroke-width="0"/>
+<path d="M238.87,380.65 A185,185 0 0,1 195.91,384.97 L199,200 Z" fill="#ffff45" stroke="#000000" stroke-width="0"/>
+<path d="M195.91,384.97 A185,185 0 0,1 151.62,378.83 L199,200 Z" fill="#d7ff86" stroke="#000000" stroke-width="0"/>
+<path d="M151.62,378.83 A185,185 0 0,1 108.74,361.49 L199,200 Z" fill="#ff86ff" stroke="#000000" stroke-width="0"/>
+<path d="M108.74,361.49 A185,185 0 0,1 70.39,332.98 L199,200 Z" fill="#20ffff" stroke="#000000" stroke-width="0"/>
+<path d="M70.39,332.98 A185,185 0 0,1 39.83,294.28 L199,200 Z" fill="#ff2020" stroke="#000000" stroke-width="0"/>
+<path d="M39.83,294.28 A185,185 0 0,1 20.17,247.38 L199,200 Z" fill="#ff20ff" stroke="#000000" stroke-width="0"/>
+<path d="M20.17,247.38 A185,185 0 0,1 14.06,195.36 L199,200 Z" fill="#20ff8f" stroke="#000000" stroke-width="0"/>
+<path d="M14.06,195.36 A185,185 0 0,1 23.25,142.24 L199,200 Z" fill="#ff5353" stroke="#000000" stroke-width="0"/>
+<path d="M23.25,142.24 A185,185 0 0,1 48.25,92.77 L199,200 Z" fill="#ececff" stroke="#000000" stroke-width="0"/>
+<path d="M48.25,92.77 A185,185 0 0,1 88.02,51.98 L199,200 Z" fill="#ffffde" stroke="#000000" stroke-width="0"/>
+<path d="M88.02,51.98 A185,185 0 0,1 139.78,24.74 L199,200 Z" fill="#b5ff20" stroke="#000000" stroke-width="0"/>
+</g>
+<g class="pieCircle highlighted">
+<path d="M136.82,15.97 A194.25,194.25 0 0,1 199,5.75 L199,200 Z" fill="#b9b9ff" stroke="#000000" stroke-width="0"/>
+</g>
+<g class="slice">
+<text x="205.18" y="19.45" text-anchor="middle" font-size="17" fill="#333333">1%</text>
+<text x="218.29" y="20.35" text-anchor="middle" font-size="17" fill="#333333">1%</text>
+<text x="232.81" y="22.46" text-anchor="middle" font-size="17" fill="#333333">1%</text>
+<text x="248.62" y="26.12" text-anchor="middle" font-size="17" fill="#333333">1%</text>
+<text x="265.49" y="31.71" text-anchor="middle" font-size="17" fill="#333333">2%</text>
+<text x="283.13" y="39.58" text-anchor="middle" font-size="17" fill="#333333">2%</text>
+<text x="301.14" y="50.09" text-anchor="middle" font-size="17" fill="#333333">2%</text>
+<text x="319.03" y="63.57" text-anchor="middle" font-size="17" fill="#333333">2%</text>
+<text x="336.21" y="80.25" text-anchor="middle" font-size="17" fill="#333333">2%</text>
+<text x="351.96" y="100.28" text-anchor="middle" font-size="17" fill="#333333">2%</text>
+<text x="365.49" y="123.68" text-anchor="middle" font-size="17" fill="#333333">2%</text>
+<text x="375.92" y="150.27" text-anchor="middle" font-size="17" fill="#333333">2%</text>
+<text x="382.35" y="179.69" text-anchor="middle" font-size="17" fill="#333333">3%</text>
+<text x="383.87" y="211.3" text-anchor="middle" font-size="17" fill="#333333">3%</text>
+<text x="379.65" y="244.22" text-anchor="middle" font-size="17" fill="#333333">3%</text>
+<text x="369.02" y="277.28" text-anchor="middle" font-size="17" fill="#333333">3%</text>
+<text x="351.52" y="309.04" text-anchor="middle" font-size="17" fill="#333333">3%</text>
+<text x="327.05" y="337.86" text-anchor="middle" font-size="17" fill="#333333">3%</text>
+<text x="295.93" y="361.92" text-anchor="middle" font-size="17" fill="#333333">3%</text>
+<text x="258.95" y="379.36" text-anchor="middle" font-size="17" fill="#333333">3%</text>
+<text x="217.52" y="388.41" text-anchor="middle" font-size="17" fill="#333333">4%</text>
+<text x="173.58" y="387.59" text-anchor="middle" font-size="17" fill="#333333">4%</text>
+<text x="129.63" y="375.85" text-anchor="middle" font-size="17" fill="#333333">4%</text>
+<text x="88.64" y="352.82" text-anchor="middle" font-size="17" fill="#333333">4%</text>
+<text x="53.81" y="319" text-anchor="middle" font-size="17" fill="#333333">4%</text>
+<text x="28.38" y="275.85" text-anchor="middle" font-size="17" fill="#333333">4%</text>
+<text x="15.26" y="225.93" text-anchor="middle" font-size="17" fill="#333333">4%</text>
+<text x="16.71" y="172.81" text-anchor="middle" font-size="17" fill="#333333">4%</text>
+<text x="33.88" y="120.91" text-anchor="middle" font-size="17" fill="#333333">5%</text>
+<text x="66.56" y="75.18" text-anchor="middle" font-size="17" fill="#333333">5%</text>
+<text x="112.82" y="40.64" text-anchor="middle" font-size="17" fill="#333333">5%</text>
+<text x="168.99" y="21.79" text-anchor="middle" font-size="17" fill="#333333">5%</text>
+</g>
+</g>
+<g class="legend">
+<rect x="10" y="402.86" width="10" height="10" rx="2" fill="#ececff"/>
+<text x="25" y="412.21" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="402.86" width="10" height="10" rx="2" fill="#ffffde"/>
+<text x="211.85" y="412.21" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="422.59" width="10" height="10" rx="2" fill="#b5ff20"/>
+<text x="25" y="431.93" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="422.59" width="10" height="10" rx="2" fill="#b9b9ff"/>
+<text x="211.85" y="431.93" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="442.31" width="10" height="10" rx="2" fill="#ffff45"/>
+<text x="25" y="451.66" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="442.31" width="10" height="10" rx="2" fill="#d7ff86"/>
+<text x="211.85" y="451.66" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="462.04" width="10" height="10" rx="2" fill="#ff86ff"/>
+<text x="25" y="471.38" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="462.04" width="10" height="10" rx="2" fill="#20ffff"/>
+<text x="211.85" y="471.38" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="481.76" width="10" height="10" rx="2" fill="#ff2020"/>
+<text x="25" y="491.11" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="481.76" width="10" height="10" rx="2" fill="#ff20ff"/>
+<text x="211.85" y="491.11" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="501.49" width="10" height="10" rx="2" fill="#20ff8f"/>
+<text x="25" y="510.83" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="501.49" width="10" height="10" rx="2" fill="#ff5353"/>
+<text x="211.85" y="510.83" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="521.21" width="10" height="10" rx="2" fill="#ececff"/>
+<text x="25" y="530.56" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="521.21" width="10" height="10" rx="2" fill="#ffffde"/>
+<text x="211.85" y="530.56" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="540.94" width="10" height="10" rx="2" fill="#b5ff20"/>
+<text x="25" y="550.28" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="540.94" width="10" height="10" rx="2" fill="#b9b9ff"/>
+<text x="211.85" y="550.28" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="560.66" width="10" height="10" rx="2" fill="#ffff45"/>
+<text x="25" y="570.01" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="560.66" width="10" height="10" rx="2" fill="#d7ff86"/>
+<text x="211.85" y="570.01" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="580.39" width="10" height="10" rx="2" fill="#ff86ff"/>
+<text x="25" y="589.73" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="580.39" width="10" height="10" rx="2" fill="#20ffff"/>
+<text x="211.85" y="589.73" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="600.11" width="10" height="10" rx="2" fill="#ff2020"/>
+<text x="25" y="609.46" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="600.11" width="10" height="10" rx="2" fill="#ff20ff"/>
+<text x="211.85" y="609.46" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="619.84" width="10" height="10" rx="2" fill="#20ff8f"/>
+<text x="25" y="629.18" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="619.84" width="10" height="10" rx="2" fill="#ff5353"/>
+<text x="211.85" y="629.18" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="639.56" width="10" height="10" rx="2" fill="#ececff"/>
+<text x="25" y="648.91" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="639.56" width="10" height="10" rx="2" fill="#ffffde"/>
+<text x="211.85" y="648.91" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="659.29" width="10" height="10" rx="2" fill="#b5ff20"/>
+<text x="25" y="668.63" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="659.29" width="10" height="10" rx="2" fill="#b9b9ff"/>
+<text x="211.85" y="668.63" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="679.01" width="10" height="10" rx="2" fill="#ffff45"/>
+<text x="25" y="688.36" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="679.01" width="10" height="10" rx="2" fill="#d7ff86"/>
+<text x="211.85" y="688.36" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="698.74" width="10" height="10" rx="2" fill="#ff86ff"/>
+<text x="25" y="708.08" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="698.74" width="10" height="10" rx="2" fill="#20ffff"/>
+<text x="211.85" y="708.08" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="718.46" width="10" height="10" rx="2" fill="#ff2020"/>
+<text x="25" y="727.81" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="718.46" width="10" height="10" rx="2" fill="#ff20ff"/>
+<text x="211.85" y="727.81" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="738.19" width="10" height="10" rx="2" fill="#20ff8f"/>
+<text x="25" y="747.53" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="738.19" width="10" height="10" rx="2" fill="#ff5353"/>
+<text x="211.85" y="747.53" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="757.91" width="10" height="10" rx="2" fill="#ececff"/>
+<text x="25" y="767.26" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="757.91" width="10" height="10" rx="2" fill="#ffffde"/>
+<text x="211.85" y="767.26" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="10" y="777.64" width="10" height="10" rx="2" fill="#b5ff20"/>
+<text x="25" y="786.98" font-size="17" fill="#000000">Slice with a very lo…</text>
+<rect x="196.85" y="777.64" width="10" height="10" rx="2" fill="#b9b9ff"/>
+<text x="211.85" y="786.98" font-size="17" fill="#000000">Slice with a very lo…</text>
+</g>
+</svg>

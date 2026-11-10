@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="897.62" height="55.2" viewBox="0 0 897.62 55.2" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="897.62" height="55.2" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 -11.54)">
+<g class="clusters">
+</g>
+<g class="edges">
+<g class="edge solid">
+<path d="M38.9,39.14 L46.47,39.14 C54.05,39.14 69.19,39.14 83.01,39.14 C96.83,39.14 109.31,39.14 115.55,39.14 L121.79,39.14" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M129.79,39.14 L121.79,35.14 L121.79,43.14 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge dotted">
+<path d="M168.69,39.14 L177.23,39.14 C185.77,39.14 202.85,39.14 218.59,39.14 C234.34,39.14 248.75,39.14 255.96,39.14 L263.17,39.14" fill="none" stroke="#333333" stroke-dasharray="3 3" class="edge-path"/>
+<path d="M271.17,39.14 L263.17,35.14 L263.17,43.14 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge thick">
+<path d="M309.17,39.14 L316.72,39.14 C324.26,39.14 339.36,39.14 353.12,39.14 C366.89,39.14 379.31,39.14 385.53,39.14 L391.74,39.14" fill="none" stroke="#333333" stroke-width="3.5" class="edge-path"/>
+<path d="M399.74,39.14 L391.74,35.14 L391.74,43.14 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge solid">
+<path d="M447.64,39.14 L456.83,39.14 C466.02,39.14 484.4,39.14 502.78,39.14 C521.15,39.14 539.53,39.14 548.72,39.14 L557.91,39.14" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M447.64,39.14 C447.64,41.62 445.63,43.64 443.14,43.64 C440.65,43.64 438.64,41.62 438.64,39.14 C438.64,36.65 440.65,34.64 443.14,34.64 C445.63,34.64 447.64,36.65 447.64,39.14 Z" fill="#333333" class="marker"/>
+<path d="M566.91,39.14 C566.91,41.62 564.9,43.64 562.41,43.64 C559.93,43.64 557.91,41.62 557.91,39.14 C557.91,36.65 559.93,34.64 562.41,34.64 C564.9,34.64 566.91,36.65 566.91,39.14 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge solid">
+<path d="M605.81,39.14 L609.97,39.14 C614.14,39.14 622.47,39.14 630.81,39.14 C639.14,39.14 647.47,39.14 651.64,39.14 L655.81,39.14" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M653.81,35.14 L645.81,43.14" fill="none" stroke="#333333" stroke-width="2" class="marker"/>
+<path d="M653.81,43.14 L645.81,35.14" fill="none" stroke="#333333" stroke-width="2" class="marker"/>
+</g>
+<g class="edge solid">
+<path d="M690.26,39.14 L694.42,39.14 C698.59,39.14 706.92,39.14 719.63,39.14 C732.33,39.14 749.41,39.14 766.49,39.14 C783.57,39.14 800.64,39.14 812.01,39.14 C823.39,39.14 829.05,39.14 831.89,39.14 L834.72,39.14" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M842.72,39.14 L834.72,35.14 L834.72,43.14 Z" fill="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+<g class="edge-label">
+<rect x="63.9" y="25.54" width="40.9" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="84.34" y="43.22" text-anchor="middle" font-size="16" fill="#333333">solid</text>
+</g>
+<g class="edge-label">
+<rect x="193.69" y="25.54" width="52.48" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="219.93" y="43.22" text-anchor="middle" font-size="16" fill="#333333">dotted</text>
+</g>
+<g class="edge-label">
+<rect x="334.17" y="25.54" width="40.58" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="354.46" y="43.22" text-anchor="middle" font-size="16" fill="#333333">thick</text>
+</g>
+<g class="edge-label">
+<rect x="463.64" y="25.54" width="78.27" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="502.78" y="43.22" text-anchor="middle" font-size="16" fill="#333333">both ends</text>
+</g>
+<g class="edge-label">
+<rect x="740.26" y="25.54" width="52.46" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="766.49" y="43.22" text-anchor="middle" font-size="16" fill="#333333">longer</text>
+</g>
+</g>
+<g class="nodes">
+<g class="node" data-id="a">
+<g transform="translate(19.45 39.14)">
+<path d="M-19.45,-19.6 L19.45,-19.6 L19.45,19.6 L-19.45,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="19.45" y="43.22" text-anchor="middle" font-size="16" fill="#333333">a</text>
+</g>
+<g class="node" data-id="b">
+<g transform="translate(149.24 39.14)">
+<path d="M-19.45,-19.6 L19.45,-19.6 L19.45,19.6 L-19.45,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="149.24" y="43.22" text-anchor="middle" font-size="16" fill="#333333">b</text>
+</g>
+<g class="node" data-id="c">
+<g transform="translate(290.17 39.14)">
+<path d="M-19,-19.6 L19,-19.6 L19,19.6 L-19,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="290.17" y="43.22" text-anchor="middle" font-size="16" fill="#333333">c</text>
+</g>
+<g class="node" data-id="d">
+<g transform="translate(419.19 39.14)">
+<path d="M-19.45,-19.6 L19.45,-19.6 L19.45,19.6 L-19.45,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="419.19" y="43.22" text-anchor="middle" font-size="16" fill="#333333">d</text>
+</g>
+<g class="node" data-id="e">
+<g transform="translate(586.36 39.14)">
+<path d="M-19.45,-19.6 L19.45,-19.6 L19.45,19.6 L-19.45,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="586.36" y="43.22" text-anchor="middle" font-size="16" fill="#333333">e</text>
+</g>
+<g class="node" data-id="f">
+<g transform="translate(673.03 39.14)">
+<path d="M-17.22,-19.6 L17.22,-19.6 L17.22,19.6 L-17.22,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="673.03" y="43.22" text-anchor="middle" font-size="16" fill="#333333">f</text>
+</g>
+<g class="node" data-id="g">
+<g transform="translate(862.17 39.14)">
+<path d="M-19.45,-19.6 L19.45,-19.6 L19.45,19.6 L-19.45,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="862.17" y="43.22" text-anchor="middle" font-size="16" fill="#333333">g</text>
+</g>
+</g>
+</g>
+</svg>

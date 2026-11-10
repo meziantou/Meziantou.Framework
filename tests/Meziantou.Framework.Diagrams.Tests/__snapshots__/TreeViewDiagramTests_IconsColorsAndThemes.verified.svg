@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300.8" height="163.2" viewBox="0 0 300.8 163.2" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="300.8" height="163.2" fill="#333333"/>
+<g class="diagram" transform="translate(9 8)">
+<g class="lines">
+<line x1="8" y1="27.6" x2="28" y2="27.6" stroke="#00aa00" stroke-width="2"/>
+<line x1="36" y1="46" x2="56" y2="46" stroke="#00aa00" stroke-width="2"/>
+<line x1="36" y1="64.4" x2="56" y2="64.4" stroke="#00aa00" stroke-width="2"/>
+<line x1="36" y1="82.8" x2="56" y2="82.8" stroke="#00aa00" stroke-width="2"/>
+<line x1="36" y1="101.2" x2="56" y2="101.2" stroke="#00aa00" stroke-width="2"/>
+<line x1="36" y1="119.6" x2="56" y2="119.6" stroke="#00aa00" stroke-width="2"/>
+<line x1="36" y1="36.8" x2="36" y2="120.6" stroke="#00aa00" stroke-width="2"/>
+<line x1="8" y1="138" x2="28" y2="138" stroke="#00aa00" stroke-width="2"/>
+<line x1="8" y1="18.4" x2="8" y2="139" stroke="#00aa00" stroke-width="2"/>
+</g>
+<g class="highlights">
+<rect x="28" y="129.8" width="254.8" height="16.4" rx="3" fill="#ffeeee" stroke="#ff0000" class="highlight"/>
+</g>
+<g class="nodes">
+<g class="node directory">
+<g class="icon" transform="matrix(0.583333 0 0 0.583333 8 2)">
+<path d="M10.59,4.59 A2,2 0 0,0 9.17,4 L4,4 A2,2 0 0,0 2,6 L2,18 A2,2 0 0,0 4,20 L20,20 A2,2 0 0,0 22,18 L22,8 A2,2 0 0,0 20,6 L12.83,6 Z" fill="#ff8800"/>
+</g>
+<text x="26" y="12.27" font-size="12" font-weight="bold" fill="#cccccc">/</text>
+</g>
+<g class="node directory">
+<g class="icon" transform="matrix(0.583333 0 0 0.583333 36 20.4)">
+<path d="M10.59,4.59 A2,2 0 0,0 9.17,4 L4,4 A2,2 0 0,0 2,6 L2,18 A2,2 0 0,0 4,20 L20,20 A2,2 0 0,0 22,18 L22,8 A2,2 0 0,0 20,6 L12.83,6 Z" fill="#ff8800"/>
+</g>
+<text x="54" y="30.67" font-size="12" font-weight="bold" fill="#cccccc">folder</text>
+</g>
+<g class="node">
+<g class="icon" transform="matrix(0.583333 0 0 0.583333 64 38.8)">
+<text x="12" y="18.18" text-anchor="middle" font-size="20" font-weight="bold" fill="#ff8800">?</text>
+</g>
+<text x="82" y="49.07" font-size="12" fill="#cccccc">Dockerfile</text>
+</g>
+<g class="node">
+<text x="64" y="67.47" font-size="12" fill="#cccccc">notes.txt</text>
+</g>
+<g class="node">
+<g class="icon" transform="matrix(0.583333 0 0 0.583333 64 75.6)">
+<path d="M6,2 A2,2 0 0,0 4,4 L4,20 A2,2 0 0,0 6,22 L18,22 A2,2 0 0,0 20,20 L20,8.83 A2,2 0 0,0 19.41,7.41 L14.59,2.59 A2,2 0 0,0 13.17,2 L6,2 Z M13.5,3.9 L18.1,8.5 L14.5,8.5 A1,1 0 0,1 13.5,7.5 L13.5,3.9 Z" fill-rule="evenodd" fill="#ff8800"/>
+</g>
+<text x="82" y="85.87" font-size="12" fill="#cccccc">README.MD</text>
+</g>
+<g class="node">
+<text x="64" y="104.27" font-size="12" fill="#cccccc">hidden icon</text>
+</g>
+<g class="node">
+<g class="icon" transform="matrix(0.583333 0 0 0.583333 64 112.4)">
+<text x="12" y="18.18" text-anchor="middle" font-size="20" font-weight="bold" fill="#ff8800">?</text>
+</g>
+<text x="82" y="122.67" font-size="12" fill="#cccccc">pack icon</text>
+</g>
+<g class="node directory">
+<g class="icon" transform="matrix(0.583333 0 0 0.583333 36 130.8)">
+<path d="M10.59,4.59 A2,2 0 0,0 9.17,4 L4,4 A2,2 0 0,0 2,6 L2,18 A2,2 0 0,0 4,20 L20,20 A2,2 0 0,0 22,18 L22,8 A2,2 0 0,0 20,6 L12.83,6 Z" fill="#ff8800"/>
+</g>
+<text x="54" y="141.07" font-size="12" font-weight="bold" fill="#cccccc">A  name with  spaces </text>
+<text x="214.6" y="141.07" font-size="12" font-style="italic" fill="#8888ff">described</text>
+</g>
+</g>
+</g>
+</svg>

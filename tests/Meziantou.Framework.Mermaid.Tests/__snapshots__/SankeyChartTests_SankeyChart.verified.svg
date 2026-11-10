@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="342.8" viewBox="0 0 620 342.8" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Energy flows (TWh)</title>
+<rect width="620" height="342.8" fill="#ffffff"/>
+<g class="marks">
+<g>
+<path d="M20,53.89 C162.5,53.89 162.5,79.56 305,79.56" fill="none" stroke="#4e79a7" stroke-opacity="0.502" stroke-width="42.17"><title>Solar → Electricity: 60</title></path>
+<path d="M20,133.6 C162.5,133.6 162.5,132.28 305,132.28" fill="none" stroke="#e15759" stroke-opacity="0.502" stroke-width="63.26"><title>Wind → Electricity: 90</title></path>
+<path d="M20,234.4 C162.5,234.4 162.5,206.08 305,206.08" fill="none" stroke="#76b7b2" stroke-opacity="0.502" stroke-width="84.34"><title>Gas → Electricity: 120</title></path>
+<path d="M20,304.69 C162.5,304.69 162.5,304.69 305,304.69" fill="none" stroke="#76b7b2" stroke-opacity="0.502" stroke-width="56.23"><title>Gas → Heating: 80</title></path>
+<path d="M315,97.13 C457.5,97.13 457.5,71.46 600,71.46" fill="none" stroke="#f28e2c" stroke-opacity="0.502" stroke-width="77.31"><title>Electricity → Homes: 110</title></path>
+<path d="M315,184.99 C457.5,184.99 457.5,242.54 600,242.54" fill="none" stroke="#f28e2c" stroke-opacity="0.502" stroke-width="98.4"><title>Electricity → Industry: 140</title></path>
+<path d="M315,241.22 C457.5,241.22 457.5,325.77 600,325.77" fill="none" stroke="#f28e2c" stroke-opacity="0.502" stroke-width="14.06"><title>Electricity → Losses: 20</title></path>
+<path d="M315,304.69 C457.5,304.69 457.5,138.23 600,138.23" fill="none" stroke="#59a14f" stroke-opacity="0.502" stroke-width="56.23"><title>Heating → Homes: 80</title></path>
+<rect x="10" y="32.8" width="10" height="42.17" fill="#4e79a7"><title>Solar 60: 60</title></rect>
+<text x="26" y="57.46" font-size="14" fill="#333333">Solar 60</text>
+<rect x="305" y="58.48" width="10" height="189.77" fill="#f28e2c"><title>Electricity 270: 270</title></rect>
+<text x="321" y="156.94" font-size="14" fill="#333333">Electricity 270</text>
+<rect x="10" y="101.97" width="10" height="63.26" fill="#e15759"><title>Wind 90: 90</title></rect>
+<text x="26" y="137.18" font-size="14" fill="#333333">Wind 90</text>
+<rect x="10" y="192.23" width="10" height="140.57" fill="#76b7b2"><title>Gas 200: 200</title></rect>
+<text x="26" y="266.09" font-size="14" fill="#333333">Gas 200</text>
+<rect x="305" y="276.57" width="10" height="56.23" fill="#59a14f"><title>Heating 80: 80</title></rect>
+<text x="321" y="308.26" font-size="14" fill="#333333">Heating 80</text>
+<rect x="600" y="32.8" width="10" height="133.54" fill="#edc949"><title>Homes 190: 190</title></rect>
+<text x="594" y="103.15" text-anchor="end" font-size="14" fill="#333333">Homes 190</text>
+<rect x="600" y="193.34" width="10" height="98.4" fill="#af7aa1"><title>Industry 140: 140</title></rect>
+<text x="594" y="246.12" text-anchor="end" font-size="14" fill="#333333">Industry 140</text>
+<rect x="600" y="318.74" width="10" height="14.06" fill="#ff9da7"><title>Losses 20: 20</title></rect>
+<text x="594" y="329.35" text-anchor="end" font-size="14" fill="#333333">Losses 20</text>
+</g>
+</g>
+<text x="10" y="21.49" font-size="16" font-weight="bold" fill="#333333">Energy flows (TWh)</text>
+</svg>

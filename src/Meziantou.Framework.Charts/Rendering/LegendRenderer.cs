@@ -13,7 +13,7 @@ internal sealed class LegendRenderer : ILegendBlock
     private readonly string? _title;
     private readonly ChartTheme _theme;
     private readonly ITextMeasurer _measurer;
-    private readonly List<(double X, double Y, string Text, ChartColor Color)> _items = [];
+    private readonly List<(double X, double Y, string Text, SceneColor Color)> _items = [];
     private double _rampWidth;
     private double _titleHeight;
 
@@ -29,9 +29,9 @@ internal sealed class LegendRenderer : ILegendBlock
 
     public double Height { get; private set; }
 
-    private ChartFont Font => new(_theme.FontSize);
+    private SceneFont Font => new(_theme.FontSize);
 
-    private ChartFont TickFont => new(_theme.TickFontSize);
+    private SceneFont TickFont => new(_theme.TickFontSize);
 
     public static bool IsVisibleByDefault(ResolvedColorScale scale) => scale is not ResolvedOrdinalColorScale ordinal || ordinal.Domain.Count > 1;
 

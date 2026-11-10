@@ -1,0 +1,10 @@
+gantt
+    title A Gantt Diagram
+    dateFormat YYYY-MM-DD
+    excludes weekeds
+    section Section
+        A task       :done,]a1, 2014-01-01, 30d
+        Another task :after a1, 20d
+    section Another
+        Task in sec  :crit, 2014-01-12, 12d
+        Release      :milestone, 2014-02-20, 0d

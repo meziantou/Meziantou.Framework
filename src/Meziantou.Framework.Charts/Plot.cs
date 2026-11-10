@@ -8,10 +8,10 @@ namespace Meziantou.Framework.Charts;
 /// </summary>
 /// <remarks>
 /// Every chart type is a combination of these pieces. The scales, the axes and the legend are inferred from the marks
-/// unless they are set. <see cref="CreateScene"/> lays the chart out into a <see cref="ChartScene"/>; <see cref="ToSvg"/>
+/// unless they are set. <see cref="CreateScene"/> lays the chart out into a <see cref="Scene"/>; <see cref="ToSvg"/>
 /// writes it as SVG. The output is deterministic: the same plot always gives the same SVG.
 /// </remarks>
-public sealed class Plot
+public sealed class Plot : ISceneSource
 {
     private double _width = 640;
     private double _height = 400;
@@ -109,27 +109,29 @@ public sealed class Plot
     /// <summary>Lays the chart out into drawing primitives.</summary>
     /// <param name="textMeasurer">The measurer of the texts, or <see langword="null"/> for <see cref="TextMeasurer"/>.</param>
     /// <returns>The scene.</returns>
-    public ChartScene CreateScene(ITextMeasurer? textMeasurer = null) => PlotRenderer.Render(this, textMeasurer ?? TextMeasurer ?? AfmTextMeasurer.Default);
+    public Scene CreateScene(ITextMeasurer? textMeasurer = null) => PlotRenderer.Render(this, textMeasurer ?? TextMeasurer ?? AfmTextMeasurer.Default);
 
     /// <summary>Returns the chart as SVG.</summary>
-    /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
+    /// <param name="options">The options, or <see langword="null"/> for the defaults, with the identifier prefix <c>chart</c>.</param>
     /// <returns>The SVG document, without an XML declaration.</returns>
-    public string ToSvg(SvgRenderOptions? options = null) => SvgChartRenderer.Render(CreateScene(), options);
+    public string ToSvg(SvgRenderOptions? options = null) => SvgSceneRenderer.Render(CreateScene(), options ?? CreateDefaultSvgOptions());
 
     /// <summary>Writes the chart as SVG.</summary>
     /// <param name="writer">The destination.</param>
-    /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
-    public void WriteSvg(TextWriter writer, SvgRenderOptions? options = null) => SvgChartRenderer.Render(CreateScene(), writer, options);
+    /// <param name="options">The options, or <see langword="null"/> for the defaults, with the identifier prefix <c>chart</c>.</param>
+    public void WriteSvg(TextWriter writer, SvgRenderOptions? options = null) => SvgSceneRenderer.Render(CreateScene(), writer, options ?? CreateDefaultSvgOptions());
 
     /// <summary>Writes the chart as SVG, encoded in UTF-8 without a byte order mark.</summary>
     /// <param name="stream">The destination. It is left open.</param>
-    /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
+    /// <param name="options">The options, or <see langword="null"/> for the defaults, with the identifier prefix <c>chart</c>.</param>
     public void WriteSvg(Stream stream, SvgRenderOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(stream);
         using var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 4096, leaveOpen: true);
         WriteSvg(writer, options);
     }
+
+    private static SvgRenderOptions CreateDefaultSvgOptions() => new() { IdPrefix = "chart" };
 
     private static double ValidateSize(double value)
     {

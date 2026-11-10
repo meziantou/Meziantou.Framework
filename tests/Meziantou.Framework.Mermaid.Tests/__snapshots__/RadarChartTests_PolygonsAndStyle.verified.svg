@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="530" height="400" viewBox="0 0 530 400" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="530" height="400" fill="#333333"/>
+<g class="marks">
+<g class="radarGraticule">
+<path d="M280,54 L426,200 L280,346 L134,200 Z" fill="#0000ff" fill-opacity="0.102" stroke="#0000ff" stroke-width="2" stroke-linejoin="round"/>
+<path d="M280,90.5 L389.5,200 L280,309.5 L170.5,200 Z" fill="#0000ff" fill-opacity="0.102" stroke="#0000ff" stroke-width="2" stroke-linejoin="round"/>
+<path d="M280,127 L353,200 L280,273 L207,200 Z" fill="#0000ff" fill-opacity="0.102" stroke="#0000ff" stroke-width="2" stroke-linejoin="round"/>
+<path d="M280,163.5 L316.5,200 L280,236.5 L243.5,200 Z" fill="#0000ff" fill-opacity="0.102" stroke="#0000ff" stroke-width="2" stroke-linejoin="round"/>
+</g>
+<g class="radarAxes">
+<line x1="280" y1="200" x2="280" y2="127" stroke="#ff0000"/>
+<line x1="280" y1="200" x2="353" y2="200" stroke="#ff0000"/>
+<line x1="280" y1="200" x2="280" y2="273" stroke="#ff0000"/>
+<line x1="280" y1="200" x2="207" y2="200" stroke="#ff0000"/>
+</g>
+<g class="radarCurves">
+<path d="M280,90.5 L353,200 L280,236.5 L170.5,200 Z" fill="#1f2020" fill-opacity="0.2" stroke="#1f2020" stroke-width="3" stroke-linejoin="round"/>
+<path d="M280,54 L280,200 L280,273 L207,200 Z" fill="#0b0000" fill-opacity="0.2" stroke="#0b0000" stroke-width="3" stroke-linejoin="round"/>
+</g>
+<g class="radarAxisLabel">
+<text x="280" y="20.8" text-anchor="middle" font-size="14" fill="#cccccc">Food Quality</text>
+</g>
+<g class="radarAxisLabel">
+<text x="459.2" y="203.58" font-size="14" fill="#cccccc">Service</text>
+</g>
+<g class="radarAxisLabel">
+<text x="280" y="389.25" text-anchor="middle" font-size="14" fill="#cccccc">Price</text>
+</g>
+<g class="radarAxisLabel">
+<text x="100.8" y="203.58" text-anchor="end" font-size="14" fill="#cccccc">ambiance</text>
+</g>
+</g>
+<g class="legend">
+<rect x="411.78" y="12.4" width="10" height="10" rx="2" fill="#1f2020"/>
+<text x="426.78" y="21.49" font-size="16" fill="#cccccc">Restaurant A</text>
+<rect x="411.78" y="31.2" width="10" height="10" rx="2" fill="#0b0000"/>
+<text x="426.78" y="40.29" font-size="16" fill="#cccccc">b</text>
+</g>
+</svg>

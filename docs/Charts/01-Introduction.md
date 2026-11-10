@@ -3,8 +3,8 @@ title: Introduction
 description: What the chart libraries do, and how a chart is built from marks, scales and coordinates.
 ---
 
-`Meziantou.Framework.Charts` creates charts and writes them as SVG. `Meziantou.Framework.Imaging.Charts` draws the
-same charts as images (PNG, WebP, JPEG...) or on the canvas of [Meziantou.Framework.Imaging](../Imaging/01-Introduction.md).
+`Meziantou.Framework.Charts` creates charts and writes them as SVG. `Meziantou.Framework.Imaging.VectorGraphics` draws
+the same charts as images (PNG, WebP, JPEG...) or on the canvas of [Meziantou.Framework.Imaging](../Imaging/01-Introduction.md).
 
 ![A bar chart of the sales of four regions](images/BarChart.svg)
 

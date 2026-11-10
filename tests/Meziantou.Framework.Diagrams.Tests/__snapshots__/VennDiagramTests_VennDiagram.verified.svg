@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="816" height="497.6" viewBox="0 0 816 497.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>What makes a good feature</title>
+<rect width="816" height="497.6" fill="#ffffff"/>
+<g class="title">
+<text x="408" y="23.4" text-anchor="middle" font-size="18" fill="#333333">What makes a good feature</text>
+</g>
+<g class="diagram" transform="translate(8 39.6)">
+<g class="venn-area venn-circle" data-venn-sets="Desirable">
+<circle cx="314.26" cy="299.25" r="135.75" fill="#5353ff" fill-opacity="0.102" stroke="#5353ff" stroke-opacity="0.949" stroke-width="2.5"/>
+<text x="268" y="333.4" text-anchor="middle" font-size="24" fill="#0000b9">Desirable</text>
+</g>
+<g class="venn-area venn-circle" data-venn-sets="Feasible">
+<circle cx="485.74" cy="299.25" r="135.75" fill="#ffff45" fill-opacity="0.102" stroke="#ffff45" stroke-opacity="0.949" stroke-width="2.5"/>
+<text x="531" y="333.4" text-anchor="middle" font-size="24" fill="#abab00">Feasible</text>
+</g>
+<g class="venn-area venn-circle" data-venn-sets="Viable">
+<circle cx="400" cy="150.75" r="135.75" fill="#b5ff20" fill-opacity="0.102" stroke="#b5ff20" stroke-opacity="0.949" stroke-width="2.5"/>
+<text x="400" y="106.4" text-anchor="middle" font-size="24" fill="#5a8600">Viable</text>
+</g>
+<g class="venn-area venn-intersection" data-venn-sets="Desirable_Feasible">
+<text x="399" y="338.4" text-anchor="middle" font-size="24" fill="#333333">Buildable</text>
+</g>
+<g class="venn-area venn-intersection" data-venn-sets="Feasible_Viable">
+<text x="470" y="217.4" text-anchor="middle" font-size="24" fill="#333333">Sustainable</text>
+</g>
+<g class="venn-area venn-intersection" data-venn-sets="Desirable_Viable">
+<text x="329" y="217.4" text-anchor="middle" font-size="24" fill="#333333">Marketable</text>
+</g>
+<g class="venn-area venn-intersection" data-venn-sets="Desirable_Feasible_Viable">
+<text x="400" y="257.4" text-anchor="middle" font-size="24" fill="#333333">Ship it</text>
+</g>
+</g>
+</svg>

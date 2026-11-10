@@ -2,4 +2,3 @@ title: Charts
 description: Create bar, line, area, scatter, pie, radar, gauge, treemap, sunburst, histogram, box plot and other charts as SVG or images, with a grammar of graphics.
 packageIds:
 - Meziantou.Framework.Charts
-- Meziantou.Framework.Imaging.Charts

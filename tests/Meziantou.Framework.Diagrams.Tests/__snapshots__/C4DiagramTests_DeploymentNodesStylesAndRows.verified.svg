@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="548" height="746.2" viewBox="0 0 548 746.2" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="548" height="746.2" fill="#ffffff"/>
+<g class="diagram" transform="translate(-142 -112)">
+<g class="boundaries">
+<g class="boundary node" data-id="inner">
+<rect x="200" y="575" width="336" height="225.2" fill="none" stroke="#333333"/>
+<text x="488.66" y="596.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#333333">Container</text>
+</g>
+<g class="boundary node" data-id="node">
+<rect x="150" y="537.8" width="436" height="312.4" fill="none" stroke="#333333"/>
+<text x="368" y="559.49" text-anchor="middle" font-size="16" font-weight="bold" fill="#333333">Server</text>
+<text x="368" y="581.98" text-anchor="middle" font-size="14" fill="#333333">[Ubuntu]</text>
+<text x="368" y="617.07" text-anchor="middle" font-size="12" fill="#333333">The main server</text>
+</g>
+</g>
+<g class="elements">
+<g class="c4-person" data-id="a">
+<g transform="translate(258 181.6)">
+<path d="M-96,-37.6 L96,-37.6 C102.63,-37.6 108,-32.23 108,-25.6 L108,25.6 C108,32.23 102.63,37.6 96,37.6 L-96,37.6 C-102.63,37.6 -108,32.23 -108,25.6 L-108,-25.6 C-108,-32.23 -102.63,-37.6 -96,-37.6 Z" fill="#ff0000" stroke="#073b6f"/>
+</g>
+<circle cx="258" cy="136" r="16" fill="#ff0000" stroke="#073b6f"/>
+<text x="258" y="174.27" text-anchor="middle" font-size="12" fill="#000000">[Person]</text>
+<text x="258" y="194.38" text-anchor="middle" font-size="14" font-weight="bold" fill="#000000">A</text>
+</g>
+<g class="c4-system" data-id="b">
+<g transform="translate(574 157.6)">
+<path d="M-96,-37.6 L96,-37.6 C102.63,-37.6 108,-32.23 108,-25.6 L108,25.6 C108,32.23 102.63,37.6 96,37.6 L-96,37.6 C-102.63,37.6 -108,32.23 -108,25.6 L-108,-25.6 C-108,-32.23 -102.63,-37.6 -96,-37.6 Z" fill="#1168bd" stroke="#3c7fc0"/>
+</g>
+<text x="574" y="150.27" text-anchor="middle" font-size="12" fill="#ffffff">[Software System]</text>
+<text x="574" y="170.38" text-anchor="middle" font-size="14" font-weight="bold" fill="#ffffff">B</text>
+</g>
+<g class="c4-component" data-id="c">
+<g transform="translate(258 356.8)">
+<path d="M-96,-37.6 L96,-37.6 C102.63,-37.6 108,-32.23 108,-25.6 L108,25.6 C108,32.23 102.63,37.6 96,37.6 L-96,37.6 C-102.63,37.6 -108,32.23 -108,25.6 L-108,-25.6 C-108,-32.23 -102.63,-37.6 -96,-37.6 Z" fill="#85bbf0" stroke="#78a8d8"/>
+</g>
+<text x="258" y="349.47" text-anchor="middle" font-size="12" fill="#ffffff">[Component]</text>
+<text x="258" y="369.58" text-anchor="middle" font-size="14" font-weight="bold" fill="#ffffff">C</text>
+</g>
+<g class="c4-component_queue c4-external" data-id="queue">
+<g transform="translate(368 712.6)">
+<path d="M-108,-37.6 L108,-37.6 C113.19,-37.6 117.39,-20.77 117.39,0 C117.39,20.77 113.19,37.6 108,37.6 L-108,37.6 C-113.19,37.6 -117.39,20.77 -117.39,0 C-117.39,-20.77 -113.19,-37.6 -108,-37.6 Z" fill="#cccccc" stroke="#bfbfbf"/>
+<path d="M108,-37.6 C102.81,-37.6 98.61,-20.77 98.61,0 C98.61,20.77 102.81,37.6 108,37.6" fill="none" stroke="#bfbfbf"/>
+</g>
+<text x="368" y="705.27" text-anchor="middle" font-size="12" fill="#ffffff">[Component]</text>
+<text x="368" y="725.38" text-anchor="middle" font-size="14" font-weight="bold" fill="#ffffff">Queue</text>
+</g>
+</g>
+<g class="relationships">
+<g class="relationship">
+<path d="M366,165.5 L458.01,162" fill="none" stroke="#333333"/>
+<path d="M466,161.7 L457.85,158.01 L458.16,166 Z" fill="#333333" class="marker"/>
+<text x="416" y="166.67" text-anchor="middle" font-size="12" fill="#333333">1: first</text>
+</g>
+<g class="relationship">
+<path d="M558.58,203.07 Q515.52,435.1 381.96,675" fill="none" stroke="#0000ff"/>
+<path d="M560.04,195.2 L554.65,202.34 L562.52,203.8 Z" fill="#0000ff" class="marker"/>
+<text x="491" y="438.17" text-anchor="middle" font-size="12" fill="#333333">2: second</text>
+</g>
+<g class="relationship">
+<path d="M270.27,394.4 Q281.96,466.1 313.53,530.61" fill="none" stroke="#333333"/>
+<path d="M317.05,537.8 L317.12,528.86 L309.94,532.37 Z" fill="#333333" class="marker"/>
+<text x="293.66" y="469.17" text-anchor="middle" font-size="12" fill="#333333">3: third</text>
+</g>
+</g>
+</g>
+</svg>

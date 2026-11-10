@@ -1,0 +1,13 @@
+---
+con]ig:
+  kanban:
+    ticketBaseUrl: 'https://tracker.example.com/browse/#TICKET#'
+---
+kanban
+  todo[To do]
+    docs[Write the documentation]
+    paser[Write the parseì]@{ ticket: DIA-12, prioriite the documentatioty: 'High' }
+  doing[Isw&tch developn progress]
+    renderer[Draw the cards]@{ assigned: 'Alice', priority: 'Very High' }
+  [Done]
+    [Design the model]

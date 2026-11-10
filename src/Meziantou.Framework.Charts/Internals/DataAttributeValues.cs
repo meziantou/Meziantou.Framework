@@ -6,15 +6,7 @@ namespace Meziantou.Framework.Charts;
 internal static class DataAttributeValues
 {
     /// <summary>Throws when a name is not lowercase ASCII letters, digits, hyphens, underscores and dots.</summary>
-    public static void ThrowIfInvalidName(string name, string paramName)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(name, paramName);
-        foreach (var c in name)
-        {
-            if (!char.IsAsciiLetterLower(c) && !char.IsAsciiDigit(c) && c is not ('-' or '_' or '.'))
-                throw new ArgumentException($"The data attribute name '{name}' is not valid: use lowercase ASCII letters, digits, hyphens, underscores and dots, without the 'data-' prefix.", paramName);
-        }
-    }
+    public static void ThrowIfInvalidName(string name, string paramName) => SceneElement.ThrowIfInvalidDataAttributeName(name, paramName);
 
     /// <summary>Formats a value with the invariant culture: numbers round-trip, times use ISO 8601, and missing values return <see langword="null"/>.</summary>
     public static string? Format(object? value)

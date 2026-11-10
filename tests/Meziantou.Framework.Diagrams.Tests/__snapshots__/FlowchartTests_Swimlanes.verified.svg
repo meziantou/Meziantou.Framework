@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="637.14" height="174.4" viewBox="0 0 637.14 174.4" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="637.14" height="174.4" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="lanes">
+<g class="lane" data-id="customer">
+<rect x="0" y="0" width="621.14" height="79.2" fill="#ffffde" stroke="#aaaa33"/>
+<line x1="105.34" y1="0" x2="105.34" y2="79.2" stroke="#aaaa33"/>
+<text x="52.67" y="43.69" text-anchor="middle" font-size="16" fill="#333333">Customer</text>
+</g>
+<g class="lane" data-id="support">
+<rect x="0" y="79.2" width="621.14" height="79.2" fill="#ffffde" fill-opacity="0.502" stroke="#aaaa33"/>
+<line x1="105.34" y1="79.2" x2="105.34" y2="158.4" stroke="#aaaa33"/>
+<text x="52.67" y="122.89" text-anchor="middle" font-size="16" fill="#333333">Support</text>
+</g>
+</g>
+<g class="edges">
+<g class="edge solid">
+<path d="M248.98,39.6 L251.06,39.6 C253.15,39.6 257.31,39.6 259.4,52.8 C261.48,66 261.48,92.4 266.4,105.6 C271.31,118.8 281.15,118.8 286.06,118.8 L290.98,118.8" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M298.98,118.8 L290.98,114.8 L290.98,122.8 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge solid">
+<path d="M372.64,118.8 L510.43,118.8" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M518.43,118.8 L510.43,114.8 L510.43,122.8 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge solid">
+<path d="M559.78,138.4 L559.78,140.9 C559.78,143.4 559.78,148.4 497.68,150.9 C435.58,153.4 311.37,153.4 249.26,139.03 C187.16,124.67 187.16,95.93 187.16,81.57 L187.16,67.2" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M187.16,59.2 L183.16,67.2 L191.16,67.2 Z" fill="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+<g class="edge-label">
+<rect x="397.64" y="105.2" width="95.79" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="445.54" y="122.89" text-anchor="middle" font-size="16" fill="#333333">known issue</text>
+</g>
+</g>
+<g class="nodes">
+<g class="node" data-id="request">
+<g transform="translate(187.16 39.6)">
+<path d="M-61.82,-19.6 L61.82,-19.6 L61.82,19.6 L-61.82,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="187.16" y="43.69" text-anchor="middle" font-size="16" fill="#333333">Open a ticket</text>
+</g>
+<g class="node" data-id="triage">
+<g transform="translate(335.81 118.8)">
+<path d="M-36.83,-19.6 L36.83,-19.6 L36.83,19.6 L-36.83,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="335.81" y="122.89" text-anchor="middle" font-size="16" fill="#333333">Triage</text>
+</g>
+<g class="node" data-id="answer">
+<g transform="translate(559.78 118.8)">
+<path d="M-41.35,-19.6 L41.35,-19.6 L41.35,19.6 L-41.35,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="559.78" y="122.89" text-anchor="middle" font-size="16" fill="#333333">Answer</text>
+</g>
+</g>
+</g>
+</svg>

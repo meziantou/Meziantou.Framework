@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="193.33" height="725.38" viewBox="0 0 193.33 725.38" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="193.33" height="725.38" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+</g>
+<g class="edges">
+<g class="edge association">
+<path d="M51.89,213.2 L51.89,217.37 C51.89,221.53 51.89,229.87 54.23,237.21 C56.58,244.56 61.26,250.92 63.61,254.1 L65.95,257.28" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M70.7,263.72 L69.17,254.9 L62.73,259.65 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge association">
+<path d="M106.9,67.14 L109.99,72.31 C113.08,77.49 119.26,87.85 122.35,104.69 C125.44,121.53 125.44,144.87 125.44,168.2 C125.44,191.53 125.44,214.87 123.2,229.58 C120.95,244.29 116.46,250.38 114.22,253.43 L111.97,256.47" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M113.8,260.09 C113.8,262.58 111.79,264.59 109.3,264.59 C106.82,264.59 104.8,262.58 104.8,260.09 C104.8,257.61 106.82,255.59 109.3,255.59 C111.79,255.59 113.8,257.61 113.8,260.09 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge extend">
+<path d="M88.67,312.98 L88.67,319.41 C88.67,325.85 88.67,338.71 88.67,350.25 C88.67,361.78 88.67,371.98 88.67,377.08 L88.67,382.18" fill="none" stroke="#333333" stroke-dasharray="3 3" class="edge-path"/>
+<path d="M88.67,390.18 L92.67,382.18 L84.67,382.18 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge generalization">
+<path d="M70.43,67.14 L67.34,72.31 C64.25,77.49 58.07,87.85 54.98,94.36 C51.89,100.87 51.89,103.53 51.89,104.87 L51.89,106.2" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M51.89,123.2 L57.89,106.2 L45.89,106.2 Z" fill="#ffffff" stroke="#333333" class="marker"/>
+</g>
+<g class="edge association">
+<path d="M88.67,425.38 L88.67,429.55 C88.67,433.71 88.67,442.05 88.67,450.38 C88.67,458.71 88.67,467.05 88.67,475.38 C88.67,483.71 88.67,492.05 88.67,499.05 C88.67,506.05 88.67,511.71 88.67,514.55 L88.67,517.38" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M88.67,525.38 L92.67,517.38 L84.67,517.38 Z" fill="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+<g class="edge-label">
+<rect x="51.99" y="337.98" width="73.34" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="88.67" y="355.67" text-anchor="middle" font-size="16" fill="#333333">«extend»</text>
+</g>
+</g>
+<g class="nodes">
+<g class="actor" data-id="agent">
+<g transform="translate(51.89 123.2)">
+<circle cx="0" cy="7" r="7" fill="#ececff" stroke="#9370db" stroke-width="1.5"/>
+<path d="M0,14 L0,33 M-14,20 L14,20 M-11,50 L0,33 L11,50" fill="none" stroke="#9370db" stroke-width="1.5"/>
+<line x1="-6" y1="12" x2="6" y2="2" stroke="#9370db" stroke-width="1.5" class="business"/>
+</g>
+<text x="51.89" y="189.18" text-anchor="middle" font-size="14" fill="#333333">«Employee»</text>
+<text x="51.89" y="207.69" text-anchor="middle" font-size="16" fill="#333333">agent</text>
+</g>
+<g class="actor" data-id="robot">
+<g transform="translate(88.67 0)">
+<circle cx="0" cy="8" r="8" fill="#9370db"/>
+<path d="M-14,50 L-14,30 C-14,22 -8,19 0,19 C8,19 14,22 14,30 L14,50 Z" fill="#9370db"/>
+</g>
+<text x="88.67" y="67.69" text-anchor="middle" font-size="16" fill="#333333">robot</text>
+</g>
+<g class="usecase" data-id="quote">
+<path d="M177.33,288.09 C177.33,301.84 137.63,312.98 88.67,312.98 C39.7,312.98 0,301.84 0,288.09 C0,274.34 39.7,263.2 88.67,263.2 C137.63,263.2 177.33,274.34 177.33,288.09 Z" fill="#ececff" stroke="#9370db"/>
+<line x1="44.33" y1="309.65" x2="5.35" y2="296.6" stroke="#9370db" class="business"/>
+<text x="88.67" y="292.18" text-anchor="middle" font-size="16" fill="#131300">Prepare quote</text>
+</g>
+<g class="usecase rectangle" data-id="archive">
+<rect x="50.19" y="390.18" width="76.94" height="35.2" fill="#ececff" stroke="#9370db"/>
+<text x="88.67" y="411.87" text-anchor="middle" font-size="16" fill="#131300">Archive</text>
+</g>
+<g class="json-table" data-id="data">
+<rect x="3.8" y="525.38" width="169.73" height="184" fill="#ececff" stroke="#9370db"/>
+<text x="88.67" y="547.07" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">data</text>
+<rect x="3.8" y="560.58" width="103.92" height="24.8" fill="#ffffff" stroke="#9370db"/>
+<rect x="107.72" y="560.58" width="65.81" height="24.8" fill="#ffffff" stroke="#9370db"/>
+<text x="30.48" y="576.56" text-anchor="middle" font-size="14" fill="#131300">status</text>
+<text x="140.63" y="576.56" text-anchor="middle" font-size="14" fill="#131300">pending</text>
+<rect x="3.8" y="585.38" width="103.92" height="24.8" fill="#f1f1ff" stroke="#9370db"/>
+<rect x="107.72" y="585.38" width="65.81" height="24.8" fill="#f1f1ff" stroke="#9370db"/>
+<text x="25.03" y="601.36" text-anchor="middle" font-size="14" fill="#131300">tags</text>
+<text x="119.61" y="601.36" text-anchor="middle" font-size="14" fill="#131300">a</text>
+<rect x="3.8" y="610.18" width="103.92" height="24.8" fill="#ffffff" stroke="#9370db"/>
+<rect x="107.72" y="610.18" width="65.81" height="24.8" fill="#ffffff" stroke="#9370db"/>
+<text x="119.61" y="626.16" text-anchor="middle" font-size="14" fill="#131300">b</text>
+<rect x="3.8" y="634.98" width="103.92" height="24.8" fill="#f1f1ff" stroke="#9370db"/>
+<rect x="107.72" y="634.98" width="65.81" height="24.8" fill="#f1f1ff" stroke="#9370db"/>
+<text x="55.76" y="650.96" text-anchor="middle" font-size="14" fill="#131300">items[0].name</text>
+<text x="131.67" y="650.96" text-anchor="middle" font-size="14" fill="#131300">Book</text>
+<rect x="3.8" y="659.78" width="103.92" height="24.8" fill="#ffffff" stroke="#9370db"/>
+<rect x="107.72" y="659.78" width="65.81" height="24.8" fill="#ffffff" stroke="#9370db"/>
+<text x="30.86" y="675.76" text-anchor="middle" font-size="14" fill="#131300">empty</text>
+<text x="120.4" y="675.76" text-anchor="middle" font-size="14" fill="#131300">{}</text>
+<rect x="3.8" y="684.58" width="103.92" height="24.8" fill="#f1f1ff" stroke="#9370db"/>
+<rect x="107.72" y="684.58" width="65.81" height="24.8" fill="#f1f1ff" stroke="#9370db"/>
+<text x="27.37" y="700.56" text-anchor="middle" font-size="14" fill="#131300">none</text>
+<text x="119.61" y="700.56" text-anchor="middle" font-size="14" fill="#131300">[]</text>
+</g>
+</g>
+</g>
+</svg>

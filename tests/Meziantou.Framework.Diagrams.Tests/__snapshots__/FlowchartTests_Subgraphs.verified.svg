@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="454.69" height="167.75" viewBox="0 0 454.69 167.75" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="454.69" height="167.75" fill="#ffffff"/>
+<g class="diagram" transform="translate(8 8)">
+<g class="clusters">
+<g class="cluster" data-id="backend">
+<rect x="204" y="0" width="234.69" height="151.75" fill="#ffffde" stroke="#aaaa33"/>
+<text x="321.34" y="17.69" text-anchor="middle" font-size="16" fill="#333333">Backend</text>
+</g>
+</g>
+<g class="edges">
+<g class="edge solid">
+<path d="M93.55,89.47 L102.76,89.47 C111.96,89.47 130.37,89.47 148.78,89.47 C167.18,89.47 185.59,89.47 197.63,89.47 C209.67,89.47 215.33,89.47 218.17,89.47 L221,89.47" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M229,89.47 L221,85.47 L221,93.47 Z" fill="#333333" class="marker"/>
+</g>
+<g class="edge solid">
+<path d="M284.79,89.47 L288.96,89.47 C293.13,89.47 301.46,89.47 308.46,89.47 C315.46,89.47 321.13,89.47 323.96,89.47 L326.79,89.47" fill="none" stroke="#333333" class="edge-path"/>
+<path d="M334.79,89.47 L326.79,85.47 L326.79,93.47 Z" fill="#333333" class="marker"/>
+</g>
+</g>
+<g class="edge-labels">
+<g class="edge-label">
+<rect x="118.55" y="75.87" width="60.45" height="27.2" fill="#e8e8e8" fill-opacity="0.8"/>
+<text x="148.78" y="93.56" text-anchor="middle" font-size="16" fill="#333333">HTTPS</text>
+</g>
+</g>
+<g class="nodes">
+<g class="node" data-id="client">
+<g transform="translate(46.78 89.47)">
+<path d="M-46.78,-19.6 L46.78,-19.6 L46.78,19.6 L-46.78,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="46.78" y="93.56" text-anchor="middle" font-size="16" fill="#333333">Web app</text>
+</g>
+<g class="node" data-id="api">
+<g transform="translate(256.9 89.47)">
+<path d="M-27.9,-19.6 L27.9,-19.6 L27.9,19.6 L-27.9,19.6 Z" fill="#ececff" stroke="#9370db"/>
+</g>
+<text x="256.9" y="93.56" text-anchor="middle" font-size="16" fill="#333333">API</text>
+</g>
+<g class="node" data-id="db">
+<g transform="translate(374.24 89.47)">
+<path d="M-39.45,-19.6 C-39.45,-24.94 -21.79,-29.27 0,-29.27 C21.79,-29.27 39.45,-24.94 39.45,-19.6 L39.45,19.6 C39.45,24.94 21.79,29.27 0,29.27 C-21.79,29.27 -39.45,24.94 -39.45,19.6 Z" fill="#ececff" stroke="#9370db"/>
+<path d="M-39.45,-19.6 C-39.45,-14.26 -21.79,-9.93 0,-9.93 C21.79,-9.93 39.45,-14.26 39.45,-19.6" fill="none" stroke="#9370db"/>
+</g>
+<text x="374.24" y="98.4" text-anchor="middle" font-size="16" fill="#333333">Orders</text>
+</g>
+</g>
+</g>
+</svg>

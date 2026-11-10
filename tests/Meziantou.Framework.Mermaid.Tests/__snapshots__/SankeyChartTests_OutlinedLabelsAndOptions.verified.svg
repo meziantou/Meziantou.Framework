@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="420" viewBox="0 0 520 420" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="520" height="420" fill="#333333"/>
+<g class="marks">
+<g>
+<path d="M30,111.73 C140,111.73 140,111.73 250,111.73" fill="none" stroke="#a1a1a1" stroke-opacity="0.502" stroke-width="203.46"><title>A → B: $30 M</title></path>
+<path d="M30,247.37 C140,247.37 140,292.37 250,292.37" fill="none" stroke="#a1a1a1" stroke-opacity="0.502" stroke-width="67.82"><title>A → C: $10 M</title></path>
+<path d="M270,94.77 C380,94.77 380,103.99 490,103.99" fill="none" stroke="#a1a1a1" stroke-opacity="0.502" stroke-width="169.55"><title>B → D: $25 M</title></path>
+<path d="M270,275.41 C380,275.41 380,205.72 490,205.72" fill="none" stroke="#a1a1a1" stroke-opacity="0.502" stroke-width="33.91"><title>C → D: $5 M</title></path>
+<path d="M270,309.32 C380,309.32 380,309.32 490,309.32" fill="none" stroke="#a1a1a1" stroke-opacity="0.502" stroke-width="33.91"><title>C → E: $5 M</title></path>
+<path d="M30,368.14 C260,368.14 260,368.14 490,368.14" fill="none" stroke="#a1a1a1" stroke-opacity="0.502" stroke-width="83.72"><title>F → E: $12.35 M</title></path>
+<rect x="10" y="10" width="20" height="271.28" fill="#4e79a7"><title>A $40 M: 40</title></rect>
+<text x="36" y="149.22" font-size="14" fill="#cccccc">A $40 M</text>
+<rect x="250" y="10" width="20" height="203.46" fill="#ff0000"><title>B $30 M: 30</title></rect>
+<text x="276" y="115.31" font-size="14" fill="#cccccc">B $30 M</text>
+<rect x="250" y="258.46" width="20" height="67.82" fill="#f28e2c"><title>C $10 M: 10</title></rect>
+<text x="276" y="295.94" font-size="14" fill="#cccccc">C $10 M</text>
+<rect x="490" y="19.22" width="20" height="203.46" fill="#e15759"><title>D $30 M: 30</title></rect>
+<text x="484" y="124.53" text-anchor="end" font-size="14" fill="#cccccc">D $30 M</text>
+<rect x="490" y="292.37" width="20" height="117.63" fill="#76b7b2"><title>E $17.35 M: 17.345</title></rect>
+<text x="484" y="354.76" text-anchor="end" font-size="14" fill="#cccccc">E $17.35 M</text>
+<rect x="10" y="326.28" width="20" height="83.72" fill="#59a14f"><title>F $12.35 M: 12.345</title></rect>
+<text x="36" y="371.72" font-size="14" fill="#cccccc">F $12.35 M</text>
+</g>
+</g>
+</svg>

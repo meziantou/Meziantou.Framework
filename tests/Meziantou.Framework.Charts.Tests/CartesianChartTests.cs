@@ -220,7 +220,7 @@ public sealed class CartesianChartTests
             Size = car => car.Horsepower,
             Fill = car => car.Origin,
             FillOpacity = 0.7,
-            StrokeColor = ChartColor.White,
+            StrokeColor = SceneColor.White,
         });
         plot.SizeScale = new SizeScale { MaxRadius = 20 };
         #endregion
@@ -238,7 +238,7 @@ public sealed class CartesianChartTests
             Size = car => car.Horsepower,
             Fill = car => car.Origin,
             FillOpacity = 0.7,
-            StrokeColor = ChartColor.White,
+            StrokeColor = SceneColor.White,
         });
         plot.SizeScale = new SizeScale { MaxRadius = 20 };
         plot.Legend.Position = LegendPosition.Right;
@@ -307,7 +307,7 @@ public sealed class CartesianChartTests
     {
         (double X, double Y, string? Text)[] notes = [(2, 1.5, "left"), (2, 2.5, "middle"), (3, 3, "below"), (4, 4, null), (double.NaN, 1, "missing")];
         var plot = new Plot { Width = 300, Height = 200, XScale = new LinearScale { Minimum = 0, Maximum = 5 } };
-        plot.Add(new AnnotationMark<(double X, double Y, string? Text)>(notes.Take(1), x: note => note.X, y: note => note.Y, text: note => note.Text) { DX = -30, DY = 0, HeadSize = 0, StrokeColor = ChartColor.Black, FillColor = "#e5484d" });
+        plot.Add(new AnnotationMark<(double X, double Y, string? Text)>(notes.Take(1), x: note => note.X, y: note => note.Y, text: note => note.Text) { DX = -30, DY = 0, HeadSize = 0, StrokeColor = SceneColor.Black, FillColor = "#e5484d" });
         plot.Add(new AnnotationMark<(double X, double Y, string? Text)>(notes.Skip(1).Take(1), x: note => note.X, y: note => note.Y, text: note => note.Text) { DX = 0, DY = 0, FontSize = 14 });
         plot.Add(new AnnotationMark<(double X, double Y, string? Text)>(notes.Skip(2), x: note => note.X, y: note => note.Y, text: note => note.Text)
         {
@@ -637,7 +637,7 @@ public sealed class CartesianChartTests
         plot.Add(new DotMark<DotSymbol>(symbols, x: symbol => symbol.ToString(), y: _ => 1) { Radius = 8, Fill = symbol => symbol.ToString() });
         foreach (var symbol in symbols)
         {
-            plot.Add(new DotMark<DotSymbol>([symbol], x: s => s.ToString(), y: _ => 2) { Radius = 8, Symbol = symbol, StrokeColor = ChartColor.Black });
+            plot.Add(new DotMark<DotSymbol>([symbol], x: s => s.ToString(), y: _ => 2) { Radius = 8, Symbol = symbol, StrokeColor = SceneColor.Black });
         }
 
         plot.Legend.Visible = false;

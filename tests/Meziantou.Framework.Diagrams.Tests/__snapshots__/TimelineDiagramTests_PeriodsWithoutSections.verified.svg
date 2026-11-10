@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="906" height="425.6" viewBox="0 0 906 425.6" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>Social media</title>
+<rect width="906" height="425.6" fill="#ffffff"/>
+<g class="title">
+<text x="453" y="23.4" text-anchor="middle" font-size="18" fill="#333333">Social media</text>
+</g>
+<g class="diagram" transform="translate(-42 -10.4)">
+<g class="lines">
+<line x1="195" y1="118" x2="195" y2="420" stroke="#333333" stroke-width="2" stroke-dasharray="5 5"/>
+<path d="M195,428 L199,420 L191,420 Z" fill="#333333" class="marker"/>
+<line x1="395" y1="118" x2="395" y2="420" stroke="#333333" stroke-width="2" stroke-dasharray="5 5"/>
+<path d="M395,428 L399,420 L391,420 Z" fill="#333333" class="marker"/>
+<line x1="595" y1="118" x2="595" y2="420" stroke="#333333" stroke-width="2" stroke-dasharray="5 5"/>
+<path d="M595,428 L599,420 L591,420 Z" fill="#333333" class="marker"/>
+<line x1="50" y1="168" x2="930" y2="168" stroke="#333333" stroke-width="4"/>
+<path d="M940,168 L932,164 L932,172 Z" fill="#333333" class="marker"/>
+</g>
+<g class="nodes">
+<g class="timeline-node period section-0">
+<path d="M100,113 L100,55 Q100,50 105,50 L285,50 Q290,50 290,55 L290,118 L100,118 Z" fill="#8686ff"/>
+<line x1="100" y1="118" x2="290" y2="118" stroke="#797900" stroke-width="3"/>
+<text x="195" y="78.49" text-anchor="middle" font-size="16" fill="#ffffff">2002</text>
+</g>
+<g class="timeline-node event section-0">
+<path d="M100,295 L100,255 Q100,250 105,250 L285,250 Q290,250 290,255 L290,300 L100,300 Z" fill="#8686ff"/>
+<line x1="100" y1="300" x2="290" y2="300" stroke="#797900" stroke-width="3"/>
+<text x="195" y="278.49" text-anchor="middle" font-size="16" fill="#ffffff">LinkedIn</text>
+</g>
+<g class="timeline-node period section-1">
+<path d="M300,113 L300,55 Q300,50 305,50 L485,50 Q490,50 490,55 L490,118 L300,118 Z" fill="#ffff78"/>
+<line x1="300" y1="118" x2="490" y2="118" stroke="#000087" stroke-width="3"/>
+<text x="395" y="78.49" text-anchor="middle" font-size="16" fill="#000000">2004</text>
+</g>
+<g class="timeline-node event section-1">
+<path d="M300,295 L300,255 Q300,250 305,250 L485,250 Q490,250 490,255 L490,300 L300,300 Z" fill="#ffff78"/>
+<line x1="300" y1="300" x2="490" y2="300" stroke="#000087" stroke-width="3"/>
+<text x="395" y="278.49" text-anchor="middle" font-size="16" fill="#000000">Facebook</text>
+</g>
+<g class="timeline-node event section-1">
+<path d="M300,355 L300,315 Q300,310 305,310 L485,310 Q490,310 490,315 L490,360 L300,360 Z" fill="#ffff78"/>
+<line x1="300" y1="360" x2="490" y2="360" stroke="#000087" stroke-width="3"/>
+<text x="395" y="338.49" text-anchor="middle" font-size="16" fill="#000000">Google</text>
+</g>
+<g class="timeline-node period section-2">
+<path d="M500,113 L500,55 Q500,50 505,50 L685,50 Q690,50 690,55 L690,118 L500,118 Z" fill="#d7ff86"/>
+<line x1="500" y1="118" x2="690" y2="118" stroke="#280079" stroke-width="3"/>
+<text x="595" y="78.49" text-anchor="middle" font-size="16" fill="#000000">2005</text>
+</g>
+<g class="timeline-node event section-2">
+<path d="M500,295 L500,255 Q500,250 505,250 L685,250 Q690,250 690,255 L690,300 L500,300 Z" fill="#d7ff86"/>
+<line x1="500" y1="300" x2="690" y2="300" stroke="#280079" stroke-width="3"/>
+<text x="595" y="278.49" text-anchor="middle" font-size="16" fill="#000000">YouTube</text>
+</g>
+<g class="timeline-node period section-3">
+<path d="M700,113 L700,55 Q700,50 705,50 L885,50 Q890,50 890,55 L890,118 L700,118 Z" fill="#c286ff"/>
+<line x1="700" y1="118" x2="890" y2="118" stroke="#3d7900" stroke-width="3"/>
+<text x="795" y="78.49" text-anchor="middle" font-size="16" fill="#000000">2006</text>
+</g>
+</g>
+</g>
+</svg>

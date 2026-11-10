@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="596" height="271" viewBox="0 0 596 271" role="img" font-family="Helvetica, Arial, sans-serif">
+<rect width="596" height="271" fill="#ffffff"/>
+<g class="marks">
+<g>
+<rect x="8" y="8" width="580" height="255" fill="#8686ff" fill-opacity="0.251"><title>Budget: $1,500,000</title></rect>
+<text x="11" y="28.31" font-size="11" fill="#333333">Budget ($1,500,000)</text>
+<rect x="18" y="43" width="372" height="210" fill="#ffff78" fill-opacity="0.251"><title>Budget / Operations: $1,000,000</title></rect>
+<text x="21" y="63.31" font-size="11" fill="#333333">Operations ($1,000,000)</text>
+<rect x="28" y="78" width="245.2" height="165" fill="#ff9966"><title>Budget / Operations / Salaries: $700,000</title></rect>
+<text x="32" y="88.9" font-size="11" fill="#1f2328">Salaries</text>
+<text x="32" y="99.07" font-size="11" fill="#1f2328" fill-opacity="0.749">$700,000</text>
+<rect x="277.2" y="78" width="102.8" height="108.67" fill="#ffff78" fill-opacity="0.502"><title>Budget / Operations / Equipment: $200,000</title></rect>
+<text x="281.2" y="88.9" font-size="11" fill="#1f2328">Equipment</text>
+<text x="281.2" y="99.07" font-size="11" fill="#1f2328" fill-opacity="0.749">$200,000</text>
+<rect x="277.2" y="190.67" width="102.8" height="52.33" fill="#ffff78"><title>Budget / Operations / Supplies: $100,000</title></rect>
+<text x="281.2" y="201.56" font-size="11" fill="#1f2328">Supplies</text>
+<text x="281.2" y="211.74" font-size="11" fill="#1f2328" fill-opacity="0.749">$100,000</text>
+<rect x="394" y="43" width="184" height="210" fill="#ff9966" fill-opacity="0.251"><title>Budget / Marketing with a name too long for its header: $500,000</title></rect>
+<text x="397" y="63.31" font-size="11" fill="#333333">Marketing with a name too long fo…</text>
+<rect x="404" y="78" width="164" height="131.2" fill="#d7ff86"><title>Budget / Marketing with a name too long for its header / Advertising: $400,000</title></rect>
+<text x="408" y="88.9" font-size="11" fill="#1f2328">Advertising</text>
+<text x="408" y="99.07" font-size="11" fill="#1f2328" fill-opacity="0.749">$400,000</text>
+<rect x="404" y="213.2" width="164" height="29.8" fill="#d7ff86"><title>Budget / Marketing with a name too long for its header / Events: $100,000</title></rect>
+<text x="408" y="224.1" font-size="11" fill="#1f2328">Events</text>
+<text x="408" y="234.27" font-size="11" fill="#1f2328" fill-opacity="0.749">$100,000</text>
+</g>
+</g>
+</svg>

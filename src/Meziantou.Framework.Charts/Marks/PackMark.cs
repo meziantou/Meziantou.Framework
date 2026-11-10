@@ -22,7 +22,7 @@ public sealed class PackMark<T> : HierarchyMark<T>
         var offsetX = frame.X + ((frame.Width - size) / 2);
         var offsetY = frame.Y + ((frame.Height - size) / 2);
         var circles = layout.Layout(Root);
-        var labels = new List<(HierarchyCircle<T> Circle, ChartColor Color)>();
+        var labels = new List<(HierarchyCircle<T> Circle, SceneColor Color)>();
         foreach (var circle in circles)
         {
             if (circle.Radius <= 0)
@@ -56,7 +56,7 @@ public sealed class PackMark<T> : HierarchyMark<T>
                 continue;
 
             var metrics = context.Measurer.Measure(text, context.LabelFont);
-            if (TextFitting.FitsInCircle(metrics, circle.Radius - 2))
+            if (LabelFitting.FitsInCircle(metrics, circle.Radius - 2))
             {
                 context.AddCenteredLabel(group, text, offsetX + circle.X, offsetY + circle.Y, color, double.PositiveInfinity, double.PositiveInfinity);
             }

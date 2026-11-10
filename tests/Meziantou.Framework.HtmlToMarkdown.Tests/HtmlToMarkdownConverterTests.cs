@@ -4853,6 +4853,30 @@ public sealed class HtmlToMarkdownConverterTests
     }
 
     [Fact]
+    public void RawHtml_BlankLinesInCommentsAndAttributesAreRemoved()
+    {
+        AssertHtmlToMarkdown(
+            "<p><mark title=\"a\n\nb\"><!--a\n\nsecret\n-->x</mark></p>",
+            "<mark title=\"a\nb\"><!--a\nsecret\n-->x</mark>");
+    }
+
+    [Fact]
+    public void RawHtml_BlankLinesOfRawTextAreRemoved()
+    {
+        AssertHtmlToMarkdown(
+            "<div><x-a><textarea>a\n\nb</textarea></x-a></div>",
+            "<x-a><textarea>a\nb</textarea></x-a>");
+    }
+
+    [Fact]
+    public void RawHtml_BlankLineLeftByAStrippedElementGetsAComment()
+    {
+        AssertHtmlToMarkdown(
+            "<x-a><pre>a\n<script>x</script>\nb</pre></x-a>",
+            "<x-a><pre>a\n<!---->\nb</pre></x-a>");
+    }
+
+    [Fact]
     public void RawHtml_BlankLinesGetAnEmptyComment()
     {
         AssertHtmlToMarkdown(
@@ -4891,6 +4915,8 @@ public sealed class HtmlToMarkdownConverterTests
     [InlineData("white-space: pre; white-space: invalid", "a &nbsp;b  \nc")]
     [InlineData("white-space: pre; white-space-collapse: collapse", "a b c")]
     [InlineData("white-space: pre; white-space: inherit", "a b c")]
+    [InlineData("white-space: pre !important; white-space: normal", "a &nbsp;b  \nc")]
+    [InlineData("white-space: pre !important; white-space-collapse: collapse !important", "a b c")]
     [InlineData("white-space: unknown", "a b c")]
     public void CssWhiteSpace_Values(string style, string expected)
     {
@@ -4926,6 +4952,20 @@ public sealed class HtmlToMarkdownConverterTests
     public void CssWhiteSpace_WhitespaceOnlyTextBetweenBlocksIsRemoved()
     {
         AssertHtmlToMarkdown("<div style=\"white-space: pre\">\n  <p>a</p>\n  <p>b</p>\n</div>", "a\n\nb");
+    }
+
+    [Fact]
+    public void CssWhiteSpace_EmptyLinesKeepTheParagraph()
+    {
+        AssertHtmlToMarkdown("<p style=\"white-space: pre\">a\n\nb</p>", "a  \n&nbsp;  \nb");
+        AssertHtmlToMarkdown("<p style=\"white-space: pre-line\">a\n  \nb</p>", "a\\\n&nbsp;\\\nb", new() { LineBreakStyle = LineBreakStyle.Backslash });
+    }
+
+    [Fact]
+    public void CssWhiteSpace_TabsCountColumnsAcrossElements()
+    {
+        AssertHtmlToMarkdown("<p style=\"white-space: pre\"><span>a</span>\tb</p>", "a&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;b");
+        AssertHtmlToMarkdown("<div style=\"white-space: pre\"><p>abc</p><p>\tb</p></div>", "abc\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;b");
     }
 
     [Fact]
@@ -5045,6 +5085,15 @@ public sealed class HtmlToMarkdownConverterTests
     {
         var markdown = HtmlToMarkdown.Convert("<table><tr><td colspan=\"99999999999999999999\">a</td></tr></table>", new() { TableSpanHandling = TableSpanHandling.EmptyCells });
         Assert.Equal(1000, markdown.Split('\n')[1].Count(c => c == '|') - 1);
+    }
+
+    [Fact]
+    public void TableSpans_GridSizeIsLimited()
+    {
+        var html = "<table>" + string.Concat(Enumerable.Repeat("<tr><td colspan=\"1000\" rowspan=\"0\">x</td></tr>", 1000)) + "</table>";
+        var markdown = HtmlToMarkdown.Convert(html, new() { TableSpanHandling = TableSpanHandling.Duplicate });
+        Assert.HasCountLessThan(10_000_000, markdown);
+        Assert.StartsWith("| x | x |", markdown, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -59,7 +59,9 @@ Assert.Equal("Name: Alice Role: admin", collapsed);
   `<br>` in a table cell.
 - A run of spaces keeps one space and writes the others `&nbsp;`, because a Markdown renderer collapses consecutive
   spaces: all of them at the start of a line, where Markdown removes the indentation. A tab advances to the next
-  multiple of 8 columns.
+  multiple of 8 columns of the line. An empty line between two line breaks is written `&nbsp;`, so that it does not end
+  the paragraph.
+- An `!important` declaration wins over the other ones; otherwise the last valid declaration wins.
 - The line breaks at the start and at the end of a block, and the text made only of whitespace between blocks, are
   removed: they render nothing.
 
@@ -335,6 +337,8 @@ Assert.Equal("""
 - The alignment of a spanning header cell applies to every column it spans.
 - As in HTML, `colspan` is at most 1000, and a `rowspan` stops at the end of its `thead`, `tbody` or `tfoot`;
   `rowspan="0"` spans to that end.
+- A span that would make the table larger than 1,000,000 cells (rows × columns) is ignored, so that a small document
+  cannot produce a huge table.
 
 ### Complex tables
 
@@ -370,8 +374,9 @@ A table is complex when:
 
 The other tables stay pipe tables. The HTML is the one of the table, with its attributes, without its `script`,
 `style` and `noscript` elements, as for an [unknown element](05-UnknownElementsAndUntrustedHtml.md): sanitize untrusted
-HTML first. A blank line would end the HTML block, so each blank line of the HTML, such as an empty line of a `pre`,
-gets an empty comment (`<!---->`), which renders nothing.
+HTML first. A blank line would end the HTML block, so a blank line of a text, such as an empty line of a `pre`, gets
+an empty comment (`<!---->`), which renders nothing. The blank lines of comments, attribute values and `textarea`
+elements are removed. The same applies to the unknown elements and the embedded content written as raw HTML.
 
 ## Definition lists
 

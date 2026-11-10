@@ -24,8 +24,8 @@ public static class HtmlToMarkdown
             return "";
 
         var document = HtmlDocumentParser.ParseDocument("<body>" + html + "</body>");
-        var state = new ConversionState(options);
         var body = document.Body!;
+        var state = new ConversionState(options, body);
         ConvertDescendants(body, state);
         var result = ConvertChildNodes(body, state);
         return result.Trim('\n', '\r');
@@ -142,12 +142,24 @@ public static class HtmlToMarkdown
 
                 if (i < lines.Length - 1)
                     line = line.TrimEnd(' ');
+            }
 
+            // A line between two preserved line breaks has to hold something: a line made of nothing but spaces
+            // would be a blank line, which ends the paragraph
+            if (line.Length == 0)
+            {
+                if (i > 0 && i < lines.Length - 1)
+                    sb.Append("&nbsp;");
+            }
+            else if (whiteSpace is WhiteSpaceMode.PreserveBreaks)
+            {
                 sb.Append(ConvertTextSegment(line, state));
             }
             else
             {
-                AppendPreservedSpaces(sb, ConvertTextSegment(ExpandTabs(line), state));
+                // A tab advances to a multiple of 8 columns from the start of the line, which can be in a previous text
+                var startColumn = i == 0 && line.Contains('\t', StringComparison.Ordinal) ? state.GetStartColumn(text) : 0;
+                AppendPreservedSpaces(sb, ConvertTextSegment(ExpandTabs(line, startColumn), state));
             }
         }
 
@@ -184,7 +196,7 @@ public static class HtmlToMarkdown
         }
 
         // A tab advances to the next multiple of 8 columns, the default tab-size of CSS
-        static string ExpandTabs(string line)
+        static string ExpandTabs(string line, int startColumn)
         {
             if (!line.Contains('\t', StringComparison.Ordinal))
                 return line;
@@ -194,7 +206,7 @@ public static class HtmlToMarkdown
             {
                 if (c is '\t')
                 {
-                    sb.Append(' ', 8 - (sb.Length % 8));
+                    sb.Append(' ', TabSize - ((startColumn + sb.Length) % TabSize));
                 }
                 else
                 {
@@ -205,6 +217,8 @@ public static class HtmlToMarkdown
             return sb.ToString();
         }
     }
+
+    private const int TabSize = 8;
 
     private static string GetHardLineBreak(ConversionState state)
     {
@@ -218,9 +232,14 @@ public static class HtmlToMarkdown
         if (string.IsNullOrEmpty(style))
             return null;
 
+        // An important declaration wins over the normal ones; otherwise the last valid declaration wins
         WhiteSpaceMode? result = null;
-        foreach (var (property, value) in GetCssDeclarations(style))
+        var resultIsImportant = false;
+        foreach (var (property, value, isImportant) in GetCssDeclarations(style))
         {
+            if (resultIsImportant && !isImportant)
+                continue;
+
             WhiteSpaceMode? mode;
             if (property.Equals("white-space", StringComparison.OrdinalIgnoreCase))
             {
@@ -228,6 +247,7 @@ public static class HtmlToMarkdown
                 if (isInherited)
                 {
                     result = null;
+                    resultIsImportant = isImportant;
                     continue;
                 }
             }
@@ -237,6 +257,7 @@ public static class HtmlToMarkdown
                 if (isInherited)
                 {
                     result = null;
+                    resultIsImportant = isImportant;
                     continue;
                 }
             }
@@ -247,7 +268,10 @@ public static class HtmlToMarkdown
 
             // An invalid declaration is ignored: the previous one still applies
             if (mode is not null)
+            {
                 result = mode;
+                resultIsImportant = isImportant;
+            }
         }
 
         return result;
@@ -311,7 +335,7 @@ public static class HtmlToMarkdown
     /// Splits an inline style into its declarations, with the property and the value trimmed and the
     /// <c>!important</c> flag removed from the value.
     /// </summary>
-    private static IEnumerable<(string Property, string Value)> GetCssDeclarations(string style)
+    private static IEnumerable<(string Property, string Value, bool IsImportant)> GetCssDeclarations(string style)
     {
         foreach (var declaration in style.Split(';'))
         {
@@ -321,11 +345,15 @@ public static class HtmlToMarkdown
 
             var property = declaration[..colonIndex].Trim();
             var value = declaration[(colonIndex + 1)..].Trim();
+            var isImportant = false;
             var bangIndex = value.LastIndexOf('!', StringComparison.Ordinal);
             if (bangIndex >= 0 && value[(bangIndex + 1)..].Trim().Equals("important", StringComparison.OrdinalIgnoreCase))
+            {
                 value = value[..bangIndex].Trim();
+                isImportant = true;
+            }
 
-            yield return (property, value);
+            yield return (property, value, isImportant);
         }
     }
 
@@ -1021,27 +1049,130 @@ public static class HtmlToMarkdown
 
     /// <summary>
     /// Gets the HTML written for an element passed through as raw HTML. A blank line ends an HTML block, and a raw HTML
-    /// tag cannot span one, so each blank line of the HTML gets an empty comment: the comment renders nothing, also in a
-    /// <c>pre</c> element where the line itself is kept.
+    /// tag cannot span one, so the blank lines are removed from the copy that is written. In text, where a line can be
+    /// significant (in a <c>pre</c> element), an empty comment is inserted on the blank line instead: it renders nothing.
+    /// The blank lines of comments, attribute values and raw text elements (<c>textarea</c>, <c>title</c>...) are
+    /// removed, because markup there would be read as text.
     /// </summary>
     private static string GetRawHtml(Element element)
     {
         var html = GetOuterHtmlWithoutStrippedElements(element);
-        if (!html.Contains('\n', StringComparison.Ordinal))
+        if (!ContainsBlankLine(html))
             return html;
 
-        var lines = html.Split('\n');
-        var changed = false;
-        for (var i = 0; i < lines.Length; i++)
+        var clone = (Element)element.CloneNode(subtree: true);
+        foreach (var stripped in clone.QuerySelectorAll<Element>(StrippedElementsSelector))
         {
-            if (string.IsNullOrWhiteSpace(lines[i]))
+            stripped.Remove();
+        }
+
+        // Removing an element can leave two text nodes side by side, whose text forms a blank line
+        clone.Normalize();
+
+        var document = element.OwnerDocument!;
+        foreach (var node in clone.DescendantsAndSelf().ToList())
+        {
+            switch (node)
             {
-                lines[i] += "<!---->";
-                changed = true;
+                case Element el:
+                    foreach (var attribute in el.Attributes)
+                    {
+                        if (ContainsBlankLine(attribute.Value))
+                            attribute.Value = RemoveBlankLines(attribute.Value);
+                    }
+
+                    break;
+
+                case Comment comment when ContainsBlankLine(comment.Data):
+                    comment.Data = RemoveBlankLines(comment.Data);
+                    break;
+
+                case Text text when ContainsBlankLine(text.Data):
+                    if (text.ParentElement?.LocalName is "textarea" or "title" or "xmp" or "iframe" or "noembed" or "noframes" or "plaintext")
+                    {
+                        text.Data = RemoveBlankLines(text.Data);
+                    }
+                    else
+                    {
+                        InsertCommentsOnBlankLines(text, document);
+                    }
+
+                    break;
             }
         }
 
-        return changed ? string.Join('\n', lines) : html;
+        return clone.OuterHtml;
+
+        static void InsertCommentsOnBlankLines(Text text, Document document)
+        {
+            var parent = text.ParentNode!;
+            var next = text.NextSibling;
+            var lines = text.Data.Split('\n');
+            var segment = new StringBuilder(lines[0]);
+            var isFirstSegment = true;
+            for (var i = 1; i < lines.Length; i++)
+            {
+                segment.Append('\n').Append(lines[i]);
+                if (i < lines.Length - 1 && string.IsNullOrWhiteSpace(lines[i]))
+                {
+                    AddSegment(segment.ToString());
+                    parent.InsertBefore(document.CreateComment(""), next);
+                    segment.Clear();
+                }
+            }
+
+            AddSegment(segment.ToString());
+
+            void AddSegment(string value)
+            {
+                if (isFirstSegment)
+                {
+                    text.Data = value;
+                    isFirstSegment = false;
+                }
+                else if (value.Length > 0)
+                {
+                    parent.InsertBefore(document.CreateTextNode(value), next);
+                }
+            }
+        }
+    }
+
+    private static bool ContainsBlankLine(string value)
+    {
+        var index = value.IndexOf('\n', StringComparison.Ordinal);
+        while (index >= 0)
+        {
+            var nextIndex = value.IndexOf('\n', index + 1, StringComparison.Ordinal);
+            if (nextIndex < 0)
+                return false;
+
+            if (value.AsSpan(index + 1, nextIndex - index - 1).IsWhiteSpace())
+                return true;
+
+            index = nextIndex;
+        }
+
+        return false;
+    }
+
+    // Removes the lines made only of whitespace between two line breaks
+    private static string RemoveBlankLines(string value)
+    {
+        var lines = value.Split('\n');
+        var sb = new StringBuilder(value.Length);
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (i > 0 && i < lines.Length - 1 && string.IsNullOrWhiteSpace(lines[i]))
+                continue;
+
+            if (i > 0)
+                sb.Append('\n');
+
+            sb.Append(lines[i]);
+        }
+
+        return sb.ToString();
     }
 
     // =========================================================================
@@ -1052,13 +1183,18 @@ public static class HtmlToMarkdown
     /// Places the cells of the rows in a grid. When <see cref="HtmlToMarkdownOptions.TableSpanHandling"/> honors the spans,
     /// a cell fills every position it spans, and the following cells of a row skip the positions that a cell of a
     /// previous row spans, as the table model of HTML does. A position that no cell fills is <see langword="null"/>.
+    /// A span that would make the grid larger than <see cref="MaximumTableGridSize"/> positions is ignored, so that a
+    /// small document cannot allocate a huge grid.
     /// </summary>
     private static List<List<TableCell?>> BuildTableGrid(List<List<Element>> groups, ConversionState state, out bool hasSpans, out bool hasBlocks)
     {
         hasSpans = false;
         hasBlocks = false;
         var honorSpans = state.Options.TableSpanHandling is not TableSpanHandling.Ignore;
-        var rows = new List<List<TableCell?>>();
+        var rowCount = groups.Sum(group => group.Count);
+        var width = 0;
+        long spannedPositions = 0;
+        var rows = new List<List<TableCell?>>(rowCount);
         foreach (var group in groups)
         {
             var groupStart = rows.Count;
@@ -1092,14 +1228,21 @@ public static class HtmlToMarkdown
                         rowSpan = groupEnd - rowIndex;
 
                     hasSpans |= colSpan > 1 || rowSpan > 1;
-                    if (!honorSpans)
+                    while (column < row.Count && row[column] is not null)
+                        column++;
+
+                    // The grid is written with as many columns as its widest row, in every row
+                    if (!honorSpans
+                        || (long)rowCount * Math.Max(width, column + colSpan) > MaximumTableGridSize
+                        || spannedPositions + ((long)colSpan * rowSpan) > MaximumTableGridSize)
                     {
                         colSpan = 1;
                         rowSpan = 1;
                     }
 
-                    while (column < row.Count && row[column] is not null)
-                        column++;
+                    width = Math.Max(width, column + colSpan);
+                    if (colSpan > 1 || rowSpan > 1)
+                        spannedPositions += (long)colSpan * rowSpan;
 
                     for (var r = 0; r < rowSpan; r++)
                     {
@@ -1121,6 +1264,8 @@ public static class HtmlToMarkdown
 
         return rows;
     }
+
+    private const int MaximumTableGridSize = 1_000_000;
 
     /// <summary>
     /// Parses a colspan or rowspan attribute with the rules for parsing non-negative integers of HTML: leading
@@ -1209,7 +1354,7 @@ public static class HtmlToMarkdown
     /// </summary>
     private static string? ExtractCssTextAlign(string style)
     {
-        foreach (var (property, value) in GetCssDeclarations(style))
+        foreach (var (property, value, _) in GetCssDeclarations(style))
         {
             if (property.Equals("text-align", StringComparison.OrdinalIgnoreCase))
             {
@@ -1954,11 +2099,99 @@ public static class HtmlToMarkdown
         private readonly Dictionary<Node, string> _converted = [];
         private readonly Dictionary<Element, WhiteSpaceMode> _whiteSpace = [];
 
+        private readonly Node _root;
+        private Dictionary<Text, int>? _startColumns;
+
         public HtmlToMarkdownOptions Options { get; }
 
-        public ConversionState(HtmlToMarkdownOptions options)
+        public ConversionState(HtmlToMarkdownOptions options, Node root)
         {
             Options = options;
+            _root = root;
+        }
+
+        /// <summary>
+        /// Gets the column of the rendered line at which a text starts, so that a tab advances to the same position as
+        /// in a browser when elements split the line. A line starts at a block element, a <c>br</c> or a preserved line
+        /// break. The columns of all the texts are computed in one pass, the first time one is needed.
+        /// </summary>
+        public int GetStartColumn(Text text)
+        {
+            if (_startColumns is null)
+            {
+                _startColumns = [];
+                ComputeStartColumns();
+            }
+
+            return _startColumns.TryGetValue(text, out var column) ? column : 0;
+        }
+
+        private void ComputeStartColumns()
+        {
+            var column = 0;
+            var stack = new Stack<(Node Node, bool Exiting)>();
+            PushChildren(stack, _root);
+            while (stack.Count > 0)
+            {
+                var (node, exiting) = stack.Pop();
+                if (node is Text text)
+                {
+                    _startColumns![text] = column;
+                    column = AdvanceColumn(column, text);
+                    continue;
+                }
+
+                if (node is not Element element || IsStrippedElement(element))
+                    continue;
+
+                if (element.LocalName is "br" || IsBlockElement(element))
+                    column = 0;
+
+                if (!exiting)
+                {
+                    stack.Push((element, Exiting: true));
+                    PushChildren(stack, element);
+                }
+            }
+
+            static void PushChildren(Stack<(Node Node, bool Exiting)> stack, Node parent)
+            {
+                var children = parent.ChildNodes;
+                for (var i = children.Count - 1; i >= 0; i--)
+                {
+                    stack.Push((children[i], Exiting: false));
+                }
+            }
+        }
+
+        private int AdvanceColumn(int column, Text text)
+        {
+            var whiteSpace = Options.UseCssWhiteSpace ? GetWhiteSpace(text.ParentElement) : WhiteSpaceMode.Collapse;
+            var data = whiteSpace switch
+            {
+                WhiteSpaceMode.Collapse or WhiteSpaceMode.PreserveBreaks => CollapseWhitespaceExceptLineBreaks(text.Data, whiteSpace),
+                WhiteSpaceMode.PreserveSpaces => text.Data.Replace('\n', ' '),
+                _ => text.Data,
+            };
+            foreach (var c in data)
+            {
+                column = c switch
+                {
+                    '\n' => 0,
+                    '\t' => column + TabSize - (column % TabSize),
+                    _ => column + 1,
+                };
+            }
+
+            return column;
+
+            static string CollapseWhitespaceExceptLineBreaks(string data, WhiteSpaceMode whiteSpace)
+            {
+                if (whiteSpace is WhiteSpaceMode.Collapse)
+                    return CollapseWhitespace(data);
+
+                return string.Join('\n', data.Split('\n').Select(CollapseWhitespace));
+            }
         }
 
         public void SetConverted(Node node, string markdown) => _converted[node] = markdown;

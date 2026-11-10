@@ -147,6 +147,8 @@ public static class HtmlToMarkdownFuzzTargets
         yield return "<table><tr><th>Fruit</th><th colspan=\"2\" align=\"right\">Price</th></tr><tr><td rowspan=\"2\">Apple</td><td>$1.20</td><td>each</td></tr><tr><td>$10</td><td>per box</td></tr></table>";
         yield return "<table><thead><tr><th rowspan=\"0\">A</th><th>B</th></tr></thead><tbody><tr><td rowspan=\"0\">x</td><td colspan=\" +2px\">1</td></tr><tr><td>2</td></tr></tbody><tfoot><tr><td>f</td></tr></tfoot></table>";
         yield return "<table><tr><td><pre>a\n\nb</pre><script>alert(1)</script></td><td><p>c</p><p>d</p></td></tr><tr><td><ul><li>a</li></ul></td></tr></table>";
+        yield return "<p style=\"white-space: pre !important; white-space: normal\"><span>a</span>\tb\n\nc</p><mark title=\"a\n\nb\"><!--a\n\nsecret\n-->x</mark><x-a><pre>a\n<script>x</script>\nb</pre><textarea>a\n\nb</textarea></x-a>";
+        yield return "<table>" + string.Concat(Enumerable.Repeat("<tr><td colspan=\"1000\" rowspan=\"0\">x</td></tr>", 20)) + "</table>";
 
         var assembly = typeof(HtmlToMarkdownFuzzTargets).Assembly;
         foreach (var name in assembly.GetManifestResourceNames().Where(n => n.StartsWith("Specs.", StringComparison.Ordinal)).Order(StringComparer.Ordinal))

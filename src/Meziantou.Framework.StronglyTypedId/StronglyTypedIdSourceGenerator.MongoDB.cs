@@ -7,7 +7,8 @@ public partial class StronglyTypedIdSourceGenerator
         if (!context.CanGenerateMongoDbConverter())
             return;
 
-        using (writer.BeginBlock($"partial class {context.MongoDbConverterTypeName} : global::MongoDB.Bson.Serialization.Serializers.SerializerBase<{context.TypeName}{(context.IsReferenceType ? "?" : "")}>"))
+        WriteNewMember(writer, context, addNewLine: true, [XmlSummary("Serializes ", XmlSeeCref(context.TypeName), " to and from BSON.")]);
+        using (writer.BeginBlock($"{context.GetConverterModifiers(StronglyTypedIdConverters.MongoDB_Bson_Serialization)}partial class {context.MongoDbConverterTypeName} : global::MongoDB.Bson.Serialization.Serializers.SerializerBase<{context.TypeName}{(context.IsReferenceType ? "?" : "")}>"))
         {
             WriteNewMember(writer, context, addNewLine: false, InheritDocComment);
             using (writer.BeginBlock($"public override {context.TypeName}{(context.IsReferenceType ? "?" : "")} Deserialize(global::MongoDB.Bson.Serialization.BsonDeserializationContext context, global::MongoDB.Bson.Serialization.BsonDeserializationArgs args)"))

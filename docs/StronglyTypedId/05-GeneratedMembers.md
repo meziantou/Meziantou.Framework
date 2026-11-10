@@ -22,9 +22,10 @@ depend on the underlying type, such as `FromInt32`, follow the table of [underly
 | `TryParse(string?, out ProjectId)`, `TryParse(ReadOnlySpan<char>, out ProjectId)` | Return `false` when the value is not valid, `null` or rejected by your constructor. |
 | `CompareTo`, `<`, `<=`, `>`, `>=` | Only when the type declares `IComparable` or `IComparable<T>`. See [Implement IComparable](03-DeclaringIds.md#implement-icomparable-to-sort-ids). |
 
-The generator also adds a private `_value` field that stores the value, and private nested classes for the converters:
+The generator also adds a private `_value` field that stores the value, and public nested classes for the converters:
 `ProjectIdTypeConverter`, `ProjectIdJsonConverter`, `ProjectIdNewtonsoftJsonConverter` and `ProjectIdBsonConverter`.
-Attributes on the type register them, so you never use them directly. See [Integrations](09-Integrations/01-Overview.md).
+Attributes on the type register them, so most libraries use them without configuration, and you can also reference them
+yourself. See [Integrations](09-Integrations/01-Overview.md#use-a-converter-directly).
 
 ## Interfaces
 

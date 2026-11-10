@@ -645,6 +645,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             SupportSystemTextJsonConverter = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonConverter`1") is not null;
             SupportNewtonsoftJsonConverter = compilation.GetTypeByMetadataName("Newtonsoft.Json.JsonConverter") is not null;
             SupportMongoDbConverter = compilation.GetTypeByMetadataName("MongoDB.Bson.Serialization.Serializers.SerializerBase`1") is not null;
+            UserDeclaredConverters = GetUserDeclaredConverters(typeSymbol, TypeName);
             SupportNotNullWhenAttribute = compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") is { } type && compilation.IsSymbolAccessibleWithin(type, compilation.Assembly);
             SupportStaticInterfaces = compilation.SyntaxTrees.FirstOrDefault()?.Options is CSharpParseOptions { LanguageVersion: >= (LanguageVersion)1100 };
             SupportGuidCreateVersion7 = compilation.SupportGuidCreateVersion7();
@@ -672,6 +673,26 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             ValueTypeCSharpNullableTypeName = ValueTypeCSharpTypeName + (IsReferenceType ? "?" : "");
 
             static bool SymbolEqual(ITypeSymbol? left, ITypeSymbol? right) => SymbolEqualityComparer.Default.Equals(left, right);
+
+            // The generator cannot see its own output, so a nested type found here is declared by the user.
+            // The generated part then has no modifier and the user's declaration sets the accessibility.
+            static StronglyTypedIdConverters GetUserDeclaredConverters(INamedTypeSymbol typeSymbol, string typeName)
+            {
+                var result = StronglyTypedIdConverters.None;
+                if (!typeSymbol.GetTypeMembers(typeName + TypeConverterSuffix).IsEmpty)
+                    result |= StronglyTypedIdConverters.System_ComponentModel_TypeConverter;
+
+                if (!typeSymbol.GetTypeMembers(typeName + SystemTextJsonConverterSuffix).IsEmpty)
+                    result |= StronglyTypedIdConverters.System_Text_Json;
+
+                if (!typeSymbol.GetTypeMembers(typeName + NewtonsoftJsonConverterSuffix).IsEmpty)
+                    result |= StronglyTypedIdConverters.Newtonsoft_Json;
+
+                if (!typeSymbol.GetTypeMembers(typeName + MongoDbConverterSuffix).IsEmpty)
+                    result |= StronglyTypedIdConverters.MongoDB_Bson_Serialization;
+
+                return result;
+            }
 
             static TryFormatSignature GetValueTypeTryFormatSignature(ITypeSymbol valueType, ITypeSymbol? spanSymbol, ITypeSymbol? readOnlySpanCharSymbol, ITypeSymbol? formatProviderSymbol)
             {
@@ -822,10 +843,21 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
         public bool SupportDisallowNullAttribute { get; }
 
-        public string TypeConverterTypeName => TypeName + "TypeConverter";
-        public string SystemTextJsonConverterTypeName => TypeName + "JsonConverter";
-        public string NewtonsoftJsonConverterTypeName => TypeName + "NewtonsoftJsonConverter";
-        public string MongoDbConverterTypeName => TypeName + "BsonConverter";
+        private const string TypeConverterSuffix = "TypeConverter";
+        private const string SystemTextJsonConverterSuffix = "JsonConverter";
+        private const string NewtonsoftJsonConverterSuffix = "NewtonsoftJsonConverter";
+        private const string MongoDbConverterSuffix = "BsonConverter";
+
+        public string TypeConverterTypeName => TypeName + TypeConverterSuffix;
+        public string SystemTextJsonConverterTypeName => TypeName + SystemTextJsonConverterSuffix;
+        public string NewtonsoftJsonConverterTypeName => TypeName + NewtonsoftJsonConverterSuffix;
+        public string MongoDbConverterTypeName => TypeName + MongoDbConverterSuffix;
+
+        /// <summary>Gets the converters whose nested type is already declared by the user.</summary>
+        public StronglyTypedIdConverters UserDeclaredConverters { get; }
+
+        /// <summary>Gets the modifiers of the declaration of a generated converter: <c>public</c>, unless the user declares the type and chooses its accessibility.</summary>
+        public string GetConverterModifiers(StronglyTypedIdConverters converter) => (UserDeclaredConverters & converter) == converter ? "" : "public ";
 
         public string ValueTypeShortName { get; }
         public string ValueTypeCSharpTypeName { get; }
@@ -895,6 +927,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 && SupportSystemTextJsonConverter == other.SupportSystemTextJsonConverter
                 && SupportNewtonsoftJsonConverter == other.SupportNewtonsoftJsonConverter
                 && SupportMongoDbConverter == other.SupportMongoDbConverter
+                && UserDeclaredConverters == other.UserDeclaredConverters
                 && SupportNotNullWhenAttribute == other.SupportNotNullWhenAttribute
                 && SupportReadOnlySpanChar == other.SupportReadOnlySpanChar
                 && IsOpLessThanDefined == other.IsOpLessThanDefined
@@ -955,6 +988,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             hashcode.Add(SupportSystemTextJsonConverter);
             hashcode.Add(SupportNewtonsoftJsonConverter);
             hashcode.Add(SupportMongoDbConverter);
+            hashcode.Add(UserDeclaredConverters);
             hashcode.Add(SupportNotNullWhenAttribute);
             hashcode.Add(SupportReadOnlySpanChar);
             hashcode.Add(IsOpLessThanDefined);

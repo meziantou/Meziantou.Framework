@@ -9,7 +9,8 @@ public partial class StronglyTypedIdSourceGenerator
 
         var idType = context.IdType;
 
-        using (writer.BeginBlock($"partial class {context.SystemTextJsonConverterTypeName} : global::System.Text.Json.Serialization.JsonConverter<{context.TypeName}>"))
+        WriteNewMember(writer, context, addNewLine: true, [XmlSummary("Converts ", XmlSeeCref(context.TypeName), " to and from JSON with System.Text.Json.")]);
+        using (writer.BeginBlock($"{context.GetConverterModifiers(StronglyTypedIdConverters.System_Text_Json)}partial class {context.SystemTextJsonConverterTypeName} : global::System.Text.Json.Serialization.JsonConverter<{context.TypeName}>"))
         {
             // public override void WriteAsPropertyName(Utf8JsonWriter writer, [DisallowNull] Sample value, JsonSerializerOptions options)
             WriteNewMember(writer, context, addNewLine: false, InheritDocComment);

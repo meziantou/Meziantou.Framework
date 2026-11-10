@@ -55,7 +55,7 @@ public partial struct ProjectId :
     public static bool operator !=(ProjectId a, ProjectId b);
     public override string ToString();
 
-    private partial class ProjectIdTypeConverter : System.ComponentModel.TypeConverter
+    public partial class ProjectIdTypeConverter : System.ComponentModel.TypeConverter
     {
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext context, System.Type sourceType);
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value);
@@ -64,14 +64,14 @@ public partial struct ProjectId :
     }
 
     // Generated only when System.Text.Json is accessible
-    private partial class ProjectIdJsonConverter : System.Text.Json.Serialization.JsonConverter<ProjectId>
+    public partial class ProjectIdJsonConverter : System.Text.Json.Serialization.JsonConverter<ProjectId>
     {
         public override void Write(System.Text.Json.Utf8JsonWriter writer, ProjectId value, System.Text.Json.JsonSerializerOptions options);
         public override ProjectId Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options);
     }
 
     // Generated only when Newtonsoft.Json is accessible
-    private partial class ProjectIdNewtonsoftJsonConverter : Newtonsoft.Json.JsonConverter
+    public partial class ProjectIdNewtonsoftJsonConverter : Newtonsoft.Json.JsonConverter
     {
         public override bool CanRead { get; }
         public override bool CanWrite { get; }
@@ -81,7 +81,7 @@ public partial struct ProjectId :
     }
 
     // Generated only when MongoDB.Bson.Serialization.Serializers.SerializerBase is accessible
-    private partial class ProjectIdBsonConverter : MongoDB.Bson.Serialization.Serializers.SerializerBase<ProjectId>
+    public partial class ProjectIdBsonConverter : MongoDB.Bson.Serialization.Serializers.SerializerBase<ProjectId>
     {
         public override ProjectId Deserialize(MongoDB.Bson.Serialization.BsonDeserializationContext context, MongoDB.Bson.Serialization.BsonDeserializationArgs args);
         public override void Serialize(MongoDB.Bson.Serialization.BsonSerializationContext context, MongoDB.Bson.Serialization.BsonSerializationArgs args, ProjectId value);
@@ -90,6 +90,8 @@ public partial struct ProjectId :
 ````
 
 <!-- generated code -->
+
+The converters are public, so you can use them where the attributes are not read, such as `JsonSerializerOptions.Converters` for a source-generated `JsonSerializerContext`. To choose another accessibility, declare the converter in the ID (for instance `internal sealed partial class ProjectIdJsonConverter;`): the generator keeps your modifiers.
 
 Parsing and formatting are culture-invariant: the `IFormatProvider` arguments of the interface members are ignored and `CultureInfo.InvariantCulture` is always used. `IUtf8SpanParsable<T>`, `IFormattable`, `ISpanFormattable` and `IUtf8SpanFormattable` are implemented explicitly, so the type doesn't expose overloads with an `IFormatProvider` parameter.
 

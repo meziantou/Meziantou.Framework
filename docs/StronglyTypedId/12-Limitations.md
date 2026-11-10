@@ -24,10 +24,9 @@ description: What the generator does not do, and the behaviors to know before yo
 
 ## Integrations
 
-- **System.Text.Json source generation ignores the generated converter.** With a `JsonSerializerContext`, which
-  Native AOT applications use, an ID is serialized as `{}`. See
+- **System.Text.Json source generation ignores the attribute that registers the converter.** With a
+  `JsonSerializerContext`, which Native AOT applications use, an ID is serialized as `{}` unless you add the generated
+  converters to the options of the context. See
   [System.Text.Json](09-Integrations/02-SystemTextJson.md#source-generation-and-native-aot).
 - **No Entity Framework Core converter is generated.** Write one value converter per ID type. See
   [Entity Framework Core](09-Integrations/07-EntityFrameworkCore.md).
-- **The converters are private.** They are registered by attributes on the ID, and you cannot add them to
-  `JsonSerializerOptions.Converters` or reuse them in another type.

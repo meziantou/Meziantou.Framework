@@ -7,7 +7,8 @@ public partial class StronglyTypedIdSourceGenerator
         if (!context.CanGenerateTypeConverter())
             return;
 
-        using (writer.BeginBlock($"partial class {context.TypeConverterTypeName} : global::System.ComponentModel.TypeConverter"))
+        WriteNewMember(writer, context, addNewLine: true, [XmlSummary("Converts ", XmlSeeCref(context.TypeName), " to and from its underlying value and its string representation.")]);
+        using (writer.BeginBlock($"{context.GetConverterModifiers(StronglyTypedIdConverters.System_ComponentModel_TypeConverter)}partial class {context.TypeConverterTypeName} : global::System.ComponentModel.TypeConverter"))
         {
             var idType = context.IdType;
 

@@ -44,5 +44,6 @@ Controllers bind route and query string values to IDs too: MVC model binding con
 
 Request and response bodies use System.Text.Json, which uses the
 [generated converter](02-SystemTextJson.md): an ID in a body is its value. A Native AOT application serializes with a
-source-generated `JsonSerializerContext`, which ignores the converter. See
+source-generated `JsonSerializerContext`, which ignores the attribute that registers the converter: add the converters
+to the options of the context. See
 [Source generation and Native AOT](02-SystemTextJson.md#source-generation-and-native-aot).

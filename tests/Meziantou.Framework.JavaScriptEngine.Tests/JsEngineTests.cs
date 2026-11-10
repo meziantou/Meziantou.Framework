@@ -1573,6 +1573,54 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void Debugger_ScopesOfParametersWithExpressions()
+    {
+        var values = new List<string>();
+        var debugger = new JsBreakpointDebugger(pause =>
+        {
+            // The body var x shadows the parameter x: the scope has the binding that the code sees
+            var local = pause.Event.GetScopes()[0];
+            Assert.True(local.TryGetVariable("x", out var x));
+            values.Add($"{string.Join(", ", local.Variables)} | {x.Value} | {pause.Event.Evaluate("x")}");
+            return JsStepAction.Continue;
+        });
+
+        using var engine = new JsEngine(new JsEngineOptions { Debugger = debugger });
+        engine.CreateRealm().Execute("function f(x = 1, y = 3) { var x = 2; debugger; }\nf();");
+
+        Assert.Equal(["y = 3, arguments = [object Arguments], x = 2 | 2 | 2"], values);
+    }
+
+    [Fact]
+    public void Debugger_EvaluateSuperCallInDerivedConstructor()
+    {
+        var debugger = new JsBreakpointDebugger(pause =>
+        {
+            if (pause.Event.FunctionName is "Derived")
+            {
+                pause.Event.Evaluate("super(5)");
+            }
+            else
+            {
+                // super() is a syntax error outside a derived constructor
+                var exception = Assert.Throws<JsException>(() => pause.Event.Evaluate("super()"));
+                Assert.StartsWith("SyntaxError", exception.Message, StringComparison.Ordinal);
+            }
+
+            return JsStepAction.Continue;
+        });
+
+        using var engine = new JsEngine(new JsEngineOptions { Debugger = debugger });
+        var result = engine.CreateRealm().Execute("""
+            class Base { constructor(v) { this.v = v; debugger; } }
+            class Derived extends Base { constructor() { debugger; } }
+            new Derived().v;
+            """);
+
+        Assert.Equal(5, result.AsNumber());
+    }
+
+    [Fact]
     public void Debugger_ScopesOfModules()
     {
         var scopes = new List<string>();
@@ -1761,8 +1809,12 @@ public sealed class JsEngineTests
         Assert.True(debugger.RemoveBreakpoint(column));
         Assert.False(debugger.RemoveBreakpoint(column));
         debugger.PauseOnDebuggerStatements = false;
+
+        // A breakpoint on a debugger statement pauses even when the debugger statements are ignored
+        var onDebuggerStatement = debugger.AddBreakpoint("bp.js", 7);
         realm.Execute(Script, "bp.js");
-        Assert.Equal(["Breakpoint@4:3"], pauses);
+        Assert.Equal(["Breakpoint@4:3", "Breakpoint@7:1"], pauses);
+        Assert.Equal(1, onDebuggerStatement.HitCount);
 
         pauses.Clear();
         debugger.ClearBreakpoints();

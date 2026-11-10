@@ -73,8 +73,9 @@ public sealed class JsDebugFrame
             switch (environment)
             {
                 case DeclarativeEnvironment { Info: { Kind: ScopeKind.Function or ScopeKind.FunctionBody } or { IsFunctionLexicalScope: true } } declarative:
+                    // A body var can have the name of a parameter (parameters with expressions): the inner binding is the one the code sees
                     functionVariables ??= [];
-                    functionVariables.InsertRange(0, GetVariables(declarative));
+                    functionVariables.InsertRange(0, GetVariables(declarative).Where(variable => !functionVariables.Exists(inner => string.Equals(inner.Name, variable.Name, StringComparison.Ordinal))).ToArray());
 
                     // The scope of the parameters is the outermost environment of a function
                     if (declarative.Info.Kind is ScopeKind.Function)

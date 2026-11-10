@@ -117,14 +117,14 @@ public class JsBreakpointDebugger : JsDebugger
     {
         JsPauseReason? reason = null;
         JsBreakpoint? breakpoint = null;
-        if (isDebuggerStatement && PauseOnDebuggerStatements)
-        {
-            reason = JsPauseReason.DebuggerStatement;
-        }
-        else if (!isDebuggerStatement && FindBreakpoint(debugEvent) is { } hit)
+        if (FindBreakpoint(debugEvent) is { } hit)
         {
             reason = JsPauseReason.Breakpoint;
             breakpoint = hit;
+        }
+        else if (isDebuggerStatement && PauseOnDebuggerStatements)
+        {
+            reason = JsPauseReason.DebuggerStatement;
         }
         else if (_isPauseRequested)
         {

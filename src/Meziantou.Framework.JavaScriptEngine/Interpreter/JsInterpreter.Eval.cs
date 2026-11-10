@@ -80,16 +80,22 @@ internal static partial class JsInterpreter
     {
         var allowNewTarget = false;
         var allowSuperProperty = false;
+        bool? allowSuperCall = null;
         var privateNames = new List<string>();
         for (var environment = caller.Environment; environment is not null; environment = environment.Outer)
         {
             if (environment is not DeclarativeEnvironment declarative)
                 continue;
 
-            foreach (var name in declarative.Info.Names)
+            for (var i = 0; i < declarative.Info.SlotCount; i++)
             {
+                var name = declarative.Info.Names[i];
                 switch (name)
                 {
+                    // The active function of the innermost function that has its own this: super() is allowed in a derived constructor
+                    case "%func" when allowSuperCall is null:
+                        allowSuperCall = declarative.Slots[i].Cell is JsClosure { IsDerivedConstructor: true };
+                        break;
                     case "new.target":
                         allowNewTarget = true;
                         break;
@@ -104,12 +110,13 @@ internal static partial class JsInterpreter
         }
 
         var realm = caller.Realm;
-        var context = new EvalContext(caller.IsStrict, allowNewTarget, allowSuperProperty, AllowSuperCall: false, InClassFieldInitializer: false, [.. privateNames]);
+        var context = new EvalContext(caller.IsStrict, allowNewTarget, allowSuperProperty, allowSuperCall ?? false, InClassFieldInitializer: false, [.. privateNames]);
         var options = new ParserOptions
         {
             IsStrict = context.IsStrict,
             AllowNewTarget = context.AllowNewTarget,
             AllowSuperProperty = context.AllowSuperProperty,
+            AllowSuperCall = context.AllowSuperCall,
             PrivateNames = context.PrivateNames,
         };
 

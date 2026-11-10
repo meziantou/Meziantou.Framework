@@ -298,10 +298,11 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         var platformDeserializeCryptoKey = Adapter.RunInRealm(EngineRealm, () => adapter.CreateFunction("platformDeserializeCryptoKey", 1, (_, args) => DeserializeCryptoKey(args[0])));
         var setErrorStack = Adapter.RunInRealm(EngineRealm, () => adapter.CreateFunction("setErrorStack", 2, (_, args) => adapter.FromBoolean(adapter.TrySetErrorStack(args[0], adapter.ToString(args[1])))));
 
-        // null when the adapter cannot tell whether a value has an internal slot
+        // null when the adapter cannot tell whether a value has an internal slot; the function returns undefined for a slot
+        // the adapter does not know
         var hasInternalSlot = Adapter.HasInternalSlot(Adapter.Undefined, JsInternalSlot.BooleanData) is null
             ? Adapter.Null
-            : Adapter.RunInRealm(EngineRealm, () => adapter.CreateFunction("hasInternalSlot", 2, (_, args) => adapter.FromBoolean(adapter.HasInternalSlot(args[0], (JsInternalSlot)(int)adapter.ToNumber(args[1])) ?? true)));
+            : Adapter.RunInRealm(EngineRealm, () => adapter.CreateFunction("hasInternalSlot", 2, (_, args) => adapter.HasInternalSlot(args[0], (JsInternalSlot)(int)adapter.ToNumber(args[1])) is { } hasSlot ? adapter.FromBoolean(hasSlot) : adapter.Undefined));
         // https://html.spec.whatwg.org/multipage/structured-data.html#structuredserializeinternal: the data block of a
         // SharedArrayBuffer is held by an empty object of the record, as the serialized platform objects
         var platformShareBuffer = Adapter.RunInRealm(EngineRealm, () => adapter.CreateFunction("platformShareBuffer", 1, (_, args) =>

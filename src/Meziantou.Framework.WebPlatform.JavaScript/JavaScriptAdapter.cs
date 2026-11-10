@@ -385,6 +385,8 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
             WebIdlInternalSlot.SetData => obj.HasInternalSlot(EngineInternalSlot.SetData),
             WebIdlInternalSlot.WeakMapData => obj.HasInternalSlot(EngineInternalSlot.WeakMapData),
             WebIdlInternalSlot.WeakSetData => obj.HasInternalSlot(EngineInternalSlot.WeakSetData),
+            WebIdlInternalSlot.RegExpMatcher => obj.HasInternalSlot(EngineInternalSlot.RegExpMatcher),
+            WebIdlInternalSlot.ErrorData => obj.HasInternalSlot(EngineInternalSlot.ErrorData),
             _ => null,
         };
     }

@@ -14600,6 +14600,8 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         SetData = 10,
         WeakMapData = 11,
         WeakSetData = 12,
+        RegExpMatcher = 13,
+        ErrorData = 14,
     }
 
     public readonly struct JsPropertyDescriptor<TValue> where TValue : class

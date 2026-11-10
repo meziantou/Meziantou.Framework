@@ -27,6 +27,8 @@ internal static class WebApisNatives
         JsInternalSlot.SetData,
         JsInternalSlot.WeakMapData,
         JsInternalSlot.WeakSetData,
+        JsInternalSlot.RegExpMatcher,
+        JsInternalSlot.ErrorData,
     ];
 
     public static JsObject Create(JsWebApiHost host)
@@ -88,6 +90,24 @@ internal static class WebApisNatives
             return timeProvider.GetTimestamp() * 1000.0 / timeProvider.TimestampFrequency;
         });
         Define("stackTrace", 0, (_, _) => RemoveInternalFrames(engine.CaptureStackTrace()));
+
+        // The kind of an object, read from its internal slots: the console shows an object without running code of the
+        // script (no getter, no proxy trap, no Symbol.toStringTag accessor)
+        Define("kindOf", 1, (_, args) => Arg(args, 0).TryGetObject() is { } obj ? GetKind(engine, obj) : "primitive");
+        Define("primitiveValue", 1, (_, args) => Arg(args, 0).TryGetObject() is { } obj && obj.TryGetPrimitiveValue(out var value) ? value : JsValue.Undefined);
+        Define("promiseState", 1, (_, args) =>
+        {
+            if (Arg(args, 0).TryGetObject() is not { } obj || !obj.TryGetPromiseState(out var state, out var result, out bool _))
+                return JsValue.Undefined;
+
+            var name = state switch
+            {
+                JsPromiseState.Fulfilled => "fulfilled",
+                JsPromiseState.Rejected => "rejected",
+                _ => "pending",
+            };
+            return realm.CreateArray([name, result]);
+        });
 
         // Structured clone
         Define("isBufferSource", 1, (_, args) => JsBinaryData.TryGetBufferSource(Arg(args, 0), out JsBufferKind _, out bool _, out Memory<byte> _));
@@ -272,6 +292,69 @@ internal static class WebApisNatives
         });
 
         return natives;
+    }
+
+    private static string GetKind(JsEngine engine, JsObject obj)
+    {
+        if (obj.HasInternalSlot(JsInternalSlot.ProxyHandler))
+            return "proxy";
+
+        if (obj.HasInternalSlot(JsInternalSlot.ErrorData))
+            return "error";
+
+        if (obj.HasInternalSlot(JsInternalSlot.DateValue))
+            return "date";
+
+        if (obj.HasInternalSlot(JsInternalSlot.RegExpMatcher))
+            return "regexp";
+
+        if (obj.HasInternalSlot(JsInternalSlot.MapData))
+            return "map";
+
+        if (obj.HasInternalSlot(JsInternalSlot.SetData))
+            return "set";
+
+        if (obj.HasInternalSlot(JsInternalSlot.WeakMapData))
+            return "weakmap";
+
+        if (obj.HasInternalSlot(JsInternalSlot.WeakSetData))
+            return "weakset";
+
+        if (obj.HasInternalSlot(JsInternalSlot.TypedArrayName))
+            return "typedarray";
+
+        if (obj.HasInternalSlot(JsInternalSlot.ArrayBufferData))
+            return "arraybuffer";
+
+        if (obj.HasInternalSlot(JsInternalSlot.SharedArrayBufferData))
+            return "sharedarraybuffer";
+
+        if (obj.HasInternalSlot(JsInternalSlot.DataView))
+            return "dataview";
+
+        if (obj.HasInternalSlot(JsInternalSlot.PromiseState))
+            return "promise";
+
+        if (obj.HasInternalSlot(JsInternalSlot.BooleanData))
+            return "Boolean";
+
+        if (obj.HasInternalSlot(JsInternalSlot.NumberData))
+            return "Number";
+
+        if (obj.HasInternalSlot(JsInternalSlot.StringData))
+            return "String";
+
+        if (obj.HasInternalSlot(JsInternalSlot.SymbolData))
+            return "Symbol";
+
+        if (obj.HasInternalSlot(JsInternalSlot.BigIntData))
+            return "BigInt";
+
+        if (obj.IsCallable)
+            return "function";
+
+        // Not a proxy: IsArray runs no code of the script
+        return engine.IsArray(obj) ? "array" : "object";
     }
 
     private static JsValue Arg(ReadOnlySpan<JsValue> arguments, int index) => index < arguments.Length ? arguments[index] : JsValue.Undefined;

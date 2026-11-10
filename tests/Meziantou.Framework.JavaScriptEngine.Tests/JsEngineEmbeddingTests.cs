@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.JavaScriptEngine.Tests;
 
@@ -797,6 +798,31 @@ public sealed class JsEngineEmbeddingTests
         await engine.WaitForJobsAsync().WaitAsync(TimeSpan.FromSeconds(30));
         engine.RunJobs();
         Assert.True(ran);
+    }
+
+    [Fact]
+    public void EnqueueTimeoutJob_CanceledJobReleasesItsAction()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var (job, data) = EnqueueJobWithData(engine, realm);
+        job.Cancel();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        // The canceled job waits in the queue for an hour, but no longer holds what its action captures
+        Assert.False(data.IsAlive);
+        GC.KeepAlive(job);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static (JsTimeoutJob Job, WeakReference Data) EnqueueJobWithData(JsEngine engine, JsRealm realm)
+        {
+            var data = new byte[1024];
+            using var scope = engine.Enter();
+            var job = engine.EnqueueTimeoutJob(() => GC.KeepAlive(data), TimeSpan.FromHours(1), realm);
+            return (job, new WeakReference(data));
+        }
     }
 
     [Fact]

@@ -103,8 +103,9 @@ Assert.Equal("cart has 3 items { total: 12.5 }", message.Text);
 - The text is formatted as the [Console Standard](https://console.spec.whatwg.org/#formatter) specifies (`%s`, `%d`,
   `%i`, `%f`, `%o`, `%O`, `%c`), and the objects are shown as Node.js shows them: `{ a: 1 }`, `[ 1, 'x' ]`,
   `Map(1) { 'k' => 1 }`. An error is shown with its stack trace.
-- Showing an object runs no code of the script: the getters are shown as `[Getter]`, the objects deeper than two
-  levels as `[Object]`, and the collections show their first 100 items.
+- Showing an object runs no code of the script: its kind comes from its internal slots, the getters are shown as
+  `[Getter]`, a proxy as `[Proxy]`, the objects deeper than two levels as `[Object]`, and the collections show their
+  first 100 items.
 - `console.table` writes its data as `console.log` does, and `console.trace` writes the stack trace of the call.
 
 ## Choose the APIs

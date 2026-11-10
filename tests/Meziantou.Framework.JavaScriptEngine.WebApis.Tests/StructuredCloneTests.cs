@@ -39,6 +39,50 @@ public sealed class StructuredCloneTests
     }
 
     [Fact]
+    public void StructuredClone_DoesNotUseTheModifiedBuiltIns()
+    {
+        using var context = new WebApisTestContext();
+        Assert.Equal("true", context.Run("""
+            const mapSize = Object.getOwnPropertyDescriptor(Map.prototype, 'size').get;
+            const shared = { a: 1 };
+            const value = { shared, again: shared, map: new Map([[1, 'one']]), set: new Set([2]), bytes: new Uint8Array([3]), error: new Error('m') };
+            value.self = value;
+            const fail = () => { throw new Error('patched'); };
+            Map.prototype.has = fail;
+            Map.prototype.get = fail;
+            Map.prototype.set = fail;
+            Set.prototype.add = fail;
+            Array.prototype[Symbol.iterator] = fail;
+            Object.getPrototypeOf(new Map().entries()).next = fail;
+            Object.getPrototypeOf(new Set().values()).next = fail;
+            Uint8Array.prototype.set = fail;
+            globalThis.Map = fail;
+            globalThis.String = fail;
+            const clone = structuredClone(value);
+            clone.self === clone && clone.again === clone.shared && clone.shared.a === 1 && clone.bytes[0] === 3 && clone.error.message === 'm'
+              && Reflect.apply(mapSize, clone.map, []) === 1
+            """));
+    }
+
+    [Fact]
+    public void StructuredClone_ReadsTheInternalSlots()
+    {
+        // The flags come from [[OriginalFlags]] and the type from [[ErrorData]]: the accessors of the script are not called
+        using var context = new WebApisTestContext();
+        Assert.Equal("gi|TypeError|0", context.Run("""
+            globalThis.calls = 0;
+            const regExp = /a/gi;
+            Object.defineProperty(regExp, 'global', { get() { calls++; return false; } });
+            Object.defineProperty(regExp, 'flags', { get() { calls++; return ''; } });
+            const error = new TypeError('m');
+            Object.defineProperty(error, Symbol.toStringTag, { get() { calls++; return 'Other'; } });
+            const notRegExp = Object.defineProperties({}, { source: { get() { calls++; return 'x'; } }, flags: { get() { calls++; return 'g'; } } });
+            structuredClone(notRegExp);
+            [structuredClone(regExp).flags, structuredClone(error).name, calls].join('|')
+            """));
+    }
+
+    [Fact]
     public void StructuredClone_PrototypeIsNotKept()
     {
         using var context = new WebApisTestContext();

@@ -619,6 +619,12 @@ public enum JsInternalSlot
 
     /// <summary>[[WeakSetData]] (a WeakSet)</summary>
     WeakSetData,
+
+    /// <summary>[[RegExpMatcher]] (a RegExp)</summary>
+    RegExpMatcher,
+
+    /// <summary>[[ErrorData]] (an error, or a platform object such as a DOMException)</summary>
+    ErrorData,
 }
 
 /// <summary>The well-known symbols used by the bindings.</summary>

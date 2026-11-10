@@ -97,10 +97,57 @@ public sealed class ConsoleTests
     {
         using var context = new WebApisTestContext();
         context.Run("""
-            const proxy = new Proxy({}, { ownKeys() { throw new Error('trap'); } });
-            console.log({ get a() { throw new Error('getter'); } }, proxy);
+            globalThis.calls = 0;
+            const trap = () => { calls++; throw new Error('trap'); };
+            const proxy = new Proxy({}, { ownKeys: trap, get: trap, getOwnPropertyDescriptor: trap, getPrototypeOf: trap, has: trap });
+            const tagged = { get [Symbol.toStringTag]() { calls++; return 'Tag'; } };
+            const sourceLike = { get source() { calls++; return 'x'; }, get flags() { calls++; return 'g'; } };
+            const error = new Error('boom');
+            Object.defineProperty(error, Symbol.toStringTag, { get() { calls++; return 'X'; } });
+            console.log({ get a() { calls++; } }, proxy, tagged, sourceLike, new Proxy(function f() {}, { get: trap }), Object.setPrototypeOf({ b: 1 }, proxy));
+            console.log(error);
             """);
-        Assert.Equal(["{ a: [Getter] } [object]"], context.MessageTexts);
+        Assert.Equal("{ a: [Getter] } [Proxy] { [Symbol(Symbol.toStringTag)]: [Getter] } { source: [Getter], flags: [Getter] } [Function: Proxy] { b: 1 }", context.Messages[0].Text);
+        Assert.StartsWith("Error: boom", context.Messages[1].Text);
+        Assert.Equal("0", context.Run("calls"));
+    }
+
+    [Theory]
+    [InlineData("Promise.resolve(1)", "Promise { 1 }")]
+    [InlineData("new Promise(() => {})", "Promise { <pending> }")]
+    [InlineData("new String('s')", "[String: 's']")]
+    [InlineData("new Number(-0)", "[Number: -0]")]
+    [InlineData("new WeakMap()", "WeakMap { <items unknown> }")]
+    [InlineData("new DataView(new ArrayBuffer(2))", "DataView { byteLength: 2 }")]
+    [InlineData("new SharedArrayBuffer(4)", "SharedArrayBuffer { byteLength: 4 }")]
+    [InlineData("new Proxy([], {})", "[Proxy]")]
+    public void Console_InspectBuiltIns(string value, string expected)
+    {
+        using var context = new WebApisTestContext();
+        context.Run($"console.log({value})");
+        Assert.Equal([expected], context.MessageTexts);
+    }
+
+    [Fact]
+    public void Console_DoesNotUseTheModifiedBuiltIns()
+    {
+        using var context = new WebApisTestContext();
+        context.Run("""
+            const value = { "it's": new Map([[1, new Set([2])]]), r: /x/g };
+            const array = [1];
+            const fail = () => { throw new Error('patched'); };
+            RegExp.prototype.exec = fail;
+            RegExp.prototype[Symbol.replace] = fail;
+            String.prototype.indexOf = fail;
+            String.prototype.slice = fail;
+            Number.prototype.toFixed = fail;
+            Array.prototype[Symbol.iterator] = fail;
+            Object.getPrototypeOf(new Map().entries()).next = fail;
+            Object.getPrototypeOf(new Set().values()).next = fail;
+            console.log('%s=%d', 'a', 1, value, array);
+            console.assert(false, { a: 1 });
+            """);
+        Assert.Equal(["a=1 { 'it\\'s': Map(1) { 1 => Set(1) { 2 } }, r: /x/g } [ 1 ]", "Assertion failed { a: 1 }"], context.MessageTexts);
     }
 
     [Fact]

@@ -4,7 +4,7 @@ namespace Meziantou.Framework.JavaScriptEngine;
 public sealed class JsTimeoutJob
 {
     private readonly JsEngine _engine;
-    private readonly Action _action;
+    private Action? _action;
     private volatile bool _isCanceled;
 
     internal JsTimeoutJob(JsEngine engine, Action action)
@@ -27,6 +27,9 @@ public sealed class JsTimeoutJob
 
         _isCanceled = true;
 
+        // The job stays in the queue until it is due: it no longer holds the action and what the action captures
+        Volatile.Write(ref _action, null);
+
         // A host waiting for the delay of the job computes the delay of the next one
         _engine.SignalJobs();
     }
@@ -34,9 +37,13 @@ public sealed class JsTimeoutJob
     internal static void Run(object? state, JsValue argument)
     {
         var job = (JsTimeoutJob)state!;
-        if (!job._isCanceled)
+
+        // The action is read once: Cancel can clear it at the same time, from another thread
+        var action = Volatile.Read(ref job._action);
+        if (!job._isCanceled && action is not null)
         {
-            job._action();
+            Volatile.Write(ref job._action, null);
+            action();
         }
     }
 }

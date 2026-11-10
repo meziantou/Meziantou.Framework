@@ -9,7 +9,7 @@ internal static class WebApisScript
     internal const string Source = """
         (function (natives, global, options, structuredCloneFactory) {
           'use strict';
-          const { defineProperty, getOwnPropertyDescriptor, getOwnPropertyNames, getPrototypeOf, setPrototypeOf, create: objectCreate, keys: objectKeys, is: objectIs } = Object;
+          const { defineProperty, getOwnPropertyDescriptor, getOwnPropertyNames, getPrototypeOf, create: objectCreate, keys: objectKeys, is: objectIs } = Object;
           const { apply, ownKeys } = Reflect;
           const String_ = String;
           const TypeError_ = TypeError;
@@ -22,7 +22,6 @@ internal static class WebApisScript
           const SymbolToStringTag = Symbol.toStringTag;
           const arrayPush = Array.prototype.push;
           const arrayJoin = Array.prototype.join;
-          const isArray = Array.isArray;
           const weakSetAdd = WeakSet.prototype.add;
           const weakSetHas = WeakSet.prototype.has;
           const weakSetDelete = WeakSet.prototype.delete;
@@ -38,24 +37,47 @@ internal static class WebApisScript
           const setValues = Set.prototype.values;
           const setSize = getOwnPropertyDescriptor(Set.prototype, 'size').get;
           const functionToString = Function.prototype.toString;
-          const objectToString = Object.prototype.toString;
           const hasOwn = Object.prototype.hasOwnProperty;
           const dateToISOString = Date.prototype.toISOString;
           const dateGetTime = Date.prototype.getTime;
-          const regExpToString = RegExp.prototype.toString;
+          const regExpExec = RegExp.prototype.exec;
+          const regExpSource = getOwnPropertyDescriptor(RegExp.prototype, 'source').get;
+          // The flags are read from [[OriginalFlags]] by the getter of each flag: the flags getter reads the properties of
+          // the object, which can be accessors of the script
+          const regExpFlagGetters = [['d', 'hasIndices'], ['g', 'global'], ['i', 'ignoreCase'], ['m', 'multiline'], ['s', 'dotAll'], ['u', 'unicode'], ['v', 'unicodeSets'], ['y', 'sticky']]
+            .map(([flag, name]) => [flag, getOwnPropertyDescriptor(RegExp.prototype, name)?.get])
+            .filter(([, get]) => typeof get === 'function');
           const symbolToString = Symbol.prototype.toString;
+          const stringIndexOf = String.prototype.indexOf;
+          const stringSlice = String.prototype.slice;
+          const numberToFixed = Number.prototype.toFixed;
+          const mapIteratorNext = getPrototypeOf(new Map().entries()).next;
+          const setIteratorNext = getPrototypeOf(new Set().values()).next;
           const parseInt_ = parseInt;
           const parseFloat_ = parseFloat;
           const NaN_ = NaN;
-          const stringReplace = String.prototype.replace;
           const typedArrayPrototype = getPrototypeOf(Uint8Array.prototype);
           const typedArrayToStringTag = getOwnPropertyDescriptor(typedArrayPrototype, SymbolToStringTag).get;
           const typedArrayLength = getOwnPropertyDescriptor(typedArrayPrototype, 'length').get;
           const arrayBufferByteLength = getOwnPropertyDescriptor(ArrayBuffer.prototype, 'byteLength').get;
+          const sharedArrayBufferByteLength = typeof SharedArrayBuffer === 'function' ? getOwnPropertyDescriptor(SharedArrayBuffer.prototype, 'byteLength').get : null;
+          const dataViewByteLength = getOwnPropertyDescriptor(DataView.prototype, 'byteLength').get;
           const iteratorPrototype = getPrototypeOf(getPrototypeOf([][SymbolIterator]()));
           const errorStackGetter = getOwnPropertyDescriptor(Error.prototype, 'stack')?.get ?? null;
           const tryCall = (f, v) => { try { return { ok: true, value: apply(f, v, []) }; } catch { return { ok: false }; } };
           const append = (array, value) => apply(arrayPush, array, [value]);
+          // The code that runs after the installation calls the intrinsics captured above, never the methods of the
+          // prototypes or the iteration protocol, which the scripts can replace
+          const test = (regExp, text) => apply(regExpExec, regExp, [text]) !== null;
+          const indexOf = (text, search) => apply(stringIndexOf, text, [search]);
+          const collect = (iterator, next) => {
+            const items = [];
+            for (;;) {
+              const result = apply(next, iterator, []);
+              if (result.done) return items;
+              append(items, result.value);
+            }
+          };
 
           // ---------------------------------------------------------------------------------------------------------
           // WebIDL helpers (https://webidl.spec.whatwg.org/)
@@ -163,9 +185,9 @@ internal static class WebApisScript
               if (errorStackGetter !== null) {
                 const stack = tryCall(errorStackGetter, this);
                 if (stack.ok && typeof stack.value === 'string') {
-                  const newLine = stack.value.indexOf('\n');
+                  const newLine = indexOf(stack.value, '\n');
                   const header = state.message === '' ? state.name : `${state.name}: ${state.message}`;
-                  natives.setErrorStack(this, newLine < 0 ? header : header + stack.value.slice(newLine));
+                  natives.setErrorStack(this, newLine < 0 ? header : header + apply(stringSlice, stack.value, [newLine]));
                 }
               }
             }
@@ -519,19 +541,37 @@ internal static class WebApisScript
           if (options.console) {
             const maxDepth = 2;
             const maxItems = 100;
-            const quote = (value) => `'${apply(stringReplace, apply(stringReplace, value, [/[\\']/g, '\\$&']), [/\n/g, '\\n'])}'`;
-            const formatKey = (key) => typeof key === 'symbol' ? `[${apply(symbolToString, key, [])}]` : /^[A-Za-z_$][\w$]*$/.test(key) ? key : quote(key);
+            const quote = (value) => {
+              let text = "'";
+              for (let i = 0; i < value.length; i++) {
+                const c = value[i];
+                text += c === "'" || c === '\\' ? '\\' + c : c === '\n' ? '\\n' : c;
+              }
+              return text + "'";
+            };
+            const formatKey = (key) => typeof key === 'symbol' ? `[${apply(symbolToString, key, [])}]` : test(/^[A-Za-z_$][\w$]*$/, key) ? key : quote(key);
+
+            // Reads a data property along the prototype chain, without calling a getter or a proxy trap
+            const readData = (value, key) => {
+              for (let current = value; current !== null && natives.kindOf(current) !== 'proxy'; current = getPrototypeOf(current)) {
+                const descriptor = getOwnPropertyDescriptor(current, key);
+                if (descriptor !== undefined) return 'value' in descriptor ? descriptor.value : undefined;
+              }
+
+              return undefined;
+            };
 
             const describeFunction = (value) => {
               const source = tryCall(functionToString, value);
-              const isClass = source.ok && /^class[\s{]/.test(source.value);
+              const isClass = source.ok && test(/^class[\s{]/, source.value);
               const nameDescriptor = getOwnPropertyDescriptor(value, 'name');
               const name = nameDescriptor !== undefined && typeof nameDescriptor.value === 'string' ? nameDescriptor.value : '';
               if (isClass) return name === '' ? '[class (anonymous)]' : `[class ${name}]`;
               return name === '' ? '[Function (anonymous)]' : `[Function: ${name}]`;
             };
 
-            // A representation of a value, as the browsers and Node.js show it: the accessors are not called
+            // A representation of a value, as Node.js shows it. It runs no code of the script: the kind of an object comes
+            // from its internal slots, the accessors are not called, and the proxies are not inspected
             const inspect = (value, depth, seen, quoteStrings) => {
               switch (typeof value) {
                 case 'string': return quoteStrings ? quote(value) : value;
@@ -540,14 +580,16 @@ internal static class WebApisScript
                 case 'symbol': return apply(symbolToString, value, []);
                 case 'undefined': return 'undefined';
                 case 'boolean': return `${value}`;
-                case 'function': return describeFunction(value);
               }
 
               if (value === null) return 'null';
+              const kind = natives.kindOf(value);
+              if (kind === 'proxy') return typeof value === 'function' ? '[Function: Proxy]' : '[Proxy]';
+              if (kind === 'function') return describeFunction(value);
               if (apply(weakSetHas, seen, [value])) return '[Circular]';
               try {
                 apply(weakSetAdd, seen, [value]);
-                return inspectObject(value, depth, seen);
+                return inspectObject(value, kind, depth, seen);
               } catch {
                 return '[object]';
               } finally {
@@ -556,8 +598,10 @@ internal static class WebApisScript
             };
 
             const inspectProperties = (value, depth, seen, items, skipIndices) => {
-              for (const key of ownKeys(value)) {
-                if (skipIndices && typeof key === 'string' && /^(0|[1-9]\d*)$/.test(key)) continue;
+              const keys = ownKeys(value);
+              for (let i = 0; i < keys.length; i++) {
+                const key = keys[i];
+                if (skipIndices && typeof key === 'string' && test(/^(0|[1-9]\d*)$/, key)) continue;
                 const descriptor = getOwnPropertyDescriptor(value, key);
                 if (descriptor === undefined || !descriptor.enumerable) continue;
                 if (items.length >= maxItems) { append(items, '...'); break; }
@@ -574,79 +618,115 @@ internal static class WebApisScript
               return `${prefix}${open} ${body} ${close}`;
             };
 
-            const inspectObject = (value, depth, seen) => {
-              const errorState = apply(weakMapGet, domExceptions, [value]);
-              if (errorState !== undefined || apply(objectToString, value, []) === '[object Error]') {
-                const stack = errorStackGetter === null ? { ok: false } : tryCall(errorStackGetter, value);
-                if (stack.ok && typeof stack.value === 'string' && stack.value !== '') return stack.value;
-                const name = errorState?.name ?? value.name;
-                const message = errorState?.message ?? value.message;
-                return message === undefined || message === '' ? `${name}` : `${name}: ${message}`;
+            const appendLimited = (items, values, format) => {
+              for (let i = 0; i < values.length; i++) {
+                if (items.length >= maxItems) { append(items, `... ${values.length - maxItems} more items`); break; }
+                append(items, format(values[i]));
               }
+            };
 
-              const time = tryCall(dateGetTime, value);
-              if (time.ok) return time.value !== time.value ? 'Invalid Date' : apply(dateToISOString, value, []);
-              const regExp = tryCall(regExpToString, value);
-              if (regExp.ok && apply(objectToString, value, []) === '[object RegExp]') return regExp.value;
-
-              const tag = apply(typedArrayToStringTag, value, []);
+            const inspectObject = (value, kind, depth, seen) => {
               const items = [];
-              if (tag !== undefined) {
-                if (depth > maxDepth) return `[${tag}]`;
-                const length = apply(typedArrayLength, value, []);
-                for (let i = 0; i < length && i < maxItems; i++) append(items, inspect(value[i], depth + 1, seen, true));
-                if (length > maxItems) append(items, `... ${length - maxItems} more items`);
-                return wrap(`${tag}(${length}) `, items, '[', ']');
-              }
-
-              const size = tryCall(mapSize, value);
-              if (size.ok) {
-                if (depth > maxDepth) return '[Map]';
-                for (const [k, v] of apply(mapEntries, value, [])) {
-                  if (items.length >= maxItems) { append(items, '...'); break; }
-                  append(items, `${inspect(k, depth + 1, seen, true)} => ${inspect(v, depth + 1, seen, true)}`);
+              switch (kind) {
+                case 'error': {
+                  const errorState = apply(weakMapGet, domExceptions, [value]);
+                  const stack = errorStackGetter === null ? { ok: false } : tryCall(errorStackGetter, value);
+                  if (stack.ok && typeof stack.value === 'string' && stack.value !== '') return stack.value;
+                  const name = errorState?.name ?? readData(value, 'name');
+                  const message = errorState?.message ?? readData(value, 'message');
+                  return message === undefined || message === '' ? `${name}` : `${name}: ${message}`;
                 }
-                return wrap(`Map(${size.value}) `, items, '{', '}');
-              }
 
-              const setSizeResult = tryCall(setSize, value);
-              if (setSizeResult.ok) {
-                if (depth > maxDepth) return '[Set]';
-                for (const v of apply(setValues, value, [])) {
-                  if (items.length >= maxItems) { append(items, '...'); break; }
-                  append(items, inspect(v, depth + 1, seen, true));
+                case 'date': {
+                  const time = apply(dateGetTime, value, []);
+                  return time !== time ? 'Invalid Date' : apply(dateToISOString, value, []);
                 }
-                return wrap(`Set(${setSizeResult.value}) `, items, '{', '}');
-              }
 
-              const byteLength = tryCall(arrayBufferByteLength, value);
-              if (byteLength.ok) return `ArrayBuffer { byteLength: ${byteLength.value} }`;
+                case 'regexp': {
+                  let flags = '';
+                  for (let i = 0; i < regExpFlagGetters.length; i++) {
+                    if (apply(regExpFlagGetters[i][1], value, [])) flags += regExpFlagGetters[i][0];
+                  }
 
-              if (isArray(value)) {
-                if (depth > maxDepth) return '[Array]';
-                const length = value.length;
-                for (let i = 0; i < length && i < maxItems; i++) {
-                  const descriptor = getOwnPropertyDescriptor(value, `${i}`);
-                  if (descriptor === undefined) append(items, '<empty item>');
-                  else append(items, 'value' in descriptor ? inspect(descriptor.value, depth + 1, seen, true) : '[Getter]');
+                  return `/${apply(regExpSource, value, [])}/${flags}`;
                 }
-                if (length > maxItems) append(items, `... ${length - maxItems} more items`);
-                inspectProperties(value, depth, seen, items, true);
-                return wrap('', items, '[', ']');
+
+                case 'map': {
+                  if (depth > maxDepth) return '[Map]';
+                  const entries = collect(apply(mapEntries, value, []), mapIteratorNext);
+                  appendLimited(items, entries, (entry) => `${inspect(entry[0], depth + 1, seen, true)} => ${inspect(entry[1], depth + 1, seen, true)}`);
+                  return wrap(`Map(${entries.length}) `, items, '{', '}');
+                }
+
+                case 'set': {
+                  if (depth > maxDepth) return '[Set]';
+                  const values = collect(apply(setValues, value, []), setIteratorNext);
+                  appendLimited(items, values, (item) => inspect(item, depth + 1, seen, true));
+                  return wrap(`Set(${values.length}) `, items, '{', '}');
+                }
+
+                case 'weakmap': return 'WeakMap { <items unknown> }';
+                case 'weakset': return 'WeakSet { <items unknown> }';
+
+                case 'typedarray': {
+                  const tag = apply(typedArrayToStringTag, value, []);
+                  if (depth > maxDepth) return `[${tag}]`;
+                  const length = tryCall(typedArrayLength, value);
+                  if (!length.ok) return `${tag} { detached }`;
+                  for (let i = 0; i < length.value && i < maxItems; i++) append(items, inspect(value[i], depth + 1, seen, true));
+                  if (length.value > maxItems) append(items, `... ${length.value - maxItems} more items`);
+                  return wrap(`${tag}(${length.value}) `, items, '[', ']');
+                }
+
+                case 'arraybuffer': return `ArrayBuffer { byteLength: ${apply(arrayBufferByteLength, value, [])} }`;
+                case 'sharedarraybuffer': return `SharedArrayBuffer { byteLength: ${sharedArrayBufferByteLength === null ? 0 : apply(sharedArrayBufferByteLength, value, [])} }`;
+
+                case 'dataview': {
+                  const byteLength = tryCall(dataViewByteLength, value);
+                  return byteLength.ok ? `DataView { byteLength: ${byteLength.value} }` : 'DataView { detached }';
+                }
+
+                case 'promise': {
+                  const state = natives.promiseState(value);
+                  if (state[0] === 'pending') return 'Promise { <pending> }';
+                  const result = depth > maxDepth ? '...' : inspect(state[1], depth + 1, seen, true);
+                  return state[0] === 'rejected' ? `Promise { <rejected> ${result} }` : `Promise { ${result} }`;
+                }
+
+                case 'Boolean':
+                case 'Number':
+                case 'String':
+                case 'Symbol':
+                case 'BigInt':
+                  return `[${kind}: ${inspect(natives.primitiveValue(value), depth + 1, seen, true)}]`;
+
+                case 'array': {
+                  if (depth > maxDepth) return '[Array]';
+                  const length = value.length;
+                  for (let i = 0; i < length && i < maxItems; i++) {
+                    const descriptor = getOwnPropertyDescriptor(value, `${i}`);
+                    if (descriptor === undefined) append(items, '<empty item>');
+                    else append(items, 'value' in descriptor ? inspect(descriptor.value, depth + 1, seen, true) : '[Getter]');
+                  }
+                  if (length > maxItems) append(items, `... ${length - maxItems} more items`);
+                  inspectProperties(value, depth, seen, items, true);
+                  return wrap('', items, '[', ']');
+                }
               }
 
+              // An ordinary object: its prefix is the name of its constructor and its tag, read without calling an accessor
               const prototype = getPrototypeOf(value);
               let prefix = '';
               if (prototype === null) prefix = '[Object: null prototype] ';
-              else {
+              else if (natives.kindOf(prototype) !== 'proxy') {
                 const constructor = getOwnPropertyDescriptor(prototype, 'constructor')?.value;
-                const name = typeof constructor === 'function' ? getOwnPropertyDescriptor(constructor, 'name')?.value : undefined;
+                const name = typeof constructor === 'function' && natives.kindOf(constructor) !== 'proxy' ? getOwnPropertyDescriptor(constructor, 'name')?.value : undefined;
                 const toStringTag = getOwnPropertyDescriptor(prototype, SymbolToStringTag)?.value;
-                if (typeof toStringTag === 'string' && toStringTag !== '' && toStringTag !== name) prefix = `${name ?? 'Object'} [${toStringTag}] `;
+                if (typeof toStringTag === 'string' && toStringTag !== '' && toStringTag !== name) prefix = `${typeof name === 'string' && name !== '' ? name : 'Object'} [${toStringTag}] `;
                 else if (typeof name === 'string' && name !== '' && name !== 'Object') prefix = `${name} `;
               }
 
-              if (depth > maxDepth) return prefix === '' ? '[Object]' : `[${prefix.trim()}]`;
+              if (depth > maxDepth) return prefix === '' ? '[Object]' : `[${apply(stringSlice, prefix, [0, -1])}]`;
               inspectProperties(value, depth, seen, items, false);
               return wrap(prefix, items, '{', '}');
             };
@@ -667,7 +747,7 @@ internal static class WebApisScript
                   if (c !== '%' || i + 1 >= target.length) { text += c; continue; }
                   const specifier = target[i + 1];
                   if (specifier === '%') { text += '%'; i++; continue; }
-                  if ('sdifoOc'.indexOf(specifier) < 0 || next >= args.length) { text += c; continue; }
+                  if (indexOf('sdifoOc', specifier) < 0 || next >= args.length) { text += c; continue; }
                   const element = args[next++];
                   i++;
                   switch (specifier) {
@@ -699,7 +779,7 @@ internal static class WebApisScript
             const logger = (method, level, args) => print(method, level, format(args));
             const formatDuration = (start) => {
               const duration = natives.now() - start;
-              return `${+duration.toFixed(3)}ms`;
+              return `${+apply(numberToFixed, duration, [3])}ms`;
             };
 
             const console = objectCreate(Object.prototype);
@@ -712,14 +792,22 @@ internal static class WebApisScript
               trace(...data) {
                 const text = format(data);
                 const stack = natives.stackTrace();
-                print('trace', 'log', stack === '' ? (text === '' ? 'Trace' : `Trace: ${text}`) : `${text === '' ? 'Trace' : `Trace: ${text}`}\n${stack}`);
+                const header = text === '' ? 'Trace' : `Trace: ${text}`;
+                print('trace', 'log', stack === '' ? header : `${header}\n${stack}`);
               },
               assert(condition = false, ...data) {
                 if (condition) return;
                 const message = 'Assertion failed';
-                if (data.length === 0) data = [message];
-                else if (typeof data[0] === 'string') data[0] = `${message}: ${data[0]}`;
-                else data = [message, ...data];
+                if (data.length === 0) {
+                  data = [message];
+                } else if (typeof data[0] === 'string') {
+                  data[0] = `${message}: ${data[0]}`;
+                } else {
+                  const items = [message];
+                  for (let i = 0; i < data.length; i++) append(items, data[i]);
+                  data = items;
+                }
+
                 logger('assert', 'error', data);
               },
               clear() { groupDepth = 0; },

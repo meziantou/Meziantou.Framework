@@ -1,6 +1,6 @@
 ---
 title: Reading bencode
-description: Parse bencode from memory, a stream or a pipe, navigate the values, read strings that may be binary, and handle invalid data.
+description: Parse bencode from memory, a stream or a pipe, read it one token at a time, navigate the values, read strings that may be binary and integers of any size, and handle invalid data.
 ---
 
 ## Parse bencode
@@ -41,13 +41,89 @@ await dictionary.WriteToAsync(stream);
 The data must hold exactly one value: bytes after it are an error. The asynchronous methods accept a
 `CancellationToken`.
 
+## Read one token at a time
+
+[BencodeReader](cref:Meziantou.Framework.Bencode.BencodeReader) reads bencode from a stream or a `PipeReader` as the data arrives, and returns its tokens one at
+a time without building the values. Use it to process data larger than you want in memory, or to keep only part of
+it:
+
+<!-- ref:../../tests/Meziantou.Framework.Bencode.Tests/BencodeDocumentTests.cs;region=BencodeReader_ReadTokens;format=md-fenced-code-block;dedent=true -->
+```csharp
+var data = "d4:name5:Alice6:scoresli10ei20eee"u8.ToArray();
+
+// Read from a stream, such as File.OpenRead("input.bencode")
+await using var stream = new MemoryStream(data);
+await using var reader = new BencodeReader(stream);
+
+var tokens = new List<string>();
+while (await reader.ReadAsync())
+{
+    tokens.Add(reader.TokenType switch
+    {
+        BencodeTokenType.Key => "key " + reader.GetUtf8String(),
+        BencodeTokenType.String => "string " + reader.GetUtf8String(),
+        BencodeTokenType.Integer => "integer " + reader.GetInt64(),
+        _ => reader.TokenType.ToString(),
+    });
+}
+
+Assert.Equal(["StartDictionary", "key name", "string Alice", "key scores", "StartList", "integer 10", "integer 20", "EndList", "EndDictionary"], tokens);
+```
+<!-- endref -->
+
+- [ReadAsync](cref:Meziantou.Framework.Bencode.BencodeReader.ReadAsync) moves to the next token, and returns `false` after the root value, once it has checked that the data
+  ends there.
+- [TokenType](cref:Meziantou.Framework.Bencode.BencodeReader.TokenType) tells what the token is. A string that is the key of a dictionary entry is a `Key`, and the token
+  after it is the value of the entry.
+- [GetBytes](cref:Meziantou.Framework.Bencode.BencodeReader.GetBytes) and [GetUtf8String](cref:Meziantou.Framework.Bencode.BencodeReader.GetUtf8String) read a string or a key; [GetInt64](cref:Meziantou.Framework.Bencode.BencodeReader.GetInt64), [TryGetInt64](cref:Meziantou.Framework.Bencode.BencodeReader.TryGetInt64) and [GetBigInteger](cref:Meziantou.Framework.Bencode.BencodeReader.GetBigInteger) read an
+  integer. They throw an `InvalidOperationException` on another kind of token.
+- [CurrentDepth](cref:Meziantou.Framework.Bencode.BencodeReader.CurrentDepth) is the number of lists and dictionaries around the token, and [BytesConsumed](cref:Meziantou.Framework.Bencode.BencodeReader.BytesConsumed) the position after it.
+- A reader created from a stream closes it when it is disposed, unless you pass `leaveOpen: true`. A reader created
+  from a `PipeReader` does not complete it.
+
+[ReadValueAsync](cref:Meziantou.Framework.Bencode.BencodeReader.ReadValueAsync) returns the value that starts at the current token as a [BencodeValue](cref:Meziantou.Framework.Bencode.BencodeValue), and [SkipAsync](cref:Meziantou.Framework.Bencode.BencodeReader.SkipAsync) skips the
+content of a list or a dictionary. Both leave the reader on the last token of the value:
+
+<!-- ref:../../tests/Meziantou.Framework.Bencode.Tests/BencodeDocumentTests.cs;region=BencodeReader_ReadValue;format=md-fenced-code-block;dedent=true -->
+```csharp
+var data = "d5:large12:skipped data4:metad7:versioni2eee"u8.ToArray();
+
+await using var stream = new MemoryStream(data);
+await using var reader = new BencodeReader(stream);
+
+BencodeValue? meta = null;
+await reader.ReadAsync(); // StartDictionary
+while (await reader.ReadAsync() && reader.TokenType is BencodeTokenType.Key)
+{
+    var key = reader.GetUtf8String();
+    await reader.ReadAsync(); // The first token of the value
+    if (key is "meta")
+    {
+        // Read the whole value as a BencodeValue
+        meta = await reader.ReadValueAsync();
+    }
+    else
+    {
+        // Skip the content of a list or a dictionary; a string or an integer is already read
+        await reader.SkipAsync();
+    }
+}
+
+var version = (BencodeInteger)((BencodeDictionary)meta!)[new BencodeString("version"u8.ToArray())];
+Assert.Equal(2, version.Value);
+```
+<!-- endref -->
+
+The reader checks the encoding as it reads and throws a `FormatException` at the first invalid token. It does not keep
+the keys of the dictionaries, so it does not detect a key that appears twice; [ReadValueAsync](cref:Meziantou.Framework.Bencode.BencodeReader.ReadValueAsync) does.
+
 ## Navigate the values
 
 Every value derives from [BencodeValue](cref:Meziantou.Framework.Bencode.BencodeValue), and its [Kind](cref:Meziantou.Framework.Bencode.BencodeValue.Kind) tells which of the four kinds it is:
 
 | Type | Content |
 | --- | --- |
-| [BencodeInteger](cref:Meziantou.Framework.Bencode.BencodeInteger) | `Value`, a `long`. |
+| [BencodeInteger](cref:Meziantou.Framework.Bencode.BencodeInteger) | `Value`, a `long`, or `BigIntegerValue` for any size. See [Read large integers](#read-large-integers). |
 | [BencodeString](cref:Meziantou.Framework.Bencode.BencodeString) | `Value`, the bytes as a `ReadOnlyMemory<byte>`. |
 | [BencodeList](cref:Meziantou.Framework.Bencode.BencodeList) | An `IReadOnlyList<BencodeValue>`. |
 | [BencodeDictionary](cref:Meziantou.Framework.Bencode.BencodeDictionary) | An `IReadOnlyDictionary<BencodeString, BencodeValue>`. |
@@ -110,6 +186,34 @@ Assert.Throws<DecoderFallbackException>(() => value.ToUtf8String());
 - `ToString` is for logs and the debugger: it returns the text when the bytes are valid UTF-8, and hexadecimal
   otherwise, shortened after 32 bytes.
 
+## Read large integers
+
+Bencode does not bound integers. [Value](cref:Meziantou.Framework.Bencode.BencodeInteger.Value) returns a `long` and throws an `InvalidOperationException` for an integer that
+does not fit in one: check [IsInt64](cref:Meziantou.Framework.Bencode.BencodeInteger.IsInt64), call [TryGetInt64](cref:Meziantou.Framework.Bencode.BencodeInteger.TryGetInt64), or read [BigIntegerValue](cref:Meziantou.Framework.Bencode.BencodeInteger.BigIntegerValue), a `BigInteger`
+(`System.Numerics`):
+
+<!-- ref:../../tests/Meziantou.Framework.Bencode.Tests/BencodeDocumentTests.cs;region=BencodeInteger_BigInteger;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = BencodeDocument.Parse("li42ei123456789012345678901234567890ee"u8);
+var list = (BencodeList)document.Root;
+
+var small = (BencodeInteger)list[0];
+Assert.True(small.IsInt64);
+Assert.Equal(42, small.Value);
+
+// An integer that does not fit in a long
+var large = (BencodeInteger)list[1];
+Assert.False(large.IsInt64);
+Assert.Equal(BigInteger.Parse("123456789012345678901234567890", CultureInfo.InvariantCulture), large.BigIntegerValue);
+Assert.False(large.TryGetInt64(out _));
+
+// Write a large integer
+Assert.Equal("i-98765432109876543210e"u8.ToArray(), new BencodeInteger(BigInteger.Parse("-98765432109876543210", CultureInfo.InvariantCulture)).ToUtf8ByteArray());
+```
+<!-- endref -->
+
+Two [BencodeInteger](cref:Meziantou.Framework.Bencode.BencodeInteger) values are equal when their values are, whichever constructor created them.
+
 ## Invalid data
 
 Parsing throws a `FormatException` when the data is not valid bencode:
@@ -124,7 +228,7 @@ Assert.Throws<FormatException>(() => BencodeDocument.Parse("d1:ai1e1:ai2ee"u8));
 <!-- endref -->
 
 The parser enforces the rules of the encoding: integers and string lengths without leading zeros, no `-0`, integers
-that fit in a `long`, no duplicate key in a dictionary. It does not require the keys of a dictionary to be sorted, so
+of at most 4096 digits, no duplicate key in a dictionary. It does not require the keys of a dictionary to be sorted, so
 it reads data that was not encoded canonically.
 
 ## Untrusted data
@@ -133,6 +237,7 @@ The parsers are written for data from the network:
 
 - Lists and dictionaries can be nested 64 levels deep. Deeper data throws a `FormatException` instead of overflowing
   the stack.
+- Integers have at most 4096 digits. Converting more digits takes time that grows faster than their number.
 - When parsing from a stream or a pipe, the buffer of a string grows with the bytes that arrive, not with the length
   the data declares, and the digits of an integer or a length are bounded. A peer cannot make the parser allocate a
   large buffer by declaring a large string.

@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.IO.Pipelines;
+using System.Numerics;
 
 namespace Meziantou.Framework.Bencode.Tests;
 
@@ -368,7 +369,8 @@ public sealed class BencodeDocumentTests
         var pipe = new Pipe();
         var parseTask = BencodeDocument.ParseAsync(pipe.Reader).AsTask();
 
-        var digits = new byte[1024];
+        // More digits than the maximum supported, so the decoder cannot be waiting for the terminator
+        var digits = new byte[5000];
         Array.Fill(digits, (byte)'1');
         await pipe.Writer.WriteAsync("i"u8.ToArray());
         await pipe.Writer.WriteAsync(digits);
@@ -401,7 +403,8 @@ public sealed class BencodeDocumentTests
         var pipe = new Pipe();
         var parseTask = BencodeDocument.ParseAsync(pipe.Reader).AsTask();
 
-        var digits = new byte[1024];
+        // More digits than the maximum supported, so the decoder cannot be waiting for the terminator
+        var digits = new byte[5000];
         Array.Fill(digits, (byte)'1');
         await pipe.Writer.WriteAsync(digits);
 
@@ -678,6 +681,306 @@ public sealed class BencodeDocumentTests
         writer.WriteInteger(1);
 
         Assert.Throws<InvalidOperationException>(() => writer.Complete());
+    }
+
+    [Fact]
+    public async Task Documentation_ReadTokens()
+    {
+        #region BencodeReader_ReadTokens
+        var data = "d4:name5:Alice6:scoresli10ei20eee"u8.ToArray();
+
+        // Read from a stream, such as File.OpenRead("input.bencode")
+        await using var stream = new MemoryStream(data);
+        await using var reader = new BencodeReader(stream);
+
+        var tokens = new List<string>();
+        while (await reader.ReadAsync())
+        {
+            tokens.Add(reader.TokenType switch
+            {
+                BencodeTokenType.Key => "key " + reader.GetUtf8String(),
+                BencodeTokenType.String => "string " + reader.GetUtf8String(),
+                BencodeTokenType.Integer => "integer " + reader.GetInt64(),
+                _ => reader.TokenType.ToString(),
+            });
+        }
+
+        Assert.Equal(["StartDictionary", "key name", "string Alice", "key scores", "StartList", "integer 10", "integer 20", "EndList", "EndDictionary"], tokens);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ReadSelectedValues()
+    {
+        #region BencodeReader_ReadValue
+        var data = "d5:large12:skipped data4:metad7:versioni2eee"u8.ToArray();
+
+        await using var stream = new MemoryStream(data);
+        await using var reader = new BencodeReader(stream);
+
+        BencodeValue? meta = null;
+        await reader.ReadAsync(); // StartDictionary
+        while (await reader.ReadAsync() && reader.TokenType is BencodeTokenType.Key)
+        {
+            var key = reader.GetUtf8String();
+            await reader.ReadAsync(); // The first token of the value
+            if (key is "meta")
+            {
+                // Read the whole value as a BencodeValue
+                meta = await reader.ReadValueAsync();
+            }
+            else
+            {
+                // Skip the content of a list or a dictionary; a string or an integer is already read
+                await reader.SkipAsync();
+            }
+        }
+
+        var version = (BencodeInteger)((BencodeDictionary)meta!)[new BencodeString("version"u8.ToArray())];
+        Assert.Equal(2, version.Value);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_LargeIntegers()
+    {
+        #region BencodeInteger_BigInteger
+        var document = BencodeDocument.Parse("li42ei123456789012345678901234567890ee"u8);
+        var list = (BencodeList)document.Root;
+
+        var small = (BencodeInteger)list[0];
+        Assert.True(small.IsInt64);
+        Assert.Equal(42, small.Value);
+
+        // An integer that does not fit in a long
+        var large = (BencodeInteger)list[1];
+        Assert.False(large.IsInt64);
+        Assert.Equal(BigInteger.Parse("123456789012345678901234567890", CultureInfo.InvariantCulture), large.BigIntegerValue);
+        Assert.False(large.TryGetInt64(out _));
+
+        // Write a large integer
+        Assert.Equal("i-98765432109876543210e"u8.ToArray(), new BencodeInteger(BigInteger.Parse("-98765432109876543210", CultureInfo.InvariantCulture)).ToUtf8ByteArray());
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("i9223372036854775807e", true)]
+    [InlineData("i-9223372036854775808e", true)]
+    [InlineData("i9223372036854775808e", false)]
+    [InlineData("i-9223372036854775809e", false)]
+    [InlineData("i99999999999999999999999999999e", false)]
+    public async Task Parse_IntegerOutsideInt64_IsABigInteger(string text, bool isInt64)
+    {
+        var data = Encoding.ASCII.GetBytes(text);
+        var expected = BigInteger.Parse(text[1..^1], CultureInfo.InvariantCulture);
+
+        var integer = (BencodeInteger)BencodeDocument.Parse(data).Root;
+        Assert.Equal(isInt64, integer.IsInt64);
+        Assert.Equal(expected, integer.BigIntegerValue);
+        Assert.Equal(data, integer.ToUtf8ByteArray());
+        Assert.Equal(text[1..^1], integer.ToString());
+
+        await using var stream = new MemoryStream(data);
+        var streamed = (BencodeInteger)(await BencodeDocument.ParseAsync(stream)).Root;
+        Assert.Equal(integer, streamed);
+    }
+
+    [Fact]
+    public void BencodeInteger_OutsideInt64_ValueThrows()
+    {
+        var integer = new BencodeInteger(new BigInteger(long.MaxValue) + 1);
+
+        Assert.Throws<InvalidOperationException>(() => integer.Value);
+    }
+
+    [Fact]
+    public void BencodeInteger_EqualityDoesNotDependOnTheConstructor()
+    {
+        var fromLong = new BencodeInteger(42);
+        var fromBigInteger = new BencodeInteger(new BigInteger(42));
+
+        Assert.True(fromLong.IsInt64 && fromBigInteger.IsInt64);
+        Assert.Equal(fromLong, fromBigInteger);
+        Assert.Equal(fromLong.GetHashCode(), fromBigInteger.GetHashCode());
+        Assert.Equal(new BencodeInteger(BigInteger.Pow(10, 30)), new BencodeInteger(BigInteger.Pow(10, 30)));
+        Assert.NotEqual(new BencodeInteger(BigInteger.Pow(10, 30)), new BencodeInteger(BigInteger.Pow(10, 30) + 1));
+    }
+
+    [Theory]
+    [InlineData(4096, true)]
+    [InlineData(4097, false)]
+    public async Task Parse_IntegerDigitLimit(int digitCount, bool expectedSuccess)
+    {
+        foreach (var sign in (string[])["", "-"])
+        {
+            var data = Encoding.ASCII.GetBytes("i" + sign + new string('9', digitCount) + "e");
+            await using var stream = new MemoryStream(data);
+            if (expectedSuccess)
+            {
+                Assert.Equal(data, BencodeDocument.Parse(data).Root.ToUtf8ByteArray());
+                Assert.Equal(data, (await BencodeDocument.ParseAsync(stream)).Root.ToUtf8ByteArray());
+            }
+            else
+            {
+                Assert.Throws<FormatException>(() => BencodeDocument.Parse(data));
+                await Assert.ThrowsAsync<FormatException>(async () => await BencodeDocument.ParseAsync(stream));
+            }
+        }
+    }
+
+    [Fact]
+    public void BencodeWriter_WriteBigInteger()
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        var writer = new BencodeWriter(buffer);
+        writer.WriteStartList();
+        writer.WriteInteger(BigInteger.Pow(2, 100));
+        writer.WriteInteger(BigInteger.MinusOne);
+        writer.WriteEndList();
+        writer.Complete();
+
+        Assert.Equal("li1267650600228229401496703205376ei-1ee"u8.ToArray(), buffer.WrittenSpan.ToArray());
+    }
+
+    [Fact]
+    public async Task BencodeReader_ReportsDepthAndBytesConsumed()
+    {
+        var pipe = new Pipe();
+        await pipe.Writer.WriteAsync("ld1:ai1eee"u8.ToArray());
+        await pipe.Writer.CompleteAsync();
+
+        var reader = new BencodeReader(pipe.Reader);
+        await using (reader)
+        {
+            var tokens = new List<(BencodeTokenType, int, long)>();
+            while (await reader.ReadAsync())
+            {
+                tokens.Add((reader.TokenType, reader.CurrentDepth, reader.BytesConsumed));
+            }
+
+            Assert.Equal(
+                [
+                    (BencodeTokenType.StartList, 0, 1L),
+                    (BencodeTokenType.StartDictionary, 1, 2L),
+                    (BencodeTokenType.Key, 2, 5L),
+                    (BencodeTokenType.Integer, 2, 8L),
+                    (BencodeTokenType.EndDictionary, 1, 9L),
+                    (BencodeTokenType.EndList, 0, 10L),
+                ],
+                tokens);
+            Assert.Equal(BencodeTokenType.None, reader.TokenType);
+            Assert.False(await reader.ReadAsync());
+        }
+
+        // The reader was created from a PipeReader, which it does not complete
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
+    public async Task BencodeReader_TrailingData_Throws()
+    {
+        await using var reader = new BencodeReader(new MemoryStream("i1ei2e"u8.ToArray()));
+
+        Assert.True(await reader.ReadAsync());
+        await Assert.ThrowsAsync<FormatException>(async () => await reader.ReadAsync());
+    }
+
+    [Theory]
+    [InlineData("di1ei2ee")]
+    [InlineData("dlei2ee")]
+    [InlineData("d1:ae")]
+    [InlineData("l")]
+    [InlineData("i1")]
+    [InlineData("x")]
+    [InlineData("")]
+    public async Task BencodeReader_InvalidData_Throws(string text)
+    {
+        await using var reader = new BencodeReader(new MemoryStream(Encoding.ASCII.GetBytes(text)));
+
+        await Assert.ThrowsAsync<FormatException>(async () =>
+        {
+            while (await reader.ReadAsync())
+            {
+            }
+        });
+    }
+
+    [Fact]
+    public async Task BencodeReader_DuplicateKeys_AreReportedByReadValueAsync()
+    {
+        var data = "d1:ai1e1:ai2ee"u8.ToArray();
+
+        await using (var reader = new BencodeReader(new MemoryStream(data)))
+        {
+            var keys = 0;
+            while (await reader.ReadAsync())
+            {
+                if (reader.TokenType is BencodeTokenType.Key)
+                {
+                    keys++;
+                }
+            }
+
+            Assert.Equal(2, keys);
+        }
+
+        await using (var reader = new BencodeReader(new MemoryStream(data)))
+        {
+            await reader.ReadAsync();
+            await Assert.ThrowsAsync<FormatException>(async () => await reader.ReadValueAsync());
+        }
+    }
+
+    [Fact]
+    public async Task BencodeReader_GetValueOfTheWrongToken_Throws()
+    {
+        await using var reader = new BencodeReader(new MemoryStream("li99999999999999999999ee"u8.ToArray()));
+
+        Assert.Throws<InvalidOperationException>(() => reader.GetBytes());
+        await reader.ReadAsync();
+        Assert.Throws<InvalidOperationException>(() => reader.GetBytes());
+        Assert.Throws<InvalidOperationException>(() => reader.GetInt64());
+        await reader.ReadAsync();
+        Assert.Throws<OverflowException>(() => reader.GetInt64());
+        Assert.False(reader.TryGetInt64(out _));
+        Assert.Equal(BigInteger.Parse("99999999999999999999", CultureInfo.InvariantCulture), reader.GetBigInteger());
+        await reader.ReadAsync();
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await reader.ReadValueAsync());
+    }
+
+    [Fact]
+    public async Task BencodeReader_SkipAsync_SkipsNestedContainers()
+    {
+        await using var reader = new BencodeReader(new MemoryStream("ll1:ad1:bli1eeeei2ee"u8.ToArray()));
+
+        await reader.ReadAsync(); // l
+        await reader.ReadAsync(); // l
+        await reader.SkipAsync();
+        Assert.Equal(BencodeTokenType.EndList, reader.TokenType);
+        Assert.Equal(1, reader.CurrentDepth);
+
+        await reader.ReadAsync();
+        Assert.Equal(2, reader.GetInt64());
+        await reader.SkipAsync();
+        Assert.Equal(BencodeTokenType.Integer, reader.TokenType);
+    }
+
+    [Fact]
+    public async Task BencodeReader_LeaveOpen()
+    {
+        var stream = new MemoryStream("i1e"u8.ToArray());
+        await using (var reader = new BencodeReader(stream, leaveOpen: true))
+        {
+            await reader.ReadAsync();
+        }
+
+        Assert.True(stream.CanRead);
+
+        await using (var reader = new BencodeReader(stream))
+        {
+        }
+
+        Assert.False(stream.CanRead);
     }
 
     [Fact]

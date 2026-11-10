@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Buffers.Text;
+using System.Numerics;
 
 namespace Meziantou.Framework.Bencode;
 
@@ -21,6 +22,21 @@ public sealed class BencodeWriter
 
         WriteByte((byte)'i');
         WriteInt64(value);
+        WriteByte((byte)'e');
+
+        if (rootValueWasCompleted)
+        {
+            _isComplete = true;
+        }
+    }
+
+    /// <summary>Writes an integer of any size.</summary>
+    public void WriteInteger(BigInteger value)
+    {
+        var rootValueWasCompleted = StartValue();
+
+        WriteByte((byte)'i');
+        WriteBytes(Encoding.ASCII.GetBytes(value.ToString(CultureInfo.InvariantCulture)));
         WriteByte((byte)'e');
 
         if (rootValueWasCompleted)

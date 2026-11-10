@@ -7,9 +7,10 @@ description: Parse and write bencode, the encoding of BitTorrent files, and work
 and for the messages of its protocols. It has two levels:
 
 - **A document model** for any bencode data: integers, byte strings, lists and dictionaries that you read, build and
-  encode. See [Reading bencode](03-ReadingBencode.md) and [Writing bencode](04-WritingBencode.md).
-- **A torrent model** for `.torrent` files: the trackers, the files and the piece hashes as typed properties, and the
-  info-hash that identifies the torrent. See [Torrent files](05-TorrentFiles.md).
+  encode, and a reader that returns the tokens of a stream one at a time. See [Reading bencode](03-ReadingBencode.md)
+  and [Writing bencode](04-WritingBencode.md).
+- **A torrent model** for `.torrent` files, BitTorrent v1, v2 and hybrid: the trackers, the files and the piece hashes
+  as typed properties, and the info-hashes that identify the torrent. See [Torrent files](05-TorrentFiles.md).
 
 ## Bencode in short
 
@@ -27,8 +28,9 @@ strings, and the canonical encoding sorts them by their bytes, so a given dictio
 
 ## Namespaces
 
-The document model is in the [Meziantou.Framework.Bencode](cref:Meziantou.Framework.Bencode) namespace. The torrent model ([TorrentFile](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile),
-[TorrentInfo](cref:Meziantou.Framework.Bencode.Torrent.TorrentInfo), [TorrentInfoFile](cref:Meziantou.Framework.Bencode.Torrent.TorrentInfoFile), [TorrentNode](cref:Meziantou.Framework.Bencode.Torrent.TorrentNode)) is in [Meziantou.Framework.Bencode.Torrent](cref:Meziantou.Framework.Bencode.Torrent).
+The document model and [BencodeReader](cref:Meziantou.Framework.Bencode.BencodeReader) are in the [Meziantou.Framework.Bencode](cref:Meziantou.Framework.Bencode) namespace. The torrent model ([TorrentFile](cref:Meziantou.Framework.Bencode.Torrent.TorrentFile),
+[TorrentInfo](cref:Meziantou.Framework.Bencode.Torrent.TorrentInfo), [TorrentInfoFile](cref:Meziantou.Framework.Bencode.Torrent.TorrentInfoFile), [TorrentFileTreeEntry](cref:Meziantou.Framework.Bencode.Torrent.TorrentFileTreeEntry), [TorrentPieceLayer](cref:Meziantou.Framework.Bencode.Torrent.TorrentPieceLayer),
+[TorrentNode](cref:Meziantou.Framework.Bencode.Torrent.TorrentNode)) is in [Meziantou.Framework.Bencode.Torrent](cref:Meziantou.Framework.Bencode.Torrent).
 
 ## Next steps
 

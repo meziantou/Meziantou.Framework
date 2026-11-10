@@ -18,7 +18,14 @@ namespace Meziantou.Framework.MediaTags.Fuzz;
 /// them, the BPM included, as 16-bit values where 0 is a missing value; a larger value is refused.</item>
 /// <item>ReplayGain gains are stored with 2 decimals and peaks with 6.</item>
 /// <item>A picture MIME type is ASCII. MP4 stores neither the picture type nor the description, and only knows the PNG, GIF,
-/// BMP and JPEG types. ID3v2 drops a picture without data.</item>
+/// BMP and JPEG types. ID3v2 drops a picture without data. APE stores no MIME type: it is read from the image. APE stores one
+/// picture per type, and a type it has no key for as "Other"; JPEG is assumed for an image of another format. ASF stores the
+/// MIME type and the description as UTF-16.</item>
+/// <item>APE stores text as UTF-8 and ASF as UTF-16: both lose the trailing null characters of a value. ASF stores the track
+/// number and the total as two integers, and the disc number and the total as "number/total".</item>
+/// <item>An APE item key has 2 to 255 printable ASCII characters, and cannot be ID3, TAG, OggS or MP+; another custom field
+/// name is refused. An ASF attribute name has at most 32766 characters. Both drop a custom field with an empty value, and ASF
+/// one with an empty name.</item>
 /// <item>A custom field is a TXXX frame (ID3v2), a Vorbis comment, or a freeform atom (MP4), whose name a "mean:name" key gives
 /// when the namespace looks like a reverse domain name. MP4 drops a field with an empty name or value. A custom field named
 /// like a field the reader knows is read as that field, which is checked by the fixed point only.</item>
@@ -45,6 +52,28 @@ public static partial class MediaTagsFuzzTargets
 
     private static readonly string[] ReservedMp4Names = ["ISRC", .. SharedFieldNames()];
 
+    private static readonly string[] ReservedApeNames =
+    [
+        "Title", "Artist", "Album", "Album Artist", "AlbumArtist", "Album_Artist", "Year", "Date", "Track", "Disc", "Genre", "Comment", "Lyrics", "Unsynced Lyrics",
+        "Composer", "Conductor", "Copyright", "ISRC", "BPM", "Compilation", .. SharedFieldNames(),
+    ];
+
+    private static readonly string[] ReservedAsfNames =
+    [
+        "Title", "Author", "Copyright", "Description", "Date", "WM/AlbumTitle", "WM/AlbumArtist", "WM/Genre", "WM/Year", "WM/TrackNumber", "WM/Track", "TotalTracks", "WM/PartOfSet",
+        "WM/Composer", "WM/Conductor", "WM/Lyrics", "WM/ISRC", "WM/BeatsPerMinute", "WM/IsCompilation", "WM/Picture",
+        "MusicBrainz/Track Id", "MusicBrainz/Artist Id", "MusicBrainz/Album Id", "MusicBrainz/Release Group Id", .. SharedFieldNames(),
+    ];
+
+    /// <summary>The keys of the APE pictures, indexed by picture type.</summary>
+    private static readonly string[] ApePictureKeys =
+    [
+        "Cover Art (Other)", "Cover Art (Icon)", "Cover Art (Other Icon)", "Cover Art (Front)", "Cover Art (Back)", "Cover Art (Leaflet)",
+        "Cover Art (Media)", "Cover Art (Lead Artist)", "Cover Art (Artist)", "Cover Art (Conductor)", "Cover Art (Band)", "Cover Art (Composer)",
+        "Cover Art (Lyricist)", "Cover Art (Recording Location)", "Cover Art (During Recording)", "Cover Art (During Performance)",
+        "Cover Art (Video Capture)", "Cover Art (Fish)", "Cover Art (Illustration)", "Cover Art (Band Logotype)", "Cover Art (Publisher Logotype)",
+    ];
+
     /// <summary>The test files, with their format.</summary>
     private static readonly List<(string Name, byte[] Data, MediaFormat Format)> ValueTestFiles = [.. GetTestFiles().Select(file => (file.Name, file.Data, Format: MediaFile.DetectFormat(new MemoryStream(file.Data, writable: false)))).Where(file => file.Format is not null).Select(file => (file.Name, file.Data, file.Format!.Value))];
 
@@ -53,6 +82,8 @@ public static partial class MediaTagsFuzzTargets
         Id3v2,
         VorbisComment,
         Mp4,
+        Ape,
+        Asf,
     }
 
     private static string[] SharedFieldNames() =>
@@ -85,14 +116,15 @@ public static partial class MediaTagsFuzzTargets
         var allowReservedNames = (options & 0x08) is not 0;
         var tags = ReadTagValues(ref data, format, allowReservedNames);
         var expectedError = GetExpectedWriteError(tags, format);
-        var expected = expectedError is null ? Normalize(tags, format) : null;
-
         foreach (var (name, file, fileFormat) in ValueTestFiles)
         {
             if (fileFormat != format)
                 continue;
 
-            WriteValues(name, file, format, tags, writeOptions, expectedError, allowReservedNames ? null : expected);
+            // The native fields of the file are kept, as the tags do not set any
+            var expected = expectedError is null && !allowReservedNames ? Normalize(tags, format) : null;
+            expected?.NativeFields = MediaFile.ReadTags(new MemoryStream(file, writable: false), format).Value.NativeFields;
+            WriteValues(name, file, format, tags, writeOptions, expectedError, expected);
         }
     }
 
@@ -119,9 +151,9 @@ public static partial class MediaTagsFuzzTargets
         var readBackTags = readBack.Value;
         if (expected is not null)
         {
-            // The duration comes from the audio: no value of the input sets it
+            // The duration and the video size come from the stream: no value of the input sets them
             expected.Format = format;
-            expected.Duration = readBackTags.Duration;
+            WithStreamProperties(expected, readBackTags);
             FuzzAssert.Equal(Describe(expected), Describe(readBackTags), $"{fileName}: the written values do not read back");
         }
 
@@ -327,6 +359,8 @@ public static partial class MediaTagsFuzzTargets
     {
         MediaFormat.Mp3 or MediaFormat.Wav or MediaFormat.Aiff => TagFamily.Id3v2,
         MediaFormat.OggVorbis or MediaFormat.OggOpus or MediaFormat.Flac => TagFamily.VorbisComment,
+        MediaFormat.MonkeysAudio or MediaFormat.WavPack or MediaFormat.Musepack => TagFamily.Ape,
+        MediaFormat.Asf => TagFamily.Asf,
         _ => TagFamily.Mp4,
     };
 
@@ -346,6 +380,21 @@ public static partial class MediaTagsFuzzTargets
 
             case TagFamily.VorbisComment:
                 return tags.CustomFields.Keys.Any(key => key.Contains('=', StringComparison.Ordinal)) ? "a '=' in a custom field name" : null;
+
+            case TagFamily.Ape:
+                if (tags.Pictures.Any(picture => picture.Description?.Contains('\0', StringComparison.Ordinal) is true))
+                    return "a null character in a picture description";
+
+                if (tags.Pictures.GroupBy(picture => GetApePictureKey(picture.PictureType)).Any(group => group.Count() > 1))
+                    return "two pictures of the same type";
+
+                return tags.CustomFields.Keys.Any(key => !IsValidApeKey(key)) ? "a custom field name that is not a valid APE key" : null;
+
+            case TagFamily.Asf:
+                if (tags.Pictures.Any(picture => picture.MimeType?.Contains('\0', StringComparison.Ordinal) is true || picture.Description?.Contains('\0', StringComparison.Ordinal) is true))
+                    return "a null character in a picture MIME type or description";
+
+                return tags.CustomFields.Keys.Any(key => key.Length > 32766) ? "a custom field name longer than 32766 characters" : null;
 
             default:
                 return new[] { tags.TrackNumber, tags.TrackTotal, tags.DiscNumber, tags.DiscTotal, tags.Bpm }.Any(value => value > ushort.MaxValue) ? "a number larger than 65535" : null;
@@ -378,8 +427,8 @@ public static partial class MediaTagsFuzzTargets
             MusicBrainzReleaseGroupId = NormalizeText(family, tags.MusicBrainzReleaseGroupId),
         };
 
-        (result.TrackNumber, result.TrackTotal) = NormalizeNumberPair(family, tags.TrackNumber, tags.TrackTotal);
-        (result.DiscNumber, result.DiscTotal) = NormalizeNumberPair(family, tags.DiscNumber, tags.DiscTotal);
+        (result.TrackNumber, result.TrackTotal) = NormalizeNumberPair(family is TagFamily.Asf ? TagFamily.VorbisComment : family, tags.TrackNumber, tags.TrackTotal);
+        (result.DiscNumber, result.DiscTotal) = NormalizeNumberPair(family is TagFamily.Asf ? TagFamily.Id3v2 : family, tags.DiscNumber, tags.DiscTotal);
 
         if (tags.ReplayGain is { } replayGain && (replayGain.TrackGain is not null || replayGain.TrackPeak is not null || replayGain.AlbumGain is not null || replayGain.AlbumPeak is not null))
         {
@@ -402,6 +451,15 @@ public static partial class MediaTagsFuzzTargets
 
                 case TagFamily.Id3v2 or TagFamily.VorbisComment:
                     result.Pictures.Add(new MediaPicture { PictureType = picture.PictureType, MimeType = mimeType, Description = Utf8(picture.Description ?? ""), Data = picture.Data });
+                    break;
+
+                case TagFamily.Ape:
+                    var pictureType = (int)picture.PictureType < ApePictureKeys.Length ? picture.PictureType : MediaPictureType.Other;
+                    result.Pictures.Add(new MediaPicture { PictureType = pictureType, MimeType = DetectImageMimeType(picture.Data), Description = Utf8(picture.Description ?? ""), Data = picture.Data });
+                    break;
+
+                case TagFamily.Asf:
+                    result.Pictures.Add(new MediaPicture { PictureType = picture.PictureType, MimeType = Utf16(picture.MimeType ?? "image/jpeg"), Description = Utf16(picture.Description ?? ""), Data = picture.Data });
                     break;
 
                 default:
@@ -434,11 +492,16 @@ public static partial class MediaTagsFuzzTargets
         }
     }
 
-    private static string? NormalizeText(TagFamily family, string? value) => value is null ? null : family is TagFamily.VorbisComment ? Utf8(value) : Utf8(value).TrimEnd('\0');
+    private static string? NormalizeText(TagFamily family, string? value) => value is null ? null : family switch
+    {
+        TagFamily.VorbisComment => Utf8(value),
+        TagFamily.Asf => Utf16(value).TrimEnd('\0'),
+        _ => Utf8(value).TrimEnd('\0'),
+    };
 
     private static (int? Number, int? Total) NormalizeNumberPair(TagFamily family, int? number, int? total) => family switch
     {
-        TagFamily.Id3v2 when total is not null && number is 0 => (null, total),
+        TagFamily.Id3v2 or TagFamily.Ape when total is not null && number is 0 => (null, total),
         TagFamily.Mp4 => (number is 0 ? null : number, total is 0 ? null : total),
         _ => (number, total),
     };
@@ -453,6 +516,15 @@ public static partial class MediaTagsFuzzTargets
 
             case TagFamily.VorbisComment:
                 return (Utf8(key), Utf8(value));
+
+            case TagFamily.Ape:
+                value = Utf8(value).TrimEnd('\0');
+                return value.Length is 0 ? null : (key, value);
+
+            case TagFamily.Asf:
+                value = Utf16(value).TrimEnd('\0');
+                key = Utf16(key).TrimEnd('\0');
+                return key.Length is 0 || value.Length is 0 ? null : (key, value);
 
             default:
                 var (mean, name) = SplitMp4CustomFieldName(key);
@@ -491,6 +563,8 @@ public static partial class MediaTagsFuzzTargets
         {
             TagFamily.Id3v2 => ReservedId3v2Names,
             TagFamily.VorbisComment => ReservedVorbisNames,
+            TagFamily.Ape => [.. ReservedApeNames, .. ApePictureKeys],
+            TagFamily.Asf => ReservedAsfNames,
             _ => ReservedMp4Names,
         };
 
@@ -498,6 +572,23 @@ public static partial class MediaTagsFuzzTargets
     }
 
     private static string Utf8(string value) => Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(value));
+
+    private static string Utf16(string value) => Encoding.Unicode.GetString(Encoding.Unicode.GetBytes(value));
+
+    private static string GetApePictureKey(MediaPictureType pictureType) => (int)pictureType < ApePictureKeys.Length ? ApePictureKeys[(int)pictureType] : ApePictureKeys[0];
+
+    private static bool IsValidApeKey(string key)
+        => key.Length is >= 2 and <= 255 && key.All(c => c is >= (char)0x20 and <= (char)0x7E) && !((string[])["ID3", "TAG", "OggS", "MP+"]).Contains(key, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Gets the MIME type the APE reader gives a picture, from the first bytes of the image.</summary>
+    private static string DetectImageMimeType(byte[] data) => data switch
+    {
+        [0x89, (byte)'P', (byte)'N', (byte)'G', ..] => "image/png",
+        [(byte)'G', (byte)'I', (byte)'F', (byte)'8', ..] => "image/gif",
+        [(byte)'B', (byte)'M', ..] => "image/bmp",
+        [(byte)'R', (byte)'I', (byte)'F', (byte)'F', _, _, _, _, (byte)'W', (byte)'E', (byte)'B', (byte)'P', ..] => "image/webp",
+        _ => "image/jpeg",
+    };
 
     private static string Ascii(string value) => Encoding.ASCII.GetString(Encoding.ASCII.GetBytes(value));
 

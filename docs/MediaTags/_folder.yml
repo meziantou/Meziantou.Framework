@@ -1,4 +1,4 @@
 title: MediaTags
-description: Read and write the metadata tags of MP3, OGG, FLAC, MP4, WAV and AIFF audio files.
+description: Read and write the metadata tags of MP3, OGG, FLAC, MP4, WAV, AIFF, APE, WavPack, Musepack and WMA audio files, and of MP4 and WMV videos.
 packageIds:
 - Meziantou.Framework.MediaTags

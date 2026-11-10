@@ -2,7 +2,8 @@
 
 # Generates test fixture files using ffmpeg.
 # Run once: pwsh ./generate-test-files.ps1
-# Requires: ffmpeg with libmp3lame, libvorbis, libopus, aac encoders.
+# Requires: ffmpeg with libmp3lame, libvorbis, libopus, aac, wmav2, wmv2, wavpack and mpeg4 encoders, mpcenc
+# (musepack-tools) and python3. Debian 13 provides all of them (apt-get install ffmpeg musepack-tools python3).
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -295,6 +296,115 @@ Invoke-Ffmpeg -Arguments @(
     "-metadata", "track=7",
     "-c:a", "libmp3lame", "-q:a", "9", "-write_id3v2", "0",
     (Join-Path $testFilesDirectory "id3v1_only.mp3")
+)
+
+# ================================
+# ASF (WMA / WMV)
+# ================================
+
+Invoke-Ffmpeg -Arguments @(
+    "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+    "-metadata", "title=Test Title", "-metadata", "artist=Test Artist", "-metadata", "album=Test Album",
+    "-metadata", "track=3", "-metadata", "date=2024", "-metadata", "genre=Rock",
+    "-c:a", "wmav2", "-b:a", "32k", (Join-Path $testFilesDirectory "basic.wma")
+)
+
+Invoke-Ffmpeg -Arguments @(
+    "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+    "-metadata", "title=All Fields Title", "-metadata", "artist=All Fields Artist", "-metadata", "album=All Fields Album",
+    "-metadata", "album_artist=All Fields Album Artist", "-metadata", "genre=Electronic", "-metadata", "date=2023",
+    "-metadata", "track=5", "-metadata", "disc=1/2", "-metadata", "composer=Test Composer",
+    "-metadata", "copyright=2023 Test", "-metadata", "comment=Test Comment",
+    "-metadata", "WM/Conductor=Test Conductor", "-metadata", "WM/ISRC=USRC17607839", "-metadata", "WM/BeatsPerMinute=128",
+    "-metadata", "WM/Lyrics=Line 1", "-metadata", "REPLAYGAIN_TRACK_GAIN=-6.50 dB",
+    "-metadata", "MusicBrainz/Track Id=f1c4a1d2-9d4b-4e0a-8f3e-1c2b3a4d5e6f", "-metadata", "CUSTOM_FIELD=Custom Value",
+    "-c:a", "wmav2", "-b:a", "32k", (Join-Path $testFilesDirectory "all_fields.wma")
+)
+
+Invoke-Ffmpeg -Arguments @(
+    "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+    "-metadata", "title=日本語テスト", "-metadata", "artist=Тест Артист", "-metadata", "album=Tëst Àlbüm",
+    "-c:a", "wmav2", "-b:a", "32k", (Join-Path $testFilesDirectory "unicode.wma")
+)
+
+Invoke-Ffmpeg -Arguments @(
+    "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+    "-fflags", "+bitexact", "-map_metadata", "-1", "-c:a", "wmav2", "-b:a", "32k", (Join-Path $testFilesDirectory "empty.wma")
+)
+
+Invoke-Ffmpeg -Arguments @(
+    "-y", "-f", "lavfi", "-i", "testsrc=size=64x48:rate=10:duration=1", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+    "-metadata", "title=Video Title", "-metadata", "artist=Video Artist",
+    "-c:v", "wmv2", "-c:a", "wmav2", "-b:a", "32k", "-shortest", (Join-Path $testFilesDirectory "basic.wmv")
+)
+
+# ================================
+# APE TAGS (WavPack, Musepack, MP3)
+# ================================
+
+Invoke-Ffmpeg -Arguments @(
+    "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+    "-metadata", "title=Test Title", "-metadata", "artist=Test Artist", "-metadata", "album=Test Album",
+    "-metadata", "track=3", "-metadata", "date=2024", "-metadata", "genre=Rock",
+    "-c:a", "wavpack", (Join-Path $testFilesDirectory "basic.wv")
+)
+
+Invoke-Ffmpeg -Arguments @(
+    "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+    "-fflags", "+bitexact", "-map_metadata", "-1", "-c:a", "wavpack", (Join-Path $testFilesDirectory "empty.wv")
+)
+
+Invoke-Ffmpeg -Arguments @(
+    "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+    "-metadata", "title=日本語テスト", "-metadata", "artist=Тест Артист", "-metadata", "album=Tëst Àlbüm",
+    "-c:a", "wavpack", (Join-Path $testFilesDirectory "unicode.wv")
+)
+
+# mpcenc encodes Musepack stream version 8 and writes an APEv2 tag
+$sineWav = Join-Path ([System.IO.Path]::GetTempPath()) "mediatags-sine.wav"
+Invoke-Ffmpeg -Arguments @("-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-ar", "44100", "-ac", "2", $sineWav)
+& mpcenc --silent --overwrite --title "Test Title" --artist "Test Artist" --album "Test Album" --track 3 --year 2024 --genre Rock $sineWav (Join-Path $testFilesDirectory "basic.mpc")
+& mpcenc --silent --overwrite $sineWav (Join-Path $testFilesDirectory "empty.mpc")
+Remove-Item -LiteralPath $sineWav
+
+# The MP3 audio of ape_only.mp3, which generate-handcrafted-test-files.py tags
+$plainMp3 = Join-Path $testFilesDirectory "plain.mp3"
+Invoke-Ffmpeg -Arguments @(
+    "-y", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+    "-c:a", "libmp3lame", "-q:a", "9", "-id3v2_version", "0", "-write_id3v1", "0", $plainMp3
+)
+
+# Monkey's Audio and Musepack stream version 7 have no encoder in ffmpeg: their headers are written by hand, with an
+# APEv2 tag written independently of the library.
+& python3 (Join-Path $scriptDirectory "generate-handcrafted-test-files.py") $testFilesDirectory
+if ($LASTEXITCODE -ne 0) {
+    throw "generate-handcrafted-test-files.py failed with exit code $LASTEXITCODE"
+}
+
+Remove-Item -LiteralPath $plainMp3
+
+# ================================
+# MP4 VIDEO
+# ================================
+
+Invoke-Ffmpeg -Arguments @(
+    "-y", "-f", "lavfi", "-i", "testsrc=size=64x48:rate=10:duration=1", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+    "-c:v", "mpeg4", "-c:a", "aac", "-b:a", "32k", "-shortest",
+    "-metadata", "title=Episode Title", "-metadata", "artist=Video Artist", "-metadata", "show=Test Show",
+    "-metadata", "network=Test Network", "-metadata", "episode_id=S01E02", "-metadata", "season_number=1",
+    "-metadata", "episode_sort=2", "-metadata", "media_type=10", "-metadata", "description=Short description",
+    "-metadata", "synopsis=Long description", "-metadata", "hd_video=1", "-f", "mp4", (Join-Path $testFilesDirectory "tv_show.m4v")
+)
+
+Invoke-Ffmpeg -Arguments @(
+    "-y", "-f", "lavfi", "-i", "testsrc=size=64x48:rate=10:duration=2",
+    "-c:v", "mpeg4", "-metadata", "title=Video Only", "-f", "mp4", (Join-Path $testFilesDirectory "video_only.mp4")
+)
+
+Invoke-Ffmpeg -Arguments @(
+    "-y", "-f", "lavfi", "-i", "testsrc=size=32x16:rate=10:duration=1", "-f", "lavfi", "-i", "sine=frequency=440:duration=1",
+    "-c:v", "mpeg4", "-c:a", "aac", "-b:a", "32k", "-shortest", "-metadata", "title=QuickTime Title",
+    "-f", "mov", (Join-Path $testFilesDirectory "basic.mov")
 )
 
 $emptyFiles = Get-ChildItem -Path $testFilesDirectory -File -Force | Where-Object { $_.Length -eq 0 }

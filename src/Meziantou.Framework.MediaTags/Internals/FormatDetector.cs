@@ -5,6 +5,9 @@ internal static class FormatDetector
     // Minimum bytes needed for format detection (need enough for OGG page header + Opus/Vorbis identification)
     internal const int MinHeaderSize = 64;
 
+    /// <summary>The GUID of the ASF header object (75B22630-668E-11CF-A6D9-00AA0062CE6C), as stored.</summary>
+    private static ReadOnlySpan<byte> AsfHeaderGuid => [0x30, 0x26, 0xB2, 0x75, 0x8E, 0x66, 0xCF, 0x11, 0xA6, 0xD9, 0x00, 0xAA, 0x00, 0x62, 0xCE, 0x6C];
+
     /// <summary>
     /// Detects the media format from the first bytes of the file.
     /// </summary>
@@ -35,6 +38,20 @@ internal static class FormatDetector
         if (header.Length >= 8 && header[4] == 'f' && header[5] == 't' && header[6] == 'y' && header[7] == 'p')
             return MediaFormat.Mp4;
 
+        // Monkey's Audio, WavPack and Musepack, which use APE tags
+        if (header.StartsWith("MAC "u8))
+            return MediaFormat.MonkeysAudio;
+
+        if (header.StartsWith("wvpk"u8))
+            return MediaFormat.WavPack;
+
+        if (header.StartsWith("MPCK"u8) || (header.StartsWith("MP+"u8) && (header[3] & 0x0F) == 7))
+            return MediaFormat.Musepack;
+
+        // ASF: the GUID of the header object
+        if (header.StartsWith(AsfHeaderGuid))
+            return MediaFormat.Asf;
+
         // ID3v2 tag: "ID3" — this is MP3
         if (header[0] == 'I' && header[1] == 'D' && header[2] == '3')
             return MediaFormat.Mp3;
@@ -59,9 +76,13 @@ internal static class FormatDetector
             ".ogg" or ".oga" => MediaFormat.OggVorbis,
             ".opus" => MediaFormat.OggOpus,
             ".flac" => MediaFormat.Flac,
-            ".m4a" or ".mp4" or ".m4b" or ".m4p" or ".m4r" => MediaFormat.Mp4,
+            ".m4a" or ".mp4" or ".m4b" or ".m4p" or ".m4r" or ".m4v" or ".mov" or ".3gp" or ".3g2" => MediaFormat.Mp4,
             ".wav" or ".wave" => MediaFormat.Wav,
             ".aif" or ".aiff" or ".aifc" => MediaFormat.Aiff,
+            ".ape" => MediaFormat.MonkeysAudio,
+            ".wv" => MediaFormat.WavPack,
+            ".mpc" or ".mp+" or ".mpp" => MediaFormat.Musepack,
+            ".wma" or ".wmv" or ".asf" => MediaFormat.Asf,
             _ => null,
         };
     }

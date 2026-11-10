@@ -68,10 +68,20 @@ if (!writeResult.IsSuccess)
 - [Format](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Format) is ignored when writing: the format comes from the file.
 - A [Duration](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Duration) the library computed from the audio is not written as a tag, so it cannot override the audio on a later
   read. A duration read from a tag, or one you set, is written by the formats that store it.
+- [VideoWidth](cref:Meziantou.Framework.MediaTags.MediaTagInfo.VideoWidth) and [VideoHeight](cref:Meziantou.Framework.MediaTags.MediaTagInfo.VideoHeight) are never written: they describe the video stream.
 
-Some data is kept even though [MediaTagInfo](cref:Meziantou.Framework.MediaTags.MediaTagInfo) does not show it: the ID3v2 frames and the MP4 items this library does not
-read, such as the publisher or the sort names, are copied from the existing tag. See
-[Format support](05-FormatSupport.md).
+## Write the native fields
+
+[NativeFields](cref:Meziantou.Framework.MediaTags.MediaTagInfo.NativeFields) decides what happens to the frames, items and attributes no other property represents:
+
+- `null`, the value of a new [MediaTagInfo](cref:Meziantou.Framework.MediaTags.MediaTagInfo), keeps the ones of the file. So writing a new [MediaTagInfo](cref:Meziantou.Framework.MediaTags.MediaTagInfo) replaces
+  the common fields, and keeps the publisher, the sort names or the encoder the file had.
+- A list, which reading always sets, replaces them: the fields of the [TagType](cref:Meziantou.Framework.MediaTags.MediaNativeField.TagType) the format writes are written, in
+  order, and the fields of other tag types are ignored. Remove a field from the list to remove it from the file.
+
+A native field that a property represents, such as an ID3v2 `TIT2` frame or an MP4 `©nam` item, is refused with
+[InvalidTagData](cref:Meziantou.Framework.MediaTags.MediaTagError.InvalidTagData): set the property instead. So are an invalid identifier and flags the format cannot store; see
+[Format support](05-FormatSupport.md) for the rules of each format.
 
 ## A safe replacement
 
@@ -112,7 +122,7 @@ When the result is a failure, discard what was written to the output stream: it 
 
 ## Remove the tags
 
-[MediaFile.RemoveTags](cref:Meziantou.Framework.MediaTags.MediaFile.RemoveTags) removes every tag this library can write, including the ID3v2 frames it does not read:
+[MediaFile.RemoveTags](cref:Meziantou.Framework.MediaTags.MediaFile.RemoveTags) removes every tag this library can write, including the native fields:
 
 <!-- ref:../../samples/Meziantou.Framework.MediaTags.Samples/ReadmeExamples.cs;region=MediaFile_RemoveTags;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -152,5 +162,5 @@ MediaFile.WriteTags("song.mp3", tags, options);
 ## When writing fails
 
 [WriteTags](cref:Meziantou.Framework.MediaTags.MediaFile.WriteTags) returns the same errors as [ReadTags](cref:Meziantou.Framework.MediaTags.MediaFile.ReadTags); see [Errors](03-ReadingTags.md#errors). [InvalidTagData](cref:Meziantou.Framework.MediaTags.MediaTagError.InvalidTagData) means the
-tags cannot be stored in the format of the file, such as a track number above 65535 in an MP4 file, or a Vorbis custom
-field whose name contains `=`.
+tags cannot be stored in the format of the file, such as a track number above 65535 in an MP4 file, a Vorbis custom
+field whose name contains `=`, or a native field a property represents.

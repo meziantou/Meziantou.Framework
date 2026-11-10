@@ -121,8 +121,67 @@ public sealed class MediaTagInfo
     /// <summary>Gets or sets the MusicBrainz release group ID.</summary>
     public string? MusicBrainzReleaseGroupId { get; set; }
 
+    // Video (MP4)
+    /// <summary>Gets or sets the kind of media, such as a movie or a TV show. Only MP4 files store it.</summary>
+    public MediaKind? MediaKind { get; set; }
+
+    /// <summary>Gets or sets a short description of the content. Only MP4 files store it.</summary>
+    public string? Description { get; set; }
+
+    /// <summary>Gets or sets a long description of the content. Only MP4 files store it.</summary>
+    public string? LongDescription { get; set; }
+
+    /// <summary>Gets or sets the name of the TV show. Only MP4 files store it.</summary>
+    public string? TvShow { get; set; }
+
+    /// <summary>Gets or sets the TV network that broadcast the episode. Only MP4 files store it.</summary>
+    public string? TvNetwork { get; set; }
+
+    /// <summary>Gets or sets the identifier of the TV episode, such as <c>S01E02</c>. Only MP4 files store it.</summary>
+    public string? TvEpisodeId { get; set; }
+
+    /// <summary>Gets or sets the TV season number. Must not be negative. Only MP4 files store it.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int? TvSeason
+    {
+        get => field;
+        set => field = ValidateNonNegative(value);
+    }
+
+    /// <summary>Gets or sets the TV episode number. Must not be negative. Only MP4 files store it.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int? TvEpisode
+    {
+        get => field;
+        set => field = ValidateNonNegative(value);
+    }
+
+    /// <summary>Gets or sets the width, in pixels, of the video stream. It is read from the stream and never written.</summary>
+    public int? VideoWidth { get; set; }
+
+    /// <summary>Gets or sets the height, in pixels, of the video stream. It is read from the stream and never written.</summary>
+    public int? VideoHeight { get; set; }
+
     /// <summary>Gets the collection of custom or format-specific metadata fields.</summary>
     public IDictionary<string, string> CustomFields { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Gets or sets the frames, items and attributes of the tag that no other property represents, as stored in the file.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Reading sets a list, empty when the format has none. Writing a list replaces the fields of the tag type the format writes,
+    /// and ignores the fields of other tag types. Writing <see langword="null"/> keeps the fields of the existing file, which is
+    /// how a new <see cref="MediaTagInfo"/> changes the common fields without removing the format-specific ones.
+    /// </para>
+    /// <para>
+    /// A field that a property represents, such as the ID3v2 <c>TIT2</c> frame, cannot be written as a native field: the write
+    /// fails with <see cref="MediaTagError.InvalidTagData"/>. User-defined text fields (ID3v2 <c>TXXX</c> frames, MP4 freeform
+    /// items, APEv2 text items and ASF text attributes) are in <see cref="CustomFields"/>.
+    /// </para>
+    /// </remarks>
+    [SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "null keeps the fields of the file")]
+    public IList<MediaNativeField>? NativeFields { get; set; }
 
     /// <summary>Gets or sets the source format that the tags were read from.</summary>
     public MediaFormat? Format { get; set; }

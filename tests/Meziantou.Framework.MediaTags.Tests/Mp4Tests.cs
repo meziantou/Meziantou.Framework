@@ -727,4 +727,170 @@ public sealed class Mp4Tests
         ilstAtom.CopyTo(metaPayload, 4); // Full box version/flags
         return CreateAtom("moov", CreateAtom("udta", CreateAtom("meta", metaPayload)));
     }
+
+    [Fact]
+    public void ReadTags_VideoTags_Example()
+    {
+        #region MediaFile_ReadVideoTags
+        var tags = MediaFile.ReadTags("TestFiles/tv_show.m4v").Value;
+        Assert.Equal(MediaKind.TvShow, tags.MediaKind);
+        Assert.Equal("Test Show", tags.TvShow);
+        Assert.Equal(1, tags.TvSeason);
+        Assert.Equal(2, tags.TvEpisode);
+        Assert.Equal("Episode Title", tags.Title);
+
+        // Read from the video stream, never written
+        Assert.Equal(64, tags.VideoWidth);
+        Assert.Equal(48, tags.VideoHeight);
+        #endregion
+    }
+
+    [Fact]
+    public void ReadTags_TvShowVideo()
+    {
+        var result = MediaFile.ReadTags(GetTestFilePath("tv_show.m4v"));
+        Assert.True(result.IsSuccess);
+
+        var tags = result.Value;
+        Assert.Equal(MediaFormat.Mp4, tags.Format);
+        Assert.Equal("Episode Title", tags.Title);
+        Assert.Equal(MediaKind.TvShow, tags.MediaKind);
+        Assert.Equal("Test Show", tags.TvShow);
+        Assert.Equal("Test Network", tags.TvNetwork);
+        Assert.Equal("S01E02", tags.TvEpisodeId);
+        Assert.Equal(1, tags.TvSeason);
+        Assert.Equal(2, tags.TvEpisode);
+        Assert.Equal("Short description", tags.Description);
+        Assert.Equal("Long description", tags.LongDescription);
+        Assert.Equal(64, tags.VideoWidth);
+        Assert.Equal(48, tags.VideoHeight);
+        Assert.NotNull(tags.Duration);
+        Assert.Equal(1.0, tags.Duration.Value.TotalSeconds, 0.1);
+
+        // The HD flag and the encoder have no property
+        Assert.Contains("hdvd", tags.NativeFields!.Select(field => field.Id));
+        Assert.Contains("\u00A9too", tags.NativeFields!.Select(field => field.Id));
+    }
+
+    [Theory]
+    [InlineData("video_only.mp4", "Video Only", 64, 48, 2.0)]
+    [InlineData("basic.mov", "QuickTime Title", 32, 16, 1.0)]
+    public void ReadTags_VideoFiles(string fileName, string title, int width, int height, double durationSeconds)
+    {
+        Assert.Equal(MediaFormat.Mp4, MediaFile.DetectFormat(GetTestFilePath(fileName)));
+
+        var tags = ReadMp4(File.ReadAllBytes(GetTestFilePath(fileName)));
+
+        Assert.Equal(title, tags.Title);
+        Assert.Equal(width, tags.VideoWidth);
+        Assert.Equal(height, tags.VideoHeight);
+        Assert.NotNull(tags.Duration);
+        Assert.Equal(durationSeconds, tags.Duration.Value.TotalSeconds, 0.1);
+    }
+
+    [Fact]
+    public void ReadTags_AudioFile_HasNoVideoSize()
+    {
+        var tags = ReadMp4(File.ReadAllBytes(GetTestFilePath("basic.m4a")));
+
+        Assert.Null(tags.VideoWidth);
+        Assert.Null(tags.VideoHeight);
+    }
+
+    [Theory]
+    [InlineData("basic.m4a")]
+    [InlineData("tv_show.m4v")]
+    [InlineData("basic.mov")]
+    public void WriteTags_VideoFields_RoundTrip(string fileName)
+    {
+        var original = File.ReadAllBytes(GetTestFilePath(fileName));
+        var tags = new MediaTagInfo
+        {
+            Title = "Pilot",
+            MediaKind = MediaKind.Movie,
+            Description = "A description",
+            LongDescription = "A much longer description",
+            TvShow = "Show",
+            TvNetwork = "Network",
+            TvEpisodeId = "S02E05",
+            TvSeason = 2,
+            TvEpisode = 5,
+        };
+
+        var readBack = ReadMp4(WriteMp4(original, tags));
+
+        Assert.Equal("Pilot", readBack.Title);
+        Assert.Equal(MediaKind.Movie, readBack.MediaKind);
+        Assert.Equal("A description", readBack.Description);
+        Assert.Equal("A much longer description", readBack.LongDescription);
+        Assert.Equal("Show", readBack.TvShow);
+        Assert.Equal("Network", readBack.TvNetwork);
+        Assert.Equal("S02E05", readBack.TvEpisodeId);
+        Assert.Equal(2, readBack.TvSeason);
+        Assert.Equal(5, readBack.TvEpisode);
+
+        var originalTags = ReadMp4(original);
+        Assert.Equal(originalTags.Duration, readBack.Duration);
+        Assert.Equal(originalTags.VideoWidth, readBack.VideoWidth);
+    }
+
+    [Fact]
+    public void WriteTags_QuickTimeTextRecords_AreMovedToTheMetadataItems()
+    {
+        var original = File.ReadAllBytes(GetTestFilePath("basic.mov"));
+        var tags = ReadMp4(original);
+        Assert.Equal("QuickTime Title", tags.Title);
+
+        // Kept when the tags are written back
+        var written = WriteMp4(original, tags);
+        Assert.Equal("QuickTime Title", ReadMp4(written).Title);
+
+        // Removed with the field: the record does not bring it back
+        tags.Title = null;
+        Assert.Null(ReadMp4(WriteMp4(written, tags)).Title);
+        Assert.Equal(-1, WriteMp4(original, tags).AsSpan().IndexOf("QuickTime Title"u8));
+    }
+
+    [Fact]
+    public void WriteTags_NativeFields()
+    {
+        var original = File.ReadAllBytes(GetTestFilePath("tv_show.m4v"));
+        var tags = ReadMp4(original);
+
+        // Writing a new MediaTagInfo keeps the items of the file
+        Assert.Contains("hdvd", ReadMp4(WriteMp4(original, new MediaTagInfo { Title = "Title" })).NativeFields!.Select(field => field.Id));
+
+        // Writing the native fields replaces them
+        tags.NativeFields!.Clear();
+        var gapless = (byte[])[0, 0, 0, 9, .. "data"u8, 0, 0, 0, 21, 0, 0, 0, 0, 1];
+        tags.NativeFields.Add(new MediaNativeField { TagType = MediaTagType.Mp4, Id = "pgap", Data = gapless });
+        var readBack = ReadMp4(WriteMp4(original, tags));
+
+        var nativeField = Assert.Single(readBack.NativeFields!);
+        Assert.Equal("pgap", nativeField.Id);
+        Assert.Equal(gapless, nativeField.Data);
+        Assert.Equal("Test Show", readBack.TvShow);
+
+        // Removing the tags removes them
+        using var output = new MemoryStream();
+        Assert.True(MediaFile.RemoveTags(new MemoryStream(original, writable: false), output, MediaFormat.Mp4).IsSuccess);
+        Assert.Empty(ReadMp4(output.ToArray()).NativeFields!);
+    }
+
+    [Theory]
+    [InlineData("\u00A9nam")]
+    [InlineData("tvsh")]
+    [InlineData("moov")]
+    [InlineData("stco")]
+    [InlineData("abc")]
+    [InlineData("\u0100abc")]
+    public void WriteTags_InvalidNativeField_Fails(string type)
+    {
+        var tags = new MediaTagInfo { NativeFields = [new MediaNativeField { TagType = MediaTagType.Mp4, Id = type, Data = [0] }] };
+
+        var result = MediaFile.WriteTags(new MemoryStream(File.ReadAllBytes(GetTestFilePath("basic.m4a")), writable: false), new MemoryStream(), tags, MediaFormat.Mp4);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.InvalidTagData, result.Error);
+    }
 }

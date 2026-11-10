@@ -30,6 +30,17 @@ public static partial class MediaTagsFuzzTargets
         // Vorbis comments
         "TITLE=", "ARTIST=", "ALBUM=", "ALBUMARTIST=", "GENRE=", "DATE=", "TRACKNUMBER=", "TRACKTOTAL=", "DISCNUMBER=", "COMPOSER=", "LYRICS=", "COMMENT=", "ISRC=", "BPM=", "COMPILATION=", "METADATA_BLOCK_PICTURE=",
         "REPLAYGAIN_TRACK_GAIN=", "REPLAYGAIN_TRACK_PEAK=", "REPLAYGAIN_ALBUM_GAIN=", "REPLAYGAIN_ALBUM_PEAK=", "MUSICBRAINZ_TRACKID=", "MUSICBRAINZ_ALBUMID=", "image/png", "image/jpeg", "-->",
+        // MP4 video and QuickTime
+        "stik", "desc", "ldes", "tvsh", "tvnn", "tven", "tvsn", "tves", "tkhd", "vide", "soun", "hdvd", "pgap", "\u00A9nam", "\u00A9ART", "\u00A9day", "\u00A9too",
+        // APE tags and the formats that use them
+        "APETAGEX", "MAC ", "wvpk", "MPCK", "MP+\u0007", "MP+\u0017", "SH", "SE", "AP", "Title", "Artist", "Album", "Year", "Track", "Disc", "Cover Art (Front)", "Cover Art (Back)",
+        // ASF objects and attribute names
+        BinaryToken(new Guid("75B22630-668E-11CF-A6D9-00AA0062CE6C").ToByteArray()), BinaryToken(new Guid("8CABDCA1-A947-11CF-8EE4-00C00C205365").ToByteArray()),
+        BinaryToken(new Guid("B7DC0791-A9B7-11CF-8EE6-00C00C205365").ToByteArray()), BinaryToken(new Guid("75B22633-668E-11CF-A6D9-00AA0062CE6C").ToByteArray()),
+        BinaryToken(new Guid("D2D0A440-E307-11D2-97F0-00A0C95EA850").ToByteArray()), BinaryToken(new Guid("5FBF03B5-A92E-11CF-8EE3-00C00C205365").ToByteArray()),
+        BinaryToken(new Guid("C5F8CBEA-5BAF-4877-8467-AA8C44FA4CCA").ToByteArray()), BinaryToken(new Guid("44231C94-9498-49D1-A141-1D134E457054").ToByteArray()),
+        BinaryToken(new Guid("BC19EFC0-5B4D-11CF-A8FD-00805F5C442B").ToByteArray()),
+        BinaryToken(Encoding.Unicode.GetBytes("WM/Picture\0")), BinaryToken(Encoding.Unicode.GetBytes("WM/TrackNumber\0")), BinaryToken(Encoding.Unicode.GetBytes("WM/AlbumTitle\0")),
     ];
 
     /// <summary>The characters the tag formats give a meaning to, and the names of the fields that a custom field can shadow.</summary>
@@ -44,6 +55,7 @@ public static partial class MediaTagsFuzzTargets
         new("mediatags-read", Read) { Seeds = GetReadSeeds, Dictionary = Tokens },
         new("mediatags-write", Write) { Seeds = GetWriteSeeds, Dictionary = Tokens },
         new("mediatags-write-values", WriteValues) { Seeds = GetWriteValuesSeeds, Dictionary = ValueTokens },
+        new("mediatags-native-fields", NativeFields) { Seeds = GetNativeFieldsSeeds, Dictionary = Tokens },
     ];
 
     /// <summary>
@@ -173,7 +185,7 @@ public static partial class MediaTagsFuzzTargets
                 break;
 
             default:
-                FuzzAssert.Equal(Describe(new MediaTagInfo { Format = format, Duration = readBackTags.Duration }), Describe(readBackTags), "Removing the tags leaves some behind");
+                FuzzAssert.Equal(Describe(WithStreamProperties(new MediaTagInfo { Format = format }, readBackTags)), Describe(readBackTags), "Removing the tags leaves some behind");
                 break;
         }
 
@@ -185,6 +197,18 @@ public static partial class MediaTagsFuzzTargets
         FuzzAssert.True(reread.IsSuccess, $"The file written twice does not read back: {reread.Error} {reread.ErrorMessage}");
         FuzzAssert.Equal(Describe(readBackTags), Describe(reread.Value), "Writing the tags read from a written file changes them");
     }
+
+    /// <summary>Copies the values read from the audio or video stream rather than from a tag, which no write changes.</summary>
+    private static MediaTagInfo WithStreamProperties(MediaTagInfo tags, MediaTagInfo source)
+    {
+        tags.Duration = source.Duration;
+        tags.VideoWidth = source.VideoWidth;
+        tags.VideoHeight = source.VideoHeight;
+        return tags;
+    }
+
+    /// <summary>Gets the token of bytes that are not text: <see cref="FuzzText"/> encodes U+DC00 + b as the byte b.</summary>
+    private static string BinaryToken(byte[] bytes) => string.Concat(bytes.Select(b => b < 0x80 ? ((char)b).ToString() : ((char)(0xDC00 + b)).ToString()));
 
     private static MediaTagResult WriteTags(Stream input, Stream output, MediaTagInfo tags, MediaFormat format, MediaTagWriteOptions options, bool remove)
         => remove ? MediaFile.RemoveTags(input, output, format) : MediaFile.WriteTags(input, output, tags, format, options);
@@ -239,6 +263,14 @@ public static partial class MediaTagsFuzzTargets
             MusicBrainzArtistId = "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
             MusicBrainzAlbumId = "0a1b2c3d-4e5f-4061-8293-a4b5c6d7e8f9",
             MusicBrainzReleaseGroupId = "9f8e7d6c-5b4a-4392-8170-6f5e4d3c2b1a",
+            MediaKind = MediaKind.TvShow,
+            Description = "Fuzz Description",
+            LongDescription = "Fuzz Long Description",
+            TvShow = "Fuzz Show",
+            TvNetwork = "Fuzz Network",
+            TvEpisodeId = "S01E02",
+            TvSeason = 1,
+            TvEpisode = 2,
         };
 
         tags.Pictures.Add(new MediaPicture
@@ -287,6 +319,16 @@ public static partial class MediaTagsFuzzTargets
         Append(nameof(tags.MusicBrainzArtistId), tags.MusicBrainzArtistId);
         Append(nameof(tags.MusicBrainzAlbumId), tags.MusicBrainzAlbumId);
         Append(nameof(tags.MusicBrainzReleaseGroupId), tags.MusicBrainzReleaseGroupId);
+        Append(nameof(tags.MediaKind), tags.MediaKind);
+        Append(nameof(tags.Description), tags.Description);
+        Append(nameof(tags.LongDescription), tags.LongDescription);
+        Append(nameof(tags.TvShow), tags.TvShow);
+        Append(nameof(tags.TvNetwork), tags.TvNetwork);
+        Append(nameof(tags.TvEpisodeId), tags.TvEpisodeId);
+        Append(nameof(tags.TvSeason), tags.TvSeason);
+        Append(nameof(tags.TvEpisode), tags.TvEpisode);
+        Append(nameof(tags.VideoWidth), tags.VideoWidth);
+        Append(nameof(tags.VideoHeight), tags.VideoHeight);
         for (var i = 0; i < tags.Pictures.Count; i++)
         {
             var picture = tags.Pictures[i];
@@ -296,6 +338,12 @@ public static partial class MediaTagsFuzzTargets
         foreach (var (key, value) in tags.CustomFields.OrderBy(field => field.Key, StringComparer.Ordinal))
         {
             Append(nameof(tags.CustomFields), FuzzAssert.Format(key) + " = " + FuzzAssert.Format(value));
+        }
+
+        // A null list (keep the fields of the file) and an empty one describe the same tags once read
+        foreach (var field in tags.NativeFields ?? [])
+        {
+            Append(nameof(tags.NativeFields), DescribeNativeField(field));
         }
 
         return builder.ToString();
@@ -314,6 +362,9 @@ public static partial class MediaTagsFuzzTargets
             builder.Append(name).Append(": ").Append(FuzzAssert.Format(value is IFormattable formattable ? formattable.ToString(format: null, CultureInfo.InvariantCulture) : value)).Append('\n');
         }
     }
+
+    private static string DescribeNativeField(MediaNativeField field)
+        => string.Create(CultureInfo.InvariantCulture, $"{field.TagType} {FuzzAssert.Format(field.Id)} {field.Flags} {field.Data.Length} bytes {Convert.ToHexString(SHA256.HashData(field.Data))}");
 
     private static IEnumerable<(string Name, byte[] Data)> GetTestFiles()
     {

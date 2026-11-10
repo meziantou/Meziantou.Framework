@@ -39,15 +39,27 @@ internal sealed class Mp3TagReader : IMediaTagReader
     {
         try
         {
-            var tags = new MediaTagInfo();
+            var tags = new MediaTagInfo { NativeFields = [] };
 
             // Try ID3v2 first (at start of file)
             stream.Position = 0;
             Id3v2Reader.TryReadTag(stream, tags);
 
-            // Then try ID3v1 (at end of file) — ID3v2 values take priority (already set via ??=). "TAG" inside the
-            // ID3v2 tag is not an ID3v1 tag, even in the last 128 bytes of the file.
-            if (Mp3AudioLocator.HasId3v1Tag(stream))
+            // Then the APE and ID3v1 tags at the end of the file: they only fill the fields the ID3v2 tag does not set.
+            // "TAG" inside the ID3v2 tag is not an ID3v1 tag, even in the last 128 bytes of the file. The items of the APE
+            // tag that no property represents are not read: the writer replaces the APE tag with the ID3v2 tag.
+            if (Mp3AudioLocator.TryLocate(stream, out var audioStart, out _, out _))
+            {
+                _ = Ape.ApeFileReader.TryReadEndTags(stream, Mp3AudioLocator.GetMinimumTailTagStart(stream, audioStart), tags, readNativeFields: false, out _);
+
+                // The ID3v2 tag that replaces the APE tag does not store a picture without data.
+                for (var i = tags.Pictures.Count - 1; i >= 0; i--)
+                {
+                    if (tags.Pictures[i].Data.Length == 0)
+                        tags.Pictures.RemoveAt(i);
+                }
+            }
+            else
             {
                 Id3v1.Id3v1Reader.TryReadTag(stream, tags);
             }

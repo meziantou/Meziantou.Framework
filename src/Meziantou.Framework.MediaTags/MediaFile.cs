@@ -1,5 +1,7 @@
 using Meziantou.Framework.MediaTags.Formats;
 using Meziantou.Framework.MediaTags.Formats.Aiff;
+using Meziantou.Framework.MediaTags.Formats.Ape;
+using Meziantou.Framework.MediaTags.Formats.Asf;
 using Meziantou.Framework.MediaTags.Formats.Flac;
 using Meziantou.Framework.MediaTags.Formats.Id3v2;
 using Meziantou.Framework.MediaTags.Formats.Mp4;
@@ -417,6 +419,7 @@ public static class MediaFile
         if (result.IsSuccess)
         {
             result.Value.Format = format;
+            result.Value.NativeFields ??= [];
         }
 
         return result;
@@ -463,8 +466,10 @@ public static class MediaFile
             if (!Id3v2TagLocator.TryGetAudioDataOffsets(stream, start, out var primaryOffset, out var secondaryOffset))
                 return 0;
 
-            if (TryDetectNestedFormatAtOffset(stream, primaryOffset, out var nestedFormat) && nestedFormat == format)
-                return primaryOffset - start;
+            // The offset DetectFormat picks: the primary one when a format is there, so a format found at the secondary one
+            // is not the format of the file.
+            if (TryDetectNestedFormatAtOffset(stream, primaryOffset, out var nestedFormat))
+                return nestedFormat == format ? primaryOffset - start : 0;
 
             if (secondaryOffset >= 0 && TryDetectNestedFormatAtOffset(stream, secondaryOffset, out nestedFormat) && nestedFormat == format)
                 return secondaryOffset - start;
@@ -491,6 +496,8 @@ public static class MediaFile
             MediaFormat.Mp4 => new Mp4Reader(),
             MediaFormat.Wav => new WavReader(),
             MediaFormat.Aiff => new AiffReader(),
+            MediaFormat.MonkeysAudio or MediaFormat.WavPack or MediaFormat.Musepack => new ApeFileReader(format),
+            MediaFormat.Asf => new AsfReader(),
             _ => null,
         };
 
@@ -508,6 +515,8 @@ public static class MediaFile
             MediaFormat.Mp4 => new Mp4Writer(),
             MediaFormat.Wav => new WavWriter(),
             MediaFormat.Aiff => new AiffWriter(),
+            MediaFormat.MonkeysAudio or MediaFormat.WavPack or MediaFormat.Musepack => new ApeFileWriter(format),
+            MediaFormat.Asf => new AsfWriter(),
             _ => null,
         };
 

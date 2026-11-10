@@ -78,7 +78,13 @@ public sealed class AmsiContext : IDisposable
     /// </remarks>
     public static IReadOnlyList<AmsiProvider> GetRegisteredProviders()
     {
-        using var providersKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\AMSI\Providers");
+        return GetRegisteredProviders(Registry.LocalMachine);
+    }
+
+    /// <summary>Reads the providers from the AMSI and COM registration keys under <paramref name="root"/>.</summary>
+    internal static IReadOnlyList<AmsiProvider> GetRegisteredProviders(RegistryKey root)
+    {
+        using var providersKey = root.OpenSubKey(@"SOFTWARE\Microsoft\AMSI\Providers");
         if (providersKey is null)
             return [];
 
@@ -88,7 +94,7 @@ public sealed class AmsiContext : IDisposable
             if (!Guid.TryParse(name, out var id))
                 continue;
 
-            using var classKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Classes\CLSID\" + id.ToString("B"));
+            using var classKey = root.OpenSubKey(@"SOFTWARE\Classes\CLSID\" + id.ToString("B"));
             using var serverKey = classKey?.OpenSubKey("InprocServer32");
             var displayName = classKey?.GetValue(name: null) as string;
             var modulePath = serverKey?.GetValue(name: null) as string;

@@ -14,6 +14,12 @@ internal sealed class JpegXlCodec : ImageCodec
 
     public override ImageFormat Format => ImageFormat.JpegXl;
 
+    /// <summary>
+    /// Gets a value indicating that a still image of one VarDCT frame is decoded at 1/8 of its size from its LF image
+    /// (<see cref="JpegXlDecoder"/>); another image is decoded at full size for a target size and rejected for an exact scale.
+    /// </summary>
+    public override bool SupportsScaledDecoding => true;
+
     /// <summary>Determines whether the data starts with the two bytes of a codestream (<c>FF 0A</c>) or with the signature box of a container (12 bytes).</summary>
     public static bool MatchesSignature(ReadOnlySpan<byte> prefix)
         => prefix.StartsWith(JpegXlFormat.CodestreamSignature) || prefix.StartsWith(JpegXlFormat.ContainerSignature);

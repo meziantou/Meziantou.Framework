@@ -20,6 +20,12 @@ internal sealed class TiffCodec : ImageCodec
     /// <summary>Gets a value indicating that the decoder only reads the strips or the tiles that an area meets (<see cref="ImageDecodeRequest.Region"/>).</summary>
     public override bool SupportsRegionDecoding => true;
 
+    /// <summary>
+    /// Gets a value indicating that the decoder reads a reduced-resolution image of the first page when the file stores one
+    /// (<see cref="TiffResolutionLevels"/>); without one, a target size gives the full resolution and an exact scale is rejected.
+    /// </summary>
+    public override bool SupportsScaledDecoding => true;
+
     /// <summary>Determines whether the data starts with a classic TIFF or a BigTIFF header.</summary>
     public static bool MatchesSignature(ReadOnlySpan<byte> prefix) => TiffHeader.MatchesSignature(prefix);
 
@@ -68,6 +74,6 @@ internal sealed class TiffCodec : ImageCodec
         var header = TiffHeader.Read(source);
         var directory = TiffDirectory.Read(source, header, header.FirstDirectoryOffset);
         var page = TiffPage.Resolve(directory, index: 0, context);
-        return TiffPageDecoder.Decode(source, page, request, context);
+        return request.IsScaled ? TiffResolutionLevels.Decode(source, page, request, context) : TiffPageDecoder.Decode(source, page, request, context);
     }
 }

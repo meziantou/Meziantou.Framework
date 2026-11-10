@@ -3552,10 +3552,189 @@ public sealed class TiffCodecTests
         Assert.Equal(ImageFormat.Tiff, outside.Format);
         Assert.Equal("Region decoding", Assert.Throws<UnsupportedImageFeatureException>(() => ImageCollection.Load(data)[0].Decode(new ImageDecodeOptions { Region = new Rectangle(0, 230, 10, 10) })).Feature);
 
-        // TIFF is only decoded at full resolution: an exact scale is rejected, a target size is the full page
+        // A page without reduced-resolution images is only decoded at full resolution: an exact scale is rejected, a target
+        // size is the full page
         Assert.Equal("Scaled decoding", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data, new ImageDecodeOptions { Region = new Rectangle(0, 0, 10, 10), ScaleDenominator = 2 })).Feature);
         using var target = Image.Load(data, new ImageDecodeOptions { Region = new Rectangle(0, 0, 10, 10), TargetSize = new Size(5, 5) });
         Assert.Equal(new Size(10, 10), target.Size);
+    }
+
+    [Theory]
+    [InlineData("chain", false)]
+    [InlineData("chain", true)]
+    [InlineData("sub-directories", false)]
+    [InlineData("sub-directories", true)]
+    public void ATargetSizeReadsTheSmallestReducedResolutionImageThatIsLargeEnough(string layout, bool bigTiff)
+    {
+        // A page of 300x200 pixels and its images at 1/2, 1/4 (tiled) and 1/8 (38x25: rounded up), stored after it in the
+        // chain of directories (Cloud Optimized GeoTIFF) or in its SubIFDs (OME-TIFF, libvips)
+        var levels = new[] { CreatePyramidLevel(150, 100, 2), CreatePyramidLevel(75, 50, 4, tiled: true), CreatePyramidLevel(38, 25, 8) };
+        var data = CreatePyramid(layout, levels, bigTiff);
+        foreach (var (target, expected) in new (Size Target, int Level)[] { (new(150, 100), 0), (new(100, 60), 0), (new(70, 50), 1), (new(10, 10), 2), (new(1, 1), 2), (new(151, 100), -1), (new(300, 200), -1) })
+        {
+            using var decoded = Image.Load(data, new ImageDecodeOptions { TargetSize = target });
+            var page = expected < 0 ? CreatePyramidLevel(300, 200, 1) : levels[expected];
+            Assert.Equal(new Size(page.Width, page.Height), decoded.Size);
+            Assert.Equal(PixelFormat.Rgb24, decoded.PixelFormat);
+            Assert.Equal(page.Samples, GetBytes(decoded));
+            Assert.Equal(ExifOrientation.RightTop, decoded.Metadata.Orientation);
+            var pixels = decoded.Owner.Scope.GetLiveBytes(Internals.AllocationKind.ImagePixels);
+            Assert.True(pixels >= page.Width * page.Height * 3 && pixels < page.Width * page.Height * 6, $"{pixels} bytes of pixels for {decoded.Size}.");
+        }
+
+        // An exact scale reads its level, or is rejected; the size of the file is the size of the page
+        using (var quarter = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = 4 }))
+        {
+            Assert.Equal(levels[1].Samples, GetBytes(quarter));
+        }
+
+        var missing = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data, new ImageDecodeOptions { ScaleDenominator = 16 }));
+        Assert.Equal(("Scaled decoding", ImageFormat.Tiff), (missing.Feature, missing.Format));
+        Assert.Contains("1/2, 1/4, 1/8", missing.Message, StringComparison.Ordinal);
+        Assert.Equal(new Size(300, 200), Image.Identify(data).Size);
+    }
+
+    [Fact]
+    public void ARegionOfAReducedResolutionImageHasThePixelsThatCoverIt()
+    {
+        // The area is in pixels of the page: at 1/4 it is divided, rounded outward, and cropped to the level (75x50)
+        var levels = new[] { CreatePyramidLevel(150, 100, 2), CreatePyramidLevel(75, 50, 4, tiled: true), CreatePyramidLevel(38, 25, 8) };
+        var data = CreatePyramid("chain", levels, bigTiff: false);
+        foreach (var (region, expected) in new (Rectangle Region, Rectangle Area)[]
+        {
+            (new(0, 0, 1, 1), new(0, 0, 1, 1)),
+            (new(10, 21, 30, 9), Rectangle.FromLTRB(2, 5, 10, 8)),
+            (new(299, 199, 1, 1), new(74, 49, 1, 1)),
+            (new(100, 0, 500, 500), Rectangle.FromLTRB(25, 0, 75, 50)),
+            (new(0, 0, 300, 200), new(0, 0, 75, 50)),
+        })
+        {
+            using var decoded = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = 4, Region = region });
+            Assert.Equal(expected.Size, decoded.Size);
+            Assert.Equal(Crop(levels[1].Samples, 75, 3, expected), GetBytes(decoded));
+        }
+
+        Assert.Equal("Region decoding", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data, new ImageDecodeOptions { TargetSize = new Size(20, 20), Region = new Rectangle(300, 0, 1, 1) })).Feature);
+    }
+
+    [Fact]
+    public void TheMetadataOfAReducedResolutionImageIsNotRead()
+    {
+        // Every image of the pyramid embeds the same profile: only the one of the page is read and charged, so a budget
+        // that fits the metadata of the page fits a decode of a level, which has the profile of the page
+        var profile = IccProfile.Srgb.Data.ToArray();
+        TiffPageSpec WithProfile(TiffPageSpec spec)
+        {
+            spec.ExtraFields.Add(TiffFieldSpec.Bytes(34675, 7, profile));
+            return spec;
+        }
+
+        var data = new TiffFileBuilder()
+            .AddPage(WithProfile(CreatePyramidPage()))
+            .AddPage(WithProfile(CreatePyramidLevel(150, 100, 2)))
+            .AddPage(WithProfile(CreatePyramidLevel(75, 50, 4)))
+            .Build();
+        var configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxMetadataBytes = profile.Length + (profile.Length / 2) } };
+        using var decoded = Image.Load(data, new ImageDecodeOptions { Configuration = configuration, TargetSize = new Size(70, 50) });
+        Assert.Equal(new Size(75, 50), decoded.Size);
+        Assert.Equal(profile, decoded.Metadata.IccProfile!.Data.ToArray());
+    }
+
+    [Fact]
+    public void ImagesThatAreNotReducedResolutionVersionsOfThePageAreNotUsed()
+    {
+        // Masks, sizes that are not a power-of-two reduction, other pixel formats, images that cannot be decoded, images of
+        // the next page, and images without a subfile type: the target size gives the page
+        static TiffPageSpec Gray(int width, int height, int? newSubfileType)
+        {
+            var spec = new TiffPageSpec { Width = width, Height = height, Samples = new byte[width * height] };
+            if (newSubfileType is { } type)
+            {
+                spec.ExtraFields.Add(TiffFieldSpec.Long(254, (uint)type));
+            }
+
+            return spec;
+        }
+
+        var mask = CreatePyramidLevel(150, 100, 2);
+        mask.ExtraFields.Clear();
+        mask.ExtraFields.Add(TiffFieldSpec.Long(254, 5));
+        var broken = new TiffPageSpec { Width = 75, Height = 50, SamplesPerPixel = 3, Photometric = 2, Compression = 99, EncodedBlocks = [[0]], Samples = [] };
+        broken.ExtraFields.Add(TiffFieldSpec.Long(254, 1));
+        var files = new (string Name, byte[] Data)[]
+        {
+            ("mask", CreatePyramid("chain", [mask], bigTiff: false)),
+            ("not a power of two", CreatePyramid("chain", [CreatePyramidLevel(100, 67, 3)], bigTiff: false)),
+            ("rounded to another scale", CreatePyramid("chain", [CreatePyramidLevel(150, 50, 2)], bigTiff: false)),
+            ("gray", CreatePyramid("chain", [Gray(150, 100, 1)], bigTiff: false)),
+            ("unknown compression", CreatePyramid("sub-directories", [broken], bigTiff: false)),
+            ("level of the next page", new TiffFileBuilder().AddPage(CreatePyramidPage()).AddPage(Gray(300, 200, null)).AddPage(CreatePyramidLevel(150, 100, 2)).Build()),
+            ("no subfile type", new TiffFileBuilder().AddPage(CreatePyramidPage()).AddPage(CreatePyramidLevel(150, 100, 2, newSubfileType: null)).Build()),
+        };
+        foreach (var (name, data) in files)
+        {
+            using var decoded = Image.Load(data, new ImageDecodeOptions { TargetSize = new Size(10, 10) });
+            Assert.True(decoded.Size == new Size(300, 200), $"{name}: {decoded.Size}");
+            Assert.Equal("Scaled decoding", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data, new ImageDecodeOptions { ScaleDenominator = 2 })).Feature);
+        }
+
+        // Every image of the file is still a page of the collection, decoded at full resolution
+        var pyramid = CreatePyramid("chain", [CreatePyramidLevel(150, 100, 2)], bigTiff: false);
+        var collection = ImageCollection.Load(pyramid);
+        Assert.Equal(2, collection.Count);
+        using var level = collection[1].Decode(new ImageDecodeOptions { TargetSize = new Size(10, 10) });
+        Assert.Equal(new Size(150, 100), level.Size);
+    }
+
+    /// <summary>A page of 300x200 RGB pixels, LZW compressed, with an orientation (the levels have none).</summary>
+    private static TiffPageSpec CreatePyramidPage()
+    {
+        var page = CreatePyramidLevel(300, 200, 1, newSubfileType: null);
+        return new TiffPageSpec { Width = page.Width, Height = page.Height, SamplesPerPixel = 3, Photometric = 2, Compression = 5, Orientation = 6, Samples = page.Samples };
+    }
+
+    /// <summary>An image of RGB samples that depend on its scale, marked as a reduced-resolution image.</summary>
+    private static TiffPageSpec CreatePyramidLevel(int width, int height, int scale, bool tiled = false, int? newSubfileType = 1)
+    {
+        var samples = new byte[width * height * 3];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            samples[i] = (byte)((i * 7) + (i / (width * 3) * 13) + (scale * 31));
+        }
+
+        var spec = new TiffPageSpec { Width = width, Height = height, SamplesPerPixel = 3, Photometric = 2, Compression = 5, TileWidth = tiled ? 16 : null, TileLength = tiled ? 16 : null, Samples = samples };
+        if (newSubfileType is { } type)
+        {
+            spec.ExtraFields.Add(TiffFieldSpec.Long(254, (uint)type));
+        }
+
+        return spec;
+    }
+
+    /// <summary>A file of the pyramid page and its levels, after it in the chain of directories or in its SubIFDs.</summary>
+    private static byte[] CreatePyramid(string layout, TiffPageSpec[] levels, bool bigTiff)
+    {
+        var builder = new TiffFileBuilder { BigTiff = bigTiff };
+        var page = CreatePyramidPage();
+        if (layout == "chain")
+        {
+            builder.AddPage(page);
+            foreach (var level in levels)
+            {
+                builder.AddPage(level);
+            }
+        }
+        else
+        {
+            foreach (var level in levels)
+            {
+                page.SubPages.Add(level);
+            }
+
+            builder.AddPage(page);
+        }
+
+        return builder.Build();
     }
 
     [Theory]

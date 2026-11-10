@@ -127,6 +127,10 @@ internal sealed class JpegReconstruction
     /// <param name="scales">A scratch block of 64 values, which receives the quantization values.</param>
     public static void TransformMcuRow(JpegFrameComponent component, int mcuRow, ushort[] quantization, double[] block, double[] scales)
     {
+        // The blocks outside the area that is decoded (ImageDecodeRequest.Region) are not transformed
+        if (mcuRow < component.FirstTransformedMcuRow || mcuRow >= component.EndTransformedMcuRow)
+            return;
+
         for (var i = 0; i < 64; i++)
         {
             scales[i] = quantization[i];
@@ -141,6 +145,8 @@ internal sealed class JpegReconstruction
         var stride = component.Stride;
         var precision = component.Precision;
         var blocksPerLine = component.CoefficientBlocksPerLine;
+        var firstColumn = component.FirstTransformedBlockColumn;
+        var endColumn = Math.Min(blocksPerLine, component.EndTransformedBlockColumn);
 
         // The buffers are read once: the coefficients of a block row are contiguous, and the 8-bit plane is not reallocated
         var coefficientBuffer = component.CoefficientBuffer;
@@ -150,7 +156,7 @@ internal sealed class JpegReconstruction
             var rowOffset = component.GetRowOffset(blockRow * 8);
             var coefficientRow = blockRow % component.CoefficientBlockRows;
             var rowCoefficients = unsafe(MemoryMarshal.Cast<byte, short>(coefficientBuffer.AsSpan(coefficientRow * blocksPerLine * 64 * sizeof(short), blocksPerLine * 64 * sizeof(short))));
-            for (var blockColumn = 0; blockColumn < blocksPerLine; blockColumn++)
+            for (var blockColumn = firstColumn; blockColumn < endColumn; blockColumn++)
             {
                 var coefficients = rowCoefficients.Slice(blockColumn * 64, 64);
                 var offset = rowOffset + (blockColumn * 8);
@@ -193,10 +199,11 @@ internal sealed class JpegReconstruction
     {
         // A block of one sample is its DC coefficient: the AC coefficients are not read
         var reduced = component.BlockWidth * component.BlockHeight > 1;
+        var endColumn = Math.Min(component.CoefficientBlocksPerLine, component.EndTransformedBlockColumn);
         for (var blockRow = mcuRow * component.VerticalSampling; blockRow < (mcuRow + 1) * component.VerticalSampling; blockRow++)
         {
             var coefficientRow = blockRow % component.CoefficientBlockRows;
-            for (var blockColumn = 0; blockColumn < component.CoefficientBlocksPerLine; blockColumn++)
+            for (var blockColumn = component.FirstTransformedBlockColumn; blockColumn < endColumn; blockColumn++)
             {
                 var coefficients = component.GetCoefficients(coefficientRow, blockColumn);
                 var offset = component.GetBlockOffset(blockRow, blockColumn);

@@ -53,18 +53,17 @@ internal sealed class TiffFileBuilder
 
         foreach (var page in _pages)
         {
-            Align(buffer);
-            var blocks = page.BuildBlocks(BigEndian);
-            var offsets = new List<ulong>();
-            var byteCounts = new List<ulong>();
-            foreach (var block in blocks)
+            // The images of the SubIFDs of the page are written first, each with its blocks and a directory that links to nothing
+            var subDirectories = new List<ulong>();
+            foreach (var subPage in page.SubPages)
             {
+                var (subOffsets, subByteCounts) = WriteBlocks(buffer, subPage);
                 Align(buffer);
-                offsets.Add((ulong)buffer.Count);
-                byteCounts.Add((ulong)block.Length);
-                buffer.AddRange(block);
+                subDirectories.Add((ulong)buffer.Count);
+                WriteDirectory(buffer, subPage, subOffsets, subByteCounts, subDirectories: []);
             }
 
+            var (offsets, byteCounts) = WriteBlocks(buffer, page);
             Align(buffer);
             var directoryOffset = buffer.Count;
             if (_firstDirectoryOffset == 0)
@@ -72,7 +71,7 @@ internal sealed class TiffFileBuilder
                 _firstDirectoryOffset = directoryOffset;
             }
 
-            WriteDirectory(buffer, page, offsets, byteCounts);
+            WriteDirectory(buffer, page, offsets, byteCounts, subDirectories);
             PatchOffset(buffer, pointerOffset, (ulong)directoryOffset);
             pointerOffset = _lastNextPointerOffset;
         }
@@ -105,7 +104,23 @@ internal sealed class TiffFileBuilder
     private long _lastNextPointerOffset;
     private long _firstDirectoryOffset;
 
-    private void WriteDirectory(List<byte> buffer, TiffPageSpec page, List<ulong> offsets, List<ulong> byteCounts)
+    private (List<ulong> Offsets, List<ulong> ByteCounts) WriteBlocks(List<byte> buffer, TiffPageSpec page)
+    {
+        Align(buffer);
+        var offsets = new List<ulong>();
+        var byteCounts = new List<ulong>();
+        foreach (var block in page.BuildBlocks(BigEndian))
+        {
+            Align(buffer);
+            offsets.Add((ulong)buffer.Count);
+            byteCounts.Add((ulong)block.Length);
+            buffer.AddRange(block);
+        }
+
+        return (offsets, byteCounts);
+    }
+
+    private void WriteDirectory(List<byte> buffer, TiffPageSpec page, List<ulong> offsets, List<ulong> byteCounts, List<ulong> subDirectories)
     {
         var offsetType = BigTiff ? (ushort)16 : (ushort)4;
         var fields = new List<TiffFieldSpec>
@@ -182,6 +197,11 @@ internal sealed class TiffFileBuilder
         foreach (var field in page.ExtraFields)
         {
             fields.Add(field);
+        }
+
+        if (subDirectories.Count > 0)
+        {
+            fields.Add(new TiffFieldSpec(330, BigTiff ? (ushort)18 : (ushort)13, [.. subDirectories]));
         }
 
         fields.Sort(static (left, right) => left.Tag.CompareTo(right.Tag));

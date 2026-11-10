@@ -148,6 +148,10 @@ internal sealed record ImageDecodeRequest(PixelFormat? PixelFormat, int? FrameLi
     private static UnsupportedImageFeatureException CreateUnsupportedRegionException(ImageFormat format)
         => new(string.Create(CultureInfo.InvariantCulture, $"{ImageFormatNames.Get(format)} images cannot be decoded by area: decode the whole image and crop it."), format, "Region decoding");
 
-    private UnsupportedImageFeatureException CreateUnsupportedScaleException(ImageFormat format, string reason)
+    /// <summary>Creates the error of a request for an exact scale (<see cref="ScaleDenominator"/>) that the image does not allow.</summary>
+    /// <param name="format">The format.</param>
+    /// <param name="reason">Why the image cannot be decoded at that scale.</param>
+    /// <returns>The exception.</returns>
+    public UnsupportedImageFeatureException CreateUnsupportedScaleException(ImageFormat format, string reason)
         => new(string.Create(CultureInfo.InvariantCulture, $"The image cannot be decoded at 1/{ScaleDenominator} of its size: {reason}. Set TargetSize instead of ScaleDenominator to decode at the smallest size the image allows."), format, "Scaled decoding");
 }

@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -165,6 +166,58 @@ internal sealed class JpegFrameComponent : IDisposable
         Height = (CodedHeight + verticalReduction - 1) / verticalReduction;
         HorizontalRatio = horizontalRatio / horizontalShared;
         VerticalRatio = verticalRatio / verticalShared;
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether only the blocks of an area are transformed (<see cref="SetTransformWindow"/>): the
+    /// samples of the other blocks are not written, and the planes keep what they held.
+    /// </summary>
+    public bool HasTransformWindow { get; private set; }
+
+    /// <summary>Gets the first MCU row whose blocks are transformed.</summary>
+    public int FirstTransformedMcuRow { get; private set; }
+
+    /// <summary>Gets the MCU row after the last one whose blocks are transformed.</summary>
+    public int EndTransformedMcuRow { get; private set; } = int.MaxValue;
+
+    /// <summary>Gets the first block column that is transformed.</summary>
+    public int FirstTransformedBlockColumn { get; private set; }
+
+    /// <summary>Gets the block column after the last one that is transformed.</summary>
+    public int EndTransformedBlockColumn { get; private set; } = int.MaxValue;
+
+    /// <summary>
+    /// Restricts the inverse DCT to the blocks that the output rows of an area read (<see cref="ImageDecodeRequest.Region"/>):
+    /// the MCU rows of its bands and the rows of their context rows, and the samples that the upsampling of its columns
+    /// reads, one more on each side. Call after <see cref="SetGeometry"/>.
+    /// </summary>
+    /// <param name="firstMcuRow">The first MCU row to transform.</param>
+    /// <param name="endMcuRow">The MCU row after the last one to transform.</param>
+    /// <param name="left">The first column of the area in the frame (scaled when the frame is).</param>
+    /// <param name="right">The column after the last one of the area.</param>
+    public void SetTransformWindow(int firstMcuRow, int endMcuRow, int left, int right)
+    {
+        // Output column x reads the samples x / ratio and its two neighbors (triangle filter)
+        var first = Math.Max(0, (left / HorizontalRatio) - 1);
+        var end = ((right - 1) / HorizontalRatio) + 2;
+        HasTransformWindow = true;
+        FirstTransformedMcuRow = firstMcuRow;
+        EndTransformedMcuRow = endMcuRow;
+        FirstTransformedBlockColumn = first / BlockWidth;
+        EndTransformedBlockColumn = (end + BlockWidth - 1) / BlockWidth;
+    }
+
+    /// <summary>Gets a value indicating whether a block is outside the transform window (<see cref="SetTransformWindow"/>).</summary>
+    /// <param name="blockRow">The block row in the block grid of the component.</param>
+    /// <param name="blockColumn">The block column in the block grid of the component.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool SkipsBlock(int blockRow, int blockColumn)
+    {
+        if (!HasTransformWindow)
+            return false;
+
+        var mcuRow = blockRow / VerticalSampling;
+        return mcuRow < FirstTransformedMcuRow || mcuRow >= EndTransformedMcuRow || blockColumn < FirstTransformedBlockColumn || blockColumn >= EndTransformedBlockColumn;
     }
 
     /// <summary>Allocates the plane.</summary>

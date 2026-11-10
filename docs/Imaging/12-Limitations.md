@@ -13,8 +13,10 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
   ([ImageBufferPool](cref:Meziantou.Framework.Imaging.ImageBufferPool)) but cannot be replaced by an allocator of yours.
 - **No floating-point grayscale.** [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) and [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) are the floating-point formats. OpenEXR and TIFF read and
   write them, JPEG XL reads them; the other encoders need an explicit reduction to 16 bits.
-- **Scaled and region decoding are limited to some formats.** JPEG and JPEG 2000 decode at a reduced size, and JPEG 2000,
-  TIFF, AVIF and HEIC decode an area; the other formats are decoded whole: resize or crop the image afterward. See
+- **Scaled and region decoding are limited to some formats.** JPEG and JPEG 2000 decode at a reduced size, lossy JPEG XL
+  at 1/8, TIFF from the reduced-resolution images it stores, and JPEG,
+  JPEG 2000, TIFF, AVIF and HEIC decode an area; the other formats are decoded whole: resize or crop the image afterward.
+  A progressive JPEG file keeps the coefficients of its whole frame until its end, whatever the size or the area. See
   [Loading images](05-LoadingAndSaving/02-LoadingImages.md#decode-a-smaller-image).
 - **Color profiles are never applied implicitly.** Colors change only when you convert them
   ([ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile)). See [Color management](09-Color/03-ColorManagement.md).

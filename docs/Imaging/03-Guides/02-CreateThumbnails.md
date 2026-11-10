@@ -42,7 +42,8 @@ Each step matters:
 
 1. **[TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize)** lets the decoder of a JPEG or JPEG 2000 file produce a smaller image, at 1/2, 1/4 or 1/8 of its size, as
    long as it stays at least as large as the box: a 4000x3000 photo is decoded as a 500x375 image, which costs a fraction
-   of the memory and the time of the full photo. Other formats are decoded at full size. See
+   of the memory and the time of the full photo. A lossy JPEG XL file is decoded at 1/8 of its size, and a TIFF file that stores reduced-resolution images (a pyramid) is decoded
+   from the smallest one that is large enough. Other formats are decoded at full size. See
    [Decode a smaller image](../05-LoadingAndSaving/02-LoadingImages.md#decode-a-smaller-image).
 2. **[AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient)** applies the orientation that the camera wrote in the metadata. Decoders report it
    (`Metadata.Orientation`) and never move a pixel: without this step, a portrait photo becomes a sideways thumbnail

@@ -22,6 +22,9 @@ internal sealed class JpegXlFrameDecoder
     private readonly int _maxDegreeOfParallelism;
     private readonly JpegXlBitReader _reader = new();
     private bool _captureJpegCoefficients;
+
+    // Whether only the LF image of a VarDCT frame is decoded (DecodeLfImage)
+    private bool _lfImageOnly;
     private JpegCoefficientStore? _jpegCoefficients;
     private ushort[][]? _jpegQuantization;
 
@@ -91,6 +94,29 @@ internal sealed class JpegXlFrameDecoder
         EnsureSupported(frame);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(passCount, frame.PassCount);
         return new JpegXlFrameDecoder(image, frame, toc, data, lfFrame, maxDegreeOfParallelism, scope, cancellationToken).Decode(passCount);
+    }
+
+    /// <summary>
+    /// Decodes the LF image of a VarDCT frame of 4:4:4 samples that has no extra channel: <c>LfGlobal</c> and the LF groups
+    /// only. The color planes of the result have one sample per block of 8x8 samples of the frame (the frame at 1/8 of its
+    /// size, each sample the LF value of its block, after the adaptive smoothing), before the color transform; the HF
+    /// coefficients, the restoration filters and the groups are not read.
+    /// </summary>
+    /// <param name="image">The image header.</param>
+    /// <param name="frame">The frame header.</param>
+    /// <param name="toc">The table of contents of the frame.</param>
+    /// <param name="data">The sections of the frame; only <c>LfGlobal</c> and the LF groups are read.</param>
+    /// <param name="scope">The scope of the samples and of the working memory.</param>
+    /// <param name="cancellationToken">The token checked between rows and sections.</param>
+    /// <returns>The LF image, with three planes of <c>ceil(width / 8)</c> by <c>ceil(height / 8)</c> samples.</returns>
+    public static JpegXlDecodedFrame DecodeLfImage(JpegXlImageHeader image, JpegXlFrameHeader frame, JpegXlToc toc, byte[] data, AllocationScope scope, CancellationToken cancellationToken)
+    {
+        EnsureSupported(frame);
+        if (frame.IsModular || image.ExtraChannels.Length != 0 || frame.ChromaSubsampling != (0, 0, 0))
+            throw new ArgumentException("Only the LF image of a VarDCT frame of 4:4:4 samples without extra channels is decoded alone.", nameof(frame));
+
+        var decoder = new JpegXlFrameDecoder(image, frame, toc, data, lfFrame: null, maxDegreeOfParallelism: 1, scope, cancellationToken) { _lfImageOnly = true };
+        return decoder.Decode(frame.PassCount)!;
     }
 
     /// <summary>
@@ -215,6 +241,21 @@ internal sealed class JpegXlFrameDecoder
                 DecodeGroup(_reader, modular, globalTree, x, y, lfDimension, minShift: 3, maxShift: int.MaxValue, streamIndex: 1 + lfGroupCount + group);
                 varDct?.ReadHfMetadata(_reader, group, readModular);
                 EndSection();
+            }
+
+            if (_lfImageOnly)
+            {
+                // The LF image is the frame at 1/8 of its size: the HF coefficients and the groups are not read
+                varDct!.FinishLf();
+                var lfImage = ownedResult = new JpegXlDecodedFrame(modular, modularColorChannelCount) { LfQuant = lfQuant };
+                owned = null;
+                for (var c = 0; c < 3; c++)
+                {
+                    lfImage.SetPlane(c, varDct.DetachLf(c), varDct.BlocksWide, varDct.BlocksHigh, horizontalShift: 0, verticalShift: 0);
+                }
+
+                ownedResult = null;
+                return lfImage;
             }
 
             // HfGlobal is empty for a Modular frame

@@ -151,6 +151,11 @@ public sealed class ImageDecodeOptions
     /// the reduced image keeps the pixel that covers it.
     /// </para>
     /// <para>
+    /// A JPEG file transforms only the blocks that the area reads, and a sequential file is not decoded below the area. With
+    /// <see cref="ScaleDenominator"/> or <see cref="TargetSize"/>, the image holds the pixels of the reduced image that cover
+    /// the area.
+    /// </para>
+    /// <para>
     /// A TIFF page reads and decompresses only the strips or the tiles that the area meets, and an AVIF or HEIC grid decodes
     /// only the tiles that the area needs (an AVIF or HEIC image that is not a grid is decoded whole, and only the area is
     /// kept). The pixels are those of a full decode in that area. The blocks and the tiles that are not decoded are not

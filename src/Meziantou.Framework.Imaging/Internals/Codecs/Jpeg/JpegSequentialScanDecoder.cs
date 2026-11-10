@@ -113,7 +113,7 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         reader.Commit();
 
         // The DC coefficient is read back from the predictor: one value less to keep alive in the loop
-        Transform(scanComponent, offset, scanComponent.Predictor, naturalIndexes);
+        Transform(scanComponent, blockRow, blockColumn, offset, scanComponent.Predictor, naturalIndexes);
     }
 
     /// <summary>
@@ -276,7 +276,7 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         }
         while (k < 64);
 
-        Transform(scanComponent, offset, dc, naturalIndexes);
+        Transform(scanComponent, blockRow, blockColumn, offset, dc, naturalIndexes);
     }
 
     /// <summary>
@@ -284,12 +284,25 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
     /// with the case of 8-bit samples at full scale inline.
     /// </summary>
     /// <param name="scanComponent">The component of the block.</param>
+    /// <param name="blockRow">The block row in the component's block grid.</param>
+    /// <param name="blockColumn">The block column in the component's block grid.</param>
     /// <param name="offset">The offset of the first sample of the block in the plane of the component.</param>
     /// <param name="dc">The quantized DC coefficient.</param>
     /// <param name="naturalIndexes">The natural indexes of the non-zero AC coefficients ORed together, with bit 6 set when there is one.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void Transform(ScanComponent scanComponent, int offset, int dc, int naturalIndexes)
+    private void Transform(ScanComponent scanComponent, int blockRow, int blockColumn, int offset, int dc, int naturalIndexes)
     {
+        if (scanComponent.Component.SkipsBlock(blockRow, blockColumn))
+        {
+            // A block outside the area that is decoded (ImageDecodeRequest.Region) is not transformed
+            if (naturalIndexes != 0)
+            {
+                JpegIdct.ClearBlock(_block);
+            }
+
+            return;
+        }
+
         if (!scanComponent.IsFullScale8Bit)
         {
             TransformBlock(scanComponent, offset, _block, dc, naturalIndexes != 0, JpegIdct.IsSparse(naturalIndexes));

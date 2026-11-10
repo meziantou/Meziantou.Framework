@@ -53,6 +53,9 @@ internal sealed class TiffPageSpec
 
     public IList<TiffFieldSpec> ExtraFields { get; } = [];
 
+    /// <summary>The images written before the page, outside the chain of directories, and listed by its <c>SubIFDs</c> tag (330).</summary>
+    public IList<TiffPageSpec> SubPages { get; } = [];
+
     /// <summary>The samples of the page, row by row, packed and in the byte order of the file.</summary>
     public required byte[] Samples { get; init; }
 

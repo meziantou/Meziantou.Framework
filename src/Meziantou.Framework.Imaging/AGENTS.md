@@ -857,7 +857,27 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   one chroma sample on each side), into planes that hold these tiles only; the converter is given the size of what they
   cover, so its edge replication only touches pixels outside the area. The alpha plane shares the window only when it is
   a grid of the same layout. Images that are not grids, derived images and sequences are decoded whole, and only the area
-  is converted. The HEIC band path (`DecodeGridByTileRows`) is not used for a region.
+  is converted. The HEIC band path (`DecodeGridByTileRows`) is not used for a region. JPEG (`JpegDecoder._window`, in
+  pixels of the scaled frame: floor/ceil of the area divided by the scale): the sink has the size of the window, the band
+  writers (`JpegBandWriter`) write only its rows and slice the upsampled component rows to its columns (the color
+  conversions are per pixel), and `JpegFrameComponent.SetTransformWindow` restricts the inverse DCT (inline in the scan
+  decoders and in `JpegReconstruction.TransformMcuRow`) to the MCU rows of its bands and one more on each side, and to the
+  block columns its upsampling reads (one plane sample of margin). The planes outside keep stale samples, which only reach
+  columns that are cut away. A sequential scan ends after the MCU rows the window needs (`JpegScanDecoder.EndAfterRows`):
+  its remaining data and restart markers are skipped. Lossless, JPEG-LS and hierarchical frames only use the writer
+  window. Mutating the margins fails `ARegionHasThePixelsOfTheDecodeOfTheWholeImage`.
+- **JPEG XL scaled decoding** (`JpegXlDecoder`, `JpegXlFrameDecoder.DecodeLfImage`, `JpegXlFrameRenderer.RenderLfImage`):
+  only 1/8, from the LF image (`JpegXlVarDctDecoder.DetachLf` after `FinishLf`), for a still image without extra channels
+  whose first frame is the only, displayed, full-image VarDCT 4:4:4 frame without patches/splines/noise/upsampling/LF frame
+  and without blending. The sink is created in `OnFrame` (not `OnHeaderComplete`) while that is undecided; readers decode
+  at full resolution. The fuzz oracle checks that a 1x1 `TargetSize` decode succeeds whenever the full one does.
+- **TIFF pyramids** (`TiffResolutionLevels`): `TiffCodec.SupportsScaledDecoding` is true, and a scaled request of
+  `Image.Load` looks for the reduced-resolution images of the first page (its `SubIFDs`, then the following directories of
+  the chain while they are reduced-resolution images, at most 32 each), resolves them, keeps those whose size is a
+  power-of-two reduction of the page (floor or ceil per dimension) with the same pixel format, color model and alpha, and
+  decodes the chosen one with the metadata of the page (`TiffPageDecoder.Decode(..., metadata)`). Directories that fail to
+  read or resolve are skipped. Collection entries still go through `ForFullResolution`. The test builder writes SubIFDs from
+  `TiffPageSpec.SubPages`; the fuzz oracle checks `CheckTiffTargetSize` on the pyramid seeds.
 - **TIFF** (`Internals/Codecs/Tiff`). `TiffPage` resolves and validates a directory without reading a pixel, so every
   rejection also comes from `Identify`, except the ones of the compressed data. `TiffBlockReader` turns a strip or a
   tile into rows of samples (fill order, compression, predictor, YCbCr data units) and `TiffRowExpander` turns the rows

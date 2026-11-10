@@ -58,7 +58,7 @@ internal abstract class JpegScanDecoder
     private readonly JpegEntropyReader _reader;
     private readonly bool _interleaved;
     private readonly int _mcusPerLine;
-    private readonly int _totalMcus;
+    private int _totalMcus;
     private readonly int _restartInterval;
     private readonly int _safeBytes;
     private readonly int _uncheckedBytes;
@@ -127,6 +127,20 @@ internal abstract class JpegScanDecoder
     /// <param name="lossless">Whether the scans code the samples of a lossless frame.</param>
     public static int GetRequiredBufferCapacity(int blocksPerMcu, int precision, bool arithmetic, bool lossless = false)
         => (blocksPerMcu * (lossless ? (arithmetic ? MaxBytesPerArithmeticLosslessSample : MaxBytesPerLosslessSample) : arithmetic ? MaxBytesPerArithmeticBlock : precision > 8 ? MaxBytesPerDeepBlock : MaxBytesPerBlock)) + 24;
+
+    /// <summary>
+    /// Ends the scan after its first MCU rows (block rows of a non-interleaved scan), before any data is fed: the rest of
+    /// the entropy-coded data, and the restart markers in it, are skipped without being decoded or validated. An area of
+    /// the image (<see cref="ImageDecodeRequest.Region"/>) needs no row below it.
+    /// </summary>
+    /// <param name="rows">The number of rows to decode.</param>
+    public void EndAfterRows(int rows)
+    {
+        if (_mcu != 0)
+            throw new InvalidOperationException("The scan already started.");
+
+        _totalMcus = (int)Math.Min(_totalMcus, (long)rows * _mcusPerLine);
+    }
 
     /// <summary>Gets a value indicating whether every MCU of the scan was decoded.</summary>
     public bool IsComplete => _mcu >= _totalMcus;
@@ -246,7 +260,20 @@ internal abstract class JpegScanDecoder
     /// <param name="hasAc">Whether an AC coefficient is not zero.</param>
     /// <param name="sparse">Whether every coefficient outside the top-left 4x4 corner is zero (<see cref="JpegIdct.IsSparse(int)"/>).</param>
     protected static void TransformBlock(ScanComponent scanComponent, int blockRow, int blockColumn, double[] block, int dc, bool hasAc, bool sparse)
-        => TransformBlock(scanComponent, scanComponent.GetBlockOffset(blockRow, blockColumn), block, dc, hasAc, sparse);
+    {
+        if (scanComponent.Component.SkipsBlock(blockRow, blockColumn))
+        {
+            // A block outside the area that is decoded (ImageDecodeRequest.Region) is not transformed
+            if (hasAc)
+            {
+                JpegIdct.ClearBlock(block);
+            }
+
+            return;
+        }
+
+        TransformBlock(scanComponent, scanComponent.GetBlockOffset(blockRow, blockColumn), block, dc, hasAc, sparse);
+    }
 
     /// <summary>Writes the samples of a block of a sequential scan at an offset of the sample plane.</summary>
     /// <param name="scanComponent">The component of the block.</param>

@@ -268,11 +268,16 @@ internal sealed class TiffPage
     /// <param name="directory">The directory of the page.</param>
     /// <param name="index">The zero-based index of the page.</param>
     /// <param name="context">The operation context (limits and metadata accounting).</param>
+    /// <param name="readMetadata">
+    /// Whether the metadata of the page (resolution, orientation, ICC profile, XMP) is read and charged; otherwise
+    /// <see cref="Metadata"/> is empty. A reduced-resolution image of a page (<see cref="TiffResolutionLevels"/>) is decoded
+    /// with the metadata of the page.
+    /// </param>
     /// <returns>The page.</returns>
     /// <exception cref="InvalidImageContentException">A required tag is missing, or a tag is inconsistent with the rest of the page.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The page uses a recognized but unsupported variant.</exception>
     /// <exception cref="ImageResourceLimitException">The page exceeds a configured limit.</exception>
-    public static TiffPage Resolve(TiffDirectory directory, int index, ImageCodecContext context)
+    public static TiffPage Resolve(TiffDirectory directory, int index, ImageCodecContext context, bool readMetadata = true)
     {
         ArgumentNullException.ThrowIfNull(directory);
         ArgumentNullException.ThrowIfNull(context);
@@ -281,7 +286,11 @@ internal sealed class TiffPage
         page.ResolveSamples();
         page.ResolveCompression();
         page.ResolveBlocks(context);
-        page.ResolveMetadata(context);
+        if (readMetadata)
+        {
+            page.ResolveMetadata(context);
+        }
+
         return page;
     }
 

@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -34,17 +35,22 @@ internal static class TiffPageDecoder
     /// <param name="page">The resolved page.</param>
     /// <param name="request">The requested representation and conversions.</param>
     /// <param name="context">The operation context.</param>
+    /// <param name="metadata">
+    /// The metadata of the image, whose color profile labels the samples, or <see langword="null"/> for the metadata of the
+    /// page: a reduced-resolution image of a page (<see cref="TiffResolutionLevels"/>) has the metadata of the page.
+    /// </param>
     /// <returns>A new image owned by the caller.</returns>
     /// <exception cref="InvalidImageContentException">A strip or tile is missing, malformed or outside the input.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The page stores CMYK samples and the request has no conversion for them.</exception>
-    public static Image Decode(RandomAccessSource source, TiffPage page, ImageDecodeRequest request, ImageCodecContext context)
+    public static Image Decode(RandomAccessSource source, TiffPage page, ImageDecodeRequest request, ImageCodecContext context, ImageMetadata? metadata = null)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(page);
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(context);
 
-        var profile = page.Metadata.IccProfile;
+        metadata ??= page.Metadata;
+        var profile = metadata.IccProfile;
         IccPipeline? inkConversion = null;
         var nativeInks = false;
         var requestsCmyk = request.PixelFormat is { } requested && PixelFormats.IsCmyk(requested);
@@ -103,7 +109,7 @@ internal static class TiffPageDecoder
         }
 
         sink.EndImage();
-        return sink.Build(page.Metadata, animation: null);
+        return sink.Build(metadata, animation: null);
     }
 
     /// <summary>

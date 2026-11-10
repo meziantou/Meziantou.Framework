@@ -592,6 +592,120 @@ public sealed class JpegXlLossyEncoderTests
         Assert.True(psnr >= 34, $"primaries {primaries}, transfer {transfer}: PSNR {psnr:F2} dB.");
     }
 
+    [Theory]
+    [InlineData(PixelFormat.Rgb24, false)]
+    [InlineData(PixelFormat.Rgb24, true)]
+    [InlineData(PixelFormat.Gray8, false)]
+    [InlineData(PixelFormat.Gray16, true)]
+    public void AnEighthOfALossyImageIsDecodedFromItsLfImage(PixelFormat format, bool progressive)
+    {
+        // Each pixel is the LF value of a block of 8x8 pixels: close to the mean of the pixels of the full decode
+        foreach (var (width, height) in new[] { (8, 8), (13, 9), (1, 1), (300, 270), (520, 31) })
+        {
+            using var source = CreatePhoto(width, height, seed: width + (int)format);
+            using var image = ConvertTo(source, format);
+            var data = Save(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = 90, Progressive = progressive });
+            var context = $"{format} {width}x{height}{(progressive ? " progressive" : "")}";
+            var reduced = new Size((width + 7) / 8, (height + 7) / 8);
+            using var full = Image.Load(data);
+            using var eighth = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = 8 });
+            Assert.True(eighth.Size == reduced, $"{context}: {eighth.Size}");
+            Assert.Equal(full.PixelFormat, eighth.PixelFormat);
+            using var mean = ReduceByEight(full);
+            var (psnr, _) = Measure(mean, eighth);
+            Assert.True(psnr >= 30, $"{context}: PSNR {psnr:F2} dB against the mean of the blocks of the full decode.");
+
+            // A target size takes 1/8 when it keeps that size, the full size otherwise
+            using (var target = Image.Load(data, new ImageDecodeOptions { TargetSize = reduced }))
+            {
+                Assert.True(Measure(eighth, target).Psnr == double.PositiveInfinity, context);
+            }
+
+            using (var larger = Image.Load(data, new ImageDecodeOptions { TargetSize = new Size(reduced.Width + 1, reduced.Height) }))
+            {
+                Assert.Equal(full.Size, larger.Size);
+            }
+        }
+    }
+
+    [Fact]
+    public void AnEighthOfALargeLossyImageNeedsAFractionOfTheMemoryOfAFullDecode()
+    {
+        using var source = CreatePhoto(1024, 768, seed: 3);
+        using var image = ConvertTo(source, PixelFormat.Rgb24);
+        var data = Save(image, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = 90 });
+        using var full = Image.Load(data);
+        using var eighth = Image.Load(data, new ImageDecodeOptions { TargetSize = new Size(100, 90) });
+        Assert.Equal(new Size(128, 96), eighth.Size);
+        var fullPeak = full.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        var eighthPeak = eighth.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        Assert.True(eighthPeak * 8 < fullPeak, $"Peak {eighthPeak} bytes at 1/8, {fullPeak} bytes for the full decode.");
+    }
+
+    [Fact]
+    public void ImagesThatAreNotOneVarDctFrameAreDecodedAtFullSize()
+    {
+        // Lossless (Modular) images, images with alpha, animations and readers: a target size gives the full size, an exact
+        // scale is rejected; scales other than 1/8 are rejected for every image
+        using var source = CreatePhoto(40, 24, seed: 5);
+        using var rgb = ConvertTo(source, PixelFormat.Rgb24);
+        var lossy = Save(rgb, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = 90 });
+        var lossless = Save(rgb, new JpegXlEncoder());
+        var alpha = Save(source, new JpegXlEncoder { Compression = JpegXlCompression.Lossy, Quality = 90 });
+        foreach (var (name, data) in new[] { ("lossless", lossless), ("alpha", alpha), ("animation", JpegXlTestFiles.LayeredAnimation) })
+        {
+            using (var full = Image.Load(data))
+            using (var target = Image.Load(data, new ImageDecodeOptions { TargetSize = new Size(1, 1) }))
+            {
+                Assert.True(target.Size == full.Size, name);
+            }
+
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data, new ImageDecodeOptions { ScaleDenominator = 8 }));
+            Assert.Equal(("Scaled decoding", ImageFormat.JpegXl), (exception.Feature, exception.Format));
+        }
+
+        foreach (var scale in (int[])[2, 4, 16])
+        {
+            Assert.Equal("Scaled decoding", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(lossy, new ImageDecodeOptions { ScaleDenominator = scale })).Feature);
+        }
+
+        Assert.Equal("Scaled decoding", Assert.Throws<UnsupportedImageFeatureException>(() => Image.OpenReader<Rgb24>(new MemoryStream(lossy), new ImageReaderOptions { ScaleDenominator = 8 })).Feature);
+        using var reader = Image.OpenReader<Rgb24>(new MemoryStream(lossy), new ImageReaderOptions { TargetSize = new Size(1, 1) });
+        Assert.Equal(new Size(40, 24), reader.Info.Size);
+    }
+
+    /// <summary>Gets the mean of the pixels of each block of 8x8 pixels (fewer on the right and bottom edges), at 16 bits.</summary>
+    private static Image<Rgba64> ReduceByEight(Image image)
+    {
+        using var wide = image.CloneAs<Rgba64>();
+        var pixels = GetPixels(wide);
+        var width = (image.Width + 7) / 8;
+        var height = (image.Height + 7) / 8;
+        var result = new Rgba64[width * height];
+        for (var by = 0; by < height; by++)
+        {
+            for (var bx = 0; bx < width; bx++)
+            {
+                long red = 0, green = 0, blue = 0, count = 0;
+                for (var y = by * 8; y < Math.Min(image.Height, (by * 8) + 8); y++)
+                {
+                    for (var x = bx * 8; x < Math.Min(image.Width, (bx * 8) + 8); x++)
+                    {
+                        var pixel = pixels[(y * image.Width) + x];
+                        red += pixel.R;
+                        green += pixel.G;
+                        blue += pixel.B;
+                        count++;
+                    }
+                }
+
+                result[(by * width) + bx] = new Rgba64((ushort)(red / count), (ushort)(green / count), (ushort)(blue / count), ushort.MaxValue);
+            }
+        }
+
+        return Image.ImportPixelData<Rgba64>(result, width, height);
+    }
+
     /// <summary>Measures the peak signal-to-noise ratio of the color samples, at 16 bits, and whether the alpha samples are equal.</summary>
     private static (double Psnr, bool AlphaIsExact) Measure(Image expected, Image actual)
     {

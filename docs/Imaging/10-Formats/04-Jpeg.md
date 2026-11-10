@@ -18,6 +18,7 @@ picture: an animation, transparency or 16-bit samples in a lossy file need an ex
 | Metadata | EXIF, XMP, ICC profile, resolution, comments | The same |
 | Gain maps | Listed and rendered by [AuxiliaryImageCollection](cref:Meziantou.Framework.Imaging.AuxiliaryImageCollection) (Ultra HDR) | Ultra HDR, with [GainMap](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.GainMap) |
 | Reduced size | 1/2, 1/4 or 1/8 of the size, except lossless, JPEG-LS and hierarchical files | - |
+| Area | Any area, alone or at a reduced size | - |
 
 8-bit files load as [Gray8](cref:Meziantou.Framework.Imaging.Gray8) or [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24); 12-bit files, and lossless and JPEG-LS files of more than 8 bits, load as [Gray16](cref:Meziantou.Framework.Imaging.Gray16) or [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48).
 CMYK and YCCK files load as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) or [Cmyk64](cref:Meziantou.Framework.Imaging.Cmyk64) when you ask for these pixel formats (see
@@ -27,6 +28,11 @@ CMYK and YCCK files load as [Cmyk32](cref:Meziantou.Framework.Imaging.Cmyk32) or
 coefficients of its blocks: the pixels are the means of the pixels of the full image they replace, and a subsampled
 chrominance is reduced less, so that it needs less upsampling. See
 [Decode a smaller image](../05-LoadingAndSaving/02-LoadingImages.md#decode-a-smaller-image).
+
+[ImageDecodeOptions.Region](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Region) decodes an area of a file, with the pixels of a full decode there: only the blocks the area
+reads are transformed, the image holds the area only, and a sequential file stops being decoded after the last row of
+blocks the area needs, so a viewport at the top of a large photo is cheap. Every block before that row is still read, as
+the entropy-coded data have no index. See [Decode an area](../05-LoadingAndSaving/02-LoadingImages.md#decode-an-area).
 
 ## Save a JPEG
 

@@ -41,6 +41,7 @@
                            IncludeAssemblyReferences="$(PublicApiGeneratorIncludeAssemblyReferences)"
                            IncludedAssemblyReferences="$(PublicApiGeneratorIncludedAssemblyReferences)"
                            ExcludedAssemblyReferences="$(PublicApiGeneratorExcludedAssemblyReferences)"
-                           VerifyNoChange="$(PublicApiGeneratorVerifyNoChangeOnBuild)" />
+                           VerifyNoChange="$(PublicApiGeneratorVerifyNoChangeOnBuild)"
+                           ProjectDirectory="$(MSBuildProjectDirectory)" />
   </Target>
 </Project>

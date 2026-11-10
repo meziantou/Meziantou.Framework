@@ -109,3 +109,9 @@ set the `Name` metadata on all but one of the files. A member cannot have the na
 
 The generated file is rewritten only when its content changes, and the files listed in `EmbeddedConstant` are inputs
 of the Visual Studio up-to-date check: editing one of them rebuilds the project.
+
+## Multithreaded builds
+
+The task supports the multithreaded mode of MSBuild 18.6 and later (`dotnet build -mt`): MSBuild runs it in the build
+process instead of a separate task host. Earlier versions of MSBuild are still supported. Relative paths are resolved
+against the project directory, not the current directory of the process.

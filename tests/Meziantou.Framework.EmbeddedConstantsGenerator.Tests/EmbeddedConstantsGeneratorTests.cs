@@ -506,6 +506,46 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         Assert.Contains("'SharedText'", output);
     }
 
+    [Fact]
+    public async Task MultiThreadedBuild_RelativePaths_ResolveAgainstTheProjectDirectory()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("multithreaded");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile("multithreaded/Sample.csproj", $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net10.0</TargetFramework>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="{{EmbeddedConstantsGeneratorPackageFixture.PackageName}}" Version="{{fixture.PackageVersion}}" PrivateAssets="all" />
+                <EmbeddedConstant Include="Assets/hello.txt" Kind="Text" />
+              </ItemGroup>
+
+              <Target Name="GenerateWithRelativePaths" AfterTargets="GenerateEmbeddedConstants">
+                <GenerateEmbeddedConstantsTask EmbeddedConstants="@(EmbeddedConstant)"
+                                               OutputPath="Relative/Custom.g.cs"
+                                               ClassName="Custom"
+                                               ProjectDirectory="$(MSBuildProjectDirectory)" />
+              </Target>
+            </Project>
+            """);
+        temporaryDirectory.CreateTextFile("multithreaded/Assets/hello.txt", "Hello");
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+
+        // In multithreaded builds, MSBuild runs the task in-process and moves the current directory away from the project directory.
+        // MSB4287 reports files written to that directory.
+        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo", "-mt", "-warnAsError:MSB4287"], expectedExitCode: 0);
+
+        Assert.DoesNotContain("MSB4287", string.Join('\n', result.Output));
+        Assert.Contains("public const string HelloText = \"Hello\";", await File.ReadAllTextAsync(GetGeneratedFilePath(projectDirectory), XunitCancellationToken));
+        Assert.Contains("public const string HelloText = \"Hello\";", await File.ReadAllTextAsync(projectDirectory / "Relative" / "Custom.g.cs", XunitCancellationToken));
+    }
+
     private static string CreateProjectFile(EmbeddedConstantsGeneratorPackageFixture fixture, string embeddedConstants)
     {
         return $$"""

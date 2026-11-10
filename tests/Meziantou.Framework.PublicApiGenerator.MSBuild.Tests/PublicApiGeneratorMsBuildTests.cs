@@ -355,6 +355,49 @@ public sealed class PublicApiGeneratorMsBuildTests(PublicApiGeneratorMsBuildPack
         Assert.Equal("// stale", await File.ReadAllTextAsync(generatedFilePath, XunitCancellationToken));
     }
 
+    [Fact]
+    public async Task MultiThreadedBuild_RelativePaths_ResolveAgainstTheProjectDirectory()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("multithreaded");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile("multithreaded/Sample.csproj", $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net10.0</TargetFramework>
+                <PublicApiGeneratorOutputPath>PublicApi/PublicApi.g.cs</PublicApiGeneratorOutputPath>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="Meziantou.Framework.PublicApiGenerator.MSBuild" Version="{{fixture.PackageVersion}}" PrivateAssets="all" />
+              </ItemGroup>
+
+              <Target Name="GenerateWithRelativePaths" AfterTargets="GeneratePublicApiOnBuild">
+                <GeneratePublicApiTask Assemblies="$([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '$(TargetPath)'))"
+                                       OutputPath="Relative/PublicApi.g.cs"
+                                       ProjectDirectory="$(MSBuildProjectDirectory)" />
+              </Target>
+            </Project>
+            """);
+        temporaryDirectory.CreateTextFile("multithreaded/Sample.cs", """
+            public class Sample
+            {
+            }
+            """);
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+
+        // In multithreaded builds, MSBuild runs the task in-process and moves the current directory away from the project directory.
+        // MSB4287 reports files written to that directory.
+        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo", "-mt", "-warnAsError:MSB4287"], expectedExitCode: 0);
+
+        Assert.DoesNotContain("MSB4287", string.Join('\n', result.Output));
+        Assert.Contains("public class Sample", await File.ReadAllTextAsync(projectDirectory / "PublicApi" / "PublicApi.g.cs", XunitCancellationToken));
+        Assert.Contains("public class Sample", await File.ReadAllTextAsync(projectDirectory / "Relative" / "PublicApi.g.cs", XunitCancellationToken));
+    }
+
     private static void CreateGlobalJson(FullPath projectDirectory, string dotnetSdkVersion)
     {
         File.WriteAllText(projectDirectory / "global.json", $$"""

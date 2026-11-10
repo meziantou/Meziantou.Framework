@@ -273,9 +273,10 @@ internal sealed class RailroadDiagramParser
         return result;
     }
 
+    // The writer can write each level as a group, inside the groups and the rule being parsed (_depth): both count
     private int CheckHeight(int offset, int height)
     {
-        if (height > _context.Options.MaxDepth)
+        if (_depth + height > _context.Options.MaxDepth)
             throw _scanner.Error(offset, $"The expressions are nested deeper than {_context.Options.MaxDepth} levels.");
 
         return height;

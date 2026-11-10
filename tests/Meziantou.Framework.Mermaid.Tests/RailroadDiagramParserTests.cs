@@ -150,6 +150,16 @@ public sealed class RailroadDiagramParserTests
         Assert.Contains("nested deeper", exception.Message, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("b" + "********************************")]
+    [InlineData("(b" + "****************" + ")" + "****************")]
+    [InlineData("(b c" + "+++++++++++++++++++++++++++++++" + ")")]
+    public void EbnfExpressionsJustAboveTheMaximumDepthAreRejected(string expression)
+    {
+        var exception = Assert.Throws<MermaidParseException>(() => MermaidDocument.Parse("railroad-ebnf-beta\na = " + expression + " ;"));
+        Assert.Contains("nested deeper", exception.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void GroupedChainsOfEbnfOperatorsNestedTooDeeplyAreRejected()
     {
@@ -163,6 +173,11 @@ public sealed class RailroadDiagramParserTests
     [InlineData("b" + "********************" + " c?")]
     [InlineData("(b" + "+++++++++++++++" + ")" + "+++++++++++++++")]
     [InlineData("(b c" + "**********" + ")" + "**********" + " - d" + "+++")]
+    [InlineData("b" + "*******************************")]
+    [InlineData("b" + "???????????????????????????????")]
+    [InlineData("b" + "+++++++++++++++++++++++++++++++")]
+    [InlineData("(b" + "***************" + ")" + "****************")]
+    [InlineData("(b c" + "++++++++++++++++++++++++++++++" + ")")]
     public void ChainedEbnfOperatorsWithinTheMaximumDepthRoundTrip(string expression)
     {
         var text = "railroad-ebnf-beta\na = " + expression + " ;";

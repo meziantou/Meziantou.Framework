@@ -74,24 +74,33 @@ internal sealed class StreamingEvaluator
     /// <summary>Gets whether the root value has been read entirely.</summary>
     public bool IsCompleted { get; private set; }
 
-    /// <summary>Reads tokens until the root value ends or the reader runs out of data.</summary>
+    /// <summary>Reads tokens until the root value ends, a match is found, or the reader runs out of data.</summary>
     /// <returns>
-    /// <see langword="true"/> when the root value has been read; <see langword="false"/> when more data is needed. The
-    /// reader then stands before the first token that was not processed.
+    /// Why the reading stopped. When more data is needed, the reader stands before the first token that was not processed.
     /// </returns>
-    public bool Process(ref Utf8JsonReader reader)
+    public StreamingStatus Process(ref Utf8JsonReader reader)
     {
         while (!IsCompleted)
         {
             var checkpoint = reader;
-            if (!reader.Read() || !HandleToken(ref reader))
+            if (!reader.Read())
             {
                 reader = checkpoint;
-                return false;
+                return StreamingStatus.NeedsMoreData;
             }
+
+            if (!HandleToken(ref reader))
+            {
+                reader = checkpoint;
+                return StreamingStatus.NeedsWholeValue;
+            }
+
+            // Returning the matches as soon as they are found lets the caller stop before the rest is read
+            if (Matches.Count > 0 && !IsCompleted)
+                return StreamingStatus.MatchesFound;
         }
 
-        return true;
+        return StreamingStatus.Completed;
     }
 
     /// <summary>Reads a value whose tokens are all available, from the current token when there is one.</summary>

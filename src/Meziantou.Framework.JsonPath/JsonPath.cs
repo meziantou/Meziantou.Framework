@@ -406,7 +406,8 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
     /// <para>The query is evaluated in <see cref="JsonPathEvaluationMode.Lax"/> mode before anything changes.</para>
     /// </remarks>
     /// <exception cref="InvalidOperationException">
-    /// The query selects the root value, or a location is part of a <see cref="JsonValue"/> that wraps an object or an array.
+    /// The query selects the root value, a location is part of a <see cref="JsonValue"/> that wraps an object or an array, or
+    /// an object that ignores the case of names has a member whose name differs from the one to set only by case.
     /// </exception>
     public int Set(JsonNode? root, JsonNode? value)
     {

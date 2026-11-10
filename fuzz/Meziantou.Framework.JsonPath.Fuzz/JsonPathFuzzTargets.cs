@@ -366,6 +366,7 @@ public static class JsonPathFuzzTargets
             ("1", "1.0"), ("1", "10e-1"), ("100", "1e2"), ("0", "-0"), ("-0.0", "0e5"), ("9007199254740992", "9007199254740993"),
             ("0.1", "0.10000000000000001"), ("12", "125e-1"), ("-1", "1"), ("1e-400", "0"), ("-1e-400", "0"), ("-1.5", "-1.25"),
             ("1e400", "1e500"), ("1e400", "10e399"), ("123456789012345678901234567890", "123456789012345678901234567891"),
+            ("1e-2147483648", "1"), ("1e2147483647", "1"), ("0.5e-2000", "0"),
         ];
 
         foreach (var (left, right) in pairs)
@@ -826,6 +827,10 @@ public static class JsonPathFuzzTargets
             if (exponentIndex >= 0 && !int.TryParse(text.AsSpan(exponentIndex + 1), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out exponent))
                 return false;
 
+            // Checked before the fraction moves it: an exponent such as int.MinValue would overflow
+            if (exponent is < -MaxExponent or > MaxExponent)
+                return false;
+
             var mantissa = exponentIndex >= 0 ? text[..exponentIndex] : text;
             var dot = mantissa.IndexOf('.', StringComparison.Ordinal);
             if (dot >= 0)
@@ -834,7 +839,8 @@ public static class JsonPathFuzzTargets
                 mantissa = mantissa.Remove(dot, 1);
             }
 
-            if (Math.Abs(exponent) > MaxExponent)
+            // The fraction has at most 200 digits, so this cannot overflow
+            if (exponent is < -MaxExponent - 200 or > MaxExponent)
                 return false;
 
             result = new ExactNumber(BigInteger.Parse(mantissa, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture), exponent);

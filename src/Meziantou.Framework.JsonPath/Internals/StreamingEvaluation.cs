@@ -21,6 +21,7 @@ internal sealed class StreamingEvaluation : IDisposable
     private bool _isFinalBlock;
     private bool _isFirstBlock = true;
     private bool _isTrailingDataRead;
+    private bool _needsWholeValue;
     private JsonReaderState _state;
 
     private StreamingEvaluation(JsonPathExpression expression, JsonReaderOptions options)
@@ -39,12 +40,19 @@ internal sealed class StreamingEvaluation : IDisposable
 
     private bool IsDone => _isTrailingDataRead;
 
+    /// <summary>
+    /// Gets whether to keep reading before processing again. A value to parse is checked for completeness from its start,
+    /// so it is only checked again once the buffer is full: as the buffer doubles, the whole value is scanned a bounded
+    /// number of times rather than once per read.
+    /// </summary>
+    private bool NeedsMoreRead => _needsWholeValue && !_isFinalBlock && _end < _buffer.Length;
+
     public static IEnumerable<JsonPathMatch> Evaluate(JsonPathExpression expression, Stream utf8Json, JsonReaderOptions options)
     {
         using var evaluation = new StreamingEvaluation(expression, options);
         while (true)
         {
-            evaluation.Process();
+            var needsData = evaluation.Process();
             foreach (var match in evaluation.TakeMatches())
             {
                 yield return match;
@@ -53,8 +61,15 @@ internal sealed class StreamingEvaluation : IDisposable
             if (evaluation.IsDone)
                 yield break;
 
+            if (!needsData)
+                continue;
+
             evaluation.PrepareRead();
-            evaluation.Complete(utf8Json.Read(evaluation._buffer, evaluation._end, evaluation._buffer.Length - evaluation._end));
+            do
+            {
+                evaluation.Complete(utf8Json.Read(evaluation._buffer, evaluation._end, evaluation._buffer.Length - evaluation._end));
+            }
+            while (evaluation.NeedsMoreRead);
         }
     }
 
@@ -63,7 +78,7 @@ internal sealed class StreamingEvaluation : IDisposable
         using var evaluation = new StreamingEvaluation(expression, options);
         while (true)
         {
-            evaluation.Process();
+            var needsData = evaluation.Process();
             foreach (var match in evaluation.TakeMatches())
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -73,8 +88,15 @@ internal sealed class StreamingEvaluation : IDisposable
             if (evaluation.IsDone)
                 yield break;
 
+            if (!needsData)
+                continue;
+
             evaluation.PrepareRead();
-            evaluation.Complete(await utf8Json.ReadAsync(evaluation._buffer.AsMemory(evaluation._end), cancellationToken).ConfigureAwait(false));
+            do
+            {
+                evaluation.Complete(await utf8Json.ReadAsync(evaluation._buffer.AsMemory(evaluation._end), cancellationToken).ConfigureAwait(false));
+            }
+            while (evaluation.NeedsMoreRead);
         }
     }
 
@@ -94,13 +116,16 @@ internal sealed class StreamingEvaluation : IDisposable
         return matches;
     }
 
-    private void Process()
+    /// <summary>Processes the data read so far.</summary>
+    /// <returns><see langword="true"/> when more data must be read; <see langword="false"/> when matches were found and the evaluation can go on.</returns>
+    private bool Process()
     {
+        _needsWholeValue = false;
         if (_isFirstBlock)
         {
             // Skip the byte order mark, as JsonDocument.Parse does. Wait for 3 bytes before deciding, unless the stream ends.
             if (_end - _start < 3 && !_isFinalBlock)
-                return;
+                return true;
 
             if (_buffer.AsSpan(_start, _end - _start).StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]))
             {
@@ -111,13 +136,21 @@ internal sealed class StreamingEvaluation : IDisposable
         }
 
         var reader = new Utf8JsonReader(_buffer.AsSpan(_start, _end - _start), _isFinalBlock, _state);
+        var needsData = true;
         if (!_evaluator.IsCompleted)
         {
-            _evaluator.Process(ref reader);
-            if (!_evaluator.IsCompleted && _isFinalBlock)
+            var status = _evaluator.Process(ref reader);
+            if (status is StreamingStatus.MatchesFound)
+            {
+                needsData = false;
+            }
+            else if (status is not StreamingStatus.Completed)
             {
                 // The reader throws on invalid data, so the data ended in the middle of a value
-                throw new JsonException("The JSON value is incomplete.");
+                if (_isFinalBlock)
+                    throw new JsonException("The JSON value is incomplete.");
+
+                _needsWholeValue = status is StreamingStatus.NeedsWholeValue;
             }
         }
 
@@ -133,6 +166,7 @@ internal sealed class StreamingEvaluation : IDisposable
 
         _start += (int)reader.BytesConsumed;
         _state = reader.CurrentState;
+        return needsData && !IsDone;
     }
 
     // Makes room for more data: moves the unprocessed bytes to the start, and grows the buffer when they fill it

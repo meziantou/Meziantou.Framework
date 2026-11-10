@@ -20,8 +20,9 @@ internal static class JsonNodeModifier
         if (segments.Length is 0)
             throw RootCannotChange();
 
+        var copies = new ValueCopies(value);
         if (IsSingularPath(segments))
-            return SetSingularPath(segments, root, value);
+            return SetSingularPath(segments, root, copies);
 
         var locations = new Locations(root);
 
@@ -34,13 +35,14 @@ internal static class JsonNodeModifier
             {
                 if (AsContainer(locations.Find(match.PathNode)) is JsonObject obj && seen.Add(obj))
                 {
+                    EnsureNoCaseConflict(obj, nameSelector.Name);
                     parents.Add(obj);
                 }
             }
 
             foreach (var parent in parents)
             {
-                parent[nameSelector.Name] = value?.DeepClone();
+                parent[nameSelector.Name] = copies.Next();
             }
 
             return parents.Count;
@@ -52,10 +54,10 @@ internal static class JsonNodeModifier
             switch (target.Parent)
             {
                 case JsonObject obj:
-                    obj[target.Step.Name!] = value?.DeepClone();
+                    obj[target.Step.Name!] = copies.Next();
                     break;
                 case JsonArray array:
-                    array[(int)target.Step.Index] = value?.DeepClone();
+                    array[(int)target.Step.Index] = copies.Next();
                     break;
             }
         }
@@ -65,6 +67,7 @@ internal static class JsonNodeModifier
 
     public static int Add(JsonPathExpression expression, JsonNode? root, JsonNode? value)
     {
+        var copies = new ValueCopies(value);
         var locations = new Locations(root);
         var arrays = new List<JsonArray>();
         var seen = new HashSet<JsonNode>(ReferenceEqualityComparer.Instance);
@@ -78,7 +81,7 @@ internal static class JsonNodeModifier
 
         foreach (var array in arrays)
         {
-            array.Add(value?.DeepClone());
+            array.Add(copies.Next());
         }
 
         return arrays.Count;
@@ -149,7 +152,7 @@ internal static class JsonNodeModifier
     /// of the path is made of names only, the missing objects are created. Nothing changes when an index is out of range
     /// or a value on the path is not a container.
     /// </summary>
-    private static int SetSingularPath(Segment[] segments, JsonNode? root, JsonNode? value)
+    private static int SetSingularPath(Segment[] segments, JsonNode? root, ValueCopies copies)
     {
         var current = root;
         for (var i = 0; i < segments.Length; i++)
@@ -163,7 +166,8 @@ internal static class JsonNodeModifier
 
                     if (isLast)
                     {
-                        obj[name] = value?.DeepClone();
+                        EnsureNoCaseConflict(obj, name);
+                        obj[name] = copies.Next();
                         return 1;
                     }
 
@@ -181,6 +185,7 @@ internal static class JsonNodeModifier
                             return 0;
                     }
 
+                    EnsureNoCaseConflict(obj, name);
                     foreach (var segment in rest)
                     {
                         var created = new JsonObject();
@@ -189,7 +194,7 @@ internal static class JsonNodeModifier
                         name = ((NameSelector)segment.Selectors[0]).Name;
                     }
 
-                    obj[name] = value?.DeepClone();
+                    obj[name] = copies.Next();
                     return 1;
 
                 case IndexSelector { Index: var index }:
@@ -206,7 +211,7 @@ internal static class JsonNodeModifier
 
                     if (isLast)
                     {
-                        array[(int)index] = value?.DeepClone();
+                        array[(int)index] = copies.Next();
                         return 1;
                     }
 
@@ -239,6 +244,16 @@ internal static class JsonNodeModifier
         return obj.TryGetPropertyValue(name, out member);
     }
 
+    /// <summary>
+    /// Rejects setting a member of an object that ignores case when another member has the same name in another case:
+    /// the object would replace that member, although the query does not select it.
+    /// </summary>
+    private static void EnsureNoCaseConflict(JsonObject obj, string name)
+    {
+        if (obj.Options?.PropertyNameCaseInsensitive is true && obj.ContainsKey(name) && !TryGetMember(obj, name, out _))
+            throw new InvalidOperationException($"The member '{name}' cannot be set: the object ignores the case of names and has a member whose name differs only by case, which it would replace.");
+    }
+
     /// <summary>Returns the node when it is a container that can change.</summary>
     /// <exception cref="InvalidOperationException">The node is a <see cref="JsonValue"/> that serializes as an object or an array.</exception>
     private static JsonNode? AsContainer(JsonNode? node)
@@ -252,6 +267,26 @@ internal static class JsonNodeModifier
     private static InvalidOperationException RootCannotChange()
     {
         return new InvalidOperationException("The query selects the root value, which has no parent: replace the root value itself instead.");
+    }
+
+    /// <summary>Copies of the value to write, one per location.</summary>
+    /// <remarks>
+    /// The value is copied before the first write: it can be part of the document, such as the root, and later copies
+    /// must not include the earlier writes.
+    /// </remarks>
+    private sealed class ValueCopies(JsonNode? value)
+    {
+        private readonly JsonNode? _snapshot = value?.DeepClone();
+        private bool _isSnapshotUsed;
+
+        public JsonNode? Next()
+        {
+            if (_isSnapshotUsed)
+                return _snapshot?.DeepClone();
+
+            _isSnapshotUsed = true;
+            return _snapshot;
+        }
     }
 
     private readonly record struct ChildLocation(JsonNode Parent, PathNode Step)

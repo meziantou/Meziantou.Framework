@@ -256,6 +256,8 @@ Assert.Equal(
   third. The query runs in lax mode, so a missing member selects nothing.
 - The root value has no parent: [Set](cref:Meziantou.Framework.Json.JsonPath.Set) and [Remove](cref:Meziantou.Framework.Json.JsonPath.Remove) throw an `InvalidOperationException` for the query `$`. Replace the
   root yourself instead.
+- An object parsed with `PropertyNameCaseInsensitive` would replace a member whose name differs only by case, such
+  as `Name` for `$.name`. [Set](cref:Meziantou.Framework.Json.JsonPath.Set) throws an `InvalidOperationException` instead, before changing anything.
 - A `JsonValue` that wraps a CLR object or array cannot change: the values inside it are detached copies. Changing
   them throws an `InvalidOperationException`; replacing the whole `JsonValue` works.
 

@@ -879,6 +879,36 @@ public sealed class JsonPathEvaluateTests
     }
 
     [Fact]
+    public void Set_ValueThatIsPartOfTheDocument()
+    {
+        // The value is copied before the first change, so the copies do not include the changes made before them
+        var document = JsonNode.Parse("""{"a":1,"b":2}""")!;
+        Assert.Equal(2, JsonPath.Parse("$.*").Set(document, document));
+        Assert.Equal("""{"a":{"a":1,"b":2},"b":{"a":1,"b":2}}""", document.ToJsonString());
+
+        var singular = JsonNode.Parse("""{"a":1}""")!;
+        Assert.Equal(1, JsonPath.Parse("$.x.y").Set(singular, singular));
+        Assert.Equal("""{"a":1,"x":{"y":{"a":1}}}""", singular.ToJsonString());
+
+        var arrays = JsonNode.Parse("""{"a":[1],"b":[2]}""")!;
+        Assert.Equal(2, JsonPath.Parse("$.*").Add(arrays, arrays));
+        Assert.Equal("""{"a":[1,{"a":[1],"b":[2]}],"b":[2,{"a":[1],"b":[2]}]}""", arrays.ToJsonString());
+    }
+
+    [Theory]
+    [InlineData("$.name")]
+    [InlineData("$.name.x")]
+    [InlineData("$[?@.NAME == 2].name")]
+    [InlineData("$.*.name")]
+    public void Set_CaseInsensitiveObjectRejectsNamesInAnotherCase(string query)
+    {
+        var document = JsonNode.Parse("""{"Name":1,"o":{"NAME":2}}""", new JsonNodeOptions { PropertyNameCaseInsensitive = true })!;
+        var exception = Assert.Throws<InvalidOperationException>(() => JsonPath.Parse(query).Set(document, JsonValue.Create(3)));
+        Assert.Contains("case", exception.Message, StringComparison.Ordinal);
+        Assert.Equal("""{"Name":1,"o":{"NAME":2}}""", document.ToJsonString());
+    }
+
+    [Fact]
     public void Set_Null()
     {
         var document = JsonNode.Parse("""{"a":1,"b":[1]}""")!;
@@ -1149,6 +1179,35 @@ public sealed class JsonPathEvaluateTests
         var json = Encoding.UTF8.GetBytes("""[{"id":1},{"id":2},""" + new string(' ', 100_000) + "invalid");
         Assert.Equal("1", JsonPath.Parse("$[*].id").EvaluateStream(new MemoryStream(json)).First().Value!.ToJsonString());
         Assert.ThrowsAny<JsonException>(() => JsonPath.Parse("$[*].id").EvaluateStream(new MemoryStream(json)).ToList());
+    }
+
+    [Fact]
+    public async Task EvaluateStream_StopsAtTheFirstMatch()
+    {
+        // The data after the first match is in the same read, but it is not processed before the next match is requested
+        var json = "[1,invalid]"u8.ToArray();
+        Assert.Equal("1", JsonPath.Parse("$[*]").EvaluateStream(new MemoryStream(json)).First().Value!.ToJsonString());
+        await foreach (var match in JsonPath.Parse("$[*]").EvaluateStreamAsync(new MemoryStream(json)))
+        {
+            Assert.Equal("1", match.Value!.ToJsonString());
+            break;
+        }
+
+        Assert.ThrowsAny<JsonException>(() => JsonPath.Parse("$[*]").EvaluateStream(new MemoryStream(json)).ToList());
+    }
+
+    [Fact]
+    public void EvaluateStream_LargeSelectedValueReadInSmallChunks()
+    {
+        // A selected value is only checked for completeness once the buffer is full, not after each read: checking it
+        // after each one-byte read would scan it once per byte
+        var json = Encoding.UTF8.GetBytes("{\"a\":[" + string.Join(',', Enumerable.Range(0, 100_000)) + "]}");
+        using var stream = new OneByteStream(json);
+        var match = Assert.Single(JsonPath.Parse("$.a").EvaluateStream(stream));
+        Assert.HasCount(100_000, match.Value!.AsArray());
+
+        using var lastStream = new OneByteStream(json);
+        Assert.Equal("99999", Assert.Single(JsonPath.Parse("$.a[-1]").EvaluateStream(lastStream)).Value!.ToJsonString());
     }
 
     [Fact]

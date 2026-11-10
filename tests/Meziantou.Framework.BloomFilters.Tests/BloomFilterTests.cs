@@ -928,6 +928,54 @@ public sealed class BloomFilterTests
     }
 
     [Fact]
+    public void AddRange_SetsTheSameBitsAsAdd()
+    {
+        var size = BloomFilterSize.CreateOptimalSize(1000, 0.01);
+        var intValues = Enumerable.Range(-500, 1003).Append(int.MinValue).Append(int.MaxValue).ToArray();
+        var longValues = intValues.Select(value => (long)value * 0x1_0000_0001L).Append(long.MinValue).Append(long.MaxValue).ToArray();
+
+        AssertSameBits(BloomFilter.CreateXXHash32(size), BloomFilter.CreateXXHash32(size), intValues, (filter, value) => filter.Add(value), (filter, values) => filter.AddRange(values));
+        AssertSameBits(BloomFilter.CreateXXHash64(size), BloomFilter.CreateXXHash64(size), longValues, (filter, value) => filter.Add(value), (filter, values) => filter.AddRange(values));
+        AssertSameBits(BloomFilter.CreateXXHash128(size), BloomFilter.CreateXXHash128(size), longValues, (filter, value) => filter.Add(value), (filter, values) => filter.AddRange(values));
+
+        var countingSize = CountingBloomFilterSize.CreateOptimalSize(1000, 0.01);
+        AssertSameCounters(CountingBloomFilter.CreateXXHash32(countingSize), CountingBloomFilter.CreateXXHash32(countingSize), intValues, (filter, value) => filter.Add(value), (filter, values) => filter.AddRange(values));
+        AssertSameCounters(CountingBloomFilter.CreateXXHash64(countingSize), CountingBloomFilter.CreateXXHash64(countingSize), longValues, (filter, value) => filter.Add(value), (filter, values) => filter.AddRange(values));
+        AssertSameCounters(CountingBloomFilter.CreateXXHash128(countingSize), CountingBloomFilter.CreateXXHash128(countingSize), longValues, (filter, value) => filter.Add(value), (filter, values) => filter.AddRange(values));
+
+        static void AssertSameBits<TFilter, TValue>(TFilter expected, TFilter actual, TValue[] values, Action<TFilter, TValue> add, Action<TFilter, TValue[]> addRange)
+            where TFilter : BloomFilter
+        {
+            foreach (var value in values)
+            {
+                add(expected, value);
+            }
+
+            addRange(actual, values);
+            Assert.Equal(Save(expected.Save), Save(actual.Save));
+        }
+
+        static void AssertSameCounters<TFilter, TValue>(TFilter expected, TFilter actual, TValue[] values, Action<TFilter, TValue> add, Action<TFilter, TValue[]> addRange)
+            where TFilter : CountingBloomFilter
+        {
+            foreach (var value in values)
+            {
+                add(expected, value);
+            }
+
+            addRange(actual, values);
+            Assert.Equal(Save(expected.Save), Save(actual.Save));
+        }
+
+        static byte[] Save(Action<Stream> save)
+        {
+            using var stream = new MemoryStream();
+            save(stream);
+            return stream.ToArray();
+        }
+    }
+
+    [Fact]
     public void CountingXXHash32_AddRangeAndRemoveRange_UpdatesValues()
     {
         var filter = CountingBloomFilter.CreateXXHash32(CountingBloomFilterSize.CreateOptimalSize(1000, 0.01));

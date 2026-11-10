@@ -21,8 +21,9 @@ description: What the URL patterns, the query string helpers and the Public Suff
 
 - **Strings in, strings out.** The helpers work on URL strings and do not validate them: they split the string at the
   first `?` and the first `#`.
-- **Names are case-sensitive**, and parameters are written back in the `name=value` form, so a parameter written
-  without `=` (`?debug`) gains one (`?debug=`) when the query string is written again.
+- **Parameters are encoded again.** The methods that write the whole query string decode the parameters they keep and
+  encode them again, so their encoding can change (`?q=a+b` becomes `?q=a%20b`), which can break a signed URL. The form
+  of a parameter without `=` (`?debug`) is kept.
 
 ## Public Suffix List
 

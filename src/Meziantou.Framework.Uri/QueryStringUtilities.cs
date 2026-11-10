@@ -12,7 +12,7 @@ public static class QueryStringUtilities
     /// <param name="name">The name of the query key.</param>
     /// <param name="value">The query value.</param>
     /// <returns>The combined result.</returns>
-    /// <remarks>A <see langword="null"/> <paramref name="value"/> appends nothing, which is how <see cref="RemoveQueryString"/> drops a parameter.</remarks>
+    /// <remarks>A <see langword="null"/> <paramref name="value"/> appends nothing, which is how <see cref="RemoveQueryString(string, string)"/> drops a parameter.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
     public static string AddQueryString(string uri, string name, string? value)
@@ -77,6 +77,21 @@ public static class QueryStringUtilities
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(queryString);
 
+        if (queryString is QueryStringParameterCollection collection)
+        {
+            var (beforeQuery, query, anchorText) = SplitUri(uri);
+            var sb = new StringBuilder();
+            sb.Append(beforeQuery);
+            if (query is not null)
+            {
+                sb.Append('?').Append(query);
+            }
+
+            collection.WriteTo(sb, hasQuery: query is not null);
+            sb.Append(anchorText);
+            return sb.ToString();
+        }
+
         return AddQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create(kvp.Key, v)));
     }
 
@@ -132,6 +147,16 @@ public static class QueryStringUtilities
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(queryString);
 
+        if (queryString is QueryStringParameterCollection collection)
+        {
+            var (beforeQuery, _, anchorText) = SplitUri(uri);
+            var sb = new StringBuilder();
+            sb.Append(beforeQuery);
+            collection.WriteTo(sb, hasQuery: false);
+            sb.Append(anchorText);
+            return sb.ToString();
+        }
+
         return SetQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create(kvp.Key, v)));
     }
 
@@ -178,10 +203,22 @@ public static class QueryStringUtilities
     /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
     public static string AddOrReplaceQueryString(string uri, IEnumerable<(string Name, string? Value)> queryString)
     {
+        return AddOrReplaceQueryString(uri, queryString, comparer: null);
+    }
+
+    /// <summary>Adds or replaces the given query keys and values in the URI.</summary>
+    /// <param name="uri">The base URI.</param>
+    /// <param name="queryString">A collection of name value query pairs to set.</param>
+    /// <param name="comparer">The comparer used to find the parameters of the URI by name, such as <see cref="StringComparer.OrdinalIgnoreCase"/>, or <see langword="null"/> to compare names with the exact case. A replaced parameter keeps the name it has in the URI.</param>
+    /// <returns>The combined result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
+    public static string AddOrReplaceQueryString(string uri, IEnumerable<(string Name, string? Value)> queryString, IEqualityComparer<string>? comparer)
+    {
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(queryString);
 
-        var parsed = ParseNullableQuery(GetQueryString(uri));
+        var parsed = ParseNullableQuery(GetQueryString(uri), comparer);
         if (parsed is null)
             return AddQueryString(uri, queryString);
 
@@ -201,10 +238,22 @@ public static class QueryStringUtilities
     /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
     public static string AddOrReplaceQueryString(string uri, IEnumerable<(string Name, StringValues Value)> queryString)
     {
+        return AddOrReplaceQueryString(uri, queryString, comparer: null);
+    }
+
+    /// <summary>Adds or replaces the given query keys and values in the URI.</summary>
+    /// <param name="uri">The base URI.</param>
+    /// <param name="queryString">A collection of name value query pairs to set.</param>
+    /// <param name="comparer">The comparer used to find the parameters of the URI by name, such as <see cref="StringComparer.OrdinalIgnoreCase"/>, or <see langword="null"/> to compare names with the exact case. A replaced parameter keeps the name it has in the URI.</param>
+    /// <returns>The combined result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
+    public static string AddOrReplaceQueryString(string uri, IEnumerable<(string Name, StringValues Value)> queryString, IEqualityComparer<string>? comparer)
+    {
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(queryString);
 
-        var parsed = ParseNullableQuery(GetQueryString(uri));
+        var parsed = ParseNullableQuery(GetQueryString(uri), comparer);
         if (parsed is null)
             return AddQueryString(uri, queryString);
 
@@ -224,10 +273,22 @@ public static class QueryStringUtilities
     /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
     public static string AddOrReplaceQueryString(string uri, IEnumerable<KeyValuePair<string, StringValues>> queryString)
     {
+        return AddOrReplaceQueryString(uri, queryString, comparer: null);
+    }
+
+    /// <summary>Adds or replaces the given query keys and values in the URI.</summary>
+    /// <param name="uri">The base URI.</param>
+    /// <param name="queryString">A collection of name value query pairs to set.</param>
+    /// <param name="comparer">The comparer used to find the parameters of the URI by name, such as <see cref="StringComparer.OrdinalIgnoreCase"/>, or <see langword="null"/> to compare names with the exact case. A replaced parameter keeps the name it has in the URI.</param>
+    /// <returns>The combined result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
+    public static string AddOrReplaceQueryString(string uri, IEnumerable<KeyValuePair<string, StringValues>> queryString, IEqualityComparer<string>? comparer)
+    {
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(queryString);
 
-        var parsed = ParseNullableQuery(GetQueryString(uri));
+        var parsed = ParseNullableQuery(GetQueryString(uri), comparer);
         if (parsed is null)
             return AddQueryString(uri, queryString);
 
@@ -248,10 +309,23 @@ public static class QueryStringUtilities
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
     public static string AddOrReplaceQueryString(string uri, string name, string? value)
     {
+        return AddOrReplaceQueryString(uri, name, value, comparer: null);
+    }
+
+    /// <summary>Adds or replaces the given query key and value in the URI.</summary>
+    /// <param name="uri">The base URI.</param>
+    /// <param name="name">The name of the query key.</param>
+    /// <param name="value">The query value.</param>
+    /// <param name="comparer">The comparer used to find the parameters of the URI by name, such as <see cref="StringComparer.OrdinalIgnoreCase"/>, or <see langword="null"/> to compare names with the exact case. A replaced parameter keeps the name it has in the URI.</param>
+    /// <returns>The combined result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+    public static string AddOrReplaceQueryString(string uri, string name, string? value, IEqualityComparer<string>? comparer)
+    {
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(name);
 
-        var parsed = ParseNullableQuery(GetQueryString(uri));
+        var parsed = ParseNullableQuery(GetQueryString(uri), comparer);
         if (parsed is null)
             return AddQueryString(uri, name, value);
 
@@ -267,16 +341,28 @@ public static class QueryStringUtilities
     /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
     public static string AddOrReplaceQueryString(string uri, IEnumerable<KeyValuePair<string, string?>> queryString)
     {
+        return AddOrReplaceQueryString(uri, queryString, comparer: null);
+    }
+
+    /// <summary>Adds or replaces the given query keys and values in the URI.</summary>
+    /// <param name="uri">The base URI.</param>
+    /// <param name="queryString">A collection of name value query pairs to set.</param>
+    /// <param name="comparer">The comparer used to find the parameters of the URI by name, such as <see cref="StringComparer.OrdinalIgnoreCase"/>, or <see langword="null"/> to compare names with the exact case. A replaced parameter keeps the name it has in the URI.</param>
+    /// <returns>The combined result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
+    public static string AddOrReplaceQueryString(string uri, IEnumerable<KeyValuePair<string, string?>> queryString, IEqualityComparer<string>? comparer)
+    {
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(queryString);
 
-        var accumulator = new QueryStringParameterCollection();
+        var accumulator = new QueryStringParameterCollection(comparer);
         foreach (var parameter in queryString)
         {
             accumulator.Append(parameter.Key, parameter.Value);
         }
 
-        return AddOrReplaceQueryString(uri, accumulator);
+        return AddOrReplaceQueryString(uri, accumulator, comparer);
     }
 
     /// <summary>Removes the specified query parameter from the URI.</summary>
@@ -287,10 +373,22 @@ public static class QueryStringUtilities
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
     public static string RemoveQueryString(string uri, string name)
     {
+        return RemoveQueryString(uri, name, comparer: null);
+    }
+
+    /// <summary>Removes the specified query parameter from the URI.</summary>
+    /// <param name="uri">The base URI.</param>
+    /// <param name="name">The name of the query key.</param>
+    /// <param name="comparer">The comparer used to find the parameter by name, such as <see cref="StringComparer.OrdinalIgnoreCase"/>, or <see langword="null"/> to compare names with the exact case.</param>
+    /// <returns>The combined result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+    public static string RemoveQueryString(string uri, string name, IEqualityComparer<string>? comparer)
+    {
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(name);
 
-        return AddOrReplaceQueryString(uri, name, value: null);
+        return AddOrReplaceQueryString(uri, name, value: null, comparer);
     }
 
     /// <summary>Parse a query string into its component key and value parts.</summary>
@@ -298,10 +396,19 @@ public static class QueryStringUtilities
     /// <returns>A collection of parsed keys and values.</returns>
     public static QueryStringParameterCollection ParseQuery(string? queryString)
     {
-        var result = ParseNullableQuery(queryString);
+        return ParseQuery(queryString, comparer: null);
+    }
+
+    /// <summary>Parse a query string into its component key and value parts.</summary>
+    /// <param name="queryString">The raw query string value, with or without the leading '?'.</param>
+    /// <param name="comparer">The comparer used to group the values by name and to find a parameter by name, such as <see cref="StringComparer.OrdinalIgnoreCase"/>, or <see langword="null"/> to compare names with the exact case.</param>
+    /// <returns>A collection of parsed keys and values.</returns>
+    public static QueryStringParameterCollection ParseQuery(string? queryString, IEqualityComparer<string>? comparer)
+    {
+        var result = ParseNullableQuery(queryString, comparer);
 
         if (result is null)
-            return new QueryStringParameterCollection();
+            return new QueryStringParameterCollection(comparer);
 
         return result;
     }
@@ -311,12 +418,21 @@ public static class QueryStringUtilities
     /// <returns>A collection of parsed keys and values, null if there are no entries.</returns>
     public static QueryStringParameterCollection? ParseNullableQuery(string? queryString)
     {
-        var result = new QueryStringParameterCollection();
+        return ParseNullableQuery(queryString, comparer: null);
+    }
 
+    /// <summary>Parse a query string into its component key and value parts.</summary>
+    /// <param name="queryString">The raw query string value, with or without the leading '?'.</param>
+    /// <param name="comparer">The comparer used to group the values by name and to find a parameter by name, such as <see cref="StringComparer.OrdinalIgnoreCase"/>, or <see langword="null"/> to compare names with the exact case.</param>
+    /// <returns>A collection of parsed keys and values, null if there are no entries.</returns>
+    public static QueryStringParameterCollection? ParseNullableQuery(string? queryString, IEqualityComparer<string>? comparer)
+    {
         if (string.IsNullOrEmpty(queryString) || queryString == "?")
         {
             return null;
         }
+
+        var result = new QueryStringParameterCollection(comparer);
 
         var scanIndex = 0;
         if (queryString[0] == '?')
@@ -361,7 +477,9 @@ public static class QueryStringUtilities
             {
                 if (delimiterIndex > scanIndex)
                 {
-                    result.Append(queryString[scanIndex..delimiterIndex], "");
+                    // Remember that the parameter has no '=', so that it is written back without one
+                    var name = queryString[scanIndex..delimiterIndex];
+                    result.AppendWithoutValue(Uri.UnescapeDataString(name.Replace('+', ' ')));
                 }
             }
 

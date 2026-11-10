@@ -44,19 +44,19 @@ See [Matching URLs](03-MatchingUrls.md) and [Pattern syntax](04-PatternSyntax.md
 
 <!-- ref:../../tests/Meziantou.Framework.Uri.Tests/QueryStringUtilitiesTests.cs;region=QueryStringUtilities_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
-var query = QueryStringUtilities.ParseQuery("?author=meziantou&tag=dotnet&tag=csharp");
+var query = QueryStringUtilities.ParseQuery("?author=meziantou&tag=dotnet&tag=csharp", StringComparer.Ordinal);
 Assert.Equal("meziantou", query["author"].ToString());
 Assert.Equal(["dotnet", "csharp"], query["tag"].ToArray());
 
 var uri = "https://www.meziantou.net/?author=meziantou";
 Assert.Equal("https://www.meziantou.net/?author=meziantou&name=value", QueryStringUtilities.AddQueryString(uri, "name", "value"));
-Assert.Equal("https://www.meziantou.net/?author=john", QueryStringUtilities.AddOrReplaceQueryString(uri, "author", "john"));
+Assert.Equal("https://www.meziantou.net/?author=john", QueryStringUtilities.AddOrReplaceQueryString(uri, "author", "john", StringComparer.Ordinal));
 
 // Replace the whole query string
 Assert.Equal("https://www.meziantou.net/?name=value", QueryStringUtilities.SetQueryString(uri, [KeyValuePair.Create("name", (string?)"value")]));
 
 // Remove a query string parameter
-Assert.Equal("https://www.meziantou.net/", QueryStringUtilities.RemoveQueryString(uri, "author"));
+Assert.Equal("https://www.meziantou.net/", QueryStringUtilities.RemoveQueryString(uri, "author", StringComparer.Ordinal));
 ```
 <!-- endref -->
 

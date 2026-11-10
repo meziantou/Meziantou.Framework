@@ -50,9 +50,11 @@ namespace Meziantou.Framework
 
     public sealed class QueryStringParameterCollection : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>>, System.Collections.IEnumerable
     {
+        public System.Collections.Generic.IEqualityComparer<string> Comparer { get => throw null; }
         public int Count { get => throw null; }
         public bool IsEmpty { get => throw null; }
         public Microsoft.Extensions.Primitives.StringValues this[string name] { get => throw null; set { } }
+        public QueryStringParameterCollection(System.Collections.Generic.IEqualityComparer<string>? comparer) { }
         public void Append(string name, Microsoft.Extensions.Primitives.StringValues values) { }
         public void Append(string name, string? value) { }
         public void Clear() { }
@@ -69,7 +71,12 @@ namespace Meziantou.Framework
         public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, string? Value)> queryString) => throw null;
         public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
         public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> queryString) => throw null;
+        public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, Microsoft.Extensions.Primitives.StringValues Value)> queryString, System.Collections.Generic.IEqualityComparer<string>? comparer) => throw null;
+        public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, string? Value)> queryString, System.Collections.Generic.IEqualityComparer<string>? comparer) => throw null;
+        public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> queryString, System.Collections.Generic.IEqualityComparer<string>? comparer) => throw null;
+        public static string AddOrReplaceQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> queryString, System.Collections.Generic.IEqualityComparer<string>? comparer) => throw null;
         public static string AddOrReplaceQueryString(string uri, string name, string? value) => throw null;
+        public static string AddOrReplaceQueryString(string uri, string name, string? value, System.Collections.Generic.IEqualityComparer<string>? comparer) => throw null;
         public static string AddQueryString(string uri, System.Collections.Generic.IDictionary<string, string?> queryString) => throw null;
         public static string AddQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, Microsoft.Extensions.Primitives.StringValues Value)> queryString) => throw null;
         public static string AddQueryString(string uri, System.Collections.Generic.IEnumerable<(string Name, string? Value)>? queryString) => throw null;
@@ -77,8 +84,11 @@ namespace Meziantou.Framework
         public static string AddQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> queryString) => throw null;
         public static string AddQueryString(string uri, string name, string? value) => throw null;
         public static Meziantou.Framework.QueryStringParameterCollection? ParseNullableQuery(string? queryString) => throw null;
+        public static Meziantou.Framework.QueryStringParameterCollection? ParseNullableQuery(string? queryString, System.Collections.Generic.IEqualityComparer<string>? comparer) => throw null;
         public static Meziantou.Framework.QueryStringParameterCollection ParseQuery(string? queryString) => throw null;
+        public static Meziantou.Framework.QueryStringParameterCollection ParseQuery(string? queryString, System.Collections.Generic.IEqualityComparer<string>? comparer) => throw null;
         public static string RemoveQueryString(string uri, string name) => throw null;
+        public static string RemoveQueryString(string uri, string name, System.Collections.Generic.IEqualityComparer<string>? comparer) => throw null;
         public static string SetQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>> queryString) => throw null;
         public static string SetQueryString(string uri, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>> queryString) => throw null;
     }

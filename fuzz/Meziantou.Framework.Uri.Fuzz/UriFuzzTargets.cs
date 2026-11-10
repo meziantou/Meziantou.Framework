@@ -42,7 +42,7 @@ public static partial class UriFuzzTargets
 
     private static readonly string[] QueryStringTokens =
     [
-        "?", "&", "=", "#", "+", "%", "%20", "%2B", "%26", "%3D", "%23", "%3F", "%25", "%C3%A9", "%ED%A0%80", "%ff", "%", " ", "\t", "\n", "\u00A0", "\u2028", "\u00E9", "\uD800", "\U0001F600", "a=1", "b=2", "a", "http://www.example.com/", "?a=1&b=2#hash",
+        "?", "&", "=", "#", "+", "%", "%20", "%2B", "%26", "%3D", "%23", "%3F", "%25", "%C3%A9", "%ED%A0%80", "%ff", "%", " ", "\t", "\n", "\u00A0", "\u2028", "\u00E9", "\uD800", "\U0001F600", "a=1", "b=2", "a", "A", "debug", "&debug&", "http://www.example.com/", "?a=1&b=2#hash",
     ];
 
     public static IReadOnlyList<FuzzTarget> All { get; } =

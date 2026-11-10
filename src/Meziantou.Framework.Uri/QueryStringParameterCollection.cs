@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Text.Encodings.Web;
 using Microsoft.Extensions.Primitives;
 
 namespace Meziantou.Framework;
@@ -10,10 +11,21 @@ public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<st
     // Also, we want to preserve the order of the parameters.
     private readonly List<Parameter> _values = [];
 
-    /// <summary>Initializes a new instance of the <see cref="QueryStringParameterCollection"/> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="QueryStringParameterCollection"/> class that compares names with the exact case.</summary>
     public QueryStringParameterCollection()
+        : this(comparer: null)
     {
     }
+
+    /// <summary>Initializes a new instance of the <see cref="QueryStringParameterCollection"/> class that compares names with the specified comparer.</summary>
+    /// <param name="comparer">The comparer used to find a parameter by name, such as <see cref="StringComparer.OrdinalIgnoreCase"/>, or <see langword="null"/> to use <see cref="StringComparer.Ordinal"/>.</param>
+    public QueryStringParameterCollection(IEqualityComparer<string>? comparer)
+    {
+        Comparer = comparer ?? StringComparer.Ordinal;
+    }
+
+    /// <summary>Gets the comparer used to find a parameter by name.</summary>
+    public IEqualityComparer<string> Comparer { get; }
 
     /// <summary>Gets or sets the parameter value with the specified name.</summary>
     /// <param name="name">The name of the parameter.</param>
@@ -72,7 +84,7 @@ public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<st
     {
         for (var i = 0; i < _values.Count; i++)
         {
-            if (_values[i].Name == name)
+            if (Comparer.Equals(_values[i].Name, name))
             {
                 _values.RemoveAt(i);
                 return true;
@@ -115,11 +127,52 @@ public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<st
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+    /// <summary>Appends an empty value written without '=' (<c>?debug</c>), so that it is written back in the same form.</summary>
+    internal void AppendWithoutValue(string name)
+    {
+        var parameter = Find(name);
+        if (parameter is null)
+        {
+            parameter = new Parameter(name, StringValues.Empty);
+            _values.Add(parameter);
+        }
+
+        parameter.AppendWithoutValue();
+    }
+
+    /// <summary>Writes the parameters as a query string, each preceded by '?' for the first parameter of the query and '&amp;' for the others.</summary>
+    /// <returns><see langword="true"/> if the query has a parameter; otherwise, <paramref name="hasQuery"/>.</returns>
+    internal bool WriteTo(StringBuilder sb, bool hasQuery)
+    {
+        foreach (var parameter in _values)
+        {
+            var values = parameter.GetValues();
+            for (var i = 0; i < values.Count; i++)
+            {
+                var value = values[i];
+                if (value is null)
+                    continue;
+
+                sb.Append(hasQuery ? '&' : '?');
+                sb.Append(UrlEncoder.Default.Encode(parameter.Name));
+                if (!parameter.IsWithoutValue(i))
+                {
+                    sb.Append('=');
+                    sb.Append(UrlEncoder.Default.Encode(value));
+                }
+
+                hasQuery = true;
+            }
+        }
+
+        return hasQuery;
+    }
+
     private Parameter? Find(string name)
     {
         foreach (var parameter in _values)
         {
-            if (parameter.Name == name)
+            if (Comparer.Equals(parameter.Name, name))
                 return parameter;
         }
 
@@ -136,6 +189,9 @@ public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<st
         private StringValues _values;
         private List<string?>? _appended;
 
+        // Whether each value, in order, was written without '='. Null when none was.
+        private List<bool>? _withoutValue;
+
         public Parameter(string name, StringValues values)
         {
             Name = name;
@@ -143,6 +199,10 @@ public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<st
         }
 
         public string Name { get; }
+
+        private int Count => _values.Count + (_appended?.Count ?? 0);
+
+        public bool IsWithoutValue(int index) => _withoutValue is not null && _withoutValue[index];
 
         public StringValues GetValues()
         {
@@ -166,6 +226,20 @@ public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<st
         {
             _values = values;
             _appended = null;
+            _withoutValue = null;
+        }
+
+        public void AppendWithoutValue()
+        {
+            if (_withoutValue is null)
+            {
+                _withoutValue = new List<bool>(Count + 1);
+                _withoutValue.AddRange(Enumerable.Repeat(element: false, Count));
+            }
+
+            _appended ??= [];
+            _appended.Add("");
+            _withoutValue.Add(true);
         }
 
         public void Append(StringValues values)
@@ -174,6 +248,7 @@ public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<st
             for (var i = 0; i < values.Count; i++)
             {
                 _appended.Add(values[i]);
+                _withoutValue?.Add(false);
             }
         }
     }

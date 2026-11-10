@@ -14,7 +14,7 @@ its values as `StringValues`:
 <!-- ref:../../tests/Meziantou.Framework.Uri.Tests/QueryStringUtilitiesTests.cs;region=QueryStringUtilities_ParseQuery;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // The leading "?" is optional, names and values are decoded
-var query = QueryStringUtilities.ParseQuery("q=hello+world&path=%2Fdocs&tag=a&tag=b&debug");
+var query = QueryStringUtilities.ParseQuery("q=hello+world&path=%2Fdocs&tag=a&tag=b&debug", StringComparer.Ordinal);
 
 Assert.Equal("hello world", query["q"].ToString());
 Assert.Equal("/docs", query["path"].ToString());
@@ -30,15 +30,15 @@ Assert.True(StringValues.IsNullOrEmpty(query["missing"]));
 Assert.Equal(["q", "path", "tag", "debug"], query.Select(parameter => parameter.Key));
 
 // ParseNullableQuery returns null instead of an empty collection
-Assert.Null(QueryStringUtilities.ParseNullableQuery("?"));
-Assert.True(QueryStringUtilities.ParseQuery("?").IsEmpty);
+Assert.Null(QueryStringUtilities.ParseNullableQuery("?", StringComparer.Ordinal));
+Assert.True(QueryStringUtilities.ParseQuery("?", StringComparer.Ordinal).IsEmpty);
 ```
 <!-- endref -->
 
 - The leading `?` is optional, so you can pass `Uri.Query` as is.
 - Names and values are percent-decoded, and `+` is decoded as a space.
-- A name that appears several times has several values, in order. A name is compared with the exact case: `Tag` and
-  `tag` are two parameters.
+- A name that appears several times has several values, in order. By default, a name is compared with the exact case:
+  `Tag` and `tag` are two parameters. See [Case-insensitive names](#case-insensitive-names) to change that.
 - A missing name returns `StringValues.Empty`.
 - [ParseNullableQuery](cref:Meziantou.Framework.QueryStringUtilities.ParseNullableQuery) returns `null` for an empty query string, where [ParseQuery](cref:Meziantou.Framework.QueryStringUtilities.ParseQuery) returns an empty collection.
 
@@ -71,11 +71,11 @@ Assert.Equal(
 Assert.Equal(uri, QueryStringUtilities.AddQueryString(uri, "author", null));
 
 // AddOrReplaceQueryString replaces every value of the name, and a null value removes it
-Assert.Equal("https://example.com/search?q=novels#results", QueryStringUtilities.AddOrReplaceQueryString(uri, "q", "novels"));
-Assert.Equal("https://example.com/search#results", QueryStringUtilities.AddOrReplaceQueryString(uri, "q", null));
+Assert.Equal("https://example.com/search?q=novels#results", QueryStringUtilities.AddOrReplaceQueryString(uri, "q", "novels", StringComparer.Ordinal));
+Assert.Equal("https://example.com/search#results", QueryStringUtilities.AddOrReplaceQueryString(uri, "q", null, StringComparer.Ordinal));
 
-// The parameters that are kept are written again
-Assert.Equal("https://example.com/?q=a%20b&debug=&page=2", QueryStringUtilities.AddOrReplaceQueryString("https://example.com/?q=a+b&debug", "page", "2"));
+// The parameters that are kept are written again, and a parameter without "=" keeps this form
+Assert.Equal("https://example.com/?q=a%20b&debug&page=2", QueryStringUtilities.AddOrReplaceQueryString("https://example.com/?q=a+b&debug", "page", "2", StringComparer.Ordinal));
 ```
 <!-- endref -->
 
@@ -84,8 +84,10 @@ Assert.Equal("https://example.com/?q=a%20b&debug=&page=2", QueryStringUtilities.
   `string` or `StringValues` values.
 - A `null` value adds nothing. With [AddOrReplaceQueryString](cref:Meziantou.Framework.QueryStringUtilities.AddOrReplaceQueryString), it removes the parameter.
 - [AddOrReplaceQueryString](cref:Meziantou.Framework.QueryStringUtilities.AddOrReplaceQueryString), [RemoveQueryString](cref:Meziantou.Framework.QueryStringUtilities.RemoveQueryString) and [SetQueryString](cref:Meziantou.Framework.QueryStringUtilities.SetQueryString) write the whole query string again, so the
-  parameters they keep are encoded again: `?q=a+b` becomes `?q=a%20b`, which has the same meaning, and `?debug` becomes
-  `?debug=`.
+  parameters they keep are encoded again: `?q=a+b` becomes `?q=a%20b`, which has the same meaning.
+- A parameter written without `=` keeps this form: `?debug` stays `?debug`, and `?debug=` stays `?debug=`. This also
+  applies to a parsed [QueryStringParameterCollection](cref:Meziantou.Framework.QueryStringParameterCollection) written with [SetQueryString](cref:Meziantou.Framework.QueryStringUtilities.SetQueryString) or [AddQueryString](cref:Meziantou.Framework.QueryStringUtilities.AddQueryString). A value
+  that you set or append is always written with `=`.
 
 ## Edit a parsed query string
 
@@ -95,7 +97,7 @@ For several changes, edit the [QueryStringParameterCollection](cref:Meziantou.Fr
 ```csharp
 var uri = "https://example.com/search?q=books&page=3&utm_source=newsletter";
 
-var query = QueryStringUtilities.ParseQuery(new System.Uri(uri).Query);
+var query = QueryStringUtilities.ParseQuery(new System.Uri(uri).Query, StringComparer.Ordinal);
 query.Remove("utm_source");
 query.Set("page", "1");
 query.Append("tag", "fiction");
@@ -115,6 +117,31 @@ Assert.Equal(
 | `Remove(name)` | Removes the parameter and all its values. |
 | [Clear()](cref:Meziantou.Framework.QueryStringParameterCollection.Clear) | Removes every parameter. |
 | [Count](cref:Meziantou.Framework.QueryStringParameterCollection.Count), [IsEmpty](cref:Meziantou.Framework.QueryStringParameterCollection.IsEmpty) | The number of distinct parameter names. |
+| [Comparer](cref:Meziantou.Framework.QueryStringParameterCollection.Comparer) | The comparer of the names. |
+
+## Case-insensitive names
+
+[ParseQuery](cref:Meziantou.Framework.QueryStringUtilities.ParseQuery), [ParseNullableQuery](cref:Meziantou.Framework.QueryStringUtilities.ParseNullableQuery), [AddOrReplaceQueryString](cref:Meziantou.Framework.QueryStringUtilities.AddOrReplaceQueryString) and [RemoveQueryString](cref:Meziantou.Framework.QueryStringUtilities.RemoveQueryString) have overloads that take the comparer
+of the names, such as `StringComparer.OrdinalIgnoreCase`. The constructor of [QueryStringParameterCollection](cref:Meziantou.Framework.QueryStringParameterCollection) takes one
+too. A `null` comparer compares the names with the exact case:
+
+<!-- ref:../../tests/Meziantou.Framework.Uri.Tests/QueryStringUtilitiesTests.cs;region=QueryStringUtilities_CaseInsensitiveNames;format=md-fenced-code-block;dedent=true -->
+```csharp
+var query = QueryStringUtilities.ParseQuery("?Tag=a&tag=b", StringComparer.OrdinalIgnoreCase);
+
+// The values of "Tag" and "tag" are grouped under the first name
+Assert.Equal(["a", "b"], query["TAG"].ToArray());
+Assert.Equal(["Tag"], query.Select(parameter => parameter.Key));
+
+// A replaced parameter keeps the name it has in the URL
+var uri = "https://example.com/?Page=3&Debug";
+Assert.Equal("https://example.com/?Page=1&Debug", QueryStringUtilities.AddOrReplaceQueryString(uri, "page", "1", StringComparer.OrdinalIgnoreCase));
+Assert.Equal("https://example.com/?Page=3", QueryStringUtilities.RemoveQueryString(uri, "debug", StringComparer.OrdinalIgnoreCase));
+```
+<!-- endref -->
+
+- The values of the names that are equal for the comparer are grouped under the name that appears first.
+- A replaced parameter keeps the name it has in the URL.
 
 ## Next steps
 

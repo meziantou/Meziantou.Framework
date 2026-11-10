@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Meziantou.Framework;
 
 public sealed class TextDiffOptions
@@ -17,8 +19,12 @@ public sealed class TextDiffOptions
 
     /// <summary>
     /// Gets or sets a value indicating whether two chunks that differ only in casing are considered equal.
-    /// The comparison is ordinal, so casing rules are not culture-sensitive.
     /// </summary>
+    /// <remarks>
+    /// The comparison is ordinal, so casing rules are not culture-sensitive, unless <see cref="Culture"/> or
+    /// <see cref="CompareOptions"/> is set: <see cref="System.Globalization.CompareOptions.IgnoreCase"/> is then added to
+    /// the culture-aware comparison.
+    /// </remarks>
     public bool IgnoreCase { get; set; }
 
     /// <summary>
@@ -32,6 +38,31 @@ public sealed class TextDiffOptions
     /// in its own chunk, which trimming then reduces to an empty one.
     /// </remarks>
     public bool IgnoreWhitespace { get; set; }
+
+    /// <summary>
+    /// Gets or sets the culture whose rules compare the chunks. Defaults to <see langword="null"/>: the chunks are compared
+    /// ordinally, unless <see cref="CompareOptions"/> is set, which then uses <see cref="CultureInfo.InvariantCulture"/>.
+    /// </summary>
+    /// <remarks>
+    /// A culture-aware comparison treats canonically equivalent strings as equal, such as <c>"\u00E9"</c> and
+    /// <c>"e\u0301"</c>. It depends on ICU: in invariant globalization mode, it is ordinal.
+    /// </remarks>
+    public CultureInfo? Culture { get; set; }
+
+    /// <summary>
+    /// Gets or sets the options of a culture-aware comparison of the chunks, such as
+    /// <see cref="System.Globalization.CompareOptions.IgnoreNonSpace"/> to ignore accents. Defaults to
+    /// <see cref="System.Globalization.CompareOptions.None"/>.
+    /// </summary>
+    /// <remarks>
+    /// Any value but <see cref="System.Globalization.CompareOptions.None"/> compares the chunks with the
+    /// <see cref="CompareInfo"/> of <see cref="Culture"/>, or of <see cref="CultureInfo.InvariantCulture"/> when
+    /// <see cref="Culture"/> is <see langword="null"/>. <see cref="System.Globalization.CompareOptions.Ordinal"/>,
+    /// <see cref="System.Globalization.CompareOptions.OrdinalIgnoreCase"/> and
+    /// <see cref="System.Globalization.CompareOptions.StringSort"/> are not supported: leave both properties unset for an
+    /// ordinal comparison.
+    /// </remarks>
+    public CompareOptions CompareOptions { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether line terminators are normalized to <c>"\n"</c> before the texts
@@ -73,4 +104,21 @@ public sealed class TextDiffOptions
     /// </para>
     /// </remarks>
     public int? MaxEditCost { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether <see cref="TextDiff.ComputeDiff"/> looks for blocks of chunks that are
+    /// deleted at one place and inserted at another. Defaults to <see langword="false"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A moved block is still reported as <see cref="TextDiffOperation.Delete"/> entries where it was and
+    /// <see cref="TextDiffOperation.Insert"/> entries where it is now, so the entries rebuild both texts as usual. The
+    /// entries of both places share the same <see cref="TextDiffEntry.MoveId"/>.
+    /// </para>
+    /// <para>
+    /// A block of chunks that holds only whitespace is never a move, and neither is a block deleted and inserted at the
+    /// same place. <see cref="TextDiff.ComputeHierarchyDiff"/> does not detect moves.
+    /// </para>
+    /// </remarks>
+    public bool DetectMoves { get; set; }
 }

@@ -1,5 +1,6 @@
 extern alias TextDiffLib;
 using System.Net;
+using Meziantou.Xunit;
 using Diff = TextDiffLib::Meziantou.Framework.TextDiff;
 using TextDiffLib::Meziantou.Framework;
 
@@ -386,7 +387,12 @@ public sealed class TextDiffTests
         var oldText = "a\nb\nc\nd\ne\nf\ng\nh\n";
         var newText = "a\nb\nC\nd\ne\nf\ng\nh\ni\n";
 
-        var patch = ToUnifiedDiff(oldText, newText, "old.txt", "new.txt", contextLines: 1);
+        var diff = UnifiedDiff.Create(oldText, newText, new UnifiedDiffOptions
+        {
+            OldFileName = "old.txt",
+            NewFileName = "new.txt",
+            ContextLines = 1,
+        });
 
         Assert.Equal(
             "--- old.txt\n" +
@@ -399,7 +405,7 @@ public sealed class TextDiffTests
             "@@ -8 +8,2 @@\n" +
             " h\n" +
             "+i\n",
-            patch);
+            diff.ToString());
         #endregion
     }
 
@@ -411,88 +417,221 @@ public sealed class TextDiffTests
     [InlineData("a\nb", "a\nc", "--- a\n+++ b\n@@ -1,2 +1,2 @@\n a\n-b\n\\ No newline at end of file\n+c\n\\ No newline at end of file\n")]
     [InlineData("a\nb\nc\nd\ne\nf\ng\nh\ni\nj\n", "A\nb\nc\nd\ne\nf\ng\nh\ni\nJ\n", "--- a\n+++ b\n@@ -1,4 +1,4 @@\n-a\n+A\n b\n c\n d\n@@ -7,4 +7,4 @@\n g\n h\n i\n-j\n+J\n")]
     [InlineData("a\nb\nc\nd\ne\nf\ng\nh\n", "A\nb\nc\nd\ne\nf\ng\nH\n", "--- a\n+++ b\n@@ -1,8 +1,8 @@\n-a\n+A\n b\n c\n d\n e\n f\n g\n-h\n+H\n")]
-    public void DocumentationExample_UnifiedDiff_MatchesDiffUtils(string oldText, string newText, string expected)
+    [InlineData("a\r\nb\r\n", "a\r\nc\r\n", "--- a\n+++ b\n@@ -1,2 +1,2 @@\n a\r\n-b\r\n+c\r\n")]
+    [InlineData("a\rb\n", "a\rc\n", "--- a\n+++ b\n@@ -1 +1 @@\n-a\rb\n+a\rc\n")]
+    public void UnifiedDiff_Create_MatchesDiffUtils(string oldText, string newText, string expected)
     {
-        Assert.Equal(expected, ToUnifiedDiff(oldText, newText));
+        var patch = UnifiedDiff.Create(oldText, newText).ToString();
+
+        Assert.Equal(expected, patch);
+        if (patch.Length > 0)
+        {
+            Assert.Equal(newText, UnifiedDiff.Apply(oldText, patch));
+        }
     }
 
-    #region TextDiff_UnifiedDiff
-    public static string ToUnifiedDiff(string oldText, string newText, string oldName = "a", string newName = "b", int contextLines = 3)
+    [Fact]
+    public void UnifiedDiff_Create_NoContext()
     {
-        var result = TextDiff.ComputeDiff(oldText, newText);
+        var diff = UnifiedDiff.Create("a\nb\nc\nd\n", "a\nB\nc\nd\nE\n", new UnifiedDiffOptions { ContextLines = 0 });
 
-        // One item per line, with the number of the line in each text
-        var lines = new List<(char Prefix, string Text, int OldLine, int NewLine)>();
-        var oldLine = 1;
-        var newLine = 1;
-        foreach (var entry in result.Entries)
-        {
-            if (entry.Text.Length is 0)
-                continue; // The empty chunk after the last line terminator
-
-            lines.Add(entry.Operation switch
-            {
-                TextDiffOperation.Equal => (' ', entry.Text, oldLine++, newLine++),
-                TextDiffOperation.Delete => ('-', entry.Text, oldLine++, newLine),
-                _ => ('+', entry.Text, oldLine, newLine++),
-            });
-        }
-
-        var output = new StringBuilder();
-        var index = 0;
-        while (true)
-        {
-            var firstChange = lines.FindIndex(index, line => line.Prefix is not ' ');
-            if (firstChange < 0)
-                break;
-
-            // Changes separated by at most 2 × contextLines unchanged lines share a hunk
-            var lastChange = firstChange;
-            while (true)
-            {
-                var nextChange = lines.FindIndex(lastChange + 1, line => line.Prefix is not ' ');
-                if (nextChange < 0 || nextChange - lastChange - 1 > 2 * contextLines)
-                    break;
-
-                lastChange = nextChange;
-            }
-
-            var start = Math.Max(index, firstChange - contextLines);
-            var end = Math.Min(lines.Count, lastChange + contextLines + 1);
-            var hunk = lines.GetRange(start, end - start);
-
-            if (output.Length is 0)
-            {
-                output.Append("--- ").Append(oldName).Append('\n');
-                output.Append("+++ ").Append(newName).Append('\n');
-            }
-
-            var oldRange = FormatRange(hunk[0].OldLine, hunk.Count(line => line.Prefix is not '+'));
-            var newRange = FormatRange(hunk[0].NewLine, hunk.Count(line => line.Prefix is not '-'));
-            output.Append("@@ -").Append(oldRange).Append(" +").Append(newRange).Append(" @@\n");
-            foreach (var line in hunk)
-            {
-                output.Append(line.Prefix).Append(line.Text);
-                if (line.Text[^1] is not '\n')
-                {
-                    output.Append("\n\\ No newline at end of file\n");
-                }
-            }
-
-            index = end;
-        }
-
-        return output.ToString();
-
-        // An empty range gives the number of the line before it, and a count of 1 is omitted
-        static string FormatRange(int start, int count) => count switch
-        {
-            0 => string.Create(CultureInfo.InvariantCulture, $"{start - 1},0"),
-            1 => string.Create(CultureInfo.InvariantCulture, $"{start}"),
-            _ => string.Create(CultureInfo.InvariantCulture, $"{start},{count}"),
-        };
+        Assert.Equal("--- a\n+++ b\n@@ -2 +2 @@\n-b\n+B\n@@ -4,0 +5 @@\n+E\n", diff.ToString());
+        Assert.Equal("a\nB\nc\nd\nE\n", diff.Apply("a\nb\nc\nd\n"));
     }
-    #endregion
+
+    [Fact]
+    public void UnifiedDiff_Create_IdenticalTexts_HasNoHunk()
+    {
+        var diff = UnifiedDiff.Create("a\nb\n", "a\nb\n");
+
+        Assert.Empty(diff.Hunks);
+        Assert.Equal("", diff.ToString());
+        Assert.Equal("a\nb\n", diff.Apply("a\nb\n"));
+    }
+
+    [Fact]
+    public void UnifiedDiff_Create_NegativeContextLines_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("options", () => UnifiedDiff.Create("a", "b", new UnifiedDiffOptions { ContextLines = -1 }));
+    }
+
+    [Fact]
+    public void DocumentationExample_ParsePatch()
+    {
+        #region TextDiff_ParsePatch
+        var patch =
+            "diff --git a/greeting.txt b/greeting.txt\n" +
+            "index 3b18e51..a042389 100644\n" +
+            "--- a/greeting.txt\n" +
+            "+++ b/greeting.txt\n" +
+            "@@ -1,2 +1,2 @@ Greetings\n" +
+            " Hello\n" +
+            "-World\n" +
+            "+There\n";
+
+        var files = UnifiedDiff.Parse(patch);
+
+        var file = files[0];
+        Assert.Equal("a/greeting.txt", file.OldFileName);
+        Assert.Equal("b/greeting.txt", file.NewFileName);
+
+        var hunk = file.Hunks[0];
+        Assert.Equal(1, hunk.OldStart);
+        Assert.Equal(2, hunk.OldLineCount);
+        Assert.Equal("Greetings", hunk.SectionHeading);
+        Assert.Equal([TextDiffOperation.Equal, TextDiffOperation.Delete, TextDiffOperation.Insert], hunk.Lines.Select(line => line.Operation));
+        Assert.Equal(["Hello\n", "World\n", "There\n"], hunk.Lines.Select(line => line.Text));
+
+        Assert.Equal("Hello\nThere\n", file.Apply("Hello\nWorld\n"));
+        #endregion
+
+        Assert.HasCount(1, files);
+        Assert.Equal(patch[patch.IndexOf("---", StringComparison.Ordinal)..], file.ToString());
+    }
+
+    [Fact]
+    public void DocumentationExample_ApplyPatch()
+    {
+        #region TextDiff_ApplyPatch
+        var patch = UnifiedDiff.Create("one\ntwo\nthree\n", "one\n2\nthree\n").ToString();
+
+        // A line was added at the start since the patch was made: the hunk still applies, one line further down
+        var patched = UnifiedDiff.Apply("zero\none\ntwo\nthree\n", patch);
+
+        Assert.Equal("zero\none\n2\nthree\n", patched);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_ApplyPatchConflict()
+    {
+        #region TextDiff_ApplyPatchConflict
+        var patch = UnifiedDiff.Create("one\ntwo\nthree\n", "one\n2\nthree\n").ToString();
+
+        // The line the hunk deletes changed: the hunk no longer matches
+        var exception = Assert.Throws<UnifiedDiffApplyException>(() => UnifiedDiff.Apply("one\nTWO\nthree\n", patch));
+
+        Assert.Equal(0, exception.HunkIndex);
+        #endregion
+    }
+
+    [Fact]
+    public void UnifiedDiff_Apply_SeveralHunksWithOffsets()
+    {
+        var oldText = JoinLines("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12") + "\n";
+        var newText = JoinLines("1", "two", "3", "4", "5", "6", "7", "8", "9", "10", "eleven", "12") + "\n";
+        var patch = UnifiedDiff.Create(oldText, newText, new UnifiedDiffOptions { ContextLines = 1 }).ToString();
+
+        var shifted = "0\n" + JoinLines("1", "2", "3", "4", "5", "inserted", "6", "7", "8", "9", "10", "11", "12") + "\n";
+
+        Assert.Equal("0\n" + JoinLines("1", "two", "3", "4", "5", "inserted", "6", "7", "8", "9", "10", "eleven", "12") + "\n", UnifiedDiff.Apply(shifted, patch));
+    }
+
+    [Fact]
+    public void UnifiedDiff_Apply_NoNewLineAtEndMustMatch()
+    {
+        var patch = UnifiedDiff.Create("a\nb", "a\nc").ToString();
+
+        Assert.Equal("a\nc", UnifiedDiff.Apply("a\nb", patch));
+        Assert.Throws<UnifiedDiffApplyException>(() => UnifiedDiff.Apply("a\nb\n", patch));
+    }
+
+    [Fact]
+    public void UnifiedDiff_Apply_SeveralFiles_Throws()
+    {
+        var patch = UnifiedDiff.Create("a\n", "b\n").ToString() + UnifiedDiff.Create("c\n", "d\n").ToString();
+
+        Assert.Throws<ArgumentException>("patch", () => UnifiedDiff.Apply("a\n", patch));
+    }
+
+    [Fact]
+    public void UnifiedDiff_Parse_SeveralFiles()
+    {
+        var patch =
+            UnifiedDiff.Create("a\n", "b\n", new UnifiedDiffOptions { OldFileName = "a/one.txt", NewFileName = "b/one.txt" }).ToString() +
+            "diff --git a/two.txt b/two.txt\n" +
+            UnifiedDiff.Create("c\n", "d\n", new UnifiedDiffOptions { OldFileName = "a/two.txt", NewFileName = "b/two.txt" }).ToString();
+
+        var files = UnifiedDiff.Parse(patch);
+
+        Assert.Equal(["a/one.txt", "a/two.txt"], files.Select(file => file.OldFileName));
+        Assert.Equal("b\n", files[0].Apply("a\n"));
+        Assert.Equal("d\n", files[1].Apply("c\n"));
+    }
+
+    [Fact]
+    public void UnifiedDiff_Parse_TimestampsAndCrLf()
+    {
+        var patch = "--- a.txt\t2024-01-01 10:00:00\r\n+++ b.txt\t2024-01-02 10:00:00\r\n@@ -1 +1 @@\r\n-a\r\n+b\r\n";
+
+        var file = UnifiedDiff.Parse(patch)[0];
+
+        Assert.Equal("a.txt", file.OldFileName);
+        Assert.Equal("b.txt", file.NewFileName);
+        Assert.Equal("b\r\n", file.Apply("a\r\n"));
+    }
+
+    [Fact]
+    public void UnifiedDiff_Parse_EmptyContextLineWithoutItsSpace()
+    {
+        var patch = "--- a\n+++ b\n@@ -1,2 +1,2 @@\n\n-a\n+b\n";
+
+        Assert.Equal("\nb\n", UnifiedDiff.Apply("\na\n", patch));
+    }
+
+    [Fact]
+    public void UnifiedDiff_Parse_MissingFinalLineFeed_EndsTheLine()
+    {
+        Assert.Equal("b\n", UnifiedDiff.Apply("a\n", "--- a\n+++ b\n@@ -1 +1 @@\n-a\n+b"));
+    }
+
+    [Theory]
+    [InlineData("--- a\n+++ b\n@@ -1 +1 @@\n")]
+    [InlineData("--- a\n+++ b\n@@ -1 +1 @@\n-a\n")]
+    [InlineData("--- a\n+++ b\n@@ -x +1 @@\n")]
+    [InlineData("--- a\n+++ b\n@@ -1 +1\n")]
+    [InlineData("--- a\n+++ b\n@@ -1,1 +1,99999999999 @@\n")]
+    [InlineData("--- a\n+++ b\n@@ -1 +1 @@\n*a\n+b\n")]
+    [InlineData("--- a\n+++ b\n@@ -1 +1 @@\n-a\n-b\n")]
+    [InlineData("--- a\n+++ b\n@@ -0,0 +1 @@\n\\ No newline at end of file\n+a\n")]
+    [InlineData("--- a\n+++ b\n@@ -1 +1 @@\n-a\n\\ No newline at end of file\n\\ No newline at end of file\n+b\n")]
+    public void UnifiedDiff_Parse_MalformedHunk_Throws(string patch)
+    {
+        Assert.Throws<FormatException>(() => UnifiedDiff.Parse(patch));
+    }
+
+    [Fact]
+    public void UnifiedDiff_Parse_NoFile()
+    {
+        Assert.Empty(UnifiedDiff.Parse("not a patch\n--- a\n"));
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void UnifiedDiff_AllAlgorithms_RandomizedInputs_RoundTrip(TextDiffAlgorithm algorithm)
+    {
+        var random = new Random(1234);
+        for (var iteration = 0; iteration < 200; iteration++)
+        {
+            var oldText = string.Join('\n', CreateRandomLines(random, alphabet: 5)) + (random.Next(2) is 0 ? "\n" : "");
+            var newText = string.Join('\n', CreateRandomLines(random, alphabet: 5)) + (random.Next(2) is 0 ? "\n" : "");
+            var options = new UnifiedDiffOptions { Algorithm = algorithm, ContextLines = random.Next(0, 4) };
+
+            var patch = UnifiedDiff.Create(oldText, newText, options).ToString();
+            var files = UnifiedDiff.Parse(patch);
+
+            if (string.Equals(oldText, newText, StringComparison.Ordinal))
+            {
+                Assert.Empty(files);
+                continue;
+            }
+
+            Assert.HasCount(1, files);
+            Assert.Equal(patch, files[0].ToString());
+            Assert.Equal(newText, files[0].Apply(oldText));
+        }
+    }
 
     [Fact]
     public void DocumentationExample_HighlightChangedWords()
@@ -1511,6 +1650,394 @@ public sealed class TextDiffTests
         Assert.Equal("a", chunks[0]);
         Assert.Equal("b", chunks[1]);
         Assert.Equal("c", chunks[2]);
+    }
+
+    [Fact]
+    public void DocumentationExample_DetectMoves()
+    {
+        #region TextDiff_DetectMoves
+        var options = new TextDiffOptions { DetectMoves = true };
+
+        var result = TextDiff.ComputeDiff("a\nb\nc\nd\n", "a\nc\nd\nb\n", options);
+
+        // The deleted "b" and the inserted "b" share move 0
+        Assert.Equal(
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "a\n"),
+                new TextDiffEntry(TextDiffOperation.Delete, "b\n", null, moveId: 0),
+                new TextDiffEntry(TextDiffOperation.Equal, "c\n"),
+                new TextDiffEntry(TextDiffOperation.Equal, "d\n"),
+                new TextDiffEntry(TextDiffOperation.Insert, null, "b\n", moveId: 0),
+                new TextDiffEntry(TextDiffOperation.Equal, ""),
+            ],
+            result.Entries);
+        #endregion
+    }
+
+    [Fact]
+    public void ComputeDiff_DetectMovesDisabled_HasNoMoveId()
+    {
+        var result = TextDiff.ComputeDiff("a\nb\nc\nd\n", "a\nc\nd\nb\n");
+
+        Assert.All(result.Entries, entry => entry.MoveId is null);
+    }
+
+    [Fact]
+    public void ComputeDiff_DetectMoves_BlockOfSeveralChunksSharesOneId()
+    {
+        var options = new TextDiffOptions { DetectMoves = true };
+
+        var result = TextDiff.ComputeDiff("x\ny\na\nb\nc\nd\ne\n", "a\nb\nc\nd\nx\ny\ne\nnew\n", options);
+
+        var moved = result.Entries.Where(entry => entry.MoveId is not null).ToArray();
+        Assert.Equal(["x\n", "y\n", "x\n", "y\n"], moved.Select(entry => entry.Text));
+        Assert.All(moved, entry => entry.MoveId is 0);
+        Assert.Equal(TextDiffOperation.Insert, result.Entries.Single(entry => entry.Text is "new\n").Operation);
+        Assert.Null(result.Entries.Single(entry => entry.Text is "new\n").MoveId);
+    }
+
+    [Fact]
+    public void ComputeDiff_DetectMoves_TwoMoves()
+    {
+        var options = new TextDiffOptions { DetectMoves = true };
+
+        var result = TextDiff.ComputeDiff("a\nb\nc\nd\ne\n", "b\nc\na\nd\ne\n", options);
+
+        Assert.Equal([0, 0], result.Entries.Where(entry => entry.Text is "a\n" && entry.Operation is not TextDiffOperation.Equal).Select(entry => entry.MoveId!.Value));
+        Assert.Equal("Delete (move 0): a\n", result.Entries.First(entry => entry.MoveId is not null).ToString());
+    }
+
+    [Fact]
+    public void ComputeDiff_DetectMoves_WhitespaceOnlyBlockIsNotAMove()
+    {
+        var options = new TextDiffOptions { DetectMoves = true };
+
+        // The empty line moves to the end: deleting and inserting it is the minimal diff
+        var result = TextDiff.ComputeDiff("\na\nb\nc\n", "a\nb\nc\n\n", options);
+
+        Assert.Equal(TextDiffOperation.Delete, result.Entries[0].Operation);
+        Assert.All(result.Entries, entry => entry.MoveId is null);
+    }
+
+    [Fact]
+    public void ComputeDiff_DetectMoves_ReplacedInPlaceIsNotAMove()
+    {
+        // An expired timeout replaces the whole region, so "a" and "b" are deleted and inserted in the same block
+        var options = new TextDiffOptions { DetectMoves = true, Timeout = TimeSpan.Zero };
+
+        var result = TextDiff.ComputeDiff("a\nb\n", "b\na\n", options);
+
+        Assert.All(result.Entries, entry => entry.MoveId is null);
+    }
+
+    [Fact]
+    public void ComputeDiff_DetectMoves_UsesTheComparisonOptions()
+    {
+        var options = new TextDiffOptions { DetectMoves = true, IgnoreCase = true };
+
+        var result = TextDiff.ComputeDiff("Moved\na\nb\n", "a\nb\nMOVED\n", options);
+
+        Assert.HasCount(2, result.Entries.Where(entry => entry.MoveId is 0));
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void ComputeDiff_AllAlgorithms_DetectMoves_PairsEqualBlocks(TextDiffAlgorithm algorithm)
+    {
+        var random = new Random(42);
+        for (var iteration = 0; iteration < 200; iteration++)
+        {
+            var oldText = string.Join('\n', CreateRandomLines(random, alphabet: 12));
+            var newText = string.Join('\n', CreateRandomLines(random, alphabet: 12));
+            var options = new TextDiffOptions { Algorithm = algorithm, DetectMoves = true };
+
+            var result = TextDiff.ComputeDiff(oldText, newText, options);
+
+            Assert.Equal(oldText, ReconstructOldText(result));
+            Assert.Equal(newText, ReconstructNewText(result));
+            foreach (var move in result.Entries.Where(entry => entry.MoveId is not null).GroupBy(entry => entry.MoveId))
+            {
+                var deleted = move.Where(entry => entry.Operation is TextDiffOperation.Delete).Select(entry => entry.OldText).ToArray();
+                var inserted = move.Where(entry => entry.Operation is TextDiffOperation.Insert).Select(entry => entry.NewText).ToArray();
+                Assert.NotEmpty(deleted);
+                Assert.Equal(deleted, inserted);
+            }
+        }
+    }
+
+    [Fact]
+    public void DocumentationExample_GraphemeChunks()
+    {
+        #region TextDiff_GraphemeChunks
+        // "e" followed by a combining acute accent, an emoji (a surrogate pair), and "\r\n"
+        var chunks = TextChunker.Graphemes.Chunk("e\u0301\U0001F600!\r\n");
+
+        Assert.Equal(["e\u0301", "\U0001F600", "!", "\r\n"], chunks);
+        #endregion
+    }
+
+    [Fact]
+    public void ComputeDiff_Graphemes_ReplacesTheWholeEmoji()
+    {
+        var options = new TextDiffOptions { Chunker = TextChunker.Graphemes };
+
+        var result = TextDiff.ComputeDiff("I \U0001F600 you", "I \U0001F601 you", options);
+
+        Assert.Equal(
+            [
+                new TextDiffEntry(TextDiffOperation.Equal, "I"),
+                new TextDiffEntry(TextDiffOperation.Equal, " "),
+                new TextDiffEntry(TextDiffOperation.Delete, "\U0001F600"),
+                new TextDiffEntry(TextDiffOperation.Insert, "\U0001F601"),
+                new TextDiffEntry(TextDiffOperation.Equal, " "),
+                new TextDiffEntry(TextDiffOperation.Equal, "y"),
+                new TextDiffEntry(TextDiffOperation.Equal, "o"),
+                new TextDiffEntry(TextDiffOperation.Equal, "u"),
+            ],
+            result.Entries);
+    }
+
+    [Fact]
+    public void GraphemeChunker_EmptyText_HasNoChunk()
+    {
+        Assert.Empty(TextChunker.Graphemes.Chunk(""));
+    }
+
+    [Fact]
+    public void GraphemeChunker_LoneSurrogate_IsOneChunk()
+    {
+        var text = "a" + (char)0xD800 + "b";
+
+        Assert.Equal(["a", ((char)0xD800).ToString(), "b"], TextChunker.Graphemes.Chunk(text));
+    }
+
+    [Fact]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void DocumentationExample_CompareOptions()
+    {
+        #region TextDiff_CompareOptions
+        var options = new TextDiffOptions { CompareOptions = CompareOptions.IgnoreNonSpace };
+
+        // The accents are ignored
+        Assert.False(TextDiff.ComputeDiff("Caf\u00E9 cr\u00E8me\n", "Cafe creme\n", options).HasDifferences);
+        #endregion
+    }
+
+    [Fact]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void DocumentationExample_Culture()
+    {
+        #region TextDiff_Culture
+        var options = new TextDiffOptions { Culture = CultureInfo.GetCultureInfo("tr-TR"), IgnoreCase = true };
+
+        // In Turkish, the lowercase of "I" is the dotless "\u0131"
+        Assert.False(TextDiff.ComputeDiff("TITLE\n", "t\u0131tle\n", options).HasDifferences);
+
+        // The ordinal comparison of IgnoreCase alone does not know it
+        Assert.True(TextDiff.ComputeDiff("TITLE\n", "t\u0131tle\n", new TextDiffOptions { IgnoreCase = true }).HasDifferences);
+        #endregion
+    }
+
+    [Fact]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void ComputeDiff_Culture_CanonicallyEquivalentChunksAreEqual()
+    {
+        var options = new TextDiffOptions { Culture = CultureInfo.InvariantCulture };
+
+        Assert.False(TextDiff.ComputeDiff("caf\u00E9\n", "cafe\u0301\n", options).HasDifferences);
+        Assert.True(TextDiff.ComputeDiff("caf\u00E9\n", "cafe\u0301\n").HasDifferences);
+    }
+
+    [Fact]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void ComputeDiff_CompareOptions_CombinesWithTheOtherOptions()
+    {
+        var options = new TextDiffOptions { CompareOptions = CompareOptions.IgnoreNonSpace, IgnoreCase = true, IgnoreWhitespace = true };
+
+        var result = TextDiff.ComputeDiff("  Caf\u00E9\nsame\n", "CAFE  \nsame\n", options);
+
+        Assert.False(result.HasDifferences);
+        Assert.Equal("  Caf\u00E9\nsame\n", ReconstructOldText(result));
+        Assert.Equal("CAFE  \nsame\n", ReconstructNewText(result));
+    }
+
+    [Fact]
+    [RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void ComputeHierarchyDiff_CompareOptions_PropagatesToNestedLevels()
+    {
+        var options = new TextDiffOptions { CompareOptions = CompareOptions.IgnoreNonSpace };
+
+        var result = TextDiff.ComputeHierarchyDiff("na\u00EFve idea\n", "naive plan\n", [TextChunker.Lines, TextChunker.Words], options);
+
+        var line = result.Entries[0];
+        Assert.Equal(TextDiffHierarchyOperation.Replace, line.Operation);
+        Assert.Equal(TextDiffHierarchyOperation.Equal, line.Children[0].Operation);
+    }
+
+    [Theory]
+    [InlineData(CompareOptions.Ordinal)]
+    [InlineData(CompareOptions.OrdinalIgnoreCase)]
+    [InlineData(CompareOptions.StringSort)]
+    [InlineData(CompareOptions.IgnoreCase | CompareOptions.StringSort)]
+    public void ComputeDiff_UnsupportedCompareOptions_Throws(CompareOptions compareOptions)
+    {
+        var options = new TextDiffOptions { CompareOptions = compareOptions };
+
+        Assert.Throws<ArgumentOutOfRangeException>("options", () => TextDiff.ComputeDiff("a", "b", options));
+    }
+
+    [Fact]
+    public void ComputeDiff_InvariantCultureIgnoreCase_MatchesTheCasing()
+    {
+        // Casing is the same with and without ICU
+        var options = new TextDiffOptions { Culture = CultureInfo.InvariantCulture, IgnoreCase = true };
+
+        Assert.False(TextDiff.ComputeDiff("Hello\n", "HELLO\n", options).HasDifferences);
+    }
+
+    [Fact]
+    public void DocumentationExample_Merge()
+    {
+        #region TextMerge_Merge
+        var baseText = "red\ngreen\nblue\n";
+        var oursText = "red\nGREEN\nblue\n";            // Changes a line
+        var theirsText = "red\ngreen\nblue\nyellow\n";   // Adds a line
+
+        var result = TextMerge.Merge(baseText, oursText, theirsText);
+
+        Assert.False(result.HasConflicts);
+        Assert.Equal("red\nGREEN\nblue\nyellow\n", result.Text);
+        #endregion
+
+        Assert.Equal(
+            [TextMergeChunkKind.Unchanged, TextMergeChunkKind.ChangedInOurs, TextMergeChunkKind.Unchanged, TextMergeChunkKind.ChangedInTheirs, TextMergeChunkKind.Unchanged],
+            result.Chunks.Select(chunk => chunk.Kind));
+    }
+
+    [Fact]
+    public void DocumentationExample_MergeConflict()
+    {
+        #region TextMerge_Conflict
+        var baseText = "title: Draft\nbody\n";
+        var oursText = "title: Final\nbody\n";
+        var theirsText = "title: Review\nbody\n";
+
+        var result = TextMerge.Merge(baseText, oursText, theirsText, new TextMergeOptions
+        {
+            ConflictStyle = TextMergeConflictStyle.Diff3,
+            OursLabel = "main",
+            TheirsLabel = "feature",
+        });
+
+        Assert.True(result.HasConflicts);
+        Assert.Equal(
+            "<<<<<<< main\n" +
+            "title: Final\n" +
+            "||||||| base\n" +
+            "title: Draft\n" +
+            "=======\n" +
+            "title: Review\n" +
+            ">>>>>>> feature\n" +
+            "body\n",
+            result.Text);
+
+        // Each region gives the text of the three versions, to resolve the conflict in code
+        var conflict = result.Chunks.Single(chunk => chunk.Kind is TextMergeChunkKind.Conflict);
+        Assert.Equal("title: Draft\n", conflict.BaseText);
+        Assert.Equal("title: Final\n", conflict.OursText);
+        Assert.Equal("title: Review\n", conflict.TheirsText);
+        Assert.Null(conflict.Text);
+        #endregion
+    }
+
+    [Fact]
+    public void TextMerge_SameChangeOnBothSides_IsNotAConflict()
+    {
+        var result = TextMerge.Merge("a\nb\nc\n", "a\nB\nc\n", "a\nB\nc\nd\n");
+
+        Assert.False(result.HasConflicts);
+        Assert.Equal("a\nB\nc\nd\n", result.Text);
+        Assert.Contains(TextMergeChunkKind.ChangedInBoth, result.Chunks.Select(chunk => chunk.Kind).ToList());
+    }
+
+    [Fact]
+    public void TextMerge_InsertionsAtTheSamePlace_Conflict()
+    {
+        var result = TextMerge.Merge("a\nb\n", "a\nx\nb\n", "a\ny\nb\n");
+
+        Assert.True(result.HasConflicts);
+        Assert.Equal("a\n<<<<<<< ours\nx\n=======\ny\n>>>>>>> theirs\nb\n", result.Text);
+    }
+
+    [Fact]
+    public void TextMerge_DeletedOnOneSideChangedOnTheOther_Conflict()
+    {
+        var result = TextMerge.Merge("a\nb\nc\n", "a\nc\n", "a\nB\nc\n");
+
+        Assert.True(result.HasConflicts);
+        Assert.Equal("a\n<<<<<<< ours\n=======\nB\n>>>>>>> theirs\nc\n", result.Text);
+    }
+
+    [Fact]
+    public void TextMerge_NoFinalLineFeed_MarkersStartALine()
+    {
+        var result = TextMerge.Merge("a", "b", "c", new TextMergeOptions { OursLabel = "", TheirsLabel = "" });
+
+        Assert.Equal("<<<<<<<\nb\n=======\nc\n>>>>>>>\n", result.Text);
+    }
+
+    [Fact]
+    public void TextMerge_WordChunker()
+    {
+        var options = new TextMergeOptions { DiffOptions = new TextDiffOptions { Chunker = TextChunker.Words } };
+
+        var result = TextMerge.Merge("a b c", "A b c", "a b C", options);
+
+        Assert.False(result.HasConflicts);
+        Assert.Equal("A b C", result.Text);
+    }
+
+    [Fact]
+    public void TextMerge_IgnoreCase_TakesOursForUnchangedRegions()
+    {
+        var options = new TextMergeOptions { DiffOptions = new TextDiffOptions { IgnoreCase = true } };
+
+        var result = TextMerge.Merge("A\nb\n", "a\nb\n", "A\nb\nc\n", options);
+
+        Assert.False(result.HasConflicts);
+        Assert.Equal("a\nb\nc\n", result.Text);
+    }
+
+    [Fact]
+    public void TextMerge_InvalidConflictStyle_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("options", () => TextMerge.Merge("a", "b", "c", new TextMergeOptions { ConflictStyle = (TextMergeConflictStyle)42 }));
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void TextMerge_AllAlgorithms_RandomizedInputs(TextDiffAlgorithm algorithm)
+    {
+        var random = new Random(7);
+        var options = new TextMergeOptions { DiffOptions = new TextDiffOptions { Algorithm = algorithm } };
+        for (var iteration = 0; iteration < 200; iteration++)
+        {
+            var baseText = string.Join('\n', CreateRandomLines(random, alphabet: 6));
+            var oursText = string.Join('\n', CreateRandomLines(random, alphabet: 6));
+            var theirsText = string.Join('\n', CreateRandomLines(random, alphabet: 6));
+
+            var result = TextMerge.Merge(baseText, oursText, theirsText, options);
+            Assert.Equal(baseText, string.Concat(result.Chunks.Select(chunk => chunk.BaseText)));
+            Assert.Equal(oursText, string.Concat(result.Chunks.Select(chunk => chunk.OursText)));
+            Assert.Equal(theirsText, string.Concat(result.Chunks.Select(chunk => chunk.TheirsText)));
+            Assert.Equal(result.Chunks.Any(chunk => chunk.Kind is TextMergeChunkKind.Conflict), result.HasConflicts);
+
+            Assert.Equal(oursText, TextMerge.Merge(baseText, oursText, baseText, options).Text);
+            Assert.Equal(theirsText, TextMerge.Merge(baseText, baseText, theirsText, options).Text);
+            Assert.Equal(oursText, TextMerge.Merge(baseText, oursText, oursText, options).Text);
+        }
     }
 
     private static string ReconstructOldText(TextDiffResult result)

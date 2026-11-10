@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Globalization;
 
 namespace Meziantou.Framework;
 
@@ -25,9 +26,20 @@ public class TextChunker
 
     /// <summary>Gets a chunker that produces one chunk per <see cref="char"/>.</summary>
     /// <remarks>
-    /// Chunks are UTF-16 code units, not grapheme clusters: a surrogate pair is split into two chunks.
+    /// Chunks are UTF-16 code units, not grapheme clusters: a surrogate pair is split into two chunks. Use
+    /// <see cref="Graphemes"/> to keep each user-perceived character in one chunk.
     /// </remarks>
     public static TextChunker Characters { get; } = new CharacterChunker();
+
+    /// <summary>
+    /// Gets a chunker that produces one chunk per grapheme cluster: what a user sees as a single character, such as an
+    /// emoji, a letter followed by combining accents, or <c>"\r\n"</c>.
+    /// </summary>
+    /// <remarks>
+    /// The clusters are the extended grapheme clusters of Unicode (UAX #29), as returned by
+    /// <see cref="StringInfo.GetNextTextElementLength(ReadOnlySpan{char})"/>. They do not depend on the current culture.
+    /// </remarks>
+    public static TextChunker Graphemes { get; } = new GraphemeChunker();
 
     /// <summary>Splits <paramref name="value"/> into chunks.</summary>
     /// <param name="value">The text to split.</param>
@@ -126,7 +138,7 @@ public class TextChunker
     private sealed class CharacterChunker : TextChunker
     {
         // Cache single-character strings for the ASCII range to avoid allocating a new string per character.
-        private static readonly string[] AsciiCache = CreateAsciiCache();
+        internal static readonly string[] AsciiCache = CreateAsciiCache();
 
         private static string[] CreateAsciiCache()
         {
@@ -149,6 +161,23 @@ public class TextChunker
             }
 
             return chars;
+        }
+    }
+
+    private sealed class GraphemeChunker : TextChunker
+    {
+        public override IEnumerable<string> Chunk(ReadOnlySpan<char> value)
+        {
+            var graphemes = new List<string>();
+            while (!value.IsEmpty)
+            {
+                var length = StringInfo.GetNextTextElementLength(value);
+                var c = value[0];
+                graphemes.Add(length is 1 && c < CharacterChunker.AsciiCache.Length ? CharacterChunker.AsciiCache[c] : value[..length].ToString());
+                value = value[length..];
+            }
+
+            return graphemes;
         }
     }
 }

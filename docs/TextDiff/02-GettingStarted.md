@@ -67,5 +67,8 @@ See [Chunking](04-Chunking.md) and [Comparison options](05-ComparisonOptions.md)
 
 - [Reading the result](03-ReadingTheResult.md): the entries, and how to rebuild either text.
 - [Hierarchical diffs](06-HierarchicalDiffs.md): find the changed lines, then the changed words inside them.
-- [Algorithms](07-Algorithms.md): when to use another algorithm than Myers.
-- [Displaying a diff](08-DisplayingADiff.md): write the result as a unified diff or as HTML.
+- [Detecting moves](07-DetectingMoves.md): find the blocks that moved.
+- [Algorithms](08-Algorithms.md): when to use another algorithm than Myers.
+- [Displaying a diff](09-DisplayingADiff.md): write the result as a unified diff or as HTML.
+- [Patches](10-Patches.md): read and apply unified diffs.
+- [Merging](11-Merging.md): merge two versions of a text.

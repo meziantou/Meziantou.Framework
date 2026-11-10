@@ -4,15 +4,16 @@ namespace Meziantou.Framework;
 /// what happened to it.</summary>
 public sealed class TextDiffResult
 {
-    internal TextDiffResult(IReadOnlyList<TextDiffEntry> entries, bool hasDifferences)
+    internal TextDiffResult(List<TextDiffEntry> entries, bool hasDifferences)
     {
-        Entries = entries;
+        MutableEntries = entries;
         HasDifferences = hasDifferences;
     }
 
+    internal List<TextDiffEntry> MutableEntries { get; }
 
     /// <summary>Gets the chunks of both texts, in order.</summary>
-    public IReadOnlyList<TextDiffEntry> Entries { get; }
+    public IReadOnlyList<TextDiffEntry> Entries => MutableEntries;
 
     /// <summary>Gets a value indicating whether the two texts differ under the comparison options that were used.</summary>
     public bool HasDifferences { get; }

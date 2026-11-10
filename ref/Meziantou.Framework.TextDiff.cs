@@ -7,6 +7,7 @@ namespace Meziantou.Framework
     public class TextChunker
     {
         public static Meziantou.Framework.TextChunker Characters { get => throw null; }
+        public static Meziantou.Framework.TextChunker Graphemes { get => throw null; }
         public static Meziantou.Framework.TextChunker Lines { get => throw null; }
         public static Meziantou.Framework.TextChunker Words { get => throw null; }
         public virtual System.Collections.Generic.IEnumerable<string> Chunk(System.ReadOnlySpan<char> value) => throw null;
@@ -28,12 +29,14 @@ namespace Meziantou.Framework
 
     public readonly struct TextDiffEntry : System.IEquatable<Meziantou.Framework.TextDiffEntry>
     {
+        public int? MoveId { get => throw null; }
         public string? NewText { get => throw null; }
         public string? OldText { get => throw null; }
         public Meziantou.Framework.TextDiffOperation Operation { get => throw null; }
         public string Text { get => throw null; }
         public TextDiffEntry(Meziantou.Framework.TextDiffOperation operation, string text) { }
         public TextDiffEntry(Meziantou.Framework.TextDiffOperation operation, string? oldText, string? newText) { }
+        public TextDiffEntry(Meziantou.Framework.TextDiffOperation operation, string? oldText, string? newText, int? moveId) { }
         public bool Equals(Meziantou.Framework.TextDiffEntry other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
@@ -76,6 +79,9 @@ namespace Meziantou.Framework
     {
         public Meziantou.Framework.TextDiffAlgorithm Algorithm { get => throw null; set { } }
         public Meziantou.Framework.TextChunker Chunker { get => throw null; set { } }
+        public System.Globalization.CompareOptions CompareOptions { get => throw null; set { } }
+        public System.Globalization.CultureInfo? Culture { get => throw null; set { } }
+        public bool DetectMoves { get => throw null; set { } }
         public bool IgnoreCase { get => throw null; set { } }
         public bool IgnoreEndOfLine { get => throw null; set { } }
         public bool IgnoreWhitespace { get => throw null; set { } }
@@ -88,5 +94,107 @@ namespace Meziantou.Framework
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.TextDiffEntry> Entries { get => throw null; }
         public bool HasDifferences { get => throw null; }
         public override string ToString() => throw null;
+    }
+
+    public static class TextMerge
+    {
+        public static Meziantou.Framework.TextMergeResult Merge(string baseText, string oursText, string theirsText, Meziantou.Framework.TextMergeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
+    public sealed class TextMergeChunk
+    {
+        public string BaseText { get => throw null; }
+        public Meziantou.Framework.TextMergeChunkKind Kind { get => throw null; }
+        public string OursText { get => throw null; }
+        public string? Text { get => throw null; }
+        public string TheirsText { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public enum TextMergeChunkKind
+    {
+        Unchanged = 0,
+        ChangedInOurs = 1,
+        ChangedInTheirs = 2,
+        ChangedInBoth = 3,
+        Conflict = 4,
+    }
+
+    public enum TextMergeConflictStyle
+    {
+        Merge = 0,
+        Diff3 = 1,
+    }
+
+    public sealed class TextMergeOptions
+    {
+        public string BaseLabel { get => throw null; set { } }
+        public Meziantou.Framework.TextMergeConflictStyle ConflictStyle { get => throw null; set { } }
+        public Meziantou.Framework.TextDiffOptions? DiffOptions { get => throw null; set { } }
+        public string OursLabel { get => throw null; set { } }
+        public string TheirsLabel { get => throw null; set { } }
+    }
+
+    public sealed class TextMergeResult
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.TextMergeChunk> Chunks { get => throw null; }
+        public bool HasConflicts { get => throw null; }
+        public string Text { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public static class UnifiedDiff
+    {
+        public static string Apply(string text, string patch) => throw null;
+        public static Meziantou.Framework.UnifiedDiffFile Create(string oldText, string newText, Meziantou.Framework.UnifiedDiffOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.UnifiedDiffFile> Parse(string patch) => throw null;
+    }
+
+    public sealed class UnifiedDiffApplyException : System.Exception
+    {
+        public int HunkIndex { get => throw null; }
+        public UnifiedDiffApplyException(string message) { }
+        public UnifiedDiffApplyException(string message, System.Exception innerException) { }
+    }
+
+    public sealed class UnifiedDiffFile
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.UnifiedDiffHunk> Hunks { get => throw null; }
+        public string NewFileName { get => throw null; }
+        public string OldFileName { get => throw null; }
+        public string Apply(string text) => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public sealed class UnifiedDiffHunk
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.UnifiedDiffLine> Lines { get => throw null; }
+        public int NewLineCount { get => throw null; }
+        public int NewStart { get => throw null; }
+        public int OldLineCount { get => throw null; }
+        public int OldStart { get => throw null; }
+        public string? SectionHeading { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public readonly struct UnifiedDiffLine : System.IEquatable<Meziantou.Framework.UnifiedDiffLine>
+    {
+        public Meziantou.Framework.TextDiffOperation Operation { get => throw null; }
+        public string Text { get => throw null; }
+        public bool Equals(Meziantou.Framework.UnifiedDiffLine other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.UnifiedDiffLine left, Meziantou.Framework.UnifiedDiffLine right) => throw null;
+        public static bool operator !=(Meziantou.Framework.UnifiedDiffLine left, Meziantou.Framework.UnifiedDiffLine right) => throw null;
+    }
+
+    public sealed class UnifiedDiffOptions
+    {
+        public Meziantou.Framework.TextDiffAlgorithm Algorithm { get => throw null; set { } }
+        public int ContextLines { get => throw null; set { } }
+        public string NewFileName { get => throw null; set { } }
+        public string OldFileName { get => throw null; set { } }
+        public System.TimeSpan? Timeout { get => throw null; set { } }
     }
 }

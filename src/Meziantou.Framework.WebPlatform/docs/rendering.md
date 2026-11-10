@@ -483,7 +483,9 @@ operations (see [Paint worklet images](#paint-worklet-images)).
   filter and the clip region of the state (not the transformation matrix), and its drawings are recorded in a display list of
   their own (`CanvasRenderingContext2DBase.Builder`). `endLayer()` draws this list through the drawing model with the
   restored state, as one isolated group (`SaveLayerItem`), the filter of the layer applied in the coordinates of its
-  transformation matrix; a layer opened with a non-invertible matrix is not drawn. The pixels cannot be read while a layer is
+  transformation matrix; a layer opened with a non-invertible matrix is not drawn. The shadow of a layer is drawn from an
+  image of the layer (rasterized by the backend, as the texture of a layer in the browsers), so that a layer is not added
+  twice to its parent (the display list would double at each nested layer with a shadow). The pixels cannot be read while a layer is
   open (`InvalidStateError`), the page paints the bitmap without the open layers, and a paint callback ends its open layers.
   The filter of a layer is a CSS filter: the `CanvasFilter` objects are ignored.
 - Not implemented: `CanvasFilter` objects, the HDR settings (`toneMapping`), HDR gradient colors and intermediate layers and effects,

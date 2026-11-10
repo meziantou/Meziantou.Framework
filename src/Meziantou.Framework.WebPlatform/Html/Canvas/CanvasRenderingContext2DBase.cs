@@ -1114,7 +1114,8 @@ public abstract partial class CanvasRenderingContext2DBase
     /// composited within the clip region with the compositing operator, then the shape itself.
     /// </summary>
     /// <param name="addItems">Adds the items of the shape, in the coordinates of the canvas (they add their own transform).</param>
-    private void DrawShape(Action<DisplayListBuilder> addItems)
+    /// <param name="addShadowItems">Adds the items of the shape for its shadow, or null to use <paramref name="addItems"/>.</param>
+    private void DrawShape(Action<DisplayListBuilder> addItems, Action<DisplayListBuilder>? addShadowItems = null)
     {
         if (!Bitmap.HasPixels)
             return;
@@ -1131,7 +1132,7 @@ public abstract partial class CanvasRenderingContext2DBase
         {
             var shadow = new DropShadowFilter(new PhysicalOffset(_state.ShadowOffsetX, _state.ShadowOffsetY), _state.ShadowBlur / 2, _state.ShadowColor) { ShadowOnly = true };
             builder.SaveLayer(new SaveLayerItem(1, mode, filters is null ? [shadow] : [.. filters, shadow]));
-            addItems(builder);
+            (addShadowItems ?? addItems)(builder);
             builder.Restore();
         }
 

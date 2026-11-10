@@ -726,5 +726,35 @@ public sealed class CanvasTests : IDisposable
         Assert.Equal([0, 0, 0, 0], GetPixel(context, 0, 0));
         Assert.Equal("InvalidStateError", Assert.Throws<DomException>(context.EndLayer).Name);
     }
+
+    [Theory]
+    [InlineData("source-over")]
+    [InlineData("multiply")]
+    public void Layers_NestedLayersWithShadowsDoNotCopyTheirContent(string compositeOperation)
+    {
+        var (_, _, context) = Create(20, 20);
+
+        // Each layer is drawn with a shadow: the layer is added once to its parent (not once for the shadow and once for the
+        // layer), so the display list does not double at each level
+        for (var i = 0; i < 40; i++)
+        {
+            context.GlobalCompositeOperation = compositeOperation;
+            context.ShadowColor = "#000";
+            context.ShadowOffsetX = 1;
+            context.BeginLayer();
+        }
+
+        context.FillStyle = "#f00";
+        context.FillRect(0, 0, 4, 4);
+        for (var i = 0; i < 40; i++)
+        {
+            context.EndLayer();
+        }
+
+        Assert.Equal([255, 0, 0, 255], GetPixel(context, 0, 0));
+        Assert.Equal([0, 0, 0, 255], GetPixel(context, 4, 0));
+        Assert.Equal([0, 0, 0, 255], GetPixel(context, 18, 0));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 18, 6));
+    }
 #pragma warning restore WEBPLATEXP0017
 }

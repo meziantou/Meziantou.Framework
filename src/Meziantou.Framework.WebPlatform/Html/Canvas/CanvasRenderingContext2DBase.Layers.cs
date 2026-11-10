@@ -79,7 +79,13 @@ public abstract partial class CanvasRenderingContext2DBase
         // applies in the coordinates of the transformation matrix of the layer (unlike the filter of the state).
         var alpha = _state.GlobalAlpha;
         var transform = _state.Transform;
-        DrawShape(builder =>
+        // With a shadow, the drawings of the layer must not be added twice to the parent (once for the shadow, once for the
+        // layer): a shadow at each nested layer would double the size of the display list at each level. The shadow is drawn
+        // from an image of the layer instead, as the browsers draw the texture of the layer.
+        var shadowContent = ShadowsAreDrawn ? RasterizeForShadow(content) : null;
+        DrawShape(builder => AddLayer(builder, content), shadowContent is null ? null : builder => AddLayer(builder, shadowContent));
+
+        void AddLayer(DisplayListBuilder builder, DisplayList list)
         {
             builder.SaveLayer(new SaveLayerItem(alpha, BlendMode.Normal, Filters: null));
             if (layer.Filters is { } filters && Invert(transform) is { } inverse)
@@ -88,17 +94,45 @@ public abstract partial class CanvasRenderingContext2DBase
                 builder.Transform(transform);
                 builder.SaveLayer(new SaveLayerItem(1, BlendMode.Normal, filters));
                 builder.Transform(inverse);
-                builder.AddList(content);
+                builder.AddList(list);
                 builder.Restore();
                 builder.Restore();
             }
             else
             {
-                builder.AddList(content);
+                builder.AddList(list);
             }
 
             builder.Restore();
-        });
+        }
+    }
+
+    /// <summary>
+    /// Returns an image of the drawings of a layer for the pass of its shadow, as the browsers draw the texture of the layer: the area that the shadow moves onto the canvas (the canvas moved by the
+    /// opposite of the offset), with a margin for the blur and the filters, so its size does not depend on the offset. Returns
+    /// null when the image cannot be created: the drawings are then added again.
+    /// </summary>
+    private DisplayList? RasterizeForShadow(DisplayList content)
+    {
+        double width = Bitmap.Width;
+        double height = Bitmap.Height;
+        var margin = Math.Ceiling((_state.ShadowBlur * 1.5) + Math.Max(width, height));
+        var x = Math.Round(-_state.ShadowOffsetX, MidpointRounding.AwayFromZero) - margin;
+        var y = Math.Round(-_state.ShadowOffsetY, MidpointRounding.AwayFromZero) - margin;
+        var imageWidth = width + (2 * margin);
+        var imageHeight = height + (2 * margin);
+        if (imageWidth * imageHeight > BitmapPixels.MaxPixelCount)
+            return null;
+
+        using var surface = Bitmap.Backend.CreateSurface((int)imageWidth, (int)imageHeight, new RenderingSurfaceOptions(HasAlpha: true, Bitmap.Options.ColorSpace));
+        if (surface is null)
+            return null;
+
+        surface.Draw(content.WithTransform(DisplayMatrix.Translation(-x, -y)));
+        var image = new PaintImage("", Bitmap.Backend, surface.CreateSnapshot());
+        var builder = new DisplayListBuilder();
+        builder.Add(new DrawImageItem(image, new PhysicalRect(0, 0, imageWidth, imageHeight), new PhysicalRect(x, y, imageWidth, imageHeight), ImageSampling.Pixelated));
+        return builder.ToDisplayList(content.Size);
     }
 
     /// <summary>Closes the open layers (and the states saved in them), as <see cref="EndLayer"/> does, e.g. at the end of a paint callback.</summary>

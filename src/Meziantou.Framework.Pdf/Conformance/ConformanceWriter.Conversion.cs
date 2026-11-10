@@ -413,9 +413,23 @@ internal static partial class ConformanceWriter
         var limits = document.Reader?.DecodeLimits ?? PdfDecodeLimits.Default;
 
         // The content streams of a page are one content: an operator and its operands may be in two streams (7.8.2).
-        // A page whose content changes gets one stream; its streams may be shared with other pages.
+        // A page whose content changes gets one stream, shared by the pages that have the same streams.
+        var rewritten = new Dictionary<string, PdfReference?>(StringComparer.Ordinal);
+        var pageNumber = 0;
         foreach (var page in document.Pages)
         {
+            pageNumber++;
+            var key = GetContentsKey(page);
+            if (key is not null && rewritten.TryGetValue(key, out var shared))
+            {
+                if (shared is not null)
+                {
+                    page.Dictionary[PdfNames.Contents] = shared;
+                }
+
+                continue;
+            }
+
             byte[] data;
             try
             {
@@ -423,14 +437,22 @@ internal static partial class ConformanceWriter
             }
             catch (PdfException)
             {
+                violations.Add($"The content of page {pageNumber} cannot be decoded: its inline images cannot be checked");
                 continue;
             }
 
+            PdfReference? reference = null;
             if (RewriteInlineImages(data, limits, change, violations) is { } content)
             {
                 var stream = new PdfStream();
                 stream.SetData(content);
-                page.Dictionary[PdfNames.Contents] = document.Objects.Add(stream);
+                reference = document.Objects.Add(stream);
+                page.Dictionary[PdfNames.Contents] = reference;
+            }
+
+            if (key is not null)
+            {
+                rewritten[key] = reference;
             }
         }
 
@@ -451,6 +473,20 @@ internal static partial class ConformanceWriter
                 stream.SetData(content);
             }
         }
+    }
+
+    /// <summary>Gets a key of the content streams of a page, the same for the pages that share them, or <see langword="null"/> when they are not indirect objects.</summary>
+    private static string? GetContentsKey(PdfPage page)
+    {
+        var references = PdfReference.ResolveIfReference(page.Dictionary[PdfNames.Contents] ?? PdfNull.Instance) switch
+        {
+            PdfArray array => array.ToList(),
+            _ => [page.Dictionary[PdfNames.Contents] ?? PdfNull.Instance],
+        };
+        if (!references.TrueForAll(item => item is PdfReference))
+            return null;
+
+        return string.Join(' ', references.Cast<PdfReference>().Select(reference => reference.ObjectNumber.ToString(System.Globalization.CultureInfo.InvariantCulture) + "." + reference.Generation.ToString(System.Globalization.CultureInfo.InvariantCulture)));
     }
 
     /// <summary>Rewrites a content whose inline images need a fix; returns <see langword="null"/> when none does.</summary>

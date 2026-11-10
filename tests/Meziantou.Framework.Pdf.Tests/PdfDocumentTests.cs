@@ -949,6 +949,43 @@ public sealed class PdfDocumentTests
         Assert.DoesNotContain("/LZW", content);
     }
 
+    [Fact]
+    public void ConvertToPdfA_ThePagesThatShareTheirContentShareItsFix()
+    {
+        var lzw = Meziantou.Framework.Pdf.Filters.LzwFilter.Encode([0x80]);
+        var content = "q BI /W 1 /H 1 /BPC 8 /CS /G /F /LZW /L " + lzw.Length.ToString(CultureInfo.InvariantCulture) + " ID " + Encoding.Latin1.GetString(lzw) + " EI Q";
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 5 0 R >>")
+            .Add(5, HandWrittenPdf.Stream(content));
+        var document = PdfDocument.Open(file.ToArray());
+
+        var result = document.ConvertToPdfA(PdfAConformance.PdfA2B);
+
+        Assert.True(result.Succeeded, string.Join('\n', result.Violations));
+        Assert.Equal(document.Pages[0].Dictionary[PdfNames.Contents], document.Pages[1].Dictionary[PdfNames.Contents]);
+        Assert.NotEqual(5, Assert.IsType<PdfReference>(document.Pages[0].Dictionary[PdfNames.Contents]).ObjectNumber);
+    }
+
+    [Fact]
+    public void ConvertToPdfA_ReportsThePagesWhoseContentCannotBeDecoded()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents [4 0 R 5 0 R] >>")
+            .Add(4, HandWrittenPdf.Stream("not flate data", " /Filter /FlateDecode"))
+            .Add(5, HandWrittenPdf.Stream("0 0 10 10 re f"));
+        var document = PdfDocument.Open(file.ToArray());
+
+        var result = document.ConvertToPdfA(PdfAConformance.PdfA2B);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains("The content of page 1 cannot be decoded: its inline images cannot be checked", result.Violations);
+    }
+
     [Theory]
     [InlineData(PdfAConformance.PdfA1B)]
     [InlineData(PdfAConformance.PdfA2A)]

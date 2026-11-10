@@ -79,6 +79,10 @@ internal sealed class IniDocumentSyntax : IniSyntaxNode
     /// moved back after it, or removed with it when the header is gone.
     /// </item>
     /// <item>
+    /// In the git dialect, a value that ends the text with a backslash is followed by a blank line once its line ends, so
+    /// that it does not continue on the entry after it.
+    /// </item>
+    /// <item>
     /// With <see cref="IniParseOptions.AllowMultilineValues"/>, an entry after a property is indented no more than its key,
     /// so that it does not continue its value, and the lines a value continues on are indented more than its key.
     /// </item>
@@ -105,6 +109,12 @@ internal sealed class IniDocumentSyntax : IniSyntaxNode
             if (needsEndOfLine && !EndsItsLine(entry))
             {
                 entry = SyntaxNodeRemover.AppendTrailingTrivia(entry, GetEndOfLine(ref endOfLine, entries));
+
+                // A git value that ended the text with a backslash now continues on the next line: a blank line ends it there.
+                if (options.IsGit && entry.GetLastTerminal() is GreenToken { RawKind: (int)SyntaxKind.ValueToken } value && Lexer.EndsWithLineContinuation(value.Text))
+                {
+                    entry = SyntaxNodeRemover.AppendTrailingTrivia(entry, GetEndOfLine(ref endOfLine, entries));
+                }
             }
 
             if (!ReferenceEquals(entry, items[i]))
@@ -114,7 +124,7 @@ internal sealed class IniDocumentSyntax : IniSyntaxNode
             }
         }
 
-        if (options.AllowMultilineValues)
+        if (options.EffectiveAllowMultilineValues)
         {
             changed |= KeepEntriesOutOfValues(items);
         }

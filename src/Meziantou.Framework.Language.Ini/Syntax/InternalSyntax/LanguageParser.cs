@@ -16,6 +16,7 @@ internal sealed class LanguageParser
     private readonly List<PendingDiagnostic> _pending = [];
     private readonly DuplicateTracker? _duplicates;
     private GreenToken _current;
+    private LexerDiagnostic[] _currentDiagnostics = [];
     private LexerMode _currentMode;
     private int _currentFullStart;
     private int _previousTokenTextEnd;
@@ -29,7 +30,7 @@ internal sealed class LanguageParser
         _lexer = new Lexer(source, options);
         _duplicates = options.ReportDuplicates ? new DuplicateTracker(options.NameComparer) : null;
         _currentMode = LexerMode.LineStart;
-        _current = _lexer.Lex(_currentMode);
+        _current = Lex(_currentMode);
         _currentFullStart = _lexer.Position - _current.FullWidth;
     }
 
@@ -92,14 +93,14 @@ internal sealed class LanguageParser
         if (!_previousTokenEndedTheLine && CurrentKind == SyntaxKind.KeyToken)
         {
             var nameStart = CurrentTextStart;
+            _duplicates?.EnterSection(_current.ValueText, nameStart, _current.Width, _pending);
             name = EatToken(LexerMode.SectionName);
-            _duplicates?.EnterSection(name.Text, nameStart, _pending);
         }
         else
         {
             AddErrorForMissingToken(IniDiagnosticDescriptors.ExpectedSectionName);
             name = SyntaxFactory.MissingToken(SyntaxKind.KeyToken);
-            _duplicates?.EnterSection(name: null, position: 0, _pending);
+            _duplicates?.EnterSection(name: null, position: 0, width: 0, _pending);
         }
 
         GreenToken closeBracket;
@@ -156,14 +157,14 @@ internal sealed class LanguageParser
         {
             separator = EatToken(LexerMode.Value);
             value = EatToken(LexerMode.LineStart);
-            if (_options.AllowMultilineValues)
+            if (_options.EffectiveAllowMultilineValues)
             {
                 continuations = ParseContinuationLines();
             }
         }
         else
         {
-            if (!_options.AllowKeysWithoutValue)
+            if (!_options.EffectiveAllowKeysWithoutValue)
             {
                 AddErrorForMissingToken(IniDiagnosticDescriptors.ExpectedSeparator);
             }
@@ -175,7 +176,7 @@ internal sealed class LanguageParser
 
             // configparser rejects a line indented as if it continued a key that has no value. It is read as an entry of
             // its own, and reported once that entry is read.
-            if (_options.AllowMultilineValues && !key.IsMissing && _previousTokenEndedTheLine && _lexer.IsContinuation(_currentFullStart, _valueIndentation, out _))
+            if (_options.EffectiveAllowMultilineValues && !key.IsMissing && _previousTokenEndedTheLine && _lexer.IsContinuation(_currentFullStart, _valueIndentation, out _))
             {
                 _keyWithoutValueBeforeContinuation = key.Text;
             }
@@ -216,10 +217,15 @@ internal sealed class LanguageParser
     private GreenToken EatToken(LexerMode nextMode)
     {
         var eaten = _current;
+        foreach (var diagnostic in _currentDiagnostics)
+        {
+            _pending.Add(new PendingDiagnostic(diagnostic.Position, diagnostic.Width, diagnostic.Descriptor, diagnostic.Arguments));
+        }
+
         _previousTokenTextEnd = _currentFullStart + eaten.GetLeadingTriviaWidth() + eaten.Width;
         _previousTokenEndedTheLine = EndsTheLine(eaten.TrailingTrivia);
         _lexer.Position = _currentFullStart + eaten.FullWidth;
-        _current = _lexer.Lex(nextMode);
+        _current = Lex(nextMode);
         _currentMode = nextMode;
         _currentFullStart = _lexer.Position - _current.FullWidth;
 
@@ -233,8 +239,16 @@ internal sealed class LanguageParser
             return;
 
         _lexer.Position = _currentFullStart;
-        _current = _lexer.Lex(mode);
+        _current = Lex(mode);
         _currentMode = mode;
+    }
+
+    /// <summary>Reads the next token, and keeps the errors the lexer found in it until it is eaten.</summary>
+    private GreenToken Lex(LexerMode mode)
+    {
+        var token = _lexer.Lex(mode);
+        _currentDiagnostics = _lexer.Diagnostics.Count == 0 ? [] : [.. _lexer.Diagnostics];
+        return token;
     }
 
     private static bool EndsTheLine(GreenNode? trailingTrivia)
@@ -291,7 +305,7 @@ internal sealed class LanguageParser
         private HashSet<string> _currentKeys = new(comparer);
         private string _currentSectionDescription = "the global section";
 
-        public void EnterSection(string? name, int position, List<PendingDiagnostic> pending)
+        public void EnterSection(string? name, int position, int width, List<PendingDiagnostic> pending)
         {
             if (name is null)
             {
@@ -305,7 +319,7 @@ internal sealed class LanguageParser
 
             if (!_sections.Add(name))
             {
-                pending.Add(new PendingDiagnostic(position, name.Length, IniDiagnosticDescriptors.DuplicateSection, [name]));
+                pending.Add(new PendingDiagnostic(position, width, IniDiagnosticDescriptors.DuplicateSection, [name]));
             }
 
             if (!_keysBySection.TryGetValue(name, out var keys))

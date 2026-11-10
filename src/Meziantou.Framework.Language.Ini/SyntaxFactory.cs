@@ -1,3 +1,4 @@
+using System.Text;
 using Green = Meziantou.Framework.Language.Ini.Syntax.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Ini;
@@ -242,7 +243,7 @@ public static class SyntaxFactory
     {
         ArgumentNullException.ThrowIfNull(entries);
 
-        return IniDocument(List(entries.Select(entry => EndLine(entry, LineFeed, replaceLineBreaks: false))), Token(SyntaxKind.EndOfFileToken));
+        return IniDocument(List(entries.Select(entry => EndLine(entry, LineFeed, replaceLineBreaks: false, IniParseOptions.Default))), Token(SyntaxKind.EndOfFileToken));
     }
 
     /// <summary>Creates a document from <paramref name="entries"/>, ending the line of each one that another follows.</summary>
@@ -358,7 +359,8 @@ public static class SyntaxFactory
     /// <param name="entry">The entry.</param>
     /// <param name="endOfLine">The line break to end it with.</param>
     /// <param name="replaceLineBreaks">Whether the line breaks it already has are replaced by <paramref name="endOfLine"/>, so that it matches the document it goes into.</param>
-    internal static IniEntrySyntax EndLine(IniEntrySyntax entry, SyntaxTrivia endOfLine, bool replaceLineBreaks)
+    /// <param name="options">The options of the document it goes into.</param>
+    internal static IniEntrySyntax EndLine(IniEntrySyntax entry, SyntaxTrivia endOfLine, bool replaceLineBreaks, IniParseOptions options)
     {
         ArgumentNullException.ThrowIfNull(entry);
 
@@ -375,6 +377,11 @@ public static class SyntaxFactory
         var trailing = entry.GetTrailingTrivia();
         if (trailing.Any(trivia => trivia.IsKind(SyntaxKind.EndOfLineTrivia)))
             return entry;
+
+        // A git value that ends the text with a backslash would continue on the next line once the line ends: a blank
+        // line ends it there.
+        if (options.IsGit && entry.GetLastToken() is { RawKind: (int)SyntaxKind.ValueToken } last && Green.Lexer.EndsWithLineContinuation(last.Text))
+            return entry.WithTrailingTrivia([.. trailing, endOfLine, endOfLine]);
 
         return entry.WithTrailingTrivia([.. trailing, endOfLine]);
     }
@@ -410,8 +417,20 @@ public static class SyntaxFactory
     /// </remarks>
     internal static (SyntaxToken First, SyntaxToken[] Continuations)? TryValueLines(string value, IniParseOptions options, string indentation, SyntaxTrivia endOfLine, out string? error)
     {
+        if (options.WritesLineBreaksAsEscapes)
+        {
+            if (ValueLine(value, options, isContinuation: false) is not { } line)
+            {
+                error = "The value cannot be written as an INI value with these options.";
+                return null;
+            }
+
+            error = null;
+            return (line.WithTrailingTrivia(endOfLine), []);
+        }
+
         var lines = SplitLines(value);
-        if (lines.Length > 1 && !options.AllowMultilineValues)
+        if (lines.Length > 1 && !options.EffectiveAllowMultilineValues)
         {
             error = "The value holds a line break, which a document read without AllowMultilineValues cannot read back.";
             return null;
@@ -461,6 +480,12 @@ public static class SyntaxFactory
     /// <param name="isContinuation">Whether the line starts a line of its own, where <c>;</c> and <c>#</c> always start a comment.</param>
     internal static SyntaxToken? ValueLine(string value, IniParseOptions options, bool isContinuation)
     {
+        if (options.IsGit)
+            return GitValue(value, options);
+
+        if (options.EffectiveAllowEscapes)
+            return EscapedValueLine(value, options, isContinuation);
+
         if (value.AsSpan().IndexOfAny('\r', '\n') >= 0)
             return null;
 
@@ -471,20 +496,120 @@ public static class SyntaxFactory
 
         // A quote at the start of a value is closed by the next one on the line, which could be in the comment after it,
         // so such a value is quoted when it can be.
-        if (options.AllowQuotedValues && value is ['"' or '\'', ..] && LexValue(quote + value + quote) is { } quoted)
+        if (options.AllowQuotedValues && value is ['"' or '\'', ..] && LexValue(quote + value + quote, value, options, rejectCommentStart) is { } quoted)
             return quoted;
 
-        if (LexValue(value) is { } token)
+        if (LexValue(value, value, options, rejectCommentStart) is { } token)
             return token;
 
         if (!options.AllowQuotedValues)
             return null;
 
-        return LexValue(quote + value + quote);
-
-        SyntaxToken? LexValue(string text)
-            => Lex(text, Green.LexerMode.Value, SyntaxKind.ValueToken, options, rejectCommentStart) is { } lexed && lexed.ValueText == value ? lexed : null;
+        return LexValue(quote + value + quote, value, options, rejectCommentStart);
     }
+
+    /// <summary>Writes a value of the generic dialect with <see cref="IniParseOptions.AllowEscapes"/>, escaping what would not read back otherwise.</summary>
+    /// <remarks>
+    /// Backslashes, line breaks, null characters, and a quote the value starts with are always escaped. Then <c>;</c> and
+    /// <c>#</c> are escaped if they would start a comment, and the value is quoted if it has whitespace around it.
+    /// </remarks>
+    private static SyntaxToken? EscapedValueLine(string value, IniParseOptions options, bool isContinuation)
+    {
+        var rejectCommentStart = isContinuation || options.InlineComments != IniInlineCommentMode.None;
+        if (LexValue(Escape(value, escapeCommentStart: false, quote: null), value, options, rejectCommentStart) is { } plain)
+            return plain;
+
+        if (LexValue(Escape(value, escapeCommentStart: true, quote: null), value, options, rejectCommentStart) is { } escaped)
+            return escaped;
+
+        if (!options.AllowQuotedValues)
+            return null;
+
+        return LexValue('"' + Escape(value, escapeCommentStart: false, quote: '"') + '"', value, options, rejectCommentStart);
+
+        static string Escape(string value, bool escapeCommentStart, char? quote)
+        {
+            var builder = new StringBuilder(value.Length + 2);
+            for (var i = 0; i < value.Length; i++)
+            {
+                var current = value[i];
+                switch (current)
+                {
+                    case '\\':
+                        builder.Append(@"\\");
+                        break;
+                    case '\n':
+                        builder.Append(@"\n");
+                        break;
+                    case '\r':
+                        builder.Append(@"\r");
+                        break;
+                    case '\0':
+                        builder.Append(@"\0");
+                        break;
+                    case ';' or '#' when escapeCommentStart:
+                    case '"' or '\'' when current == quote || (quote is null && i == 0):
+                        builder.Append('\\').Append(current);
+                        break;
+                    default:
+                        builder.Append(current);
+                        break;
+                }
+            }
+
+            return builder.ToString();
+        }
+    }
+
+    /// <summary>Writes a value of the git dialect as git writes it: escaped, and in quotes when it has whitespace around it or a <c>;</c> or <c>#</c>.</summary>
+    /// <remarks>
+    /// A carriage return cannot be written: git has no escape for it, and this parser reads one as the end of a line.
+    /// </remarks>
+    private static SyntaxToken? GitValue(string value, IniParseOptions options)
+    {
+        if (value.Contains('\r', StringComparison.Ordinal))
+            return null;
+
+        var needsQuotes = (value.Length > 0 && (Green.Lexer.IsWhitespace(value[0]) || Green.Lexer.IsWhitespace(value[^1]))) || value.AsSpan().IndexOfAny(';', '#') >= 0;
+        var builder = new StringBuilder(value.Length + 2);
+        if (needsQuotes)
+        {
+            builder.Append('"');
+        }
+
+        foreach (var current in value)
+        {
+            switch (current)
+            {
+                case '\\' or '"':
+                    builder.Append('\\').Append(current);
+                    break;
+                case '\n':
+                    builder.Append(@"\n");
+                    break;
+                case '\t':
+                    builder.Append(@"\t");
+                    break;
+                case '\b':
+                    builder.Append(@"\b");
+                    break;
+                default:
+                    builder.Append(current);
+                    break;
+            }
+        }
+
+        if (needsQuotes)
+        {
+            builder.Append('"');
+        }
+
+        return LexValue(builder.ToString(), value, options, rejectCommentStart: true);
+    }
+
+    /// <summary>Reads <paramref name="text"/> as a value, and returns its token when it reads back as <paramref name="value"/>.</summary>
+    private static SyntaxToken? LexValue(string text, string value, IniParseOptions options, bool rejectCommentStart)
+        => Lex(text, Green.LexerMode.Value, SyntaxKind.ValueToken, options, rejectCommentStart) is { } lexed && lexed.ValueText == value ? lexed : null;
 
     /// <summary>Determines whether a line of a value, with the trivia around it, reads back as <paramref name="value"/>.</summary>
     /// <remarks>The trivia after a value can change how it is read: a quote in a comment could close one the value starts with.</remarks>
@@ -494,9 +619,11 @@ public static class SyntaxFactory
     /// <param name="value">What the line should read back as.</param>
     internal static bool ReadsBackAs(SyntaxToken token, IniParseOptions options, bool isContinuation, string value)
     {
-        var lexed = new Green.Lexer(SourceText.From(token.ToFullString()), options).Lex(isContinuation ? Green.LexerMode.ValueContinuation : Green.LexerMode.Value);
+        var lexer = new Green.Lexer(SourceText.From(token.ToFullString()), options);
+        var lexed = lexer.Lex(isContinuation ? Green.LexerMode.ValueContinuation : Green.LexerMode.Value);
 
         return lexed.RawKind == (int)SyntaxKind.ValueToken
+            && lexer.Diagnostics.Count == 0
             && lexed.GetLeadingTriviaWidth() == token.LeadingTrivia.FullSpan.Length
             && string.Equals(lexed.Text, token.Text, StringComparison.Ordinal)
             && string.Equals(lexed.ValueText, value, StringComparison.Ordinal);
@@ -505,15 +632,26 @@ public static class SyntaxFactory
     internal static SyntaxToken? TryKey(string text, IniParseOptions options)
         => Lex(text, Green.LexerMode.LineStart, SyntaxKind.KeyToken, options, rejectCommentStart: true);
 
+    /// <summary>Writes a section name so that a document read with <paramref name="options"/> reads it back, or returns <see langword="null"/>.</summary>
+    /// <remarks>In the git dialect, <c>remote.origin</c> is written <c>remote "origin"</c>, as git writes it.</remarks>
     internal static SyntaxToken? TrySectionName(string text, IniParseOptions options)
-        => Lex(text, Green.LexerMode.SectionName, SyntaxKind.KeyToken, options, rejectCommentStart: true);
+    {
+        var written = text;
+        if (options.IsGit && text.IndexOf('.', StringComparison.Ordinal) is var dot and >= 0)
+        {
+            var subsection = text[(dot + 1)..].Replace(@"\", @"\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal);
+            written = text[..dot] + " \"" + subsection + "\"";
+        }
+
+        return Lex(written, Green.LexerMode.SectionName, SyntaxKind.KeyToken, options, rejectCommentStart: true) is { } token && token.ValueText == text ? token : null;
+    }
 
     /// <summary>Reads <paramref name="text"/> as <paramref name="mode"/> would, and returns the token if it is the whole text and nothing else.</summary>
     private static SyntaxToken? Lex(string text, Green.LexerMode mode, SyntaxKind kind, IniParseOptions options, bool rejectCommentStart)
     {
         var lexer = new Green.Lexer(SourceText.From(text), options);
         var token = lexer.Lex(mode);
-        if (token.RawKind != (int)kind || token.LeadingTrivia is not null || token.TrailingTrivia is not null || token.Width != text.Length)
+        if (token.RawKind != (int)kind || lexer.Diagnostics.Count > 0 || token.LeadingTrivia is not null || token.TrailingTrivia is not null || token.Width != text.Length)
             return null;
 
         if (rejectCommentStart && text is [';' or '#', ..])

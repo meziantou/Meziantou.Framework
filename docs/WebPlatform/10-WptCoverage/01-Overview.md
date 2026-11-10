@@ -48,18 +48,18 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,379 | 29,911 | 2,117 | 95% |
+| [Stable](#stable-tests) | 26,421 | 29,911 | 2,117 | 95% |
 | [Tentative](#tentative-tests) | 1,383 | 3,169 | 698 | 56% |
-| [Reftests](#reftests) | 28,163 | 29,507 | 171 | 96% |
-| **All** | **55,925** | **62,587** | **2,986** | **94%** |
+| [Reftests](#reftests) | 28,250 | 29,507 | 171 | 96% |
+| **All** | **56,054** | **62,587** | **2,986** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 172
+- **BUG**: 184
 - **TEST BUG**: 1,019
-- **NOT IMPLEMENTED**: 4,491
+- **NOT IMPLEMENTED**: 4,350
 - **REQUIRES**: 765
   - `hardware`: 573
   - `layout`: 23
@@ -240,7 +240,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html-aam`](html-aam.md) | 25 | 26 | 0 | 96% |
 | [`html-media-capture`](html-media-capture.md) | 0 | 2 | 2 | – |
 | [`html/browsers`](html/browsers.md) | 697 | 748 | 0 | 93% |
-| [`html/canvas`](html/canvas.md) | 3,089 | 3,166 | 0 | 98% |
+| [`html/canvas`](html/canvas.md) | 3,131 | 3,166 | 0 | 99% |
 | [`html/cross-origin-embedder-policy`](html/cross-origin-embedder-policy.md) | 66 | 73 | 0 | 90% |
 | [`html/cross-origin-opener-policy`](html/cross-origin-opener-policy.md) | 68 | 115 | 0 | 59% |
 | [`html/dom`](html/dom.md) | 212 | 216 | 0 | 98% |
@@ -419,7 +419,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 320 | 331 | 0 | 97% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,379** | **29,911** | **2,117** | **95%** |
+| **Total (343 sections)** | **26,421** | **29,911** | **2,117** | **95%** |
 
 ## Tentative tests
 
@@ -694,7 +694,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`gif`](gif.md#reftests) | 1 | 1 | 0 | 100% |
 | [`html-ruby-extensions`](html-ruby-extensions.md#reftests) | 84 | 84 | 0 | 100% |
 | [`html/browsers`](html/browsers.md#reftests) | 4 | 4 | 0 | 100% |
-| [`html/canvas`](html/canvas.md#reftests) | 213 | 585 | 0 | 36% |
+| [`html/canvas`](html/canvas.md#reftests) | 300 | 585 | 0 | 51% |
 | [`html/dom`](html/dom.md#reftests) | 127 | 127 | 0 | 100% |
 | [`html/editing`](html/editing.md#reftests) | 25 | 26 | 1 | 100% |
 | [`html/infrastructure`](html/infrastructure.md#reftests) | 0 | 1 | 1 | – |
@@ -728,4 +728,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 0 | 0% |
 | [`webvtt`](webvtt.md#reftests) | 182 | 252 | 0 | 72% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (131 sections)** | **28,163** | **29,507** | **171** | **96%** |
+| **Total (131 sections)** | **28,250** | **29,507** | **171** | **96%** |

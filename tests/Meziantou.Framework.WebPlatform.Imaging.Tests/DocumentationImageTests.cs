@@ -204,6 +204,63 @@ public sealed class DocumentationImageTests
         AssertImage(Rendering, "CanvasChart", screenshot);
     }
 
+    [Fact]
+    public void CanvasLayers()
+    {
+        #region WebPlatformImaging_CanvasLayers
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            RenderingBackend = new ImagingRenderingBackend(),
+            ScriptingEnabled = true,
+        });
+        var document = context.Navigate("https://example.com/", _ => """<canvas id="circles" width="240" height="120"></canvas>""");
+        context.EventLoop.RunUntilIdle();
+
+        var canvas = (HtmlCanvasElement)document.GetElementById("circles")!;
+        var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+        context2D.FillStyle = "#f8fafc";
+        context2D.FillRect(0, 0, 240, 120);
+
+        // Left: each circle is drawn with the global alpha, so they show through each other.
+        // Right: the circles are drawn in a layer, which is drawn with the global alpha as one image.
+        for (var i = 0; i < 2; i++)
+        {
+            context2D.Save();
+            context2D.Translate(i * 120, 0);
+            context2D.GlobalAlpha = 0.6;
+            #pragma warning disable WEBPLATEXP0017 // The canvas layers are a proposal
+            if (i == 1)
+            {
+                context2D.BeginLayer();
+            }
+
+            context2D.FillStyle = "#0ea5e9";
+            context2D.BeginPath();
+            context2D.Arc(45, 60, 35, 0, 2 * Math.PI);
+            context2D.Fill();
+            context2D.FillStyle = "#ea580c";
+            context2D.BeginPath();
+            context2D.Arc(75, 60, 35, 0, 2 * Math.PI);
+            context2D.Fill();
+
+            if (i == 1)
+            {
+                context2D.EndLayer();
+            }
+            #pragma warning restore WEBPLATEXP0017
+
+            context2D.Restore();
+        }
+
+        using var screenshot = canvas.TakeScreenshot();
+        #endregion
+
+        // In the layer, the orange circle hides the blue one where they overlap
+        Assert.NotEqual(screenshot.GetPixel(60, 60), screenshot.GetPixel(100, 60));
+        Assert.Equal(screenshot.GetPixel(180, 60), screenshot.GetPixel(220, 60));
+        AssertImage(Rendering, "CanvasLayers", screenshot);
+    }
+
     /// <summary>
     /// Compares an image with the committed PNG: same size, and each component within 8 levels (the antialiasing may differ
     /// at the rounding of the floating-point operations between the processors).

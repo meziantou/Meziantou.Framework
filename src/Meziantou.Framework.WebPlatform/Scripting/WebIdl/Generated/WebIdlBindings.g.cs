@@ -1012,6 +1012,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.AssignedNodesOptions dictionaryDom_AssignedNodesOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AssignedNodesOptions(r, dictionaryDom_AssignedNodesOptions);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.BeginLayerOptions dictionaryDom_BeginLayerOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BeginLayerOptions(r, dictionaryDom_BeginLayerOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.BoxQuadOptions dictionaryDom_BoxQuadOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BoxQuadOptions(r, dictionaryDom_BoxQuadOptions);
                 return true;

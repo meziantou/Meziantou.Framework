@@ -99,6 +99,7 @@ public partial class HtmlCanvasElement : ICanvasHost
     public string ToDataUrl(string type = "image/png", double? quality = null)
     {
         ArgumentNullException.ThrowIfNull(type);
+        (RenderingContext as CanvasRenderingContext2D)?.ThrowIfLayersAreOpen();
         var pixels = GetBitmapSnapshot();
         if (!pixels.IsOriginClean)
             throw new DomException("The canvas has been tainted by cross-origin data", "SecurityError");
@@ -125,6 +126,7 @@ public partial class HtmlCanvasElement : ICanvasHost
         if (IsPlaceholder)
             throw new DomException("The canvas has transferred its control to an OffscreenCanvas", "InvalidStateError");
 
+        (RenderingContext as CanvasRenderingContext2D)?.ThrowIfLayersAreOpen();
         var pixels = GetBitmapSnapshot();
         if (!pixels.IsOriginClean)
             throw new DomException("The canvas has been tainted by cross-origin data", "SecurityError");

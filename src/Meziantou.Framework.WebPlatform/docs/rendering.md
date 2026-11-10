@@ -478,8 +478,15 @@ operations (see [Paint worklet images](#paint-worklet-images)).
   bitmap changes) in the box of the canvas with `object-fit` and `image-rendering`; each drawing operation repaints the
   document.
 - `drawFocusIfNeeded()` strokes the path with a 2px ring when the element is focused and is a descendant of the canvas.
-- Not implemented: the canvas layers (`beginLayer()`, `endLayer()`, a proposal that the HTML Standard does not define yet),
-  `CanvasFilter` objects, the HDR settings (`toneMapping`), HDR gradient colors and intermediate layers and effects,
+- **Layers** (`beginLayer()`, `endLayer()`, a proposal that the HTML Standard does not define yet, whatwg/html#9537): the
+  stack of the drawing states holds the layers; a layer resets the global alpha, the compositing operator, the shadows, the
+  filter and the clip region of the state (not the transformation matrix), and its drawings are recorded in a display list of
+  their own (`CanvasRenderingContext2DBase.Builder`). `endLayer()` draws this list through the drawing model with the
+  restored state, as one isolated group (`SaveLayerItem`), the filter of the layer applied in the coordinates of its
+  transformation matrix; a layer opened with a non-invertible matrix is not drawn. The pixels cannot be read while a layer is
+  open (`InvalidStateError`), the page paints the bitmap without the open layers, and a paint callback ends its open layers.
+  The filter of a layer is a CSS filter: the `CanvasFilter` objects are ignored.
+- Not implemented: `CanvasFilter` objects, the HDR settings (`toneMapping`), HDR gradient colors and intermediate layers and effects,
   `captureStream()`, the text clusters of `TextMetrics`, HTML-in-canvas (`drawElementImage()`), WebGL and WebGPU.
 
 ## Display list

@@ -82,4 +82,74 @@ PNG serialization uses 16-bit integer samples; values outside zero to one are cl
 
 Solid paints preserve floating-point colors. Gradients and intermediate layers, filters and shadows still use the drawing backend's 16-bit normalized colors.
 Drawing a floating-point image onto an 8-bit canvas clips its color channels to zero to one.
-The canvas layers (`beginLayer()`) are not implemented.
+
+## Layers
+
+[BeginLayer](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.BeginLayer) and [EndLayer](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.EndLayer)
+implement the canvas layers of the [proposal](https://github.com/whatwg/html/pull/9537) that Chromium ships behind a flag: the
+drawings between the two calls are composited with each other, then drawn on the canvas as one image. In the layer, the
+global alpha, the compositing operator, the shadow, the filter and the clip region are reset; `EndLayer()` restores them
+and draws the layer with them:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/DocumentationImageTests.cs;region=WebPlatformImaging_CanvasLayers;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    RenderingBackend = new ImagingRenderingBackend(),
+    ScriptingEnabled = true,
+});
+var document = context.Navigate("https://example.com/", _ => """<canvas id="circles" width="240" height="120"></canvas>""");
+context.EventLoop.RunUntilIdle();
+
+var canvas = (HtmlCanvasElement)document.GetElementById("circles")!;
+var context2D = (CanvasRenderingContext2D)canvas.GetContext("2d")!;
+context2D.FillStyle = "#f8fafc";
+context2D.FillRect(0, 0, 240, 120);
+
+// Left: each circle is drawn with the global alpha, so they show through each other.
+// Right: the circles are drawn in a layer, which is drawn with the global alpha as one image.
+for (var i = 0; i < 2; i++)
+{
+    context2D.Save();
+    context2D.Translate(i * 120, 0);
+    context2D.GlobalAlpha = 0.6;
+    #pragma warning disable WEBPLATEXP0017 // The canvas layers are a proposal
+    if (i == 1)
+    {
+        context2D.BeginLayer();
+    }
+
+    context2D.FillStyle = "#0ea5e9";
+    context2D.BeginPath();
+    context2D.Arc(45, 60, 35, 0, 2 * Math.PI);
+    context2D.Fill();
+    context2D.FillStyle = "#ea580c";
+    context2D.BeginPath();
+    context2D.Arc(75, 60, 35, 0, 2 * Math.PI);
+    context2D.Fill();
+
+    if (i == 1)
+    {
+        context2D.EndLayer();
+    }
+    #pragma warning restore WEBPLATEXP0017
+
+    context2D.Restore();
+}
+
+using var screenshot = canvas.TakeScreenshot();
+```
+<!-- endref -->
+
+![Two pairs of overlapping translucent circles: on the left the blue circle shows through the orange one, on the right it does not](images/CanvasLayers.png)
+
+- The layers nest, and they share the stack of [Save](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.Save): `Restore()` throws an
+  `InvalidStateError` when the last saved state is a layer, and `EndLayer()` when it is not. `Reset()` discards the open layers.
+- The filter of [BeginLayerOptions](cref:Meziantou.Framework.WebPlatform.Dom.BeginLayerOptions) is a CSS filter applied to the layer before the
+  filter of the state, in the coordinates of the transformation matrix. The `CanvasFilter` objects are not supported: a
+  filter that is not a string is ignored.
+- While a layer is open, the pixels of the canvas cannot be read or replaced: `GetImageData()`, `PutImageData()`,
+  `ToDataUrl()`, `ToBlob()`, `createImageBitmap()` and drawing the canvas into another one throw an `InvalidStateError`.
+  The page shows the pixels drawn before the layer was opened.
+- The API is experimental (`WEBPLATEXP0017`, see [Experimental APIs](../09-Limitations.md#experimental-apis)); the scripts of the page use
+  it without restriction.

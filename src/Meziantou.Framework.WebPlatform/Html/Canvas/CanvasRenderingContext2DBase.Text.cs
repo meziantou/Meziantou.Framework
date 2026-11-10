@@ -877,31 +877,40 @@ public abstract partial class CanvasRenderingContext2DBase
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            var components = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
-            if (components is [CssPreservedToken { Type: CssTokenType.Ident } ident] && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "none"))
+            if (ParseFilter(value) is { } filter)
             {
-                _state.Filter = "none";
-                return;
+                _state.Filter = filter;
             }
-
-            // A <filter-value-list> (https://drafts.fxtf.org/filter-effects/#typedef-filter-value-list): a valid value of the
-            // filter property that is not a CSS-wide keyword and has no variable
-            if (!IsValidFontValue(components) || CssShorthands.ParseValue("filter", CssParser.ParseListOfComponentValues(value), value.Trim()) is null)
-                return;
-
-            _state.Filter = value;
         }
     }
 
-    /// <summary>Returns the filters of the drawing state, or null for <c>none</c>.</summary>
-    private DisplayFilter[]? GetFilters()
+    /// <summary>Returns <c>none</c>, the value of a valid filter, or null for an invalid value (which <see cref="Filter"/> ignores).</summary>
+    private static string? ParseFilter(string value)
     {
-        if (_state.Filter == "none")
+        var components = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
+        if (components is [CssPreservedToken { Type: CssTokenType.Ident } ident] && InfraAscii.EqualsIgnoreAsciiCase(ident.Token.Value, "none"))
+            return "none";
+
+        // A <filter-value-list> (https://drafts.fxtf.org/filter-effects/#typedef-filter-value-list): a valid value of the
+        // filter property that is not a CSS-wide keyword and has no variable
+        if (!IsValidFontValue(components) || CssShorthands.ParseValue("filter", CssParser.ParseListOfComponentValues(value), value.Trim()) is null)
+            return null;
+
+        return value;
+    }
+
+    /// <summary>Returns the filters of the drawing state, or null for <c>none</c>.</summary>
+    private DisplayFilter[]? GetFilters() => GetFilters(_state.Filter);
+
+    /// <summary>Returns the filters of a valid filter value (see <see cref="ParseFilter"/>), or null for <c>none</c>.</summary>
+    private DisplayFilter[]? GetFilters(string value)
+    {
+        if (value == "none")
             return null;
 
         var filterStyle = GetFilterStyle();
-        var components = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(_state.Filter));
-        var computed = GetComputedFilter(filterStyle);
+        var components = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
+        var computed = GetComputedFilter(value, filterStyle);
         if (!components.Exists(IsUrl))
             return FilterEffects.Get(computed, filterStyle, space: null);
 
@@ -931,22 +940,22 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>
-    /// Returns the computed value of the filter of the drawing state (a list of filter functions, whose relative lengths are
-    /// resolved against a style, see <see cref="GetFilterStyle"/>): the filters use absolute lengths.
+    /// Returns the computed value of a filter (a list of filter functions, whose relative lengths are resolved against a style,
+    /// see <see cref="GetFilterStyle"/>): the filters use absolute lengths.
     /// </summary>
-    private List<CssComponentValue> GetComputedFilter(ComputedStyle style)
+    private List<CssComponentValue> GetComputedFilter(string filter, ComputedStyle style)
     {
-        if (_computedFilter is { } cached && cached.Filter == _state.Filter && ReferenceEquals(cached.Style, style))
+        if (_computedFilter is { } cached && cached.Filter == filter && ReferenceEquals(cached.Style, style))
             return cached.Components;
 
-        var value = _state.Filter;
+        var value = filter;
         if (CssShorthands.ParseValue("filter", CssParser.ParseListOfComponentValues(value), value.Trim()) is { } longhands)
         {
             value = style.WithDeclarations(longhands).GetComputedValue("filter");
         }
 
         var components = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
-        _computedFilter = (_state.Filter, style, components);
+        _computedFilter = (filter, style, components);
         return components;
     }
 

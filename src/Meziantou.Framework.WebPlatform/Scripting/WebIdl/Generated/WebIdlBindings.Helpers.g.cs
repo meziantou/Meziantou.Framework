@@ -29,6 +29,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.AddEventListenerOptions Defaults_Dom_AddEventListenerOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.BeginLayerOptions Defaults_Dom_BeginLayerOptions = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.BoxQuadOptions Defaults_Dom_BoxQuadOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.BreakTokenOptions Defaults_Dom_BreakTokenOptions = new();
@@ -709,6 +711,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         var result = r.CreateObject();
         r.SetMember(result, "flatten", r.FromBoolean(value.Flatten));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_BeginLayerOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.BeginLayerOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.Filter is not null) r.SetMember(result, "filter", r.ToJs((object?)value.Filter));
         return result;
     }
 
@@ -4593,6 +4602,18 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return new global::Meziantou.Framework.WebPlatform.Dom.AssignedNodesOptions
         {
             Flatten = m0,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.BeginLayerOptions ToDictionary_Dom_BeginLayerOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "BeginLayerOptions");
+        var m0_value = r.GetDictionaryMember(value, "filter");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (object?)r.ToAny(m0_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.BeginLayerOptions
+        {
+            Filter = m0_present ? m0 : Defaults_Dom_BeginLayerOptions.Filter,
         };
     }
 

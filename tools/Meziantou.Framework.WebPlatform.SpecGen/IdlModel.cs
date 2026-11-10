@@ -400,6 +400,7 @@ internal sealed partial class IdlModel
         SetMediaMetadataArtworkType(model);
         AddIFrameElementPolicy(model);
         AddDocumentPolicyViolationReportBody(model);
+        AddCanvasLayers(model);
         return model;
     }
 
@@ -1354,6 +1355,77 @@ internal sealed partial class IdlModel
             Href = definition.Href,
             SpecUrl = definition.SpecUrl,
         };
+    }
+
+    /// <summary>
+    /// The canvas layers (https://github.com/whatwg/html/pull/9537), which Chromium implements behind a flag and the tentative
+    /// web-platform-tests of html/canvas/element/layers test, on the contexts that include CanvasState:
+    /// <code>
+    /// partial interface mixin CanvasState {
+    ///   undefined beginLayer(optional BeginLayerOptions options = {});
+    ///   undefined endLayer();
+    /// };
+    /// dictionary BeginLayerOptions { any filter = null; };
+    /// </code>
+    /// The <c>filter</c> member is a CSS filter or a <c>CanvasFilterInput</c> in the proposal; the library does not implement
+    /// the <c>CanvasFilter</c> objects, so it is <c>any</c>. As the other dictionaries of the proposals, the dictionary is not
+    /// experimental (the bindings do not support experimental dictionaries): the operations that take it are.
+    /// </summary>
+    private static void AddCanvasLayers(IdlModel model)
+    {
+        const string Href = "https://github.com/fserb/canvas2D/blob/master/spec/layers.md#proposal";
+        if (!model.Definitions.TryGetValue("CanvasState", out var mixin) || model.Definitions.ContainsKey("BeginLayerOptions"))
+            return;
+
+        model.Definitions["BeginLayerOptions"] = new IdlDefinition
+        {
+            Name = "BeginLayerOptions",
+            Kind = IdlDefinitionKind.Dictionary,
+            Members =
+            [
+                new IdlMember
+                {
+                    Kind = IdlMemberKind.Field,
+                    Name = "filter",
+                    Type = new IdlType { Name = "any" },
+                    Source = mixin.Source,
+                    DeclaringDefinition = "BeginLayerOptions",
+                    Href = Href,
+                },
+            ],
+            Source = mixin.Source,
+            Href = Href,
+            SpecUrl = Href,
+        };
+
+        using var emptyDictionary = JsonDocument.Parse("""{"type":"dictionary"}""");
+        foreach (var name in (string[])["CanvasState", "CanvasRenderingContext2D", "OffscreenCanvasRenderingContext2D", "PaintRenderingContext2D"])
+        {
+            if (!model.Definitions.TryGetValue(name, out var definition))
+                continue;
+
+            definition.Members.Add(new IdlMember
+            {
+                Kind = IdlMemberKind.Operation,
+                Name = "beginLayer",
+                Type = new IdlType { Name = "undefined" },
+                Arguments = [new IdlArgument { Name = "options", Type = new IdlType { Name = "BeginLayerOptions" }, Optional = true, Default = emptyDictionary.RootElement.Clone() }],
+                Source = mixin.Source,
+                DeclaringDefinition = "CanvasState",
+                ExperimentalApi = "CanvasLayers",
+                Href = Href,
+            });
+            definition.Members.Add(new IdlMember
+            {
+                Kind = IdlMemberKind.Operation,
+                Name = "endLayer",
+                Type = new IdlType { Name = "undefined" },
+                Source = mixin.Source,
+                DeclaringDefinition = "CanvasState",
+                ExperimentalApi = "CanvasLayers",
+                Href = Href,
+            });
+        }
     }
 
     private static IdlDefinition? ParseDefinition(JsonElement element)

@@ -289,6 +289,7 @@ public abstract partial class CanvasRenderingContext2DBase
         switch (context)
         {
             case CanvasRenderingContext2DBase context2D:
+                context2D.ThrowIfLayersAreOpen();
                 return context2D.Bitmap.GetSnapshot() is { } snapshot ? new UsableImage(snapshot, width, height, context2D.Bitmap.IsOriginClean) : null;
 
             case ImageBitmapRenderingContext bitmapRenderer:
@@ -378,6 +379,8 @@ public abstract partial class CanvasRenderingContext2DBase
     [IdlMember("getImageData", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-getimagedata")]
     public ImageData GetImageData(int sx, int sy, int sw, int sh, ImageDataSettings? settings = null)
     {
+        ThrowIfLayersAreOpen();
+
         // 1-2. Zero sizes, and a canvas that is not origin-clean
         if (sw == 0 || sh == 0)
             throw new DomException("The width and the height must not be zero", "IndexSizeError");
@@ -447,6 +450,7 @@ public abstract partial class CanvasRenderingContext2DBase
     public void PutImageData(ImageData imageData, int dx, int dy, int dirtyX, int dirtyY, int dirtyWidth, int dirtyHeight)
     {
         ArgumentNullException.ThrowIfNull(imageData);
+        ThrowIfLayersAreOpen();
 
         // 1. A detached buffer
         if (imageData.IsDetached)

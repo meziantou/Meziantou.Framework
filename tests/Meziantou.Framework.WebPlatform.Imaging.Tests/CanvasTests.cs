@@ -628,4 +628,103 @@ public sealed class CanvasTests : IDisposable
         Assert.Equal((30u, 10u), (bitmap.Width, bitmap.Height));
         Assert.Equal([0, 0, 0, 0], GetPixel(context2D, 5, 5));
     }
+
+#pragma warning disable WEBPLATEXP0017 // The canvas layers are a proposal
+    [Fact]
+    public void Layers_AreDrawnAsOneImageWithTheStateOfBeginLayer()
+    {
+        var (_, _, context) = Create(30, 10);
+        context.FillStyle = "#00f";
+        context.FillRect(0, 0, 30, 10);
+
+        // The global alpha is reset in the layer and applies to the layer: the overlap of the two red rectangles is not darker
+        context.GlobalAlpha = 0.5;
+        context.BeginLayer();
+        Assert.Equal(1, context.GlobalAlpha);
+        context.FillStyle = "#f00";
+        context.FillRect(0, 0, 20, 10);
+        context.FillRect(10, 0, 20, 10);
+        context.EndLayer();
+        Assert.Equal(0.5, context.GlobalAlpha);
+
+        Assert.Equal([128, 0, 128, 255], GetPixel(context, 5, 5));
+        Assert.Equal(GetPixel(context, 5, 5), GetPixel(context, 15, 5));
+        Assert.Equal(GetPixel(context, 5, 5), GetPixel(context, 25, 5));
+    }
+
+    [Fact]
+    public void Layers_ClearRectClearsTheLayer()
+    {
+        var (_, _, context) = Create(30, 10);
+        context.FillStyle = "#00f";
+        context.FillRect(0, 0, 30, 10);
+        context.BeginLayer();
+        context.GlobalCompositeOperation = "copy";
+        context.FillStyle = "#f00";
+        context.FillRect(0, 0, 20, 10);
+        context.ClearRect(0, 0, 10, 10);
+        context.EndLayer();
+
+        // The copy operator and clearRect() replace the pixels of the layer, not the ones of the canvas
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 5, 5));
+        Assert.Equal([255, 0, 0, 255], GetPixel(context, 15, 5));
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 25, 5));
+    }
+
+    [Fact]
+    public void Layers_ClipAndFilterApplyToTheLayer()
+    {
+        var (_, _, context) = Create(40, 10);
+
+        // The clip region applies when the layer is drawn: the blur spreads the rectangle drawn outside of the clip into it
+        context.Rect(20, 0, 20, 10);
+        context.Clip();
+        context.BeginLayer(new BeginLayerOptions { Filter = "blur(4px)" });
+        context.FillStyle = "#000";
+        context.FillRect(0, 0, 18, 10);
+        context.EndLayer();
+
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 10, 5));
+        Assert.True(GetPixel(context, 21, 5)[3] > 0);
+
+        // An invalid filter and the CanvasFilter objects are no filter
+        context.Reset();
+        context.BeginLayer(new BeginLayerOptions { Filter = "not a filter" });
+        context.FillRect(0, 0, 10, 10);
+        context.EndLayer();
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 11, 5));
+    }
+
+    [Fact]
+    public void Layers_UnmatchedCallsAndPixelAccessThrow()
+    {
+        var (_, canvas, context) = Create(10, 10);
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(context.EndLayer).Name);
+
+        context.Save();
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(context.EndLayer).Name);
+        context.Restore();
+
+        context.BeginLayer();
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(context.Restore).Name);
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => context.GetImageData(0, 0, 1, 1)).Name);
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => context.PutImageData(new ImageData(1, 1), 0, 0)).Name);
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => canvas.ToDataUrl()).Name);
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => context.CreatePattern(canvas, "repeat")).Name);
+
+        // A save() in the layer is restored before the layer ends
+        context.Save();
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(context.EndLayer).Name);
+        context.Restore();
+        context.EndLayer();
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 0, 0));
+
+        // reset() discards the open layers
+        context.BeginLayer();
+        context.FillRect(0, 0, 10, 10);
+        context.Reset();
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 0, 0));
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(context.EndLayer).Name);
+    }
+#pragma warning restore WEBPLATEXP0017
 }

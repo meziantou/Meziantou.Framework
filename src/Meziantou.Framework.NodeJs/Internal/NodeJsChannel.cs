@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Meziantou.Framework.NodeJs.Internal;
 
@@ -9,8 +10,9 @@ namespace Meziantou.Framework.NodeJs.Internal;
 /// <remarks>
 /// Messages are newline-delimited JSON. The first message received is the handshake. Requests start with their identifier, which is unique in the host,
 /// and their response starts with it. The main thread of a process that runs worker threads also sends notices, which start with their type.
+/// The thread also sends the calls of the functions created for <see cref="JSCallback"/> arguments, and the release of these functions, which start with their type.
 /// </remarks>
-[SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "AvailableWaitHandle of the write lock is never used, and the stream is closed by CloseAsync")]
+[SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "AvailableWaitHandle of the write lock is never used, the stream is closed by CloseAsync, and the callback cancellation has no timer")]
 internal sealed class NodeJsChannel
 {
     // Initial size of the buffer that receives messages. It grows to contain the largest message, and shrinks back once the message is processed.
@@ -22,8 +24,17 @@ internal sealed class NodeJsChannel
     private readonly ConcurrentDictionary<long, byte> _abandonedRequests = new();
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     private readonly TaskCompletionSource<byte[]> _hello = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    // The delegates of the functions created by the thread for JSCallback arguments, by identifier. Identifiers are never reused, so a release never removes a newer function.
+    private readonly ConcurrentDictionary<long, JSCallback> _callbacks = new();
+    private readonly CancellationTokenSource _callbackCancellation = new();
     private Exception? _terminationException;
     private int _abandonedCalls;
+    private long _nextCallbackId;
+
+    // The callbacks registered while serializing a message on the current thread, so they can be unregistered when the message is not sent
+    [ThreadStatic]
+    private static List<(NodeJsChannel Channel, long Id)>? t_registeredCallbacks;
 
     public NodeJsChannel(NodeJsHost host, Stream stream)
     {
@@ -50,6 +61,9 @@ internal sealed class NodeJsChannel
 
     public bool IsTerminated => Volatile.Read(ref _terminationException) is not null;
 
+    /// <summary>Gets the number of functions of the thread that call a <see cref="JSCallback"/>, for tests.</summary>
+    internal int CallbackCount => _callbacks.Count;
+
     public void StartReading()
     {
         ReadTask = ReadMessagesAsync();
@@ -73,6 +87,31 @@ internal sealed class NodeJsChannel
         foreach (var (_, request) in _pendingRequests)
         {
             request.SetException(exception);
+        }
+
+        // The functions of the thread are gone
+        _callbacks.Clear();
+        _callbackCancellation.Cancel();
+    }
+
+    /// <summary>Registers the delegate of a function created by the thread for a <see cref="JSCallback"/> argument of a message being serialized.</summary>
+    /// <returns>The identifier of the function.</returns>
+    public long RegisterCallback(JSCallback callback)
+    {
+        var id = Interlocked.Increment(ref _nextCallbackId);
+        _callbacks[id] = callback;
+        (t_registeredCallbacks ??= []).Add((this, id));
+        return id;
+    }
+
+    private static void UnregisterCallbacks(List<(NodeJsChannel Channel, long Id)>? callbacks)
+    {
+        if (callbacks is null)
+            return;
+
+        foreach (var (channel, id) in callbacks)
+        {
+            channel._callbacks.TryRemove(id, out _);
         }
     }
 
@@ -112,9 +151,15 @@ internal sealed class NodeJsChannel
     }
 
     /// <summary>Writes a message that has no response.</summary>
-    public async Task WriteMessageAsync(Action<Utf8JsonWriter> writeMessage)
+    public Task WriteMessageAsync(Action<Utf8JsonWriter> writeMessage)
     {
-        PooledBufferWriter? message = SerializeMessage(writeMessage);
+        return WriteMessageAsync(SerializeMessage(writeMessage, registeredCallbacks: null));
+    }
+
+    /// <summary>Writes a serialized message that has no response, then disposes it.</summary>
+    private async Task WriteMessageAsync(PooledBufferWriter serializedMessage)
+    {
+        PooledBufferWriter? message = serializedMessage;
         try
         {
             await _writeLock.WaitAsync().ConfigureAwait(false);
@@ -132,6 +177,8 @@ internal sealed class NodeJsChannel
     /// <param name="id">The identifier of the request, unique in the host.</param>
     public async Task<T> SendRequestAsync<T>(long id, Action<Utf8JsonWriter> writeMessage, ResultKind resultKind, ResultReader<T> readResult, CancellationToken cancellationToken)
     {
+        // Capacity 0 does not allocate an array until a callback is registered
+        var registeredCallbacks = new List<(NodeJsChannel Channel, long Id)>(capacity: 0);
         PooledBufferWriter? message = SerializeMessage(writer =>
         {
             writer.WriteNumber("id", id);
@@ -146,7 +193,7 @@ internal sealed class NodeJsChannel
             }
 
             writeMessage(writer);
-        });
+        }, registeredCallbacks);
 
         var request = new PendingRequest<T>(readResult, hasResult: resultKind is not ResultKind.Void);
         _pendingRequests[id] = request;
@@ -208,6 +255,12 @@ internal sealed class NodeJsChannel
         finally
         {
             _pendingRequests.TryRemove(id, out _);
+            if (message is not null)
+            {
+                // The message is not sent, so the thread never creates its functions
+                UnregisterCallbacks(registeredCallbacks);
+            }
+
             message?.Dispose();
         }
     }
@@ -231,6 +284,27 @@ internal sealed class NodeJsChannel
     }
 
     /// <summary>Serializes a message. The caller must dispose the returned buffer, or pass it to <see cref="WriteMessageAndReleaseLockAsync"/>.</summary>
+    /// <param name="writeMessage">Writes the properties of the message.</param>
+    /// <param name="registeredCallbacks">Receives the callbacks registered by the message, to unregister them when it is not sent.</param>
+    private static PooledBufferWriter SerializeMessage(Action<Utf8JsonWriter> writeMessage, List<(NodeJsChannel Channel, long Id)>? registeredCallbacks)
+    {
+        var previousCallbacks = t_registeredCallbacks;
+        t_registeredCallbacks = registeredCallbacks;
+        try
+        {
+            return SerializeMessage(writeMessage);
+        }
+        catch
+        {
+            UnregisterCallbacks(t_registeredCallbacks);
+            throw;
+        }
+        finally
+        {
+            t_registeredCallbacks = previousCallbacks;
+        }
+    }
+
     private static PooledBufferWriter SerializeMessage(Action<Utf8JsonWriter> writeMessage)
     {
         var buffer = new PooledBufferWriter();
@@ -395,7 +469,23 @@ internal sealed class NodeJsChannel
 
         if (reader.ValueTextEquals("type"u8))
         {
-            _host.OnNotice(this, message);
+            if (!reader.Read() || reader.TokenType is not JsonTokenType.String)
+                throw new JsonException("The type of the message is invalid.");
+
+            if (reader.ValueTextEquals("callback"u8))
+            {
+                ProcessCallbackCall(message);
+            }
+            else if (reader.ValueTextEquals("releaseCallback"u8))
+            {
+                var root = JsonElement.Parse(message);
+                _callbacks.TryRemove(root.GetProperty("callback").GetInt64(), out _);
+            }
+            else
+            {
+                _host.OnNotice(this, message);
+            }
+
             return;
         }
 
@@ -453,6 +543,82 @@ internal sealed class NodeJsChannel
         else
         {
             throw new JsonException("The response contains an unexpected property.");
+        }
+    }
+
+    // {"type":"callback","call":1,"callback":2,"args":[...]}: a function created for a JSCallback argument is called
+    private void ProcessCallbackCall(ReadOnlySpan<byte> message)
+    {
+        var root = JsonElement.Parse(message, NodeJsHost.UnlimitedDepthDocumentOptions);
+        var call = root.GetProperty("call").GetInt64();
+        var callbackId = root.GetProperty("callback").GetInt64();
+        var arguments = root.GetProperty("args").EnumerateArray().ToArray();
+
+        // The delegate is found before processing the next message, which may release the function once the call is sent
+        _callbacks.TryGetValue(callbackId, out var callback);
+
+        // The delegate runs on the thread pool, so it does not block the messages of the other calls
+        _ = Task.Run(() => InvokeCallbackAsync(call, callback, arguments));
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "The exception of the delegate is reported to the JavaScript code")]
+    private async Task InvokeCallbackAsync(long call, JSCallback? callback, JsonElement[] arguments)
+    {
+        JsonNode? result = null;
+        Exception? error = null;
+        try
+        {
+            if (callback is null)
+                throw new InvalidOperationException("The callback does not exist or was released.");
+
+            result = await callback.InvokeAsync(arguments, _callbackCancellation.Token).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            error = ex;
+        }
+
+        if (IsTerminated)
+            return;
+
+        try
+        {
+            await WriteMessageAsync(SerializeCallbackResult(call, result, error)).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException or OperationCanceledException)
+        {
+            // The connection is lost, so the thread and its pending calls are gone
+        }
+    }
+
+    [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "The exception is reported to the JavaScript code")]
+    private PooledBufferWriter SerializeCallbackResult(long call, JsonNode? result, Exception? error)
+    {
+        try
+        {
+            return SerializeMessage(writer => WriteCallbackResult(writer, call, result, error), registeredCallbacks: null);
+        }
+        catch (Exception ex) when (error is null)
+        {
+            // The result cannot be serialized, e.g. it contains a disposed reference
+            return SerializeMessage(writer => WriteCallbackResult(writer, call, result: null, ex), registeredCallbacks: null);
+        }
+    }
+
+    private void WriteCallbackResult(Utf8JsonWriter writer, long call, JsonNode? result, Exception? error)
+    {
+        writer.WriteString("type", "callbackResult");
+        writer.WriteNumber("call", call);
+        if (error is null)
+        {
+            ArgumentWriter.Write(writer, this, [result]);
+        }
+        else
+        {
+            writer.WriteStartObject("error");
+            writer.WriteString("name", error.GetType().Name);
+            writer.WriteString("message", error.Message);
+            writer.WriteEndObject();
         }
     }
 

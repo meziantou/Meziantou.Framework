@@ -58,6 +58,17 @@ async function startRuntime(config) {
     // Worker threads started for NodeJsHostOptions.WorkerThreads, by index
     let workerSlots = [];
 
+    // Calls of .NET callbacks (JSCallback) waiting for their result, by identifier
+    const pendingCallbackCalls = new Map();
+    let nextCallbackCallId = 0;
+
+    // A .NET callback is kept by the host until its function is collected. Identifiers are never reused, so a release never removes a newer function.
+    const callbackRegistry = new FinalizationRegistry(callback => {
+        if (socket.writable) {
+            send({ type: "releaseCallback", callback });
+        }
+    });
+
     // JSON.stringify escapes a lone surrogate (e.g. a string cut in the middle of an emoji) as \udXXX, which System.Text.Json cannot convert to a string.
     // It is replaced by U+FFFD, as String.prototype.toWellFormed does. Valid surrogate pairs are not escaped, and a backslash preceded by an odd number of backslashes is not an escape.
     const loneSurrogateEscapePattern = /(?<!\\)((?:\\\\)*)\\ud[89a-f][0-9a-f]{2}/g;
@@ -323,7 +334,55 @@ async function startRuntime(config) {
         return references.get(id);
     }
 
-    function decodeValue(entry) {
+    // Calls a .NET callback. The arguments are converted as the results of calls are.
+    function invokeCallback(callback, args) {
+        const json = stringify(args, resultReplacer);
+        const call = ++nextCallbackCallId;
+        return new Promise((resolve, reject) => {
+            pendingCallbackCalls.set(call, { resolve, reject });
+
+            // Written in several parts, so large arguments are not copied into a new string
+            socket.cork();
+            socket.write(`{"type":"callback","call":${call},"callback":${callback},"args":`);
+            socket.write(json);
+            socket.write("}\n");
+            socket.uncork();
+        });
+    }
+
+    function createCallbackFunction(callback) {
+        const fn = async (...args) => await invokeCallback(callback, args);
+        callbackRegistry.register(fn, callback);
+        return fn;
+    }
+
+    function completeCallbackCall(message, error) {
+        const pending = pendingCallbackCalls.get(message.call);
+        if (pending === undefined) {
+            return;
+        }
+
+        pendingCallbackCalls.delete(message.call);
+        if (error !== undefined) {
+            pending.reject(error);
+            return;
+        }
+
+        if (message.error !== undefined && message.error !== null) {
+            const dotnetError = new Error(String(message.error.message));
+            dotnetError.name = String(message.error.name);
+            pending.reject(dotnetError);
+            return;
+        }
+
+        try {
+            pending.resolve(decodeArguments(message)[0]);
+        } catch (decodeError) {
+            pending.reject(decodeError);
+        }
+    }
+
+    function decodeValue(entry, callbacks) {
         switch (entry.type) {
             case "undefined":
                 return undefined;
@@ -338,6 +397,16 @@ async function startRuntime(config) {
                 return new Uint8Array(Buffer.from(entry.value, "base64"));
             case "reference":
                 return getReference(entry.value);
+            case "callback": {
+                // The same callback is the same function in a message
+                let fn = callbacks.get(entry.value);
+                if (fn === undefined) {
+                    fn = createCallbackFunction(entry.value);
+                    callbacks.set(entry.value, fn);
+                }
+
+                return fn;
+            }
             default:
                 throw new Error(`Unknown value type '${entry.type}'`);
         }
@@ -346,6 +415,7 @@ async function startRuntime(config) {
     // Values that JSON cannot represent are sent as null, with their location in the arguments
     function decodeArguments(message) {
         const args = message.args ?? [];
+        const callbacks = new Map();
         for (const entry of message.values ?? []) {
             const path = entry.path;
             let container = args;
@@ -354,7 +424,7 @@ async function startRuntime(config) {
             }
 
             // Containers are created by JSON.parse, so even keys such as "__proto__" are own properties
-            container[path[path.length - 1]] = decodeValue(entry);
+            container[path[path.length - 1]] = decodeValue(entry, callbacks);
         }
 
         return args;
@@ -656,6 +726,10 @@ async function startRuntime(config) {
                 references.delete(message.reference);
                 return;
 
+            case "callbackResult":
+                completeCallbackCall(message);
+                return;
+
             case "watchdog":
                 try {
                     startWatchdog();
@@ -735,8 +809,10 @@ async function startRuntime(config) {
         }
     }
 
-    // Requests always start with their identifier, so a request that cannot be parsed can still be answered
+    // Requests always start with their identifier, so a request that cannot be parsed can still be answered.
+    // The result of a .NET callback starts with the identifier of its call, so the call can still be rejected.
     const requestIdPattern = /^\{"id":(\d+)[,}]/;
+    const callbackResultPattern = /^\{"type":"callbackResult","call":(\d+)[,}]/;
 
     function processLine(parts) {
         let message;
@@ -751,10 +827,17 @@ async function startRuntime(config) {
             // e.g. the message exceeds the maximum length of a string
             let prefix = "";
             for (const part of parts) {
-                prefix += part.slice(0, 32);
-                if (prefix.length >= 32) {
+                prefix += part.slice(0, 64);
+                if (prefix.length >= 64) {
                     break;
                 }
+            }
+
+            const reportedError = error instanceof RangeError ? new RangeError(`The message is too large to be processed by Node.js: ${error.message}`) : error;
+            const callbackMatch = callbackResultPattern.exec(prefix);
+            if (callbackMatch !== null) {
+                completeCallbackCall({ call: Number(callbackMatch[1]) }, reportedError);
+                return;
             }
 
             const match = requestIdPattern.exec(prefix);
@@ -765,7 +848,7 @@ async function startRuntime(config) {
                 return;
             }
 
-            sendError(Number(match[1]), error instanceof RangeError ? new RangeError(`The message is too large to be processed by Node.js: ${error.message}`) : error);
+            sendError(Number(match[1]), reportedError);
             return;
         }
 

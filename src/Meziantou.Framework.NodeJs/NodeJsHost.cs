@@ -164,6 +164,9 @@ public sealed class NodeJsHost : IAsyncDisposable
         }
     }
 
+    /// <summary>Gets the number of functions of the process that call a <see cref="JSCallback"/>, for tests.</summary>
+    internal int CallbackCount => _channels.Keys.Sum(channel => channel.CallbackCount);
+
     /// <summary>Starts a new Node.js process.</summary>
     /// <exception cref="NodeJsException">The <c>node</c> executable cannot be found, or the process fails to start.</exception>
     /// <param name="options">The options. They are copied, so changing them once the process is started has no effect.</param>
@@ -190,7 +193,7 @@ public sealed class NodeJsHost : IAsyncDisposable
     /// <summary>Imports a module and calls one of its exports.</summary>
     /// <param name="module">The module specifier, as used by <c>import()</c>: an npm package name, a relative path starting with <c>./</c> or <c>../</c> and including the file extension, resolved from <see cref="NodeJsHostOptions.WorkingDirectory"/>, an absolute path, or a <c>file:</c> or <c>node:</c> URL. A module is loaded once, and kept for the lifetime of the process.</param>
     /// <param name="exportName">The name of the export. When <see langword="null"/>, the default export is used. CommonJS exports are supported.</param>
-    /// <param name="arguments">The arguments passed to the function. Use <see cref="JSValue"/> for values that JSON cannot represent, and <see cref="JSReference"/> to pass a value kept in the Node.js process.</param>
+    /// <param name="arguments">The arguments passed to the function. Use <see cref="JSValue"/> for values that JSON cannot represent, <see cref="JSReference"/> to pass a value kept in the Node.js process, and <see cref="JSCallback"/> to pass a .NET delegate.</param>
     /// <param name="cancellationToken">A token to stop waiting for the result. The JavaScript code keeps running.</param>
     /// <returns>The JSON representation of the value returned by the function (awaited if it is a promise), or the value of the export when it is not a function. <c>BigInt</c> values are exact JSON numbers (Node.js 21 or later).</returns>
     /// <exception cref="NodeJsException">The JavaScript code throws, or the Node.js process exits.</exception>
@@ -265,7 +268,7 @@ public sealed class NodeJsHost : IAsyncDisposable
     /// <summary>Imports a module, creates an instance of one of its exported classes (<c>new</c>), and keeps the instance in the Node.js process.</summary>
     /// <param name="module">The module specifier, as used by <c>import()</c>: an npm package name, a relative path starting with <c>./</c> or <c>../</c> and including the file extension, resolved from <see cref="NodeJsHostOptions.WorkingDirectory"/>, an absolute path, or a <c>file:</c> or <c>node:</c> URL. A module is loaded once, and kept for the lifetime of the process.</param>
     /// <param name="exportName">The name of the exported class or constructor function. When <see langword="null"/>, the default export is used.</param>
-    /// <param name="arguments">The arguments passed to the constructor. Use <see cref="JSValue"/> for values that JSON cannot represent, and <see cref="JSReference"/> to pass a value kept in the Node.js process.</param>
+    /// <param name="arguments">The arguments passed to the constructor. Use <see cref="JSValue"/> for values that JSON cannot represent, <see cref="JSReference"/> to pass a value kept in the Node.js process, and <see cref="JSCallback"/> to pass a .NET delegate.</param>
     /// <param name="cancellationToken">A token to stop waiting for the result. The JavaScript code keeps running.</param>
     /// <returns>A reference to the new instance. Dispose it when the instance is no longer needed.</returns>
     /// <exception cref="NodeJsException">The export is not a constructor, the constructor throws, or the Node.js process exits.</exception>
@@ -295,7 +298,7 @@ public sealed class NodeJsHost : IAsyncDisposable
 
     /// <summary>Evaluates JavaScript code as the body of an async function that receives arguments.</summary>
     /// <param name="code">The body of the function. The arguments are available in the <c>args</c> array. Use <c>return</c> to return a value and <c>await</c> to wait for promises. <c>require</c> is available, and values stored on <c>globalThis</c> persist across calls.</param>
-    /// <param name="arguments">The arguments, available in the <c>args</c> array. Pass values as arguments instead of inserting them in the code, so they cannot change the code. Use <see cref="JSValue"/> for values that JSON cannot represent, and <see cref="JSReference"/> to pass a value kept in the Node.js process.</param>
+    /// <param name="arguments">The arguments, available in the <c>args</c> array. Pass values as arguments instead of inserting them in the code, so they cannot change the code. Use <see cref="JSValue"/> for values that JSON cannot represent, <see cref="JSReference"/> to pass a value kept in the Node.js process, and <see cref="JSCallback"/> to pass a .NET delegate.</param>
     /// <param name="cancellationToken">A token to stop waiting for the result. The JavaScript code keeps running.</param>
     /// <returns>The JSON representation of the returned value. <c>BigInt</c> values are exact JSON numbers (Node.js 21 or later).</returns>
     /// <exception cref="NodeJsException">The JavaScript code throws, or the Node.js process exits.</exception>

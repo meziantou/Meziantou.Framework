@@ -90,10 +90,10 @@ JsonElement value = await client.GetValueAsync();
 
 - The value is kept until the reference is disposed or the process exits.
 - A reference can only be used with the process that created it. Once the process exits, the calls that use it fail with
-  a [NodeJsException](cref:Meziantou.Framework.NodeJs.NodeJsException) whose [ExitCode](cref:Meziantou.Framework.NodeJs.NodeJsException.ExitCode) is set. See [Handling errors](08-HandlingErrors.md).
+  a [NodeJsException](cref:Meziantou.Framework.NodeJs.NodeJsException) whose [ExitCode](cref:Meziantou.Framework.NodeJs.NodeJsException.ExitCode) is set. See [Handling errors](09-HandlingErrors.md).
 - With a pool, a reference is bound to the process that created it, and the calls of the pool whose arguments contain
   it run on that process. With worker threads, the value is kept by the worker thread that created it, and is lost when
   this worker thread exits. A call cannot use references kept by different processes or worker threads. See
-  [Running calls in parallel](10-ParallelCalls.md).
+  [Running calls in parallel](11-ParallelCalls.md).
 - A [JSReference](cref:Meziantou.Framework.NodeJs.JSReference) can only be used in the arguments of a call. It cannot be a member of an object serialized using
   reflection, and a `JsonNode` created from it cannot be serialized or cloned.

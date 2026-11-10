@@ -36,9 +36,9 @@ Assert.Equal("Development", environment);
 | [EnvironmentVariables](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.EnvironmentVariables) | The variables of your application | Variables to set, or to remove with a `null` value |
 | [StartupTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.StartupTimeout) | 30 seconds | The maximum time to wait for the process to start, or `Timeout.InfiniteTimeSpan` |
 | [StandardOutputReceived](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.StandardOutputReceived), [StandardErrorReceived](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.StandardErrorReceived) | Discarded | Callbacks that receive each line of the output |
-| [MaxConcurrentCalls](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.MaxConcurrentCalls) | Not limited | See [Running calls in parallel](10-ParallelCalls.md#limit-the-calls-in-progress) |
-| [WorkerThreads](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.WorkerThreads) | None | See [Running calls in parallel](10-ParallelCalls.md#worker-threads) |
-| [UnresponsiveTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.UnresponsiveTimeout) | Never killed | See [Cancellation and timeouts](09-CancellationAndTimeouts.md) |
+| [MaxConcurrentCalls](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.MaxConcurrentCalls) | Not limited | See [Running calls in parallel](11-ParallelCalls.md#limit-the-calls-in-progress) |
+| [WorkerThreads](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.WorkerThreads) | None | See [Running calls in parallel](11-ParallelCalls.md#worker-threads) |
+| [UnresponsiveTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.UnresponsiveTimeout) | Never killed | See [Cancellation and timeouts](10-CancellationAndTimeouts.md) |
 
 The options are copied when a host or a pool starts, so changing them afterwards has no effect on it. A zero or negative
 [StartupTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.StartupTimeout), [UnresponsiveTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.UnresponsiveTimeout), [MaxConcurrentCalls](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.MaxConcurrentCalls) or [WorkerThreads](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.WorkerThreads) throws an

@@ -94,7 +94,7 @@ Modules are loaded using `import()`, so the module specifier follows the rules o
 [InvokeAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.InvokeAsync) accepts no other URL: a `data:` URL, which contains the code to run, is rejected.
 
 The working directory is [NodeJsHostOptions.WorkingDirectory](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.WorkingDirectory), or the current directory of your application when it is
-not set. See [Configuring the Node.js process](07-ConfiguringTheProcess.md).
+not set. See [Configuring the Node.js process](08-ConfiguringTheProcess.md).
 
 ## Use npm packages
 
@@ -111,7 +111,7 @@ read the `node_modules` folder at run time: deploy it with your application, or 
 ## Modules are loaded once
 
 A module is loaded the first time a call imports it, and kept for the lifetime of the process (or of the worker thread,
-with [worker threads](10-ParallelCalls.md#worker-threads)):
+with [worker threads](11-ParallelCalls.md#worker-threads)):
 
 - Its top-level code runs once, so a module can create a value once and reuse it in every call, such as a cache or a
   connection pool.

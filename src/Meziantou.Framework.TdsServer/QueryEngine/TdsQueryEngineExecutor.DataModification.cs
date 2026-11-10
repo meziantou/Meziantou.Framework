@@ -146,18 +146,10 @@ internal sealed partial class TdsQueryEngineExecutor
     private Func<CancellationToken, ValueTask<IReadOnlyList<object?[]>>> TranslateInsertSelect(SqlSelectSpecification selectSpecification, string[] columnNames, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext)
     {
         // The values are matched to the columns by position, so the selected expressions do not need names, as in SQL Server
-        var selectExpressions = (selectSpecification.QueryExpression as SqlQuerySpecification)?.SelectClause.SelectExpressions;
-        var namesByPosition = selectExpressions is not null && selectExpressions.Count == columnNames.Length && !selectExpressions.Any(expression => expression is SqlSelectStarExpression)
-            ? columnNames
-            : null;
+        var namesByPosition = new PositionalColumnNames(columnNames, CreateCountMismatchError);
         var query = TranslateSelectSpecification(selectSpecification, parameters, cteRoots, queryExecutionContext, namesByPosition);
         var members = GetReadableMembers(query.ElementType);
-        if (members.Count != columnNames.Length)
-        {
-            throw members.Count < columnNames.Length
-                ? new TdsQueryEngineException("The select list for the INSERT statement contains fewer items than the insert list. The number of SELECT values must match the number of INSERT columns.", errorNumber: 120)
-                : new TdsQueryEngineException("The select list for the INSERT statement contains more items than the insert list. The number of SELECT values must match the number of INSERT columns.", errorNumber: 121);
-        }
+        namesByPosition.EnsureCount(members.Count);
 
         return async cancellationToken =>
         {
@@ -170,6 +162,13 @@ internal sealed partial class TdsQueryEngineExecutor
 
             return values;
         };
+
+        TdsQueryEngineException CreateCountMismatchError(int count)
+        {
+            return count < columnNames.Length
+                ? new TdsQueryEngineException("The select list for the INSERT statement contains fewer items than the insert list. The number of SELECT values must match the number of INSERT columns.", errorNumber: 120)
+                : new TdsQueryEngineException("The select list for the INSERT statement contains more items than the insert list. The number of SELECT values must match the number of INSERT columns.", errorNumber: 121);
+        }
     }
 
     private Func<CancellationToken, ValueTask<long>> TranslateUpdateStatement(SqlUpdateStatement statement, IReadOnlyDictionary<string, TdsQueryParameter> parameters, QueryExecutionContext queryExecutionContext)

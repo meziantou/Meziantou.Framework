@@ -131,8 +131,25 @@ The statements the engine can translate are listed in [Supported SQL](08-Support
 ## Modify data
 
 A query root is read-only unless you register the handlers of the statements that change it. Pass a
-[TdsQueryRootWriteHandlers\<T\>](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryRootWriteHandlers{T}) to `AddQueryRoot`. Here, `Product` is a class with settable `Id`, `Name` and
-`Price` properties:
+[TdsQueryRootWriteHandlers\<T\>](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryRootWriteHandlers{T}) to [AddQueryRoot](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions.AddQueryRoot). The rows are instances of a class with settable
+properties:
+
+<!-- ref:../../tests/Meziantou.Framework.TdsServer.Tests/TdsQueryEngineTests.cs;region=TdsServer_QueryEngineProduct;format=md-fenced-code-block;dedent=true -->
+```csharp
+internal sealed class Product
+{
+    public int Id { get; set; }
+
+    public string Name { get; set; } = "";
+
+    public decimal Price { get; set; }
+
+    public int? Stock { get; set; }
+}
+```
+<!-- endref -->
+
+The handlers save the changes to a list:
 
 <!-- ref:../../tests/Meziantou.Framework.TdsServer.Tests/TdsQueryEngineTests.cs;region=TdsServer_QueryEngineDataModification;format=md-fenced-code-block;dedent=true -->
 ```csharp

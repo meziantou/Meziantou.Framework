@@ -5234,6 +5234,87 @@ public sealed class TdsQueryEngineTests
         Assert.Equal(["2 Mouse 19.50 0", "3 Pen 0 0", "4 Ink 0 0"], products.Select(FormatProduct));
     }
 
+    [Fact]
+    public async Task SqlClient_QueryEngine_DataModification_SnapshotQueryRoot_LaterStatementsReadTheNewRows()
+    {
+        var products = CreateProducts();
+        await ExecuteQuery(
+            CreateWritableQueryEngineOptions(products, snapshot: true),
+            command =>
+            {
+                command.CommandText = """
+                    INSERT INTO products (Id, Name) VALUES (3, 'Pen'), (4, 'Ink');
+                    DELETE FROM products WHERE Id = 3;
+                    SELECT Id, Name FROM products ORDER BY Id
+                    """;
+            },
+            """
+            Id Name
+            1 Keyboard
+            2 Mouse
+            4 Ink
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_Insert_SelectWithUnionAndGroupBy_MatchesColumnsByPosition()
+    {
+        var products = CreateProducts();
+        var recordsAffected = await ExecuteNonQuery(
+            CreateWritableQueryEngineOptions(products),
+            command =>
+            {
+                command.CommandText = """
+                    INSERT INTO products (Id, Name) SELECT Id + 10, Name FROM customers WHERE Id = 1 UNION ALL SELECT Id + 20, Name FROM customers WHERE Id = 2;
+                    INSERT INTO products (Id, Stock) SELECT MAX(Id), MAX(Amount) FROM orders GROUP BY Region;
+                    """;
+            });
+
+        Assert.Equal(4, recordsAffected);
+        Assert.Equal(["1 Keyboard 49.90 5", "2 Mouse 19.50 NULL", "11 Alice 0 NULL", "22 Bob 0 NULL", "2  0 20", "3  0 5"], products.Select(FormatProduct));
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RecursiveCte_AnchorMembersWithDifferentNames_MatchColumnsByPosition()
+    {
+        await ExecuteQuery(
+            CreateQueryEngineOptions(),
+            command =>
+            {
+                command.CommandText = """
+                    WITH c (n) AS (
+                        SELECT Id FROM customers WHERE Id = 1
+                        UNION ALL
+                        SELECT Id AS Other FROM customers WHERE Id = 2
+                        UNION ALL
+                        SELECT n + 1 FROM c WHERE n < 3
+                    ),
+                    d AS (
+                        SELECT Id AS m FROM customers WHERE Id = 1
+                        UNION ALL
+                        SELECT Id + 1 FROM customers WHERE Id = 1
+                        UNION ALL
+                        SELECT m + 10 FROM d WHERE m < 10
+                    )
+                    SELECT n FROM c UNION ALL SELECT m AS n FROM d ORDER BY n
+                    """;
+            },
+            """
+            n
+            1
+            1
+            2
+            2
+            2
+            3
+            3
+            11
+            12
+            """,
+            expectedMaterializedQueries: null);
+    }
+
     [Theory]
     [InlineData(TdsQueryEngineResourceKind.QueryRootInsert, "INSERT INTO products (Id, Name) VALUES (3, 'x')", "INSERT")]
     [InlineData(TdsQueryEngineResourceKind.QueryRootUpdate, "UPDATE products SET Name = 'x'", "UPDATE")]
@@ -5327,10 +5408,10 @@ public sealed class TdsQueryEngineTests
         return options;
     }
 
-    private static TdsQueryEngineOptions CreateWritableQueryEngineOptions(List<Product> products, Action<IReadOnlyList<Product>>? updated = null)
+    private static TdsQueryEngineOptions CreateWritableQueryEngineOptions(List<Product> products, Action<IReadOnlyList<Product>>? updated = null, bool snapshot = false)
     {
         var options = CreateQueryEngineOptions();
-        options.AddQueryRoot("products", context => products.AsQueryable(), new TdsQueryRootWriteHandlers<Product>
+        options.AddQueryRoot("products", context => snapshot ? products.ToArray().AsQueryable() : products.AsQueryable(), new TdsQueryRootWriteHandlers<Product>
         {
             Insert = (context, rows, cancellationToken) =>
             {
@@ -5655,7 +5736,8 @@ public sealed class TdsQueryEngineTests
 
     private sealed record Employee(int Id, string Name, int? ManagerId);
 
-    private sealed class Product
+    #region TdsServer_QueryEngineProduct
+    internal sealed class Product
     {
         public int Id { get; set; }
 
@@ -5665,6 +5747,7 @@ public sealed class TdsQueryEngineTests
 
         public int? Stock { get; set; }
     }
+    #endregion
 
     private sealed record JsonDocumentRow(int Id, string? Payload);
 

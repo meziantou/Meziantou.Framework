@@ -103,16 +103,18 @@ internal sealed partial class TdsQueryEngineExecutor
             throw new TdsQueryEngineException($"No anchor member was specified for recursive query '{cteName}'.", errorNumber: 246);
         }
 
+        // The column list, or else the first anchor member, names the columns: the other members match them by position
         var anchorQuery = TranslateQueryExpression(members[0].Query, parameters, cteRoots, queryExecutionContext);
-        for (var i = 1; i < firstRecursiveMember; i++)
-        {
-            var anchorMember = TranslateQueryExpression(members[i].Query, parameters, cteRoots, queryExecutionContext);
-            anchorQuery = CombineUnion(anchorQuery, anchorMember, members[i].Operator!.Value);
-        }
-
         if (cte.ColumnList is not null && cte.ColumnList.Count > 0)
         {
             anchorQuery = ApplyColumnList(anchorQuery, cte.ColumnList, scopeName: "CTE");
+        }
+
+        var anchorColumnNames = new PositionalColumnNames([.. GetReadableMembers(anchorQuery.ElementType).Select(member => member.Name)], _ => CreateColumnCountMismatchError());
+        for (var i = 1; i < firstRecursiveMember; i++)
+        {
+            var anchorMember = TranslateQueryExpression(members[i].Query, parameters, cteRoots, queryExecutionContext, anchorColumnNames);
+            anchorQuery = CombineUnion(anchorQuery, anchorMember, members[i].Operator!.Value);
         }
 
         var recursiveMembers = new List<SqlQuerySpecification>();
@@ -140,7 +142,7 @@ internal sealed partial class TdsQueryEngineExecutor
         // The anchor names the columns. A column is nullable when the anchor or a recursive member returns a nullable
         // value, so the rows of every level fit in the same type.
         var anchorColumns = GetReadableMembers(anchorQuery.ElementType);
-        var columnNames = anchorColumns.Select(member => member.Name).ToArray();
+        var columnNames = anchorColumnNames.Names;
         var columnTypes = anchorColumns.Select(GetMemberType).ToArray();
         var (workingTable, recursiveQueries) = TranslateRecursiveMembers(anchorQuery.ElementType);
         foreach (var recursiveQuery in recursiveQueries)
@@ -195,7 +197,7 @@ internal sealed partial class TdsQueryEngineExecutor
             };
 
             var queries = recursiveMembers
-                .Select(member => TranslateQuerySpecification(member, orderByOverride: null, parameters, recursiveCteRoots, queryExecutionContext, columnNames))
+                .Select(member => TranslateQuerySpecification(member, orderByOverride: null, parameters, recursiveCteRoots, queryExecutionContext, anchorColumnNames))
                 .ToArray();
             return (table, queries);
         }

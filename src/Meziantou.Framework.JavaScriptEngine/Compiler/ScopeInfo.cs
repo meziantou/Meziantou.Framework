@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.JavaScriptEngine.Compiler;
 
 /// <summary>The runtime description of a declarative environment: its slots and the names of its bindings (for the lookups by name of eval and with).</summary>
-internal sealed class ScopeInfo(ScopeKind kind, string?[] names, ScopeSlotFlags[] flags, bool isVarScope, bool isParameterVarScope = false)
+internal sealed class ScopeInfo(ScopeKind kind, string?[] names, ScopeSlotFlags[] flags, bool isVarScope, bool isParameterVarScope = false, bool isFunctionLexicalScope = false)
 {
     public ScopeKind Kind { get; } = kind;
 
@@ -17,6 +17,9 @@ internal sealed class ScopeInfo(ScopeKind kind, string?[] names, ScopeSlotFlags[
 
     /// <summary>Gets whether the environment is the parameter scope of a function whose parameters have expressions, used as the variable environment of the eval code of the parameters: the vars of the eval code cannot redeclare its bindings.</summary>
     public bool IsParameterVarScope { get; } = isParameterVarScope;
+
+    /// <summary>Gets whether the environment holds the lexical declarations of the top level of a function body (a debugger shows them with the parameters and the vars).</summary>
+    public bool IsFunctionLexicalScope { get; } = isFunctionLexicalScope;
 
     public int IndexOf(string name)
     {

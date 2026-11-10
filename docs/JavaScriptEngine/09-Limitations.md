@@ -47,7 +47,9 @@ them with this engine.
   Compile the scripts that run many times once, with [JsPreparedScript](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript).
 - **One thread at a time per engine.** Use one engine per thread to run scripts in parallel. Engines share memory only
   through `SharedArrayBuffer`.
-- **No debugger.** There is no debugging protocol and no breakpoints; the errors give their location and their stack.
+- **No debugging protocol.** Chrome DevTools and Visual Studio Code cannot attach to the engine. Your application can
+  set breakpoints, step through the scripts, read their variables and evaluate code in a paused script with the
+  debugger API: see [Debugging and inspecting scripts](04-RunningCode/05-Debugging.md).
 - **The memory limit counts allocations**, not the memory that the script keeps. See
   [Limits and sandboxing](07-LimitsAndSandboxing.md).
 - **The nesting of the code is limited.** A source nested deeper than 1,500 levels (parentheses, brackets, blocks,

@@ -35,7 +35,7 @@ internal sealed partial class CodeGenerator
     /// <summary>Compiles a script, a module or eval code (with the context of the call, for a direct eval).</summary>
     public static FunctionTemplate CompileProgram(Program program, SourceText source, ProgramKind kind, bool isStrict, EvalContext? evalContext = null)
     {
-        var analysis = ScopeAnalyzer.Analyze(program, kind, isStrict, evalContext: evalContext);
+        var analysis = ScopeAnalyzer.Analyze(program, kind, isStrict, source.IsInstrumented, evalContext: evalContext);
         var generator = new CodeGenerator(analysis, source, analysis.Root);
         return generator.CompileProgramBody(program, kind);
     }
@@ -50,7 +50,7 @@ internal sealed partial class CodeGenerator
             Body = [new ExpressionStatement { Start = function.Start, End = function.End, Expression = new FunctionExpression { Start = function.Start, End = function.End, Function = function } }],
         };
 
-        var analysis = ScopeAnalyzer.Analyze(program, ProgramKind.Script, isStrict: false, eagerFunction: function);
+        var analysis = ScopeAnalyzer.Analyze(program, ProgramKind.Script, isStrict: false, source.IsInstrumented, eagerFunction: function);
         var info = analysis.Functions[function];
         var generator = new CodeGenerator(analysis, source, info);
         return generator.CompileFunctionBody(function, "anonymous", FunctionTemplateFlags.None);
@@ -71,7 +71,7 @@ internal sealed partial class CodeGenerator
     /// </summary>
     public static CompiledModule CompileModule(Program program, SourceText source)
     {
-        var analysis = ScopeAnalyzer.Analyze(program, ProgramKind.Module, isStrict: true);
+        var analysis = ScopeAnalyzer.Analyze(program, ProgramKind.Module, isStrict: true, source.IsInstrumented);
         var scope = analysis.Root.Scope;
         var initialization = new CodeGenerator(analysis, source, analysis.Root);
         initialization.EmitFunctionDeclarations(program.Body, scope, isGlobal: false);

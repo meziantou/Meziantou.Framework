@@ -711,7 +711,7 @@ public sealed class InterpreterTests
         var source = new JavaScriptEngine.Text.SourceText("function outer(a, b) { let i = 0; var g = function (c) { let i = 1; for (let b = 0; b < 1; b++) { } return [arguments, i, a, b]; }; return g; }");
         var program = JavaScriptEngine.Parsing.JsParser.ParseScript(source, JavaScriptEngine.Parsing.ParserOptions.Script);
         var outer = ((JavaScriptEngine.Ast.FunctionDeclaration)program.Body[0]).Function;
-        var analysis = JavaScriptEngine.Compiler.ScopeAnalyzer.Analyze(program, JavaScriptEngine.Compiler.ProgramKind.Script, isStrict: false, eagerFunction: outer);
+        var analysis = JavaScriptEngine.Compiler.ScopeAnalyzer.Analyze(program, JavaScriptEngine.Compiler.ProgramKind.Script, isStrict: false, isDebuggable: false, eagerFunction: outer);
         var info = analysis.Functions[outer];
         Assert.True(info.Scope.Find("a")!.IsCaptured);
         Assert.True(info.Scope.Find("b")!.IsCaptured);

@@ -1,4 +1,5 @@
 using Meziantou.Framework.JavaScriptEngine.Compiler;
+using Meziantou.Framework.JavaScriptEngine.Interpreter;
 
 namespace Meziantou.Framework.JavaScriptEngine;
 
@@ -45,18 +46,21 @@ public abstract class JsDebugger
 /// <summary>A statement that is about to run, given to the methods of <see cref="JsDebugger"/>.</summary>
 public readonly struct JsDebugEvent
 {
+    private readonly Frame _frame;
     private readonly FunctionTemplate _code;
     private readonly int _pc;
-    private readonly string? _functionName;
+    private readonly long _version;
 
-    internal JsDebugEvent(JsEngine engine, JsRealm realm, FunctionTemplate code, int pc, int callDepth, string? functionName)
+    internal JsDebugEvent(JsEngine engine, Frame frame, long version, int callDepth)
     {
         Engine = engine;
-        Realm = realm;
-        _code = code;
-        _pc = pc;
+        Realm = frame.Realm;
+        _frame = frame;
+        _code = frame.Code;
+        _pc = frame.Pc;
+        _version = version;
         CallDepth = callDepth;
-        _functionName = functionName;
+        FunctionName = frame.Function?.InitialName is { Length: > 0 } name ? name : null;
     }
 
     /// <summary>Gets the engine that runs the statement.</summary>
@@ -73,19 +77,58 @@ public readonly struct JsDebugEvent
     public int CallDepth { get; }
 
     /// <summary>Gets the name of the function that contains the statement, or null for the top-level code and the anonymous functions.</summary>
-    public string? FunctionName => string.IsNullOrEmpty(_functionName) ? null : _functionName;
+    public string? FunctionName { get; }
 
     /// <summary>Gets the position of the start of the statement.</summary>
-    public JsSourceLocation Location
-    {
-        get
-        {
-            var offset = _code.GetSourceOffset(_pc);
-            var (line, column) = _code.Source.GetLineAndColumn(Math.Max(0, offset));
-            return new JsSourceLocation(_code.Source.Url, line, column);
-        }
-    }
+    public JsSourceLocation Location => JsDebugFrame.GetLocation(_code, _pc);
 
     /// <summary>Captures the stack trace of the running code, in the format of the <c>stack</c> property of the errors (without the first line).</summary>
     public string CaptureStackTrace() => Engine.CaptureStackTrace();
+
+    /// <summary>Gets the JavaScript frames of the stack, the frame of the statement first, then its callers.</summary>
+    /// <returns>The frames. They can be used until the callback that received the event returns.</returns>
+    /// <exception cref="InvalidOperationException">The callback that received the event returned.</exception>
+    public IReadOnlyList<JsDebugFrame> GetCallStack()
+    {
+        EnsureActive();
+        var frames = Engine.Frames;
+        var index = frames.Count - 1;
+
+        // The callback may run code: the frames it pushed are above the frame of the event
+        while (index >= 0 && !ReferenceEquals(frames[index], _frame))
+        {
+            index--;
+        }
+
+        var result = new JsDebugFrame[index + 1];
+        for (var i = index; i >= 0; i--)
+        {
+            result[index - i] = new JsDebugFrame(Engine, frames[i], _version, isTop: i == index);
+        }
+
+        return result;
+    }
+
+    /// <summary>Gets the scopes of the statement, the innermost first: its variables, and the ones of the enclosing blocks, functions and global scope.</summary>
+    /// <exception cref="InvalidOperationException">The callback that received the event returned.</exception>
+    public IReadOnlyList<JsDebugScope> GetScopes() => GetFrame().GetScopes();
+
+    /// <summary>Evaluates code at the position of the statement, like a direct <c>eval</c>: it reads and changes the variables of the statement.</summary>
+    /// <param name="code">The code, e.g. an expression.</param>
+    /// <returns>The completion value of the code.</returns>
+    /// <exception cref="InvalidOperationException">The callback that received the event returned.</exception>
+    /// <exception cref="JsException">The code throws, or it has a syntax error.</exception>
+    public JsValue Evaluate(string code) => GetFrame().Evaluate(code);
+
+    private JsDebugFrame GetFrame()
+    {
+        EnsureActive();
+        return new JsDebugFrame(Engine, _frame, _version, isTop: true);
+    }
+
+    private void EnsureActive()
+    {
+        if (Engine is null || !Engine.IsDebugEventActive(_version))
+            throw new InvalidOperationException("The debug event can only be used while the callback that received it runs");
+    }
 }

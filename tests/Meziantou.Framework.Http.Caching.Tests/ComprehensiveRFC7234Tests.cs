@@ -1123,14 +1123,19 @@ public sealed class ComprehensiveRFC7234Tests
     {
         await using var context = new HttpTestContext(new HttpCachingOptions { IsSharedCache = true });
         context.AddResponse(HttpStatusCode.OK, "v1", ("Cache-Control", "max-age=1"), ("ETag", "\"v1\""));
-        context.AddResponse(HttpStatusCode.NotModified, ("Cache-Control", "private, max-age=600"), ("ETag", "\"v1\""));
+        context.AddResponse(HttpStatusCode.NotModified, ("Cache-Control", "private, max-age=600"), ("ETag", "\"v1\""), ("Set-Cookie", "session=alice"));
         context.AddResponse(HttpStatusCode.OK, "v2", ("Cache-Control", "max-age=600"));
 
         Assert.Equal("v1", await context.HttpClient.GetStringAsync("http://example.com/resource", XunitCancellationToken));
         context.TimeProvider.Advance(TimeSpan.FromSeconds(5));
 
-        // The 304 still validates the response for this request
-        Assert.Equal("v1", await context.HttpClient.GetStringAsync("http://example.com/resource", XunitCancellationToken));
+        // The 304 still validates the response for this request, which gets the updated headers
+        using (var revalidated = await context.HttpClient.GetAsync("http://example.com/resource", XunitCancellationToken))
+        {
+            Assert.Equal("v1", await revalidated.Content.ReadAsStringAsync(XunitCancellationToken));
+            Assert.True(revalidated.Headers.CacheControl?.Private);
+            Assert.True(revalidated.Headers.Contains("Set-Cookie"));
+        }
 
         // The response is private now, so the shared cache does not serve it to the next request
         Assert.Equal("v2", await context.HttpClient.GetStringAsync("http://example.com/resource", XunitCancellationToken));

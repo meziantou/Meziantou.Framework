@@ -506,17 +506,15 @@ internal sealed class CacheEntry
         // The directives of the merged response decide what a shared cache can keep: a 304 without Cache-Control
         // leaves the stored one in place, while its other fields are still added.
         var mergedCacheControl = storedResponse.Headers.CacheControl;
-        if (isSharedCache && mergedCacheControl?.Private is true && mergedCacheControl.PrivateHeaders.Count is 0)
-        {
-            storedResponse.Dispose();
-            return false;
-        }
+        // A response that became unqualified private is not stored any more, but still answers the current request with
+        // all the updated headers, so none is excluded.
+        var isStorable = !(isSharedCache && mergedCacheControl?.Private is true && mergedCacheControl.PrivateHeaders.Count is 0);
 
         // Re-serialize the updated response
-        var excludedHeaders = isSharedCache ? mergedCacheControl?.PrivateHeaders : null;
+        var excludedHeaders = isSharedCache && isStorable ? mergedCacheControl?.PrivateHeaders : null;
         SerializedResponse = (await ResponseSerializer.SerializeAsync(storedResponse, maximumSize: null, excludedHeaders, cancellationToken))!;
 
         storedResponse.Dispose();
-        return true;
+        return isStorable;
     }
 }

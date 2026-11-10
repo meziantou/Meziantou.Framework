@@ -8,10 +8,10 @@ public static class ContainerDefinitionMongoDbExtensions
     extension(ContainerDefinition)
     {
         /// <summary>Creates a definition pre-configured for a MongoDB container (port 27017 and a readiness wait strategy).</summary>
-        /// <returns>A MongoDB container definition using the <c>mongo:8</c> image.</returns>
+        /// <returns>A MongoDB container definition using the <c>mongo:9</c> image.</returns>
         public static MongoDbContainerDefinition CreateMongoDb()
         {
-            return CreateMongoDb(ImageSource.FromRegistry("mongo:8"));
+            return CreateMongoDb(ImageSource.FromRegistry("mongo:9"));
         }
 
         /// <summary>Creates a definition pre-configured for a MongoDB container (port 27017 and a readiness wait strategy).</summary>

@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging;
+using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.TestHarness;
 using Meziantou.Framework.Pdf.TestHarness.ExternalTools;
 
@@ -46,6 +47,59 @@ public sealed class ConformanceInteropTests
         var known = ReadKnownFailures().Where(entry => entry.Name == name && entry.Flavour == flavour).Select(entry => entry.Rule).Order(StringComparer.Ordinal).ToList();
         var actual = failures.Select(failure => failure[..failure.IndexOf(':', StringComparison.Ordinal)]).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
         Assert.True(known.SequenceEqual(actual, StringComparer.Ordinal), $"veraPDF {VeraPdfTool.Version} {flavour}: the failed rules are not the known failures of '{name}' in verapdf-known-failures.txt\n" + string.Join('\n', failures));
+    }
+
+    public static TheoryData<string> ConvertedLevels => ["2b", "2u", "3b", "3u"];
+
+    /// <summary>A document that is not PDF/A (standard fonts not embedded, JavaScript, an annotation without appearance, XMP metadata of another schema) converted by PdfDocument.ConvertToPdfA.</summary>
+    [Theory]
+    [MemberData(nameof(ConvertedLevels))]
+    public async Task ConvertedDocumentsConformToTheirLevels(string flavour)
+    {
+        var verapdf = await VeraPdfTool.LocateAsync(XunitCancellationToken);
+        var document = PdfDocument.Open(CreateDocumentToConvert());
+        var level = flavour switch
+        {
+            "2b" => PdfAConformance.PdfA2B,
+            "2u" => PdfAConformance.PdfA2U,
+            "3b" => PdfAConformance.PdfA3B,
+            _ => PdfAConformance.PdfA3U,
+        };
+        var result = document.ConvertToPdfA(level);
+        Assert.True(result.Succeeded, string.Join('\n', result.Violations));
+        var path = Path.Combine(AppContext.BaseDirectory, "InteropOutput", "converted-" + flavour + ".pdf");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        await File.WriteAllBytesAsync(path, document.ToByteArray(), XunitCancellationToken);
+
+        var failures = await verapdf.ValidateAsync(path, flavour, XunitCancellationToken);
+
+        Assert.Empty(failures);
+    }
+
+    private static byte[] CreateDocumentToConvert()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+        page.CreateContentBuilder()
+            .DrawText("Hello, archive", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 72, 700)
+            .DrawText("Bold and serif", PdfFont.GetStandardFont(PdfStandardFont.TimesBold), 18, 72, 660)
+            .DrawText("Monospaced \u00e9\u00e8", PdfFont.GetStandardFont(PdfStandardFont.Courier), 12, 72, 630)
+            .SetFillRgb(0, 0, 1).Rectangle(72, 500, 100, 50).Fill();
+        page.Dictionary[PdfName.Create("AA")] = new PdfDictionary { [PdfName.Create("O")] = new PdfDictionary { [PdfName.Create("S")] = PdfName.Create("JavaScript"), [PdfName.Create("JS")] = PdfString.FromText("1") } };
+        page.Annotations.AddNote(new PdfPoint(300, 300), "A note");
+        page.Annotations.AddLink(new PdfRectangle(72, 690, 200, 720), new Uri("https://example.com"));
+        var square = new PdfDictionary
+        {
+            [PdfName.Create("Type")] = PdfName.Create("Annot"),
+            [PdfName.Create("Subtype")] = PdfName.Create("Square"),
+            [PdfName.Create("Rect")] = PdfArray.FromNumbers(300, 400, 400, 450),
+            [PdfName.Create("C")] = PdfArray.FromNumbers(1, 0, 0),
+        };
+        page.Dictionary.Get<PdfArray>(PdfName.Create("Annots"))!.Add(document.Objects.Add(square));
+        document.Catalog[PdfName.Create("OpenAction")] = new PdfDictionary { [PdfName.Create("S")] = PdfName.Create("JavaScript"), [PdfName.Create("JS")] = PdfString.FromText("app.alert('hi')") };
+        document.Information.Title = "To convert";
+        document.SetXmpMetadata("<x:xmpmeta xmlns:x='adobe:ns:meta/'><rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'><rdf:Description rdf:about='' xmlns:custom='http://example.com/custom/' custom:id='42'/></rdf:RDF></x:xmpmeta>"u8);
+        return document.ToByteArray();
     }
 
     private static PdfDocument CreateDocument(string name)

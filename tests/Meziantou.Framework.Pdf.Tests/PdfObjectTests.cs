@@ -30,6 +30,50 @@ public sealed class PdfObjectTests
     public void DecodeTextStrings(byte[] bytes, string expected) => Assert.Equal(expected, PdfString.FromBytes(bytes).ToText());
 
     [Fact]
+    public void AnIncrementalUpdateWritesTheReferencesToMissingObjectsAsNull()
+    {
+        // The resources point to the object 6, which the file does not have
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Resources 4 0 R >>")
+            .Add(4, "<< /Font << /F1 6 0 R >> >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        // The objects 5 and 6 are added before the resources are read, then the resources change
+        document.Objects.Add(new PdfDictionary());
+        document.Objects.Add(new PdfDictionary());
+        document.Pages[0].Resources![PdfName.Create("Changed")] = PdfBoolean.True;
+        using var output = new MemoryStream();
+        document.SaveIncremental(output);
+
+        var text = Encoding.Latin1.GetString(output.ToArray());
+        Assert.DoesNotContain("65536", text);
+        Assert.Contains("/F1 null", text);
+    }
+
+    [Fact]
+    public void AddedObjectsDoNotTakeTheNumbersOfMissingObjects()
+    {
+        // The page tree points to the object 9 and the resources to the object 6, which the file does not have
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R 9 0 R] /Count 2 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Resources 4 0 R >>")
+            .Add(4, "<< /Font << /F1 6 0 R >> >>");
+        var document = PdfDocument.Open(file.ToArray());
+        Assert.Equal(1, document.Pages.Count);
+
+        // The objects 5 and 6 are added before the resources are read: the reference to the object 6 of the file stays a reference to nothing
+        var added = Enumerable.Range(0, 3).Select(_ => document.Objects.Add(new PdfDictionary())).ToList();
+
+        Assert.DoesNotContain(9, added.Select(reference => reference.ObjectNumber));
+        var font = document.Pages[0].Resources!.Get<PdfDictionary>(PdfNames.Font)![PdfName.Create("F1")];
+        Assert.IsType<PdfNull>(PdfReference.ResolveIfReference(font!));
+        Assert.Equal(1, PdfDocument.Open(document.ToByteArray()).Pages.Count);
+    }
+
+    [Fact]
     public void EveryPdfDocEncodingCharacterRoundTrips()
     {
         for (var code = 0; code < 256; code++)
@@ -64,6 +108,9 @@ public sealed class PdfObjectTests
     [InlineData("D:20231323")]
     [InlineData("D:20230230")]
     [InlineData("D:2023102325")]
+    [InlineData("D:20231023103400+23'00")] // DateTimeOffset allows 14 hours at most
+    [InlineData("D:00010101000000+01'00")] // Before DateTime.MinValue in UTC
+    [InlineData("D:99991231235959-01'00")] // After DateTime.MaxValue in UTC
     [InlineData("garbage")]
     public void InvalidDates(string text) => Assert.False(PdfDate.TryParse(text, out _));
 

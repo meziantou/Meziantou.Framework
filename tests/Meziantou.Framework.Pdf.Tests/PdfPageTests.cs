@@ -714,6 +714,464 @@ public sealed class PdfPageTests
         Assert.Equal(128, inlineImage.Frames[0][0, 0].R);
     }
 
+    [Fact]
+    public void Example_Underlay()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 200));
+        page.CreateContentBuilder().Scale(2, 2).SetFillRgb(1, 0, 0).Rectangle(0, 0, 50, 50).Fill();
+
+        #region Pdf_Underlay
+        // A background: the content of the page is painted over it
+        page.CreateContentBuilder(PdfContentPlacement.Under)
+            .SetFillRgb(0.9, 0.9, 1)
+            .Rectangle(page.MediaBox)
+            .Fill()
+            .Complete();
+        #endregion
+
+        using var image = PdfDocument.Open(document.ToByteArray()).Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false, Dpi = 72 });
+        AssertColor(Pixel(image, 50, 50), 255, 0, 0);
+        AssertColor(Pixel(image, 150, 150), 230, 230, 255);
+    }
+
+    [Fact]
+    public void CreateContentBuilder_UnderlaysDoNotChangeTheGraphicsStateOfThePage()
+    {
+        var document = CreateRedactionDocument("1 0 0 rg 0 0 100 100 re f");
+        var page = document.Pages[0];
+
+        // The first underlay is painted over the second one, and both under the page; the overlay is painted over all
+        page.CreateContentBuilder(PdfContentPlacement.Under).Scale(3, 3).SetFillRgb(0, 1, 0).Rectangle(0, 0, 50, 50).Fill().Complete();
+        page.CreateContentBuilder(PdfContentPlacement.Under).SetFillRgb(0, 0, 1).Rectangle(0, 0, 200, 200).Fill().Complete();
+        page.CreateContentBuilder().SetFillGray(0).Rectangle(180, 180, 20, 20).Fill().Complete();
+
+        using var image = PdfDocument.Open(document.ToByteArray()).Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false, Dpi = 72 });
+        AssertColor(Pixel(image, 50, 50), 255, 0, 0);
+        AssertColor(Pixel(image, 120, 120), 0, 255, 0);
+        AssertColor(Pixel(image, 170, 170), 0, 0, 255);
+        AssertColor(Pixel(image, 190, 190), 0, 0, 0);
+    }
+
+    [Fact]
+    public void CreateContentBuilder_RejectsAnUnknownPlacement()
+    {
+        var page = new PdfDocument().Pages.Add(PdfSize.A4);
+
+        Assert.Throws<ArgumentOutOfRangeException>("placement", () => page.CreateContentBuilder((PdfContentPlacement)2));
+    }
+
+    [Fact]
+    public void Example_Watermark()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+        document.Pages.Add(new PdfSize(500, 500));
+
+        #region Pdf_Watermark
+        // On every page, along its diagonal; the text is drawn once and painted by each page
+        document.AddWatermark("DRAFT", new PdfWatermarkOptions { Opacity = 0.2 });
+        #endregion
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        foreach (var page in read.Pages)
+        {
+            var size = page.DisplaySize;
+            var line = Assert.Single(page.ExtractTextLayout().Lines);
+            Assert.Equal("DRAFT", line.Text);
+            Assert.Equal(Math.Atan2(size.Height, size.Width) * 180 / Math.PI, line.Glyphs[0].Angle, 0.01);
+            // Centered on its capital letters: the box of the line, with the ascent and the descent, is a little off center
+            Assert.Equal(size.Width / 2, (line.Bounds.Left + line.Bounds.Right) / 2, 20.0);
+            Assert.Equal(size.Height / 2, (line.Bounds.Bottom + line.Bounds.Top) / 2, 20.0);
+            Assert.True(line.Bounds.Left >= 0 && line.Bounds.Right <= size.Width && line.Bounds.Bottom >= 0 && line.Bounds.Top <= size.Height);
+            Assert.Contains("/Artifact", Encoding.Latin1.GetString(page.GetContentData()));
+        }
+
+        Assert.Equal(read.Pages[0].Resources!.Get<PdfDictionary>(PdfNames.XObject)!.First().Value, read.Pages[1].Resources!.Get<PdfDictionary>(PdfNames.XObject)!.First().Value);
+    }
+
+    [Fact]
+    public void AddWatermark_FollowsTheRotationOfThePage()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 400));
+        page.Rotation = 90;
+
+        page.AddWatermark("TOP SECRET", new PdfWatermarkOptions { Rotation = 0, FontSize = 20, Placement = PdfContentPlacement.Under });
+
+        // Horizontal on the display: turned by 90 degrees in user space, centered on the page
+        var glyph = PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractTextLayout().Lines[0].Glyphs[0];
+        Assert.Equal(90, glyph.Angle, 0.01);
+        Assert.Equal(20, glyph.FontSize, 0.01);
+    }
+
+    [Theory]
+    [InlineData(-0.1)]
+    [InlineData(1.5)]
+    [InlineData(double.NaN)]
+    public void AddWatermark_RejectsAnInvalidOpacity(double opacity)
+    {
+        var page = new PdfDocument().Pages.Add(PdfSize.A4);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => page.AddWatermark("DRAFT", new PdfWatermarkOptions { Opacity = opacity }));
+        Assert.Throws<ArgumentException>(() => page.AddWatermark(""));
+    }
+
+    /// <summary>A one-page document of 200 x 200 points with Helvetica as /F1, the content, and other objects from 6.</summary>
+    private static PdfDocument CreateRedactionDocument(string content, string resources = "", params string[] objects)
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Resources << /Font << /F1 4 0 R >> " + resources + " >> /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+            .Add(5, HandWrittenPdf.Stream(content));
+        for (var i = 0; i < objects.Length; i++)
+        {
+            file.Add(6 + i, objects[i]);
+        }
+
+        return PdfDocument.Open(file.ToArray());
+    }
+
+    private static PdfTextGlyph FindGlyph(PdfPage page, string text) => page.ExtractTextLayout().Lines.SelectMany(line => line.Glyphs).First(glyph => glyph.Text == text);
+
+    [Fact]
+    public void Example_Redact()
+    {
+        #region Pdf_Redact
+        var document = new PdfDocument();
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        var page = document.Pages.Add(PdfSize.A4);
+        page.CreateContentBuilder()
+            .DrawText("Name: John Smith", font, 12, 72, 720);
+
+        // Removes the content under the rectangle and paints it black; the document can then only be saved as a whole
+        var result = page.Redact([new PdfRectangle(108, 715, 200, 732)]);
+        var redacted = PdfDocument.Open(document.ToByteArray());
+
+        Assert.Equal("Name:", redacted.Pages[0].ExtractText().Trim());
+        #endregion
+
+        Assert.Equal(11, result.RemovedGlyphCount);
+    }
+
+    [Fact]
+    public void Example_RedactWords()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+        page.CreateContentBuilder().DrawText("Card number: 4111 1111 1111 1111", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 72, 720);
+
+        #region Pdf_RedactWords
+        // The boxes of the words to remove, found in the text of the page
+        var areas = page.ExtractTextLayout().Lines
+            .SelectMany(line => line.Words)
+            .Where(word => word.Text.All(char.IsAsciiDigit))
+            .Select(word => word.Bounds);
+        page.Redact(areas);
+        #endregion
+
+        Assert.Equal("Card number:", PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractText().Trim());
+    }
+
+    [Fact]
+    public void Redact_KeepsTheOtherGlyphsInPlace()
+    {
+        var document = CreateRedactionDocument("BT /F1 12 Tf 2 Tc 110 Tz 10 100 Td [(AB) -250 (CD)] TJ (EF) Tj ET");
+        var page = document.Pages[0];
+        var before = FindGlyph(page, "E").Origin;
+        var d = FindGlyph(page, "D").Origin;
+        var c = FindGlyph(page, "C");
+
+        // C only
+        var result = page.Redact([new PdfRectangle(c.Bounds.Left + 1, 90, c.Bounds.Right - 1, 120)], new PdfRedactionOptions { FillColor = null });
+
+        Assert.Equal(1, result.RemovedGlyphCount);
+        var read = PdfDocument.Open(document.ToByteArray()).Pages[0];
+        Assert.Equal("ABDEF", read.ExtractText().Replace(" ", "", StringComparison.Ordinal));
+        Assert.Equal(before.X, FindGlyph(read, "E").Origin.X, 0.001);
+        Assert.Equal(d.X, FindGlyph(read, "D").Origin.X, 0.001);
+    }
+
+    [Fact]
+    public void Redact_RemovesInvisibleTextAndTheLinesOfApostropheOperators()
+    {
+        var document = CreateRedactionDocument("BT /F1 10 Tf 14 TL 3 Tr 10 150 Td (secret) Tj 0 Tr (top) ' 1 0 (bottom) \" ET");
+        var page = document.Pages[0];
+
+        // The first two lines: the invisible text and "top"
+        var result = page.Redact([new PdfRectangle(0, 130, 200, 170)], new PdfRedactionOptions { FillColor = null });
+
+        Assert.Equal(9, result.RemovedGlyphCount);
+        var read = PdfDocument.Open(document.ToByteArray()).Pages[0];
+        Assert.Equal("bottom", read.ExtractText().Trim());
+        Assert.Equal(150 - 28, FindGlyph(read, "b").Origin.Y, 0.001);
+        Assert.DoesNotContain("secret", Encoding.Latin1.GetString(read.GetContentData()));
+    }
+
+    [Fact]
+    public void Redact_RedactsACopyOfAFormPaintedOnSeveralPages()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R 7 0 R] /Count 2 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Resources << /XObject << /Fm1 6 0 R >> >> /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+            .Add(5, HandWrittenPdf.Stream("q 1 0 0 1 10 10 cm /Fm1 Do Q"))
+            .Add(6, HandWrittenPdf.Stream("BT /F1 10 Tf 0 0 Td (Left) Tj 100 0 Td (Right) Tj ET", " /Type /XObject /Subtype /Form /BBox [0 0 200 20] /Resources << /Font << /F1 4 0 R >> >>"))
+            .Add(7, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Resources << /XObject << /Fm1 6 0 R >> >> /Contents 5 0 R >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        var result = document.Pages[0].Redact([new PdfRectangle(100, 0, 200, 50)]);
+
+        Assert.Equal(5, result.RemovedGlyphCount);
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal("Left", read.Pages[0].ExtractText().Trim());
+        Assert.Equal("Left Right", read.Pages[1].ExtractText().Trim());
+        Assert.False(read.Pages[0].Resources!.Get<PdfDictionary>(PdfNames.XObject)!.ContainsKey(PdfName.Create("Fm1")));
+    }
+
+    [Fact]
+    public void Redact_AFormUsesTheTextStateOfTheContentThatPaintsIt()
+    {
+        // The font is set by the page, before the form shows its text
+        var document = CreateRedactionDocument(
+            "BT /F1 10 Tf ET /Fm1 Do",
+            "/XObject << /Fm1 6 0 R >>",
+            HandWrittenPdf.Stream("BT 10 10 Td (Left) Tj 100 0 Td (Right) Tj ET", " /Type /XObject /Subtype /Form /BBox [0 0 200 200] /Resources << >>"));
+
+        var result = document.Pages[0].Redact([new PdfRectangle(100, 0, 200, 50)]);
+
+        Assert.Equal(5, result.RemovedGlyphCount);
+        Assert.Equal("Left", PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractText().Trim());
+    }
+
+    [Fact]
+    public void Redact_KeepsTheResourcesThatAFormWithoutResourcesUses()
+    {
+        // The form has no resources: it paints the image of the page, outside the area
+        var document = CreateRedactionDocument(
+            "q 50 0 0 50 0 0 cm /Im1 Do Q q 1 0 0 1 120 120 cm /Fm1 Do Q",
+            "/XObject << /Im1 6 0 R /Fm1 7 0 R >>",
+            HandWrittenPdf.Stream("FF0000", " /Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /ASCIIHexDecode"),
+            HandWrittenPdf.Stream("q 50 0 0 50 0 0 cm /Im1 Do Q", " /Type /XObject /Subtype /Form /BBox [0 0 50 50]"));
+
+        var result = document.Pages[0].Redact([new PdfRectangle(0, 0, 100, 100)], new PdfRedactionOptions { FillColor = null });
+
+        Assert.Equal(1, result.RedactedImageCount);
+        var images = PdfDocument.Open(document.ToByteArray()).Pages[0].GetImages();
+        Assert.Equal(new PdfRectangle(120, 120, 170, 170), Assert.Single(images).Bounds);
+    }
+
+    [Fact]
+    public void Redact_RemovesTheImagesWithoutPixelsLeftFromTheResources()
+    {
+        var document = CreateRedactionDocument(
+            "q 50 0 0 50 0 0 cm /Im1 Do Q",
+            "/XObject << /Im1 6 0 R >>",
+            HandWrittenPdf.Stream("FF0000", " /Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /ASCIIHexDecode"));
+
+        document.Pages[0].Redact([new PdfRectangle(0, 0, 100, 100)]);
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.Empty(read.Pages[0].GetImages());
+        Assert.False(read.Pages[0].Resources!.Get<PdfDictionary>(PdfNames.XObject)!.ContainsKey(PdfName.Create("Im1")));
+    }
+
+    [Fact]
+    public void Redact_RemovesThePathsInsideTheAreasAndClipsThePathsThatCrossThem()
+    {
+        // A red rectangle inside the area, a blue one across it
+        var document = CreateRedactionDocument("1 0 0 rg 20 20 20 20 re f 0 0 1 rg 10 100 180 40 re f");
+        var page = document.Pages[0];
+
+        var result = page.Redact([new PdfRectangle(0, 0, 100, 150)], new PdfRedactionOptions { FillColor = null });
+
+        Assert.Equal(1, result.RemovedPathCount);
+        Assert.Equal(1, result.ClippedPathCount);
+        var read = PdfDocument.Open(document.ToByteArray()).Pages[0];
+        Assert.DoesNotContain("20 20 20 20 re", Encoding.Latin1.GetString(read.GetContentData()));
+        using var image = read.Render(new PdfRenderOptions { UseSystemFonts = false, Dpi = 72 });
+        AssertColor(Pixel(image, 30, 30), 255, 255, 255);
+        AssertColor(Pixel(image, 50, 120), 255, 255, 255);
+        AssertColor(Pixel(image, 150, 120), 0, 0, 255);
+    }
+
+    [Fact]
+    public void Redact_ErasesThePixelsOfTheImagesUnderTheAreas()
+    {
+        using var pixels = new Image<Rgba32>(10, 10, new Rgba32(255, 0, 0, 255));
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 200));
+        page.CreateContentBuilder().DrawImage(PdfImage.FromImage(pixels), 0, 0, 100, 100);
+        page.CreateContentBuilder().AppendRawContent("q 50 0 0 50 120 120 cm BI /W 1 /H 1 /BPC 8 /CS /G /F /AHx ID 00> EI Q"u8);
+
+        // The right half of the image, and the whole inline image
+        var result = page.Redact([new PdfRectangle(50, 0, 200, 200)], new PdfRedactionOptions { FillColor = null });
+
+        Assert.Equal(2, result.RedactedImageCount);
+        var read = PdfDocument.Open(document.ToByteArray()).Pages[0];
+        var images = read.GetImages();
+        Assert.HasCount(1, images);
+        using var image = read.Render(new PdfRenderOptions { UseSystemFonts = false, Dpi = 72 });
+        AssertColor(Pixel(image, 25, 50), 255, 0, 0);
+        AssertColor(Pixel(image, 75, 50), 255, 255, 255);
+        AssertColor(Pixel(image, 140, 140), 255, 255, 255);
+    }
+
+    [Fact]
+    public void Redact_RemovesTheAnnotationsAndTheFieldsUnderTheAreas()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 200));
+        var note = page.Annotations.AddNote(new PdfPoint(20, 20), "secret");
+        page.Annotations.AddLink(new PdfRectangle(150, 150, 190, 190), new Uri("https://example.com"));
+        var field = document.Form.AddTextField(page, "ssn", new PdfRectangle(10, 50, 90, 70));
+        field.Value = "123-45-6789";
+
+        var result = page.Redact([new PdfRectangle(0, 0, 100, 100)]);
+
+        Assert.Equal(2, result.RemovedAnnotationCount);
+        var bytes = document.ToByteArray(new PdfSaveOptions { CompressStreams = false });
+        var text = Encoding.Latin1.GetString(bytes);
+        Assert.DoesNotContain("secret", text);
+        Assert.DoesNotContain("123-45-6789", text);
+        var read = PdfDocument.Open(bytes);
+        Assert.HasCount(1, read.Pages[0].Annotations);
+        Assert.Empty(read.Form.GetFields());
+        Assert.NotNull(note);
+    }
+
+    [Fact]
+    public void Redact_RemovesTheReplacementTextOfTheSequencesThatLoseContent()
+    {
+        var document = CreateRedactionDocument(
+            "/Span << /ActualText (hidden) >> BDC BT /F1 10 Tf 10 10 Td (x) Tj ET EMC /Span /P1 BDC BT /F1 10 Tf 10 100 Td (y) Tj ET EMC /Span /P2 BDC BT /F1 10 Tf 150 150 Td (z) Tj ET EMC",
+            "/Properties << /P1 << /ActualText (also hidden) >> /P2 << /ActualText (kept) >> >>");
+        var page = document.Pages[0];
+
+        page.Redact([new PdfRectangle(0, 0, 100, 120)]);
+
+        var read = PdfDocument.Open(document.ToByteArray(new PdfSaveOptions { CompressStreams = false }));
+        Assert.Equal("kept", read.Pages[0].ExtractText().Trim());
+        var properties = read.Pages[0].Resources!.Get<PdfDictionary>(PdfNames.Properties)!;
+        Assert.False(properties.ContainsKey(PdfName.Create("P1")));
+        Assert.True(properties.ContainsKey(PdfName.Create("P2")));
+        Assert.DoesNotContain("hidden", Encoding.Latin1.GetString(read.Pages[0].GetContentData()));
+    }
+
+    [Fact]
+    public void Redact_KeepsThePathsAcrossTheOperatorsOfColors()
+    {
+        // The color is set between the rectangle and the operator that fills it
+        var document = CreateRedactionDocument("20 20 20 20 re 1 0 0 rg f");
+
+        var result = document.Pages[0].Redact([new PdfRectangle(0, 0, 100, 100)], new PdfRedactionOptions { FillColor = null });
+
+        Assert.Equal(1, result.RemovedPathCount);
+        Assert.DoesNotContain("20 20 20 20 re", Encoding.Latin1.GetString(PdfDocument.Open(document.ToByteArray()).Pages[0].GetContentData()));
+    }
+
+    [Fact]
+    public void Redact_RemovesTheReplacementTextOfAClippedPath()
+    {
+        // A label drawn as a path that crosses the area
+        var document = CreateRedactionDocument("/Figure << /Alt (Secret label) >> BDC 50 50 100 20 re f EMC");
+
+        var result = document.Pages[0].Redact([new PdfRectangle(0, 0, 100, 100)]);
+
+        Assert.Equal(1, result.ClippedPathCount);
+        var bytes = PdfDocument.Open(document.ToByteArray(new PdfSaveOptions { CompressStreams = false })).ToByteArray(new PdfSaveOptions { CompressStreams = false });
+        Assert.DoesNotContain("Secret label", Encoding.Latin1.GetString(bytes));
+    }
+
+    [Fact]
+    public void Redact_DoesNotWriteTheImagesOfTheResourcesThePageInherited()
+    {
+        // The resources are those of the page tree: the page has none of its own
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /Resources << /XObject << /Im1 5 0 R >> >> >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R >>")
+            .Add(4, HandWrittenPdf.Stream("q 50 0 0 50 0 0 cm /Im1 Do Q"))
+            .Add(5, HandWrittenPdf.Stream("C0FFEE", " /Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /ASCIIHexDecode"));
+        var document = PdfDocument.Open(file.ToArray());
+
+        document.Pages[0].Redact([new PdfRectangle(0, 0, 100, 100)]);
+
+        var bytes = document.ToByteArray(new PdfSaveOptions { CompressStreams = false });
+        Assert.DoesNotContain("C0FFEE", Encoding.Latin1.GetString(bytes));
+        Assert.Empty(PdfDocument.Open(bytes).Pages[0].GetImages());
+    }
+
+    [Fact]
+    public void Redact_ErasesOnlyThePixelsUnderTheAreaOfARotatedImage()
+    {
+        using var pixels = new Image<Rgba32>(100, 100, new Rgba32(255, 0, 0, 255));
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(400, 400));
+
+        // The image turned by 45 degrees around its lower-left corner, one pixel per point
+        page.CreateContentBuilder().Translate(200, 50).Rotate(45).DrawImage(PdfImage.FromImage(pixels), 0, 0, 100, 100);
+
+        // A 10 x 10 square on the image: its box in the pixels of the image is twice as large
+        page.Redact([new PdfRectangle(195, 115, 205, 125)], new PdfRedactionOptions { FillColor = null });
+
+        using var image = PdfDocument.Open(document.ToByteArray()).Pages[0].GetImages()[0].Decode()!;
+        var erased = 0;
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                if (image.Frames[0][x, y].A == 0)
+                {
+                    erased++;
+                }
+            }
+        }
+
+        Assert.True(erased is > 100 and < 170, $"{erased} pixels erased");
+    }
+
+    [Fact]
+    public void Redact_PaintsTheAreasWithTheFillColor()
+    {
+        var document = CreateRedactionDocument("BT /F1 10 Tf 10 10 Td (x) Tj ET");
+
+        document.Pages[0].Redact([new PdfRectangle(100, 100, 150, 150)], new PdfRedactionOptions { FillColor = PdfColor.FromRgb(0, 1, 0) });
+
+        using var image = PdfDocument.Open(document.ToByteArray()).Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false, Dpi = 72 });
+        AssertColor(Pixel(image, 125, 125), 0, 255, 0);
+        AssertColor(Pixel(image, 175, 175), 255, 255, 255);
+    }
+
+    [Fact]
+    public void Redact_ARedactedDocumentCannotBeSavedIncrementally()
+    {
+        var document = CreateRedactionDocument("BT /F1 10 Tf 10 10 Td (x) Tj ET");
+
+        document.Pages[0].Redact([new PdfRectangle(0, 0, 50, 50)]);
+
+        Assert.Throws<InvalidOperationException>(() => document.SaveIncremental(new MemoryStream()));
+    }
+
+    [Fact]
+    public void Redact_DoesNotChangeThePageWhenAContentStreamCannotBeDecoded()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R >>")
+            .Add(4, HandWrittenPdf.Stream("not flate data", " /Filter /FlateDecode"));
+        var document = PdfDocument.Open(file.ToArray());
+        var contents = document.Pages[0].Dictionary[PdfNames.Contents];
+
+        Assert.Throws<InvalidPdfContentException>(() => document.Pages[0].Redact([new PdfRectangle(0, 0, 50, 50)]));
+
+        Assert.Same(contents, document.Pages[0].Dictionary[PdfNames.Contents]);
+    }
+
     private static Rgba32 Pixel(Image<Rgba32> image, int x, int y) => image.Frames[0][x, image.Height - 1 - y];
 
     private static void AssertColor(Rgba32 pixel, int r, int g, int b, int tolerance = 2)

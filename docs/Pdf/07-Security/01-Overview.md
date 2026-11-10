@@ -1,6 +1,6 @@
 ---
 title: Security
-description: Protect documents with passwords and permissions, and sign them so that their readers know who wrote them and that they did not change.
+description: Protect documents with passwords and permissions, sign them so that their readers know who wrote them and that they did not change, and remove sensitive content.
 ---
 
 | To | Use | Page |
@@ -11,6 +11,7 @@ description: Protect documents with passwords and permissions, and sign them so 
 | Embed an encrypted document in a document that every reader opens | [PdfDocument.SetEncryptedPayload](cref:Meziantou.Framework.Pdf.PdfDocument.SetEncryptedPayload) | [Unencrypted wrapper documents](03-UnencryptedWrappers.md) |
 | Prove who approved a document, and that it did not change since | [PdfSigner](cref:Meziantou.Framework.Pdf.Signing.PdfSigner) | [Digital signatures](04-DigitalSignatures.md) |
 | Check the signatures of a document | [PdfSignatureVerifier](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureVerifier) | [Digital signatures](04-DigitalSignatures.md) |
+| Remove sensitive text, graphics and images from areas of a page | [PdfPage.Redact](cref:Meziantou.Framework.Pdf.PdfPage.Redact) | [Redaction](05-Redaction.md) |
 
 Encryption and signatures protect different things. Encryption hides the content from those who do not have the
 password or the private key of a recipient; its permissions are honored by the readers, not enforced by the file. A signature does not hide anything: it
@@ -22,3 +23,4 @@ decide to trust.
 - [Encryption](02-Encryption.md): passwords or certificates, algorithms and permissions, and how to remove or change them.
 - [Unencrypted wrapper documents](03-UnencryptedWrappers.md): an encrypted document embedded in a document that is not encrypted.
 - [Digital signatures](04-DigitalSignatures.md): PAdES signatures and time stamps, and their verification.
+- [Redaction](05-Redaction.md): remove what a page shows in areas, so that the saved file does not contain it.

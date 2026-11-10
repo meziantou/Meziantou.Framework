@@ -256,22 +256,35 @@ public sealed partial class PdfInteractiveForm
             if (annotations.GetResolved(i) is not PdfDictionary widget || widget.GetName(PdfNames.Subtype) != PdfFormField.WidgetName)
                 continue;
 
-            PdfObject item = annotations[i];
-            var node = widget;
-            for (var depth = 0; depth < MaxDepth; depth++)
-            {
-                var parent = node.Get<PdfDictionary>(PdfNames.Parent);
-                var container = parent?.Get<PdfArray>(PdfNames.Kids) ?? form.Get<PdfArray>(FieldsName);
-                if (container is null)
-                    break;
+            RemoveWidget(form, annotations[i], widget);
+        }
+    }
 
-                Remove(container, item, node);
-                if (parent is null || parent.Get<PdfArray>(PdfNames.Kids) is { Count: > 0 })
-                    break;
+    /// <summary>Removes a widget from its field, and a field without widgets nor children from its parent.</summary>
+    internal static void RemoveWidget(PdfDocument document, PdfObject item, PdfDictionary widget)
+    {
+        if (document.Catalog.Get<PdfDictionary>(AcroFormName) is { } form)
+        {
+            RemoveWidget(form, item, widget);
+        }
+    }
 
-                item = node[PdfNames.Parent]!;
-                node = parent;
-            }
+    private static void RemoveWidget(PdfDictionary form, PdfObject item, PdfDictionary widget)
+    {
+        var node = widget;
+        for (var depth = 0; depth < MaxDepth; depth++)
+        {
+            var parent = node.Get<PdfDictionary>(PdfNames.Parent);
+            var container = parent?.Get<PdfArray>(PdfNames.Kids) ?? form.Get<PdfArray>(FieldsName);
+            if (container is null)
+                break;
+
+            Remove(container, item, node);
+            if (parent is null || parent.Get<PdfArray>(PdfNames.Kids) is { Count: > 0 })
+                break;
+
+            item = node[PdfNames.Parent]!;
+            node = parent;
         }
 
         static void Remove(PdfArray array, PdfObject item, PdfDictionary dictionary)

@@ -44,7 +44,8 @@ Besides the rules of each level in the table below, the save refuses a document 
   CMYK colors.
 - uses a font without embedding it, including a font of the form that a viewer renders a field without appearance with.
 
-The save does not generate the missing appearances: it reports them.
+The save does not generate the missing appearances: it reports them. To fix an existing document, see
+[Converting to PDF/A](04-ConvertingToPdfA.md).
 
 ## Output intents
 

@@ -19,7 +19,8 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   cross-reference streams); the file is streamed to the output through a bounded buffer; the output depends only on the
   document and the options, except the random keys and vectors of the encryption
 - **Conformance**: PDF/A-1 (b, a), PDF/A-2 (b, u, a), PDF/A-3 (b, u, a) and PDF/A-4 (4, 4e, 4f) output
-  (`PdfDocument.PdfAConformance`), PDF/UA-1 and PDF/UA-2 (`PdfDocument.PdfUAConformance`), and Tagged PDF: a structure tree with a role map, alternate descriptions,
+  (`PdfDocument.PdfAConformance`), the conversion of existing documents to PDF/A-2 and PDF/A-3 (b, u)
+  (`PdfDocument.ConvertToPdfA`: actions, appearances, substitute fonts, LZW, metadata), PDF/UA-1 and PDF/UA-2 (`PdfDocument.PdfUAConformance`), and Tagged PDF: a structure tree with a role map, alternate descriptions,
   languages and artifacts (`PdfDocument.StructureTree`, `PdfContentBuilder.BeginStructureElement`); the documents are
   validated by veraPDF in the tests
 - **Encryption**: the standard security handler, revisions 2 to 6 (RC4 with 40-bit and 128-bit keys, AES-128,
@@ -34,10 +35,13 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   labels, embedded files (`PdfDocument.EmbeddedFiles`, file attachment annotations), text boxes
   (`PdfContentBuilder.DrawTextBox`: Unicode line breaking, soft hyphens and pluggable hyphenation), tables
   (`PdfContentBuilder.DrawTable`: fixed, relative and automatic columns, borders, header rows repeated on each page), pages moved, duplicated, removed and imported from other documents (merging), a
-  page as a form XObject, the page boxes and display coordinates, text extraction (`PdfPage.ExtractText`), positioned
+  page as a form XObject, the page boxes and display coordinates, text extraction (`PdfPage.ExtractText`, with the
+  right-to-left lines put in the order of the text by the Unicode Bidirectional Algorithm), positioned
   text (`PdfPage.ExtractTextLayout`: lines, words and glyphs with their bounding boxes), the reading order of the
   layout (`PdfTextReadingOrder.Layout`: columns and blocks found from the blank spaces of the page), image extraction
-  (`PdfPage.GetImages`), interactive forms created, read, filled and flattened (`PdfDocument.Form`)
+  (`PdfPage.GetImages`), content drawn over or under the content of a page (`PdfContentPlacement`), text watermarks
+  (`PdfDocument.AddWatermark`), interactive forms created, read, filled and flattened (`PdfDocument.Form`), redaction
+  (`PdfPage.Redact`: the text, paths, image pixels and annotations of areas removed from the content, not hidden)
 - **Rendering** (`Meziantou.Framework.Pdf.Rendering`): the pages drawn to images on the canvas of
   `Meziantou.Framework.Imaging`: paths, clipping, optional content and annotation appearances; embedded TrueType, CFF,
   Type 1 and Type 3 fonts and substituted fonts; every color space and image filter; functions, the seven shading types
@@ -290,6 +294,27 @@ document.Information.Author = "Reviewer";
 
 using var output = new MemoryStream();
 document.SaveIncremental(output);
+```
+<!-- endref -->
+
+## Redact a page
+
+`PdfPage.Redact` removes what a page shows in areas: the glyphs, paths and image pixels are removed from the content,
+so that the text cannot be extracted or found in the saved file, and the areas are painted black.
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfPageTests.cs;region=Pdf_Redact;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = new PdfDocument();
+var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+var page = document.Pages.Add(PdfSize.A4);
+page.CreateContentBuilder()
+    .DrawText("Name: John Smith", font, 12, 72, 720);
+
+// Removes the content under the rectangle and paints it black; the document can then only be saved as a whole
+var result = page.Redact([new PdfRectangle(108, 715, 200, 732)]);
+var redacted = PdfDocument.Open(document.ToByteArray());
+
+Assert.Equal("Name:", redacted.Pages[0].ExtractText().Trim());
 ```
 <!-- endref -->
 

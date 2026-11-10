@@ -496,6 +496,62 @@ public sealed class PdfTextExtractionTests
         Assert.Equal("Up\nNext", layout.Text);
     }
 
+    // The codes a, b, c and d show the Hebrew letters alef, bet, gimel and dalet
+    private const string Alef = "\u05D0";
+    private const string Bet = "\u05D1";
+    private const string Gimel = "\u05D2";
+    private const string Dalet = "\u05D3";
+
+    private static PdfPage OpenWithHebrewLetters(string content)
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode 6 0 R >>")
+            .Add(5, HandWrittenPdf.Stream(content))
+            .Add(6, HandWrittenPdf.Stream("begincmap 1 begincodespacerange <00> <FF> endcodespacerange 1 beginbfrange <61> <64> <05D0> endbfrange endcmap"));
+        return PdfDocument.Open(file.ToArray()).Pages[0];
+    }
+
+    [Theory]
+    [InlineData("[(a) 1112 (b) 1112 (c)] TJ", Alef + Bet + Gimel)] // In the order of the text, each glyph to the left of the previous one
+    [InlineData("(cba) Tj", Alef + Bet + Gimel)] // In the order of the display, from left to right
+    [InlineData("(ba) Tj -50 0 Td (dc) Tj", Alef + Bet + " " + Gimel + Dalet)] // Words written from right to left, on one line
+    [InlineData("(12 ba) Tj", Alef + Bet + " 12")] // Numbers are written from left to right in right-to-left text
+    [InlineData("(XY cba) Tj", Alef + Bet + Gimel + " XY")]
+    [InlineData("(\\(a\\)) Tj", "(" + Alef + ")")] // The brackets are mirrored
+    public void RightToLeftTextIsExtractedInTheOrderOfTheText(string operators, string expected)
+    {
+        var page = OpenWithHebrewLetters("BT /F1 10 Tf 150 700 Td " + operators + " ET");
+
+        Assert.Equal(expected, page.ExtractText());
+        Assert.Equal(expected, page.ExtractTextLayout().Text);
+    }
+
+    [Fact]
+    public void RightToLeftLinesWithAnEmptyReplacementText()
+    {
+        // An empty replacement text after a Hebrew glyph, on the same line
+        var page = OpenWithHebrewLetters("BT /F1 10 Tf 150 700 Td (a) Tj /Span << /ActualText () >> BDC EMC ET");
+
+        Assert.Equal(Alef, page.ExtractText());
+        Assert.Equal(Alef, page.ExtractTextLayout().Text);
+    }
+
+    [Fact]
+    public void RightToLeftLinesKeepTheirWordsInTheOrderOfTheText()
+    {
+        var page = OpenWithHebrewLetters("BT /F1 10 Tf 150 700 Td (ba) Tj -50 0 Td (dc) Tj ET BT /F1 10 Tf 100 680 Td (Next line) Tj ET");
+
+        var layout = page.ExtractTextLayout();
+
+        Assert.Equal(Alef + Bet + " " + Gimel + Dalet + "\nNext line", layout.Text);
+        Assert.Equal([Alef + Bet, Gimel + Dalet], layout.Lines[0].Words.Select(word => word.Text));
+        Assert.Equal([Alef, Bet, Gimel, Dalet], layout.Lines[0].Glyphs.Where(glyph => glyph.Text != " ").Select(glyph => glyph.Text));
+        Assert.Equal(["Next", "line"], layout.Lines[1].Words.Select(word => word.Text));
+    }
+
     private static PdfTextLayout ExtractWithHelvetica(string content, PdfTextExtractionOptions? options = null, int rotate = 0) => OpenWithHelvetica(content, rotate).ExtractTextLayout(options);
 
     private static PdfPage OpenWithHelvetica(string content, int rotate = 0)

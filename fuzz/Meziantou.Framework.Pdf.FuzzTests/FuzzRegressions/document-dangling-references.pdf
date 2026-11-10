@@ -1,0 +1,33 @@
+%PDF-1.7
+%†Ú§Ù
+% A page tree of two levels: the media box, the resources and the rotation are inherited. The content of the
+% second page is split between two streams, between the operands of an operator and the operator
+1 0 obj <<
+  /Type /Catalog
+  /Pages 2 0 R
+>>
+endobj
+2 0 obj <<
+  /Type /Pages
+  /Kids [3 0 R 4 0 R]
+  /Count 3
+  /MediaBox [0 0 595 842]
+  /Resources << /Font << /F1 8 0 R >> >>
+>>
+endobä
+3 0 obj <<
+  /Type /Pages
+  /Parent 2 0 R
+  /Kids [5 0 R 6 0 R]
+  /Count 2
+  /Rotate 90
+>>
+endobj
+4 0 obj <<
+  /Type /Page
+  /Parent 2 0 R
+  /MediaBox [0 0 300 300]
+  /Contents 11 0 R
+>>
+endobj
+5 0 ob

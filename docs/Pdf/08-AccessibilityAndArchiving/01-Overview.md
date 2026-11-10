@@ -31,3 +31,4 @@ descriptions of the figures, the colors. The library's own tests validate the do
 - [Tagged PDF and PDF/UA](02-TaggedPdfAndPdfUA.md): the structure tree, artifacts, alternate descriptions, PDF/UA-1 and
   PDF/UA-2.
 - [PDF/A](03-PdfA.md): the levels, what each requires, and attached files of PDF/A-3.
+- [Converting to PDF/A](04-ConvertingToPdfA.md): turn an existing document into a PDF/A-2 or PDF/A-3 document.

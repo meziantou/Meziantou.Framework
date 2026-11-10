@@ -10,6 +10,13 @@ internal sealed class IncrementalReferenceWriter(PdfIndirectObjectCollection obj
         if (!ReferenceEquals(reference.Owner, objects))
             throw ForeignReference(reference);
 
+        // A reference of the file to an object it does not have, whose number an added object took, is the null object
+        if (reference.Generation == PdfIndirectObjectCollection.DanglingGeneration)
+        {
+            writer.WriteAscii("null");
+            return;
+        }
+
         base.Write(writer, reference);
     }
 }

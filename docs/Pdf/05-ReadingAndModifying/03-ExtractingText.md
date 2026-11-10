@@ -1,6 +1,6 @@
 ---
 title: Extracting text
-description: Get the text of the pages of a document, search a document for a word, find where the words are, and know what the extraction can and cannot do.
+description: Get the text of the pages of a document, search a document for a word, find where the words are, read right-to-left text in order, and know what the extraction can and cannot do.
 ---
 
 [PdfPage.ExtractText](cref:Meziantou.Framework.Pdf.PdfPage.ExtractText) returns the text of a page, with a line break between the lines:
@@ -122,6 +122,20 @@ var text = document.Pages[0].ExtractText(options);
 
 By default, the text is exactly what the fonts give.
 
+## Right-to-left text
+
+The text of the right-to-left scripts, such as Hebrew and Arabic, is extracted in the order it is read, whatever the
+order in which the document draws it. Documents draw these lines in one of two ways: in the order of the text, each
+glyph or word to the left of the previous one, or in the order of the display, from left to right. A line that has
+right-to-left characters is sorted from left to right, then put back in the order of the text by the Unicode
+Bidirectional Algorithm (UAX #9):
+
+- The words and the glyphs of the [text layout](cref:Meziantou.Framework.Pdf.PdfTextLayout) are in the order of the text too.
+- The numbers and the left-to-right words in a right-to-left line keep their order, and the brackets of right-to-left
+  text get their mirrored character: `(` and `)` are swapped, as when the text is displayed.
+- The direction of a line is the direction of most of its strong characters. A line without right-to-left characters
+  keeps the order of the content.
+
 ## How the text is extracted
 
 - The glyphs are read in the order of the content, and turned back into characters with the encoding of their font,
@@ -132,14 +146,15 @@ By default, the text is exactly what the fonts give.
   of the encoding and decoded with its character set (Shift-JIS, EUC, GBK, GB 18030, Big Five, UHC or Unicode).
 - The text written vertically follows the vertical metrics of its font (`/W2` and `/DW2`).
 - The glyphs are joined into lines by their positions. A gap between two glyphs of a line becomes a space, and a new
-  line becomes a line break, even when the document draws each word separately.
+  line becomes a line break, even when the document draws each word separately. A line that has right-to-left text is
+  put in the order of the text ([Right-to-left text](#right-to-left-text)).
 - A replacement text (`/ActualText`) replaces the glyphs it covers, such as a ligature or a right-to-left run.
 - The text of the forms the page paints is included.
 
 ## Limits
 
-- By default, the order is the order of the content: a document that draws the text in another order than it is read
-  gives it in that order. The reading order of the layout ([Read the columns in order](#read-the-columns-in-order))
+- By default, the lines are in the order of the content: a document that draws the text in another order than it is
+  read gives it in that order. Only the glyphs of a right-to-left line are reordered. The reading order of the layout ([Read the columns in order](#read-the-columns-in-order))
   follows the blank spaces of the page: columns that no blank space separates, such as text that flows around an
   image, are not detected, and the columns of vertical writing are not ordered.
 - A text drawn as paths or as an image (a scanned page) has no characters to extract.

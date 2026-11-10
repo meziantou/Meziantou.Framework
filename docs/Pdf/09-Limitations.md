@@ -50,6 +50,21 @@ description: What the library does not do, so that you can plan around it.
 - A linearized file cannot be encrypted, has no object streams, and is built in memory before it is written. It has no
   thumbnail hint table: the thumbnails of the pages, if any, are counted with the objects of their pages.
 
+## Converting to PDF/A
+
+- [ConvertToPdfA](cref:Meziantou.Framework.Pdf.PdfDocument.ConvertToPdfA) converts to PDF/A-2 and PDF/A-3, levels b and u. It does not tag documents
+  (level a), and does not convert to PDF/A-1, which has no transparency, or to PDF/A-4.
+- It embeds substitutes for the Latin standard fonts only, and has no CMYK profile: see
+  [What it cannot fix](08-AccessibilityAndArchiving/04-ConvertingToPdfA.md#what-it-cannot-fix).
+
+## Redaction
+
+- [Redact](cref:Meziantou.Framework.Pdf.PdfPage.Redact) does not change the content of the tiling patterns, the soft masks, the glyphs of Type 3
+  fonts and the appearances of the annotations it keeps, nor the text outside the pages (metadata, bookmarks, the
+  alternate descriptions of the structure elements): see [Redaction](07-Security/05-Redaction.md#what-is-not-removed).
+- A path that crosses an area is clipped, not cut: its coordinates stay in the file. A redacted image is stored again in
+  sRGB.
+
 ## Rendering
 
 - The renderer composites the page in sRGB, for a screen: overprint (`OP`, `op`, `OPM`) is not simulated, and the

@@ -3,8 +3,8 @@ title: Type rules
 description: Select types with LINQ, then assert the types they use, the members they access, their names and their shape.
 ---
 
-A type rule selects types, then asserts something about them: the types they use with
-[Assert.Architecture](cref:Meziantou.Framework.Assertions.Architecture.ArchitectureAssert), or their names and shape with `Assert.All`.
+A type rule selects types, then asserts something about them with
+[Assert.Architecture](cref:Meziantou.Framework.Assertions.Architecture.ArchitectureAssert): the types they use, or their names and shape.
 
 ## Select the types
 
@@ -72,37 +72,27 @@ Assert.Architecture.DoesNotAccessMember<DateTime>(types, nameof(DateTime.UtcNow)
 ```
 <!-- endref -->
 
-[The model](05-Model.md#dependencies) explains what counts as a dependency.
+[The model](06-Model.md#dependencies) explains what counts as a dependency.
 
 ## Check the names and the shape
 
-`Assert.All` from `Meziantou.Framework.Assertions` checks a predicate on each type, with the members of
-[TypeElement](cref:Meziantou.Framework.Assertions.Architecture.TypeElement):
+[AllMatch](cref:Meziantou.Framework.Assertions.Architecture.ArchitectureAssert.AllMatch) checks a predicate on each type, with
+the members of [TypeElement](cref:Meziantou.Framework.Assertions.Architecture.TypeElement):
 
 <!-- ref:../../../tests/Meziantou.Framework.Assertions.Tests/Architecture/DocumentationTests.cs;region=Architecture_ShapeRules;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var architecture = ArchitectureModel.FromAssemblyContaining<Order>();
 var repositories = architecture.Types.Where(t => t.IsClass && t.Implements<IOrderRepository>());
 
-Assert.NotEmpty(repositories);
-Assert.All(repositories, t => t.Name.EndsWith("Repository", StringComparison.Ordinal));
-Assert.All(repositories, t => t.IsSealed);
-Assert.All(architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp.Domain") && !t.IsInterface), t => t.IsImmutable);
+Assert.Architecture.AllMatch(repositories, t => t.Name.EndsWith("Repository", StringComparison.Ordinal));
+Assert.Architecture.AllMatch(repositories, t => t.IsSealed);
+Assert.Architecture.AllMatch(architecture.Types.Where(t => t.IsInNamespaceOrChildren("SampleApp.Domain") && !t.IsInterface), t => t.IsImmutable);
 ```
 <!-- endref -->
 
-- `Assert.All` passes when the collection is empty: add `Assert.NotEmpty` when a typo in the filter must fail.
-- `Assert.All` reports the first type that does not match the predicate.
+- Unlike `Assert.All`, the message lists every type that does not match the predicate, with its location, and the
+  assertion fails when there is no type to check.
 - [IsImmutable](cref:Meziantou.Framework.Assertions.Architecture.TypeElement.IsImmutable) is `true` when the instance
   fields are `readonly` or constant, and the instance properties have no setter other than `init`.
 
-The members of the types are in the model too, so the same pattern checks methods, properties or fields:
-
-<!-- ref:../../../tests/Meziantou.Framework.Assertions.Tests/Architecture/DocumentationTests.cs;region=Architecture_MemberRules;format=md-fenced-code-block;dedent=true -->
-```csharp
-var architecture = ArchitectureModel.FromAssemblyContaining<Order>();
-var handlers = architecture.Types.Where(t => t.IsInNamespace("SampleApp.Application") && t.Name.EndsWith("Handler", StringComparison.Ordinal));
-
-Assert.All(handlers.SelectMany(t => t.Methods).Where(method => method.Accessibility == ElementAccessibility.Public), method => method.IsAsync);
-```
-<!-- endref -->
+To check methods, properties or fields, see [Member rules](04-MemberRules.md).

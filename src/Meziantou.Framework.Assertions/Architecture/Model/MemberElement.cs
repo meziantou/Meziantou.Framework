@@ -23,6 +23,9 @@ public abstract class MemberElement
     /// <summary>Gets the declared accessibility of the member.</summary>
     public abstract ElementAccessibility Accessibility { get; }
 
+    /// <summary>Gets a value indicating whether the member is declared <c>public</c>. A property or an event is public when one of its accessors is public.</summary>
+    public bool IsPublic => Accessibility == ElementAccessibility.Public;
+
     /// <summary>Gets a value indicating whether the member is static.</summary>
     public abstract bool IsStatic { get; }
 

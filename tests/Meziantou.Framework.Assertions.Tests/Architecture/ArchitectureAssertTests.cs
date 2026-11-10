@@ -157,6 +157,137 @@ public sealed class ArchitectureAssertTests
     }
 
     [Fact]
+    public void AllMatchTypes()
+    {
+        var domain = Domain;
+        Assert.Architecture.AllMatch(domain, t => t.IsClass);
+        var exception = Assert.Throws<AssertionException>(() => Assert.Architecture.AllMatch(domain, t => t.IsSealed, "the classes are sealed"));
+        Assert.Equal("""
+            Assert.Architecture.AllMatch() assertion failed: 1 type does not match the predicate.
+            Message: the classes are sealed
+            Types expression:     domain
+            Predicate expression: t => t.IsSealed
+            - App.Domain.Customer (/src/Sample.cs:12:31)
+            """.ReplaceLineEndings("\n"), exception.Message);
+    }
+
+    [Fact]
+    public void AllMatchMembers()
+    {
+        var fields = App.Value.Types.SelectMany(t => t.Fields);
+        var exception = Assert.Throws<AssertionException>(() => Assert.Architecture.AllMatch(fields, field => !field.IsPublic));
+        Assert.Equal("""
+            Assert.Architecture.AllMatch() assertion failed: 1 member does not match the predicate.
+            Members expression:   fields
+            Predicate expression: field => !field.IsPublic
+            - App.Domain.Customer.Database
+            """.ReplaceLineEndings("\n"), exception.Message);
+
+        var properties = Domain.SelectMany(t => t.Properties);
+        exception = Assert.Throws<AssertionException>(() => Assert.Architecture.AllMatch(properties, property => property.Setter is null || property.IsInitOnly));
+        Assert.Equal("""
+            Assert.Architecture.AllMatch() assertion failed: 1 member does not match the predicate.
+            Members expression:   properties
+            Predicate expression: property => property.Setter is null || property.IsInitOnly
+            - App.Domain.Customer.Name (/src/Sample.cs:12:31)
+            """.ReplaceLineEndings("\n"), exception.Message);
+
+        var methods = App.Value.Types.SelectMany(t => t.Methods);
+        exception = Assert.Throws<AssertionException>(() => Assert.Architecture.AllMatch(methods, method => method.IsStatic));
+        Assert.Equal("""
+            Assert.Architecture.AllMatch() assertion failed: 1 member does not match the predicate.
+            Members expression:   methods
+            Predicate expression: method => method.IsStatic
+            - App.Data.Database.Save(App.Domain.Order) (/src/Sample.cs:21:53)
+            """.ReplaceLineEndings("\n"), exception.Message);
+
+        Assert.Architecture.AllMatch(App.Value.Types.SelectMany(t => t.Members), member => member.IsPublic || member is MethodElement { IsConstructor: true });
+    }
+
+    [Fact]
+    public void MemberDependencies()
+    {
+        var members = Domain.SelectMany(t => t.Members);
+        var exception = Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotDependOn(members, Data, "the domain stays persistence-ignorant"));
+        Assert.Equal("""
+            Assert.Architecture.DoesNotDependOn() assertion failed: 1 member depends on a forbidden type.
+            Message: the domain stays persistence-ignorant
+            Members expression:   members
+            Forbidden expression: Data
+            - App.Domain.Customer.Database depends on App.Data.Database
+                App.Domain.Customer.Database has a field of type App.Data.Database
+            """.ReplaceLineEndings("\n"), exception.Message);
+
+        var properties = Domain.SelectMany(t => t.Properties);
+        Assert.Architecture.DoesNotDependOn(properties, Data);
+        Assert.Architecture.DoesNotDependOn(properties, t => t.IsInNamespaceOrChildren("App.Data"));
+        exception = Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotDependOn(members, t => t.IsInNamespaceOrChildren("App.Data")));
+        Assert.StartsWith("""
+            Assert.Architecture.DoesNotDependOn() assertion failed: 1 member depends on a forbidden type.
+            Members expression:   members
+            Forbidden expression: t => t.IsInNamespaceOrChildren("App.Data")
+            - App.Domain.Customer.Database depends on App.Data.Database
+            """.ReplaceLineEndings("\n"), exception.Message);
+
+        var orderProperties = App.Value.FindType("App.Domain.Order")!.Properties;
+        exception = Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotDependOn<Guid>(orderProperties));
+        Assert.StartsWith("""
+            Assert.Architecture.DoesNotDependOn() assertion failed: 1 member depends on a forbidden type.
+            Members expression: orderProperties
+            Forbidden type:     System.Guid
+            - App.Domain.Order.Id depends on System.Guid
+            """.ReplaceLineEndings("\n"), exception.Message);
+        Assert.Architecture.DoesNotDependOn<Uri>(orderProperties);
+        Assert.Architecture.DoesNotDependOn(orderProperties.Where(property => property.Name == "CreatedAt"), typeof(Guid));
+    }
+
+    [Fact]
+    public void MembersDependOnlyOn()
+    {
+        var members = Domain.SelectMany(t => t.Members);
+        var exception = Assert.Throws<AssertionException>(() => Assert.Architecture.DependsOnlyOn(members, t => t.IsInNamespaceOrChildren("System")));
+        Assert.StartsWith("""
+            Assert.Architecture.DependsOnlyOn() assertion failed: 1 member depends on a type that is not allowed.
+            Members expression: members
+            Allowed expression: t => t.IsInNamespaceOrChildren("System")
+            - App.Domain.Customer.Database depends on App.Data.Database
+            """.ReplaceLineEndings("\n"), exception.Message);
+
+        // The types that declare the checked members are allowed: Database.Save uses Order, and Order declares a checked member
+        var order = App.Value.FindType("App.Domain.Order")!;
+        var database = App.Value.FindType("App.Data.Database")!;
+        Assert.Throws<AssertionException>(() => Assert.Architecture.DependsOnlyOn(database.Methods, t => t.IsInNamespaceOrChildren("System")));
+        Assert.Architecture.DependsOnlyOn([.. database.Methods, .. order.Properties], t => t.IsInNamespaceOrChildren("System"));
+    }
+
+    [Fact]
+    public void MembersDoNotAccessMember()
+    {
+        var order = App.Value.FindType("App.Domain.Order")!;
+        var constructors = order.Constructors;
+        var exception = Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotAccessMember<DateTime>(constructors, "Now"));
+        Assert.Equal("""
+            Assert.Architecture.DoesNotAccessMember() assertion failed: 1 member accesses the member.
+            Members expression: constructors
+            Member:             System.DateTime.Now
+            - App.Domain.Order..ctor() accesses System.DateTime.get_Now
+                App.Domain.Order..ctor calls System.DateTime.get_Now (/src/Sample.cs:7:46)
+            """.ReplaceLineEndings("\n"), exception.Message);
+
+        Assert.Architecture.DoesNotAccessMember<DateTime>(order.Properties, "Now");
+        Assert.Architecture.DoesNotAccessMember(constructors, typeof(DateTime), nameof(DateTime.UtcNow));
+    }
+
+    [Fact]
+    public void MemberIsPublic()
+    {
+        var customer = App.Value.FindType("App.Domain.Customer")!;
+        Assert.True(customer.Fields.Single().IsPublic);
+        Assert.True(customer.Properties.Single().IsPublic);
+        Assert.True(customer.Constructors.Single().IsPublic);
+    }
+
+    [Fact]
     public void EmptySetsFail()
     {
         var typo = App.Value.Types.Where(t => t.IsInNamespaceOrChildren("App.Typo"));
@@ -173,6 +304,24 @@ public sealed class ArchitectureAssertTests
 
         Assert.Throws<AssertionException>(() => Assert.Architecture.DependsOnlyOn(typo, t => true));
         Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotAccessMember<DateTime>(typo, "Now"));
+        Assert.Throws<AssertionException>(() => Assert.Architecture.AllMatch(typo, t => true));
+
+        var noMembers = typo.SelectMany(t => t.Methods);
+        exception = Assert.Throws<AssertionException>(() => Assert.Architecture.AllMatch(noMembers, method => true));
+        Assert.Equal("""
+            Assert.Architecture.AllMatch() assertion failed: No member to check.
+            Members expression:   noMembers
+            Predicate expression: method => true
+            """.ReplaceLineEndings("\n"), exception.Message);
+        exception = Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotDependOn(noMembers, Data));
+        Assert.StartsWith("Assert.Architecture.DoesNotDependOn() assertion failed: No member to check.\n", exception.Message);
+        exception = Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotDependOn(Domain.SelectMany(t => t.Members), typo));
+        Assert.StartsWith("Assert.Architecture.DoesNotDependOn() assertion failed: No forbidden type.\n", exception.Message);
+        Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotDependOn(noMembers, t => true));
+        Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotDependOn<DateTime>(noMembers));
+        Assert.Throws<AssertionException>(() => Assert.Architecture.DependsOnlyOn(noMembers, t => true));
+        Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotAccessMember<DateTime>(noMembers, "Now"));
+
         exception = Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotHaveCycles(typo.SliceByNamespace("App.{slice}")));
         Assert.StartsWith("Assert.Architecture.DoesNotHaveCycles() assertion failed: No slice to check.\n", exception.Message);
     }
@@ -252,11 +401,23 @@ public sealed class ArchitectureAssertTests
     [Fact]
     public void NullArgumentsAreRejected()
     {
-        Assert.Throws<ArgumentNullException>("types", () => Assert.Architecture.DoesNotDependOn(null!, Data));
+        Assert.Throws<ArgumentNullException>("types", () => Assert.Architecture.DoesNotDependOn((IEnumerable<TypeElement>)null!, Data));
         Assert.Throws<ArgumentNullException>("forbiddenTypes", () => Assert.Architecture.DoesNotDependOn(Domain, (IEnumerable<TypeElement>)null!));
         Assert.Throws<ArgumentNullException>("predicate", () => Assert.Architecture.DoesNotDependOn(Domain, (Func<TypeReference, bool>)null!));
         Assert.Throws<ArgumentNullException>("type", () => Assert.Architecture.DoesNotDependOn(Domain, (Type)null!));
         Assert.Throws<ArgumentNullException>("memberName", () => Assert.Architecture.DoesNotAccessMember<DateTime>(Domain, null!));
         Assert.Throws<ArgumentNullException>("slices", () => Assert.Architecture.DoesNotHaveCycles(null!));
+
+        var members = Domain.SelectMany(t => t.Members);
+        Assert.Throws<ArgumentNullException>("types", () => Assert.Architecture.AllMatch((IEnumerable<TypeElement>)null!, t => true));
+        Assert.Throws<ArgumentNullException>("predicate", () => Assert.Architecture.AllMatch(Domain, null!));
+        Assert.Throws<ArgumentNullException>("members", () => Assert.Architecture.AllMatch((IEnumerable<FieldElement>)null!, field => true));
+        Assert.Throws<ArgumentNullException>("predicate", () => Assert.Architecture.AllMatch(members, (Func<MemberElement, bool>)null!));
+        Assert.Throws<ArgumentNullException>("members", () => Assert.Architecture.DoesNotDependOn((IEnumerable<MemberElement>)null!, Data));
+        Assert.Throws<ArgumentNullException>("forbiddenTypes", () => Assert.Architecture.DoesNotDependOn(members, (IEnumerable<TypeElement>)null!));
+        Assert.Throws<ArgumentNullException>("predicate", () => Assert.Architecture.DoesNotDependOn(members, (Func<TypeReference, bool>)null!));
+        Assert.Throws<ArgumentNullException>("type", () => Assert.Architecture.DoesNotDependOn(members, (Type)null!));
+        Assert.Throws<ArgumentNullException>("predicate", () => Assert.Architecture.DependsOnlyOn(members, null!));
+        Assert.Throws<ArgumentNullException>("memberName", () => Assert.Architecture.DoesNotAccessMember<DateTime>(members, null!));
     }
 }

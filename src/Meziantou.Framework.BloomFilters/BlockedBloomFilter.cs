@@ -55,7 +55,7 @@ public closed partial class BlockedBloomFilter
         long setBitCount = 0;
         foreach (var segment in _segments)
         {
-            var words = segment.Words.AsSpan(segment.Offset, segment.BlockCount * WordsPerBlock);
+            var words = segment.GetWords();
             for (var index = 0; index < words.Length; index++)
             {
                 setBitCount += BitOperations.PopCount(Volatile.Read(ref words[index]));
@@ -67,6 +67,62 @@ public closed partial class BlockedBloomFilter
             return double.PositiveInfinity;
 
         return -bitCount / _hashCount * Math.Log(1 - (setBitCount / bitCount));
+    }
+
+    /// <summary>
+    /// Adds to this filter every value represented by <paramref name="other"/>, by combining their bits with a bitwise OR.
+    /// </summary>
+    /// <param name="other">
+    /// The filter whose values are added. It must use the same hash algorithm (the same concrete type), the same number of
+    /// blocks and the same number of hash functions as this filter. It is not modified.
+    /// </param>
+    /// <remarks>
+    /// <para>
+    /// After the call, <c>MayContain</c> returns <see langword="true"/> for every value added to this filter or to
+    /// <paramref name="other"/> before the call: the union never introduces a false negative. Calling the method with the
+    /// filter itself does nothing.
+    /// </para>
+    /// <para>
+    /// The result holds the values of both filters in the same number of bits. Its false positive probability is higher
+    /// than the one the filters were sized for when the total number of values exceeds the expected item count. Size each
+    /// filter for the total number of values when you plan to merge them.
+    /// </para>
+    /// <para>
+    /// The compatibility checks happen before any bit is written: when they fail, this filter is left unchanged.
+    /// </para>
+    /// <para>
+    /// The method can run while other threads call <c>Add</c> or <c>MayContain</c> on either filter. The bits of this filter
+    /// are set with atomic operations, so no value added concurrently to this filter is lost. The source is read one 64-bit
+    /// word at a time, not as a snapshot: a value added to <paramref name="other"/> during the call may or may not be
+    /// included. Once the method has returned, every value that was in <paramref name="other"/> when it was called is
+    /// included.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="other"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="other"/> uses another hash algorithm, number of blocks or number of hash functions.
+    /// </exception>
+    public void UnionWith(BlockedBloomFilter other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        if (ReferenceEquals(this, other))
+            return;
+
+        if (other.GetType() != GetType())
+            throw new ArgumentException($"Cannot combine a {GetType().Name} with a {other.GetType().Name}: the filters must use the same hash algorithm.", nameof(other));
+
+        if (other._blockCount != _blockCount)
+            throw new ArgumentException($"Cannot combine a filter of {_blockCount} blocks with a filter of {other._blockCount} blocks: the filters must have the same number of blocks.", nameof(other));
+
+        if (other._hashCount != _hashCount)
+            throw new ArgumentException($"Cannot combine a filter that uses {_hashCount} hash functions with a filter that uses {other._hashCount}: the filters must use the same number of hash functions.", nameof(other));
+
+        // Both filters have the same number of blocks, so their segments hold the same blocks; only the alignment
+        // offsets of the arrays differ.
+        for (var segmentIndex = 0; segmentIndex < _segments.Length; segmentIndex++)
+        {
+            SegmentedBitStorage.UnionWith(_segments[segmentIndex].GetWords(), other._segments[segmentIndex].GetWords());
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -113,5 +169,18 @@ public closed partial class BlockedBloomFilter
     }
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly record struct Segment(ulong[] Words, int Offset, int BlockCount);
+    private readonly record struct Segment(ulong[] Words, int Offset, int BlockCount)
+    {
+        // The words of the blocks, without the alignment padding
+        public Span<ulong> GetWords() => Words.AsSpan(Offset, BlockCount * WordsPerBlock);
+    }
+
+    // Lets the batch hashing of BloomFilterXXHash* add its hashes to a blocked filter. A struct, so the generic method is
+    // specialized for it and AddHash is inlined.
+    [StructLayout(LayoutKind.Auto)]
+    internal readonly struct HashSink(BlockedBloomFilter filter) : IBloomFilterHashSink
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AddHash(BloomFilterHash hash) => filter.AddHash(hash);
+    }
 }

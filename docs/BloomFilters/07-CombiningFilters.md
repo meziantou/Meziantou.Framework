@@ -31,6 +31,9 @@ Assert.Throws<ArgumentException>(() => europe.UnionWith(other));
 - Every value added to either filter is reported as present in the merged filter: the union has no false negatives.
 - The other filter is not modified. Merging a filter with itself does nothing, and merging the same filter twice gives
   the same result as merging it once.
+- [BlockedBloomFilter.UnionWith](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilter.UnionWith) combines two
+  [blocked filters](08-BlockedBloomFilters.md#combine-and-save-blocked-filters) the same way. A blocked filter cannot be
+  combined with a classic one: the bits of a value are not at the same place.
 - Counting Bloom filters do not support this operation.
 
 ## The filters must be compatible
@@ -39,7 +42,8 @@ A value sets the same bits in two filters only when they hash it the same way, s
 
 - the same hash algorithm: they come from the same factory method, such as [BloomFilter.CreateXXHash128](cref:Meziantou.Framework.BloomFilters.BloomFilter.CreateXXHash128);
 - the same number of bits and the same number of hash functions: create them from the same
-  [BloomFilterSize](cref:Meziantou.Framework.BloomFilters.BloomFilterSize).
+  [BloomFilterSize](cref:Meziantou.Framework.BloomFilters.BloomFilterSize) (or the same
+  [BlockedBloomFilterSize](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterSize) for blocked filters).
 
 [UnionWith](cref:Meziantou.Framework.BloomFilters.BloomFilter.UnionWith) throws an `ArgumentException` otherwise. It
 checks the filters before writing any bit, so the filter is left unchanged when it throws.

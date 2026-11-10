@@ -10,15 +10,16 @@ namespace Meziantou.Framework.BloomFilters;
 //   offset  size  field
 //        0     4  magic "MZBF"
 //        4     2  format version
-//        6     1  filter kind (1: Bloom filter, 2: counting Bloom filter)
+//        6     1  filter kind (1: Bloom filter, 2: counting Bloom filter, 3: blocked Bloom filter)
 //        7     1  hash algorithm
 //        8     2  hash derivation version (how the algorithm's hash is turned into positions)
 //       10     1  byte order of the keys (1: little-endian, 2: big-endian)
 //       11     1  reserved, 0
 //       12     4  hash count
-//       16     8  position count (bits or counters)
+//       16     8  position count (bits, counters or 512-bit blocks)
 //       24     8  payload length in bytes
-//       32     n  payload: the bits as 64-bit little-endian words, or one byte per counter
+//       32     n  payload: the bits as 64-bit little-endian words (blocks one after the other for a blocked filter),
+//                   or one byte per counter
 //     32+n     8  XxHash3 of the header and the payload
 //
 // The payload is copied through a small buffer, so writing or reading a filter never allocates a second copy of it.
@@ -44,6 +45,7 @@ internal static class BloomFilterSnapshot
     {
         BloomFilter = 1,
         CountingBloomFilter = 2,
+        BlockedBloomFilter = 3,
     }
 
     public enum HashAlgorithm : byte
@@ -62,6 +64,7 @@ internal static class BloomFilterSnapshot
         return kind switch
         {
             FilterKind.BloomFilter => (((positionCount - 1) / 64) + 1) * sizeof(ulong),
+            FilterKind.BlockedBloomFilter => positionCount * (BlockedBloomFilterSize.BitsPerBlock / 8),
             _ => positionCount,
         };
     }
@@ -271,14 +274,17 @@ internal static class BloomFilterSnapshot
                 throw new InvalidDataException($"The Bloom filter snapshot format version {formatVersion} is not supported. Supported version: {FormatVersion}.");
 
             var kind = (FilterKind)source[6];
-            if (kind is not FilterKind.BloomFilter and not FilterKind.CountingBloomFilter)
+            if (kind is not FilterKind.BloomFilter and not FilterKind.CountingBloomFilter and not FilterKind.BlockedBloomFilter)
                 throw new InvalidDataException($"The Bloom filter snapshot has an unknown filter kind: {source[6]}.");
 
             if (kind != expectedKind)
             {
-                throw kind is FilterKind.CountingBloomFilter
-                    ? new InvalidDataException("The snapshot contains a counting Bloom filter. Load it with CountingBloomFilter.Load.")
-                    : new InvalidDataException("The snapshot contains a Bloom filter. Load it with BloomFilter.Load.");
+                throw kind switch
+                {
+                    FilterKind.CountingBloomFilter => new InvalidDataException("The snapshot contains a counting Bloom filter. Load it with CountingBloomFilter.Load."),
+                    FilterKind.BlockedBloomFilter => new InvalidDataException("The snapshot contains a blocked Bloom filter. Load it with BlockedBloomFilter.Load."),
+                    _ => new InvalidDataException("The snapshot contains a Bloom filter. Load it with BloomFilter.Load."),
+                };
             }
 
             var algorithm = (HashAlgorithm)source[7];
@@ -302,7 +308,7 @@ internal static class BloomFilterSnapshot
                 throw new InvalidDataException("The Bloom filter snapshot header is corrupted: the reserved byte is not zero.");
 
             var hashCount = BinaryPrimitives.ReadInt32LittleEndian(source[12..]);
-            if (hashCount <= 0)
+            if (hashCount <= 0 || hashCount > GetMaxHashCount(kind))
                 throw new InvalidDataException($"The Bloom filter snapshot has an invalid hash count: {hashCount}.");
 
             var positionCount = BinaryPrimitives.ReadInt64LittleEndian(source[16..]);
@@ -324,7 +330,17 @@ internal static class BloomFilterSnapshot
             return kind switch
             {
                 FilterKind.BloomFilter => long.MaxValue,
+                FilterKind.BlockedBloomFilter => BlockedBloomFilterSize.MaxBlockCount,
                 _ => (long)Array.MaxLength << 30,
+            };
+        }
+
+        private static int GetMaxHashCount(FilterKind kind)
+        {
+            return kind switch
+            {
+                FilterKind.BlockedBloomFilter => BlockedBloomFilterSize.MaxHashCount,
+                _ => int.MaxValue,
             };
         }
     }

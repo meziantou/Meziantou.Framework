@@ -152,8 +152,8 @@ partial class BloomFilterXXHash128 : IBloomFilter
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
     public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
-    public void AddRange(params System.ReadOnlySpan<long> values) => AddRangeCore(values);
-    public void AddRange(params System.ReadOnlySpan<ulong> values) => AddRangeCore(values);
+    public void AddRange(params System.ReadOnlySpan<long> values) => AddRangeCore(new HashSink(this), values);
+    public void AddRange(params System.ReadOnlySpan<ulong> values) => AddRangeCore(new HashSink(this), values);
 }
 
 partial class BloomFilterXXHash64 : IBloomFilter
@@ -198,8 +198,8 @@ partial class BloomFilterXXHash64 : IBloomFilter
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
     public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
-    public void AddRange(params System.ReadOnlySpan<long> values) => AddRangeCore(values);
-    public void AddRange(params System.ReadOnlySpan<ulong> values) => AddRangeCore(values);
+    public void AddRange(params System.ReadOnlySpan<long> values) => AddRangeCore(new HashSink(this), values);
+    public void AddRange(params System.ReadOnlySpan<ulong> values) => AddRangeCore(new HashSink(this), values);
 }
 
 partial class BloomFilterXXHash32 : IBloomFilter
@@ -244,8 +244,8 @@ partial class BloomFilterXXHash32 : IBloomFilter
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
     public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
-    public void AddRange(params System.ReadOnlySpan<int> values) => AddRangeCore(values);
-    public void AddRange(params System.ReadOnlySpan<uint> values) => AddRangeCore(values);
+    public void AddRange(params System.ReadOnlySpan<int> values) => AddRangeCore(new HashSink(this), values);
+    public void AddRange(params System.ReadOnlySpan<uint> values) => AddRangeCore(new HashSink(this), values);
 }
 
 partial class BloomFilterXXHash3 : IBloomFilter
@@ -930,6 +930,8 @@ public sealed partial class BlockedBloomFilterXXHash128 : BlockedBloomFilter, IB
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
     public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
+    public void AddRange(params System.ReadOnlySpan<long> values) => BloomFilterXXHash128.AddRangeCore(new HashSink(this), values);
+    public void AddRange(params System.ReadOnlySpan<ulong> values) => BloomFilterXXHash128.AddRangeCore(new HashSink(this), values);
 }
 
 public sealed partial class BlockedBloomFilterXXHash64 : BlockedBloomFilter, IBloomFilter
@@ -978,6 +980,8 @@ public sealed partial class BlockedBloomFilterXXHash64 : BlockedBloomFilter, IBl
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
     public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
+    public void AddRange(params System.ReadOnlySpan<long> values) => BloomFilterXXHash64.AddRangeCore(new HashSink(this), values);
+    public void AddRange(params System.ReadOnlySpan<ulong> values) => BloomFilterXXHash64.AddRangeCore(new HashSink(this), values);
 }
 
 public sealed partial class BlockedBloomFilterXXHash32 : BlockedBloomFilter, IBloomFilter
@@ -1026,6 +1030,8 @@ public sealed partial class BlockedBloomFilterXXHash32 : BlockedBloomFilter, IBl
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
     public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
+    public void AddRange(params System.ReadOnlySpan<int> values) => BloomFilterXXHash32.AddRangeCore(new HashSink(this), values);
+    public void AddRange(params System.ReadOnlySpan<uint> values) => BloomFilterXXHash32.AddRangeCore(new HashSink(this), values);
 }
 
 public sealed partial class BlockedBloomFilterXXHash3 : BlockedBloomFilter, IBloomFilter

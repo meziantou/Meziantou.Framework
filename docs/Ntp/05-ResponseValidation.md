@@ -15,6 +15,9 @@ With [ValidateResponse](cref:Meziantou.Framework.Ntp.NtpClientOptions.ValidateRe
 - does not report an alarm condition (`LeapIndicator.AlarmCondition`), which means the clock of the server is not
   synchronized.
 
+With [AuthenticationKey](cref:Meziantou.Framework.Ntp.NtpClientOptions.AuthenticationKey) set, it also requires a valid MAC, whatever [ValidateResponse](cref:Meziantou.Framework.Ntp.NtpClientOptions.ValidateResponse) is. See
+[Authentication](06-Authentication.md).
+
 A reply that fails is ignored, and the client keeps waiting for a valid one until [Timeout](cref:Meziantou.Framework.Ntp.NtpClientOptions.Timeout): a single stray or forged
 datagram cannot make the query fail. Even with [ValidateResponse](cref:Meziantou.Framework.Ntp.NtpClientOptions.ValidateResponse) set to `false`, the client ignores packets that are
 too short, and replies without receive and transmit timestamps.
@@ -29,13 +32,14 @@ To see the code, set [ValidateResponse](cref:Meziantou.Framework.Ntp.NtpClientOp
 timestamps of such a reply carry no time: do not use its offset. When a server sends `RATE`, query it less often.
 
 This only works with servers whose refusal carries timestamps: the `RATE` reply of [NtpServer](cref:Meziantou.Framework.Ntp.NtpServer) has none, so the client
-ignores it even with validation off. See [Rate limiting](05-RunningAServer.md#rate-limiting).
+ignores it even with validation off. See [Rate limiting](07-RunningAServer.md#rate-limiting).
 
 ## What the checks do not protect against
 
-The checks tie a reply to the request; they do not authenticate the server. The library implements neither NTS
-(RFC 8915) nor symmetric key authentication, so an attacker who can read and inject packets on the path to the server
-can still choose the time the client reports.
+The checks tie a reply to the request; they do not authenticate the server. An attacker who can read and inject
+packets on the path to the server can still choose the time the client reports, unless the client and the server share
+a key: see [Authentication](06-Authentication.md). The library does not implement NTS (RFC 8915).
 
-Do not use the result alone for a security decision, such as the validity period of a certificate or a token. To limit
-the risk, query several servers and compare their answers, and check [RootDispersion](cref:Meziantou.Framework.Ntp.NtpResponse.RootDispersion) and [Stratum](cref:Meziantou.Framework.Ntp.NtpResponse.Stratum).
+Do not use an unauthenticated result alone for a security decision, such as the validity period of a certificate or a
+token. To limit the risk, query several servers and let the majority outvote a wrong one (see
+[Several servers](04-MeasuringAccurately.md#several-servers)), and check [RootDispersion](cref:Meziantou.Framework.Ntp.NtpResponse.RootDispersion) and [Stratum](cref:Meziantou.Framework.Ntp.NtpResponse.Stratum).

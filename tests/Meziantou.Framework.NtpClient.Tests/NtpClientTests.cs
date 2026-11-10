@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Ntp.Tests;
@@ -500,6 +501,309 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
 
         Assert.True(response.Stratum > 0);
         Assert.True(response.TransmitTimestamp > DateTimeOffset.UnixEpoch);
+    }
+
+    [Fact]
+    public async Task Query_RetryCount_SendsANewRequestAfterATimeout()
+    {
+        var requestCount = 0;
+        using var server = FakeNtpServer.Start(request => Interlocked.Increment(ref requestCount) is 1 ? [] : [BuildResponse(request)]);
+
+        var response = await CreateClient(server, options => options.RetryCount = 2).QueryAsync(XunitCancellationToken);
+
+        Assert.Equal(2, response.Stratum);
+        Assert.Equal(2, Volatile.Read(ref requestCount));
+    }
+
+    [Fact]
+    public async Task Query_RetryCount_IgnoresALateReplyToThePreviousAttempt()
+    {
+        var requestCount = 0;
+        byte[]? firstRequest = null;
+        using var server = FakeNtpServer.Start(request =>
+        {
+            if (Interlocked.Increment(ref requestCount) is 1)
+            {
+                firstRequest = request;
+                return [];
+            }
+
+            // The reply to the first request arrives during the second attempt, with a server time that would be wrong
+            return [BuildResponse(firstRequest!, DateTimeOffset.UtcNow.AddHours(1)), BuildResponse(request)];
+        });
+
+        var response = await CreateClient(server, options => options.RetryCount = 1).QueryAsync(XunitCancellationToken);
+
+        Assert.True(Math.Abs(response.ClockOffset.TotalMinutes) < 1, $"Clock offset was {response.ClockOffset}");
+    }
+
+    [Fact]
+    public async Task Query_RetryCount_ThrowsTimeoutExceptionAfterTheLastAttempt()
+    {
+        var requestCount = 0;
+        using var server = FakeNtpServer.Start(request =>
+        {
+            Interlocked.Increment(ref requestCount);
+            return [];
+        });
+
+        var exception = await Assert.ThrowsAsync<TimeoutException>(() => CreateClient(server, options =>
+        {
+            options.RetryCount = 2;
+            options.Timeout = TimeSpan.FromMilliseconds(200);
+        }).QueryAsync(XunitCancellationToken));
+
+        Assert.Contains("3 attempts", exception.Message);
+        Assert.Equal(3, Volatile.Read(ref requestCount));
+    }
+
+    [Fact]
+    public void Options_RetryCount_RejectsANegativeValue()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new NtpClientOptions { RetryCount = -1 });
+    }
+
+    [Fact]
+    public void MeasurementOptions_RejectInvalidValues()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new NtpMeasurementOptions { SampleCount = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new NtpMeasurementOptions { SampleInterval = TimeSpan.FromSeconds(-1) });
+    }
+
+    [Fact]
+    public async Task Measure_KeepsEverySampleAndTheErrors()
+    {
+        var requestCount = 0;
+        using var server = FakeNtpServer.Start(request => Interlocked.Increment(ref requestCount) is 2 ? [] : [BuildResponse(request)]);
+
+        var measurement = await CreateClient(server).MeasureAsync(new NtpMeasurementOptions { SampleCount = 4, SampleInterval = TimeSpan.Zero }, XunitCancellationToken);
+
+        Assert.Equal("127.0.0.1", measurement.Server);
+        Assert.Equal(3, measurement.Samples.Count);
+        Assert.IsType<TimeoutException>(Assert.Single(measurement.Errors));
+        Assert.Contains(measurement.BestSample, measurement.Samples);
+        Assert.All(measurement.Samples, sample => Assert.True(sample.RoundTripDelay >= measurement.RoundTripDelay));
+        Assert.True(measurement.RootDistance > measurement.RoundTripDelay / 2);
+    }
+
+    [Fact]
+    public async Task Measure_ThrowsWhenNoSampleSucceeds()
+    {
+        using var server = FakeNtpServer.Blackhole();
+
+        var exception = await Assert.ThrowsAsync<TimeoutException>(() => CreateClient(server, options => options.Timeout = TimeSpan.FromMilliseconds(100))
+            .MeasureAsync(new NtpMeasurementOptions { SampleCount = 2, SampleInterval = TimeSpan.Zero }, XunitCancellationToken));
+
+        Assert.Contains("None of the 2 queries", exception.Message);
+    }
+
+    [Fact]
+    public async Task MeasureServers_RejectsInvalidLists()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() => NtpClient.MeasureAsync(Array.Empty<NtpClient>(), cancellationToken: XunitCancellationToken));
+        await Assert.ThrowsAsync<ArgumentException>(() => NtpClient.MeasureAsync([(NtpClient)null!], cancellationToken: XunitCancellationToken));
+    }
+
+    [Fact]
+    public void ClockSelection_DiscardsTheFalseticker()
+    {
+        long[] offsets = [100, 110, 95, 1_000_000];
+        long[] rootDistances = [50, 50, 50, 50];
+        var selected = new bool[4];
+
+        Assert.True(NtpClockSelection.TrySelect(offsets, rootDistances, selected, out var low, out var high));
+
+        Assert.Equal([true, true, true, false], selected);
+        Assert.Equal(60, low);
+        Assert.Equal(145, high);
+
+        var (offset, jitter) = NtpClockSelection.Combine(offsets, rootDistances, selected);
+        Assert.Equal(102, offset);
+        Assert.InRange(jitter, 5, 7);
+    }
+
+    [Fact]
+    public void ClockSelection_WeightsByTheInverseOfTheRootDistance()
+    {
+        long[] offsets = [0, 300];
+        long[] rootDistances = [100, 300];
+        bool[] selected = [true, true];
+
+        Assert.Equal(75, NtpClockSelection.Combine(offsets, rootDistances, selected).Offset);
+    }
+
+    [Fact]
+    public void ClockSelection_FailsWithoutAMajority()
+    {
+        long[] offsets = [0, 1000];
+        long[] rootDistances = [10, 10];
+
+        Assert.False(NtpClockSelection.TrySelect(offsets, rootDistances, new bool[2], out _, out _));
+    }
+
+    [Fact]
+    public void ClockSelection_ASingleCandidateIsSelected()
+    {
+        var selected = new bool[1];
+
+        Assert.True(NtpClockSelection.TrySelect([42], [0], selected, out var low, out var high));
+
+        Assert.True(selected[0]);
+        Assert.Equal(42, low);
+        Assert.Equal(42, high);
+    }
+
+    // RFC 4493 section 4
+    [Theory]
+    [InlineData("", "bb1d6929e95937287fa37d129b756746")]
+    [InlineData("6bc1bee22e409f96e93d7e117393172a", "070a16b46b4d4144f79bdd9dd04a287c")]
+    [InlineData("6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e5130c81c46a35ce411", "dfa66747de9ae63030ca32611497c827")]
+    [InlineData("6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e5130c81c46a35ce411e5fbc1191a0a52eff69f2445df4f9b17ad2b417be66c3710", "51f0bebf7e3b9d92fc49741779363cfe")]
+    public void AesCmac_MatchesTheTestVectorsOfRfc4493(string message, string expected)
+    {
+        var key = Convert.FromHexString("2b7e151628aed2a6abf7158809cf4f3c");
+        var digest = new byte[16];
+
+        NtpAesCmac.Compute(key, Convert.FromHexString(message), digest);
+
+        Assert.Equal(expected, Convert.ToHexStringLower(digest));
+    }
+
+    [Fact]
+    public void AuthenticationKey_RejectsInvalidArguments()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new NtpAuthenticationKey(0, NtpAuthenticationAlgorithm.Sha1, [1]));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new NtpAuthenticationKey(1, (NtpAuthenticationAlgorithm)42, [1]));
+        Assert.Throws<ArgumentException>(() => new NtpAuthenticationKey(1, NtpAuthenticationAlgorithm.Md5, []));
+        Assert.Throws<ArgumentException>(() => new NtpAuthenticationKey(1, NtpAuthenticationAlgorithm.AesCmac, new byte[15]));
+    }
+
+    [Fact]
+    public void AuthenticationKey_CopiesTheKey()
+    {
+        var bytes = new byte[] { 1, 2, 3 };
+        var key = new NtpAuthenticationKey(7, NtpAuthenticationAlgorithm.Sha1, bytes);
+        bytes[0] = 42;
+
+        Assert.Equal(7u, key.KeyId);
+        Assert.Equal(NtpAuthenticationAlgorithm.Sha1, key.Algorithm);
+        Assert.Equal([1, 2, 3], key.Key.ToArray());
+    }
+
+    [Theory]
+    [InlineData(48, true, 48)]
+    [InlineData(52, true, 48)]                // crypto-NAK
+    [InlineData(68, true, 48)]                // key identifier and a 16-byte digest
+    [InlineData(72, true, 48)]                // key identifier and a 20-byte digest
+    [InlineData(47, false, 0)]
+    [InlineData(56, false, 0)]
+    [InlineData(48 + 28, true, 48 + 28)]      // an extension field, no MAC
+    [InlineData(48 + 28 + 20, true, 48 + 28)] // an extension field and a MAC
+    public void Mac_FindsTheMacAfterTheExtensionFields(int length, bool isValid, int expectedOffset)
+    {
+        var packet = new byte[length];
+        if (length >= 48 + 28)
+        {
+            BinaryPrimitives.WriteUInt16BigEndian(packet.AsSpan(48 + 2), 28);
+        }
+
+        Assert.Equal(isValid, NtpMac.TryGetMacOffset(packet, out var macOffset));
+        Assert.Equal(expectedOffset, macOffset);
+    }
+
+    [Theory]
+    [InlineData(15)] // shorter than the minimum
+    [InlineData(30)] // not a multiple of 4
+    [InlineData(64)] // longer than the packet
+    public void Mac_RejectsMalformedExtensionFields(int extensionLength)
+    {
+        var packet = new byte[48 + 32];
+        BinaryPrimitives.WriteUInt16BigEndian(packet.AsSpan(48 + 2), (ushort)extensionLength);
+
+        Assert.False(NtpMac.TryGetMacOffset(packet, out _));
+    }
+
+    [Fact]
+    public async Task Query_Authenticated_SendsAMacAndAcceptsAnAuthenticatedReply()
+    {
+        var keyBytes = "secret"u8.ToArray();
+        byte[]? receivedRequest = null;
+        using var server = FakeNtpServer.Start(request =>
+        {
+            receivedRequest = request;
+            return [AppendMd5Mac(BuildResponse(request), keyId: 5, keyBytes)];
+        });
+
+        var response = await CreateClient(server, options => options.AuthenticationKey = new NtpAuthenticationKey(5, NtpAuthenticationAlgorithm.Md5, keyBytes)).QueryAsync(XunitCancellationToken);
+
+        Assert.Equal(2, response.Stratum);
+        Assert.NotNull(receivedRequest);
+        Assert.HasCount(PacketSize + 20, receivedRequest);
+        Assert.Equal(receivedRequest, AppendMd5Mac(receivedRequest[..PacketSize], keyId: 5, keyBytes));
+    }
+
+    [Theory]
+    [InlineData("unauthenticated", "it is not authenticated")]
+    [InlineData("wrong-key", "its MAC is not valid")]
+    [InlineData("wrong-key-id", "its MAC is not valid")]
+    [InlineData("crypto-nak", "crypto-NAK")]
+    [InlineData("tampered", "its MAC is not valid")]
+    public async Task Query_Authenticated_RejectsRepliesThatAreNotAuthenticated(string kind, string expectedReason)
+    {
+        var keyBytes = "secret"u8.ToArray();
+        using var server = FakeNtpServer.Start(request =>
+        {
+            var response = BuildResponse(request);
+            return kind switch
+            {
+                "unauthenticated" => [response],
+                "wrong-key" => [AppendMd5Mac(response, keyId: 5, "other"u8.ToArray())],
+                "wrong-key-id" => [AppendMd5Mac(response, keyId: 6, keyBytes)],
+                "crypto-nak" => [[.. response, 0, 0, 0, 0]],
+                _ => [Tamper(AppendMd5Mac(response, keyId: 5, keyBytes))],
+            };
+        });
+
+        var exception = await Assert.ThrowsAsync<TimeoutException>(() => CreateClient(server, options => options.AuthenticationKey = new NtpAuthenticationKey(5, NtpAuthenticationAlgorithm.Md5, keyBytes)).QueryAsync(XunitCancellationToken));
+
+        Assert.Contains(expectedReason, exception.Message);
+
+        static byte[] Tamper(byte[] packet)
+        {
+            packet[TransmitTimestampOffset] ^= 0x01;
+            return packet;
+        }
+    }
+
+    [Fact]
+    public async Task Query_Authenticated_IsEnforcedWhenValidationIsDisabled()
+    {
+        using var server = FakeNtpServer.Start(request => [BuildResponse(request)]);
+
+        await Assert.ThrowsAsync<TimeoutException>(() => CreateClient(server, options =>
+        {
+            options.ValidateResponse = false;
+            options.AuthenticationKey = new NtpAuthenticationKey(5, NtpAuthenticationAlgorithm.Md5, "secret"u8);
+        }).QueryAsync(XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task Query_Unauthenticated_IgnoresAMacInTheReply()
+    {
+        using var server = FakeNtpServer.Start(request => [AppendMd5Mac(BuildResponse(request), keyId: 5, "secret"u8.ToArray())]);
+
+        var response = await CreateClient(server).QueryAsync(XunitCancellationToken);
+
+        Assert.Equal(2, response.Stratum);
+    }
+
+    /// <summary>Appends an RFC 5905 MD5 MAC, computed independently of the library: MD5(key || packet).</summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5351:Do Not Use Broken Cryptographic Algorithms", Justification = "The MAC of RFC 5905")]
+    private static byte[] AppendMd5Mac(byte[] packet, uint keyId, byte[] key)
+    {
+        var keyIdBytes = new byte[4];
+        BinaryPrimitives.WriteUInt32BigEndian(keyIdBytes, keyId);
+        return [.. packet, .. keyIdBytes, .. MD5.HashData([.. key, .. packet])];
     }
 
     /// <summary>A UDP server that answers with whatever bytes the test tells it to.</summary>

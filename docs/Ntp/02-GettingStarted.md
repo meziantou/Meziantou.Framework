@@ -37,4 +37,5 @@ Assert.True(response.RoundTripDelay >= TimeSpan.Zero);
 ## Next steps
 
 - [Querying a server](03-QueryingAServer.md): the fields of the response, the options, timeouts.
-- [Running a server](05-RunningAServer.md): addresses, time source, stratum, rate limiting.
+- [Measuring accurately](04-MeasuringAccurately.md): several samples, several servers.
+- [Running a server](07-RunningAServer.md): addresses, time source, stratum, rate limiting.

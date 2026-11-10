@@ -4,19 +4,58 @@
 
 namespace Meziantou.Framework.Ntp
 {
+    public enum NtpAuthenticationAlgorithm
+    {
+        AesCmac = 0,
+        Sha1 = 1,
+        Md5 = 2,
+    }
+
+    public sealed class NtpAuthenticationKey
+    {
+        public Meziantou.Framework.Ntp.NtpAuthenticationAlgorithm Algorithm { get => throw null; }
+        public System.ReadOnlyMemory<byte> Key { get => throw null; }
+        public uint KeyId { get => throw null; }
+        public NtpAuthenticationKey(uint keyId, Meziantou.Framework.Ntp.NtpAuthenticationAlgorithm algorithm, System.ReadOnlySpan<byte> key) { }
+    }
+
     public sealed class NtpClient
     {
+        public string Server { get => throw null; }
         public NtpClient(string server) { }
         public NtpClient(string server, Meziantou.Framework.Ntp.NtpClientOptions? options) { }
+        public System.Threading.Tasks.Task<Meziantou.Framework.Ntp.NtpServerMeasurement> MeasureAsync(Meziantou.Framework.Ntp.NtpMeasurementOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Ntp.NtpClockMeasurement> MeasureAsync(System.Collections.Generic.IEnumerable<Meziantou.Framework.Ntp.NtpClient> clients, Meziantou.Framework.Ntp.NtpMeasurementOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task<Meziantou.Framework.Ntp.NtpResponse> QueryAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class NtpClientOptions
     {
+        public Meziantou.Framework.Ntp.NtpAuthenticationKey? AuthenticationKey { get => throw null; set { } }
         public int Port { get => throw null; set { } }
+        public int RetryCount { get => throw null; set { } }
         public System.TimeSpan Timeout { get => throw null; set { } }
         public bool ValidateResponse { get => throw null; set { } }
         public Meziantou.Framework.Ntp.NtpVersion Version { get => throw null; set { } }
+    }
+
+    public sealed class NtpClockMeasurement
+    {
+        public System.TimeSpan ClockOffset { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<Meziantou.Framework.Ntp.NtpClient, System.Exception> FailedServers { get => throw null; }
+        public System.TimeSpan Jitter { get => throw null; }
+        public System.TimeSpan MaximumClockOffset { get => throw null; }
+        public System.TimeSpan MinimumClockOffset { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Ntp.NtpServerMeasurement> RejectedServers { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Ntp.NtpServerMeasurement> SelectedServers { get => throw null; }
+    }
+
+    public sealed class NtpClockSelectionException : System.Exception
+    {
+        public System.Collections.Generic.IReadOnlyDictionary<Meziantou.Framework.Ntp.NtpClient, System.Exception> FailedServers { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Ntp.NtpServerMeasurement> Measurements { get => throw null; }
+        public NtpClockSelectionException(string message) { }
+        public NtpClockSelectionException(string message, System.Exception innerException) { }
     }
 
     public enum NtpLeapIndicator
@@ -25,6 +64,12 @@ namespace Meziantou.Framework.Ntp
         LastMinuteHas61Seconds = 1,
         LastMinuteHas59Seconds = 2,
         AlarmCondition = 3,
+    }
+
+    public sealed class NtpMeasurementOptions
+    {
+        public int SampleCount { get => throw null; set { } }
+        public System.TimeSpan SampleInterval { get => throw null; set { } }
     }
 
     public sealed class NtpResponse
@@ -47,6 +92,19 @@ namespace Meziantou.Framework.Ntp
         public byte Stratum { get => throw null; }
         public System.DateTimeOffset TransmitTimestamp { get => throw null; }
         public Meziantou.Framework.Ntp.NtpVersion Version { get => throw null; }
+    }
+
+    public sealed class NtpServerMeasurement
+    {
+        public Meziantou.Framework.Ntp.NtpResponse BestSample { get => throw null; }
+        public Meziantou.Framework.Ntp.NtpClient Client { get => throw null; }
+        public System.TimeSpan ClockOffset { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<System.Exception> Errors { get => throw null; }
+        public System.TimeSpan Jitter { get => throw null; }
+        public System.TimeSpan RootDistance { get => throw null; }
+        public System.TimeSpan RoundTripDelay { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Ntp.NtpResponse> Samples { get => throw null; }
+        public string Server { get => throw null; }
     }
 
     public enum NtpVersion

@@ -36,9 +36,38 @@ public sealed class NtpClientOptions
     /// The originate timestamp is what ties a reply to this specific request, so disabling this makes
     /// the client accept a forged reply from anyone who can guess its source port. Only turn it off to
     /// interoperate with a server known to be non-compliant, and do not use the result to make a
-    /// security decision. This library never authenticates the server cryptographically: it implements
-    /// neither NTS (RFC 8915) nor symmetric key authentication.
+    /// security decision. Disabling it does not disable <see cref="AuthenticationKey"/>.
     /// </para>
     /// </remarks>
     public bool ValidateResponse { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the number of times a request is sent again to the same address when no valid reply arrives within
+    /// <see cref="Timeout"/>. Default is 0.
+    /// </summary>
+    /// <remarks>
+    /// Each attempt sends a new request and waits <see cref="Timeout"/> for its reply, so an address can take
+    /// <c>Timeout × (RetryCount + 1)</c>. Only a missing reply is retried, not a network error.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int RetryCount
+    {
+        get;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the symmetric key that authenticates the requests and the replies (RFC 5905, RFC 8573), or
+    /// <see langword="null"/> to send unauthenticated requests. Default is <see langword="null"/>.
+    /// </summary>
+    /// <remarks>
+    /// When set, the client appends a message authentication code (MAC) to every request, and ignores every reply that
+    /// does not end with a valid MAC computed with the same key, whatever <see cref="ValidateResponse"/> is. The server
+    /// must be configured with the same key identifier, algorithm and key.
+    /// </remarks>
+    public NtpAuthenticationKey? AuthenticationKey { get; set; }
 }

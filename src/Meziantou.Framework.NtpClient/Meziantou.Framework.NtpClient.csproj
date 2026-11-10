@@ -7,4 +7,9 @@
     <PackageTags>ntp, sntp, time, clock, networking</PackageTags>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.NtpClient.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Ntp.Fuzz" />
+  </ItemGroup>
+
 </Project>

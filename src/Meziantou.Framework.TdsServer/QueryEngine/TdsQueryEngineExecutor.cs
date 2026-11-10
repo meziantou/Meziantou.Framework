@@ -460,6 +460,12 @@ internal sealed partial class TdsQueryEngineExecutor
     {
         var left = TranslateQueryExpression(queryExpression.Left, parameters, cteRoots, queryExecutionContext, columnNames);
         var right = TranslateQueryExpression(queryExpression.Right, parameters, cteRoots, queryExecutionContext, columnNames);
+        if (columnNames is not null && left.ElementType != right.ElementType && CanConvertRows(right.ElementType, left.ElementType))
+        {
+            // The columns match by position: the first query names them, and the others can use other names
+            right = ConvertRows(right, left.ElementType);
+        }
+
         if (left.ElementType != right.ElementType)
         {
             throw new TdsQueryEngineException("UNION query expressions must project the same columns and types.");

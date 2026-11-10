@@ -3858,6 +3858,7 @@ internal sealed class GeneratedArrayStream(int count) : Stream
 
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 }
+
 /// <summary>A stream that returns one chunk per read, and fails when it is read past them, as a stream that waits would block.</summary>
 internal sealed class ChunkStream(string[] chunks) : Stream
 {

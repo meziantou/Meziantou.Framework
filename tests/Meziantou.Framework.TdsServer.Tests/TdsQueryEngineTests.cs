@@ -5297,6 +5297,44 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task SqlClient_QueryEngine_Insert_UnionOfStarAndColumns_RemovesDuplicateRows()
+    {
+        var products = CreateProducts();
+        var recordsAffected = await ExecuteNonQuery(
+            CreateWritableQueryEngineOptions(products),
+            command => command.CommandText = "INSERT INTO products SELECT * FROM products UNION SELECT Id, Name, Price, Stock FROM products");
+
+        Assert.Equal(2, recordsAffected);
+        Assert.Equal(["1 Keyboard 49.90 5", "2 Mouse 19.50 NULL", "1 Keyboard 49.90 5", "2 Mouse 19.50 NULL"], products.Select(FormatProduct));
+    }
+
+    [Fact]
+    public async Task SqlClient_QueryEngine_RecursiveCte_StarAnchorThenNamedAnchor_AreCombined()
+    {
+        await ExecuteQuery(
+            CreateQueryEngineOptions(),
+            command =>
+            {
+                command.CommandText = """
+                    WITH c AS (
+                        SELECT * FROM customers WHERE Id = 1
+                        UNION
+                        SELECT Id, Name FROM customers WHERE Id = 1
+                        UNION ALL
+                        SELECT Id + 1, Name FROM c WHERE Id < 2
+                    )
+                    SELECT Id, Name FROM c ORDER BY Id
+                    """;
+            },
+            """
+            Id Name
+            1 Alice
+            2 Alice
+            """,
+            expectedMaterializedQueries: null);
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_RecursiveCte_StarAnchorMembers_AreCombined()
     {
         await ExecuteQuery(

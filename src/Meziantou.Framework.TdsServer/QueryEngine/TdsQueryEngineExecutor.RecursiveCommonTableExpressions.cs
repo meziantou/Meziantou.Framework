@@ -114,10 +114,10 @@ internal sealed partial class TdsQueryEngineExecutor
         for (var i = 1; i < firstRecursiveMember; i++)
         {
             var anchorMember = TranslateQueryExpression(members[i].Query, parameters, cteRoots, queryExecutionContext, anchorColumnNames);
-            if (anchorMember.ElementType != anchorQuery.ElementType && CanConvertRows(anchorMember.ElementType, anchorQuery.ElementType))
+            if (anchorMember.ElementType != anchorQuery.ElementType)
             {
                 // SELECT * keeps the row type of its table, whatever the names
-                anchorMember = ConvertRows(anchorMember, anchorQuery.ElementType);
+                _ = TryConvertToCommonRowType(ref anchorQuery, ref anchorMember);
             }
 
             anchorQuery = CombineUnion(anchorQuery, anchorMember, members[i].Operator!.Value);
@@ -329,6 +329,33 @@ internal sealed partial class TdsQueryEngineExecutor
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Converts the rows of two queries combined by UNION to one generated row type, named and typed by the columns of
+    /// <paramref name="left"/>. The generated type compares the values of the columns, as UNION does, while a row type of
+    /// the application, such as the one of SELECT *, can compare references.
+    /// </summary>
+    /// <returns><see langword="false"/> when the columns of <paramref name="right"/> do not convert to the ones of <paramref name="left"/>.</returns>
+    private static bool TryConvertToCommonRowType(ref IQueryable left, ref IQueryable right)
+    {
+        var rowType = TdsProjectionTypeFactory.GetProjectionType([.. GetReadableMembers(left.ElementType).Select(member => new TdsProjectionMember(member.Name, GetMemberType(member)))]);
+        if (!CanConvertRows(right.ElementType, rowType))
+        {
+            return false;
+        }
+
+        if (left.ElementType != rowType)
+        {
+            left = ConvertRows(left, rowType);
+        }
+
+        if (right.ElementType != rowType)
+        {
+            right = ConvertRows(right, rowType);
+        }
+
+        return true;
     }
 
     /// <summary>Tells whether <see cref="ConvertRows"/> converts every row of <paramref name="sourceType"/>: the columns have the same types, or the target is the nullable version of the source.</summary>

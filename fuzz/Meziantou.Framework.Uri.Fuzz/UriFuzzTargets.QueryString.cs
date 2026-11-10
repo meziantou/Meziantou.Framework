@@ -48,7 +48,7 @@ public static partial class UriFuzzTargets
         FuzzAssert.Equal(CountParametersWithoutValue(query), CountParametersWithoutValue(SplitUri(rewritten).Query), $"Writing the parsed parameters changes the parameters without '=' ({FuzzAssert.Format(rewritten)})");
 
         var caseInsensitive = QueryStringUtilities.ParseQuery(query, StringComparer.OrdinalIgnoreCase);
-        FuzzAssert.Equal(Group(original, StringComparer.OrdinalIgnoreCase), Format(caseInsensitive), "Parsing with a case-insensitive comparer gives other parameters");
+        FuzzAssert.Equal(Group(ParseInQueryOrder(query), StringComparer.OrdinalIgnoreCase), Format(caseInsensitive), "Parsing with a case-insensitive comparer gives other parameters");
         foreach (var parameter in parsed)
         {
             FuzzAssert.Equal(Format(caseInsensitive[parameter.Key]), Format(caseInsensitive[parameter.Key.ToUpperInvariant()]), "A case-insensitive lookup depends on the case");
@@ -94,6 +94,24 @@ public static partial class UriFuzzTargets
     private static List<(string Name, string Value)> Scalar(IEnumerable<(string Name, string Value)> parameters)
         => [.. parameters.Select(parameter => (ToScalarValueString(parameter.Name), ToScalarValueString(parameter.Value)))];
 
+    /// <summary>
+    /// Parses each parameter of the query on its own, so the values are in the order of the query string rather than
+    /// grouped by the exact name: <c>?a=1&amp;A=2&amp;a=3</c> gives <c>1, 2, 3</c>.
+    /// </summary>
+    private static List<(string Name, string Value)> ParseInQueryOrder(string? query)
+    {
+        if (query is null)
+            return [];
+
+        if (query.StartsWith('?', StringComparison.Ordinal))
+        {
+            query = query[1..];
+        }
+
+        // A leading '?' is added to each parameter, so that a parameter that starts with '?' keeps it
+        return [.. query.Split('&').SelectMany(parameter => Flatten(QueryStringUtilities.ParseQuery("?" + parameter, StringComparer.Ordinal)))];
+    }
+
     /// <summary>Counts the non-empty parameters that have no '=', after the optional leading '?' that parsing skips.</summary>
     private static int CountParametersWithoutValue(string? query)
     {
@@ -134,6 +152,7 @@ public static partial class UriFuzzTargets
         yield return new FuzzSeed("fragment", Encode([], "http://www.example.com/#/search?x=1", "x", "1"));
         yield return new FuzzSeed("no-value", Encode([], "http://www.example.com/?debug&a=1&debug=&Debug&a%20b&c+d#hash", "debug", "1"));
         yield return new FuzzSeed("case", Encode([], "http://www.example.com/?Tag=a&tag=b&TAG&\u0130=1&i=2", "TAG", "c"));
+        yield return new FuzzSeed("case-interleaved", Encode([], "http://www.example.com/?a=1&A=2&a=3", "A", "4"));
         yield return new FuzzSeed("special", Encode([], "?a b=c d&%=%&\u00E9=\u00E9", " a&b=", "=?#%+"));
 
         var literals = GetStringLiterals("QueryStringUtilitiesTests.cs").ToList();

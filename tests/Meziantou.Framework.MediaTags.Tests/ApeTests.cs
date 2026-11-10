@@ -246,6 +246,8 @@ public sealed class ApeTests
     [InlineData("X", 2)]
     [InlineData("TAG", 2)]
     [InlineData("Flags", 8)]
+    [InlineData("Reserved", 6)]
+    [InlineData("ReservedReadOnly", 7)]
     public void WriteTags_InvalidNativeField_Fails(string key, int flags)
     {
         var tags = new MediaTagInfo { NativeFields = [new MediaNativeField { TagType = MediaTagType.Ape, Id = key, Data = [1], Flags = flags }] };
@@ -366,6 +368,27 @@ public sealed class ApeTests
         BinaryPrimitives.WriteInt32LittleEndian(footer.AsSpan(12), body.Length + 32);
         BinaryPrimitives.WriteInt32LittleEndian(footer.AsSpan(16), items.Length);
         return [.. body, .. footer];
+    }
+
+    [Fact]
+    public void ReadTags_Mp3WithApeTag_FillsTheTotalsTheId3v2TagDoesNotSet()
+    {
+        // ID3v2.4 tag with TRCK=4 and TPOS=1, before the audio, then an APE tag with "4/12" and "1/2"
+        byte[] id3v2 = [.. "ID3"u8, 4, 0, 0, 0, 0, 0, 24, .. "TRCK"u8, 0, 0, 0, 2, 0, 0, 3, (byte)'4', .. "TPOS"u8, 0, 0, 0, 2, 0, 0, 3, (byte)'1'];
+        var apeTag = BuildApeTag(("Track", 0, "4/12"u8.ToArray()), ("Disc", 0, "1/2"u8.ToArray()));
+        var audio = ReadTestFile("id3v1_only.mp3")[..^128];
+        var file = (byte[])[.. id3v2, .. audio, .. apeTag];
+
+        var tags = Read(file, MediaFormat.Mp3);
+        Assert.Equal(4, tags.TrackNumber);
+        Assert.Equal(12, tags.TrackTotal);
+        Assert.Equal(1, tags.DiscNumber);
+        Assert.Equal(2, tags.DiscTotal);
+
+        // Kept when the ID3v2 tag replaces the APE tag
+        var readBack = Read(Write(file, tags, MediaFormat.Mp3), MediaFormat.Mp3);
+        Assert.Equal(12, readBack.TrackTotal);
+        Assert.Equal(2, readBack.DiscTotal);
     }
 
     [Fact]

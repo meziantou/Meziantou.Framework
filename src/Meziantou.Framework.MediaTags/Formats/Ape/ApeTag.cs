@@ -24,6 +24,7 @@ internal static class ApeTag
     public const int ItemTypeMask = 0x06;
     public const int TextItemType = 0x00;
     public const int BinaryItemType = 0x02;
+    public const int LinkItemType = 0x04;
 
     /// <summary>The flags an item may carry: the read-only flag and the item type.</summary>
     public const int ItemFlagsMask = ReadOnlyFlag | ItemTypeMask;

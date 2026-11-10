@@ -73,7 +73,7 @@ internal static class QuickTimeUserData
         }
     }
 
-    /// <summary>Reads the first text of a record.</summary>
+    /// <summary>Reads the text of a record that holds a single one.</summary>
     private static string? ReadText(ReadOnlySpan<byte> data)
     {
         if (data.Length < 4)
@@ -82,6 +82,11 @@ internal static class QuickTimeUserData
         var length = BinaryPrimitives.ReadUInt16BigEndian(data);
         var language = BinaryPrimitives.ReadUInt16BigEndian(data[2..]);
         if (length > data.Length - 4)
+            return null;
+
+        // A record that holds the text in several languages is not read: the writer would replace it with one text, and
+        // the other languages would be lost. It is kept as it is.
+        if (data.Length - 4 - length >= 4)
             return null;
 
         var text = data.Slice(4, length);

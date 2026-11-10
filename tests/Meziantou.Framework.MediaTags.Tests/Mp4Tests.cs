@@ -852,6 +852,31 @@ public sealed class Mp4Tests
     }
 
     [Fact]
+    public void WriteTags_QuickTimeTextRecordInSeveralLanguages_IsKept()
+    {
+        // Adds a French text to the ©nam record, the last record but one of udta, the last atom of moov
+        var original = File.ReadAllBytes(GetTestFilePath("basic.mov"));
+        var record = original.AsSpan().IndexOf((ReadOnlySpan<byte>)[0xA9, (byte)'n', (byte)'a', (byte)'m']) - 4;
+        var recordSize = (int)BinaryPrimitives.ReadUInt32BigEndian(original.AsSpan(record));
+        byte[] french = [0, 5, 0x15, 0xC7, .. "Titre"u8];
+        var file = (byte[])[.. original.AsSpan(0, record + recordSize), .. french, .. original.AsSpan(record + recordSize)];
+        foreach (var atomType in (string[])["moov", "udta"])
+        {
+            var atom = file.AsSpan().IndexOf(Encoding.Latin1.GetBytes(atomType)) - 4;
+            BinaryPrimitives.WriteUInt32BigEndian(file.AsSpan(atom), BinaryPrimitives.ReadUInt32BigEndian(file.AsSpan(atom)) + (uint)french.Length);
+        }
+
+        BinaryPrimitives.WriteUInt32BigEndian(file.AsSpan(record), (uint)(recordSize + french.Length));
+
+        var tags = ReadMp4(file);
+        Assert.Null(tags.Title);
+
+        var written = WriteMp4(file, new MediaTagInfo { Artist = "Artist" });
+        Assert.True(written.AsSpan().IndexOf("Titre"u8) >= 0);
+        Assert.True(written.AsSpan().IndexOf("QuickTime Title"u8) >= 0);
+    }
+
+    [Fact]
     public void WriteTags_NativeFields()
     {
         var original = File.ReadAllBytes(GetTestFilePath("tv_show.m4v"));

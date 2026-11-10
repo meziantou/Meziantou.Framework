@@ -67,7 +67,8 @@ is computed from the audio instead.
   read from the header of the first video track.
 - QuickTime files store the title, the artist, the album, the year, the comment, the genre, the composer, the copyright
   and the description as text records of the `udta` atom (`©nam`, `©ART`…). They are read when the metadata items do
-  not set the field, and writing moves them to the metadata items.
+  not set the field, and writing moves them to the metadata items. A record that holds the text in several languages is
+  kept as it is, and is not read.
 
 ## WAV and AIFF
 
@@ -89,7 +90,8 @@ is computed from the audio instead.
 - A custom field name, and the key of a native item, has 2 to 255 printable ASCII characters, and cannot be `ID3`,
   `TAG`, `OggS` or `MP+`; another one is refused. A custom field named like a field that is set is not written.
 - The native fields are the binary items and the external links (flags 2 and 4, optionally with the read-only flag 1).
-  A binary item named after a picture type is a picture.
+  A binary item named after a picture type is a picture. Items of the reserved type (flags 6) are not read, and writing
+  removes them.
 - The duration is read from the stream header. Musepack files of stream versions 7 and 8 are supported.
 
 ## ASF (WMA and WMV)

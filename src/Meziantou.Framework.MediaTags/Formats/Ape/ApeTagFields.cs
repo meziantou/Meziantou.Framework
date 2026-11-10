@@ -61,12 +61,12 @@ internal static class ApeTagFields
                     tags.CustomFields.TryAdd(item.Key, value);
                 }
             }
-            else if (!IsNativeItem(item.Key, item.Flags))
+            else if (item.ItemType == ApeTag.BinaryItemType && TryGetPictureType(item.Key, out var pictureType))
             {
-                if (addPictures && TryGetPictureType(item.Key, out var pictureType))
+                if (addPictures)
                     tags.Pictures.Add(ReadPicture(pictureType, item.Value.Span));
             }
-            else
+            else if (IsNativeItem(item.Key, item.Flags))
             {
                 nativeFields?.Add(new MediaNativeField { TagType = MediaTagType.Ape, Id = item.Key, Data = item.Value.ToArray(), Flags = item.Flags & ApeTag.ItemFlagsMask });
             }
@@ -74,11 +74,14 @@ internal static class ApeTagFields
     }
 
     /// <summary>Gets whether the reader reads an item into a native field rather than into a property.</summary>
-    /// <remarks>Text items are properties or custom fields, and binary items named after a picture type are pictures.</remarks>
+    /// <remarks>
+    /// Text items are properties or custom fields, and binary items named after a picture type are pictures. Items of the
+    /// reserved type (6) have no defined meaning: they are not read, and a write removes them.
+    /// </remarks>
     public static bool IsNativeItem(string key, int flags)
     {
         var itemType = flags & ApeTag.ItemTypeMask;
-        return itemType != ApeTag.TextItemType && !(itemType == ApeTag.BinaryItemType && TryGetPictureType(key, out _));
+        return itemType == ApeTag.LinkItemType || (itemType == ApeTag.BinaryItemType && !TryGetPictureType(key, out _));
     }
 
     private static string? GetTextField(string key)
@@ -130,11 +133,9 @@ internal static class ApeTagFields
                 if (!TagFieldMapping.TryParseNumberPair(value, out var trackNumber, out var trackTotal))
                     return false;
 
-                if (tags.TrackNumber is null && tags.TrackTotal is null)
-                {
-                    tags.TrackTotal = trackTotal;
-                    tags.TrackNumber = TagFieldMapping.GetPosition(trackNumber, trackTotal);
-                }
+                // Each part fills what a tag read first does not set, such as the total of an ID3v2 TRCK frame without one.
+                tags.TrackTotal ??= trackTotal;
+                tags.TrackNumber ??= TagFieldMapping.GetPosition(trackNumber, tags.TrackTotal);
 
                 return true;
 
@@ -142,11 +143,8 @@ internal static class ApeTagFields
                 if (!TagFieldMapping.TryParseNumberPair(value, out var discNumber, out var discTotal))
                     return false;
 
-                if (tags.DiscNumber is null && tags.DiscTotal is null)
-                {
-                    tags.DiscTotal = discTotal;
-                    tags.DiscNumber = TagFieldMapping.GetPosition(discNumber, discTotal);
-                }
+                tags.DiscTotal ??= discTotal;
+                tags.DiscNumber ??= TagFieldMapping.GetPosition(discNumber, tags.DiscTotal);
 
                 return true;
 

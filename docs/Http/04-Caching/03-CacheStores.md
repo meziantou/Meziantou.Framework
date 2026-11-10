@@ -108,7 +108,7 @@ await cacheStore.PruneObsoleteEntriesAsync();
 A cache that receives many distinct URLs keeps growing. Pass a [HttpCacheStoreLimits](cref:Meziantou.Framework.Http.Caching.HttpCacheStoreLimits) to the constructor of a store to
 bound it:
 
-<!-- ref:../../../tests/Meziantou.Framework.Http.Caching.Tests/PersistenceProvidersTests.cs;region=HttpCaching_BoundedStore;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../samples/Meziantou.Framework.Http.Samples/HttpCachingExamples.cs;region=HttpCaching_BoundedStore;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var cacheStore = new InMemoryHttpCacheStore(new HttpCacheStoreLimits
 {
@@ -117,8 +117,9 @@ var cacheStore = new InMemoryHttpCacheStore(new HttpCacheStoreLimits
     MaximumTotalSize = 50 * 1024 * 1024,
 });
 
-using var cachingHandler = new HttpCachingDelegateHandler(originHandler, cacheStore);
+using var cachingHandler = new HttpCachingDelegateHandler(new SocketsHttpHandler(), cacheStore);
 using var httpClient = new HttpClient(cachingHandler);
+using var response = await httpClient.GetAsync("https://example.com/data");
 ```
 <!-- endref -->
 

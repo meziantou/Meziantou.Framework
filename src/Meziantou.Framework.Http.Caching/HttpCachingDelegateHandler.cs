@@ -118,6 +118,14 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             try
             {
                 var coalescedResponse = await SendThroughCacheAsync(request, requestTime, coalescing, cancellationToken).ConfigureAwait(false);
+
+                // This request has just registered as the one going to the server. A concurrent request may have stored a
+                // response between the lookup and the registration, so the cache is looked up again before going.
+                if (coalescedResponse is null && coalescing.HasStarted)
+                {
+                    coalescedResponse = await SendThroughCacheAsync(request, _timeProvider.GetUtcNow(), coalescing, cancellationToken).ConfigureAwait(false);
+                }
+
                 if (coalescedResponse is not null)
                     return coalescedResponse;
             }
@@ -154,7 +162,8 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
 
     /// <summary>
     /// Serves the request from the cache, or from the server. Returns <see langword="null"/> when the request had to go to the
-    /// server, but waited for a concurrent request to do it instead.
+    /// server, but waited for a concurrent request to do it instead, or has just registered as the one going to the server
+    /// (<see cref="CoalescingState.HasStarted"/>) and must look the cache up again first.
     /// </summary>
     private async Task<HttpResponseMessage?> SendThroughCacheAsync(HttpRequestMessage request, DateTimeOffset requestTime, CoalescingState? coalescing, CancellationToken cancellationToken)
     {
@@ -329,13 +338,22 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
                             return replacementResponse;
                         }
 
-                        // Update cached entry with new headers from 304 response. RFC 9111 Section 5.2.2.7: a shared cache does
-                        // not store the fields listed by a qualified private directive.
-                        var excludedHeaders = _isSharedCache ? conditionalResponse.Headers.CacheControl?.PrivateHeaders : null;
-                        await cacheResult.UpdateFromValidationResponse(conditionalResponse, validationRequestTime, responseTime, excludedHeaders, cancellationToken).ConfigureAwait(false);
+                        // Update cached entry with new headers from 304 response
+                        var isStorable = await cacheResult.UpdateFromValidationResponse(conditionalResponse, validationRequestTime, responseTime, _isSharedCache, cancellationToken).ConfigureAwait(false);
+
+                        // RFC 9111 Sections 3 and 3.5: the updated response may no longer be storable by a shared cache. It
+                        // still answers this request, but the stored entry must not answer the next users.
+                        isStorable &= !_isSharedCache || request.Headers.Authorization is null || cacheResult.MustRevalidate || cacheResult.Public || cacheResult.SharedMaxAge is not null;
                         try
                         {
-                            await _cache.PersistEntryAsync(request.Method, request.RequestUri, cacheResult, cancellationToken).ConfigureAwait(false);
+                            if (isStorable)
+                            {
+                                await _cache.PersistEntryAsync(request.Method, request.RequestUri, cacheResult, cancellationToken).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                await _cache.RemoveEntriesAsync(request.Method, request.RequestUri, cacheResult, cancellationToken).ConfigureAwait(false);
+                            }
                         }
                         catch (Exception ex) when (IsStoreFailure(ex, cancellationToken))
                         {
@@ -672,9 +690,13 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
     {
         private InFlightRequest? _inFlightRequest;
 
+        /// <summary>Gets a value indicating whether the request is registered as the one the concurrent requests wait for.</summary>
+        public bool HasStarted => _inFlightRequest is not null;
+
         /// <summary>
-        /// Returns <see langword="true"/> when the request can go to the server, after registering it as the one the concurrent
-        /// requests wait for. Otherwise, waits for the concurrent request that is going to the server, and returns <see langword="false"/>.
+        /// Returns <see langword="true"/> when the request is registered as the one the concurrent requests wait for, and can go to
+        /// the server. Otherwise, returns <see langword="false"/>: after registering it, so that the caller looks the cache up again
+        /// first (see <see cref="HasStarted"/>), or after waiting for the concurrent request that is going to the server.
         /// </summary>
         public async ValueTask<bool> TryStartAsync(CancellationToken cancellationToken)
         {
@@ -686,7 +708,7 @@ public sealed class HttpCachingDelegateHandler : DelegatingHandler
             if (ReferenceEquals(existing, inFlightRequest))
             {
                 _inFlightRequest = inFlightRequest;
-                return true;
+                return false;
             }
 
             await existing.Completion.WaitAsync(cancellationToken).ConfigureAwait(false);

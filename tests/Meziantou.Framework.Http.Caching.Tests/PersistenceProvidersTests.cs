@@ -963,7 +963,7 @@ public class PersistenceProvidersTests
     }
 
     [Fact]
-    public async Task Documentation_BoundedStore()
+    public async Task WhenStoreIsBoundedThenLeastRecentlyUsedResponseIsEvicted()
     {
         var originRequestCount = 0;
         using var originHandler = new MockResponseHandler(request =>
@@ -972,7 +972,6 @@ public class PersistenceProvidersTests
             return CreateCacheableResponse(request.RequestUri!.AbsolutePath);
         });
 
-        #region HttpCaching_BoundedStore
         var cacheStore = new InMemoryHttpCacheStore(new HttpCacheStoreLimits
         {
             // Keep at most 1,000 responses, and at most 50 MB of responses
@@ -982,7 +981,6 @@ public class PersistenceProvidersTests
 
         using var cachingHandler = new HttpCachingDelegateHandler(originHandler, cacheStore);
         using var httpClient = new HttpClient(cachingHandler);
-        #endregion
 
         for (var i = 0; i < 1001; i++)
         {

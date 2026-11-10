@@ -1119,6 +1119,40 @@ public sealed class ComprehensiveRFC7234Tests
     }
 
     [Fact]
+    public async Task WhenSharedCacheAndRevalidationMakesResponsePrivateThenItIsNoLongerStored()
+    {
+        await using var context = new HttpTestContext(new HttpCachingOptions { IsSharedCache = true });
+        context.AddResponse(HttpStatusCode.OK, "v1", ("Cache-Control", "max-age=1"), ("ETag", "\"v1\""));
+        context.AddResponse(HttpStatusCode.NotModified, ("Cache-Control", "private, max-age=600"), ("ETag", "\"v1\""));
+        context.AddResponse(HttpStatusCode.OK, "v2", ("Cache-Control", "max-age=600"));
+
+        Assert.Equal("v1", await context.HttpClient.GetStringAsync("http://example.com/resource", XunitCancellationToken));
+        context.TimeProvider.Advance(TimeSpan.FromSeconds(5));
+
+        // The 304 still validates the response for this request
+        Assert.Equal("v1", await context.HttpClient.GetStringAsync("http://example.com/resource", XunitCancellationToken));
+
+        // The response is private now, so the shared cache does not serve it to the next request
+        Assert.Equal("v2", await context.HttpClient.GetStringAsync("http://example.com/resource", XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task WhenSharedCacheAndRevalidationAddsAPrivateFieldThenItIsNotStored()
+    {
+        await using var context = new HttpTestContext(new HttpCachingOptions { IsSharedCache = true });
+        context.AddResponse(HttpStatusCode.OK, "v1", ("Cache-Control", "max-age=1, private=\"Set-Cookie\""), ("ETag", "\"v1\""));
+        context.AddResponse(HttpStatusCode.NotModified, ("ETag", "\"v1\""), ("Set-Cookie", "session=alice"), ("X-Other", "kept"));
+
+        Assert.Equal("v1", await context.HttpClient.GetStringAsync("http://example.com/resource", XunitCancellationToken));
+        context.TimeProvider.Advance(TimeSpan.FromSeconds(5));
+
+        // The 304 has no Cache-Control, so the stored private="Set-Cookie" still applies to the fields it adds
+        using var revalidated = await context.HttpClient.GetAsync("http://example.com/resource", XunitCancellationToken);
+        Assert.False(revalidated.Headers.Contains("Set-Cookie"));
+        Assert.True(revalidated.Headers.Contains("X-Other"));
+    }
+
+    [Fact]
     public async Task WhenSharedCacheAndResponseHasProxyRevalidateThenMaxStaleIsNotHonored()
     {
         await using var context = new HttpTestContext(new HttpCachingOptions { IsSharedCache = true });

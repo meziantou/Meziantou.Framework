@@ -356,13 +356,15 @@ internal sealed class CacheEntry
     }
 
     /// <summary>Updates this cache entry from a 304 Not Modified validation response.</summary>
-    public ValueTask UpdateFromValidationResponse(HttpResponseMessage validationResponse, DateTimeOffset requestTime, DateTimeOffset responseTime, CancellationToken cancellationToken)
-    {
-        return UpdateFromValidationResponse(validationResponse, requestTime, responseTime, excludedHeaders: null, cancellationToken);
-    }
-
-    /// <summary>Updates this cache entry from a 304 Not Modified validation response, without storing the <paramref name="excludedHeaders"/>.</summary>
-    public async ValueTask UpdateFromValidationResponse(HttpResponseMessage validationResponse, DateTimeOffset requestTime, DateTimeOffset responseTime, ICollection<string>? excludedHeaders, CancellationToken cancellationToken)
+    /// <returns>
+    /// <see langword="false"/> when the updated response has the unqualified <c>private</c> directive and
+    /// <paramref name="isSharedCache"/> is set: a shared cache must not store it any more.
+    /// </returns>
+    /// <remarks>
+    /// RFC 9111 Section 5.2.2.7: for a shared cache, the fields listed by a qualified <c>private</c> directive of the updated
+    /// response (whether it comes from the 304 or was already stored) are not stored.
+    /// </remarks>
+    public async ValueTask<bool> UpdateFromValidationResponse(HttpResponseMessage validationResponse, DateTimeOffset requestTime, DateTimeOffset responseTime, bool isSharedCache, CancellationToken cancellationToken)
     {
         // RFC 7234 Section 4.3.4: Update metadata from 304 response
 
@@ -427,10 +429,10 @@ internal sealed class CacheEntry
         }
 
         // RFC 9111 Section 4.3.4: Update stored response headers with headers from 304 response.
-        await UpdateSerializedResponseHeaders(validationResponse, excludedHeaders, cancellationToken);
+        return await UpdateSerializedResponseHeaders(validationResponse, isSharedCache, cancellationToken);
     }
 
-    private async ValueTask UpdateSerializedResponseHeaders(HttpResponseMessage validationResponse, ICollection<string>? excludedHeaders, CancellationToken cancellationToken)
+    private async ValueTask<bool> UpdateSerializedResponseHeaders(HttpResponseMessage validationResponse, bool isSharedCache, CancellationToken cancellationToken)
     {
         // Deserialize the stored response
         var storedResponse = ResponseSerializer.Deserialize(SerializedResponse);
@@ -501,9 +503,20 @@ internal sealed class CacheEntry
         // Remove Age header as it's calculated dynamically in CreateCachedResponse
         storedResponse.Headers.Remove("Age");
 
+        // The directives of the merged response decide what a shared cache can keep: a 304 without Cache-Control
+        // leaves the stored one in place, while its other fields are still added.
+        var mergedCacheControl = storedResponse.Headers.CacheControl;
+        if (isSharedCache && mergedCacheControl?.Private is true && mergedCacheControl.PrivateHeaders.Count is 0)
+        {
+            storedResponse.Dispose();
+            return false;
+        }
+
         // Re-serialize the updated response
+        var excludedHeaders = isSharedCache ? mergedCacheControl?.PrivateHeaders : null;
         SerializedResponse = (await ResponseSerializer.SerializeAsync(storedResponse, maximumSize: null, excludedHeaders, cancellationToken))!;
 
         storedResponse.Dispose();
+        return true;
     }
 }

@@ -161,6 +161,15 @@ internal sealed class HttpCache
         return _persistenceProvider.SetEntryAsync(ComputeStorageKey(method, uri, entry), entry.ToPersistenceEntry(), cancellationToken);
     }
 
+    /// <summary>Removes the entries stored under the key of <paramref name="entry"/>, its other variants included.</summary>
+    public ValueTask RemoveEntriesAsync(HttpMethod method, Uri? uri, CacheEntry entry, CancellationToken cancellationToken)
+    {
+        if (uri is null)
+            return ValueTask.CompletedTask;
+
+        return _persistenceProvider.RemoveEntriesAsync(ComputeStorageKey(method, uri, entry), cancellationToken);
+    }
+
     private static string ComputeStorageKey(HttpMethod method, Uri uri, CacheEntry entry)
     {
         return entry.VariationConfig.IsDefault ? ComputePrimaryKey(method, uri) : ComputeNoVarySearchKey(method, uri);

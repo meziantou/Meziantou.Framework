@@ -80,7 +80,7 @@ The stores keep an entry until it is stale for both kinds of cache, so they do n
 When a popular response expires, every concurrent request for it goes to the server, multiplying the load on the server
 when the cache should protect it. Set [CoalesceRequests](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.CoalesceRequests) to send a single request instead:
 
-<!-- ref:../../../tests/Meziantou.Framework.Http.Caching.Tests/ThreadSafetyTests.cs;region=HttpCaching_CoalesceRequests;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../samples/Meziantou.Framework.Http.Samples/HttpCachingExamples.cs;region=HttpCaching_CoalesceRequests;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var options = new HttpCachingOptions
 {
@@ -88,8 +88,11 @@ var options = new HttpCachingOptions
     CoalesceRequests = true,
 };
 
-using var cachingHandler = new HttpCachingDelegateHandler(originHandler, new InMemoryHttpCacheStore(), options);
+using var cachingHandler = new HttpCachingDelegateHandler(new SocketsHttpHandler(), new InMemoryHttpCacheStore(), options);
 using var httpClient = new HttpClient(cachingHandler);
+
+// Only one of these requests goes to the server. The others wait for it, then are served from the cache.
+var responses = await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => httpClient.GetStringAsync("https://example.com/data")));
 ```
 <!-- endref -->
 

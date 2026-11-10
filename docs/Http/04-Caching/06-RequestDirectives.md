@@ -79,19 +79,19 @@ response is not stored.
 A `GET` request with a `Range` header asks for part of the response. When the cache holds a complete `200` response it can
 serve, it answers from it:
 
-<!-- ref:../../../tests/Meziantou.Framework.Http.Caching.Tests/RangeRequestsTests.cs;region=HttpCaching_RangeRequest;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../samples/Meziantou.Framework.Http.Samples/HttpCachingExamples.cs;region=HttpCaching_RangeRequest;format=md-fenced-code-block;dedent=true -->
 ```csharp
-// The server answers with a complete response that is fresh for 100 seconds: "full content here"
+using var cachingHandler = new HttpCachingDelegateHandler(new SocketsHttpHandler(), new InMemoryHttpCacheStore());
+using var httpClient = new HttpClient(cachingHandler);
+
+// The server answers with a complete response, which the cache stores
 using var response = await httpClient.GetAsync("https://example.com/file.txt");
 
-// The cache serves the range from the stored response, without contacting the server
+// While the stored response is fresh, the cache serves the range from it without contacting the server:
+// 206 Partial Content, with Content-Range: bytes 5-11/<length of the response>
 using var rangeRequest = new HttpRequestMessage(HttpMethod.Get, "https://example.com/file.txt");
-rangeRequest.Headers.Range = new RangeHeaderValue(5, 11);
+rangeRequest.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(5, 11);
 using var rangeResponse = await httpClient.SendAsync(rangeRequest);
-
-Assert.Equal(HttpStatusCode.PartialContent, rangeResponse.StatusCode);
-Assert.Equal("bytes 5-11/17", rangeResponse.Content.Headers.ContentRange?.ToString());
-Assert.Equal("content", await rangeResponse.Content.ReadAsStringAsync());
 ```
 <!-- endref -->
 

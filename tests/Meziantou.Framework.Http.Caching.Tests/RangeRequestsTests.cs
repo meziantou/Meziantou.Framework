@@ -229,13 +229,12 @@ public sealed class RangeRequestsTests
     #region Ranges served from stored complete responses (RFC 9110 Section 14)
 
     [Fact]
-    public async Task Documentation_RangeRequest()
+    public async Task WhenRangeHeaderValueIsSetThenRangeIsServedFromCache()
     {
         await using var context = new HttpTestContext();
         context.AddResponse(HttpStatusCode.OK, "full content here", ("Cache-Control", "max-age=100"));
         var httpClient = context.HttpClient;
 
-        #region HttpCaching_RangeRequest
         // The server answers with a complete response that is fresh for 100 seconds: "full content here"
         using var response = await httpClient.GetAsync("https://example.com/file.txt");
 
@@ -247,7 +246,6 @@ public sealed class RangeRequestsTests
         Assert.Equal(HttpStatusCode.PartialContent, rangeResponse.StatusCode);
         Assert.Equal("bytes 5-11/17", rangeResponse.Content.Headers.ContentRange?.ToString());
         Assert.Equal("content", await rangeResponse.Content.ReadAsStringAsync());
-        #endregion
     }
 
     [Fact]

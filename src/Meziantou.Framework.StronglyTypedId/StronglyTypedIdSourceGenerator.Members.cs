@@ -222,13 +222,19 @@ public partial class StronglyTypedIdSourceGenerator
             if (!context.ImplementsIComparableOfT_CompareTo)
             {
                 WriteNewMember(InheritDocComment);
+
+                // Use the same comparison as the equality, so that sorting does not depend on the current culture.
+                // The compiler writes the equality of records, which compares strings ordinally.
+                var comparer = context.IdType is IdType.System_String
+                    ? GetStringComparer(context.PartialTypeContext.Keyword is "record" or "record struct" ? StringComparison.Ordinal : context.StringComparison)
+                    : $"global::System.Collections.Generic.Comparer<{context.ValueTypeCSharpTypeName}>.Default";
                 if (context.IsReferenceType)
                 {
-                    writer.WriteLine($"public int CompareTo({context.TypeName}? other) => other == null ? 1 : global::System.Collections.Generic.Comparer<{context.ValueTypeCSharpTypeName}>.Default.Compare(Value, other.Value);");
+                    writer.WriteLine($"public int CompareTo({context.TypeName}? other) => other == null ? 1 : {comparer}.Compare(Value, other.Value);");
                 }
                 else
                 {
-                    writer.WriteLine($"public int CompareTo({context.TypeName} other) => global::System.Collections.Generic.Comparer<{context.ValueTypeCSharpTypeName}>.Default.Compare(Value, other.Value);");
+                    writer.WriteLine($"public int CompareTo({context.TypeName} other) => {comparer}.Compare(Value, other.Value);");
                 }
             }
 

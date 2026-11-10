@@ -97,6 +97,6 @@ Assert.Equal(-1, low.CompareTo(high));
 ```
 <!-- endref -->
 
-IDs are compared by their values with `Comparer<T>.Default` of the underlying type. For a `string`, this comparison
-depends on the current culture and ignores the [`StringComparison` option](07-Options.md#compare-string-values),
-which only applies to equality.
+IDs are compared by their values with `Comparer<T>.Default` of the underlying type. `string` values are compared with
+the [`StringComparison` option](07-Options.md#compare-string-values), an ordinal comparison by default, so the order
+does not depend on the current culture and agrees with equality. A record compares them ordinally, like its equality.

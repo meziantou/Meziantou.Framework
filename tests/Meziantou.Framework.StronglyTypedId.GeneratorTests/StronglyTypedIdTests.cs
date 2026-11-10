@@ -1048,6 +1048,24 @@ public sealed partial class StronglyTypedIdTests
     }
 
     [Fact]
+    public void StringComparison_CompareTo()
+    {
+        // Ordinal: uppercase letters sort before lowercase letters, whatever the current culture
+        Assert.True(IdStringComparable.FromString("B").CompareTo(IdStringComparable.FromString("a")) < 0);
+        Assert.True(IdStringComparable.FromString("B") < IdStringComparable.FromString("a"));
+        Assert.True(IdStringComparable.FromString("a").CompareTo(IdStringComparable.FromString("A")) > 0);
+        Assert.Equal(0, IdStringComparable.FromString("a").CompareTo(IdStringComparable.FromString("a")));
+
+        Assert.Equal(0, IdStringComparableOrdinalIgnoreCase.FromString("a").CompareTo(IdStringComparableOrdinalIgnoreCase.FromString("A")));
+        Assert.True(IdStringComparableOrdinalIgnoreCase.FromString("a") < IdStringComparableOrdinalIgnoreCase.FromString("B"));
+        Assert.True(IdStringComparableOrdinalIgnoreCase.FromString("a").CompareTo(null) > 0);
+
+        // The compiler writes the equality of records, so the comparison stays ordinal
+        Assert.True(IdStringComparableRecord.FromString("B").CompareTo(IdStringComparableRecord.FromString("a")) < 0);
+        Assert.True(IdStringComparableRecord.FromString("a").CompareTo(IdStringComparableRecord.FromString("A")) > 0);
+    }
+
+    [Fact]
     public void ToStringRaw()
     {
         Assert.Equal("IdString { Value = test }", IdString.FromString("test").ToString());
@@ -1353,6 +1371,15 @@ public sealed partial class StronglyTypedIdTests
     private sealed partial record IdInt32WithoutCodeGeneratedAttribute
     {
     }
+
+    [StronglyTypedId(typeof(string))]
+    private partial struct IdStringComparable : IComparable<IdStringComparable> { }
+
+    [StronglyTypedId(typeof(string), StringComparison = StringComparison.OrdinalIgnoreCase)]
+    private sealed partial class IdStringComparableOrdinalIgnoreCase : IComparable<IdStringComparableOrdinalIgnoreCase> { }
+
+    [StronglyTypedId(typeof(string), StringComparison = StringComparison.OrdinalIgnoreCase)]
+    private partial record struct IdStringComparableRecord : IComparable<IdStringComparableRecord> { }
 
     [StronglyTypedId(typeof(int))]
     private sealed partial class IdInt32Comparable : IComparable

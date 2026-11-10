@@ -139,6 +139,27 @@ public sealed class RailroadDiagramParserTests
     }
 
     [Theory]
+    [InlineData("*")]
+    [InlineData("?")]
+    [InlineData("+")]
+    [InlineData(" - b")]
+    public void ChainedEbnfOperatorsNestedTooDeeplyAreRejected(string op)
+    {
+        var text = "railroad-ebnf-beta\na = b" + string.Concat(Enumerable.Repeat(op, 150)) + " ;";
+        var exception = Assert.Throws<MermaidParseException>(() => MermaidDocument.Parse(text));
+        Assert.Contains("nested deeper", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ChainedEbnfOperatorsWithinTheMaximumDepthRoundTrip()
+    {
+        var text = "railroad-ebnf-beta\na = b" + new string('*', 20) + " c? ;";
+        var document = MermaidDocument.Parse(text);
+        var written = MermaidWriter.Write(document.Content);
+        Assert.Equal(written, MermaidWriter.Write(MermaidDocument.Parse(written).Content));
+    }
+
+    [Theory]
     [InlineData(RailroadNotation.Primitives)]
     [InlineData(RailroadNotation.Ebnf)]
     [InlineData(RailroadNotation.Abnf)]

@@ -231,15 +231,19 @@ internal sealed class RailroadDiagramParser
         if (result is null)
             return null;
 
+        // Each operator nests the expression one level deeper: a chain of them counts toward the maximum depth
+        var levels = 0;
         while (true)
         {
             SkipTrivia();
             var c = _scanner.Current;
             if (c == '?' && TryMatchSpecial(out _, consume: false))
-                return result;
+                break;
 
             if (c is '?' or '*' or '+')
             {
+                Enter(_scanner.Position);
+                levels++;
                 _scanner.Position++;
                 result = c switch
                 {
@@ -255,6 +259,8 @@ internal sealed class RailroadDiagramParser
             {
                 // An exception, as Mermaid draws it: the expression, a terminal "-", and the excluded expression
                 var start = _scanner.Position;
+                Enter(start);
+                levels++;
                 _scanner.Position++;
                 var except = ParseEbnfPrimary() ?? throw _scanner.Error(start, "An expression is expected after '-'.");
                 result = new RailroadSequence(result, new RailroadTerminal("-"), except);
@@ -262,8 +268,11 @@ internal sealed class RailroadDiagramParser
                 continue;
             }
 
-            return result;
+            break;
         }
+
+        _depth -= levels;
+        return result;
     }
 
     private RailroadExpression? ParseEbnfPrimary()

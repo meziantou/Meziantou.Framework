@@ -35,12 +35,22 @@ internal static class ImageRedactor
             if (!TryGetPixelBounds(area, inverse, width, height, out var left, out var top, out var right, out var bottom))
                 continue;
 
-            erased = true;
+            // An image painted without rotation or skew: the box of the area is the pixels it touches. Otherwise, the
+            // area is a parallelogram in the image, and each pixel of its box is tested
+            var axisAligned = (matrix.B == 0 && matrix.C == 0) || (matrix.A == 0 && matrix.D == 0);
             image.Frames[0].ProcessPixelRows(rows =>
             {
                 for (var y = top; y < bottom; y++)
                 {
-                    rows.GetRowSpan(y)[left..right].Clear();
+                    var row = rows.GetRowSpan(y);
+                    for (var x = left; x < right; x++)
+                    {
+                        if (axisAligned || CellTouches(matrix, area, x, y, width, height))
+                        {
+                            row[x] = default;
+                            erased = true;
+                        }
+                    }
                 }
             });
         }
@@ -117,6 +127,42 @@ internal static class ImageRedactor
         return left < right && top < bottom;
 
         static int Clamp(double value, int max) => double.IsNaN(value) ? 0 : (int)Math.Clamp(value, 0, max);
+    }
+
+    /// <summary>Indicates whether the cell of a pixel, painted by the matrix, overlaps an area: no axis of the area or of the cell separates them.</summary>
+    private static bool CellTouches(PdfMatrix matrix, PdfRectangle area, int x, int y, int width, int height)
+    {
+        // The corners of the cell in the unit square of the image, (0, 0) at the lower-left corner of the last row
+        var u0 = (double)x / width;
+        var u1 = (double)(x + 1) / width;
+        var v0 = 1 - ((double)(y + 1) / height);
+        var v1 = 1 - ((double)y / height);
+        Span<(double X, double Y)> cell = [matrix.Transform(u0, v0), matrix.Transform(u1, v0), matrix.Transform(u1, v1), matrix.Transform(u0, v1)];
+        Span<(double X, double Y)> rectangle = [(area.Left, area.Bottom), (area.Right, area.Bottom), (area.Right, area.Top), (area.Left, area.Top)];
+        Span<(double X, double Y)> axes = [(1, 0), (0, 1), (-(cell[1].Y - cell[0].Y), cell[1].X - cell[0].X), (-(cell[3].Y - cell[0].Y), cell[3].X - cell[0].X)];
+        foreach (var (axisX, axisY) in axes)
+        {
+            var (cellMin, cellMax) = Project(cell, axisX, axisY);
+            var (areaMin, areaMax) = Project(rectangle, axisX, axisY);
+            if (cellMax <= areaMin || areaMax <= cellMin)
+                return false;
+        }
+
+        return true;
+
+        static (double Min, double Max) Project(ReadOnlySpan<(double X, double Y)> points, double axisX, double axisY)
+        {
+            var min = double.PositiveInfinity;
+            var max = double.NegativeInfinity;
+            foreach (var (px, py) in points)
+            {
+                var value = (px * axisX) + (py * axisY);
+                min = Math.Min(min, value);
+                max = Math.Max(max, value);
+            }
+
+            return (min, max);
+        }
     }
 
     /// <summary>Creates a stencil mask (8.9.6.2) from the alpha of the image: a sample 0 paints the fill color.</summary>

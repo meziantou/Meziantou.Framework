@@ -1062,6 +1062,79 @@ public sealed class PdfPageTests
     }
 
     [Fact]
+    public void Redact_KeepsThePathsAcrossTheOperatorsOfColors()
+    {
+        // The color is set between the rectangle and the operator that fills it
+        var document = CreateRedactionDocument("20 20 20 20 re 1 0 0 rg f");
+
+        var result = document.Pages[0].Redact([new PdfRectangle(0, 0, 100, 100)], new PdfRedactionOptions { FillColor = null });
+
+        Assert.Equal(1, result.RemovedPathCount);
+        Assert.DoesNotContain("20 20 20 20 re", Encoding.Latin1.GetString(PdfDocument.Open(document.ToByteArray()).Pages[0].GetContentData()));
+    }
+
+    [Fact]
+    public void Redact_RemovesTheReplacementTextOfAClippedPath()
+    {
+        // A label drawn as a path that crosses the area
+        var document = CreateRedactionDocument("/Figure << /Alt (Secret label) >> BDC 50 50 100 20 re f EMC");
+
+        var result = document.Pages[0].Redact([new PdfRectangle(0, 0, 100, 100)]);
+
+        Assert.Equal(1, result.ClippedPathCount);
+        var bytes = PdfDocument.Open(document.ToByteArray(new PdfSaveOptions { CompressStreams = false })).ToByteArray(new PdfSaveOptions { CompressStreams = false });
+        Assert.DoesNotContain("Secret label", Encoding.Latin1.GetString(bytes));
+    }
+
+    [Fact]
+    public void Redact_DoesNotWriteTheImagesOfTheResourcesThePageInherited()
+    {
+        // The resources are those of the page tree: the page has none of its own
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /Resources << /XObject << /Im1 5 0 R >> >> >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R >>")
+            .Add(4, HandWrittenPdf.Stream("q 50 0 0 50 0 0 cm /Im1 Do Q"))
+            .Add(5, HandWrittenPdf.Stream("C0FFEE", " /Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /ASCIIHexDecode"));
+        var document = PdfDocument.Open(file.ToArray());
+
+        document.Pages[0].Redact([new PdfRectangle(0, 0, 100, 100)]);
+
+        var bytes = document.ToByteArray(new PdfSaveOptions { CompressStreams = false });
+        Assert.DoesNotContain("C0FFEE", Encoding.Latin1.GetString(bytes));
+        Assert.Empty(PdfDocument.Open(bytes).Pages[0].GetImages());
+    }
+
+    [Fact]
+    public void Redact_ErasesOnlyThePixelsUnderTheAreaOfARotatedImage()
+    {
+        using var pixels = new Image<Rgba32>(100, 100, new Rgba32(255, 0, 0, 255));
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(400, 400));
+
+        // The image turned by 45 degrees around its lower-left corner, one pixel per point
+        page.CreateContentBuilder().Translate(200, 50).Rotate(45).DrawImage(PdfImage.FromImage(pixels), 0, 0, 100, 100);
+
+        // A 10 x 10 square on the image: its box in the pixels of the image is twice as large
+        page.Redact([new PdfRectangle(195, 115, 205, 125)], new PdfRedactionOptions { FillColor = null });
+
+        using var image = PdfDocument.Open(document.ToByteArray()).Pages[0].GetImages()[0].Decode()!;
+        var erased = 0;
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                if (image.Frames[0][x, y].A == 0)
+                {
+                    erased++;
+                }
+            }
+        }
+
+        Assert.True(erased is > 100 and < 170, $"{erased} pixels erased");
+    }
+
+    [Fact]
     public void Redact_PaintsTheAreasWithTheFillColor()
     {
         var document = CreateRedactionDocument("BT /F1 10 Tf 10 10 Td (x) Tj ET");

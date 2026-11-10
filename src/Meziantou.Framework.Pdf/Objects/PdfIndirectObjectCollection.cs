@@ -17,7 +17,7 @@ public sealed class PdfIndirectObjectCollection
     internal const int MaxAllocatableObjectNumber = int.MaxValue - 2;
 
     // The generation of the references of a file to an object it does not have, whose number an added object took: no object has it
-    private const int DanglingGeneration = 65536;
+    internal const int DanglingGeneration = 65536;
 
     private readonly Dictionary<int, IndirectObjectEntry> _entries = [];
     private int _maxObjectNumber;

@@ -882,6 +882,51 @@ public sealed class PdfDocumentTests
         Assert.Single(PdfDocument.Open(pdfA3.ToByteArray()).EmbeddedFiles);
     }
 
+    [Fact]
+    public void ConvertToPdfA_EmbedsTheFontsThePagesInherit()
+    {
+        // The font is in the resources of the page tree
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /Resources << /Font << /F1 4 0 R >> >> >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+            .Add(5, HandWrittenPdf.Stream("BT /F1 12 Tf 72 700 Td (Inherited) Tj ET"));
+        var document = PdfDocument.Open(file.ToArray());
+
+        var result = document.ConvertToPdfA(PdfAConformance.PdfA2B);
+
+        Assert.True(result.Succeeded, string.Join('\n', result.Violations));
+        Assert.Contains("Embedded a substitute of the standard font Helvetica (Liberation, with its widths)", result.Changes);
+        Assert.Equal("Inherited", PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void ConvertToPdfA_FixesTheInlineImages()
+    {
+        // A gray inline image of 2 x 1 samples, encoded with LZWDecode and interpolated
+        var lzw = Meziantou.Framework.Pdf.Filters.LzwFilter.Encode([0x20, 0xE0]);
+        var content = "q 10 0 0 10 0 0 cm BI /W 2 /H 1 /BPC 8 /CS /G /I true /F /LZW /L " + lzw.Length.ToString(CultureInfo.InvariantCulture) + " ID " + Encoding.Latin1.GetString(lzw) + " EI Q";
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >>")
+            .Add(4, HandWrittenPdf.Stream(content));
+        var document = PdfDocument.Open(file.ToArray());
+
+        var result = document.ConvertToPdfA(PdfAConformance.PdfA2B);
+
+        Assert.True(result.Succeeded, string.Join('\n', result.Violations));
+        Assert.Contains("Decoded the LZWDecode inline images", result.Changes);
+        var page = PdfDocument.Open(document.ToByteArray()).Pages[0];
+        Assert.DoesNotContain("/LZW", Encoding.Latin1.GetString(page.GetContentData()));
+        var image = Assert.Single(page.GetImages());
+        Assert.Equal(PdfBoolean.False, image.Dictionary[PdfNames.Interpolate]);
+        using var decoded = image.Decode()!;
+        Assert.Equal(0x20, decoded.Frames[0][0, 0].R);
+        Assert.Equal(0xE0, decoded.Frames[0][1, 0].R);
+    }
+
     [Theory]
     [InlineData(PdfAConformance.PdfA1B)]
     [InlineData(PdfAConformance.PdfA2A)]

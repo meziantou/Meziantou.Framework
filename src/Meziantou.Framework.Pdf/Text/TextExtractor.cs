@@ -702,12 +702,14 @@ internal sealed partial class TextExtractor
         }
 
         var levels = new byte[text.Length];
-        UnicodeBidi.ResolveLevels(text, rightToLeft >= leftToRight ? UnicodeBidiDirection.RightToLeft : UnicodeBidiDirection.LeftToRight, levels);
+        var paragraphLevel = rightToLeft >= leftToRight ? (byte)1 : (byte)0;
+        UnicodeBidi.ResolveLevels(text, paragraphLevel == 1 ? UnicodeBidiDirection.RightToLeft : UnicodeBidiDirection.LeftToRight, levels);
         var itemLevels = new byte[items.Count];
         var position = 0;
         for (var i = 0; i < items.Count; i++)
         {
-            itemLevels[i] = levels[position];
+            // An item without text, such as an empty replacement text, has the level of the paragraph
+            itemLevels[i] = items[i].Text.Length > 0 ? levels[position] : paragraphLevel;
             position += items[i].Text.Length;
         }
 

@@ -97,6 +97,7 @@ public sealed partial class PdfPage
             if (content is not null)
             {
                 content.ApplyTo(GetOrCreateResources());
+                RemoveUnusedInheritedResources();
             }
 
             Dictionary[PdfNames.Contents] = contentReference;
@@ -107,6 +108,33 @@ public sealed partial class PdfPage
         result.RemovedAnnotationCount = annotations.Count;
         Document.HasRedactions = true;
         return result;
+    }
+
+    /// <summary>
+    /// Removes the resources of the nodes of the page tree that no page inherits anymore: the resources the page inherited
+    /// were copied to the page, and a full save would still write the images and forms they hold through the node.
+    /// </summary>
+    private void RemoveUnusedInheritedResources()
+    {
+        var inherited = new HashSet<PdfDictionary>(ReferenceEqualityComparer.Instance);
+        foreach (var page in Document.Pages)
+        {
+            if (page.Dictionary[PdfNames.Resources] is null && page.Resources is { } resources)
+            {
+                inherited.Add(resources);
+            }
+        }
+
+        var node = Dictionary.GetResolved(PdfNames.Parent) as PdfDictionary;
+        for (var depth = 0; node is not null && depth < MaxStructureDepth; depth++)
+        {
+            if (node.GetResolved(PdfNames.Resources) is PdfDictionary resources && !inherited.Contains(resources))
+            {
+                node.Remove(PdfNames.Resources);
+            }
+
+            node = node.GetResolved(PdfNames.Parent) as PdfDictionary;
+        }
     }
 
     /// <summary>Finds the annotations whose rectangle touches an area, and the pop-up annotations of those.</summary>

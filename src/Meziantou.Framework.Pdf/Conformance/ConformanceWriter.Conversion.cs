@@ -1,4 +1,6 @@
 using Meziantou.Framework.Imaging.Metadata;
+using System.Text;
+using Meziantou.Framework.Pdf.Content;
 using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Metadata;
 using Meziantou.Framework.Pdf.Objects;
@@ -60,6 +62,7 @@ internal static partial class ConformanceWriter
         FixAnnotations(document, Change, violations);
         FixEmbeddedFiles(document, part, Change);
         ReencodeLzwStreams(document, Change, violations);
+        FixInlineImages(document, Change, violations);
         FixResources(document, Change);
         FixOptionalContent(document, Change);
         EmbedSubstituteFonts(document, Change);
@@ -399,6 +402,179 @@ internal static partial class ConformanceWriter
                 violations.Add("A stream encoded with LZWDecode cannot be decoded");
             }
         }
+    }
+
+    /// <summary>
+    /// Fixes the inline images of the content streams (ISO 19005-2, 6.1.7.2 and 6.2.9): the data of an image encoded with
+    /// <c>LZWDecode</c> is decoded and written in hexadecimal, and the interpolation is turned off.
+    /// </summary>
+    private static void FixInlineImages(PdfDocument document, Action<string> change, List<string> violations)
+    {
+        var limits = document.Reader?.DecodeLimits ?? PdfDecodeLimits.Default;
+        foreach (var stream in GetContentStreams(document))
+        {
+            byte[] data;
+            try
+            {
+                data = stream.GetDecodedData();
+            }
+            catch (PdfException)
+            {
+                continue;
+            }
+
+            // Only the content that has inline images with these entries is read
+            var span = data.AsSpan();
+            if (span.IndexOf("ID"u8) < 0 || (span.IndexOf("LZW"u8) < 0 && span.IndexOf("/I"u8) < 0))
+                continue;
+
+            var reader = new ContentStreamReader(data);
+            var operands = new List<PdfObject>();
+            var operations = new List<(string Name, PdfObject[] Operands, byte[]? Data)>();
+            var changed = false;
+            while (reader.TryRead(operands, out var name))
+            {
+                if (name == "BI" && operands is [PdfDictionary inline, PdfString imageData])
+                {
+                    var (fixedDictionary, fixedData) = FixInlineImage(inline, imageData.Bytes, limits, change, violations);
+                    changed |= fixedDictionary is not null;
+                    operations.Add((name, [fixedDictionary ?? inline], fixedData ?? imageData.Bytes.ToArray()));
+                    continue;
+                }
+
+                operations.Add((name, [.. operands], null));
+            }
+
+            if (!changed)
+                continue;
+
+            var writer = new Writing.PdfByteWriter(data.Length + 256);
+            foreach (var (name, values, imageData) in operations)
+            {
+                ContentStreamWriter.Write(writer, name, values, imageData);
+            }
+
+            stream.SetData(writer.WrittenSpan);
+        }
+    }
+
+    /// <summary>Fixes an inline image; returns <see langword="null"/> values when it is kept as it is.</summary>
+    private static (PdfDictionary? Dictionary, byte[]? Data) FixInlineImage(PdfDictionary inline, ReadOnlyMemory<byte> data, PdfDecodeLimits limits, Action<string> change, List<string> violations)
+    {
+        var filterKey = inline.ContainsKey(PdfName.Create("Filter")) ? PdfName.Create("Filter") : PdfName.Create("F");
+        var parametersKey = inline.ContainsKey(PdfName.Create("DecodeParms")) ? PdfName.Create("DecodeParms") : PdfName.Create("DP");
+        var interpolateKey = inline.ContainsKey(PdfNames.Interpolate) ? PdfNames.Interpolate : PdfName.Create("I");
+        var filters = inline[filterKey] switch
+        {
+            PdfName name => [name],
+            PdfArray array => array.OfType<PdfName>().ToList(),
+            _ => new List<PdfName>(),
+        };
+        var lzw = filters.Exists(name => name.Value is "LZW" or "LZWDecode");
+        var interpolate = inline[interpolateKey] is PdfBoolean { Value: true };
+        if (!lzw && !interpolate)
+            return (null, null);
+
+        var dictionary = inline.CloneShallow();
+        if (interpolate)
+        {
+            dictionary[interpolateKey] = PdfBoolean.False;
+            change("Turned off the interpolation of the images");
+        }
+
+        if (!lzw)
+            return (dictionary, null);
+
+        byte[] decoded;
+        (PdfName Name, PdfDictionary? Parameters)? imageFilter;
+        try
+        {
+            decoded = PdfFilterPipeline.Decode(data, PdfImageOccurrence.ExpandInlineDictionary(inline), limits, stopBeforeImageFilters: true, out imageFilter);
+        }
+        catch (PdfException)
+        {
+            violations.Add("An inline image encoded with LZWDecode cannot be decoded");
+            return (null, null);
+        }
+
+        // The data is written in hexadecimal: binary data could hold the bytes that end an inline image
+        dictionary.Remove(filterKey);
+        dictionary.Remove(parametersKey);
+        if (imageFilter is { } filter)
+        {
+            dictionary[filterKey] = new PdfArray(PdfName.Create("AHx"), filter.Name);
+            dictionary[parametersKey] = new PdfArray(PdfNull.Instance, (PdfObject?)filter.Parameters ?? PdfNull.Instance);
+        }
+        else
+        {
+            dictionary[filterKey] = PdfName.Create("AHx");
+        }
+
+        change("Decoded the LZWDecode inline images");
+        return (dictionary, Encoding.ASCII.GetBytes(Convert.ToHexString(decoded) + ">"));
+    }
+
+    /// <summary>Gets the content streams of the pages, of the forms and tiling patterns of their resources, of the glyphs of the Type 3 fonts, and of the annotation appearances.</summary>
+    private static List<PdfStream> GetContentStreams(PdfDocument document)
+    {
+        var result = new List<PdfStream>();
+        var visited = new HashSet<PdfStream>(ReferenceEqualityComparer.Instance);
+        void Add(PdfObject? value)
+        {
+            if (Resolve(value) is PdfStream stream && visited.Add(stream))
+            {
+                result.Add(stream);
+            }
+        }
+
+        foreach (var page in document.Pages)
+        {
+            foreach (var stream in page.GetContentStreams())
+            {
+                Add(stream);
+            }
+
+            foreach (var annotation in page.Annotations)
+            {
+                foreach (var stream in GetAppearanceStreams(annotation))
+                {
+                    Add(stream);
+                }
+            }
+        }
+
+        ForEachResources(document, resources =>
+        {
+            foreach (var key in new[] { PdfNames.XObject, PdfNames.Pattern })
+            {
+                if (resources.GetResolved(key) is PdfDictionary items)
+                {
+                    foreach (var (_, value) in items)
+                    {
+                        if (Resolve(value) is PdfStream stream && (stream.Dictionary.GetName(PdfNames.Subtype) == PdfNames.Form || stream.Dictionary.ContainsKey(PatternTypeName)))
+                        {
+                            Add(stream);
+                        }
+                    }
+                }
+            }
+
+            if (resources.GetResolved(PdfNames.Font) is PdfDictionary fonts)
+            {
+                foreach (var (_, value) in fonts)
+                {
+                    if (Resolve(value) is PdfDictionary font && font.GetResolved(PdfName.Create("CharProcs")) is PdfDictionary procedures)
+                    {
+                        foreach (var (_, procedure) in procedures)
+                        {
+                            Add(procedure);
+                        }
+                    }
+                }
+            }
+        });
+
+        return result;
     }
 
     /// <summary>

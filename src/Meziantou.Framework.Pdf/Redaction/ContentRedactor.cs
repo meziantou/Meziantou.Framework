@@ -232,8 +232,14 @@ internal sealed class ContentRedactor : IDisposable
                     return;
             }
 
-            // The other operators end a path that is not painted
-            FlushUnpaintedPath();
+            // The operators of the graphics state and of the colors do not end a path: readers paint it with the state
+            // the painting operator finds (and with the transformation matrix of each point). They do not change the
+            // points of the path, so they are written before it. The other operators end a path that is not painted.
+            if (!IsStateOperator(name))
+            {
+                FlushUnpaintedPath();
+            }
+
             switch (name)
             {
                 case "q":
@@ -321,6 +327,8 @@ internal sealed class ContentRedactor : IDisposable
 
             Emit(name, operands);
         }
+
+        private static bool IsStateOperator(string name) => name is "w" or "J" or "j" or "M" or "d" or "ri" or "i" or "gs" or "CS" or "cs" or "SC" or "SCN" or "sc" or "scn" or "G" or "g" or "RG" or "rg" or "K" or "k";
 
         private void Emit(string name, List<PdfObject> operands) => _ops.Add(new ContentOp(name, [.. operands]));
 
@@ -498,11 +506,9 @@ internal sealed class ContentRedactor : IDisposable
                 return;
             }
 
+            // A path that loses subpaths or is clipped loses content: the replacement text of its sequence could tell what
             _owner._result.RemovedPathCount += removedCount;
-            if (removedCount > 0)
-            {
-                MarkRemoval();
-            }
+            MarkRemoval();
 
             Changed = true;
             var kept = new List<Subpath>(_subpaths.Count - removedCount);
@@ -1018,31 +1024,7 @@ internal sealed class ContentRedactor : IDisposable
             var used = new HashSet<(PdfName Category, PdfName Name)>();
             foreach (var op in _ops)
             {
-                if (op.Name == "BI")
-                {
-                    writer.WriteAscii("BI ");
-                    foreach (var (key, value) in (PdfDictionary)op.Operands[0])
-                    {
-                        PdfObjectSerializer.WriteName(writer, key);
-                        writer.WriteSpace();
-                        PdfObjectSerializer.Write(writer, value, ReferenceWriter.Identity);
-                        writer.WriteSpace();
-                    }
-
-                    writer.WriteAscii("ID ");
-                    writer.Write(op.InlineData.Span);
-                    writer.WriteAscii("\nEI\n");
-                    continue;
-                }
-
-                foreach (var operand in op.Operands)
-                {
-                    PdfObjectSerializer.Write(writer, operand, ReferenceWriter.Identity);
-                    writer.WriteSpace();
-                }
-
-                writer.WriteAscii(op.Name);
-                writer.WriteNewLine();
+                ContentStreamWriter.Write(writer, op.Name, op.Operands, op.InlineData.Span);
                 if (op.Name == "Do" && op.Operands is [.., PdfName xobject])
                 {
                     used.Add((PdfNames.XObject, xobject));

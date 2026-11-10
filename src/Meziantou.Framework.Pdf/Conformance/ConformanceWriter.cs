@@ -735,7 +735,8 @@ internal static partial class ConformanceWriter
 
         foreach (var page in document.Pages)
         {
-            VisitResources(page.Dictionary.GetResolved(PdfNames.Resources) as PdfDictionary, depth: 0);
+            // The resources of the page, or those it inherits from the page tree
+            VisitResources(page.Resources, depth: 0);
             foreach (var annotation in page.Annotations)
             {
                 foreach (var state in GetAppearanceStreams(annotation))

@@ -30,6 +30,29 @@ public sealed class PdfObjectTests
     public void DecodeTextStrings(byte[] bytes, string expected) => Assert.Equal(expected, PdfString.FromBytes(bytes).ToText());
 
     [Fact]
+    public void AnIncrementalUpdateWritesTheReferencesToMissingObjectsAsNull()
+    {
+        // The resources point to the object 6, which the file does not have
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Resources 4 0 R >>")
+            .Add(4, "<< /Font << /F1 6 0 R >> >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        // The objects 5 and 6 are added before the resources are read, then the resources change
+        document.Objects.Add(new PdfDictionary());
+        document.Objects.Add(new PdfDictionary());
+        document.Pages[0].Resources![PdfName.Create("Changed")] = PdfBoolean.True;
+        using var output = new MemoryStream();
+        document.SaveIncremental(output);
+
+        var text = Encoding.Latin1.GetString(output.ToArray());
+        Assert.DoesNotContain("65536", text);
+        Assert.Contains("/F1 null", text);
+    }
+
+    [Fact]
     public void AddedObjectsDoNotTakeTheNumbersOfMissingObjects()
     {
         // The page tree points to the object 9 and the resources to the object 6, which the file does not have

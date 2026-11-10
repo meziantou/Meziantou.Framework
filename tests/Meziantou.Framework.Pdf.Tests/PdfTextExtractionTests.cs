@@ -530,6 +530,16 @@ public sealed class PdfTextExtractionTests
     }
 
     [Fact]
+    public void RightToLeftLinesWithAnEmptyReplacementText()
+    {
+        // An empty replacement text after a Hebrew glyph, on the same line
+        var page = OpenWithHebrewLetters("BT /F1 10 Tf 150 700 Td (a) Tj /Span << /ActualText () >> BDC EMC ET");
+
+        Assert.Equal(Alef, page.ExtractText());
+        Assert.Equal(Alef, page.ExtractTextLayout().Text);
+    }
+
+    [Fact]
     public void RightToLeftLinesKeepTheirWordsInTheOrderOfTheText()
     {
         var page = OpenWithHebrewLetters("BT /F1 10 Tf 150 700 Td (ba) Tj -50 0 Td (dc) Tj ET BT /F1 10 Tf 100 680 Td (Next line) Tj ET");

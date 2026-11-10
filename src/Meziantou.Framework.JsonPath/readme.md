@@ -25,6 +25,63 @@ Assert.Equal(["$['store']['book'][0]['title']: A", "$['store']['book'][1]['title
 ```
 <!-- endref -->
 
+## Change values by path
+
+`Set`, `Add` and `Remove` change the locations that a query selects in a `JsonNode`:
+
+<!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_ChangeValuesByPath;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = JsonNode.Parse("""
+    {
+      "logging": { "level": "info" },
+      "users": [
+        { "name": "Alice", "password": "secret", "roles": [] },
+        { "name": "Bob", "password": "hunter2", "roles": ["admin"] }
+      ]
+    }
+    """);
+
+// Set replaces the selected values. The objects missing on a path of names are created.
+JsonPath.Parse("$.logging.level").Set(document, "debug");
+JsonPath.Parse("$.logging.file.path").Set(document, "app.log");
+
+// A query that ends with a name sets the member on every selected object
+JsonPath.Parse("$.users[*].active").Set(document, true);
+
+// Add appends a value to the selected arrays
+JsonPath.Parse("$.users[?@.name == 'Alice'].roles").Add(document, "reader");
+
+// Remove deletes the selected values, and returns how many it removed
+int removed = JsonPath.Parse("$..password").Remove(document);
+Assert.Equal(2, removed);
+
+Assert.Equal(
+    """{"logging":{"level":"debug","file":{"path":"app.log"}},"users":[{"name":"Alice","roles":["reader"],"active":true},{"name":"Bob","roles":["admin"],"active":true}]}""",
+    document!.ToJsonString());
+```
+<!-- endref -->
+
+## Read a stream
+
+`EvaluateStream` and `EvaluateStreamAsync` read a document once, from start to end, and only parse the selected
+values, so the document is never loaded in memory:
+
+<!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_EvaluateStream;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Any stream, such as a file or the body of an HTTP response
+using var stream = new MemoryStream("""{"orders":[{"id":1,"total":8},{"id":2,"total":120},{"id":3,"total":40}]}"""u8.ToArray());
+
+// Only the selected values, and the values a filter tests, are parsed: the document is never loaded in memory
+var ids = new List<int>();
+foreach (var match in JsonPath.Parse("$.orders[?@.total > 10].id").EvaluateStream(stream))
+{
+    ids.Add(match.Value!.GetValue<int>());
+}
+
+Assert.Equal([2, 3], ids);
+```
+<!-- endref -->
+
 ## Evaluation modes
 
 `Evaluate` supports two modes:
@@ -238,16 +295,11 @@ back-reference, for example — is reported as this same depth error rather than
 
 ### Number precision
 
-Filter expressions compare numbers, both the literals in the query and the values in the document, as IEEE 754
-double-precision values (`JsonPathNavigator<TValue>.TryGetNumber` returns a `double`). Numbers that a `double`
-represents exactly compare exactly. This covers every integer from -(2^53)+1 to 2^53-1, the range I-JSON
-([RFC 7493 §2.2](https://www.rfc-editor.org/rfc/rfc7493#section-2.2)) recommends for interoperability. Outside it,
-distinct numbers can compare as equal:
-
-- Integers beyond ±(2^53)-1 are rounded: `$[?@ == 9007199254740993]` matches `9007199254740992`.
-- Decimals are rounded to the nearest `double`: `$[?@ == 0.1]` matches `0.10000000000000001`.
-- Magnitudes beyond the `double` range become infinity: `$[?@ == 1e400]` matches `1e500`.
-- Magnitudes below the smallest `double` become zero: `$[?@ < 0]` does not match `-1e-400`.
+Filter expressions compare numbers, both the literals in the query and the values in the document, by their exact
+value. They are compared as `double` values first, and the numbers that round to the same `double` are compared by
+their text: `$[?@ == 9007199254740993]` does not match `9007199254740992`, and `$[?@ == 1e400]` does not match
+`1e500`. A custom `JsonPathNavigator<TValue>` gives the text of its numbers by overriding `TryGetNumberText`; without
+it, its numbers compare as `double` values.
 
 Index and slice selectors are not affected: the parser rejects any value outside the I-JSON integer range, as
 RFC 9535 §2.1 requires.

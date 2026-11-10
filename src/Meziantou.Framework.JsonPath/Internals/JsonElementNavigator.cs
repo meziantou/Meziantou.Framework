@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text.Json;
 
 namespace Meziantou.Framework.Json.Internals;
@@ -104,6 +105,30 @@ internal sealed class JsonElementNavigator : JsonPathNavigator<JsonElement>
         }
 
         result = 0;
+        return false;
+    }
+
+    public override bool TryGetNumberText(JsonElement value, [NotNullWhen(true)] out string? result)
+    {
+        if (value.ValueKind is JsonValueKind.Number)
+        {
+            result = value.GetRawText();
+            return true;
+        }
+
+        result = null;
+        return false;
+    }
+
+    internal override bool TryGetNumberUtf8(JsonElement value, Span<byte> buffer, out ReadOnlySpan<byte> result)
+    {
+        if (value.ValueKind is JsonValueKind.Number)
+        {
+            result = JsonMarshal.GetRawUtf8Value(value);
+            return true;
+        }
+
+        result = default;
         return false;
     }
 

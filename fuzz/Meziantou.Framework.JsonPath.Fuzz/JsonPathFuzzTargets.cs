@@ -1,4 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Numerics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -41,6 +43,22 @@ public static class JsonPathFuzzTargets
         "{", "}", "\":", "{\"a\":1}", "[1,2]", "\"a\"", "1.5", "[]", "{}",
     ];
 
+    private static readonly string[] NumberTokens = ["-", "0", "1", "9", ".", "e", "E", "e+", "e-", "00", "9007199254740993", "1e400", "1e-400", "0.1", "0.10000000000000001"];
+
+    // The comparison operators, and whether each one holds for two numbers whose difference has the given sign
+    private static readonly (string Operator, Func<int, bool> Holds)[] ComparisonOperators =
+    [
+        ("==", sign => sign is 0),
+        ("!=", sign => sign is not 0),
+        ("<", sign => sign < 0),
+        ("<=", sign => sign <= 0),
+        (">", sign => sign > 0),
+        (">=", sign => sign >= 0),
+    ];
+
+    // The value that Set and Add write, which no document of the corpus is likely to hold already
+    private static readonly JsonObject Marker = new() { ["\u0001marker"] = true };
+
     private static readonly JsonDocumentOptions DocumentOptions = new()
     {
         // A JsonObject rejects duplicate names, whereas a JsonDocument keeps them: only compare documents both accept
@@ -58,6 +76,7 @@ public static class JsonPathFuzzTargets
     [
         new("jsonpath-parse", Parse) { Seeds = GetParseSeeds, Dictionary = Tokens },
         new("jsonpath-evaluate", Evaluate) { Seeds = GetEvaluateSeeds, Dictionary = Tokens },
+        new("jsonpath-number-comparison", CompareNumbers) { Seeds = GetNumberComparisonSeeds, Dictionary = NumberTokens },
     ];
 
     private static void Parse(ReadOnlySpan<byte> data)
@@ -177,6 +196,241 @@ public static class JsonPathFuzzTargets
             CheckStrictModeOnDocument(path, document, elementMatches, strictFails);
             CheckCustomNavigator(path, node, nodeMatches, strictFails);
             CheckNormalizedPaths(node, nodeMatches);
+
+            var locations = GetLocations(node);
+            CheckStreaming(path, json, locations, nodeMatches);
+            CheckModifications(path, json, locations, nodeMatches);
+        }
+    }
+
+    // The streaming evaluation selects the values of the JsonNode navigator, in document order. The streams return a few
+    // bytes per read, so that the tokens are split across reads.
+    private static void CheckStreaming(JsonPathQuery path, byte[] json, Dictionary<string, Location> locations, JsonPathResult nodeMatches)
+    {
+        var expected = Format(nodeMatches.OrderBy(match => locations[match.Path].Order));
+
+        // A JsonDocument skips the byte order mark, and a Utf8JsonReader does not
+        var data = json.AsSpan();
+        if (data.StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]))
+        {
+            data = data[3..];
+        }
+
+        var reader = new Utf8JsonReader(data);
+        FuzzAssert.Equal(expected, Format(path.Evaluate(ref reader)), "Evaluate(ref Utf8JsonReader) does not give the matches of the JsonNode navigator in document order");
+
+        using var stream = new ChunkedStream(json);
+        FuzzAssert.Equal(expected, Format(path.EvaluateStream(stream)), "EvaluateStream does not give the matches of the JsonNode navigator in document order");
+
+        using var asyncStream = new ChunkedStream(json);
+        FuzzAssert.Equal(expected, Format(path.EvaluateStreamAsync(asyncStream).ToBlockingEnumerable()), "EvaluateStreamAsync does not give the matches of the JsonNode navigator in document order");
+    }
+
+    // Set, Remove and Add change the locations that the query selects, and only throw when it selects the root
+    private static void CheckModifications(JsonPathQuery path, byte[] json, Dictionary<string, Location> locations, JsonPathResult nodeMatches)
+    {
+        var selectsRoot = nodeMatches.Any(match => match.Path is "$");
+        var paths = nodeMatches.Select(match => match.Path).Distinct(StringComparer.Ordinal).ToArray();
+
+        // The changes of the locations inside another selected value are lost with it, so only the outer ones are checked
+        var matched = paths.ToHashSet(StringComparer.Ordinal);
+        var outerPaths = paths.Where(path => !HasMatchedAncestor(path)).ToArray();
+
+        CheckSet();
+        CheckRemove();
+        CheckAdd();
+
+        bool HasMatchedAncestor(string path)
+        {
+            for (var parent = locations[path].ParentPath; parent is not null; parent = locations[parent].ParentPath)
+            {
+                if (matched.Contains(parent))
+                    return true;
+            }
+
+            return false;
+        }
+
+        void CheckSet()
+        {
+            var document = JsonNode.Parse(json, documentOptions: DocumentOptions);
+            var documentLocations = GetLocations(document);
+            int count;
+            try
+            {
+                count = path.Set(document, Marker);
+            }
+            catch (InvalidOperationException)
+            {
+                FuzzAssert.True(selectsRoot, "Set throws although the query does not select the root");
+                return;
+            }
+
+            FuzzAssert.False(selectsRoot, "Set does not throw although the query selects the root");
+            FuzzAssert.True(Marker.Parent is null, "Set attaches the value to the document");
+            FuzzAssert.True(count >= outerPaths.Length, $"Set returns {count} but the query selects {outerPaths.Length} locations");
+            foreach (var outerPath in outerPaths)
+            {
+                FuzzAssert.True(AreEqual(documentLocations[outerPath].GetValue(), Marker), $"Set does not set the value at {outerPath}");
+            }
+        }
+
+        void CheckRemove()
+        {
+            var document = JsonNode.Parse(json, documentOptions: DocumentOptions);
+            var documentLocations = GetLocations(document);
+            var removed = outerPaths.Select(path => documentLocations[path]).GroupBy(location => location.Parent!, ReferenceEqualityComparer.Instance).ToArray();
+            var counts = removed.Select(group => group.Key is JsonArray array ? array.Count : 0).ToArray();
+            int count;
+            try
+            {
+                count = path.Remove(document);
+            }
+            catch (InvalidOperationException)
+            {
+                FuzzAssert.True(selectsRoot, "Remove throws although the query does not select the root");
+                return;
+            }
+
+            FuzzAssert.False(selectsRoot, "Remove does not throw although the query selects the root");
+            FuzzAssert.Equal(paths.Length, count, "Remove does not return the number of selected locations");
+            for (var i = 0; i < removed.Length; i++)
+            {
+                switch (removed[i].Key)
+                {
+                    case JsonArray array:
+                        FuzzAssert.Equal(counts[i] - removed[i].Count(), array.Count, "Remove does not remove the selected elements of an array");
+                        break;
+                    case JsonObject obj:
+                        FuzzAssert.False(removed[i].Any(location => obj.ContainsKey(location.Name!)), "Remove does not remove a selected member");
+                        break;
+                }
+            }
+        }
+
+        void CheckAdd()
+        {
+            var document = JsonNode.Parse(json, documentOptions: DocumentOptions);
+            var arrays = path.Evaluate(document).Select(match => match.Value).OfType<JsonArray>().Distinct(ReferenceEqualityComparer.Instance).Cast<JsonArray>().ToArray();
+            var counts = arrays.Select(array => array.Count).ToArray();
+            var count = path.Add(document, Marker);
+            FuzzAssert.Equal(arrays.Length, count, "Add does not return the number of selected arrays");
+            FuzzAssert.True(Marker.Parent is null, "Add attaches the value to the document");
+            for (var i = 0; i < arrays.Length; i++)
+            {
+                FuzzAssert.Equal(counts[i] + 1, arrays[i].Count, "Add does not append one value to a selected array");
+                FuzzAssert.True(AreEqual(arrays[i][^1], Marker), "Add does not append the value");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Filters compare numbers exactly. The two numbers of the input are compared by every operator, as values of the
+    /// document with the three navigators, and as a value of the document and a literal. An exact comparison of the
+    /// numbers as integers scaled by a power of ten gives the expected answer.
+    /// </summary>
+    private static void CompareNumbers(ReadOnlySpan<byte> data)
+    {
+        var left = FuzzText.Decode(FuzzInput.ReadUntil(ref data, Separator));
+        var right = FuzzText.Decode(data);
+        if (!ExactNumber.TryParse(left, out var leftNumber) || !ExactNumber.TryParse(right, out var rightNumber))
+            return;
+
+        var expected = ExactNumber.Compare(leftNumber, rightNumber);
+        var json = $$"""[{"a":{{left}},"b":{{right}}}]""";
+        var node = JsonNode.Parse(json);
+        using var document = JsonDocument.Parse(json);
+        var tree = TreeValue.Create(node);
+        foreach (var (op, holds) in ComparisonOperators)
+        {
+            var expectedCount = holds(expected) ? 1 : 0;
+            foreach (var query in new[] { $"$[?@.a {op} @.b]", $"$[?@.a {op} {right}]", $"$[?{left} {op} @.b]" })
+            {
+                var path = JsonPathQuery.Parse(query);
+                FuzzAssert.Equal(expectedCount, path.Evaluate(node).Count, $"{query} on {json} (JsonNode)");
+                FuzzAssert.Equal(expectedCount, path.Evaluate(document).Count, $"{query} on {json} (JsonDocument)");
+                FuzzAssert.Equal(expectedCount, path.Evaluate(tree, TreeNavigator.Instance).Count, $"{query} on {json} (custom navigator)");
+            }
+        }
+
+        // Arrays and objects compare their numbers the same way
+        var deep = JsonPathQuery.Parse("$[?@[0] == @[1]]");
+        FuzzAssert.Equal(expected is 0 ? 1 : 0, deep.Evaluate(JsonNode.Parse($$"""[[[{{left}}],[{{right}}]]]""")).Count, $"Arrays holding {left} and {right}");
+        FuzzAssert.Equal(expected is 0 ? 1 : 0, deep.Evaluate(JsonNode.Parse($$"""[[{"a":{{left}}},{"a":{{right}}}]]""")).Count, $"Objects holding {left} and {right}");
+    }
+
+    private static IEnumerable<FuzzSeed> GetNumberComparisonSeeds()
+    {
+        (string Left, string Right)[] pairs =
+        [
+            ("1", "1.0"), ("1", "10e-1"), ("100", "1e2"), ("0", "-0"), ("-0.0", "0e5"), ("9007199254740992", "9007199254740993"),
+            ("0.1", "0.10000000000000001"), ("12", "125e-1"), ("-1", "1"), ("1e-400", "0"), ("-1e-400", "0"), ("-1.5", "-1.25"),
+            ("1e400", "1e500"), ("1e400", "10e399"), ("123456789012345678901234567890", "123456789012345678901234567891"),
+            ("1e-2147483648", "1"), ("1e2147483647", "1"), ("0.5e-2000", "0"),
+        ];
+
+        foreach (var (left, right) in pairs)
+        {
+            yield return new FuzzSeed($"{left} vs {right}", (byte[])[.. FuzzText.Encode(left), Separator, .. FuzzText.Encode(right)]);
+        }
+    }
+
+    /// <summary>The location of a value: its position in a depth-first walk of the document, and its parent.</summary>
+    private sealed record Location(int Order, JsonNode? Parent, string? Name, int Index, string? ParentPath)
+    {
+        public JsonNode? GetValue() => Parent is JsonObject obj ? obj[Name!] : Parent![Index];
+    }
+
+    // Maps the normalized path of every value to its location, writing the paths as RFC 9535 section 2.7 does
+    private static Dictionary<string, Location> GetLocations(JsonNode? root)
+    {
+        var locations = new Dictionary<string, Location>(StringComparer.Ordinal);
+        Visit(root, "$", parent: null, name: null, index: -1, parentPath: null);
+        return locations;
+
+        void Visit(JsonNode? node, string path, JsonNode? parent, string? name, int index, string? parentPath)
+        {
+            locations.Add(path, new Location(locations.Count, parent, name, index, parentPath));
+            switch (node)
+            {
+                case JsonObject obj:
+                    foreach (var property in obj)
+                    {
+                        Visit(property.Value, path + "['" + EscapeName(property.Key) + "']", obj, property.Key, -1, path);
+                    }
+
+                    break;
+
+                case JsonArray array:
+                    for (var i = 0; i < array.Count; i++)
+                    {
+                        Visit(array[i], path + "[" + i.ToString(CultureInfo.InvariantCulture) + "]", array, name: null, i, path);
+                    }
+
+                    break;
+            }
+        }
+
+        static string EscapeName(string name)
+        {
+            var builder = new StringBuilder();
+            foreach (var c in name)
+            {
+                builder.Append(c switch
+                {
+                    '\'' => @"\'",
+                    '\\' => @"\\",
+                    '\b' => @"\b",
+                    '\f' => @"\f",
+                    '\n' => @"\n",
+                    '\r' => @"\r",
+                    '\t' => @"\t",
+                    < ' ' => @"\u" + ((int)c).ToString("x4", CultureInfo.InvariantCulture),
+                    _ => c.ToString(),
+                });
+            }
+
+            return builder.ToString();
         }
     }
 
@@ -388,7 +642,7 @@ public static class JsonPathFuzzTargets
         }
     }
 
-    private static string Format(JsonPathResult result)
+    private static string Format(IEnumerable<JsonPathMatch> result)
     {
         var builder = new StringBuilder();
         foreach (var match in result)
@@ -437,6 +691,8 @@ public static class JsonPathFuzzTargets
         // Null when the number cannot be represented as a double, like the JsonNode navigator
         public double? Number { get; private init; }
 
+        public string? NumberText { get; private init; }
+
         public string? String { get; private init; }
 
         public TreeValue[] Elements { get; private init; } = [];
@@ -469,7 +725,7 @@ public static class JsonPathFuzzTargets
                     return element.ValueKind switch
                     {
                         JsonValueKind.True or JsonValueKind.False => new TreeValue(JsonPathNodeKind.Boolean, node) { Boolean = element.GetBoolean() },
-                        JsonValueKind.Number => new TreeValue(JsonPathNodeKind.Number, node) { Number = element.TryGetDouble(out var number) ? number : null },
+                        JsonValueKind.Number => new TreeValue(JsonPathNodeKind.Number, node) { Number = element.TryGetDouble(out var number) ? number : null, NumberText = element.GetRawText() },
                         JsonValueKind.String => new TreeValue(JsonPathNodeKind.String, node) { String = element.GetString() },
                         _ => throw new FuzzAssertionException($"Unexpected value kind {element.ValueKind}"),
                     };
@@ -529,10 +785,128 @@ public static class JsonPathFuzzTargets
             return false;
         }
 
+        public override bool TryGetNumberText(TreeValue? value, [NotNullWhen(true)] out string? result)
+        {
+            result = value?.NumberText;
+            return result is not null;
+        }
+
         public override bool TryGetBoolean(TreeValue? value, out bool result)
         {
             result = value?.Boolean ?? false;
             return value is { Kind: JsonPathNodeKind.Boolean };
+        }
+    }
+
+    /// <summary>A stream that returns at most 3 bytes per read, so that most tokens are split across reads.</summary>
+    private sealed class ChunkedStream(byte[] data) : MemoryStream(data)
+    {
+        private const int ChunkSize = 3;
+
+        public override int Read(byte[] buffer, int offset, int count) => base.Read(buffer, offset, Math.Min(count, ChunkSize));
+
+        public override int Read(Span<byte> buffer) => base.Read(buffer[..Math.Min(buffer.Length, ChunkSize)]);
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => base.ReadAsync(buffer[..Math.Min(buffer.Length, ChunkSize)], cancellationToken);
+    }
+
+    /// <summary>A JSON number as an integer significand and a power of ten: an oracle independent of the library.</summary>
+    private readonly record struct ExactNumber(BigInteger Significand, int Exponent)
+    {
+        // The exponents of the two numbers are aligned by multiplying by a power of ten, which this bounds
+        private const int MaxExponent = 2000;
+
+        public static bool TryParse(string text, out ExactNumber result)
+        {
+            result = default;
+            if (text.Length is 0 or > 200 || !IsJsonNumber(text))
+                return false;
+
+            var exponentIndex = text.IndexOfAny(['e', 'E']);
+            var exponent = 0;
+            if (exponentIndex >= 0 && !int.TryParse(text.AsSpan(exponentIndex + 1), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out exponent))
+                return false;
+
+            // Checked before the fraction moves it: an exponent such as int.MinValue would overflow
+            if (exponent is < -MaxExponent or > MaxExponent)
+                return false;
+
+            var mantissa = exponentIndex >= 0 ? text[..exponentIndex] : text;
+            var dot = mantissa.IndexOf('.', StringComparison.Ordinal);
+            if (dot >= 0)
+            {
+                exponent -= mantissa.Length - dot - 1;
+                mantissa = mantissa.Remove(dot, 1);
+            }
+
+            // The fraction has at most 200 digits, so this cannot overflow
+            if (exponent is < -MaxExponent - 200 or > MaxExponent)
+                return false;
+
+            result = new ExactNumber(BigInteger.Parse(mantissa, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture), exponent);
+            return true;
+        }
+
+        public static int Compare(ExactNumber left, ExactNumber right)
+        {
+            var exponent = Math.Min(left.Exponent, right.Exponent);
+            var leftValue = left.Significand * BigInteger.Pow(10, left.Exponent - exponent);
+            var rightValue = right.Significand * BigInteger.Pow(10, right.Exponent - exponent);
+            return leftValue.CompareTo(rightValue);
+        }
+
+        // The grammar of a JSON number: -?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?
+        private static bool IsJsonNumber(string text)
+        {
+            var i = 0;
+            if (text[i] is '-')
+            {
+                i++;
+            }
+
+            if (i >= text.Length || !char.IsAsciiDigit(text[i]))
+                return false;
+
+            if (text[i] is '0')
+            {
+                i++;
+            }
+            else
+            {
+                SkipDigits(text, ref i);
+            }
+
+            if (i < text.Length && text[i] is '.')
+            {
+                i++;
+                if (!SkipDigits(text, ref i))
+                    return false;
+            }
+
+            if (i < text.Length && text[i] is 'e' or 'E')
+            {
+                i++;
+                if (i < text.Length && text[i] is '+' or '-')
+                {
+                    i++;
+                }
+
+                if (!SkipDigits(text, ref i))
+                    return false;
+            }
+
+            return i == text.Length;
+        }
+
+        private static bool SkipDigits(string text, ref int index)
+        {
+            var start = index;
+            while (index < text.Length && char.IsAsciiDigit(text[index]))
+            {
+                index++;
+            }
+
+            return index > start;
         }
     }
 }

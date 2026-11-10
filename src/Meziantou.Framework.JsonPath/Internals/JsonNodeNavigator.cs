@@ -1,5 +1,7 @@
 using System.Buffers;
+using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -7,6 +9,9 @@ namespace Meziantou.Framework.Json.Internals;
 
 internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
 {
+    // Long enough for the text of every primitive number type: a UInt128 takes 39 digits, a double 24 characters
+    internal const int NumberBufferLength = 64;
+
     public override bool IsPure => true;
 
     /// <summary>
@@ -123,6 +128,30 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
         }
 
         result = 0;
+        return false;
+    }
+
+    public override bool TryGetNumberText(JsonNode? value, [NotNullWhen(true)] out string? result)
+    {
+        Span<byte> buffer = stackalloc byte[NumberBufferLength];
+        if (TryGetNumberUtf8(value, buffer, out var utf8))
+        {
+            result = Encoding.UTF8.GetString(utf8);
+            return true;
+        }
+
+        result = null;
+        return false;
+    }
+
+    internal override bool TryGetNumberUtf8(JsonNode? value, Span<byte> buffer, out ReadOnlySpan<byte> result)
+    {
+        if (value is JsonValue jsonValue && jsonValue.GetValueKind() is JsonValueKind.Number)
+        {
+            return TryGetNumberUtf8(jsonValue, buffer, out result);
+        }
+
+        result = default;
         return false;
     }
 
@@ -265,6 +294,80 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
 
         var reader = CreateReader(value);
         return reader.TryGetDouble(out result);
+    }
+
+    /// <summary>
+    /// Writes the text of the number a <see cref="JsonValue"/> holds, consistently with <see cref="TryGetDoubleValue"/>:
+    /// the text of a <see cref="double"/> is the one JSON writes, and a <see cref="float"/> or a <see cref="Half"/> is
+    /// written as the <see cref="double"/> it converts to, so the text and the <see cref="double"/> describe the same value.
+    /// </summary>
+    private static bool TryGetNumberUtf8(JsonValue value, Span<byte> buffer, out ReadOnlySpan<byte> result)
+    {
+        if (value.TryGetValue<JsonElement>(out var element))
+        {
+            result = JsonMarshal.GetRawUtf8Value(element);
+            return true;
+        }
+
+        if (TryFormat(value, buffer, out var written))
+        {
+            result = buffer[..written];
+            return true;
+        }
+
+        // Anything else, such as an enum, is read back from its serialized form
+        var reader = CreateReader(value);
+        result = reader.ValueSpan;
+        return true;
+    }
+
+    private static bool TryFormat(JsonValue value, Span<byte> buffer, out int written)
+    {
+        var culture = CultureInfo.InvariantCulture;
+        if (value.TryGetValue<double>(out var d))
+            return d.TryFormat(buffer, out written, "R", culture);
+
+        if (value.TryGetValue<float>(out var f))
+            return ((double)f).TryFormat(buffer, out written, "R", culture);
+
+        if (value.TryGetValue<Half>(out var h))
+            return ((double)h).TryFormat(buffer, out written, "R", culture);
+
+        if (value.TryGetValue<decimal>(out var dec))
+            return dec.TryFormat(buffer, out written, format: default, culture);
+
+        if (value.TryGetValue<long>(out var l))
+            return l.TryFormat(buffer, out written, format: default, culture);
+
+        if (value.TryGetValue<ulong>(out var ul))
+            return ul.TryFormat(buffer, out written, format: default, culture);
+
+        if (value.TryGetValue<Int128>(out var i128))
+            return i128.TryFormat(buffer, out written, format: default, culture);
+
+        if (value.TryGetValue<UInt128>(out var ui128))
+            return ui128.TryFormat(buffer, out written, format: default, culture);
+
+        if (value.TryGetValue<int>(out var i))
+            return i.TryFormat(buffer, out written, format: default, culture);
+
+        if (value.TryGetValue<uint>(out var ui))
+            return ui.TryFormat(buffer, out written, format: default, culture);
+
+        if (value.TryGetValue<short>(out var sh))
+            return sh.TryFormat(buffer, out written, format: default, culture);
+
+        if (value.TryGetValue<ushort>(out var us))
+            return us.TryFormat(buffer, out written, format: default, culture);
+
+        if (value.TryGetValue<byte>(out var b))
+            return b.TryFormat(buffer, out written, format: default, culture);
+
+        if (value.TryGetValue<sbyte>(out var sb))
+            return sb.TryFormat(buffer, out written, format: default, culture);
+
+        written = 0;
+        return false;
     }
 
     /// <summary>

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Meziantou.Framework.Json;
@@ -696,6 +697,597 @@ public sealed class JsonPathEvaluateTests
 
         using var emptyDocument = JsonDocument.Parse("{}");
         Assert.Null(emptyDocument.EvaluateValue(path));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("$[?@ == 9007199254740993]", "[9007199254740992,9007199254740993]", "[9007199254740993]")]
+    [InlineData("$[?@ != 9007199254740993]", "[9007199254740992,9007199254740993]", "[9007199254740992]")]
+    [InlineData("$[?@ > 9007199254740992]", "[9007199254740992,9007199254740993]", "[9007199254740993]")]
+    [InlineData("$[?@ >= 9007199254740993]", "[9007199254740992,9007199254740993]", "[9007199254740993]")]
+    [InlineData("$[?@ < 9007199254740993]", "[9007199254740992,9007199254740993]", "[9007199254740992]")]
+    [InlineData("$[?@ <= 9007199254740992]", "[9007199254740992,9007199254740993]", "[9007199254740992]")]
+    [InlineData("$[?@ == 0.1]", "[0.1,0.10000000000000001,1e-1,0.10,100e-3]", "[0.1,1e-1,0.10,100e-3]")]
+    [InlineData("$[?@ == 1e400]", "[1e400,1e500,10e399,1E+400]", "[1e400,10e399,1E+400]")]
+    [InlineData("$[?@ > 1e400]", "[1e400,1e500,-1e500]", "[1e500]")]
+    [InlineData("$[?@ < 0]", "[-1e-400,0,-0,1e-400,-0.0e5]", "[-1e-400]")]
+    [InlineData("$[?@ == 0]", "[-1e-400,0,-0,0.0,0e99,1e-400]", "[0,-0,0.0,0e99]")]
+    [InlineData("$[?@ == 1]", "[1,1.0,10e-1,1.0000000000000000001,0.1e1]", "[1,1.0,10e-1,0.1e1]")]
+    [InlineData("$[?@ == 1e99999999999999999999]", "[1e99999999999999999999,1e99999999999999999998,10e99999999999999999998]", "[1e99999999999999999999,10e99999999999999999998]")]
+    [InlineData("$[?@.a == @.b]", """[{"a":9007199254740993,"b":9007199254740992},{"a":1.0,"b":1}]""", """[{"a":1.0,"b":1}]""")]
+    [InlineData("$[?@.a < @.b]", """[{"a":9007199254740992,"b":9007199254740993},{"a":0.30000000000000001,"b":0.3}]""", """[{"a":9007199254740992,"b":9007199254740993}]""")]
+    [InlineData("$[?@ == $[0]]", "[[1e400],[1e500],[10e399]]", "[[1e400],[10e399]]")]
+    [InlineData("$[?@ == $[0]]", """[{"a":9007199254740993},{"a":9007199254740992},{"a":9007199254740993.0}]""", """[{"a":9007199254740993},{"a":9007199254740993.0}]""")]
+    [InlineData("$[?length(@) == 2.0000000000000000001]", "[[1,2]]", "[]")]
+    [InlineData("$[?length(@) == 2.0]", "[[1,2]]", "[[1,2]]")]
+    [InlineData("$[?count(@.*) == 20e-1]", "[[1,2]]", "[[1,2]]")]
+    public void Filter_ComparesNumbersExactly(string query, string json, string expected)
+    {
+        var path = JsonPath.Parse(query);
+        Assert.Equal(expected, path.Evaluate(JsonNode.Parse(json)).ToJsonArray().ToJsonString());
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal(expected, JsonSerializer.Serialize(path.Evaluate(document).Select(match => match.Value)));
+    }
+
+    [Fact]
+    public void Filter_ComparesNumbersOfClrValuesExactly()
+    {
+        var root = new JsonArray(
+            JsonValue.Create(9007199254740992L),
+            JsonValue.Create(9007199254740993L),
+            JsonValue.Create(9007199254740993UL),
+            JsonValue.Create((Int128)9007199254740993L),
+            JsonValue.Create(0.1m),
+            JsonValue.Create(0.10000000000000001m),
+            JsonValue.Create(0.1d),
+            JsonValue.Create(0.1f));
+
+        Assert.Equal(["$[1]", "$[2]", "$[3]"], JsonPath.Parse("$[?@ == 9007199254740993]").Evaluate(root).Select(match => match.Path));
+        Assert.Equal(["$[4]", "$[6]"], JsonPath.Parse("$[?@ == 0.1]").Evaluate(root).Select(match => match.Path));
+        Assert.Equal(["$[5]"], JsonPath.Parse("$[?@ == 0.10000000000000001]").Evaluate(root).Select(match => match.Path));
+
+        // A float compares as the double it converts to, like its double value
+        Assert.Equal(["$[7]"], JsonPath.Parse("$[?@ == 0.10000000149011612]").Evaluate(root).Select(match => match.Path));
+    }
+
+    [Fact]
+    public void Filter_CustomNavigatorWithoutNumberTextComparesDoubles()
+    {
+        var root = MyNode.Array(MyNode.Number(9007199254740992), MyNode.Number(9007199254740993));
+        Assert.Equal(2, JsonPath.Parse("$[?@ == 9007199254740993]").Evaluate(root, MyNodeNavigator.Instance).Count);
+    }
+
+    [Fact]
+    public void Filter_CustomNavigatorWithNumberTextComparesExactly()
+    {
+        var root = TextNumberNode.Array(new TextNumberNode("9007199254740992"), new TextNumberNode("9007199254740993"), new TextNumberNode("not a number"));
+        var matches = JsonPath.Parse("$[?@ == 9007199254740993]").Evaluate(root, TextNumberNavigator.Instance);
+
+        // The text of the last value is not a number, so it compares as its double
+        Assert.Equal(["$[1]", "$[2]"], matches.Select(match => match.Path));
+    }
+
+    [Theory]
+    [InlineData("1", "1", 0)]
+    [InlineData("1", "1.0", 0)]
+    [InlineData("1", "10e-1", 0)]
+    [InlineData("1", "0.1E+1", 0)]
+    [InlineData("100", "1e2", 0)]
+    [InlineData("0", "-0", 0)]
+    [InlineData("0", "0e-99999999999999999999999", 0)]
+    [InlineData("-0.0", "0e5", 0)]
+    [InlineData("007", "7", 0)]
+    [InlineData("9007199254740992", "9007199254740993", -1)]
+    [InlineData("0.1", "0.10000000000000001", -1)]
+    [InlineData("12", "125e-1", -1)]
+    [InlineData("12.5", "12", 1)]
+    [InlineData("-1", "1", -1)]
+    [InlineData("-1", "0", -1)]
+    [InlineData("1e-400", "0", 1)]
+    [InlineData("-1e-400", "0", -1)]
+    [InlineData("-2", "-1", -1)]
+    [InlineData("-1.5", "-1.25", -1)]
+    [InlineData("1e400", "1e500", -1)]
+    [InlineData("1e99999999999999999999", "1e99999999999999999998", 1)]
+    [InlineData("1e-99999999999999999999", "1e-99999999999999999998", -1)]
+    [InlineData("123456789012345678901234567890", "123456789012345678901234567891", -1)]
+    public void JsonNumberComparer_Compare(string left, string right, int expected)
+    {
+        Assert.True(JsonNumberComparer.TryCompare(Encoding.UTF8.GetBytes(left), Encoding.UTF8.GetBytes(right), out var result));
+        Assert.Equal(expected, Math.Sign(result));
+        Assert.True(JsonNumberComparer.TryCompare(Encoding.UTF8.GetBytes(right), Encoding.UTF8.GetBytes(left), out result));
+        Assert.Equal(-expected, Math.Sign(result));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("-")]
+    [InlineData("+1")]
+    [InlineData("1.")]
+    [InlineData(".5")]
+    [InlineData("1e")]
+    [InlineData("1e+")]
+    [InlineData("1 ")]
+    [InlineData("0x10")]
+    [InlineData("NaN")]
+    [InlineData("Infinity")]
+    [InlineData("∞")]
+    public void JsonNumberComparer_RejectsInvalidText(string text)
+    {
+        Assert.False(JsonNumberComparer.TryCompare(Encoding.UTF8.GetBytes(text), "1"u8, out _));
+        Assert.False(JsonNumberComparer.TryCompare("1"u8, Encoding.UTF8.GetBytes(text), out _));
+        Assert.False(JsonNumberComparer.TryCompare(Encoding.UTF8.GetBytes(text), Encoding.UTF8.GetBytes(text), out _));
+    }
+
+    [Fact]
+    public void DocumentationExample_ExactNumbers()
+    {
+        #region JsonPath_ExactNumbers
+        var document = JsonNode.Parse("""{"ids":[9007199254740992,9007199254740993],"amounts":[0.1,0.10000000000000001]}""");
+
+        // Numbers that round to the same double still compare by their exact value
+        Assert.Equal("[9007199254740993]", JsonPath.Parse("$.ids[?@ == 9007199254740993]").Evaluate(document).ToJsonArray().ToJsonString());
+        Assert.Equal("[0.10000000000000001]", JsonPath.Parse("$.amounts[?@ > 0.1]").Evaluate(document).ToJsonArray().ToJsonString());
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("$.a", """{"a":1}""", 1, """{"a":true}""")]
+    [InlineData("$.b", """{"a":1}""", 1, """{"a":1,"b":true}""")]
+    [InlineData("$.x.y.z", """{"a":1}""", 1, """{"a":1,"x":{"y":{"z":true}}}""")]
+    [InlineData("$.a.y", """{"a":{"x":1}}""", 1, """{"a":{"x":1,"y":true}}""")]
+    [InlineData("$.a.y", """{"a":1}""", 0, """{"a":1}""")]
+    [InlineData("$.a.y", """{"a":null}""", 0, """{"a":null}""")]
+    [InlineData("$.a.y", """[1]""", 0, """[1]""")]
+    [InlineData("$.x[0]", """{}""", 0, """{}""")]
+    [InlineData("$.x.y[0]", """{}""", 0, """{}""")]
+    [InlineData("$[1]", """[1,2]""", 1, """[1,true]""")]
+    [InlineData("$[-1]", """[1,2]""", 1, """[1,true]""")]
+    [InlineData("$[2]", """[1,2]""", 0, """[1,2]""")]
+    [InlineData("$[-3]", """[1,2]""", 0, """[1,2]""")]
+    [InlineData("$[0].a", """[{}]""", 1, """[{"a":true}]""")]
+    [InlineData("$[0]['b c']['d']", """[{}]""", 1, """[{"b c":{"d":true}}]""")]
+    [InlineData("$.users[*].active", """{"users":[{"name":"a"},{"name":"b","active":false},1]}""", 2, """{"users":[{"name":"a","active":true},{"name":"b","active":true},1]}""")]
+    [InlineData("$.users[0,0].active", """{"users":[{}]}""", 1, """{"users":[{"active":true}]}""")]
+    [InlineData("$..price", """{"a":{"price":1},"b":[{"price":2}],"price":3}""", 3, """{"a":{"price":true},"b":[{"price":true}],"price":true}""")]
+    [InlineData("$.items[?@.price > 10]", """{"items":[{"price":8},{"price":12}]}""", 1, """{"items":[{"price":8},true]}""")]
+    [InlineData("$.items[*]", """{"items":[1,2,3]}""", 3, """{"items":[true,true,true]}""")]
+    [InlineData("$.items[0,0]", """{"items":[1,2]}""", 1, """{"items":[true,2]}""")]
+    [InlineData("$.*[*]", """{"a":[1],"b":{"c":2}}""", 2, """{"a":[true],"b":{"c":true}}""")]
+    [InlineData("$..*", """{"a":{"b":1}}""", 2, """{"a":true}""")]
+    [InlineData("$.missing[*]", """{}""", 0, """{}""")]
+    public void Set(string query, string json, int expectedCount, string expected)
+    {
+        var document = JsonNode.Parse(json);
+        var value = JsonValue.Create(true);
+        Assert.Equal(expectedCount, JsonPath.Parse(query).Set(document, value));
+        Assert.Equal(expected, document!.ToJsonString());
+        Assert.Null(value.Parent);
+    }
+
+    [Fact]
+    public void Set_CopiesTheValueForEachLocation()
+    {
+        var document = JsonNode.Parse("""{"a":[{},{}]}""")!;
+        var value = new JsonObject { ["x"] = 1 };
+        Assert.Equal(2, JsonPath.Parse("$.a[*]").Set(document, value));
+        Assert.Null(value.Parent);
+        Assert.NotSame(document["a"]![0], document["a"]![1]);
+
+        value["x"] = 2;
+        Assert.Equal("""{"a":[{"x":1},{"x":1}]}""", document.ToJsonString());
+    }
+
+    [Fact]
+    public void Set_ValueThatIsPartOfTheDocument()
+    {
+        // The value is copied before the first change, so the copies do not include the changes made before them
+        var document = JsonNode.Parse("""{"a":1,"b":2}""")!;
+        Assert.Equal(2, JsonPath.Parse("$.*").Set(document, document));
+        Assert.Equal("""{"a":{"a":1,"b":2},"b":{"a":1,"b":2}}""", document.ToJsonString());
+
+        var singular = JsonNode.Parse("""{"a":1}""")!;
+        Assert.Equal(1, JsonPath.Parse("$.x.y").Set(singular, singular));
+        Assert.Equal("""{"a":1,"x":{"y":{"a":1}}}""", singular.ToJsonString());
+
+        var arrays = JsonNode.Parse("""{"a":[1],"b":[2]}""")!;
+        Assert.Equal(2, JsonPath.Parse("$.*").Add(arrays, arrays));
+        Assert.Equal("""{"a":[1,{"a":[1],"b":[2]}],"b":[2,{"a":[1],"b":[2]}]}""", arrays.ToJsonString());
+    }
+
+    [Theory]
+    [InlineData("$.name")]
+    [InlineData("$.name.x")]
+    [InlineData("$[?@.NAME == 2].name")]
+    [InlineData("$.*.name")]
+    public void Set_CaseInsensitiveObjectRejectsNamesInAnotherCase(string query)
+    {
+        var document = JsonNode.Parse("""{"Name":1,"o":{"NAME":2}}""", new JsonNodeOptions { PropertyNameCaseInsensitive = true })!;
+        var exception = Assert.Throws<InvalidOperationException>(() => JsonPath.Parse(query).Set(document, JsonValue.Create(3)));
+        Assert.Contains("case", exception.Message, StringComparison.Ordinal);
+        Assert.Equal("""{"Name":1,"o":{"NAME":2}}""", document.ToJsonString());
+    }
+
+    [Fact]
+    public void Set_Null()
+    {
+        var document = JsonNode.Parse("""{"a":1,"b":[1]}""")!;
+        Assert.Equal(1, JsonPath.Parse("$.a").Set(document, value: null));
+        Assert.Equal(1, JsonPath.Parse("$.b[0]").Set(document, value: null));
+        Assert.Equal("""{"a":null,"b":[null]}""", document.ToJsonString());
+    }
+
+    [Fact]
+    public void Set_NullRoot()
+    {
+        Assert.Equal(0, JsonPath.Parse("$.a").Set(root: null, JsonValue.Create(1)));
+        Assert.Equal(0, JsonPath.Parse("$[*]").Set(root: null, JsonValue.Create(1)));
+    }
+
+    [Theory]
+    [InlineData("$")]
+    [InlineData("$[?@ == 1]..*")]
+    public void Set_RootThrows(string query)
+    {
+        var document = JsonNode.Parse("[1]");
+        if (query is "$")
+        {
+            Assert.Throws<InvalidOperationException>(() => JsonPath.Parse(query).Set(document, JsonValue.Create(1)));
+            Assert.Throws<InvalidOperationException>(() => JsonPath.Parse(query).Remove(document));
+        }
+        else
+        {
+            Assert.Equal(0, JsonPath.Parse(query).Set(document, JsonValue.Create(1)));
+        }
+    }
+
+    [Fact]
+    public void Set_ValueWrappingAnObjectThrows()
+    {
+        var document = new JsonObject { ["a"] = JsonValue.Create(new Dictionary<string, int>(StringComparer.Ordinal) { ["b"] = 1 }) };
+        Assert.Throws<InvalidOperationException>(() => JsonPath.Parse("$.a.b").Set(document, JsonValue.Create(2)));
+        Assert.Throws<InvalidOperationException>(() => JsonPath.Parse("$.a.*").Set(document, JsonValue.Create(2)));
+        Assert.Throws<InvalidOperationException>(() => JsonPath.Parse("$.*.c").Set(document, JsonValue.Create(2)));
+        Assert.Throws<InvalidOperationException>(() => JsonPath.Parse("$.a.*").Remove(document));
+        Assert.Equal("""{"a":{"b":1}}""", document.ToJsonString());
+
+        // The value as a whole can be replaced
+        Assert.Equal(1, JsonPath.Parse("$.a").Set(document, JsonValue.Create(2)));
+        Assert.Equal(1, JsonPath.Parse("$[?@ == 2]").Set(document, JsonValue.Create(3)));
+        Assert.Equal("""{"a":3}""", document.ToJsonString());
+    }
+
+    [Fact]
+    public void Set_CaseInsensitiveObjectUsesExactNames()
+    {
+        var document = JsonNode.Parse("""{"Name":1}""", new JsonNodeOptions { PropertyNameCaseInsensitive = true })!;
+        Assert.Equal(1, JsonPath.Parse("$.Name").Set(document, JsonValue.Create(2)));
+        Assert.Equal("""{"Name":2}""", document.ToJsonString());
+    }
+
+    [Theory]
+    [InlineData("$.a", """{"a":1,"b":2}""", 1, """{"b":2}""")]
+    [InlineData("$.missing", """{"a":1}""", 0, """{"a":1}""")]
+    [InlineData("$[0,2]", """[0,1,2,3]""", 2, """[1,3]""")]
+    [InlineData("$[2,0,2]", """[0,1,2,3]""", 2, """[1,3]""")]
+    [InlineData("$[-1]", """[0,1,2]""", 1, """[0,1]""")]
+    [InlineData("$[::2]", """[0,1,2,3,4]""", 3, """[1,3]""")]
+    [InlineData("$[?@ > 1]", """[3,0,2,1]""", 2, """[0,1]""")]
+    [InlineData("$..password", """{"password":"a","users":[{"name":"b","password":"c"},{"name":"d"}]}""", 2, """{"users":[{"name":"b"},{"name":"d"}]}""")]
+    [InlineData("$..*", """{"a":{"b":[1,2]},"c":3}""", 5, """{}""")]
+    [InlineData("$.a[*].b", """{"a":[{"b":1},{"b":2},{"c":3}]}""", 2, """{"a":[{},{},{"c":3}]}""")]
+    [InlineData("$[*][0]", """[[1,2],[3],[]]""", 2, """[[2],[],[]]""")]
+    public void Remove(string query, string json, int expectedCount, string expected)
+    {
+        var document = JsonNode.Parse(json);
+        Assert.Equal(expectedCount, JsonPath.Parse(query).Remove(document));
+        Assert.Equal(expected, document!.ToJsonString());
+    }
+
+    [Theory]
+    [InlineData("$", """[1]""", 1, """[1,true]""")]
+    [InlineData("$.a", """{"a":[]}""", 1, """{"a":[true]}""")]
+    [InlineData("$.*", """{"a":[],"b":{},"c":[1],"d":1}""", 2, """{"a":[true],"b":{},"c":[1,true],"d":1}""")]
+    [InlineData("$[0,0]", """[[]]""", 1, """[[true]]""")]
+    [InlineData("$..tags", """{"tags":[],"x":{"tags":["a"]}}""", 2, """{"tags":[true],"x":{"tags":["a",true]}}""")]
+    [InlineData("$.missing", """{}""", 0, """{}""")]
+    public void Add(string query, string json, int expectedCount, string expected)
+    {
+        var document = JsonNode.Parse(json);
+        var value = JsonValue.Create(true);
+        Assert.Equal(expectedCount, JsonPath.Parse(query).Add(document, value));
+        Assert.Equal(expected, document!.ToJsonString());
+        Assert.Null(value.Parent);
+    }
+
+    [Fact]
+    public void Add_ValueWrappingAnArrayThrows()
+    {
+        var document = new JsonObject { ["a"] = JsonValue.Create(new[] { 1 }) };
+        Assert.Throws<InvalidOperationException>(() => JsonPath.Parse("$.a").Add(document, JsonValue.Create(2)));
+    }
+
+    [Fact]
+    public void DocumentationExample_ChangeValuesByPath()
+    {
+        #region JsonPath_ChangeValuesByPath
+        var document = JsonNode.Parse("""
+            {
+              "logging": { "level": "info" },
+              "users": [
+                { "name": "Alice", "password": "secret", "roles": [] },
+                { "name": "Bob", "password": "hunter2", "roles": ["admin"] }
+              ]
+            }
+            """);
+
+        // Set replaces the selected values. The objects missing on a path of names are created.
+        JsonPath.Parse("$.logging.level").Set(document, "debug");
+        JsonPath.Parse("$.logging.file.path").Set(document, "app.log");
+
+        // A query that ends with a name sets the member on every selected object
+        JsonPath.Parse("$.users[*].active").Set(document, true);
+
+        // Add appends a value to the selected arrays
+        JsonPath.Parse("$.users[?@.name == 'Alice'].roles").Add(document, "reader");
+
+        // Remove deletes the selected values, and returns how many it removed
+        int removed = JsonPath.Parse("$..password").Remove(document);
+        Assert.Equal(2, removed);
+
+        Assert.Equal(
+            """{"logging":{"level":"debug","file":{"path":"app.log"}},"users":[{"name":"Alice","roles":["reader"],"active":true},{"name":"Bob","roles":["admin"],"active":true}]}""",
+            document!.ToJsonString());
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("$..[*]", "[[1],[2]]", "$[0]=[1] $[0][0]=1 $[1]=[2] $[1][0]=2")]
+    [InlineData("$['b','a']", """{"a":1,"b":2}""", "$['a']=1 $['b']=2")]
+    [InlineData("$[1,0,1]", "[1,2]", "$[0]=1 $[1]=2 $[1]=2")]
+    [InlineData("$", "[1]", "$=[1]")]
+    [InlineData("$", "1", "$=1")]
+    [InlineData("$.a", "1", "")]
+    [InlineData("$[-1]", "[1,2,3]", "$[2]=3")]
+    [InlineData("$[::-2]", "[0,1,2,3,4]", "$[0]=0 $[2]=2 $[4]=4")]
+    [InlineData("$[1:]", "[0,1,2]", "$[1]=1 $[2]=2")]
+    [InlineData("$[?@ > $[0]]", "[1,0,2,3]", "$[2]=2 $[3]=3")]
+    [InlineData("$.a[?@.b == 1].c", """{"x":[1,2],"a":[{"b":1,"c":"x"},{"b":2,"c":"y"}]}""", "$['a'][0]['c']=\"x\"")]
+    [InlineData("$..b", """{"a":{"b":{"b":1}}}""", "$['a']['b']={\"b\":1} $['a']['b']['b']=1")]
+    [InlineData("$['a\\nb']", """{"a\nb":1,"a\u000ab":2}""", "$['a\\nb']=1 $['a\\nb']=2")]
+    [InlineData("$.a", """{"a":1,"a":2}""", "$['a']=1 $['a']=2")]
+    public void Evaluate_Reader(string query, string json, string expected)
+    {
+        var path = JsonPath.Parse(query);
+        var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
+        Assert.Equal(expected, string.Join(' ', path.Evaluate(ref reader).Select(match => match.Path + "=" + (match.Value?.ToJsonString() ?? "null"))));
+        Assert.True(reader.IsFinalBlock);
+        Assert.False(reader.Read());
+    }
+
+    [Fact]
+    public void Evaluate_ReaderPositionedOnValue()
+    {
+        var reader = new Utf8JsonReader("""{"skip":{"a":1},"value":{"a":2},"after":{"a":3}}"""u8);
+        reader.Read();
+        reader.Read();
+        reader.Skip();
+        reader.Read();
+        Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+
+        // On a property name, the value that follows is evaluated
+        var matches = JsonPath.Parse("$.a").Evaluate(ref reader);
+        Assert.Equal("2", Assert.Single(matches).Value!.ToJsonString());
+        Assert.Equal(JsonTokenType.EndObject, reader.TokenType);
+
+        reader.Read();
+        reader.Read();
+        Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+        Assert.Equal("3", Assert.Single(JsonPath.Parse("$.a").Evaluate(ref reader)).Value!.ToJsonString());
+    }
+
+    [Fact]
+    public void Evaluate_ReaderWithComments()
+    {
+        var json = "/* a */ { /* b */ \"a\": /* c */ [ /* d */ 1, {\"b\": /* e */ 2} ] /* f */ } // g"u8;
+        var reader = new Utf8JsonReader(json, new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip });
+        var matches = JsonPath.Parse("$..*").Evaluate(ref reader);
+        Assert.Equal(["$['a']=[1,{\"b\":2}]", "$['a'][0]=1", "$['a'][1]={\"b\":2}", "$['a'][1]['b']=2"], matches.Select(match => match.Path + "=" + match.Value!.ToJsonString()));
+
+        // A JsonNode cannot be parsed from a reader that returns comments, as JsonNode.Parse(ref Utf8JsonReader) reports
+        var allowReader = new Utf8JsonReader(json, new JsonReaderOptions { CommentHandling = JsonCommentHandling.Allow });
+        try
+        {
+            JsonPath.Parse("$..*").Evaluate(ref allowReader);
+            Assert.Fail("The evaluation must fail");
+        }
+        catch (ArgumentException ex)
+        {
+            Assert.Equal("reader", ex.ParamName);
+        }
+    }
+
+    [Fact]
+    public void Evaluate_ReaderWithIncompleteValueThrows()
+    {
+        var reader = new Utf8JsonReader("""{"a":[1,2"""u8, isFinalBlock: false, state: default);
+        try
+        {
+            JsonPath.Parse("$.a").Evaluate(ref reader);
+            Assert.Fail("The evaluation must fail");
+        }
+        catch (JsonException)
+        {
+        }
+
+        var endReader = new Utf8JsonReader("[]"u8);
+        endReader.Read();
+        endReader.Read();
+        try
+        {
+            JsonPath.Parse("$").Evaluate(ref endReader);
+            Assert.Fail("The evaluation must fail");
+        }
+        catch (JsonException)
+        {
+        }
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("{")]
+    [InlineData("[1,2")]
+    [InlineData("[1] 2")]
+    [InlineData("[1] x")]
+    [InlineData("[1,]")]
+    [InlineData("{\"a\":1,}")]
+    public void EvaluateStream_InvalidJsonThrows(string json)
+    {
+        var path = JsonPath.Parse("$..*");
+        Assert.ThrowsAny<JsonException>(() => path.EvaluateStream(new MemoryStream(Encoding.UTF8.GetBytes(json))).ToList());
+        using var stream = new OneByteStream(Encoding.UTF8.GetBytes(json));
+        Assert.ThrowsAny<JsonException>(() => path.EvaluateStream(stream).ToList());
+        using var asyncStream = new OneByteStream(Encoding.UTF8.GetBytes(json));
+        Assert.ThrowsAny<JsonException>(() => path.EvaluateStreamAsync(asyncStream).ToBlockingEnumerable().ToList());
+    }
+
+    [Theory]
+    [InlineData("\uFEFF[1]")]
+    [InlineData("  [1]  \n")]
+    [InlineData("[ /* comment */ 1 // comment\n]")]
+    [InlineData("[1,] ")]
+    public void EvaluateStream_ReaderOptions(string json)
+    {
+        var options = new JsonReaderOptions { CommentHandling = JsonCommentHandling.Allow, AllowTrailingCommas = true };
+        var bytes = Encoding.UTF8.GetBytes(json);
+        using var stream = new OneByteStream(bytes);
+        Assert.Equal(["1"], JsonPath.Parse("$[*]").EvaluateStream(new MemoryStream(bytes), options).Select(match => match.Value!.ToJsonString()));
+        Assert.Equal(["1"], JsonPath.Parse("$[*]").EvaluateStream(stream, options).Select(match => match.Value!.ToJsonString()));
+    }
+
+    [Fact]
+    public void EvaluateStream_MultipleValues()
+    {
+        var options = new JsonReaderOptions { AllowMultipleValues = true };
+        Assert.Equal(["1"], JsonPath.Parse("$[*]").EvaluateStream(new MemoryStream("[1] [2] {"u8.ToArray()), options).Select(match => match.Value!.ToJsonString()));
+    }
+
+    [Fact]
+    public void EvaluateStream_ReturnsMatchesAsTheyAreRead()
+    {
+        // The data after the first match is invalid, but it is not read when the enumeration stops before it
+        var json = Encoding.UTF8.GetBytes("""[{"id":1},{"id":2},""" + new string(' ', 100_000) + "invalid");
+        Assert.Equal("1", JsonPath.Parse("$[*].id").EvaluateStream(new MemoryStream(json)).First().Value!.ToJsonString());
+        Assert.ThrowsAny<JsonException>(() => JsonPath.Parse("$[*].id").EvaluateStream(new MemoryStream(json)).ToList());
+    }
+
+    [Fact]
+    public async Task EvaluateStream_StopsAtTheFirstMatch()
+    {
+        // The data after the first match is in the same read, but it is not processed before the next match is requested
+        var json = "[1,invalid]"u8.ToArray();
+        Assert.Equal("1", JsonPath.Parse("$[*]").EvaluateStream(new MemoryStream(json)).First().Value!.ToJsonString());
+        await foreach (var match in JsonPath.Parse("$[*]").EvaluateStreamAsync(new MemoryStream(json)))
+        {
+            Assert.Equal("1", match.Value!.ToJsonString());
+            break;
+        }
+
+        Assert.ThrowsAny<JsonException>(() => JsonPath.Parse("$[*]").EvaluateStream(new MemoryStream(json)).ToList());
+    }
+
+    [Fact]
+    public async Task EvaluateStream_ReturnsAMatchOnceItsValueIsComplete()
+    {
+        // The producer waits for the consumer after sending the first element: the match must come without another read
+        string[] chunks = ["""[{"id":""", "1},"];
+        using var stream = new ChunkStream(chunks);
+        Assert.Equal("""{"id":1}""", JsonPath.Parse("$[*]").EvaluateStream(stream).First().Value!.ToJsonString());
+
+        using var asyncStream = new ChunkStream(chunks);
+        await foreach (var match in JsonPath.Parse("$[*]").EvaluateStreamAsync(asyncStream))
+        {
+            Assert.Equal("""{"id":1}""", match.Value!.ToJsonString());
+            break;
+        }
+    }
+
+    [Fact]
+    public void EvaluateStream_LargeSelectedValueReadInSmallChunks()
+    {
+        // A selected value is only checked for completeness once the buffer is full, not after each read: checking it
+        // after each one-byte read would scan it once per byte
+        var json = Encoding.UTF8.GetBytes("{\"a\":[" + string.Join(',', Enumerable.Range(0, 100_000)) + "]}");
+        using var stream = new OneByteStream(json);
+        var match = Assert.Single(JsonPath.Parse("$.a").EvaluateStream(stream));
+        Assert.HasCount(100_000, match.Value!.AsArray());
+
+        using var lastStream = new OneByteStream(json);
+        Assert.Equal("99999", Assert.Single(JsonPath.Parse("$.a[-1]").EvaluateStream(lastStream)).Value!.ToJsonString());
+    }
+
+    [Fact]
+    public void EvaluateStream_LargeDocument()
+    {
+        using var stream = new GeneratedArrayStream(count: 200_000);
+        var matches = new List<string>();
+        foreach (var match in JsonPath.Parse("$[?@.id == 3 || @.id == 199999].name").EvaluateStream(stream))
+        {
+            matches.Add(match.Value!.GetValue<string>());
+        }
+
+        Assert.Equal(["item3", "item199999"], matches);
+        Assert.True(stream.Position > 5_000_000, "The document is large");
+    }
+
+    [Fact]
+    public async Task EvaluateStreamAsync_Cancellation()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        var stream = new MemoryStream("[1,2]"u8.ToArray());
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            await foreach (var match in JsonPath.Parse("$[*]").EvaluateStreamAsync(stream, cancellationToken: cts.Token))
+            {
+                _ = match;
+            }
+        });
+    }
+
+    [Fact]
+    public void EvaluateStream_NullStreamThrows()
+    {
+        Assert.Throws<ArgumentNullException>(() => JsonPath.Parse("$").EvaluateStream(null!));
+        Assert.Throws<ArgumentNullException>(() => JsonPath.Parse("$").EvaluateStreamAsync(null!));
+    }
+
+    [Fact]
+    public void DocumentationExample_EvaluateStream()
+    {
+        #region JsonPath_EvaluateStream
+        // Any stream, such as a file or the body of an HTTP response
+        using var stream = new MemoryStream("""{"orders":[{"id":1,"total":8},{"id":2,"total":120},{"id":3,"total":40}]}"""u8.ToArray());
+
+        // Only the selected values, and the values a filter tests, are parsed: the document is never loaded in memory
+        var ids = new List<int>();
+        foreach (var match in JsonPath.Parse("$.orders[?@.total > 10].id").EvaluateStream(stream))
+        {
+            ids.Add(match.Value!.GetValue<int>());
+        }
+
+        Assert.Equal([2, 3], ids);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EvaluateReader()
+    {
+        #region JsonPath_EvaluateReader
+        var reader = new Utf8JsonReader("""{"store":{"book":[{"title":"A"},{"title":"B"}]}}"""u8);
+
+        JsonPathResult result = JsonPath.Parse("$.store.book[*].title").Evaluate(ref reader);
+        Assert.Equal(["$['store']['book'][0]['title']", "$['store']['book'][1]['title']"], result.Select(match => match.Path));
         #endregion
     }
 
@@ -3139,4 +3731,175 @@ internal sealed class MyNodeNavigator : JsonPathNavigator<MyNode>
     }
 }
 #endregion
+
+internal sealed class TextNumberNode
+{
+    public TextNumberNode(string text)
+    {
+        Text = text;
+    }
+
+    private TextNumberNode(TextNumberNode[] items)
+    {
+        Items = items;
+    }
+
+    public string? Text { get; }
+
+    public TextNumberNode[]? Items { get; }
+
+    public static TextNumberNode Array(params TextNumberNode[] items) => new(items);
+}
+
+/// <summary>A navigator over numbers known by their text only, such as values read from a CSV file.</summary>
+internal sealed class TextNumberNavigator : JsonPathNavigator<TextNumberNode>
+{
+    public static TextNumberNavigator Instance { get; } = new();
+
+    public override JsonPathNodeKind GetKind(TextNumberNode? value) => value?.Items is not null ? JsonPathNodeKind.Array : JsonPathNodeKind.Number;
+
+    public override bool TryGetPropertyValue(TextNumberNode? value, string name, out TextNumberNode? result)
+    {
+        result = null;
+        return false;
+    }
+
+    public override IEnumerable<JsonPathProperty<TextNumberNode>> GetProperties(TextNumberNode? value) => [];
+
+    public override int GetArrayLength(TextNumberNode? value) => value?.Items?.Length ?? 0;
+
+    public override bool TryGetElement(TextNumberNode? value, int index, out TextNumberNode? result)
+    {
+        result = value?.Items?[index];
+        return result is not null;
+    }
+
+    public override bool TryGetString(TextNumberNode? value, out string? result)
+    {
+        result = null;
+        return false;
+    }
+
+    // Every value rounds to the same double, as the numbers of the test do
+    public override bool TryGetNumber(TextNumberNode? value, out double result)
+    {
+        result = 9007199254740992;
+        return value?.Text is not null;
+    }
+
+    public override bool TryGetNumberText(TextNumberNode? value, [NotNullWhen(true)] out string? result)
+    {
+        result = value?.Text;
+        return result is not null;
+    }
+
+    public override bool TryGetBoolean(TextNumberNode? value, out bool result)
+    {
+        result = false;
+        return false;
+    }
+}
+
+/// <summary>A stream of <c>[{"id":0,"name":"item0"},...]</c>, generated as it is read.</summary>
+internal sealed class GeneratedArrayStream(int count) : Stream
+{
+    private readonly byte[] _item = new byte[64];
+    private int _index = -1;
+    private int _itemLength;
+    private int _itemPosition;
+    private long _position;
+
+    public override bool CanRead => true;
+
+    public override bool CanSeek => false;
+
+    public override bool CanWrite => false;
+
+    public override long Length => throw new NotSupportedException();
+
+    public override long Position
+    {
+        get => _position;
+        set => throw new NotSupportedException();
+    }
+
+    public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+    public override int Read(Span<byte> buffer)
+    {
+        if (_itemPosition == _itemLength)
+        {
+            if (_index > count)
+                return 0;
+
+            _index++;
+            var text = _index switch
+            {
+                0 => "[",
+                _ when _index == count + 1 => "]",
+                _ => (_index > 1 ? "," : "") + "{\"id\":" + (_index - 1).ToString(CultureInfo.InvariantCulture) + ",\"name\":\"item" + (_index - 1).ToString(CultureInfo.InvariantCulture) + "\"}",
+            };
+            _itemLength = Encoding.UTF8.GetBytes(text, _item);
+            _itemPosition = 0;
+        }
+
+        var length = Math.Min(buffer.Length, _itemLength - _itemPosition);
+        _item.AsSpan(_itemPosition, length).CopyTo(buffer);
+        _itemPosition += length;
+        _position += length;
+        return length;
+    }
+
+    public override void Flush() => throw new NotSupportedException();
+
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+    public override void SetLength(long value) => throw new NotSupportedException();
+
+    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+}
+
+/// <summary>A stream that returns one chunk per read, and fails when it is read past them, as a stream that waits would block.</summary>
+internal sealed class ChunkStream(string[] chunks) : Stream
+{
+    private int _index;
+
+    public override bool CanRead => true;
+
+    public override bool CanSeek => false;
+
+    public override bool CanWrite => false;
+
+    public override long Length => throw new NotSupportedException();
+
+    public override long Position
+    {
+        get => throw new NotSupportedException();
+        set => throw new NotSupportedException();
+    }
+
+    public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+    public override int Read(Span<byte> buffer)
+    {
+        if (_index == chunks.Length)
+            throw new InvalidOperationException("The stream is read past the data it has received.");
+
+        var bytes = Encoding.UTF8.GetBytes(chunks[_index++]);
+        bytes.CopyTo(buffer);
+        return bytes.Length;
+    }
+
+    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => ValueTask.FromResult(Read(buffer.Span));
+
+    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => Task.FromResult(Read(buffer, offset, count));
+
+    public override void Flush() => throw new NotSupportedException();
+
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+    public override void SetLength(long value) => throw new NotSupportedException();
+
+    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+}
 #pragma warning restore MA0048

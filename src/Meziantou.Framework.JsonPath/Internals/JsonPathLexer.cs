@@ -455,7 +455,7 @@ internal ref struct JsonPathLexer
             // Try to parse as long for integer values (index/slice selectors need exact integers)
             if (long.TryParse(numberSpan, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var longValue))
             {
-                return new JsonPathToken(JsonPathTokenKind.NumberLiteral, pos, longValue, isIntegerLiteral: true);
+                return new JsonPathToken(JsonPathTokenKind.NumberLiteral, pos, longValue, isIntegerLiteral: true, numberSpan.ToString());
             }
         }
 
@@ -464,7 +464,7 @@ internal ref struct JsonPathLexer
             throw new FormatException($"Invalid number '{numberSpan}' at position {pos}.");
         }
 
-        return new JsonPathToken(JsonPathTokenKind.NumberLiteral, pos, doubleValue, isIntegerLiteral: false);
+        return new JsonPathToken(JsonPathTokenKind.NumberLiteral, pos, doubleValue, isIntegerLiteral: false, numberSpan.ToString());
     }
 
     private JsonPathToken ReadIdentifierOrKeyword(int pos, int firstLength)

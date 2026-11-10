@@ -138,7 +138,8 @@ Assert.Equal("[]", Select("$[?@.value < @.missing || @.value > @.missing].id"));
 
 - **Values of different types are never equal**: the string `"1"` is not equal to the number `1`, and `null` is only
   equal to `null`.
-- **Numbers compare by value**: `1`, `1.0` and `1e0` are equal. They are compared as `double` values; see
+- **Numbers compare by value**: `1`, `1.0` and `1e0` are equal. The comparison is exact, even for numbers that a
+  `double` does not hold: `9007199254740993` is greater than `9007199254740992`. See
   [Number precision](09-Limitations.md#number-precision).
 - **Strings compare by Unicode code point**, without culture rules: `"B" < "a"` is true, `"a" < "B"` is false.
 - **Arrays and objects compare deeply**: equal when they have the same elements in the same order, or the same members

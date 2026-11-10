@@ -24,4 +24,6 @@ public readonly struct JsonPathMatch
     /// </summary>
     /// <remarks>The path is rendered on first access and cached, so evaluations that never read it do not pay for it.</remarks>
     public string Path => _path.Value;
+
+    internal PathNode? PathNode => _path.Node;
 }

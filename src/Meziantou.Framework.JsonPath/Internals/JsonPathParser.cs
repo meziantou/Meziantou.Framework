@@ -486,7 +486,7 @@ internal ref struct JsonPathParser
 
             case JsonPathTokenKind.NumberLiteral:
                 {
-                    var value = _current.NumberValue;
+                    var value = new NumberLiteral(_current.NumberValue, _current.StringValue!);
                     Advance();
                     return new LiteralComparable(value);
                 }
@@ -751,7 +751,7 @@ internal ref struct JsonPathParser
 
             case JsonPathTokenKind.NumberLiteral:
                 {
-                    var value = _current.NumberValue;
+                    var value = new NumberLiteral(_current.NumberValue, _current.StringValue!);
                     Advance();
                     return FunctionArgument.FromLiteral(value);
                 }

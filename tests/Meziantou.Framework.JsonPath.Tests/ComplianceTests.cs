@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Xunit.Sdk;
 using Meziantou.Framework.Json;
+using Meziantou.Framework.Json.Internals;
 
 namespace Meziantou.Framework.JsonPathTests;
 
@@ -91,6 +92,60 @@ public sealed class ComplianceTests
         using var document = JsonDocument.Parse(testCase.Document?.ToJsonString() ?? "null");
         var elementMatches = path.Evaluate(document).Select(match => new ActualMatch(JsonNode.Parse(match.Value.GetRawText()), match.Path)).ToArray();
         AssertExpectedResult(testCase, elementMatches, nameof(JsonElement));
+
+        AssertStreamingMatches(path, testCase.Document, nodeMatches);
+    }
+
+    /// <summary>
+    /// The streaming evaluation selects the values of <see cref="JsonPath.Evaluate(JsonNode?)"/>, in document order.
+    /// The stream is read one byte at a time, so that every token is split across reads.
+    /// </summary>
+    private static void AssertStreamingMatches(JsonPath path, JsonNode? document, ActualMatch[] nodeMatches)
+    {
+        var order = GetDocumentOrder(document);
+        var expected = FormatResult([.. nodeMatches.OrderBy(match => order[match.Path])]);
+        var json = Encoding.UTF8.GetBytes(document?.ToJsonString() ?? "null");
+
+        var reader = new Utf8JsonReader(json);
+        Assert.Equal(expected, FormatResult([.. path.Evaluate(ref reader).Select(match => new ActualMatch(match.Value, match.Path))]));
+
+        using var stream = new OneByteStream(json);
+        Assert.Equal(expected, FormatResult([.. path.EvaluateStream(stream).Select(match => new ActualMatch(match.Value, match.Path))]));
+
+        using var asyncStream = new OneByteStream(json);
+        var asyncMatches = path.EvaluateStreamAsync(asyncStream).ToBlockingEnumerable().Select(match => new ActualMatch(match.Value, match.Path));
+        Assert.Equal(expected, FormatResult([.. asyncMatches]));
+    }
+
+    // Maps the normalized path of every value to its position in a depth-first walk of the document
+    private static Dictionary<string, int> GetDocumentOrder(JsonNode? document)
+    {
+        var order = new Dictionary<string, int>(StringComparer.Ordinal);
+        Visit(document, path: null);
+        return order;
+
+        void Visit(JsonNode? node, PathNode? path)
+        {
+            order.Add(NormalizedPathBuilder.Build(path), order.Count);
+            switch (node)
+            {
+                case JsonObject obj:
+                    foreach (var property in obj)
+                    {
+                        Visit(property.Value, PathNode.FromName(path, property.Key));
+                    }
+
+                    break;
+
+                case JsonArray array:
+                    for (var i = 0; i < array.Count; i++)
+                    {
+                        Visit(array[i], PathNode.FromIndex(path, i));
+                    }
+
+                    break;
+            }
+        }
     }
 
     private static void AssertExpectedResult(ComplianceTestCase testCase, ActualMatch[] actual, string navigator)
@@ -292,4 +347,16 @@ public sealed class ComplianceTestCase : IXunitSerializable
         info.AddValue(nameof(ResultPaths), ResultPaths?.ToJsonString());
         info.AddValue(nameof(ResultsPaths), ResultsPaths?.ToJsonString());
     }
+}
+
+/// <summary>A stream that returns one byte per read, as a slow network stream can.</summary>
+internal sealed class OneByteStream(byte[] data) : MemoryStream(data)
+{
+    public override int Read(byte[] buffer, int offset, int count) => base.Read(buffer, offset, Math.Min(count, 1));
+
+    public override int Read(Span<byte> buffer) => base.Read(buffer[..Math.Min(buffer.Length, 1)]);
+
+    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => base.ReadAsync(buffer, offset, Math.Min(count, 1), cancellationToken);
+
+    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => base.ReadAsync(buffer[..Math.Min(buffer.Length, 1)], cancellationToken);
 }

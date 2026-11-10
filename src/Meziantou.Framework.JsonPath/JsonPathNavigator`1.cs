@@ -54,6 +54,44 @@ public abstract class JsonPathNavigator<TValue>
     /// <returns><see langword="true"/> when <paramref name="value"/> represents a number; otherwise, <see langword="false"/>.</returns>
     public abstract bool TryGetNumber(TValue? value, out double result);
 
+    /// <summary>Gets the exact text of a number scalar value, such as <c>9007199254740993</c> or <c>0.1</c>.</summary>
+    /// <param name="value">The scalar value.</param>
+    /// <param name="result">When this method returns, contains the number as JSON writes it.</param>
+    /// <returns><see langword="true"/> when <paramref name="value"/> represents a number whose text is known; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// Filters compare the <see cref="double"/> values of <see cref="TryGetNumber"/> first. When two numbers round to the
+    /// same <see cref="double"/>, they compare their texts, so that distinct numbers such as <c>9007199254740992</c> and
+    /// <c>9007199254740993</c> do not compare as equal. Return <see langword="false"/> when the text is not known: the numbers
+    /// then compare as <see cref="double"/> values. The default implementation returns <see langword="false"/>.
+    /// The text has an optional minus sign, digits, an optional fraction and an optional exponent, like a JSON number;
+    /// leading zeros and an uppercase <c>E</c> are accepted, so the result of <c>ToString(CultureInfo.InvariantCulture)</c> on
+    /// a <see cref="long"/>, a <see cref="decimal"/> or a <see cref="System.Numerics.BigInteger"/> can be returned as is.
+    /// </remarks>
+    public virtual bool TryGetNumberText(TValue? value, [NotNullWhen(true)] out string? result)
+    {
+        result = null;
+        return false;
+    }
+
+    /// <summary>Gets the exact text of a number, in UTF-8, preferably without allocating.</summary>
+    /// <param name="value">The scalar value.</param>
+    /// <param name="buffer">A buffer the text can be written to.</param>
+    /// <param name="result">The text, in <paramref name="buffer"/> or elsewhere.</param>
+    internal virtual bool TryGetNumberUtf8(TValue? value, Span<byte> buffer, out ReadOnlySpan<byte> result)
+    {
+        if (!TryGetNumberText(value, out var text))
+        {
+            result = default;
+            return false;
+        }
+
+        // A number is written in ASCII. Other characters make the text invalid, which the comparison detects.
+        result = Encoding.UTF8.GetMaxByteCount(text.Length) <= buffer.Length
+            ? buffer[..Encoding.UTF8.GetBytes(text, buffer)]
+            : Encoding.UTF8.GetBytes(text);
+        return true;
+    }
+
     /// <summary>Gets a boolean scalar value.</summary>
     /// <param name="value">The scalar value.</param>
     /// <param name="result">When this method returns, contains the boolean value.</param>

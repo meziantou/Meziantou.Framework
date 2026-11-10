@@ -19,6 +19,9 @@ internal sealed class NormalizedPath
         _path = path;
     }
 
+    /// <summary>Gets the last step of the path, or <see langword="null"/> for the root.</summary>
+    public PathNode? Node => _path;
+
     /// <summary>Gets the normalized path, building it on first access.</summary>
     /// <remarks>
     /// A benign race can render the same string twice; both are equal, so no lock is needed.

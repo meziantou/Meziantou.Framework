@@ -1,6 +1,6 @@
 ---
 title: Modifying documents
-description: Draw over the pages of an existing document, add and remove pages, change its metadata, and save it in full or as an incremental update.
+description: Draw over or under the pages of an existing document, add watermarks, add and remove pages, change its metadata, and save it in full or as an incremental update.
 ---
 
 ## Stamp the pages of a document
@@ -47,6 +47,47 @@ public static void StampPages(string inputPath, string outputPath)
 - Use [DisplayToUserSpace](cref:Meziantou.Framework.Pdf.PdfPage.DisplayToUserSpace) to draw on a rotated or cropped page as on an upright page: see
   [Managing pages](07-ManagingPages.md#draw-on-a-rotated-or-cropped-page).
 - Add, remove, move, duplicate and import pages with [Pages](cref:Meziantou.Framework.Pdf.PdfDocument.Pages): see [Managing pages](07-ManagingPages.md).
+
+## Draw under the content of a page
+
+[CreateContentBuilder](cref:Meziantou.Framework.Pdf.PdfPage.CreateContentBuilder) with [PdfContentPlacement.Under](cref:Meziantou.Framework.Pdf.PdfContentPlacement.Under) draws before the content of the page, so
+under it: a background, a letterhead, or a watermark that the text and the images of the page cover.
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfPageTests.cs;region=Pdf_Underlay;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A background: the content of the page is painted over it
+page.CreateContentBuilder(PdfContentPlacement.Under)
+    .SetFillRgb(0.9, 0.9, 1)
+    .Rectangle(page.MediaBox)
+    .Fill()
+    .Complete();
+```
+<!-- endref -->
+
+- The new content starts with the default graphics state and is closed by a restore of the graphics state, so the
+  content of the page starts as it did before.
+- Each new builder under the page draws under the content of the builders created under it before.
+- An opaque page covers what is under it: a scanned page is an image of the whole page, and some documents paint a
+  white rectangle first. Draw over the content, with transparency, to be seen on these pages.
+
+## Add a watermark
+
+[PdfDocument.AddWatermark](cref:Meziantou.Framework.Pdf.PdfDocument.AddWatermark) writes a text across every page, such as "DRAFT" or "CONFIDENTIAL":
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfPageTests.cs;region=Pdf_Watermark;format=md-fenced-code-block;dedent=true -->
+```csharp
+// On every page, along its diagonal; the text is drawn once and painted by each page
+document.AddWatermark("DRAFT", new PdfWatermarkOptions { Opacity = 0.2 });
+```
+<!-- endref -->
+
+- The text is centered on the page as it is displayed, cropped and rotated, along the diagonal from the lower-left to
+  the upper-right corner, and sized to fit in 80% of the page. [PdfWatermarkOptions](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions) sets the font, the font
+  size, the color, the opacity, the angle, and whether it is painted over or under the content.
+- The text is drawn once, in a form XObject that each page paints, so a long document stays small.
+  [PdfPage.AddWatermark](cref:Meziantou.Framework.Pdf.PdfPage.AddWatermark) adds a watermark to one page.
+- The watermark is marked as an artifact, so that screen readers skip it in tagged documents. It is part of the content:
+  the text extraction returns it, and it can be removed only by editing the content.
 
 ## Full and incremental saves
 

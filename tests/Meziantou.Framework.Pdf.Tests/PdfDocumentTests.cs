@@ -721,6 +721,179 @@ public sealed class PdfDocumentTests
         Assert.Equal(PdfVersion.Pdf17, read.Version);
     }
 
+    /// <summary>
+    /// A document that is not PDF/A: Helvetica not embedded, JavaScript that opens it and additional actions on its
+    /// page, a content stream encoded with LZWDecode, a square annotation without appearance, and XMP metadata.
+    /// </summary>
+    internal static byte[] CreateDocumentToConvert()
+    {
+        var content = "BT /F1 24 Tf 72 700 Td (Hello, archive) Tj ET 0 0 1 rg 72 600 100 50 re f"u8.ToArray();
+        var lzw = Meziantou.Framework.Pdf.Filters.LzwFilter.Encode(content);
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /OpenAction << /S /JavaScript /JS (app.alert('hi')) >> /Metadata 8 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R /AA << /O << /S /JavaScript /JS (1) >> >> /Annots [6 0 R 7 0 R] >>")
+            .Add(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+            .Add(5, "<< /Length " + lzw.Length.ToString(CultureInfo.InvariantCulture) + " /Filter /LZWDecode >>\nstream\n" + Encoding.Latin1.GetString(lzw) + "\nendstream")
+            .Add(6, "<< /Type /Annot /Subtype /Square /Rect [300 300 400 400] /C [1 0 0] >>")
+            .Add(7, "<< /Type /Annot /Subtype /Link /Rect [72 690 200 720] /A << /S /Launch /F (calc.exe) >> >>")
+            .Add(8, HandWrittenPdf.Stream("<x:xmpmeta xmlns:x='adobe:ns:meta/'><rdf:RDF xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'><rdf:Description xmlns:custom='http://example.com/custom/' custom:id='42'/></rdf:RDF></x:xmpmeta>", " /Type /Metadata /Subtype /XML"));
+        return file.ToArray();
+    }
+
+    [Fact]
+    public void Example_ConvertToPdfA()
+    {
+        var file = CreateDocumentToConvert();
+
+        #region Pdf_ConvertToPdfA
+        var document = PdfDocument.Open(file);
+        var result = document.ConvertToPdfA(PdfAConformance.PdfA2B);
+        if (result.Succeeded)
+        {
+            // The save writes a PDF/A-2b document
+            var pdf = document.ToByteArray();
+        }
+        else
+        {
+            // What the conversion could not fix, such as a font that is not embedded and has no substitute
+            var reasons = string.Join(Environment.NewLine, result.Violations);
+        }
+        #endregion
+
+        Assert.True(result.Succeeded, string.Join('\n', result.Violations));
+        Assert.Equal(PdfAConformance.PdfA2B, document.PdfAConformance);
+        Assert.Contains("Removed the JavaScript actions", result.Changes);
+        Assert.Contains("Removed the Launch actions", result.Changes);
+        Assert.Contains("Removed the additional actions (AA)", result.Changes);
+        Assert.Contains("Decoded the LZWDecode streams: they are compressed with FlateDecode", result.Changes);
+        Assert.Contains("Embedded a substitute of the standard font Helvetica (Liberation, with its widths)", result.Changes);
+        Assert.Contains("Generated the appearance of the Square annotations that had none", result.Changes);
+
+        var read = PdfDocument.Open(document.ToByteArray(new PdfSaveOptions { CompressStreams = false }));
+        Assert.Equal("Hello, archive", read.Pages[0].ExtractText());
+        var xmp = Encoding.UTF8.GetString(read.GetXmpMetadata()!);
+        Assert.Contains("<pdfaid:part>2</pdfaid:part>", xmp);
+        Assert.DoesNotContain("custom", xmp);
+        Assert.Null(read.Catalog[PdfName.Create("OpenAction")]);
+        Assert.Null(read.Pages[0].Dictionary[PdfName.Create("AA")]);
+        Assert.Null(read.Pages[0].Annotations[1].Dictionary[PdfNames.A]);
+        Assert.NotNull(read.Pages[0].Annotations[0].Dictionary[PdfName.Create("AP")]);
+        var font = read.Pages[0].Resources!.Get<PdfDictionary>(PdfNames.Font)!.Get<PdfDictionary>(PdfName.Create("F1"))!;
+        Assert.Equal("TrueType", font.GetName(PdfNames.Subtype)!.Value);
+        Assert.NotNull(font.Get<PdfDictionary>(PdfName.Create("FontDescriptor"))!.Get<PdfStream>(PdfNames.FontFile2));
+    }
+
+    [Fact]
+    public void ConvertToPdfA_KeepsThePositionsOfTheGlyphs()
+    {
+        var before = PdfDocument.Open(CreateDocumentToConvert()).Pages[0].ExtractTextLayout().Lines[0].Glyphs;
+        var document = PdfDocument.Open(CreateDocumentToConvert());
+
+        document.ConvertToPdfA(PdfAConformance.PdfA3U);
+
+        var after = PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractTextLayout().Lines[0].Glyphs;
+        Assert.Equal(before.Select(glyph => (glyph.Text, glyph.Origin, glyph.End)), after.Select(glyph => (glyph.Text, glyph.Origin, glyph.End)));
+    }
+
+    [Fact]
+    public void ConvertToPdfA_RendersTheSubstituteFont()
+    {
+        var document = PdfDocument.Open(CreateDocumentToConvert());
+
+        document.ConvertToPdfA(PdfAConformance.PdfA2B);
+
+        // The text is drawn with the embedded font: dark pixels where the glyphs are
+        using var image = Rendering.PdfRenderer.RenderPage(PdfDocument.Open(document.ToByteArray()).Pages[0], new Rendering.PdfRenderOptions { UseSystemFonts = false, Dpi = 72 });
+        var dark = 0;
+        for (var x = 72; x < 230; x++)
+        {
+            for (var y = 792 - 720; y < 792 - 695; y++)
+            {
+                if (image.Frames[0][x, y].R < 128)
+                {
+                    dark++;
+                }
+            }
+        }
+
+        Assert.True(dark > 200, $"{dark} dark pixels");
+    }
+
+    [Fact]
+    public void ConvertToPdfA_ReportsWhatItCannotFix()
+    {
+        // A font that is not a standard font, not embedded, and a CMYK fill without a CMYK output intent
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /TrueType /BaseFont /Garamond /Encoding /WinAnsiEncoding >>")
+            .Add(5, HandWrittenPdf.Stream("BT /F1 12 Tf 72 700 Td (Text) Tj ET 0 0 0 1 k 0 0 10 10 re f"));
+        var document = PdfDocument.Open(file.ToArray());
+
+        var result = document.ConvertToPdfA(PdfAConformance.PdfA2B);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(PdfAConformance.None, document.PdfAConformance);
+        Assert.Contains(result.Violations, violation => violation.Contains("Garamond", StringComparison.Ordinal));
+        Assert.Contains("The document paints with DeviceCMYK: PDF/A needs a CMYK output intent (PdfAConversionOptions.OutputIntentProfile)", result.Violations);
+    }
+
+    [Fact]
+    public void ConvertToPdfA_AddsDefaultRgbWithACmykOutputIntent()
+    {
+        var cmyk = Meziantou.Framework.Imaging.Metadata.IccProfile.Srgb.Data.ToArray();
+        // An ICC profile header claiming CMYK, for the output intent
+        Encoding.Latin1.GetBytes("CMYK").CopyTo(cmyk, 16);
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << >> /Contents 4 0 R >>")
+            .Add(4, HandWrittenPdf.Stream("0 0 0 1 k 0 0 10 10 re f 1 0 0 rg 20 20 10 10 re f"));
+        var document = PdfDocument.Open(file.ToArray());
+
+        var result = document.ConvertToPdfA(PdfAConformance.PdfA2B, new PdfAConversionOptions { OutputIntentProfile = cmyk });
+
+        Assert.True(result.Succeeded, string.Join('\n', result.Violations));
+        Assert.Contains("Added an sRGB DefaultRGB color space: the output intent is not RGB", result.Changes);
+        Assert.NotNull(document.Pages[0].Resources!.Get<PdfDictionary>(PdfNames.ColorSpace)![PdfName.Create("DefaultRGB")]);
+    }
+
+    [Fact]
+    public void ConvertToPdfA_RemovesTheEncryptionAndTheFilesThatAreNotPdfA()
+    {
+        var source = new PdfDocument();
+        source.Pages.Add(PdfSize.A4);
+        source.EmbeddedFiles.Add("data.csv", "a,b"u8);
+        source.Encryption = new PdfEncryption("user", "owner");
+        var document = PdfDocument.Open(source.ToByteArray(), new PdfReadOptions { Password = "user" });
+
+        var pdfA2 = document.ConvertToPdfA(PdfAConformance.PdfA2B);
+
+        Assert.True(pdfA2.Succeeded, string.Join('\n', pdfA2.Violations));
+        Assert.Contains("Removed the encryption", pdfA2.Changes);
+        Assert.Contains("Removed the embedded file 'data.csv': PDF/A-2 embeds PDF/A documents only (use PDF/A-3)", pdfA2.Changes);
+        Assert.Empty(PdfDocument.Open(document.ToByteArray()).EmbeddedFiles);
+
+        var pdfA3 = PdfDocument.Open(source.ToByteArray(), new PdfReadOptions { Password = "user" });
+        var result = pdfA3.ConvertToPdfA(PdfAConformance.PdfA3B);
+        Assert.True(result.Succeeded, string.Join('\n', result.Violations));
+        Assert.Single(PdfDocument.Open(pdfA3.ToByteArray()).EmbeddedFiles);
+    }
+
+    [Theory]
+    [InlineData(PdfAConformance.PdfA1B)]
+    [InlineData(PdfAConformance.PdfA2A)]
+    [InlineData(PdfAConformance.PdfA4)]
+    [InlineData(PdfAConformance.None)]
+    public void ConvertToPdfA_RejectsTheLevelsItDoesNotSupport(PdfAConformance conformance)
+    {
+        var document = new PdfDocument();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => document.ConvertToPdfA(conformance));
+    }
+
     [Fact]
     public void TheParentTreeMapsTheMarkedContentAndTheAnnotations()
     {

@@ -122,9 +122,9 @@ public sealed class PdfImageOccurrence
         };
     }
 
-    internal static PdfImageOccurrence FromInline(PdfPage page, PdfMatrix matrix, PdfDictionary inline, ReadOnlyMemory<byte> data, PdfDictionary? resources)
+    /// <summary>Expands the abbreviated keys and values of the dictionary of an inline image (8.9.7, table 91 and 92).</summary>
+    internal static PdfDictionary ExpandInlineDictionary(PdfDictionary inline)
     {
-        // The abbreviations of inline images (8.9.7, table 91 and 92)
         var dictionary = new PdfDictionary();
         foreach (var (key, value) in inline)
         {
@@ -159,6 +159,12 @@ public sealed class PdfImageOccurrence
             dictionary[PdfName.Create(name)] = expanded;
         }
 
+        return dictionary;
+    }
+
+    internal static PdfImageOccurrence FromInline(PdfPage page, PdfMatrix matrix, PdfDictionary inline, ReadOnlyMemory<byte> data, PdfDictionary? resources)
+    {
+        var dictionary = ExpandInlineDictionary(inline);
         return new PdfImageOccurrence(page, matrix, dictionary, data, resources, stream: null, inline);
     }
 }

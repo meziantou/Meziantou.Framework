@@ -71,6 +71,14 @@ internal sealed partial class TextExtractor
         return new PdfTextLayout(text, lines!, lines!.Count > 0 ? [new PdfTextBlock(lines)] : []);
     }
 
+    /// <summary>Counts the glyphs of a page whose font gives no text, such as the codes of a font without encoding information.</summary>
+    public static int CountGlyphsWithoutText(PdfPage page)
+    {
+        var extractor = new TextExtractor(page.Document.TextDecoders, PdfTextExtractionOptions.Default, withBounds: false);
+        extractor.RunPage(page);
+        return extractor._glyphs.Count(glyph => glyph.Text is null);
+    }
+
     private void RunPage(PdfPage page)
     {
         // The content streams of a page are one content: an operator and its operands may be in two streams (7.8.2).
@@ -416,7 +424,7 @@ internal sealed partial class TextExtractor
         state.TextMatrix = PdfMatrix.CreateTranslation(x, y) * state.TextMatrix;
     }
 
-    private static PdfRectangle GetBounds(double x, double y, double advanceX, double advanceY, double acrossX, double acrossY, double low, double high)
+    internal static PdfRectangle GetBounds(double x, double y, double advanceX, double advanceY, double acrossX, double acrossY, double low, double high)
     {
         var x1 = x + (acrossX * low);
         var y1 = y + (acrossY * low);
@@ -509,14 +517,73 @@ internal sealed partial class TextExtractor
     /// is wider than a fraction of the font size. The lines, the words (the glyphs between spaces) and the boxes of the
     /// glyphs are made when the positions are extracted.
     /// </summary>
+    /// <remarks>
+    /// A line that has right-to-left text (Hebrew, Arabic...) does not end when its glyphs go back: the files write it
+    /// in the order of the text, each glyph or word to the left of the previous one, or in the order of the display,
+    /// from left to right. Its glyphs are sorted from left to right, then put in the order of the text by the Unicode
+    /// Bidirectional Algorithm (<see cref="OrderRightToLeftLine"/>).
+    /// </remarks>
     private (string Text, List<PdfTextLine>? Lines) BuildText(bool layout)
     {
         var builder = new StringBuilder();
         var lines = layout ? new List<PdfTextLine>() : null;
-        var lineGlyphs = new List<PdfTextGlyph>();
+        var line = new List<int>();
+        var lineIsRightToLeft = false;
+        TextGlyph? previous = null;
+        for (var i = 0; i < _glyphs.Count; i++)
+        {
+            var glyph = _glyphs[i];
+            if (glyph.Text is null)
+                continue;
+
+            var rightToLeft = ContainsRightToLeft(glyph.Text);
+            if (previous is { } last)
+            {
+                var (along, across) = GetOffset(last, glyph);
+                var size = Math.Max(Math.Max(last.Size, glyph.Size), 0.001);
+                // In the reading order of the layout, a wide gap also ends the line: it can be the gutter between two
+                // columns, and the lines are joined again when no blank space of the page separates them
+                var goesBack = along < -size * 2 && !(lineIsRightToLeft || rightToLeft);
+                if (Math.Abs(across) > size * 0.5 || goesBack || Math.Abs(glyph.Angle - last.Angle) > 0.01 || (_layoutOrder && along > size * ColumnGap))
+                {
+                    AppendLine(builder, lines, line, lineIsRightToLeft);
+                    builder.Append('\n');
+                    line.Clear();
+                    lineIsRightToLeft = false;
+                }
+            }
+
+            line.Add(i);
+            lineIsRightToLeft |= rightToLeft;
+            previous = glyph;
+        }
+
+        AppendLine(builder, lines, line, lineIsRightToLeft);
+        return (builder.ToString(), lines);
+    }
+
+    /// <summary>Gets the position of a glyph relative to the end of the previous one, along and across the baseline of the previous one.</summary>
+    private static (double Along, double Across) GetOffset(TextGlyph last, TextGlyph glyph)
+    {
+        var cos = Math.Cos(last.Angle);
+        var sin = Math.Sin(last.Angle);
+        var dx = glyph.X - last.EndX;
+        var dy = glyph.Y - last.EndY;
+        return ((dx * cos) + (dy * sin), (-dx * sin) + (dy * cos));
+    }
+
+    /// <summary>Appends the text of a line, and makes its words and glyphs when the positions are extracted.</summary>
+    private void AppendLine(StringBuilder builder, List<PdfTextLine>? lines, List<int> line, bool rightToLeft)
+    {
+        if (line.Count == 0)
+            return;
+
+        // The glyphs in the order of the text, and the spaces between them (-1)
+        var items = rightToLeft && !line.Exists(index => _glyphs[index].Font?.IsVertical ?? false) ? OrderRightToLeftLine(line) : AddSpaces(line);
+        var lineStart = builder.Length;
+        var lineGlyphs = lines is null ? null : new List<PdfTextGlyph>();
         var words = new List<PdfTextWord>();
         var wordGlyphs = new List<PdfTextGlyph>();
-        var lineStart = 0;
 
         void EndWord()
         {
@@ -527,84 +594,154 @@ internal sealed partial class TextExtractor
             }
         }
 
-        void EndLine()
+        foreach (var (index, text) in items)
         {
-            EndWord();
-            if (lineGlyphs.Count > 0)
-            {
-                lines!.Add(new PdfTextLine(builder.ToString(lineStart, builder.Length - lineStart), [.. words], [.. lineGlyphs]));
-                lineGlyphs.Clear();
-                words.Clear();
-            }
-        }
-
-        TextGlyph? previous = null;
-        for (var i = 0; i < _glyphs.Count; i++)
-        {
-            var glyph = _glyphs[i];
-            if (glyph.Text is null)
+            builder.Append(text);
+            if (lineGlyphs is null)
                 continue;
 
-            if (previous is { } last)
+            if (index < 0)
             {
-                var cos = Math.Cos(last.Angle);
-                var sin = Math.Sin(last.Angle);
-
-                // The position of the glyph relative to the end of the previous one, along and across the baseline
-                var dx = glyph.X - last.EndX;
-                var dy = glyph.Y - last.EndY;
-                var along = (dx * cos) + (dy * sin);
-                var across = (-dx * sin) + (dy * cos);
-                var size = Math.Max(Math.Max(last.Size, glyph.Size), 0.001);
-                // In the reading order of the layout, a wide gap also ends the line: it can be the gutter between two
-                // columns, and the lines are joined again when no blank space of the page separates them
-                if (Math.Abs(across) > size * 0.5 || along < -size * 2 || Math.Abs(glyph.Angle - last.Angle) > 0.01 || (_layoutOrder && along > size * ColumnGap))
-                {
-                    if (layout)
-                    {
-                        EndLine();
-                    }
-
-                    builder.Append('\n');
-                    lineStart = builder.Length;
-                }
-                else if (along > size * 0.15 && !EndsWithSpace(builder) && glyph.Text is not [' ', ..])
-                {
-                    if (layout)
-                    {
-                        EndWord();
-                    }
-
-                    builder.Append(' ');
-                }
+                EndWord();
+                continue;
             }
 
-            builder.Append(glyph.Text);
-            previous = glyph;
-            if (layout)
+            var glyph = _glyphs[index];
+            var item = new PdfTextGlyph(text, new PdfPoint(glyph.X, glyph.Y), new PdfPoint(glyph.EndX, glyph.EndY), _bounds![index], glyph.Size, glyph.Font?.FontName, glyph.Angle * 180 / Math.PI, glyph.Font?.IsVertical ?? false);
+            lineGlyphs.Add(item);
+            if (string.IsNullOrWhiteSpace(text))
             {
-                var item = new PdfTextGlyph(glyph.Text, new PdfPoint(glyph.X, glyph.Y), new PdfPoint(glyph.EndX, glyph.EndY), _bounds![i], glyph.Size, glyph.Font?.FontName, glyph.Angle * 180 / Math.PI, glyph.Font?.IsVertical ?? false);
-                lineGlyphs.Add(item);
-                if (string.IsNullOrWhiteSpace(glyph.Text))
-                {
-                    EndWord();
-                }
-                else
-                {
-                    wordGlyphs.Add(item);
-                }
+                EndWord();
+            }
+            else
+            {
+                wordGlyphs.Add(item);
             }
         }
 
-        if (layout)
+        if (lines is not null)
         {
-            EndLine();
+            EndWord();
+            lines.Add(new PdfTextLine(builder.ToString(lineStart, builder.Length - lineStart), [.. words], [.. lineGlyphs!]));
         }
-
-        return (builder.ToString(), lines);
     }
 
-    private static bool EndsWithSpace(StringBuilder builder) => builder.Length > 0 && char.IsWhiteSpace(builder[^1]);
+    /// <summary>Keeps the glyphs of a line in the order of the content, with a space where the gap after a glyph is wider than a fraction of the font size.</summary>
+    private List<(int Index, string Text)> AddSpaces(List<int> line)
+    {
+        var result = new List<(int Index, string Text)>(line.Count);
+        for (var i = 0; i < line.Count; i++)
+        {
+            var glyph = _glyphs[line[i]];
+            if (i > 0)
+            {
+                var last = _glyphs[line[i - 1]];
+                var (along, _) = GetOffset(last, glyph);
+                var size = Math.Max(Math.Max(last.Size, glyph.Size), 0.001);
+                if (along > size * 0.15 && !EndsWithSpace(result[^1].Text) && glyph.Text is not [' ', ..])
+                {
+                    result.Add((-1, " "));
+                }
+            }
+
+            result.Add((line[i], glyph.Text!));
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Orders a line that has right-to-left text: its glyphs are sorted from left to right along the baseline, with a
+    /// space where a gap is wider than a fraction of the font size, which gives the line as it is displayed. The rule L2
+    /// of the Unicode Bidirectional Algorithm (UAX #9) applied to the display order gives back the order of the text, as
+    /// it reverses the same runs; the brackets of the right-to-left runs get their mirrored character (rule L4). The
+    /// direction of the paragraph is the direction of most of the strong characters of the line.
+    /// </summary>
+    private List<(int Index, string Text)> OrderRightToLeftLine(List<int> line)
+    {
+        var first = _glyphs[line[0]];
+        var cos = Math.Cos(first.Angle);
+        var sin = Math.Sin(first.Angle);
+        double Start(TextGlyph glyph) => Math.Min((glyph.X * cos) + (glyph.Y * sin), (glyph.EndX * cos) + (glyph.EndY * sin));
+        double End(TextGlyph glyph) => Math.Max((glyph.X * cos) + (glyph.Y * sin), (glyph.EndX * cos) + (glyph.EndY * sin));
+
+        // The display order; the sort is stable, so the glyphs at the same position keep the order of the content
+        var display = line.OrderBy(index => Start(_glyphs[index])).ToList();
+        var items = new List<(int Index, string Text)>(display.Count);
+        for (var i = 0; i < display.Count; i++)
+        {
+            var glyph = _glyphs[display[i]];
+            if (i > 0)
+            {
+                var last = _glyphs[display[i - 1]];
+                var size = Math.Max(Math.Max(last.Size, glyph.Size), 0.001);
+                if (Start(glyph) - End(last) > size * 0.15 && !EndsWithSpace(items[^1].Text) && !string.IsNullOrWhiteSpace(glyph.Text) && !char.IsWhiteSpace(glyph.Text![0]))
+                {
+                    items.Add((-1, " "));
+                }
+            }
+
+            items.Add((display[i], glyph.Text!));
+        }
+
+        // The levels of the display text, and the level of each item: the level of its first character
+        var text = string.Concat(items.Select(item => item.Text));
+        var rightToLeft = 0;
+        var leftToRight = 0;
+        foreach (var rune in text.EnumerateRunes())
+        {
+            switch (UnicodeProperties.GetBidiClass(rune.Value))
+            {
+                case UnicodeBidirectionalCategory.RightToLeft or UnicodeBidirectionalCategory.RightToLeftArabic:
+                    rightToLeft++;
+                    break;
+                case UnicodeBidirectionalCategory.LeftToRight:
+                    leftToRight++;
+                    break;
+            }
+        }
+
+        var levels = new byte[text.Length];
+        UnicodeBidi.ResolveLevels(text, rightToLeft >= leftToRight ? UnicodeBidiDirection.RightToLeft : UnicodeBidiDirection.LeftToRight, levels);
+        var itemLevels = new byte[items.Count];
+        var position = 0;
+        for (var i = 0; i < items.Count; i++)
+        {
+            itemLevels[i] = levels[position];
+            position += items[i].Text.Length;
+        }
+
+        var order = new int[items.Count];
+        UnicodeBidi.GetVisualOrder(itemLevels, order);
+        var result = new List<(int Index, string Text)>(items.Count);
+        foreach (var index in order)
+        {
+            var (glyph, itemText) = items[index];
+            if ((itemLevels[index] & 1) != 0 && itemText.Length == 1 && UnicodeProperties.IsBidiMirrored(itemText[0]) && UnicodeProperties.TryGetBidiMirroringGlyph(itemText[0], out var mirrored) && mirrored <= char.MaxValue)
+            {
+                itemText = ((char)mirrored).ToString();
+            }
+
+            result.Add((glyph, itemText));
+        }
+
+        return result;
+    }
+
+    /// <summary>Indicates whether a text has a strong right-to-left character (bidirectional class R or AL).</summary>
+    private static bool ContainsRightToLeft(string text)
+    {
+        foreach (var rune in text.EnumerateRunes())
+        {
+            if (rune.Value >= 0x590 && UnicodeProperties.GetBidiClass(rune.Value) is UnicodeBidirectionalCategory.RightToLeft or UnicodeBidirectionalCategory.RightToLeftArabic)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool EndsWithSpace(string text) => text.Length > 0 && char.IsWhiteSpace(text[^1]);
+
 
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct TextGlyph(string? Text, double X, double Y, double EndX, double EndY, double Size, double Angle, PdfFontDecoder? Font);

@@ -5,7 +5,7 @@ using Meziantou.Framework.Pdf.Text;
 namespace Meziantou.Framework.Pdf;
 
 /// <summary>A page of a document (ISO 32000-2, 7.7.3.3). The members read and write the page dictionary; the inheritable entries are looked up in the page tree.</summary>
-public sealed class PdfPage
+public sealed partial class PdfPage
 {
     private const int MaxInheritanceDepth = 64;
     private static readonly PdfRectangle DefaultMediaBox = new(0, 0, 612, 792);
@@ -200,20 +200,41 @@ public sealed class PdfPage
     /// shares with other pages (an indirect dictionary, or a category of the page tree) are copied first, so that the
     /// other pages do not change.
     /// </remarks>
-    public PdfContentBuilder CreateContentBuilder()
+    public PdfContentBuilder CreateContentBuilder() => CreateContentBuilder(PdfContentPlacement.Over);
+
+    /// <summary>
+    /// Creates a builder that adds a content stream to the page, painted over or under its content. The content of the
+    /// builder starts with the default graphics state, and does not change the graphics state of the content around it.
+    /// </summary>
+    /// <param name="placement">
+    /// <see cref="PdfContentPlacement.Over"/> to paint over the content of the page (as <see cref="CreateContentBuilder()"/>),
+    /// <see cref="PdfContentPlacement.Under"/> to paint under it, such as a background or a watermark that the content
+    /// covers. The content of each new builder under the page is painted under the content of the builders created before.
+    /// </param>
+    /// <returns>The builder.</returns>
+    /// <remarks>
+    /// The isolation relies on the content of each builder being balanced: call <see cref="PdfContentBuilder.Complete"/>
+    /// to check it. The resources the builder adds go to a resource dictionary of the page itself, as with
+    /// <see cref="CreateContentBuilder()"/>.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="placement"/> is not a value of <see cref="PdfContentPlacement"/>.</exception>
+    public PdfContentBuilder CreateContentBuilder(PdfContentPlacement placement)
     {
-        var streams = new List<PdfObject>();
-        switch (Dictionary[PdfNames.Contents])
+        if (placement is not (PdfContentPlacement.Over or PdfContentPlacement.Under))
+            throw new ArgumentOutOfRangeException(nameof(placement), placement, "The placement is not valid");
+
+        var streams = GetContentReferences();
+        if (placement == PdfContentPlacement.Under)
         {
-            case PdfArray array:
-                streams.AddRange(array);
-                break;
-            case PdfReference reference when reference.Resolve() is PdfArray array:
-                streams.AddRange(array);
-                break;
-            case PdfReference reference:
-                streams.Add(reference);
-                break;
+            // q (content of the builder) Q (content of the page): the page starts with the default graphics state
+            var underlay = new PdfStream();
+            underlay.AppendData("q\n"u8);
+            var restore = new PdfStream();
+            restore.AppendData("Q\n"u8);
+            streams.Insert(0, Document.Objects.Add(restore));
+            streams.Insert(0, Document.Objects.Add(underlay));
+            Dictionary[PdfNames.Contents] = new PdfArray(streams);
+            return new PdfContentBuilder(Document, GetOrCreateResources(), underlay, this);
         }
 
         // Each builder saves the state at the start of the content and restores it before its own content:
@@ -239,6 +260,26 @@ public sealed class PdfPage
         streams.Add(streamReference);
         Dictionary[PdfNames.Contents] = streams.Count == 1 ? streamReference : new PdfArray(streams);
         return new PdfContentBuilder(Document, GetOrCreateResources(), stream, this);
+    }
+
+    /// <summary>Gets the references to the content streams of the page.</summary>
+    private List<PdfObject> GetContentReferences()
+    {
+        var streams = new List<PdfObject>();
+        switch (Dictionary[PdfNames.Contents])
+        {
+            case PdfArray array:
+                streams.AddRange(array);
+                break;
+            case PdfReference reference when reference.Resolve() is PdfArray array:
+                streams.AddRange(array);
+                break;
+            case PdfReference reference:
+                streams.Add(reference);
+                break;
+        }
+
+        return streams;
     }
 
     /// <summary>

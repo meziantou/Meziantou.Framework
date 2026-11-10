@@ -33,7 +33,7 @@ data of the file it was read from.
 
 - [Opening documents](02-OpeningDocuments.md): files, streams and arrays, passwords, read options and repaired files.
 - [Extracting text](03-ExtractingText.md): the text of a page, and search a document.
-- [Modifying documents](04-ModifyingDocuments.md): stamp the pages, add and remove pages, full and incremental saves.
+- [Modifying documents](04-ModifyingDocuments.md): stamp the pages, draw under their content, add watermarks, add and remove pages, full and incremental saves.
 - [The object model](05-ObjectModel.md): read and change the objects of a document directly.
 - [Errors and limits](06-ErrorsAndLimits.md): the exceptions, and how to open the files of untrusted users.
 - [Managing pages](07-ManagingPages.md): move, duplicate, remove and merge pages, page boxes, display coordinates, and

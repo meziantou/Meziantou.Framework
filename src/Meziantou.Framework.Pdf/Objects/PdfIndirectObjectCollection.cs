@@ -16,6 +16,9 @@ public sealed class PdfIndirectObjectCollection
     // objects, and the /Size of the trailer is one more
     internal const int MaxAllocatableObjectNumber = int.MaxValue - 2;
 
+    // The generation of the references of a file to an object it does not have, whose number an added object took: no object has it
+    private const int DanglingGeneration = 65536;
+
     private readonly Dictionary<int, IndirectObjectEntry> _entries = [];
     private int _maxObjectNumber;
     private int _loadDepth;
@@ -156,10 +159,25 @@ public sealed class PdfIndirectObjectCollection
     }
 
     /// <summary>Gets or creates the reference the parser reads (<c>12 0 R</c>).</summary>
+    /// <remarks>
+    /// A reference of the file to an object it does not have (a damaged or truncated file) keeps resolving to the null
+    /// object: its number is not given to the objects added later, and when an object added before the reference was
+    /// read has its number, the reference gets a generation no object has.
+    /// </remarks>
     internal PdfReference GetOrCreateReference(int objectNumber, int generation)
     {
-        if (_entries.TryGetValue(objectNumber, out var entry) && entry.Reference.Generation == generation)
-            return entry.Reference;
+        if (_entries.TryGetValue(objectNumber, out var entry))
+        {
+            if (entry.IsNew)
+                return new PdfReference(this, objectNumber, DanglingGeneration);
+
+            if (entry.Reference.Generation == generation)
+                return entry.Reference;
+        }
+        else if (objectNumber is > 0 and <= MaxAllocatableObjectNumber)
+        {
+            Reserve(objectNumber);
+        }
 
         return new PdfReference(this, objectNumber, generation);
     }

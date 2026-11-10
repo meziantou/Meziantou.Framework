@@ -68,7 +68,12 @@ internal static class PdfDate
         if (year is < 1 or > 9999 || month is < 1 or > 12 || hour > 23 || minute > 59 || second > 59 || day < 1 || day > DateTime.DaysInMonth(year, month))
             return false;
 
-        value = new DateTimeOffset(year, month, day, hour, minute, second, offset);
+        // DateTimeOffset allows offsets of 14 hours at most, and a date whose UTC time is in the range of DateTime
+        var local = new DateTime(year, month, day, hour, minute, second, DateTimeKind.Unspecified);
+        if (offset.Duration() > TimeSpan.FromHours(14) || local.Ticks - offset.Ticks is < 0 || local.Ticks - offset.Ticks > DateTime.MaxValue.Ticks)
+            return false;
+
+        value = new DateTimeOffset(local, offset);
         return true;
     }
 

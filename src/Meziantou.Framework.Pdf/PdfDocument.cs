@@ -226,6 +226,9 @@ public sealed partial class PdfDocument
     /// <summary>Gets the decoders of the fonts the text extraction read, shared by the pages of the document.</summary>
     internal Text.TextDecoderCache TextDecoders => field ??= new();
 
+    /// <summary>Gets or sets a value indicating whether content was redacted: the document can only be saved as a whole.</summary>
+    internal bool HasRedactions { get; set; }
+
     /// <summary>Reads a document.</summary>
     /// <param name="data">The content of the file.</param>
     /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfReadOptions.Default"/>.</param>
@@ -418,7 +421,7 @@ public sealed partial class PdfDocument
     /// original file has cross-reference streams.
     /// </param>
     /// <remarks>The original file is copied to the stream without being buffered again, and the update is written through a buffer of bounded size: when the save fails, the stream may contain the beginning of the file.</remarks>
-    /// <exception cref="InvalidOperationException">The document was not read from a file, or its cross-reference information was rebuilt (<see cref="IsRepaired"/>).</exception>
+    /// <exception cref="InvalidOperationException">The document was not read from a file, its cross-reference information was rebuilt (<see cref="IsRepaired"/>), or a page was redacted (<see cref="PdfPage.Redact"/>).</exception>
     public void SaveIncremental(Stream stream, PdfSaveOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(stream);
@@ -436,7 +439,7 @@ public sealed partial class PdfDocument
     /// written to the stream asynchronously; the original file is not copied in memory. Cancellation is observed as for
     /// <see cref="SaveAsync(Stream, PdfSaveOptions?, CancellationToken)"/>.
     /// </remarks>
-    /// <exception cref="InvalidOperationException">The document was not read from a file, or its cross-reference information was rebuilt (<see cref="IsRepaired"/>).</exception>
+    /// <exception cref="InvalidOperationException">The document was not read from a file, its cross-reference information was rebuilt (<see cref="IsRepaired"/>), or a page was redacted (<see cref="PdfPage.Redact"/>).</exception>
     /// <exception cref="OperationCanceledException">The save was canceled.</exception>
     public async Task SaveIncrementalAsync(Stream stream, PdfSaveOptions? options = null, CancellationToken cancellationToken = default)
     {
@@ -459,6 +462,9 @@ public sealed partial class PdfDocument
         options ??= PdfSaveOptions.Default;
         if (incremental && Reader is null)
             throw new InvalidOperationException("Only a document read from a file can be saved incrementally");
+
+        if (incremental && HasRedactions)
+            throw new InvalidOperationException("A redacted document cannot be saved incrementally: the original bytes, which an incremental update keeps, contain what was redacted");
 
         cancellationToken.ThrowIfCancellationRequested();
         PrepareForSave();

@@ -153,6 +153,92 @@ internal static class PdfFuzzOracle
 
         CheckReadBack(document.ToByteArray(), options, pageCount, "default options");
         CheckReadBack(document.ToByteArray(new PdfSaveOptions { CompressStreams = false, UseObjectStreams = false }), options, pageCount, "uncompressed streams, no object streams");
+        if (pageCount > 0)
+        {
+            CheckRedaction(PdfDocument.Open(data, options), options, pageCount);
+            CheckWatermark(PdfDocument.Open(data, options), options, pageCount);
+            CheckPdfAConversion(PdfDocument.Open(data, options), options, pageCount);
+        }
+    }
+
+    /// <summary>
+    /// Redacts the left half of the first page: no glyph is left inside it, and the document is written and read back. A
+    /// glyph whose box is inside the area touches it, so the redaction removed it; the boxes of the replacement texts are
+    /// the union of the boxes of their glyphs, which is inside the area only when all of them are.
+    /// </summary>
+    private static void CheckRedaction(PdfDocument document, PdfReadOptions options, int pageCount)
+    {
+        var page = document.Pages[0];
+        var box = page.MediaBox;
+        var area = new PdfRectangle(box.Left, box.Bottom, box.Left + (box.Width / 2), box.Top);
+        try
+        {
+            page.Redact([area], new PdfRedactionOptions { FillColor = null });
+        }
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException or InvalidOperationException)
+        {
+            // InvalidOperationException: the file uses the highest object numbers, and no object can be added
+            return;
+        }
+
+        Tolerate(() =>
+        {
+            foreach (var glyph in page.ExtractTextLayout().Lines.SelectMany(line => line.Glyphs))
+            {
+                var bounds = glyph.Bounds;
+                if (bounds.Width > 0 && bounds.Height > 0 && bounds.Left > area.Left && bounds.Right < area.Right && bounds.Bottom > area.Bottom && bounds.Top < area.Top)
+                    throw new InvalidOperationException($"The glyph '{glyph.Text}' at {bounds} is left in the redacted area {area}");
+            }
+        });
+
+        CheckReadBack(document.ToByteArray(), options, pageCount, "after a redaction");
+    }
+
+    /// <summary>Adds a watermark under the first page and over every page, from the boxes and the rotation of the file: the document is written and read back.</summary>
+    private static void CheckWatermark(PdfDocument document, PdfReadOptions options, int pageCount)
+    {
+        try
+        {
+            document.Pages[0].AddWatermark("DRAFT", new PdfWatermarkOptions { Placement = PdfContentPlacement.Under });
+            document.AddWatermark("CONFIDENTIAL");
+        }
+        catch (InvalidOperationException)
+        {
+            // The file uses the highest object numbers: no object can be added
+            return;
+        }
+
+        CheckReadBack(document.ToByteArray(), options, pageCount, "after a watermark");
+    }
+
+    /// <summary>Converts the document to PDF/A-3b: when the conversion succeeds, the save, which checks the same requirements, writes it, and it is read back.</summary>
+    private static void CheckPdfAConversion(PdfDocument document, PdfReadOptions options, int pageCount)
+    {
+        PdfAConversionResult result;
+        try
+        {
+            result = document.ConvertToPdfA(PdfAConformance.PdfA3B);
+        }
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException or InvalidOperationException)
+        {
+            // InvalidOperationException: the file uses the highest object numbers, and no object can be added
+            return;
+        }
+
+        if (!result.Succeeded)
+            return;
+
+        byte[] written;
+        try
+        {
+            written = document.ToByteArray();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.StartsWith("No object number", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        CheckReadBack(written, options, pageCount, "after a conversion to PDF/A");
     }
 
     private static void ReadStructureTree(PdfStructureTree tree)

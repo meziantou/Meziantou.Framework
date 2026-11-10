@@ -28,16 +28,17 @@ internal static partial class ConformanceWriter
     private static readonly PdfName TRName = PdfName.Create("TR");
     private static readonly PdfName TR2Name = PdfName.Create("TR2");
 
-    /// <exception cref="InvalidOperationException">The document does not meet a requirement of its conformance levels.</exception>
-    public static void Apply(PdfDocument document, PdfSaveOptions options)
+    /// <summary>Checks the requirements of the conformance levels the document claims, without changing it.</summary>
+    /// <returns>The requirements the document does not meet, without duplicates.</returns>
+    public static List<string> Validate(PdfDocument document)
     {
         var pdfA = document.PdfAConformance;
         var pdfUA = document.PdfUAConformance;
+        var errors = new List<string>();
         if (pdfA == PdfAConformance.None && pdfUA == PdfUAConformance.None)
-            return;
+            return errors;
 
         var part = PdfALevel.GetPart(pdfA);
-        var errors = new List<string>();
         if (pdfA != PdfAConformance.None && document.Encryption is not null)
         {
             errors.Add("PDF/A does not allow encryption");
@@ -102,8 +103,21 @@ internal static partial class ConformanceWriter
                 : $"PDF/A-2 and PDF/A-3 are based on PDF 1.7: the version of the document is {document.Version}");
         }
 
+        return [.. errors.Distinct(StringComparer.Ordinal)];
+    }
+
+    /// <exception cref="InvalidOperationException">The document does not meet a requirement of its conformance levels.</exception>
+    public static void Apply(PdfDocument document, PdfSaveOptions options)
+    {
+        var pdfA = document.PdfAConformance;
+        var pdfUA = document.PdfUAConformance;
+        if (pdfA == PdfAConformance.None && pdfUA == PdfUAConformance.None)
+            return;
+
+        var part = PdfALevel.GetPart(pdfA);
+        var errors = Validate(document);
         if (errors.Count > 0)
-            throw new InvalidOperationException("The document does not conform to the levels it claims:\n" + string.Join('\n', errors.Distinct(StringComparer.Ordinal)));
+            throw new InvalidOperationException("The document does not conform to the levels it claims:\n" + string.Join('\n', errors));
 
         if (part == 4 || pdfUA == PdfUAConformance.PdfUA2)
         {

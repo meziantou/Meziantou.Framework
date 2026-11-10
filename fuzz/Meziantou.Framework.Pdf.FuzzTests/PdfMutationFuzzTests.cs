@@ -260,6 +260,73 @@ public sealed class PdfMutationFuzzTests
 
     private static byte[] BigEndian(uint value) => [(byte)(value >> 24), (byte)(value >> 16), (byte)(value >> 8), (byte)value];
 
+    public static TheoryData<string> RightToLeftContents => new(
+    [
+        "BT /F1 10 Tf 150 700 Td [(a) 1112 (b) 1112 (c)] TJ ET",
+        "BT /F1 10 Tf 150 700 Td (cba) Tj -50 0 Td (dc) Tj ET",
+        "BT /F1 10 Tf 150 700 Td (12 ba \\(XY\\)) Tj 0 -12 Td (Next line) Tj ET",
+    ]);
+
+    /// <summary>
+    /// Mutated content streams of right-to-left text (codes a to d show Hebrew letters): the text and the text layout
+    /// agree, and the reordering of a line neither loses nor repeats a glyph, so each line is its glyphs and the spaces
+    /// put between them.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(RightToLeftContents))]
+    public void MutatedRightToLeftContent(string content)
+    {
+        var seed = System.Text.Encoding.Latin1.GetBytes(content);
+        var random = PdfFuzzRandom.Create(PdfFuzzSettings.Seed, content);
+        CheckRightToLeftContent(seed);
+        for (var i = 0; i < PdfFuzzSettings.Iterations * 10; i++)
+        {
+            CheckRightToLeftContent(PdfFuzzMutator.Mutate(seed, random));
+        }
+    }
+
+    private static void CheckRightToLeftContent(byte[] content)
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.Letter);
+        var toUnicode = new PdfStream();
+        toUnicode.SetData("begincmap 1 begincodespacerange <00> <FF> endcodespacerange 1 beginbfrange <61> <64> <05D0> endbfrange endcmap"u8);
+        var font = new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.Font,
+            [PdfNames.Subtype] = PdfName.Create("Type1"),
+            [PdfNames.BaseFont] = PdfName.Create("Helvetica"),
+            [PdfName.Create("Encoding")] = PdfName.Create("WinAnsiEncoding"),
+            [PdfNames.ToUnicode] = document.Objects.Add(toUnicode),
+        };
+        page.CreateContentBuilder().AppendRawContent(content);
+        page.Resources![PdfNames.Font] = new PdfDictionary { [PdfName.Create("F1")] = document.Objects.Add(font) };
+
+        PdfTextLayout layout;
+        string text;
+        try
+        {
+            text = page.ExtractText();
+            layout = page.ExtractTextLayout();
+        }
+        catch (PdfResourceLimitException)
+        {
+            return;
+        }
+
+        if (!string.Equals(text, layout.Text, StringComparison.Ordinal))
+            throw new InvalidOperationException($"The text and the text layout differ: '{text}' and '{layout.Text}'");
+
+        foreach (var line in layout.Lines)
+        {
+            var glyphs = RemoveWhiteSpace(string.Concat(line.Glyphs.Select(glyph => glyph.Text)));
+            if (!string.Equals(glyphs, RemoveWhiteSpace(line.Text), StringComparison.Ordinal))
+                throw new InvalidOperationException($"The line '{line.Text}' is not made of its glyphs '{glyphs}'");
+        }
+
+        static string RemoveWhiteSpace(string value) => string.Concat(value.Where(c => !char.IsWhiteSpace(c)));
+    }
+
     [Fact]
     public void RandomTokensForTheParser()
     {

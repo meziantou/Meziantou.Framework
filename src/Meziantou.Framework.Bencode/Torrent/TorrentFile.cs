@@ -178,6 +178,7 @@ public sealed class TorrentFile
             // Read the whole value so invalid bencode is reported as such
             await reader.ReadValueAsync(cancellationToken).ConfigureAwait(false);
             await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            reader.MarkFailed();
             throw new FormatException("Torrent metainfo root must be a bencode dictionary.");
         }
 
@@ -205,6 +206,7 @@ public sealed class TorrentFile
             }
             catch (ArgumentException ex)
             {
+                reader.MarkFailed();
                 throw new FormatException("Duplicate bencode dictionary key.", ex);
             }
         }

@@ -32,6 +32,7 @@ public sealed class BencodeReader : IAsyncDisposable
     private bool _hasReadRoot;
     private bool _isFinished;
     private bool _isDisposed;
+    private bool _hasFailed;
     private ReadOnlyMemory<byte> _stringValue;
     private BencodeInteger? _integerValue;
     private ArrayBufferWriter<byte>? _capture;
@@ -65,6 +66,19 @@ public sealed class BencodeReader : IAsyncDisposable
     /// <returns><see langword="true"/> when a token was read; <see langword="false"/> when the root value is complete and the data ends.</returns>
     /// <exception cref="FormatException">The data is not valid bencode, or it has data after the root value.</exception>
     public async ValueTask<bool> ReadAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await ReadCoreAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (FormatException)
+        {
+            _hasFailed = true;
+            throw;
+        }
+    }
+
+    private async ValueTask<bool> ReadCoreAsync(CancellationToken cancellationToken)
     {
         ObjectDisposedException.ThrowIf(_isDisposed, this);
         if (_isFinished)
@@ -248,6 +262,7 @@ public sealed class BencodeReader : IAsyncDisposable
                     }
                     catch (ArgumentException ex)
                     {
+                        _hasFailed = true;
                         throw new FormatException("Duplicate bencode dictionary key.", ex);
                     }
                 }
@@ -282,12 +297,19 @@ public sealed class BencodeReader : IAsyncDisposable
             return;
 
         _isDisposed = true;
-        AdvanceReader();
+
+        // After valid data, the bytes after the last token are not examined, so a caller that keeps reading the PipeReader
+        // gets them at once. After invalid data, they are: a Pipe counts examined bytes to resume a writer that waits for
+        // the reader to make room, and the caller may never read them.
+        AdvanceReader(examineAll: _hasFailed);
         if (_ownsReader)
         {
             await _reader.CompleteAsync().ConfigureAwait(false);
         }
     }
+
+    /// <summary>Records that the caller found the data invalid, so disposing releases the bytes that are left.</summary>
+    internal void MarkFailed() => _hasFailed = true;
 
     /// <summary>Starts copying every byte the reader consumes, so the caller can get the exact bytes of a value.</summary>
     internal void StartCapture() => _capture = new ArrayBufferWriter<byte>();
@@ -483,13 +505,13 @@ public sealed class BencodeReader : IAsyncDisposable
         BytesConsumed += length;
     }
 
-    private void AdvanceReader()
+    private void AdvanceReader(bool examineAll = true)
     {
         if (!_hasPendingReadResult)
             return;
 
-        // Everything left in the buffer was examined: the next read waits for more data
-        _reader.AdvanceTo(_buffer.Start, _buffer.End);
+        // When everything left in the buffer is examined, the next read waits for more data
+        _reader.AdvanceTo(_buffer.Start, examineAll ? _buffer.End : _buffer.Start);
         _hasPendingReadResult = false;
     }
 

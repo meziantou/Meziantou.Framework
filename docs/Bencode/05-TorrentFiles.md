@@ -91,7 +91,8 @@ has both the v1 keys and the v2 keys, so v1 and v2 clients can share it:
 <!-- ref:../../tests/Meziantou.Framework.Bencode.Tests/TorrentFileTests.cs;region=TorrentFile_V2;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // A hybrid torrent, created by libtorrent, holds both the BitTorrent v1 and v2 keys
-await using var stream = OpenResourceStream("hybrid.torrent"); // Such as File.OpenRead("file.torrent")
+// Such as File.OpenRead("file.torrent")
+await using var stream = typeof(TorrentFileTests).Assembly.GetManifestResourceStream("files/hybrid.torrent")!;
 var torrent = await TorrentFile.ParseAsync(stream);
 
 Assert.Equal(2, torrent.Info.MetaVersion);
@@ -141,7 +142,7 @@ The text fields of a torrent are UTF-8, unless its [Encoding](cref:Meziantou.Fra
 ```csharp
 // A torrent whose 'encoding' key says its text is in GBK, a Chinese code page
 var gbk = CodePagesEncodingProvider.Instance.GetEncoding("GBK")!;
-var data = Concat("d7:comment4:", gbk.GetBytes("中文"), "8:encoding3:GBK4:infod6:lengthi1e4:name8:", gbk.GetBytes("文件.txt"), "12:piece lengthi16384e6:pieces20:01234567890123456789ee");
+byte[] data = [.. "d7:comment4:"u8, .. gbk.GetBytes("中文"), .. "8:encoding3:GBK4:infod6:lengthi1e4:name8:"u8, .. gbk.GetBytes("文件.txt"), .. "12:piece lengthi16384e6:pieces20:01234567890123456789ee"u8];
 
 var torrent = TorrentFile.Parse(data);
 Assert.Equal("GBK", torrent.Encoding);

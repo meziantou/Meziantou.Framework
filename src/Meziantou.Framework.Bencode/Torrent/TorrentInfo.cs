@@ -66,6 +66,10 @@ public sealed class TorrentInfo
             if (piecesValue is not BencodeString pieces)
                 throw new FormatException("The 'pieces' field must be a string.");
 
+            // An empty value would not be written back, which would change the info-hash
+            if (pieces.Value.IsEmpty)
+                throw new FormatException("The 'pieces' field cannot be empty.");
+
             info.Pieces = pieces.Value;
         }
 
@@ -284,6 +288,9 @@ public sealed class TorrentInfo
             {
                 if (piecesRootValue is not BencodeString piecesRoot)
                     throw new FormatException("The 'pieces root' field must be a string.");
+
+                if (piecesRoot.Value.IsEmpty)
+                    throw new FormatException("The 'pieces root' field cannot be empty. It is absent for an empty file.");
 
                 entry.PiecesRoot = piecesRoot.Value;
             }

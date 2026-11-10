@@ -966,6 +966,43 @@ public sealed class BencodeDocumentTests
     }
 
     [Fact]
+    public async Task BencodeReader_Dispose_LeavesTheRemainingBytesToThePipeReader()
+    {
+        var pipe = new Pipe();
+        await pipe.Writer.WriteAsync("i1eXYZ"u8.ToArray());
+
+        var reader = new BencodeReader(pipe.Reader);
+        await reader.ReadAsync();
+        await reader.DisposeAsync();
+
+        // The remaining bytes are returned without waiting for another write
+        var result = await pipe.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30));
+        Assert.Equal("XYZ"u8.ToArray(), result.Buffer.ToArray());
+        pipe.Reader.AdvanceTo(result.Buffer.End);
+
+        await pipe.Writer.CompleteAsync();
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
+    public async Task BencodeReader_DisposeAfterInvalidData_ReleasesAWaitingWriter()
+    {
+        // More than the pause threshold of the pipe, so the write waits for the reader to make room
+        var pipe = new Pipe(new PipeOptions(pauseWriterThreshold: 1024, resumeWriterThreshold: 512));
+        var data = new byte[4096];
+        Array.Fill(data, (byte)'x');
+        var writeTask = pipe.Writer.WriteAsync(data).AsTask();
+
+        var reader = new BencodeReader(pipe.Reader);
+        await Assert.ThrowsAsync<FormatException>(async () => await reader.ReadAsync());
+        await reader.DisposeAsync();
+
+        await writeTask.WaitAsync(TimeSpan.FromSeconds(30));
+        await pipe.Writer.CompleteAsync();
+        await pipe.Reader.CompleteAsync();
+    }
+
+    [Fact]
     public async Task BencodeReader_LeaveOpen()
     {
         var stream = new MemoryStream("i1e"u8.ToArray());

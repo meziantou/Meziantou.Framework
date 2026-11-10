@@ -483,7 +483,8 @@ public sealed class TorrentFileTests
     {
         #region TorrentFile_V2
         // A hybrid torrent, created by libtorrent, holds both the BitTorrent v1 and v2 keys
-        await using var stream = OpenResourceStream("hybrid.torrent"); // Such as File.OpenRead("file.torrent")
+        // Such as File.OpenRead("file.torrent")
+        await using var stream = typeof(TorrentFileTests).Assembly.GetManifestResourceStream("files/hybrid.torrent")!;
         var torrent = await TorrentFile.ParseAsync(stream);
 
         Assert.Equal(2, torrent.Info.MetaVersion);
@@ -698,6 +699,8 @@ public sealed class TorrentFileTests
     [InlineData("d9:file treed1:ad0:d6:lengthi0eeee12:meta versioni2e4:name1:a12:piece lengthi16385ee")] // piece length not a power of two
     [InlineData("d9:file treed1:ad0:d6:lengthi0eeee12:meta versioni2e4:name1:a12:piece lengthi8192ee")] // piece length below 16 KiB
     [InlineData("d9:file treed1:ad0:d6:lengthi0eeee6:lengthi0e12:meta versioni2e4:name1:a12:piece lengthi16384ee")] // partial v1 keys
+    [InlineData("d9:file treed1:ad0:d6:lengthi0eeee12:meta versioni2e4:name1:a12:piece lengthi16384e6:pieces0:e")] // empty 'pieces'
+    [InlineData("d9:file treed1:ad0:d6:lengthi0e11:pieces root0:eeee12:meta versioni2e4:name1:a12:piece lengthi16384ee")] // empty 'pieces root'
     public void Parse_InvalidV2Info_Throws(string info)
     {
         Assert.False(TorrentFile.TryParse(Encoding.ASCII.GetBytes("d4:info" + info + "e"), out _));
@@ -739,7 +742,7 @@ public sealed class TorrentFileTests
         #region TorrentFile_Encoding
         // A torrent whose 'encoding' key says its text is in GBK, a Chinese code page
         var gbk = CodePagesEncodingProvider.Instance.GetEncoding("GBK")!;
-        var data = Concat("d7:comment4:", gbk.GetBytes("中文"), "8:encoding3:GBK4:infod6:lengthi1e4:name8:", gbk.GetBytes("文件.txt"), "12:piece lengthi16384e6:pieces20:01234567890123456789ee");
+        byte[] data = [.. "d7:comment4:"u8, .. gbk.GetBytes("中文"), .. "8:encoding3:GBK4:infod6:lengthi1e4:name8:"u8, .. gbk.GetBytes("文件.txt"), .. "12:piece lengthi16384e6:pieces20:01234567890123456789ee"u8];
 
         var torrent = TorrentFile.Parse(data);
         Assert.Equal("GBK", torrent.Encoding);

@@ -14,18 +14,20 @@ public sealed partial class BloomFilterXXHash64 : BloomFilter
     private const ulong Prime4 = 0x85EBCA77C2B2AE63UL;
     private const ulong Prime5 = 0x27D4EB2F165667C5UL;
 
-    private void AddRangeCore(ReadOnlySpan<long> values)
+    internal static void AddRangeCore<TSink>(TSink sink, ReadOnlySpan<long> values)
+        where TSink : struct, IBloomFilterHashSink
     {
-        AddRangeCore(unsafe(MemoryMarshal.Cast<long, ulong>(values)));
+        AddRangeCore(sink, unsafe(MemoryMarshal.Cast<long, ulong>(values)));
     }
 
-    private void AddRangeCore(ReadOnlySpan<ulong> values)
+    internal static void AddRangeCore<TSink>(TSink sink, ReadOnlySpan<ulong> values)
+        where TSink : struct, IBloomFilterHashSink
     {
         if (!BitConverter.IsLittleEndian)
         {
             foreach (var value in values)
             {
-                Add(value);
+                sink.AddHash(Hash(value));
             }
 
             return;
@@ -55,7 +57,7 @@ public sealed partial class BloomFilterXXHash64 : BloomFilter
 
                 for (var lane = 0; lane < Vector<ulong>.Count; lane++)
                 {
-                    AddHash(BloomFilterHash.FromUInt64(hashes[lane]));
+                    sink.AddHash(BloomFilterHash.FromUInt64(hashes[lane]));
                 }
 
                 index += Vector<ulong>.Count;
@@ -64,7 +66,7 @@ public sealed partial class BloomFilterXXHash64 : BloomFilter
 
         foreach (var value in values[index..])
         {
-            AddHash(BloomFilterHash.FromUInt64(HashUInt64(value)));
+            sink.AddHash(BloomFilterHash.FromUInt64(HashUInt64(value)));
         }
     }
 

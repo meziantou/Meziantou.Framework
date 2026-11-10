@@ -4,144 +4,233 @@ using Meziantou.Framework.Fuzzing;
 namespace Meziantou.Framework.BloomFilters.Fuzz;
 
 /// <summary>
-/// The batched methods of the XXHash filters (<c>AddRange</c>, <c>RemoveRange</c>) hash several values at once, with
-/// vector or scalar code depending on the hardware. They are compared with the methods that hash one value at a time
-/// (<c>Add</c>, <c>Remove</c>), which call <see cref="System.IO.Hashing"/>: both must set the same bits and counters.
+/// A snapshot that loads saves back to the same bytes, and any other input is rejected with an
+/// <see cref="InvalidDataException"/>. On blocked filters, <c>AddRange</c> sets the same bits as <c>Add</c>, the union of
+/// two filters has the bits of a filter built from both sets of values, and a snapshot gives back the same filter.
 /// </summary>
-/// <remarks>
-/// The input starts with two option bytes: the first selects the filter (classic or counting, XXHash32, XXHash64 or
-/// XXHash128) and whether the values are signed, the second where the batch is split in two calls. The rest of the input
-/// is read as little-endian values (4 bytes for XXHash32, 8 bytes for XXHash64 and XXHash128).
-/// </remarks>
-public static class BloomFiltersFuzzTargets
+public static partial class BloomFiltersFuzzTargets
 {
-    private const int FilterCount = 6;
-    private const byte SignedFlag = 0x80;
+    private const int MaxValues = 4096;
 
-    private static readonly BloomFilterSize Size = BloomFilterSize.CreateOptimalSize(1000, 0.01);
-    private static readonly CountingBloomFilterSize CountingSize = CountingBloomFilterSize.CreateOptimalSize(1000, 0.01);
-
-    // The extreme values of the lanes, and the patterns of the multiplications
-    private static readonly string[] Tokens = ["\0\0\0\0", "\0\0\0\0\0\0\0\0", "\u007F\u007F\u007F\u007F", "\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F", "\u0001\0\0\0", "\u0001\0\0\0\0\0\0\0"];
-
-    private delegate void RangeAction<in TFilter, T>(TFilter filter, ReadOnlySpan<T> values);
+    private static readonly string[] Tokens =
+    [
+        "MZBF",
+        Token(0x01, 0x00), // format version
+        Token(0x01), Token(0x02), Token(0x03), // filter kinds
+        Token(0x04), Token(0x05), Token(0x06), Token(0x07), // hash algorithms
+        Token(0x00, 0x02, 0x00, 0x00), // 512 hash functions
+        Token(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F), // long.MaxValue
+        Token(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x3F, 0x00), // the largest block count
+    ];
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
-        new("bloomfilters-addrange", AddRange) { Seeds = GetSeeds, Dictionary = Tokens },
+        new("bloomfilter-snapshot", Snapshot) { Seeds = GetSnapshotSeeds, Dictionary = Tokens },
+        new("bloomfilter-blocked-operations", BlockedOperations) { Seeds = GetOperationSeeds },
+        new("bloomfilter-addrange", ClassicAndCountingAddRange) { Seeds = GetAddRangeSeeds, Dictionary = ValueTokens },
     ];
 
-    private static void AddRange(ReadOnlySpan<byte> data)
+    /// <summary>
+    /// <c>kind, snapshot</c>: <c>kind</c> picks the filter that loads the snapshot (Bloom, counting or blocked). A
+    /// snapshot that loads saves back to the bytes it was read from; any other input throws an
+    /// <see cref="InvalidDataException"/>.
+    /// </summary>
+    private static void Snapshot(ReadOnlySpan<byte> data)
     {
-        var options = FuzzInput.ReadByte(ref data);
-        var split = FuzzInput.ReadByte(ref data);
-        var signed = (options & SignedFlag) != 0;
-        switch ((options & ~SignedFlag) % FilterCount)
+        var kind = FuzzInput.ReadByte(ref data) % 3;
+        var bytes = data.ToArray();
+
+        // A seekable stream: the length is checked before the filter is allocated, so a corrupted size cannot allocate
+        // more than the input
+        using var stream = new MemoryStream(bytes, writable: false);
+        byte[] saved;
+        try
         {
-            case 0 when signed:
-                Check(() => BloomFilter.CreateXXHash32(Size), ReadInt32(data), split, (f, v) => f.Add(v), (f, v) => f.AddRange(v), (f, v) => f.MayContain(v));
+            switch (kind)
+            {
+                case 0:
+                    saved = Save(BloomFilter.Load(stream).Save);
+                    break;
+                case 1:
+                    saved = Save(CountingBloomFilter.Load(stream).Save);
+                    break;
+                default:
+                    var blockedFilter = BlockedBloomFilter.Load(stream);
+                    saved = Save(blockedFilter.Save);
+
+                    // At most 512 hash functions, so a lookup is cheap
+                    _ = ((IBloomFilter)blockedFilter).MayContain(bytes.AsSpan());
+                    _ = blockedFilter.GetEstimateCount();
+                    break;
+            }
+        }
+        catch (InvalidDataException)
+        {
+            return;
+        }
+
+        FuzzAssert.Equal(stream.Position, saved.LongLength, "The snapshot does not end where the loader stopped reading");
+        FuzzAssert.True(saved.AsSpan().SequenceEqual(bytes.AsSpan(0, saved.Length)), "Saving a loaded snapshot does not give back its bytes");
+    }
+
+    /// <summary>
+    /// <c>algorithm, blocks, hashes (2 bytes), split, values</c>: the values are 64-bit little-endian integers, the first
+    /// <c>split</c> go to a filter, the others to a second one.
+    /// </summary>
+    private static void BlockedOperations(ReadOnlySpan<byte> data)
+    {
+        var algorithm = FuzzInput.ReadByte(ref data) % 3;
+        var blockCount = 1 + (FuzzInput.ReadByte(ref data) % 16);
+        var hashCount = 1 + ((FuzzInput.ReadByte(ref data) | (FuzzInput.ReadByte(ref data) << 8)) % 512);
+        var split = FuzzInput.ReadByte(ref data);
+
+        var values = new ulong[Math.Min(MaxValues, data.Length / sizeof(ulong))];
+        for (var i = 0; i < values.Length; i++)
+        {
+            values[i] = BinaryPrimitives.ReadUInt64LittleEndian(data[(i * sizeof(ulong))..]);
+        }
+
+        var first = values.AsSpan(0, Math.Min(split, values.Length)).ToArray();
+        var second = values.AsSpan(first.Length).ToArray();
+        var size = BlockedBloomFilterSize.CreateExact(blockCount, hashCount);
+        var classicSize = BloomFilterSize.CreateExact(size.BitCount, hashCount);
+
+        // AddRange sets the same bits as Add, on blocked and on classic filters
+        var filter = Create(algorithm, size);
+        var expected = Create(algorithm, size);
+        AddRange(algorithm, filter, first, signed: (split & 1) is 0);
+        Add(algorithm, expected, first);
+        FuzzAssert.True(Save(filter.Save).AsSpan().SequenceEqual(Save(expected.Save)), "AddRange does not set the same bits as Add");
+
+        var classicFilter = CreateClassic(algorithm, classicSize);
+        var classicExpected = CreateClassic(algorithm, classicSize);
+        AddRange(algorithm, classicFilter, values);
+        Add(algorithm, classicExpected, values);
+        FuzzAssert.True(Save(classicFilter.Save).AsSpan().SequenceEqual(Save(classicExpected.Save)), "AddRange of a Bloom filter does not set the same bits as Add");
+
+        // The union has the bits of a filter built from both sets
+        var other = Create(algorithm, size);
+        AddRange(algorithm, other, second, signed: (split & 2) is 0);
+        var otherSnapshot = Save(other.Save);
+        Add(algorithm, expected, second);
+        filter.UnionWith(other);
+        var snapshot = Save(filter.Save);
+        FuzzAssert.True(snapshot.AsSpan().SequenceEqual(Save(expected.Save)), "The union does not have the bits of a filter built from both sets");
+        FuzzAssert.True(otherSnapshot.AsSpan().SequenceEqual(Save(other.Save)), "The union modified its source");
+        foreach (var value in values)
+        {
+            FuzzAssert.True(MayContain(algorithm, filter, value), $"The union does not contain {value}");
+        }
+
+        // A snapshot gives back the same filter
+        var restored = BlockedBloomFilter.Load(new MemoryStream(snapshot, writable: false));
+        FuzzAssert.Equal(filter.GetType(), restored.GetType(), "The snapshot restored another type of filter");
+        FuzzAssert.True(snapshot.AsSpan().SequenceEqual(Save(restored.Save)), "The restored filter does not save the same snapshot");
+        foreach (var value in values)
+        {
+            FuzzAssert.True(MayContain(algorithm, restored, value), $"The restored filter does not contain {value}");
+        }
+    }
+
+    private static BlockedBloomFilter Create(int algorithm, BlockedBloomFilterSize size) => algorithm switch
+    {
+        0 => BlockedBloomFilter.CreateXXHash32(size),
+        1 => BlockedBloomFilter.CreateXXHash64(size),
+        _ => BlockedBloomFilter.CreateXXHash128(size),
+    };
+
+    private static BloomFilter CreateClassic(int algorithm, BloomFilterSize size) => algorithm switch
+    {
+        0 => BloomFilter.CreateXXHash32(size),
+        1 => BloomFilter.CreateXXHash64(size),
+        _ => BloomFilter.CreateXXHash128(size),
+    };
+
+    private static void AddRange(int algorithm, BlockedBloomFilter filter, ulong[] values, bool signed)
+    {
+        switch (filter)
+        {
+            case BlockedBloomFilterXXHash32 f when signed:
+                f.AddRange(Array.ConvertAll(values, value => unchecked((int)value)));
                 break;
-            case 0:
-                Check(() => BloomFilter.CreateXXHash32(Size), ReadUInt32(data), split, (f, v) => f.Add(v), (f, v) => f.AddRange(v), (f, v) => f.MayContain(v));
+            case BlockedBloomFilterXXHash32 f:
+                f.AddRange(Array.ConvertAll(values, value => unchecked((uint)value)));
                 break;
-            case 1 when signed:
-                Check(() => BloomFilter.CreateXXHash64(Size), ReadInt64(data), split, (f, v) => f.Add(v), (f, v) => f.AddRange(v), (f, v) => f.MayContain(v));
+            case BlockedBloomFilterXXHash64 f when signed:
+                f.AddRange(Array.ConvertAll(values, value => unchecked((long)value)));
                 break;
-            case 1:
-                Check(() => BloomFilter.CreateXXHash64(Size), ReadUInt64(data), split, (f, v) => f.Add(v), (f, v) => f.AddRange(v), (f, v) => f.MayContain(v));
+            case BlockedBloomFilterXXHash64 f:
+                f.AddRange(values);
                 break;
-            case 2 when signed:
-                Check(() => BloomFilter.CreateXXHash128(Size), ReadInt64(data), split, (f, v) => f.Add(v), (f, v) => f.AddRange(v), (f, v) => f.MayContain(v));
+            case BlockedBloomFilterXXHash128 f when signed:
+                f.AddRange(Array.ConvertAll(values, value => unchecked((long)value)));
                 break;
-            case 2:
-                Check(() => BloomFilter.CreateXXHash128(Size), ReadUInt64(data), split, (f, v) => f.Add(v), (f, v) => f.AddRange(v), (f, v) => f.MayContain(v));
-                break;
-            case 3 when signed:
-                CheckCounting(() => CountingBloomFilter.CreateXXHash32(CountingSize), ReadInt32(data), split, (f, v) => f.Add(v), (f, v) => f.AddRange(v), (f, v) => f.Remove(v), (f, v) => f.RemoveRange(v), (f, v) => f.MayContain(v));
-                break;
-            case 3:
-                CheckCounting(() => CountingBloomFilter.CreateXXHash32(CountingSize), ReadUInt32(data), split, (f, v) => f.Add(v), (f, v) => f.AddRange(v), (f, v) => f.Remove(v), (f, v) => f.RemoveRange(v), (f, v) => f.MayContain(v));
-                break;
-            case 4 when signed:
-                CheckCounting(() => CountingBloomFilter.CreateXXHash64(CountingSize), ReadInt64(data), split, (f, v) => f.Add(v), (f, v) => f.AddRange(v), (f, v) => f.Remove(v), (f, v) => f.RemoveRange(v), (f, v) => f.MayContain(v));
-                break;
-            case 4:
-                CheckCounting(() => CountingBloomFilter.CreateXXHash64(CountingSize), ReadUInt64(data), split, (f, v) => f.Add(v), (f, v) => f.AddRange(v), (f, v) => f.Remove(v), (f, v) => f.RemoveRange(v), (f, v) => f.MayContain(v));
-                break;
-            case 5 when signed:
-                CheckCounting(() => CountingBloomFilter.CreateXXHash128(CountingSize), ReadInt64(data), split, (f, v) => f.Add(v), (f, v) => f.AddRange(v), (f, v) => f.Remove(v), (f, v) => f.RemoveRange(v), (f, v) => f.MayContain(v));
+            case BlockedBloomFilterXXHash128 f:
+                f.AddRange(values);
                 break;
             default:
-                CheckCounting(() => CountingBloomFilter.CreateXXHash128(CountingSize), ReadUInt64(data), split, (f, v) => f.Add(v), (f, v) => f.AddRange(v), (f, v) => f.Remove(v), (f, v) => f.RemoveRange(v), (f, v) => f.MayContain(v));
+                FuzzAssert.Fail($"Unexpected algorithm {algorithm}");
                 break;
         }
     }
 
-    /// <summary>
-    /// AddRange over the whole batch and over two parts set the same bits as Add, and every value is then reported as
-    /// possibly present.
-    /// </summary>
-    private static void Check<TFilter, T>(Func<TFilter> create, T[] values, byte split, Action<TFilter, T> add, RangeAction<TFilter, T> addRange, Func<TFilter, T, bool> mayContain)
-        where TFilter : BloomFilter
+    private static void AddRange(int algorithm, BloomFilter filter, ulong[] values)
     {
-        var expected = create();
-        foreach (var value in values)
+        switch (filter)
         {
-            add(expected, value);
-        }
-
-        var expectedBytes = Save(expected.Save);
-        var name = typeof(TFilter).Name;
-
-        var actual = create();
-        addRange(actual, values);
-        FuzzAssert.True(expectedBytes.AsSpan().SequenceEqual(Save(actual.Save)), $"{name}: AddRange of {values.Length} values differs from Add");
-
-        var index = GetSplitIndex(values.Length, split);
-        var splitActual = create();
-        addRange(splitActual, values.AsSpan(0, index));
-        addRange(splitActual, values.AsSpan(index));
-        FuzzAssert.True(expectedBytes.AsSpan().SequenceEqual(Save(splitActual.Save)), $"{name}: AddRange of {values.Length} values split at {index} differs from Add");
-
-        foreach (var value in values)
-        {
-            FuzzAssert.True(mayContain(actual, value), $"{name}: MayContain({value}) is false after AddRange");
+            case BloomFilterXXHash32 f:
+                f.AddRange(Array.ConvertAll(values, value => unchecked((uint)value)));
+                break;
+            case BloomFilterXXHash64 f:
+                f.AddRange(values);
+                break;
+            case BloomFilterXXHash128 f:
+                f.AddRange(values);
+                break;
+            default:
+                FuzzAssert.Fail($"Unexpected algorithm {algorithm}");
+                break;
         }
     }
 
-    /// <summary>
-    /// AddRange sets the same counters as Add, then RemoveRange over two parts sets the same counters as Remove.
-    /// </summary>
-    private static void CheckCounting<TFilter, T>(Func<TFilter> create, T[] values, byte split, Action<TFilter, T> add, RangeAction<TFilter, T> addRange, Action<TFilter, T> remove, RangeAction<TFilter, T> removeRange, Func<TFilter, T, bool> mayContain)
-        where TFilter : CountingBloomFilter
+    // A 32-bit algorithm adds 32-bit values: the signed and unsigned overloads hash the same bytes
+    private static void Add(int algorithm, BlockedBloomFilter filter, ulong[] values)
     {
-        var expected = create();
+        var target = (IBloomFilter)filter;
         foreach (var value in values)
         {
-            add(expected, value);
+            if (algorithm is 0)
+            {
+                target.Add(unchecked((uint)value));
+            }
+            else
+            {
+                target.Add(value);
+            }
         }
-
-        var name = typeof(TFilter).Name;
-        var actual = create();
-        addRange(actual, values);
-        FuzzAssert.True(Save(expected.Save).AsSpan().SequenceEqual(Save(actual.Save)), $"{name}: AddRange of {values.Length} values differs from Add");
-        foreach (var value in values)
-        {
-            FuzzAssert.True(mayContain(actual, value), $"{name}: MayContain({value}) is false after AddRange");
-        }
-
-        // Remove the values after the split index, so that some of the counters are still set
-        var index = GetSplitIndex(values.Length, split);
-        foreach (var value in values.AsSpan(index))
-        {
-            remove(expected, value);
-        }
-
-        removeRange(actual, values.AsSpan(index));
-        FuzzAssert.True(Save(expected.Save).AsSpan().SequenceEqual(Save(actual.Save)), $"{name}: RemoveRange of {values.Length - index} values differs from Remove");
     }
 
-    private static int GetSplitIndex(int length, byte split) => (int)((long)length * split / byte.MaxValue);
+    private static void Add(int algorithm, BloomFilter filter, ulong[] values)
+    {
+        var target = (IBloomFilter)filter;
+        foreach (var value in values)
+        {
+            if (algorithm is 0)
+            {
+                target.Add(unchecked((uint)value));
+            }
+            else
+            {
+                target.Add(value);
+            }
+        }
+    }
+
+    private static bool MayContain(int algorithm, BlockedBloomFilter filter, ulong value)
+    {
+        var target = (IBloomFilter)filter;
+        return algorithm is 0 ? target.MayContain(unchecked((uint)value)) : target.MayContain(value);
+    }
 
     private static byte[] Save(Action<Stream> save)
     {
@@ -150,78 +239,70 @@ public static class BloomFiltersFuzzTargets
         return stream.ToArray();
     }
 
-    private static int[] ReadInt32(ReadOnlySpan<byte> data)
+    private static IEnumerable<FuzzSeed> GetSnapshotSeeds()
     {
-        var values = new int[data.Length / sizeof(int)];
-        for (var i = 0; i < values.Length; i++)
+        // The sizes of the snapshot unit tests: one bit, a partial word, whole words, several blocks
+        foreach (var bitCount in (long[])[1, 63, 64, 65, 1000])
         {
-            values[i] = BinaryPrimitives.ReadInt32LittleEndian(data[(i * sizeof(int))..]);
+            var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateExact(bitCount, 3));
+            yield return Seed($"bloom-empty-{bitCount}", 0, Save(filter.Save));
+            Fill((IBloomFilter)filter);
+            yield return Seed($"bloom-{bitCount}", 0, Save(filter.Save));
+
+            var countingFilter = CountingBloomFilter.CreateXXHash64(CountingBloomFilterSize.CreateExact(bitCount, 3));
+            for (var i = 0; i < 300; i++)
+            {
+                countingFilter.Add(i % 10);
+            }
+
+            yield return Seed($"counting-{bitCount}", 1, Save(countingFilter.Save));
         }
 
-        return values;
-    }
-
-    private static uint[] ReadUInt32(ReadOnlySpan<byte> data)
-    {
-        var values = new uint[data.Length / sizeof(uint)];
-        for (var i = 0; i < values.Length; i++)
+        foreach (var (blockCount, hashCount) in ((long, int)[])[(1, 1), (3, 6), (2, 512)])
         {
-            values[i] = BinaryPrimitives.ReadUInt32LittleEndian(data[(i * sizeof(uint))..]);
+            var filter = BlockedBloomFilter.CreateCrc32(BlockedBloomFilterSize.CreateExact(blockCount, hashCount));
+            yield return Seed($"blocked-empty-{blockCount}-{hashCount}", 2, Save(filter.Save));
+            Fill(filter);
+            yield return Seed($"blocked-{blockCount}-{hashCount}", 2, Save(filter.Save));
         }
 
-        return values;
-    }
+        // A snapshot of another kind, rejected
+        yield return Seed("blocked-as-bloom", 0, Save(BlockedBloomFilter.CreateXXHash3(BlockedBloomFilterSize.CreateExact(1, 4)).Save));
 
-    private static long[] ReadInt64(ReadOnlySpan<byte> data)
-    {
-        var values = new long[data.Length / sizeof(long)];
-        for (var i = 0; i < values.Length; i++)
+        static void Fill(IBloomFilter filter)
         {
-            values[i] = BinaryPrimitives.ReadInt64LittleEndian(data[(i * sizeof(long))..]);
-        }
-
-        return values;
-    }
-
-    private static ulong[] ReadUInt64(ReadOnlySpan<byte> data)
-    {
-        var values = new ulong[data.Length / sizeof(ulong)];
-        for (var i = 0; i < values.Length; i++)
-        {
-            values[i] = BinaryPrimitives.ReadUInt64LittleEndian(data[(i * sizeof(ulong))..]);
-        }
-
-        return values;
-    }
-
-    /// <summary>
-    /// The values of the unit tests (BloomFilterTests: -50 to 49 with the minimum and maximum, 0 to 99 with the
-    /// maximum), for every filter, and a batch shorter than a vector.
-    /// </summary>
-    private static IEnumerable<FuzzSeed> GetSeeds()
-    {
-        for (var filter = 0; filter < FilterCount; filter++)
-        {
-            var is32 = filter % 3 == 0;
-            var signedValues = Enumerable.Range(-50, 100).Select(value => (long)value).Append(is32 ? int.MinValue : long.MinValue).Append(is32 ? int.MaxValue : long.MaxValue).ToArray();
-            var unsignedValues = Enumerable.Range(0, 100).Select(value => (ulong)value).Append(is32 ? uint.MaxValue : ulong.MaxValue).ToArray();
-
-            yield return new FuzzSeed($"filter{filter}-signed", Encode((byte)(filter | SignedFlag), 128, signedValues.Select(value => (ulong)value), is32));
-            yield return new FuzzSeed($"filter{filter}-unsigned", Encode((byte)filter, 37, unsignedValues, is32));
-            yield return new FuzzSeed($"filter{filter}-short", Encode((byte)filter, 255, [1, 2, 3], is32));
+            for (var i = 0; i < 100; i++)
+            {
+                filter.Add(i);
+                filter.Add("value-" + i.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
         }
     }
 
-    private static byte[] Encode(byte options, byte split, IEnumerable<ulong> values, bool is32)
+    private static IEnumerable<FuzzSeed> GetOperationSeeds()
     {
-        var result = new List<byte> { options, split };
-        Span<byte> buffer = stackalloc byte[sizeof(ulong)];
-        foreach (var value in values)
+        // Lengths around the vector widths, so the scalar tails run
+        foreach (var count in (int[])[0, 1, 3, 7, 33, 200])
         {
-            BinaryPrimitives.WriteUInt64LittleEndian(buffer, value);
-            result.AddRange(buffer[..(is32 ? sizeof(uint) : sizeof(ulong))]);
-        }
+            for (var algorithm = 0; algorithm < 3; algorithm++)
+            {
+                var data = new byte[5 + (count * sizeof(ulong))];
+                data[0] = (byte)algorithm;
+                data[1] = (byte)(count % 16);
+                data[2] = (byte)(1 + (count % 12));
+                data[3] = 0;
+                data[4] = (byte)(count / 2);
+                for (var i = 0; i < count; i++)
+                {
+                    BinaryPrimitives.WriteUInt64LittleEndian(data.AsSpan(5 + (i * sizeof(ulong))), unchecked((ulong)i * 0x9E3779B97F4A7C15UL));
+                }
 
-        return [.. result];
+                yield return new FuzzSeed($"values-{count}-algorithm-{algorithm}", data);
+            }
+        }
     }
+
+    private static FuzzSeed Seed(string name, byte kind, byte[] snapshot) => new(name, (byte[])[kind, .. snapshot]);
+
+    private static string Token(params ReadOnlySpan<byte> bytes) => FuzzText.Decode(bytes);
 }

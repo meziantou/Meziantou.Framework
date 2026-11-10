@@ -105,4 +105,13 @@ public closed partial class BloomFilter
 
         return true;
     }
+
+    // Lets the batch hashing of BloomFilterXXHash* add its hashes to this filter. A struct, so the generic method is
+    // specialized for it and AddHash is inlined.
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+    internal readonly struct HashSink(BloomFilter filter) : IBloomFilterHashSink
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AddHash(BloomFilterHash hash) => filter.AddHash(hash);
+    }
 }

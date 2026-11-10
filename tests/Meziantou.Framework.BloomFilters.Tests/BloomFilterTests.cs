@@ -1773,7 +1773,7 @@ public sealed class BloomFilterTests
                 snapshot[4] = 2;
                 break;
             case "UnknownKind":
-                snapshot[6] = 3;
+                snapshot[6] = 4;
                 break;
             case "AlgorithmZero":
                 snapshot[7] = 0;
@@ -1856,6 +1856,389 @@ public sealed class BloomFilterTests
 
         var exception = Assert.Throws<InvalidDataException>(() => CountingBloomFilter.Load(new MemoryStream(snapshot)));
         Assert.Contains("checksum", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Documentation_BlockedSnapshot()
+    {
+        #region BlockedBloomFilter_Snapshot
+        var filter = BlockedBloomFilter.CreateXXHash128(BlockedBloomFilterSize.CreateOptimalSize(expectedItemCount: 1000, falsePositiveProbability: 0.01));
+        filter.Add("alice@example.com");
+
+        using var stream = new MemoryStream();
+        filter.Save(stream);
+
+        stream.Position = 0;
+        var restored = BlockedBloomFilter.Load<BlockedBloomFilterXXHash128>(stream);
+
+        Assert.True(restored.MayContain("alice@example.com"));
+        Assert.False(restored.MayContain("bob@example.com"));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_BlockedUnionAndAddRange()
+    {
+        #region BlockedBloomFilter_Union
+        var size = BlockedBloomFilterSize.CreateOptimalSize(expectedItemCount: 2000, falsePositiveProbability: 0.01);
+        var europe = BlockedBloomFilter.CreateXXHash64(size);
+        var america = BlockedBloomFilter.CreateXXHash64(size);
+
+        // XXHash32, XXHash64 and XXHash128 filters add numbers in batches
+        europe.AddRange([1L, 2L, 3L]);
+        america.AddRange([100L, 200L]);
+
+        europe.UnionWith(america);
+        Assert.True(europe.MayContain(2L));
+        Assert.True(europe.MayContain(200L));
+        #endregion
+    }
+
+    public static TheoryData<string, long, int, bool> BlockedSnapshotRoundTripData()
+    {
+        var data = new TheoryData<string, long, int, bool>();
+        foreach (var method in GetCreateMethodNames())
+        {
+            foreach (var (blockCount, hashCount) in ((long, int)[])[(1, 1), (3, 6), (1_025, 8), (2, 512)])
+            {
+                data.Add(method, blockCount, hashCount, false);
+                data.Add(method, blockCount, hashCount, true);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(BlockedSnapshotRoundTripData))]
+    public async Task Snapshot_BlockedBloomFilter_RoundTrip(string createMethodName, long blockCount, int hashCount, bool populated)
+    {
+        var filter = (BlockedBloomFilter)CreateBlockedFilter(createMethodName, BlockedBloomFilterSize.CreateExact(blockCount, hashCount));
+        var values = (IBloomFilter)filter;
+        if (populated)
+        {
+            foreach (var value in GetValues())
+            {
+                AddValue(values, value);
+            }
+
+            for (var i = 0; i < 500; i++)
+            {
+                values.Add(i);
+            }
+        }
+
+        using var stream = new MemoryStream();
+        filter.Save(stream);
+        var snapshot = stream.ToArray();
+        Assert.Equal(32 + (blockCount * 64) + 8, snapshot.LongLength);
+
+        stream.Position = 0;
+        var restored = BlockedBloomFilter.Load(stream);
+        Assert.Equal(stream.Length, stream.Position);
+        AssertSameBlockedBloomFilter(filter, restored, snapshot);
+
+        using var asyncStream = new NonSeekableStream(snapshot);
+        var restoredAsync = await BlockedBloomFilter.LoadAsync(asyncStream);
+        AssertSameBlockedBloomFilter(filter, restoredAsync, snapshot);
+
+        using var asyncSaveStream = new MemoryStream();
+        await filter.SaveAsync(asyncSaveStream);
+        Assert.Equal(snapshot, asyncSaveStream.ToArray());
+
+        static void AssertSameBlockedBloomFilter(BlockedBloomFilter expected, BlockedBloomFilter actual, byte[] snapshot)
+        {
+            Assert.Equal(expected.GetType(), actual.GetType());
+            Assert.Equal(expected.GetEstimateCount(), actual.GetEstimateCount());
+
+            var expectedValues = (IBloomFilter)expected;
+            var actualValues = (IBloomFilter)actual;
+            foreach (var value in GetValues())
+            {
+                Assert.Equal(MayContainValue(expectedValues, value), MayContainValue(actualValues, value));
+            }
+
+            for (var i = 0; i < 2000; i++)
+            {
+                Assert.Equal(expectedValues.MayContain(i), actualValues.MayContain(i));
+            }
+
+            Assert.Equal(snapshot, SaveSnapshot(actual));
+        }
+    }
+
+    [Fact]
+    public async Task Snapshot_BlockedBloomFilter_LoadTyped()
+    {
+        var filter = BlockedBloomFilter.CreateCrc64(BlockedBloomFilterSize.CreateExact(4, 3));
+        filter.Add(42);
+        var snapshot = SaveSnapshot(filter);
+
+        var restored = BlockedBloomFilter.Load<BlockedBloomFilterCrc64>(new MemoryStream(snapshot));
+        Assert.True(restored.MayContain(42));
+
+        var exception = Assert.Throws<InvalidDataException>(() => BlockedBloomFilter.Load<BlockedBloomFilterCrc32>(new MemoryStream(snapshot)));
+        Assert.Contains("BlockedBloomFilterCrc64", exception.Message, StringComparison.Ordinal);
+        await Assert.Throws<InvalidDataException>(async () => await BlockedBloomFilter.LoadAsync<BlockedBloomFilterCrc32>(new MemoryStream(snapshot)));
+    }
+
+    [Fact]
+    public void Snapshot_BlockedBloomFilter_KindMismatch_Throws()
+    {
+        var blockedSnapshot = SaveSnapshot(BlockedBloomFilter.CreateXXHash128(BlockedBloomFilterSize.CreateExact(4, 3)));
+        var bloomSnapshot = SaveSnapshot(BloomFilter.CreateXXHash128(BloomFilterSize.CreateExact(2048, 3)));
+        using var countingStream = new MemoryStream();
+        CountingBloomFilter.CreateXXHash128(CountingBloomFilterSize.CreateExact(100, 2)).Save(countingStream);
+
+        var exception = Assert.Throws<InvalidDataException>(() => BloomFilter.Load(new MemoryStream(blockedSnapshot)));
+        Assert.Contains("BlockedBloomFilter.Load", exception.Message, StringComparison.Ordinal);
+
+        exception = Assert.Throws<InvalidDataException>(() => CountingBloomFilter.Load(new MemoryStream(blockedSnapshot)));
+        Assert.Contains("BlockedBloomFilter.Load", exception.Message, StringComparison.Ordinal);
+
+        exception = Assert.Throws<InvalidDataException>(() => BlockedBloomFilter.Load(new MemoryStream(bloomSnapshot)));
+        Assert.Contains(" BloomFilter.Load", exception.Message, StringComparison.Ordinal);
+
+        exception = Assert.Throws<InvalidDataException>(() => BlockedBloomFilter.Load(new MemoryStream(countingStream.ToArray())));
+        Assert.Contains("CountingBloomFilter.Load", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Snapshot_BlockedBloomFilter_NullStream_Throws()
+    {
+        var filter = BlockedBloomFilter.CreateXXHash128(BlockedBloomFilterSize.CreateExact(4, 3));
+
+        Assert.Throws<ArgumentNullException>("stream", () => filter.Save(null!));
+        Assert.Throws<ArgumentNullException>("stream", () => BlockedBloomFilter.Load(null!));
+    }
+
+    [Theory]
+    [InlineData("HashCountTooLarge", "invalid hash count")]
+    [InlineData("ZeroSize", "invalid size")]
+    [InlineData("SizeTooLarge", "invalid size")]
+    [InlineData("PayloadLength", "payload length")]
+    [InlineData("HugeSize", "truncated")]
+    [InlineData("TruncatedPayload", "truncated")]
+    [InlineData("Checksum", "checksum")]
+    public async Task Snapshot_BlockedBloomFilter_InvalidData_Throws(string corruption, string expectedMessage)
+    {
+        var filter = BlockedBloomFilter.CreateXXHash128(BlockedBloomFilterSize.CreateExact(5, 4));
+        for (var i = 0; i < 100; i++)
+        {
+            filter.Add(i);
+        }
+
+        var snapshot = SaveSnapshot(filter);
+        switch (corruption)
+        {
+            case "HashCountTooLarge":
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(snapshot.AsSpan(12), 513);
+                break;
+            case "ZeroSize":
+                System.Buffers.Binary.BinaryPrimitives.WriteInt64LittleEndian(snapshot.AsSpan(16), 0);
+                break;
+            case "SizeTooLarge":
+                System.Buffers.Binary.BinaryPrimitives.WriteInt64LittleEndian(snapshot.AsSpan(16), (long.MaxValue / 512) + 1);
+                break;
+            case "PayloadLength":
+                System.Buffers.Binary.BinaryPrimitives.WriteInt64LittleEndian(snapshot.AsSpan(24), 5 * 64 + 8);
+                break;
+            case "HugeSize":
+                // A consistent header for the largest filter: the stream is too short, so nothing is allocated
+                System.Buffers.Binary.BinaryPrimitives.WriteInt64LittleEndian(snapshot.AsSpan(16), long.MaxValue / 512);
+                System.Buffers.Binary.BinaryPrimitives.WriteInt64LittleEndian(snapshot.AsSpan(24), long.MaxValue / 512 * 64);
+                break;
+            case "TruncatedPayload":
+                snapshot = snapshot[..^20];
+                break;
+            case "Checksum":
+                snapshot[40] ^= 0x01;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(corruption));
+        }
+
+        var exception = Assert.Throws<InvalidDataException>(() => BlockedBloomFilter.Load(new MemoryStream(snapshot)));
+        Assert.Contains(expectedMessage, exception.Message, StringComparison.Ordinal);
+
+        if (corruption is not "HugeSize")
+        {
+            exception = await Assert.Throws<InvalidDataException>(async () => await BlockedBloomFilter.LoadAsync(new NonSeekableStream(snapshot)));
+            Assert.Contains(expectedMessage, exception.Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
+    [InlineData(1L, 1)]
+    [InlineData(3L, 6)]
+    [InlineData(1_025L, 8)]
+    public void BlockedBloomFilter_UnionWith_MatchesFilterBuiltFromBothSets(long blockCount, int hashCount)
+    {
+        var size = BlockedBloomFilterSize.CreateExact(blockCount, hashCount);
+        var first = BlockedBloomFilter.CreateXXHash128(size);
+        var second = BlockedBloomFilter.CreateXXHash128(size);
+        var expected = BlockedBloomFilter.CreateXXHash128(size);
+        for (var i = 0; i < 2_000; i++)
+        {
+            first.Add(i);
+            expected.Add(i);
+        }
+
+        for (var i = 1_000; i < 5_000; i++)
+        {
+            second.Add(i);
+            expected.Add(i);
+        }
+
+        var secondSnapshot = SaveSnapshot(second);
+        first.UnionWith(second);
+
+        Assert.Equal(SaveSnapshot(expected), SaveSnapshot(first));
+        Assert.Equal(secondSnapshot, SaveSnapshot(second));
+    }
+
+    [Theory]
+    [MemberData(nameof(AllBlockedAlgorithmsAndValues))]
+    public void BlockedBloomFilter_UnionWith_ForAllAlgorithmsAndTypes_KeepsValuesOfBothFilters(string createMethodName, object value)
+    {
+        var size = BlockedBloomFilterSize.CreateOptimalSize(1000, 0.01);
+        var destination = CreateBlockedFilter(createMethodName, size);
+        var source = CreateBlockedFilter(createMethodName, size);
+        destination.Add("destination-value");
+        AddValue(source, value);
+
+        ((BlockedBloomFilter)destination).UnionWith((BlockedBloomFilter)source);
+
+        Assert.True(destination.MayContain("destination-value"));
+        Assert.True(MayContainValue(destination, value));
+    }
+
+    [Fact]
+    public void BlockedBloomFilter_UnionWith_SelfAndTwice_AreNoOps()
+    {
+        var size = BlockedBloomFilterSize.CreateOptimalSize(1000, 0.01);
+        var destination = BlockedBloomFilter.CreateXXHash64(size);
+        var source = BlockedBloomFilter.CreateXXHash64(size);
+        for (var i = 0; i < 500; i++)
+        {
+            destination.Add(i);
+            source.Add(-i - 1);
+        }
+
+        var before = SaveSnapshot(destination);
+        destination.UnionWith(destination);
+        Assert.Equal(before, SaveSnapshot(destination));
+
+        destination.UnionWith(source);
+        var merged = SaveSnapshot(destination);
+        destination.UnionWith(source);
+        Assert.Equal(merged, SaveSnapshot(destination));
+    }
+
+    [Fact]
+    public void BlockedBloomFilter_UnionWith_ConcurrentAddsToDestination_AreKept()
+    {
+        var size = BlockedBloomFilterSize.CreateOptimalSize(200_000, 0.01);
+        var destination = BlockedBloomFilter.CreateXXHash128(size);
+        var source = BlockedBloomFilter.CreateXXHash128(size);
+        for (var i = 0; i < 100_000; i++)
+        {
+            source.Add(i);
+        }
+
+        Parallel.Invoke(
+            () => Parallel.For(100_000, 200_000, i => destination.Add(i)),
+            () => destination.UnionWith(source));
+
+        for (var i = 0; i < 200_000; i++)
+        {
+            Assert.True(destination.MayContain(i));
+        }
+    }
+
+    [Fact]
+    public void BlockedBloomFilter_UnionWith_Null_Throws()
+    {
+        var filter = BlockedBloomFilter.CreateXXHash128(BlockedBloomFilterSize.CreateExact(4, 3));
+
+        Assert.Throws<ArgumentNullException>("other", () => filter.UnionWith(null!));
+    }
+
+    [Theory]
+    [InlineData("CreateXXHash64", 10L, 3)]
+    [InlineData("CreateXXHash128", 11L, 3)]
+    [InlineData("CreateXXHash128", 10L, 4)]
+    public void BlockedBloomFilter_UnionWith_IncompatibleFilter_ThrowsAndLeavesDestinationUnchanged(string sourceCreateMethodName, long sourceBlockCount, int sourceHashCount)
+    {
+        var destination = BlockedBloomFilter.CreateXXHash128(BlockedBloomFilterSize.CreateExact(10, 3));
+        var source = CreateBlockedFilter(sourceCreateMethodName, BlockedBloomFilterSize.CreateExact(sourceBlockCount, sourceHashCount));
+        for (var i = 0; i < 100; i++)
+        {
+            source.Add(i);
+        }
+
+        Assert.Throws<ArgumentException>("other", () => destination.UnionWith((BlockedBloomFilter)source));
+
+        Assert.Equal(0d, destination.GetEstimateCount());
+    }
+
+    // The vectorized batch hashing must set the same bits as adding the values one at a time. Lengths that are not a
+    // multiple of the vector width exercise the scalar tail.
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(7)]
+    [InlineData(33)]
+    [InlineData(1_001)]
+    public void AddRange_SetsSameBitsAsAdd(int count)
+    {
+        var longs = Enumerable.Range(0, count).Select(i => unchecked((long)((ulong)i * 0x9E3779B97F4A7C15UL))).Append(long.MinValue).Append(long.MaxValue).ToArray();
+        var ulongs = longs.Select(value => unchecked((ulong)value)).Append(ulong.MaxValue).ToArray();
+        var ints = longs.Select(value => unchecked((int)value)).Append(int.MinValue).ToArray();
+        var uints = ints.Select(value => unchecked((uint)value)).Append(uint.MaxValue).ToArray();
+
+        var blockedSize = BlockedBloomFilterSize.CreateExact(37, 5);
+        var size = BloomFilterSize.CreateExact(37 * 512, 5);
+
+        AssertSame(BlockedBloomFilter.CreateXXHash128(blockedSize), f => f.AddRange(longs), f => f.AddRange(ulongs), f => Array.ForEach(longs, f.Add), f => Array.ForEach(ulongs, f.Add));
+        AssertSame(BlockedBloomFilter.CreateXXHash64(blockedSize), f => f.AddRange(longs), f => f.AddRange(ulongs), f => Array.ForEach(longs, f.Add), f => Array.ForEach(ulongs, f.Add));
+        AssertSame(BlockedBloomFilter.CreateXXHash32(blockedSize), f => f.AddRange(ints), f => f.AddRange(uints), f => Array.ForEach(ints, f.Add), f => Array.ForEach(uints, f.Add));
+        AssertSame(BloomFilter.CreateXXHash128(size), f => f.AddRange(longs), f => f.AddRange(ulongs), f => Array.ForEach(longs, f.Add), f => Array.ForEach(ulongs, f.Add));
+        AssertSame(BloomFilter.CreateXXHash64(size), f => f.AddRange(longs), f => f.AddRange(ulongs), f => Array.ForEach(longs, f.Add), f => Array.ForEach(ulongs, f.Add));
+        AssertSame(BloomFilter.CreateXXHash32(size), f => f.AddRange(ints), f => f.AddRange(uints), f => Array.ForEach(ints, f.Add), f => Array.ForEach(uints, f.Add));
+
+        static void AssertSame<TFilter>(TFilter template, Action<TFilter> addRangeSigned, Action<TFilter> addRangeUnsigned, Action<TFilter> addSigned, Action<TFilter> addUnsigned)
+            where TFilter : class
+        {
+            Assert.Equal(Run(template, addSigned), Run(template, addRangeSigned));
+            Assert.Equal(Run(template, addUnsigned), Run(template, addRangeUnsigned));
+        }
+
+        static byte[] Run<TFilter>(TFilter template, Action<TFilter> add)
+            where TFilter : class
+        {
+            var filter = template switch
+            {
+                BloomFilter bloomFilter => (TFilter)(object)BloomFilter.Load(new MemoryStream(SaveSnapshot(bloomFilter))),
+                BlockedBloomFilter blockedFilter => (TFilter)(object)BlockedBloomFilter.Load(new MemoryStream(SaveSnapshot(blockedFilter))),
+                _ => throw new ArgumentOutOfRangeException(nameof(template)),
+            };
+
+            add(filter);
+            return filter switch
+            {
+                BloomFilter bloomFilter => SaveSnapshot(bloomFilter),
+                BlockedBloomFilter blockedFilter => SaveSnapshot(blockedFilter),
+                _ => throw new ArgumentOutOfRangeException(nameof(template)),
+            };
+        }
+    }
+
+    private static byte[] SaveSnapshot(BlockedBloomFilter filter)
+    {
+        using var stream = new MemoryStream();
+        filter.Save(stream);
+        return stream.ToArray();
     }
 
     private static byte[] SaveSnapshot(BloomFilter filter)

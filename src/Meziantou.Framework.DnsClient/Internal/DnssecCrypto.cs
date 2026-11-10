@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Meziantou.Framework.DnsClient.Response.Records;
+using Meziantou.Framework.WebPlatform.Cryptography;
 
 namespace Meziantou.Framework.DnsClient.Internal;
 
@@ -7,7 +8,7 @@ internal static class DnssecCrypto
 {
     public static bool IsSupportedAlgorithm(byte algorithm)
     {
-        return algorithm is 8 or 10 or 13 or 14;
+        return algorithm is 8 or 10 or 13 or 14 or 15 or 16;
     }
 
     public static DnssecSignatureVerificationStatus VerifySignature(DnsDnskeyRecord key, byte[] data, byte[] signature)
@@ -18,6 +19,8 @@ internal static class DnssecCrypto
             10 => VerifyRsa(key.PublicKey, data, signature, HashAlgorithmName.SHA512),
             13 => VerifyEcdsa(key.PublicKey, data, signature, HashAlgorithmName.SHA256, 32, ECCurve.NamedCurves.nistP256),
             14 => VerifyEcdsa(key.PublicKey, data, signature, HashAlgorithmName.SHA384, 48, ECCurve.NamedCurves.nistP384),
+            15 => VerifyEd25519(key.PublicKey, data, signature),
+            16 => VerifyEd448(key.PublicKey, data, signature),
             _ => DnssecSignatureVerificationStatus.UnsupportedAlgorithm,
         };
     }
@@ -67,6 +70,29 @@ internal static class DnssecCrypto
         {
             return DnssecSignatureVerificationStatus.InvalidKey;
         }
+    }
+
+    // RFC 8080 section 3: the public key is the 32-byte encoding of RFC 8032 section 5.1.5, the signature is 64 bytes
+    private static DnssecSignatureVerificationStatus VerifyEd25519(byte[] publicKey, byte[] data, byte[] signature)
+    {
+        if (publicKey.Length != Ed25519.KeySize)
+            return DnssecSignatureVerificationStatus.InvalidKey;
+
+        return Ed25519.Verify(publicKey, data, signature)
+            ? DnssecSignatureVerificationStatus.Valid
+            : DnssecSignatureVerificationStatus.Invalid;
+    }
+
+    // RFC 8080 section 3: the public key is the 57-byte encoding of RFC 8032 section 5.2.5, the signature is 114 bytes.
+    // DNSSEC uses pure Ed448 with an empty context.
+    private static DnssecSignatureVerificationStatus VerifyEd448(byte[] publicKey, byte[] data, byte[] signature)
+    {
+        if (publicKey.Length != Ed448.KeySize)
+            return DnssecSignatureVerificationStatus.InvalidKey;
+
+        return Ed448.Verify(publicKey, data, signature, context: [])
+            ? DnssecSignatureVerificationStatus.Valid
+            : DnssecSignatureVerificationStatus.Invalid;
     }
 
     private static bool TryReadRsaPublicKey(byte[] publicKey, out RSAParameters parameters)

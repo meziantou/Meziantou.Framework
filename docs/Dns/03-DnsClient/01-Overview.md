@@ -26,6 +26,9 @@ Assert.Equal([IPAddress.Parse("192.0.2.10")], addresses);
   and custom query messages.
 - [DNSSEC](04-Dnssec.md): request the signatures, read the resolver's AD flag, or validate the chain of trust locally.
 - [Errors and timeouts](05-ErrorsAndTimeouts.md): the exceptions, the timeout, how responses are checked, and tracing.
+- [Zone transfers](06-ZoneTransfers.md): copy a whole zone (AXFR), or the changes since your version (IXFR).
+- [TSIG and cookies](07-TsigAndCookies.md): sign the queries and authenticate the responses with a shared key, and use
+  DNS cookies.
 
 ## Options
 
@@ -40,6 +43,8 @@ Assert.Equal([IPAddress.Parse("192.0.2.10")], addresses);
 | [DnssecOk](cref:Meziantou.Framework.DnsClient.DnsClientOptions.DnssecOk) | `false` | Asks for the DNSSEC records. See [DNSSEC](04-Dnssec.md). |
 | [DnssecValidationMode](cref:Meziantou.Framework.DnsClient.DnssecValidationMode) | [None](cref:Meziantou.Framework.DnsClient.DnssecValidationMode.None) | [Local](cref:Meziantou.Framework.DnsClient.DnssecValidationMode.Local) validates the DNSSEC chain of trust. See [DNSSEC](04-Dnssec.md#validate-locally). |
 | [DnssecTrustAnchors](cref:Meziantou.Framework.DnsClient.DnssecTrustAnchors) | [DnssecTrustAnchors.Root](cref:Meziantou.Framework.DnsClient.DnssecTrustAnchors.Root) | The trust anchors of local validation. |
-| [TimeProvider](cref:Meziantou.Framework.DnsClient.DnsClientOptions.TimeProvider) | `TimeProvider.System` | The clock used to check the validity period of DNSSEC signatures. |
+| [TimeProvider](cref:Meziantou.Framework.DnsClient.DnsClientOptions.TimeProvider) | `TimeProvider.System` | The clock used to check the validity period of DNSSEC signatures and the time of TSIG signatures. |
+| [TsigKey](cref:Meziantou.Framework.DnsClient.DnsClientOptions.TsigKey) | `null` | Signs the queries and authenticates the responses. See [TSIG and cookies](07-TsigAndCookies.md). |
+| [EnableCookies](cref:Meziantou.Framework.DnsClient.DnsClientOptions.EnableCookies) | `false` | Sends DNS cookies. See [Use DNS cookies](07-TsigAndCookies.md#use-dns-cookies). |
 | [HttpHandler](cref:Meziantou.Framework.DnsClient.DnsClientOptions.HttpHandler), [HttpVersion](cref:Meziantou.Framework.DnsClient.DnsClientOptions.HttpVersion), [HttpVersionPolicy](cref:Meziantou.Framework.DnsClient.DnsClientOptions.HttpVersionPolicy) | a pooled handler, HTTP/2, `RequestVersionOrLower` | DNS over HTTPS only. See [DNS over HTTPS](02-Protocols.md#dns-over-https). |
 | [ServerAddressResolver](cref:Meziantou.Framework.DnsClient.DnsClientOptions.ServerAddressResolver) | the system resolver | Resolves the host name of the server. See [Server address](02-Protocols.md#server-address). |

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Security.Cryptography;
+using Meziantou.Framework.DnsClient.Internal;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
 using Meziantou.Framework.DnsClient.Response.Records;
@@ -10,6 +11,18 @@ namespace Meziantou.Framework.DnsClient.Protocol;
 internal static class DnsMessageEncoder
 {
     public static byte[] EncodeQuery(DnsQueryMessage query, out ushort id)
+    {
+        return EncodeQuery(query, out id, cookie: default, incrementalTransferSerial: null);
+    }
+
+    /// <param name="query">The query.</param>
+    /// <param name="id">The identifier of the encoded message.</param>
+    /// <param name="cookie">The COOKIE option to add to the OPT record (RFC 7873), or empty.</param>
+    /// <param name="incrementalTransferSerial">
+    /// For an IXFR query, the serial of the version of the zone the client has: RFC 1995 section 3 sends it as an SOA
+    /// record in the authority section.
+    /// </param>
+    public static byte[] EncodeQuery(DnsQueryMessage query, out ushort id, ReadOnlySpan<byte> cookie, uint? incrementalTransferSerial)
     {
         var writer = new DnsWireWriter(512);
 
@@ -31,7 +44,7 @@ internal static class DnsMessageEncoder
         writer.WriteUInt16(flags);
         writer.WriteUInt16((ushort)query.Questions.Count); // QDCOUNT
         writer.WriteUInt16(0); // ANCOUNT
-        writer.WriteUInt16(0); // NSCOUNT
+        writer.WriteUInt16(incrementalTransferSerial is null ? (ushort)0 : (ushort)1); // NSCOUNT
 
         var hasEdns = query.EdnsOptions is not null;
         writer.WriteUInt16(hasEdns ? (ushort)1 : (ushort)0); // ARCOUNT
@@ -42,6 +55,26 @@ internal static class DnsMessageEncoder
             writer.WriteDomainName(question.Name);
             writer.WriteUInt16((ushort)question.Type);
             writer.WriteUInt16((ushort)question.QueryClass);
+        }
+
+        if (incrementalTransferSerial is { } serial)
+        {
+            if (query.Questions.Count is 0)
+                throw new ArgumentException("An IXFR query needs a question.", nameof(query));
+
+            // Only the serial matters: the names and timers of the SOA record are not used
+            writer.WriteDomainName(query.Questions[0].Name);
+            writer.WriteUInt16((ushort)DnsQueryType.SOA);
+            writer.WriteUInt16((ushort)query.Questions[0].QueryClass);
+            writer.WriteUInt32(0); // TTL
+            writer.WriteUInt16(22); // RDLENGTH
+            writer.WriteByte(0); // MNAME: root
+            writer.WriteByte(0); // RNAME: root
+            writer.WriteUInt32(serial);
+            writer.WriteUInt32(0); // REFRESH
+            writer.WriteUInt32(0); // RETRY
+            writer.WriteUInt32(0); // EXPIRE
+            writer.WriteUInt32(0); // MINIMUM
         }
 
         // EDNS(0) OPT record in Additional section
@@ -56,7 +89,17 @@ internal static class DnsMessageEncoder
             if (edns.DnssecOk)
                 ednsFlags |= 0x8000; // DO flag
             writer.WriteUInt16(ednsFlags); // EDNS flags
-            writer.WriteUInt16(0); // RDLENGTH: no options data
+            if (cookie.IsEmpty)
+            {
+                writer.WriteUInt16(0); // RDLENGTH: no options data
+            }
+            else
+            {
+                writer.WriteUInt16((ushort)(cookie.Length + 4)); // RDLENGTH
+                writer.WriteUInt16(DnsCookies.OptionCode);
+                writer.WriteUInt16((ushort)cookie.Length);
+                writer.WriteBytes(cookie);
+            }
         }
 
         return writer.ToArray();
@@ -131,6 +174,7 @@ internal static class DnsMessageEncoder
         var records = new List<DnsRecord>(count);
         for (var i = 0; i < count; i++)
         {
+            var recordStart = reader.Position;
             var name = reader.ReadDomainName();
             var type = (DnsQueryType)reader.ReadUInt16();
             var recordClass = (DnsQueryClass)reader.ReadUInt16();
@@ -162,6 +206,10 @@ internal static class DnsMessageEncoder
                 optRecord.ExtendedRCode = (byte)(ttl >> 24);
                 optRecord.EdnsVersion = (byte)(ttl >> 16);
                 optRecord.DnssecOk = ((ushort)ttl & 0x8000) != 0;
+            }
+            else if (record is DnsTsigRecord tsigRecord)
+            {
+                tsigRecord.MessageOffset = recordStart;
             }
 
             records.Add(record);
@@ -201,6 +249,7 @@ internal static class DnsMessageEncoder
             DnsQueryType.DNAME => ParseDnameRecord(ref reader),
             DnsQueryType.OPT => ParseOptRecord(ref reader, rdLength),
             DnsQueryType.URI => ParseUriRecord(ref reader, rdLength),
+            DnsQueryType.TSIG => ParseTsigRecord(ref reader),
             _ => ParseUnknownRecord(ref reader, rdLength),
         };
     }
@@ -535,6 +584,30 @@ internal static class DnsMessageEncoder
         var target = Encoding.UTF8.GetString(reader.ReadBytes(rdLength - 4));
 
         return new DnsUriRecord { Priority = priority, Weight = weight, Target = target };
+    }
+
+    private static DnsTsigRecord ParseTsigRecord(ref DnsWireReader reader)
+    {
+        var algorithm = reader.ReadDomainName();
+        var timeSigned = ((ulong)reader.ReadUInt16() << 32) | reader.ReadUInt32();
+        var fudge = reader.ReadUInt16();
+        var macLength = reader.ReadUInt16();
+        var mac = reader.ReadBytes(macLength).ToArray();
+        var originalId = reader.ReadUInt16();
+        var error = (DnsResponseCode)reader.ReadUInt16();
+        var otherLength = reader.ReadUInt16();
+        var otherData = reader.ReadBytes(otherLength).ToArray();
+
+        return new DnsTsigRecord
+        {
+            Algorithm = algorithm,
+            TimeSigned = timeSigned,
+            Fudge = fudge,
+            Mac = mac,
+            OriginalId = originalId,
+            Error = error,
+            OtherData = otherData,
+        };
     }
 
     private static DnsUnknownRecord ParseUnknownRecord(ref DnsWireReader reader, ushort rdLength)

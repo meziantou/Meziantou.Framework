@@ -1,4 +1,5 @@
 using System.Net;
+using Meziantou.Framework.DnsClient.Internal;
 using Meziantou.Framework.DnsClient.Protocol;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
@@ -855,5 +856,147 @@ public sealed class DnsWireFormatTests
         var message = BuildSingleAnswerMessage(type, (ushort)rdata.Length, rdata, trailing: []);
         var response = DnsMessageEncoder.DecodeResponse(message);
         return Assert.IsType<T>(Assert.Single(response.Answers));
+    }
+
+    // The expected messages were signed by dnspython 2.7 with the key "tsig-key." and the secret 00 01 02 ... 1F, at
+    // 1700000000 (2023-11-14T22:13:20Z), with a fudge of 300 seconds
+    private const ulong TsigVectorTime = 1700000000;
+
+    private static readonly byte[] TsigVectorSecret = [.. Enumerable.Range(0, 32).Select(value => (byte)value)];
+
+    [Theory]
+    [InlineData(DnsTsigAlgorithm.HmacSha256, "123401000001000000000001076578616d706c6503636f6d000006000108747369672d6b65790000fa00ff00000000003d0b686d61632d7368613235360000006553f100012c002062cab8e08ed635a70ac5a279afce9b8c3dc3564b427e4ff78e4611f54e99f402123400000000")]
+    [InlineData(DnsTsigAlgorithm.HmacMd5, "123401000001000000000001076578616d706c6503636f6d000006000108747369672d6b65790000fa00ff00000000003a08686d61632d6d6435077369672d616c670372656703696e740000006553f100012c001058c0f976332de75a3547503ab82e38de123400000000")]
+    [InlineData(DnsTsigAlgorithm.HmacSha1, "123401000001000000000001076578616d706c6503636f6d000006000108747369672d6b65790000fa00ff00000000002f09686d61632d736861310000006553f100012c00146d1620e29f503e6c73f4fae73563be41ffe40abd123400000000")]
+    [InlineData(DnsTsigAlgorithm.HmacSha384, "123401000001000000000001076578616d706c6503636f6d000006000108747369672d6b65790000fa00ff00000000004d0b686d61632d7368613338340000006553f100012c003061f3257764371dba2e51ae107d7e86f2f6895c59e2f46aaf2abb3006969df28b3b49c9c106356246ca9ae34b47c314b9123400000000")]
+    [InlineData(DnsTsigAlgorithm.HmacSha512, "123401000001000000000001076578616d706c6503636f6d000006000108747369672d6b65790000fa00ff00000000005d0b686d61632d7368613531320000006553f100012c0040ecfe5188561d21b67762e1adee4f5459bd0d024ae97a990a7c7164006dbe5900a8e5742684ac07e1917edc354be3278ac0cd44ca05b4d125b3761f6f3c6bb70e123400000000")]
+    public void TsigSign_Query_MatchesDnspython(DnsTsigAlgorithm algorithm, string expectedHex)
+    {
+        var query = new DnsQueryMessage { Id = 0x1234, RecursionDesired = true };
+        query.Questions.Add(new DnsQuestion("example.com", DnsQueryType.SOA));
+        var key = new DnsTsigKey("tsig-key", algorithm, TsigVectorSecret);
+
+        var message = DnsMessageEncoder.EncodeQuery(query, out _);
+        var signed = DnsTsig.Sign(message, key, TsigVectorTime, priorMac: [], unsignedMessages: [], timersOnly: false, DnsResponseCode.NoError, out var mac);
+
+        Assert.Equal(expectedHex, Convert.ToHexStringLower(signed));
+        var tsig = Assert.IsType<DnsTsigRecord>(DnsMessageEncoder.DecodeResponse(signed).AdditionalRecords[^1]);
+        Assert.Equal(mac, tsig.Mac);
+    }
+
+    [Fact]
+    public void TsigVerifier_ZoneTransferSignedByDnspython_IsValid()
+    {
+        var query = Convert.FromHexString("432100000001000000000001076578616d706c6503636f6d0000fc000108747369672d6b65790000fa00ff00000000003d0b686d61632d7368613235360000006553f100012c00208f837fd4140c88ea5deb125df454c369d4d26fb8661763740ca4c1857a4c99fb432100000000");
+        string[] responses =
+        [
+            "432184000001000200000001076578616d706c6503636f6d0000fc0001c00c0006000100000e100026026e73c00c0a686f73746d6173746572c00c0000000700000e1000000258000151800000003cc00c0002000100000e100002c02908747369672d6b65790000fa00ff00000000003d0b686d61632d7368613235360000006553f100012c0020d247f4658e06146bff77a37806e896bfa053b137daf05c1ecb285000caf8e141432100000000",
+            "43218400000000010000000103777777076578616d706c6503636f6d000001000100000e100004c000020108747369672d6b65790000fa00ff00000000003d0b686d61632d7368613235360000006553f100012c00207f6da90bf09e390c438b1a6021f68d4e911de1dd29277451cb06ee925db92bbe432100000000",
+            "432184000000000200000001046d61696c076578616d706c6503636f6d000001000100000e100004c0000202c0110006000100000e100026026e73c0110a686f73746d6173746572c0110000000700000e1000000258000151800000003c08747369672d6b65790000fa00ff00000000003d0b686d61632d7368613235360000006553f100012c00200f3e1a8f4b118e59f16ccfa202b77db88cfc1d82349a3265835933bc9abd8a19432100000000",
+        ];
+
+        var key = new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, TsigVectorSecret);
+        var requestMac = Assert.IsType<DnsTsigRecord>(DnsMessageEncoder.DecodeResponse(query).AdditionalRecords[^1]).Mac;
+        using var verifier = new DnsTsigVerifier(key, requestMac, new FixedTimeProvider(DateTimeOffset.FromUnixTimeSeconds((long)TsigVectorTime)));
+        var state = new DnsZoneTransferState(clientSerial: null);
+        foreach (var hex in responses)
+        {
+            var data = Convert.FromHexString(hex);
+            var response = DnsMessageEncoder.DecodeResponse(data);
+            verifier.Verify(data, response);
+            Assert.True(verifier.IsLastMessageSigned);
+            state.Process(response.Answers);
+        }
+
+        Assert.True(state.IsComplete);
+
+        // The MAC of each message covers the previous one: the messages cannot be verified out of order
+        using var outOfOrder = new DnsTsigVerifier(key, requestMac, new FixedTimeProvider(DateTimeOffset.FromUnixTimeSeconds((long)TsigVectorTime)));
+        var first = Convert.FromHexString(responses[0]);
+        outOfOrder.Verify(first, DnsMessageEncoder.DecodeResponse(first));
+        var third = Convert.FromHexString(responses[2]);
+        Assert.Throws<DnsProtocolException>(() => outOfOrder.Verify(third, DnsMessageEncoder.DecodeResponse(third)));
+    }
+
+    [Fact]
+    public void TsigVerifier_ResponseSignedOutsideTheFudge_IsRejected()
+    {
+        var query = Convert.FromHexString("432100000001000000000001076578616d706c6503636f6d0000fc000108747369672d6b65790000fa00ff00000000003d0b686d61632d7368613235360000006553f100012c00208f837fd4140c88ea5deb125df454c369d4d26fb8661763740ca4c1857a4c99fb432100000000");
+        var response = Convert.FromHexString("432184000001000200000001076578616d706c6503636f6d0000fc0001c00c0006000100000e100026026e73c00c0a686f73746d6173746572c00c0000000700000e1000000258000151800000003cc00c0002000100000e100002c02908747369672d6b65790000fa00ff00000000003d0b686d61632d7368613235360000006553f100012c0020d247f4658e06146bff77a37806e896bfa053b137daf05c1ecb285000caf8e141432100000000");
+        var key = new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, TsigVectorSecret);
+        var requestMac = Assert.IsType<DnsTsigRecord>(DnsMessageEncoder.DecodeResponse(query).AdditionalRecords[^1]).Mac;
+
+        using var verifier = new DnsTsigVerifier(key, requestMac, new FixedTimeProvider(DateTimeOffset.FromUnixTimeSeconds((long)TsigVectorTime + 301)));
+        var exception = Assert.Throws<DnsProtocolException>(() => verifier.Verify(response, DnsMessageEncoder.DecodeResponse(response)));
+        Assert.Contains("301 seconds", exception.Message);
+    }
+
+    [Fact]
+    public void TsigVerifier_TsigRecordOutsideTheAdditionalSection_IsRejected()
+    {
+        var signed = Convert.FromHexString("123401000001000000000001076578616d706c6503636f6d000006000108747369672d6b65790000fa00ff00000000003d0b686d61632d7368613235360000006553f100012c002062cab8e08ed635a70ac5a279afce9b8c3dc3564b427e4ff78e4611f54e99f402123400000000");
+
+        // The same record in the answer section: ANCOUNT 1, ARCOUNT 0
+        signed[7] = 1;
+        signed[11] = 0;
+        var key = new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, TsigVectorSecret);
+        using var verifier = new DnsTsigVerifier(key, [], new FixedTimeProvider(DateTimeOffset.FromUnixTimeSeconds((long)TsigVectorTime)));
+
+        Assert.Throws<DnsProtocolException>(() => verifier.Verify(signed, DnsMessageEncoder.DecodeResponse(signed)));
+    }
+
+    [Fact]
+    public void DecodeResponse_TsigRecord_ReadsEveryField()
+    {
+        var data = Convert.FromHexString("123401000001000000000001076578616d706c6503636f6d000006000108747369672d6b65790000fa00ff00000000003d0b686d61632d7368613235360000006553f100012c002062cab8e08ed635a70ac5a279afce9b8c3dc3564b427e4ff78e4611f54e99f402123400000000");
+
+        var tsig = Assert.IsType<DnsTsigRecord>(Assert.Single(DnsMessageEncoder.DecodeResponse(data).AdditionalRecords));
+
+        Assert.Equal("tsig-key", tsig.Name);
+        Assert.Equal(DnsQueryType.TSIG, tsig.RecordType);
+        Assert.Equal(DnsQueryClass.ANY, tsig.RecordClass);
+        Assert.Equal("hmac-sha256", tsig.Algorithm);
+        Assert.Equal(TsigVectorTime, tsig.TimeSigned);
+        Assert.Equal((ushort)300, tsig.Fudge);
+        Assert.HasCount(32, tsig.Mac);
+        Assert.Equal((ushort)0x1234, tsig.OriginalId);
+        Assert.Equal(DnsResponseCode.NoError, tsig.Error);
+        Assert.Empty(tsig.OtherData);
+        Assert.Equal(29, tsig.MessageOffset);
+    }
+
+    [Fact]
+    public void EncodeQuery_IncrementalTransfer_SendsTheSerialInTheAuthoritySection()
+    {
+        var query = new DnsQueryMessage { Id = 1, RecursionDesired = false };
+        query.Questions.Add(new DnsQuestion("example.com", DnsQueryType.IXFR));
+
+        var message = DnsMessageEncoder.EncodeQuery(query, out _, cookie: default, incrementalTransferSerial: 41);
+        var decoded = DnsMessageEncoder.DecodeResponse(message);
+
+        var soa = Assert.IsType<DnsSoaRecord>(Assert.Single(decoded.Authorities));
+        Assert.Equal("example.com", soa.Name);
+        Assert.Equal(41u, soa.Serial);
+        Assert.Equal("", soa.PrimaryNameServer);
+    }
+
+    [Fact]
+    public void EncodeQuery_WithACookie_AddsTheCookieOptionToTheOptRecord()
+    {
+        var query = new DnsQueryMessage { Id = 1, EdnsOptions = new DnsEdnsOptions() };
+        query.Questions.Add(new DnsQuestion("example.com", DnsQueryType.A));
+        byte[] cookie = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+
+        var message = DnsMessageEncoder.EncodeQuery(query, out _, cookie, incrementalTransferSerial: null);
+        var opt = Assert.IsType<DnsOptRecord>(Assert.Single(DnsMessageEncoder.DecodeResponse(message).AdditionalRecords));
+
+        var option = Assert.Single(opt.Options);
+        Assert.Equal((ushort)10, option.Code);
+        Assert.Equal(cookie, option.Data);
+    }
+
+    private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now;
     }
 }

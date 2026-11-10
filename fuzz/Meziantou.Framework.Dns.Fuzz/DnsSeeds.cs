@@ -7,6 +7,9 @@ using Meziantou.Framework.DnsServer.Protocol;
 using Meziantou.Framework.DnsServer.Protocol.Records;
 using Meziantou.Framework.DnsServer.Protocol.Wire;
 using Meziantou.Framework.Fuzzing;
+using ClientCanonicalizer = Meziantou.Framework.DnsClient.Internal.DnssecCanonicalizer;
+using ClientDecoder = Meziantou.Framework.DnsClient.Protocol.DnsMessageEncoder;
+using ClientRecords = Meziantou.Framework.DnsClient.Response.Records;
 using DnsResponseCode = Meziantou.Framework.DnsServer.Protocol.DnsResponseCode;
 
 namespace Meziantou.Framework.DnsFuzz;
@@ -30,6 +33,14 @@ internal static partial class DnsSeeds
         "\u0000\u0000)\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000", "\u0000\u0000)\u0004\u0000\u0001\u0000\u0000\u0000\u0000\u0000", "\u0000\u0000\u0000\u0000",
         "\u0007example\u0003com\u0000", "\u0003www", "\u0003com\u0000", "\u0001*", "\u0000", "\u0001\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000\u0000", "\u0001\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000\u0001",
         "\u0001\u0003\u0008", "\u0001\u0003\u000D", "\u0001\u0001\u0000\u0000", "\u0002h2", "\u0005issue",
+    ];
+
+    // The tokens of TSIG records, cookies and zone transfers
+    public static IReadOnlyList<string> TransferTokens { get; } =
+    [
+        .. WireTokens,
+        "\u000Bhmac-sha256\u0000", "\u0009hmac-sha1\u0000", "\u0008hmac-md5\u0007sig-alg\u0003reg\u0003int\u0000", "\u0008tsig-key\u0000", "\u0001,",
+        "\u0000\u0006\u0000\u0001", "\u0000\n\u0000\u0008", "\u0000\n\u0000\u0010", "\u0000\n\u0000\u0018", "\u0000\u0000\u0000\u0001", "\u0000\u0000\u0000\u0002",
     ];
 
     public static IReadOnlyList<string> FilterTokens { get; } =
@@ -211,6 +222,178 @@ internal static partial class DnsSeeds
     {
         return CSharpStringLiterals.Extract(FuzzResources.ReadText(typeof(DnsSeeds).Assembly, "DnsFilterListReaderTests.cs"))
             .Concat(CSharpStringLiterals.Extract(FuzzResources.ReadText(typeof(DnsSeeds).Assembly, "DnsFilterEngineTests.cs")));
+    }
+
+    /// <summary>The examples of RFC 8080 section 6 (with the signatures of erratum 4935), verified and signed again.</summary>
+    public static IEnumerable<FuzzSeed> GetEdDsaSeeds()
+    {
+        (byte Algorithm, string PrivateKey, string PublicKey, ushort KeyTag, string Signature)[] examples =
+        [
+            (15, "ODIyNjAzODQ2MjgwODAxMjI2NDUxOTAyMDQxNDIyNjI=", "l02Woi0iS8Aa25FQkUd9RMzZHJpBoRQwAQEX1SxZJA4=", 3613, "oL9krJun7xfBOIWcGHi7mag5/hdZrKWw15jPGrHpjQeRAvTdszaPD+QLs3fx8A4M3e23mRZ9VrbpMngwcrqNAg=="),
+            (15, "DSSF3o0s0f+ElWzj9E/Osxw8hLpk55chkmx0LYN5WiY=", "zPnZ/QwEe7S8C5SPz2OfS5RR40ATk2/rYnE9xHIEijs=", 35217, "zXQ0bkYgQTEFyfLyi9QoiY6D8ZdYo4wyUhVioYZXFdT410QPRITQSqJSnzQoSm5poJ7gD7AQR0O7KuI5k2pcBg=="),
+            (16, "xZ+5Cgm463xugtkY5B0Jx6erFTXp13rYegst0qRtNsOYnaVpMx0Z/c5EiA9x8wWbDDct/U3FhYWA", "3kgROaDjrh0H2iuixWBrc8g2EpBBLCdGzHmn+G2MpTPhpj/OiBVHHSfPodx1FYYUcJKm1MDpJtIA", 9713, "3cPAHkmlnxcDHMyg7vFC34l0blBhuG1qpwLmjInI8w1CMB29FkEAIJUA0amxWndkmnBZ6SKiwZSAxGILn/NBtOXft0+Gj7FSvOKxE/07+4RQvE581N3Aj/JtIyaiYVdnYtyMWbSNyGEY2213WKsJlwEA"),
+            (16, "WEykD3ht3MHkU8iH4uVOLz8JLwtRBSqiBoM6fF72+Mrp/u5gjxuB1DV6NnPO2BlZdz4hdSTkOdOA", "kkreGWoccSDmUBGAe7+zsbG6ZAFQp+syPmYUurBRQc3tDjeMCJcVMRDmgcNLp5HlHAMy12VoISsA", 38353, "E1/oLjSGIbmLny/4fcgM1z4oL6aqo+izT3urCyHyvEp4Sp8Syg1eI+lJ57CSnZqjJP41O/9l4m0AsQ4f7qI1gVnML8vWWiyW2KXhT9kuAICUSxv5OWbf81Rq7Yu60npabODB0QFPb/rkW3kUZmQ0YQUA"),
+        ];
+
+        var index = 0;
+        foreach (var example in examples)
+        {
+            var mx = new ClientRecords.DnsMxRecord { Name = "example.com", RecordType = Meziantou.Framework.DnsClient.Query.DnsQueryType.MX, RecordClass = Meziantou.Framework.DnsClient.Query.DnsQueryClass.IN, TimeToLive = 3600, Preference = 10, Exchange = "mail.example.com" };
+            var rrsig = new ClientRecords.DnsRrsigRecord
+            {
+                Name = "example.com",
+                RecordType = Meziantou.Framework.DnsClient.Query.DnsQueryType.RRSIG,
+                RecordClass = Meziantou.Framework.DnsClient.Query.DnsQueryClass.IN,
+                TimeToLive = 3600,
+                TypeCovered = Meziantou.Framework.DnsClient.Query.DnsQueryType.MX,
+                Algorithm = example.Algorithm,
+                Labels = 2,
+                OriginalTtl = 3600,
+                SignatureExpiration = 1440021600,
+                SignatureInception = 1438207200,
+                KeyTag = example.KeyTag,
+                SignerName = "example.com",
+                Signature = Convert.FromBase64String(example.Signature),
+            };
+            var signedData = ClientCanonicalizer.GetSignedData([mx], rrsig);
+            var selector = example.Algorithm is 15 ? (byte)0 : (byte)1;
+            yield return new FuzzSeed(string.Create(CultureInfo.InvariantCulture, $"rfc8080-verify-{index}"), (byte[])[selector, .. Convert.FromBase64String(example.PublicKey), .. rrsig.Signature, .. signedData]);
+            yield return new FuzzSeed(string.Create(CultureInfo.InvariantCulture, $"rfc8080-sign-{index}"), (byte[])[(byte)(selector | 2), (byte)index, .. Convert.FromBase64String(example.PrivateKey), .. signedData]);
+            yield return new FuzzSeed(string.Create(CultureInfo.InvariantCulture, $"rfc8080-sign-empty-{index}"), (byte[])[(byte)(selector | 2), 0x55, .. Convert.FromBase64String(example.PrivateKey)]);
+            index++;
+        }
+    }
+
+    /// <summary>The responses of the unit tests: the zone transfer dnspython signed (without its TSIG records), and messages with every record type.</summary>
+    public static IEnumerable<FuzzSeed> GetTsigSeeds()
+    {
+        byte[][] transfer = [.. GetDnspythonTransfer().Select(RemoveTsigRecord)];
+        for (byte algorithm = 0; algorithm < 5; algorithm++)
+        {
+            yield return new FuzzSeed(string.Create(CultureInfo.InvariantCulture, $"dnspython-axfr-{algorithm}"), (byte[])[algorithm, 0, 7, .. LengthPrefixed(transfer)]);
+        }
+
+        yield return new FuzzSeed("dnspython-axfr-unsigned-middle", (byte[])[0, 0b10, 40, .. LengthPrefixed(transfer)]);
+        yield return new FuzzSeed("dnspython-axfr-signed", (byte[])[0, 0, 0, .. LengthPrefixed(GetDnspythonTransfer())]);
+        foreach (var (name, message) in GetMessages())
+        {
+            yield return new FuzzSeed("message-" + name, (byte[])[3, 0, 13, .. LengthPrefixed([message])]);
+        }
+    }
+
+    /// <summary>The zone transfers of the unit tests: AXFR in three messages, IXFR with differences, IXFR up to date, refused.</summary>
+    public static IEnumerable<FuzzSeed> GetZoneTransferSeeds()
+    {
+        var soa1 = Record("example.com", DnsQueryType.SOA, Soa(1));
+        var soa2 = Record("example.com", DnsQueryType.SOA, Soa(2));
+        var oldAddress = Record("www.example.com", DnsQueryType.A, new DnsARecordData { Address = IPAddress.Parse("192.0.2.10") });
+        var newAddress = Record("www.example.com", DnsQueryType.A, new DnsARecordData { Address = IPAddress.Parse("192.0.2.11") });
+        var ns = Record("example.com", DnsQueryType.NS, new DnsNsRecordData { NameServer = "ns.example.com" });
+
+        yield return TransferSeed("axfr", serial: null,
+        [
+            TransferMessage(DnsQueryType.AXFR, [soa2, ns]),
+            TransferMessage(question: null, [newAddress]),
+            TransferMessage(question: null, [soa2]),
+        ]);
+        yield return TransferSeed("axfr-single-message", serial: null, [TransferMessage(DnsQueryType.AXFR, [soa2, ns, newAddress, soa2])]);
+        yield return TransferSeed("axfr-empty-zone", serial: null, [TransferMessage(DnsQueryType.AXFR, [soa2, soa2])]);
+        yield return TransferSeed("axfr-refused", serial: null, [TransferMessage(DnsQueryType.AXFR, [], DnsResponseCode.Refused)]);
+        yield return TransferSeed("axfr-truncated", serial: null, [TransferMessage(DnsQueryType.AXFR, [soa2, ns])]);
+        yield return TransferSeed("ixfr", serial: 1,
+        [
+            TransferMessage(DnsQueryType.IXFR, [soa2]),
+            TransferMessage(question: null, [soa1, oldAddress, soa2, newAddress, soa2]),
+        ]);
+        yield return TransferSeed("ixfr-up-to-date", serial: 2, [TransferMessage(DnsQueryType.IXFR, [soa2])]);
+        yield return TransferSeed("ixfr-full", serial: 1, [TransferMessage(DnsQueryType.IXFR, [soa2, ns, newAddress, soa2])]);
+    }
+
+    /// <summary>Responses with a COOKIE option: with a server cookie, the client cookie alone, another client cookie, an invalid length, two options.</summary>
+    public static IEnumerable<FuzzSeed> GetCookieSeeds()
+    {
+        byte[] clientCookie = [1, 2, 3, 4, 5, 6, 7, 8];
+        byte[][] options =
+        [
+            [.. clientCookie, 9, 9, 9, 9, 9, 9, 9, 9],
+            [.. clientCookie, .. Enumerable.Repeat((byte)7, 32)],
+            clientCookie,
+            [8, 7, 6, 5, 4, 3, 2, 1, 9, 9, 9, 9, 9, 9, 9, 9],
+            [.. clientCookie, 9, 9, 9, 9],
+        ];
+
+        var index = 0;
+        foreach (var option in options)
+        {
+            yield return new FuzzSeed(string.Create(CultureInfo.InvariantCulture, $"cookie-{index++}"), (byte[])[.. clientCookie, .. CookieResponse([option])]);
+        }
+
+        yield return new FuzzSeed("cookie-twice", (byte[])[.. clientCookie, .. CookieResponse([clientCookie, clientCookie])]);
+        yield return new FuzzSeed("cookie-badcookie", (byte[])[.. clientCookie, .. CookieResponse([options[0]], DnsResponseCode.BadCookie)]);
+        yield return new FuzzSeed("no-cookie", (byte[])[.. clientCookie, .. CookieResponse([])]);
+    }
+
+    private static byte[] CookieResponse(byte[][] cookies, DnsResponseCode responseCode = DnsResponseCode.NoError)
+    {
+        var message = new DnsMessage { Id = 7, IsResponse = true, RecursionDesired = true, RecursionAvailable = true, ResponseCode = responseCode };
+        message.Questions.Add(new DnsQuestion("example.com", DnsQueryType.A));
+        message.Answers.Add(Record("example.com", DnsQueryType.A, new DnsARecordData { Address = IPAddress.Parse("192.0.2.1") }));
+        message.AdditionalRecords.Add(new DnsResourceRecord { Name = "", Type = DnsQueryType.OPT, Class = (DnsQueryClass)1232, TimeToLive = (uint)((ushort)responseCode >> 4) << 24, Data = new DnsOptRecordData { Options = [.. cookies.Select(cookie => new DnsEdnsOption { Code = 10, Data = cookie })] } });
+        return DnsMessageEncoder.EncodeResponse(message);
+    }
+
+    private static byte[] TransferMessage(DnsQueryType? question, DnsResourceRecord[] answers, DnsResponseCode responseCode = DnsResponseCode.NoError)
+    {
+        var message = new DnsMessage { Id = 0, IsResponse = true, IsAuthoritative = true, ResponseCode = responseCode };
+        if (question is { } type)
+        {
+            message.Questions.Add(new DnsQuestion("example.com", type));
+        }
+
+        foreach (var answer in answers)
+        {
+            message.Answers.Add(answer);
+        }
+
+        return DnsMessageEncoder.EncodeResponse(message);
+    }
+
+    private static FuzzSeed TransferSeed(string name, uint? serial, byte[][] messages)
+    {
+        Span<byte> buffer = stackalloc byte[4];
+        BinaryPrimitives.WriteUInt32BigEndian(buffer, serial ?? 0);
+        return new FuzzSeed(name, (byte[])[serial is null ? (byte)0 : (byte)1, .. buffer, .. LengthPrefixed(messages)]);
+    }
+
+    private static DnsSoaRecordData Soa(uint serial) => new() { PrimaryNameServer = "ns.example.com", ResponsibleMailbox = "hostmaster.example.com", Serial = serial, Refresh = 3600, Retry = 600, Expire = 86400, Minimum = 60 };
+
+    private static byte[] LengthPrefixed(IEnumerable<byte[]> messages)
+    {
+        var data = new List<byte>();
+        foreach (var message in messages)
+        {
+            data.Add((byte)(message.Length >> 8));
+            data.Add((byte)message.Length);
+            data.AddRange(message);
+        }
+
+        return [.. data];
+    }
+
+    /// <summary>The three messages of an AXFR that dnspython 2.7 signed with HMAC-SHA256 (the vectors of the unit tests).</summary>
+    private static byte[][] GetDnspythonTransfer() =>
+    [
+        Convert.FromHexString("432184000001000200000001076578616d706c6503636f6d0000fc0001c00c0006000100000e100026026e73c00c0a686f73746d6173746572c00c0000000700000e1000000258000151800000003cc00c0002000100000e100002c02908747369672d6b65790000fa00ff00000000003d0b686d61632d7368613235360000006553f100012c0020d247f4658e06146bff77a37806e896bfa053b137daf05c1ecb285000caf8e141432100000000"),
+        Convert.FromHexString("43218400000000010000000103777777076578616d706c6503636f6d000001000100000e100004c000020108747369672d6b65790000fa00ff00000000003d0b686d61632d7368613235360000006553f100012c00207f6da90bf09e390c438b1a6021f68d4e911de1dd29277451cb06ee925db92bbe432100000000"),
+        Convert.FromHexString("432184000000000200000001046d61696c076578616d706c6503636f6d000001000100000e100004c0000202c0110006000100000e100026026e73c0110a686f73746d6173746572c0110000000700000e1000000258000151800000003c08747369672d6b65790000fa00ff00000000003d0b686d61632d7368613235360000006553f100012c00200f3e1a8f4b118e59f16ccfa202b77db88cfc1d82349a3265835933bc9abd8a19432100000000"),
+    ];
+
+    private static byte[] RemoveTsigRecord(byte[] message)
+    {
+        var tsig = (ClientRecords.DnsTsigRecord)ClientDecoder.DecodeResponse(message).AdditionalRecords[^1];
+        var result = message.AsSpan(0, tsig.MessageOffset).ToArray();
+        BinaryPrimitives.WriteUInt16BigEndian(result.AsSpan(10), (ushort)(BinaryPrimitives.ReadUInt16BigEndian(result.AsSpan(10)) - 1));
+        return result;
     }
 
     private static IEnumerable<FuzzSeed> WithPrefix(IEnumerable<(string Name, byte[] Message)> messages, params byte[][] prefixes)

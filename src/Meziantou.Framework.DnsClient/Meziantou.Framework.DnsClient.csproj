@@ -5,8 +5,24 @@
     <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>2.0.8</Version>
-    <Description>A DNS client supporting UDP, TCP, DNS over TLS, DNS over HTTPS, DNS over QUIC, DNSSEC, EDNS, IDN, and reverse lookups</Description>
-    <PackageTags>dns, dns-client, doh, dot, doq, dnssec, networking</PackageTags>
+    <Description>A DNS client supporting UDP, TCP, DNS over TLS, DNS over HTTPS, DNS over QUIC, DNSSEC, EDNS, IDN, reverse lookups, zone transfers, TSIG, and DNS cookies</Description>
+    <PackageTags>dns, dns-client, doh, dot, doq, dnssec, axfr, ixfr, tsig, networking</PackageTags>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Ed25519 and Ed448 (DNSSEC algorithms 15 and 16, RFC 8080): the base class library does not provide them -->
+    <Compile Include="../Meziantou.Framework.WebPlatform/Cryptography/Ed25519.cs" Link="Internal/EdDsa/Ed25519.cs" />
+    <Compile Include="../Meziantou.Framework.WebPlatform/Cryptography/Ed448.cs" Link="Internal/EdDsa/Ed448.cs" />
+    <Compile Include="../Meziantou.Framework.WebPlatform/Cryptography/Edwards25519Point.cs" Link="Internal/EdDsa/Edwards25519Point.cs" />
+    <Compile Include="../Meziantou.Framework.WebPlatform/Cryptography/Edwards448Point.cs" Link="Internal/EdDsa/Edwards448Point.cs" />
+    <Compile Include="../Meziantou.Framework.WebPlatform/Cryptography/Field25519.cs" Link="Internal/EdDsa/Field25519.cs" />
+    <Compile Include="../Meziantou.Framework.WebPlatform/Cryptography/Field448.cs" Link="Internal/EdDsa/Field448.cs" />
+    <Compile Include="../Meziantou.Framework.WebPlatform/Cryptography/X25519.cs" Link="Internal/EdDsa/X25519.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SHAKE256, the hash function of Ed448 -->
+    <ProjectReference Include="../Meziantou.Framework.Hashing/Meziantou.Framework.Hashing.csproj" />
+  </ItemGroup>
 
 </Project>

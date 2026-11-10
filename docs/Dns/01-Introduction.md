@@ -7,7 +7,7 @@ The DNS packages cover both sides of the protocol, plus filtering:
 
 | Package | Use it to |
 | --- | --- |
-| `Meziantou.Framework.DnsClient` | Send queries to a DNS server and read typed records, with optional DNSSEC validation. See [DnsClient](03-DnsClient/01-Overview.md). |
+| `Meziantou.Framework.DnsClient` | Send queries to a DNS server and read typed records, with optional DNSSEC validation, TSIG and zone transfers. See [DnsClient](03-DnsClient/01-Overview.md). |
 | `Meziantou.Framework.DnsServer` | Answer DNS queries from your own code, in an ASP.NET Core application. See [DnsServer](04-DnsServer/01-Overview.md). |
 | `Meziantou.Framework.DnsFilter` | Parse block lists (hosts files, domain lists, Adblock-style rules) and decide whether a domain is blocked, allowed or rewritten. See [DnsFilter](05-DnsFilter/01-Overview.md). |
 | `Meziantou.DnsProxy` | Run a DNS proxy that filters queries and forwards the others to upstream resolvers. It is a .NET tool built on the three libraries. See [DnsProxy](06-DnsProxy/01-Overview.md). |

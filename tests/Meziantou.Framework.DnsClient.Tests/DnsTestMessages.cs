@@ -1,6 +1,11 @@
+using System.Buffers.Binary;
+using System.Net;
+using Meziantou.Framework.DnsClient.Internal;
 using Meziantou.Framework.DnsClient.Protocol;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
+using Meziantou.Framework.DnsClient.Response.Records;
+using DnsResponseCode = Meziantou.Framework.DnsClient.Response.DnsResponseCode;
 
 namespace Meziantou.Framework.DnsClient.Tests;
 
@@ -76,6 +81,112 @@ internal static class DnsTestMessages
         return writer.ToArray();
     }
 
+    /// <summary>An SOA record of a test zone, whose only meaningful field is the serial.</summary>
+    public static TestRecord Soa(string zone, uint serial)
+    {
+        var writer = new DnsWireWriter(64);
+        writer.WriteDomainName("ns." + zone);
+        writer.WriteDomainName("hostmaster." + zone);
+        writer.WriteUInt32(serial);
+        writer.WriteUInt32(3600); // REFRESH
+        writer.WriteUInt32(600); // RETRY
+        writer.WriteUInt32(86400); // EXPIRE
+        writer.WriteUInt32(60); // MINIMUM
+        return new TestRecord(zone, DnsQueryType.SOA, writer.ToArray());
+    }
+
+    public static TestRecord A(string name, string address) => new(name, DnsQueryType.A, IPAddress.Parse(address).GetAddressBytes());
+
+    /// <summary>
+    /// Builds a response to <paramref name="query"/> with its identifier, operation code and question (unless
+    /// <paramref name="includeQuestion"/> is false, as in the messages of a zone transfer after the first one).
+    /// </summary>
+    public static byte[] CreateResponse(byte[] query, IEnumerable<TestRecord> answers, bool includeQuestion = true, DnsResponseCode responseCode = DnsResponseCode.NoError, byte[]? cookie = null)
+    {
+        var records = answers.ToList();
+        var hasOpt = cookie is not null || (ushort)responseCode > 15;
+        var questionEnd = GetQuestionSectionEnd(query);
+
+        var writer = new DnsWireWriter(512);
+        writer.WriteBytes(query.AsSpan(0, includeQuestion ? questionEnd : 12));
+        writer.WriteUInt16At((ushort)(0x8400 | (BinaryPrimitives.ReadUInt16BigEndian(query.AsSpan(2)) & 0x7900) | ((ushort)responseCode & 0x0F)), 2); // QR + AA + OPCODE + RD + RCODE
+        writer.WriteUInt16At(includeQuestion ? BinaryPrimitives.ReadUInt16BigEndian(query.AsSpan(4)) : (ushort)0, 4);
+        writer.WriteUInt16At((ushort)records.Count, 6);
+        writer.WriteUInt16At(0, 8);
+        writer.WriteUInt16At(hasOpt ? (ushort)1 : (ushort)0, 10);
+        foreach (var record in records)
+        {
+            writer.WriteDomainName(record.Name);
+            writer.WriteUInt16((ushort)record.Type);
+            writer.WriteUInt16((ushort)DnsQueryClass.IN);
+            writer.WriteUInt32(3600);
+            writer.WriteUInt16((ushort)record.Data.Length);
+            writer.WriteBytes(record.Data);
+        }
+
+        if (hasOpt)
+        {
+            writer.WriteByte(0); // root name
+            writer.WriteUInt16((ushort)DnsQueryType.OPT);
+            writer.WriteUInt16(1232);
+            writer.WriteUInt32((uint)((ushort)responseCode >> 4) << 24); // extended RCODE
+            writer.WriteUInt16(cookie is null ? (ushort)0 : (ushort)(cookie.Length + 4));
+            if (cookie is not null)
+            {
+                writer.WriteUInt16(10); // COOKIE
+                writer.WriteUInt16((ushort)cookie.Length);
+                writer.WriteBytes(cookie);
+            }
+        }
+
+        return writer.ToArray();
+    }
+
+    /// <summary>Gets the COOKIE option of a query, or null.</summary>
+    public static byte[]? GetCookie(byte[] query)
+    {
+        return DnsMessageEncoder.DecodeResponse(query).AdditionalRecords.OfType<DnsOptRecord>().SelectMany(opt => opt.Options).FirstOrDefault(option => option.Code is 10)?.Data;
+    }
+
+    /// <summary>
+    /// Checks the TSIG signature of a query as a server does (RFC 8945 section 5.2), and returns its MAC, or null when
+    /// the query is not signed or its signature is not valid.
+    /// </summary>
+    public static byte[]? VerifyQuerySignature(byte[] query, DnsTsigKey key)
+    {
+        var additionalRecords = DnsMessageEncoder.DecodeResponse(query).AdditionalRecords;
+        if (additionalRecords.Count is 0 || additionalRecords[^1] is not DnsTsigRecord tsig)
+            return null;
+
+        var signedMessage = query.AsSpan(0, tsig.MessageOffset).ToArray();
+        BinaryPrimitives.WriteUInt16BigEndian(signedMessage, tsig.OriginalId);
+        BinaryPrimitives.WriteUInt16BigEndian(signedMessage.AsSpan(10), (ushort)(BinaryPrimitives.ReadUInt16BigEndian(signedMessage.AsSpan(10)) - 1));
+        DnsTsig.Sign(signedMessage, key, tsig.TimeSigned, priorMac: [], unsignedMessages: [], timersOnly: false, DnsResponseCode.NoError, out var mac);
+        return mac.AsSpan().SequenceEqual(tsig.Mac) ? mac : null;
+    }
+
+    /// <summary>Signs the messages of a response as a server does (RFC 8945 sections 5.3 and 5.3.1), leaving unsigned the ones <paramref name="isSigned"/> rejects.</summary>
+    public static List<byte[]> SignResponses(IReadOnlyList<byte[]> messages, DnsTsigKey key, byte[] requestMac, ulong timeSigned, Func<int, bool>? isSigned = null)
+    {
+        var result = new List<byte[]>(messages.Count);
+        var priorMac = requestMac;
+        var unsignedMessages = new List<byte>();
+        for (var i = 0; i < messages.Count; i++)
+        {
+            if (isSigned is not null && !isSigned(i))
+            {
+                result.Add(messages[i]);
+                unsignedMessages.AddRange(messages[i]);
+                continue;
+            }
+
+            result.Add(DnsTsig.Sign(messages[i], key, timeSigned, priorMac, [.. unsignedMessages], timersOnly: i > 0, DnsResponseCode.NoError, out priorMac));
+            unsignedMessages.Clear();
+        }
+
+        return result;
+    }
+
     /// <summary>Returns the offset just past the question section of a DNS message.</summary>
     public static int GetQuestionSectionEnd(byte[] message)
     {
@@ -95,4 +206,7 @@ internal static class DnsTestMessages
 
         return position;
     }
+
+    /// <summary>A resource record of a test message, with its RDATA in wire format.</summary>
+    public readonly record struct TestRecord(string Name, DnsQueryType Type, byte[] Data);
 }

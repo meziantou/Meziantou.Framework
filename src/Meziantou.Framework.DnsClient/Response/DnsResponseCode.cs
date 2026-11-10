@@ -40,6 +40,10 @@ public enum DnsResponseCode : ushort
     /// <summary>Bad OPT version (RFC 6891).</summary>
     BadVersion = 16,
 
+    /// <summary>TSIG signature failure (RFC 8945). It shares its value with <see cref="BadVersion"/>: it is the error of a TSIG record.</summary>
+    [SuppressMessage("Design", "CA1069:Enums values should not be duplicated", Justification = "The IANA registry assigns 16 to both BADVERS and BADSIG")]
+    BadSignature = 16,
+
     /// <summary>Key not recognized (RFC 2845).</summary>
     BadKey = 17,
 

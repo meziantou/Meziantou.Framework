@@ -63,6 +63,26 @@ public sealed class DnsClientTelemetryTests
         Assert.Equal(exception.Message, activity.StatusDescription);
     }
 
+    [Fact]
+    public async Task TransferZoneAsync_WhenTheConnectionFails_SetsActivityStatusToError()
+    {
+        using var listener = CreateDnsClientActivityListener();
+        using var transport = new ThrowingTransport();
+        using var client = new DnsClient(transport, DnsClientProtocol.Tcp, options: null);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            await foreach (var message in client.TransferZoneAsync("example.com", TestContext.Current.CancellationToken))
+            {
+            }
+        });
+
+        var activity = Assert.Single(listener.Activities);
+        Assert.Equal("dns.zone_transfer", activity.OperationName);
+        Assert.Equal(ActivityStatusCode.Error, activity.Status);
+        Assert.Equal(exception.Message, activity.StatusDescription);
+    }
+
     // The scope only reports the activities started by the current test, so the tests of this class can run in parallel
     private static ScopedActivityListener CreateDnsClientActivityListener()
         => new(new ScopedActivityListenerOptions { SourceNames = ["Meziantou.Framework.DnsClient"] });
@@ -89,11 +109,16 @@ public sealed class DnsClientTelemetryTests
             => DnsTestMessages.CreateEmptyResponse(query, responseCode);
     }
 
-    private sealed class ThrowingTransport : IDnsTransport
+    private sealed class ThrowingTransport : IDnsTransport, IDnsStreamTransport
     {
         public Task<DnsTransportResponse> SendAsync(byte[] query, CancellationToken cancellationToken)
         {
             throw new InvalidOperationException("Could not send DNS query.");
+        }
+
+        public Task<DnsStreamConnection> ConnectAsync(CancellationToken cancellationToken)
+        {
+            throw new InvalidOperationException("Could not connect to the DNS server.");
         }
 
         public void Dispose()

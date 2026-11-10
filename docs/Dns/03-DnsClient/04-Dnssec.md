@@ -104,8 +104,8 @@ switch (validation.Status)
 - [Timeout](cref:Meziantou.Framework.DnsClient.DnsClientOptions.Timeout) covers the query and its whole validation, chain queries included: raise it when you validate locally. A
   validation that runs out of time throws `TimeoutException`.
 - It requires EDNS: creating a client with `EnableEdns = false` and local validation throws `ArgumentException`.
-- The supported signature algorithms are RSA/SHA-256 (8), RSA/SHA-512 (10), ECDSA P-256/SHA-256 (13) and ECDSA
-  P-384/SHA-384 (14); the supported DS digests are SHA-1 (1), SHA-256 (2) and SHA-384 (4). A zone signed only with
+- The supported signature algorithms are RSA/SHA-256 (8), RSA/SHA-512 (10), ECDSA P-256/SHA-256 (13), ECDSA
+  P-384/SHA-384 (14), Ed25519 (15) and Ed448 (16); the supported DS digests are SHA-1 (1), SHA-256 (2) and SHA-384 (4). A zone signed only with
   another algorithm validates as [Indeterminate](cref:Meziantou.Framework.DnsClient.Response.DnssecValidationStatus.Indeterminate).
 - Signature validity periods are checked against [TimeProvider](cref:Meziantou.Framework.DnsClient.DnsClientOptions.TimeProvider), the system clock by default. A wrong clock makes valid
   signatures look expired or not yet valid.

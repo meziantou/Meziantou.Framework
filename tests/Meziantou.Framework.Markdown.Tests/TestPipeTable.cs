@@ -905,6 +905,8 @@ public sealed class TestPipeTable
     [InlineData("> | a | b |\n> |---|---|\n> | 0 | 1 |\n")]
     [InlineData("- | a | b |\n  |---|---|\n  | 0 | 1 |\n")]
     [InlineData("| a \\| b |\n|---|\n| `c \\| d` |\n")]
+    [InlineData("a \f| b\n-- | --")]
+    [InlineData("a \f| b \f\n-- | --\n\f0  |  1\n")]
     public void PipeTableRoundtrip(string markdown)
     {
         TestRoundtrip.RoundTrip(markdown, new MarkdownPipelineBuilder().UsePipeTables());

@@ -22,8 +22,8 @@ public sealed class ResxGeneratorTest
 
     private static async Task<Compilation> CreateCompilation()
     {
-        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
-        var desktopRef = await NuGetHelpers.GetNuGetReferences("Microsoft.WindowsDesktop.App.Ref", "8.0.0", "ref/net8.0/");
+        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "10.0.0", "ref/net10.0/");
+        var desktopRef = await NuGetHelpers.GetNuGetReferences("Microsoft.WindowsDesktop.App.Ref", "10.0.0", "ref/net10.0/");
         var references = netcoreRef.Concat(desktopRef)
             .Select(loc => MetadataReference.CreateFromFile(loc))
             .ToArray();

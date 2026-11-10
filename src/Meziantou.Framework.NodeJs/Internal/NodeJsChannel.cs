@@ -281,7 +281,30 @@ internal sealed class NodeJsChannel
         // The call keeps running until its response arrives, and its JavaScript code may block the event loop
         Interlocked.Increment(ref _abandonedCalls);
         _host.OnRequestAbandoned();
+
+        // Aborts the AbortSignal of the call, so its JavaScript code can stop
+        _ = CancelRequestAsync(id);
         return true;
+    }
+
+    /// <summary>Tells the thread that a call is canceled. Never throws: when the thread is gone, the call no longer runs.</summary>
+    private async Task CancelRequestAsync(long id)
+    {
+        if (IsTerminated)
+            return;
+
+        try
+        {
+            await WriteMessageAsync(writer =>
+            {
+                writer.WriteString("type", "cancel");
+                writer.WriteNumber("call", id);
+            }).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException or OperationCanceledException)
+        {
+            // The connection is lost, so the thread and its calls are gone
+        }
     }
 
     /// <summary>Serializes a message. The caller must dispose the returned buffer, or pass it to <see cref="WriteMessageAndReleaseLockAsync"/>.</summary>

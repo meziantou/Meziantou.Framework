@@ -53,7 +53,7 @@ public sealed class JSReference : IAsyncDisposable, IDisposable
     /// <summary>Calls a method of the referenced value, or the referenced function.</summary>
     /// <param name="methodName">The name of the method, called with the referenced value as <c>this</c>. When the member is not a function, its value is returned. When <see langword="null"/>, the referenced value is called, so it must be a function.</param>
     /// <param name="arguments">The arguments passed to the function.</param>
-    /// <param name="cancellationToken">A token to stop waiting for the result. The JavaScript code keeps running.</param>
+    /// <param name="cancellationToken">A token to stop waiting for the result. Canceling it aborts <c>nodeJsHost.signal</c> in the JavaScript code, which keeps running unless it stops when the signal is aborted.</param>
     /// <returns>The JSON representation of the value returned by the function (awaited if it is a promise).</returns>
     /// <exception cref="NodeJsException">The JavaScript code throws, or the Node.js process exits.</exception>
     public Task<JsonElement> InvokeAsync(string? methodName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)
@@ -127,7 +127,7 @@ public sealed class JSReference : IAsyncDisposable, IDisposable
     /// <summary>Creates an instance (<c>new</c>) of the referenced class, or of a class that is a member of the referenced value, and keeps the instance in the Node.js process.</summary>
     /// <param name="memberName">The name of the member of the referenced value that is a class or a constructor function. When <see langword="null"/>, the referenced value is the class.</param>
     /// <param name="arguments">The arguments passed to the constructor.</param>
-    /// <param name="cancellationToken">A token to stop waiting for the result. The JavaScript code keeps running.</param>
+    /// <param name="cancellationToken">A token to stop waiting for the result. Canceling it aborts <c>nodeJsHost.signal</c> in the JavaScript code, which keeps running unless it stops when the signal is aborted.</param>
     /// <returns>A reference to the new instance. Dispose it when the instance is no longer needed.</returns>
     /// <exception cref="NodeJsException">The value is not a constructor, the constructor throws, or the Node.js process exits.</exception>
     public Task<JSReference> CreateInstanceAsync(string? memberName, IReadOnlyList<JsonNode?>? arguments = null, CancellationToken cancellationToken = default)

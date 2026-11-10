@@ -22,7 +22,8 @@ code, without writing a web service around it.
   progress, log, or resolve resources from your application. See [Calling .NET from JavaScript](07-CallingDotNet.md).
 - **Run calls in parallel**: on the worker threads of one process, or on a pool of processes. See
   [Running calls in parallel](11-ParallelCalls.md).
-- **Stop runaway code**: kill a process blocked by a canceled call, such as an infinite loop. See
+- **Stop canceled calls**: canceling a call aborts an `AbortSignal` that its JavaScript code can check, and a process
+  blocked by a canceled call, such as with an infinite loop, can be killed. See
   [Cancellation and timeouts](10-CancellationAndTimeouts.md).
 
 ## How it works

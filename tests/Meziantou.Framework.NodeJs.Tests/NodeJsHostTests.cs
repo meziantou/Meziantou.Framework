@@ -245,6 +245,30 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task DocumentationExample_CancellationSignal()
+    {
+        SkipIfNodeIsNotInstalled();
+
+        #region NodeJs_CancellationSignal
+        await using var node = await NodeJsHost.StartAsync();
+
+        using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => node.EvaluateVoidAsync("""
+            // nodeJsHost.signal is aborted when the call is canceled, so the timer stops immediately
+            const { setTimeout } = require("node:timers/promises");
+            try {
+                await setTimeout(60_000, undefined, { signal: nodeJsHost.signal });
+            } catch (error) {
+                globalThis.stopReason = error.name;
+            }
+            """, cancellationTokenSource.Token));
+        #endregion
+
+        await WaitUntilAsync(async () => (await node.EvaluateAsync("return globalThis.stopReason ?? null;", XunitCancellationToken)).ValueKind is JsonValueKind.String);
+        Assert.Equal("AbortError", (await node.EvaluateAsync<string>("return globalThis.stopReason;", XunitCancellationToken)));
+    }
+
+    [Fact]
     public async Task DocumentationExample_JSCallback()
     {
         SkipIfNodeIsNotInstalled();
@@ -1306,6 +1330,128 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task Cancellation_AbortsSignalOfTheCall()
+    {
+        var output = new ConcurrentQueue<string>();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { StandardOutputReceived = output.Enqueue });
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+
+        var canceled = node.EvaluateVoidAsync("""
+            const signal = nodeJsHost.signal;
+            await new Promise(resolve => {
+                signal.addEventListener("abort", resolve);
+                console.log("waiting");
+            });
+
+            // The signal is available in the asynchronous code of the call
+            await new Promise(resolve => setTimeout(resolve, 1));
+            console.log(`aborted ${nodeJsHost.signal === signal} ${signal.aborted} ${signal.reason?.name}`);
+            """, cts.Token);
+        var other = node.EvaluateAsync<bool>("""
+            const signal = nodeJsHost.signal;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return signal.aborted;
+            """, cancellationToken: XunitCancellationToken);
+        await WaitUntilAsync(() => output.Contains("waiting"));
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled);
+
+        await WaitUntilAsync(() => output.Contains("aborted true true AbortError"));
+        Assert.False(await other);
+    }
+
+    [Fact]
+    public async Task Cancellation_SignalIsNotAbortedOnceTheCallCompletes()
+    {
+        await using var node = await StartNodeAsync();
+
+        await node.EvaluateVoidAsync("globalThis.completedSignal = nodeJsHost.signal;", XunitCancellationToken);
+        var result = await node.EvaluateAsync<bool[]>("return [completedSignal instanceof AbortSignal, completedSignal.aborted, completedSignal === nodeJsHost.signal];", cancellationToken: XunitCancellationToken);
+
+        Assert.Equal([true, false, false], result);
+    }
+
+    [Fact]
+    public async Task Cancellation_AbortsSignalOfModuleFunction()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+
+        // The top-level code of a module does not belong to the call that loads it
+        temporaryDirectory.CreateTextFile("wait.mjs", """
+            import fs from "node:fs";
+            const signalAtLoad = nodeJsHost.signal;
+            export function wait() {
+                const signal = nodeJsHost.signal;
+                return new Promise(resolve => {
+                    signal.addEventListener("abort", () => {
+                        fs.writeSync(1, `aborted ${signalAtLoad === undefined}\n`);
+                        resolve();
+                    });
+                    fs.writeSync(1, "waiting\n");
+                });
+            }
+            """);
+        var output = new ConcurrentQueue<string>();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { WorkingDirectory = temporaryDirectory.FullPath, StandardOutputReceived = output.Enqueue });
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+
+        var canceled = node.InvokeVoidAsync("./wait.mjs", "wait", arguments: null, cts.Token);
+        await WaitUntilAsync(() => output.Contains("waiting"));
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled);
+
+        await WaitUntilAsync(() => output.Contains("aborted true"));
+    }
+
+    [Fact]
+    public async Task Cancellation_WorkerThreads_AbortsSignal()
+    {
+        var output = new ConcurrentQueue<string>();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { WorkerThreads = 2, StandardOutputReceived = output.Enqueue });
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+
+        var canceled = node.EvaluateVoidAsync("""
+            const fs = require("node:fs");
+            await new Promise(resolve => {
+                nodeJsHost.signal.addEventListener("abort", resolve);
+                fs.writeSync(1, "waiting\n");
+            });
+            fs.writeSync(1, "aborted\n");
+            """, cts.Token);
+        await WaitUntilAsync(() => output.Contains("waiting"));
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled);
+
+        await WaitUntilAsync(() => output.Contains("aborted"));
+    }
+
+    [Fact]
+    public async Task Cancellation_ReferenceCall_AbortsSignal()
+    {
+        var output = new ConcurrentQueue<string>();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { StandardOutputReceived = output.Enqueue });
+        await using var reference = await node.EvaluateReferenceAsync("""
+            const fs = require("node:fs");
+            return {
+                wait() {
+                    return new Promise(resolve => {
+                        nodeJsHost.signal.addEventListener("abort", () => { fs.writeSync(1, "aborted\n"); resolve(); });
+                        fs.writeSync(1, "waiting\n");
+                    });
+                },
+            };
+            """, XunitCancellationToken);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+
+        var canceled = reference.InvokeVoidAsync("wait", arguments: null, cts.Token);
+        await WaitUntilAsync(() => output.Contains("waiting"));
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled);
+
+        await WaitUntilAsync(() => output.Contains("aborted"));
+    }
+
+    [Fact]
     public async Task Cancellation_DuringLargeWrite_DoesNotCorruptProtocol()
     {
         await using var node = await StartNodeAsync();
@@ -2359,6 +2505,30 @@ public sealed partial class NodeJsHostTests
         var nextException = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return 1;", XunitCancellationToken));
         Assert.Contains("a canceled call blocked its event loop", pendingException.Message);
         Assert.Contains("a canceled call blocked its event loop", nextException.Message);
+    }
+
+    [Fact]
+    public async Task UnresponsiveTimeout_KillsProcessBlockedByAbortListenerOfCanceledCall()
+    {
+        var output = new ConcurrentQueue<string>();
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { UnresponsiveTimeout = TimeSpan.FromMilliseconds(500), StandardOutputReceived = output.Enqueue });
+        using var process = Process.GetProcessById(node.ProcessId);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+
+        // The abort listeners run as code of the canceled call
+        var canceled = node.EvaluateVoidAsync("""
+            nodeJsHost.signal.addEventListener("abort", () => { while (true) { } });
+            console.log("waiting");
+            await new Promise(() => { });
+            """, cts.Token);
+        await WaitUntilAsync(() => output.Contains("waiting"));
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => canceled);
+        await node.WaitForResponsivenessCheckAsync();
+        await WaitUntilAsync(() => process.HasExited);
+
+        var exception = await Assert.ThrowsAsync<NodeJsException>(() => node.EvaluateAsync("return 1;", XunitCancellationToken));
+        Assert.Contains("a canceled call blocked its event loop", exception.Message);
     }
 
     [Fact]

@@ -97,7 +97,7 @@ internal static class StructuredCloneScript
           // The intrinsic functions that throw when their this value does not have an internal slot (JsInternalSlot): the
           // host tells whether the value has the slot, so that the function is not called when it would throw (a thrown
           // exception is slow, and most cloned objects are ordinary objects)
-          const slots = { boolean: 0, number: 1, bigInt: 2, string: 3, symbol: 4, date: 5, arrayBuffer: 6, sharedArrayBuffer: 7, dataView: 8, map: 9, set: 10, weakMap: 11, weakSet: 12, regExp: 13, error: 14 };
+          const slots = { boolean: 0, number: 1, bigInt: 2, string: 3, symbol: 4, date: 5, arrayBuffer: 6, sharedArrayBuffer: 7, dataView: 8, map: 9, set: 10, weakMap: 11, weakSet: 12, regExp: 13, error: 14, promise: 15, proxy: 16 };
           const notOk = { ok: false };
           const tryCallSlot = (slot, f, v) => f === null || (hasInternalSlot !== null && hasInternalSlot(v, slot) === false) ? notOk : tryCall(f, v);
           // [[ErrorData]] has no intrinsic function to check it: without the host, the tag of the object tells (it reads
@@ -142,6 +142,10 @@ internal static class StructuredCloneScript
             if (type === 'symbol') throw dataCloneError('A symbol could not be cloned');
             if ((type !== 'object' && type !== 'function') || value === null) return { t: 'primitive', v: value };
             if (apply(mapHas, memory, [value])) return apply(mapGet, memory, [value]);
+            // An exotic object (a proxy) and an object with an internal slot the algorithm does not handle (a promise) cannot
+            // be serialized: they would be read as ordinary objects (through the traps of a proxy), and lose their data
+            if (hasInternalSlot !== null && hasInternalSlot(value, slots.proxy) === true) throw dataCloneError('A Proxy object could not be cloned');
+            if (hasInternalSlot !== null && hasInternalSlot(value, slots.promise) === true) throw dataCloneError('A Promise object could not be cloned');
             const record = objectCreate(null);
             apply(mapSet, memory, [value, record]);
             let result;

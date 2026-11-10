@@ -151,8 +151,8 @@ Assert.Equal("undefined,undefined,function", types);
   as U+FFFD.
 - `structuredClone` copies the values the HTML specification lists: the primitives, the objects and arrays (cycles
   included), `Date`, `RegExp`, `Map`, `Set`, `ArrayBuffer` and its views, `SharedArrayBuffer` (the clone shares the
-  memory), the errors and `DOMException`. The `transfer` option moves `ArrayBuffer` objects. A function, a symbol or
-  a `WeakMap` throws a `DataCloneError`, and the clone of a class instance is a plain object.
+  memory), the errors and `DOMException`. The `transfer` option moves `ArrayBuffer` objects. A function, a symbol, a
+  `WeakMap`, a promise or a proxy throws a `DataCloneError`, and the clone of a class instance is a plain object.
 - `atob` and `btoa` implement the forgiving base64 of the HTML specification: `atob` ignores the white space and
   accepts a missing padding.
 

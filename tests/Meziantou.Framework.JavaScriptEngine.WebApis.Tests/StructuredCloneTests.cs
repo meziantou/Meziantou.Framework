@@ -97,6 +97,10 @@ public sealed class StructuredCloneTests
         Assert.Equal("DataCloneError", context.GetErrorName("structuredClone({ f() {} })"));
         Assert.Equal("DataCloneError", context.GetErrorName("structuredClone(Symbol())"));
         Assert.Equal("DataCloneError", context.GetErrorName("structuredClone(new WeakMap())"));
+        Assert.Equal("DataCloneError", context.GetErrorName("structuredClone({ result: Promise.resolve(1) })"));
+        Assert.Equal("DataCloneError", context.GetErrorName("structuredClone(new Proxy({ a: 1 }, {}))"));
+        Assert.Equal("DataCloneError", context.GetErrorName("structuredClone([new Proxy([1], {})])"));
+        Assert.Equal("0", context.Run("globalThis.calls = 0; try { structuredClone(new Proxy([1], { get() { calls++; }, ownKeys() { calls++; return []; } })); } catch {} calls"));
         Assert.Equal("25,true", context.Run("try { structuredClone(() => {}); } catch (e) { [e.code, e instanceof DOMException].join() }"));
         Assert.Equal("TypeError", context.GetErrorName("structuredClone()"));
     }

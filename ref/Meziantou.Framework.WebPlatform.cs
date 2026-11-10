@@ -14602,6 +14602,8 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         WeakSetData = 12,
         RegExpMatcher = 13,
         ErrorData = 14,
+        PromiseState = 15,
+        ProxyHandler = 16,
     }
 
     public readonly struct JsPropertyDescriptor<TValue> where TValue : class

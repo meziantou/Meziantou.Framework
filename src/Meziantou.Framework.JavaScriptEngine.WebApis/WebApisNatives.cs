@@ -29,6 +29,8 @@ internal static class WebApisNatives
         JsInternalSlot.WeakSetData,
         JsInternalSlot.RegExpMatcher,
         JsInternalSlot.ErrorData,
+        JsInternalSlot.PromiseState,
+        JsInternalSlot.ProxyHandler,
     ];
 
     public static JsObject Create(JsWebApiHost host)

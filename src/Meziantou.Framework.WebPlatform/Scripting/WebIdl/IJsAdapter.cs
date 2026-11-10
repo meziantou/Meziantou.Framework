@@ -625,6 +625,12 @@ public enum JsInternalSlot
 
     /// <summary>[[ErrorData]] (an error, or a platform object such as a DOMException)</summary>
     ErrorData,
+
+    /// <summary>[[PromiseState]] (a Promise)</summary>
+    PromiseState,
+
+    /// <summary>[[ProxyHandler]] (a Proxy)</summary>
+    ProxyHandler,
 }
 
 /// <summary>The well-known symbols used by the bindings.</summary>

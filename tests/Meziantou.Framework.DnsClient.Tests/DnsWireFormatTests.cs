@@ -932,6 +932,20 @@ public sealed class DnsWireFormatTests
     }
 
     [Fact]
+    public void TsigVerifier_TsigRecordOutsideTheAdditionalSection_IsRejected()
+    {
+        var signed = Convert.FromHexString("123401000001000000000001076578616d706c6503636f6d000006000108747369672d6b65790000fa00ff00000000003d0b686d61632d7368613235360000006553f100012c002062cab8e08ed635a70ac5a279afce9b8c3dc3564b427e4ff78e4611f54e99f402123400000000");
+
+        // The same record in the answer section: ANCOUNT 1, ARCOUNT 0
+        signed[7] = 1;
+        signed[11] = 0;
+        var key = new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, TsigVectorSecret);
+        using var verifier = new DnsTsigVerifier(key, [], new FixedTimeProvider(DateTimeOffset.FromUnixTimeSeconds((long)TsigVectorTime)));
+
+        Assert.Throws<DnsProtocolException>(() => verifier.Verify(signed, DnsMessageEncoder.DecodeResponse(signed)));
+    }
+
+    [Fact]
     public void DecodeResponse_TsigRecord_ReadsEveryField()
     {
         var data = Convert.FromHexString("123401000001000000000001076578616d706c6503636f6d000006000108747369672d6b65790000fa00ff00000000003d0b686d61632d7368613235360000006553f100012c002062cab8e08ed635a70ac5a279afce9b8c3dc3564b427e4ff78e4611f54e99f402123400000000");

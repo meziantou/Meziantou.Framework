@@ -67,15 +67,28 @@ internal sealed class DnsTsigVerifier : IDisposable
             if (!_first)
                 throw new DnsProtocolException($"The server reported the TSIG error {tsig.Error} during the transfer.");
 
-            if (response.Answers.Count > 0 || response.Authorities.Count > 0)
-                throw new DnsProtocolException($"The response reports the TSIG error {tsig.Error}, which cannot be authenticated, but carries records.");
+            // RFC 8945 section 5.3.2: the server could not verify the query, and answers NOTAUTH with no data. Only the
+            // TSIG errors are accepted, so a forged response cannot pass for another answer (NXDOMAIN, say).
+            if (tsig.Error is not (DnsResponseCode.BadSignature or DnsResponseCode.BadKey or DnsResponseCode.BadTime or DnsResponseCode.BadTruncation))
+                throw new DnsProtocolException($"The TSIG record of the response has the error {tsig.Error}, which is not a TSIG error.");
 
-            // RFC 8945 section 5.3.2: the server could not verify the query. Its answer cannot be authenticated (a
-            // BADSIG or BADKEY response has no MAC), and it carries no data: report the error as the response code.
-            response.Header.ResponseCode = tsig.Error;
-            _first = false;
-            IsLastMessageSigned = true;
-            return;
+            if (response.Header.ResponseCode is not DnsResponseCode.NotAuthoritative)
+                throw new DnsProtocolException($"The response reports the TSIG error {tsig.Error} with the response code {response.Header.ResponseCode} instead of NotAuthoritative.");
+
+            if (response.Answers.Count > 0 || response.Authorities.Count > 0 || response.AdditionalRecords.Any(record => record is not DnsOptRecord and not DnsTsigRecord))
+                throw new DnsProtocolException($"The response reports the TSIG error {tsig.Error}, but carries records.");
+
+            if (tsig.Error is DnsResponseCode.BadSignature or DnsResponseCode.BadKey)
+            {
+                // The server could not compute a MAC with the key: the response cannot be authenticated, and carries
+                // nothing but the error
+                response.Header.ResponseCode = tsig.Error;
+                _first = false;
+                IsLastMessageSigned = true;
+                return;
+            }
+
+            // A BADTIME or BADTRUNC response is signed with the key: it is verified below
         }
 
         if (tsig.Mac.Length != _macSize)
@@ -92,10 +105,19 @@ internal sealed class DnsTsigVerifier : IDisposable
         if (!CryptographicOperations.FixedTimeEquals(expectedMac, tsig.Mac))
             throw new DnsProtocolException("The TSIG signature of the response is not valid.");
 
-        var now = (ulong)Math.Max(0, _timeProvider.GetUtcNow().ToUnixTimeSeconds());
-        var difference = now > tsig.TimeSigned ? now - tsig.TimeSigned : tsig.TimeSigned - now;
-        if (difference > tsig.Fudge)
-            throw new DnsProtocolException($"The response was signed {difference} seconds away from the current time, which is more than the {tsig.Fudge} seconds the server allows.");
+        // A BADTIME response says the clocks differ: its own time is not checked
+        if (tsig.Error is not DnsResponseCode.BadTime)
+        {
+            var now = (ulong)Math.Max(0, _timeProvider.GetUtcNow().ToUnixTimeSeconds());
+            var difference = now > tsig.TimeSigned ? now - tsig.TimeSigned : tsig.TimeSigned - now;
+            if (difference > tsig.Fudge)
+                throw new DnsProtocolException($"The response was signed {difference} seconds away from the current time, which is more than the {tsig.Fudge} seconds the server allows.");
+        }
+
+        if (tsig.Error is not DnsResponseCode.NoError)
+        {
+            response.Header.ResponseCode = tsig.Error;
+        }
 
         DnsTsig.AppendMac(_hmac, tsig.Mac);
         _first = false;
@@ -117,7 +139,7 @@ internal sealed class DnsTsigVerifier : IDisposable
         if (tsigCount is 0)
             return null;
 
-        if (tsigCount > 1 || response.AdditionalRecords[^1] is not DnsTsigRecord tsig)
+        if (tsigCount > 1 || response.AdditionalRecords.Count is 0 || response.AdditionalRecords[^1] is not DnsTsigRecord tsig)
             throw new DnsProtocolException("A TSIG record must be the last record of the additional section, and a message has at most one.");
 
         return tsig;

@@ -44,10 +44,12 @@ local DNSSEC validation. The response is returned only when its signature is val
 - A response that is not signed, signed with another key or algorithm, whose signature does not match, or signed too
   far from the current time, throws [DnsProtocolException](cref:Meziantou.Framework.DnsClient.DnsProtocolException).
 - In a zone transfer, the server may leave up to 99 messages in a row unsigned: the next signature covers them. The first
-  and the last messages must be signed.
+  and the last messages must be signed. [TransferZoneAsync](cref:Meziantou.Framework.DnsClient.DnsClient.TransferZoneAsync) returns the unsigned messages only once that signature is
+  verified.
 - When the server cannot verify the query, the response code is the TSIG error: [BadKey](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadKey) (the server does not know the
-  key), [BadSignature](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadSignature) (the secret differs) or [BadTime](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadTime) (the clocks differ by more than the fudge). Such a response
-  cannot be authenticated and carries no records. [BadSignature](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadSignature) has the value 16 of [BadVersion](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadVersion): compare the
+  key), [BadSignature](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadSignature) (the secret differs) or [BadTime](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadTime) (the clocks differ by more than the fudge). A [BadKey](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadKey) or
+  [BadSignature](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadSignature) response cannot be authenticated, so it must carry no records; a [BadTime](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadTime) response must be signed. Any
+  other error in the TSIG record throws [DnsProtocolException](cref:Meziantou.Framework.DnsClient.DnsProtocolException). [BadSignature](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadSignature) has the value 16 of [BadVersion](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadVersion): compare the
   values, not the names.
 - The signature of a response is the [DnsTsigRecord](cref:Meziantou.Framework.DnsClient.Response.Records.DnsTsigRecord), the last of its [AdditionalRecords](cref:Meziantou.Framework.DnsClient.Response.DnsResponseMessage.AdditionalRecords).
 
@@ -74,7 +76,7 @@ Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
 - Each [DnsClient](cref:Meziantou.Framework.DnsClient.DnsClient) has its own random client cookie. The server cookie of the last response is sent with the next queries.
 - A response with a cookie that is not the client cookie throws [DnsProtocolException](cref:Meziantou.Framework.DnsClient.DnsProtocolException). A server without cookies
   answers as usual.
-- A [BadCookie](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadCookie) response is sent again once, with the server cookie it returned. If the server answers
+- A query (or a zone transfer) answered [BadCookie](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadCookie) is sent again once, with the server cookie of the answer. If the server answers
   [BadCookie](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.BadCookie) again, that response is returned.
 - Cookies need EDNS: creating a client with `EnableEdns = false` and `EnableCookies = true` throws `ArgumentException`.
 - Cookies do not authenticate the answer: use TSIG, an encrypted transport or [DNSSEC](04-Dnssec.md) when it must be

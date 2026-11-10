@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Net.Quic;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using Meziantou.Framework.DnsClient.Helpers;
 using Meziantou.Framework.DnsClient.Internal;
@@ -16,7 +15,7 @@ namespace Meziantou.Framework.DnsClient;
 
 /// <summary>A DNS client supporting UDP, TCP, DNS over TLS, DNS over HTTPS, DNS over QUIC, DNSSEC, EDNS, IDN, reverse lookups, zone transfers, TSIG, and DNS cookies.</summary>
 [SuppressMessage("Naming", "MA0049:Type name should not match containing namespace")]
-public sealed class DnsClient : IDisposable
+public sealed partial class DnsClient : IDisposable
 {
     private readonly IDnsTransport _transport;
     private readonly DnsClientOptions _options;
@@ -288,180 +287,6 @@ public sealed class DnsClient : IDisposable
     private static byte[]? CreateClientCookie(DnsClientOptions options)
     {
         return options.EnableCookies ? RandomNumberGenerator.GetBytes(DnsCookies.ClientCookieLength) : null;
-    }
-
-    /// <summary>
-    /// Transfers a whole zone (AXFR, RFC 5936). The transfer goes over TCP for a <see cref="DnsClientProtocol.Udp"/> or
-    /// <see cref="DnsClientProtocol.Tcp"/> client, and over TLS for a <see cref="DnsClientProtocol.Tls"/> client.
-    /// </summary>
-    /// <param name="zoneName">The name of the zone. Unicode names are automatically converted to punycode.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>
-    /// The messages of the transfer, as they arrive. The answers of the first message start with the SOA record of the
-    /// zone, and the last message ends with the same SOA record. When the server refuses the transfer, the only message
-    /// has its response code.
-    /// </returns>
-    /// <remarks><see cref="DnsClientOptions.Timeout"/> applies to each message, not to the whole transfer.</remarks>
-    /// <exception cref="NotSupportedException">The protocol of the client is DNS over HTTPS or DNS over QUIC.</exception>
-    /// <exception cref="DnsProtocolException">A message is malformed, does not answer the query, or the server closed the connection before the end of the transfer.</exception>
-    /// <exception cref="TimeoutException"><see cref="DnsClientOptions.Timeout"/> elapsed before a message arrived.</exception>
-    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled.</exception>
-    /// <exception cref="ObjectDisposedException">The client has been disposed.</exception>
-    public IAsyncEnumerable<DnsResponseMessage> TransferZoneAsync(string zoneName, CancellationToken cancellationToken = default)
-    {
-        var transport = GetZoneTransferTransport(zoneName);
-        return TransferZoneCoreAsync(transport, zoneName, currentSerial: null, cancellationToken);
-    }
-
-    /// <summary>
-    /// Transfers the changes of a zone since the version the client has (IXFR, RFC 1995). The transfer goes over TCP for a
-    /// <see cref="DnsClientProtocol.Udp"/> or <see cref="DnsClientProtocol.Tcp"/> client, and over TLS for a
-    /// <see cref="DnsClientProtocol.Tls"/> client.
-    /// </summary>
-    /// <param name="zoneName">The name of the zone. Unicode names are automatically converted to punycode.</param>
-    /// <param name="currentSerial">The serial of the version of the zone the client has.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>
-    /// The messages of the transfer, as they arrive. Their answers start with the SOA record of the current version, then
-    /// come the differences: for each version, its old SOA record and the deleted records, then its new SOA record and the
-    /// added records. The last message ends with the SOA record of the current version. A server that does not keep the
-    /// differences sends the whole zone instead, as <see cref="TransferZoneAsync(string, CancellationToken)"/> does,
-    /// and a client that is up to date gets the SOA record alone.
-    /// </returns>
-    /// <remarks><see cref="DnsClientOptions.Timeout"/> applies to each message, not to the whole transfer.</remarks>
-    /// <exception cref="NotSupportedException">The protocol of the client is DNS over HTTPS or DNS over QUIC.</exception>
-    /// <exception cref="DnsProtocolException">A message is malformed, does not answer the query, or the server closed the connection before the end of the transfer.</exception>
-    /// <exception cref="TimeoutException"><see cref="DnsClientOptions.Timeout"/> elapsed before a message arrived.</exception>
-    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled.</exception>
-    /// <exception cref="ObjectDisposedException">The client has been disposed.</exception>
-    public IAsyncEnumerable<DnsResponseMessage> TransferZoneAsync(string zoneName, uint currentSerial, CancellationToken cancellationToken = default)
-    {
-        var transport = GetZoneTransferTransport(zoneName);
-        return TransferZoneCoreAsync(transport, zoneName, currentSerial, cancellationToken);
-    }
-
-    private IDnsStreamTransport GetZoneTransferTransport(string zoneName)
-    {
-        ArgumentNullException.ThrowIfNull(zoneName);
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        return _streamTransport ?? throw new NotSupportedException($"Zone transfers need TCP or DNS over TLS; they are not supported over {_protocol}.");
-    }
-
-    private async IAsyncEnumerable<DnsResponseMessage> TransferZoneCoreAsync(IDnsStreamTransport transport, string zoneName, uint? currentSerial, [EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        var query = new DnsQueryMessage
-        {
-            RecursionDesired = false,
-        };
-        query.Questions.Add(new DnsQuestion(zoneName, currentSerial is null ? DnsQueryType.AXFR : DnsQueryType.IXFR, DnsQueryClass.IN));
-        var message = CloneWithOptions(query);
-        var queryBytes = EncodeQuery(message, currentSerial, out var queryId, out var requestMac);
-
-        using var activity = DnsTelemetry.ActivitySource.StartActivity("dns.zone_transfer", ActivityKind.Client);
-        activity?.SetTag("dns.question.name", message.Questions[0].Name);
-        activity?.SetTag("dns.question.type", message.Questions[0].Type.ToString());
-        activity?.SetTag("dns.question.class", message.Questions[0].QueryClass.ToString());
-        activity?.SetTag("network.transport", GetTransportName(_protocol));
-
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        using var verifier = _options.TsigKey is { } key ? new DnsTsigVerifier(key, requestMac, _options.TimeProvider) : null;
-        var state = new DnsZoneTransferState(currentSerial);
-
-        var connection = await RunWithTimeoutAsync(transport.ConnectAsync, cts, cancellationToken).ConfigureAwait(false);
-        await using (connection.ConfigureAwait(false))
-        {
-            await RunWithTimeoutAsync(async token => { await connection.WriteMessageAsync(queryBytes, token).ConfigureAwait(false); return true; }, cts, cancellationToken).ConfigureAwait(false);
-
-            var messageCount = 0;
-            while (true)
-            {
-                var data = await RunWithTimeoutAsync(token => ReadZoneTransferMessageAsync(connection, token), cts, cancellationToken).ConfigureAwait(false)
-                    ?? throw SetError(activity, new DnsProtocolException("The server closed the connection before the end of the zone transfer."));
-
-                var isFirstMessage = messageCount++ is 0;
-                DnsResponseMessage response;
-                bool isComplete;
-                try
-                {
-                    response = DnsMessageEncoder.DecodeResponse(data);
-                    ValidateResponseMatchesQuery(message, queryId, response, isFirstMessage);
-                    verifier?.Verify(data, response);
-                    if (isFirstMessage)
-                    {
-                        ProcessCookies(response);
-                    }
-
-                    if (response.Header.ResponseCode is not DnsResponseCode.NoError)
-                    {
-                        // The server refused the transfer, or its TSIG verification failed: the error is the answer
-                        if (!isFirstMessage)
-                            throw new DnsProtocolException($"The server reported the error {response.Header.ResponseCode} during the zone transfer.");
-
-                        isComplete = true;
-                    }
-                    else
-                    {
-                        isComplete = state.Process(response.Answers);
-                        if (isComplete && verifier is { IsLastMessageSigned: false })
-                            throw new DnsProtocolException("The last message of the zone transfer is not signed.");
-                    }
-                }
-                catch (DnsProtocolException ex)
-                {
-                    throw SetError(activity, ex);
-                }
-
-                activity?.SetTag("dns.response.code", response.Header.ResponseCode.ToString());
-                if (isComplete)
-                {
-                    activity?.SetTag("dns.zone_transfer.message_count", messageCount);
-                    if (response.Header.ResponseCode is DnsResponseCode.NoError)
-                    {
-                        activity?.SetStatus(ActivityStatusCode.Ok);
-                    }
-                    else
-                    {
-                        activity?.SetStatus(ActivityStatusCode.Error, $"DNS response code: {response.Header.ResponseCode}");
-                    }
-                }
-
-                yield return response;
-                if (isComplete)
-                    yield break;
-            }
-        }
-    }
-
-    private static async Task<byte[]?> ReadZoneTransferMessageAsync(DnsStreamConnection connection, CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await connection.ReadMessageAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (EndOfStreamException ex)
-        {
-            throw new DnsProtocolException("The server closed the connection in the middle of a message of the zone transfer.", ex);
-        }
-    }
-
-    private static Exception SetError(Activity? activity, Exception exception)
-    {
-        activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
-        return exception;
-    }
-
-    /// <summary>Runs one step of a zone transfer, which gets the whole <see cref="DnsClientOptions.Timeout"/>.</summary>
-    private async Task<T> RunWithTimeoutAsync<T>(Func<CancellationToken, Task<T>> action, CancellationTokenSource cts, CancellationToken cancellationToken)
-    {
-        cts.CancelAfter(_options.Timeout);
-        try
-        {
-            return await action(cts.Token).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
-        {
-            throw new TimeoutException($"The zone transfer timed out after {_options.Timeout} without receiving a message.", ex);
-        }
     }
 
     private Task<DnsResponseMessage> SendWithoutValidationAsync(DnsQueryMessage message, CancellationToken cancellationToken)

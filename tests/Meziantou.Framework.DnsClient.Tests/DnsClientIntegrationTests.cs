@@ -932,6 +932,74 @@ public sealed class DnsClientIntegrationTests
     }
 
     [Fact]
+    public async Task Local_ZoneTransfer_WithTsig_TamperedUnsignedMessage_IsNeverReturned()
+    {
+        var key = new DnsTsigKey("transfer-key", DnsTsigAlgorithm.HmacSha256, Convert.FromBase64String("xnRdh6uLqXIbHHeRPrsytA3ZCoYbpSUjYWBRftgDE/s="));
+        await using var server = LocalZoneTransferServer.Start(respond: query =>
+        {
+            var responses = LocalZoneTransferServer.AnswerZoneTransfer(query, key, isSigned: index => index is not 1);
+
+            // An attacker changes the address of www.example.com in the unsigned message: its last byte comes before
+            // the 32 bytes of the record of mail.example.com
+            responses[1][^33] ^= 0x01;
+            return responses;
+        });
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Tcp, new DnsClientOptions { TsigKey = key });
+
+        var received = new List<DnsResponseMessage>();
+        await Assert.ThrowsAsync<DnsProtocolException>(async () =>
+        {
+            await foreach (var message in client.TransferZoneAsync("example.com", XunitCancellationToken))
+            {
+                received.Add(message);
+            }
+        });
+
+        // The first message is signed; the unsigned one is held until the next signature, which fails
+        Assert.Single(received);
+    }
+
+    [Fact]
+    public async Task Local_ZoneTransfer_SlowConsumer_DoesNotTimeOut()
+    {
+        await using var server = LocalZoneTransferServer.Start();
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Tcp, new DnsClientOptions { Timeout = TimeSpan.FromSeconds(3) });
+
+        var count = 0;
+        await foreach (var message in client.TransferZoneAsync("example.com", XunitCancellationToken))
+        {
+            // Processing a message takes longer than the timeout, which only applies to reading the messages
+            if (count++ is 0)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(6), XunitCancellationToken);
+            }
+        }
+
+        Assert.Equal(3, count);
+    }
+
+    [Fact]
+    public async Task Local_ZoneTransfer_WithCookies_BadCookie_IsRetriedWithTheServerCookie()
+    {
+        var connections = 0;
+        await using var server = LocalZoneTransferServer.Start(respond: query =>
+        {
+            Interlocked.Increment(ref connections);
+            var cookie = DnsTestMessages.GetCookie(query)!;
+            if (cookie.Length is 8)
+                return [DnsTestMessages.CreateResponse(query, [], responseCode: DnsResponseCode.BadCookie, cookie: [.. cookie, 1, 2, 3, 4, 5, 6, 7, 8])];
+
+            return LocalZoneTransferServer.AnswerZoneTransfer(query, key: null, isSigned: null);
+        });
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Tcp, new DnsClientOptions { EnableCookies = true });
+
+        var messages = await ToListAsync(client.TransferZoneAsync("example.com", XunitCancellationToken));
+
+        Assert.HasCount(3, messages);
+        Assert.Equal(2, connections);
+    }
+
+    [Fact]
     public async Task Local_ZoneTransfer_WithTsig_UnsignedLastMessage_IsRejected()
     {
         var key = new DnsTsigKey("transfer-key", DnsTsigAlgorithm.HmacSha256, Convert.FromBase64String("xnRdh6uLqXIbHHeRPrsytA3ZCoYbpSUjYWBRftgDE/s="));
@@ -1092,7 +1160,7 @@ public sealed class DnsClientIntegrationTests
             _cts.Dispose();
         }
 
-        private static List<byte[]> AnswerZoneTransfer(byte[] query, DnsTsigKey? key, Func<int, bool>? isSigned)
+        public static List<byte[]> AnswerZoneTransfer(byte[] query, DnsTsigKey? key, Func<int, bool>? isSigned)
         {
             byte[]? requestMac = null;
             if (key is not null)

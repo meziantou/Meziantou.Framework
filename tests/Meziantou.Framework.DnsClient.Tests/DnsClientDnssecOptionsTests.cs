@@ -592,6 +592,71 @@ public sealed class DnsClientDnssecOptionsTests
         Assert.Equal(DnsResponseCode.BadKey, response.Header.ResponseCode);
     }
 
+    [Theory]
+    [InlineData(DnsResponseCode.NameError, DnsResponseCode.NameError)]
+    [InlineData(DnsResponseCode.NotAuthoritative, DnsResponseCode.Refused)]
+    [InlineData(DnsResponseCode.NameError, DnsResponseCode.BadKey)]
+    public async Task QueryAsync_WithATsigKey_UnsignedResponseWithAForgedError_IsRejected(DnsResponseCode responseCode, DnsResponseCode tsigError)
+    {
+        var key = new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, TsigSecret);
+        using var transport = new ScriptedTransport(query =>
+        {
+            var response = DnsTestMessages.CreateResponse(query, [], responseCode: responseCode);
+            return DnsTsig.Sign(response, key, (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds(), priorMac: [], unsignedMessages: [], timersOnly: false, tsigError, out _);
+        });
+        using var client = new DnsClient(transport, DnsClientProtocol.Udp, new DnsClientOptions { TsigKey = key });
+
+        await Assert.ThrowsAsync<DnsProtocolException>(() => client.QueryAsync("example.com", DnsQueryType.A, XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task QueryAsync_WithATsigKey_BadKeyResponseWithRecords_IsRejected()
+    {
+        var key = new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, TsigSecret);
+        using var transport = new ScriptedTransport(query =>
+        {
+            var response = DnsTestMessages.CreateResponse(query, [DnsTestMessages.A("example.com", "192.0.2.66")], responseCode: DnsResponseCode.NotAuthoritative);
+            return DnsTsig.Sign(response, key, (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds(), priorMac: [], unsignedMessages: [], timersOnly: false, DnsResponseCode.BadKey, out _);
+        });
+        using var client = new DnsClient(transport, DnsClientProtocol.Udp, new DnsClientOptions { TsigKey = key });
+
+        await Assert.ThrowsAsync<DnsProtocolException>(() => client.QueryAsync("example.com", DnsQueryType.A, XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task QueryAsync_WithATsigKey_SignedBadTimeResponse_ReturnsBadTime()
+    {
+        var key = new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, TsigSecret);
+        using var transport = new ScriptedTransport(query =>
+        {
+            // RFC 8945 section 5.2.3: the clocks differ, the server signs its answer with its own time
+            var requestMac = DnsTestMessages.VerifyQuerySignature(query, key)!;
+            var response = DnsTestMessages.CreateResponse(query, [], responseCode: DnsResponseCode.NotAuthoritative);
+            return DnsTsig.Sign(response, key, (ulong)DateTimeOffset.UtcNow.AddHours(2).ToUnixTimeSeconds(), requestMac, unsignedMessages: [], timersOnly: false, DnsResponseCode.BadTime, out _);
+        });
+        using var client = new DnsClient(transport, DnsClientProtocol.Udp, new DnsClientOptions { TsigKey = key });
+
+        var response = await client.QueryAsync("example.com", DnsQueryType.A, XunitCancellationToken);
+
+        Assert.Equal(DnsResponseCode.BadTime, response.Header.ResponseCode);
+    }
+
+    [Fact]
+    public async Task QueryAsync_WithATsigKey_BadTimeResponseSignedWithAnotherSecret_IsRejected()
+    {
+        var key = new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, TsigSecret);
+        var otherKey = new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, new byte[32]);
+        using var transport = new ScriptedTransport(query =>
+        {
+            var requestMac = DnsTestMessages.VerifyQuerySignature(query, key)!;
+            var response = DnsTestMessages.CreateResponse(query, [], responseCode: DnsResponseCode.NotAuthoritative);
+            return DnsTsig.Sign(response, otherKey, (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds(), requestMac, unsignedMessages: [], timersOnly: false, DnsResponseCode.BadTime, out _);
+        });
+        using var client = new DnsClient(transport, DnsClientProtocol.Udp, new DnsClientOptions { TsigKey = key });
+
+        await Assert.ThrowsAsync<DnsProtocolException>(() => client.QueryAsync("example.com", DnsQueryType.A, XunitCancellationToken));
+    }
+
     [Fact]
     public void DnsTsigKey_InvalidArguments_Throw()
     {

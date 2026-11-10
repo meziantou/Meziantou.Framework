@@ -50,7 +50,7 @@ internal static class KanbanDiagramRenderer
                 var infoCenterY = y + Padding + label.Height + (Padding / 2) + (infoHeight / 2);
                 if (ticket is not null)
                 {
-                    var url = string.IsNullOrEmpty(diagram.TicketLinkFormat) ? null : diagram.TicketLinkFormat.Replace("#TICKET#", card.Ticket, StringComparison.Ordinal);
+                    var url = GetTicketLink(diagram.TicketLinkFormat, card.Ticket);
                     var ticketGroup = cardGroup.Add(new SceneGroup { CssClass = "kanban-ticket", Hyperlink = url });
                     ticket.Draw(ticketGroup, cardLeft + Padding + (ticket.Width / 2), infoCenterY, theme.TextColor);
                     if (url is not null)
@@ -106,5 +106,24 @@ internal static class KanbanDiagramRenderer
 
         lightness = Math.Clamp(lightness + (dark ? -0.1 : 0.1), 0, 1);
         return SceneColor.FromHsl(hue, saturation, lightness);
+    }
+
+    /// <summary>
+    /// Returns the address of a ticket, or <see langword="null"/> when it is not an http, https, mailto or relative address:
+    /// the ticket completes the address, so a safe format such as <c>#TICKET#</c> can become a <c>javascript:</c> address.
+    /// </summary>
+    internal static string? GetTicketLink(string? format, string? ticket)
+    {
+        if (string.IsNullOrEmpty(format))
+            return null;
+
+        var url = format.Replace("#TICKET#", ticket, StringComparison.Ordinal);
+        var trimmed = url.Trim();
+        var colon = trimmed.IndexOf(':', StringComparison.Ordinal);
+        var slash = trimmed.IndexOfAny(['/', '?', '#']);
+        if (colon < 0 || (slash >= 0 && slash < colon))
+            return url;
+
+        return trimmed[..colon].ToLowerInvariant() is "http" or "https" or "mailto" ? url : null;
     }
 }

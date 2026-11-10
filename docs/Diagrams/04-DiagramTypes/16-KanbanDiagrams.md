@@ -39,7 +39,8 @@ A card can show:
 
 - a [ticket](cref:Meziantou.Framework.Diagrams.KanbanCard.Ticket), at the bottom left. When
   [TicketLinkFormat](cref:Meziantou.Framework.Diagrams.KanbanDiagram.TicketLinkFormat) is set, the ticket is a link to
-  this address, where `#TICKET#` is replaced by the ticket;
+  this address, where `#TICKET#` is replaced by the ticket. The link is written only when the completed address is an
+  http, https, mailto or relative address, so a ticket cannot turn it into a `javascript:` address;
 - the person it is [assigned](cref:Meziantou.Framework.Diagrams.KanbanCard.Assigned) to, at the bottom right;
 - a [priority](cref:Meziantou.Framework.Diagrams.KanbanPriority), as a stripe on its left side: red for very high,
   orange for high, blue for low, light blue for very low, and none for medium.

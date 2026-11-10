@@ -12,7 +12,9 @@ public sealed class KanbanDiagram : Diagram
 
     /// <summary>
     /// Gets or sets the address of a ticket, where <c>#TICKET#</c> is replaced by the ticket of the card, or
-    /// <see langword="null"/> for none: the tickets then link nowhere (Mermaid <c>ticketBaseUrl</c>).
+    /// <see langword="null"/> for none: the tickets then link nowhere (Mermaid <c>ticketBaseUrl</c>). A ticket links only
+    /// to an http, https, mailto or relative address, once <c>#TICKET#</c> is replaced: another address, such as a
+    /// <c>javascript:</c> one, is not written.
     /// </summary>
     public string? TicketLinkFormat { get; set; }
 

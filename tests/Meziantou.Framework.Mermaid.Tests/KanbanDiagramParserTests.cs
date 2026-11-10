@@ -35,6 +35,24 @@ public sealed class KanbanDiagramParserTests
     }
 
     [Fact]
+    public void TicketsCannotCompleteAScriptLink()
+    {
+        var document = MermaidDocument.Parse("""
+            ---
+            config:
+              kanban:
+                ticketBaseUrl: '#TICKET#'
+            ---
+            kanban
+              todo[To do]
+                card[Card]@{ ticket: "javascript:alert(1)" }
+            """);
+
+        Assert.Equal("#TICKET#", ((KanbanDiagram)document.Content).TicketLinkFormat);
+        Assert.DoesNotContain("href=\"javascript:", ((KanbanDiagram)document.Content).ToSvg(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ShapesTextsAndDecorations()
     {
         var document = MermaidDocument.Parse("""

@@ -107,6 +107,19 @@ internal sealed class JsonSyntaxNodeNavigator : JsonPathNavigator<JsonSyntaxNode
         return false;
     }
 
+    // Numbers that round to the same double, such as 1e-400 and 0, are told apart by their text
+    public override bool TryGetNumberText(JsonSyntaxNode? value, [NotNullWhen(true)] out string? result)
+    {
+        if (value is JsonNumberSyntax syntax)
+        {
+            result = syntax.Text;
+            return true;
+        }
+
+        result = null;
+        return false;
+    }
+
     public override bool TryGetBoolean(JsonSyntaxNode? value, out bool result)
     {
         if (value is JsonLiteralSyntax literal)

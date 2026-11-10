@@ -570,6 +570,16 @@ public sealed class JsonSyntaxTreeTests
     }
 
     [Fact]
+    public void EvaluateJsonPath_JsonSyntaxTree_ComparesNumbersThatRoundToTheSameDouble()
+    {
+        var tree = JsonSyntaxTree.ParseText("[1e-400, -0, 0, 9007199254740993, 1e4000]");
+
+        Assert.Equal(["$[0]", "$[3]", "$[4]"], JsonPath.Parse("$[?@ > 0]").Evaluate(tree).Select(match => match.Path));
+        Assert.Equal(["$[1]", "$[2]"], JsonPath.Parse("$[?@ == 0]").Evaluate(tree).Select(match => match.Path));
+        Assert.Equal(["$[3]"], JsonPath.Parse("$[?@ == 9007199254740993]").Evaluate(tree).Select(match => match.Path));
+    }
+
+    [Fact]
     public void EvaluateJsonPath_JsonSyntaxTree_CanEvaluateFromRoot()
     {
         var tree = CreateJsonPathSyntaxTree();

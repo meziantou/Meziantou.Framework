@@ -89,7 +89,7 @@ internal static class ImageRedactor
             reference = pdfImage.GetReference(document);
         }
 
-        var stream = (PdfStream)reference.Resolve()!;
+        var stream = (PdfStream)reference.Resolve();
         foreach (var key in KeptKeys)
         {
             if (dictionary[key] is { } value)

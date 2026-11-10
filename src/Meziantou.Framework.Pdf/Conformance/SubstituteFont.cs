@@ -89,7 +89,7 @@ internal static class SubstituteFont
         var descriptor = new PdfDictionary
         {
             [PdfNames.Type] = FontDescriptorName,
-            [PdfName.Create("FontName")] = font[PdfNames.BaseFont]!,
+            [PdfName.Create("FontName")] = font[PdfNames.BaseFont],
             [PdfName.Create("Flags")] = PdfInteger.Get(flags),
             [PdfName.Create("FontBBox")] = PdfArray.FromNumbers(box.Left, box.Bottom, box.Right, box.Top),
             [PdfName.Create("ItalicAngle")] = PdfInteger.Get(italic ? -12 : 0),

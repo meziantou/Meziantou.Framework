@@ -365,7 +365,7 @@ internal static partial class ConformanceWriter
             PdfObject value;
             try
             {
-                value = reference.Resolve()!;
+                value = reference.Resolve();
             }
             catch (PdfException)
             {

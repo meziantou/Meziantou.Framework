@@ -749,17 +749,15 @@ public sealed class PdfDocumentTests
         #region Pdf_ConvertToPdfA
         var document = PdfDocument.Open(file);
         var result = document.ConvertToPdfA(PdfAConformance.PdfA2B);
-        if (result.Succeeded)
-        {
-            // The save writes a PDF/A-2b document
-            var pdf = document.ToByteArray();
-        }
-        else
-        {
-            // What the conversion could not fix, such as a font that is not embedded and has no substitute
-            var reasons = string.Join(Environment.NewLine, result.Violations);
-        }
+
+        // When the conversion succeeds, the save writes a PDF/A-2b document; otherwise, the violations tell what it could
+        // not fix, such as a font that is not embedded and has no substitute
+        var pdf = result.Succeeded ? document.ToByteArray() : null;
+        var reasons = string.Join(Environment.NewLine, result.Violations);
         #endregion
+
+        Assert.NotNull(pdf);
+        Assert.Empty(reasons);
 
         Assert.True(result.Succeeded, string.Join('\n', result.Violations));
         Assert.Equal(PdfAConformance.PdfA2B, document.PdfAConformance);

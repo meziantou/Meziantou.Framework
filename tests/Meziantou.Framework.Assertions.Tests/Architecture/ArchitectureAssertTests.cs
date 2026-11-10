@@ -279,6 +279,68 @@ public sealed class ArchitectureAssertTests
     }
 
     [Fact]
+    public void AccessorsHaveTheDependenciesOfTheirCode()
+    {
+        var architecture = TestCompiler.Load("""
+            using System;
+            namespace App
+            {
+                public sealed class Clock
+                {
+                    private DateTime _value;
+
+                    public DateTime Value
+                    {
+                        get => DateTime.Now;
+                        set => _value = value.ToUniversalTime();
+                    }
+
+                    public Func<DateTime> Factory => () => DateTime.Now;
+
+                    public event EventHandler? Changed
+                    {
+                        add => Console.WriteLine(value);
+                        remove { }
+                    }
+                }
+            }
+            """);
+        var clock = architecture.FindType("App.Clock")!;
+        var value = clock.Properties.Single(property => property.Name == "Value");
+        var getter = value.Getter!;
+        var setter = value.Setter!;
+
+        IEnumerable<MemberElement> getters = [getter];
+        var exception = Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotAccessMember<DateTime>(getters, "Now"));
+        Assert.Equal("""
+            Assert.Architecture.DoesNotAccessMember() assertion failed: 1 member accesses the member.
+            Members expression: getters
+            Member:             System.DateTime.Now
+            - App.Clock.get_Value() accesses System.DateTime.get_Now
+                App.Clock.get_Value calls System.DateTime.get_Now (/src/Sample.cs:10:20)
+            """.ReplaceLineEndings("\n"), exception.Message);
+
+        // Each accessor has the dependencies of its own code; the property has the dependencies of both
+        Assert.Architecture.DoesNotAccessMember<DateTime>([setter], "Now");
+        Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotAccessMember<DateTime>([setter], nameof(DateTime.ToUniversalTime)));
+        Assert.Architecture.DoesNotAccessMember<DateTime>([getter], nameof(DateTime.ToUniversalTime));
+        Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotAccessMember<DateTime>([value], "Now"));
+        Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotAccessMember<DateTime>([value], nameof(DateTime.ToUniversalTime)));
+        Assert.All(getter.Dependencies, dependency => dependency.SourceMember == getter);
+        Assert.All(value.Dependencies, dependency => dependency.SourceMember == value);
+
+        // The code of a lambda belongs to the accessor that declares it
+        var factory = clock.Properties.Single(property => property.Name == "Factory");
+        Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotAccessMember<DateTime>([factory.Getter!], "Now"));
+        Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotAccessMember<DateTime>([factory], "Now"));
+
+        var changed = clock.Events.Single();
+        Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotDependOn([changed.Adder!], typeof(Console)));
+        Assert.Architecture.DoesNotDependOn([changed.Remover!], typeof(Console));
+        Assert.Throws<AssertionException>(() => Assert.Architecture.DoesNotDependOn([changed], typeof(Console)));
+    }
+
+    [Fact]
     public void MemberIsPublic()
     {
         var customer = App.Value.FindType("App.Domain.Customer")!;

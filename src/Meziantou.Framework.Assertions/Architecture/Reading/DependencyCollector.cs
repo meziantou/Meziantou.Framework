@@ -49,7 +49,11 @@ internal sealed class DependencyCollector
     private readonly Dictionary<(string Target, DependencyKind Kind, MemberElement? Source, string? TargetMember), Dependency> _dependencies = [];
     private readonly List<Dependency> _result = [];
     private readonly List<TypeReference> _namedTypes = [];
-    private Dictionary<TypeDefinitionHandle, MemberElement>? _generatedTypeOwners;
+    private readonly Dictionary<MethodElement, AccessorDependencies> _accessorDependencies = [];
+    private Dictionary<TypeDefinitionHandle, CodeOwner>? _generatedTypeOwners;
+
+    // The accessor whose code is being read: its dependencies are also recorded in its own list
+    private MethodElement? _currentAccessor;
 
     public DependencyCollector(TypeElement owner)
     {
@@ -70,7 +74,7 @@ internal sealed class DependencyCollector
         };
     }
 
-    public IReadOnlyList<Dependency> Collect()
+    public Result Collect()
     {
         var definition = _reader.GetTypeDefinition(_owner.Handle);
         var context = _owner.GenericContext;
@@ -133,8 +137,8 @@ internal sealed class DependencyCollector
         {
             var name = _reader.GetString(_reader.GetMethodDefinition(handle).Name);
             var isGenerated = MetadataNames.IsCompilerGeneratedMemberName(name);
-            var sourceMember = isGenerated ? FindGeneratedCodeOwner(name, generatedType: default) : _owner.GetSourceMember(handle);
-            AddMethod(handle, context, sourceMember, isGenerated);
+            var owner = isGenerated ? FindGeneratedCodeOwner(name, generatedType: default) : new CodeOwner(_owner.GetSourceMember(handle), _owner.GetAccessor(handle));
+            AddMethod(handle, context, owner, isGenerated);
         }
 
         _generatedTypeOwners = [];
@@ -144,7 +148,7 @@ internal sealed class DependencyCollector
             AddGeneratedType(generatedType);
         }
 
-        return _result;
+        return new Result(_result, _accessorDependencies.ToDictionary(item => item.Key, item => (IReadOnlyList<Dependency>)item.Value.Dependencies));
     }
 
     private void AddGeneratedType(TypeDefinitionHandle handle)
@@ -158,8 +162,16 @@ internal sealed class DependencyCollector
             Try(() =>
             {
                 var field = _reader.GetFieldDefinition(fieldHandle);
-                var sourceMember = FindGeneratedCodeOwner(memberName: null, handle);
-                Add(field.DecodeSignature(_provider, context), DependencyKind.LocalVariable, sourceMember);
+                var owner = FindGeneratedCodeOwner(memberName: null, handle);
+                _currentAccessor = owner.Accessor;
+                try
+                {
+                    Add(field.DecodeSignature(_provider, context), DependencyKind.LocalVariable, owner.Member);
+                }
+                finally
+                {
+                    _currentAccessor = null;
+                }
             });
         }
 
@@ -170,7 +182,21 @@ internal sealed class DependencyCollector
         }
     }
 
-    private void AddMethod(MethodDefinitionHandle handle, GenericContext typeContext, MemberElement? sourceMember, bool isGenerated)
+    private void AddMethod(MethodDefinitionHandle handle, GenericContext typeContext, CodeOwner owner, bool isGenerated)
+    {
+        var sourceMember = owner.Member;
+        _currentAccessor = owner.Accessor;
+        try
+        {
+            AddMethodCore(handle, typeContext, sourceMember, isGenerated);
+        }
+        finally
+        {
+            _currentAccessor = null;
+        }
+    }
+
+    private void AddMethodCore(MethodDefinitionHandle handle, GenericContext typeContext, MemberElement? sourceMember, bool isGenerated)
     {
         Try(() =>
         {
@@ -360,25 +386,25 @@ internal sealed class DependencyCollector
 
     // The member whose code the compiler moved to a lambda, a local function or a state machine. The name of a lambda or a local function
     // contains the name of the member ("<Run>b__0_0"). A closure has no such name ("<>c__DisplayClass0_0"): it belongs to the member that creates it.
-    private MemberElement? FindGeneratedCodeOwner(string? memberName, TypeDefinitionHandle generatedType)
+    private CodeOwner FindGeneratedCodeOwner(string? memberName, TypeDefinitionHandle generatedType)
     {
         if (memberName is not null && MetadataNames.GetGeneratedCodeOwnerName(memberName) is { } ownerName && _owner.FindMemberByMethodName(ownerName) is { } member)
-            return member;
+            return new CodeOwner(member, _owner.FindAccessorByMethodName(ownerName));
 
         for (var type = generatedType; !type.IsNil && type != _owner.Handle; type = _reader.GetTypeDefinition(type).GetDeclaringType())
         {
-            if (_generatedTypeOwners is not null && _generatedTypeOwners.TryGetValue(type, out member))
-                return member;
+            if (_generatedTypeOwners is not null && _generatedTypeOwners.TryGetValue(type, out var owner))
+                return owner;
 
             if (MetadataNames.GetGeneratedCodeOwnerName(_reader.GetString(_reader.GetTypeDefinition(type).Name)) is { } typeOwnerName)
-                return _owner.FindMemberByMethodName(typeOwnerName);
+                return new CodeOwner(_owner.FindMemberByMethodName(typeOwnerName), _owner.FindAccessorByMethodName(typeOwnerName));
         }
 
-        return null;
+        return default;
     }
 
     // Finds the member that creates each closure and state machine (newobj, or initobj for a struct state machine)
-    private void FindGeneratedTypeOwners(Dictionary<TypeDefinitionHandle, MemberElement> owners)
+    private void FindGeneratedTypeOwners(Dictionary<TypeDefinitionHandle, CodeOwner> owners)
     {
         if (_owner.GeneratedTypes.Count == 0)
             return;
@@ -387,7 +413,7 @@ internal sealed class DependencyCollector
         foreach (var handle in _reader.GetTypeDefinition(_owner.Handle).GetMethods())
         {
             var name = _reader.GetString(_reader.GetMethodDefinition(handle).Name);
-            ScanCreatedTypes(handle, MetadataNames.IsCompilerGeneratedMemberName(name) ? FindGeneratedCodeOwner(name, generatedType: default) : _owner.GetSourceMember(handle));
+            ScanCreatedTypes(handle, MetadataNames.IsCompilerGeneratedMemberName(name) ? FindGeneratedCodeOwner(name, generatedType: default) : new CodeOwner(_owner.GetSourceMember(handle), _owner.GetAccessor(handle)));
         }
 
         // The closures created by the code of a lambda or of another closure
@@ -406,9 +432,9 @@ internal sealed class DependencyCollector
                 break;
         }
 
-        void ScanCreatedTypes(MethodDefinitionHandle methodHandle, MemberElement? member)
+        void ScanCreatedTypes(MethodDefinitionHandle methodHandle, CodeOwner owner)
         {
-            if (member is null || _image.GetMethodBody(_reader.GetMethodDefinition(methodHandle)) is not { } body)
+            if (owner.Member is null || _image.GetMethodBody(_reader.GetMethodDefinition(methodHandle)) is not { } body)
                 return;
 
             Try(() =>
@@ -417,7 +443,7 @@ internal sealed class DependencyCollector
                 {
                     if (reference.Kind is ILTokenKind.ObjectCreation or ILTokenKind.Type && GetTypeDefinition(reference.Handle) is { IsNil: false } type && generatedTypes.Contains(type))
                     {
-                        owners.TryAdd(type, member);
+                        owners.TryAdd(type, owner);
                     }
                 }
             });
@@ -444,10 +470,25 @@ internal sealed class DependencyCollector
     {
         _namedTypes.Clear();
         type.CollectNamedTypes(_namedTypes);
+        var accessor = _currentAccessor is { } current && current.AccessorOwner == sourceMember ? current : null;
         foreach (var target in _namedTypes)
         {
             if (IsExcluded(target))
                 continue;
+
+            if (accessor is not null)
+            {
+                if (!_accessorDependencies.TryGetValue(accessor, out var accessorDependencies))
+                {
+                    accessorDependencies = new AccessorDependencies();
+                    _accessorDependencies.Add(accessor, accessorDependencies);
+                }
+
+                if (accessorDependencies.Keys.Add((target.FullName, kind, targetMember?.Name)))
+                {
+                    accessorDependencies.Dependencies.Add(new Dependency(_owner, accessor, target, targetMember, kind, location));
+                }
+            }
 
             var key = (target.FullName, kind, sourceMember, targetMember?.Name);
             if (_dependencies.ContainsKey(key))
@@ -490,5 +531,18 @@ internal sealed class DependencyCollector
         catch (BadImageFormatException)
         {
         }
+    }
+
+    // The dependencies of the type, and the ones of the code of each accessor of its properties and events
+    public sealed record Result(IReadOnlyList<Dependency> Dependencies, Dictionary<MethodElement, IReadOnlyList<Dependency>> AccessorDependencies);
+
+    // The member a piece of code belongs to, and the accessor when it is the code of an accessor of a property or an event
+    private readonly record struct CodeOwner(MemberElement? Member, MethodElement? Accessor);
+
+    private sealed class AccessorDependencies
+    {
+        public HashSet<(string Target, DependencyKind Kind, string? TargetMember)> Keys { get; } = [];
+
+        public List<Dependency> Dependencies { get; } = [];
     }
 }

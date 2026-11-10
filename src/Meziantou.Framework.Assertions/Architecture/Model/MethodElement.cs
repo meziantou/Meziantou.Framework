@@ -39,6 +39,9 @@ public sealed class MethodElement : MemberElement
 
     internal GenericContext GenericContext { get; }
 
+    // The property or the event when the method is one of its accessors
+    internal MemberElement? AccessorOwner { get; set; }
+
     /// <inheritdoc />
     public override ElementAccessibility Accessibility => GetAccessibility(_attributes);
 
@@ -78,6 +81,8 @@ public sealed class MethodElement : MemberElement
     /// <summary>Returns the method as <c>DeclaringType.Name(ParameterTypes)</c>.</summary>
     /// <returns>The method as <c>DeclaringType.Name(ParameterTypes)</c>.</returns>
     public override string ToString() => DeclaringType + "." + Name + "(" + string.Join(", ", Parameters.Select(parameter => parameter.Type)) + ")";
+
+    private protected override IReadOnlyList<Dependency> GetDependencies() => AccessorOwner is null ? base.GetDependencies() : DeclaringType.GetAccessorDependencies(this);
 
     private (TypeReference ReturnType, IReadOnlyList<ParameterElement> Parameters) DecodeSignature()
     {

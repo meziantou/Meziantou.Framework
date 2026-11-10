@@ -11,7 +11,7 @@ public abstract class MemberElement
     {
         DeclaringType = declaringType;
         Name = name;
-        _dependencies = new(() => [.. DeclaringType.Dependencies.Where(dependency => dependency.SourceMember == this)]);
+        _dependencies = new(GetDependencies);
     }
 
     /// <summary>Gets the type that declares the member.</summary>
@@ -32,7 +32,10 @@ public abstract class MemberElement
     /// <summary>Gets the attributes applied to the member.</summary>
     public abstract IReadOnlyList<AttributeElement> Attributes { get; }
 
-    /// <summary>Gets the dependencies of the declaration and the code of the member, including the code of its lambdas and local functions.</summary>
+    /// <summary>
+    /// Gets the dependencies of the declaration and the code of the member, including the code of its lambdas and local functions.
+    /// The dependencies of an accessor of a property or an event are the ones of its own code: the property or the event lists the dependencies of all its accessors.
+    /// </summary>
     public IReadOnlyList<Dependency> Dependencies => _dependencies.Value;
 
     /// <summary>Gets the first statement of the member when the PDB is available, or <see langword="null"/>.</summary>
@@ -50,6 +53,8 @@ public abstract class MemberElement
     /// <summary>Returns the member as <c>DeclaringType.Name</c>.</summary>
     /// <returns>The member as <c>DeclaringType.Name</c>.</returns>
     public override string ToString() => DeclaringType + "." + Name;
+
+    private protected virtual IReadOnlyList<Dependency> GetDependencies() => [.. DeclaringType.Dependencies.Where(dependency => dependency.SourceMember == this)];
 
     private protected static ElementAccessibility GetAccessibility(MethodAttributes attributes)
     {

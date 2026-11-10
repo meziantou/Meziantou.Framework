@@ -109,3 +109,7 @@ Assert.StartsWith("""
 
 A dependency belongs to the member whose declaration or code uses the type. A dependency of the type declaration, such
 as its base type, belongs to no member: check it with the type rules.
+
+A property or an event has the dependencies of all its accessors. An accessor, such as
+[Getter](cref:Meziantou.Framework.Assertions.Architecture.PropertyElement.Getter), has the dependencies of its own code,
+including its lambdas, so a rule can check the `get` accessors only.

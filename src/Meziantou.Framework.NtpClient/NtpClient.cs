@@ -185,6 +185,9 @@ public sealed class NtpClient
             // Each failure is read from its task below
         }
 
+        // A server that failed before the caller canceled makes Task.WhenAll throw its fault instead of the cancellation
+        cancellationToken.ThrowIfCancellationRequested();
+
         List<NtpServerMeasurement> measurements = [];
         var failedServers = new Dictionary<NtpClient, Exception>();
         for (var i = 0; i < tasks.Count; i++)
@@ -433,7 +436,7 @@ public sealed class NtpClient
     {
         // Surface a plain timeout as a TimeoutException rather than burying it in an AggregateException,
         // so that `catch (TimeoutException)` works for the case callers actually expect.
-        if (exceptions.Count > 1 && exceptions.TrueForAll(static ex => ex is TimeoutException))
+        if (exceptions.Count > 1 && exceptions.TrueForAll(ex => ex is TimeoutException))
         {
             return new TimeoutException(
                 $"The NTP query to '{_server}' timed out on all {exceptions.Count} resolved address(es), allowing {_options.Timeout} each.",
@@ -450,7 +453,7 @@ public sealed class NtpClient
         if (exceptions.Count is 1)
             return exceptions[0];
 
-        if (exceptions.TrueForAll(static ex => ex is TimeoutException))
+        if (exceptions.TrueForAll(ex => ex is TimeoutException))
             return new TimeoutException(message + ": every query timed out.", exceptions[0]);
 
         return new AggregateException(message, exceptions);

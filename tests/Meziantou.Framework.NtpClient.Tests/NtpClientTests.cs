@@ -605,6 +605,19 @@ public sealed class NtpClientTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public async Task MeasureServers_HonorsCancellationAfterAnotherServerFailed()
+    {
+        using var failingServer = FakeNtpServer.Blackhole();
+        using var slowServer = FakeNtpServer.Blackhole();
+        var failingClient = new NtpClient("127.0.0.1", new NtpClientOptions { Port = failingServer.Port, Timeout = TimeSpan.FromMilliseconds(50) });
+        var slowClient = new NtpClient("127.0.0.1", new NtpClientOptions { Port = slowServer.Port, Timeout = TimeSpan.FromSeconds(30) });
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(XunitCancellationToken);
+        cts.CancelAfter(TimeSpan.FromMilliseconds(500));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => NtpClient.MeasureAsync([failingClient, slowClient], new NtpMeasurementOptions { SampleCount = 1 }, cts.Token));
+    }
+
+    [Fact]
     public void ClockSelection_DiscardsTheFalseticker()
     {
         long[] offsets = [100, 110, 95, 1_000_000];

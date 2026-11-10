@@ -32,7 +32,7 @@ internal static class NtpClockSelection
             endpoints[(i * 3) + 2] = (offsets[i] + rootDistances[i], -1);
         }
 
-        Array.Sort(endpoints, static (a, b) => a.Value != b.Value ? a.Value.CompareTo(b.Value) : b.Type.CompareTo(a.Type));
+        Array.Sort(endpoints, (a, b) => a.Value != b.Value ? a.Value.CompareTo(b.Value) : b.Type.CompareTo(a.Type));
 
         var isFound = false;
         for (var allowedFalsetickers = 0; 2 * allowedFalsetickers < count; allowedFalsetickers++)

@@ -83,9 +83,12 @@ values added, like on a classic filter.
 
 Blocked filters support the same bulk operations as classic filters:
 
-- `AddRange` adds many numbers in one call on [BlockedBloomFilterXXHash128](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash128)
-  and [BlockedBloomFilterXXHash64](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash64) (`long`, `ulong`), and
-  [BlockedBloomFilterXXHash32](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash32) (`int`, `uint`). See
+- Add many numbers in one call:
+  [BlockedBloomFilterXXHash128.AddRange](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash128.AddRange) and
+  [BlockedBloomFilterXXHash64.AddRange](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash64.AddRange) take
+  `long` or `ulong` values, and
+  [BlockedBloomFilterXXHash32.AddRange](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash32.AddRange) takes
+  `int` or `uint` values. See
   [Add many values](04-AddingValues.md#add-many-values).
 - [UnionWith](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilter.UnionWith) adds the values of another blocked
   filter of the same hash algorithm and the same [BlockedBloomFilterSize](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterSize).

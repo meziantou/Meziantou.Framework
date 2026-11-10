@@ -39,6 +39,28 @@ public sealed class TdsQueryEngineOptions
     /// <summary>Gets or sets the materializer used to enumerate translated text queries.</summary>
     public TdsQueryMaterializer MaterializeAsync { get; set; } = DefaultMaterializeAsync;
 
+    /// <summary>
+    /// Gets or sets the maximum number of rows a recursive common table expression can return, or <see langword="null"/>
+    /// for no limit. A recursive common table expression that returns more rows fails the statement.
+    /// </summary>
+    /// <remarks>
+    /// <c>OPTION (MAXRECURSION n)</c> limits the number of recursion levels, as in SQL Server. This limit also bounds
+    /// recursions whose rows grow exponentially, or that run without limit with <c>MAXRECURSION 0</c>.
+    /// </remarks>
+    public int? MaxRecursiveCommonTableExpressionRows
+    {
+        get;
+        set
+        {
+            if (value is not null)
+            {
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value.Value, nameof(value));
+            }
+
+            field = value;
+        }
+    }
+
     /// <summary>Gets the scalar SQL function mappings used by the query translator.</summary>
     public IDictionary<string, TdsQueryScalarFunction> ScalarFunctions { get; }
 
@@ -57,14 +79,36 @@ public sealed class TdsQueryEngineOptions
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentNullException.ThrowIfNull(queryFactory);
 
-        QueryRoots.Add(new TdsQueryRoot(name, context =>
+        QueryRoots.Add(new TdsQueryRoot(name, CreateQueryFactory(name, queryFactory)));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a query root factory resolved from the current query request context, and the handlers of the
+    /// <c>INSERT</c>, <c>UPDATE</c> and <c>DELETE</c> statements that target it.
+    /// </summary>
+    public TdsQueryEngineOptions AddQueryRoot<T>(string name, Func<TdsQueryContext, IQueryable<T>> queryFactory, TdsQueryRootWriteHandlers<T> writeHandlers)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(queryFactory);
+        ArgumentNullException.ThrowIfNull(writeHandlers);
+
+        QueryRoots.Add(new TdsQueryRoot(name, CreateQueryFactory(name, queryFactory))
+        {
+            Writer = TdsQueryRootWriter.Create(writeHandlers),
+        });
+        return this;
+    }
+
+    private static Func<TdsQueryContext, IQueryable> CreateQueryFactory<T>(string name, Func<TdsQueryContext, IQueryable<T>> queryFactory)
+    {
+        return context =>
         {
             ArgumentNullException.ThrowIfNull(context);
 
             var query = queryFactory(context);
             return query ?? throw new InvalidOperationException($"The query root '{name}' returned null.");
-        }));
-        return this;
+        };
     }
 
     /// <summary>Adds or replaces a scalar SQL function mapping.</summary>
@@ -133,6 +177,9 @@ public sealed class TdsQueryEngineOptions
         {
             TdsQueryEngineResourceKind.StoredProcedure => "EXECUTE",
             TdsQueryEngineResourceKind.QueryRoot => "SELECT",
+            TdsQueryEngineResourceKind.QueryRootInsert => "INSERT",
+            TdsQueryEngineResourceKind.QueryRootUpdate => "UPDATE",
+            TdsQueryEngineResourceKind.QueryRootDelete => "DELETE",
             _ => throw new InvalidOperationException($"Unsupported resource kind '{resourceKind}'."),
         };
 

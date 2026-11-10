@@ -33,8 +33,11 @@ The library implements the protocol of SQL Server, not a database. This page lis
 
 ## Query engine
 
-- `SELECT` statements only: no recursive common table expressions, no `INSERT`, `UPDATE` or `DELETE`. See
-  [Supported SQL](08-SupportedSql.md).
+- `SELECT`, `INSERT`, `UPDATE` and `DELETE` statements only: no `MERGE`, `DECLARE` or `SET`, and no `OUTPUT` clause.
+  See [Supported SQL](08-SupportedSql.md).
+- `INSERT`, `UPDATE` and `DELETE` call your handlers, which save the changes: the engine does not roll them back when
+  the transaction is rolled back. See [Modify data](07-QueryEngine.md#modify-data).
+- Recursive common table expressions are computed in memory, with LINQ to objects.
 - `LIKE` compares characters ordinally, so it is case-sensitive.
 - The XML methods take XPath 1.0, not XQuery.
 - A stored procedure that returns an `IQueryable` is enumerated synchronously.

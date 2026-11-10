@@ -285,12 +285,14 @@ namespace Meziantou.Framework.Tds.QueryEngine
     {
         public Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineAuthorizationHandler IsAuthorized { get => throw null; set { } }
         public Meziantou.Framework.Tds.QueryEngine.TdsQueryMaterializer MaterializeAsync { get => throw null; set { } }
+        public int? MaxRecursiveCommonTableExpressionRows { get => throw null; set { } }
         public System.Func<Meziantou.Framework.Tds.Handler.TdsQueryContext, Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineResourceKind, string, Meziantou.Framework.Tds.Handler.TdsQueryError> NotAuthorizedErrorFactory { get => throw null; set { } }
         public System.Collections.ObjectModel.Collection<Meziantou.Framework.Tds.QueryEngine.TdsQueryRoot> QueryRoots { get => throw null; }
         public System.Collections.Generic.IDictionary<string, Meziantou.Framework.Tds.QueryEngine.TdsQueryScalarFunction> ScalarFunctions { get => throw null; }
         public System.Collections.Generic.IDictionary<string, System.Delegate> StoredProcedures { get => throw null; }
         public System.Collections.Generic.IDictionary<string, System.Xml.Schema.XmlSchemaSet> XmlSchemaCollections { get => throw null; }
         public Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddQueryRoot<T>(string name, System.Func<Meziantou.Framework.Tds.Handler.TdsQueryContext, System.Linq.IQueryable<T>> queryFactory) => throw null;
+        public Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddQueryRoot<T>(string name, System.Func<Meziantou.Framework.Tds.Handler.TdsQueryContext, System.Linq.IQueryable<T>> queryFactory, Meziantou.Framework.Tds.QueryEngine.TdsQueryRootWriteHandlers<T> writeHandlers) => throw null;
         public Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddScalarFunction(string name, Meziantou.Framework.Tds.QueryEngine.TdsQueryScalarFunction function) => throw null;
         public Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddXmlSchemaCollection(string name, System.Xml.Schema.XmlSchemaSet schemaSet) => throw null;
         public Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions AddXmlSchemaCollection(string name, string schemaDefinition) => throw null;
@@ -300,6 +302,9 @@ namespace Meziantou.Framework.Tds.QueryEngine
     {
         StoredProcedure = 0,
         QueryRoot = 1,
+        QueryRootInsert = 2,
+        QueryRootUpdate = 3,
+        QueryRootDelete = 4,
     }
 
     public delegate System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<object?>> TdsQueryMaterializer(System.Linq.IQueryable query, System.Threading.CancellationToken cancellationToken);
@@ -308,6 +313,15 @@ namespace Meziantou.Framework.Tds.QueryEngine
     {
         public string Name { get => throw null; }
         public TdsQueryRoot(string name, System.Func<Meziantou.Framework.Tds.Handler.TdsQueryContext, System.Linq.IQueryable> queryFactory) { }
+    }
+
+    public delegate System.Threading.Tasks.ValueTask TdsQueryRootRowsHandler<T>(Meziantou.Framework.Tds.Handler.TdsQueryContext context, System.Collections.Generic.IReadOnlyList<T> rows, System.Threading.CancellationToken cancellationToken);
+
+    public sealed class TdsQueryRootWriteHandlers<T>
+    {
+        public Meziantou.Framework.Tds.QueryEngine.TdsQueryRootRowsHandler<T>? Delete { get => throw null; set { } }
+        public Meziantou.Framework.Tds.QueryEngine.TdsQueryRootRowsHandler<T>? Insert { get => throw null; set { } }
+        public Meziantou.Framework.Tds.QueryEngine.TdsQueryRootRowsHandler<T>? Update { get => throw null; set { } }
     }
 
     public delegate System.Linq.Expressions.Expression TdsQueryScalarFunction(System.Collections.Generic.IReadOnlyList<System.Linq.Expressions.Expression> arguments);

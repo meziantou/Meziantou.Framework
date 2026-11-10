@@ -1,18 +1,20 @@
 ---
 title: Supported SQL
-description: The SELECT statements, operators and functions the query engine translates, and how they treat NULL.
+description: The SELECT, INSERT, UPDATE and DELETE statements, operators and functions the query engine translates, and how they treat NULL.
 ---
 
-The [query engine](07-QueryEngine.md) translates the `SELECT` statements of a request to LINQ queries. It does not run
-other statements. This page lists what it translates; anything else returns the error 50004 with a message that names
-the problem.
+The [query engine](07-QueryEngine.md) translates the `SELECT` statements of a request to LINQ queries, and runs the
+`INSERT`, `UPDATE` and `DELETE` statements with the handlers of their query root. It does not run other statements.
+This page lists what it translates; anything else returns the error 50004 with a message that names the problem.
 
 ## Statements and clauses
 
-- One or more `SELECT` statements, separated by `;` or not. Each statement returns a result set, in order: read them
-  with `SqlDataReader.NextResult`, or fill a `DataSet`. All the statements are translated before the first one runs, so
-  an invalid statement returns an error and no result set. Parameters are shared by all the statements.
-- Each statement can start with non-recursive common table expressions (`WITH … AS (…)`), including column lists.
+- One or more `SELECT`, `INSERT`, `UPDATE` and `DELETE` statements, separated by `;` or not. Each `SELECT` returns a
+  result set, in order: read them with `SqlDataReader.NextResult`, or fill a `DataSet`. All the statements are
+  translated before the first one runs, so an invalid statement returns an error, no result set, and changes nothing.
+  Parameters are shared by all the statements. See [INSERT, UPDATE and DELETE](#insert-update-and-delete).
+- Each statement can start with common table expressions (`WITH … AS (…)`), including column lists. They can be
+  recursive: see [Recursive common table expressions](#recursive-common-table-expressions).
 - `TOP`, `DISTINCT`, `SELECT *` on a single table, and selected columns and expressions with aliases.
 - `FROM` a query root or a derived table (`FROM (SELECT …) AS t`).
 - `INNER JOIN`, `LEFT JOIN` and `RIGHT JOIN`, on query roots or derived tables.
@@ -83,6 +85,52 @@ A subquery in parentheses can be used as a value, for instance
 - An aggregate is translated to the LINQ operator (`Count`, `Sum`, …). A subquery that returns a column calls a .NET
   method to check that there is at most one row, which LINQ to objects runs but other providers may not.
 
+## Recursive common table expressions
+
+A common table expression that reads itself is recursive, for instance to walk a hierarchy:
+
+```sql
+WITH chain AS (
+    SELECT Id, Name, 0 AS Level FROM employees WHERE ManagerId IS NULL
+    UNION ALL
+    SELECT e.Id, e.Name, c.Level + 1 FROM employees e INNER JOIN chain c ON e.ManagerId = c.Id
+)
+SELECT Id, Name, Level FROM chain ORDER BY Level, Id
+```
+
+- The anchor members come first, combined with `UNION` or `UNION ALL`, then the recursive members, each after
+  `UNION ALL`. The anchor runs once, then the recursive members run on the rows of the previous level until they return
+  no row.
+- The anchor names the columns, unless the expression has a column list, so the columns of the recursive members do not
+  need names. A column is nullable when the anchor or a recursive member returns a nullable value; its type must
+  otherwise be the same, or the error 240 is returned.
+- As in SQL Server, a recursive member reads the expression once, in its `FROM` clause and not in a subquery or an outer
+  join, and cannot use `DISTINCT`, `TOP`, `GROUP BY`, `HAVING` or aggregates. These statements return the errors 252,
+  253, 460 to 467 of SQL Server.
+- The recursion stops with the error 530 after 100 levels. `OPTION (MAXRECURSION n)` at the end of the statement sets
+  the limit, from 0 (no limit) to 32767.
+  [MaxRecursiveCommonTableExpressionRows](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions.MaxRecursiveCommonTableExpressionRows) limits the number of rows, for an expression whose rows grow
+  exponentially or that has no limit; the recursion also stops when the request is canceled.
+- The expression is computed in memory: the anchor and the recursive members are enumerated synchronously, and the
+  statement reads the rows with LINQ to objects.
+
+## INSERT, UPDATE and DELETE
+
+These statements need the handlers of the query root they change. See [Modify data](07-QueryEngine.md#modify-data).
+
+- `INSERT INTO t (columns) VALUES (…), (…)`, `INSERT INTO t (columns) SELECT …` and `INSERT INTO t DEFAULT VALUES`.
+  Without a column list, the values go to the settable properties of the row type, in their declaration order. `DEFAULT`
+  keeps the value set by the constructor. The selected columns of `INSERT … SELECT` match the columns by position.
+- `UPDATE t SET column = expression, … WHERE …`, with the compound operators `+=`, `-=`, `*=`, `/=` and `%=`. Every
+  expression reads the values of the row before the statement: `SET A = B, B = A` swaps the values.
+- `DELETE FROM t WHERE …`, or `DELETE t`.
+- `UPDATE` and `DELETE` accept `TOP (n)`, and a `FROM` clause that contains only their target, to give it an alias:
+  `UPDATE p SET Price = 0 FROM products AS p WHERE p.Id = 1`.
+- The values are converted to the types of the properties. A conversion that fails returns an error, and `NULL` in a
+  `NOT NULL` column the error 515.
+- The `WHERE` clause and the expressions support what a `SELECT` supports, including subqueries, and the statements can
+  start with common table expressions, recursive or not.
+
 ## XML methods
 
 The XML methods take XPath 1.0 expressions, not XQuery. Common paths such as `/root/item[@id="2"]/text()` behave the
@@ -94,8 +142,9 @@ engine options.
 
 ## Not supported
 
-- Recursive common table expressions.
+- `SELECT` without `FROM`.
 - Scalar subqueries with `GROUP BY`, `HAVING` or `DISTINCT`, and subqueries in `GROUP BY` queries.
-- `INSERT`, `UPDATE`, `DELETE`, `MERGE` and other statements that change data, and any statement other than `SELECT`,
-  such as `DECLARE` and `SET`.
+- `MERGE`, the `OUTPUT` clause, `INSERT TOP`, joins in `UPDATE` and `DELETE`, and a common table expression as the
+  target of a statement.
+- Any statement other than `SELECT`, `INSERT`, `UPDATE` and `DELETE`, such as `DECLARE` and `SET`.
 - `GO`: it separates batches in client tools such as SQL Server Management Studio, and is not part of T-SQL.

@@ -25,6 +25,9 @@ public sealed class TdsQueryRoot
     {
     }
 
+    /// <summary>Gets the handlers of the statements that modify the query root, or <see langword="null"/> when it is read-only.</summary>
+    internal TdsQueryRootWriter? Writer { get; init; }
+
     internal IQueryable GetQuery(TdsQueryContext context)
     {
         ArgumentNullException.ThrowIfNull(context);

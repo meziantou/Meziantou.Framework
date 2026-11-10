@@ -8,4 +8,13 @@ public enum TdsQueryEngineResourceKind
 
     /// <summary>A named query root referenced by a SQL query.</summary>
     QueryRoot,
+
+    /// <summary>A named query root targeted by an <c>INSERT</c> statement.</summary>
+    QueryRootInsert,
+
+    /// <summary>A named query root targeted by an <c>UPDATE</c> statement.</summary>
+    QueryRootUpdate,
+
+    /// <summary>A named query root targeted by a <c>DELETE</c> statement.</summary>
+    QueryRootDelete,
 }

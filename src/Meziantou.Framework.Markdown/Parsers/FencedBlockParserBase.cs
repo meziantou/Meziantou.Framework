@@ -113,14 +113,16 @@ public abstract class FencedBlockParserBase<T> : FencedBlockParserBase where T :
         var afterArg = new StringSlice(line.Text, start, end);
         ParseState state = ParseState.AfterFence;
 
+        // An info string cannot contain any backticks (unless it is a tilde block), including in the arguments, which the loop
+        // does not read one by one
+        if (openingCharacter == '`' && line.AsSpan().Contains('`'))
+        {
+            return false;
+        }
+
         for (int i = line.Start; i <= line.End; i++)
         {
             char c = line.Text[i];
-            // An info string cannot contain any backticks (unless it is a tilde block)
-            if (c == '`' && openingCharacter == '`')
-            {
-                return false;
-            }
             switch (state)
             {
                 case ParseState.AfterFence:

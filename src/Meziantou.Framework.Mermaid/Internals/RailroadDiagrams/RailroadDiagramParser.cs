@@ -231,15 +231,19 @@ internal sealed class RailroadDiagramParser
         if (result is null)
             return null;
 
+        // Each operator nests the expression one level deeper. The writer drops the parentheses of a group, so "(b*)*" is
+        // written "b**": the limit applies to the height of the expression, not to the depth of the chain being parsed.
+        var height = -1;
         while (true)
         {
             SkipTrivia();
             var c = _scanner.Current;
             if (c == '?' && TryMatchSpecial(out _, consume: false))
-                return result;
+                break;
 
             if (c is '?' or '*' or '+')
             {
+                height = CheckHeight(_scanner.Position, (height < 0 ? GetHeight(result) : height) + 1);
                 _scanner.Position++;
                 result = c switch
                 {
@@ -257,12 +261,48 @@ internal sealed class RailroadDiagramParser
                 var start = _scanner.Position;
                 _scanner.Position++;
                 var except = ParseEbnfPrimary() ?? throw _scanner.Error(start, "An expression is expected after '-'.");
+                height = CheckHeight(start, Math.Max(height < 0 ? GetHeight(result) : height, GetHeight(except)) + 1);
                 result = new RailroadSequence(result, new RailroadTerminal("-"), except);
                 CountExpression();
                 continue;
             }
 
-            return result;
+            break;
+        }
+
+        return result;
+    }
+
+    // The writer can write each level as a group, inside the groups and the rule being parsed (_depth): both count
+    private int CheckHeight(int offset, int height)
+    {
+        if (_depth + height > _context.Options.MaxDepth)
+            throw _scanner.Error(offset, $"The expressions are nested deeper than {_context.Options.MaxDepth} levels.");
+
+        return height;
+    }
+
+    /// <summary>Gets the number of levels of nested expressions, which the parser bounds, so the recursion is bounded too.</summary>
+    private static int GetHeight(RailroadExpression expression)
+    {
+        return expression switch
+        {
+            RailroadOptional optional => GetHeight(optional.Expression) + 1,
+            RailroadRepetition repetition => GetHeight(repetition.Expression) + 1,
+            RailroadSequence sequence => GetMaxHeight(sequence.Items) + 1,
+            RailroadChoice choice => GetMaxHeight(choice.Alternatives) + 1,
+            _ => 0,
+        };
+
+        static int GetMaxHeight(IList<RailroadExpression> items)
+        {
+            var max = 0;
+            foreach (var item in items)
+            {
+                max = Math.Max(max, GetHeight(item));
+            }
+
+            return max;
         }
     }
 

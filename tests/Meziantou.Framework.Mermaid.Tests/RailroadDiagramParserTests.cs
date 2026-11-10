@@ -139,6 +139,54 @@ public sealed class RailroadDiagramParserTests
     }
 
     [Theory]
+    [InlineData("*")]
+    [InlineData("?")]
+    [InlineData("+")]
+    [InlineData(" - b")]
+    public void ChainedEbnfOperatorsNestedTooDeeplyAreRejected(string op)
+    {
+        var text = "railroad-ebnf-beta\na = b" + string.Concat(Enumerable.Repeat(op, 150)) + " ;";
+        var exception = Assert.Throws<MermaidParseException>(() => MermaidDocument.Parse(text));
+        Assert.Contains("nested deeper", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("b" + "********************************")]
+    [InlineData("(b" + "****************" + ")" + "****************")]
+    [InlineData("(b c" + "+++++++++++++++++++++++++++++++" + ")")]
+    public void EbnfExpressionsJustAboveTheMaximumDepthAreRejected(string expression)
+    {
+        var exception = Assert.Throws<MermaidParseException>(() => MermaidDocument.Parse("railroad-ebnf-beta\na = " + expression + " ;"));
+        Assert.Contains("nested deeper", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GroupedChainsOfEbnfOperatorsNestedTooDeeplyAreRejected()
+    {
+        // The writer drops the parentheses, so the two chains would be written as one chain of 40 operators
+        var text = "railroad-ebnf-beta\na = (b" + new string('+', 20) + ")" + new string('+', 20) + " ;";
+        var exception = Assert.Throws<MermaidParseException>(() => MermaidDocument.Parse(text));
+        Assert.Contains("nested deeper", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("b" + "********************" + " c?")]
+    [InlineData("(b" + "+++++++++++++++" + ")" + "+++++++++++++++")]
+    [InlineData("(b c" + "**********" + ")" + "**********" + " - d" + "+++")]
+    [InlineData("b" + "*******************************")]
+    [InlineData("b" + "???????????????????????????????")]
+    [InlineData("b" + "+++++++++++++++++++++++++++++++")]
+    [InlineData("(b" + "***************" + ")" + "****************")]
+    [InlineData("(b c" + "++++++++++++++++++++++++++++++" + ")")]
+    public void ChainedEbnfOperatorsWithinTheMaximumDepthRoundTrip(string expression)
+    {
+        var text = "railroad-ebnf-beta\na = " + expression + " ;";
+        var document = MermaidDocument.Parse(text);
+        var written = MermaidWriter.Write(document.Content);
+        Assert.Equal(written, MermaidWriter.Write(MermaidDocument.Parse(written).Content));
+    }
+
+    [Theory]
     [InlineData(RailroadNotation.Primitives)]
     [InlineData(RailroadNotation.Ebnf)]
     [InlineData(RailroadNotation.Abnf)]

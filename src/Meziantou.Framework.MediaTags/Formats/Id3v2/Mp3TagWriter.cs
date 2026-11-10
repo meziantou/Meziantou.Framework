@@ -13,7 +13,9 @@ internal sealed class Mp3TagWriter : IMediaTagWriter
 
             // Build new ID3v2 tag
             inputStream.Position = 0;
-            var preservedFrames = Id3v2Writer.ReadFramesToPreserve(inputStream, options);
+            if (!Id3v2Writer.TryGetFramesToWrite(inputStream, tags, options, out var preservedFrames, out var framesError))
+                return MediaTagResult.Failure(MediaTagError.InvalidTagData, framesError);
+
             if (!Id3v2Writer.TryBuildTag(tags, options.Id3v2PaddingSize, preservedFrames, out var id3v2Tag, out var buildError))
                 return MediaTagResult.Failure(MediaTagError.InvalidTagData, buildError);
 

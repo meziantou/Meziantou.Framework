@@ -27,6 +27,33 @@ namespace Meziantou.Framework.MediaTags
         Mp4 = 4,
         Wav = 5,
         Aiff = 6,
+        MonkeysAudio = 7,
+        WavPack = 8,
+        Musepack = 9,
+        Asf = 10,
+    }
+
+    public enum MediaKind : byte
+    {
+        LegacyMovie = 0,
+        Music = 1,
+        Audiobook = 2,
+        Bookmark = 5,
+        MusicVideo = 6,
+        Movie = 9,
+        TvShow = 10,
+        Booklet = 11,
+        Ringtone = 14,
+        Podcast = 21,
+        ITunesU = 23,
+    }
+
+    public sealed class MediaNativeField
+    {
+        public byte[] Data { get => throw null; init { } }
+        public int Flags { get => throw null; init { } }
+        public required string Id { get => throw null; init { } }
+        public required Meziantou.Framework.MediaTags.MediaTagType TagType { get => throw null; init { } }
     }
 
     public sealed class MediaPicture
@@ -83,6 +110,7 @@ namespace Meziantou.Framework.MediaTags
         public string? Conductor { get => throw null; set { } }
         public string? Copyright { get => throw null; set { } }
         public System.Collections.Generic.IDictionary<string, string> CustomFields { get => throw null; }
+        public string? Description { get => throw null; set { } }
         public int? DiscNumber { get => throw null; set { } }
         public int? DiscTotal { get => throw null; set { } }
         public System.TimeSpan? Duration { get => throw null; set { } }
@@ -90,16 +118,26 @@ namespace Meziantou.Framework.MediaTags
         public string? Genre { get => throw null; set { } }
         public bool? IsCompilation { get => throw null; set { } }
         public string? Isrc { get => throw null; set { } }
+        public string? LongDescription { get => throw null; set { } }
         public string? Lyrics { get => throw null; set { } }
+        public Meziantou.Framework.MediaTags.MediaKind? MediaKind { get => throw null; set { } }
         public string? MusicBrainzAlbumId { get => throw null; set { } }
         public string? MusicBrainzArtistId { get => throw null; set { } }
         public string? MusicBrainzReleaseGroupId { get => throw null; set { } }
         public string? MusicBrainzTrackId { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.MediaTags.MediaNativeField>? NativeFields { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.MediaTags.MediaPicture> Pictures { get => throw null; }
         public Meziantou.Framework.MediaTags.ReplayGainInfo? ReplayGain { get => throw null; set { } }
         public string? Title { get => throw null; set { } }
         public int? TrackNumber { get => throw null; set { } }
         public int? TrackTotal { get => throw null; set { } }
+        public int? TvEpisode { get => throw null; set { } }
+        public string? TvEpisodeId { get => throw null; set { } }
+        public string? TvNetwork { get => throw null; set { } }
+        public int? TvSeason { get => throw null; set { } }
+        public string? TvShow { get => throw null; set { } }
+        public int? VideoHeight { get => throw null; set { } }
+        public int? VideoWidth { get => throw null; set { } }
         public int? Year { get => throw null; set { } }
     }
 
@@ -123,6 +161,14 @@ namespace Meziantou.Framework.MediaTags
         public T Value { get => throw null; }
         public static Meziantou.Framework.MediaTags.MediaTagResult<T> Failure(Meziantou.Framework.MediaTags.MediaTagError error, string? message = null) => throw null;
         public static Meziantou.Framework.MediaTags.MediaTagResult<T> Success(T value) => throw null;
+    }
+
+    public enum MediaTagType
+    {
+        Id3v2 = 0,
+        Mp4 = 1,
+        Ape = 2,
+        Asf = 3,
     }
 
     public sealed class MediaTagWriteOptions

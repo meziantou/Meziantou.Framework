@@ -105,9 +105,39 @@ public sealed class FormatDetectorTests
     [InlineData(".wav", MediaFormat.Wav)]
     [InlineData(".aif", MediaFormat.Aiff)]
     [InlineData(".aiff", MediaFormat.Aiff)]
+    [InlineData(".m4v", MediaFormat.Mp4)]
+    [InlineData(".mov", MediaFormat.Mp4)]
+    [InlineData(".ape", MediaFormat.MonkeysAudio)]
+    [InlineData(".wv", MediaFormat.WavPack)]
+    [InlineData(".mpc", MediaFormat.Musepack)]
+    [InlineData(".wma", MediaFormat.Asf)]
+    [InlineData(".wmv", MediaFormat.Asf)]
     public void DetectFromExtension(string extension, MediaFormat expected)
     {
         Assert.Equal(expected, FormatDetector.DetectFromExtension("test" + extension));
+    }
+
+    [Theory]
+    [InlineData("MAC \u0096\u000f", MediaFormat.MonkeysAudio)]
+    [InlineData("wvpk", MediaFormat.WavPack)]
+    [InlineData("MPCK", MediaFormat.Musepack)]
+    [InlineData("MP+\u0017", MediaFormat.Musepack)]
+    public void DetectFromHeader_ApeTaggedFormats(string header, MediaFormat expected)
+    {
+        Assert.Equal(expected, FormatDetector.DetectFromHeader(Encoding.Latin1.GetBytes(header)));
+    }
+
+    [Fact]
+    public void DetectFromHeader_MusepackStreamVersion6_IsNotRecognized()
+    {
+        Assert.Null(FormatDetector.DetectFromHeader("MP+\u0016"u8));
+    }
+
+    [Fact]
+    public void DetectFromHeader_Asf()
+    {
+        byte[] header = [0x30, 0x26, 0xB2, 0x75, 0x8E, 0x66, 0xCF, 0x11, 0xA6, 0xD9, 0x00, 0xAA, 0x00, 0x62, 0xCE, 0x6C];
+        Assert.Equal(MediaFormat.Asf, FormatDetector.DetectFromHeader(header));
     }
 
     [Fact]

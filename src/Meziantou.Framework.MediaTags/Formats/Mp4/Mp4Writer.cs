@@ -32,7 +32,7 @@ internal sealed class Mp4Writer : IMediaTagWriter
             if (inputStream.ReadAtLeast(moovData, moovData.Length, throwOnEndOfStream: false) < moovData.Length)
                 return MediaTagResult.Failure(MediaTagError.UnexpectedEndOfStream, "The file ended inside the moov atom.");
 
-            if (!TryBuildIlstData(tags, moovAtom, moovData, out var ilstData, out var buildError))
+            if (!TryBuildIlstData(tags, options, moovAtom, moovData, out var ilstData, out var buildError))
                 return MediaTagResult.Failure(MediaTagError.InvalidTagData, buildError);
 
             var newMoov = RebuildMoov(moovAtom, moovData, ilstData);
@@ -196,10 +196,12 @@ internal sealed class Mp4Writer : IMediaTagWriter
                     ms.Write(BuildMeta(child, moovAtom, moovData, ilstData));
                     metaWritten = true;
                 }
-                else
+                else if (!QuickTimeUserData.IsReadIntoProperty(child))
                 {
                     // Anything else under udta — an m4b chapter list, Windows metadata — belongs to the user
-                    // and is copied through rather than dropped.
+                    // and is copied through rather than dropped. The QuickTime text records are not: the reader
+                    // reads them into the fields the metadata list does not set, so a stale one would bring back
+                    // a value the caller removed. Their values are in the metadata list now.
                     ms.Write(GetAtomBytes(child, moovAtom, moovData));
                 }
             }
@@ -273,7 +275,7 @@ internal sealed class Mp4Writer : IMediaTagWriter
         return BuildAtom("hdlr", data);
     }
 
-    private static bool TryBuildIlstData(MediaTagInfo tags, Mp4Atom moovAtom, byte[] moovData, out byte[] ilstData, out string? error)
+    private static bool TryBuildIlstData(MediaTagInfo tags, MediaTagWriteOptions options, Mp4Atom moovAtom, byte[] moovData, out byte[] ilstData, out string? error)
     {
         ilstData = [];
 
@@ -332,20 +334,74 @@ internal sealed class Mp4Writer : IMediaTagWriter
 
         WriteCoverArtAtom(ms, tags.Pictures);
 
-        // Items this writer does not produce — sort names, the encoder tool, the gapless flag — are the
-        // user's data and are carried through instead of being dropped.
-        var existingIlst = moovAtom.FindChild("udta")?.FindChild("meta")?.FindChild("ilst");
-        if (existingIlst is not null)
+        if (tags.MediaKind is { } mediaKind)
+            WriteByteAtom(ms, ItunesAtomNames.MediaKind, (byte)mediaKind);
+
+        WriteTextAtom(ms, ItunesAtomNames.Description, tags.Description);
+        WriteTextAtom(ms, ItunesAtomNames.LongDescription, tags.LongDescription);
+        WriteTextAtom(ms, ItunesAtomNames.TvShow, tags.TvShow);
+        WriteTextAtom(ms, ItunesAtomNames.TvNetwork, tags.TvNetwork);
+        WriteTextAtom(ms, ItunesAtomNames.TvEpisodeId, tags.TvEpisodeId);
+        if (tags.TvSeason is { } season)
+            WriteUInt32Atom(ms, ItunesAtomNames.TvSeason, (uint)season);
+
+        if (tags.TvEpisode is { } episode)
+            WriteUInt32Atom(ms, ItunesAtomNames.TvEpisode, (uint)episode);
+
+        if (!options.PreserveUnrecognizedFrames)
         {
-            foreach (var item in existingIlst.Children)
+            ilstData = ms.ToArray();
+            return true;
+        }
+
+        if (NativeFieldSelector.GetFieldsToWrite(tags, MediaTagType.Mp4) is { } nativeFields)
+        {
+            foreach (var field in nativeFields)
             {
-                if (!IsRegeneratedItem(item.Type))
-                    ms.Write(GetAtomBytes(item, moovAtom, moovData));
+                if (!IsValidNativeItemType(field.Id))
+                {
+                    error = $"'{field.Id}' cannot be written as a native MP4 item: an item type has four Latin-1 characters, and is not one a property of MediaTagInfo represents or that has a meaning in the movie structure.";
+                    return false;
+                }
+
+                if (field.Flags != 0)
+                {
+                    error = $"The native MP4 item '{field.Id}' has the flags {field.Flags}: MP4 items have no flags.";
+                    return false;
+                }
+
+                ms.Write(BuildAtom(field.Id, field.Data));
+            }
+        }
+        else
+        {
+            // Items this writer does not produce — sort names, the encoder tool, the gapless flag — are the
+            // user's data and are carried through instead of being dropped.
+            var existingIlst = moovAtom.FindChild("udta")?.FindChild("meta")?.FindChild("ilst");
+            if (existingIlst is not null)
+            {
+                foreach (var item in existingIlst.Children)
+                {
+                    if (!ItunesAtomNames.IsRegenerated(item.Type))
+                        ms.Write(GetAtomBytes(item, moovAtom, moovData));
+                }
             }
         }
 
         ilstData = ms.ToArray();
         return true;
+    }
+
+    /// <summary>
+    /// Gets whether a native field can be written as an item that reads back as a native field. The reader parses the
+    /// content of the other types, and the writer adjusts the content of a chunk offset table.
+    /// </summary>
+    internal static bool IsValidNativeItemType(string type)
+    {
+        if (type.Length != 4 || type.Any(c => c > 0xFF))
+            return false;
+
+        return !Mp4Atom.IsContainerAtom(type, parentType: "ilst") && type is not (Mp4Atom.ChunkOffsetTable or Mp4Atom.ChunkOffsetTable64);
     }
 
     /// <summary>
@@ -394,18 +450,6 @@ internal sealed class Mp4Writer : IMediaTagWriter
         return (ItunesMean, key);
     }
 
-    private static bool IsRegeneratedItem(string atomType)
-    {
-        // gnre is replaced by the ©gen text Mp4Reader read it into. Keeping it would leave a stale genre
-        // that a genre change or removal does not affect.
-        return atomType is ItunesAtomNames.Title or ItunesAtomNames.Artist or ItunesAtomNames.Album
-            or ItunesAtomNames.AlbumArtist or ItunesAtomNames.Genre or ItunesAtomNames.GenreId or ItunesAtomNames.Year
-            or ItunesAtomNames.TrackNumber or ItunesAtomNames.DiscNumber or ItunesAtomNames.Composer
-            or ItunesAtomNames.Conductor or ItunesAtomNames.Comment or ItunesAtomNames.Lyrics
-            or ItunesAtomNames.Copyright or ItunesAtomNames.Bpm or ItunesAtomNames.Compilation
-            or ItunesAtomNames.CoverArt or ItunesAtomNames.Freeform;
-    }
-
     private static void WriteTextAtom(MemoryStream ms, string atomType, string? value)
     {
         if (string.IsNullOrEmpty(value))
@@ -427,6 +471,13 @@ internal sealed class Mp4Writer : IMediaTagWriter
     {
         var data = new byte[2];
         BinaryPrimitives.WriteUInt16BigEndian(data, value);
+        WriteDataAtom(ms, atomType, 21, data); // type indicator 21 = signed integer
+    }
+
+    private static void WriteUInt32Atom(MemoryStream ms, string atomType, uint value)
+    {
+        var data = new byte[4];
+        BinaryPrimitives.WriteUInt32BigEndian(data, value);
         WriteDataAtom(ms, atomType, 21, data); // type indicator 21 = signed integer
     }
 

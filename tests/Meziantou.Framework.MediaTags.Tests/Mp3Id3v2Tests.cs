@@ -754,6 +754,65 @@ public sealed class Mp3Id3v2Tests
     }
 
     [Fact]
+    public void ReadTags_ExposesTheFramesItDoesNotRead_AsNativeFields()
+    {
+        var bytes = BuildId3Tag(3, 0,
+            ("TIT2", 0, TextBody("Title")),
+            ("TORY", 0, TextBody("1999")),
+            ("PRIV", 0x2000, [.. "owner"u8, 0, 1, 2, 3]), // ID3v2.3 read-only flag
+            ("COMM", 0, CommentBody("iTunNORM", " 00000A2B")),
+            ("TENC", 0x8000, TextBody("Encoder"))); // Tag alter preservation: not kept
+
+        var tags = ReadMp3(bytes);
+
+        Assert.Equal("Title", tags.Title);
+        Assert.Equal(["TDOR", "PRIV", "COMM"], tags.NativeFields!.Select(field => field.Id));
+        Assert.All(tags.NativeFields!, field => Assert.Equal(MediaTagType.Id3v2, field.TagType));
+        Assert.Equal(TextBody("1999"), tags.NativeFields![0].Data);
+        Assert.Equal([.. "owner"u8, 0, 1, 2, 3], tags.NativeFields[1].Data);
+        Assert.Equal(0x1000, tags.NativeFields[1].Flags); // The ID3v2.4 read-only flag
+    }
+
+    [Fact]
+    public void WriteTags_NativeFields_ReplaceTheFramesOfTheFile()
+    {
+        var bytes = BuildId3Tag(4, 0,
+            ("TIT2", 0, TextBody("Title")),
+            ("TPUB", 0, TextBody("Label")),
+            ("PRIV", 0, [.. "owner"u8, 0, 1, 2, 3]));
+
+        var tags = ReadMp3(bytes);
+        tags.NativeFields!.RemoveAt(tags.NativeFields.ToList().FindIndex(field => field.Id == "PRIV"));
+        tags.NativeFields.Add(new MediaNativeField { TagType = MediaTagType.Id3v2, Id = "UFID", Data = [.. "http://musicbrainz.org"u8, 0, .. "id"u8] });
+        var written = WriteMp3(bytes, tags);
+
+        var frames = ReadFrameIds(written);
+        Assert.Contains("TPUB", frames);
+        Assert.Contains("UFID", frames);
+        Assert.DoesNotContain("PRIV", frames);
+        Assert.Equal(["TPUB", "UFID"], ReadMp3(written).NativeFields!.Select(field => field.Id));
+    }
+
+    [Theory]
+    [InlineData("TIT2", 0)]
+    [InlineData("TXXX", 0)]
+    [InlineData("tpub", 0)]
+    [InlineData("TPB", 0)]
+    [InlineData("TPUB", 0x4000)]
+    [InlineData("TPUB", 0x10000)]
+    [InlineData("COMM", 0)]
+    public void WriteTags_InvalidNativeField_IsRefused(string frameId, int flags)
+    {
+        var tags = new MediaTagInfo { NativeFields = [new MediaNativeField { TagType = MediaTagType.Id3v2, Id = frameId, Data = CommentBody("", "text"), Flags = flags }] };
+
+        using var output = new MemoryStream();
+        var result = MediaFile.WriteTags(new MemoryStream(File.ReadAllBytes(GetTestFilePath("basic.mp3")), writable: false), output, tags, MediaFormat.Mp3);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MediaTagError.InvalidTagData, result.Error);
+    }
+
+    [Fact]
     public void RemoveTags_AlsoRemovesTheFramesItDoesNotRead()
     {
         var bytes = BuildId3Tag(4, 0, ("TPUB", 0, TextBody("Label")));

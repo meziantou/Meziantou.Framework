@@ -176,6 +176,29 @@ internal static class TagFieldMapping
         return isValid;
     }
 
+    /// <summary>
+    /// Formats a "number/total" value, as ID3v2 and APEv2 store track and disc numbers. Returns <see langword="null"/> when
+    /// neither part is set.
+    /// </summary>
+    public static string? FormatNumberPair(int? number, int? total)
+    {
+        if (number is null && total is null)
+            return null;
+
+        if (total is null)
+            return number!.Value.ToString(CultureInfo.InvariantCulture);
+
+        // "0/total" is how the format expresses a known total with an unknown position.
+        var numberPart = (number ?? 0).ToString(CultureInfo.InvariantCulture);
+        return numberPart + "/" + total.Value.ToString(CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Gets the position part of a "number/total" value. "0/total" is how <see cref="FormatNumberPair"/> stores a known total
+    /// with an unknown position, so reading it as position 0 would invent a value on every read-modify-write.
+    /// </summary>
+    public static int? GetPosition(int? number, int? total) => number is 0 && total is not null ? null : number;
+
     public static string FormatGain(double value) => value.ToString("F2", CultureInfo.InvariantCulture) + " dB";
 
     public static string FormatPeak(double value) => value.ToString("F6", CultureInfo.InvariantCulture);

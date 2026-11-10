@@ -10,31 +10,40 @@ internal sealed class Mp4Reader : IMediaTagReader
         try
         {
             stream.Position = 0;
-            var tags = new MediaTagInfo();
+            var tags = new MediaTagInfo { NativeFields = [] };
 
             // Reading is best effort: whatever atoms were parsed before a malformed one still carry usable
             // tags, and unlike the writer nothing is destroyed by using them.
             var atoms = Mp4Atom.ReadAtoms(stream, stream.Length, out _);
             tags.Duration = TryReadDuration(atoms);
+            ReadVideoSize(atoms, tags);
 
             // Navigate to moov.udta.meta.ilst
             var ilst = Mp4Atom.FindPath(atoms, "moov", "udta", "meta", "ilst");
-            if (ilst is null)
-                return MediaTagResult<MediaTagInfo>.Success(tags); // No metadata
-
-            foreach (var item in ilst.Children)
+            foreach (var item in ilst?.Children ?? [])
             {
-                ProcessIlstItem(item, tags);
+                if (ItunesAtomNames.IsRegenerated(item.Type))
+                {
+                    ProcessIlstItem(item, tags);
+                }
+                else if (Mp4Writer.IsValidNativeItemType(item.Type) && TryReadNativeField(stream, item) is { } nativeField)
+                {
+                    tags.NativeFields.Add(nativeField);
+                }
             }
 
             // iTunes stores its built-in genres as an index in gnre rather than as text in ©gen. The text
             // wins when both are present, whatever their order.
-            if (tags.Genre is null && ilst.FindChild(ItunesAtomNames.GenreId)?.FindChild("data")?.Data is { Length: >= 10 } genreData)
+            if (tags.Genre is null && ilst?.FindChild(ItunesAtomNames.GenreId)?.FindChild("data")?.Data is { Length: >= 10 } genreData)
             {
                 var genreIndex = BinaryPrimitives.ReadUInt16BigEndian(genreData.AsSpan(8));
                 if (genreIndex is > 0 and <= 256)
                     tags.Genre = Id3v1.Id3v1Genres.GetGenre((byte)(genreIndex - 1));
             }
+
+            // QuickTime files store some of the fields as text records of udta. The metadata list takes precedence.
+            if (Mp4Atom.FindPath(atoms, "moov", "udta") is { } userData)
+                QuickTimeUserData.Apply(userData, tags);
 
             return MediaTagResult<MediaTagInfo>.Success(tags);
         }
@@ -43,6 +52,50 @@ internal sealed class Mp4Reader : IMediaTagReader
             return MediaTagResult<MediaTagInfo>.Failure(error, ex.Message);
         }
     }
+
+    /// <summary>Reads an item the writer does not regenerate, which it keeps as is.</summary>
+    private static MediaNativeField? TryReadNativeField(Stream stream, Mp4Atom item)
+    {
+        stream.Position = item.Position + item.HeaderSize;
+        if (!StreamHelpers.TryReadExact(stream, item.Size - item.HeaderSize, Mp4Atom.MaxMoovSize, out var data))
+            return null;
+
+        return new MediaNativeField { TagType = MediaTagType.Mp4, Id = item.Type, Data = data };
+    }
+
+    /// <summary>Reads the size of the first video track from its track header, whose width and height are 16.16 fixed-point values.</summary>
+    private static void ReadVideoSize(List<Mp4Atom> atoms, MediaTagInfo tags)
+    {
+        var moovAtom = Mp4Atom.FindPath(atoms, "moov");
+        if (moovAtom is null)
+            return;
+
+        foreach (var trackAtom in moovAtom.Children)
+        {
+            if (trackAtom.Type != "trak" || !HasHandler(trackAtom.FindChild("mdia")?.FindChild("hdlr")?.Data, "vide"u8))
+                continue;
+
+            var trackHeader = trackAtom.FindChild("tkhd")?.Data;
+            if (trackHeader is not { Length: > 0 })
+                continue;
+
+            var sizeOffset = trackHeader[0] == 1 ? 88 : 76;
+            if (trackHeader.Length < sizeOffset + 8)
+                continue;
+
+            var width = BinaryPrimitives.ReadUInt32BigEndian(trackHeader.AsSpan(sizeOffset)) >> 16;
+            var height = BinaryPrimitives.ReadUInt32BigEndian(trackHeader.AsSpan(sizeOffset + 4)) >> 16;
+            if (width > 0 && height > 0)
+            {
+                tags.VideoWidth = (int)width;
+                tags.VideoHeight = (int)height;
+                return;
+            }
+        }
+    }
+
+    private static bool HasHandler(byte[]? handlerData, ReadOnlySpan<byte> handlerType)
+        => handlerData is { Length: >= 12 } && handlerData.AsSpan(8, 4).SequenceEqual(handlerType);
 
     private static TimeSpan? TryReadDuration(List<Mp4Atom> atoms)
     {
@@ -69,18 +122,10 @@ internal sealed class Mp4Reader : IMediaTagReader
         if (mediaAtom is null)
             return null;
 
-        if (!IsSoundTrack(mediaAtom.FindChild("hdlr")?.Data))
+        if (!HasHandler(mediaAtom.FindChild("hdlr")?.Data, "soun"u8))
             return null;
 
         return TryReadDurationFromFullBox(mediaAtom.FindChild("mdhd")?.Data);
-    }
-
-    private static bool IsSoundTrack(byte[]? handlerData)
-    {
-        if (handlerData is null || handlerData.Length < 12)
-            return false;
-
-        return handlerData[8] == 's' && handlerData[9] == 'o' && handlerData[10] == 'u' && handlerData[11] == 'n';
     }
 
     private static TimeSpan? TryReadDurationFromFullBox(byte[]? data)
@@ -217,6 +262,33 @@ internal sealed class Mp4Reader : IMediaTagReader
                 if (tags.IsCompilation is null && valueData.Length >= 1)
                     tags.IsCompilation = valueData[0] != 0;
                 break;
+            case ItunesAtomNames.MediaKind:
+                if (tags.MediaKind is null && TryReadInteger(valueData, out var mediaKind) && mediaKind <= byte.MaxValue)
+                    tags.MediaKind = (MediaKind)mediaKind;
+                break;
+            case ItunesAtomNames.Description:
+                tags.Description ??= ReadUtf8Value(valueData);
+                break;
+            case ItunesAtomNames.LongDescription:
+                tags.LongDescription ??= ReadUtf8Value(valueData);
+                break;
+            case ItunesAtomNames.TvShow:
+                tags.TvShow ??= ReadUtf8Value(valueData);
+                break;
+            case ItunesAtomNames.TvNetwork:
+                tags.TvNetwork ??= ReadUtf8Value(valueData);
+                break;
+            case ItunesAtomNames.TvEpisodeId:
+                tags.TvEpisodeId ??= ReadUtf8Value(valueData);
+                break;
+            case ItunesAtomNames.TvSeason:
+                if (tags.TvSeason is null && TryReadInteger(valueData, out var season) && season <= int.MaxValue)
+                    tags.TvSeason = (int)season;
+                break;
+            case ItunesAtomNames.TvEpisode:
+                if (tags.TvEpisode is null && TryReadInteger(valueData, out var episode) && episode <= int.MaxValue)
+                    tags.TvEpisode = (int)episode;
+                break;
             case ItunesAtomNames.Freeform:
                 // Freeform atoms: check mean/name sub-atoms
                 ProcessFreeformAtom(item, tags);
@@ -271,6 +343,21 @@ internal sealed class Mp4Reader : IMediaTagReader
         {
             tags.CustomFields.TryAdd(mean + ":" + name, value);
         }
+    }
+
+    /// <summary>Reads a big-endian unsigned integer of 1, 2, 4 or 8 bytes, the sizes iTunes uses for integer items.</summary>
+    private static bool TryReadInteger(ReadOnlySpan<byte> data, out ulong value)
+    {
+        value = data.Length switch
+        {
+            1 => data[0],
+            2 => BinaryPrimitives.ReadUInt16BigEndian(data),
+            4 => BinaryPrimitives.ReadUInt32BigEndian(data),
+            8 => BinaryPrimitives.ReadUInt64BigEndian(data),
+            _ => ulong.MaxValue,
+        };
+
+        return data.Length is 1 or 2 or 4 or 8;
     }
 
     private static string ReadUtf8Value(ReadOnlySpan<byte> data) => TrimTrailingNullCharacters(Encoding.UTF8.GetString(data));

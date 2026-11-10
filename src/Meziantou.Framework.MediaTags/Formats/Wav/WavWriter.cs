@@ -34,12 +34,9 @@ internal sealed class WavWriter : IMediaTagWriter
 
             // Build new ID3v2 tag, carrying over the frames of the existing one that this library does not read
             var existingTag = chunks.Find(chunk => RiffChunk.IsId3Chunk(chunk.Id) && chunk.Data is not null);
-            List<byte[]> preservedFrames = [];
-            if (existingTag?.Data is { } existingTagData)
-            {
-                using var existingTagStream = new MemoryStream(existingTagData, writable: false);
-                preservedFrames = Id3v2.Id3v2Writer.ReadFramesToPreserve(existingTagStream, options);
-            }
+            using var existingTagStream = existingTag?.Data is { } existingTagData ? new MemoryStream(existingTagData, writable: false) : null;
+            if (!Id3v2.Id3v2Writer.TryGetFramesToWrite(existingTagStream, tags, options, out var preservedFrames, out var framesError))
+                return MediaTagResult.Failure(MediaTagError.InvalidTagData, framesError);
 
             if (!Id3v2.Id3v2Writer.TryBuildTag(tags, options.Id3v2PaddingSize, preservedFrames, out var id3v2Tag, out var buildError))
                 return MediaTagResult.Failure(MediaTagError.InvalidTagData, buildError);

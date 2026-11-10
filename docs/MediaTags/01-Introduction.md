@@ -1,11 +1,12 @@
 ---
 title: Introduction
-description: Read and write the title, artist, album, artwork and other tags of audio files with one API for every format.
+description: Read and write the title, artist, album, artwork and other tags of audio and video files with one API for every format.
 ---
 
-`Meziantou.Framework.MediaTags` reads and writes the metadata of audio files: title, artist, album, track numbers,
-artwork, lyrics, ReplayGain values and more. One type, [MediaTagInfo](cref:Meziantou.Framework.MediaTags.MediaTagInfo), holds the tags of every format, so the same code
-works for an MP3 file and a FLAC file.
+`Meziantou.Framework.MediaTags` reads and writes the metadata of audio and video files: title, artist, album, track
+numbers, artwork, lyrics, ReplayGain values, TV show details and more. One type, [MediaTagInfo](cref:Meziantou.Framework.MediaTags.MediaTagInfo), holds the tags of every
+format, so the same code works for an MP3 file and a FLAC file. The fields of a format that no property represents are
+still readable and writable, as [native fields](03-ReadingTags.md#native-fields).
 
 ## Supported formats
 
@@ -15,9 +16,13 @@ works for an MP3 file and a FLAC file.
 | OGG Vorbis | [OggVorbis](cref:Meziantou.Framework.MediaTags.MediaFormat.OggVorbis) | Vorbis comments |
 | OGG Opus | [OggOpus](cref:Meziantou.Framework.MediaTags.MediaFormat.OggOpus) | Vorbis comments |
 | FLAC | [Flac](cref:Meziantou.Framework.MediaTags.MediaFormat.Flac) | Vorbis comments and picture blocks |
-| MP4 / M4A | [Mp4](cref:Meziantou.Framework.MediaTags.MediaFormat.Mp4) | iTunes-style metadata |
+| MP4 / M4A / M4V / MOV | [Mp4](cref:Meziantou.Framework.MediaTags.MediaFormat.Mp4) | iTunes-style metadata, audio or video |
 | WAV | [Wav](cref:Meziantou.Framework.MediaTags.MediaFormat.Wav) | An embedded ID3v2 tag, or `LIST`/`INFO` chunks |
 | AIFF | [Aiff](cref:Meziantou.Framework.MediaTags.MediaFormat.Aiff) | An embedded ID3v2 tag |
+| Monkey's Audio (APE) | [MonkeysAudio](cref:Meziantou.Framework.MediaTags.MediaFormat.MonkeysAudio) | APEv2 |
+| WavPack | [WavPack](cref:Meziantou.Framework.MediaTags.MediaFormat.WavPack) | APEv2 |
+| Musepack | [Musepack](cref:Meziantou.Framework.MediaTags.MediaFormat.Musepack) | APEv2 |
+| ASF (WMA / WMV) | [Asf](cref:Meziantou.Framework.MediaTags.MediaFormat.Asf) | ASF attributes, audio or video |
 
 The fields each format stores are listed in [Format support](05-FormatSupport.md).
 
@@ -36,7 +41,7 @@ that walks a music library does not need a `try` block for each file.
 ## Namespace
 
 Every type is in the [Meziantou.Framework.MediaTags](cref:Meziantou.Framework.MediaTags) namespace: [MediaFile](cref:Meziantou.Framework.MediaTags.MediaFile), [MediaTagInfo](cref:Meziantou.Framework.MediaTags.MediaTagInfo), [MediaPicture](cref:Meziantou.Framework.MediaTags.MediaPicture),
-[ReplayGainInfo](cref:Meziantou.Framework.MediaTags.ReplayGainInfo), [MediaTagWriteOptions](cref:Meziantou.Framework.MediaTags.MediaTagWriteOptions) and the result types.
+[ReplayGainInfo](cref:Meziantou.Framework.MediaTags.ReplayGainInfo), [MediaNativeField](cref:Meziantou.Framework.MediaTags.MediaNativeField), [MediaTagWriteOptions](cref:Meziantou.Framework.MediaTags.MediaTagWriteOptions) and the result types.
 
 ## Next steps
 

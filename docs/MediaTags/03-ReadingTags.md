@@ -1,6 +1,6 @@
 ---
 title: Reading tags
-description: Read the fields, pictures and custom fields of an audio file or stream, detect its format, and handle files that cannot be read.
+description: Read the fields, pictures, custom and native fields of an audio or video file or stream, detect its format, and handle files that cannot be read.
 ---
 
 [MediaFile.ReadTags](cref:Meziantou.Framework.MediaTags.MediaFile.ReadTags) reads the tags of a file, or of a stream, into a [MediaTagInfo](cref:Meziantou.Framework.MediaTags.MediaTagInfo):
@@ -34,7 +34,11 @@ A field is `null` when the file does not have it.
 | [Pictures](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Pictures) | The embedded pictures, such as the album art. |
 | [ReplayGain](cref:Meziantou.Framework.MediaTags.MediaTagInfo.ReplayGain) | The track and album gains, in dB, and peaks. |
 | [MusicBrainzTrackId](cref:Meziantou.Framework.MediaTags.MediaTagInfo.MusicBrainzTrackId), [MusicBrainzArtistId](cref:Meziantou.Framework.MediaTags.MediaTagInfo.MusicBrainzArtistId), [MusicBrainzAlbumId](cref:Meziantou.Framework.MediaTags.MediaTagInfo.MusicBrainzAlbumId), [MusicBrainzReleaseGroupId](cref:Meziantou.Framework.MediaTags.MediaTagInfo.MusicBrainzReleaseGroupId) | MusicBrainz identifiers. |
+| [MediaKind](cref:Meziantou.Framework.MediaTags.MediaTagInfo.MediaKind), [Description](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Description), [LongDescription](cref:Meziantou.Framework.MediaTags.MediaTagInfo.LongDescription) | The kind of media (music, movie, TV show…) and its descriptions. |
+| [TvShow](cref:Meziantou.Framework.MediaTags.MediaTagInfo.TvShow), [TvNetwork](cref:Meziantou.Framework.MediaTags.MediaTagInfo.TvNetwork), [TvEpisodeId](cref:Meziantou.Framework.MediaTags.MediaTagInfo.TvEpisodeId), [TvSeason](cref:Meziantou.Framework.MediaTags.MediaTagInfo.TvSeason), [TvEpisode](cref:Meziantou.Framework.MediaTags.MediaTagInfo.TvEpisode) | The TV show an episode belongs to. |
+| [VideoWidth](cref:Meziantou.Framework.MediaTags.MediaTagInfo.VideoWidth), [VideoHeight](cref:Meziantou.Framework.MediaTags.MediaTagInfo.VideoHeight) | The size of the video, read from the video stream. |
 | [CustomFields](cref:Meziantou.Framework.MediaTags.MediaTagInfo.CustomFields) | The other text fields, by name. |
+| [NativeFields](cref:Meziantou.Framework.MediaTags.MediaTagInfo.NativeFields) | The frames, items and attributes of the format that no other property represents. |
 | [Format](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Format) | The format of the file the tags were read from. |
 
 Not every format stores every field; see [Format support](05-FormatSupport.md).
@@ -63,6 +67,70 @@ Assert.NotEmpty(cover.Data); // Save it with File.WriteAllBytes("cover.png", cov
 [CustomFields](cref:Meziantou.Framework.MediaTags.MediaTagInfo.CustomFields) holds the text fields that have no property, such as a `MOOD` Vorbis comment, keyed by name with a
 case-insensitive comparison. It also holds a field whose value cannot be parsed, such as a Vorbis `TRACKNUMBER=A1`,
 so that writing the tags back keeps it.
+
+## Video files
+
+MP4, M4V and QuickTime MOV files, and WMV files, are read like audio files. The MP4 items of a movie or a TV show have their
+own properties, and the size of the video comes from the video stream:
+
+<!-- ref:../../tests/Meziantou.Framework.MediaTags.Tests/Mp4Tests.cs;region=MediaFile_ReadVideoTags;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tags = MediaFile.ReadTags("TestFiles/tv_show.m4v").Value;
+Assert.Equal(MediaKind.TvShow, tags.MediaKind);
+Assert.Equal("Test Show", tags.TvShow);
+Assert.Equal(1, tags.TvSeason);
+Assert.Equal(2, tags.TvEpisode);
+Assert.Equal("Episode Title", tags.Title);
+
+// Read from the video stream, never written
+Assert.Equal(64, tags.VideoWidth);
+Assert.Equal(48, tags.VideoHeight);
+```
+<!-- endref -->
+
+[Duration](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Duration), [VideoWidth](cref:Meziantou.Framework.MediaTags.MediaTagInfo.VideoWidth) and [VideoHeight](cref:Meziantou.Framework.MediaTags.MediaTagInfo.VideoHeight) describe the streams, not the tags: a write never changes them.
+
+## Native fields
+
+[NativeFields](cref:Meziantou.Framework.MediaTags.MediaTagInfo.NativeFields) holds what the other properties do not: the ID3v2 frames such as `PRIV`, `UFID` or the
+publisher (`TPUB`), the MP4 items such as the encoder (`©too`), the binary APEv2 items, and the ASF attributes that are
+not text. Each [MediaNativeField](cref:Meziantou.Framework.MediaTags.MediaNativeField) has the [TagType](cref:Meziantou.Framework.MediaTags.MediaNativeField.TagType) it belongs to, its [Id](cref:Meziantou.Framework.MediaTags.MediaNativeField.Id), its [Data](cref:Meziantou.Framework.MediaTags.MediaNativeField.Data) as stored, and its
+[Flags](cref:Meziantou.Framework.MediaTags.MediaNativeField.Flags):
+
+| [MediaTagType](cref:Meziantou.Framework.MediaTags.MediaTagType) | Id | Data | Flags |
+| --- | --- | --- | --- |
+| [Id3v2](cref:Meziantou.Framework.MediaTags.MediaTagType.Id3v2) | The ID3v2.4 frame identifier; ID3v2.3 frames are converted | The content of the frame | The ID3v2.4 frame flags |
+| [Mp4](cref:Meziantou.Framework.MediaTags.MediaTagType.Mp4) | The type of the item | The content of the item: its `data` atoms, headers included | 0 |
+| [Ape](cref:Meziantou.Framework.MediaTags.MediaTagType.Ape) | The key of the item | The value | Binary (2) or external link (4), and read-only (1) |
+| [Asf](cref:Meziantou.Framework.MediaTags.MediaTagType.Asf) | The name of the attribute | The value; a boolean is a 32-bit 0 or 1 | The data type: byte array (1), boolean (2), 32-bit (3), 64-bit (4) or 16-bit (5) integer, GUID (6) |
+
+Reading always sets the list, empty for a format that has none, such as FLAC, whose Vorbis comments are all
+[CustomFields](cref:Meziantou.Framework.MediaTags.MediaTagInfo.CustomFields). The list can be changed and written back:
+
+<!-- ref:../../tests/Meziantou.Framework.MediaTags.Tests/ApeTests.cs;region=MediaFile_NativeFields;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tags = MediaFile.ReadTags("TestFiles/basic.ape").Value;
+
+// The items of the APE tag that no property represents
+var privateData = tags.NativeFields!.Single(field => field.Id == "Private Data");
+Assert.Equal(MediaTagType.Ape, privateData.TagType);
+
+// Replace it with an external link
+tags.NativeFields!.Remove(privateData);
+tags.NativeFields.Add(new MediaNativeField { TagType = MediaTagType.Ape, Id = "Homepage", Data = "https://example.com"u8.ToArray(), Flags = 4 });
+
+using var input = File.OpenRead("TestFiles/basic.ape");
+using var output = new MemoryStream();
+var result = MediaFile.WriteTags(input, output, tags, MediaFormat.MonkeysAudio);
+Assert.True(result.IsSuccess, result.ErrorMessage);
+
+output.Position = 0;
+var written = MediaFile.ReadTags(output).Value;
+Assert.Equal("Homepage", Assert.Single(written.NativeFields!).Id);
+```
+<!-- endref -->
+
+See [Write the native fields](04-WritingTags.md#write-the-native-fields) for what writing does with them.
 
 ## Errors
 
@@ -124,7 +192,7 @@ foreach (var path in Directory.EnumerateFiles("Music", "*", SearchOption.AllDire
 ## Detect the format
 
 [MediaFile.DetectFormat](cref:Meziantou.Framework.MediaTags.MediaFile.DetectFormat) reads the first bytes of a file to recognize its format, and falls back to its extension. It
-returns `null` for a file that is not a supported audio file:
+returns `null` for a file that is not a supported audio or video file:
 
 <!-- ref:../../tests/Meziantou.Framework.MediaTags.Tests/FlacTests.cs;region=MediaFile_DetectFormat;format=md-fenced-code-block;dedent=true -->
 ```csharp

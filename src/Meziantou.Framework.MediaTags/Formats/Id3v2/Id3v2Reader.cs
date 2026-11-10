@@ -38,6 +38,9 @@ internal static class Id3v2Reader
         {
             var frames = ParseFrames(buffer.AsMemory(0, length), header);
             ApplyFrames(frames, header.MajorVersion, tags);
+
+            // The frames reference the rented buffer, so the native fields copy their data before it is returned.
+            tags.NativeFields = [.. tags.NativeFields ?? [], .. Id3v2Writer.SelectNativeFields(frames, header)];
         }
         finally
         {

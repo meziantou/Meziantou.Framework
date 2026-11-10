@@ -48,11 +48,11 @@ internal sealed class Mp4Atom
     {
         var atoms = new List<Mp4Atom>();
         var remainingCount = MaxCount;
-        complete = ReadAtoms(stream, endPosition, depth: 0, ref remainingCount, atoms);
+        complete = ReadAtoms(stream, endPosition, parentType: "", depth: 0, ref remainingCount, atoms);
         return atoms;
     }
 
-    private static bool ReadAtoms(Stream stream, long endPosition, int depth, ref int remainingCount, List<Mp4Atom> atoms)
+    private static bool ReadAtoms(Stream stream, long endPosition, string parentType, int depth, ref int remainingCount, List<Mp4Atom> atoms)
     {
         if (depth >= MaxDepth)
             throw new InvalidDataException($"MP4 atoms are nested too deeply. The maximum supported depth is {MaxDepth}.");
@@ -102,10 +102,11 @@ internal sealed class Mp4Atom
             var dataSize = size - headerSize;
             var atomEnd = atomPosition + size;
 
-            if (IsContainerAtom(type))
+            if (IsContainerAtom(type, parentType))
             {
-                // For 'meta' atom, skip 4-byte version/flags
-                if (type == "meta")
+                // The 'meta' atom of MP4 starts with a 4-byte version/flags, but the one of QuickTime does not: it starts
+                // with its handler atom.
+                if (type == "meta" && !StartsWithHandlerAtom(stream, dataSize))
                 {
                     if (dataSize < 4)
                         return false;
@@ -113,7 +114,7 @@ internal sealed class Mp4Atom
                     stream.Seek(4, SeekOrigin.Current);
                 }
 
-                if (!ReadAtoms(stream, atomEnd, depth + 1, ref remainingCount, atom.Children))
+                if (!ReadAtoms(stream, atomEnd, type, depth + 1, ref remainingCount, atom.Children))
                     return false;
             }
             else if (dataSize > 0 && dataSize <= GetBufferLimit(type))
@@ -145,7 +146,8 @@ internal sealed class Mp4Atom
             // the writer regenerates covr from the pictures it read, so it would delete it. Any data atom of a
             // moov the writer accepts fits, and the size was already checked against the bytes in the file.
             "data" => MaxMoovSize,
-            "mean" or "name" or "mvhd" or "mdhd" or "hdlr" or ChunkOffsetTable or ChunkOffsetTable64 => StreamHelpers.MaxRecordDataSize,
+            "mean" or "name" or "mvhd" or "mdhd" or "hdlr" or "tkhd" or ChunkOffsetTable or ChunkOffsetTable64 => StreamHelpers.MaxRecordDataSize,
+            _ when QuickTimeUserData.IsTextRecord(type) => StreamHelpers.MaxRecordDataSize,
             _ => 0,
         };
     }
@@ -201,15 +203,24 @@ internal sealed class Mp4Atom
         }
     }
 
-    private static bool IsContainerAtom(string type)
+    /// <summary>
+    /// Gets whether the content of an atom is parsed as atoms: the boxes of the movie structure, and the items of the
+    /// metadata list the reader reads. In QuickTime files, <c>udta</c> also holds text records named like those items.
+    /// </summary>
+    internal static bool IsContainerAtom(string type, string parentType)
     {
-        return type is "moov" or "trak" or "mdia" or "minf" or "stbl" or "udta" or "meta" or "ilst"
-            or ItunesAtomNames.Title or ItunesAtomNames.Artist or ItunesAtomNames.Album
-            or ItunesAtomNames.AlbumArtist or ItunesAtomNames.Genre or ItunesAtomNames.GenreId or ItunesAtomNames.Year
-            or ItunesAtomNames.TrackNumber or ItunesAtomNames.DiscNumber or ItunesAtomNames.Composer
-            or ItunesAtomNames.Conductor or ItunesAtomNames.Comment or ItunesAtomNames.Lyrics
-            or ItunesAtomNames.Copyright or ItunesAtomNames.Bpm
-            or ItunesAtomNames.Compilation or ItunesAtomNames.CoverArt or ItunesAtomNames.Freeform
-            or "aART";
+        return type is "moov" or "trak" or "mdia" or "minf" or "stbl" or "udta" or "meta" or "ilst" || (parentType == "ilst" && ItunesAtomNames.IsRegenerated(type));
+    }
+
+    private static bool StartsWithHandlerAtom(Stream stream, long dataSize)
+    {
+        if (dataSize < 8)
+            return false;
+
+        Span<byte> header = stackalloc byte[8];
+        var position = stream.Position;
+        var read = stream.ReadAtLeast(header, header.Length, throwOnEndOfStream: false);
+        stream.Position = position;
+        return read == header.Length && header[4..].SequenceEqual("hdlr"u8);
     }
 }

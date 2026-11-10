@@ -13,7 +13,7 @@ internal static class Id3v2Writer
     /// </summary>
     /// <param name="tags">The tags to write.</param>
     /// <param name="paddingSize">The number of padding bytes to append.</param>
-    /// <param name="preservedFrames">Complete frames carried over from the existing tag, from <see cref="ReadFramesToPreserve"/>.</param>
+    /// <param name="preservedFrames">Complete frames to write as they are, from <see cref="TryGetFramesToWrite"/>.</param>
     /// <param name="tag">The tag, or an empty array when there is nothing to write.</param>
     /// <param name="errorMessage">Why the tag could not be built.</param>
     /// <returns>
@@ -42,8 +42,8 @@ internal static class Id3v2Writer
 
         // The number and the total share one frame, so writing the frame only when the number is set would
         // discard a total that was supplied on its own.
-        AddTextFrame(frames, Id3v2FrameId.TrackNumber, FormatNumberPair(tags.TrackNumber, tags.TrackTotal));
-        AddTextFrame(frames, Id3v2FrameId.DiscNumber, FormatNumberPair(tags.DiscNumber, tags.DiscTotal));
+        AddTextFrame(frames, Id3v2FrameId.TrackNumber, TagFieldMapping.FormatNumberPair(tags.TrackNumber, tags.TrackTotal));
+        AddTextFrame(frames, Id3v2FrameId.DiscNumber, TagFieldMapping.FormatNumberPair(tags.DiscNumber, tags.DiscTotal));
 
         AddTextFrame(frames, Id3v2FrameId.Composer, tags.Composer);
         AddTextFrame(frames, Id3v2FrameId.Conductor, tags.Conductor);
@@ -158,22 +158,6 @@ internal static class Id3v2Writer
         return true;
     }
 
-    /// <summary>
-    /// Formats an ID3v2 "number/total" value. Returns <see langword="null"/> when neither part is set.
-    /// </summary>
-    private static string? FormatNumberPair(int? number, int? total)
-    {
-        if (number is null && total is null)
-            return null;
-
-        if (total is null)
-            return number!.Value.ToString(CultureInfo.InvariantCulture);
-
-        // "0/total" is how the format expresses a known total with an unknown position.
-        var numberPart = (number ?? 0).ToString(CultureInfo.InvariantCulture);
-        return numberPart + "/" + total.Value.ToString(CultureInfo.InvariantCulture);
-    }
-
     private static void AddTextFrame(List<byte[]> frames, string frameId, string? value)
     {
         if (string.IsNullOrEmpty(value))
@@ -257,36 +241,98 @@ internal static class Id3v2Writer
     }
 
     /// <summary>
-    /// Reads the ID3v2 tag at the current position of the stream, and returns the frames this library does not
-    /// read, converted to ID3v2.4, so they can be carried into the tag that replaces it.
+    /// Gets the frames to write in addition to the ones <see cref="TryBuildTag"/> builds from the properties of
+    /// <paramref name="tags"/>: its native fields, or when it has none, the frames of the existing tag this library does not read.
     /// </summary>
+    /// <param name="existingTag">A stream positioned on the existing ID3v2 tag, or <see langword="null"/> when there is none. Its position is restored.</param>
+    /// <param name="tags">The tags to write.</param>
+    /// <param name="options">The write options.</param>
+    /// <param name="frames">The complete frames.</param>
+    /// <param name="error">Why a native field cannot be written.</param>
     /// <remarks>
-    /// Publisher, sort names, ratings, UFID, PRIV and the like are the user's data. The writer rebuilds the tag
-    /// from <see cref="MediaTagInfo"/>, which cannot represent them, so without this every tag edit deletes them.
-    /// The stream position is restored.
+    /// Publisher, sort names, ratings, UFID, PRIV and the like are the user's data. Without them, every tag edit of a
+    /// <see cref="MediaTagInfo"/> that was not read from the file would delete them.
     /// </remarks>
-    public static List<byte[]> ReadFramesToPreserve(Stream stream, MediaTagWriteOptions options)
+    public static bool TryGetFramesToWrite(Stream? existingTag, MediaTagInfo tags, MediaTagWriteOptions options, out List<byte[]> frames, [NotNullWhen(false)] out string? error)
     {
+        frames = [];
+        error = null;
         if (!options.PreserveUnrecognizedFrames)
-            return [];
+            return true;
 
-        var originalPosition = stream.Position;
+        if (NativeFieldSelector.GetFieldsToWrite(tags, MediaTagType.Id3v2) is { } nativeFields)
+        {
+            foreach (var field in nativeFields)
+            {
+                if (!TryValidateNativeField(field, out error))
+                    return false;
+
+                frames.Add(BuildFrame(field.Id, field.Data, (ushort)field.Flags));
+            }
+
+            return true;
+        }
+
+        if (existingTag is null)
+            return true;
+
+        var originalPosition = existingTag.Position;
         try
         {
-            if (!Id3v2Reader.TryReadFrames(stream, out var header, out var frames))
-                return [];
-
-            return SelectFramesToPreserve(frames, header);
+            if (Id3v2Reader.TryReadFrames(existingTag, out var header, out var existingFrames))
+            {
+                foreach (var field in SelectNativeFields(existingFrames, header))
+                {
+                    frames.Add(BuildFrame(field.Id, field.Data, (ushort)field.Flags));
+                }
+            }
         }
         finally
         {
-            stream.Position = originalPosition;
+            existingTag.Position = originalPosition;
         }
+
+        return true;
     }
 
-    private static List<byte[]> SelectFramesToPreserve(List<Id3v2Frame> frames, in Id3v2Header header)
+    /// <summary>Checks that a native field is a frame the reader reads back as a native field.</summary>
+    private static bool TryValidateNativeField(MediaNativeField field, [NotNullWhen(false)] out string? error)
     {
-        var result = new List<byte[]>();
+        error = null;
+        if (field.Id.Length != 4 || !field.Id.All(c => c is (>= 'A' and <= 'Z') or (>= '0' and <= '9')))
+        {
+            error = $"'{field.Id}' is not a valid ID3v2.4 frame identifier: it has four upper-case letters or digits.";
+            return false;
+        }
+
+        // Tag alter preservation: the frame is discarded when the tag is altered, so it would not read back.
+        if (field.Flags is < 0 or > ushort.MaxValue || (field.Flags & 0x4000) != 0)
+        {
+            error = $"The native ID3v2 frame '{field.Id}' has the flags {field.Flags}, which are not 16-bit ID3v2.4 frame flags without the tag alter preservation flag.";
+            return false;
+        }
+
+        if (IsRegeneratedFrame(field.Id))
+        {
+            error = $"The ID3v2 frame '{field.Id}' is written from a property of MediaTagInfo, and cannot be written as a native field.";
+            return false;
+        }
+
+        // The comment and the lyrics are the COMM and USLT frames without a description.
+        if (field.Id is Id3v2FrameId.Comment or Id3v2FrameId.Lyrics
+            && ((field.Flags & Id3v2Reader.V24EncryptionFlag) != 0 || Id3v2Reader.GetDescription(field.Data) is not { Length: > 0 }))
+        {
+            error = $"A native '{field.Id}' frame must have a description: the one without a description is written from a property of MediaTagInfo.";
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>Gets the frames of a tag this library does not read, converted to ID3v2.4.</summary>
+    internal static List<MediaNativeField> SelectNativeFields(List<Id3v2Frame> frames, in Id3v2Header header)
+    {
+        var result = new List<MediaNativeField>();
 
         // ID3v2.2 frame identifiers have three characters, and there is no general mapping to ID3v2.4 for the
         // frames this library does not know.
@@ -317,16 +363,16 @@ internal static class Id3v2Writer
 
             var preserved = header.MajorVersion == 4
                 ? PreserveV24Frame(frame, header.Unsynchronisation)
-                : PreserveV23Frame(frameId, frame);
+                : PreserveV23Frame(frame);
 
-            if (preserved is not null)
-                result.Add(preserved);
+            if (preserved is var (data, flags))
+                result.Add(new MediaNativeField { TagType = MediaTagType.Id3v2, Id = frameId, Data = data, Flags = flags });
         }
 
         return result;
     }
 
-    private static byte[]? PreserveV24Frame(in Id3v2Frame frame, bool tagIsUnsynchronised)
+    private static (byte[] Data, ushort Flags)? PreserveV24Frame(in Id3v2Frame frame, bool tagIsUnsynchronised)
     {
         // Tag alter preservation: the frame must be discarded when the tag is altered and the frame is unknown.
         if ((frame.Flags & 0x4000) != 0)
@@ -335,15 +381,15 @@ internal static class Id3v2Writer
         // File alter preservation and read-only are kept; the format flags describe the stored content.
         var statusFlags = (ushort)(frame.Flags & 0x3000);
         if (frame.Payload is { } payload)
-            return BuildFrame(frame.Id, payload.Span, statusFlags);
+            return (payload.ToArray(), statusFlags);
 
         // An encrypted frame cannot be decoded, so it is copied as stored. Unsynchronisation declared on the
         // tag applied to it, and the rebuilt tag does not declare it, so the frame has to.
         var flags = tagIsUnsynchronised ? (ushort)(frame.Flags | Id3v2Reader.V24UnsynchronisationFlag) : frame.Flags;
-        return BuildFrame(frame.Id, frame.StoredData.Span, flags);
+        return (frame.StoredData.ToArray(), flags);
     }
 
-    private static byte[]? PreserveV23Frame(string frameId, in Id3v2Frame frame)
+    private static (byte[] Data, ushort Flags)? PreserveV23Frame(in Id3v2Frame frame)
     {
         // Tag alter preservation, and encrypted frames, whose ID3v2.3 layout has no ID3v2.4 equivalent.
         if ((frame.Flags & 0x8000) != 0 || frame.Payload is not { } payload)
@@ -351,7 +397,7 @@ internal static class Id3v2Writer
 
         // ID3v2.3 status flags are one bit to the left of their ID3v2.4 equivalents.
         var statusFlags = (ushort)((frame.Flags >> 1) & 0x3000);
-        return BuildFrame(frameId, payload.Span, statusFlags);
+        return (payload.ToArray(), statusFlags);
     }
 
     /// <summary>

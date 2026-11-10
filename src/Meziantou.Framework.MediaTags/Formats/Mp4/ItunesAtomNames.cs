@@ -25,6 +25,25 @@ internal static class ItunesAtomNames
     public const string Compilation = "cpil";
     public const string CoverArt = "covr";
 
+    // Video items
+    public const string MediaKind = "stik";
+    public const string Description = "desc";
+    public const string LongDescription = "ldes";
+    public const string TvShow = "tvsh";
+    public const string TvNetwork = "tvnn";
+    public const string TvEpisodeId = "tven";
+    public const string TvSeason = "tvsn";
+    public const string TvEpisode = "tves";
+
     // Custom freeform atoms use "----" with mean/name sub-atoms
     public const string Freeform = "----";
+
+    /// <summary>Gets whether the writer regenerates an item from <see cref="MediaTagInfo"/>, rather than keeping it as a native field.</summary>
+    /// <remarks>gnre is replaced by the ©gen text the reader reads it into. Keeping it would leave a stale genre that a genre change or removal does not affect.</remarks>
+    public static bool IsRegenerated(string atomType)
+    {
+        return atomType is Title or Artist or Album or AlbumArtist or Genre or GenreId or Year or TrackNumber or DiscNumber
+            or Composer or Conductor or Comment or Lyrics or Copyright or Bpm or Compilation or CoverArt or Freeform
+            or MediaKind or Description or LongDescription or TvShow or TvNetwork or TvEpisodeId or TvSeason or TvEpisode;
+    }
 }

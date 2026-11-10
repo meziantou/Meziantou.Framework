@@ -3,10 +3,17 @@ title: Limitations
 description: What the library does not do, so you can plan around it.
 ---
 
-- **Audio formats only.** There is no support for video files, images, or audio formats other than those of the
-  [Introduction](01-Introduction.md#supported-formats), such as WMA or APE tags.
-- **One set of fields.** [MediaTagInfo](cref:Meziantou.Framework.MediaTags.MediaTagInfo) exposes the common fields; the frames and items of a format that the library
-  does not read are kept when writing, but you cannot read or change them, except the text fields of [CustomFields](cref:Meziantou.Framework.MediaTags.MediaTagInfo.CustomFields).
+- **Supported formats only.** Formats other than those of the [Introduction](01-Introduction.md#supported-formats), such
+  as Matroska (MKV, WebM), AVI, DSF or TTA files, are not supported.
+- **Stream properties.** Besides the [Duration](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Duration), only the size of a video is read from the streams: there is no codec,
+  bit rate, sample rate or channel count.
+- **Some fields are kept but not read.** The metadata of iPhone videos (QuickTime `mdta` keys such as
+  `com.apple.quicktime.location.ISO6709`) and the ASF attributes of a single stream or language are kept when writing,
+  but are neither [native fields](03-ReadingTags.md#native-fields) nor properties.
+- **ID3v2.2 frames are dropped.** The frames of an ID3v2.2 tag that no property represents have no general ID3v2.4
+  identifier: they are not native fields, and writing removes them.
+- **APE tags of MP3 files are converted.** The APEv2 tag of an MP3 file is read, but writing replaces it with the ID3v2
+  tag, without its binary items.
 - **Writing replaces.** There is no merge: read the tags before writing them; see
   [Writing replaces the tags](04-WritingTags.md#writing-replaces-the-tags).
 - **No OGG multiplexing.** Multiplexed and chained OGG streams are refused when writing.

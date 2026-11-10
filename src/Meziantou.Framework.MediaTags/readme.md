@@ -4,13 +4,17 @@
 
 ## Supported formats
 
-- MP3 (ID3v1 and ID3v2)
+- MP3 (ID3v1 and ID3v2, and APEv2 on read)
 - OGG Vorbis
 - OGG Opus
 - FLAC
-- MP4 / M4A
+- MP4 / M4A / M4V / MOV, audio and video
 - WAV
 - AIFF
+- Monkey's Audio, WavPack and Musepack (APEv2)
+- WMA / WMV (ASF)
+
+The frames, items and attributes that no property represents are available as native fields (`MediaTagInfo.NativeFields`).
 
 ## Usage
 

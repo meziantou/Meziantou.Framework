@@ -568,6 +568,7 @@ public class TestHtmlAttributes
     [InlineData("a [l](u){.c} b\n", nameof(LinkInline), "a [l](u){#x .c} b\n", "<p>a <a href=\"u\" id=\"x\" class=\"c\">l</a> b</p>\n")]
     [InlineData("a *e*{.c} b\n", nameof(EmphasisInline), "a *e*{#x .c} b\n", "<p>a <em id=\"x\" class=\"c\">e</em> b</p>\n")]
     [InlineData("Setext [l](u)\n===\n", nameof(LinkInline), "Setext [l](u){#x}\n===\n", "<h1>Setext <a href=\"u\" id=\"x\">l</a></h1>\n")]
+    [InlineData("a\n``` b c`\n", nameof(ParagraphBlock), "a\n``` b c` {#x}\n", "<p id=\"x\">a\n``` b c`</p>\n")]
     public void GenericAttributesRoundtripChangedAttributes(string markdown, string type, string expected, string expectedHtml)
     {
         var result = RoundtripWithChangedAttributes(markdown, new MarkdownPipelineBuilder().UseGenericAttributes(), type, attributes => attributes.Id = "x");

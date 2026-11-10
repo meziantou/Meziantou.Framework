@@ -283,7 +283,7 @@ A worker thread that exits is restarted, and its state is lost: its calls in pro
 
 ## Cancellation
 
-Canceling a call stops waiting for its result, and aborts the `AbortSignal` of the call, `nodeJsHost.signal`. JavaScript code cannot be interrupted: pass the signal to the APIs that accept one (e.g. `fetch`, or `setTimeout` of `node:timers/promises`), or check it regularly, so the code stops. The signal is `undefined` in code that does not belong to a call, such as the top-level code of a module.
+Canceling a call stops waiting for its result, and aborts the `AbortSignal` of the call, `nodeJsHost.signal`. JavaScript code cannot be interrupted: pass the signal to the APIs that accept one (e.g. `fetch`, or `setTimeout` of `node:timers/promises`), or check it regularly, so the code stops. The signal is `undefined` in the top-level code of the modules loaded by `InvokeAsync` and by the `require` function of evaluated code. Modules that the code of a call loads itself (`import()`, or the `require` of a CommonJS module) see the signal of that call while they load.
 
 <!-- ref:../../tests/Meziantou.Framework.NodeJs.Tests/NodeJsHostTests.cs;region=NodeJs_CancellationSignal;format=md-fenced-code-block;dedent=true -->
 ```csharp

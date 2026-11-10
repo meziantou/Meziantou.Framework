@@ -50,8 +50,9 @@ export async function render(document) {
   [InvokeAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.InvokeAsync) and the methods called through a
   [JSReference](cref:Meziantou.Framework.NodeJs.JSReference), and in the callbacks of the promises, timers and I/O
   operations that the call starts.
-- It is `undefined` in the code that does not belong to a call, such as the top-level code of a module, which is shared
-  by all the calls.
+- It is `undefined` in the top-level code of the modules loaded by [InvokeAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.InvokeAsync) and by the `require` function of
+  evaluated code, as these modules are shared by all the calls. The modules that the code of a call loads itself, using
+  `import()` or the `require` function of a CommonJS module, see the signal of that call while they load.
 - Its `reason` is an `AbortError`. The error thrown by the code of a canceled call is ignored, as the host no longer
   waits for its result.
 - The signal of a call that completes is never aborted.

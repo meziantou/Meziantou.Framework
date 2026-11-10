@@ -1197,6 +1197,22 @@ public sealed class JsonPathEvaluateTests
     }
 
     [Fact]
+    public async Task EvaluateStream_ReturnsAMatchOnceItsValueIsComplete()
+    {
+        // The producer waits for the consumer after sending the first element: the match must come without another read
+        string[] chunks = ["""[{"id":""", "1},"];
+        using var stream = new ChunkStream(chunks);
+        Assert.Equal("""{"id":1}""", JsonPath.Parse("$[*]").EvaluateStream(stream).First().Value!.ToJsonString());
+
+        using var asyncStream = new ChunkStream(chunks);
+        await foreach (var match in JsonPath.Parse("$[*]").EvaluateStreamAsync(asyncStream))
+        {
+            Assert.Equal("""{"id":1}""", match.Value!.ToJsonString());
+            break;
+        }
+    }
+
+    [Fact]
     public void EvaluateStream_LargeSelectedValueReadInSmallChunks()
     {
         // A selected value is only checked for completeness once the buffer is full, not after each read: checking it
@@ -3833,6 +3849,49 @@ internal sealed class GeneratedArrayStream(int count) : Stream
         _position += length;
         return length;
     }
+
+    public override void Flush() => throw new NotSupportedException();
+
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+    public override void SetLength(long value) => throw new NotSupportedException();
+
+    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+}
+/// <summary>A stream that returns one chunk per read, and fails when it is read past them, as a stream that waits would block.</summary>
+internal sealed class ChunkStream(string[] chunks) : Stream
+{
+    private int _index;
+
+    public override bool CanRead => true;
+
+    public override bool CanSeek => false;
+
+    public override bool CanWrite => false;
+
+    public override long Length => throw new NotSupportedException();
+
+    public override long Position
+    {
+        get => throw new NotSupportedException();
+        set => throw new NotSupportedException();
+    }
+
+    public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+    public override int Read(Span<byte> buffer)
+    {
+        if (_index == chunks.Length)
+            throw new InvalidOperationException("The stream is read past the data it has received.");
+
+        var bytes = Encoding.UTF8.GetBytes(chunks[_index++]);
+        bytes.CopyTo(buffer);
+        return bytes.Length;
+    }
+
+    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => ValueTask.FromResult(Read(buffer.Span));
+
+    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => Task.FromResult(Read(buffer, offset, count));
 
     public override void Flush() => throw new NotSupportedException();
 

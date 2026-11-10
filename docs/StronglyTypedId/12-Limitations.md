@@ -19,9 +19,7 @@ description: What the generator does not do, and the behaviors to know before yo
   constructor. See [Validate the value](06-ValidationAndCustomMembers.md#validate-the-value).
 - **Records keep their own equality and `ToString`.** The `StringComparison` and `GenerateToStringAsRecord` options
   have no effect on a record or a record struct, whose `Equals`, `GetHashCode` and `ToString` are written by the
-  compiler. Use a struct or a class when you need these options.
-- **`StringComparison` applies to equality only.** [Sorting](03-DeclaringIds.md#implement-icomparable-to-sort-ids)
-  `string` IDs uses `Comparer<string>.Default`, which depends on the current culture.
+  compiler. Its `string` values are compared and sorted ordinally. Use a struct or a class when you need these options.
 - **The `IFormatProvider` is ignored.** Parsing and formatting always use the invariant culture.
 
 ## Integrations

@@ -112,8 +112,9 @@ Assert.Equal("fr", code.Value);
 <!-- endref -->
 
 `Equals`, `GetHashCode`, `==` and `!=` use the comparison, so IDs that differ only by case are the same key in a
-dictionary. The value is not normalized: `Value` and the serialized value keep the case they were created with. The
-option has no effect on other underlying types, nor on [sorting](03-DeclaringIds.md#implement-icomparable-to-sort-ids).
+dictionary. [Sorting](03-DeclaringIds.md#implement-icomparable-to-sort-ids) uses it too, so `CompareTo` returns `0`
+for two equal IDs. The value is not normalized: `Value` and the serialized value keep the case they were created with.
+The option has no effect on other underlying types.
 
 ## Format ToString as the value
 

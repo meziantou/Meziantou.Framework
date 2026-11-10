@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.FastEnumGenerator.Fuzz;
+namespace Meziantou.Framework.FastEnumGenerator.FuzzEnums;
 
 public enum FuzzLarge : ulong
 {

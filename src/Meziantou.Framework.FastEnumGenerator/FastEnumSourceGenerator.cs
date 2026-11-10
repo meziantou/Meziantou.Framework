@@ -1210,7 +1210,8 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine("            first = value[1];");
         sb.AppendLine("        }");
         sb.AppendLine();
-        sb.AppendLine("        return (uint)(first - '0') <= 9;");
+        // unchecked: a char below '0' gives a negative difference, which throws in a checked build.
+        sb.AppendLine("        return unchecked((uint)(first - '0')) <= 9;");
         sb.AppendLine("    }");
         sb.AppendLine();
     }

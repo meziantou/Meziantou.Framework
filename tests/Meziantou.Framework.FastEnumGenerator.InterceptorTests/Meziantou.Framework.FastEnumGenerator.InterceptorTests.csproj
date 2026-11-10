@@ -4,6 +4,8 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <!-- Exercises the package's opt-in interceptor mode against real call sites. -->
     <MeziantouFastEnumInterceptors>true</MeziantouFastEnumInterceptors>
+    <!-- The generated code must not throw OverflowException in a checked build -->
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
     <InterceptorsNamespaces>$(InterceptorsNamespaces);Meziantou.Framework.Annotations.FastEnumInterceptors</InterceptorsNamespaces>
     <NoWarn>$(NoWarn);MFEG0002;MFEG0003;MFEG0004;MFEG0005;MFEG0006;MFEG0007;MFEG0008</NoWarn>
   </PropertyGroup>

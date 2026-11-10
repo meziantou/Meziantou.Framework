@@ -1,11 +1,8 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using Meziantou.Framework.FastEnumGenerator.FuzzEnums;
 using Meziantou.Framework.Fuzzing;
-
-[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.Fuzz.FuzzColor))]
-[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.Fuzz.FuzzPermission))]
-[assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Meziantou.Framework.FastEnumGenerator.Fuzz.FuzzLarge))]
 
 namespace Meziantou.Framework.FastEnumGenerator.Fuzz;
 
@@ -23,10 +20,6 @@ public static partial class FastEnumGeneratorFuzzTargets
         "Min", "Mid", "Max", ",", ", ", " ", "\t", "\n", "\u00A0", "\u2028", "+", "-", "0", "1", "2", "3", "7", "8", "255", "256", "-3",
         "9223372036854775808", "18446744073709551615", "18446744073709551616", "\u0660", "\uFF11", "\u0130", "\u212A",
     ];
-
-    private delegate T ParseDelegate<T>(string value, bool ignoreCase);
-
-    private delegate bool TryParseDelegate<T>(string value, bool ignoreCase, out T result);
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
@@ -55,54 +48,13 @@ public static partial class FastEnumGeneratorFuzzTargets
         }
     }
 
-#pragma warning disable RS0030 // Banned API -- the overloads without ignoreCase are intercepted too
-    private static void CheckColor(string text, bool ignoreCase)
-    {
-        Check(text, ignoreCase,
-            intercepted: [(value, ic) => Enum.Parse<FuzzColor>(value, ic), (value, ic) => Enum.Parse<FuzzColor>(value.AsSpan(), ic)],
-            interceptedCaseSensitive: [(value, _) => Enum.Parse<FuzzColor>(value), (value, _) => Enum.Parse<FuzzColor>(value.AsSpan())],
-            interceptedTry: [(string value, bool ic, out FuzzColor result) => Enum.TryParse(value, ic, out result), (string value, bool ic, out FuzzColor result) => Enum.TryParse(value.AsSpan(), ic, out result)],
-            interceptedTryCaseSensitive: [(string value, bool _, out FuzzColor result) => Enum.TryParse(value, out result), (string value, bool _, out FuzzColor result) => Enum.TryParse(value.AsSpan(), out result)],
-            generated: [(value, ic) => FuzzColor.Parse(value, ic), (value, ic) => FuzzColor.Parse(value.AsSpan(), ic)],
-            generatedTry: [(string value, bool ic, out FuzzColor result) => FuzzColor.TryParse(value, ic, out result), (string value, bool ic, out FuzzColor result) => FuzzColor.TryParse(value.AsSpan(), ic, out result)],
-            format: value => value.ToString());
-    }
+    private static void CheckColor(string text, bool ignoreCase) => Check(text, ignoreCase, FuzzEnumParsers.Color);
 
-    private static void CheckPermission(string text, bool ignoreCase)
-    {
-        Check(text, ignoreCase,
-            intercepted: [(value, ic) => Enum.Parse<FuzzPermission>(value, ic), (value, ic) => Enum.Parse<FuzzPermission>(value.AsSpan(), ic)],
-            interceptedCaseSensitive: [(value, _) => Enum.Parse<FuzzPermission>(value), (value, _) => Enum.Parse<FuzzPermission>(value.AsSpan())],
-            interceptedTry: [(string value, bool ic, out FuzzPermission result) => Enum.TryParse(value, ic, out result), (string value, bool ic, out FuzzPermission result) => Enum.TryParse(value.AsSpan(), ic, out result)],
-            interceptedTryCaseSensitive: [(string value, bool _, out FuzzPermission result) => Enum.TryParse(value, out result), (string value, bool _, out FuzzPermission result) => Enum.TryParse(value.AsSpan(), out result)],
-            generated: [(value, ic) => FuzzPermission.Parse(value, ic), (value, ic) => FuzzPermission.Parse(value.AsSpan(), ic)],
-            generatedTry: [(string value, bool ic, out FuzzPermission result) => FuzzPermission.TryParse(value, ic, out result), (string value, bool ic, out FuzzPermission result) => FuzzPermission.TryParse(value.AsSpan(), ic, out result)],
-            format: value => value.ToString());
-    }
+    private static void CheckPermission(string text, bool ignoreCase) => Check(text, ignoreCase, FuzzEnumParsers.Permission);
 
-    private static void CheckLarge(string text, bool ignoreCase)
-    {
-        Check(text, ignoreCase,
-            intercepted: [(value, ic) => Enum.Parse<FuzzLarge>(value, ic), (value, ic) => Enum.Parse<FuzzLarge>(value.AsSpan(), ic)],
-            interceptedCaseSensitive: [(value, _) => Enum.Parse<FuzzLarge>(value), (value, _) => Enum.Parse<FuzzLarge>(value.AsSpan())],
-            interceptedTry: [(string value, bool ic, out FuzzLarge result) => Enum.TryParse(value, ic, out result), (string value, bool ic, out FuzzLarge result) => Enum.TryParse(value.AsSpan(), ic, out result)],
-            interceptedTryCaseSensitive: [(string value, bool _, out FuzzLarge result) => Enum.TryParse(value, out result), (string value, bool _, out FuzzLarge result) => Enum.TryParse(value.AsSpan(), out result)],
-            generated: [(value, ic) => FuzzLarge.Parse(value, ic), (value, ic) => FuzzLarge.Parse(value.AsSpan(), ic)],
-            generatedTry: [(string value, bool ic, out FuzzLarge result) => FuzzLarge.TryParse(value, ic, out result), (string value, bool ic, out FuzzLarge result) => FuzzLarge.TryParse(value.AsSpan(), ic, out result)],
-            format: value => value.ToString());
-    }
-#pragma warning restore RS0030
+    private static void CheckLarge(string text, bool ignoreCase) => Check(text, ignoreCase, FuzzEnumParsers.Large);
 
-    private static void Check<T>(
-        string text,
-        bool ignoreCase,
-        ParseDelegate<T>[] intercepted,
-        ParseDelegate<T>[] interceptedCaseSensitive,
-        TryParseDelegate<T>[] interceptedTry,
-        TryParseDelegate<T>[] interceptedTryCaseSensitive,
-        ParseDelegate<T>[] generated,
-        TryParseDelegate<T>[] generatedTry,
-        Func<T, string> format)
+    private static void Check<T>(string text, bool ignoreCase, EnumParsers<T> parsers)
         where T : struct, Enum
     {
         var expectedSucceeded = Enum.TryParse(typeof(T), text, ignoreCase, out var boxed);
@@ -110,7 +62,7 @@ public static partial class FastEnumGeneratorFuzzTargets
         var expectedException = GetParseException(() => _ = Enum.Parse(typeof(T), text, ignoreCase));
         FuzzAssert.Equal(expectedSucceeded, expectedException is null, $"Enum.Parse and Enum.TryParse disagree on {FuzzAssert.Format(text)}");
 
-        foreach (var parse in ignoreCase ? intercepted : [.. intercepted, .. interceptedCaseSensitive])
+        foreach (var parse in ignoreCase ? parsers.Intercepted : [.. parsers.Intercepted, .. parsers.InterceptedCaseSensitive])
         {
             var actual = default(T);
             var exception = GetParseException(() => actual = parse(text, ignoreCase));
@@ -119,7 +71,7 @@ public static partial class FastEnumGeneratorFuzzTargets
             FuzzAssert.Equal(expected, actual, $"The intercepted Enum.Parse<{typeof(T).Name}> returns another value for {FuzzAssert.Format(text)} (ignoreCase: {ignoreCase})");
         }
 
-        foreach (var tryParse in ignoreCase ? interceptedTry : [.. interceptedTry, .. interceptedTryCaseSensitive])
+        foreach (var tryParse in ignoreCase ? parsers.InterceptedTry : [.. parsers.InterceptedTry, .. parsers.InterceptedTryCaseSensitive])
         {
             var succeeded = tryParse(text, ignoreCase, out var actual);
             FuzzAssert.Equal(expectedSucceeded, succeeded, $"The intercepted Enum.TryParse<{typeof(T).Name}> disagrees on {FuzzAssert.Format(text)} (ignoreCase: {ignoreCase})");
@@ -127,7 +79,7 @@ public static partial class FastEnumGeneratorFuzzTargets
         }
 
         // The generated members throw the same exception types, with their own message.
-        foreach (var parse in generated)
+        foreach (var parse in parsers.Generated)
         {
             var actual = default(T);
             var exception = GetParseException(() => actual = parse(text, ignoreCase));
@@ -135,7 +87,7 @@ public static partial class FastEnumGeneratorFuzzTargets
             FuzzAssert.Equal(expected, actual, $"{typeof(T).Name}.Parse returns another value for {FuzzAssert.Format(text)} (ignoreCase: {ignoreCase})");
         }
 
-        foreach (var tryParse in generatedTry)
+        foreach (var tryParse in parsers.GeneratedTry)
         {
             var succeeded = tryParse(text, ignoreCase, out var actual);
             FuzzAssert.Equal(expectedSucceeded, succeeded, $"{typeof(T).Name}.TryParse disagrees on {FuzzAssert.Format(text)} (ignoreCase: {ignoreCase})");
@@ -146,9 +98,9 @@ public static partial class FastEnumGeneratorFuzzTargets
             return;
 
         // The intercepted ToString formats like Enum.ToString, and its text parses back to the same value.
-        var formatted = format(expected);
+        var formatted = parsers.Format(expected);
         FuzzAssert.Equal(((Enum)boxed!).ToString(), formatted, $"The intercepted ToString differs from Enum.ToString for {FuzzAssert.Format(text)}");
-        FuzzAssert.True(interceptedTry[0](formatted, false, out var roundTripped), $"{FuzzAssert.Format(formatted)}, the text of a parsed value, does not parse");
+        FuzzAssert.True(parsers.InterceptedTry[0](formatted, false, out var roundTripped), $"{FuzzAssert.Format(formatted)}, the text of a parsed value, does not parse");
         FuzzAssert.Equal(expected, roundTripped, $"{FuzzAssert.Format(formatted)} does not parse back to the value it was formatted from");
     }
 

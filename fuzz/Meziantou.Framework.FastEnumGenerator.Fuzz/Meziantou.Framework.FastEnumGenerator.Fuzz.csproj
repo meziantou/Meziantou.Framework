@@ -4,10 +4,6 @@
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
-    <!-- The targets compare the intercepted System.Enum calls with the reflection-based ones -->
-    <MeziantouFastEnumInterceptors>true</MeziantouFastEnumInterceptors>
-    <InterceptorsNamespaces>$(InterceptorsNamespaces);Meziantou.Framework.Annotations.FastEnumInterceptors</InterceptorsNamespaces>
-    <NoWarn>$(NoWarn);MFEG0002;MFEG0003;MFEG0004;MFEG0005;MFEG0006;MFEG0007;MFEG0008</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,7 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework.FastEnumGenerator\Meziantou.Framework.FastEnumGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
-    <CompilerVisibleProperty Include="MeziantouFastEnumInterceptors" />
+    <!-- The enums and the generated parser live there, so that eng/run-fuzz.ps1 instruments them -->
+    <ProjectReference Include="..\Meziantou.Framework.FastEnumGenerator.FuzzEnums\Meziantou.Framework.FastEnumGenerator.FuzzEnums.csproj" />
   </ItemGroup>
 </Project>

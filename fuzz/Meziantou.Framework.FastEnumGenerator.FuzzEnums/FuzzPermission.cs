@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Meziantou.Framework.FastEnumGenerator.Fuzz;
+namespace Meziantou.Framework.FastEnumGenerator.FuzzEnums;
 
 [Flags]
 public enum FuzzPermission : byte

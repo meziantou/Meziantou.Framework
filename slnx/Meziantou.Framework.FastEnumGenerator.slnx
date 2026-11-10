@@ -1,7 +1,6 @@
 <Solution>
   <Folder Name="/fuzz/">
-    <Project Path="../fuzz/Meziantou.Framework.FastEnumGenerator.Fuzz/Meziantou.Framework.FastEnumGenerator.Fuzz.csproj" />
-    <Project Path="../fuzz/Meziantou.Framework.Fuzzing/Meziantou.Framework.Fuzzing.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.FastEnumGenerator.FuzzEnums/Meziantou.Framework.FastEnumGenerator.FuzzEnums.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.FastEnumGenerator.CodeFixes/Meziantou.Framework.FastEnumGenerator.CodeFixes.csproj" />

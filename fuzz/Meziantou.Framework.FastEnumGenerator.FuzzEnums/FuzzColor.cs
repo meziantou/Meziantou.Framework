@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.FastEnumGenerator.Fuzz;
+namespace Meziantou.Framework.FastEnumGenerator.FuzzEnums;
 
 /// <summary>Not [Flags], with names that differ only by case, an alias, and a negative value.</summary>
 public enum FuzzColor

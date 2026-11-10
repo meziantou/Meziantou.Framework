@@ -34,7 +34,7 @@ public sealed class JsTimeoutJob
         _engine.SignalJobs();
     }
 
-    internal static void Run(object? state, JsValue argument)
+    internal static void Run(object? state)
     {
         var job = (JsTimeoutJob)state!;
 

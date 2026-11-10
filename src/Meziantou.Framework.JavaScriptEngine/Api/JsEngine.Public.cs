@@ -152,7 +152,7 @@ public sealed partial class JsEngine
         ArgumentNullException.ThrowIfNull(job);
         realm ??= CurrentRealm ?? throw new InvalidOperationException("There is no current realm: specify the realm of the job");
         var timeoutJob = new JsTimeoutJob(this, job);
-        EnqueueTimeoutJob(JsTimeoutJob.Run, timeoutJob, default, realm, delay);
+        EnqueueTimeoutJob(static (state, _) => JsTimeoutJob.Run(state), timeoutJob, default, realm, delay);
         return timeoutJob;
     }
 

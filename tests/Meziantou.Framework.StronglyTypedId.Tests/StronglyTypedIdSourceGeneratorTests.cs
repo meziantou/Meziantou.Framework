@@ -706,6 +706,55 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public async Task Converters_ArePublic()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test {}
+            """;
+
+        var generatedCode = await GenerateSingleFile(sourceCode);
+        Assert.Contains("public partial class TestJsonConverter :", generatedCode);
+        Assert.Contains("public partial class TestNewtonsoftJsonConverter :", generatedCode);
+        Assert.Contains("public partial class TestTypeConverter :", generatedCode);
+    }
+
+    [Fact]
+    public async Task Converters_UserDeclaredConverterKeepsItsAccessibility()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test
+            {
+                internal partial class TestJsonConverter { }
+                private partial class TestTypeConverter { }
+            }
+            """;
+
+        var generatedCode = await GenerateSingleFile(sourceCode);
+        Assert.Contains("\tpartial class TestJsonConverter :", generatedCode);
+        Assert.DoesNotContain("public partial class TestJsonConverter", generatedCode);
+        Assert.Contains("\tpartial class TestTypeConverter :", generatedCode);
+        Assert.DoesNotContain("public partial class TestTypeConverter", generatedCode);
+        Assert.Contains("public partial class TestNewtonsoftJsonConverter :", generatedCode);
+    }
+
+    [Fact]
+    public async Task Converters_GenericTypeWithSameNameDoesNotChangeAccessibility()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test
+            {
+                private sealed class TestJsonConverter<T> { }
+            }
+            """;
+
+        var generatedCode = await GenerateSingleFile(sourceCode);
+        Assert.Contains("public partial class TestJsonConverter :", generatedCode);
+    }
+
+    [Fact]
     public async Task AssemblyDefaults_GuidGenerationStrategy_NotSupportedByTargetFramework()
     {
         var sourceCode = """

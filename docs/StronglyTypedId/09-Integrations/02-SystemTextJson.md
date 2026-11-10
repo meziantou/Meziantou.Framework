@@ -63,7 +63,38 @@ An object without a `Value` property gives an ID with the default value. The con
 
 ## Source generation and Native AOT
 
-With a source-generated `JsonSerializerContext`, the generated converter is not used: an ID is written as an empty object
-(`{}`). The System.Text.Json source generator cannot see the code of other source generators, so it does not know the
-`[JsonConverter]` attribute that this generator adds to the ID. Use the reflection-based serializer (the default
-`JsonSerializerOptions`) for the types that contain IDs. See [Limitations](../12-Limitations.md).
+A source-generated `JsonSerializerContext` does not see the `[JsonConverter]` attribute that this generator adds to the
+ID: the System.Text.Json source generator cannot see the code of other source generators. Without configuration, an ID
+is written as an empty object (`{}`). Register the [generated converters](01-Overview.md#use-a-converter-directly) in
+the options of the context instead:
+
+<!-- ref:../../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_SystemTextJsonSourceGenerationModel;format=md-fenced-code-block;dedent=true -->
+```csharp
+[System.Text.Json.Serialization.JsonSourceGenerationOptions(RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true)]
+[System.Text.Json.Serialization.JsonSerializable(typeof(OrderLine))]
+internal sealed partial class OrderJsonContext : System.Text.Json.Serialization.JsonSerializerContext;
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_SystemTextJsonSourceGeneration;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The generated converters are public: register them in the options of the context
+var options = new System.Text.Json.JsonSerializerOptions
+{
+    RespectNullableAnnotations = true,
+    RespectRequiredConstructorParameters = true,
+    Converters = { new ProductId.ProductIdJsonConverter(), new ProjectId.ProjectIdJsonConverter() },
+};
+var context = new OrderJsonContext(options);
+
+var line = new OrderLine(ProductId.FromGuid(new Guid("0f8fad5b-d9cb-469f-a165-70867728950e")), ProjectId.FromInt32(42), Quantity: 3);
+var json = System.Text.Json.JsonSerializer.Serialize(line, context.OrderLine);
+Assert.Equal("""{"ProductId":"0f8fad5b-d9cb-469f-a165-70867728950e","ProjectId":42,"Quantity":3}""", json);
+
+var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, context.OrderLine);
+Assert.Equal(line, deserialized);
+```
+<!-- endref -->
+
+Add one converter per ID type that the serialized types contain. The converters also handle the IDs used as dictionary
+keys.

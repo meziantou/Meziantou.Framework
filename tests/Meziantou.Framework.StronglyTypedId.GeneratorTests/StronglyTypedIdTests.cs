@@ -198,6 +198,45 @@ public sealed partial class StronglyTypedIdTests
     }
 
     [Fact]
+    public void Docs_SystemTextJsonSourceGeneration()
+    {
+        #region StronglyTypedId_SystemTextJsonSourceGeneration
+        // The generated converters are public: register them in the options of the context
+        var options = new System.Text.Json.JsonSerializerOptions
+        {
+            RespectNullableAnnotations = true,
+            RespectRequiredConstructorParameters = true,
+            Converters = { new ProductId.ProductIdJsonConverter(), new ProjectId.ProjectIdJsonConverter() },
+        };
+        var context = new OrderJsonContext(options);
+
+        var line = new OrderLine(ProductId.FromGuid(new Guid("0f8fad5b-d9cb-469f-a165-70867728950e")), ProjectId.FromInt32(42), Quantity: 3);
+        var json = System.Text.Json.JsonSerializer.Serialize(line, context.OrderLine);
+        Assert.Equal("""{"ProductId":"0f8fad5b-d9cb-469f-a165-70867728950e","ProjectId":42,"Quantity":3}""", json);
+
+        var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, context.OrderLine);
+        Assert.Equal(line, deserialized);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_ConvertersArePublic()
+    {
+        Assert.True(typeof(ShipmentId.ShipmentIdJsonConverter).IsNestedPublic);
+        Assert.True(typeof(ShipmentId.ShipmentIdNewtonsoftJsonConverter).IsNestedPublic);
+        Assert.True(typeof(ShipmentId.ShipmentIdTypeConverter).IsNestedPublic);
+        Assert.True(typeof(ShipmentId.ShipmentIdBsonConverter).IsNestedPublic);
+    }
+
+    [Fact]
+    public void Docs_ConverterAccessibility()
+    {
+        Assert.True(typeof(WarehouseId.WarehouseIdJsonConverter).IsNestedAssembly);
+        Assert.True(typeof(WarehouseId.WarehouseIdTypeConverter).IsNestedPublic);
+        Assert.Equal("7", System.Text.Json.JsonSerializer.Serialize(WarehouseId.FromInt32(7)));
+    }
+
+    [Fact]
     public void Docs_SystemTextJsonObjectForm()
     {
         #region StronglyTypedId_SystemTextJsonObjectForm
@@ -1490,6 +1529,21 @@ public sealed partial class StronglyTypedIdTests
 
     #region StronglyTypedId_JsonModel
     public sealed record OrderLine(ProductId ProductId, ProjectId ProjectId, int Quantity);
+    #endregion
+
+    #region StronglyTypedId_SystemTextJsonSourceGenerationModel
+    [System.Text.Json.Serialization.JsonSourceGenerationOptions(RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true)]
+    [System.Text.Json.Serialization.JsonSerializable(typeof(OrderLine))]
+    internal sealed partial class OrderJsonContext : System.Text.Json.Serialization.JsonSerializerContext;
+    #endregion
+
+    #region StronglyTypedId_ConverterAccessibility
+    [StronglyTypedId<int>]
+    public partial struct WarehouseId
+    {
+        // Declare the converter to choose its accessibility. The generator writes the rest of the type.
+        internal sealed partial class WarehouseIdJsonConverter;
+    }
     #endregion
 
     #region StronglyTypedId_MongoDBModel

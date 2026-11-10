@@ -483,6 +483,59 @@ public sealed partial class NodeJsHostTests
     }
 
     [Fact]
+    public async Task JSCallback_CancellationCallbackThatThrowsDoesNotStopDisposal()
+    {
+        var node = await StartNodeAsync();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var callback = JSCallback.Create(async (_, cancellationToken) =>
+        {
+            cancellationToken.Register(() => throw new InvalidOperationException("Cancellation callback failed"));
+            started.SetResult();
+            await Task.Delay(Timeout.Infinite, CancellationToken.None).WaitAsync(cancellationToken);
+        });
+
+        using var process = Process.GetProcessById(node.ProcessId);
+        var call = node.EvaluateVoidAsync("await args[0]();", [callback], XunitCancellationToken);
+        await started.Task.WaitAsync(HangTimeout, XunitCancellationToken);
+        await node.DisposeAsync().AsTask().WaitAsync(HangTimeout, XunitCancellationToken);
+
+        Assert.True(process.HasExited);
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => call);
+    }
+
+    [Fact]
+    public async Task JSCallback_CallsOnTheHostDoNotWaitForTheConcurrencyLimit()
+    {
+        await using var node = await StartNodeAsync(new NodeJsHostOptions { MaxConcurrentCalls = 1 });
+        var callback = JSCallback.Create(async (args, cancellationToken) =>
+        {
+            // The call waiting for the delegate holds the only slot
+            var nested = await node.EvaluateAsync("return args[0] * 2;", [args[0].GetInt32()], cancellationToken);
+            return nested.GetInt32();
+        });
+
+        var result = await node.EvaluateAsync("return await args[0](21);", [callback], XunitCancellationToken).WaitAsync(HangTimeout, XunitCancellationToken);
+
+        Assert.Equal(42, result.GetInt32());
+    }
+
+    [Fact]
+    public async Task JSCallback_CallsOnThePoolDoNotWaitForTheConcurrencyLimit()
+    {
+        SkipIfNodeIsNotInstalled();
+        await using var pool = await NodeJsHostPool.StartAsync(1, new NodeJsHostOptions { MaxConcurrentCalls = 1 }, XunitCancellationToken);
+        var callback = JSCallback.Create(async (args, cancellationToken) =>
+        {
+            var nested = await pool.EvaluateAsync("return args[0] * 2;", [args[0].GetInt32()], cancellationToken);
+            return nested.GetInt32();
+        });
+
+        var result = await pool.EvaluateAsync("return await args[0](21);", [callback], XunitCancellationToken).WaitAsync(HangTimeout, XunitCancellationToken);
+
+        Assert.Equal(42, result.GetInt32());
+    }
+
+    [Fact]
     public async Task JSCallback_WorkerThreads()
     {
         await using var node = await StartNodeAsync(new NodeJsHostOptions { WorkerThreads = 2 });

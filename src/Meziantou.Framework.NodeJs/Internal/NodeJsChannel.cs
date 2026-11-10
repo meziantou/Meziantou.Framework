@@ -34,7 +34,7 @@ internal sealed class NodeJsChannel
 
     // The callbacks registered while serializing a message on the current thread, so they can be unregistered when the message is not sent
     [ThreadStatic]
-    private static List<(NodeJsChannel Channel, long Id)>? t_registeredCallbacks;
+    private static List<(NodeJsChannel Channel, long Id)>? s_registeredCallbacks;
 
     public NodeJsChannel(NodeJsHost host, Stream stream)
     {
@@ -89,9 +89,10 @@ internal sealed class NodeJsChannel
             request.SetException(exception);
         }
 
-        // The functions of the thread are gone
+        // The functions of the thread are gone. The cancellation callbacks registered by the delegates run on the thread pool,
+        // so they cannot delay or interrupt the termination, and their exceptions are ignored.
         _callbacks.Clear();
-        _callbackCancellation.Cancel();
+        _ = _callbackCancellation.CancelAsync().ContinueWith(static task => _ = task.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     }
 
     /// <summary>Registers the delegate of a function created by the thread for a <see cref="JSCallback"/> argument of a message being serialized.</summary>
@@ -100,7 +101,7 @@ internal sealed class NodeJsChannel
     {
         var id = Interlocked.Increment(ref _nextCallbackId);
         _callbacks[id] = callback;
-        (t_registeredCallbacks ??= []).Add((this, id));
+        (s_registeredCallbacks ??= []).Add((this, id));
         return id;
     }
 
@@ -288,20 +289,20 @@ internal sealed class NodeJsChannel
     /// <param name="registeredCallbacks">Receives the callbacks registered by the message, to unregister them when it is not sent.</param>
     private static PooledBufferWriter SerializeMessage(Action<Utf8JsonWriter> writeMessage, List<(NodeJsChannel Channel, long Id)>? registeredCallbacks)
     {
-        var previousCallbacks = t_registeredCallbacks;
-        t_registeredCallbacks = registeredCallbacks;
+        var previousCallbacks = s_registeredCallbacks;
+        s_registeredCallbacks = registeredCallbacks;
         try
         {
             return SerializeMessage(writeMessage);
         }
         catch
         {
-            UnregisterCallbacks(t_registeredCallbacks);
+            UnregisterCallbacks(s_registeredCallbacks);
             throw;
         }
         finally
         {
-            t_registeredCallbacks = previousCallbacks;
+            s_registeredCallbacks = previousCallbacks;
         }
     }
 
@@ -557,13 +558,20 @@ internal sealed class NodeJsChannel
         // The delegate is found before processing the next message, which may release the function once the call is sent
         _callbacks.TryGetValue(callbackId, out var callback);
 
-        // The delegate runs on the thread pool, so it does not block the messages of the other calls
-        _ = Task.Run(() => InvokeCallbackAsync(call, callback, arguments));
+        // The delegate runs on the thread pool, so it does not block the messages of the other calls.
+        // It does not inherit the context of the read loop, which is the context of the code that started the host.
+        using (ExecutionContext.SuppressFlow())
+        {
+            _ = Task.Run(() => InvokeCallbackAsync(call, callback, arguments));
+        }
     }
 
     [SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "The exception of the delegate is reported to the JavaScript code")]
     private async Task InvokeCallbackAsync(long call, JSCallback? callback, JsonElement[] arguments)
     {
+        // The value flows to the delegate, so the calls it makes do not wait for the concurrency limit held by the call waiting for it
+        NodeJsHost.RunningCallbackHost = _host;
+
         JsonNode? result = null;
         Exception? error = null;
         try

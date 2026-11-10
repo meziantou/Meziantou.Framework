@@ -49,6 +49,10 @@ public sealed class NodeJsHost : IAsyncDisposable
     // While canceled calls are running, the process is checked at this interval, as they can block the event loop at any time
     private static readonly TimeSpan MaxResponsivenessCheckInterval = TimeSpan.FromSeconds(1);
 
+    // The host whose JSCallback delegate is running. The JavaScript code that calls the delegate may hold the concurrency limit while it waits,
+    // so the calls the delegate makes on the host do not wait for it, which would never end.
+    private static readonly AsyncLocal<NodeJsHost?> RunningCallbackHostValue = new();
+
     private static readonly byte[] WatchdogRequest = "{\"type\":\"running\"}\n"u8.ToArray();
 
     // Messages are only read by JSON.parse, so characters that are sensitive in HTML or non-ASCII do not need to be escaped, which would make them up to 6 times larger
@@ -162,6 +166,13 @@ public sealed class NodeJsHost : IAsyncDisposable
 
             return result;
         }
+    }
+
+    /// <summary>Gets or sets the host whose <see cref="JSCallback"/> delegate is running in the current asynchronous context.</summary>
+    internal static NodeJsHost? RunningCallbackHost
+    {
+        get => RunningCallbackHostValue.Value;
+        set => RunningCallbackHostValue.Value = value;
     }
 
     /// <summary>Gets the number of functions of the process that call a <see cref="JSCallback"/>, for tests.</summary>
@@ -1152,7 +1163,7 @@ public sealed class NodeJsHost : IAsyncDisposable
         // A call that uses a reference runs on the worker thread that keeps the referenced value
         var owner = _workers is null ? null : ArgumentWriter.FindReferenceChannel(this, target, arguments);
 
-        if (_concurrencyLimit is null)
+        if (_concurrencyLimit is null || RunningCallbackHost == this)
             return await SendRequestCoreAsync(owner, writeMessage, resultKind, createReader, cancellationToken).ConfigureAwait(false);
 
         // The message is serialized once the call can run, so waiting calls do not keep a serialized copy of their arguments

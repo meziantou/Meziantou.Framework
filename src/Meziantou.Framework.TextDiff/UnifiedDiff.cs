@@ -138,6 +138,8 @@ public static class UnifiedDiff
             while (index < lines.Count && lines[index].StartsWith("@@ ", StringComparison.Ordinal))
             {
                 hunks.Add(ParseHunk(lines, ref index));
+                if (IsExtraHunkLine(lines, index))
+                    throw new FormatException($"Line {index + 1}: the hunk has more lines than its header gives.");
             }
 
             files.Add(new UnifiedDiffFile(oldFileName, newFileName, hunks));
@@ -165,6 +167,29 @@ public static class UnifiedDiff
             throw new ArgumentException($"The patch must hold exactly one file, but it holds {files.Count}.", nameof(patch));
 
         return files[0].Apply(text);
+    }
+
+    // A line that reads as a line of the hunk just read, but that its header does not count. The header of the next file
+    // ("--- " followed by "+++ ") and the "-- " signature separator of git format-patch are not.
+    private static bool IsExtraHunkLine(List<string> lines, int index)
+    {
+        if (index >= lines.Count)
+            return false;
+
+        var line = TrimLineEnd(lines[index].AsSpan());
+        if (line.IsEmpty)
+            return false;
+
+        if (line[0] is ' ' or '+' or '\\')
+            return true;
+
+        if (line[0] is not '-')
+            return false;
+
+        if (line.StartsWith("--- ", StringComparison.Ordinal) && index + 1 < lines.Count && lines[index + 1].StartsWith("+++ ", StringComparison.Ordinal))
+            return false;
+
+        return !line.SequenceEqual("-- ");
     }
 
     internal static char GetPrefix(TextDiffOperation operation) => operation switch

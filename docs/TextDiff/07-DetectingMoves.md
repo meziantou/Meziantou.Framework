@@ -36,7 +36,9 @@ Assert.Equal(
 
 - The deleted and the inserted chunks must be equal under the [comparison options](05-ComparisonOptions.md): with
   [IgnoreCase](cref:Meziantou.Framework.TextDiffOptions.IgnoreCase), a block moved and recased is a move. A block moved and edited is not.
-- The longest block is taken first. When the same block is inserted at several places, the first one wins.
+- The deleted blocks are matched in order: for each one, the longest insertion that matches from its start is taken,
+  and the first one wins a tie. A deletion that comes earlier can claim an insertion that a longer, later deletion
+  would also match.
 - A block that holds only whitespace, such as an empty line, is never a move: it would link unrelated places.
 - A block deleted and inserted at the same place is a change, not a move. This happens when a
   [work limit](08-Algorithms.md#limiting-the-work) replaces a region as a whole.

@@ -3,8 +3,10 @@ namespace Meziantou.Framework;
 /// <summary>Pairs blocks of deleted chunks with equal blocks of inserted chunks found elsewhere in the diff.</summary>
 internal static class MoveDetector
 {
-    // Bounds the work for a chunk that is inserted at many places, such as an empty line
+    // Bounds the work for a chunk that is inserted at many places, such as an empty line: the number of candidates
+    // compared, and the number of candidates looked at, including the ones already part of a move
     private const int MaxCandidatesPerChunk = 64;
+    private const int MaxScannedCandidatesPerChunk = 256;
 
     internal static void Apply(List<TextDiffEntry> entries, IEqualityComparer<string> comparer, DiffBudget budget)
     {
@@ -12,6 +14,7 @@ internal static class MoveDetector
 
         // Consecutive changed entries form a block; a chunk deleted and inserted in the same block did not move
         var blocks = new int[count];
+        var blockEnds = new List<int>(); // The index of the last entry of each block
         var block = 0;
         for (var i = 0; i < count; i++)
         {
@@ -25,6 +28,14 @@ internal static class MoveDetector
             else
             {
                 blocks[i] = block;
+                if (blockEnds.Count == block)
+                {
+                    blockEnds.Add(i);
+                }
+                else
+                {
+                    blockEnds[block] = i;
+                }
             }
         }
 
@@ -63,9 +74,22 @@ internal static class MoveDetector
             var bestStart = -1;
             var bestLength = 0;
             var inspected = 0;
-            foreach (var candidate in candidates)
+            var scanned = 0;
+            for (var c = 0; c < candidates.Count; c++)
             {
-                if (moveIds[candidate] is not 0 || blocks[candidate] == blocks[i])
+                var candidate = candidates[c];
+
+                // The candidates are sorted, so the ones of the same block are consecutive: skip them at once
+                if (blocks[candidate] == blocks[i])
+                {
+                    c = DiffAlgorithmHelpers.LowerBound(candidates, blockEnds[blocks[i]] + 1) - 1;
+                    continue;
+                }
+
+                if (++scanned > MaxScannedCandidatesPerChunk)
+                    break;
+
+                if (moveIds[candidate] is not 0)
                     continue;
 
                 if (++inspected > MaxCandidatesPerChunk)

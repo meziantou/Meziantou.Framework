@@ -595,9 +595,20 @@ public sealed class TextDiffTests
     [InlineData("--- a\n+++ b\n@@ -1 +1 @@\n-a\n-b\n")]
     [InlineData("--- a\n+++ b\n@@ -0,0 +1 @@\n\\ No newline at end of file\n+a\n")]
     [InlineData("--- a\n+++ b\n@@ -1 +1 @@\n-a\n\\ No newline at end of file\n\\ No newline at end of file\n+b\n")]
+    [InlineData("--- a\n+++ b\n@@ -1 +1 @@\n-a\n+b\n+c\n")]
+    [InlineData("--- a\n+++ b\n@@ -1 +1 @@\n-a\n+b\n c\n")]
+    [InlineData("--- a\n+++ b\n@@ -1 +1 @@\n-a\n+b\n-c\n")]
     public void UnifiedDiff_Parse_MalformedHunk_Throws(string patch)
     {
         Assert.Throws<FormatException>(() => UnifiedDiff.Parse(patch));
+    }
+
+    [Fact]
+    public void UnifiedDiff_Parse_FormatPatchSignatureAfterTheLastHunk()
+    {
+        var patch = "--- a/f\n+++ b/f\n@@ -1 +1 @@\n-a\n+b\n-- \n2.47.0\n\n";
+
+        Assert.Equal("b\n", UnifiedDiff.Apply("a\n", patch));
     }
 
     [Fact]
@@ -1726,6 +1737,18 @@ public sealed class TextDiffTests
         var options = new TextDiffOptions { DetectMoves = true, Timeout = TimeSpan.Zero };
 
         var result = TextDiff.ComputeDiff("a\nb\n", "b\na\n", options);
+
+        Assert.All(result.Entries, entry => entry.MoveId is null);
+    }
+
+    [Fact]
+    public void ComputeDiff_DetectMoves_RepeatedLinesReplacedAsOneBlock_AreNotMoves()
+    {
+        // MaxEditCost = 0 replaces the whole region, so every inserted "x" is in the block of every deleted "x"
+        var repeatedLines = string.Concat(Enumerable.Repeat("x\n", 20_000));
+        var options = new TextDiffOptions { DetectMoves = true, MaxEditCost = 0 };
+
+        var result = TextDiff.ComputeDiff("left\n" + repeatedLines + "endleft\n", "right\n" + repeatedLines + "endright\n", options);
 
         Assert.All(result.Entries, entry => entry.MoveId is null);
     }

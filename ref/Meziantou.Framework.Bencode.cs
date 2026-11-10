@@ -33,13 +33,17 @@ namespace Meziantou.Framework.Bencode
 
     public sealed class BencodeInteger : Meziantou.Framework.Bencode.BencodeValue, System.IEquatable<Meziantou.Framework.Bencode.BencodeInteger>
     {
+        public System.Numerics.BigInteger BigIntegerValue { get => throw null; }
+        public bool IsInt64 { get => throw null; }
         public override Meziantou.Framework.Bencode.BencodeValueKind Kind { get => throw null; }
         public long Value { get => throw null; }
+        public BencodeInteger(System.Numerics.BigInteger value) { }
         public BencodeInteger(long value) { }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Bencode.BencodeInteger? other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
+        public bool TryGetInt64(out long value) => throw null;
         public override void WriteTo(Meziantou.Framework.Bencode.BencodeWriter writer, bool canonical) { }
     }
 
@@ -55,6 +59,24 @@ namespace Meziantou.Framework.Bencode
         public override void WriteTo(Meziantou.Framework.Bencode.BencodeWriter writer, bool canonical) { }
     }
 
+    public sealed class BencodeReader : System.IAsyncDisposable
+    {
+        public long BytesConsumed { get => throw null; }
+        public int CurrentDepth { get => throw null; }
+        public Meziantou.Framework.Bencode.BencodeTokenType TokenType { get => throw null; }
+        public BencodeReader(System.IO.Pipelines.PipeReader reader) { }
+        public BencodeReader(System.IO.Stream stream, bool leaveOpen = false) { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+        public System.Numerics.BigInteger GetBigInteger() => throw null;
+        public System.ReadOnlyMemory<byte> GetBytes() => throw null;
+        public long GetInt64() => throw null;
+        public string GetUtf8String() => throw null;
+        public System.Threading.Tasks.ValueTask<bool> ReadAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask<Meziantou.Framework.Bencode.BencodeValue> ReadValueAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask SkipAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public bool TryGetInt64(out long value) => throw null;
+    }
+
     public sealed class BencodeString : Meziantou.Framework.Bencode.BencodeValue, System.IEquatable<Meziantou.Framework.Bencode.BencodeString>
     {
         public override Meziantou.Framework.Bencode.BencodeValueKind Kind { get => throw null; }
@@ -66,6 +88,18 @@ namespace Meziantou.Framework.Bencode
         public override string ToString() => throw null;
         public string ToUtf8String() => throw null;
         public override void WriteTo(Meziantou.Framework.Bencode.BencodeWriter writer, bool canonical) { }
+    }
+
+    public enum BencodeTokenType
+    {
+        None = 0,
+        Integer = 1,
+        String = 2,
+        Key = 3,
+        StartList = 4,
+        EndList = 5,
+        StartDictionary = 6,
+        EndDictionary = 7,
     }
 
     public abstract class BencodeValue
@@ -94,6 +128,7 @@ namespace Meziantou.Framework.Bencode
         public void Complete() { }
         public void WriteEndDictionary() { }
         public void WriteEndList() { }
+        public void WriteInteger(System.Numerics.BigInteger value) { }
         public void WriteInteger(long value) { }
         public void WriteKey(System.ReadOnlySpan<byte> key) { }
         public void WriteStartDictionary() { }
@@ -108,6 +143,7 @@ namespace Meziantou.Framework.Bencode.Torrent
 {
     public sealed class TorrentFile
     {
+        public System.Collections.Generic.IDictionary<Meziantou.Framework.Bencode.BencodeString, Meziantou.Framework.Bencode.BencodeValue> AdditionalKeys { get => throw null; }
         public string? Announce { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<string>>? AnnounceList { get => throw null; set { } }
         public string? Comment { get => throw null; set { } }
@@ -117,24 +153,37 @@ namespace Meziantou.Framework.Bencode.Torrent
         public System.Collections.Generic.IReadOnlyList<string>? HttpSeeds { get => throw null; set { } }
         public Meziantou.Framework.Bencode.Torrent.TorrentInfo Info { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Bencode.Torrent.TorrentNode>? Nodes { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Bencode.Torrent.TorrentPieceLayer>? PieceLayers { get => throw null; set { } }
         public string? Publisher { get => throw null; set { } }
         public string? PublisherUrl { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<string>? UrlList { get => throw null; set { } }
         public byte[] GetInfoHashSha1() => throw null;
         public byte[] GetInfoHashSha256() => throw null;
         public static Meziantou.Framework.Bencode.Torrent.TorrentFile Parse(System.ReadOnlySpan<byte> data) => throw null;
+        public static System.Threading.Tasks.ValueTask<Meziantou.Framework.Bencode.Torrent.TorrentFile> ParseAsync(System.IO.Pipelines.PipeReader reader, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.ValueTask<Meziantou.Framework.Bencode.Torrent.TorrentFile> ParseAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public byte[] ToUtf8ByteArray(bool canonical = true) => throw null;
         public static bool TryParse(System.ReadOnlySpan<byte> data, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Bencode.Torrent.TorrentFile? result) => throw null;
         public System.Threading.Tasks.ValueTask WriteToAsync(System.IO.Stream stream, bool canonical = true, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
+    public sealed class TorrentFileTreeEntry
+    {
+        public System.Collections.Generic.IDictionary<Meziantou.Framework.Bencode.BencodeString, Meziantou.Framework.Bencode.BencodeValue> AdditionalKeys { get => throw null; }
+        public long Length { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<string> Path { get => throw null; set { } }
+        public System.ReadOnlyMemory<byte> PiecesRoot { get => throw null; set { } }
+    }
+
     public sealed class TorrentInfo
     {
+        public System.Collections.Generic.IDictionary<Meziantou.Framework.Bencode.BencodeString, Meziantou.Framework.Bencode.BencodeValue> AdditionalKeys { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Bencode.Torrent.TorrentFileTreeEntry>? FileTree { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Bencode.Torrent.TorrentInfoFile>? Files { get => throw null; set { } }
         public bool IsPrivate { get => throw null; set { } }
         public long? Length { get => throw null; set { } }
         public string? Md5Sum { get => throw null; set { } }
+        public int? MetaVersion { get => throw null; set { } }
         public string Name { get => throw null; set { } }
         public long PieceLength { get => throw null; set { } }
         public System.ReadOnlyMemory<byte> Pieces { get => throw null; set { } }
@@ -143,6 +192,7 @@ namespace Meziantou.Framework.Bencode.Torrent
 
     public sealed class TorrentInfoFile
     {
+        public System.Collections.Generic.IDictionary<Meziantou.Framework.Bencode.BencodeString, Meziantou.Framework.Bencode.BencodeValue> AdditionalKeys { get => throw null; }
         public long Length { get => throw null; set { } }
         public string? Md5Sum { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<string> Path { get => throw null; set { } }
@@ -152,5 +202,11 @@ namespace Meziantou.Framework.Bencode.Torrent
     {
         public string Host { get => throw null; set { } }
         public int Port { get => throw null; set { } }
+    }
+
+    public sealed class TorrentPieceLayer
+    {
+        public System.ReadOnlyMemory<byte> Hashes { get => throw null; set { } }
+        public System.ReadOnlyMemory<byte> PiecesRoot { get => throw null; set { } }
     }
 }

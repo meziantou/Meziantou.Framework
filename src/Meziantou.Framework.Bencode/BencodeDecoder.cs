@@ -9,6 +9,14 @@ internal static class BencodeDecoder
     /// </remarks>
     public const int MaxDepth = 64;
 
+    /// <summary>The maximum number of digits of a bencode integer, not counting its sign.</summary>
+    /// <remarks>
+    /// Integers can be larger than a <see cref="long"/>, but converting a very long run of digits to a
+    /// <see cref="System.Numerics.BigInteger"/> takes time that grows faster than the input, so untrusted data could make
+    /// parsing slow. 4096 digits is far above any legitimate use (a 4096-bit number has 1234 digits).
+    /// </remarks>
+    public const int MaxIntegerDigits = 4096;
+
     public static BencodeValue Parse(ReadOnlySpan<byte> data)
     {
         var index = 0;
@@ -47,16 +55,9 @@ internal static class BencodeDecoder
         if (index >= data.Length)
             throw new FormatException("Unterminated bencode integer.");
 
-        var integerText = data[start..index];
-        if (!IsValidInteger(integerText))
-            throw new FormatException("Invalid bencode integer format.");
-
-        var integerString = Encoding.ASCII.GetString(integerText);
-        if (!long.TryParse(integerString, CultureInfo.InvariantCulture, out var value))
-            throw new FormatException("Invalid bencode integer value.");
-
+        var value = ParseIntegerText(data[start..index]);
         index++; // e
-        return new BencodeInteger(value);
+        return value;
     }
 
     private static BencodeString ParseString(ReadOnlySpan<byte> data, ref int index)
@@ -144,6 +145,23 @@ internal static class BencodeDecoder
     {
         if (depth >= MaxDepth)
             throw new FormatException($"Bencode data is nested too deeply. The maximum supported depth is {MaxDepth}.");
+    }
+
+    /// <summary>Converts the text between the 'i' and the 'e' of an integer, which must be its only encoding.</summary>
+    public static BencodeInteger ParseIntegerText(ReadOnlySpan<byte> text)
+    {
+        if (!IsValidInteger(text))
+            throw new FormatException("Invalid bencode integer format.");
+
+        var digitCount = text[0] is (byte)'-' ? text.Length - 1 : text.Length;
+        if (digitCount > MaxIntegerDigits)
+            throw new FormatException($"The bencode integer has too many digits. The maximum supported is {MaxIntegerDigits}.");
+
+        // 18 digits always fit in a long
+        if (digitCount <= 18)
+            return new BencodeInteger(long.Parse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture));
+
+        return new BencodeInteger(System.Numerics.BigInteger.Parse(Encoding.ASCII.GetString(text), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture));
     }
 
     private static bool IsValidInteger(ReadOnlySpan<byte> value)

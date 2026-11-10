@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Globalization;
+using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -16,13 +17,17 @@ namespace Meziantou.Framework.Bencode.Fuzz;
 /// others with a <see cref="FormatException"/>. The span decoder and the <see cref="System.IO.Pipelines.PipeReader"/>
 /// decoder agree whatever the chunks the data arrives in. A decoded value written back in insertion order gives the input,
 /// and its canonical encoding is a fixed point. <see cref="BencodeWriter"/> rejects an out-of-order call with an
-/// <see cref="InvalidOperationException"/> that leaves its output unchanged. A torrent that parses has a consistent model,
-/// its info-hash is the hash of the bytes of its 'info' dictionary, and it round-trips through its writer.
+/// <see cref="InvalidOperationException"/> that leaves its output unchanged. <see cref="BencodeReader"/> returns the tokens of
+/// the decoded value. A torrent that parses has a consistent model, its info-hash is the hash of the bytes of its 'info'
+/// dictionary, and it round-trips through its writer.
 /// </summary>
 public static partial class BencodeFuzzTargets
 {
     // BencodeDecoder.MaxDepth
     private const int MaxDepth = 64;
+
+    // BencodeDecoder.MaxIntegerDigits
+    private const int MaxIntegerDigits = 4096;
 
     private static readonly BencodeString InfoKey = new("info"u8.ToArray());
 
@@ -32,12 +37,15 @@ public static partial class BencodeFuzzTargets
         "0:", "1:", "2:", "4:", "20:", "00:", "01:", "2147483647:", "2147483648:", "4294967296:", "1:a", "1:b", "3:cow", "3:moo", "4:spam", "4:eggs",
         "4:info", "4:name", "6:length", "12:piece length", "6:pieces", "5:files", "4:path", "7:private", "6:source", "6:md5sum", "8:announce", "13:announce-list", "7:comment", "10:created by", "13:creation date",
         "8:url-list", "9:httpseeds", "5:nodes", "8:encoding", "9:publisher", "13:publisher-url", "2:..", "1:.", "1:/", "1:\\", "i65535e", "i65536e", "i16384e", "i253402300799e", "i253402300800e", "i-62135596801e",
+        "i99999999999999999999e", "i-99999999999999999999e", "12:meta version", "9:file tree", "11:pieces root", "12:piece layers", "4:attr", "1:p", "i2e", "i32768e",
+        "3:GBK", "12:windows-1251", "9:shift_jis", "10:iso-8859-1", "5:UTF-8", "6:utf-16", "32:", "64:", "96:",
     ];
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("bencode-parse", Parse) { Seeds = GetParseSeeds, Dictionary = Tokens },
         new("bencode-pipe-reader", PipeReaderParse) { Seeds = GetPipeReaderSeeds, Dictionary = Tokens },
+        new("bencode-reader", Reader) { Seeds = GetPipeReaderSeeds, Dictionary = Tokens },
         new("bencode-writer", Writer) { Seeds = GetWriterSeeds },
         new("bencode-torrent", Torrent) { Seeds = GetTorrentSeeds, Dictionary = Tokens },
     ];
@@ -140,6 +148,182 @@ public static partial class BencodeFuzzTargets
     }
 
     /// <summary>
+    /// <c>mode, chunks, document</c>: <see cref="BencodeReader"/> reads the document in chunks whose sizes come from
+    /// <c>chunks</c>, through a <see cref="ChunkedPipeReader"/> (even <c>mode</c>) or a stream (odd <c>mode</c>). It reads
+    /// exactly the documents the reference validator accepts, ignoring duplicate keys that only <see cref="BencodeReader.ReadValueAsync"/>
+    /// detects, and returns the tokens of the value the span decoder returns, with their depth and position. The bits of
+    /// <c>mode</c> choose the containers it reads with <see cref="BencodeReader.ReadValueAsync"/> or skips with
+    /// <see cref="BencodeReader.SkipAsync"/>, which give the value or the end of the container.
+    /// </summary>
+    private static void Reader(ReadOnlySpan<byte> data)
+    {
+        var mode = FuzzInput.ReadByte(ref data);
+        var sizer = new ChunkSizer(FuzzInput.ReadByte(ref data));
+        var bytes = data.ToArray();
+        var isValid = IsValidDocument(bytes, allowDuplicateKeys: true);
+
+        // The tokens of the value the span decoder returns, when the document has no duplicate key
+        BencodeValue? expectedValue;
+        try
+        {
+            expectedValue = BencodeDocument.Parse(bytes).Root;
+        }
+        catch (FormatException)
+        {
+            expectedValue = null;
+        }
+
+        List<ExpectedToken>? expected = null;
+        if (expectedValue is not null)
+        {
+            expected = [];
+            AddTokens(expectedValue, depth: 0, expected);
+        }
+
+        ChunkedPipeReader? pipeReader = (mode & 1) is 0 ? new ChunkedPipeReader(bytes, sizer) : null;
+        var reader = pipeReader is not null ? new BencodeReader(pipeReader) : new BencodeReader(new ShortReadStream(bytes, sizer));
+        var choices = mode >> 1;
+        var tokenIndex = 0;
+        var succeeded = false;
+        try
+        {
+            long previousPosition = 0;
+            while (reader.ReadAsync().AsTask().GetAwaiter().GetResult())
+            {
+                FuzzAssert.True(reader.BytesConsumed > previousPosition && reader.BytesConsumed <= bytes.Length, "BytesConsumed does not grow within the document");
+                previousPosition = reader.BytesConsumed;
+                if (expected is not null)
+                {
+                    FuzzAssert.True(tokenIndex < expected.Count, "The reader returned more tokens than the value has");
+                    CheckToken(reader, expected[tokenIndex]);
+                }
+
+                var token = expected?[tokenIndex];
+                tokenIndex++;
+                if (reader.TokenType is BencodeTokenType.StartList or BencodeTokenType.StartDictionary)
+                {
+                    var choice = choices & 3;
+                    choices = ((choices >> 2) | (choices << 5)) & 0x7F;
+                    if (choice is 1)
+                    {
+                        var value = reader.ReadValueAsync().AsTask().GetAwaiter().GetResult();
+                        if (token is not null)
+                        {
+                            FuzzAssert.True(AreEqual(token.Value!, value, ordered: true), "ReadValueAsync returned a different value");
+                        }
+
+                        tokenIndex = token?.EndIndex + 1 ?? tokenIndex;
+                        FuzzAssert.True(reader.TokenType is BencodeTokenType.EndList or BencodeTokenType.EndDictionary, "ReadValueAsync did not stop at the end of the container");
+                    }
+                    else if (choice is 2)
+                    {
+                        reader.SkipAsync().AsTask().GetAwaiter().GetResult();
+                        tokenIndex = token?.EndIndex + 1 ?? tokenIndex;
+                        FuzzAssert.True(reader.TokenType is BencodeTokenType.EndList or BencodeTokenType.EndDictionary, "SkipAsync did not stop at the end of the container");
+                    }
+
+                    previousPosition = reader.BytesConsumed;
+                }
+            }
+
+            succeeded = true;
+            FuzzAssert.Equal(BencodeTokenType.None, reader.TokenType, "The token after the end is not None");
+            FuzzAssert.Equal((long)bytes.Length, reader.BytesConsumed, "The reader did not consume the whole document");
+            FuzzAssert.False(reader.ReadAsync().AsTask().GetAwaiter().GetResult(), "The reader read past the end");
+        }
+        catch (FormatException ex)
+        {
+            // ReadValueAsync detects duplicate keys
+            FuzzAssert.True(!isValid || expectedValue is null, "The reader rejected a valid document: " + ex.Message);
+        }
+        finally
+        {
+            reader.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        }
+
+        if (succeeded)
+        {
+            FuzzAssert.True(isValid, "The reader accepted an invalid document");
+            if (expected is not null)
+            {
+                FuzzAssert.Equal(expected.Count, tokenIndex, "The reader returned fewer tokens than the value has");
+            }
+        }
+
+        if (pipeReader is not null)
+        {
+            FuzzAssert.False(pipeReader.IsReading, "The reader was disposed without advancing the pipe past its last read");
+        }
+
+        static void CheckToken(BencodeReader reader, ExpectedToken token)
+        {
+            FuzzAssert.Equal(token.Type, reader.TokenType, "The reader returned another token");
+            FuzzAssert.Equal(token.Depth, reader.CurrentDepth, "The reader reported another depth");
+            switch (token.Value)
+            {
+                case BencodeInteger integer:
+                    FuzzAssert.Equal(integer.BigIntegerValue, reader.GetBigInteger(), "The reader returned another integer");
+                    FuzzAssert.Equal(integer.IsInt64, reader.TryGetInt64(out var value), "TryGetInt64 does not match the size of the integer");
+                    if (integer.IsInt64)
+                    {
+                        FuzzAssert.Equal(integer.Value, value, "TryGetInt64 returned another integer");
+                        FuzzAssert.Equal(integer.Value, reader.GetInt64(), "GetInt64 returned another integer");
+                    }
+
+                    break;
+
+                case BencodeString text when token.Type is BencodeTokenType.String or BencodeTokenType.Key:
+                    FuzzAssert.True(text.Value.Span.SequenceEqual(reader.GetBytes().Span), "The reader returned other bytes");
+                    break;
+            }
+        }
+    }
+
+    private static void AddTokens(BencodeValue value, int depth, List<ExpectedToken> tokens)
+    {
+        switch (value)
+        {
+            case BencodeInteger:
+                tokens.Add(new ExpectedToken(BencodeTokenType.Integer, depth, value));
+                break;
+
+            case BencodeString:
+                tokens.Add(new ExpectedToken(BencodeTokenType.String, depth, value));
+                break;
+
+            case BencodeList list:
+                var listToken = new ExpectedToken(BencodeTokenType.StartList, depth, value);
+                tokens.Add(listToken);
+                foreach (var item in list)
+                {
+                    AddTokens(item, depth + 1, tokens);
+                }
+
+                listToken.EndIndex = tokens.Count;
+                tokens.Add(new ExpectedToken(BencodeTokenType.EndList, depth, Value: null));
+                break;
+
+            case BencodeDictionary dictionary:
+                var dictionaryToken = new ExpectedToken(BencodeTokenType.StartDictionary, depth, value);
+                tokens.Add(dictionaryToken);
+                foreach (var entry in dictionary)
+                {
+                    tokens.Add(new ExpectedToken(BencodeTokenType.Key, depth + 1, entry.Key));
+                    AddTokens(entry.Value, depth + 1, tokens);
+                }
+
+                dictionaryToken.EndIndex = tokens.Count;
+                tokens.Add(new ExpectedToken(BencodeTokenType.EndDictionary, depth, Value: null));
+                break;
+        }
+    }
+
+    private sealed record ExpectedToken(BencodeTokenType Type, int Depth, BencodeValue? Value)
+    {
+        public int EndIndex { get; set; }
+    }
+
+    /// <summary>
     /// The input is a sequence of <see cref="BencodeWriter"/> calls (an opcode byte, then its operand). A model of the
     /// encoding says which calls are valid and what they write: a valid call succeeds, an invalid one throws
     /// <see cref="InvalidOperationException"/> and writes nothing, and the output is always the model's. A complete output
@@ -152,7 +336,7 @@ public static partial class BencodeFuzzTargets
         var model = new WriterModel();
         while (!data.IsEmpty)
         {
-            var opcode = FuzzInput.ReadByte(ref data) % 11;
+            var opcode = FuzzInput.ReadByte(ref data) % 12;
             byte[] expectedBytes;
             bool isValid;
             Action call;
@@ -224,6 +408,13 @@ public static partial class BencodeFuzzTargets
                     call = writer.WriteEndDictionary;
                     break;
 
+                case 11:
+                    var bigInteger = new BigInteger(ReadBytes(ref data), isUnsigned: false, isBigEndian: false);
+                    isValid = model.CanWriteValue;
+                    expectedBytes = Encoding.ASCII.GetBytes("i" + bigInteger.ToString(CultureInfo.InvariantCulture) + "e");
+                    call = () => writer.WriteInteger(bigInteger);
+                    break;
+
                 default:
                     isValid = model.IsComplete;
                     expectedBytes = [];
@@ -268,14 +459,16 @@ public static partial class BencodeFuzzTargets
 
     /// <summary>
     /// <c>chunks, document</c>: <see cref="TorrentFile.Parse"/>, <see cref="TorrentFile.TryParse"/>, and
-    /// <see cref="TorrentFile.ParseAsync"/> (reading in chunks) agree. A parsed torrent satisfies the rules of its model, its
+    /// <see cref="TorrentFile.ParseAsync(Stream, CancellationToken)"/> or <see cref="TorrentFile.ParseAsync(System.IO.Pipelines.PipeReader, CancellationToken)"/>
+    /// (reading in chunks, the high bit of <c>chunks</c> choosing the pipe) agree. A parsed torrent satisfies the rules of its model, its
     /// info-hashes are the hashes of the exact bytes of its 'info' dictionary, and writing it gives a torrent with the same
     /// model whose encoding is a fixed point and whose info-hash is the one of the model.
     /// </summary>
     [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 info-hash is SHA-1.")]
     private static void Torrent(ReadOnlySpan<byte> data)
     {
-        var sizer = new ChunkSizer(FuzzInput.ReadByte(ref data));
+        var sizerSeed = FuzzInput.ReadByte(ref data);
+        var sizer = new ChunkSizer(sizerSeed);
         var bytes = data.ToArray();
 
         TorrentFile? torrent;
@@ -292,14 +485,29 @@ public static partial class BencodeFuzzTargets
         FuzzAssert.Equal(torrent is not null, tryParsed, "Parse and TryParse disagree");
 
         TorrentFile? asyncResult;
+        ChunkedPipeReader? pipeReader = null;
         try
         {
-            using var stream = new ShortReadStream(bytes, sizer);
-            asyncResult = TorrentFile.ParseAsync(stream).AsTask().GetAwaiter().GetResult();
+            if ((sizerSeed & 0x80) is not 0)
+            {
+                pipeReader = new ChunkedPipeReader(bytes, sizer);
+                asyncResult = TorrentFile.ParseAsync(pipeReader).AsTask().GetAwaiter().GetResult();
+                FuzzAssert.Equal(bytes.Length, pipeReader.Consumed, "ParseAsync did not consume the whole torrent");
+            }
+            else
+            {
+                using var stream = new ShortReadStream(bytes, sizer);
+                asyncResult = TorrentFile.ParseAsync(stream).AsTask().GetAwaiter().GetResult();
+            }
         }
         catch (FormatException)
         {
             asyncResult = null;
+        }
+
+        if (pipeReader is not null)
+        {
+            FuzzAssert.False(pipeReader.IsReading, "ParseAsync returned without advancing the reader past its last read");
         }
 
         FuzzAssert.Equal(torrent is not null, asyncResult is not null, "Parse and ParseAsync disagree");
@@ -322,10 +530,11 @@ public static partial class BencodeFuzzTargets
         {
             written = torrent.ToUtf8ByteArray();
         }
-        catch (FormatException)
+        catch (FormatException ex)
         {
-            // The parser accepts an empty URL or host that the writer rejects
-            FuzzAssert.True(HasEmptyListEntry(torrent), "A parsed torrent cannot be written");
+            // The parser accepts an empty URL or host that the writer rejects, and text that decodes to characters a code
+            // page cannot encode back, or to paths of the file tree that are no longer distinct
+            FuzzAssert.True(HasEmptyListEntry(torrent) || ResolveEncoding(torrent.Encoding) is not null, "A parsed torrent cannot be written: " + ex.Message);
             return;
         }
 
@@ -345,6 +554,18 @@ public static partial class BencodeFuzzTargets
         {
             case BencodeInteger integer:
                 FuzzAssert.Equal(BencodeValueKind.Integer, integer.Kind, "Wrong kind");
+                var big = integer.BigIntegerValue;
+                FuzzAssert.Equal(big >= long.MinValue && big <= long.MaxValue, integer.IsInt64, "IsInt64 does not match the value");
+                FuzzAssert.Equal(integer.IsInt64, integer.TryGetInt64(out var int64), "TryGetInt64 does not match IsInt64");
+                if (integer.IsInt64)
+                {
+                    FuzzAssert.Equal(big, (BigInteger)int64, "TryGetInt64 returned another value");
+                    FuzzAssert.Equal(int64, integer.Value, "Value is not the value of TryGetInt64");
+                }
+
+                var integerCopy = new BencodeInteger(big);
+                FuzzAssert.True(integerCopy.Equals(integer) && integerCopy.GetHashCode() == integer.GetHashCode(), "Equal integers are not equal or have different hashes");
+                FuzzAssert.Equal(big.ToString(CultureInfo.InvariantCulture), integer.ToString(), "ToString does not format the value");
                 break;
 
             case BencodeString text:
@@ -442,7 +663,7 @@ public static partial class BencodeFuzzTargets
         switch (left, right)
         {
             case (BencodeInteger a, BencodeInteger b):
-                return a.Value == b.Value;
+                return a.BigIntegerValue == b.BigIntegerValue;
 
             case (BencodeString a, BencodeString b):
                 return a.Value.Span.SequenceEqual(b.Value.Span);
@@ -480,9 +701,45 @@ public static partial class BencodeFuzzTargets
         var info = torrent.Info;
         CheckPathSegment(info.Name);
         FuzzAssert.True(info.PieceLength > 0, "The piece length is not positive");
-        FuzzAssert.True(!info.Pieces.IsEmpty && info.Pieces.Length % 20 is 0, "The piece hashes are not a non-empty multiple of 20 bytes");
-        FuzzAssert.True(info.Length.HasValue != info.Files is not null, "A torrent must have either a length or files");
+        FuzzAssert.Equal(info.FileTree is not null, info.MetaVersion is 2, "A torrent has a file tree exactly when its meta version is 2");
+        var isV2Only = info.FileTree is not null && info.Pieces.IsEmpty && info.Length is null && info.Files is null;
+        if (!isV2Only)
+        {
+            FuzzAssert.True(!info.Pieces.IsEmpty && info.Pieces.Length % 20 is 0, "The piece hashes are not a non-empty multiple of 20 bytes");
+            FuzzAssert.True(info.Length.HasValue != info.Files is not null, "A torrent must have either a length or files");
+        }
+
         FuzzAssert.False(info.Length < 0, "The length is negative");
+        if (info.FileTree is not null)
+        {
+            FuzzAssert.True(info.PieceLength >= 16384 && BitOperations.IsPow2(info.PieceLength), "The piece length of a v2 torrent is not a power of two of at least 16 KiB");
+            FuzzAssert.True(info.FileTree.Count > 0, "A file tree has no file");
+            var paths = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var entry in info.FileTree)
+            {
+                FuzzAssert.True(entry.Length >= 0, "A file tree length is negative");
+                FuzzAssert.Equal(entry.Length > 0 ? 32 : 0, entry.PiecesRoot.Length, "A pieces root is not 32 bytes for a non-empty file and absent otherwise");
+                FuzzAssert.True(entry.Path.Count > 0, "A file tree entry has no path");
+                foreach (var segment in entry.Path)
+                {
+                    CheckPathSegment(segment);
+                }
+
+                // The paths are distinct, and a file is not the directory of another file
+                for (var i = 1; i <= entry.Path.Count; i++)
+                {
+                    var prefix = string.Join('/', entry.Path.Take(i));
+                    var isFile = i == entry.Path.Count;
+                    var isValid = isFile ? !paths.Contains("d:" + prefix) && paths.Add("f:" + prefix) : !paths.Contains("f:" + prefix) && (paths.Add("d:" + prefix) || true);
+                    FuzzAssert.True(isValid, "Two file tree entries conflict: " + FuzzAssert.Format(prefix));
+                }
+            }
+        }
+
+        foreach (var layer in torrent.PieceLayers ?? [])
+        {
+            FuzzAssert.True(layer.PiecesRoot.Length is 32 && !layer.Hashes.IsEmpty && layer.Hashes.Length % 32 is 0, "A piece layer has a pieces root that is not 32 bytes or hashes that are not a non-empty multiple of 32 bytes");
+        }
         if (info.Files is not null)
         {
             FuzzAssert.True(info.Files.Count > 0, "A multi-file torrent has no file");
@@ -505,6 +762,23 @@ public static partial class BencodeFuzzTargets
         static void CheckPathSegment(string segment)
         {
             FuzzAssert.True(segment is { Length: > 0 } and not "." and not ".." && !segment.AsSpan().ContainsAny('/', '\\'), "An unsafe path segment was accepted: " + FuzzAssert.Format(segment));
+        }
+    }
+
+    /// <summary>The encoding the library uses for the text fields, from the same rules: <see langword="null"/> for UTF-8 or an unknown name.</summary>
+    private static Encoding? ResolveEncoding(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return null;
+
+        try
+        {
+            var encoding = CodePagesEncodingProvider.Instance.GetEncoding(name.Trim()) ?? Encoding.GetEncoding(name.Trim());
+            return encoding.CodePage is 65001 ? null : encoding;
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+        {
+            return null;
         }
     }
 
@@ -540,7 +814,17 @@ public static partial class BencodeFuzzTargets
         FuzzAssert.Equal(expectedInfo.Length, actualInfo.Length, message + "length");
         FuzzAssert.Equal(expectedInfo.Source, actualInfo.Source, message + "source");
         FuzzAssert.Equal(expectedInfo.Md5Sum, actualInfo.Md5Sum, message + "md5sum");
-        FuzzAssert.True(SameLists(expectedInfo.Files, actualInfo.Files, (a, b) => a.Length == b.Length && a.Md5Sum == b.Md5Sum && a.Path.SequenceEqual(b.Path, StringComparer.Ordinal)), message + "files");
+        FuzzAssert.True(SameLists(expectedInfo.Files, actualInfo.Files, (a, b) => a.Length == b.Length && a.Md5Sum == b.Md5Sum && a.Path.SequenceEqual(b.Path, StringComparer.Ordinal) && SameKeys(a.AdditionalKeys, b.AdditionalKeys)), message + "files");
+        FuzzAssert.Equal(expectedInfo.MetaVersion, actualInfo.MetaVersion, message + "meta version");
+        FuzzAssert.True(SameLists(expectedInfo.FileTree?.OrderBy(entry => string.Join('/', entry.Path), StringComparer.Ordinal).ToList(), actualInfo.FileTree?.OrderBy(entry => string.Join('/', entry.Path), StringComparer.Ordinal).ToList(), (a, b) => a.Length == b.Length && a.PiecesRoot.Span.SequenceEqual(b.PiecesRoot.Span) && a.Path.SequenceEqual(b.Path, StringComparer.Ordinal) && SameKeys(a.AdditionalKeys, b.AdditionalKeys)), message + "file tree");
+        FuzzAssert.True(SameLists(expected.PieceLayers?.OrderBy(layer => Convert.ToHexString(layer.PiecesRoot.Span), StringComparer.Ordinal).ToList(), actual.PieceLayers?.OrderBy(layer => Convert.ToHexString(layer.PiecesRoot.Span), StringComparer.Ordinal).ToList(), (a, b) => a.PiecesRoot.Span.SequenceEqual(b.PiecesRoot.Span) && a.Hashes.Span.SequenceEqual(b.Hashes.Span)), message + "piece layers");
+        FuzzAssert.True(SameKeys(expected.AdditionalKeys, actual.AdditionalKeys), message + "additional keys");
+        FuzzAssert.True(SameKeys(expectedInfo.AdditionalKeys, actualInfo.AdditionalKeys), message + "additional info keys");
+
+        static bool SameKeys(IDictionary<BencodeString, BencodeValue> a, IDictionary<BencodeString, BencodeValue> b)
+        {
+            return a.Count == b.Count && a.All(entry => b.TryGetValue(entry.Key, out var other) && AreEqual(entry.Value, other, ordered: false));
+        }
 
         static bool SameLists<T>(IReadOnlyList<T>? a, IReadOnlyList<T>? b, Func<T, T, bool> equals)
         {
@@ -551,13 +835,13 @@ public static partial class BencodeFuzzTargets
         }
     }
 
-    private static bool IsValidDocument(ReadOnlySpan<byte> data)
+    private static bool IsValidDocument(ReadOnlySpan<byte> data, bool allowDuplicateKeys = false)
     {
         var index = 0;
-        return IsValidValue(data, ref index, depth: 0) && index == data.Length;
+        return IsValidValue(data, ref index, depth: 0, allowDuplicateKeys) && index == data.Length;
     }
 
-    private static bool IsValidValue(ReadOnlySpan<byte> data, ref int index, int depth)
+    private static bool IsValidValue(ReadOnlySpan<byte> data, ref int index, int depth, bool allowDuplicateKeys)
     {
         if (index >= data.Length)
             return false;
@@ -573,7 +857,9 @@ public static partial class BencodeFuzzTargets
                 var digits = data.Slice(index, length);
                 index += length + 1;
                 var isNegative = !digits.IsEmpty && digits[0] is (byte)'-';
-                return IsCanonicalNumber(isNegative ? digits[1..] : digits, isNegative ? "9223372036854775808"u8 : "9223372036854775807"u8)
+                var magnitude = isNegative ? digits[1..] : digits;
+                return magnitude.Length <= MaxIntegerDigits
+                    && IsCanonicalNumber(magnitude, max: [])
                     && !(isNegative && digits is [_, (byte)'0']);
 
             case >= (byte)'0' and <= (byte)'9':
@@ -592,7 +878,7 @@ public static partial class BencodeFuzzTargets
                         return true;
                     }
 
-                    if (!IsValidValue(data, ref index, depth + 1))
+                    if (!IsValidValue(data, ref index, depth + 1, allowDuplicateKeys))
                         return false;
                 }
 
@@ -612,7 +898,7 @@ public static partial class BencodeFuzzTargets
                         return true;
                     }
 
-                    if (!TryReadString(data, ref index, out var key) || !keys.Add(Convert.ToHexString(key)) || !IsValidValue(data, ref index, depth + 1))
+                    if (!TryReadString(data, ref index, out var key) || !(keys.Add(Convert.ToHexString(key)) || allowDuplicateKeys) || !IsValidValue(data, ref index, depth + 1, allowDuplicateKeys))
                         return false;
                 }
 
@@ -640,11 +926,14 @@ public static partial class BencodeFuzzTargets
         return true;
     }
 
-    /// <summary>Gets whether the digits are <c>0</c> or a number without a leading zero that is at most <paramref name="max"/>.</summary>
+    /// <summary>Gets whether the digits are <c>0</c> or a number without a leading zero that is at most <paramref name="max"/> (no bound when empty).</summary>
     private static bool IsCanonicalNumber(ReadOnlySpan<byte> digits, ReadOnlySpan<byte> max)
     {
         if (digits.IsEmpty || digits.ContainsAnyExceptInRange((byte)'0', (byte)'9') || (digits.Length > 1 && digits[0] is (byte)'0'))
             return false;
+
+        if (max.IsEmpty)
+            return true;
 
         // Numbers of the same length compare as their digits do
         return digits.Length < max.Length || (digits.Length == max.Length && digits.SequenceCompareTo(max) <= 0);
@@ -690,7 +979,7 @@ public static partial class BencodeFuzzTargets
         var index = 0;
         foreach (var (name, document) in GetDocuments())
         {
-            yield return new FuzzSeed(name, (byte[])[(byte)(index++ % 2 is 0 ? 0 : 0x23), .. document]);
+            yield return new FuzzSeed(name, (byte[])[(byte)(index++ % 3 switch { 0 => 0, 1 => 0x23, _ => 0x85 }), .. document]);
         }
     }
 
@@ -700,6 +989,7 @@ public static partial class BencodeFuzzTargets
         yield return new FuzzSeed("dictionary", (byte[])[6, 7, 3, .. "cow"u8, 1, 3, .. "moo"u8, 8, 4, .. "spam"u8, 4, 0, 42, 0, 0, 0, 0, 0, 0, 0, 3, 3, .. "abc"u8, 5, 9, 10]);
         yield return new FuzzSeed("integer", (byte[])[0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 10]);
         yield return new FuzzSeed("string", (byte[])[2, 5, .. "hello"u8, 10]);
+        yield return new FuzzSeed("big-integer", (byte[])[4, 11, 12, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 11, 1, 0x80, 5, 10]);
 
         // Out-of-order calls: a value where a key is expected, a key in a list, mismatched ends, a second root
         yield return new FuzzSeed("invalid-calls", (byte[])[6, 0, 1, 0, 0, 0, 0, 0, 0, 0, 5, 7, 1, (byte)'a', 5, 9, 9, 4, 10, 7, 1, (byte)'b', 5, 0, 2, 0, 0, 0, 0, 0, 0, 0]);
@@ -735,6 +1025,20 @@ public static partial class BencodeFuzzTargets
         yield return ("url-list-string", "d4:infod6:lengthi5e4:name1:a12:piece lengthi1e6:pieces20:01234567890123456789e8:url-list12:https://w.ioe"u8.ToArray());
         yield return ("empty-url-list", "d4:infod6:lengthi5e4:name1:a12:piece lengthi1e6:pieces20:01234567890123456789e8:url-list0:e"u8.ToArray());
         yield return ("ubuntu-torrent", GetSmallUbuntuTorrent());
+        yield return ("hybrid-torrent", ReadResource("hybrid.torrent"));
+        yield return ("v2-torrent", ReadResource("v2.torrent"));
+        var gbk = CodePagesEncodingProvider.Instance.GetEncoding("GBK")!;
+        yield return ("gbk-torrent", [.. "d7:comment4:"u8, .. gbk.GetBytes("中文"), .. "8:encoding3:GBK4:infod6:lengthi1e4:name8:"u8, .. gbk.GetBytes("文件.txt"), .. "12:piece lengthi16384e6:pieces20:01234567890123456789ee"u8]);
+        yield return ("big-integers", Encoding.ASCII.GetBytes("li99999999999999999999ei-99999999999999999999ei" + new string('9', MaxIntegerDigits) + "ee"));
+        yield return ("too-many-digits", Encoding.ASCII.GetBytes("i" + new string('9', MaxIntegerDigits + 1) + "e"));
+    }
+
+    private static byte[] ReadResource(string name)
+    {
+        using var stream = FuzzResources.Open(typeof(BencodeFuzzTargets).Assembly, name);
+        using var buffer = new MemoryStream();
+        stream.CopyTo(buffer);
+        return buffer.ToArray();
     }
 
     /// <summary>The sample torrent of the unit tests, with its first two piece hashes only so that the seed stays small.</summary>
@@ -779,7 +1083,7 @@ public static partial class BencodeFuzzTargets
             Output.Write(bytes);
             switch (opcode)
             {
-                case 0 or 1 or 2 or 3:
+                case 0 or 1 or 2 or 3 or 11:
                     StartValue();
                     if (_containers.Count is 0)
                     {

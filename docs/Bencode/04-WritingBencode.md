@@ -58,7 +58,7 @@ Assert.Equal("d3:cow3:mooe"u8.ToArray(), data);
 <!-- endref -->
 
 - Inside a dictionary, write a key ([WriteUtf8Key](cref:Meziantou.Framework.Bencode.BencodeWriter.WriteUtf8Key) or [WriteKey](cref:Meziantou.Framework.Bencode.BencodeWriter.WriteKey)) before each value.
-- [WriteString](cref:Meziantou.Framework.Bencode.BencodeWriter.WriteString) writes bytes and [WriteUtf8String](cref:Meziantou.Framework.Bencode.BencodeWriter.WriteUtf8String) writes text as UTF-8; [WriteInteger](cref:Meziantou.Framework.Bencode.BencodeWriter.WriteInteger) writes a `long`.
+- [WriteString](cref:Meziantou.Framework.Bencode.BencodeWriter.WriteString) writes bytes and [WriteUtf8String](cref:Meziantou.Framework.Bencode.BencodeWriter.WriteUtf8String) writes text as UTF-8; [WriteInteger](cref:Meziantou.Framework.Bencode.BencodeWriter.WriteInteger) writes a `long` or a `BigInteger`.
 - The writer checks the structure: it throws an `InvalidOperationException` for a value without its key, a container
   closed in the wrong order, or a second root value. [Complete](cref:Meziantou.Framework.Bencode.BencodeWriter.Complete) throws when a container is still open.
 - The writer writes the keys in the order you write them: write them sorted to produce canonical bencode.

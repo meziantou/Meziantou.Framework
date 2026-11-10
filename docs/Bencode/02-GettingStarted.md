@@ -76,6 +76,8 @@ Dictionary keys are [BencodeString](cref:Meziantou.Framework.Bencode.BencodeStri
 
 ## Next steps
 
-- [Reading bencode](03-ReadingBencode.md): parse from memory, a stream or a pipe, and read strings safely.
+- [Reading bencode](03-ReadingBencode.md): parse from memory, a stream or a pipe, read tokens one at a time, and read
+  strings and large integers safely.
 - [Writing bencode](04-WritingBencode.md): build values and encode them, or write them directly.
-- [Torrent files](05-TorrentFiles.md): the torrent model, multi-file torrents and creating a torrent.
+- [Torrent files](05-TorrentFiles.md): the torrent model, multi-file and BitTorrent v2 torrents, text encodings, and
+  creating a torrent.

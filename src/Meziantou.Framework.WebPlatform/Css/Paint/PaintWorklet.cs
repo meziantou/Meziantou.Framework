@@ -215,6 +215,8 @@ internal sealed class PaintWorklet : Worklet
                 classConstructor.Invoke(definition.PaintFunction, paintInstance, [renderingContext, new PaintSize(width, height), styleMap, arguments]);
             }
 
+            // The layers that the callback did not end are drawn
+            renderingContext.EndLayers();
             var recording = bitmap.TakeRecording();
             if (definition.Alpha)
                 return recording;

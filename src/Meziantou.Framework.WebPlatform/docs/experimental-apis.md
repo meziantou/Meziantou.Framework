@@ -170,3 +170,13 @@ Their APIs and behavior may change while the proposals are under discussion.
 [Document Policy](https://wicg.github.io/document-policy/#iframe-policy-attribute) draft: the required document policy of
 the iframe, sent in the `Sec-Required-Document-Policy` header of its navigations. Only Chromium implements it, behind a
 flag. Its API and behavior may change while the proposal is under discussion.
+
+<a id="WEBPLATEXP0017"></a>
+
+## WEBPLATEXP0017: canvas layers
+
+`CanvasRenderingContext2DBase.BeginLayer()` and `CanvasRenderingContext2DBase.EndLayer()` implement the canvas layers of
+the [proposal](https://github.com/whatwg/html/pull/9537) (see the
+[explainer](https://github.com/fserb/canvas2D/blob/master/spec/layers.md)), as tested by the tentative web-platform-tests
+of `html/canvas/element/layers`. Chromium implements them behind a flag. Their API and behavior may change while the
+proposal is under discussion.

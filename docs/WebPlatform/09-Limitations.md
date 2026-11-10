@@ -30,7 +30,7 @@ fails.
   - the SVG color glyphs (the `SVG ` table of a font): they are drawn as their outlines (the `COLR` glyphs, versions 0 and
     1, and the bitmap glyphs of `sbix` and `CBDT` are drawn with their colors);
   - the wrapping of the SVG texts in the shapes of `shape-inside`;
-  - the canvas layers (`beginLayer()`).
+  - the `CanvasFilter` objects, also as the filter of a canvas layer (`beginLayer()`).
 
   Float16 canvas storage and transfers are supported, but gradients and intermediate effects use normalized 16-bit colors
   (see [Canvas](07-Rendering/05-Canvas.md)). As in Blink, the painted boxes and the baselines are snapped to the device

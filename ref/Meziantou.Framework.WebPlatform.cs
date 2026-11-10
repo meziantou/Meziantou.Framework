@@ -3201,6 +3201,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public new string ReturnValue { get => throw null; set { } }
     }
 
+    public sealed class BeginLayerOptions
+    {
+        public object? Filter { get => throw null; init { } }
+    }
+
     public enum BinaryType
     {
         Blob = 0,
@@ -3569,6 +3574,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string WordSpacing { get => throw null; set { } }
         public void Arc(double x, double y, double radius, double startAngle, double endAngle, bool counterclockwise = false) { }
         public void ArcTo(double x1, double y1, double x2, double y2, double radius) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0017", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void BeginLayer(Meziantou.Framework.WebPlatform.Dom.BeginLayerOptions? options = null) { }
         public void BeginPath() { }
         public void BezierCurveTo(double cp1x, double cp1y, double cp2x, double cp2y, double x, double y) { }
         public void ClearRect(double x, double y, double w, double h) { }
@@ -3587,6 +3594,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void DrawImage(object? image, double dx, double dy, double dw, double dh) { }
         public void DrawImage(object? image, double sx, double sy, double sw, double sh, double dx, double dy, double dw, double dh) { }
         public void Ellipse(double x, double y, double radiusX, double radiusY, double rotation, double startAngle, double endAngle, bool counterclockwise = false) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0017", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void EndLayer() { }
         public void Fill(Meziantou.Framework.WebPlatform.Dom.CanvasFillRule fillRule = Meziantou.Framework.WebPlatform.Dom.CanvasFillRule.NonZero) { }
         public void Fill(Meziantou.Framework.WebPlatform.Dom.Path2D path, Meziantou.Framework.WebPlatform.Dom.CanvasFillRule fillRule = Meziantou.Framework.WebPlatform.Dom.CanvasFillRule.NonZero) { }
         public void FillRect(double x, double y, double w, double h) { }

@@ -629,6 +629,21 @@ internal static class Binding_CanvasRenderingContext2D<TAdapter, TValue> where T
         var a7 = r.IsMissing(a, 7) ? (bool)false : r.ToBoolean(a[7]);
         o.Ellipse(a0, a1, a2, a3, a4, a5, a6, a7); return r.Adapter.Undefined;
     }
+    #pragma warning disable WEBPLATEXP0017 // The binding exposes the experimental Web IDL member
+    private static TValue Op_beginLayer(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding);
+        var a0 = r.IsMissing(a, 0) ? (global::Meziantou.Framework.WebPlatform.Dom.BeginLayerOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_BeginLayerOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_BeginLayerOptions(r, a[0]);
+        o.BeginLayer(a0); return r.Adapter.Undefined;
+    }
+    #pragma warning restore WEBPLATEXP0017
+    #pragma warning disable WEBPLATEXP0017 // The binding exposes the experimental Web IDL member
+    private static TValue Op_endLayer(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D>(t, Binding);
+        o.EndLayer(); return r.Adapter.Undefined;
+    }
+    #pragma warning restore WEBPLATEXP0017
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "canvas", Get_canvas, null);
@@ -704,5 +719,7 @@ internal static class Binding_CanvasRenderingContext2D<TAdapter, TValue> where T
         r.DefineOperation(instanceTarget, "roundRect", 4, Op_roundRect);
         r.DefineOperation(instanceTarget, "arc", 5, Op_arc);
         r.DefineOperation(instanceTarget, "ellipse", 7, Op_ellipse);
+        r.DefineOperation(instanceTarget, "beginLayer", 0, Op_beginLayer);
+        r.DefineOperation(instanceTarget, "endLayer", 0, Op_endLayer);
     }
 }

@@ -27,7 +27,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 [IdlInterface("CanvasState", "https://html.spec.whatwg.org/multipage/canvas.html#canvasstate")]
 public abstract partial class CanvasRenderingContext2DBase
 {
-    private readonly List<DrawingState> _stack = [];
+    private readonly List<StackEntry> _stack = [];
     private readonly CanvasPath _path = new();
 
     // The current default path in user space (built with the identity matrix), valid while all its segments were added with the same
@@ -77,9 +77,13 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <summary>Pushes a copy of the drawing state on the stack (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-save).</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-save"/>
     [IdlMember("save", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-save")]
-    public void Save() => _stack.Add(_state.Clone());
+    public void Save() => _stack.Add(new StackEntry(_state.Clone(), Layer: null));
 
-    /// <summary>Pops the drawing state from the stack (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-restore); does nothing when the stack is empty.</summary>
+    /// <summary>
+    /// Pops the drawing state from the stack (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-restore); does
+    /// nothing when the stack is empty.
+    /// </summary>
+    /// <exception cref="DomException">An <c>InvalidStateError</c> when the last state of the stack was pushed by <see cref="BeginLayer"/>.</exception>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-restore"/>
     [IdlMember("restore", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-restore")]
     public void Restore()
@@ -87,13 +91,18 @@ public abstract partial class CanvasRenderingContext2DBase
         if (_stack.Count == 0)
             return;
 
-        _state = _stack[^1];
+        // The state of a layer is restored by endLayer()
+        if (_stack[^1].Layer is not null)
+            throw new DomException("The state was saved by beginLayer(): call endLayer() to restore it", "InvalidStateError");
+
+        _state = _stack[^1].State;
         _stack.RemoveAt(_stack.Count - 1);
     }
 
     /// <summary>
     /// Resets the context to its default state (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-reset): the
-    /// bitmap is cleared, the drawing state and its stack, and the current default path are reset.
+    /// bitmap is cleared, the drawing state and its stack, and the current default path are reset, and the open layers are
+    /// discarded.
     /// </summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-reset"/>
     [IdlMember("reset", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-reset")]
@@ -110,11 +119,12 @@ public abstract partial class CanvasRenderingContext2DBase
     [IdlMember("isContextLost", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-iscontextlost")]
     public bool IsContextLost() => false;
 
-    /// <summary>Resets the drawing state, its stack and the current default path (the bitmap is reset by the caller).</summary>
+    /// <summary>Resets the drawing state, its stack, the open layers and the current default path (the bitmap is reset by the caller).</summary>
     internal void ResetState()
     {
         _state = new DrawingState();
         _stack.Clear();
+        _layerBuilder = null;
         BeginPath();
     }
 
@@ -617,7 +627,7 @@ public abstract partial class CanvasRenderingContext2DBase
         if (!double.IsFinite(x) || !double.IsFinite(y) || !double.IsFinite(w) || !double.IsFinite(h) || w == 0 || h == 0 || !Bitmap.HasPixels)
             return;
 
-        var builder = Bitmap.Builder;
+        var builder = Builder;
         builder.Save();
         AddClip(builder);
         builder.Transform(_state.Transform);
@@ -1034,7 +1044,7 @@ public abstract partial class CanvasRenderingContext2DBase
         if (GetUserSpacePath(path, isDefaultPath, FillRule.NonZero) is not { } userPath || !Bitmap.HasPixels)
             return;
 
-        var builder = Bitmap.Builder;
+        var builder = Builder;
         builder.Save();
         AddClip(builder);
         builder.Transform(_state.Transform);
@@ -1104,12 +1114,14 @@ public abstract partial class CanvasRenderingContext2DBase
     /// composited within the clip region with the compositing operator, then the shape itself.
     /// </summary>
     /// <param name="addItems">Adds the items of the shape, in the coordinates of the canvas (they add their own transform).</param>
-    private void DrawShape(Action<DisplayListBuilder> addItems)
+    /// <param name="addShadowItems">Adds the items of the shape for its shadow, or null to use <paramref name="addItems"/>.</param>
+    /// <param name="shadowItemsAreFiltered">Whether the items of <paramref name="addShadowItems"/> are already filtered by the filters of the drawing state.</param>
+    private void DrawShape(Action<DisplayListBuilder> addItems, Action<DisplayListBuilder>? addShadowItems = null, bool shadowItemsAreFiltered = false)
     {
         if (!Bitmap.HasPixels)
             return;
 
-        var builder = Bitmap.Builder;
+        var builder = Builder;
         builder.Save();
         AddClip(builder);
         var mode = _state.BlendMode;
@@ -1120,8 +1132,8 @@ public abstract partial class CanvasRenderingContext2DBase
         if (ShadowsAreDrawn)
         {
             var shadow = new DropShadowFilter(new PhysicalOffset(_state.ShadowOffsetX, _state.ShadowOffsetY), _state.ShadowBlur / 2, _state.ShadowColor) { ShadowOnly = true };
-            builder.SaveLayer(new SaveLayerItem(1, mode, filters is null ? [shadow] : [.. filters, shadow]));
-            addItems(builder);
+            builder.SaveLayer(new SaveLayerItem(1, mode, filters is null || shadowItemsAreFiltered ? [shadow] : [.. filters, shadow]));
+            (addShadowItems ?? addItems)(builder);
             builder.Restore();
         }
 
@@ -1210,5 +1222,20 @@ public abstract partial class CanvasRenderingContext2DBase
         public CanvasTextRendering TextRendering = CanvasTextRendering.Auto;
 
         public DrawingState Clone() => (DrawingState)MemberwiseClone();
+
+        /// <summary>Resets the states that a layer applies when it is drawn (https://github.com/whatwg/html/pull/9537): the global alpha, the compositing, the shadows, the filter and the clip region.</summary>
+        public void ResetLayerRenderingState()
+        {
+            Clip = null;
+            GlobalAlpha = 1;
+            CompositeOperation = "source-over";
+            BlendMode = BlendMode.Normal;
+            ShadowOffsetX = 0;
+            ShadowOffsetY = 0;
+            ShadowBlur = 0;
+            ShadowColorText = "rgba(0, 0, 0, 0)";
+            ShadowColor = DisplayColor.Transparent;
+            Filter = "none";
+        }
     }
 }

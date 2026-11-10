@@ -59,4 +59,7 @@ internal static class ExperimentalApis
 
     /// <summary>The <c>policy</c> attribute of the <c>iframe</c> elements (https://wicg.github.io/document-policy/#iframe-policy-attribute), which no IDL of webref defines.</summary>
     public const string DocumentPolicyIframeAttribute = "WEBPLATEXP0016";
+
+    /// <summary>The canvas layers (https://github.com/whatwg/html/pull/9537): <c>beginLayer()</c> and <c>endLayer()</c> of the 2D contexts.</summary>
+    public const string CanvasLayers = "WEBPLATEXP0017";
 }

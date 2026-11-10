@@ -115,6 +115,7 @@ internal static class ImageBitmapFactory
                 if ((long)width * height > BitmapPixels.MaxPixelCount)
                     throw InvalidState("The canvas is too large");
 
+                (canvas.RenderingContext as CanvasRenderingContext2D)?.ThrowIfLayersAreOpen();
                 return canvas.GetBitmapSnapshot();
             }
 
@@ -129,6 +130,7 @@ internal static class ImageBitmapFactory
                 if ((double)offscreen.Width * offscreen.Height > BitmapPixels.MaxPixelCount)
                     throw InvalidState("The OffscreenCanvas is too large");
 
+                (offscreen.RenderingContext as OffscreenCanvasRenderingContext2D)?.ThrowIfLayersAreOpen();
                 return offscreen.GetBitmapSnapshot();
             }
 

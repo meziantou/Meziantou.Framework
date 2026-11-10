@@ -171,6 +171,7 @@ public sealed class OffscreenCanvas : EventTarget, IStructuredTransferable, ICan
         {
             case OffscreenCanvasRenderingContext2D context:
             {
+                context.ThrowIfLayersAreOpen();
                 var pixels = context.Bitmap.GetPixels();
                 context.Bitmap.Clear();
                 OnBitmapChanged();
@@ -201,6 +202,9 @@ public sealed class OffscreenCanvas : EventTarget, IStructuredTransferable, ICan
         // 1-3. A detached canvas, a canvas that is not origin-clean, a canvas without pixels
         if (IsDetached)
             return Task.FromException<Blob>(new DomException("The OffscreenCanvas is detached", "InvalidStateError"));
+
+        if (RenderingContext is OffscreenCanvasRenderingContext2D { HasOpenLayers: true })
+            return Task.FromException<Blob>(new DomException("The pixels of the canvas cannot be accessed while a layer is open", "InvalidStateError"));
 
         var pixels = GetBitmapSnapshot();
         if (!pixels.IsOriginClean)

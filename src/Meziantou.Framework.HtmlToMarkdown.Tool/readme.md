@@ -57,6 +57,14 @@ Options:
   --simple-punctuation                                             Convert smart punctuation characters to simple ASCII punctuation
   --emoji-shortcode-mode <GitHub|None|Unicode>                     Mode used to convert emoji to shortcodes [default: None]
   --unknown-element-handling <PassThrough|Strip|StripKeepContent>  Handling of unknown HTML elements [default: PassThrough]
+  --subscript-style <Html|Text|Tilde|UnknownElement>               Style used for subscript (sub) elements [default: UnknownElement]
+  --superscript-style <Caret|Html|Text|UnknownElement>             Style used for superscript (sup) elements [default: UnknownElement]
+  --underline-style <Html|PlusSigns|Text|UnknownElement>           Style used for underline (u) elements [default: UnknownElement]
+  --keyboard-style <CodeSpan|Html|Text|UnknownElement>             Style used for keyboard input (kbd) elements [default: UnknownElement]
+  --embedded-content-style <Html|Link|Remove|UnknownElement>       Style used for video, audio and iframe elements [default: UnknownElement]
+  --ignore-css-white-space                                         Collapse the whitespace of the text even when a style attribute preserves it
+  --table-span-handling <Duplicate|EmptyCells|Ignore>              Handling of the colspan and rowspan attributes of table cells [default: Ignore]
+  --complex-table-handling <Flatten|Html>                          Handling of the tables that a pipe table cannot represent [default: Flatten]
   -?, -h, --help                                                   Show help and usage information
   --version                                                        Show version information
 ```

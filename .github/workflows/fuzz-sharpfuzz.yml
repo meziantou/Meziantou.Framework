@@ -34,6 +34,7 @@ on:
           - globbing
           - hashing
           - html-sanitizer
+          - html-to-markdown
           - http-caching
           - http
           - htpasswd
@@ -114,6 +115,7 @@ env:
       { "project": "Meziantou.Framework.Globbing.Fuzz",            "component": "globbing",              "day": 0 },
       { "project": "Meziantou.Framework.Hashing.Fuzz",             "component": "hashing",               "day": 0 },
       { "project": "Meziantou.Framework.HtmlSanitizer.Fuzz",       "component": "html-sanitizer",        "day": 1 },
+      { "project": "Meziantou.Framework.HtmlToMarkdown.Fuzz",      "component": "html-to-markdown",      "day": 4 },
       { "project": "Meziantou.Framework.Http.Caching.Fuzz",        "component": "http-caching",          "day": 2 },
       { "project": "Meziantou.Framework.Http.Fuzz",                "component": "http",                  "day": 3 },
       { "project": "Meziantou.Framework.Http.Htpasswd.Fuzz",       "component": "htpasswd",              "day": 1 },

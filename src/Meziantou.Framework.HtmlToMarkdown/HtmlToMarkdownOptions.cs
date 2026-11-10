@@ -61,4 +61,32 @@ public sealed class HtmlToMarkdownOptions
     /// <summary>Gets or sets how unknown HTML elements are handled.</summary>
     public UnknownElementHandling UnknownElementHandling { get; set; }
         = UnknownElementHandling.PassThrough;
+
+    /// <summary>Gets or sets how subscript (<c>sub</c>) elements are converted.</summary>
+    public SubscriptStyle SubscriptStyle { get; set; } = SubscriptStyle.UnknownElement;
+
+    /// <summary>Gets or sets how superscript (<c>sup</c>) elements are converted.</summary>
+    public SuperscriptStyle SuperscriptStyle { get; set; } = SuperscriptStyle.UnknownElement;
+
+    /// <summary>Gets or sets how underline (<c>u</c>) elements are converted.</summary>
+    public UnderlineStyle UnderlineStyle { get; set; } = UnderlineStyle.UnknownElement;
+
+    /// <summary>Gets or sets how keyboard input (<c>kbd</c>) elements are converted.</summary>
+    public KeyboardStyle KeyboardStyle { get; set; } = KeyboardStyle.UnknownElement;
+
+    /// <summary>Gets or sets how <c>video</c>, <c>audio</c> and <c>iframe</c> elements are converted.</summary>
+    public EmbeddedContentStyle EmbeddedContentStyle { get; set; } = EmbeddedContentStyle.UnknownElement;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the <c>white-space</c> and <c>white-space-collapse</c> declarations of the
+    /// <c>style</c> attributes are honored. When <see langword="true"/>, the spaces and the line breaks that the style
+    /// preserves are written as <c>&amp;nbsp;</c> and as hard line breaks.
+    /// </summary>
+    public bool UseCssWhiteSpace { get; set; } = true;
+
+    /// <summary>Gets or sets how the <c>colspan</c> and <c>rowspan</c> attributes of table cells are handled.</summary>
+    public TableSpanHandling TableSpanHandling { get; set; } = TableSpanHandling.Ignore;
+
+    /// <summary>Gets or sets how the tables that a pipe table cannot represent are converted.</summary>
+    public ComplexTableHandling ComplexTableHandling { get; set; } = ComplexTableHandling.Flatten;
 }

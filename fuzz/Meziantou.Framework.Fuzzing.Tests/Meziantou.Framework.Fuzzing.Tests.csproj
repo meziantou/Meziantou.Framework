@@ -28,6 +28,7 @@
     <ProjectReference Include="..\Meziantou.Framework.Globbing.Fuzz\Meziantou.Framework.Globbing.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Hashing.Fuzz\Meziantou.Framework.Hashing.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.HtmlSanitizer.Fuzz\Meziantou.Framework.HtmlSanitizer.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.HtmlToMarkdown.Fuzz\Meziantou.Framework.HtmlToMarkdown.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Http.Caching.Fuzz\Meziantou.Framework.Http.Caching.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Http.Fuzz\Meziantou.Framework.Http.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Http.Htpasswd.Fuzz\Meziantou.Framework.Http.Htpasswd.Fuzz.csproj" />

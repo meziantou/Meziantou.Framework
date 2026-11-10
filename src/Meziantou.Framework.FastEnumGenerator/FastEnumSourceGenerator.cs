@@ -82,7 +82,14 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             .Combine(languageFeatures)
             .Select(static (item, _) => item.Left && item.Right.SupportsInterceptors);
 
-        var generationInput = enums.Collect().Combine(languageFeatures).Combine(interceptorsEnabled);
+        // The generated parse code relies on the span-based Enum.TryParse overloads, which older target
+        // frameworks lack. Reduced to a bool so an edit does not invalidate the downstream steps.
+        var supportsSpanParse = context.CompilationProvider.Select(static (compilation, _) => SupportsSpanParse(compilation));
+        var interceptorOptions = interceptorsEnabled
+            .Combine(supportsSpanParse)
+            .Select(static (item, _) => new InterceptorOptions(item.Left, item.Left && item.Right));
+
+        var generationInput = enums.Collect().Combine(languageFeatures).Combine(interceptorOptions);
         context.RegisterSourceOutput(generationInput, static (spc, source) => GenerateCode(spc, source.Left.Left, source.Left.Right.SupportsExtensionMembers, source.Right));
 
         var interceptionCandidates = context.SyntaxProvider
@@ -92,7 +99,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             .Where(static candidate => candidate is not null)
             .Select(static (candidate, _) => candidate!);
 
-        var interceptionInput = enums.Collect().Combine(interceptionCandidates.Collect()).Combine(interceptorsEnabled);
+        var interceptionInput = enums.Collect().Combine(interceptionCandidates.Collect()).Combine(interceptorOptions);
         context.RegisterSourceOutput(interceptionInput, static (spc, source) => GenerateInterceptors(spc, source.Left.Left, source.Left.Right, source.Right));
     }
 
@@ -111,8 +118,81 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             nameof(Enum.HasFlag) => invocation.ArgumentList.Arguments.Count == 1,
             nameof(Enum.IsDefined) or nameof(Enum.GetName) => invocation.ArgumentList.Arguments.Count == 1,
             nameof(Enum.GetNames) or nameof(Enum.GetValues) => invocation.ArgumentList.Arguments.Count == 0,
+            nameof(Enum.Parse) => invocation.ArgumentList.Arguments.Count is 1 or 2,
+            nameof(Enum.TryParse) => invocation.ArgumentList.Arguments.Count is 2 or 3,
             _ => false,
         };
+    }
+
+    private static bool SupportsSpanParse(Compilation compilation)
+    {
+        foreach (var member in compilation.GetSpecialType(SpecialType.System_Enum).GetMembers(nameof(Enum.TryParse)))
+        {
+            if (member is IMethodSymbol { IsGenericMethod: true, Parameters: [{ Type: var type }, ..] } && IsReadOnlySpanOfChar(type))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsReadOnlySpanOfChar(ITypeSymbol type)
+    {
+        return type is INamedTypeSymbol { Name: "ReadOnlySpan", TypeArguments: [{ SpecialType: SpecialType.System_Char }], ContainingNamespace: { Name: "System", ContainingNamespace.IsGlobalNamespace: true } };
+    }
+
+    /// <summary>
+    /// Maps an <c>Enum.Parse&lt;TEnum&gt;</c> or <c>Enum.TryParse&lt;TEnum&gt;</c> overload to the interceptor
+    /// that has the same parameters.
+    /// </summary>
+    private static FastEnumInterceptKind GetParseInterceptKind(IMethodSymbol method)
+    {
+        var parameters = method.Parameters;
+        var isTryParse = method.Name is nameof(Enum.TryParse);
+        if (isTryParse)
+        {
+            if (parameters.Length is < 2 or > 3 || parameters[^1].RefKind is not RefKind.Out)
+                return FastEnumInterceptKind.None;
+
+            parameters = parameters.RemoveAt(parameters.Length - 1);
+        }
+        else if (parameters.Length is < 1 or > 2)
+        {
+            return FastEnumInterceptKind.None;
+        }
+
+        var hasIgnoreCase = parameters.Length == 2;
+        if (hasIgnoreCase && parameters[1].Type.SpecialType is not SpecialType.System_Boolean)
+            return FastEnumInterceptKind.None;
+
+        var valueType = parameters[0].Type;
+        if (valueType.SpecialType is SpecialType.System_String)
+        {
+            return (isTryParse, hasIgnoreCase) switch
+            {
+                (false, false) => FastEnumInterceptKind.ParseString,
+                (false, true) => FastEnumInterceptKind.ParseStringIgnoreCase,
+                (true, false) => FastEnumInterceptKind.TryParseString,
+                (true, true) => FastEnumInterceptKind.TryParseStringIgnoreCase,
+            };
+        }
+
+        if (IsReadOnlySpanOfChar(valueType))
+        {
+            return (isTryParse, hasIgnoreCase) switch
+            {
+                (false, false) => FastEnumInterceptKind.ParseSpan,
+                (false, true) => FastEnumInterceptKind.ParseSpanIgnoreCase,
+                (true, false) => FastEnumInterceptKind.TryParseSpan,
+                (true, true) => FastEnumInterceptKind.TryParseSpanIgnoreCase,
+            };
+        }
+
+        return FastEnumInterceptKind.None;
+    }
+
+    private static bool IsParseInterceptKind(FastEnumInterceptKind kind)
+    {
+        return kind is >= FastEnumInterceptKind.ParseString and <= FastEnumInterceptKind.TryParseSpanIgnoreCase;
     }
 
     private static InterceptionCandidate? GetInterceptionCandidate(GeneratorSyntaxContext ctx, CancellationToken cancellationToken)
@@ -143,6 +223,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
                 nameof(Enum.GetName) when method.Parameters.Length == 1 => FastEnumInterceptKind.GetName,
                 nameof(Enum.GetNames) when method.Parameters.Length == 0 => FastEnumInterceptKind.GetNames,
                 nameof(Enum.GetValues) when method.Parameters.Length == 0 => FastEnumInterceptKind.GetValues,
+                nameof(Enum.Parse) or nameof(Enum.TryParse) => GetParseInterceptKind(method),
                 _ => FastEnumInterceptKind.None,
             };
         }
@@ -407,7 +488,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         return true;
     }
 
-    private static void GenerateCode(SourceProductionContext context, ImmutableArray<EnumToProcess> enumToProcess, bool supportsExtensionMembers, bool interceptorsEnabled)
+    private static void GenerateCode(SourceProductionContext context, ImmutableArray<EnumToProcess> enumToProcess, bool supportsExtensionMembers, InterceptorOptions interceptorOptions)
     {
         if (enumToProcess.Length == 0)
             return;
@@ -432,16 +513,16 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             sb.AppendLine("// <auto-generated/>");
             sb.AppendLine("#pragma warning disable");
             sb.AppendLine("#nullable enable");
-            AppendEnumCode(sb, enumeration, supportsExtensionMembers, interceptorsEnabled, context.CancellationToken);
+            AppendEnumCode(sb, enumeration, supportsExtensionMembers, interceptorOptions, context.CancellationToken);
 
             // One file per enum keeps unchanged enums byte-identical when another enum is added or edited.
             context.AddSource("FastEnumExtensions." + enumeration.NameToken + ".g.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
         }
     }
 
-    private static void GenerateInterceptors(SourceProductionContext context, ImmutableArray<EnumToProcess> enumToProcess, ImmutableArray<InterceptionCandidate> candidates, bool interceptorsEnabled)
+    private static void GenerateInterceptors(SourceProductionContext context, ImmutableArray<EnumToProcess> enumToProcess, ImmutableArray<InterceptionCandidate> candidates, InterceptorOptions interceptorOptions)
     {
-        if (!interceptorsEnabled || candidates.Length == 0 || enumToProcess.Length == 0)
+        if (!interceptorOptions.Enabled || candidates.Length == 0 || enumToProcess.Length == 0)
             return;
 
         var enums = new Dictionary<string, EnumToProcess>(StringComparer.Ordinal);
@@ -460,6 +541,10 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         {
             context.CancellationToken.ThrowIfCancellationRequested();
             if (!enums.ContainsKey(candidate.EnumFullName))
+                continue;
+
+            // Without the span-based Enum.TryParse, the generated parse code does not exist.
+            if (!interceptorOptions.InterceptParse && IsParseInterceptKind(candidate.Kind))
                 continue;
 
             if (!grouped.TryGetValue(candidate.EnumFullName, out var byKind))
@@ -584,6 +669,38 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
                     sb.Append("            return ").Append(extensions).Append(".GetValuesArray_").Append(token).AppendLine("();");
                     sb.AppendLine("        }");
                     break;
+
+                case FastEnumInterceptKind.ParseString:
+                    AppendParseInterceptor(sb, enumTypeName, extensions, token, isSpan: false, hasIgnoreCase: false);
+                    break;
+
+                case FastEnumInterceptKind.ParseStringIgnoreCase:
+                    AppendParseInterceptor(sb, enumTypeName, extensions, token, isSpan: false, hasIgnoreCase: true);
+                    break;
+
+                case FastEnumInterceptKind.ParseSpan:
+                    AppendParseInterceptor(sb, enumTypeName, extensions, token, isSpan: true, hasIgnoreCase: false);
+                    break;
+
+                case FastEnumInterceptKind.ParseSpanIgnoreCase:
+                    AppendParseInterceptor(sb, enumTypeName, extensions, token, isSpan: true, hasIgnoreCase: true);
+                    break;
+
+                case FastEnumInterceptKind.TryParseString:
+                    AppendTryParseInterceptor(sb, enumTypeName, extensions, token, isSpan: false, hasIgnoreCase: false);
+                    break;
+
+                case FastEnumInterceptKind.TryParseStringIgnoreCase:
+                    AppendTryParseInterceptor(sb, enumTypeName, extensions, token, isSpan: false, hasIgnoreCase: true);
+                    break;
+
+                case FastEnumInterceptKind.TryParseSpan:
+                    AppendTryParseInterceptor(sb, enumTypeName, extensions, token, isSpan: true, hasIgnoreCase: false);
+                    break;
+
+                case FastEnumInterceptKind.TryParseSpanIgnoreCase:
+                    AppendTryParseInterceptor(sb, enumTypeName, extensions, token, isSpan: true, hasIgnoreCase: true);
+                    break;
             }
 
             sb.AppendLine();
@@ -592,8 +709,42 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine("    }");
     }
 
-    private static void AppendEnumCode(StringBuilder sb, EnumToProcess enumeration, bool supportsExtensionMembers, bool interceptorsEnabled, CancellationToken cancellationToken)
+    private static void AppendParseInterceptor(StringBuilder sb, string enumTypeName, string extensions, string token, bool isSpan, bool hasIgnoreCase)
     {
+        sb.Append("        public static ").Append(enumTypeName).Append(" ParseFast(").Append(isSpan ? "global::System.ReadOnlySpan<char>" : "string").Append(" value").Append(hasIgnoreCase ? ", bool ignoreCase" : "").AppendLine(")");
+        sb.AppendLine("        {");
+        var ignoreCase = hasIgnoreCase ? "ignoreCase" : "false";
+        sb.Append("            if (").Append(isSpan ? "" : "value is not null && ").Append(extensions).Append(".TryParseCore_").Append(token).Append("(value, ").Append(ignoreCase).AppendLine(", out var result))");
+        sb.AppendLine("                return result;");
+        sb.AppendLine();
+
+        // The value is invalid: let Enum.Parse throw, so the exception type and message do not change.
+        sb.Append("            return global::System.Enum.Parse<").Append(enumTypeName).Append(">(value").Append(isSpan ? "" : "!").Append(", ").Append(ignoreCase).AppendLine(");");
+        sb.AppendLine("        }");
+    }
+
+    private static void AppendTryParseInterceptor(StringBuilder sb, string enumTypeName, string extensions, string token, bool isSpan, bool hasIgnoreCase)
+    {
+        sb.Append("        public static bool TryParseFast(").Append(isSpan ? "global::System.ReadOnlySpan<char>" : "string?").Append(" value").Append(hasIgnoreCase ? ", bool ignoreCase" : "").Append(", out ").Append(enumTypeName).AppendLine(" result)");
+        sb.AppendLine("        {");
+        if (!isSpan)
+        {
+            sb.AppendLine("            if (value is null)");
+            sb.AppendLine("            {");
+            sb.AppendLine("                result = default;");
+            sb.AppendLine("                return false;");
+            sb.AppendLine("            }");
+            sb.AppendLine();
+        }
+
+        sb.Append("            return ").Append(extensions).Append(".TryParseCore_").Append(token).Append("(value, ").Append(hasIgnoreCase ? "ignoreCase" : "false").AppendLine(", out result);");
+        sb.AppendLine("        }");
+    }
+
+    private static void AppendEnumCode(StringBuilder sb, EnumToProcess enumeration, bool supportsExtensionMembers, InterceptorOptions interceptorOptions, CancellationToken cancellationToken)
+    {
+        var interceptorsEnabled = interceptorOptions.Enabled;
+        var emitParseHelpers = supportsExtensionMembers || interceptorOptions.InterceptParse;
         var visibility = enumeration.IsPublic ? "public" : "internal";
         var enumTypeName = "global::" + enumeration.FullCsharpName;
         var token = enumeration.NameToken;
@@ -615,8 +766,8 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         var needsNamesArray = supportsExtensionMembers || interceptorsEnabled || (denseMembers.Count > 0 && canUseMainArraysForDenseLookup);
         var needsMetadataNamesArray = supportsExtensionMembers || interceptorsEnabled;
         var needsValuesArray = supportsExtensionMembers || interceptorsEnabled;
-        var needsToUInt64Helper = emitFlagsFormatting || (enumeration.IsFlags && supportsExtensionMembers);
-        var needsFromUInt64Helper = enumeration.IsFlags && supportsExtensionMembers;
+        var needsToUInt64Helper = emitFlagsFormatting || emitParseHelpers;
+        var needsFromUInt64Helper = emitParseHelpers;
 
         if (!string.IsNullOrEmpty(enumeration.FullNamespace))
         {
@@ -718,10 +869,14 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             AppendInterceptorAccessors(sb, enumTypeName, token, needsMetadataNamesArray);
         }
 
-        if (supportsExtensionMembers)
+        if (emitParseHelpers)
         {
             AppendEqualsTokenHelper(sb, token);
-            AppendTryParseHelpers(sb, enumTypeName, enumeration, token, hasDistinctMetadata, members, cancellationToken);
+            AppendTryParseHelpers(sb, enumTypeName, token, hasDistinctMetadata, members, cancellationToken);
+        }
+
+        if (supportsExtensionMembers)
+        {
             AppendExtensionMembers(sb, enumTypeName, visibility, token, hasDistinctMetadata, needsMetadataNamesArray);
         }
 
@@ -1020,7 +1175,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine();
     }
 
-    private static void AppendTryParseHelpers(StringBuilder sb, string enumTypeName, EnumToProcess enumeration, string token, bool hasDistinctMetadata, ImmutableEquatableArray<EnumMemberToProcess> members, CancellationToken cancellationToken)
+    private static void AppendTryParseHelpers(StringBuilder sb, string enumTypeName, string token, bool hasDistinctMetadata, ImmutableEquatableArray<EnumMemberToProcess> members, CancellationToken cancellationToken)
     {
         AppendTryParseSingleHelperMethod(sb, enumTypeName, token, "TryParseSingle_" + token, GetParseTokens(members, useMetadata: false), cancellationToken);
         if (hasDistinctMetadata)
@@ -1028,19 +1183,17 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
             AppendTryParseSingleHelperMethod(sb, enumTypeName, token, "TryParseSingleMetadata_" + token, GetParseTokens(members, useMetadata: true), cancellationToken);
         }
 
-        if (enumeration.IsFlags)
-        {
-            AppendTryParseFlagsHelperMethod(sb, enumTypeName, token, "TryParseFlags_" + token, "TryParseSingle_" + token);
-            if (hasDistinctMetadata)
-            {
-                AppendTryParseFlagsHelperMethod(sb, enumTypeName, token, "TryParseFlagsMetadata_" + token, "TryParseSingleMetadata_" + token);
-            }
-        }
-
-        AppendTryParseDispatchHelperMethod(sb, enumTypeName, token, "TryParseCore_" + token, "TryParseSingle_" + token, enumeration.IsFlags ? "TryParseFlags_" + token : null);
+        // Enum.Parse combines a comma-separated list of names for every enum, not only [Flags] ones.
+        AppendTryParseListHelperMethod(sb, enumTypeName, token, "TryParseList_" + token, "TryParseSingle_" + token);
         if (hasDistinctMetadata)
         {
-            AppendTryParseDispatchHelperMethod(sb, enumTypeName, token, "TryParseMetadataCore_" + token, "TryParseSingleMetadata_" + token, enumeration.IsFlags ? "TryParseFlagsMetadata_" + token : null);
+            AppendTryParseListHelperMethod(sb, enumTypeName, token, "TryParseListMetadata_" + token, "TryParseSingleMetadata_" + token);
+        }
+
+        AppendTryParseDispatchHelperMethod(sb, enumTypeName, token, "TryParseCore_" + token, "TryParseSingle_" + token, "TryParseList_" + token, isInternal: true);
+        if (hasDistinctMetadata)
+        {
+            AppendTryParseDispatchHelperMethod(sb, enumTypeName, token, "TryParseMetadataCore_" + token, "TryParseSingleMetadata_" + token, "TryParseListMetadata_" + token, isInternal: false);
         }
 
         sb.Append("    private static bool IsNumericToken_").Append(token).AppendLine("(global::System.ReadOnlySpan<char> value)");
@@ -1057,7 +1210,8 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine("            first = value[1];");
         sb.AppendLine("        }");
         sb.AppendLine();
-        sb.AppendLine("        return (uint)(first - '0') <= 9;");
+        // unchecked: a char below '0' gives a negative difference, which throws in a checked build.
+        sb.AppendLine("        return unchecked((uint)(first - '0')) <= 9;");
         sb.AppendLine("    }");
         sb.AppendLine();
     }
@@ -1096,7 +1250,7 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine();
     }
 
-    private static void AppendTryParseFlagsHelperMethod(StringBuilder sb, string enumTypeName, string token, string methodName, string tryParseSingleMethodName)
+    private static void AppendTryParseListHelperMethod(StringBuilder sb, string enumTypeName, string token, string methodName, string tryParseSingleMethodName)
     {
         sb.Append("    private static bool ").Append(methodName).Append("(global::System.ReadOnlySpan<char> value, bool ignoreCase, out ").Append(enumTypeName).AppendLine(" result)");
         sb.AppendLine("    {");
@@ -1141,36 +1295,29 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
         sb.AppendLine();
     }
 
-    private static void AppendTryParseDispatchHelperMethod(StringBuilder sb, string enumTypeName, string token, string methodName, string tryParseSingleMethodName, string? tryParseFlagsMethodName)
+    private static void AppendTryParseDispatchHelperMethod(StringBuilder sb, string enumTypeName, string token, string methodName, string tryParseSingleMethodName, string tryParseListMethodName, bool isInternal)
     {
-        sb.Append("    private static bool ").Append(methodName).Append("(global::System.ReadOnlySpan<char> value, bool ignoreCase, out ").Append(enumTypeName).AppendLine(" result)");
+        // TryParseCore is internal because the interceptors, declared in another class, call it.
+        sb.Append(isInternal ? "    internal static bool " : "    private static bool ").Append(methodName).Append("(global::System.ReadOnlySpan<char> value, bool ignoreCase, out ").Append(enumTypeName).AppendLine(" result)");
         sb.AppendLine("    {");
         sb.AppendLine("        var trimmed = global::System.MemoryExtensions.Trim(value);");
-        if (tryParseFlagsMethodName is not null)
-        {
-            sb.AppendLine("        if (global::System.MemoryExtensions.IndexOf(trimmed, ',') >= 0)");
-            sb.AppendLine("        {");
-            sb.Append("            if (").Append(tryParseFlagsMethodName).AppendLine("(trimmed, ignoreCase, out result))");
-            sb.AppendLine("                return true;");
-            sb.AppendLine("        }");
-            sb.AppendLine("        else");
-            sb.AppendLine("        {");
-            sb.Append("            if (").Append(tryParseSingleMethodName).AppendLine("(trimmed, ignoreCase, out result))");
-            sb.AppendLine("                return true;");
-            sb.AppendLine("        }");
-            sb.AppendLine();
-        }
-        else
-        {
-            sb.Append("        if (").Append(tryParseSingleMethodName).AppendLine("(trimmed, ignoreCase, out result))");
-            sb.AppendLine("            return true;");
-            sb.AppendLine();
-        }
+        sb.AppendLine("        if (global::System.MemoryExtensions.IndexOf(trimmed, ',') >= 0)");
+        sb.AppendLine("        {");
+        sb.Append("            if (").Append(tryParseListMethodName).AppendLine("(trimmed, ignoreCase, out result))");
+        sb.AppendLine("                return true;");
+        sb.AppendLine("        }");
+        sb.AppendLine("        else");
+        sb.AppendLine("        {");
+        sb.Append("            if (").Append(tryParseSingleMethodName).AppendLine("(trimmed, ignoreCase, out result))");
+        sb.AppendLine("                return true;");
+        sb.AppendLine("        }");
+        sb.AppendLine();
 
-        // The generated tables cover every declared name, so only a numeric form still needs the BCL.
+        // The generated tables cover every declared name, so only a numeric form still needs the BCL. It gets
+        // the untrimmed value: a number only allows ASCII white space around it, not every char.IsWhiteSpace.
         sb.Append("        if (IsNumericToken_").Append(token).AppendLine("(trimmed))");
         sb.AppendLine("        {");
-        sb.Append("            return global::System.Enum.TryParse<").Append(enumTypeName).AppendLine(">(trimmed, ignoreCase, out result);");
+        sb.Append("            return global::System.Enum.TryParse<").Append(enumTypeName).AppendLine(">(value, ignoreCase, out result);");
         sb.AppendLine("        }");
         sb.AppendLine();
         sb.AppendLine("        result = default;");
@@ -1375,6 +1522,8 @@ public sealed class FastEnumSourceGenerator : IIncrementalGenerator
     private sealed record EnumMemberToProcess(string Name, string EscapedName, ulong UInt64Value, string? MetadataName);
 
     private readonly record struct LanguageFeatures(bool SupportsInterceptors, bool SupportsExtensionMembers);
+
+    private readonly record struct InterceptorOptions(bool Enabled, bool InterceptParse);
 
     private sealed record InterceptionCandidate(string EnumFullName, FastEnumInterceptKind Kind, string InterceptsLocationAttribute);
 

@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!--
+    The enums of Meziantou.Framework.FastEnumGenerator.Fuzz and their intercepted calls. The generated parser is compiled
+    into this assembly, which eng/run-fuzz.ps1 instruments (it does not instrument the fuzz project itself).
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <!-- The generated code must not throw OverflowException in a checked build -->
+    <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
+    <MeziantouFastEnumInterceptors>true</MeziantouFastEnumInterceptors>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Meziantou.Framework.Annotations.FastEnumInterceptors</InterceptorsNamespaces>
+    <NoWarn>$(NoWarn);MFEG0002;MFEG0003;MFEG0004;MFEG0005;MFEG0006;MFEG0007;MFEG0008</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FastEnumGenerator\Meziantou.Framework.FastEnumGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+    <CompilerVisibleProperty Include="MeziantouFastEnumInterceptors" />
+  </ItemGroup>
+</Project>

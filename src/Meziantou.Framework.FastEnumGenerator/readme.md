@@ -98,21 +98,25 @@ These calls are intercepted, for enums marked with `FastEnumAttribute`:
 | `Enum.GetName<TEnum>(value)` | the generated `GetName` |
 | `Enum.GetNames<TEnum>()` | the generated names table |
 | `Enum.GetValues<TEnum>()` | the generated values table |
+| `Enum.Parse<TEnum>(value)`, `Enum.Parse<TEnum>(value, ignoreCase)` | the generated parser |
+| `Enum.TryParse<TEnum>(value, out result)`, `Enum.TryParse<TEnum>(value, ignoreCase, out result)` | the generated parser |
 
 Behavior is unchanged: `GetNames`/`GetValues` still return a fresh array the caller owns and still order
-by the underlying value, `GetName` still returns `null` for an undefined value, and `HasFlag` still throws
-for a flag of a different enum type.
+by the underlying value, `GetName` still returns `null` for an undefined value, `HasFlag` still throws
+for a flag of a different enum type, and `Parse` still throws the same exception, with the same message,
+for an invalid value.
 
 Notes and limitations:
 
 - Only the generic `Enum.X<TEnum>(...)` overloads are intercepted. The `Type`-based overloads return
   `object`/`Array`, which an interceptor cannot change.
-- `Parse` and `TryParse` are not intercepted; use the generated members directly.
+- `Parse` and `TryParse`, with a `string` or a `ReadOnlySpan<char>`, are intercepted only on target
+  frameworks with the span-based `Enum.TryParse` overloads (.NET Core 2.1 / .NET Standard 2.1 and later).
 - `ToString()` and `HasFlag()` are declared on `System.Enum`, so their interceptors must take a
   `System.Enum` receiver and the value is boxed at the call site, exactly as it is today when calling
   `Enum.ToString()`. The win is skipping the reflection inside, not avoiding the box.
 - Enabling this makes the generator inspect every `ToString`/`HasFlag`/`IsDefined`/`GetName`/`GetNames`/
-  `GetValues` invocation in the project to find call sites, which costs more at design time than the
+  `GetValues`/`Parse`/`TryParse` invocation in the project to find call sites, which costs more at design time than the
   default mode.
 
 ## Analyzer rules

@@ -19,6 +19,7 @@
     <ProjectReference Include="..\Meziantou.Framework.DependencyScanning.Fuzz\Meziantou.Framework.DependencyScanning.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Diagrams.Fuzz\Meziantou.Framework.Diagrams.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Dns.Fuzz\Meziantou.Framework.Dns.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.FastEnumGenerator.Fuzz\Meziantou.Framework.FastEnumGenerator.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Fonts.Fuzz\Meziantou.Framework.Fonts.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Geo.Fuzz\Meziantou.Framework.Geo.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Geo.GeoPackage.Fuzz\Meziantou.Framework.Geo.GeoPackage.Fuzz.csproj" />

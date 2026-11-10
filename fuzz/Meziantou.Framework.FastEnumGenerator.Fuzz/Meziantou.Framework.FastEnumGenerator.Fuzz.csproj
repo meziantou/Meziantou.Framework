@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.FastEnumGenerator. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The values parsed by the unit tests are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.FastEnumGenerator.GeneratorTests\FastEnumGeneratedBehaviorTests.cs" LogicalName="FastEnumGeneratedBehaviorTests.cs" Link="Seeds\FastEnumGeneratedBehaviorTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.FastEnumGenerator.InterceptorTests\FastEnumInterceptorTests.cs" LogicalName="FastEnumInterceptorTests.cs" Link="Seeds\FastEnumInterceptorTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <!-- The enums and the generated parser live there, so that eng/run-fuzz.ps1 instruments them -->
+    <ProjectReference Include="..\Meziantou.Framework.FastEnumGenerator.FuzzEnums\Meziantou.Framework.FastEnumGenerator.FuzzEnums.csproj" />
+  </ItemGroup>
+</Project>

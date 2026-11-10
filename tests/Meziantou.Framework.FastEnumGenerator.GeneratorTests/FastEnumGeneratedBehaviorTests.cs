@@ -48,6 +48,12 @@ public sealed class FastEnumGeneratedBehaviorTests
     [InlineData("  Green  ", false)]
     [InlineData("1", false)]
     [InlineData("Missing", false)]
+    [InlineData("Blue, Red", false)]
+    [InlineData("blue , green", true)]
+    [InlineData("Blue,", false)]
+    [InlineData("Blue, 1", false)]
+    [InlineData("1\u00A0", false)]
+    [InlineData("\u00A01", false)]
     public void Parse_WithoutMetadata_MatchesEnumParse_Color(string value, bool ignoreCase)
     {
         AssertParseMatchesBuiltIn<Color>(
@@ -78,6 +84,12 @@ public sealed class FastEnumGeneratedBehaviorTests
     [InlineData("  Green  ", false)]
     [InlineData("1", false)]
     [InlineData("Missing", false)]
+    [InlineData("Blue, Red", false)]
+    [InlineData("blue , green", true)]
+    [InlineData("Blue,", false)]
+    [InlineData("Blue, 1", false)]
+    [InlineData("1\u00A0", false)]
+    [InlineData("\u00A01", false)]
     public void TryParse_WithoutMetadata_MatchesEnumTryParse_Color(string value, bool ignoreCase)
     {
         AssertTryParseMatchesBuiltIn<Color>(

@@ -17,7 +17,7 @@ internal static class QuadrantChartPlotBuilder
 
     public static void Configure(QuadrantChart chart, Plot plot)
     {
-        var measurer = chart.TextMeasurer ?? AfmTextMeasurer.Default;
+        var measurer = plot.TextMeasurer ?? AfmTextMeasurer.Default;
         var theme = chart.Theme;
         var colors = Resolve(chart.Colors, theme);
 

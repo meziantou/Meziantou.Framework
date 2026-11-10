@@ -31,6 +31,14 @@ public sealed class FlowchartParserTests
         Assert.Equal("text", flowchart.Nodes[0].Label?.Text);
     }
 
+    [Fact]
+    public void QuotesInShapeDataAreEntityCodes()
+    {
+        // As the lexer of Mermaid, a double quote always ends the string of the data: a quote in a label is #quot;
+        Assert.Equal("6\" screen", Parse("flowchart TD\nA@{ shape: rect, label: \"6#quot; screen\" }").Nodes[0].Label?.Text);
+        Assert.Throws<MermaidParseException>(() => MermaidDocument.Parse("flowchart TD\nA@{ shape: rect, label: \"6\\\" screen\" }"));
+    }
+
     [Theory]
     [InlineData("-->", FlowchartLineStyle.Solid, FlowchartArrowHead.None, FlowchartArrowHead.Arrow, 1)]
     [InlineData("---", FlowchartLineStyle.Solid, FlowchartArrowHead.None, FlowchartArrowHead.None, 1)]

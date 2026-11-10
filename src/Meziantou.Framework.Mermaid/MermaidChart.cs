@@ -38,26 +38,15 @@ public abstract class MermaidChart : ISceneSource
 
     /// <summary>Creates the plot that draws the chart. Each call returns a new plot, which you can change before drawing it.</summary>
     /// <returns>The plot, with the title, the description and the colors of <see cref="Theme"/>.</returns>
-    public Plot ToPlot()
-    {
-        var plot = new Plot
-        {
-            Title = string.IsNullOrEmpty(Title) ? null : Title,
-            Description = Description,
-            Theme = MermaidChartTheme.Create(Theme),
-            TextMeasurer = TextMeasurer,
-        };
-
-        Configure(plot);
-        return plot;
-    }
+    public Plot ToPlot() => CreatePlot(TextMeasurer);
 
     /// <summary>Lays the chart out into drawing primitives.</summary>
     /// <param name="textMeasurer">The measurer of the texts, or <see langword="null"/> for <see cref="TextMeasurer"/>.</param>
     /// <returns>The scene.</returns>
     public Scene CreateScene(ITextMeasurer? textMeasurer = null)
     {
-        var scene = ToPlot().CreateScene(textMeasurer);
+        // The plot is configured with the measurer that draws it: the sizes of the title and the labels depend on it
+        var scene = CreatePlot(textMeasurer ?? TextMeasurer).CreateScene();
         if (!string.IsNullOrEmpty(AccessibleTitle))
         {
             scene.Title = AccessibleTitle;
@@ -86,8 +75,25 @@ public abstract class MermaidChart : ISceneSource
         WriteSvg(writer, options);
     }
 
-    /// <summary>Adds the marks, the scales and the axes of the chart to a plot that already has its title, description and theme.</summary>
+    /// <summary>
+    /// Adds the marks, the scales and the axes of the chart to a plot that already has its title, description, theme and
+    /// measurer of the texts, which <see cref="Plot.TextMeasurer"/> gives to measure the texts.
+    /// </summary>
     private protected abstract void Configure(Plot plot);
+
+    private Plot CreatePlot(ITextMeasurer? textMeasurer)
+    {
+        var plot = new Plot
+        {
+            Title = string.IsNullOrEmpty(Title) ? null : Title,
+            Description = Description,
+            Theme = MermaidChartTheme.Create(Theme),
+            TextMeasurer = textMeasurer,
+        };
+
+        Configure(plot);
+        return plot;
+    }
 
     private static SvgRenderOptions CreateDefaultSvgOptions() => new() { IdPrefix = "chart" };
 }

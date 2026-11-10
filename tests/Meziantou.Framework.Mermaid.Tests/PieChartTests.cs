@@ -49,6 +49,31 @@ public sealed class PieChartTests
     }
 
     [Fact]
+    public void CreateSceneLaysOutWithTheGivenMeasurer()
+    {
+        // The measurer given to CreateScene sizes the title and the labels, as the TextMeasurer property does
+        var quadrant = new QuadrantChart { Title = "Quadrant" };
+        quadrant.AddPoint("Point", 0.5, 0.5);
+        var sankey = new SankeyChart { Title = "Sankey" };
+        sankey.AddLink("A", "B", 1);
+        var treemap = new TreemapChart { Title = "Treemap" };
+        treemap.AddNode("Section").AddChild("Leaf", 1);
+        var pie = new PieChart { Title = "Pie" };
+        pie.AddSlice("Slice", 1);
+        MermaidChart[] charts = [quadrant, sankey, treemap, pie];
+
+        var measurer = new LargeTextMeasurer();
+        foreach (var chart in charts)
+        {
+            var given = SvgSceneRenderer.Render(chart.CreateScene(measurer));
+            chart.TextMeasurer = measurer;
+            Assert.Equal(SvgSceneRenderer.Render(chart.CreateScene()), given);
+            chart.TextMeasurer = null;
+            Assert.NotEqual(SvgSceneRenderer.Render(chart.CreateScene()), given);
+        }
+    }
+
+    [Fact]
     public void ToPlotReturnsANewPlot()
     {
         var chart = new PieChart();
@@ -261,5 +286,16 @@ public sealed class PieChartTests
         }
 
         return count;
+    }
+
+    private sealed class LargeTextMeasurer : ITextMeasurer
+    {
+        public string FontFamily => AfmTextMeasurer.Default.FontFamily;
+
+        public TextMetrics Measure(string text, SceneFont font)
+        {
+            var metrics = AfmTextMeasurer.Default.Measure(text, font);
+            return new TextMetrics(metrics.Width * 2, metrics.Ascent * 2, metrics.Descent * 2);
+        }
     }
 }

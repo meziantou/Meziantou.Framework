@@ -1,14 +1,65 @@
 ---
 title: Cancellation and timeouts
-description: Cancel calls, and kill the process when a canceled call blocks it, such as with an infinite loop.
+description: Cancel calls, stop their JavaScript code with an AbortSignal, and kill the process when a canceled call blocks it, such as with an infinite loop.
 ---
 
 ## Canceling a call
 
-Every call takes a `CancellationToken`. Canceling it only stops waiting for the result: the call throws an
-`OperationCanceledException`, but its JavaScript code keeps running. Code that never completes, such as an infinite
-loop, keeps the event loop of the process busy and blocks the other calls, and killing the process is the only way to
-stop it.
+Every call takes a `CancellationToken`. Canceling it stops waiting for the result: the call throws an
+`OperationCanceledException`, and the `AbortSignal` of the call, `nodeJsHost.signal`, is aborted in the Node.js
+process. JavaScript code cannot be interrupted: it stops only when it checks the signal, or passes it to the APIs it
+calls. Code that ignores the signal keeps running.
+
+## Stop the JavaScript code of a canceled call
+
+`nodeJsHost.signal` is the `AbortSignal` of the call whose code runs. Pass it to the APIs that accept one, such as
+`fetch`, `setTimeout` of `node:timers/promises`, or `readFile` of `node:fs/promises`, so they stop as soon as the call is
+canceled:
+
+<!-- ref:../../tests/Meziantou.Framework.NodeJs.Tests/NodeJsHostTests.cs;region=NodeJs_CancellationSignal;format=md-fenced-code-block;dedent=true -->
+```csharp
+await using var node = await NodeJsHost.StartAsync();
+
+using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+await Assert.ThrowsAnyAsync<OperationCanceledException>(() => node.EvaluateVoidAsync("""
+    // nodeJsHost.signal is aborted when the call is canceled, so the timer stops immediately
+    const { setTimeout } = require("node:timers/promises");
+    try {
+        await setTimeout(60_000, undefined, { signal: nodeJsHost.signal });
+    } catch (error) {
+        globalThis.stopReason = error.name;
+    }
+    """, cancellationTokenSource.Token));
+```
+<!-- endref -->
+
+In a long computation, check the signal regularly, for instance with `signal.throwIfAborted()`, and read it at the
+start of the function, as it is only available in the code of a call:
+
+```javascript
+export async function render(document) {
+    const signal = nodeJsHost.signal;
+    for (const page of document.pages) {
+        signal.throwIfAborted();
+        await renderPage(page, { signal });
+    }
+}
+```
+
+- The signal is available in the code of the call, including the module functions called by
+  [InvokeAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.InvokeAsync) and the methods called through a
+  [JSReference](cref:Meziantou.Framework.NodeJs.JSReference), and in the callbacks of the promises, timers and I/O
+  operations that the call starts.
+- It is `undefined` in the top-level code of the modules loaded by [InvokeAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.InvokeAsync) and by the `require` function of
+  evaluated code, as these modules are shared by all the calls. The modules that the code of a call loads itself, using
+  `import()` or the `require` function of a CommonJS module, see the signal of that call while they load.
+- Its `reason` is an `AbortError`. The error thrown by the code of a canceled call is ignored, as the host no longer
+  waits for its result.
+- The signal of a call that completes is never aborted.
+- The abort listeners run on the thread of the call, once its event loop processes the cancellation: synchronous code
+  that never awaits, such as an infinite loop, never sees the signal aborted. Use
+  [UnresponsiveTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.UnresponsiveTimeout) to stop such code.
+- `signal.reason` and `signal.throwIfAborted()` need Node.js 17.3 or later.
 
 [StartAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.StartAsync) also takes a token, to cancel the startup. The token of [NodeJsHostPool.RunAsync](cref:Meziantou.Framework.NodeJs.NodeJsHostPool.RunAsync) stops waiting for a
 process to be available.

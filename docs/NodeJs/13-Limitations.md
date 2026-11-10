@@ -15,7 +15,8 @@ description: What the library does not do, and how to work around it.
   serialized using reflection.
 - **JavaScript code calls .NET through the delegates it receives.** It cannot call other .NET code, and the arguments
   and results of the delegates are serialized as JSON. See [Calling .NET from JavaScript](07-CallingDotNet.md).
-- **Canceling a call does not stop its JavaScript code.** Set [UnresponsiveTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.UnresponsiveTimeout) to kill the process when the code
+- **Canceling a call does not interrupt its JavaScript code.** It aborts the `AbortSignal` of the call,
+  `nodeJsHost.signal`, so code that checks it can stop. Set [UnresponsiveTimeout](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.UnresponsiveTimeout) to kill the process when the code
   blocks its event loop. See [Cancellation and timeouts](10-CancellationAndTimeouts.md).
 - **A synchronous infinite loop blocks all the other calls**, or all the other calls of its worker thread with
   [WorkerThreads](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.WorkerThreads). Disposing the host kills the process.

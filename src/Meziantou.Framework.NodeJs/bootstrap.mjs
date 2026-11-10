@@ -14,7 +14,7 @@ await startRuntime({ endpoint, token });
 async function startRuntime(config) {
     const { default: net } = await import("node:net");
     const { default: path } = await import("node:path");
-    const { AsyncResource, createHook, executionAsyncResource } = await import("node:async_hooks");
+    const { AsyncLocalStorage, AsyncResource, createHook, executionAsyncResource } = await import("node:async_hooks");
     const { createRequire } = await import("node:module");
     const { pathToFileURL } = await import("node:url");
     const { Worker, parentPort } = await import("node:worker_threads");
@@ -50,6 +50,22 @@ async function startRuntime(config) {
 
     // Connection with the host, created once everything is declared
     let socket;
+
+    // The AbortSignal of the call whose code runs, aborted when the host cancels the call. The code of a call reads it from nodeJsHost.signal.
+    const callSignal = new AsyncLocalStorage();
+
+    // Aborts the AbortSignal of the calls in progress, by identifier
+    const abortCallbacks = new Map();
+    Object.defineProperty(globalThis, "nodeJsHost", {
+        value: Object.freeze({
+            get signal() {
+                return callSignal.getStore();
+            },
+        }),
+        configurable: true,
+        enumerable: false,
+        writable: false,
+    });
 
     // Values referenced by the .NET host (JSReference), by identifier
     const references = new Map();
@@ -493,12 +509,11 @@ async function startRuntime(config) {
 
     async function evaluate(message, args) {
         // "args" is only declared when the caller provides arguments, so code declaring its own "args" variable still compiles
-        const require = tracking ? requireOutsideOfCall : nodeRequire;
         if (args === undefined) {
-            return await new AsyncFunction("require", message.code)(require);
+            return await new AsyncFunction("require", message.code)(requireOutsideOfCall);
         }
 
-        return await new AsyncFunction("require", "args", message.code)(require, args);
+        return await new AsyncFunction("require", "args", message.code)(requireOutsideOfCall, args);
     }
 
     // Resources that run their callback once (promises, timeouts, I/O requests...) belong to the call that creates them.
@@ -692,13 +707,13 @@ async function startRuntime(config) {
     }
 
     // Module initialization (the top-level code of a module, and the timers and connections it creates) is shared by all the calls,
-    // so it does not belong to the call that happens to load the module first
+    // so it does not belong to the call that happens to load the module first, and does not see its AbortSignal
     function runOutsideOfCall(fn, ...args) {
         if (!tracking) {
-            return fn(...args);
+            return callSignal.run(undefined, fn, ...args);
         }
 
-        return new AsyncResource("MeziantouNodeJsModuleLoading").runInAsyncScope(fn, undefined, ...args);
+        return new AsyncResource("MeziantouNodeJsModuleLoading").runInAsyncScope(() => callSignal.run(undefined, fn, ...args));
     }
 
     function importModule(specifier) {
@@ -708,16 +723,43 @@ async function startRuntime(config) {
     // The require function passed to evaluated code. Its properties (resolve, cache...) are the ones of the actual require function.
     const requireOutsideOfCall = Object.assign(function require(id) { return runOutsideOfCall(nodeRequire, id); }, nodeRequire);
 
-    // Runs the code of a call in its own asynchronous context once the tracking is started, so the code it runs is attributed to it
+    // Runs the code of a call with its AbortSignal, and in its own asynchronous context once the tracking is started, so the code it runs is attributed to it
     function run(message) {
-        if (!tracking || typeof message.id !== "number") {
+        const id = message.id;
+        if (typeof id !== "number") {
             handle(message);
             return;
         }
 
-        const resource = new AsyncResource("MeziantouNodeJsCall");
-        resource[callSymbol] = BigInt(message.id);
-        resource.runInAsyncScope(handle, undefined, message);
+        const controller = new AbortController();
+        let runInCall = (fn, ...args) => callSignal.run(controller.signal, fn, ...args);
+        if (tracking) {
+            const resource = new AsyncResource("MeziantouNodeJsCall");
+            resource[callSymbol] = BigInt(id);
+            const runWithSignal = runInCall;
+            runInCall = (fn, ...args) => resource.runInAsyncScope(runWithSignal, undefined, fn, ...args);
+        }
+
+        // The abort listeners are code of the call
+        abortCallbacks.set(id, () => runInCall(() => controller.abort()));
+        const complete = () => abortCallbacks.delete(id);
+        runInCall(handle, message).then(complete, complete);
+    }
+
+    // The host cancels a call. A call that already completed is ignored.
+    function cancel(id) {
+        const abort = abortCallbacks.get(id);
+        if (abort === undefined) {
+            return;
+        }
+
+        abortCallbacks.delete(id);
+        try {
+            abort();
+        } catch (error) {
+            // An abort listener threw
+            console.error("Uncaught exception:", error);
+        }
     }
 
     async function handle(message) {
@@ -728,6 +770,10 @@ async function startRuntime(config) {
 
             case "callbackResult":
                 completeCallbackCall(message);
+                return;
+
+            case "cancel":
+                cancel(message.call);
                 return;
 
             case "watchdog":

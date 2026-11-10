@@ -234,7 +234,7 @@ The JavaScript code runs with the permissions of the .NET process, and the Node.
 
 To run CPU-bound code in parallel, set `WorkerThreads` (see [Worker threads](#worker-threads)), or use `NodeJsHostPool`, which starts several Node.js processes and sends each call to the process with the fewest calls in progress, including canceled calls whose JavaScript code has not completed. A process that exits is replaced automatically.
 
-A canceled call keeps running, and synchronous code (e.g. an infinite loop) blocks its process. Set `UnresponsiveTimeout` so such a process is killed and replaced. Only the process blocked by a canceled call is killed: a process busy with calls that are not canceled is not (see [Cancellation](#cancellation)).
+A canceled call keeps running until its code stops (see [Cancellation](#cancellation)), and synchronous code (e.g. an infinite loop) blocks its process. Set `UnresponsiveTimeout` so such a process is killed and replaced. Only the process blocked by a canceled call is killed: a process busy with calls that are not canceled is not (see [Cancellation](#cancellation)).
 
 Set `MaxConcurrentCalls` so calls wait in the pool and run on the first process that becomes available. Otherwise, all calls are sent immediately, and a call can wait for a long call sent to the same process while other processes are idle. `1` is a good value for CPU-bound code. Calls made on the pool by a `RunAsync` callback do not wait in the pool, as the callback already counts as a call.
 
@@ -283,7 +283,26 @@ A worker thread that exits is restarted, and its state is lost: its calls in pro
 
 ## Cancellation
 
-Canceling a call only stops waiting for its result: the JavaScript code keeps running, and it may block the event loop of the process, and so the other calls. With `UnresponsiveTimeout`, the process is killed when the code of a canceled call blocks the event loop for longer than the timeout, synchronously (e.g. an infinite loop) or with promises that never let the event loop run other callbacks. With `WorkerThreads`, only the worker thread whose event loop is blocked is terminated and restarted, and the other worker threads keep running their calls.
+Canceling a call stops waiting for its result, and aborts the `AbortSignal` of the call, `nodeJsHost.signal`. JavaScript code cannot be interrupted: pass the signal to the APIs that accept one (e.g. `fetch`, or `setTimeout` of `node:timers/promises`), or check it regularly, so the code stops. The signal is `undefined` in the top-level code of the modules loaded by `InvokeAsync` and by the `require` function of evaluated code. Modules that the code of a call loads itself (`import()`, or the `require` of a CommonJS module) see the signal of that call while they load.
+
+<!-- ref:../../tests/Meziantou.Framework.NodeJs.Tests/NodeJsHostTests.cs;region=NodeJs_CancellationSignal;format=md-fenced-code-block;dedent=true -->
+```csharp
+await using var node = await NodeJsHost.StartAsync();
+
+using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+await Assert.ThrowsAnyAsync<OperationCanceledException>(() => node.EvaluateVoidAsync("""
+    // nodeJsHost.signal is aborted when the call is canceled, so the timer stops immediately
+    const { setTimeout } = require("node:timers/promises");
+    try {
+        await setTimeout(60_000, undefined, { signal: nodeJsHost.signal });
+    } catch (error) {
+        globalThis.stopReason = error.name;
+    }
+    """, cancellationTokenSource.Token));
+```
+<!-- endref -->
+
+Code that ignores the signal keeps running, and it may block the event loop of the process, and so the other calls. With `UnresponsiveTimeout`, the process is killed when the code of a canceled call blocks the event loop for longer than the timeout, synchronously (e.g. an infinite loop) or with promises that never let the event loop run other callbacks. With `WorkerThreads`, only the worker thread whose event loop is blocked is terminated and restarted, and the other worker threads keep running their calls.
 
 The code of a call is its own code, and the callbacks of the promises, timeouts, immediates, and I/O operations (e.g. reading a file) it starts, directly or through other callbacks. To never kill a call that is not canceled, the code run by long-lived objects belongs to no call, as these objects can run code for several calls (e.g. a connection pool created by the first call that needs it):
 
@@ -297,6 +316,6 @@ Such code is never stopped. A call that runs a loop processing jobs for other ca
 - Arguments and results are serialized as JSON. Use `JSValue` to pass values that JSON cannot represent, and `JSReference` to keep values in the Node.js process. See [Results](#results) for the conversion of results.
 - A message (arguments or result) cannot exceed the maximum length of a JavaScript string (about 512 million UTF-16 characters). A larger message fails its call.
 - `JSValue`, `JSReference`, and `JSCallback` can only be used in the arguments of a call, or in the result of a `JSCallback`. A `JsonNode` created from them cannot be serialized or cloned, and they cannot be members of objects serialized using reflection.
-- Cancelling a call only stops waiting for the result; the JavaScript code keeps running. Set `UnresponsiveTimeout` to kill the process when the code blocks its event loop (see [Cancellation](#cancellation)).
+- Cancelling a call does not interrupt its JavaScript code: it aborts `nodeJsHost.signal`, so code that checks it can stop. Set `UnresponsiveTimeout` to kill the process when the code blocks its event loop (see [Cancellation](#cancellation)).
 - JavaScript code can only call the .NET delegates it receives as `JSCallback` arguments, and their arguments and results are serialized as JSON.
 - A synchronous infinite loop blocks all the other calls, or all the other calls of its worker thread with `WorkerThreads`. Disposing the host kills the process.

@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Microsoft.Win32;
 
 namespace Meziantou.Framework.Win32;
 
@@ -42,6 +43,61 @@ public sealed class AmsiContext : IDisposable
     {
         Amsi.AmsiInitialize(applicationName, out var context).ThrowOnFailure();
         return new AmsiContext(context);
+    }
+
+    /// <summary>Determines whether at least one antimalware provider is registered with AMSI.</summary>
+    /// <returns><see langword="true"/> when a provider is registered; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    /// When no provider is registered, scans succeed and report every content as <see cref="AmsiResult.NotDetected"/>:
+    /// a negative answer does not mean that the content is safe. A registered provider may still be unable to scan,
+    /// for instance when it is disabled; scans then throw a <see cref="COMException"/>.
+    /// </remarks>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.AmsiTests/AmsiContextTests.cs" ref:region="AmsiContext_IsProviderRegistered" ref:dedent="true">
+    /// // Without a provider, every content is reported as not detected
+    /// if (!AmsiContext.IsProviderRegistered())
+    ///     throw new InvalidOperationException("No antimalware product is registered with AMSI");
+    ///
+    /// foreach (var provider in AmsiContext.GetRegisteredProviders())
+    /// {
+    ///     // e.g. {2781761E-28E0-4109-99FE-B9D127C57AFE} Windows Defender IOfficeAntiVirus implementation
+    ///     Assert.NotEqual(Guid.Empty, provider.Id);
+    /// }
+    /// </code>
+    /// </example>
+    public static bool IsProviderRegistered()
+    {
+        return GetRegisteredProviders().Count > 0;
+    }
+
+    /// <summary>Gets the antimalware providers registered with AMSI, in the order AMSI loads them.</summary>
+    /// <returns>The registered providers, or an empty list when no provider is registered.</returns>
+    /// <remarks>
+    /// AMSI reads its providers from the <c>HKLM\SOFTWARE\Microsoft\AMSI\Providers</c> registry key. The registry view of
+    /// the current process is used, as AMSI does: a 32-bit process sees the providers registered for 32-bit processes.
+    /// </remarks>
+    public static IReadOnlyList<AmsiProvider> GetRegisteredProviders()
+    {
+        using var providersKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\AMSI\Providers");
+        if (providersKey is null)
+            return [];
+
+        var result = new List<AmsiProvider>();
+        foreach (var name in providersKey.GetSubKeyNames())
+        {
+            if (!Guid.TryParse(name, out var id))
+                continue;
+
+            using var classKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Classes\CLSID\" + id.ToString("B"));
+            using var serverKey = classKey?.OpenSubKey("InprocServer32");
+            var displayName = classKey?.GetValue(name: null) as string;
+            var modulePath = serverKey?.GetValue(name: null) as string;
+            result.Add(new AmsiProvider(id, NullIfEmpty(displayName), NullIfEmpty(modulePath?.Trim('"'))));
+        }
+
+        return result;
+
+        static string? NullIfEmpty(string? value) => string.IsNullOrEmpty(value) ? null : value;
     }
 
     /// <summary>Creates a new AMSI session for correlating multiple scan requests.</summary>

@@ -5,7 +5,7 @@
 ## Requirements
 
 - Windows 10 / Windows Server 2016 or later
-- An antimalware provider registered with AMSI. When no provider is registered, scans succeed and report the content as not detected.
+- An antimalware provider registered with AMSI. When no provider is registered, scans succeed and report the content as not detected. Use `AmsiContext.IsProviderRegistered()` to check it.
 
 ## Usage
 

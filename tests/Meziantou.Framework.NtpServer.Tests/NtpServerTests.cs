@@ -204,6 +204,126 @@ public sealed class NtpServerTests : IAsyncLifetime
         #endregion
     }
 
+    [Fact]
+    public async Task Documentation_Retry()
+    {
+        using var server = new NtpServer(new NtpServerOptions { Port = 0, BindAddress = IPAddress.Loopback });
+        await server.StartAsync(XunitCancellationToken);
+        var port = server.Port;
+
+        #region NtpClient_Retry
+        var client = new NtpClient("127.0.0.1", new NtpClientOptions
+        {
+            Port = port,
+            Timeout = TimeSpan.FromSeconds(2),
+            RetryCount = 2, // up to 3 requests per address, 2 seconds each
+        });
+
+        var response = await client.QueryAsync();
+        #endregion
+
+        Assert.Equal(2, response.Stratum);
+    }
+
+    [Fact]
+    public async Task Documentation_MeasureServer()
+    {
+        using var server = new NtpServer(new NtpServerOptions { Port = 0, BindAddress = IPAddress.Loopback });
+        await server.StartAsync(XunitCancellationToken);
+        var port = server.Port;
+
+        #region NtpClient_Measure
+        var client = new NtpClient("127.0.0.1", new NtpClientOptions { Port = port });
+
+        // 4 queries, 2 seconds apart, by default
+        var measurement = await client.MeasureAsync(new NtpMeasurementOptions
+        {
+            SampleCount = 4,
+            SampleInterval = TimeSpan.FromMilliseconds(100),
+        });
+
+        // The offset of the sample with the shortest round-trip delay
+        var offset = measurement.ClockOffset;
+
+        // The maximum error of the offset, and how much the samples disagree
+        var maximumError = measurement.RootDistance;
+        var jitter = measurement.Jitter;
+
+        Assert.Equal(4, measurement.Samples.Count + measurement.Errors.Count);
+        #endregion
+
+        Assert.True(Math.Abs(offset.TotalSeconds) < 1, $"Offset was {offset}");
+        Assert.True(maximumError > TimeSpan.Zero);
+        Assert.True(jitter >= TimeSpan.Zero);
+    }
+
+    [Fact]
+    public async Task Documentation_MeasureServers()
+    {
+        #region NtpClient_MeasureServers
+        // Three servers, one of which is one hour ahead
+        using var server1 = new NtpServer(new NtpServerOptions { Port = 0, BindAddress = IPAddress.Loopback });
+        using var server2 = new NtpServer(new NtpServerOptions { Port = 0, BindAddress = IPAddress.Loopback });
+        using var wrongServer = new NtpServer(new NtpServerOptions
+        {
+            Port = 0,
+            BindAddress = IPAddress.Loopback,
+            TimeProvider = new FakeTimeProvider(DateTimeOffset.UtcNow.AddHours(1)),
+        });
+        await server1.StartAsync();
+        await server2.StartAsync();
+        await wrongServer.StartAsync();
+
+        NtpClient[] clients =
+        [
+            new NtpClient("127.0.0.1", new NtpClientOptions { Port = server1.Port }),
+            new NtpClient("127.0.0.1", new NtpClientOptions { Port = server2.Port }),
+            new NtpClient("127.0.0.1", new NtpClientOptions { Port = wrongServer.Port }),
+        ];
+        var measurement = await NtpClient.MeasureAsync(clients, new NtpMeasurementOptions { SampleCount = 2, SampleInterval = TimeSpan.Zero });
+
+        // The server that is one hour ahead is outvoted
+        Assert.Equal(2, measurement.SelectedServers.Count);
+        Assert.Same(clients[2], Assert.Single(measurement.RejectedServers).Client);
+
+        // The offset to add to the local clock, and its bounds
+        Assert.InRange(measurement.ClockOffset, TimeSpan.FromSeconds(-1), TimeSpan.FromSeconds(1));
+        Assert.InRange(measurement.ClockOffset, measurement.MinimumClockOffset, measurement.MaximumClockOffset);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_Authentication()
+    {
+        #region NtpServer_Authentication
+        // The same key on both sides: a line "1 AES128CMAC 000102030405060708090a0b0c0d0e0f" of an ntpd or chrony keys file
+        var key = new NtpAuthenticationKey(
+            keyId: 1,
+            NtpAuthenticationAlgorithm.AesCmac,
+            Convert.FromHexString("000102030405060708090a0b0c0d0e0f"));
+
+        var serverOptions = new NtpServerOptions
+        {
+            Port = 0,
+            BindAddress = IPAddress.Loopback,
+            RequireAuthentication = true, // ignore the requests without a valid MAC
+        };
+        serverOptions.AuthenticationKeys.Add(key);
+
+        using var server = new NtpServer(serverOptions);
+        await server.StartAsync();
+
+        var client = new NtpClient("127.0.0.1", new NtpClientOptions
+        {
+            Port = server.Port,
+            AuthenticationKey = key, // ignore the replies without a valid MAC
+        });
+        var response = await client.QueryAsync();
+        #endregion
+
+        Assert.Equal(2, response.Stratum);
+    }
+
     private static NtpClient CreateClient(NtpServer server, Action<NtpClientOptions>? configure = null)
     {
         var options = new NtpClientOptions { Port = server.Port, Timeout = TimeSpan.FromSeconds(2) };
@@ -224,6 +344,14 @@ public sealed class NtpServerTests : IAsyncLifetime
             buffer[TransmitTimestampOffset + i] = (byte)(0xA0 + i);
         }
 
+        return buffer;
+    }
+
+    private static byte[] BuildAuthenticatedRequest(NtpAuthenticationKey key)
+    {
+        var buffer = new byte[PacketSize + NtpMac.GetMacSize(key)];
+        BuildRequest().CopyTo(buffer, 0);
+        NtpMac.Write(key, buffer, PacketSize);
         return buffer;
     }
 
@@ -618,6 +746,168 @@ public sealed class NtpServerTests : IAsyncLifetime
 
     /// <summary>Mirrors the bucket mapping of <see cref="NtpRateLimiter"/>.</summary>
     private static int GetBucketIndex(IPAddress address) => (int)((uint)address.GetHashCode() % 1024);
+
+    [Theory]
+    [InlineData(NtpAuthenticationAlgorithm.AesCmac, 16)]
+    [InlineData(NtpAuthenticationAlgorithm.Sha1, 20)]
+    [InlineData(NtpAuthenticationAlgorithm.Md5, 16)]
+    public async Task Authentication_ClientAndServerAgree(NtpAuthenticationAlgorithm algorithm, int digestSize)
+    {
+        var key = new NtpAuthenticationKey(42, algorithm, Enumerable.Range(1, 16).Select(i => (byte)i).ToArray());
+        using var server = await StartAuthenticatedServerAsync(requireAuthentication: true, key);
+
+        var response = await CreateClient(server, options => options.AuthenticationKey = key).QueryAsync(XunitCancellationToken);
+        Assert.Equal(2, response.Stratum);
+
+        // The reply ends with the key identifier and the digest
+        var request = BuildAuthenticatedRequest(key);
+        var reply = await SendRawAsync(server, request, XunitCancellationToken);
+        Assert.NotNull(reply);
+        Assert.HasCount(PacketSize + 4 + digestSize, reply);
+        Assert.Equal(42u, BinaryPrimitives.ReadUInt32BigEndian(reply.AsSpan(PacketSize)));
+    }
+
+    [Fact]
+    public async Task Authentication_UnknownKeyGetsACryptoNak()
+    {
+        using var server = await StartAuthenticatedServerAsync(requireAuthentication: false, new NtpAuthenticationKey(1, NtpAuthenticationAlgorithm.Sha1, "server"u8));
+        var clientKey = new NtpAuthenticationKey(2, NtpAuthenticationAlgorithm.Sha1, "client"u8);
+
+        var reply = await SendRawAsync(server, BuildAuthenticatedRequest(clientKey), XunitCancellationToken);
+        Assert.NotNull(reply);
+        Assert.HasCount(PacketSize + 4, reply);
+        Assert.Equal(0u, BinaryPrimitives.ReadUInt32BigEndian(reply.AsSpan(PacketSize)));
+        Assert.True(reply.AsSpan(32, 16).IndexOfAnyExcept((byte)0) < 0, "A crypto-NAK must not carry the time");
+
+        var exception = await Assert.ThrowsAsync<TimeoutException>(() => CreateClient(server, options =>
+        {
+            options.AuthenticationKey = clientKey;
+            options.Timeout = TimeSpan.FromMilliseconds(500);
+        }).QueryAsync(XunitCancellationToken));
+        Assert.Contains("crypto-NAK", exception.Message);
+    }
+
+    [Fact]
+    public async Task Authentication_InvalidMacGetsACryptoNak()
+    {
+        var key = new NtpAuthenticationKey(1, NtpAuthenticationAlgorithm.AesCmac, new byte[16]);
+        using var server = await StartAuthenticatedServerAsync(requireAuthentication: false, key);
+
+        var request = BuildAuthenticatedRequest(key);
+        request[^1] ^= 0x01;
+        var reply = await SendRawAsync(server, request, XunitCancellationToken);
+
+        Assert.NotNull(reply);
+        Assert.HasCount(PacketSize + 4, reply);
+    }
+
+    [Fact]
+    public async Task Authentication_Required_IgnoresUnauthenticatedRequests()
+    {
+        using var server = await StartAuthenticatedServerAsync(requireAuthentication: true, new NtpAuthenticationKey(1, NtpAuthenticationAlgorithm.AesCmac, new byte[16]));
+
+        var reply = await SendRawAsync(server, BuildRequest(), XunitCancellationToken, TimeSpan.FromMilliseconds(500));
+
+        Assert.Null(reply);
+    }
+
+    [Fact]
+    public async Task Authentication_Optional_AnswersUnauthenticatedRequestsWithoutAMac()
+    {
+        using var server = await StartAuthenticatedServerAsync(requireAuthentication: false, new NtpAuthenticationKey(1, NtpAuthenticationAlgorithm.AesCmac, new byte[16]));
+
+        var response = await CreateClient(server).QueryAsync(XunitCancellationToken);
+        var reply = await SendRawAsync(server, BuildRequest(), XunitCancellationToken);
+
+        Assert.Equal(2, response.Stratum);
+        Assert.NotNull(reply);
+        Assert.HasCount(PacketSize, reply);
+    }
+
+    [Fact]
+    public async Task Server_SkipsExtensionFields()
+    {
+        // An NTS request without a MAC: a 28-byte extension field after the header
+        var request = new byte[PacketSize + 28];
+        BuildRequest().CopyTo(request, 0);
+        BinaryPrimitives.WriteUInt16BigEndian(request.AsSpan(PacketSize), 0x0104);
+        BinaryPrimitives.WriteUInt16BigEndian(request.AsSpan(PacketSize + 2), 28);
+
+        var reply = await SendRawAsync(_server, request, XunitCancellationToken);
+
+        Assert.NotNull(reply);
+        Assert.HasCount(PacketSize, reply);
+    }
+
+    [Fact]
+    public async Task Server_IgnoresMalformedExtensionFields()
+    {
+        var request = new byte[PacketSize + 28];
+        BuildRequest().CopyTo(request, 0);
+        BinaryPrimitives.WriteUInt16BigEndian(request.AsSpan(PacketSize + 2), 30);
+
+        var reply = await SendRawAsync(_server, request, XunitCancellationToken, TimeSpan.FromMilliseconds(500));
+
+        Assert.Null(reply);
+    }
+
+    [Fact]
+    public void Constructor_RejectsInvalidAuthenticationOptions()
+    {
+        var duplicates = new NtpServerOptions();
+        duplicates.AuthenticationKeys.Add(new NtpAuthenticationKey(1, NtpAuthenticationAlgorithm.Md5, "a"u8));
+        duplicates.AuthenticationKeys.Add(new NtpAuthenticationKey(1, NtpAuthenticationAlgorithm.Sha1, "b"u8));
+        Assert.Throws<ArgumentException>(() => new NtpServer(duplicates));
+
+        Assert.Throws<ArgumentException>(() => new NtpServer(new NtpServerOptions { RequireAuthentication = true }));
+    }
+
+    [Fact]
+    public async Task MeasureServers_FailsWithoutAMajority()
+    {
+        using var server1 = new NtpServer(new NtpServerOptions { Port = 0, BindAddress = IPAddress.Loopback });
+        using var server2 = new NtpServer(new NtpServerOptions { Port = 0, BindAddress = IPAddress.Loopback, TimeProvider = new FakeTimeProvider(DateTimeOffset.UtcNow.AddHours(1)) });
+        await server1.StartAsync(XunitCancellationToken);
+        await server2.StartAsync(XunitCancellationToken);
+
+        var exception = await Assert.ThrowsAsync<NtpClockSelectionException>(() => NtpClient.MeasureAsync(
+            [CreateClient(server1), CreateClient(server2)],
+            new NtpMeasurementOptions { SampleCount = 1 },
+            XunitCancellationToken));
+
+        Assert.HasCount(2, exception.Measurements);
+        Assert.Empty(exception.FailedServers);
+    }
+
+    [Fact]
+    public async Task MeasureServers_ReportsTheServersThatDoNotAnswer()
+    {
+        using var silentServer = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        var silentPort = ((IPEndPoint)silentServer.Client.LocalEndPoint!).Port;
+
+        var silentClient = new NtpClient("127.0.0.1", new NtpClientOptions { Port = silentPort, Timeout = TimeSpan.FromMilliseconds(300) });
+        var measurement = await NtpClient.MeasureAsync(
+            [CreateClient(_server), silentClient],
+            new NtpMeasurementOptions { SampleCount = 1 },
+            XunitCancellationToken);
+
+        Assert.Single(measurement.SelectedServers);
+        Assert.Empty(measurement.RejectedServers);
+        Assert.IsType<TimeoutException>(measurement.FailedServers[silentClient]);
+    }
+
+    private static async Task<NtpServer> StartAuthenticatedServerAsync(bool requireAuthentication, params NtpAuthenticationKey[] keys)
+    {
+        var options = new NtpServerOptions { Port = 0, BindAddress = IPAddress.Loopback, RequireAuthentication = requireAuthentication };
+        foreach (var key in keys)
+        {
+            options.AuthenticationKeys.Add(key);
+        }
+
+        var server = new NtpServer(options);
+        await server.StartAsync(XunitCancellationToken);
+        return server;
+    }
 
     [Fact]
     public async Task StartAsync_CalledTwiceThrows()

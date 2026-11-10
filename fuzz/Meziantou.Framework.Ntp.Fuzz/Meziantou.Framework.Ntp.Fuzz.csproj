@@ -1,0 +1,17 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.NtpClient and Meziantou.Framework.NtpServer. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.NtpClient\Meziantou.Framework.NtpClient.csproj" />
+
+    <!-- Both libraries compile the internal wire format types, and show them to this project: the alias keeps the
+         ones of the server apart -->
+    <ProjectReference Include="..\..\src\Meziantou.Framework.NtpServer\Meziantou.Framework.NtpServer.csproj" Aliases="NtpServerAssembly" />
+  </ItemGroup>
+</Project>

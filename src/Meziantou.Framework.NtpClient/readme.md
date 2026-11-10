@@ -8,6 +8,9 @@ An NTP client library for querying NTP servers to retrieve accurate network time
 - **Clock offset calculation**: Computes the time difference between client and server
 - **Round-trip delay**: Measures network round-trip time
 - **Response validation**: Rejects replies that do not answer the request that was actually sent
+- **Retries**: Sends a new request when a request or its reply is lost
+- **Multi-sample and multi-server measurement**: Clock filter and selection algorithms of RFC 5905
+- **Symmetric key authentication**: AES-128-CMAC (RFC 8573), SHA-1 and MD5 MACs (RFC 5905)
 - **Async/await**: Fully asynchronous API with cancellation support
 - **OpenTelemetry**: Built-in `ActivitySource` tracing for NTP queries
 
@@ -73,6 +76,52 @@ var response = await client.QueryAsync();
 ```
 <!-- endref -->
 
+### Retries
+
+`NtpClientOptions.RetryCount` sends a new request when no valid reply arrives within the timeout:
+
+<!-- ref:../../samples/Meziantou.Framework.NtpClient.Samples/ReadmeExamples.cs;region=NtpClient_ReadmeRetry;format=md-fenced-code-block;dedent=true -->
+```csharp
+var client = new NtpClient("pool.ntp.org", new NtpClientOptions
+{
+    Timeout = TimeSpan.FromSeconds(2),
+    RetryCount = 2, // up to 3 requests per address
+});
+var response = await client.QueryAsync();
+```
+<!-- endref -->
+
+### Several samples and several servers
+
+One query is one measurement. `MeasureAsync` queries a server several times and keeps the sample with
+the shortest round-trip delay, the most accurate. The static `NtpClient.MeasureAsync` measures several
+servers, discards the ones whose time disagrees with the majority (the selection algorithm of RFC 5905),
+and averages the others:
+
+<!-- ref:../../samples/Meziantou.Framework.NtpClient.Samples/ReadmeExamples.cs;region=NtpClient_ReadmeMeasureServers;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A single server, 4 samples 2 seconds apart
+var measurement = await new NtpClient("time.google.com").MeasureAsync();
+Console.WriteLine($"Offset: {measurement.ClockOffset} ± {measurement.RootDistance}");
+
+// Several servers: the majority outvotes a server whose clock is wrong
+var result = await NtpClient.MeasureAsync(
+[
+    new NtpClient("time.google.com"),
+    new NtpClient("time.cloudflare.com"),
+    new NtpClient("pool.ntp.org"),
+]);
+
+Console.WriteLine($"Offset: {result.ClockOffset}, between {result.MinimumClockOffset} and {result.MaximumClockOffset}");
+foreach (var rejected in result.RejectedServers)
+{
+    Console.WriteLine($"Ignored {rejected.Server}: offset {rejected.ClockOffset}");
+}
+```
+<!-- endref -->
+
+It throws `NtpClockSelectionException` when no majority of the servers that answered agrees.
+
 ## Response validation
 
 The client's socket is connected to the server, so the operating system drops datagrams from any other
@@ -100,10 +149,30 @@ if (response.IsKissOfDeath)
 <!-- endref -->
 
 > [!WARNING]
-> Validation ties a reply to the request that was sent; it does not authenticate the server. This
-> library implements neither NTS (RFC 8915) nor symmetric key authentication, so an attacker who can
-> inject packets on the path to the server can still control the reported time. Do not use the result
-> as the sole input to a security decision.
+> Validation ties a reply to the request that was sent; it does not authenticate the server. Unless the
+> client and the server share a key, an attacker who can inject packets on the path to the server can
+> still control the reported time. Do not use an unauthenticated result as the sole input to a security
+> decision. This library does not implement NTS (RFC 8915).
+
+## Authentication
+
+With `NtpClientOptions.AuthenticationKey`, the client adds a MAC to its requests and ignores every reply
+that does not end with a valid MAC computed with the same key. The key identifier, the algorithm and the
+key must match the configuration of the server, such as a line of the keys file of ntpd or chrony:
+
+<!-- ref:../../samples/Meziantou.Framework.NtpClient.Samples/ReadmeExamples.cs;region=NtpClient_ReadmeAuthentication;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The line "1 AES128CMAC 000102030405060708090a0b0c0d0e0f" of the keys file of the server
+var client = new NtpClient("ntp.example.com", new NtpClientOptions
+{
+    AuthenticationKey = new NtpAuthenticationKey(
+        keyId: 1,
+        NtpAuthenticationAlgorithm.AesCmac,
+        Convert.FromHexString("000102030405060708090a0b0c0d0e0f")),
+});
+var response = await client.QueryAsync();
+```
+<!-- endref -->
 
 ## Representable range
 

@@ -8,22 +8,24 @@ NTP (Network Time Protocol) is how computers get the time from a server. Two pac
 | Package | Use it to |
 | --- | --- |
 | `Meziantou.Framework.NtpClient` | Ask an NTP server for the time, and compute the offset of the local clock and the round-trip delay. See [Querying a server](03-QueryingAServer.md). |
-| `Meziantou.Framework.NtpServer` | Answer NTP queries with the time of the machine, or of any `TimeProvider`, for instance in tests. See [Running a server](05-RunningAServer.md). |
+| `Meziantou.Framework.NtpServer` | Answer NTP queries with the time of the machine, or of any `TimeProvider`, for instance in tests. See [Running a server](07-RunningAServer.md). |
 
 Both are in the `Meziantou.Framework.Ntp` namespace and are compatible with trimming.
 
 ## What you can do with them
 
-- **Check the clock of a machine**: compare it with a time server, and alert when the offset is too large.
+- **Check the clock of a machine**: compare it with time servers, and alert when the offset is too large.
 - **Get a reliable time** when the local clock cannot be trusted, by adding the offset to it.
 - **Test code that reads the time over NTP**: run a server on the loopback interface whose clock is a fake
   `TimeProvider`, at any date.
 - **Serve the time on an isolated network**, from a machine whose clock is accurate.
 
-Neither package sets the clock of the machine: the client measures, and the server answers. Neither authenticates the
-other side. See [Limitations](06-Limitations.md).
+Neither package sets the clock of the machine: the client measures, and the server answers. They authenticate each
+other only with a shared key ([Authentication](06-Authentication.md)), not with NTS. See [Limitations](08-Limitations.md).
 
 ## Next steps
 
 - [Getting started](02-GettingStarted.md): query a server.
-- [Response validation](04-ResponseValidation.md): what the client accepts, and what it does not protect against.
+- [Measuring accurately](04-MeasuringAccurately.md): combine several samples, or several servers.
+- [Response validation](05-ResponseValidation.md): what the client accepts, and what it does not protect against.
+- [Authentication](06-Authentication.md): share a key between the client and the server.

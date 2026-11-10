@@ -21,7 +21,9 @@ Assert.NotEqual(0, server.Port); // The port the operating system assigned
 - [Port](cref:Meziantou.Framework.Ntp.NtpServerOptions.Port) is 0 by default: the system chooses a free port, and `server.Port` returns it. Set 123, the standard port, to
   serve standard clients; on Linux and macOS, ports below 1024 need elevated privileges.
 - [StartAsync](cref:Meziantou.Framework.Ntp.NtpServer.StartAsync) throws when the port cannot be bound. It can be called only once: create another server to start again.
-- The server answers with the version of the request (3 or 4), and ignores packets that are not client requests.
+- The server answers with the version of the request (3 or 4), and ignores packets that are not client requests. It
+  skips the extension fields of a request, such as the ones of NTS, and answers without them.
+- To authenticate the requests and the replies with a shared key, see [Authentication](06-Authentication.md).
 
 ## Choose the address
 
@@ -135,5 +137,5 @@ error on a single datagram does not stop the server.
 ## Tracing
 
 The server emits an `Activity` named `ntp.server.request` for each request, from the `ActivitySource` named
-`Meziantou.Framework.NtpServer`, with the tags `ntp.client.address`, `ntp.version` and, for a request over the limit,
-`ntp.rate_limited`.
+`Meziantou.Framework.NtpServer`, with the tags `ntp.client.address`, `ntp.version`, for a request over the limit
+`ntp.rate_limited`, and for a request with a MAC `ntp.key_id` and `ntp.authenticated`.

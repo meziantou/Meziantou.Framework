@@ -8,6 +8,7 @@ An NTP server that responds to NTP time queries. Supports NTPv3 and NTPv4.
 - **Configurable time source**: Use `TimeProvider` for testability
 - **Configurable binding**: Serve every interface, or just the local machine
 - **Rate limiting**: Per-source limiting with `RATE` Kiss-o'-Death replies, enabled by default
+- **Symmetric key authentication**: AES-128-CMAC (RFC 8573), SHA-1 and MD5 MACs (RFC 5905)
 - **Auto-assigned port**: Use port 0 for testing to get an auto-assigned port
 - **OpenTelemetry**: Built-in `ActivitySource` tracing for NTP requests
 
@@ -87,6 +88,40 @@ cannot grow with the number of distinct — and easily spoofed — source addres
 addresses share a budget. It is measured against the real system clock, not `TimeProvider`, so a
 simulated clock cannot switch it off.
 
+### Authentication
+
+The server authenticates the requests that end with a MAC computed with one of `AuthenticationKeys`, and
+authenticates its reply with the same key. A request whose MAC is not valid gets a crypto-NAK, and
+`RequireAuthentication` ignores the requests without a MAC:
+
+<!-- ref:../../tests/Meziantou.Framework.NtpServer.Tests/NtpServerTests.cs;region=NtpServer_Authentication;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The same key on both sides: a line "1 AES128CMAC 000102030405060708090a0b0c0d0e0f" of an ntpd or chrony keys file
+var key = new NtpAuthenticationKey(
+    keyId: 1,
+    NtpAuthenticationAlgorithm.AesCmac,
+    Convert.FromHexString("000102030405060708090a0b0c0d0e0f"));
+
+var serverOptions = new NtpServerOptions
+{
+    Port = 0,
+    BindAddress = IPAddress.Loopback,
+    RequireAuthentication = true, // ignore the requests without a valid MAC
+};
+serverOptions.AuthenticationKeys.Add(key);
+
+using var server = new NtpServer(serverOptions);
+await server.StartAsync();
+
+var client = new NtpClient("127.0.0.1", new NtpClientOptions
+{
+    Port = server.Port,
+    AuthenticationKey = key, // ignore the replies without a valid MAC
+});
+var response = await client.QueryAsync();
+```
+<!-- endref -->
+
 ## What this server does not do
 
 - **It does not discipline its clock.** Time comes from `TimeProvider`, so the server is only as
@@ -94,5 +129,5 @@ simulated clock cannot switch it off.
   identifier and a 100 ms `RootDispersion`: clients are told this is an undisciplined local clock, not
   a primary reference. Set `Stratum = 1` and a matching `ReferenceIdentifier` only if you really have
   attached a reference clock.
-- **It does not authenticate anything.** Neither NTS (RFC 8915) nor symmetric key authentication is
-  implemented, so any client can query it and nothing proves to a client that a reply came from it.
+- **It does not implement NTS** (RFC 8915). Only clients that share a key with the server can verify that a
+  reply came from it.

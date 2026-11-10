@@ -30,6 +30,7 @@
     <Project Path="../fuzz/Meziantou.Framework.Language.Fuzz/Meziantou.Framework.Language.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Markdown.Fuzz/Meziantou.Framework.Markdown.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.MediaTags.Fuzz/Meziantou.Framework.MediaTags.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Ntp.Fuzz/Meziantou.Framework.Ntp.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.PublicApiGenerator.Fuzz/Meziantou.Framework.PublicApiGenerator.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.RobotsTxt.Fuzz/Meziantou.Framework.RobotsTxt.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Scheduling.Fuzz/Meziantou.Framework.Scheduling.Fuzz.csproj" />
@@ -93,6 +94,8 @@
     <Project Path="../src/Meziantou.Framework.Markdown/Meziantou.Framework.Markdown.csproj" />
     <Project Path="../src/Meziantou.Framework.MediaTags/Meziantou.Framework.MediaTags.csproj" />
     <Project Path="../src/Meziantou.Framework.Mermaid/Meziantou.Framework.Mermaid.csproj" />
+    <Project Path="../src/Meziantou.Framework.NtpClient/Meziantou.Framework.NtpClient.csproj" />
+    <Project Path="../src/Meziantou.Framework.NtpServer/Meziantou.Framework.NtpServer.csproj" />
     <Project Path="../src/Meziantou.Framework.Pdf/Meziantou.Framework.Pdf.csproj" />
     <Project Path="../src/Meziantou.Framework.ProcessWrapper/Meziantou.Framework.ProcessWrapper.csproj" />
     <Project Path="../src/Meziantou.Framework.PublicApiGenerator/Meziantou.Framework.PublicApiGenerator.csproj" />

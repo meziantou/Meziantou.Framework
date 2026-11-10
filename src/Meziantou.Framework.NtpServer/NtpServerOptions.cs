@@ -63,4 +63,27 @@ public sealed class NtpServerOptions
     /// </para>
     /// </remarks>
     public int MaxRequestsPerSecond { get; set; } = 100;
+
+    /// <summary>
+    /// Gets the symmetric keys the server accepts to authenticate requests (RFC 5905, RFC 8573). Default is empty.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A request that ends with a valid message authentication code (MAC) computed with one of these keys gets a reply
+    /// authenticated with the same key. A request whose MAC uses an unknown key identifier, or is not valid, gets a
+    /// crypto-NAK: a reply with no time, that tells the client that the server could not authenticate it.
+    /// </para>
+    /// <para>
+    /// The key identifiers must be unique. A request without a MAC gets an unauthenticated reply, unless
+    /// <see cref="RequireAuthentication"/> is <see langword="true"/>. The server reads the keys when it is created:
+    /// later changes to this collection do not apply to it.
+    /// </para>
+    /// </remarks>
+    public ICollection<NtpAuthenticationKey> AuthenticationKeys { get; } = new List<NtpAuthenticationKey>();
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the server ignores the requests that are not authenticated with one of
+    /// <see cref="AuthenticationKeys"/>. Default is <see langword="false"/>.
+    /// </summary>
+    public bool RequireAuthentication { get; set; }
 }

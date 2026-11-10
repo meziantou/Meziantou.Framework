@@ -11,12 +11,23 @@
     <InternalsVisibleTo Include="Meziantou.Framework.NtpServer.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Ntp.Fuzz" />
+  </ItemGroup>
+
+  <!-- The client package defines the public types both packages use, such as NtpAuthenticationKey -->
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.NtpClient/Meziantou.Framework.NtpClient.csproj" />
+  </ItemGroup>
+
   <!-- The wire format is defined once, in the client project, and shared as source. These types are
        internal, so compiling them into both assemblies does not create duplicate public API for a
        consumer that references both packages. -->
   <ItemGroup>
     <Compile Include="../Meziantou.Framework.NtpClient/NtpTimestamp.cs" Link="NtpTimestamp.cs" />
     <Compile Include="../Meziantou.Framework.NtpClient/NtpMode.cs" Link="NtpMode.cs" />
+    <Compile Include="../Meziantou.Framework.NtpClient/NtpMac.cs" Link="NtpMac.cs" />
+    <Compile Include="../Meziantou.Framework.NtpClient/NtpAesCmac.cs" Link="NtpAesCmac.cs" />
   </ItemGroup>
 
 </Project>

@@ -850,7 +850,7 @@ public static partial class TdsServerFuzzTargets
         foreach (var row in rows)
         {
             FuzzAssert.True(row is not null, "A write handler must not receive a null row");
-            FuzzAssert.True(row!.Name is not null, "A non-nullable column must not be set to NULL");
+            FuzzAssert.True(row.Name is not null, "A non-nullable column must not be set to NULL");
         }
 
         s_modifiedRows += rows.Count;

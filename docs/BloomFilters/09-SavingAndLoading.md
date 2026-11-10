@@ -56,7 +56,32 @@ Assert.Equal(2, restored.GetEstimatedCount("alice@example.com"));
 ```
 <!-- endref -->
 
-A snapshot of a Bloom filter cannot be loaded as a counting Bloom filter, nor the reverse.
+## Blocked Bloom filters
+
+[BlockedBloomFilter](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilter) has the same methods too:
+
+<!-- ref:../../tests/Meziantou.Framework.BloomFilters.Tests/BloomFilterTests.cs;region=BlockedBloomFilter_Snapshot;format=md-fenced-code-block;dedent=true -->
+```csharp
+var filter = BlockedBloomFilter.CreateXXHash128(BlockedBloomFilterSize.CreateOptimalSize(expectedItemCount: 1000, falsePositiveProbability: 0.01));
+filter.Add("alice@example.com");
+
+using var stream = new MemoryStream();
+filter.Save(stream);
+
+stream.Position = 0;
+var restored = BlockedBloomFilter.Load<BlockedBloomFilterXXHash128>(stream);
+
+Assert.True(restored.MayContain("alice@example.com"));
+Assert.False(restored.MayContain("bob@example.com"));
+```
+<!-- endref -->
+
+The snapshot holds the blocks one after the other, so it is as large as the blocks, plus 40 bytes: the padding that
+aligns the blocks on cache lines in memory is not saved.
+
+A snapshot can only be loaded by the kind of filter that saved it: a Bloom filter, a counting Bloom filter or a blocked
+Bloom filter. [Load](cref:Meziantou.Framework.BloomFilters.BloomFilter.Load) throws an `InvalidDataException` that names
+the method to use otherwise.
 
 ## Stop updating the filter while saving
 

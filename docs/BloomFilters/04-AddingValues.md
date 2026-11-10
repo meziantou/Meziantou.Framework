@@ -113,6 +113,8 @@ UTF-8 bytes are a different value.
 | [BloomFilterXXHash32](cref:Meziantou.Framework.BloomFilters.BloomFilterXXHash32) | `int`, `uint` |
 | [CountingBloomFilterXXHash128](cref:Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash128), [CountingBloomFilterXXHash64](cref:Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash64) | `long`, `ulong` |
 | [CountingBloomFilterXXHash32](cref:Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash32) | `int`, `uint` |
+| [BlockedBloomFilterXXHash128](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash128), [BlockedBloomFilterXXHash64](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash64) | `long`, `ulong` |
+| [BlockedBloomFilterXXHash32](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash32) | `int`, `uint` |
 
 The factory methods return these concrete types ([BloomFilter.CreateXXHash128](cref:Meziantou.Framework.BloomFilters.BloomFilter.CreateXXHash128) returns a [BloomFilterXXHash128](cref:Meziantou.Framework.BloomFilters.BloomFilterXXHash128)), so
 `AddRange` is available on the variable they initialize. For the other filters and types, call `Add` in a loop.

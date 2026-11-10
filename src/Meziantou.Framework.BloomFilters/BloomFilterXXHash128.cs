@@ -15,18 +15,20 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
     private const ulong RrmxmxMultiplier = 0x9FB21C651E98DF25UL;
     private const ulong UInt32Mask = uint.MaxValue;
 
-    private void AddRangeCore(ReadOnlySpan<long> values)
+    internal static void AddRangeCore<TSink>(TSink sink, ReadOnlySpan<long> values)
+        where TSink : struct, IBloomFilterHashSink
     {
-        AddRangeCore(unsafe(MemoryMarshal.Cast<long, ulong>(values)));
+        AddRangeCore(sink, unsafe(MemoryMarshal.Cast<long, ulong>(values)));
     }
 
-    private void AddRangeCore(ReadOnlySpan<ulong> values)
+    internal static void AddRangeCore<TSink>(TSink sink, ReadOnlySpan<ulong> values)
+        where TSink : struct, IBloomFilterHashSink
     {
         if (!BitConverter.IsLittleEndian)
         {
             foreach (var value in values)
             {
-                Add(value);
+                sink.AddHash(Hash(value));
             }
 
             return;
@@ -50,7 +52,7 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
 
                 for (var lane = 0; lane < Vector128<ulong>.Count; lane++)
                 {
-                    AddHash(BloomFilterHash.FromUInt128(low[lane], high[lane]));
+                    sink.AddHash(BloomFilterHash.FromUInt128(low[lane], high[lane]));
                 }
 
                 index += Vector128<ulong>.Count;
@@ -74,7 +76,7 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
 
                 for (var lane = 0; lane < Vector256<ulong>.Count; lane++)
                 {
-                    AddHash(BloomFilterHash.FromUInt128(low[lane], high[lane]));
+                    sink.AddHash(BloomFilterHash.FromUInt128(low[lane], high[lane]));
                 }
 
                 index += Vector256<ulong>.Count;
@@ -83,7 +85,7 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
 
         foreach (var value in values[index..])
         {
-            Add(value);
+            sink.AddHash(Hash(value));
         }
     }
 

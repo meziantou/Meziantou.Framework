@@ -92,19 +92,27 @@ internal sealed class SegmentedBitStorage
         Debug.Assert(destination.Length == source.Length);
         for (var segmentIndex = 0; segmentIndex < destination.Length; segmentIndex++)
         {
-            var destinationSegment = destination[segmentIndex].AsSpan();
-            var sourceSegment = source[segmentIndex].AsSpan(0, destinationSegment.Length);
-            for (var index = 0; index < destinationSegment.Length; index++)
-            {
-                var sourceWord = Volatile.Read(ref sourceSegment[index]);
-                ref var destinationWord = ref destinationSegment[index];
+            UnionWith(destination[segmentIndex], source[segmentIndex]);
+        }
+    }
 
-                // Skipping the words that would not change avoids an atomic operation, and a cache line write, for most
-                // words of a filter that already contains most of the source.
-                if ((sourceWord & ~Volatile.Read(ref destinationWord)) != 0)
-                {
-                    Interlocked.Or(ref destinationWord, sourceWord);
-                }
+    /// <summary>
+    /// Sets in <paramref name="destination"/> every bit that is set in <paramref name="source"/>, which must have the same length.
+    /// </summary>
+    internal static void UnionWith(Span<ulong> destination, Span<ulong> source)
+    {
+        Debug.Assert(destination.Length == source.Length);
+        source = source[..destination.Length];
+        for (var index = 0; index < destination.Length; index++)
+        {
+            var sourceWord = Volatile.Read(ref source[index]);
+            ref var destinationWord = ref destination[index];
+
+            // Skipping the words that would not change avoids an atomic operation, and a cache line write, for most
+            // words of a filter that already contains most of the source.
+            if ((sourceWord & ~Volatile.Read(ref destinationWord)) != 0)
+            {
+                Interlocked.Or(ref destinationWord, sourceWord);
             }
         }
     }

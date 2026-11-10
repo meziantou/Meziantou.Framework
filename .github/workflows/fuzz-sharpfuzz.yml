@@ -19,6 +19,7 @@ on:
           - atlassian-data-format
           - barcodes
           - bencode
+          - bloomfilter
           - charts
           - codeowners
           - csv
@@ -101,6 +102,7 @@ env:
       { "project": "Meziantou.Framework.AtlassianDataFormat.Fuzz", "component": "atlassian-data-format", "day": 4 },
       { "project": "Meziantou.Framework.Barcodes.Fuzz",            "component": "barcodes",              "day": 5 },
       { "project": "Meziantou.Framework.Bencode.Fuzz",             "component": "bencode",               "day": 2 },
+      { "project": "Meziantou.Framework.BloomFilters.Fuzz",        "component": "bloomfilter",           "day": 6 },
       { "project": "Meziantou.Framework.Charts.Fuzz",              "component": "charts",                "day": 1 },
       { "project": "Meziantou.Framework.CodeOwners.Fuzz",          "component": "codeowners",            "day": 1 },
       { "project": "Meziantou.Framework.Csv.Fuzz",                 "component": "csv",                   "day": 3 },
@@ -137,7 +139,7 @@ env:
       { "project": "Meziantou.Framework.Unicode.Fuzz",             "component": "unicode",               "day": 6 },
       { "project": "Meziantou.Framework.Uri.Fuzz",                 "component": "uri",                   "day": 4 },
       { "project": "Meziantou.Framework.VectorGraphics.Fuzz",      "component": "vector-graphics",       "day": 3 },
-      { "project": "Meziantou.Framework.Versioning.Fuzz",          "component": "versioning",            "day": 4 },
+      { "project": "Meziantou.Framework.Versioning.Fuzz",          "component": "versioning",            "day": 5 },
       { "project": "Meziantou.Framework.WebPlatform.Fuzz",         "component": "webplatform",           "day": 5 },
       { "project": "Meziantou.Framework.Yaml.Fuzz",                "component": "yaml",                  "day": 6 }
     ]

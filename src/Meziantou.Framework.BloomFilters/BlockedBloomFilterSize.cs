@@ -16,10 +16,10 @@ public readonly struct BlockedBloomFilterSize
     internal const int BitsPerBlock = 512;
 
     // The filter stores a block index in a long, and BitCount must not overflow.
-    private const long MaxBlockCount = long.MaxValue / BitsPerBlock;
+    internal const long MaxBlockCount = long.MaxValue / BitsPerBlock;
 
     // A position inside a block is drawn from 9 bits; more bits per value than the block holds is pointless.
-    private const int MaxHashCount = BitsPerBlock;
+    internal const int MaxHashCount = BitsPerBlock;
 
     private BlockedBloomFilterSize(long blockCount, int hashCount)
     {

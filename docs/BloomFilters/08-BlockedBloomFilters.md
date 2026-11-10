@@ -79,10 +79,41 @@ filter degrades when it receives more values than planned.
 [GetEstimateCount](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilter.GetEstimateCount) estimates the number of
 values added, like on a classic filter.
 
+## Combine and save blocked filters
+
+Blocked filters support the same bulk operations as classic filters:
+
+- `AddRange` adds many numbers in one call on [BlockedBloomFilterXXHash128](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash128)
+  and [BlockedBloomFilterXXHash64](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash64) (`long`, `ulong`), and
+  [BlockedBloomFilterXXHash32](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash32) (`int`, `uint`). See
+  [Add many values](04-AddingValues.md#add-many-values).
+- [UnionWith](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilter.UnionWith) adds the values of another blocked
+  filter of the same hash algorithm and the same [BlockedBloomFilterSize](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterSize).
+  See [Combining filters](07-CombiningFilters.md).
+- [Save](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilter.Save) and [Load](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilter.Load)
+  write and read a snapshot, to ship a prebuilt filter with an application or share it between services. See
+  [Saving and loading filters](09-SavingAndLoading.md#blocked-bloom-filters).
+
+<!-- ref:../../tests/Meziantou.Framework.BloomFilters.Tests/BloomFilterTests.cs;region=BlockedBloomFilter_Union;format=md-fenced-code-block;dedent=true -->
+```csharp
+var size = BlockedBloomFilterSize.CreateOptimalSize(expectedItemCount: 2000, falsePositiveProbability: 0.01);
+var europe = BlockedBloomFilter.CreateXXHash64(size);
+var america = BlockedBloomFilter.CreateXXHash64(size);
+
+// XXHash32, XXHash64 and XXHash128 filters add numbers in batches
+europe.AddRange([1L, 2L, 3L]);
+america.AddRange([100L, 200L]);
+
+europe.UnionWith(america);
+Assert.True(europe.MayContain(2L));
+Assert.True(europe.MayContain(200L));
+```
+<!-- endref -->
+
+A blocked filter cannot be combined with a classic one, and a snapshot of one cannot be loaded as the other: the bits of
+a value are not at the same place.
+
 ## Limitations
 
-- There is no `AddRange`: add the values one at a time.
-- There is no [UnionWith](cref:Meziantou.Framework.BloomFilters.BloomFilter.UnionWith): blocked filters cannot be [combined](07-CombiningFilters.md).
-- There is no [Save](cref:Meziantou.Framework.BloomFilters.BloomFilter.Save) or `Load`: blocked filters cannot be [saved and loaded](09-SavingAndLoading.md) yet.
 - The memory of a blocked filter is pinned, so that its blocks stay aligned on cache lines. It is allocated in segments
   of 1 GiB at most.

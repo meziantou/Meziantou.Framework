@@ -12,18 +12,20 @@ public sealed partial class BloomFilterXXHash32 : BloomFilter
     private const uint Prime4 = 0x27D4EB2FU;
     private const uint Prime5 = 0x165667B1U;
 
-    private void AddRangeCore(ReadOnlySpan<int> values)
+    internal static void AddRangeCore<TSink>(TSink sink, ReadOnlySpan<int> values)
+        where TSink : struct, IBloomFilterHashSink
     {
-        AddRangeCore(unsafe(MemoryMarshal.Cast<int, uint>(values)));
+        AddRangeCore(sink, unsafe(MemoryMarshal.Cast<int, uint>(values)));
     }
 
-    private void AddRangeCore(ReadOnlySpan<uint> values)
+    internal static void AddRangeCore<TSink>(TSink sink, ReadOnlySpan<uint> values)
+        where TSink : struct, IBloomFilterHashSink
     {
         if (!BitConverter.IsLittleEndian || !Vector.IsHardwareAccelerated || values.Length < Vector<uint>.Count)
         {
             foreach (var value in values)
             {
-                Add(value);
+                sink.AddHash(Hash(value));
             }
 
             return;
@@ -47,7 +49,7 @@ public sealed partial class BloomFilterXXHash32 : BloomFilter
 
             for (var lane = 0; lane < Vector<uint>.Count; lane++)
             {
-                AddHash(BloomFilterHash.FromUInt32(hashes[lane]));
+                sink.AddHash(BloomFilterHash.FromUInt32(hashes[lane]));
             }
 
             index += Vector<uint>.Count;
@@ -55,7 +57,7 @@ public sealed partial class BloomFilterXXHash32 : BloomFilter
 
         foreach (var value in values[index..])
         {
-            Add(value);
+            sink.AddHash(Hash(value));
         }
     }
 

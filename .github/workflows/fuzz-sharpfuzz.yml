@@ -25,6 +25,7 @@ on:
           - dependency-scanning
           - diagrams
           - dns
+          - fast-enum-generator
           - fonts
           - geo
           - geo-geopackage
@@ -104,6 +105,7 @@ env:
       { "project": "Meziantou.Framework.DependencyScanning.Fuzz",  "component": "dependency-scanning",   "day": 0 },
       { "project": "Meziantou.Framework.Diagrams.Fuzz",            "component": "diagrams",              "day": 2 },
       { "project": "Meziantou.Framework.Dns.Fuzz",                 "component": "dns",                   "day": 0 },
+      { "project": "Meziantou.Framework.FastEnumGenerator.Fuzz",   "component": "fast-enum-generator",   "day": 4 },
       { "project": "Meziantou.Framework.Fonts.Fuzz",               "component": "fonts",                 "day": 2 },
       { "project": "Meziantou.Framework.Geo.Fuzz",                 "component": "geo",                   "day": 6 },
       { "project": "Meziantou.Framework.Geo.GeoPackage.Fuzz",      "component": "geo-geopackage",        "day": 5 },

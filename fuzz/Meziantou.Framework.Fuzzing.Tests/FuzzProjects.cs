@@ -16,6 +16,7 @@ internal static class FuzzProjects
         ("Meziantou.Framework.DependencyScanning.Fuzz", DependencyScanning.Fuzz.DependencyScanningFuzzTargets.All),
         ("Meziantou.Framework.Diagrams.Fuzz", Diagrams.Fuzz.DiagramsFuzzTargets.All),
         ("Meziantou.Framework.Dns.Fuzz", DnsFuzz.DnsFuzzTargets.All),
+        ("Meziantou.Framework.FastEnumGenerator.Fuzz", FastEnumGenerator.Fuzz.FastEnumGeneratorFuzzTargets.All),
         ("Meziantou.Framework.Fonts.Fuzz", Fonts.Fuzz.FontsFuzzTargets.All),
         ("Meziantou.Framework.Geo.Fuzz", Geo.Fuzz.GeoFuzzTargets.All),
         ("Meziantou.Framework.Geo.GeoPackage.Fuzz", GeoPackageFuzz.GeoPackageFuzzTargets.All),

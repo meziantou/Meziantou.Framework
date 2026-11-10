@@ -1,0 +1,24 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.FastEnumGenerator. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <!-- The targets compare the intercepted System.Enum calls with the reflection-based ones -->
+    <MeziantouFastEnumInterceptors>true</MeziantouFastEnumInterceptors>
+    <InterceptorsNamespaces>$(InterceptorsNamespaces);Meziantou.Framework.Annotations.FastEnumInterceptors</InterceptorsNamespaces>
+    <NoWarn>$(NoWarn);MFEG0002;MFEG0003;MFEG0004;MFEG0005;MFEG0006;MFEG0007;MFEG0008</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The values parsed by the unit tests are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.FastEnumGenerator.GeneratorTests\FastEnumGeneratedBehaviorTests.cs" LogicalName="FastEnumGeneratedBehaviorTests.cs" Link="Seeds\FastEnumGeneratedBehaviorTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.FastEnumGenerator.InterceptorTests\FastEnumInterceptorTests.cs" LogicalName="FastEnumInterceptorTests.cs" Link="Seeds\FastEnumInterceptorTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FastEnumGenerator\Meziantou.Framework.FastEnumGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+    <CompilerVisibleProperty Include="MeziantouFastEnumInterceptors" />
+  </ItemGroup>
+</Project>

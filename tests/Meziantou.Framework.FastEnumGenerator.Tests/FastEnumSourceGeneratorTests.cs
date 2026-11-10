@@ -37,8 +37,9 @@ public sealed class FastEnumSourceGeneratorTests
         var generatedCode = (await generatedTree.GetRootAsync()).ToFullString();
         Assert.DoesNotContain("return useMetadata ? s_definedMetadataNames_", generatedCode);
         Assert.Contains("return s_names_", generatedCode);
-        Assert.DoesNotContain("private static ulong ToUInt64_", generatedCode);
-        Assert.DoesNotContain("private static global::Sample.Color FromUInt64_", generatedCode);
+
+        // Enum.Parse combines comma-separated names even when the enum has no [Flags] attribute.
+        Assert.Contains("private static bool TryParseList_", generatedCode);
         Assert.DoesNotContain("s_parseTokenIsMetadata_", generatedCode);
         Assert.DoesNotContain("s_definedNames_", generatedCode);
     }
@@ -539,6 +540,14 @@ public sealed class FastEnumSourceGeneratorTests
                     _ = Enum.GetName(Color.Blue);
                     _ = Enum.GetNames<Color>();
                     _ = Enum.GetValues<Color>();
+                    _ = Enum.Parse<Color>("Blue");
+                    _ = Enum.Parse<Color>("Blue", true);
+                    _ = Enum.Parse<Color>("Blue".AsSpan());
+                    _ = Enum.Parse<Color>("Blue".AsSpan(), true);
+                    _ = Enum.TryParse<Color>("Blue", out _);
+                    _ = Enum.TryParse<Color>("Blue", true, out _);
+                    _ = Enum.TryParse<Color>("Blue".AsSpan(), out _);
+                    _ = Enum.TryParse<Color>("Blue".AsSpan(), true, out _);
                 }
             }
         }
@@ -572,6 +581,16 @@ public sealed class FastEnumSourceGeneratorTests
         Assert.Contains("public static string[] GetNamesFast()", generatedCode);
         Assert.Contains("public static global::Sample.Color[] GetValuesFast()", generatedCode);
 
+        // Each Parse and TryParse overload gets an interceptor with the same parameters.
+        Assert.Contains("public static global::Sample.Color ParseFast(string value)", generatedCode);
+        Assert.Contains("public static global::Sample.Color ParseFast(string value, bool ignoreCase)", generatedCode);
+        Assert.Contains("public static global::Sample.Color ParseFast(global::System.ReadOnlySpan<char> value)", generatedCode);
+        Assert.Contains("public static global::Sample.Color ParseFast(global::System.ReadOnlySpan<char> value, bool ignoreCase)", generatedCode);
+        Assert.Contains("public static bool TryParseFast(string? value, out global::Sample.Color result)", generatedCode);
+        Assert.Contains("public static bool TryParseFast(string? value, bool ignoreCase, out global::Sample.Color result)", generatedCode);
+        Assert.Contains("public static bool TryParseFast(global::System.ReadOnlySpan<char> value, out global::Sample.Color result)", generatedCode);
+        Assert.Contains("public static bool TryParseFast(global::System.ReadOnlySpan<char> value, bool ignoreCase, out global::Sample.Color result)", generatedCode);
+
         // Enum.GetNames/GetValues return a caller-owned array.
         Assert.Contains(".Clone()", (await Assert.Single(runResult.GeneratedTrees, static tree => tree.FilePath.Contains("FastEnumExtensions.", StringComparison.Ordinal)).GetRootAsync()).ToFullString());
     }
@@ -582,6 +601,49 @@ public sealed class FastEnumSourceGeneratorTests
         // InterceptsLocationAttribute requires C# 12.
         var (runResult, _) = await GenerateFiles(InterceptorSource, LanguageVersion.CSharp11, interceptorsEnabled: true);
         Assert.DoesNotContain(runResult.GeneratedTrees, static tree => tree.FilePath.Contains("FastEnumInterceptors", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData(LanguageVersion.CSharp12)]
+    [InlineData(LanguageVersion.CSharp13)]
+    public async Task InterceptsParseBeforeCSharp14(LanguageVersion languageVersion)
+    {
+        // The extension members need C# 14, but the parse code is still generated for the interceptors.
+        var (runResult, _) = await GenerateFiles(InterceptorSource, languageVersion, interceptorsEnabled: true);
+        var tree = Assert.Single(runResult.GeneratedTrees, static tree => tree.FilePath.Contains("FastEnumInterceptors", StringComparison.Ordinal));
+        var generatedCode = (await tree.GetRootAsync()).ToFullString();
+        Assert.Contains("TryParseFast(", generatedCode);
+        Assert.Contains("ParseFast(", generatedCode);
+    }
+
+    [Fact]
+    public async Task DoesNotInterceptParseWithoutSpanBasedTryParse()
+    {
+        // .NET Framework has Enum.TryParse<TEnum>(string, out TEnum), but not the span-based overloads
+        // the generated parse code calls.
+        var sourceCode = """
+            using System;
+            [assembly: Meziantou.Framework.Annotations.FastEnumAttribute(typeof(Sample.Color))]
+            namespace Sample
+            {
+                public enum Color { Blue, Red }
+
+                public static class TestClass
+                {
+                    public static void M()
+                    {
+                        _ = Color.Blue.ToString();
+                        _ = Enum.TryParse<Color>("Blue", true, out _);
+                    }
+                }
+            }
+            """;
+
+        var (runResult, _) = await GenerateFiles(sourceCode, LanguageVersion.CSharp12, interceptorsEnabled: true, netFramework: true);
+        var tree = Assert.Single(runResult.GeneratedTrees, static tree => tree.FilePath.Contains("FastEnumInterceptors", StringComparison.Ordinal));
+        var generatedCode = (await tree.GetRootAsync()).ToFullString();
+        Assert.Contains("ToStringFast(", generatedCode);
+        Assert.DoesNotContain("TryParseFast(", generatedCode);
     }
 
     [Fact]
@@ -640,10 +702,12 @@ public sealed class FastEnumSourceGeneratorTests
             .OrderBy(static diagnostic => diagnostic.Id, StringComparer.Ordinal)];
     }
 
-    private static async Task<(GeneratorDriverRunResult RunResult, Compilation Compilation)> GenerateFiles(string sourceCode, LanguageVersion languageVersion = LanguageVersion.Preview, bool interceptorsEnabled = false)
+    private static async Task<(GeneratorDriverRunResult RunResult, Compilation Compilation)> GenerateFiles(string sourceCode, LanguageVersion languageVersion = LanguageVersion.Preview, bool interceptorsEnabled = false, bool netFramework = false)
     {
-        var netcoreReferences = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
-        var references = netcoreReferences.Select(static location => MetadataReference.CreateFromFile(location)).ToArray();
+        var frameworkReferences = netFramework
+            ? await NuGetHelpers.GetNuGetReferences("Microsoft.NETFramework.ReferenceAssemblies.net472", "1.0.3", "")
+            : await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
+        var references = frameworkReferences.Select(static location => MetadataReference.CreateFromFile(location)).ToArray();
         var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(languageVersion);
         if (interceptorsEnabled)
         {

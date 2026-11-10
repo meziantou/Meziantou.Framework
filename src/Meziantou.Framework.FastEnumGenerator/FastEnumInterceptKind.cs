@@ -10,4 +10,12 @@ internal enum FastEnumInterceptKind
     GetName,
     GetNames,
     GetValues,
+    ParseString,
+    ParseStringIgnoreCase,
+    ParseSpan,
+    ParseSpanIgnoreCase,
+    TryParseString,
+    TryParseStringIgnoreCase,
+    TryParseSpan,
+    TryParseSpanIgnoreCase,
 }

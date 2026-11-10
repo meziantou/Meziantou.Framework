@@ -90,8 +90,8 @@ Assert.Equal([Color.Blue, Color.Red, Color.Green], Color.GetValues().ToArray());
 ```
 <!-- endref -->
 
-- `Parse` and `TryParse` accept what `Enum.Parse` accepts: names, numbers, and comma-separated names for `[Flags]`
-  enums. `Parse` throws the same exceptions.
+- `Parse` and `TryParse` accept what `Enum.Parse` accepts: names, numbers, and comma-separated names, which are
+  combined with a bitwise OR, `[Flags]` or not. `Parse` throws the same exception types.
 - `GetNames` and `GetValues` order the members by value, like `Enum.GetNames` and `Enum.GetValues`, but return a
   `ReadOnlySpan<T>` instead of a new array. Call `ToArray()` when you need an array.
 

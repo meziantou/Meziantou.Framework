@@ -24,6 +24,9 @@ public sealed class FastEnumInterceptorTests
         Assert.Equal("Alpha", Enum.GetName(InterceptedColor.Alpha));
         Assert.True(Enum.IsDefined(InterceptedColor.Charlie));
         Assert.Equal(["Alpha", "Bravo", "Charlie"], Enum.GetNames<InterceptedColor>());
+        Assert.Equal(InterceptedColor.Charlie, Enum.Parse<InterceptedColor>("charlie", ignoreCase: true));
+        Assert.True(Enum.TryParse("Alpha", ignoreCase: false, out InterceptedColor color));
+        Assert.Equal(InterceptedColor.Alpha, color);
         #endregion
     }
 
@@ -116,6 +119,89 @@ public sealed class FastEnumInterceptorTests
 #pragma warning restore CA2248
     }
 
+    [Theory]
+    [InlineData("Alpha", false)]
+    [InlineData("alpha", false)]
+    [InlineData("alpha", true)]
+    [InlineData("  Bravo  ", false)]
+    [InlineData("Alpha, Bravo", false)]
+    [InlineData("Alpha,", false)]
+    [InlineData("2", false)]
+    [InlineData("99", false)]
+    [InlineData("-1", false)]
+    [InlineData("99999999999", false)]
+    [InlineData("2\u00A0", false)]
+    [InlineData("", false)]
+    [InlineData("   ", false)]
+    [InlineData("Missing", true)]
+    public void Parse_MatchesEnumParse(string value, bool ignoreCase)
+    {
+        var expected = Execute(() => (InterceptedColor)InvokeEnum(nameof(Enum.Parse), [typeof(Type), typeof(string), typeof(bool)], [typeof(InterceptedColor), value, ignoreCase])!);
+        AssertSameOutcome(expected, Execute(() => Enum.Parse<InterceptedColor>(value, ignoreCase)));
+        AssertSameOutcome(expected, Execute(() => Enum.Parse<InterceptedColor>(value.AsSpan(), ignoreCase)));
+        if (!ignoreCase)
+        {
+            AssertSameOutcome(expected, Execute(() => Enum.Parse<InterceptedColor>(value)));
+            AssertSameOutcome(expected, Execute(() => Enum.Parse<InterceptedColor>(value.AsSpan())));
+        }
+    }
+
+    [Theory]
+    [InlineData("Read", false)]
+    [InlineData("read, write", true)]
+    [InlineData("Read, Write, Execute", false)]
+    [InlineData("Read, , Write", false)]
+    [InlineData("5", false)]
+    [InlineData("Read, Missing", false)]
+    public void Parse_MatchesEnumParse_ForFlags(string value, bool ignoreCase)
+    {
+        var expected = Execute(() => (InterceptedPermission)InvokeEnum(nameof(Enum.Parse), [typeof(Type), typeof(string), typeof(bool)], [typeof(InterceptedPermission), value, ignoreCase])!);
+        AssertSameOutcome(expected, Execute(() => Enum.Parse<InterceptedPermission>(value, ignoreCase)));
+        AssertSameOutcome(expected, Execute(() => Enum.Parse<InterceptedPermission>(value.AsSpan(), ignoreCase)));
+    }
+
+    [Fact]
+    public void Parse_ThrowsForNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => Enum.Parse<InterceptedColor>(null!));
+        Assert.Throws<ArgumentNullException>(() => Enum.Parse<InterceptedColor>(null!, ignoreCase: true));
+    }
+
+    [Theory]
+    [InlineData("Alpha", false)]
+    [InlineData("alpha", false)]
+    [InlineData("alpha", true)]
+    [InlineData(" Charlie ", false)]
+    [InlineData("Alpha, Bravo", false)]
+    [InlineData("Alpha,", false)]
+    [InlineData("3", false)]
+    [InlineData("99", false)]
+    [InlineData("99999999999", false)]
+    [InlineData("2\u00A0", false)]
+    [InlineData("", false)]
+    [InlineData("Missing", true)]
+    [InlineData(null, false)]
+    public void TryParse_MatchesEnumTryParse(string? value, bool ignoreCase)
+    {
+        object?[] arguments = [typeof(InterceptedColor), value, ignoreCase, null];
+        var expectedSucceeded = (bool)InvokeEnum(nameof(Enum.TryParse), [typeof(Type), typeof(string), typeof(bool), typeof(object).MakeByRefType()], arguments)!;
+        var expectedResult = expectedSucceeded ? (InterceptedColor)arguments[3]! : default;
+
+        Assert.Equal(expectedSucceeded, Enum.TryParse(value, ignoreCase, out InterceptedColor result));
+        Assert.Equal(expectedResult, result);
+        Assert.Equal(expectedSucceeded, Enum.TryParse(value.AsSpan(), ignoreCase, out result));
+        Assert.Equal(expectedResult, result);
+        if (!ignoreCase)
+        {
+#pragma warning disable RS0030 // Banned API -- the overloads without ignoreCase are intercepted too
+            Assert.Equal(expectedSucceeded, Enum.TryParse(value, out result));
+            Assert.Equal(expectedResult, result);
+            Assert.Equal(expectedSucceeded, Enum.TryParse(value.AsSpan(), out result));
+            Assert.Equal(expectedResult, result);
+#pragma warning restore RS0030
+        }
+    }
+
     [Fact]
     public void CallSites_AreActuallyIntercepted()
     {
@@ -130,6 +216,8 @@ public sealed class FastEnumInterceptorTests
         Assert.Contains(called, name => name.Contains("FastEnumInterceptors_", StringComparison.Ordinal) && name.EndsWith(".GetNamesFast", StringComparison.Ordinal));
         Assert.Contains(called, name => name.Contains("FastEnumInterceptors_", StringComparison.Ordinal) && name.EndsWith(".GetValuesFast", StringComparison.Ordinal));
         Assert.Contains(called, name => name.Contains("FastEnumInterceptors_", StringComparison.Ordinal) && name.EndsWith(".HasFlagFast", StringComparison.Ordinal));
+        Assert.Equal(4, called.Count(name => name.Contains("FastEnumInterceptors_", StringComparison.Ordinal) && name.EndsWith(".ParseFast", StringComparison.Ordinal)));
+        Assert.Equal(4, called.Count(name => name.Contains("FastEnumInterceptors_", StringComparison.Ordinal) && name.EndsWith(".TryParseFast", StringComparison.Ordinal)));
     }
 
     private static void InterceptedCallSites()
@@ -140,6 +228,41 @@ public sealed class FastEnumInterceptorTests
         _ = Enum.GetNames<InterceptedColor>();
         _ = Enum.GetValues<InterceptedColor>();
         _ = InterceptedPermission.Read.HasFlag(InterceptedPermission.Write);
+        _ = Enum.Parse<InterceptedColor>("Alpha");
+        _ = Enum.Parse<InterceptedColor>("Alpha", ignoreCase: true);
+        _ = Enum.Parse<InterceptedColor>("Alpha".AsSpan());
+        _ = Enum.Parse<InterceptedColor>("Alpha".AsSpan(), ignoreCase: true);
+#pragma warning disable RS0030 // Banned API -- the overloads without ignoreCase are intercepted too
+        _ = Enum.TryParse<InterceptedColor>("Alpha", out _);
+        _ = Enum.TryParse<InterceptedColor>("Alpha".AsSpan(), out _);
+#pragma warning restore RS0030
+        _ = Enum.TryParse<InterceptedColor>("Alpha", ignoreCase: true, out _);
+        _ = Enum.TryParse<InterceptedColor>("Alpha".AsSpan(), ignoreCase: true, out _);
+    }
+
+    private static (Exception? Exception, TEnum Value) Execute<TEnum>(Func<TEnum> parse)
+        where TEnum : struct, Enum
+    {
+        try
+        {
+            return (null, parse());
+        }
+        catch (TargetInvocationException exception) when (exception.InnerException is not null)
+        {
+            return (exception.InnerException, default);
+        }
+        catch (Exception exception)
+        {
+            return (exception, default);
+        }
+    }
+
+    private static void AssertSameOutcome<TEnum>((Exception? Exception, TEnum Value) expected, (Exception? Exception, TEnum Value) actual)
+        where TEnum : struct, Enum
+    {
+        Assert.Equal(expected.Exception?.GetType(), actual.Exception?.GetType());
+        Assert.Equal(expected.Exception?.Message, actual.Exception?.Message);
+        Assert.Equal(expected.Value, actual.Value);
     }
 
     private static IEnumerable<string> GetCalledMethods(MethodBase method)

@@ -1435,4 +1435,295 @@ key without separator
             return base.VisitIniProperty(node);
         }
     }
+
+    [Fact]
+    public void ReadmeExample_GitConfig()
+    {
+        #region IniSyntaxTree_GitConfig
+        var tree = IniSyntaxTree.ParseText("""
+        [core]
+            bare = false
+        [remote "origin"]
+            url = https://example.com/repo.git
+            fetch = +refs/heads/*:refs/remotes/origin/* ; comment
+        [alias]
+            lg = log --graph \
+                --oneline
+            say = "!echo \"hello\" # not a comment"
+        """, IniParseOptions.Git);
+
+        var root = tree.GetRoot();
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal("https://example.com/repo.git", root.GetValue("remote.origin", "url"));
+        Assert.Equal("log --graph         --oneline", root.GetValue("alias", "lg"));
+        Assert.Equal("!echo \"hello\" # not a comment", root.GetValue("alias", "say"));
+
+        root = root.SetValue("remote.upstream", "url", "C:\\repo;main");
+        Assert.EndsWith("[remote \"upstream\"]\nurl=\"C:\\\\repo;main\"\n", root.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_Escapes()
+    {
+        #region IniSyntaxTree_Escapes
+        var options = new IniParseOptions { AllowEscapes = true };
+        var root = IniSyntaxTree.ParseText("""
+        path = C:\\temp
+        quote = "say \"hi\""
+        hash = a \# b
+        """, options).GetRoot();
+
+        Assert.Equal("C:\\temp", root.GetValue(section: null, "path"));
+        Assert.Equal("say \"hi\"", root.GetValue(section: null, "quote"));
+        Assert.Equal("a # b", root.GetValue(section: null, "hash"));
+
+        root = root.SetValue(section: null, "lines", "one\ntwo");
+        Assert.EndsWith("lines = one\\ntwo\n", root.ToFullString());
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("k = b", "b")]
+    [InlineData("k = b   ", "b")]
+    [InlineData("k = b  c", "b  c")]
+    [InlineData("k = \"  b  \"", "  b  ")]
+    [InlineData("k = x\"y z\"w", "xy zw")]
+    [InlineData("k = b ; c", "b")]
+    [InlineData("k = b;c", "b")]
+    [InlineData("k = b#c", "b")]
+    [InlineData("k = \"b;c\" ; d", "b;c")]
+    [InlineData("k = b\\\\c", "b\\c")]
+    [InlineData("k = b\\\"c", "b\"c")]
+    [InlineData("k = b\\nc\\td\\be", "b\nc\td\be")]
+    [InlineData("k = first \\\n    second", "first     second")]
+    [InlineData("k = first \\\r\n    second\r\n", "first     second")]
+    [InlineData("k = \"q \\\n r\"", "q  r")]
+    [InlineData("k = b \\\n\nother = 1", "b ")]
+    [InlineData("k = \\\n  b", "b")]
+    [InlineData("k = b\\", "b")]
+    [InlineData("k =", "")]
+    [InlineData("k", "")]
+    public void ParseText_Git_Values(string text, string expected)
+    {
+        var tree = IniSyntaxTree.ParseText(text, IniParseOptions.Git);
+
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(expected, tree.GetRoot().GetValue(section: null, "k"));
+    }
+
+    [Fact]
+    public void ParseText_Git_ContinuationKeepsTheLineBreakInTheToken()
+    {
+        var root = IniSyntaxTree.ParseText("k = a \\\n  b ; c\nother = 1\n", IniParseOptions.Git).GetRoot();
+        var property = root.GlobalProperties[0];
+
+        Assert.Equal("a \\\n  b", property.ValueToken.Text);
+        Assert.Equal("1", root.GetValue(section: null, "other"));
+    }
+
+    [Theory]
+    [InlineData("k = b\\x", "INI0009")]
+    [InlineData("k = \"b", "INI0010")]
+    [InlineData("[remote \"origin]", "INI0010", "INI0002")]
+    public void ParseText_Git_Errors(string text, params string[] expected)
+    {
+        var tree = IniSyntaxTree.ParseText(text, IniParseOptions.Git);
+
+        Assert.Equal(expected, tree.GetDiagnostics().Select(diagnostic => diagnostic.Id));
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
+    [Theory]
+    [InlineData("[core]", "core")]
+    [InlineData("[remote \"origin\"]", "remote.origin")]
+    [InlineData("[remote  \"Origin\"] ; comment", "remote.Origin")]
+    [InlineData("[remote \"a\\\"b\\\\c\\d\"]", "remote.a\"b\\cd")]
+    [InlineData("[remote \"x]y\"]", "remote.x]y")]
+    [InlineData("[remote \"\"]", "remote.")]
+    [InlineData("[branch.main]", "branch.main")]
+    [InlineData("[remote\"origin\"]", "remote\"origin\"")]
+    [InlineData("[remote \"origin\" x]", "remote \"origin\" x")]
+    public void ParseText_Git_SectionNames(string text, string expected)
+    {
+        var tree = IniSyntaxTree.ParseText(text, IniParseOptions.Git);
+
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal(expected, Assert.Single(tree.GetRoot().Sections).Name);
+    }
+
+    [Fact]
+    public void GetValue_Git_ComparesSubsectionsWithCase()
+    {
+        var root = IniSyntaxTree.ParseText("[remote \"origin\"]\nurl = a\n[Remote \"Origin\"]\nURL = b\n", IniParseOptions.Git).GetRoot();
+
+        Assert.Equal("a", root.GetValue("REMOTE.origin", "Url"));
+        Assert.Equal("b", root.GetValue("remote.Origin", "url"));
+        Assert.Null(root.GetValue("remote.ORIGIN", "url"));
+        Assert.Null(root.GetValue("remote", "url"));
+    }
+
+    [Fact]
+    public void ParseText_Git_ReportsDuplicateSubsections()
+    {
+        var options = IniParseOptions.Git with { ReportDuplicates = true };
+        var tree = IniSyntaxTree.ParseText("[remote \"a\"]\n[remote \"b\"]\n[REMOTE \"a\"]\n", options);
+
+        var diagnostic = Assert.Single(tree.GetDiagnostics());
+        Assert.Equal("INI0006", diagnostic.Id);
+        Assert.Equal("REMOTE \"a\"".Length, diagnostic.Location.SourceSpan.Length);
+    }
+
+    [Theory]
+    [InlineData("plain", "plain")]
+    [InlineData("a;b", "\"a;b\"")]
+    [InlineData(" padded ", "\" padded \"")]
+    [InlineData("C:\\path", "C:\\\\path")]
+    [InlineData("say \"hi\"", "say \\\"hi\\\"")]
+    [InlineData("one\ntwo\tthree", "one\\ntwo\\tthree")]
+    [InlineData("", "")]
+    public void SetValue_Git_WritesValuesAsGitDoes(string value, string expected)
+    {
+        var root = IniSyntaxTree.ParseText("[core]\n\tk = old\n", IniParseOptions.Git).GetRoot();
+
+        var edited = root.SetValue("core", "k", value);
+
+        Assert.Equal("[core]\n\tk = " + expected + "\n", edited.ToFullString());
+        Assert.Equal(value, IniSyntaxTree.ParseText(edited.ToFullString(), IniParseOptions.Git).GetRoot().GetValue("core", "k"));
+    }
+
+    [Fact]
+    public void SetValue_Git_RejectsCarriageReturns()
+    {
+        var root = IniSyntaxTree.ParseText("[core]\n", IniParseOptions.Git).GetRoot();
+
+        Assert.Throws<ArgumentException>(() => root.SetValue("core", "k", "a\rb"));
+        Assert.False(SyntaxFacts.IsValidValue("a\rb", IniParseOptions.Git));
+        Assert.True(SyntaxFacts.IsValidValue("a\nb", IniParseOptions.Git));
+    }
+
+    [Theory]
+    [InlineData("remote.origin", "remote \"origin\"")]
+    [InlineData("remote.a\"b\\c", "remote \"a\\\"b\\\\c\"")]
+    [InlineData("remote.x.y", "remote \"x.y\"")]
+    [InlineData("core", "core")]
+    public void SetValue_Git_WritesSubsections(string section, string expected)
+    {
+        var root = IniSyntaxTree.ParseText("", IniParseOptions.Git).GetRoot();
+
+        var edited = root.SetValue(section, "k", "v");
+
+        Assert.Equal("[" + expected + "]\nk=v\n", edited.ToFullString());
+        Assert.Equal("v", IniSyntaxTree.ParseText(edited.ToFullString(), IniParseOptions.Git).GetRoot().GetValue(section, "k"));
+    }
+
+    [Theory]
+    [InlineData("a b.c")]
+    [InlineData(".c")]
+    [InlineData("remote.a\nb")]
+    public void SectionName_Git_RejectsNamesThatDoNotReadBack(string name)
+    {
+        Assert.False(SyntaxFacts.IsValidSectionName(name, IniParseOptions.Git));
+        Assert.Throws<ArgumentException>(() => SyntaxFactory.SectionName(name, IniParseOptions.Git));
+    }
+
+    [Theory]
+    [InlineData("k = b\\")]
+    [InlineData("k = b \\")]
+    [InlineData("k = \"b \\")]
+    public void SetValue_Git_ValueEndingTheTextWithABackslashDoesNotContinueOnTheNewLine(string text)
+    {
+        var root = IniSyntaxTree.ParseText(text, IniParseOptions.Git).GetRoot();
+        var expected = root.GetValue(section: null, "k");
+
+        var edited = root.SetValue(section: null, "other", "1");
+        var reparsed = IniSyntaxTree.ParseText(edited.ToFullString(), IniParseOptions.Git).GetRoot();
+
+        Assert.Equal(expected, reparsed.GetValue(section: null, "k"));
+        Assert.Equal("1", reparsed.GetValue(section: null, "other"));
+    }
+
+    [Fact]
+    public void Options_Git_IgnoresTheOptionsOfTheGenericDialect()
+    {
+        var options = IniParseOptions.Git with { InlineComments = IniInlineCommentMode.None, AllowQuotedValues = false, AllowMultilineValues = true, AllowEscapes = true };
+        var tree = IniSyntaxTree.ParseText("[s]\nk = \"a;b\" ; c\n  d = e\nflag\n", options);
+
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal("a;b", tree.GetRoot().GetValue("s", "k"));
+        Assert.Equal("e", tree.GetRoot().GetValue("s", "d"));
+    }
+
+    [Fact]
+    public void Options_Dialect()
+    {
+        Assert.Equal(IniDialect.Generic, IniParseOptions.Default.Dialect);
+        Assert.Equal(IniDialect.Git, IniParseOptions.Git.Dialect);
+        Assert.Same(StringComparer.OrdinalIgnoreCase, IniParseOptions.Default.NameComparer);
+        Assert.True(IniParseOptions.Git.NameComparer.Equals("Remote.origin", "remote.origin"));
+        Assert.False(IniParseOptions.Git.NameComparer.Equals("remote.Origin", "remote.origin"));
+        Assert.False(IniParseOptions.Git.NameComparer.Equals("remote", "remote."));
+        Assert.Equal(IniParseOptions.Git.NameComparer.GetHashCode("REMOTE.x"), IniParseOptions.Git.NameComparer.GetHashCode("remote.x"));
+        Assert.Same(StringComparer.Ordinal, (IniParseOptions.Git with { NameComparer = StringComparer.Ordinal }).NameComparer);
+        Assert.Equal(IniParseOptions.Git, new IniParseOptions { Dialect = IniDialect.Git });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new IniParseOptions { Dialect = (IniDialect)42 });
+    }
+
+    [Theory]
+    [InlineData("k = a\\;b", "a;b")]
+    [InlineData("k = a \\; b ; c", "a ; b")]
+    [InlineData("k = a\\\\", "a\\")]
+    [InlineData("k = C:\\path\\x", "C:\\path\\x")]
+    [InlineData("k = a\\nb\\r\\tc\\0", "a\nb\r\tc\0")]
+    [InlineData("k = \"a\\\"b\" ; c", "a\"b")]
+    [InlineData("k = 'it\\'s'", "it's")]
+    [InlineData("k = \\\"a\"", "\"a\"")]
+    [InlineData("k = a\\ ", "a\\ ")]
+    [InlineData("k = a\\", "a\\")]
+    public void ParseText_Escapes(string text, string expected)
+    {
+        var tree = IniSyntaxTree.ParseText(text, new IniParseOptions { AllowEscapes = true });
+
+        Assert.Empty(tree.GetDiagnostics());
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.Equal(expected, tree.GetRoot().GetValue(section: null, "k"));
+    }
+
+    [Fact]
+    public void ParseText_EscapesAreOffByDefault()
+    {
+        var root = IniSyntaxTree.ParseText("k = \"a\\\"b\"\n").GetRoot();
+
+        Assert.Equal("\"a\\\"b\"", root.GetValue(section: null, "k"));
+    }
+
+    [Theory]
+    [InlineData(IniInlineCommentMode.AfterWhitespace, true, "a;b", "a;b")]
+    [InlineData(IniInlineCommentMode.Anywhere, true, "a;b", "a\\;b")]
+    [InlineData(IniInlineCommentMode.AfterWhitespace, true, "a ;b", "a \\;b")]
+    [InlineData(IniInlineCommentMode.AfterWhitespace, true, " a ", "\" a \"")]
+    [InlineData(IniInlineCommentMode.AfterWhitespace, true, "both \" and '", "both \" and '")]
+    [InlineData(IniInlineCommentMode.AfterWhitespace, true, " both \" and ' ", "\" both \\\" and ' \"")]
+    [InlineData(IniInlineCommentMode.AfterWhitespace, true, "\"quoted\"", "\\\"quoted\"")]
+    [InlineData(IniInlineCommentMode.AfterWhitespace, true, "a\r\nb\\c", "a\\r\\nb\\\\c")]
+    [InlineData(IniInlineCommentMode.None, false, "a ; b\nc", "a ; b\\nc")]
+    public void SetValue_Escapes_ReadsBack(IniInlineCommentMode inlineComments, bool allowQuotedValues, string value, string expected)
+    {
+        var options = new IniParseOptions { AllowEscapes = true, InlineComments = inlineComments, AllowQuotedValues = allowQuotedValues, AllowMultilineValues = true };
+        var root = IniSyntaxTree.ParseText("k = old\n", options).GetRoot();
+
+        var edited = root.SetValue(section: null, "k", value);
+
+        Assert.Equal("k = " + expected + "\n", edited.ToFullString());
+        Assert.Equal(value, IniSyntaxTree.ParseText(edited.ToFullString(), options).GetRoot().GetValue(section: null, "k"));
+    }
+
+    [Fact]
+    public void SetValue_Escapes_CannotWriteWhitespaceAroundWithoutQuotes()
+    {
+        var root = IniSyntaxTree.ParseText("", new IniParseOptions { AllowEscapes = true, AllowQuotedValues = false }).GetRoot();
+
+        Assert.Throws<ArgumentException>(() => root.SetValue(section: null, "k", " a"));
+    }
 }

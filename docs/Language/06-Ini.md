@@ -58,9 +58,8 @@ INI has no specification. The parser reads what the common dialects agree on:
 - section headers such as `[section]`, `[my section]`, or `[remote "origin"]`;
 - `key=value` and `key: value`; a key runs up to the separator, so `my key` and `Name[fr]` are keys;
 - comments on their own line, starting with `;` or `#`;
-- values wholly in double or single quotes, such as `"a;b"`, where `;` and `#` do not start a comment; nothing inside
-  the quotes is escaped. When something other than a comment follows the closing quote, as in `"a ;b" c`, the quotes are
-  ordinary characters;
+- values wholly in double or single quotes, such as `"a;b"`, where `;` and `#` do not start a comment. When something
+  other than a comment follows the closing quote, as in `"a ;b" c`, the quotes are ordinary characters;
 - whitespace around keys, section names and values, which is trivia.
 
 ## Choose a dialect
@@ -69,12 +68,14 @@ Where the dialects differ, [IniParseOptions](cref:Meziantou.Framework.Language.I
 
 | Option | Default | Changes |
 | --- | --- | --- |
+| [Dialect](cref:Meziantou.Framework.Language.Ini.IniParseOptions.Dialect) | [Generic](cref:Meziantou.Framework.Language.Ini.IniDialect.Generic) | The family of syntax: the one of the table below, or the one of [git configuration files](#git-configuration-files) ([Git](cref:Meziantou.Framework.Language.Ini.IniDialect.Git)) |
 | [InlineComments](cref:Meziantou.Framework.Language.Ini.IniParseOptions.InlineComments) | [AfterWhitespace](cref:Meziantou.Framework.Language.Ini.IniInlineCommentMode.AfterWhitespace) | Whether `;` and `#` start a comment after a key or a value: never ([None](cref:Meziantou.Framework.Language.Ini.IniInlineCommentMode.None)), when whitespace precedes them ([AfterWhitespace](cref:Meziantou.Framework.Language.Ini.IniInlineCommentMode.AfterWhitespace): `url=http://host/#top ; note` has the value `http://host/#top`), or anywhere ([Anywhere](cref:Meziantou.Framework.Language.Ini.IniInlineCommentMode.Anywhere): `password=abc#123` has the value `abc`) |
 | [AllowKeysWithoutValue](cref:Meziantou.Framework.Language.Ini.IniParseOptions.AllowKeysWithoutValue) | `false` | Whether a line with only a key, such as `skip-networking`, is a property rather than an error |
 | [AllowMultilineValues](cref:Meziantou.Framework.Language.Ini.IniParseOptions.AllowMultilineValues) | `false` | Whether the lines indented more than a key continue its value. Comment lines between them are skipped, and blank lines are empty lines of the value |
 | [AllowQuotedValues](cref:Meziantou.Framework.Language.Ini.IniParseOptions.AllowQuotedValues) | `true` | Whether a value wholly in quotes is read without them |
+| [AllowEscapes](cref:Meziantou.Framework.Language.Ini.IniParseOptions.AllowEscapes) | `false` | Whether a backslash escapes the character after it in a value: see [Escapes](#escapes) |
 | [ReportDuplicates](cref:Meziantou.Framework.Language.Ini.IniParseOptions.ReportDuplicates) | `false` | Whether a section or a key defined twice is reported as a warning |
-| [NameComparer](cref:Meziantou.Framework.Language.Ini.IniParseOptions.NameComparer) | `OrdinalIgnoreCase` | How names are compared, by the lookups and to find duplicates |
+| [NameComparer](cref:Meziantou.Framework.Language.Ini.IniParseOptions.NameComparer) | `OrdinalIgnoreCase` | How names are compared, by the lookups and to find duplicates. The git dialect compares subsections with case |
 
 For example, the dialect of Python's `configparser` has whole-line comments only, no quoted values, and multi-line
 values:
@@ -102,6 +103,76 @@ var tree = IniSyntaxTree.ParseText(text, new IniParseOptions { AllowKeysWithoutV
 Assert.Empty(tree.GetDiagnostics());
 ```
 <!-- endref -->
+
+### Escapes
+
+With [AllowEscapes](cref:Meziantou.Framework.Language.Ini.IniParseOptions.AllowEscapes), a backslash escapes the character after it in a value, in quotes or not: `\\`, `\'`, `\"`, `\;`,
+`\#`, `\=`, `\:`, `\0`, `\a`, `\b`, `\t`, `\r` and `\n`. An escaped `;` or `#` does not start a comment, and an escaped
+quote does not close the value. A backslash in front of another character is an ordinary character, so `C:\path` reads
+as it is written. Keys and section names have no escapes.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Ini.Tests/IniSyntaxTreeTests.cs;region=IniSyntaxTree_Escapes;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new IniParseOptions { AllowEscapes = true };
+var root = IniSyntaxTree.ParseText("""
+path = C:\\temp
+quote = "say \"hi\""
+hash = a \# b
+""", options).GetRoot();
+
+Assert.Equal("C:\\temp", root.GetValue(section: null, "path"));
+Assert.Equal("say \"hi\"", root.GetValue(section: null, "quote"));
+Assert.Equal("a # b", root.GetValue(section: null, "hash"));
+
+root = root.SetValue(section: null, "lines", "one\ntwo");
+Assert.EndsWith("lines = one\\ntwo\n", root.ToFullString());
+```
+<!-- endref -->
+
+An edit writes every value so that it reads back exactly: a value with line breaks goes on one line, with `\r` and `\n`.
+
+### Git configuration files
+
+[IniParseOptions.Git](cref:Meziantou.Framework.Language.Ini.IniParseOptions.Git) reads `.gitconfig` and `.git/config` files as git does:
+
+- `[remote "origin"]` is the section `remote.origin`, the name git gives it. The quotes may hold `]`, and a backslash
+  escapes the character after it. The section name is compared ignoring case and the subsection with case, so
+  `Remote.origin` finds it and `remote.Origin` does not;
+- double quotes can open and close anywhere in a value, and are left out of it: `x"y z"w` is `xy zw`;
+- `;` and `#` start a comment anywhere outside quotes;
+- `\"`, `\\`, `\n`, `\t` and `\b` are the escapes. Any other one is reported (`INI0009`), as git refuses the file;
+- a line that ends with `\` continues the value on the next one. The token of the value holds the line breaks;
+- a key without `=` is a property whose value is empty, which git reads as `true`.
+
+The other options that choose a syntax, such as [InlineComments](cref:Meziantou.Framework.Language.Ini.IniParseOptions.InlineComments), do not apply to this dialect.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Ini.Tests/IniSyntaxTreeTests.cs;region=IniSyntaxTree_GitConfig;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tree = IniSyntaxTree.ParseText("""
+[core]
+    bare = false
+[remote "origin"]
+    url = https://example.com/repo.git
+    fetch = +refs/heads/*:refs/remotes/origin/* ; comment
+[alias]
+    lg = log --graph \
+        --oneline
+    say = "!echo \"hello\" # not a comment"
+""", IniParseOptions.Git);
+
+var root = tree.GetRoot();
+Assert.Empty(tree.GetDiagnostics());
+Assert.Equal("https://example.com/repo.git", root.GetValue("remote.origin", "url"));
+Assert.Equal("log --graph         --oneline", root.GetValue("alias", "lg"));
+Assert.Equal("!echo \"hello\" # not a comment", root.GetValue("alias", "say"));
+
+root = root.SetValue("remote.upstream", "url", "C:\\repo;main");
+Assert.EndsWith("[remote \"upstream\"]\nurl=\"C:\\\\repo;main\"\n", root.ToFullString());
+```
+<!-- endref -->
+
+An edit writes values as `git config` does: with escapes, and in quotes when they have whitespace around them, `;` or
+`#`. A new section named `remote.upstream` is written `[remote "upstream"]`.
 
 The options travel with the document: [IniDocumentSyntax.Options](cref:Meziantou.Framework.Language.Ini.IniDocumentSyntax.Options) is what it was parsed with, and every document an edit
 makes from it keeps them. `IniSyntaxTree.Create(root, options)` with other options parses the text of the root again,
@@ -159,9 +230,11 @@ Assert.Equal("name=new", updated.ToFullString());
 [WithValue](cref:Meziantou.Framework.Language.Ini.IniPropertySyntax.WithValue) and [SetValue](cref:Meziantou.Framework.Language.Ini.IniDocumentSyntax.SetValue) write a value so that the document reads it back as the same value with its own options:
 
 - They quote the value only when the options require it: when a `;` or `#` would start a comment, when it has
-  whitespace around it, or when it starts with a quote.
+  whitespace around it, or when it starts with a quote. With escapes, they escape a `;` or `#` rather than quote it.
 - When [AllowQuotedValues](cref:Meziantou.Framework.Language.Ini.IniParseOptions.AllowQuotedValues) is off, they never add quotes, and throw an `ArgumentException` instead.
-- A value with line breaks continues on indented lines, which needs [AllowMultilineValues](cref:Meziantou.Framework.Language.Ini.IniParseOptions.AllowMultilineValues).
+- A value with line breaks continues on indented lines, which needs [AllowMultilineValues](cref:Meziantou.Framework.Language.Ini.IniParseOptions.AllowMultilineValues), or is written with
+  escapes on one line, with [AllowEscapes](cref:Meziantou.Framework.Language.Ini.IniParseOptions.AllowEscapes) or the git dialect. Git has no escape for `\r`, so a value that holds one
+  cannot be written in a git configuration file.
 
 The [SyntaxFactory](cref:Meziantou.Framework.Language.Ini.SyntaxFactory) methods that take a key, a section name, or a value throw when the text would read back as something
 else, so an edit cannot create a new section or cut a value short. [SyntaxFacts.IsValidKey](cref:Meziantou.Framework.Language.Ini.SyntaxFacts.IsValidKey), [IsValidSectionName](cref:Meziantou.Framework.Language.Ini.SyntaxFacts.IsValidSectionName) and
@@ -182,13 +255,15 @@ lines of their own: an entry that another one follows gets a line break if it ha
 | `INI0006` | A section defined twice, with [ReportDuplicates](cref:Meziantou.Framework.Language.Ini.IniParseOptions.ReportDuplicates) (a warning) |
 | `INI0007` | A key defined twice in a section, with [ReportDuplicates](cref:Meziantou.Framework.Language.Ini.IniParseOptions.ReportDuplicates) (a warning) |
 | `INI0008` | A line indented under a key that has no value, with [AllowMultilineValues](cref:Meziantou.Framework.Language.Ini.IniParseOptions.AllowMultilineValues) |
+| `INI0009` | An escape git does not read, such as `\x`, in the git dialect |
+| `INI0010` | A quote not closed before the end of the line, in the git dialect |
 
 ## Limitations
 
-- Nothing is escaped: there is no `\"`, `\n` or `\;`. A value that needs quotes and holds both kinds of quote, or a
-  value with a line break without [AllowMultilineValues](cref:Meziantou.Framework.Language.Ini.IniParseOptions.AllowMultilineValues), cannot be written.
-- A line that ends with `\` does not continue on the next one, as it does in git configuration files.
-- Git subsections such as `[remote "origin"]` are a section named `remote "origin"`, and a `]` inside the quotes ends
-  the header.
+- Without escapes, a value that needs quotes and holds both kinds of quote, or a value with a line break without
+  [AllowMultilineValues](cref:Meziantou.Framework.Language.Ini.IniParseOptions.AllowMultilineValues), cannot be written.
+- The git dialect does not check the characters git allows in names, and reads `[section] key = value`, which git
+  allows, as a header followed by skipped text. A header written the old way, `[section.subsection]`, is a section of
+  that name, compared like the others.
 - Keys are separated from values by `=` or `:` only, so a key cannot hold either.
 - [WithChanges](cref:Meziantou.Framework.Language.Ini.IniSyntaxTree.WithChanges) parses the whole text again.

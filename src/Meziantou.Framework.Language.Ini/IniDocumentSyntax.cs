@@ -192,7 +192,7 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
         // much as the line it goes in front of.
         var next = entries[insertAt];
         var nextIndentation = IniPropertySyntax.GetIndentation(next.GetLeadingTrivia());
-        if (Options.AllowMultilineValues && nextIndentation.Length > indentation.Length)
+        if (Options.EffectiveAllowMultilineValues && nextIndentation.Length > indentation.Length)
         {
             indentation = nextIndentation;
         }
@@ -328,13 +328,13 @@ public sealed class IniDocumentSyntax : IniSyntaxNode
             return this;
 
         var endOfLine = SyntaxFactory.GetEndOfLine(this);
-        var added = items.Select(item => SyntaxFactory.EndLine(item, endOfLine, replaceLineBreaks: true)).ToArray();
+        var added = items.Select(item => SyntaxFactory.EndLine(item, endOfLine, replaceLineBreaks: true, Options)).ToArray();
         var entries = Entries;
         var endOfFile = EndOfFileToken;
         if (entries.Count > 0)
         {
             var last = entries[entries.Count - 1];
-            entries = entries.Replace(last, SyntaxFactory.EndLine(last, endOfLine, replaceLineBreaks: false));
+            entries = entries.Replace(last, SyntaxFactory.EndLine(last, endOfLine, replaceLineBreaks: false, Options));
         }
 
         if (entries.Count == 0 || (afterTrailingComments && endOfFile.LeadingTrivia.Any(trivia => trivia.IsKind(SyntaxKind.CommentTrivia))))

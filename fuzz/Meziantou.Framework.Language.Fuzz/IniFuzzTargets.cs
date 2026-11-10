@@ -8,7 +8,8 @@ namespace Meziantou.Framework.Language.Fuzz;
 /// their section, the lookups against a scan of the entries, and <see cref="IniDocumentSyntax.SetValue"/>, whose value
 /// must read back from the edited document and from its text parsed again, without changing the other values. The same
 /// goes for <see cref="IniDocumentSyntax.SetValues"/>, and for <see cref="IniDocumentSyntax.RemoveProperties"/> and
-/// <see cref="IniDocumentSyntax.RemoveSections"/>, whose keys are gone from the text they write.
+/// <see cref="IniDocumentSyntax.RemoveSections"/>, whose keys are gone from the text they write. A second target reads
+/// the git dialect and the escapes of the generic one, where every value, line breaks included, reads back exactly.
 /// </summary>
 internal static class IniFuzzTargets
 {
@@ -21,11 +22,13 @@ internal static class IniFuzzTargets
     [
         "[", "]", "[section]", "[remote \"origin\"]", "=", ":", " = ", ";", "#", " ;", " #", "\"", "'", "\"a;b\"", "'x'", "\n", "\r\n", "\r", "\t", "    ", " ", "\uFEFF",
         "key", "Key", "KEY", "name[fr]", "my key", "value", "true", "http://host/#top", "\\", "\n    continued", "\n\n", "[]", "[[", "]]",
+        "\\\n", "\\\r\n", "\\\"", "\\\\", "\\n", "\\t", "\\b", "\\r", "\\0", "\\;", "\\#", "\\'", "\\x", "[remote \"a\\\"b\"]", "[branch.main]", "x\"y z\"w",
     ];
 
     public static IReadOnlyList<FuzzTarget> Targets { get; } =
     [
         new("language-ini", Parse) { Seeds = GetSeeds, Dictionary = Tokens },
+        new("language-ini-dialects", ParseDialects) { Seeds = GetDialectSeeds, Dictionary = Tokens },
     ];
 
     /// <summary>
@@ -50,6 +53,43 @@ internal static class IniFuzzTargets
             NameComparer = (flags & 64) == 0 ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal,
         };
 
+        Run(options, otherEdits: (flags & 128) != 0, edit, text, value, newSection: "fuzz-section");
+    }
+
+    /// <summary>
+    /// Byte 0: bit 0 the git dialect; otherwise the escapes of the generic dialect, with bits 1-2 inline comments, 3 keys
+    /// without value, 4 no quoted values, and 5 multiline values. Bit 6 reports duplicates, and bit 7 picks the other edits.
+    /// Then as <see cref="Parse"/>. A new section is named after the value, so that git writes the value as a subsection.
+    /// </summary>
+    private static void ParseDialects(ReadOnlySpan<byte> data)
+    {
+        var flags = FuzzInput.ReadByte(ref data);
+        var edit = FuzzInput.ReadByte(ref data);
+        var text = FuzzText.Decode(FuzzInput.ReadUntil(ref data, ValueSeparator));
+        var value = FuzzText.Decode(data);
+        var options = (flags & 1) != 0
+            ? IniParseOptions.Git with { ReportDuplicates = (flags & 64) != 0 }
+            : new IniParseOptions
+            {
+                AllowEscapes = true,
+                InlineComments = (IniInlineCommentMode)((flags >> 1 & 3) % 3),
+                AllowKeysWithoutValue = (flags & 8) != 0,
+                AllowQuotedValues = (flags & 16) == 0,
+                AllowMultilineValues = (flags & 32) != 0,
+                ReportDuplicates = (flags & 64) != 0,
+            };
+
+        if (options.Dialect == IniDialect.Git && SyntaxFacts.IsValidSectionName("fuzz." + value, options))
+        {
+            var section = SyntaxFactory.IniSection("fuzz." + value, options);
+            FuzzAssert.Equal("fuzz." + value, section.Name, "The section name written for the git dialect does not read back");
+        }
+
+        Run(options, otherEdits: (flags & 128) != 0, edit, text, value, newSection: "fuzz." + value);
+    }
+
+    private static void Run(IniParseOptions options, bool otherEdits, byte edit, string text, string value, string newSection)
+    {
         var tree = IniSyntaxTree.ParseText(text, options);
         var shape = SyntaxTreeInvariants.Check(tree, text, "INI", diagnosticsOnNodes: true, diagnosticsInSourceOrder: true);
         var root = tree.GetRoot();
@@ -73,12 +113,12 @@ internal static class IniFuzzTargets
             // Documented by the walker for a tree nested too deeply to walk
         }
 
-        if ((flags & 128) != 0)
+        if (otherEdits)
         {
             switch (edit & 3)
             {
                 case 0:
-                    SetValue(root, options, layout, pairs, edit >> 2, value);
+                    SetValue(root, options, layout, pairs, edit >> 2, value, newSection);
                     break;
                 case 1:
                     SetValues(root, options, pairs, edit >> 2, value);
@@ -93,7 +133,7 @@ internal static class IniFuzzTargets
         }
         else if ((edit & 1) != 0)
         {
-            SetValue(root, options, layout, pairs, edit >> 1, value);
+            SetValue(root, options, layout, pairs, edit >> 1, value, newSection);
         }
     }
 
@@ -129,7 +169,7 @@ internal static class IniFuzzTargets
         foreach (var (section, key, _) in values)
         {
             // When a property is set more than once, the last value wins
-            var expected = values.Last(item => SameSection(options.NameComparer, section, item.Section) && options.NameComparer.Equals(key, item.Key)).Value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+            var expected = ReadBack(options, values.Last(item => SameSection(options.NameComparer, section, item.Section) && options.NameComparer.Equals(key, item.Key)).Value);
             FuzzAssert.Equal(expected, edited.GetValue(section, key), $"The document returned by {setText} does not have the value of {FuzzAssert.Format(section)}/{FuzzAssert.Format(key)}");
             FuzzAssert.Equal(expected, reparsed.GetValue(section, key), $"The text written by {setText} does not read back as the value of {FuzzAssert.Format(section)}/{FuzzAssert.Format(key)}: {FuzzAssert.Format(editedText)}");
         }
@@ -266,12 +306,20 @@ internal static class IniFuzzTargets
         return properties.LastOrDefault(property => !property.KeyToken.IsMissing && comparer.Equals(property.Key, key))?.Value;
     }
 
-    private static void SetValue(IniDocumentSyntax root, IniParseOptions options, Layout layout, List<(string? Section, string Key)> pairs, int choice, string value)
+    /// <summary>Gets what a value set in a document reads back as.</summary>
+    /// <remarks>
+    /// The lines of a value written on lines of their own are read back joined with <c>\n</c>, whichever line break
+    /// separated them. Escapes write it on one line, as it is.
+    /// </remarks>
+    private static string ReadBack(IniParseOptions options, string value)
+        => options.Dialect == IniDialect.Git || options.AllowEscapes ? value : value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+
+    private static void SetValue(IniDocumentSyntax root, IniParseOptions options, Layout layout, List<(string? Section, string Key)> pairs, int choice, string value, string newSection)
     {
         // An existing property (the last pair is the key the document does not have), or a key of a new section
         var (section, key) = choice % (pairs.Count + 1) is var index && index < pairs.Count
             ? pairs[index]
-            : (layout.Sections.Count > 0 ? "fuzz-section" : null, "fuzz-key");
+            : (layout.Sections.Count > 0 ? newSection : null, "fuzz-key");
 
         IniDocumentSyntax edited;
         try
@@ -284,8 +332,7 @@ internal static class IniFuzzTargets
             return;
         }
 
-        // The lines of a value are read back joined with \n, whichever line break separated them
-        var expected = value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+        var expected = ReadBack(options, value);
         var setText = $"SetValue({FuzzAssert.Format(section)}, {FuzzAssert.Format(key)}, {FuzzAssert.Format(value)})";
         FuzzAssert.Equal(expected, edited.GetValue(section, key), $"The document returned by {setText} does not have the value");
 
@@ -325,10 +372,29 @@ internal static class IniFuzzTargets
         yield return Seed("remove-sections", 128, 3, Edited, "");
         yield return Seed("remove-sections-ordinal", 128 | 64, 3 | (2 << 2), Edited, "");
         yield return Seed("remove-sections-missing", 128 | 2, 3 | (63 << 2), "[s] # c\nk=v # c\n[t]\n", "");
-
-        static FuzzSeed Seed(string name, byte flags, byte edit, string text, string value)
-            => new(name, (byte[])[flags, edit, .. FuzzText.Encode(text), ValueSeparator, .. FuzzText.Encode(value)]);
     }
+
+    private static IEnumerable<FuzzSeed> GetDialectSeeds()
+    {
+        const string Git = "[core]\n\tbare = false\n[remote \"origin\"]\n\turl = https://example.com/repo.git\n\tfetch = +refs/heads/*:refs/remotes/origin/* ; comment\n[alias]\n\tlg = log --graph \\\n\t\t--oneline\n\tsay = \"!echo \\\"hello\\\" # not a comment\"\n";
+        yield return Seed("git", 1, 0, Git, "");
+        yield return Seed("git-set", 1, 1 | (1 << 1), Git, "a;b \\ \"c\"\nd\te");
+        yield return Seed("git-new-subsection", 1, 1 | (63 << 1), "[core]\nk=v\n", "a\"b\\c");
+        yield return Seed("git-values", 1, 1, "k = x\"y z\"w\nk2 = b\\\\c\\nd\nk3 = first \\\r\n  second\nk4 = \"q \\\n r\"\nflag\nk5 = b\\", " padded ");
+        yield return Seed("git-errors", 1 | 64, 0, "[remote \"a\"]\nk = b\\x\nk = \"open\n[remote \"a\"]\n[remote \"b]\n", "");
+        yield return Seed("git-edits", 1 | 128, 3, "[remote \"a\"]\nk = 1\n[Remote \"A\"]\nk = 2\n[remote \"a\"]\nk = 3\\", "");
+        yield return Seed("git-dangling-backslash", 1 | 128, 1 | (1 << 2), "[s]\nk = b \\", "v");
+
+        const string Escapes = "path = C:\\\\temp\nquote = \"say \\\"hi\\\"\"\nhash = a \\# b\nsingle = 'it\\'s'\nraw = C:\\path\\x\n";
+        yield return Seed("escapes", 0, 0, Escapes, "");
+        yield return Seed("escapes-set", 0, 1 | (2 << 1), Escapes, " both \" and ' ;\r\n\\");
+        yield return Seed("escapes-anywhere", 4, 1, "k = a\\;b#c\nl = \\\"a\"\n", "a;b#c");
+        yield return Seed("escapes-no-quotes-multiline", 16 | 32, 1, "k = a\n    b\nl = \"x\"\n", "x\ny");
+        yield return Seed("escapes-set-values", 128, 1 | (1 << 2), Escapes, "\"v\"");
+    }
+
+    private static FuzzSeed Seed(string name, byte flags, byte edit, string text, string value)
+        => new(name, (byte[])[flags, edit, .. FuzzText.Encode(text), ValueSeparator, .. FuzzText.Encode(value)]);
 
     private sealed record Layout(List<IniPropertySyntax> Global, List<(IniSectionSyntax Section, List<IniPropertySyntax> Properties)> Sections);
 

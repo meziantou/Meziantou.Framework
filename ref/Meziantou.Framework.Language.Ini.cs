@@ -6,6 +6,12 @@
 
 namespace Meziantou.Framework.Language.Ini
 {
+    public enum IniDialect
+    {
+        Generic = 0,
+        Git = 1,
+    }
+
     public sealed class IniDocumentSyntax : Meziantou.Framework.Language.Ini.IniSyntaxNode
     {
         public Meziantou.Framework.Language.SyntaxToken EndOfFileToken { get => throw null; }
@@ -53,10 +59,13 @@ namespace Meziantou.Framework.Language.Ini
 
     public sealed class IniParseOptions : System.IEquatable<Meziantou.Framework.Language.Ini.IniParseOptions>
     {
+        public bool AllowEscapes { get => throw null; init { } }
         public bool AllowKeysWithoutValue { get => throw null; init { } }
         public bool AllowMultilineValues { get => throw null; init { } }
         public bool AllowQuotedValues { get => throw null; init { } }
         public static Meziantou.Framework.Language.Ini.IniParseOptions Default { get => throw null; }
+        public Meziantou.Framework.Language.Ini.IniDialect Dialect { get => throw null; init { } }
+        public static Meziantou.Framework.Language.Ini.IniParseOptions Git { get => throw null; }
         public Meziantou.Framework.Language.Ini.IniInlineCommentMode InlineComments { get => throw null; init { } }
         public System.StringComparer NameComparer { get => throw null; init { } }
         public bool ReportDuplicates { get => throw null; init { } }

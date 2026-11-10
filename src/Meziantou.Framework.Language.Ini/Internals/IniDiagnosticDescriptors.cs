@@ -11,6 +11,8 @@ internal static class IniDiagnosticDescriptors
     public static readonly DiagnosticDescriptor DuplicateSection = Warning("INI0006", "Duplicate section", "The section '{0}' is already defined.");
     public static readonly DiagnosticDescriptor DuplicateKey = Warning("INI0007", "Duplicate key", "The key '{0}' is already defined in {1}.");
     public static readonly DiagnosticDescriptor UnexpectedContinuation = Error("INI0008", "Unexpected indentation", "This line is indented as if it continued the value of '{0}', which has none.");
+    public static readonly DiagnosticDescriptor InvalidEscapeSequence = Error("INI0009", "Invalid escape sequence", "'\\{0}' is not an escape sequence of git configuration files.");
+    public static readonly DiagnosticDescriptor UnclosedQuote = Error("INI0010", "Unclosed quote", "The quote is not closed before the end of the line.");
 
     private static DiagnosticDescriptor Error(string id, string title, string messageFormat) => new(id, title, messageFormat, DiagnosticSeverity.Error);
     private static DiagnosticDescriptor Warning(string id, string title, string messageFormat) => new(id, title, messageFormat, DiagnosticSeverity.Warning);

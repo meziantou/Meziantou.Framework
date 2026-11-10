@@ -62,7 +62,7 @@ INI has no specification. The parser reads what the common dialects agree on:
 - key/value pairs with `=` or `:`; a key runs up to the separator, so `my key` and `Name[fr]` are keys
 - comments on their own line, starting with `;` or `#`
 - values wholly in double or single quotes, such as `"a;b"`, where `;` and `#` are not comments; `Value` leaves the
-  quotes out, and nothing inside them is escaped (unless `AllowQuotedValues` is off). When anything but a comment
+  quotes out (unless `AllowQuotedValues` is off). When anything but a comment
   follows the closing quote, as in `"a ;b" c`, the quotes are ordinary characters and the line is read as if there were
   none, so its value is `"a`
 - whitespace around keys, section names, and values, which is trivia and not part of them
@@ -71,10 +71,12 @@ Where the dialects differ, `IniParseOptions` chooses:
 
 | Option | Default | What it changes |
 |---|---|---|
+| `Dialect` | `Generic` | The family of syntax: the one of this table, or `Git`, the one of git configuration files (see below). |
 | `InlineComments` | `AfterWhitespace` | Whether `;` and `#` start a comment after a key or value: never (`None`), when whitespace precedes them (`AfterWhitespace`, so `url=http://host/#top ; note` has the value `http://host/#top`), or anywhere (`Anywhere`, so `password=abc#123` has the value `abc`). |
 | `AllowKeysWithoutValue` | `false` | Whether a line holding only a key, such as `skip-networking`, is a valid property rather than an error. |
 | `AllowMultilineValues` | `false` | Whether lines indented more than the key continue its value, as Python's `configparser` reads them: comment lines between them are skipped, and blank lines between them are empty lines of the value. Each line is a token of `ContinuationTokens`, so comments stay trivia. A line indented under a key without a value is reported (`INI0008`), as `configparser` rejects it. |
 | `AllowQuotedValues` | `true` | Whether a value wholly in quotes is read without them. Turn it off for dialects where quotes are ordinary characters, such as Python's `configparser`. |
+| `AllowEscapes` | `false` | Whether a backslash escapes the character after it in a value: `\\`, `\'`, `\"`, `\;`, `\#`, `\=`, `\:`, `\0`, `\a`, `\b`, `\t`, `\r`, and `\n`. A backslash in front of another character is an ordinary character. Edits then write every value on one line, line breaks included. |
 | `ReportDuplicates` | `false` | Whether a section name used twice, or a key used twice in a section, is reported as a warning. |
 | `NameComparer` | `OrdinalIgnoreCase` | How names are compared to find duplicates, and by `GetValue` and the other lookups, which find a name without reading every entry when they use it. |
 
@@ -107,6 +109,57 @@ var text = "[mysqld]\nskip-networking\n";
 var tree = IniSyntaxTree.ParseText(text, new IniParseOptions { AllowKeysWithoutValue = true });
 
 Assert.Empty(tree.GetDiagnostics());
+```
+<!-- endref -->
+
+With `AllowEscapes`:
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Ini.Tests/IniSyntaxTreeTests.cs;region=IniSyntaxTree_Escapes;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new IniParseOptions { AllowEscapes = true };
+var root = IniSyntaxTree.ParseText("""
+path = C:\\temp
+quote = "say \"hi\""
+hash = a \# b
+""", options).GetRoot();
+
+Assert.Equal("C:\\temp", root.GetValue(section: null, "path"));
+Assert.Equal("say \"hi\"", root.GetValue(section: null, "quote"));
+Assert.Equal("a # b", root.GetValue(section: null, "hash"));
+
+root = root.SetValue(section: null, "lines", "one\ntwo");
+Assert.EndsWith("lines = one\\ntwo\n", root.ToFullString());
+```
+<!-- endref -->
+
+`IniParseOptions.Git` reads git configuration files as git does: `[remote "origin"]` is the section `remote.origin`
+(the section name compared ignoring case, the subsection with case), double quotes can open and close anywhere in a
+value, `;` and `#` start a comment anywhere outside quotes, `\"`, `\\`, `\n`, `\t`, and `\b` are the escapes (any other is
+reported as `INI0009`), and a line ending with `\` continues the value on the next one. Edits write values and
+subsections as `git config` does.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Ini.Tests/IniSyntaxTreeTests.cs;region=IniSyntaxTree_GitConfig;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tree = IniSyntaxTree.ParseText("""
+[core]
+    bare = false
+[remote "origin"]
+    url = https://example.com/repo.git
+    fetch = +refs/heads/*:refs/remotes/origin/* ; comment
+[alias]
+    lg = log --graph \
+        --oneline
+    say = "!echo \"hello\" # not a comment"
+""", IniParseOptions.Git);
+
+var root = tree.GetRoot();
+Assert.Empty(tree.GetDiagnostics());
+Assert.Equal("https://example.com/repo.git", root.GetValue("remote.origin", "url"));
+Assert.Equal("log --graph         --oneline", root.GetValue("alias", "lg"));
+Assert.Equal("!echo \"hello\" # not a comment", root.GetValue("alias", "say"));
+
+root = root.SetValue("remote.upstream", "url", "C:\\repo;main");
+Assert.EndsWith("[remote \"upstream\"]\nurl=\"C:\\\\repo;main\"\n", root.ToFullString());
 ```
 <!-- endref -->
 
@@ -186,11 +239,10 @@ Assert.Equal("[database]\nhost = db1\nport = 5433\n", root.ToFullString());
 
 ## Limitations
 
-- Nothing is escaped: there is no `\"`, `\n`, or `\;`, so a value that needs quotes and holds both kinds of quote, or a
-  value with a line break outside `AllowMultilineValues`, cannot be written.
-- A line ending with `\` does not continue on the next one, as it does in git config files.
-- Git subsections such as `[remote "origin"]` are read as a section named `remote "origin"`, and a `]` inside the quotes
-  ends the header.
+- Without escapes, a value that needs quotes and holds both kinds of quote, or a value with a line break outside
+  `AllowMultilineValues`, cannot be written.
+- The git dialect does not check the characters git allows in names, and reads `[section] key = value`, which git
+  allows, as a header followed by skipped text.
 - Keys are separated from values by `=` or `:` only, so a key cannot hold either.
 - A property whose value continues on several lines reads back as one only in a document read with
   `AllowMultilineValues`; putting one in another document writes lines that it reads as entries of their own.

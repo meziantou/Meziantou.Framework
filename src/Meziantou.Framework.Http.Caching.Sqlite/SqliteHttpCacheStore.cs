@@ -34,23 +34,47 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
         "SerializedResponse, " +
         "Payload";
 
+    // The size of an entry. A row written by a version that only had the Payload column has no SerializedResponse.
+    private const string EntrySizeSql = "COALESCE(length(SerializedResponse), length(Payload), 0)";
+
+    // The access counter is the largest one of the table plus one, which the index on LastAccess answers directly. A
+    // counter rather than a time keeps the order exact when several entries are written within the resolution of the clock.
+    private const string NextLastAccessSql = "(SELECT COALESCE(MAX(LastAccess), 0) + 1 FROM HttpCacheEntries)";
+
     private readonly Lock _initializationLock = new();
     private readonly string _connectionString;
+    private readonly long? _maximumEntryCount;
+    private readonly long? _maximumTotalSize;
     private Task? _initializationTask;
     private SqliteConnection? _anchorConnection;
     private volatile bool _initialized;
     private volatile bool _disposed;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="SqliteHttpCacheStore"/> class.
+    /// Initializes a new instance of the <see cref="SqliteHttpCacheStore"/> class with no limit.
     /// </summary>
     /// <param name="connectionString">The SQLite connection string.</param>
     public SqliteHttpCacheStore(string connectionString)
+        : this(connectionString, limits: null)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SqliteHttpCacheStore"/> class that evicts the least recently used
+    /// entries to stay within <paramref name="limits"/>.
+    /// </summary>
+    /// <param name="connectionString">The SQLite connection string.</param>
+    /// <param name="limits">The bounds of the store, or <see langword="null"/> for no limit. The values are read once, by the constructor.</param>
+    public SqliteHttpCacheStore(string connectionString, HttpCacheStoreLimits? limits)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
         _connectionString = new SqliteConnectionStringBuilder(connectionString).ToString();
+        _maximumEntryCount = limits?.MaximumEntryCount;
+        _maximumTotalSize = limits?.MaximumTotalSize;
     }
+
+    private bool IsBounded => _maximumEntryCount is not null || _maximumTotalSize is not null;
 
     /// <inheritdoc />
     public async ValueTask<IReadOnlyCollection<HttpCachePersistenceEntry>> GetEntriesAsync(string primaryKey, CancellationToken cancellationToken)
@@ -66,16 +90,29 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
         command.CommandText = "SELECT " + SplitColumnsSql + " FROM HttpCacheEntries WHERE PrimaryKey = $primaryKey";
         command.Parameters.AddWithValue("$primaryKey", primaryKey);
 
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-        var ordinals = EntryColumnOrdinals.Create(reader);
         var entries = new List<HttpCachePersistenceEntry>();
-        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        var hasRows = false;
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
         {
-            var entry = TryReadEntry(reader, ordinals);
-            if (entry is not null)
+            var ordinals = EntryColumnOrdinals.Create(reader);
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                entries.Add(entry);
+                hasRows = true;
+                var entry = TryReadEntry(reader, ordinals);
+                if (entry is not null)
+                {
+                    entries.Add(entry);
+                }
             }
+        }
+
+        // Only a bounded store needs the recency of the entries, so an unbounded one does not pay for a write on every read
+        if (hasRows && IsBounded)
+        {
+            await using var touchCommand = connection.CreateCommand();
+            touchCommand.CommandText = "UPDATE HttpCacheEntries SET LastAccess = " + NextLastAccessSql + " WHERE PrimaryKey = $primaryKey";
+            touchCommand.Parameters.AddWithValue("$primaryKey", primaryKey);
+            await touchCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         }
 
         return entries;
@@ -97,7 +134,12 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
         var deleteWhenExpired = entry.IsUnusableWhenStale ? 1 : 0;
 
         await using var connection = await OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+
+        // A bounded store writes the entry and evicts the others in one transaction, so that the limits hold for the
+        // other connections too
+        await using var transaction = IsBounded ? (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false) : null;
         await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText =
             "INSERT INTO HttpCacheEntries(" +
             "PrimaryKey, SecondaryKey, " +
@@ -106,7 +148,7 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
             "AgeValueTicks, MaxAgeTicks, SharedMaxAgeTicks, ExpiresUtcTicks, " +
             "MustRevalidate, ProxyRevalidate, ResponseNoCache, Public, Private, NoTransform, Immutable, " +
             "StaleIfErrorTicks, ETag, LastModifiedUtcTicks, SerializedResponse, " +
-            "StaleAtUtcTicks, DeleteWhenExpired, Payload) " +
+            "StaleAtUtcTicks, DeleteWhenExpired, Payload, LastAccess) " +
             "VALUES (" +
             "$primaryKey, $secondaryKey, " +
             "$secondaryKeyMatchNone, $secondaryKeyHeadersJson, $noVarySearch, $normalizedQuery, " +
@@ -114,7 +156,7 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
             "$ageValueTicks, $maxAgeTicks, $sharedMaxAgeTicks, $expiresUtcTicks, " +
             "$mustRevalidate, $proxyRevalidate, $responseNoCache, $public, $private, $noTransform, $immutable, " +
             "$staleIfErrorTicks, $etag, $lastModifiedUtcTicks, $serializedResponse, " +
-            "$staleAtUtcTicks, $deleteWhenExpired, NULL) " +
+            "$staleAtUtcTicks, $deleteWhenExpired, NULL, " + NextLastAccessSql + ") " +
             "ON CONFLICT(PrimaryKey, SecondaryKey) DO UPDATE SET " +
             "SecondaryKeyMatchNone = excluded.SecondaryKeyMatchNone, " +
             "SecondaryKeyHeadersJson = excluded.SecondaryKeyHeadersJson, " +
@@ -140,7 +182,8 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
             "SerializedResponse = excluded.SerializedResponse, " +
             "StaleAtUtcTicks = excluded.StaleAtUtcTicks, " +
             "DeleteWhenExpired = excluded.DeleteWhenExpired, " +
-            "Payload = NULL";
+            "Payload = NULL, " +
+            "LastAccess = excluded.LastAccess";
         command.Parameters.AddWithValue("$primaryKey", primaryKey);
         command.Parameters.AddWithValue("$secondaryKey", secondaryKey);
         command.Parameters.AddWithValue("$secondaryKeyMatchNone", entry.SecondaryKeyMatchNone ? 1 : 0);
@@ -168,6 +211,61 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
         command.Parameters.AddWithValue("$staleAtUtcTicks", staleAtUtcTicks);
         command.Parameters.AddWithValue("$deleteWhenExpired", deleteWhenExpired);
         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+
+        if (transaction is not null)
+        {
+            await EvictAsync(connection, transaction, cancellationToken).ConfigureAwait(false);
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Removes the least recently used entries until the store is within its limits.</summary>
+    private async ValueTask EvictAsync(SqliteConnection connection, SqliteTransaction transaction, CancellationToken cancellationToken)
+    {
+        long entryCount;
+        long totalSize;
+        await using (var statisticsCommand = connection.CreateCommand())
+        {
+            statisticsCommand.Transaction = transaction;
+            statisticsCommand.CommandText = "SELECT EntryCount, TotalSize FROM HttpCacheStatistics WHERE Id = 0";
+            await using var reader = await statisticsCommand.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            if (!await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                return;
+
+            entryCount = reader.GetInt64(0);
+            totalSize = reader.GetInt64(1);
+        }
+
+        var excessCount = _maximumEntryCount is { } maximumEntryCount ? entryCount - maximumEntryCount : 0;
+        var excessSize = _maximumTotalSize is { } maximumTotalSize ? totalSize - maximumTotalSize : 0;
+        if (excessCount <= 0 && excessSize <= 0)
+            return;
+
+        // The entry that was just written is the most recently used, so it is evicted last: only when it alone exceeds the limits.
+        // The rows without LastAccess, written by a version that did not track it, come first.
+        var rowsToDelete = new List<long>();
+        await using (var selectCommand = connection.CreateCommand())
+        {
+            selectCommand.Transaction = transaction;
+            selectCommand.CommandText = "SELECT rowid, " + EntrySizeSql + " FROM HttpCacheEntries ORDER BY LastAccess, rowid";
+            await using var reader = await selectCommand.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            while ((excessCount > 0 || excessSize > 0) && await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                rowsToDelete.Add(reader.GetInt64(0));
+                excessCount--;
+                excessSize -= reader.GetInt64(1);
+            }
+        }
+
+        await using var deleteCommand = connection.CreateCommand();
+        deleteCommand.Transaction = transaction;
+        deleteCommand.CommandText = "DELETE FROM HttpCacheEntries WHERE rowid = $rowId";
+        var rowIdParameter = deleteCommand.Parameters.Add("$rowId", SqliteType.Integer);
+        foreach (var rowId in rowsToDelete)
+        {
+            rowIdParameter.Value = rowId;
+            await deleteCommand.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 
     /// <inheritdoc />
@@ -390,6 +488,7 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
             "StaleAtUtcTicks INTEGER NULL, " +
             "DeleteWhenExpired INTEGER NULL, " +
             "Payload BLOB NULL, " +
+            "LastAccess INTEGER NULL, " +
             "PRIMARY KEY(PrimaryKey, SecondaryKey))";
         await command.ExecuteNonQueryAsync(CancellationToken.None).ConfigureAwait(false);
 
@@ -398,10 +497,50 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
         await using var indexCommand = connection.CreateCommand();
         indexCommand.CommandText =
             "CREATE INDEX IF NOT EXISTS IX_HttpCacheEntries_Cleanup " +
-            "ON HttpCacheEntries(DeleteWhenExpired, StaleAtUtcTicks)";
+            "ON HttpCacheEntries(DeleteWhenExpired, StaleAtUtcTicks); " +
+            "CREATE INDEX IF NOT EXISTS IX_HttpCacheEntries_LastAccess " +
+            "ON HttpCacheEntries(LastAccess)";
         await indexCommand.ExecuteNonQueryAsync(CancellationToken.None).ConfigureAwait(false);
 
+        await EnsureStatisticsAsync(connection, CancellationToken.None).ConfigureAwait(false);
+
         _initialized = true;
+    }
+
+    // The number of entries and their total size, kept up to date by triggers so that a bounded store does not scan the
+    // table on every write. The triggers are part of the database, so they also count the rows written by an unbounded
+    // store or by a version of the store that does not know them. The table is seeded and the triggers are created in
+    // one transaction, so no row written by another connection in between is missed.
+    private static async ValueTask EnsureStatisticsAsync(SqliteConnection connection, CancellationToken cancellationToken)
+    {
+        await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+            "CREATE TABLE IF NOT EXISTS HttpCacheStatistics (" +
+            "Id INTEGER NOT NULL PRIMARY KEY CHECK (Id = 0), " +
+            "EntryCount INTEGER NOT NULL, " +
+            "TotalSize INTEGER NOT NULL); " +
+
+            // The WHERE clause skips the scan of the table once the row exists
+            "INSERT OR IGNORE INTO HttpCacheStatistics (Id, EntryCount, TotalSize) " +
+            "SELECT 0, COUNT(*), COALESCE(SUM(" + EntrySizeSql + "), 0) FROM HttpCacheEntries " +
+            "WHERE NOT EXISTS (SELECT 1 FROM HttpCacheStatistics); " +
+
+            "CREATE TRIGGER IF NOT EXISTS TR_HttpCacheEntries_Insert AFTER INSERT ON HttpCacheEntries BEGIN " +
+            "UPDATE HttpCacheStatistics SET EntryCount = EntryCount + 1, " +
+            "TotalSize = TotalSize + COALESCE(length(NEW.SerializedResponse), length(NEW.Payload), 0) WHERE Id = 0; END; " +
+
+            "CREATE TRIGGER IF NOT EXISTS TR_HttpCacheEntries_Delete AFTER DELETE ON HttpCacheEntries BEGIN " +
+            "UPDATE HttpCacheStatistics SET EntryCount = EntryCount - 1, " +
+            "TotalSize = TotalSize - COALESCE(length(OLD.SerializedResponse), length(OLD.Payload), 0) WHERE Id = 0; END; " +
+
+            "CREATE TRIGGER IF NOT EXISTS TR_HttpCacheEntries_Update AFTER UPDATE OF SerializedResponse, Payload ON HttpCacheEntries BEGIN " +
+            "UPDATE HttpCacheStatistics SET " +
+            "TotalSize = TotalSize - COALESCE(length(OLD.SerializedResponse), length(OLD.Payload), 0) " +
+            "+ COALESCE(length(NEW.SerializedResponse), length(NEW.Payload), 0) WHERE Id = 0; END;";
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     // Columns added to databases created by an earlier version. The names are compile-time constants, so
@@ -433,6 +572,7 @@ public sealed class SqliteHttpCacheStore : IHttpCacheStore, IDisposable
         ("Payload", "BLOB"),
         ("StaleAtUtcTicks", "INTEGER"),
         ("DeleteWhenExpired", "INTEGER"),
+        ("LastAccess", "INTEGER"),
     ];
 
     [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The column names and types come from MigratedColumns, which holds compile-time constants")]

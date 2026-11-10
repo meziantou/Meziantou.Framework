@@ -37,14 +37,17 @@ A response is stored when all these conditions hold:
 
 - The request is a `GET` or a `HEAD`. They are stored under different keys, so a stored `HEAD` response is never served
   for a `GET`.
-- The request has no `Range` header, no `Cache-Control: no-store`, and no precondition of its own (`If-None-Match`,
-  `If-Modified-Since`, `If-Match`, `If-Unmodified-Since`, `If-Range`). Those requests are sent to the server unchanged.
+- The request has no `Cache-Control: no-store`, and no precondition of its own (`If-None-Match`, `If-Modified-Since`,
+  `If-Match`, `If-Unmodified-Since`). Those requests are sent to the server unchanged.
 - The response has no `Cache-Control: no-store`, and no `Vary: *`.
 - The status code can be stored:
   - `200`, `203`, `204`, `300`, `301`, `404`, `405`, `410`, `414` and `501` are stored by default;
-  - `500` is only stored when the response says how long it is fresh (`max-age` or a future `Expires`), or has
-    `Cache-Control: public` or `private`;
-  - any other status code, `206 Partial Content` included, is never stored.
+  - `500` is only stored when the response says how long it is fresh (`max-age`, a future `Expires`, or `s-maxage` in a
+    shared cache), or has `Cache-Control: public`, or `private` in a private cache;
+  - any other status code, `206 Partial Content` included, is never stored. A range request is answered from a stored
+    complete response instead: see [Request directives](06-RequestDirectives.md#range-requests).
+- In a shared cache (see [Options](09-Options.md#share-the-cache-between-users)), the response has no `Cache-Control: private`,
+  and when the request has an `Authorization` header, the response has `public`, `s-maxage` or `must-revalidate`.
 - The response is not larger than [MaximumResponseSize](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.MaximumResponseSize), and [ShouldCacheResponse](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.ShouldCacheResponse) accepts it. See
   [Options](09-Options.md).
 
@@ -61,8 +64,8 @@ The cache computes the freshness lifetime of a response from, in this order:
    header.
 4. Otherwise, zero: the response is stale as soon as it is stored, and only reusable after a revalidation.
 
-`s-maxage` only applies to shared caches and is ignored. The age of a stored response takes the `Age` and `Date`
-headers of the server into account, and the time the request took.
+In a shared cache, `Cache-Control: s-maxage=<seconds>` comes first, and a private cache ignores it. The age of a stored
+response takes the `Age` and `Date` headers of the server into account, and the time the request took.
 
 Each response served from the cache has an `Age` header that gives its current age, in seconds. A response sent by the
 server has the `Age` header the server sent, usually none.

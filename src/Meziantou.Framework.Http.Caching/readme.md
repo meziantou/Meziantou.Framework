@@ -2,9 +2,10 @@
 
 An HTTP caching implementation for `HttpClient` that follows [RFC 7234 (HTTP Caching)](https://www.rfc-editor.org/rfc/rfc7234.html), since obsoleted by [RFC 9111](https://www.rfc-editor.org/rfc/rfc9111.html), together with [RFC 8246 (Immutable directive)](https://www.rfc-editor.org/rfc/rfc8246.html), [RFC 5861 (stale-if-error)](https://www.rfc-editor.org/rfc/rfc5861.html), and [No-Vary-Search](https://httpwg.org/http-extensions/draft-ietf-httpbis-no-vary-search.html).
 
-This is a **private** cache: it is attached to a single `HttpClient` and its entries are not shared between users.
-Responses to requests carrying an `Authorization` header are stored like any other, which is what RFC 9111 Section 3.5
-allows for a private cache. Do not share one `HttpClient`, and therefore one cache, between users.
+By default, this is a **private** cache: it is attached to a single `HttpClient` and its entries are not shared between
+users. Responses to requests carrying an `Authorization` header are stored like any other, which is what RFC 9111
+Section 3.5 allows for a private cache. Do not share a private cache between users. Set `HttpCachingOptions.IsSharedCache`
+to follow the rules of a shared cache instead (`private`, `s-maxage`, `proxy-revalidate`, `Authorization`).
 
 ## What is it?
 
@@ -20,6 +21,9 @@ allows for a private cache. Do not share one `HttpClient`, and therefore one cac
 - ✅ **No-Vary-Search**: Reuses a cached response for URLs that only differ by query parameters the server declares irrelevant
 - ✅ **Cache Invalidation**: Automatically invalidates cache entries on unsafe methods (POST, PUT, DELETE, PATCH)
 - ✅ **Pragma Support**: Handles `Pragma: no-cache` for HTTP/1.0 backward compatibility
+- ✅ **Range Requests**: Serves byte ranges (`206`, `multipart/byteranges`, `416`) from stored complete responses, and evaluates `If-Range`
+- ✅ **Shared Cache Mode**: Optionally follows the RFC 9111 rules of shared caches (`s-maxage`, `proxy-revalidate`, `private`, `Authorization`)
+- ✅ **Request Coalescing**: Optionally sends a single request to the server for concurrent requests for the same URL
 - ✅ **Thread-Safe**: Designed for concurrent access across multiple threads
 - ✅ **Testable**: Supports custom `TimeProvider` for deterministic testing
 - ✅ **Pluggable Persistence**: Supports in-memory persistence and custom stores
@@ -160,10 +164,10 @@ var response2 = await httpClient.GetAsync("https://api.example.com/data");
 The handler follows these rules when processing requests:
 
 1. **Only GET and HEAD requests are cached** (per RFC 7234 Section 4), each under its own cache key, so a stored `HEAD` response is never served for a `GET`
-1. **Requests that carry their own validators** (`If-None-Match`, `If-Modified-Since`, `If-Match`, `If-Unmodified-Since`, `If-Range`) are forwarded to the origin unchanged, so the caller receives the `304` or `200` it asked for
-1. **Range requests are forwarded to the origin** and `206 Partial Content` responses are never stored, since the cache cannot serve partial content
+1. **Requests that carry their own validators** (`If-None-Match`, `If-Modified-Since`, `If-Match`, `If-Unmodified-Since`) are forwarded to the origin unchanged, so the caller receives the `304` or `200` it asked for
+1. **Range requests are answered from stored complete responses** (`If-Range` is evaluated against them); when nothing is stored they are forwarded to the origin, and `206 Partial Content` responses are never stored
 2. **Checks request directives** like `no-store`, `no-cache`, `max-age`, `min-fresh`, `max-stale`, `only-if-cached`
-3. **Evaluates cache freshness** using `Cache-Control: max-age` and `Expires` headers
+3. **Evaluates cache freshness** using `Cache-Control: max-age` and `Expires` headers (and `s-maxage` in shared cache mode)
 4. **Validates stale entries** using conditional requests with `If-None-Match` (ETag) or `If-Modified-Since`
 5. **Handles 304 Not Modified** responses by updating and serving the cached entry
 6. **Stores new responses** according to caching rules

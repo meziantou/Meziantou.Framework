@@ -70,9 +70,46 @@ Assert.Equal(HttpStatusCode.GatewayTimeout, response.StatusCode);
 
 A stale response is revalidated as described in [Freshness and validation](04-FreshnessAndValidation.md#revalidation).
 
-A request that carries its own precondition (`If-None-Match`, `If-Modified-Since`, `If-Match`, `If-Unmodified-Since` or
-`If-Range`) bypasses the cache: it is sent to the server unchanged, so the caller gets the `304` or the `200` it asked
-for, and the response is not stored.
+A request that carries its own precondition (`If-None-Match`, `If-Modified-Since`, `If-Match` or `If-Unmodified-Since`)
+bypasses the cache: it is sent to the server unchanged, so the caller gets the `304` or the `200` it asked for, and the
+response is not stored.
+
+## Range requests
+
+A `GET` request with a `Range` header asks for part of the response. When the cache holds a complete `200` response it can
+serve, it answers from it:
+
+<!-- ref:../../../tests/Meziantou.Framework.Http.Caching.Tests/RangeRequestsTests.cs;region=HttpCaching_RangeRequest;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The server answers with a complete response that is fresh for 100 seconds: "full content here"
+using var response = await httpClient.GetAsync("https://example.com/file.txt");
+
+// The cache serves the range from the stored response, without contacting the server
+using var rangeRequest = new HttpRequestMessage(HttpMethod.Get, "https://example.com/file.txt");
+rangeRequest.Headers.Range = new RangeHeaderValue(5, 11);
+using var rangeResponse = await httpClient.SendAsync(rangeRequest);
+
+Assert.Equal(HttpStatusCode.PartialContent, rangeResponse.StatusCode);
+Assert.Equal("bytes 5-11/17", rangeResponse.Content.Headers.ContentRange?.ToString());
+Assert.Equal("content", await rangeResponse.Content.ReadAsStringAsync());
+```
+<!-- endref -->
+
+- A single range gets a `206 Partial Content` response with a `Content-Range` header. Open-ended (`bytes=13-`) and suffix
+  (`bytes=-4`) ranges are supported.
+- Several ranges get a `206` response with a `multipart/byteranges` body, one part per range. When the ranges overlap and
+  add up to more than the response, when there are more than 16, or when the response has a `Content-Encoding`, the
+  complete response is sent instead.
+- When no range is within the response, the cache answers `416 Range Not Satisfiable`, with `Content-Range: bytes */<length>`.
+- A `Range` header that is invalid, or in another unit than `bytes`, is ignored: the complete response is served.
+- `If-Range` is evaluated against the stored response: the range is served when the entity tag matches its `ETag` (both
+  strong), or when the date matches its `Last-Modified` date. Otherwise, the complete response is served.
+- A stale stored response is revalidated first, with the `Range` header. When the server answers `304`, the range is
+  served from the refreshed response; otherwise, the response of the server is returned.
+
+When the cache has no response to serve, the request is sent to the server unchanged. A `206` response is never stored,
+so only the complete responses the cache already holds can answer range requests. `Range` only applies to `GET`: a `HEAD`
+request is answered as if it had none.
 
 ## Immutable responses
 

@@ -7,8 +7,10 @@ namespace Meziantou.Framework.Http.Caching.Fuzz;
 /// <summary>
 /// The cache reads the headers of arbitrary servers and the entries of an external store. The Structured Fields parser and
 /// the <c>No-Vary-Search</c> parser never throw and agree with a serializer, the persisted payload of a response round
-/// trips and a corrupted one is rejected by the validation that turns it into a cache miss, and the caching handler,
-/// driven end to end in memory, never throws and only serves responses it stored for the same method and URL.
+/// trips and a corrupted one is rejected by the validation that turns it into a cache miss, the ranges of a range request
+/// stay within the stored response, and the caching handler,
+/// driven end to end in memory, never throws and only serves responses it stored for the same method and URL. A bounded
+/// in-memory store evicts the same entries as a reference LRU cache.
 /// </summary>
 public static partial class HttpCachingFuzzTargets
 {
@@ -30,6 +32,8 @@ public static partial class HttpCachingFuzzTargets
         new("http-caching-response-serializer", ResponseSerializerRoundTrip) { Seeds = GetResponseSerializerSeeds, Dictionary = SerializerTokens },
         new("http-caching-handler", Handler) { Seeds = GetHandlerSeeds, Dictionary = HandlerTokens },
         new("http-caching-persistence-entry", PersistenceEntry) { Seeds = GetPersistenceEntrySeeds, Dictionary = [.. StructuredFieldTokens, .. QueryTokens] },
+        new("http-caching-byte-ranges", ByteRangesTarget) { Seeds = GetByteRangesSeeds, Dictionary = ByteRangeTokens },
+        new("http-caching-bounded-store", BoundedStore) { Seeds = GetBoundedStoreSeeds },
     ];
 
     /// <summary>

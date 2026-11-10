@@ -19,7 +19,13 @@ internal static class ResponseSerializer
     /// Base64-encoded and the headers are added, so a body already over the limit can never fit and the
     /// serialization is skipped entirely.
     /// </remarks>
-    public static async Task<byte[]?> SerializeAsync(HttpResponseMessage response, long? maximumSize, CancellationToken cancellationToken)
+    public static Task<byte[]?> SerializeAsync(HttpResponseMessage response, long? maximumSize, CancellationToken cancellationToken)
+    {
+        return SerializeAsync(response, maximumSize, excludedHeaders: null, cancellationToken);
+    }
+
+    /// <summary>Serializes the response without the <paramref name="excludedHeaders"/>, or returns <see langword="null"/> when it exceeds <paramref name="maximumSize"/>.</summary>
+    public static async Task<byte[]?> SerializeAsync(HttpResponseMessage response, long? maximumSize, ICollection<string>? excludedHeaders, CancellationToken cancellationToken)
     {
         byte[]? content;
         if (response.Content is null)
@@ -41,9 +47,9 @@ internal static class ResponseSerializer
         {
             HttpStatusCode = response.StatusCode,
             ReasonPhrase = response.ReasonPhrase,
-            Headers = CopyHeaders(response.Headers),
-            ContentHeaders = CopyHeaders(response.Content?.Headers),
-            TrailingHeaders = CopyHeaders(response.TrailingHeaders),
+            Headers = CopyHeaders(response.Headers, excludedHeaders),
+            ContentHeaders = CopyHeaders(response.Content?.Headers, excludedHeaders),
+            TrailingHeaders = CopyHeaders(response.TrailingHeaders, excludedHeaders),
             Content = content,
         };
 
@@ -72,7 +78,14 @@ internal static class ResponseSerializer
 
     public static HttpResponseMessage Deserialize(byte[] data)
     {
+        return Deserialize(data, out _);
+    }
+
+    /// <summary>Deserializes the response, and returns its body in <paramref name="content"/>.</summary>
+    public static HttpResponseMessage Deserialize(byte[] data, out byte[]? content)
+    {
         var serialized = DeserializeMessage(data);
+        content = serialized.Content;
 
         var response = new HttpResponseMessage(serialized.HttpStatusCode)
         {
@@ -111,7 +124,7 @@ internal static class ResponseSerializer
         return response;
     }
 
-    /// <summary>Deserializes the payload, or throws a <see cref="JsonException"/> when it does not describe a response <see cref="Deserialize"/> can build.</summary>
+    /// <summary>Deserializes the payload, or throws a <see cref="JsonException"/> when it does not describe a response <see cref="Deserialize(byte[])"/> can build.</summary>
     private static SerializedResponseMessage DeserializeMessage(ReadOnlySpan<byte> data)
     {
         var serialized = JsonSerializer.Deserialize(data, SerializationContext.Default.SerializedResponseMessage)
@@ -133,7 +146,7 @@ internal static class ResponseSerializer
     }
 
     [return: NotNullIfNotNull(nameof(headers))]
-    private static List<KeyValuePair<string, string[]>>? CopyHeaders(HttpHeaders? headers)
+    private static List<KeyValuePair<string, string[]>>? CopyHeaders(HttpHeaders? headers, ICollection<string>? excludedHeaders)
     {
         if (headers is null)
             return null;
@@ -141,9 +154,24 @@ internal static class ResponseSerializer
         var result = new List<KeyValuePair<string, string[]>>();
         foreach (var header in headers)
         {
+            if (excludedHeaders is not null && IsExcluded(header.Key, excludedHeaders))
+                continue;
+
             result.Add(new KeyValuePair<string, string[]>(header.Key, header.Value.ToArray()));
         }
 
         return result;
+    }
+
+    private static bool IsExcluded(string name, ICollection<string> excludedHeaders)
+    {
+        // RFC 9110 Section 5.1: field names are case-insensitive
+        foreach (var excludedHeader in excludedHeaders)
+        {
+            if (string.Equals(name, excludedHeader.Trim(), StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 }

@@ -30,4 +30,29 @@ public sealed class HttpCachingOptions
     /// Default is null (all responses that meet caching requirements are cached).
     /// </summary>
     public Func<HttpResponseMessage, bool>? ShouldCacheResponse { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the cache follows the rules of a shared cache (RFC 9111), such as a proxy
+    /// serving several users.
+    /// </summary>
+    /// <remarks>
+    /// A shared cache does not store the responses marked <c>private</c>, does not store the responses to requests with an
+    /// <c>Authorization</c> header unless the response allows it (<c>public</c>, <c>s-maxage</c> or <c>must-revalidate</c>),
+    /// uses <c>s-maxage</c> over <c>max-age</c> and <c>Expires</c>, and honors <c>proxy-revalidate</c>.
+    /// Default is <see langword="false"/> (a private cache that belongs to a single user).
+    /// </remarks>
+    public bool IsSharedCache { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether concurrent requests for the same URL share a single request to the server.
+    /// </summary>
+    /// <remarks>
+    /// When a request must go to the server (no stored response, or a stale one to revalidate), the concurrent requests with
+    /// the same method and URL wait for it to complete, then look up the cache again. The ones the stored response can
+    /// answer are served from the cache; the others, for instance because the response varies on a header they send
+    /// differently, or because it could not be stored, go to the server themselves.
+    /// Requests with a <c>Range</c> header do not take part in coalescing.
+    /// Default is <see langword="false"/>.
+    /// </remarks>
+    public bool CoalesceRequests { get; set; }
 }

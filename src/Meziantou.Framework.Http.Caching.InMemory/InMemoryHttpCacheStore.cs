@@ -14,6 +14,48 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
     // nothing used, since no two threads ever added to the same instance.
     private readonly ConcurrentDictionary<string, ImmutableArray<HttpCachePersistenceEntry>> _entries = new(StringComparer.Ordinal);
 
+    // Null when the store is unbounded. Otherwise, every change of _entries happens while holding its lock, so that the
+    // entries and their accounting stay consistent.
+    private readonly LruTracker? _lru;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InMemoryHttpCacheStore"/> class with no limit.
+    /// </summary>
+    public InMemoryHttpCacheStore()
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InMemoryHttpCacheStore"/> class that evicts the least recently used
+    /// entries to stay within <paramref name="limits"/>.
+    /// </summary>
+    /// <param name="limits">The bounds of the store, or <see langword="null"/> for no limit. The values are read once, by the constructor.</param>
+    public InMemoryHttpCacheStore(HttpCacheStoreLimits? limits)
+    {
+        if (limits is not null && (limits.MaximumEntryCount is not null || limits.MaximumTotalSize is not null))
+        {
+            _lru = new LruTracker(limits.MaximumEntryCount ?? long.MaxValue, limits.MaximumTotalSize ?? long.MaxValue);
+        }
+    }
+
+    /// <summary>Gets the number of entries and their total size, or <see langword="null"/> when the store is unbounded.</summary>
+    internal (long EntryCount, long TotalSize)? GetUsage()
+    {
+        if (_lru is null)
+            return null;
+
+        lock (_lru.SyncRoot)
+        {
+            return (_lru.EntryCount, _lru.TotalSize);
+        }
+    }
+
+    /// <summary>Gets the stored entries without changing their recency.</summary>
+    internal Dictionary<string, ImmutableArray<HttpCachePersistenceEntry>> GetSnapshot()
+    {
+        return _entries.ToDictionary(StringComparer.Ordinal);
+    }
+
     /// <summary>
     /// Saves all in-memory cache entries to a JSON file.
     /// </summary>
@@ -101,7 +143,7 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
 
         if (!File.Exists(filePath))
         {
-            _entries.Clear();
+            Clear();
             return;
         }
 
@@ -116,15 +158,54 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
             snapshot = null;
         }
 
-        _entries.Clear();
-        if (snapshot?.Entries is null)
-            return;
-
-        foreach (var (primaryKey, entries) in snapshot.Entries)
+        if (_lru is null)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            _entries.Clear();
+            if (snapshot?.Entries is null)
+                return;
 
-            _entries[primaryKey] = [.. entries.Select(static entry => entry.Clone())];
+            foreach (var (primaryKey, entries) in snapshot.Entries)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                _entries[primaryKey] = [.. entries.Select(static entry => entry.Clone())];
+            }
+
+            return;
+        }
+
+        lock (_lru.SyncRoot)
+        {
+            _entries.Clear();
+            _lru.Clear();
+            if (snapshot?.Entries is null)
+                return;
+
+            // The file does not record the recency of the entries: they are used in the order of the file
+            foreach (var (primaryKey, entries) in snapshot.Entries)
+            {
+                foreach (var entry in entries)
+                {
+                    SetEntryCore(primaryKey, entry.Clone(), _lru);
+                }
+            }
+
+            EvictCore(_lru);
+        }
+    }
+
+    private void Clear()
+    {
+        if (_lru is null)
+        {
+            _entries.Clear();
+            return;
+        }
+
+        lock (_lru.SyncRoot)
+        {
+            _entries.Clear();
+            _lru.Clear();
         }
     }
 
@@ -135,8 +216,25 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!_entries.TryGetValue(primaryKey, out var entries))
-            return ValueTask.FromResult<IReadOnlyCollection<HttpCachePersistenceEntry>>(Array.Empty<HttpCachePersistenceEntry>());
+        ImmutableArray<HttpCachePersistenceEntry> entries;
+        if (_lru is null)
+        {
+            if (!_entries.TryGetValue(primaryKey, out entries))
+                return ValueTask.FromResult<IReadOnlyCollection<HttpCachePersistenceEntry>>(Array.Empty<HttpCachePersistenceEntry>());
+        }
+        else
+        {
+            lock (_lru.SyncRoot)
+            {
+                if (!_entries.TryGetValue(primaryKey, out entries))
+                    return ValueTask.FromResult<IReadOnlyCollection<HttpCachePersistenceEntry>>(Array.Empty<HttpCachePersistenceEntry>());
+
+                foreach (var entry in entries)
+                {
+                    _lru.Touch(entry);
+                }
+            }
+        }
 
         // The entries are handed out as clones: HttpCachePersistenceEntry is public and mutable, so a
         // caller must not be able to reach into what the store holds.
@@ -158,13 +256,67 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
         cancellationToken.ThrowIfCancellationRequested();
 
         var storedEntry = entry.Clone();
-        _entries.AddOrUpdate(
-            primaryKey,
-            static (_, added) => [added],
-            static (_, existing, added) => existing.RemoveAll(candidate => HttpCachePersistenceEntry.HasSameSecondaryKey(candidate, added)).Add(added),
-            storedEntry);
+        if (_lru is null)
+        {
+            _entries.AddOrUpdate(
+                primaryKey,
+                static (_, added) => [added],
+                static (_, existing, added) => existing.RemoveAll(candidate => HttpCachePersistenceEntry.HasSameSecondaryKey(candidate, added)).Add(added),
+                storedEntry);
+        }
+        else
+        {
+            lock (_lru.SyncRoot)
+            {
+                SetEntryCore(primaryKey, storedEntry, _lru);
+                EvictCore(_lru);
+            }
+        }
 
         return ValueTask.CompletedTask;
+    }
+
+    private void SetEntryCore(string primaryKey, HttpCachePersistenceEntry storedEntry, LruTracker lru)
+    {
+        if (_entries.TryGetValue(primaryKey, out var existing))
+        {
+            foreach (var candidate in existing)
+            {
+                if (HttpCachePersistenceEntry.HasSameSecondaryKey(candidate, storedEntry))
+                {
+                    lru.Remove(candidate);
+                }
+            }
+
+            _entries[primaryKey] = existing.RemoveAll(candidate => HttpCachePersistenceEntry.HasSameSecondaryKey(candidate, storedEntry)).Add(storedEntry);
+        }
+        else
+        {
+            _entries[primaryKey] = [storedEntry];
+        }
+
+        lru.Add(primaryKey, storedEntry);
+    }
+
+    // The entry that was just written is the most recently used, so it is evicted last: only when it alone exceeds the limits.
+    private void EvictCore(LruTracker lru)
+    {
+        while (lru.IsOverLimit && lru.TryGetLeastRecentlyUsed(out var primaryKey, out var entry))
+        {
+            lru.Remove(entry);
+            if (_entries.TryGetValue(primaryKey, out var entries))
+            {
+                var keptEntries = entries.Remove(entry, ReferenceEqualityComparer.Instance);
+                if (keptEntries.IsEmpty)
+                {
+                    _entries.TryRemove(primaryKey, out _);
+                }
+                else
+                {
+                    _entries[primaryKey] = keptEntries;
+                }
+            }
+        }
     }
 
     /// <inheritdoc />
@@ -174,7 +326,23 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        _entries.TryRemove(primaryKey, out _);
+        if (_lru is null)
+        {
+            _entries.TryRemove(primaryKey, out _);
+            return ValueTask.CompletedTask;
+        }
+
+        lock (_lru.SyncRoot)
+        {
+            if (_entries.TryRemove(primaryKey, out var entries))
+            {
+                foreach (var entry in entries)
+                {
+                    _lru.Remove(entry);
+                }
+            }
+        }
+
         return ValueTask.CompletedTask;
     }
 
@@ -195,6 +363,12 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
     public ValueTask PruneObsoleteEntriesAsync(DateTimeOffset now, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        if (_lru is not null)
+        {
+            PruneBoundedEntries(now, _lru, cancellationToken);
+            return ValueTask.CompletedTask;
+        }
 
         foreach (var (primaryKey, _) in _entries)
         {
@@ -224,5 +398,40 @@ public sealed class InMemoryHttpCacheStore : IHttpCacheStore
         }
 
         return ValueTask.CompletedTask;
+    }
+
+    private void PruneBoundedEntries(DateTimeOffset now, LruTracker lru, CancellationToken cancellationToken)
+    {
+        foreach (var (primaryKey, _) in _entries)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            lock (lru.SyncRoot)
+            {
+                if (!_entries.TryGetValue(primaryKey, out var entries))
+                    continue;
+
+                var keptEntries = entries.RemoveAll(entry => entry.IsObsolete(now));
+                if (keptEntries.Length == entries.Length)
+                    continue;
+
+                foreach (var entry in entries)
+                {
+                    if (!keptEntries.Contains(entry, ReferenceEqualityComparer.Instance))
+                    {
+                        lru.Remove(entry);
+                    }
+                }
+
+                if (keptEntries.IsEmpty)
+                {
+                    _entries.TryRemove(primaryKey, out _);
+                }
+                else
+                {
+                    _entries[primaryKey] = keptEntries;
+                }
+            }
+        }
     }
 }

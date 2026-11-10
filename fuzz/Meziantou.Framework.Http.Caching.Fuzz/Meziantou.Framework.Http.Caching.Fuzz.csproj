@@ -14,5 +14,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching\Meziantou.Framework.Http.Caching.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Caching.InMemory\Meziantou.Framework.Http.Caching.InMemory.csproj" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,6 @@
 ---
 title: Cache stores
-description: Keep the cache entries in memory, in a JSON file, in SQLite or in Redis, remove the obsolete ones, or write your own store.
+description: Keep the cache entries in memory, in a JSON file, in SQLite or in Redis, bound their number and size, remove the obsolete ones, or write your own store.
 ---
 
 [HttpCachingDelegateHandler](cref:Meziantou.Framework.Http.Caching.HttpCachingDelegateHandler) keeps its entries in the [IHttpCacheStore](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore) you pass to its constructor. Choose the store
@@ -13,8 +13,9 @@ from where the entries must live:
 | [RedisHttpCacheStore](cref:Meziantou.Framework.Http.Caching.Redis.RedisHttpCacheStore) | `Meziantou.Framework.Http.Caching.Redis` | The cache lives in a Redis server |
 | Your own [IHttpCacheStore](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore) | `Meziantou.Framework.Http.Caching` | The entries go elsewhere |
 
-No store limits its size or evicts entries on its own: an entry stays until a request replaces or invalidates it, or
-until you prune it. See [Removing obsolete entries](#removing-obsolete-entries).
+By default, a store has no size limit: an entry stays until a request replaces or invalidates it, or until you prune it.
+Give the store limits to evict the least recently used entries, see [Bounding the size of a store](#bounding-the-size-of-a-store),
+and remove the entries that can no longer be used, see [Removing obsolete entries](#removing-obsolete-entries).
 
 ## In memory
 
@@ -102,6 +103,59 @@ await cacheStore.PruneObsoleteEntriesAsync();
 - The store does not set an expiration on the keys it writes: Redis keeps the entries until a request replaces or
   invalidates them, or until [PruneObsoleteEntriesAsync](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore.PruneObsoleteEntriesAsync) removes them.
 
+## Bounding the size of a store
+
+A cache that receives many distinct URLs keeps growing. Pass a [HttpCacheStoreLimits](cref:Meziantou.Framework.Http.Caching.HttpCacheStoreLimits) to the constructor of a store to
+bound it:
+
+<!-- ref:../../../tests/Meziantou.Framework.Http.Caching.Tests/PersistenceProvidersTests.cs;region=HttpCaching_BoundedStore;format=md-fenced-code-block;dedent=true -->
+```csharp
+var cacheStore = new InMemoryHttpCacheStore(new HttpCacheStoreLimits
+{
+    // Keep at most 1,000 responses, and at most 50 MB of responses
+    MaximumEntryCount = 1000,
+    MaximumTotalSize = 50 * 1024 * 1024,
+});
+
+using var cachingHandler = new HttpCachingDelegateHandler(originHandler, cacheStore);
+using var httpClient = new HttpClient(cachingHandler);
+```
+<!-- endref -->
+
+| Limit | What it bounds |
+| --- | --- |
+| [MaximumEntryCount](cref:Meziantou.Framework.Http.Caching.HttpCacheStoreLimits.MaximumEntryCount) | The number of entries. Each variant of a response (see [Vary and No-Vary-Search](05-VaryAndNoVarySearch.md)) is an entry |
+| [MaximumTotalSize](cref:Meziantou.Framework.Http.Caching.HttpCacheStoreLimits.MaximumTotalSize) | The total size of the entries, in bytes |
+
+Both are `null`, no limit, by default, and you can set one or both. When a write exceeds a limit, the store evicts the
+least recently used entries until it is within its limits again:
+
+- Reading the entries of a URL and writing an entry make them the most recently used.
+- The size of an entry is the length of its serialized response: the status, the headers and the body. The metadata
+  of the entry, and what the store adds around it (indexes, JSON, keys), are not counted, so the store takes somewhat
+  more space than the limit.
+- An entry larger than [MaximumTotalSize](cref:Meziantou.Framework.Http.Caching.HttpCacheStoreLimits.MaximumTotalSize) is not kept. To skip reading such responses at all, set
+  [MaximumResponseSize](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.MaximumResponseSize) in [the options](09-Options.md#limit-the-size-of-the-stored-responses) too.
+- The limits are enforced when an entry is written, and by [LoadFromFileAsync](cref:Meziantou.Framework.Http.Caching.InMemory.InMemoryHttpCacheStore.LoadFromFileAsync) for the in-memory store. A
+  database that already holds more entries, for instance one written with higher limits, is trimmed on the next write.
+
+Each store keeps the recency of its entries where it keeps the entries:
+
+- [InMemoryHttpCacheStore](cref:Meziantou.Framework.Http.Caching.InMemory.InMemoryHttpCacheStore) tracks them in memory. A bounded store takes a lock for each operation, where an
+  unbounded one takes none. The JSON file does not record the recency: [LoadFromFileAsync](cref:Meziantou.Framework.Http.Caching.InMemory.InMemoryHttpCacheStore.LoadFromFileAsync) uses the entries in
+  the order of the file.
+- [SqliteHttpCacheStore](cref:Meziantou.Framework.Http.Caching.Sqlite.SqliteHttpCacheStore) adds a `LastAccess` column to `HttpCacheEntries`, and keeps the number of entries and
+  their total size in a `HttpCacheStatistics` table, maintained by triggers. A database created by an earlier version is
+  upgraded on first use; its entries are the least recently used ones. A write and the evictions it causes are one
+  transaction, so the limits hold for every process that uses the database. A bounded store writes to the database
+  when it reads entries, to record their recency.
+- [RedisHttpCacheStore](cref:Meziantou.Framework.Http.Caching.Redis.RedisHttpCacheStore) keeps the recency in a sorted set, `<keyPrefix>:recency`, and the sizes and the
+  statistics in two hashes, `<keyPrefix>:sizes` and `<keyPrefix>:statistics`, which Lua scripts update atomically.
+  With Redis Cluster, the keys of the store must be in one slot: use a key prefix with a hash tag, such as
+  `{MyApp}:HttpCache`. The entries written by an unbounded store are not counted.
+
+Give the same limits to every store that shares a SQLite database or a Redis key prefix.
+
 ## Removing obsolete entries
 
 A stale entry is still useful when the cache can revalidate it (it has an `ETag` or a `Last-Modified` date) or serve it
@@ -112,6 +166,10 @@ The three stores have a [PruneObsoleteEntriesAsync](cref:Meziantou.Framework.Htt
 and the ones that can still be used. It compares the entries with the current time, `DateTimeOffset.UtcNow`; an
 overload takes the time to use instead, for instance the time of the [TimeProvider](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions.TimeProvider) of
 [the options](09-Options.md#control-the-clock). Call it from time to time, or before saving an in-memory store.
+
+The stores do not prune on their own. To prune periodically, call it from a background task, for instance a loop over a
+`PeriodicTimer`, or a `BackgroundService` in an ASP.NET Core application. Pruning reads every entry of a SQLite or Redis
+store that has no index for it, so run it every few minutes or hours rather than after each request.
 
 ## Write your own store
 

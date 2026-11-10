@@ -310,6 +310,191 @@ public class ThreadSafetyTests
         }
     }
 
+    [Fact]
+    public async Task Documentation_CoalesceRequests()
+    {
+        var requestCount = 0;
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var originHandler = new GatedResponseHandler(gate.Task, request =>
+        {
+            Interlocked.Increment(ref requestCount);
+            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("content") };
+            response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=600");
+            return response;
+        });
+
+        #region HttpCaching_CoalesceRequests
+        var options = new HttpCachingOptions
+        {
+            // Concurrent requests for the same URL share a single request to the server
+            CoalesceRequests = true,
+        };
+
+        using var cachingHandler = new HttpCachingDelegateHandler(originHandler, new InMemoryHttpCacheStore(), options);
+        using var httpClient = new HttpClient(cachingHandler);
+        #endregion
+
+        var tasks = Enumerable.Range(0, 10)
+            .Select(_ => httpClient.GetStringAsync("http://example.com/test", XunitCancellationToken))
+            .ToArray();
+
+        await Task.Delay(100, XunitCancellationToken);
+        gate.SetResult();
+
+        var bodies = await Task.WhenAll(tasks);
+        Assert.All(bodies, body => Assert.Equal("content", body));
+        Assert.Equal(1, requestCount);
+    }
+
+    [Fact]
+    public async Task WhenCoalescingAndStoredResponseIsStaleThenConcurrentRequestsShareTheRevalidation()
+    {
+        var requestCount = 0;
+        var conditionalRequestCount = 0;
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        gate.SetResult();
+        var timeProvider = new Microsoft.Extensions.Time.Testing.FakeTimeProvider();
+        var revalidationGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var handler = new GatedResponseHandler(gate.Task, request =>
+        {
+            Interlocked.Increment(ref requestCount);
+            if (request.Headers.IfNoneMatch.Count > 0)
+            {
+                Interlocked.Increment(ref conditionalRequestCount);
+                var notModified = new HttpResponseMessage(HttpStatusCode.NotModified);
+                notModified.Headers.TryAddWithoutValidation("Cache-Control", "max-age=600");
+                notModified.Headers.TryAddWithoutValidation("ETag", "\"v1\"");
+                return notModified;
+            }
+
+            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("content") };
+            response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=1");
+            response.Headers.TryAddWithoutValidation("ETag", "\"v1\"");
+            return response;
+        });
+
+        using var cache = new HttpCachingDelegateHandler(handler, new InMemoryHttpCacheStore(), new HttpCachingOptions { CoalesceRequests = true, TimeProvider = timeProvider });
+        using var httpClient = new HttpClient(cache);
+        Assert.Equal("content", await httpClient.GetStringAsync("http://example.com/test", XunitCancellationToken));
+
+        timeProvider.Advance(TimeSpan.FromSeconds(10));
+        handler.Gate = revalidationGate.Task;
+
+        var tasks = Enumerable.Range(0, 10)
+            .Select(_ => httpClient.GetStringAsync("http://example.com/test", XunitCancellationToken))
+            .ToArray();
+
+        await Task.Delay(100, XunitCancellationToken);
+        revalidationGate.SetResult();
+
+        var bodies = await Task.WhenAll(tasks);
+        Assert.All(bodies, body => Assert.Equal("content", body));
+        Assert.Equal(1, conditionalRequestCount);
+        Assert.Equal(2, requestCount);
+    }
+
+    [Fact]
+    public async Task WhenCoalescingAndResponseIsNotStorableThenWaitingRequestsGoToTheServer()
+    {
+        var requestCount = 0;
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var handler = new GatedResponseHandler(gate.Task, request =>
+        {
+            var count = Interlocked.Increment(ref requestCount);
+            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("content " + count.ToString(CultureInfo.InvariantCulture)) };
+            response.Headers.TryAddWithoutValidation("Cache-Control", "no-store");
+            return response;
+        });
+
+        using var cache = new HttpCachingDelegateHandler(handler, new InMemoryHttpCacheStore(), new HttpCachingOptions { CoalesceRequests = true });
+        using var httpClient = new HttpClient(cache);
+
+        var tasks = Enumerable.Range(0, 5)
+            .Select(_ => httpClient.GetStringAsync("http://example.com/test", XunitCancellationToken))
+            .ToArray();
+
+        await Task.Delay(100, XunitCancellationToken);
+        gate.SetResult();
+
+        var bodies = await Task.WhenAll(tasks);
+        Assert.Equal(5, requestCount);
+        Assert.HasCount(5, bodies.Distinct(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task WhenCoalescingAndResponseVariesThenWaitingRequestsWithAnotherVariantGoToTheServer()
+    {
+        var requestCount = 0;
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var handler = new GatedResponseHandler(gate.Task, request =>
+        {
+            Interlocked.Increment(ref requestCount);
+            var language = request.Headers.AcceptLanguage.ToString();
+            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(language) };
+            response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=600");
+            response.Headers.TryAddWithoutValidation("Vary", "Accept-Language");
+            return response;
+        });
+
+        using var cache = new HttpCachingDelegateHandler(handler, new InMemoryHttpCacheStore(), new HttpCachingOptions { CoalesceRequests = true });
+        using var httpClient = new HttpClient(cache);
+
+        async Task<string> Send(string language)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com/test");
+            request.Headers.TryAddWithoutValidation("Accept-Language", language);
+            using var response = await httpClient.SendAsync(request, XunitCancellationToken);
+            return await response.Content.ReadAsStringAsync(XunitCancellationToken);
+        }
+
+        var tasks = new[] { Send("en"), Send("fr"), Send("en"), Send("fr") };
+        await Task.Delay(100, XunitCancellationToken);
+        gate.SetResult();
+
+        var bodies = await Task.WhenAll(tasks);
+        Assert.Equal(["en", "fr", "en", "fr"], bodies);
+        Assert.True(requestCount <= 3, $"Expected at most 3 requests, but got {requestCount}");
+    }
+
+    [Fact]
+    public async Task WhenCoalescingAndWaitingRequestIsCanceledThenItThrows()
+    {
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var handler = new GatedResponseHandler(gate.Task, request =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("content") };
+            response.Headers.TryAddWithoutValidation("Cache-Control", "max-age=600");
+            return response;
+        });
+
+        using var cache = new HttpCachingDelegateHandler(handler, new InMemoryHttpCacheStore(), new HttpCachingOptions { CoalesceRequests = true });
+        using var httpClient = new HttpClient(cache);
+
+        var leader = httpClient.GetStringAsync("http://example.com/test", XunitCancellationToken);
+        await Task.Delay(50, XunitCancellationToken);
+
+        using var cts = new CancellationTokenSource();
+        var waiter = httpClient.GetStringAsync("http://example.com/test", cts.Token);
+        await Task.Delay(50, XunitCancellationToken);
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAsync<TaskCanceledException>(() => waiter);
+
+        gate.SetResult();
+        Assert.Equal("content", await leader);
+    }
+
+    private sealed class GatedResponseHandler(Task gate, Func<HttpRequestMessage, HttpResponseMessage> responseFunc) : HttpMessageHandler
+    {
+        public Task Gate { get; set; } = gate;
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            await Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            return responseFunc(request);
+        }
+    }
+
     private sealed class MockResponseHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFunc) : DelegatingHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

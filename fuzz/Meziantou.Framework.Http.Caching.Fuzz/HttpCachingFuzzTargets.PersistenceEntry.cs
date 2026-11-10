@@ -23,8 +23,9 @@ public static partial class HttpCachingFuzzTargets
     /// time (offsets, <see cref="DateTimeOffset.MinValue"/>, <see cref="DateTimeOffset.MaxValue"/>), any duration
     /// (negative, <see cref="TimeSpan.MinValue"/>, <see cref="TimeSpan.MaxValue"/>), secondary-key headers with either
     /// comparer, any <c>No-Vary-Search</c> value and query. Then the time of the evaluation, a change of the secondary key
-    /// and an offset. Nothing throws; the freshness lifetime and the current age are not negative and agree with
-    /// <see cref="HttpCachePersistenceEntry.IsObsolete"/>, which turns true exactly at the stale time; a clone, the entry
+    /// and an offset. Nothing throws; the freshness lifetimes (of a private and of a shared cache) and the current age are not
+    /// negative and agree with <see cref="HttpCachePersistenceEntry.IsObsolete"/>, which turns true exactly at the stale time
+    /// once the entry is stale for both kinds of cache, and the shared lifetime is <c>s-maxage</c> when there is one; a clone, the entry
     /// with its times in another offset, and the entry read back by the cache give the same results; and
     /// <see cref="HttpCachePersistenceEntry.HasSameSecondaryKey"/> is symmetric and implies equal secondary-key hashes.
     /// </summary>
@@ -40,9 +41,19 @@ public static partial class HttpCachingFuzzTargets
 
         var results = Evaluate(entry, now);
         FuzzAssert.True(results.FreshnessLifetime >= TimeSpan.Zero, $"The freshness lifetime is negative: {results.FreshnessLifetime}");
+        FuzzAssert.True(results.SharedFreshnessLifetime >= TimeSpan.Zero, $"The shared freshness lifetime is negative: {results.SharedFreshnessLifetime}");
+        if (entry.SharedMaxAge is { } sharedMaxAge)
+        {
+            FuzzAssert.Equal(sharedMaxAge > TimeSpan.Zero ? sharedMaxAge : TimeSpan.Zero, results.SharedFreshnessLifetime, "The shared freshness lifetime is not s-maxage");
+        }
+        else
+        {
+            FuzzAssert.Equal(results.FreshnessLifetime, results.SharedFreshnessLifetime, "The shared freshness lifetime differs from the private one without s-maxage");
+        }
+
         FuzzAssert.True(results.CurrentAge >= TimeSpan.Zero, $"The current age is negative: {results.CurrentAge}");
         FuzzAssert.Equal(TimeSpan.Zero, entry.GetStaleTime().Offset, "The stale time is not in UTC");
-        FuzzAssert.Equal(entry.IsUnusableWhenStale && results.CurrentAge >= results.FreshnessLifetime, results.IsObsolete, "IsObsolete disagrees with the current age and the freshness lifetime");
+        FuzzAssert.Equal(entry.IsUnusableWhenStale && results.CurrentAge >= results.FreshnessLifetime && results.CurrentAge >= results.SharedFreshnessLifetime, results.IsObsolete, "IsObsolete disagrees with the current age and the freshness lifetimes");
         FuzzAssert.True(HttpCachePersistenceEntry.HasSameSecondaryKey(entry, entry), "An entry does not have the same secondary key as itself");
 
         CheckStaleTime(entry, results);
@@ -64,6 +75,7 @@ public static partial class HttpCachingFuzzTargets
         // The cache reads the entry with the same times
         var cacheEntry = CacheEntry.FromPersistenceEntry(entry);
         FuzzAssert.Equal(results.FreshnessLifetime, cacheEntry.FreshnessLifetime, "The cache computes another freshness lifetime");
+        FuzzAssert.Equal(results.SharedFreshnessLifetime, cacheEntry.GetFreshnessLifetime(isSharedCache: true), "The shared cache computes another freshness lifetime");
         FuzzAssert.Equal(results.CurrentAge, cacheEntry.CalculateCurrentAge(now), "The cache computes another current age");
         FuzzAssert.Equal(results with { SecondaryKeyHash = "" }, Evaluate(cacheEntry.ToPersistenceEntry(), now) with { SecondaryKeyHash = "" }, "The entry written back by the cache gives other results");
 
@@ -96,7 +108,7 @@ public static partial class HttpCachingFuzzTargets
             FuzzAssert.True(entry.IsObsolete(staleTime), $"The entry is not obsolete at its stale time {staleTime:O}");
         }
 
-        if (staleTime > DateTimeOffset.MinValue && results.FreshnessLifetime > TimeSpan.Zero)
+        if (staleTime > DateTimeOffset.MinValue && (results.FreshnessLifetime > TimeSpan.Zero || results.SharedFreshnessLifetime > TimeSpan.Zero))
         {
             var before = staleTime - TimeSpan.FromTicks(1);
             FuzzAssert.False(entry.IsObsolete(before), $"The entry is already obsolete before its stale time {staleTime:O}");
@@ -105,7 +117,7 @@ public static partial class HttpCachingFuzzTargets
 
     private static EntryResults Evaluate(HttpCachePersistenceEntry entry, DateTimeOffset now)
     {
-        return new EntryResults(entry.GetFreshnessLifetime(), entry.GetCurrentAge(now), entry.GetStaleTime(), entry.IsObsolete(now), entry.ComputeSecondaryKeyHash());
+        return new EntryResults(entry.GetFreshnessLifetime(), entry.GetFreshnessLifetime(isSharedCache: true), entry.GetCurrentAge(now), entry.GetStaleTime(), entry.IsObsolete(now), entry.ComputeSecondaryKeyHash());
     }
 
     private static void AssertSamePersistenceEntry(HttpCachePersistenceEntry expected, HttpCachePersistenceEntry actual)
@@ -386,5 +398,5 @@ public static partial class HttpCachingFuzzTargets
 
     private sealed record SeededPayload(HttpStatusCode StatusCode, byte[] Body, byte[] Payload);
 
-    private sealed record EntryResults(TimeSpan FreshnessLifetime, TimeSpan CurrentAge, DateTimeOffset StaleTime, bool IsObsolete, string SecondaryKeyHash);
+    private sealed record EntryResults(TimeSpan FreshnessLifetime, TimeSpan SharedFreshnessLifetime, TimeSpan CurrentAge, DateTimeOffset StaleTime, bool IsObsolete, string SecondaryKeyHash);
 }

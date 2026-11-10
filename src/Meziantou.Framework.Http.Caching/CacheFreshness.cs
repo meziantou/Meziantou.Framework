@@ -7,12 +7,20 @@ namespace Meziantou.Framework.Http.Caching;
 /// </remarks>
 internal static class CacheFreshness
 {
-    /// <summary>Computes the freshness lifetime per RFC 7234 Section 4.2.1.</summary>
+    /// <summary>Computes the freshness lifetime per RFC 9111 Section 4.2.1.</summary>
     /// <remarks>
-    /// RFC 9111 Section 5.2.2.10: <c>s-maxage</c> is only applicable to shared caches. This is a private
-    /// cache, so the directive is ignored and <c>max-age</c> decides, per the private-cache branch of
-    /// Section 4.2.1.
+    /// RFC 9111 Section 5.2.2.10: <c>s-maxage</c> is only applicable to shared caches, where it overrides
+    /// <c>max-age</c> and <c>Expires</c>. A private cache ignores it.
     /// </remarks>
+    public static TimeSpan GetFreshnessLifetime(TimeSpan? sharedMaxAge, TimeSpan? maxAge, DateTimeOffset? expires, DateTimeOffset responseDate, DateTimeOffset? lastModified, bool isSharedCache)
+    {
+        if (isSharedCache && sharedMaxAge.HasValue)
+            return sharedMaxAge.Value > TimeSpan.Zero ? sharedMaxAge.Value : TimeSpan.Zero;
+
+        return GetFreshnessLifetime(maxAge, expires, responseDate, lastModified);
+    }
+
+    /// <summary>Computes the freshness lifetime of a private cache per RFC 9111 Section 4.2.1.</summary>
     public static TimeSpan GetFreshnessLifetime(TimeSpan? maxAge, DateTimeOffset? expires, DateTimeOffset responseDate, DateTimeOffset? lastModified)
     {
         // 1. Use max-age if present

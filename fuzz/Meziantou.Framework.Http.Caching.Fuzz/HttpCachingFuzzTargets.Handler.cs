@@ -184,16 +184,32 @@ public static partial class HttpCachingFuzzTargets
 
     private static void CheckStoredResponse(OriginResponse stored, HttpRequestMessage request, bool isSharedCache)
     {
+        if (GetStoredResponseError(stored, request, isSharedCache) is { } error)
+            FuzzAssert.Fail(error);
+    }
+
+    private static string? GetStoredResponseError(OriginResponse stored, HttpRequestMessage request, bool isSharedCache)
+    {
         var uri = request.RequestUri!;
-        FuzzAssert.Equal(stored.Method, request.Method, "The cached response was stored for another method");
-        FuzzAssert.Equal(stored.Uri.GetLeftPart(UriPartial.Path), uri.GetLeftPart(UriPartial.Path), "The cached response was stored for another path");
-        FuzzAssert.False(stored.IsNoStore, "A response marked no-store, or the response to a no-store request, is served from the cache");
-        FuzzAssert.False(stored.IsRejected, "A response that ShouldCacheResponse rejected is served from the cache");
-        if (isSharedCache)
-        {
-            FuzzAssert.False(stored.IsPrivate, "A shared cache serves a response marked private");
-            FuzzAssert.False(stored.IsAuthorizationRestricted, "A shared cache serves the response to a request with Authorization that did not allow it");
-        }
+        if (stored.Method != request.Method)
+            return $"The cached response was stored for another method{Environment.NewLine}Expected: {stored.Method}{Environment.NewLine}Actual:   {request.Method}";
+
+        if (!string.Equals(stored.Uri.GetLeftPart(UriPartial.Path), uri.GetLeftPart(UriPartial.Path), StringComparison.Ordinal))
+            return $"The cached response was stored for another path{Environment.NewLine}Expected: {FuzzAssert.Format(stored.Uri.GetLeftPart(UriPartial.Path))}{Environment.NewLine}Actual:   {FuzzAssert.Format(uri.GetLeftPart(UriPartial.Path))}";
+
+        if (stored.IsNoStore)
+            return "A response marked no-store, or the response to a no-store request, is served from the cache";
+
+        if (stored.IsRejected)
+            return "A response that ShouldCacheResponse rejected is served from the cache";
+
+        if (isSharedCache && stored.IsPrivate)
+            return "A shared cache serves a response marked private";
+
+        if (isSharedCache && stored.IsAuthorizationRestricted)
+            return "A shared cache serves the response to a request with Authorization that did not allow it";
+
+        return null;
     }
 
     /// <summary>A 206 or 416 response the cache built from a stored 200 response, to answer a range request.</summary>
@@ -227,16 +243,22 @@ public static partial class HttpCachingFuzzTargets
         if (seeded is not null && seeded.Payload.StatusCode is HttpStatusCode.OK && seeded.Payload.Body.Length == length && seeded.Payload.Body.AsSpan(first, body.Length).SequenceEqual(body))
             return;
 
+        // The range of a body can match the bodies of several responses (they only differ by their "#index:" prefix), so
+        // the response is valid when one of them could have been stored for this request
+        string? firstError = null;
         foreach (var (completeBody, stored) in origin.GetResponses())
         {
             if (stored.StatusCode is not HttpStatusCode.OK || completeBody.Length != length || !completeBody.AsSpan(first, body.Length).SequenceEqual(body))
                 continue;
 
-            CheckStoredResponse(stored, request, isSharedCache);
-            return;
+            var error = GetStoredResponseError(stored, request, isSharedCache);
+            if (error is null)
+                return;
+
+            firstError ??= error;
         }
 
-        FuzzAssert.Fail($"The body of the 206 response is not the range {contentRange} of a 200 response of the origin");
+        FuzzAssert.Fail(firstError ?? $"The body of the 206 response is not the range {contentRange} of a 200 response of the origin");
     }
 
     /// <summary>Reads the method and the kind of key (bits 0 and 1), the URL, the payload, and the metadata of the entry the store starts with.</summary>

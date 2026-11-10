@@ -1,6 +1,7 @@
 using Meziantou.Framework.Markdown.Extensions.CustomContainers;
 using Meziantou.Framework.Markdown.Extensions.Figures;
 using Meziantou.Framework.Markdown.Renderers.Roundtrip;
+using Meziantou.Framework.Markdown.Syntax;
 using static Meziantou.Framework.Markdown.Tests.TestRoundtrip;
 
 namespace Meziantou.Framework.Markdown.Tests.RoundtripSpecs;
@@ -184,6 +185,19 @@ public class TestFencedCodeBlock
     [InlineData("```i\ta a2 a3 a4 \n```")]
     public void TestInfoArguments(string value)
     {
+        RoundTrip(value);
+    }
+
+    [Theory]
+    [InlineData("a\n````` b c```d\n`````x\n")]
+    [InlineData("a\n``` b c d`\n")]
+    [InlineData("a\n``` b \tc`\n")]
+    public void TestBacktickInArgumentsIsNotAFence(string value)
+    {
+        // The roundtrip parser only checked the first characters of the arguments
+        var pipeline = new MarkdownPipelineBuilder().EnableTrackTrivia().Build();
+        Assert.IsType<ParagraphBlock>(MarkdownConverter.Parse(value, pipeline)[0]);
+        Assert.Equal(MarkdownConverter.ToHtml(value), MarkdownConverter.ToHtml(value, pipeline));
         RoundTrip(value);
     }
 

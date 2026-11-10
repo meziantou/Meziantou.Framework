@@ -40,6 +40,8 @@ Assert.Equal((3, 11), (error.Line, error.Column));
 
 [MermaidParseOptions](cref:Meziantou.Framework.Mermaid.MermaidParseOptions) limits the size of the text, the
 number of nodes and edges and the depth of the nesting, as Mermaid does: keep the limits when the text comes from users.
+The depth also bounds the expressions of a railroad diagram: each group, and each operator such as `*`, `?`, `+` or the
+`-` of an EBNF exception, nests the expression one level deeper. `(b*)*` has the same depth as `b**`.
 
 ## Warnings
 

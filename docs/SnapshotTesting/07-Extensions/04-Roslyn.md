@@ -8,6 +8,9 @@ an analyzer is a single [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTes
 
 <InstallNuGetPackage Id="Meziantou.Framework.SnapshotTesting.Roslyn" />
 
+The package depends on `Microsoft.CodeAnalysis.Common` 5.0 or later. When the test project references an older
+version of a Roslyn package directly, NuGet reports a downgrade error (`NU1605`): update that reference to 5.0 or later.
+
 ## Set up
 
 Call [AddRoslyn()](cref:Meziantou.Framework.SnapshotTesting.Roslyn.SnapshotSettingsRoslynExtensions.AddRoslyn) on [SnapshotSettings.Default](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings.Default) in a module initializer ([AddRoslyn](cref:Meziantou.Framework.SnapshotTesting.Roslyn.SnapshotSettingsRoslynExtensions.AddRoslyn) is in the

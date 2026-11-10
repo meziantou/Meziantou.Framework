@@ -12,6 +12,9 @@ Add the `Meziantou.Framework.Assertions` package to your test project:
 The package contains the [Assert](cref:Meziantou.Framework.Assertions.Assert) class and the [analyzers](11-AnalyzerRules.md): they are enabled as soon as the
 package is referenced.
 
+The analyzers require the C# compiler of Roslyn 5.0 or later, which ships with the .NET 10 SDK and Visual Studio 2026.
+An older compiler reports warning `CS8032` and skips them; the [Assert](cref:Meziantou.Framework.Assertions.Assert) class works with any compiler.
+
 ## Use it as the Assert class
 
 Test projects usually import the namespace of their test framework, whose [Assert](cref:Meziantou.Framework.Assertions.Assert) class would hide this one. Add a

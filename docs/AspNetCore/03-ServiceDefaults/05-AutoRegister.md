@@ -9,6 +9,9 @@ service defaults:
 
 <InstallNuGetPackage Id="Meziantou.AspNetCore.ServiceDefaults,Meziantou.AspNetCore.ServiceDefaults.AutoRegister" />
 
+The generator requires the C# compiler of Roslyn 5.0 or later, which ships with the .NET 10 SDK and
+Visual Studio 2026. An older compiler cannot load it: it reports warning `CS8032`, and the generated code is missing.
+
 <!-- ref:../../../tests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests/Tests.cs;region=ServiceDefaultsAutoRegister_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 var builder = WebApplication.CreateBuilder(args);

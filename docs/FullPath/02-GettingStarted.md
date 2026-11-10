@@ -12,6 +12,9 @@ Add the `Meziantou.Framework.FullPath` package to a project:
 The package also adds the [analyzer](10-Analyzer/01-Overview.md) to C# projects. The examples of this documentation
 omit the `using` directives: they need `using Meziantou.Framework;`.
 
+The analyzer requires the C# compiler of Roslyn 5.0 or later, which ships with the .NET 10 SDK and Visual Studio 2026.
+An older compiler reports warning `CS8032` and skips it; [FullPath](cref:Meziantou.Framework.FullPath) works with any compiler.
+
 ## Create and use paths
 
 Create a path, combine it with the `/` operator, and pass it to the file APIs:

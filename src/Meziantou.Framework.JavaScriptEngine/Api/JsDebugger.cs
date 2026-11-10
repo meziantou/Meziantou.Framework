@@ -82,6 +82,9 @@ public readonly struct JsDebugEvent
     /// <summary>Gets the position of the start of the statement.</summary>
     public JsSourceLocation Location => JsDebugFrame.GetLocation(_code, _pc);
 
+    /// <summary>The URL of the code of the statement, without computing its line and column.</summary>
+    internal string? Url => _code.Source.Url;
+
     /// <summary>Captures the stack trace of the running code, in the format of the <c>stack</c> property of the errors (without the first line).</summary>
     public string CaptureStackTrace() => Engine.CaptureStackTrace();
 

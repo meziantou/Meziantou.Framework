@@ -36,11 +36,8 @@ public sealed class JsBreakpoint
 
     internal void IncrementHitCount() => Interlocked.Increment(ref _hitCount);
 
-    internal bool Matches(JsSourceLocation location)
-    {
-        return IsEnabled
-            && location.Line == Line
-            && (Column is null || location.Column == Column)
-            && string.Equals(location.Url, Url, StringComparison.Ordinal);
-    }
+    /// <summary>Whether the breakpoint can pause the code of the URL: checked before the line and column, which cost more to compute.</summary>
+    internal bool MatchesUrl(string? url) => IsEnabled && string.Equals(url, Url, StringComparison.Ordinal);
+
+    internal bool MatchesPosition(JsSourceLocation location) => location.Line == Line && (Column is null || location.Column == Column);
 }

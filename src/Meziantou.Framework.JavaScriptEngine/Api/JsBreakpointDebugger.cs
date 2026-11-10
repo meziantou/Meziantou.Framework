@@ -163,10 +163,15 @@ public class JsBreakpointDebugger : JsDebugger
         if (breakpoints.Length == 0)
             return null;
 
-        var location = debugEvent.Location;
+        var url = debugEvent.Url;
+        JsSourceLocation? location = null;
         foreach (var breakpoint in breakpoints)
         {
-            if (!breakpoint.Matches(location))
+            if (!breakpoint.MatchesUrl(url))
+                continue;
+
+            location ??= debugEvent.Location;
+            if (!breakpoint.MatchesPosition(location.Value))
                 continue;
 
             if (breakpoint.Condition is not { } condition)

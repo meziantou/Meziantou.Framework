@@ -4649,6 +4649,22 @@ public sealed class HtmlToMarkdownConverterTests
         AssertHtmlToMarkdown(html, "text");
     }
 
+    [Theory]
+    [InlineData("a\n\nb")]
+    [InlineData("<script>x</script>a")]
+    public void DeeplyNestedRawHtml_DoesNotOverflowTheStack(string content)
+    {
+        var html = "<x-a>"
+            + string.Concat(Enumerable.Repeat("<div>", NestingDepthBeyondStackLimit))
+            + content
+            + string.Concat(Enumerable.Repeat("</div>", NestingDepthBeyondStackLimit))
+            + "</x-a>";
+
+        var markdown = HtmlToMarkdown.Convert(html);
+        Assert.StartsWith("<x-a><div><div>", markdown, StringComparison.Ordinal);
+        Assert.DoesNotContain("<script>", markdown, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void DeeplyNestedEmphasis_DoesNotOverflowTheStack()
     {

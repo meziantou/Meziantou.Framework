@@ -1038,13 +1038,46 @@ public static class HtmlToMarkdown
         if (element.QuerySelector(StrippedElementsSelector) is null)
             return element.OuterHtml;
 
-        var clone = (Element)element.CloneNode(subtree: true);
-        foreach (var stripped in clone.QuerySelectorAll<Element>(StrippedElementsSelector))
+        return CopyWithoutStrippedElements(element).OuterHtml;
+    }
+
+    /// <summary>
+    /// Copies an element and its descendants, except the script, style and noscript elements. The copy uses an
+    /// explicit stack: <see cref="Node.CloneNode(bool)"/> with a subtree recurses once per nesting level, so a deeply
+    /// nested document would overflow the call stack.
+    /// </summary>
+    private static Element CopyWithoutStrippedElements(Element element)
+    {
+        var copy = (Element)element.CloneNode(subtree: false);
+        var stack = new Stack<(Node Source, Node Copy)>();
+        Push(stack, element, copy);
+        while (stack.Count > 0)
         {
-            stripped.Remove();
+            var (source, target) = stack.Pop();
+            for (var child = source.FirstChild; child is not null; child = child.NextSibling)
+            {
+                if (IsStrippedElement(child))
+                    continue;
+
+                var childCopy = child.CloneNode(subtree: false);
+                target.AppendChild(childCopy);
+                Push(stack, child, childCopy);
+            }
         }
 
-        return clone.OuterHtml;
+        // Removing an element can leave two text nodes side by side
+        copy.Normalize();
+        return copy;
+
+        static void Push(Stack<(Node Source, Node Copy)> stack, Node source, Node copy)
+        {
+            if (source.FirstChild is not null)
+                stack.Push((source, copy));
+
+            // The content of a template is not one of its children
+            if (source is HtmlTemplateElement template && copy is HtmlTemplateElement templateCopy && template.Content.FirstChild is not null)
+                stack.Push((template.Content, templateCopy.Content));
+        }
     }
 
     /// <summary>
@@ -1060,15 +1093,7 @@ public static class HtmlToMarkdown
         if (!ContainsBlankLine(html))
             return html;
 
-        var clone = (Element)element.CloneNode(subtree: true);
-        foreach (var stripped in clone.QuerySelectorAll<Element>(StrippedElementsSelector))
-        {
-            stripped.Remove();
-        }
-
-        // Removing an element can leave two text nodes side by side, whose text forms a blank line
-        clone.Normalize();
-
+        var clone = CopyWithoutStrippedElements(element);
         var document = element.OwnerDocument!;
         foreach (var node in clone.DescendantsAndSelf().ToList())
         {

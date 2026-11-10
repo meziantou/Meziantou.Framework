@@ -49,6 +49,20 @@ public sealed class DnsClientOptions
     /// <summary>Gets or sets the HTTP message handler for DNS over HTTPS. When <see langword="null"/>, a default handler is used.</summary>
     public HttpMessageHandler? HttpHandler { get; set; }
 
+    /// <summary>
+    /// Gets or sets the key that signs the queries and authenticates the responses with TSIG (RFC 8945). Default is
+    /// <see langword="null"/>: messages are not signed. When it is set, a response that is not signed with the key is
+    /// rejected with a <see cref="DnsProtocolException"/>.
+    /// </summary>
+    public DnsTsigKey? TsigKey { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the queries carry DNS cookies (RFC 7873), which protect against off-path
+    /// spoofing and let the server recognize the client. Default is <see langword="false"/>. It requires
+    /// <see cref="EnableEdns"/>.
+    /// </summary>
+    public bool EnableCookies { get; set; }
+
     /// <summary>Gets or sets the resolver used to resolve DNS server hostnames to IP addresses.</summary>
     public Func<string, IReadOnlyList<IPAddress>>? ServerAddressResolver { get; set; }
 }

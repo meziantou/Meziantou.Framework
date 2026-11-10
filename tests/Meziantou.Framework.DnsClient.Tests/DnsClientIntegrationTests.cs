@@ -815,6 +815,366 @@ public sealed class DnsClientIntegrationTests
         Assert.Equal(IPAddress.Parse("192.0.2.10"), Assert.Single(response.Answers.OfType<DnsARecord>()).Address);
     }
 
+    [Fact]
+    public async Task Local_ZoneTransfer_ReturnsTheWholeZone()
+    {
+        await using var server = LocalZoneTransferServer.Start();
+        var serverAddress = server.Address;
+
+        #region DnsClient_ZoneTransfer
+        using var client = new DnsClient(serverAddress, DnsClientProtocol.Tcp);
+
+        var records = new List<DnsRecord>();
+        await foreach (var message in client.TransferZoneAsync("example.com"))
+        {
+            Assert.Equal(DnsResponseCode.NoError, message.Header.ResponseCode);
+            records.AddRange(message.Answers);
+        }
+
+        // The transfer starts and ends with the SOA record of the zone
+        Assert.Equal(2u, Assert.IsType<DnsSoaRecord>(records[0]).Serial);
+        Assert.Equal(2u, Assert.IsType<DnsSoaRecord>(records[^1]).Serial);
+
+        var addresses = records.OfType<DnsARecord>().Select(record => $"{record.Name} {record.Address}").ToList();
+        Assert.Equal(["www.example.com 192.0.2.11", "mail.example.com 192.0.2.20"], addresses);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Local_ZoneTransfer_OverAUdpClient_UsesTcp()
+    {
+        await using var server = LocalZoneTransferServer.Start();
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Udp);
+
+        var messages = await ToListAsync(client.TransferZoneAsync("example.com", XunitCancellationToken));
+
+        Assert.HasCount(3, messages);
+        Assert.Empty(messages[1].Questions);
+    }
+
+    [Fact]
+    public async Task Local_IncrementalZoneTransfer_ReturnsTheDifferences()
+    {
+        await using var server = LocalZoneTransferServer.Start();
+        var serverAddress = server.Address;
+
+        #region DnsClient_IncrementalZoneTransfer
+        using var client = new DnsClient(serverAddress, DnsClientProtocol.Tcp);
+
+        // The client has the version 1 of the zone
+        var records = new List<DnsRecord>();
+        await foreach (var message in client.TransferZoneAsync("example.com", currentSerial: 1))
+        {
+            records.AddRange(message.Answers);
+        }
+
+        // The current SOA record, then each version: its old SOA record and the deleted records, its new SOA record and
+        // the added records, and the current SOA record again
+        var lines = records.Select(record => record switch
+        {
+            DnsSoaRecord soa => $"SOA {soa.Serial}",
+            DnsARecord a => $"A {a.Name} {a.Address}",
+            _ => record.RecordType.ToString(),
+        }).ToList();
+        Assert.Equal(["SOA 2", "SOA 1", "A www.example.com 192.0.2.10", "SOA 2", "A www.example.com 192.0.2.11", "SOA 2"], lines);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Local_IncrementalZoneTransfer_UpToDate_ReturnsTheSoaRecordAlone()
+    {
+        await using var server = LocalZoneTransferServer.Start();
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Tcp);
+
+        var messages = await ToListAsync(client.TransferZoneAsync("example.com", currentSerial: 2, XunitCancellationToken));
+
+        var soa = Assert.IsType<DnsSoaRecord>(Assert.Single(Assert.Single(messages).Answers));
+        Assert.Equal(2u, soa.Serial);
+    }
+
+    [Fact]
+    public async Task Local_ZoneTransfer_WithTsig()
+    {
+        await using var server = LocalZoneTransferServer.Start(new DnsTsigKey("transfer-key", DnsTsigAlgorithm.HmacSha256, Convert.FromBase64String("xnRdh6uLqXIbHHeRPrsytA3ZCoYbpSUjYWBRftgDE/s=")));
+        var serverAddress = server.Address;
+
+        #region DnsClient_Tsig
+        // The name, algorithm and secret of the key configured on the server
+        var key = new DnsTsigKey("transfer-key", DnsTsigAlgorithm.HmacSha256, Convert.FromBase64String("xnRdh6uLqXIbHHeRPrsytA3ZCoYbpSUjYWBRftgDE/s="));
+        using var client = new DnsClient(serverAddress, DnsClientProtocol.Tcp, new DnsClientOptions
+        {
+            TsigKey = key,
+        });
+
+        // Every query is signed, and every response is verified: an unsigned or forged response throws
+        var recordCount = 0;
+        await foreach (var message in client.TransferZoneAsync("example.com"))
+        {
+            Assert.Equal(DnsResponseCode.NoError, message.Header.ResponseCode);
+            recordCount += message.Answers.Count;
+        }
+
+        Assert.Equal(5, recordCount);
+        #endregion
+    }
+
+    [Fact]
+    public async Task Local_ZoneTransfer_WithTsig_AcceptsUnsignedMessagesBetweenSignedOnes()
+    {
+        var key = new DnsTsigKey("transfer-key", DnsTsigAlgorithm.HmacSha512, Convert.FromBase64String("xnRdh6uLqXIbHHeRPrsytA3ZCoYbpSUjYWBRftgDE/s="));
+        await using var server = LocalZoneTransferServer.Start(key, isSigned: index => index is not 1);
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Tcp, new DnsClientOptions { TsigKey = key });
+
+        var messages = await ToListAsync(client.TransferZoneAsync("example.com", XunitCancellationToken));
+
+        Assert.HasCount(3, messages);
+        Assert.Empty(messages[1].AdditionalRecords.OfType<DnsTsigRecord>());
+    }
+
+    [Fact]
+    public async Task Local_ZoneTransfer_WithTsig_UnsignedLastMessage_IsRejected()
+    {
+        var key = new DnsTsigKey("transfer-key", DnsTsigAlgorithm.HmacSha256, Convert.FromBase64String("xnRdh6uLqXIbHHeRPrsytA3ZCoYbpSUjYWBRftgDE/s="));
+        await using var server = LocalZoneTransferServer.Start(key, isSigned: index => index is not 2);
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Tcp, new DnsClientOptions { TsigKey = key });
+
+        await Assert.ThrowsAsync<DnsProtocolException>(() => ToListAsync(client.TransferZoneAsync("example.com", XunitCancellationToken)));
+    }
+
+    [Fact]
+    public async Task Local_ZoneTransfer_WithTheWrongTsigKey_ReturnsTheTsigError()
+    {
+        await using var server = LocalZoneTransferServer.Start(new DnsTsigKey("transfer-key", DnsTsigAlgorithm.HmacSha256, Convert.FromBase64String("xnRdh6uLqXIbHHeRPrsytA3ZCoYbpSUjYWBRftgDE/s=")));
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Tcp, new DnsClientOptions
+        {
+            TsigKey = new DnsTsigKey("transfer-key", DnsTsigAlgorithm.HmacSha256, new byte[32]),
+        });
+
+        var message = Assert.Single(await ToListAsync(client.TransferZoneAsync("example.com", XunitCancellationToken)));
+
+        Assert.Equal(DnsResponseCode.BadSignature, message.Header.ResponseCode);
+        Assert.Empty(message.Answers);
+    }
+
+    [Fact]
+    public async Task Local_ZoneTransfer_Refused_ReturnsTheResponseCode()
+    {
+        await using var server = LocalZoneTransferServer.Start(respond: query => [DnsTestMessages.CreateResponse(query, [], responseCode: DnsResponseCode.Refused)]);
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Tcp);
+
+        var message = Assert.Single(await ToListAsync(client.TransferZoneAsync("example.com", XunitCancellationToken)));
+
+        Assert.Equal(DnsResponseCode.Refused, message.Header.ResponseCode);
+    }
+
+    [Fact]
+    public async Task Local_ZoneTransfer_ConnectionClosedBeforeTheEnd_Throws()
+    {
+        await using var server = LocalZoneTransferServer.Start(respond: query => [DnsTestMessages.CreateResponse(query, [DnsTestMessages.Soa("example.com", 2), DnsTestMessages.A("www.example.com", "192.0.2.1")])]);
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Tcp);
+
+        var exception = await Assert.ThrowsAsync<DnsProtocolException>(() => ToListAsync(client.TransferZoneAsync("example.com", XunitCancellationToken)));
+        Assert.Contains("closed the connection", exception.Message);
+    }
+
+    [Fact]
+    public async Task Local_ZoneTransfer_NotStartingWithAnSoaRecord_Throws()
+    {
+        await using var server = LocalZoneTransferServer.Start(respond: query => [DnsTestMessages.CreateResponse(query, [DnsTestMessages.A("www.example.com", "192.0.2.1")])]);
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Tcp);
+
+        await Assert.ThrowsAsync<DnsProtocolException>(() => ToListAsync(client.TransferZoneAsync("example.com", XunitCancellationToken)));
+    }
+
+    [Fact]
+    public async Task Local_ZoneTransfer_RecordsAfterTheFinalSoaRecord_Throws()
+    {
+        await using var server = LocalZoneTransferServer.Start(respond: query =>
+        [
+            DnsTestMessages.CreateResponse(query, [DnsTestMessages.Soa("example.com", 2), DnsTestMessages.Soa("example.com", 2), DnsTestMessages.A("www.example.com", "192.0.2.1")]),
+        ]);
+        using var client = new DnsClient(server.Address, DnsClientProtocol.Tcp);
+
+        await Assert.ThrowsAsync<DnsProtocolException>(() => ToListAsync(client.TransferZoneAsync("example.com", XunitCancellationToken)));
+    }
+
+    [Fact]
+    public async Task Local_Query_WithCookies()
+    {
+        var serverCookie = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+        var receivedCookies = new ConcurrentQueue<byte[]?>();
+        await using var server = LocalZoneTransferServer.Start(respond: query =>
+        {
+            var cookie = DnsTestMessages.GetCookie(query);
+            receivedCookies.Enqueue(cookie);
+            return [DnsTestMessages.CreateResponse(query, [DnsTestMessages.A("www.example.com", "192.0.2.10")], cookie: [.. cookie!.AsSpan(0, 8), .. serverCookie])];
+        });
+        var serverAddress = server.Address;
+
+        #region DnsClient_Cookies
+        using var client = new DnsClient(serverAddress, DnsClientProtocol.Tcp, new DnsClientOptions
+        {
+            EnableCookies = true,
+        });
+
+        // The first query sends a client cookie; the next ones also return the cookie the server sent back
+        var response = await client.QueryAsync("www.example.com", DnsQueryType.A);
+        Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
+        response = await client.QueryAsync("www.example.com", DnsQueryType.A);
+        Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
+        #endregion
+
+        Assert.Equal([8, 16], receivedCookies.Select(cookie => cookie!.Length));
+    }
+
+    private static async Task<List<T>> ToListAsync<T>(IAsyncEnumerable<T> source)
+    {
+        var result = new List<T>();
+        await foreach (var item in source)
+        {
+            result.Add(item);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// A DNS server on the loopback interface that answers each TCP connection with the messages of a handler. The
+    /// default handler serves the zone transfers of example.com: its version 2 changed the address of www.example.com.
+    /// </summary>
+    private sealed class LocalZoneTransferServer : IAsyncDisposable
+    {
+        private readonly TcpListener _listener;
+        private readonly Func<byte[], IReadOnlyList<byte[]>> _respond;
+        private readonly CancellationTokenSource _cts = new();
+        private readonly Task _acceptLoop;
+
+        private LocalZoneTransferServer(Func<byte[], IReadOnlyList<byte[]>> respond)
+        {
+            _respond = respond;
+            _listener = new TcpListener(IPAddress.Loopback, 0);
+            _listener.Start();
+            Address = "127.0.0.1:" + ((IPEndPoint)_listener.LocalEndpoint).Port.ToString(CultureInfo.InvariantCulture);
+            _acceptLoop = AcceptAsync();
+        }
+
+        public string Address { get; }
+
+        public static LocalZoneTransferServer Start(DnsTsigKey? key = null, Func<int, bool>? isSigned = null)
+        {
+            return new LocalZoneTransferServer(query => AnswerZoneTransfer(query, key, isSigned));
+        }
+
+        public static LocalZoneTransferServer Start(Func<byte[], IReadOnlyList<byte[]>> respond)
+        {
+            return new LocalZoneTransferServer(respond);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await _cts.CancelAsync();
+            _listener.Stop();
+            _listener.Dispose();
+            try
+            {
+                await _acceptLoop;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (SocketException)
+            {
+            }
+
+            _cts.Dispose();
+        }
+
+        private static List<byte[]> AnswerZoneTransfer(byte[] query, DnsTsigKey? key, Func<int, bool>? isSigned)
+        {
+            byte[]? requestMac = null;
+            if (key is not null)
+            {
+                requestMac = DnsTestMessages.VerifyQuerySignature(query, key);
+                if (requestMac is null)
+                {
+                    // RFC 8945 section 5.2.3: the signature of the query is not valid, the answer is unsigned
+                    var error = DnsTestMessages.CreateResponse(query, [], responseCode: DnsResponseCode.NotAuthoritative);
+                    return [Meziantou.Framework.DnsClient.Internal.DnsTsig.Sign(error, key, (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds(), priorMac: [], unsignedMessages: [], timersOnly: false, DnsResponseCode.BadSignature, out _)];
+                }
+            }
+
+            var request = Protocol.DnsMessageEncoder.DecodeResponse(query);
+            List<List<DnsTestMessages.TestRecord>> messages;
+            if (request.Questions[0].Type is DnsQueryType.AXFR)
+            {
+                messages =
+                [
+                    [DnsTestMessages.Soa("example.com", 2), new DnsTestMessages.TestRecord("example.com", DnsQueryType.NS, EncodeName("ns.example.com"))],
+                    [DnsTestMessages.A("www.example.com", "192.0.2.11"), DnsTestMessages.A("mail.example.com", "192.0.2.20")],
+                    [DnsTestMessages.Soa("example.com", 2)],
+                ];
+            }
+            else if (request.Authorities.OfType<DnsSoaRecord>().Single().Serial >= 2)
+            {
+                messages = [[DnsTestMessages.Soa("example.com", 2)]];
+            }
+            else
+            {
+                messages =
+                [
+                    [DnsTestMessages.Soa("example.com", 2)],
+                    [DnsTestMessages.Soa("example.com", 1), DnsTestMessages.A("www.example.com", "192.0.2.10"), DnsTestMessages.Soa("example.com", 2), DnsTestMessages.A("www.example.com", "192.0.2.11"), DnsTestMessages.Soa("example.com", 2)],
+                ];
+            }
+
+            var responses = messages.Select((records, index) => DnsTestMessages.CreateResponse(query, records, includeQuestion: index is 0)).ToList();
+            return key is null ? responses : DnsTestMessages.SignResponses(responses, key, requestMac!, (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds(), isSigned);
+        }
+
+        private static byte[] EncodeName(string name)
+        {
+            var writer = new Protocol.DnsWireWriter(64);
+            writer.WriteDomainName(name);
+            return writer.ToArray();
+        }
+
+        private async Task AcceptAsync()
+        {
+            while (!_cts.IsCancellationRequested)
+            {
+                var client = await _listener.AcceptTcpClientAsync(_cts.Token);
+                _ = HandleAsync(client);
+            }
+        }
+
+        private async Task HandleAsync(TcpClient client)
+        {
+            using (client)
+            {
+                try
+                {
+                    var stream = client.GetStream();
+                    var lengthPrefix = new byte[2];
+                    await stream.ReadExactlyAsync(lengthPrefix, _cts.Token);
+                    var query = new byte[(lengthPrefix[0] << 8) | lengthPrefix[1]];
+                    await stream.ReadExactlyAsync(query, _cts.Token);
+
+                    foreach (var response in _respond(query))
+                    {
+                        await stream.WriteAsync(new byte[] { (byte)(response.Length >> 8), (byte)response.Length }, _cts.Token);
+                        await stream.WriteAsync(response, _cts.Token);
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or OperationCanceledException or SocketException)
+                {
+                }
+            }
+        }
+    }
+
     /// <summary>A DNS server on the loopback interface that answers UDP and TCP queries for a small example.com zone.</summary>
     private sealed class LocalDnsServer : IAsyncDisposable
     {

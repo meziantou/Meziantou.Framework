@@ -7,13 +7,13 @@ description: The exceptions of a query, the timeout and cancellation, how respon
 
 A DNS error code (NXDOMAIN, SERVFAIL, REFUSED, ...) is a response, not an exception: see
 [Response codes](03-Querying.md#response-codes). [QueryAsync](cref:Meziantou.Framework.DnsClient.DnsClient.QueryAsync), [ReverseLookupAsync](cref:Meziantou.Framework.DnsClient.DnsClient.ReverseLookupAsync) and [SendAsync](cref:Meziantou.Framework.DnsClient.DnsClient.SendAsync) throw when there
-is no usable response:
+is no usable response, and so does the enumeration of [TransferZoneAsync](cref:Meziantou.Framework.DnsClient.DnsClient.TransferZoneAsync):
 
 | Exception | Cause |
 | --- | --- |
 | `TimeoutException` | No response within [DnsClientOptions.Timeout](cref:Meziantou.Framework.DnsClient.DnsClientOptions.Timeout). |
 | `OperationCanceledException` | The `CancellationToken` you passed was canceled. |
-| [DnsProtocolException](cref:Meziantou.Framework.DnsClient.DnsProtocolException) | The response is malformed, or does not answer the query that was sent. |
+| [DnsProtocolException](cref:Meziantou.Framework.DnsClient.DnsProtocolException) | The response is malformed, does not answer the query that was sent, or its [TSIG signature or cookie](07-TsigAndCookies.md) is not valid. |
 | `SocketException`, `IOException` | The transport failed: connection refused, reset, unreachable network (UDP, TCP, TLS, QUIC). |
 | `HttpRequestException` | The DNS over HTTPS request failed, including an HTTP error status. |
 | `AuthenticationException` | The TLS handshake failed, for instance because the certificate does not match the host name (DNS over TLS). |
@@ -48,8 +48,8 @@ question must match, or the call throws [DnsProtocolException](cref:Meziantou.Fr
 so the operating system drops datagrams that come from another address. A stray or forged datagram cannot be taken for
 the answer.
 
-These checks do not authenticate the server. Use an encrypted transport ([Protocols](02-Protocols.md)) or
-[DNSSEC](04-Dnssec.md) when the answer must be trusted.
+These checks do not authenticate the server. Use an encrypted transport ([Protocols](02-Protocols.md)), a
+[TSIG key](07-TsigAndCookies.md) or [DNSSEC](04-Dnssec.md) when the answer must be trusted.
 
 ## Tracing
 
@@ -65,3 +65,6 @@ has the tags:
 | `dns.dnssec.validation_status` | The result of local DNSSEC validation, when enabled |
 
 The status of the activity is `Error` for an exception or a response code other than [NoError](cref:Meziantou.Framework.DnsClient.Response.DnsResponseCode.NoError).
+
+A [zone transfer](06-ZoneTransfers.md) emits one `Activity` named `dns.zone_transfer`, with the same tags and
+`dns.zone_transfer.message_count`, the number of messages of a complete transfer.

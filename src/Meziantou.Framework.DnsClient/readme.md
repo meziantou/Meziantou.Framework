@@ -1,12 +1,15 @@
 # Meziantou.Framework.DnsClient
 
-A DNS client library supporting multiple transport protocols, the common DNS record types (with raw access to the rest), DNSSEC validation, EDNS(0), internationalized domain names, and reverse DNS lookups.
+A DNS client library supporting multiple transport protocols, the common DNS record types (with raw access to the rest), DNSSEC validation, EDNS(0), internationalized domain names, reverse DNS lookups, zone transfers, TSIG, and DNS cookies.
 
 ## Features
 
 - **Multiple protocols**: UDP, TCP, DNS over TLS (DoT), DNS over HTTPS (DoH), DNS over QUIC (DoQ)
 - **Typed record parsing**: A, AAAA, MX, TXT, CNAME, NS, SOA, SRV, PTR, CAA, NAPTR, SVCB, HTTPS, LOC, HINFO, RP, DNAME, URI, TLSA, SSHFP and the DNSSEC types. Any other type is returned as `DnsUnknownRecord` with its raw RDATA.
-- **DNSSEC**: request and parse DNSKEY, DS, RRSIG, NSEC and NSEC3 records, plus local chain-of-trust validation against the IANA root anchors
+- **DNSSEC**: request and parse DNSKEY, DS, RRSIG, NSEC and NSEC3 records, plus local chain-of-trust validation against the IANA root anchors (RSA, ECDSA, Ed25519 and Ed448)
+- **Zone transfers**: AXFR and IXFR over TCP or TLS, streamed message by message
+- **TSIG**: sign the queries and authenticate the responses with a shared key (HMAC-SHA256/384/512, HMAC-SHA1, HMAC-MD5), including multi-message transfers
+- **DNS cookies**: RFC 7873 client and server cookies
 - **EDNS(0)**: configurable UDP payload size (default 1232, per RFC 9715), DNSSEC OK flag, extended RCODE
 - **IDN/Punycode**: Automatic Unicode to punycode conversion for internationalized domain names
 - **Reverse DNS**: Helper for PTR lookups on IPv4 and IPv6 addresses

@@ -1,11 +1,10 @@
-using System.Buffers.Binary;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 
 namespace Meziantou.Framework.DnsClient.Transport;
 
-internal sealed class DnsTlsTransport : IDnsTransport
+internal sealed class DnsTlsTransport : IDnsTransport, IDnsStreamTransport
 {
     private readonly string _host;
     private readonly IPEndPoint _endpoint;
@@ -18,33 +17,47 @@ internal sealed class DnsTlsTransport : IDnsTransport
 
     public async Task<DnsTransportResponse> SendAsync(byte[] query, CancellationToken cancellationToken)
     {
-        using var client = new TcpClient();
-        await client.ConnectAsync(_endpoint.Address, _endpoint.Port, cancellationToken).ConfigureAwait(false);
-
-        var sslStream = new SslStream(client.GetStream(), leaveInnerStreamOpen: false);
-        await using var sslStreamScope = sslStream.ConfigureAwait(false);
-        var sslOptions = new SslClientAuthenticationOptions
+        var connection = await ConnectAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
         {
-            TargetHost = _host,
-        };
-        await sslStream.AuthenticateAsClientAsync(sslOptions, cancellationToken).ConfigureAwait(false);
+            await connection.WriteMessageAsync(query, cancellationToken).ConfigureAwait(false);
+            var response = await connection.ReadMessageAsync(cancellationToken).ConfigureAwait(false)
+                ?? throw new EndOfStreamException("The server closed the connection without answering.");
 
-        // TCP-like 2-byte length prefix (RFC 7858)
-        var lengthPrefix = new byte[2];
-        BinaryPrimitives.WriteUInt16BigEndian(lengthPrefix, (ushort)query.Length);
-        await sslStream.WriteAsync(lengthPrefix, cancellationToken).ConfigureAwait(false);
-        await sslStream.WriteAsync(query, cancellationToken).ConfigureAwait(false);
-        await sslStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            return new DnsTransportResponse(response);
+        }
+    }
 
-        // Read response length prefix
-        await sslStream.ReadExactlyAsync(lengthPrefix, cancellationToken).ConfigureAwait(false);
-        var responseLength = BinaryPrimitives.ReadUInt16BigEndian(lengthPrefix);
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The connection owns the stream and the client")]
+    public async Task<DnsStreamConnection> ConnectAsync(CancellationToken cancellationToken)
+    {
+        var client = new TcpClient();
+        try
+        {
+            await client.ConnectAsync(_endpoint.Address, _endpoint.Port, cancellationToken).ConfigureAwait(false);
 
-        // Read response data
-        var response = new byte[responseLength];
-        await sslStream.ReadExactlyAsync(response, cancellationToken).ConfigureAwait(false);
-
-        return new DnsTransportResponse(response);
+            // The same 2-byte length framing as TCP (RFC 7858)
+            var sslStream = new SslStream(client.GetStream(), leaveInnerStreamOpen: false);
+            try
+            {
+                var sslOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = _host,
+                };
+                await sslStream.AuthenticateAsClientAsync(sslOptions, cancellationToken).ConfigureAwait(false);
+                return new DnsStreamConnection(sslStream, client);
+            }
+            catch
+            {
+                await sslStream.DisposeAsync().ConfigureAwait(false);
+                throw;
+            }
+        }
+        catch
+        {
+            client.Dispose();
+            throw;
+        }
     }
 
     public void Dispose()

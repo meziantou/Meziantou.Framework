@@ -1,10 +1,9 @@
-using System.Buffers.Binary;
 using System.Net;
 using System.Net.Sockets;
 
 namespace Meziantou.Framework.DnsClient.Transport;
 
-internal sealed class DnsTcpTransport : IDnsTransport
+internal sealed class DnsTcpTransport : IDnsTransport, IDnsStreamTransport
 {
     private readonly IPEndPoint _endpoint;
 
@@ -15,27 +14,30 @@ internal sealed class DnsTcpTransport : IDnsTransport
 
     public async Task<DnsTransportResponse> SendAsync(byte[] query, CancellationToken cancellationToken)
     {
-        using var client = new TcpClient();
-        await client.ConnectAsync(_endpoint.Address, _endpoint.Port, cancellationToken).ConfigureAwait(false);
+        var connection = await ConnectAsync(cancellationToken).ConfigureAwait(false);
+        await using (connection.ConfigureAwait(false))
+        {
+            await connection.WriteMessageAsync(query, cancellationToken).ConfigureAwait(false);
+            var response = await connection.ReadMessageAsync(cancellationToken).ConfigureAwait(false)
+                ?? throw new EndOfStreamException("The server closed the connection without answering.");
 
-        var stream = client.GetStream();
+            return new DnsTransportResponse(response);
+        }
+    }
 
-        // TCP DNS uses a 2-byte length prefix (RFC 7766)
-        var lengthPrefix = new byte[2];
-        BinaryPrimitives.WriteUInt16BigEndian(lengthPrefix, (ushort)query.Length);
-        await stream.WriteAsync(lengthPrefix, cancellationToken).ConfigureAwait(false);
-        await stream.WriteAsync(query, cancellationToken).ConfigureAwait(false);
-        await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
-
-        // Read response length prefix
-        await stream.ReadExactlyAsync(lengthPrefix, cancellationToken).ConfigureAwait(false);
-        var responseLength = BinaryPrimitives.ReadUInt16BigEndian(lengthPrefix);
-
-        // Read response data
-        var response = new byte[responseLength];
-        await stream.ReadExactlyAsync(response, cancellationToken).ConfigureAwait(false);
-
-        return new DnsTransportResponse(response);
+    public async Task<DnsStreamConnection> ConnectAsync(CancellationToken cancellationToken)
+    {
+        var client = new TcpClient();
+        try
+        {
+            await client.ConnectAsync(_endpoint.Address, _endpoint.Port, cancellationToken).ConfigureAwait(false);
+            return new DnsStreamConnection(client.GetStream(), client);
+        }
+        catch
+        {
+            client.Dispose();
+            throw;
+        }
     }
 
     public void Dispose()

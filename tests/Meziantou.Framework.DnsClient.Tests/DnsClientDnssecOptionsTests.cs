@@ -1,4 +1,5 @@
 using System.Net;
+using Meziantou.Framework.DnsClient.Internal;
 using Meziantou.Framework.DnsClient.Protocol;
 using Meziantou.Framework.DnsClient.Query;
 using Meziantou.Framework.DnsClient.Response;
@@ -510,6 +511,189 @@ public sealed class DnsClientDnssecOptionsTests
         }
 
         return response;
+    }
+
+    private static readonly byte[] TsigSecret = [.. Enumerable.Range(1, 32).Select(value => (byte)value)];
+
+    [Fact]
+    public async Task QueryAsync_WithATsigKey_SignsTheQueryAndVerifiesTheResponse()
+    {
+        var key = new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, TsigSecret);
+        using var transport = new ScriptedTransport(query =>
+        {
+            var requestMac = DnsTestMessages.VerifyQuerySignature(query, key) ?? throw new InvalidOperationException("The query is not signed with the key");
+            var response = DnsTestMessages.CreateResponse(query, [DnsTestMessages.A("example.com", "192.0.2.1")]);
+            return DnsTestMessages.SignResponses([response], key, requestMac, (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds())[0];
+        });
+        using var client = new DnsClient(transport, DnsClientProtocol.Udp, new DnsClientOptions { TsigKey = key });
+
+        var response = await client.QueryAsync("example.com", DnsQueryType.A, XunitCancellationToken);
+
+        Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
+        Assert.Single(response.Answers.OfType<DnsARecord>());
+        Assert.IsType<DnsTsigRecord>(response.AdditionalRecords[^1]);
+    }
+
+    [Fact]
+    public async Task QueryAsync_WithATsigKey_UnsignedResponse_IsRejected()
+    {
+        var key = new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, TsigSecret);
+        using var transport = new ScriptedTransport(query => DnsTestMessages.CreateResponse(query, []));
+        using var client = new DnsClient(transport, DnsClientProtocol.Udp, new DnsClientOptions { TsigKey = key });
+
+        var exception = await Assert.ThrowsAsync<DnsProtocolException>(() => client.QueryAsync("example.com", DnsQueryType.A, XunitCancellationToken));
+        Assert.Contains("not signed", exception.Message);
+    }
+
+    [Fact]
+    public async Task QueryAsync_WithATsigKey_ResponseSignedWithAnotherSecret_IsRejected()
+    {
+        var key = new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, TsigSecret);
+        var otherKey = new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, new byte[32]);
+        using var transport = new ScriptedTransport(query =>
+        {
+            var requestMac = DnsTestMessages.VerifyQuerySignature(query, key)!;
+            return DnsTestMessages.SignResponses([DnsTestMessages.CreateResponse(query, [])], otherKey, requestMac, (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds())[0];
+        });
+        using var client = new DnsClient(transport, DnsClientProtocol.Udp, new DnsClientOptions { TsigKey = key });
+
+        var exception = await Assert.ThrowsAsync<DnsProtocolException>(() => client.QueryAsync("example.com", DnsQueryType.A, XunitCancellationToken));
+        Assert.Contains("not valid", exception.Message);
+    }
+
+    [Fact]
+    public async Task QueryAsync_WithATsigKey_ResponseSignedTooLongAgo_IsRejected()
+    {
+        var key = new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, TsigSecret) { Fudge = TimeSpan.FromSeconds(10) };
+        using var transport = new ScriptedTransport(query =>
+        {
+            var requestMac = DnsTestMessages.VerifyQuerySignature(query, key)!;
+            return DnsTestMessages.SignResponses([DnsTestMessages.CreateResponse(query, [])], key, requestMac, (ulong)DateTimeOffset.UtcNow.AddHours(-1).ToUnixTimeSeconds())[0];
+        });
+        using var client = new DnsClient(transport, DnsClientProtocol.Udp, new DnsClientOptions { TsigKey = key });
+
+        await Assert.ThrowsAsync<DnsProtocolException>(() => client.QueryAsync("example.com", DnsQueryType.A, XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task QueryAsync_WithATsigKey_ServerReportsBadKey_ReturnsTheTsigErrorAsTheResponseCode()
+    {
+        var key = new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, TsigSecret);
+        using var transport = new ScriptedTransport(query =>
+        {
+            // RFC 8945 section 5.2.2: the server does not know the key, and answers NOTAUTH with an unsigned TSIG record
+            var response = DnsTestMessages.CreateResponse(query, [], responseCode: DnsResponseCode.NotAuthoritative);
+            return DnsTsig.Sign(response, key, (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds(), priorMac: [], unsignedMessages: [], timersOnly: false, DnsResponseCode.BadKey, out _);
+        });
+        using var client = new DnsClient(transport, DnsClientProtocol.Udp, new DnsClientOptions { TsigKey = key });
+
+        var response = await client.QueryAsync("example.com", DnsQueryType.A, XunitCancellationToken);
+
+        Assert.Equal(DnsResponseCode.BadKey, response.Header.ResponseCode);
+    }
+
+    [Fact]
+    public void DnsTsigKey_InvalidArguments_Throw()
+    {
+        Assert.Throws<ArgumentException>(() => new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, []));
+        Assert.Throws<ArgumentException>(() => new DnsTsigKey("", DnsTsigAlgorithm.HmacSha256, TsigSecret));
+        Assert.Throws<ArgumentException>(() => new DnsTsigKey(new string('a', 64), DnsTsigAlgorithm.HmacSha256, TsigSecret));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new DnsTsigKey("tsig-key", (DnsTsigAlgorithm)42, TsigSecret));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, TsigSecret) { Fudge = TimeSpan.FromSeconds(65536) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new DnsTsigKey("tsig-key", DnsTsigAlgorithm.HmacSha256, TsigSecret) { Fudge = TimeSpan.FromMilliseconds(1500) });
+    }
+
+    [Fact]
+    public async Task QueryAsync_WithCookies_SendsTheClientCookieThenTheServerCookie()
+    {
+        byte[] serverCookie = [9, 9, 9, 9, 9, 9, 9, 9, 1, 2, 3, 4];
+        var cookies = new List<byte[]?>();
+        using var transport = new ScriptedTransport(query =>
+        {
+            var cookie = DnsTestMessages.GetCookie(query);
+            cookies.Add(cookie);
+            return DnsTestMessages.CreateResponse(query, [], cookie: [.. cookie!.AsSpan(0, 8), .. serverCookie]);
+        });
+        using var client = new DnsClient(transport, DnsClientProtocol.Udp, new DnsClientOptions { EnableCookies = true });
+
+        await client.QueryAsync("example.com", DnsQueryType.A, XunitCancellationToken);
+        await client.QueryAsync("example.com", DnsQueryType.A, XunitCancellationToken);
+
+        Assert.HasCount(2, cookies);
+        Assert.HasCount(8, cookies[0]!);
+        Assert.Equal([.. cookies[0]!, .. serverCookie], cookies[1]);
+    }
+
+    [Fact]
+    public async Task QueryAsync_WithCookies_ResponseWithAnotherClientCookie_IsRejected()
+    {
+        using var transport = new ScriptedTransport(query => DnsTestMessages.CreateResponse(query, [], cookie: [1, 2, 3, 4, 5, 6, 7, 8]));
+        using var client = new DnsClient(transport, DnsClientProtocol.Udp, new DnsClientOptions { EnableCookies = true });
+
+        await Assert.ThrowsAsync<DnsProtocolException>(() => client.QueryAsync("example.com", DnsQueryType.A, XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task QueryAsync_WithCookies_BadCookieResponse_IsRetriedOnceWithTheServerCookie()
+    {
+        var queryCount = 0;
+        using var transport = new ScriptedTransport(query =>
+        {
+            queryCount++;
+            var cookie = DnsTestMessages.GetCookie(query)!;
+            var responseCode = cookie.Length is 8 ? DnsResponseCode.BadCookie : DnsResponseCode.NoError;
+            return DnsTestMessages.CreateResponse(query, [], responseCode: responseCode, cookie: [.. cookie.AsSpan(0, 8), 1, 2, 3, 4, 5, 6, 7, 8]);
+        });
+        using var client = new DnsClient(transport, DnsClientProtocol.Udp, new DnsClientOptions { EnableCookies = true });
+
+        var response = await client.QueryAsync("example.com", DnsQueryType.A, XunitCancellationToken);
+
+        Assert.Equal(DnsResponseCode.NoError, response.Header.ResponseCode);
+        Assert.Equal(2, queryCount);
+    }
+
+    [Fact]
+    public async Task QueryAsync_WithCookies_RepeatedBadCookie_IsReturned()
+    {
+        var queryCount = 0;
+        using var transport = new ScriptedTransport(query =>
+        {
+            queryCount++;
+            var cookie = DnsTestMessages.GetCookie(query)!;
+            return DnsTestMessages.CreateResponse(query, [], responseCode: DnsResponseCode.BadCookie, cookie: [.. cookie.AsSpan(0, 8), 1, 2, 3, 4, 5, 6, 7, (byte)queryCount]);
+        });
+        using var client = new DnsClient(transport, DnsClientProtocol.Udp, new DnsClientOptions { EnableCookies = true });
+
+        var response = await client.QueryAsync("example.com", DnsQueryType.A, XunitCancellationToken);
+
+        Assert.Equal(DnsResponseCode.BadCookie, response.Header.ResponseCode);
+        Assert.Equal(2, queryCount);
+    }
+
+    [Fact]
+    public async Task QueryAsync_WithoutCookies_SendsNoCookie()
+    {
+        using var transport = new CapturingTransport();
+        using var client = new DnsClient(transport, DnsClientProtocol.Udp, options: null);
+
+        await client.QueryAsync("example.com", DnsQueryType.A, XunitCancellationToken);
+
+        Assert.Null(DnsTestMessages.GetCookie(transport.LastQuery));
+    }
+
+    [Fact]
+    public void Constructor_WithCookiesAndEdnsDisabled_Throws()
+    {
+        using var transport = new CapturingTransport();
+        Assert.Throws<ArgumentException>(() => new DnsClient(transport, DnsClientProtocol.Udp, new DnsClientOptions { EnableCookies = true, EnableEdns = false }));
+    }
+
+    [Fact]
+    public void TransferZoneAsync_OverHttps_ThrowsNotSupportedException()
+    {
+        using var client = new DnsClient("https://dns.example/dns-query", DnsClientProtocol.Https);
+
+        Assert.Throws<NotSupportedException>(() => client.TransferZoneAsync("example.com"));
     }
 
     private sealed class ScriptedTransport : IDnsTransport

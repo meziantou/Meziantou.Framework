@@ -10,10 +10,13 @@ description: What the DNS packages do not do, so you can plan around it.
 - **No cache.** Every call sends a query. Cache the answers yourself, for their TTL.
 - **No retry after a timeout.** Only a truncated UDP answer is sent again, over TCP. See
   [Errors and timeouts](03-DnsClient/05-ErrorsAndTimeouts.md).
-- **No zone transfers or dynamic updates.** [DnsQueryType.AXFR](cref:Meziantou.Framework.DnsClient.Query.DnsQueryType.AXFR) and [IXFR](cref:Meziantou.Framework.DnsClient.Query.DnsQueryType.IXFR), and the [Notify](cref:Meziantou.Framework.DnsClient.Query.DnsOpCode.Notify) and [Update](cref:Meziantou.Framework.DnsClient.Query.DnsOpCode.Update) opcodes, can
-  be sent with [SendAsync](cref:Meziantou.Framework.DnsClient.DnsClient.SendAsync), but the client reads one response message: it does not support multi-message transfers.
-- **No TSIG or SIG(0)** authentication of messages, and no DNS cookies.
-- **DNSSEC validation** supports the algorithms 8, 10, 13 and 14 only. See [DNSSEC](03-DnsClient/04-Dnssec.md).
+- **No dynamic updates.** The [Update](cref:Meziantou.Framework.DnsClient.Query.DnsOpCode.Update) opcode can be sent with [SendAsync](cref:Meziantou.Framework.DnsClient.DnsClient.SendAsync), but a [DnsQueryMessage](cref:Meziantou.Framework.DnsClient.Query.DnsQueryMessage) has no
+  prerequisite or update section.
+- **Zone transfers need TCP or TLS.** [TransferZoneAsync](cref:Meziantou.Framework.DnsClient.DnsClient.TransferZoneAsync) does not support DNS over HTTPS and DNS over QUIC. See
+  [Zone transfers](03-DnsClient/06-ZoneTransfers.md).
+- **No SIG(0), TKEY or GSS-TSIG.** TSIG uses a shared key with HMAC-SHA256, SHA-384, SHA-512, SHA-1 or MD5, and
+  truncated MACs are rejected. See [TSIG and cookies](03-DnsClient/07-TsigAndCookies.md).
+- **DNSSEC validation** supports the algorithms 8, 10, 13, 14, 15 and 16 only. See [DNSSEC](03-DnsClient/04-Dnssec.md).
 - **No custom certificate validation** for DNS over TLS and DNS over QUIC: the certificate must be trusted by the
   machine. For DNS over HTTPS, set [HttpHandler](cref:Meziantou.Framework.DnsClient.DnsClientOptions.HttpHandler).
 

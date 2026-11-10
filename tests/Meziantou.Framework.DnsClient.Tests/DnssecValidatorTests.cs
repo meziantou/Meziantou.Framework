@@ -186,6 +186,62 @@ public sealed class DnssecValidatorTests
         Assert.Contains(result.Issues, issue => issue.Code is DnssecValidationIssueCode.UnsupportedAlgorithm);
     }
 
+    // The examples of RFC 8080 section 6, with the signatures of erratum 4935 (the published ones are invalid)
+    [Theory]
+    [InlineData(15, "l02Woi0iS8Aa25FQkUd9RMzZHJpBoRQwAQEX1SxZJA4=", 3613, "3aa5ab37efce57f737fc1627013fee07bdf241bd10f3b1964ab55c78e79a304b", "oL9krJun7xfBOIWcGHi7mag5/hdZrKWw15jPGrHpjQeRAvTdszaPD+QLs3fx8A4M3e23mRZ9VrbpMngwcrqNAg==")]
+    [InlineData(15, "zPnZ/QwEe7S8C5SPz2OfS5RR40ATk2/rYnE9xHIEijs=", 35217, "401781b934e392de492ec77ae2e15d70f6575a1c0bc59c5275c04ebe80c6614c", "zXQ0bkYgQTEFyfLyi9QoiY6D8ZdYo4wyUhVioYZXFdT410QPRITQSqJSnzQoSm5poJ7gD7AQR0O7KuI5k2pcBg==")]
+    [InlineData(16, "3kgROaDjrh0H2iuixWBrc8g2EpBBLCdGzHmn+G2MpTPhpj/OiBVHHSfPodx1FYYUcJKm1MDpJtIA", 9713, "6ccf18d5bc5d7fc2fceb1d59d17321402f2aa8d368048db93dd811f5cb2b19c7", "3cPAHkmlnxcDHMyg7vFC34l0blBhuG1qpwLmjInI8w1CMB29FkEAIJUA0amxWndkmnBZ6SKiwZSAxGILn/NBtOXft0+Gj7FSvOKxE/07+4RQvE581N3Aj/JtIyaiYVdnYtyMWbSNyGEY2213WKsJlwEA")]
+    [InlineData(16, "kkreGWoccSDmUBGAe7+zsbG6ZAFQp+syPmYUurBRQc3tDjeMCJcVMRDmgcNLp5HlHAMy12VoISsA", 38353, "645ff078b3568f5852b70cb60e8e696cc77b75bfaaffc118cf79cbda1ba28af4", "E1/oLjSGIbmLny/4fcgM1z4oL6aqo+izT3urCyHyvEp4Sp8Syg1eI+lJ57CSnZqjJP41O/9l4m0AsQ4f7qI1gVnML8vWWiyW2KXhT9kuAICUSxv5OWbf81Rq7Yu60npabODB0QFPb/rkW3kUZmQ0YQUA")]
+    public void VerifySignature_Rfc8080Examples(byte algorithm, string publicKey, ushort keyTag, string dsDigest, string signature)
+    {
+        var key = CreateRecord(new DnsDnskeyRecord { Flags = 257, Protocol = 3, Algorithm = algorithm, PublicKey = Convert.FromBase64String(publicKey) }, "example.com", DnsQueryType.DNSKEY);
+        Assert.Equal(keyTag, DnssecCanonicalizer.ComputeKeyTag(key));
+        Assert.Equal(Convert.FromHexString(dsDigest), DnssecCanonicalizer.ComputeDigest("example.com", key, digestType: 2));
+        Assert.True(DnssecCrypto.IsSupportedAlgorithm(algorithm));
+
+        var mx = CreateRecord(new DnsMxRecord { Preference = 10, Exchange = "mail.example.com" }, "example.com", DnsQueryType.MX);
+        var rrsig = CreateRecord(
+            new DnsRrsigRecord
+            {
+                TypeCovered = DnsQueryType.MX,
+                Algorithm = algorithm,
+                Labels = 2,
+                OriginalTtl = 3600,
+                SignatureExpiration = 1440021600,
+                SignatureInception = 1438207200,
+                KeyTag = keyTag,
+                SignerName = "example.com",
+                Signature = Convert.FromBase64String(signature),
+            },
+            "example.com",
+            DnsQueryType.RRSIG);
+        var signedData = DnssecCanonicalizer.GetSignedData([mx], rrsig);
+
+        Assert.Equal(DnssecSignatureVerificationStatus.Valid, DnssecCrypto.VerifySignature(key, signedData, rrsig.Signature));
+
+        var tamperedSignature = rrsig.Signature.ToArray();
+        tamperedSignature[^2] ^= 1;
+        Assert.Equal(DnssecSignatureVerificationStatus.Invalid, DnssecCrypto.VerifySignature(key, signedData, tamperedSignature));
+
+        var tamperedData = signedData.ToArray();
+        tamperedData[^1] ^= 1;
+        Assert.Equal(DnssecSignatureVerificationStatus.Invalid, DnssecCrypto.VerifySignature(key, tamperedData, rrsig.Signature));
+
+        Assert.Equal(DnssecSignatureVerificationStatus.Invalid, DnssecCrypto.VerifySignature(key, signedData, rrsig.Signature[..^1]));
+    }
+
+    [Theory]
+    [InlineData(15, 31)]
+    [InlineData(15, 33)]
+    [InlineData(16, 56)]
+    [InlineData(16, 58)]
+    public void VerifySignature_EdDsaKeyOfTheWrongLength_IsAnInvalidKey(byte algorithm, int keyLength)
+    {
+        var key = new DnsDnskeyRecord { Flags = 257, Protocol = 3, Algorithm = algorithm, PublicKey = new byte[keyLength] };
+
+        Assert.Equal(DnssecSignatureVerificationStatus.InvalidKey, DnssecCrypto.VerifySignature(key, [1, 2, 3], new byte[algorithm is 15 ? 64 : 114]));
+    }
+
     [Fact]
     public void ComputeKeyTag_AndDsDigest_ForIanaRootKsk2017()
     {
@@ -588,7 +644,7 @@ public sealed class DnssecValidatorTests
             new DnsRrsigRecord
             {
                 TypeCovered = record.RecordType,
-                Algorithm = 15,
+                Algorithm = 12, // ECC-GOST, which the validator does not support
                 Labels = (byte)DnssecCanonicalizer.CountLabels(record.Name),
                 OriginalTtl = record.TimeToLive,
                 SignatureExpiration = checked((uint)now.AddHours(1).ToUnixTimeSeconds()),

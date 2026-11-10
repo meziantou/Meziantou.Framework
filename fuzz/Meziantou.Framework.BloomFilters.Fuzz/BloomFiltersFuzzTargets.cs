@@ -8,7 +8,7 @@ namespace Meziantou.Framework.BloomFilters.Fuzz;
 /// <see cref="InvalidDataException"/>. On blocked filters, <c>AddRange</c> sets the same bits as <c>Add</c>, the union of
 /// two filters has the bits of a filter built from both sets of values, and a snapshot gives back the same filter.
 /// </summary>
-public static class BloomFiltersFuzzTargets
+public static partial class BloomFiltersFuzzTargets
 {
     private const int MaxValues = 4096;
 
@@ -27,6 +27,7 @@ public static class BloomFiltersFuzzTargets
     [
         new("bloomfilter-snapshot", Snapshot) { Seeds = GetSnapshotSeeds, Dictionary = Tokens },
         new("bloomfilter-blocked-operations", BlockedOperations) { Seeds = GetOperationSeeds },
+        new("bloomfilter-addrange", ClassicAndCountingAddRange) { Seeds = GetAddRangeSeeds, Dictionary = ValueTokens },
     ];
 
     /// <summary>

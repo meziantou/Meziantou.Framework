@@ -2,6 +2,7 @@ using System.IO.Hashing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 
 namespace Meziantou.Framework.BloomFilters;
 
@@ -21,7 +22,7 @@ public sealed partial class BloomFilterXXHash32 : BloomFilter
     internal static void AddRangeCore<TSink>(TSink sink, ReadOnlySpan<uint> values)
         where TSink : struct, IBloomFilterHashSink
     {
-        if (!BitConverter.IsLittleEndian || !Vector.IsHardwareAccelerated || values.Length < Vector<uint>.Count)
+        if (!BitConverter.IsLittleEndian)
         {
             foreach (var value in values)
             {
@@ -32,33 +33,52 @@ public sealed partial class BloomFilterXXHash32 : BloomFilter
         }
 
         var index = 0;
-        var hash = new Vector<uint>(Prime5 + sizeof(uint));
-        var prime2 = new Vector<uint>(Prime2);
-        var prime3 = new Vector<uint>(Prime3);
-        var prime4 = new Vector<uint>(Prime4);
-        while (index <= values.Length - Vector<uint>.Count)
+
+        // On Arm64, the vector path is slower than the scalar hash (measured on .NET 10): the multiplications are
+        // cheap, but each lane must then be moved back to a general-purpose register to update the filter.
+        if (Vector.IsHardwareAccelerated && !AdvSimd.IsSupported && values.Length >= Vector<uint>.Count)
         {
-            var current = Vector.Create(values[index..]);
-            var hashes = hash + (current * prime3);
-            hashes = RotateLeft(hashes, 17) * prime4;
-            hashes ^= hashes >> 15;
-            hashes *= prime2;
-            hashes ^= hashes >> 13;
-            hashes *= prime3;
-            hashes ^= hashes >> 16;
-
-            for (var lane = 0; lane < Vector<uint>.Count; lane++)
+            var hash = new Vector<uint>(Prime5 + sizeof(uint));
+            var prime2 = new Vector<uint>(Prime2);
+            var prime3 = new Vector<uint>(Prime3);
+            var prime4 = new Vector<uint>(Prime4);
+            while (index <= values.Length - Vector<uint>.Count)
             {
-                sink.AddHash(BloomFilterHash.FromUInt32(hashes[lane]));
-            }
+                var current = Vector.Create(values[index..]);
+                var hashes = hash + (current * prime3);
+                hashes = RotateLeft(hashes, 17) * prime4;
+                hashes ^= hashes >> 15;
+                hashes *= prime2;
+                hashes ^= hashes >> 13;
+                hashes *= prime3;
+                hashes ^= hashes >> 16;
 
-            index += Vector<uint>.Count;
+                for (var lane = 0; lane < Vector<uint>.Count; lane++)
+                {
+                    sink.AddHash(BloomFilterHash.FromUInt32(hashes[lane]));
+                }
+
+                index += Vector<uint>.Count;
+            }
         }
 
         foreach (var value in values[index..])
         {
-            sink.AddHash(Hash(value));
+            sink.AddHash(BloomFilterHash.FromUInt32(HashUInt32(value)));
         }
+    }
+
+    /// <summary>Computes <see cref="XxHash32"/> of the little-endian bytes of <paramref name="value"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint HashUInt32(uint value)
+    {
+        var hash = BitOperations.RotateLeft(Prime5 + sizeof(uint) + (value * Prime3), 17) * Prime4;
+        hash ^= hash >> 15;
+        hash *= Prime2;
+        hash ^= hash >> 13;
+        hash *= Prime3;
+        hash ^= hash >> 16;
+        return hash;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

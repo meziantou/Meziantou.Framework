@@ -2,7 +2,6 @@ using System.IO.Hashing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.BloomFilters;
@@ -48,30 +47,8 @@ public sealed partial class CountingBloomFilterXXHash128 : CountingBloomFilter
         }
 
         var index = 0;
-        if (AdvSimd.Arm64.IsSupported)
-        {
-            while (index <= values.Length - Vector128<ulong>.Count)
-            {
-                var current = Vector128.Create(values[index..]);
-                Multiply64To128(current ^ Vector128.Create(BitFlip), Prime1 + (sizeof(ulong) << 2), out var low, out var high);
-                high += low << 1;
-                low ^= high >> 3;
-                low ^= low >> 35;
-                low = MultiplyLow(low, RrmxmxMultiplier);
-                low ^= low >> 28;
-                high ^= high >> 37;
-                high = MultiplyLow(high, AvalancheMultiplier);
-                high ^= high >> 32;
-
-                for (var lane = 0; lane < Vector128<ulong>.Count; lane++)
-                {
-                    UpdateHash(BloomFilterHash.FromUInt128(low[lane], high[lane]), remove);
-                }
-
-                index += Vector128<ulong>.Count;
-            }
-        }
-        else
+        // AdvSimd has no 64-bit lane multiply, so a Vector128 version must build each 64-bit product from four
+        // 32-bit ones. The scalar hash, which uses the native 64-bit multiply, is faster on Arm64.
         if (Avx2.IsSupported)
         {
             while (index <= values.Length - Vector256<ulong>.Count)
@@ -98,8 +75,25 @@ public sealed partial class CountingBloomFilterXXHash128 : CountingBloomFilter
 
         foreach (var value in values[index..])
         {
-            UpdateHash(Hash(value), remove);
+            var high = HashUInt64(value, out var low);
+            UpdateHash(BloomFilterHash.FromUInt128(low, high), remove);
         }
+    }
+
+    /// <summary>Computes <see cref="XxHash128"/> of the little-endian bytes of <paramref name="value"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong HashUInt64(ulong value, out ulong low)
+    {
+        var high = Math.BigMul(value ^ BitFlip, Prime1 + (sizeof(ulong) << 2), out low);
+        high += low << 1;
+        low ^= high >> 3;
+        low ^= low >> 35;
+        low *= RrmxmxMultiplier;
+        low ^= low >> 28;
+        high ^= high >> 37;
+        high *= AvalancheMultiplier;
+        high ^= high >> 32;
+        return high;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -122,18 +116,6 @@ public sealed partial class CountingBloomFilterXXHash128 : CountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Vector128<ulong> MultiplyLow(Vector128<ulong> value, ulong multiplier)
-    {
-        Split(value, out var lower, out var upper);
-        var multiplierLower = Vector64.Create((uint)multiplier);
-        var multiplierUpper = Vector64.Create((uint)(multiplier >> 32));
-        var productLower = AdvSimd.MultiplyWideningLower(lower, multiplierLower);
-        var productMiddle1 = AdvSimd.MultiplyWideningLower(lower, multiplierUpper);
-        var productMiddle2 = AdvSimd.MultiplyWideningLower(upper, multiplierLower);
-        return productLower + ((productMiddle1 + productMiddle2) << 32);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Vector256<ulong> MultiplyLow(Vector256<ulong> value, ulong multiplier)
     {
         var lower = value.AsUInt32();
@@ -144,22 +126,6 @@ public sealed partial class CountingBloomFilterXXHash128 : CountingBloomFilter
         var productMiddle1 = Avx2.Multiply(lower, multiplierUpper);
         var productMiddle2 = Avx2.Multiply(upper, multiplierLower);
         return productLower + ((productMiddle1 + productMiddle2) << 32);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void Multiply64To128(Vector128<ulong> value, ulong multiplier, out Vector128<ulong> low, out Vector128<ulong> high)
-    {
-        Split(value, out var lower, out var upper);
-        var multiplierLower = Vector64.Create((uint)multiplier);
-        var multiplierUpper = Vector64.Create((uint)(multiplier >> 32));
-        var productLower = AdvSimd.MultiplyWideningLower(lower, multiplierLower);
-        var productMiddle1 = AdvSimd.MultiplyWideningLower(lower, multiplierUpper);
-        var productMiddle2 = AdvSimd.MultiplyWideningLower(upper, multiplierLower);
-        var productUpper = AdvSimd.MultiplyWideningLower(upper, multiplierUpper);
-        var mask = Vector128.Create(UInt32Mask);
-        var middle = (productLower >> 32) + (productMiddle1 & mask) + (productMiddle2 & mask);
-        low = (productLower & mask) | (middle << 32);
-        high = productUpper + (productMiddle1 >> 32) + (productMiddle2 >> 32) + (middle >> 32);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -177,13 +143,5 @@ public sealed partial class CountingBloomFilterXXHash128 : CountingBloomFilter
         var middle = (productLower >> 32) + (productMiddle1 & mask) + (productMiddle2 & mask);
         low = (productLower & mask) | (middle << 32);
         high = productUpper + (productMiddle1 >> 32) + (productMiddle2 >> 32) + (middle >> 32);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void Split(Vector128<ulong> value, out Vector64<uint> lower, out Vector64<uint> upper)
-    {
-        var words = value.AsUInt32();
-        lower = AdvSimd.Arm64.UnzipEven(words, words).GetLower();
-        upper = AdvSimd.Arm64.UnzipOdd(words, words).GetLower();
     }
 }

@@ -750,6 +750,7 @@
     <Project Path="fuzz/Meziantou.Framework.Globbing.Fuzz/Meziantou.Framework.Globbing.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Hashing.Fuzz/Meziantou.Framework.Hashing.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.HtmlSanitizer.Fuzz/Meziantou.Framework.HtmlSanitizer.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.HtmlToMarkdown.Fuzz/Meziantou.Framework.HtmlToMarkdown.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Http.Caching.Fuzz/Meziantou.Framework.Http.Caching.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Http.Fuzz/Meziantou.Framework.Http.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Http.Htpasswd.Fuzz/Meziantou.Framework.Http.Htpasswd.Fuzz.csproj" />

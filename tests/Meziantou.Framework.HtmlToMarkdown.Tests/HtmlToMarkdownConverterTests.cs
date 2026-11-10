@@ -4658,4 +4658,477 @@ public sealed class HtmlToMarkdownConverterTests
 
         AssertHtmlToMarkdown(html, "**text**");
     }
+
+    // --- Text-level elements: sub, sup, u, kbd ---
+
+    [Fact]
+    public void DocumentationExample_TextLevelElements()
+    {
+        #region HtmlToMarkdown_TextLevelElements
+        var html = "<p>H<sub>2</sub>O, E = mc<sup>2</sup>, <u>underlined</u>, press <kbd>Ctrl</kbd>+<kbd>C</kbd></p>";
+
+        var markdown = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions
+        {
+            SubscriptStyle = SubscriptStyle.Tilde,
+            SuperscriptStyle = SuperscriptStyle.Caret,
+            UnderlineStyle = UnderlineStyle.PlusSigns,
+            KeyboardStyle = KeyboardStyle.CodeSpan,
+        });
+        Assert.Equal("H~2~O, E = mc^2^, ++underlined++, press `Ctrl`\\+`C`", markdown);
+
+        var inlineHtml = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions
+        {
+            SubscriptStyle = SubscriptStyle.Html,
+            SuperscriptStyle = SuperscriptStyle.Html,
+            UnderlineStyle = UnderlineStyle.Html,
+            KeyboardStyle = KeyboardStyle.Html,
+        });
+        Assert.Equal("H<sub>2</sub>O, E = mc<sup>2</sup>, <u>underlined</u>, press <kbd>Ctrl</kbd>\\+<kbd>C</kbd>", inlineHtml);
+        #endregion
+    }
+
+    [Theory]
+    [InlineData(UnknownElementHandling.PassThrough, "a<sub class=\"x\">b</sub>c")]
+    [InlineData(UnknownElementHandling.Strip, "ac")]
+    [InlineData(UnknownElementHandling.StripKeepContent, "abc")]
+    public void Subscript_UnknownElement_UsesUnknownElementHandling(UnknownElementHandling handling, string expected)
+    {
+        AssertHtmlToMarkdown("<p>a<sub class=\"x\">b</sub>c</p>", expected, new() { UnknownElementHandling = handling });
+    }
+
+    [Fact]
+    public void Subscript_Tilde_EscapesSpaces()
+    {
+        AssertHtmlToMarkdown("<p>x<sub>a b</sub></p>", "x~a\\ b~", new() { SubscriptStyle = SubscriptStyle.Tilde });
+    }
+
+    [Fact]
+    public void Subscript_Tilde_MovesSurroundingSpacesOutside()
+    {
+        AssertHtmlToMarkdown("<p>x<sub> a </sub>y</p>", "x ~a~ y", new() { SubscriptStyle = SubscriptStyle.Tilde });
+    }
+
+    [Fact]
+    public void Subscript_Tilde_EscapesTildesOfTheText()
+    {
+        AssertHtmlToMarkdown("<p>~a~ <sub>~</sub></p>", "\\~a\\~ ~\\~~", new() { SubscriptStyle = SubscriptStyle.Tilde });
+    }
+
+    [Fact]
+    public void Subscript_Tilde_NestedSubscriptFallsBackToHtml()
+    {
+        AssertHtmlToMarkdown("<p>a<sub>b<sub>c</sub></sub></p>", "a<sub>b~c~</sub>", new() { SubscriptStyle = SubscriptStyle.Tilde });
+    }
+
+    [Fact]
+    public void Subscript_Tilde_CodeSpanFallsBackToHtml()
+    {
+        AssertHtmlToMarkdown("<p>a<sub><code>b c</code></sub></p>", "a<sub>`b c`</sub>", new() { SubscriptStyle = SubscriptStyle.Tilde });
+    }
+
+    [Fact]
+    public void Subscript_Tilde_LinkFallsBackToHtml()
+    {
+        AssertHtmlToMarkdown("<p>a<sub><a href=\"/x\">b c</a></sub></p>", "a<sub>[b c](/x)</sub>", new() { SubscriptStyle = SubscriptStyle.Tilde });
+    }
+
+    [Fact]
+    public void Subscript_WhitespaceOnly_KeepsTheSpace()
+    {
+        AssertHtmlToMarkdown("<p>a<sub> </sub>b</p>", "a b", new() { SubscriptStyle = SubscriptStyle.Tilde });
+        AssertHtmlToMarkdown("<p>a<sub></sub>b</p>", "ab", new() { SubscriptStyle = SubscriptStyle.Html });
+    }
+
+    [Fact]
+    public void Superscript_Caret_EscapesCaretsOfTheText()
+    {
+        AssertHtmlToMarkdown("<p>2^10 = 2<sup>10</sup></p>", "2\\^10 = 2^10^", new() { SuperscriptStyle = SuperscriptStyle.Caret });
+    }
+
+    [Fact]
+    public void Superscript_DefaultOptions_CaretIsNotEscaped()
+    {
+        AssertHtmlToMarkdown("<p>2^10</p>", "2^10");
+    }
+
+    [Fact]
+    public void Superscript_Text_KeepsContent()
+    {
+        AssertHtmlToMarkdown("<p>x<sup><em>2</em></sup></p>", "x*2*", new() { SuperscriptStyle = SuperscriptStyle.Text });
+    }
+
+    [Fact]
+    public void Underline_PlusSigns_EscapesPlusSignRuns()
+    {
+        AssertHtmlToMarkdown("<p>C++ and <u>a b</u></p>", "C\\+\\+ and ++a b++", new() { UnderlineStyle = UnderlineStyle.PlusSigns });
+    }
+
+    [Fact]
+    public void Underline_DefaultOptions_PlusSignRunIsNotEscaped()
+    {
+        AssertHtmlToMarkdown("<p>C++</p>", "C++");
+    }
+
+    [Fact]
+    public void Keyboard_Html_ConvertsContent()
+    {
+        AssertHtmlToMarkdown("<p><kbd><kbd>Ctrl</kbd>+<kbd>*</kbd></kbd></p>", "<kbd><kbd>Ctrl</kbd>\\+<kbd>\\*</kbd></kbd>", new() { KeyboardStyle = KeyboardStyle.Html });
+    }
+
+    [Fact]
+    public void Keyboard_CodeSpan_UsesTextOfNestedElements()
+    {
+        AssertHtmlToMarkdown("<p><kbd><kbd>Ctrl</kbd>+<kbd>`</kbd></kbd></p>", "`` Ctrl+` ``", new() { KeyboardStyle = KeyboardStyle.CodeSpan });
+    }
+
+    [Fact]
+    public void Keyboard_Text_KeepsContent()
+    {
+        AssertHtmlToMarkdown("<p><kbd>Ctrl</kbd>+<kbd>C</kbd></p>", "Ctrl\\+C", new() { KeyboardStyle = KeyboardStyle.Text });
+    }
+
+    [Fact]
+    public void TextLevelElements_InlineHtml_RoundTrip()
+    {
+        var options = new HtmlToMarkdownOptions
+        {
+            SubscriptStyle = SubscriptStyle.Html,
+            SuperscriptStyle = SuperscriptStyle.Html,
+            UnderlineStyle = UnderlineStyle.Html,
+            KeyboardStyle = KeyboardStyle.Html,
+        };
+        var markdown = HtmlToMarkdown.Convert("<p>H<sub>2</sub>O x<sup>*</sup> <u>u</u> <kbd>K</kbd></p>", options);
+        var html = Markdown.MarkdownConverter.ToHtml(markdown);
+        Assert.Equal("<p>H<sub>2</sub>O x<sup>*</sup> <u>u</u> <kbd>K</kbd></p>\n", html);
+    }
+
+    // --- Embedded content: video, audio, iframe ---
+
+    [Fact]
+    public void DocumentationExample_EmbeddedContent()
+    {
+        #region HtmlToMarkdown_EmbeddedContent
+        var html = """
+            <p>Demo: <video controls title="Product demo"><source src="demo.mp4" type="video/mp4"></video></p>
+            <iframe src="https://example.com/map"></iframe>
+            """;
+
+        var links = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions { EmbeddedContentStyle = EmbeddedContentStyle.Link });
+        Assert.Equal("""
+            Demo: [Product demo](demo.mp4)
+
+            [https://example.com/map](https://example.com/map)
+            """, links);
+
+        var removed = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions { EmbeddedContentStyle = EmbeddedContentStyle.Remove });
+        Assert.Equal("Demo:", removed);
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("<audio src=\"a.mp3\"></audio>", "[a.mp3](a.mp3)")]
+    [InlineData("<audio><source><source src=\"b.ogg\"></audio>", "[b.ogg](b.ogg)")]
+    [InlineData("<video src=\" \"><source src=\"c.mp4\"></video>", "[c.mp4](c.mp4)")]
+    [InlineData("<video title=\"[x]\" src=\"a b.mp4\"></video>", "[\\[x\\]](<a b.mp4>)")]
+    [InlineData("<iframe></iframe>", "")]
+    [InlineData("<video>Fallback</video>", "")]
+    public void EmbeddedContent_Link(string html, string expected)
+    {
+        AssertHtmlToMarkdown(html, expected, new() { EmbeddedContentStyle = EmbeddedContentStyle.Link });
+    }
+
+    [Fact]
+    public void EmbeddedContent_Html_IgnoresUnknownElementHandling()
+    {
+        AssertHtmlToMarkdown(
+            "<p><video src=\"a.mp4\" controls></video></p>",
+            "<video src=\"a.mp4\" controls=\"\"></video>",
+            new() { EmbeddedContentStyle = EmbeddedContentStyle.Html, UnknownElementHandling = UnknownElementHandling.Strip });
+    }
+
+    [Fact]
+    public void EmbeddedContent_UnknownElement_UsesUnknownElementHandling()
+    {
+        AssertHtmlToMarkdown("<p>a<iframe src=\"x\"></iframe>b</p>", "ab", new() { UnknownElementHandling = UnknownElementHandling.Strip });
+    }
+
+    [Fact]
+    public void RawHtml_BlankLinesGetAnEmptyComment()
+    {
+        AssertHtmlToMarkdown(
+            "<video>\n\n<source src=\"a.mp4\">\n  \n</video>",
+            "<video>\n<!---->\n<source src=\"a.mp4\">\n <!---->\n</video>",
+            new() { EmbeddedContentStyle = EmbeddedContentStyle.Html });
+    }
+
+    // --- CSS white-space ---
+
+    [Fact]
+    public void DocumentationExample_CssWhiteSpace()
+    {
+        #region HtmlToMarkdown_CssWhiteSpace
+        var html = "<p style=\"white-space: pre\">Name:  Alice\n  Role: admin</p>";
+
+        var markdown = HtmlToMarkdown.Convert(html);
+        Assert.Equal("Name: &nbsp;Alice  \n&nbsp;&nbsp;Role: admin", markdown);
+
+        var collapsed = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions { UseCssWhiteSpace = false });
+        Assert.Equal("Name: Alice Role: admin", collapsed);
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("white-space: pre-wrap", "a &nbsp;b  \nc")]
+    [InlineData("white-space: break-spaces", "a &nbsp;b  \nc")]
+    [InlineData("white-space: pre-line", "a b  \nc")]
+    [InlineData("white-space: normal", "a b c")]
+    [InlineData("white-space: nowrap", "a b c")]
+    [InlineData("WHITE-SPACE: PRE !important", "a &nbsp;b  \nc")]
+    [InlineData("white-space-collapse: preserve", "a &nbsp;b  \nc")]
+    [InlineData("white-space-collapse: preserve-breaks", "a b  \nc")]
+    [InlineData("white-space-collapse: preserve-spaces", "a &nbsp;b c")]
+    [InlineData("white-space: preserve nowrap", "a &nbsp;b  \nc")]
+    [InlineData("white-space: pre; white-space: invalid", "a &nbsp;b  \nc")]
+    [InlineData("white-space: pre; white-space-collapse: collapse", "a b c")]
+    [InlineData("white-space: pre; white-space: inherit", "a b c")]
+    [InlineData("white-space: unknown", "a b c")]
+    public void CssWhiteSpace_Values(string style, string expected)
+    {
+        AssertHtmlToMarkdown($"<p style=\"{style}\">a  b\nc</p>", expected);
+    }
+
+    [Fact]
+    public void CssWhiteSpace_IsInherited()
+    {
+        AssertHtmlToMarkdown("<div style=\"white-space: pre\"><p>a  <span>b  c</span></p></div>", "a &nbsp;b &nbsp;c");
+    }
+
+    [Fact]
+    public void CssWhiteSpace_ChildCanResetToNormal()
+    {
+        AssertHtmlToMarkdown("<div style=\"white-space: pre\"><p>a  <span style=\"white-space: normal\">b  c</span></p></div>", "a &nbsp;b c");
+    }
+
+    [Fact]
+    public void CssWhiteSpace_BackslashLineBreaks()
+    {
+        AssertHtmlToMarkdown("<p style=\"white-space: pre\">a\nb\n</p>", "a\\\nb", new() { LineBreakStyle = LineBreakStyle.Backslash });
+    }
+
+    [Fact]
+    public void CssWhiteSpace_LeadingAndTrailingLineBreaksAreTrimmed()
+    {
+        AssertHtmlToMarkdown("<p style=\"white-space: pre-line\">\n  a\n  </p>", "a");
+        AssertHtmlToMarkdown("<p style=\"white-space: pre-line\">\n  a\n  </p>", "a", new() { LineBreakStyle = LineBreakStyle.Backslash });
+    }
+
+    [Fact]
+    public void CssWhiteSpace_WhitespaceOnlyTextBetweenBlocksIsRemoved()
+    {
+        AssertHtmlToMarkdown("<div style=\"white-space: pre\">\n  <p>a</p>\n  <p>b</p>\n</div>", "a\n\nb");
+    }
+
+    [Fact]
+    public void CssWhiteSpace_Tabs()
+    {
+        AssertHtmlToMarkdown("<p style=\"white-space: pre\">ab\tc</p>", "ab &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;c");
+    }
+
+    [Fact]
+    public void CssWhiteSpace_LineStartIsEscaped()
+    {
+        AssertHtmlToMarkdown("<p style=\"white-space: pre-line\">a\n# b\n1. c\n- d</p>", "a  \n\\# b  \n1\\. c  \n\\- d");
+    }
+
+    [Fact]
+    public void CssWhiteSpace_InTableCellUsesBr()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><th>H</th></tr><tr><td style=\"white-space: pre\">a\nb</td></tr></table>",
+            "| H |\n| --- |\n| a<br>b |");
+    }
+
+    [Fact]
+    public void CssWhiteSpace_InHeadingIsOneLine()
+    {
+        AssertHtmlToMarkdown("<h2 style=\"white-space: pre\">a\nb</h2>", "## a b");
+    }
+
+    [Fact]
+    public void CssWhiteSpace_RendersPreservedSpaces()
+    {
+        var markdown = HtmlToMarkdown.Convert("<p style=\"white-space: pre\">a  b</p>");
+        Assert.Equal("<p>a \u00A0b</p>\n", Markdown.MarkdownConverter.ToHtml(markdown));
+    }
+
+    // --- Tables with spans ---
+
+    [Fact]
+    public void DocumentationExample_TableSpans()
+    {
+        #region HtmlToMarkdown_TableSpans
+        var html = """
+            <table>
+              <tr><th>Fruit</th><th colspan="2">Price</th></tr>
+              <tr><td rowspan="2">Apple</td><td>$1.20</td><td>each</td></tr>
+              <tr><td>$10</td><td>per box</td></tr>
+            </table>
+            """;
+
+        var emptyCells = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions { TableSpanHandling = TableSpanHandling.EmptyCells });
+        Assert.Equal("""
+            | Fruit | Price |  |
+            | --- | --- | --- |
+            | Apple | $1.20 | each |
+            |  | $10 | per box |
+            """, emptyCells);
+
+        var duplicate = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions { TableSpanHandling = TableSpanHandling.Duplicate });
+        Assert.Equal("""
+            | Fruit | Price | Price |
+            | --- | --- | --- |
+            | Apple | $1.20 | each |
+            | Apple | $10 | per box |
+            """, duplicate);
+        #endregion
+    }
+
+    [Fact]
+    public void TableSpans_Ignore_IsTheDefault()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><th colspan=\"2\">A</th></tr><tr><td>1</td><td>2</td></tr></table>",
+            "| A |  |\n| --- | --- |\n| 1 | 2 |");
+    }
+
+    [Fact]
+    public void TableSpans_AlignmentOfSpannedHeaderAppliesToEveryColumn()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><th colspan=\"2\" align=\"right\">A</th></tr><tr><td>1</td><td>2</td></tr></table>",
+            "| A |  |\n| ---: | ---: |\n| 1 | 2 |",
+            new() { TableSpanHandling = TableSpanHandling.EmptyCells });
+    }
+
+    [Fact]
+    public void TableSpans_RowSpanZeroExtendsToTheEndOfTheGroup()
+    {
+        AssertHtmlToMarkdown(
+            "<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td rowspan=\"0\">x</td><td>1</td></tr><tr><td>2</td></tr></tbody><tfoot><tr><td>f</td><td>g</td></tr></tfoot></table>",
+            "| A | B |\n| --- | --- |\n| x | 1 |\n| x | 2 |\n| f | g |",
+            new() { TableSpanHandling = TableSpanHandling.Duplicate });
+    }
+
+    [Fact]
+    public void TableSpans_RowSpanDoesNotCrossTheGroup()
+    {
+        AssertHtmlToMarkdown(
+            "<table><thead><tr><th rowspan=\"5\">A</th><th>B</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr></tbody></table>",
+            "| A | B |\n| --- | --- |\n| 1 | 2 |",
+            new() { TableSpanHandling = TableSpanHandling.Duplicate });
+    }
+
+    [Theory]
+    [InlineData("0", "| a | b |")]
+    [InlineData("x", "| a | b |")]
+    [InlineData("-2", "| a | b |")]
+    [InlineData(" +2px", "| a | a | b |")]
+    [InlineData("2.9", "| a | a | b |")]
+    public void TableSpans_ColSpanParsing(string colspan, string expectedFirstRow)
+    {
+        var markdown = HtmlToMarkdown.Convert($"<table><tr><td colspan=\"{colspan}\">a</td><td>b</td></tr></table>", new() { TableSpanHandling = TableSpanHandling.Duplicate });
+        Assert.Equal(expectedFirstRow, markdown.Split('\n')[0]);
+    }
+
+    [Fact]
+    public void TableSpans_ColSpanIsLimitedTo1000()
+    {
+        var markdown = HtmlToMarkdown.Convert("<table><tr><td colspan=\"99999999999999999999\">a</td></tr></table>", new() { TableSpanHandling = TableSpanHandling.EmptyCells });
+        Assert.Equal(1000, markdown.Split('\n')[1].Count(c => c == '|') - 1);
+    }
+
+    [Fact]
+    public void TableSpans_CellsSkipPositionsOfRowSpans()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><td>1</td><td rowspan=\"2\">2</td><td>3</td></tr><tr><td>4</td><td>5</td></tr></table>",
+            "| 1 | 2 | 3 |\n| --- | --- | --- |\n| 4 |  | 5 |",
+            new() { TableSpanHandling = TableSpanHandling.EmptyCells });
+    }
+
+    // --- Complex tables ---
+
+    [Fact]
+    public void DocumentationExample_ComplexTables()
+    {
+        #region HtmlToMarkdown_ComplexTables
+        var html = """
+            <table>
+              <tr><th>Step</th><th>Details</th></tr>
+              <tr><td>Install</td><td><ul><li>Download</li><li>Run the setup</li></ul></td></tr>
+            </table>
+            """;
+
+        var markdown = HtmlToMarkdown.Convert(html, new HtmlToMarkdownOptions { ComplexTableHandling = ComplexTableHandling.Html });
+        Assert.Equal("""
+            <table>
+              <tbody><tr><th>Step</th><th>Details</th></tr>
+              <tr><td>Install</td><td><ul><li>Download</li><li>Run the setup</li></ul></td></tr>
+            </tbody></table>
+            """, markdown);
+        #endregion
+    }
+
+    [Fact]
+    public void ComplexTables_SimpleTableStaysAPipeTable()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><th>A</th></tr><tr><td><p>x<br>y</p></td></tr></table>",
+            "| A |\n| --- |\n| x<br>y |",
+            new() { ComplexTableHandling = ComplexTableHandling.Html });
+    }
+
+    [Theory]
+    [InlineData("<table><tr><td colspan=\"2\">a</td></tr></table>")]
+    [InlineData("<table><tr><td rowspan=\"2\">a</td></tr><tr><td>b</td></tr></table>")]
+    [InlineData("<table><thead><tr><th>a</th></tr><tr><th>b</th></tr></thead></table>")]
+    [InlineData("<table><tr><td><p>a</p><p>b</p></td></tr></table>")]
+    [InlineData("<table><tr><td><h2>a</h2></td></tr></table>")]
+    [InlineData("<table><tr><td><pre>a</pre></td></tr></table>")]
+    [InlineData("<table><tr><td><blockquote>a</blockquote></td></tr></table>")]
+    [InlineData("<table><tr><td><table><tr><td>a</td></tr></table></td></tr></table>")]
+    [InlineData("<table><tr><td><hr></td></tr></table>")]
+    [InlineData("<table><tr><td><ol><li>a</li></ol></td></tr></table>")]
+    public void ComplexTables_Html(string html)
+    {
+        var markdown = HtmlToMarkdown.Convert(html, new() { ComplexTableHandling = ComplexTableHandling.Html });
+        Assert.StartsWith("<table>", markdown, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ComplexTables_SpansAreNotComplexWhenTheyAreHandled()
+    {
+        AssertHtmlToMarkdown(
+            "<table><tr><th colspan=\"2\">a</th></tr></table>",
+            "| a | a |\n| --- | --- |",
+            new() { ComplexTableHandling = ComplexTableHandling.Html, TableSpanHandling = TableSpanHandling.Duplicate });
+    }
+
+    [Fact]
+    public void ComplexTables_StripsScriptsAndKeepsTheHtmlBlockTogether()
+    {
+        AssertHtmlToMarkdown(
+            "<p>Before</p><table><tr><td><pre>a\n\nb</pre><script>alert(1)</script></td><td><p>c</p><p>d</p></td></tr></table><p>After</p>",
+            "Before\n\n<table><tbody><tr><td><pre>a\n<!---->\nb</pre></td><td><p>c</p><p>d</p></td></tr></tbody></table>\n\nAfter",
+            new() { ComplexTableHandling = ComplexTableHandling.Html });
+    }
+
+    [Fact]
+    public void ComplexTables_RoundTrip()
+    {
+        var html = "<table><tr><td><pre>a\n\nb</pre></td><td><p>c</p><p>d</p></td></tr></table>";
+        var markdown = HtmlToMarkdown.Convert(html, new() { ComplexTableHandling = ComplexTableHandling.Html });
+        var rendered = Markdown.MarkdownConverter.ToHtml(markdown);
+        Assert.Equal("<table><tbody><tr><td><pre>a\n<!---->\nb</pre></td><td><p>c</p><p>d</p></td></tr></tbody></table>\n", rendered);
+    }
 }

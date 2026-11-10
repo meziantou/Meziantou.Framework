@@ -89,17 +89,244 @@ public static class HtmlToMarkdown
 
     private static string ConvertText(Text text, ConversionState state)
     {
-        var content = CollapseWhitespace(text.Data);
+        var whiteSpace = state.Options.UseCssWhiteSpace ? state.GetWhiteSpace(text.ParentElement) : WhiteSpaceMode.Collapse;
+        if (whiteSpace is WhiteSpaceMode.Collapse)
+            return ConvertTextSegment(CollapseWhitespace(text.Data), state);
+
+        return ConvertPreservedWhiteSpaceText(text, whiteSpace, state);
+    }
+
+    private static string ConvertTextSegment(string content, ConversionState state)
+    {
         if (state.Options.UseSimplePunctuation)
             content = ApplySimplePunctuation(content);
 
-        content = EscapeMarkdown(content);
+        content = EscapeMarkdown(content, state.Options);
         if (state.Options.EmojiShortcodeMode is not EmojiShortcodeMode.None)
         {
             content = ReplaceEmojiWithShortcodes(content, state.Options.EmojiShortcodeMode);
         }
 
         return content;
+    }
+
+    /// <summary>
+    /// Converts a text whose style preserves its line breaks, its spaces, or both. A preserved line break becomes a hard
+    /// line break. A run of preserved spaces keeps one space, and writes the other ones as <c>&amp;nbsp;</c> because a
+    /// renderer collapses consecutive spaces: all of them at the start of a line, where Markdown removes the indentation.
+    /// </summary>
+    private static string ConvertPreservedWhiteSpaceText(Text text, WhiteSpaceMode whiteSpace, ConversionState state)
+    {
+        var data = text.Data.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n');
+        if (whiteSpace is WhiteSpaceMode.PreserveSpaces)
+            data = data.Replace('\n', ' ');
+
+        var lineBreak = text.ParentElement is { } parent && (parent.LocalName is "td" or "th" || IsInTableCell(parent))
+            ? "<br>"
+            : GetHardLineBreak(state);
+
+        var sb = new StringBuilder(data.Length);
+        var lines = data.Split('\n');
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (i > 0)
+                sb.Append(lineBreak);
+
+            var line = lines[i];
+            if (whiteSpace is WhiteSpaceMode.PreserveBreaks)
+            {
+                // Collapsible spaces around a preserved line break are removed, as a browser does
+                line = CollapseWhitespace(line);
+                if (i > 0)
+                    line = line.TrimStart(' ');
+
+                if (i < lines.Length - 1)
+                    line = line.TrimEnd(' ');
+
+                sb.Append(ConvertTextSegment(line, state));
+            }
+            else
+            {
+                AppendPreservedSpaces(sb, ConvertTextSegment(ExpandTabs(line), state));
+            }
+        }
+
+        return sb.ToString();
+
+        static void AppendPreservedSpaces(StringBuilder sb, string line)
+        {
+            var index = 0;
+            while (index < line.Length)
+            {
+                if (line[index] is not ' ')
+                {
+                    sb.Append(line[index]);
+                    index++;
+                    continue;
+                }
+
+                var start = index;
+                while (index < line.Length && line[index] is ' ')
+                    index++;
+
+                for (var i = start; i < index; i++)
+                {
+                    if (i == start && start > 0)
+                    {
+                        sb.Append(' ');
+                    }
+                    else
+                    {
+                        sb.Append("&nbsp;");
+                    }
+                }
+            }
+        }
+
+        // A tab advances to the next multiple of 8 columns, the default tab-size of CSS
+        static string ExpandTabs(string line)
+        {
+            if (!line.Contains('\t', StringComparison.Ordinal))
+                return line;
+
+            var sb = new StringBuilder(line.Length + 8);
+            foreach (var c in line)
+            {
+                if (c is '\t')
+                {
+                    sb.Append(' ', 8 - (sb.Length % 8));
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+
+            return sb.ToString();
+        }
+    }
+
+    private static string GetHardLineBreak(ConversionState state)
+    {
+        return state.Options.LineBreakStyle == LineBreakStyle.Backslash ? "\\\n" : "  \n";
+    }
+
+    /// <summary>Reads the <c>white-space</c> and <c>white-space-collapse</c> declarations of the style attribute of an element.</summary>
+    private static WhiteSpaceMode? GetDeclaredWhiteSpace(Element element)
+    {
+        var style = element.GetAttribute("style");
+        if (string.IsNullOrEmpty(style))
+            return null;
+
+        WhiteSpaceMode? result = null;
+        foreach (var (property, value) in GetCssDeclarations(style))
+        {
+            WhiteSpaceMode? mode;
+            if (property.Equals("white-space", StringComparison.OrdinalIgnoreCase))
+            {
+                mode = ParseWhiteSpaceShorthand(value, out var isInherited);
+                if (isInherited)
+                {
+                    result = null;
+                    continue;
+                }
+            }
+            else if (property.Equals("white-space-collapse", StringComparison.OrdinalIgnoreCase))
+            {
+                mode = ParseWhiteSpaceCollapse(value, out var isInherited);
+                if (isInherited)
+                {
+                    result = null;
+                    continue;
+                }
+            }
+            else
+            {
+                continue;
+            }
+
+            // An invalid declaration is ignored: the previous one still applies
+            if (mode is not null)
+                result = mode;
+        }
+
+        return result;
+
+        static WhiteSpaceMode? ParseWhiteSpaceShorthand(string value, out bool isInherited)
+        {
+            isInherited = false;
+            switch (value.ToLowerInvariant())
+            {
+                case "normal" or "nowrap" or "initial":
+                    return WhiteSpaceMode.Collapse;
+                case "pre" or "pre-wrap" or "break-spaces":
+                    return WhiteSpaceMode.Preserve;
+                case "pre-line":
+                    return WhiteSpaceMode.PreserveBreaks;
+                case "inherit" or "unset" or "revert" or "revert-layer":
+                    isInherited = true;
+                    return null;
+            }
+
+            // The longhand values, such as "preserve nowrap"
+            WhiteSpaceMode? result = null;
+            foreach (var part in value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (part.Equals("wrap", StringComparison.OrdinalIgnoreCase) || part.Equals("nowrap", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var collapse = ParseWhiteSpaceCollapse(part, out var partIsInherited);
+                if (collapse is null || partIsInherited || result is not null)
+                    return null;
+
+                result = collapse;
+            }
+
+            return result;
+        }
+
+        static WhiteSpaceMode? ParseWhiteSpaceCollapse(string value, out bool isInherited)
+        {
+            isInherited = false;
+            switch (value.ToLowerInvariant())
+            {
+                case "collapse" or "initial":
+                    return WhiteSpaceMode.Collapse;
+                case "preserve" or "break-spaces":
+                    return WhiteSpaceMode.Preserve;
+                case "preserve-breaks":
+                    return WhiteSpaceMode.PreserveBreaks;
+                case "preserve-spaces":
+                    return WhiteSpaceMode.PreserveSpaces;
+                case "inherit" or "unset" or "revert" or "revert-layer":
+                    isInherited = true;
+                    return null;
+                default:
+                    return null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Splits an inline style into its declarations, with the property and the value trimmed and the
+    /// <c>!important</c> flag removed from the value.
+    /// </summary>
+    private static IEnumerable<(string Property, string Value)> GetCssDeclarations(string style)
+    {
+        foreach (var declaration in style.Split(';'))
+        {
+            var colonIndex = declaration.IndexOf(':', StringComparison.Ordinal);
+            if (colonIndex < 0)
+                continue;
+
+            var property = declaration[..colonIndex].Trim();
+            var value = declaration[(colonIndex + 1)..].Trim();
+            var bangIndex = value.LastIndexOf('!', StringComparison.Ordinal);
+            if (bangIndex >= 0 && value[(bangIndex + 1)..].Trim().Equals("important", StringComparison.OrdinalIgnoreCase))
+                value = value[..bangIndex].Trim();
+
+            yield return (property, value);
+        }
     }
 
     private static string ConvertElement(Element element, ConversionState state)
@@ -124,6 +351,11 @@ public static class HtmlToMarkdown
             "img" => ConvertImage(element),
             "br" => ConvertBreak(element, state),
             "input" => ConvertInput(element),
+            "sub" => ConvertSubscript(element, state),
+            "sup" => ConvertSuperscript(element, state),
+            "u" => ConvertUnderline(element, state),
+            "kbd" => ConvertKeyboard(element, state),
+            "video" or "audio" or "iframe" => ConvertEmbeddedContent(element, state),
 
             "script" or "style" or "noscript" => "",
 
@@ -220,7 +452,7 @@ public static class HtmlToMarkdown
 
     private static string ConvertParagraph(Element element, ConversionState state)
     {
-        var content = ConvertInlineContent(element, state).Trim();
+        var content = TrimInline(ConvertInlineContent(element, state));
         return PostProcessLineStart(content);
     }
 
@@ -326,7 +558,7 @@ public static class HtmlToMarkdown
 
             if (IsBlockElement(child))
             {
-                var inline = CollapseInlineSpaces(inlineBuf.ToString()).Trim();
+                var inline = TrimInline(CollapseInlineSpaces(inlineBuf.ToString()));
                 inlineBuf.Clear();
                 if (inline.Length > 0)
                     parts.Add((PostProcessLineStart(inline), false));
@@ -344,7 +576,7 @@ public static class HtmlToMarkdown
             }
         }
 
-        var remaining = CollapseInlineSpaces(inlineBuf.ToString()).Trim();
+        var remaining = TrimInline(CollapseInlineSpaces(inlineBuf.ToString()));
         if (remaining.Length > 0)
             parts.Add((PostProcessLineStart(remaining), false));
 
@@ -364,49 +596,66 @@ public static class HtmlToMarkdown
 
     private static string ConvertTable(Element table, ConversionState state)
     {
-        var headerRows = new List<List<(string Content, string? Align)>>();
-        var bodyRows = new List<List<(string Content, string? Align)>>();
-        var footerRows = new List<List<(string Content, string? Align)>>();
+        // A group holds the rows of a thead, a tbody or a tfoot: a cell cannot span the rows of another group
+        var headerGroups = new List<List<Element>>();
+        var bodyGroups = new List<List<Element>>();
+        var footerGroups = new List<List<Element>>();
+        List<Element>? directRows = null;
 
         foreach (var child in table.Children)
         {
             switch (child.LocalName)
             {
                 case "thead":
-                    foreach (var tr in child.Children.Where(c => c.LocalName == "tr"))
-                        headerRows.Add(ExtractTableRow(tr, state));
+                    headerGroups.Add(GetRows(child));
+                    directRows = null;
                     break;
 
                 case "tbody":
-                    foreach (var tr in child.Children.Where(c => c.LocalName == "tr"))
-                        bodyRows.Add(ExtractTableRow(tr, state));
-                    break;
-
-                case "tr":
-                    bodyRows.Add(ExtractTableRow(child, state));
+                    bodyGroups.Add(GetRows(child));
+                    directRows = null;
                     break;
 
                 case "tfoot":
-                    foreach (var tr in child.Children.Where(c => c.LocalName == "tr"))
-                        footerRows.Add(ExtractTableRow(tr, state));
+                    footerGroups.Add(GetRows(child));
+                    directRows = null;
+                    break;
+
+                case "tr":
+                    if (directRows is null)
+                    {
+                        directRows = [];
+                        bodyGroups.Add(directRows);
+                    }
+
+                    directRows.Add(child);
                     break;
             }
         }
 
-        var rows = new List<List<(string Content, string? Align)>>(headerRows.Count + bodyRows.Count + footerRows.Count);
-        rows.AddRange(headerRows);
-        rows.AddRange(bodyRows);
-        rows.AddRange(footerRows);
+        var groups = new List<List<Element>>(headerGroups.Count + bodyGroups.Count + footerGroups.Count);
+        groups.AddRange(headerGroups);
+        groups.AddRange(bodyGroups);
+        groups.AddRange(footerGroups);
 
+        var rows = BuildTableGrid(groups, state, out var hasSpans, out var hasBlocks);
         if (rows.Count == 0)
             return "";
 
+        if (state.Options.ComplexTableHandling is ComplexTableHandling.Html)
+        {
+            var headerRowCount = headerGroups.Sum(group => group.Count);
+            if (hasBlocks || headerRowCount > 1 || (hasSpans && state.Options.TableSpanHandling is TableSpanHandling.Ignore))
+                return GetRawHtml(table);
+        }
+
+        var duplicateSpans = state.Options.TableSpanHandling is TableSpanHandling.Duplicate;
         var colCount = rows.Max(r => r.Count);
         var sb = new StringBuilder();
 
         // Header row (first row)
         var headerRow = rows[0];
-        AppendTableRow(sb, headerRow, colCount);
+        AppendTableRow(sb, headerRow, colCount, duplicateSpans);
         sb.Append('\n');
 
         // Separator row with alignment
@@ -416,10 +665,12 @@ public static class HtmlToMarkdown
         for (var i = 1; i < rows.Count; i++)
         {
             sb.Append('\n');
-            AppendTableRow(sb, rows[i], colCount);
+            AppendTableRow(sb, rows[i], colCount, duplicateSpans);
         }
 
         return sb.ToString();
+
+        static List<Element> GetRows(Element group) => [.. group.Children.Where(c => c.LocalName == "tr")];
     }
 
     private static string ConvertDefinitionList(Element element, ConversionState state)
@@ -565,7 +816,157 @@ public static class HtmlToMarkdown
     {
         if (IsInTableCell(element))
             return "<br>";
-        return state.Options.LineBreakStyle == LineBreakStyle.Backslash ? "\\\n" : "  \n";
+        return GetHardLineBreak(state);
+    }
+
+    private static string ConvertSubscript(Element element, ConversionState state)
+    {
+        return state.Options.SubscriptStyle switch
+        {
+            SubscriptStyle.Html => WrapInlineHtml(element, state),
+            SubscriptStyle.Tilde => WrapCompactMarker(element, state, '~'),
+            SubscriptStyle.Text => ConvertInlineContent(element, state),
+            _ => ConvertUnknownElement(element, state),
+        };
+    }
+
+    private static string ConvertSuperscript(Element element, ConversionState state)
+    {
+        return state.Options.SuperscriptStyle switch
+        {
+            SuperscriptStyle.Html => WrapInlineHtml(element, state),
+            SuperscriptStyle.Caret => WrapCompactMarker(element, state, '^'),
+            SuperscriptStyle.Text => ConvertInlineContent(element, state),
+            _ => ConvertUnknownElement(element, state),
+        };
+    }
+
+    private static string ConvertUnderline(Element element, ConversionState state)
+    {
+        return state.Options.UnderlineStyle switch
+        {
+            UnderlineStyle.Html => WrapInlineHtml(element, state),
+            UnderlineStyle.PlusSigns => WrapInlineMarker(ConvertInlineContent(element, state), "++"),
+            UnderlineStyle.Text => ConvertInlineContent(element, state),
+            _ => ConvertUnknownElement(element, state),
+        };
+    }
+
+    private static string ConvertKeyboard(Element element, ConversionState state)
+    {
+        return state.Options.KeyboardStyle switch
+        {
+            KeyboardStyle.Html => WrapInlineHtml(element, state),
+            KeyboardStyle.CodeSpan => ConvertInlineCode(element),
+            KeyboardStyle.Text => ConvertInlineContent(element, state),
+            _ => ConvertUnknownElement(element, state),
+        };
+    }
+
+    private static string ConvertEmbeddedContent(Element element, ConversionState state)
+    {
+        return state.Options.EmbeddedContentStyle switch
+        {
+            EmbeddedContentStyle.Html => GetRawHtml(element),
+            EmbeddedContentStyle.Link => ConvertEmbeddedContentToLink(element, state),
+            EmbeddedContentStyle.Remove => "",
+            _ => ConvertUnknownElement(element, state),
+        };
+
+        static string ConvertEmbeddedContentToLink(Element element, ConversionState state)
+        {
+            var src = element.GetAttribute("src");
+            if (string.IsNullOrWhiteSpace(src) && element.LocalName is "video" or "audio")
+            {
+                foreach (var child in element.Children)
+                {
+                    if (child.LocalName is "source" && child.GetAttribute("src") is { } sourceSrc && !string.IsNullOrWhiteSpace(sourceSrc))
+                    {
+                        src = sourceSrc;
+                        break;
+                    }
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(src))
+                return "";
+
+            src = src.Trim();
+            var label = CollapseWhitespace(element.GetAttribute("title") ?? "").Trim();
+            if (label.Length == 0)
+                label = src;
+
+            var sb = new StringBuilder();
+            sb.Append('[');
+            sb.Append(EscapeMarkdown(label, state.Options));
+            sb.Append("](");
+            AppendLinkDestination(sb, src);
+            sb.Append(')');
+            return sb.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Writes the converted content of an element between its start and end tags, without its attributes. Markdown
+    /// renders inline HTML tags, and still reads the Markdown between them.
+    /// </summary>
+    private static string WrapInlineHtml(Element element, ConversionState state)
+    {
+        var content = ConvertInlineContent(element, state);
+        if (string.IsNullOrWhiteSpace(content))
+            return content;
+
+        return "<" + element.LocalName + ">" + content + "</" + element.LocalName + ">";
+    }
+
+    /// <summary>
+    /// Writes the content between two markers that do not allow spaces, as the subscript (<c>~</c>) and superscript
+    /// (<c>^</c>) extensions of Pandoc and markdown-it: the spaces of the content are escaped. Content that the markers
+    /// cannot hold, such as a code span or a nested marker, is written as inline HTML.
+    /// </summary>
+    private static string WrapCompactMarker(Element element, ConversionState state, char marker)
+    {
+        var content = CollapseHardLineBreaks(ConvertInlineContent(element, state));
+        if (string.IsNullOrWhiteSpace(content))
+            return content;
+
+        var start = 0;
+        while (start < content.Length && content[start] == ' ')
+            start++;
+
+        var end = content.Length;
+        while (end > start && content[end - 1] == ' ')
+            end--;
+
+        var inner = content[start..end];
+        if (inner.Contains('`', StringComparison.Ordinal) || inner.Contains('<', StringComparison.Ordinal) || inner.Contains("](", StringComparison.Ordinal) || ContainsUnescaped(inner, marker) || inner.EndsWith('\\', StringComparison.Ordinal))
+            return content[..start] + "<" + element.LocalName + ">" + inner + "</" + element.LocalName + ">" + content[end..];
+
+        return content[..start] + marker + inner.Replace(" ", "\\ ", StringComparison.Ordinal) + marker + content[end..];
+
+        static bool ContainsUnescaped(string text, char c)
+        {
+            var escaped = false;
+            foreach (var current in text)
+            {
+                if (escaped)
+                {
+                    escaped = false;
+                    continue;
+                }
+
+                if (current is '\\')
+                {
+                    escaped = true;
+                }
+                else if (current == c)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     /// <summary>
@@ -595,7 +996,7 @@ public static class HtmlToMarkdown
         {
             UnknownElementHandling.Strip => "",
             UnknownElementHandling.StripKeepContent => ConvertChildNodes(element, state),
-            _ => GetOuterHtmlWithoutStrippedElements(element),
+            _ => GetRawHtml(element),
         };
     }
 
@@ -618,35 +1019,150 @@ public static class HtmlToMarkdown
         return clone.OuterHtml;
     }
 
+    /// <summary>
+    /// Gets the HTML written for an element passed through as raw HTML. A blank line ends an HTML block, and a raw HTML
+    /// tag cannot span one, so each blank line of the HTML gets an empty comment: the comment renders nothing, also in a
+    /// <c>pre</c> element where the line itself is kept.
+    /// </summary>
+    private static string GetRawHtml(Element element)
+    {
+        var html = GetOuterHtmlWithoutStrippedElements(element);
+        if (!html.Contains('\n', StringComparison.Ordinal))
+            return html;
+
+        var lines = html.Split('\n');
+        var changed = false;
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(lines[i]))
+            {
+                lines[i] += "<!---->";
+                changed = true;
+            }
+        }
+
+        return changed ? string.Join('\n', lines) : html;
+    }
+
     // =========================================================================
     // Table helpers
     // =========================================================================
 
-    private static List<(string Content, string? Align)> ExtractTableRow(Element tr, ConversionState state)
+    /// <summary>
+    /// Places the cells of the rows in a grid. When <see cref="HtmlToMarkdownOptions.TableSpanHandling"/> honors the spans,
+    /// a cell fills every position it spans, and the following cells of a row skip the positions that a cell of a
+    /// previous row spans, as the table model of HTML does. A position that no cell fills is <see langword="null"/>.
+    /// </summary>
+    private static List<List<TableCell?>> BuildTableGrid(List<List<Element>> groups, ConversionState state, out bool hasSpans, out bool hasBlocks)
     {
-        var cells = new List<(string Content, string? Align)>();
-
-        foreach (var cell in tr.Children)
+        hasSpans = false;
+        hasBlocks = false;
+        var honorSpans = state.Options.TableSpanHandling is not TableSpanHandling.Ignore;
+        var rows = new List<List<TableCell?>>();
+        foreach (var group in groups)
         {
-            if (cell.LocalName is "th" or "td")
+            var groupStart = rows.Count;
+            var groupEnd = groupStart + group.Count;
+            for (var i = 0; i < group.Count; i++)
             {
-                var content = ConvertTableCellContent(cell, state);
-                var align = GetCellAlignment(cell);
-                cells.Add((content, align));
+                rows.Add([]);
+            }
+
+            for (var i = 0; i < group.Count; i++)
+            {
+                var rowIndex = groupStart + i;
+                var row = rows[rowIndex];
+                var column = 0;
+                foreach (var cell in group[i].Children)
+                {
+                    if (cell.LocalName is not ("th" or "td"))
+                        continue;
+
+                    var content = ConvertTableCellContent(cell, state, out var cellHasBlocks);
+                    hasBlocks |= cellHasBlocks;
+                    var align = GetCellAlignment(cell);
+
+                    // The limits and the meaning of 0 come from the table model of HTML
+                    var colSpan = ParseSpan(cell.GetAttribute("colspan"), defaultValue: 1, maximum: 1000);
+                    if (colSpan == 0)
+                        colSpan = 1;
+
+                    var rowSpan = ParseSpan(cell.GetAttribute("rowspan"), defaultValue: 1, maximum: 65534);
+                    if (rowSpan == 0 || rowSpan > groupEnd - rowIndex)
+                        rowSpan = groupEnd - rowIndex;
+
+                    hasSpans |= colSpan > 1 || rowSpan > 1;
+                    if (!honorSpans)
+                    {
+                        colSpan = 1;
+                        rowSpan = 1;
+                    }
+
+                    while (column < row.Count && row[column] is not null)
+                        column++;
+
+                    for (var r = 0; r < rowSpan; r++)
+                    {
+                        var target = rows[rowIndex + r];
+                        for (var c = 0; c < colSpan; c++)
+                        {
+                            var targetColumn = column + c;
+                            while (target.Count <= targetColumn)
+                                target.Add(null);
+
+                            target[targetColumn] = new TableCell(content, align, IsSpanned: r > 0 || c > 0);
+                        }
+                    }
+
+                    column += colSpan;
+                }
             }
         }
 
-        return cells;
+        return rows;
     }
+
+    /// <summary>
+    /// Parses a colspan or rowspan attribute with the rules for parsing non-negative integers of HTML: leading
+    /// whitespace, an optional plus sign, then digits; the characters after the digits are ignored.
+    /// </summary>
+    private static int ParseSpan(string? value, int defaultValue, int maximum)
+    {
+        if (value is null)
+            return defaultValue;
+
+        var index = 0;
+        while (index < value.Length && value[index] is ' ' or '\t' or '\n' or '\f' or '\r')
+            index++;
+
+        if (index < value.Length && value[index] is '+')
+            index++;
+
+        if (index >= value.Length || !char.IsAsciiDigit(value[index]))
+            return defaultValue;
+
+        var result = 0;
+        while (index < value.Length && char.IsAsciiDigit(value[index]))
+        {
+            result = Math.Min(maximum, (result * 10) + (value[index] - '0'));
+            index++;
+        }
+
+        return result;
+    }
+
+    // The blocks that a cell of a pipe table cannot hold
+    private const string TableCellBlockSelector = "h1, h2, h3, h4, h5, h6, blockquote, pre, ul, ol, table, hr, dl";
 
     /// <summary>
     /// Converts the content of a table cell. Block children are converted as blocks rather
     /// than concatenated, then the result is collapsed onto a single line: a row of a pipe
     /// table cannot contain a line break.
     /// </summary>
-    private static string ConvertTableCellContent(Element cell, ConversionState state)
+    private static string ConvertTableCellContent(Element cell, ConversionState state, out bool hasBlocks)
     {
         var content = ConvertChildNodes(cell, state).Trim();
+        hasBlocks = content.Contains('\n', StringComparison.Ordinal) || cell.QuerySelector(TableCellBlockSelector) is not null;
         if (!content.Contains('\n', StringComparison.Ordinal))
             return content;
 
@@ -693,26 +1209,10 @@ public static class HtmlToMarkdown
     /// </summary>
     private static string? ExtractCssTextAlign(string style)
     {
-        // Parse "text-align: center" (or "text-align:center") from the style string
-        foreach (var declaration in style.Split(';'))
+        foreach (var (property, value) in GetCssDeclarations(style))
         {
-            var trimmed = declaration.Trim();
-            var colonIndex = trimmed.IndexOf(':', StringComparison.Ordinal);
-            if (colonIndex < 0)
-                continue;
-
-            var property = trimmed[..colonIndex].Trim();
             if (property.Equals("text-align", StringComparison.OrdinalIgnoreCase))
             {
-                var value = trimmed[(colonIndex + 1)..].Trim().TrimEnd('!').Trim();
-                // Normalize !important
-                if (value.EndsWith("important", StringComparison.OrdinalIgnoreCase))
-                {
-                    var bangIndex = value.LastIndexOf('!', StringComparison.Ordinal);
-                    if (bangIndex >= 0)
-                        value = value[..bangIndex].Trim();
-                }
-
                 return value.ToLowerInvariant() switch
                 {
                     "left" => "left",
@@ -726,23 +1226,25 @@ public static class HtmlToMarkdown
         return null;
     }
 
-    private static void AppendTableRow(StringBuilder sb, List<(string Content, string? Align)> row, int colCount)
+    private static void AppendTableRow(StringBuilder sb, List<TableCell?> row, int colCount, bool duplicateSpans)
     {
         sb.Append('|');
         for (var i = 0; i < colCount; i++)
         {
             sb.Append(' ');
-            sb.Append(i < row.Count ? row[i].Content : "");
+            if (i < row.Count && row[i] is { } cell && (!cell.IsSpanned || duplicateSpans))
+                sb.Append(cell.Content);
+
             sb.Append(" |");
         }
     }
 
-    private static void AppendSeparatorRow(StringBuilder sb, List<(string Content, string? Align)> headerRow, int colCount)
+    private static void AppendSeparatorRow(StringBuilder sb, List<TableCell?> headerRow, int colCount)
     {
         sb.Append('|');
         for (var i = 0; i < colCount; i++)
         {
-            var align = i < headerRow.Count ? headerRow[i].Align : null;
+            var align = i < headerRow.Count ? headerRow[i]?.Align : null;
             sb.Append(' ');
             sb.Append(align switch
             {
@@ -754,6 +1256,12 @@ public static class HtmlToMarkdown
             sb.Append(" |");
         }
     }
+
+    /// <summary>A position of the grid of a table.</summary>
+    /// <param name="Content">The converted content of the cell.</param>
+    /// <param name="Align">The alignment of the cell.</param>
+    /// <param name="IsSpanned">Whether the position is covered by the span of a cell that starts at another position.</param>
+    private readonly record struct TableCell(string Content, string? Align, bool IsSpanned);
 
     // =========================================================================
     // Code block helpers
@@ -956,7 +1464,7 @@ public static class HtmlToMarkdown
         }
     }
 
-    private static string EscapeMarkdown(string text)
+    private static string EscapeMarkdown(string text, HtmlToMarkdownOptions options)
     {
         var sb = new StringBuilder(text.Length);
         for (var i = 0; i < text.Length; i++)
@@ -985,9 +1493,16 @@ public static class HtmlToMarkdown
 
                     break;
 
-                // Escape ~ only in ~~ sequences (strikethrough)
+                // Escape ~ only in ~~ sequences (strikethrough), or everywhere when it marks subscripts
                 case '~':
-                    if ((i + 1 < text.Length && text[i + 1] == '~') || (i > 0 && text[i - 1] == '~'))
+                    if (options.SubscriptStyle is SubscriptStyle.Tilde || (i + 1 < text.Length && text[i + 1] == '~') || (i > 0 && text[i - 1] == '~'))
+                        sb.Append('\\');
+                    sb.Append(c);
+                    break;
+
+                // Escape ^ when it marks superscripts
+                case '^':
+                    if (options.SuperscriptStyle is SuperscriptStyle.Caret)
                         sb.Append('\\');
                     sb.Append(c);
                     break;
@@ -999,9 +1514,9 @@ public static class HtmlToMarkdown
                     sb.Append(c);
                     break;
 
-                // Escape # (heading) and + (bullet list) only at start of text
+                // Escape # (heading) and + (bullet list) only at start of text, and + in sequences of 2+ when it marks underlines
                 case '#' or '+':
-                    if (i == 0)
+                    if (i == 0 || (c is '+' && options.UnderlineStyle is UnderlineStyle.PlusSigns && ((i + 1 < text.Length && text[i + 1] == '+') || (i > 0 && text[i - 1] == '+'))))
                         sb.Append('\\');
                     sb.Append(c);
                     break;
@@ -1344,10 +1859,60 @@ public static class HtmlToMarkdown
 
     private static void FlushInlineBuffer(StringBuilder inlineBuf, List<string> blocks)
     {
-        var inline = CollapseInlineSpaces(inlineBuf.ToString()).Trim();
+        var inline = TrimInline(CollapseInlineSpaces(inlineBuf.ToString()));
         inlineBuf.Clear();
         if (inline.Length > 0)
             blocks.Add(PostProcessLineStart(inline));
+    }
+
+    /// <summary>
+    /// Trims the inline content of a block: the whitespace, the hard line breaks at its start and at its end, which
+    /// render nothing there, and a content made of nothing else than spaces preserved by CSS.
+    /// </summary>
+    private static string TrimInline(string content)
+    {
+        var start = 0;
+        var end = content.Length;
+        while (true)
+        {
+            while (start < end && char.IsWhiteSpace(content[start]))
+                start++;
+
+            if (start + 1 < end && content[start] is '\\' && content[start + 1] is '\n')
+            {
+                start += 2;
+                continue;
+            }
+
+            break;
+        }
+
+        while (true)
+        {
+            while (end > start && char.IsWhiteSpace(content[end - 1]))
+                end--;
+
+            // A backslash that was followed by a line break is a hard line break
+            if (end > start && end < content.Length && content[end - 1] is '\\' && content[end] is '\n')
+            {
+                end--;
+                continue;
+            }
+
+            break;
+        }
+
+        var result = content[start..end];
+        if (result.Contains("&nbsp;", StringComparison.Ordinal) && IsBlank(result))
+            return "";
+
+        return result;
+
+        static bool IsBlank(string text)
+        {
+            var withoutSpaces = text.Replace("&nbsp;", "", StringComparison.Ordinal).Replace("\\\n", "", StringComparison.Ordinal);
+            return string.IsNullOrWhiteSpace(withoutSpaces);
+        }
     }
 
     /// <summary>
@@ -1387,6 +1952,7 @@ public static class HtmlToMarkdown
     private sealed class ConversionState
     {
         private readonly Dictionary<Node, string> _converted = [];
+        private readonly Dictionary<Element, WhiteSpaceMode> _whiteSpace = [];
 
         public HtmlToMarkdownOptions Options { get; }
 
@@ -1398,5 +1964,52 @@ public static class HtmlToMarkdown
         public void SetConverted(Node node, string markdown) => _converted[node] = markdown;
 
         public string GetConverted(Node node) => _converted.TryGetValue(node, out var markdown) ? markdown : "";
+
+        /// <summary>
+        /// Gets the white-space mode that applies to the content of an element: the one its style declares, else the one
+        /// of its parent, as the property is inherited. Each element is resolved once.
+        /// </summary>
+        public WhiteSpaceMode GetWhiteSpace(Element? element)
+        {
+            var mode = WhiteSpaceMode.Collapse;
+            List<Element>? unresolved = null;
+            for (var current = element; current is not null; current = current.ParentElement)
+            {
+                if (_whiteSpace.TryGetValue(current, out var cached))
+                {
+                    mode = cached;
+                    break;
+                }
+
+                if (GetDeclaredWhiteSpace(current) is { } declared)
+                {
+                    mode = declared;
+                    _whiteSpace[current] = declared;
+                    break;
+                }
+
+                unresolved ??= [];
+                unresolved.Add(current);
+            }
+
+            if (unresolved is not null)
+            {
+                foreach (var item in unresolved)
+                {
+                    _whiteSpace[item] = mode;
+                }
+            }
+
+            return mode;
+        }
+    }
+
+    /// <summary>The handling of the spaces and line breaks of a text, from the CSS white-space properties.</summary>
+    private enum WhiteSpaceMode
+    {
+        Collapse,
+        Preserve,
+        PreserveBreaks,
+        PreserveSpaces,
     }
 }

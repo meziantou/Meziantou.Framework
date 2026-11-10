@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.HtmlToMarkdown. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <!-- A namespace Meziantou.Framework.HtmlToMarkdown would hide the HtmlToMarkdown class -->
+    <RootNamespace>Meziantou.Framework.HtmlToMarkdownFuzz</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The HTML of the examples of the specifications that the unit tests convert are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.HtmlToMarkdown.Tests\TestData\Specs\*.md" LogicalName="Specs.%(Filename)%(Extension)" Link="Seeds\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.HtmlToMarkdown\Meziantou.Framework.HtmlToMarkdown.csproj" />
+  </ItemGroup>
+</Project>

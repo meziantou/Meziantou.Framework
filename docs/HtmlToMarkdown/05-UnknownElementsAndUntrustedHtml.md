@@ -5,8 +5,10 @@ description: Keep, remove or unwrap the elements that Markdown cannot write, and
 
 ## Choose what happens to unknown elements
 
-An element that the converter does not know, such as `sub`, `kbd`, `u` or a custom element, has no Markdown syntax.
-[UnknownElementHandling](cref:Meziantou.Framework.UnknownElementHandling) chooses what it becomes:
+An element that the converter does not know, such as `mark`, `abbr` or a custom element, has no Markdown syntax.
+`sub`, `sup`, `u`, `kbd`, `video`, `audio` and `iframe` are unknown elements too, unless
+[their option](03-ConvertedElements.md#subscript-superscript-underline-and-keyboard) chooses a syntax.
+[UnknownElementHandling](cref:Meziantou.Framework.UnknownElementHandling) chooses what an unknown element becomes:
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlToMarkdown.Tests/HtmlToMarkdownConverterTests.cs;region=HtmlToMarkdown_UnknownElements;format=md-fenced-code-block;dedent=true -->
 ```csharp

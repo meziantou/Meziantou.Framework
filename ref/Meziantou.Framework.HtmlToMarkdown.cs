@@ -12,6 +12,20 @@ namespace Meziantou.Framework
         Indented = 1,
     }
 
+    public enum ComplexTableHandling
+    {
+        Flatten = 0,
+        Html = 1,
+    }
+
+    public enum EmbeddedContentStyle
+    {
+        UnknownElement = 0,
+        Html = 1,
+        Link = 2,
+        Remove = 3,
+    }
+
     public enum EmojiShortcodeMode
     {
         None = 0,
@@ -41,20 +55,67 @@ namespace Meziantou.Framework
     {
         public char CodeBlockFenceCharacter { get => throw null; set { } }
         public Meziantou.Framework.CodeBlockStyle CodeBlockStyle { get => throw null; set { } }
+        public Meziantou.Framework.ComplexTableHandling ComplexTableHandling { get => throw null; set { } }
+        public Meziantou.Framework.EmbeddedContentStyle EmbeddedContentStyle { get => throw null; set { } }
         public Meziantou.Framework.EmojiShortcodeMode EmojiShortcodeMode { get => throw null; set { } }
         public Meziantou.Framework.EmphasisMarker EmphasisMarker { get => throw null; set { } }
         public Meziantou.Framework.HeadingStyle HeadingStyle { get => throw null; set { } }
+        public Meziantou.Framework.KeyboardStyle KeyboardStyle { get => throw null; set { } }
         public Meziantou.Framework.LineBreakStyle LineBreakStyle { get => throw null; set { } }
+        public Meziantou.Framework.SubscriptStyle SubscriptStyle { get => throw null; set { } }
+        public Meziantou.Framework.SuperscriptStyle SuperscriptStyle { get => throw null; set { } }
+        public Meziantou.Framework.TableSpanHandling TableSpanHandling { get => throw null; set { } }
         public string ThematicBreak { get => throw null; set { } }
+        public Meziantou.Framework.UnderlineStyle UnderlineStyle { get => throw null; set { } }
         public Meziantou.Framework.UnknownElementHandling UnknownElementHandling { get => throw null; set { } }
         public char UnorderedListMarker { get => throw null; set { } }
+        public bool UseCssWhiteSpace { get => throw null; set { } }
         public bool UseSimplePunctuation { get => throw null; set { } }
+    }
+
+    public enum KeyboardStyle
+    {
+        UnknownElement = 0,
+        Html = 1,
+        CodeSpan = 2,
+        Text = 3,
     }
 
     public enum LineBreakStyle
     {
         TrailingSpaces = 0,
         Backslash = 1,
+    }
+
+    public enum SubscriptStyle
+    {
+        UnknownElement = 0,
+        Html = 1,
+        Tilde = 2,
+        Text = 3,
+    }
+
+    public enum SuperscriptStyle
+    {
+        UnknownElement = 0,
+        Html = 1,
+        Caret = 2,
+        Text = 3,
+    }
+
+    public enum TableSpanHandling
+    {
+        Ignore = 0,
+        EmptyCells = 1,
+        Duplicate = 2,
+    }
+
+    public enum UnderlineStyle
+    {
+        UnknownElement = 0,
+        Html = 1,
+        PlusSigns = 2,
+        Text = 3,
     }
 
     public enum UnknownElementHandling

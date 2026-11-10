@@ -103,6 +103,29 @@ public sealed class HtmlToMarkdownToolTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public async Task ElementAndTableOptions()
+    {
+        var console = new ConsoleHelper(testOutputHelper);
+        var result = await Program.MainImpl(
+            [
+                "--subscript-style", "Tilde",
+                "--superscript-style", "Caret",
+                "--underline-style", "PlusSigns",
+                "--keyboard-style", "CodeSpan",
+                "--embedded-content-style", "Remove",
+                "--ignore-css-white-space",
+                "--table-span-handling", "Duplicate",
+                "--complex-table-handling", "Html",
+            ],
+            console.ConfigureConsole,
+            new StringReader("<p style=\"white-space: pre\">H<sub>2</sub>O  x<sup>2</sup> <u>u</u> <kbd>K</kbd><video src=\"v.mp4\"></video></p><table><tr><th colspan=\"2\">A</th></tr></table>"));
+
+        Assert.Equal(0, result);
+        Assert.Equal("H~2~O x^2^ ++u++ `K`\n\n| A | A |\n| --- | --- |\n", console.Output);
+        Assert.Equal(string.Empty, console.Error);
+    }
+
+    [Fact]
     public async Task EmptyInputProducesEmptyOutput()
     {
         var console = new ConsoleHelper(testOutputHelper);

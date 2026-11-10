@@ -19,6 +19,7 @@ on:
           - atlassian-data-format
           - barcodes
           - bencode
+          - bloom-filters
           - charts
           - codeowners
           - csv
@@ -101,6 +102,7 @@ env:
       { "project": "Meziantou.Framework.AtlassianDataFormat.Fuzz", "component": "atlassian-data-format", "day": 4 },
       { "project": "Meziantou.Framework.Barcodes.Fuzz",            "component": "barcodes",              "day": 5 },
       { "project": "Meziantou.Framework.Bencode.Fuzz",             "component": "bencode",               "day": 2 },
+      { "project": "Meziantou.Framework.BloomFilters.Fuzz",        "component": "bloom-filters",         "day": 5 },
       { "project": "Meziantou.Framework.Charts.Fuzz",              "component": "charts",                "day": 1 },
       { "project": "Meziantou.Framework.CodeOwners.Fuzz",          "component": "codeowners",            "day": 1 },
       { "project": "Meziantou.Framework.Csv.Fuzz",                 "component": "csv",                   "day": 3 },

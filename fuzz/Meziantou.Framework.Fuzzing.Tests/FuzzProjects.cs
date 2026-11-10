@@ -10,6 +10,7 @@ internal static class FuzzProjects
         ("Meziantou.Framework.AtlassianDataFormat.Fuzz", AtlassianDataFormat.Fuzz.AtlassianDataFormatFuzzTargets.All),
         ("Meziantou.Framework.Barcodes.Fuzz", Barcodes.Fuzz.BarcodesFuzzTargets.All),
         ("Meziantou.Framework.Bencode.Fuzz", Bencode.Fuzz.BencodeFuzzTargets.All),
+        ("Meziantou.Framework.BloomFilters.Fuzz", BloomFilters.Fuzz.BloomFiltersFuzzTargets.All),
         ("Meziantou.Framework.Charts.Fuzz", Charts.Fuzz.ChartsFuzzTargets.All),
         ("Meziantou.Framework.CodeOwners.Fuzz", CodeOwners.Fuzz.CodeOwnersFuzzTargets.All),
         ("Meziantou.Framework.Csv.Fuzz", Csv.Fuzz.CsvFuzzTargets.All),

@@ -3,6 +3,7 @@
     <Project Path="../fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Barcodes.Fuzz/Meziantou.Framework.Barcodes.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Bencode.Fuzz/Meziantou.Framework.Bencode.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.BloomFilters.Fuzz/Meziantou.Framework.BloomFilters.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Charts.Fuzz/Meziantou.Framework.Charts.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.CodeOwners.Fuzz/Meziantou.Framework.CodeOwners.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Csv.Fuzz/Meziantou.Framework.Csv.Fuzz.csproj" />
@@ -50,6 +51,7 @@
     <Project Path="../src/Meziantou.Framework.AtlassianDataFormat/Meziantou.Framework.AtlassianDataFormat.csproj" />
     <Project Path="../src/Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
     <Project Path="../src/Meziantou.Framework.Bencode/Meziantou.Framework.Bencode.csproj" />
+    <Project Path="../src/Meziantou.Framework.BloomFilters/Meziantou.Framework.BloomFilters.csproj" />
     <Project Path="../src/Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
     <Project Path="../src/Meziantou.Framework.CodeOwners/Meziantou.Framework.CodeOwners.csproj" />
     <Project Path="../src/Meziantou.Framework.CommandLine/Meziantou.Framework.CommandLine.csproj" />

@@ -23,7 +23,8 @@ public sealed class StronglyTypedIdAnalyzer : DiagnosticAnalyzer
         messageFormat: "'Guid.CreateVersion7()' is not available in the target framework, so 'GuidGenerationStrategy.Version7' cannot be used",
         category: "StronglyTypedId",
         DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: [WellKnownDiagnosticTags.CompilationEnd]);
 
     private static readonly DiagnosticDescriptor UnusedGuidGenerationStrategy = new(
         id: "MFSTID0003",

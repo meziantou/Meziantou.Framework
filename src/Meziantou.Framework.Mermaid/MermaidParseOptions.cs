@@ -15,7 +15,7 @@ public sealed class MermaidParseOptions
     /// <summary>Gets the largest number of nodes of a diagram. The default is 2,000.</summary>
     public int MaxNodes { get; init; } = 2_000;
 
-    /// <summary>Gets the deepest nesting of the groups (subgraphs, namespaces, composite states...). The default is 32.</summary>
+    /// <summary>Gets the deepest nesting of the groups (subgraphs, namespaces, composite states...) and of the expressions of a railroad diagram. The default is 32.</summary>
     public int MaxDepth { get; init; } = 32;
 
     /// <summary>Gets the theme of the diagram when the text does not choose one, or <see langword="null"/> for <see cref="DiagramTheme.Default"/>.</summary>

@@ -82,8 +82,21 @@ public abstract partial class CanvasRenderingContext2DBase
         // With a shadow, the drawings of the layer must not be added twice to the parent (once for the shadow, once for the
         // layer): a shadow at each nested layer would double the size of the display list at each level. The shadow is drawn
         // from an image of the layer instead, as the browsers draw the texture of the layer.
-        var shadowContent = ShadowsAreDrawn ? RasterizeForShadow(content) : null;
-        DrawShape(builder => AddLayer(builder, content), shadowContent is null ? null : builder => AddLayer(builder, shadowContent));
+        var shadow = ShadowsAreDrawn ? RasterizeForShadow(content, layer.Filters, transform, AddFilteredLayer) : default;
+        Action<DisplayListBuilder>? addShadow = shadow switch
+        {
+            (null, _) => null,
+            ({ } image, true) => builder => builder.AddList(image),
+            ({ } image, false) => builder => AddLayer(builder, image),
+        };
+        DrawShape(builder => AddLayer(builder, content), addShadow, shadow.IsFiltered);
+
+        void AddFilteredLayer(DisplayListBuilder builder)
+        {
+            builder.SaveLayer(new SaveLayerItem(1, BlendMode.Normal, GetFilters()));
+            AddLayer(builder, content);
+            builder.Restore();
+        }
 
         void AddLayer(DisplayListBuilder builder, DisplayList list)
         {
@@ -108,31 +121,116 @@ public abstract partial class CanvasRenderingContext2DBase
     }
 
     /// <summary>
-    /// Returns an image of the drawings of a layer for the pass of its shadow, as the browsers draw the texture of the layer: the area that the shadow moves onto the canvas (the canvas moved by the
-    /// opposite of the offset), with a margin for the blur and the filters, so its size does not depend on the offset. Returns
-    /// null when the image cannot be created: the drawings are then added again.
+    /// Returns an image of a layer for the pass of its shadow, as the browsers draw the texture of the layer, so that its size
+    /// does not depend on the offset of the shadow. The image holds the drawings that the filters of the layer and of the state
+    /// can move into the area that the shadow moves onto the canvas (the canvas moved by the opposite of the offset). When this
+    /// area of the drawings is not known (an SVG filter) or too large, the image is the layer already filtered (the backend
+    /// filters the drawings beyond the edges of the image within the reach of the filters; its colors are rounded once more).
+    /// Returns no content when the image cannot be created: the shadow pass then draws the layer again.
     /// </summary>
-    private DisplayList? RasterizeForShadow(DisplayList content)
+    private (DisplayList? Content, bool IsFiltered) RasterizeForShadow(DisplayList content, DisplayFilter[]? layerFilters, DisplayMatrix transform, Action<DisplayListBuilder> addFilteredLayer)
     {
-        double width = Bitmap.Width;
-        double height = Bitmap.Height;
-        var margin = Math.Ceiling((_state.ShadowBlur * 1.5) + Math.Max(width, height));
-        var x = Math.Round(-_state.ShadowOffsetX, MidpointRounding.AwayFromZero) - margin;
-        var y = Math.Round(-_state.ShadowOffsetY, MidpointRounding.AwayFromZero) - margin;
-        var imageWidth = width + (2 * margin);
-        var imageHeight = height + (2 * margin);
-        if (imageWidth * imageHeight > BitmapPixels.MaxPixelCount)
+        var reach = Math.Ceiling(_state.ShadowBlur * 1.5) + 1;
+        var target = new PhysicalRect(-_state.ShadowOffsetX, -_state.ShadowOffsetY, Bitmap.Width, Bitmap.Height).Expand(new Sides<double>(reach, reach, reach, reach));
+        if (GetSourceArea(GetFilters(), target) is { } stateSource && GetLayerSourceArea(layerFilters, transform, stateSource) is { } source && Rasterize(source, builder => builder.AddList(content)) is { } image)
+            return (image, false);
+
+        return (Rasterize(target, addFilteredLayer), true);
+    }
+
+    /// <summary>Returns an image of the drawings in an area (rounded to whole pixels), or null when it cannot be created.</summary>
+    private DisplayList? Rasterize(PhysicalRect area, Action<DisplayListBuilder> addItems)
+    {
+        var x = Math.Floor(area.X);
+        var y = Math.Floor(area.Y);
+        var width = Math.Ceiling(area.X + area.Width) - x;
+        var height = Math.Ceiling(area.Y + area.Height) - y;
+        if (!double.IsFinite(x) || !double.IsFinite(y) || !double.IsFinite(width) || !double.IsFinite(height) || width < 1 || height < 1 || width * height > BitmapPixels.MaxPixelCount)
             return null;
 
-        using var surface = Bitmap.Backend.CreateSurface((int)imageWidth, (int)imageHeight, new RenderingSurfaceOptions(HasAlpha: true, Bitmap.Options.ColorSpace));
+        using var surface = Bitmap.Backend.CreateSurface((int)width, (int)height, new RenderingSurfaceOptions(HasAlpha: true, Bitmap.Options.ColorSpace));
         if (surface is null)
             return null;
 
-        surface.Draw(content.WithTransform(DisplayMatrix.Translation(-x, -y)));
+        var drawings = new DisplayListBuilder();
+        drawings.Save();
+        drawings.Transform(DisplayMatrix.Translation(-x, -y));
+        addItems(drawings);
+        drawings.Restore();
+        surface.Draw(drawings.ToDisplayList(new PhysicalSize(width, height)));
+
         var image = new PaintImage("", Bitmap.Backend, surface.CreateSnapshot());
         var builder = new DisplayListBuilder();
-        builder.Add(new DrawImageItem(image, new PhysicalRect(0, 0, imageWidth, imageHeight), new PhysicalRect(x, y, imageWidth, imageHeight), ImageSampling.Pixelated));
-        return builder.ToDisplayList(content.Size);
+        builder.Add(new DrawImageItem(image, new PhysicalRect(0, 0, width, height), new PhysicalRect(x, y, width, height), ImageSampling.Pixelated));
+        return builder.ToDisplayList(new PhysicalSize(Bitmap.Width, Bitmap.Height));
+    }
+
+    /// <summary>
+    /// Returns the area of the drawings that the filter of a layer can move into an area of the canvas: the filter applies in
+    /// the coordinates of the transformation matrix of the layer. Returns null when it is not known.
+    /// </summary>
+    private static PhysicalRect? GetLayerSourceArea(DisplayFilter[]? filters, DisplayMatrix transform, PhysicalRect area)
+    {
+        if (filters is null)
+            return area;
+
+        if (Invert(transform) is not { } inverse || GetSourceArea(filters, MapBounds(inverse, area)) is not { } source)
+            return null;
+
+        return MapBounds(transform, source);
+    }
+
+    /// <summary>
+    /// Returns the area of the drawings that filters can move into an area (the inverse of the reach of the blurs and of the
+    /// offsets of the shadows), or null when it is not known (an SVG filter).
+    /// </summary>
+    private static PhysicalRect? GetSourceArea(DisplayFilter[]? filters, PhysicalRect area)
+    {
+        if (filters is null)
+            return area;
+
+        for (var i = filters.Length - 1; i >= 0; i--)
+        {
+            switch (filters[i])
+            {
+                case BlurFilter blur:
+                    area = area.Expand(new Sides<double>(3 * Math.Abs(blur.DeviationY), 3 * Math.Abs(blur.DeviationX), 3 * Math.Abs(blur.DeviationY), 3 * Math.Abs(blur.DeviationX)));
+                    break;
+
+                case DropShadowFilter shadow:
+                {
+                    var reach = 3 * Math.Abs(shadow.Deviation);
+                    var shadowSource = area.Translate(-shadow.Offset).Expand(new Sides<double>(reach, reach, reach, reach));
+                    area = shadow.ShadowOnly ? shadowSource : area.Union(shadowSource);
+                    break;
+                }
+
+                case ColorMatrixFilter or LuminanceToAlphaFilter:
+                    break;
+
+                default:
+                    return null;
+            }
+        }
+
+        return area;
+    }
+
+    /// <summary>Returns the bounds of a rectangle transformed by a matrix.</summary>
+    private static PhysicalRect MapBounds(DisplayMatrix matrix, PhysicalRect rect)
+    {
+        double minX = double.PositiveInfinity, minY = double.PositiveInfinity, maxX = double.NegativeInfinity, maxY = double.NegativeInfinity;
+        foreach (var (x, y) in ((double, double)[])[(rect.X, rect.Y), (rect.X + rect.Width, rect.Y), (rect.X, rect.Y + rect.Height), (rect.X + rect.Width, rect.Y + rect.Height)])
+        {
+            var mappedX = (matrix.A * x) + (matrix.C * y) + matrix.E;
+            var mappedY = (matrix.B * x) + (matrix.D * y) + matrix.F;
+            minX = Math.Min(minX, mappedX);
+            minY = Math.Min(minY, mappedY);
+            maxX = Math.Max(maxX, mappedX);
+            maxY = Math.Max(maxY, mappedY);
+        }
+
+        return new PhysicalRect(minX, minY, maxX - minX, maxY - minY);
     }
 
     /// <summary>Closes the open layers (and the states saved in them), as <see cref="EndLayer"/> does, e.g. at the end of a paint callback.</summary>

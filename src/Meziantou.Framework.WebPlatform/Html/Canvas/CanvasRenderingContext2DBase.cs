@@ -1115,7 +1115,8 @@ public abstract partial class CanvasRenderingContext2DBase
     /// </summary>
     /// <param name="addItems">Adds the items of the shape, in the coordinates of the canvas (they add their own transform).</param>
     /// <param name="addShadowItems">Adds the items of the shape for its shadow, or null to use <paramref name="addItems"/>.</param>
-    private void DrawShape(Action<DisplayListBuilder> addItems, Action<DisplayListBuilder>? addShadowItems = null)
+    /// <param name="shadowItemsAreFiltered">Whether the items of <paramref name="addShadowItems"/> are already filtered by the filters of the drawing state.</param>
+    private void DrawShape(Action<DisplayListBuilder> addItems, Action<DisplayListBuilder>? addShadowItems = null, bool shadowItemsAreFiltered = false)
     {
         if (!Bitmap.HasPixels)
             return;
@@ -1131,7 +1132,7 @@ public abstract partial class CanvasRenderingContext2DBase
         if (ShadowsAreDrawn)
         {
             var shadow = new DropShadowFilter(new PhysicalOffset(_state.ShadowOffsetX, _state.ShadowOffsetY), _state.ShadowBlur / 2, _state.ShadowColor) { ShadowOnly = true };
-            builder.SaveLayer(new SaveLayerItem(1, mode, filters is null ? [shadow] : [.. filters, shadow]));
+            builder.SaveLayer(new SaveLayerItem(1, mode, filters is null || shadowItemsAreFiltered ? [shadow] : [.. filters, shadow]));
             (addShadowItems ?? addItems)(builder);
             builder.Restore();
         }

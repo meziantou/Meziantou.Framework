@@ -756,5 +756,23 @@ public sealed class CanvasTests : IDisposable
         Assert.Equal([0, 0, 0, 255], GetPixel(context, 18, 0));
         Assert.Equal([0, 0, 0, 0], GetPixel(context, 18, 6));
     }
+
+    [Fact]
+    public void Layers_ShadowIncludesTheDrawingsThatTheFiltersMoveOntoTheCanvas()
+    {
+        var (_, _, context) = Create(20, 20);
+        context.ShadowColor = "#000";
+        context.ShadowOffsetX = 1;
+
+        // The rectangle is outside of the canvas: the filter of the layer moves it onto the canvas, then the shadow extends it
+        context.BeginLayer(new BeginLayerOptions { Filter = "drop-shadow(-100px 0 0 red)" });
+        context.FillStyle = "#00f";
+        context.FillRect(100, 0, 4, 4);
+        context.EndLayer();
+
+        Assert.Equal([255, 0, 0, 255], GetPixel(context, 0, 0));
+        Assert.Equal([0, 0, 0, 255], GetPixel(context, 4, 0));
+        Assert.Equal([0, 0, 0, 0], GetPixel(context, 5, 0));
+    }
 #pragma warning restore WEBPLATEXP0017
 }

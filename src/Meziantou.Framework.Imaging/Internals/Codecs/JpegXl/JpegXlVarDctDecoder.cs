@@ -236,6 +236,18 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         return plane;
     }
 
+    /// <summary>
+    /// Gives the LF image of a channel (X, Y, B) to the caller, which disposes it: one sample per block of 8x8 samples, in
+    /// rows of <see cref="BlocksWide"/> values, once <see cref="FinishLf"/> has run. A block of a DCT of 8x8 samples whose
+    /// other coefficients are zero has the samples of its LF value.
+    /// </summary>
+    public Av1PooledArray<float> DetachLf(int channel)
+    {
+        var lf = _lf[channel] ?? throw new InvalidOperationException("The LF image of the channel was not decoded.");
+        _lf[channel] = null;
+        return lf;
+    }
+
     /// <summary>Reads the parameters of the LF dequantization, which every frame stores at the start of <c>LfGlobal</c>.</summary>
     public void ReadLfDequantization(JpegXlBitReader reader)
     {

@@ -34,6 +34,7 @@ internal static class TiffFormat
     // The tags read by the decoder; every other tag is skipped without being interpreted
     public const ushort NewSubfileTypeTag = 254;
     public const ushort SubfileTypeTag = 255;
+    public const ushort SubIfdsTag = 330;
     public const ushort ImageWidthTag = 256;
     public const ushort ImageLengthTag = 257;
     public const ushort BitsPerSampleTag = 258;

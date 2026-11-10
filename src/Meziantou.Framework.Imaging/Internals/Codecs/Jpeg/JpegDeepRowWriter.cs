@@ -58,8 +58,8 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
     // Five 16-bit samples per pixel: the ink amounts and an opaque alpha sample, which the conversion copies
     private PooledBuffer? _inkRow;
 
-    public JpegDeepRowWriter(JpegFrameComponent[] components, DecodedFrameSink sink, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int bandRows, int precision, AllocationScope scope)
-        : this(components, sink, receiver: null, colorModel, inkConversion, width, height, bandRows, precision, scope)
+    public JpegDeepRowWriter(JpegFrameComponent[] components, DecodedFrameSink sink, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int bandRows, Rectangle window, int precision, AllocationScope scope)
+        : this(components, sink, receiver: null, colorModel, inkConversion, width, height, bandRows, window, precision, scope)
     {
         if (components.Length == 4 ? inkConversion is null && sink.SourcePixelFormat != PixelFormat.Cmyk64 : inkConversion is not null)
             throw new ArgumentException("A four-component frame, and only it, needs the conversion of its inks, unless its rows are CMYK.", nameof(inkConversion));
@@ -67,12 +67,12 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
 
     /// <summary>Creates a writer that hands the rows to the container of an embedded datastream instead of an image.</summary>
     public JpegDeepRowWriter(JpegFrameComponent[] components, JpegSampleReceiver receiver, ImageColorModel colorModel, int width, int height, int bandRows, int precision, AllocationScope scope)
-        : this(components, sink: null, receiver, colorModel, inkConversion: null, width, height, bandRows, precision, scope)
+        : this(components, sink: null, receiver, colorModel, inkConversion: null, width, height, bandRows, new Rectangle(0, 0, width, height), precision, scope)
     {
     }
 
-    private JpegDeepRowWriter(JpegFrameComponent[] components, DecodedFrameSink? sink, JpegSampleReceiver? receiver, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int bandRows, int precision, AllocationScope scope)
-        : base(height, bandRows)
+    private JpegDeepRowWriter(JpegFrameComponent[] components, DecodedFrameSink? sink, JpegSampleReceiver? receiver, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int bandRows, Rectangle window, int precision, AllocationScope scope)
+        : base(height, bandRows, window)
     {
         _components = components;
         _sink = sink;
@@ -299,25 +299,26 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
     {
         var sink = _sink!;
         var identity = sink.Plan.IsIdentity;
-        var length = _width * PixelFormats.GetBytesPerPixel(sink.SourcePixelFormat);
-        var rowBytes = identity ? storage.GetRowSpanCore(y)[..length] : _sourceRow!.RawBuffer.AsSpan(0, length);
+        var length = Columns * PixelFormats.GetBytesPerPixel(sink.SourcePixelFormat);
+        var rowBytes = identity ? storage.GetRowSpanCore(y - Top)[..length] : _sourceRow!.RawBuffer.AsSpan(0, length);
         var row = unsafe(MemoryMarshal.Cast<byte, ushort>(rowBytes));
         var max = _max;
         if (_components.Length == 1)
         {
             // Grayscale: the scaled luma samples are the output (a single-component frame is never subsampled)
-            Scale(_components[0].GetDeepRow(y)[.._width], row, max);
+            Scale(_components[0].GetDeepRow(y).Slice(Left, Columns), row, max);
         }
         else
         {
-            var c0 = GetSamples(_components[0], y);
-            var c1 = GetSamples(_components[1], y);
-            var c2 = GetSamples(_components[2], y);
-            var color = unsafe(MemoryMarshal.Cast<byte, ushort>(_colorRow!.RawBuffer.AsSpan(0, _width * 3 * sizeof(ushort))));
+            // The color conversions are per pixel: the upsampled rows are cut to the columns of the window
+            var c0 = GetSamples(_components[0], y).Slice(Left, Columns);
+            var c1 = GetSamples(_components[1], y).Slice(Left, Columns);
+            var c2 = GetSamples(_components[2], y).Slice(Left, Columns);
+            var color = unsafe(MemoryMarshal.Cast<byte, ushort>(_colorRow!.RawBuffer.AsSpan(0, Columns * 3 * sizeof(ushort))));
             if (_nativeInks)
             {
                 // The scaled ink amounts are the output (Cmyk64)
-                var black = GetSamples(_components[3], y);
+                var black = GetSamples(_components[3], y).Slice(Left, Columns);
                 if (_colorModel == ImageColorModel.Ycck)
                 {
                     ConvertYCbCr(c0, c1, c2, color, _precision);
@@ -342,8 +343,8 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
             }
             else if (_inkConversion is not null)
             {
-                var black = GetSamples(_components[3], y);
-                var inks = unsafe(MemoryMarshal.Cast<byte, ushort>(_inkRow!.RawBuffer.AsSpan(0, _width * 5 * sizeof(ushort))));
+                var black = GetSamples(_components[3], y).Slice(Left, Columns);
+                var inks = unsafe(MemoryMarshal.Cast<byte, ushort>(_inkRow!.RawBuffer.AsSpan(0, Columns * 5 * sizeof(ushort))));
                 if (_colorModel == ImageColorModel.Ycck)
                 {
                     // The color conversion gives the cyan, magenta and yellow amounts; only the black samples are complemented
@@ -400,7 +401,7 @@ internal sealed class JpegDeepRowWriter : JpegBandWriter
 
         if (!identity)
         {
-            sink.Plan.ConvertRow(rowBytes, storage.GetRowSpanCore(y));
+            sink.Plan.ConvertRow(rowBytes, storage.GetRowSpanCore(y - Top));
         }
     }
 

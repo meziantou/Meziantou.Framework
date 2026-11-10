@@ -20,6 +20,7 @@ numbers do not establish a matched comparison. Measure representative images at 
 | Animations | Composited into full frames with exact durations and the play count | Full frames, durations in milliseconds, play count |
 | Progressive | Renderings of a partial file | Progressive files on request |
 | Metadata | ICC profile, EXIF, XMP, enumerated color encodings, orientation | The same |
+| Reduced size | 1/8 of the size, for a still lossy image without alpha | - |
 
 8-bit files load as [Gray8](cref:Meziantou.Framework.Imaging.Gray8), [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) or [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32); files of up to 16 bits as [Gray16](cref:Meziantou.Framework.Imaging.Gray16), [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48) or [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64). The orientation of the
 image header is reported in `Metadata.Orientation`, never applied.
@@ -146,6 +147,22 @@ public static int ShowWhileReading(Stream input, Action<Image<Rgba32>, FrameRefi
 
 See [Show an image while it downloads](../05-LoadingAndSaving/06-ShowImagesWhileTheyDownload.md) for the other
 formats and for partial downloads.
+
+## Decode a thumbnail
+
+A lossy frame stores an image at 1/8 of its size before its details: its LF image, one value per block of 8x8 pixels.
+[ImageDecodeOptions.TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) and [ScaleDenominator](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.ScaleDenominator) = 8 decode that image alone, without reading the
+details, for a thumbnail of a large photo at a fraction of the memory and the time of a full decode:
+
+- Each pixel is the LF value of its block, which is close to the mean of its pixels. On the right and bottom edges, a
+  block that is not whole also covers the pixels the encoder added to complete it, so an image of a few pixels can differ
+  more.
+- Only a still image of one lossy (VarDCT) frame without alpha or other extra channels, without patches, splines, noise or
+  subsampled chrominance is reduced: other files are decoded at full size for a target size, and an exact scale throws an
+  [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). So does a scale other than 1/8.
+- Readers ([ImageReaderOptions](cref:Meziantou.Framework.Imaging.ImageReaderOptions)) decode at full resolution.
+
+See [Decode a smaller image](../05-LoadingAndSaving/02-LoadingImages.md#decode-a-smaller-image).
 
 ## Recompress JPEG files without loss
 

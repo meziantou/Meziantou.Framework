@@ -13,6 +13,12 @@ internal class JpegCodec : ImageCodec
 
     public override bool SupportsScaledDecoding => true;
 
+    /// <summary>
+    /// Gets a value indicating that the decoder writes an area of the image only (<see cref="ImageDecodeRequest.Region"/>):
+    /// it transforms only the blocks the area reads and does not decode the rows of a sequential frame below it.
+    /// </summary>
+    public override bool SupportsRegionDecoding => true;
+
     public static bool MatchesSignature(ReadOnlySpan<byte> prefix) => prefix.StartsWith((ReadOnlySpan<byte>)[0xFF, 0xD8, 0xFF]);
 
     public override bool IsMatch(ReadOnlySpan<byte> prefix) => MatchesSignature(prefix);

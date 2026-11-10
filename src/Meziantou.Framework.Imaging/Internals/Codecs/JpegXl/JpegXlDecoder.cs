@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -22,6 +23,15 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><description>
 /// A still image ends with the input, not with its frame: metadata boxes may follow the codestream.
 /// </description></item>
+/// <item><description>
+/// Scaled decoding (<see cref="ImageDecodeRequest.ScaleDenominator"/>, <see cref="ImageDecodeRequest.TargetSize"/>): a
+/// still image without extra channels whose only frame is a VarDCT frame of 4:4:4 samples that covers the image, without
+/// patches, splines, noise, upsampling or LF frame, is decoded at 1/8 of its size from the LF image of its frame
+/// (<see cref="JpegXlFrameDecoder.DecodeLfImage"/>): one pixel per block of 8x8 pixels, close to their mean, without
+/// reading the HF coefficients. The sink is created with the first frame, once it is known whether it is such a frame;
+/// another image is decoded at full size for a target size, and is rejected for an exact scale. Readers decode at full
+/// resolution.
+/// </description></item>
 /// </list>
 /// </remarks>
 internal sealed class JpegXlDecoder : JpegXlDecodeObserver
@@ -35,6 +45,12 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
     private IccPipeline? _inkConversion;
     private PooledBuffer? _inks;
     private uint _visibleFrameIndex;
+
+    // Scaled decoding: whether the image may be decoded from the LF image of its frame (the sink is then created with the
+    // first frame), and the format and the profile of the sink
+    private bool _mayDecodeLfImage;
+    private PixelFormat _defaultPixelFormat;
+    private IccProfile? _profile;
     private uint _invisibleFrameIndex;
     private bool _stillFramePending;
 
@@ -64,10 +80,41 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
             profile = conversion.DestinationProfile;
         }
 
-        // The rows are written as RGBA for the gray formats with alpha and 16-bit RGB
-        var format = structure.DefaultPixelFormat;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.JpegXl, structure.Size, format, PixelFormatWidening.GetWidenedFormat(format), profile);
+        _defaultPixelFormat = structure.DefaultPixelFormat;
+        _profile = profile;
+        if (_request.IsScaled)
+        {
+            // Only a still image without extra channels may be decoded from the LF image of its frame, at 1/8 of its size:
+            // the frame says whether it can be
+            var header = structure.Header;
+            var reduced = new Size(ImageDecodeRequest.GetScaledLength(structure.Size.Width, 8), ImageDecodeRequest.GetScaledLength(structure.Size.Height, 8));
+            var mayBeReduced = _context.Sequential is null && !header.HasAnimation && header.ExtraChannels.Length == 0;
+            if (_request.ScaleDenominator > 1 && (_request.ScaleDenominator != 8 || !mayBeReduced))
+                throw _request.CreateUnsupportedScaleException(ImageFormat.JpegXl, !mayBeReduced ? GetFullResolutionReason(header) : "a JPEG XL image is only reduced to 1/8 of its size, from the LF image of its frame");
+
+            _mayDecodeLfImage = mayBeReduced && (_request.ScaleDenominator == 8 || (_request.TargetSize is { } target && reduced.Width >= target.Width && reduced.Height >= target.Height));
+            if (_mayDecodeLfImage)
+                return;
+        }
+
+        CreateSink(structure.Size);
     }
+
+    private string GetFullResolutionReason(JpegXlImageHeader header) => _context.Sequential is not null
+        ? "a reader decodes JPEG XL images at full resolution"
+        : header.HasAnimation ? "the frames of an animated JPEG XL image are not reduced" : "a JPEG XL image with extra channels (alpha, black...) is not reduced";
+
+    private void CreateSink(Size size)
+    {
+        // The rows are written as RGBA for the gray formats with alpha and 16-bit RGB
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.JpegXl, size, _defaultPixelFormat, PixelFormatWidening.GetWidenedFormat(_defaultPixelFormat), _profile);
+    }
+
+    /// <summary>Gets a value indicating whether the LF image of a frame stands for the image at 1/8 of its size: see the remarks of the class.</summary>
+    private static bool IsReducibleFrame(JpegXlImageHeader header, JpegXlFrameHeader frame, bool isDisplayed)
+        => isDisplayed && frame.IsLast && frame.IsRegular && !frame.IsModular && frame.Upsampling == 1 && frame.ChromaSubsampling == default
+            && (frame.Flags & (JpegXlFrameHeader.FlagNoise | JpegXlFrameHeader.FlagPatches | JpegXlFrameHeader.FlagSplines | JpegXlFrameHeader.FlagUseLfFrame)) == 0
+            && frame.Width == header.Width && frame.Height == header.Height && !JpegXlFrameRenderer.NeedsBlending(frame);
 
     public override bool OnFrame(JpegXlStructureParser structure, JpegXlFrameHeader frame, JpegXlToc toc, WebPPayloadBuffer sections)
     {
@@ -75,9 +122,22 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
         ArgumentNullException.ThrowIfNull(frame);
         ArgumentNullException.ThrowIfNull(toc);
         ArgumentNullException.ThrowIfNull(sections);
-        var sink = _sink ?? throw new InvalidOperationException("The JPEG XL header was not parsed.");
         var header = structure.Header;
         var isDisplayed = structure.IsDisplayed(frame);
+        if (_mayDecodeLfImage)
+        {
+            // The first frame decides: the image is its LF image, or is decoded at full size
+            _mayDecodeLfImage = false;
+            if (IsReducibleFrame(header, frame, isDisplayed))
+                return DecodeLfImage(structure, frame, toc, sections);
+
+            if (_request.ScaleDenominator > 1)
+                throw _request.CreateUnsupportedScaleException(ImageFormat.JpegXl, "only a JPEG XL image of one VarDCT frame of 4:4:4 samples, without patches, splines, noise or upsampling, is reduced");
+
+            CreateSink(structure.Size);
+        }
+
+        var sink = _sink ?? throw new InvalidOperationException("The JPEG XL header was not parsed.");
         _stages.Clear();
         if (isDisplayed)
         {
@@ -129,6 +189,26 @@ internal sealed class JpegXlDecoder : JpegXlDecodeObserver
 
         if (header.HasAnimation)
             return sink.EndImage();
+
+        // The still image ends in OnEnd, after the metadata boxes that follow the codestream
+        _stillFramePending = true;
+        return true;
+    }
+
+    /// <summary>Decodes a still image at 1/8 of its size from the LF image of its only frame.</summary>
+    private bool DecodeLfImage(JpegXlStructureParser structure, JpegXlFrameHeader frame, JpegXlToc toc, WebPPayloadBuffer sections)
+    {
+        var header = structure.Header;
+        CreateSink(new Size(ImageDecodeRequest.GetScaledLength(structure.Size.Width, 8), ImageDecodeRequest.GetScaledLength(structure.Size.Height, 8)));
+        var sink = _sink!;
+        _visibleFrameIndex++;
+        using (var decoded = JpegXlFrameDecoder.DecodeLfImage(header, frame, toc, sections.Data, _context.Scope, _context.CancellationToken))
+        {
+            _renderer ??= new JpegXlFrameRenderer(header, structure.XybIccOutput, _context.Scope, _context.CancellationToken, _context.Configuration.MaxDegreeOfParallelism);
+            using var canvas = _renderer.RenderLfImage(decoded, frame);
+            sink.BeginFrame(FrameDuration.Zero);
+            WriteCanvas(sink, header, canvas, _renderer.OutputColorChannelCount);
+        }
 
         // The still image ends in OnEnd, after the metadata boxes that follow the codestream
         _stillFramePending = true;

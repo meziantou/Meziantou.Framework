@@ -15,6 +15,7 @@ destination.**
 | Samples | Bilevel, 2, 4, 8 and 16-bit gray, gray and alpha, RGB, RGBA, palette, YCbCr; signed 8 and 16-bit samples; 16, 24 and 32-bit floating-point samples; 8 and 16-bit CMYK as CMYK pixels or with a color conversion; CIE L\*a\*b\* with a color conversion | Gray, gray and alpha, RGB and RGBA at 8 or 16 bits, CMYK at 8 or 16 bits (lossless compressions), bilevel, palette, 32-bit floating-point |
 | Compression | None, Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3, Group 4), JPEG, old-style JPEG, JPEG 2000 | None, Deflate (default), LZW, PackBits, CCITT for bilevel pages, JPEG |
 | Metadata | Resolution, orientation, ICC profile, XMP | The same |
+| Reduced size | The reduced-resolution images of the first page (pyramids) | - |
 
 [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) reads the first page. Floating-point pages load as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf) (16 bits) or [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat).
 
@@ -78,6 +79,23 @@ public static void SaveScanAsBilevel(string inputPath, string tiffPath, string p
 <!-- endref -->
 
 See [Binarization](../06-Processing/09-Binarization.md). A bilevel page loads back as [Gray8](cref:Meziantou.Framework.Imaging.Gray8), with one bit per component.
+
+## Pyramids
+
+A large image is often stored with reduced-resolution versions of itself, so that a viewer can show it at any zoom
+level: a Cloud Optimized GeoTIFF file stores them after the image (overviews), and slide scanners, OME-TIFF and libvips
+store them in its `SubIFDs` tag. [ImageDecodeOptions.TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) reads the smallest of them that is still at least the target
+size, and [ScaleDenominator](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.ScaleDenominator) the one at that scale, without reading the full image:
+
+- An image is used when it is marked as a reduced-resolution image (`NewSubfileType` bit 0, or `SubfileType` 2) and not
+  as a transparency mask, its size is the size of the page divided by a power of two (rounded down or up), and its pixels
+  have the format and the color model of the page. The other images, and those that cannot be read, are ignored.
+- The image has the size of the reduced-resolution image and the metadata of the page (orientation, color profile).
+- A [Region](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Region) is in pixels of the full page: the image holds the pixels of the reduced-resolution image that cover it.
+- [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) reports the size of the page. An [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) lists every image of the file, the reduced-resolution
+  ones included, and decodes each at full resolution.
+
+See [Decode a smaller image](../05-LoadingAndSaving/02-LoadingImages.md#decode-a-smaller-image).
 
 ## Options
 

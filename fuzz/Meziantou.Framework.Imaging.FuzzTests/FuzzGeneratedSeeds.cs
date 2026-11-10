@@ -105,6 +105,24 @@ internal static class FuzzGeneratedSeeds
             .AddPage(new TiffPageSpec { Width = 10, Height = 4, BitsPerSample = 1, Photometric = 1, RowsPerStrip = 1, Samples = [0b1010_0000, 0b1100_0000, 0b0000_1111, 0b0100_0000, 0b1111_1111, 0b1100_0000, 0b0101_0101, 0b0000_0000] })
             .AddPage(new TiffPageSpec { Width = 3, Height = 2, SamplesPerPixel = 3, Photometric = 2, Compression = 5, Samples = Samples(3 * 2 * 3, 256) })
             .Build()));
+        // Pyramids: reduced-resolution images after the page in the chain (Cloud Optimized GeoTIFF), with a mask, and in its SubIFDs
+        static TiffPageSpec Level(int width, int height, int newSubfileType, int salt, bool tiled = false)
+        {
+            var level = new TiffPageSpec { Width = width, Height = height, SamplesPerPixel = 3, Photometric = 2, Compression = 5, TileWidth = tiled ? 16 : null, TileLength = tiled ? 16 : null, Samples = Samples(width * height * 3, salt) };
+            level.ExtraFields.Add(TiffFieldSpec.Long(254, (uint)newSubfileType));
+            return level;
+        }
+
+        seeds.Add(new FuzzSeed("tiff/builder-pyramid-chain", new TiffFileBuilder()
+            .AddPage(new TiffPageSpec { Width = 33, Height = 17, SamplesPerPixel = 3, Photometric = 2, Compression = 5, Samples = Samples(33 * 17 * 3, 251) })
+            .AddPage(Level(17, 9, 1, 241))
+            .AddPage(Level(8, 4, 1, 239, tiled: true))
+            .AddPage(Level(17, 9, 5, 233))
+            .Build()));
+        var pyramid = new TiffPageSpec { Width = 32, Height = 24, SamplesPerPixel = 3, Photometric = 2, Compression = 8, Samples = Samples(32 * 24 * 3, 229) };
+        pyramid.SubPages.Add(Level(16, 12, 1, 227));
+        pyramid.SubPages.Add(Level(4, 3, 1, 223));
+        seeds.Add(new FuzzSeed("tiff/builder-pyramid-subifds-bigtiff", new TiffFileBuilder { BigTiff = true }.AddPage(pyramid).Build()));
         seeds.Add(new FuzzSeed("tiff/builder-rgba32-bigtiff-unassociated", new TiffFileBuilder { BigTiff = true }.AddPage(new TiffPageSpec { Width = 5, Height = 4, SamplesPerPixel = 4, Photometric = 2, ExtraSamples = [2], Compression = 8, Samples = Samples(5 * 4 * 4, 256) }).Build()));
         return seeds;
     }

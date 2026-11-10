@@ -900,6 +900,46 @@ public sealed class JpegLosslessDecoderTests
     }
 
     [Fact]
+    public void ARegionOfALosslessJpegLsOrHierarchicalImageHasThePixelsOfTheWholeImage()
+    {
+        // Frames without blocks write the area of the samples they decode, for every precision and sampling
+        var images = new List<(string Name, byte[] Data)>();
+        foreach (var (precision, layout) in new[] { (8, "4:2:0"), (12, "gray"), (16, "mixed-chroma"), (2, "4:4:4") })
+        {
+            var lossless = JpegLosslessTestImage.CreateRandom(23, 17, Layouts[layout], precision, seed: precision + layout.Length);
+            images.Add(($"lossless {precision} bits {layout}", lossless.Encode(new JpegLosslessTestOptions { Predictor = 4, RestartRows = 2 })));
+            images.Add(($"arithmetic lossless {precision} bits {layout}", lossless.Encode(new JpegLosslessTestOptions { Predictor = 1, Arithmetic = true })));
+            var jpegLs = JpegLsTestImage.CreateRandom(23, 17, Layouts[layout], precision, seed: precision + 1);
+            images.Add(($"JPEG-LS {precision} bits {layout}", jpegLs.Encode(new JpegLsTestOptions { Interleave = Layouts[layout].Length == 1 ? 0 : 1, RestartInterval = 2 })));
+        }
+
+        var sampling = Layouts["4:4:4"];
+        var low = JpegLosslessTestImage.CreateRandom(7, 9, sampling, 8, seed: 3, rgb: true);
+        var image = JpegLosslessTestImage.CreateRandom(13, 17, sampling, 8, seed: 4, rgb: true);
+        var differences = JpegLosslessTestImage.FromSamples(13, 17, sampling, 8, true, (c, x, y) => image.Components[c].Samples[(y * 13) + x] - Expand(low.Components[c], x, y, horizontal: true, vertical: true));
+        images.Add(("hierarchical", Hierarchical(image, low.Encode(new JpegLosslessTestOptions { Predictor = 4 }), 0x11, differences.Encode(new JpegLosslessTestOptions { Predictor = 0, Differential = true }))));
+        foreach (var (name, data) in images)
+        {
+            using var full = Image.Load(data);
+            var bytes = GetBytes(full);
+            var pixel = bytes.Length / (full.Width * full.Height);
+            foreach (var region in new Rectangle[] { new(0, 0, 1, 1), new(4, 3, 5, 6), new(full.Width - 1, 0, 9, full.Height), new(0, full.Height - 2, full.Width, 2), new(2, 2, 100, 100) })
+            {
+                var area = Rectangle.Intersect(region, new Rectangle(0, 0, full.Width, full.Height));
+                var expected = new byte[area.Width * area.Height * pixel];
+                for (var y = 0; y < area.Height; y++)
+                {
+                    bytes.AsSpan((((area.Y + y) * full.Width) + area.X) * pixel, area.Width * pixel).CopyTo(expected.AsSpan(y * area.Width * pixel));
+                }
+
+                using var decoded = Image.Load(data, new ImageDecodeOptions { Region = region });
+                Assert.Equal(area.Size, decoded.Size);
+                AssertPixels(expected, decoded, $"{name}, region {region}");
+            }
+        }
+    }
+
+    [Fact]
     public void HierarchicalStructureIsValidated()
     {
         var sampling = Layouts["4:4:4"];

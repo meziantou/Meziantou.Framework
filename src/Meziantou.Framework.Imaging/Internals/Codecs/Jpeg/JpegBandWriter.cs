@@ -5,21 +5,40 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <see cref="JpegRowWriter"/> for 8-bit samples and <see cref="JpegDeepRowWriter"/> for deeper ones.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Several writers of the same planes write the bands of a frame at the same time (<see cref="WriteBands"/>): each one has
 /// its own rows of upsampled and converted samples, and they only read the planes.
+/// </para>
+/// <para>
+/// A writer writes the rows and the columns of its window only (<see cref="ImageDecodeRequest.Region"/>): row <c>y</c> of
+/// the frame is row <c>y - Top</c> of the image, which starts at column <see cref="Left"/> of the frame. The rows of a band
+/// outside the window are not written, and their planes are not read.
+/// </para>
 /// </remarks>
 internal abstract class JpegBandWriter : IDisposable
 {
     private readonly int _height;
     private readonly int _bandRows;
+    private readonly Rectangle _window;
 
     /// <param name="height">The height of the frame.</param>
     /// <param name="bandRows">The number of rows of an MCU row: <c>8 * Vmax</c>, or <c>Vmax</c> for a lossless frame.</param>
-    protected JpegBandWriter(int height, int bandRows)
+    /// <param name="window">The area of the frame written to the image, inside the frame.</param>
+    protected JpegBandWriter(int height, int bandRows, Rectangle window)
     {
         _height = height;
         _bandRows = bandRows;
+        _window = window;
     }
+
+    /// <summary>Gets the first column of the frame written to the image.</summary>
+    protected int Left => _window.X;
+
+    /// <summary>Gets the number of columns written to the image.</summary>
+    protected int Columns => _window.Width;
+
+    /// <summary>Gets the row of the frame written to the first row of the image.</summary>
+    protected int Top => _window.Y;
 
     /// <summary>Gets the number of bands written so far.</summary>
     public int BandsWritten { get; private set; }
@@ -29,8 +48,12 @@ internal abstract class JpegBandWriter : IDisposable
     public void WriteNextBand(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var first = BandsWritten * _bandRows;
-        WriteRows(first, Math.Min(_height, first + _bandRows));
+        var (first, last) = GetWindowRows(BandsWritten);
+        if (first < last)
+        {
+            WriteRows(first, last);
+        }
+
         BandsWritten++;
     }
 
@@ -62,13 +85,23 @@ internal abstract class JpegBandWriter : IDisposable
                 for (var band = first + RowBands.GetBandStart(count, worker, workers); band < end; band++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    var row = band * main._bandRows;
-                    writer.WriteRows(storage, row, Math.Min(main._height, row + main._bandRows));
+                    var (firstRow, lastRow) = main.GetWindowRows(band);
+                    if (firstRow < lastRow)
+                    {
+                        writer.WriteRows(storage, firstRow, lastRow);
+                    }
                 }
             });
         }
 
         main.BandsWritten = endBand;
+    }
+
+    /// <summary>Gets the rows of a band that are in the window: none when the first one is not before the last one.</summary>
+    private (int First, int Last) GetWindowRows(int band)
+    {
+        var first = band * _bandRows;
+        return (Math.Max(first, _window.Top), Math.Min(Math.Min(_height, first + _bandRows), _window.Bottom));
     }
 
     public void Dispose()

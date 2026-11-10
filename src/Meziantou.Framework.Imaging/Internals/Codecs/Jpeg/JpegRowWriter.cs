@@ -87,8 +87,8 @@ internal sealed class JpegRowWriter : JpegBandWriter
     private PooledBuffer? _sourceRow;
     private PooledBuffer? _inkRow;
 
-    public JpegRowWriter(JpegFrameComponent[] components, DecodedFrameSink sink, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int bandRows, AllocationScope scope)
-        : this(components, sink, receiver: null, colorModel, inkConversion, width, height, bandRows, scope)
+    public JpegRowWriter(JpegFrameComponent[] components, DecodedFrameSink sink, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int bandRows, Rectangle window, AllocationScope scope)
+        : this(components, sink, receiver: null, colorModel, inkConversion, width, height, bandRows, window, scope)
     {
         if (components.Length == 4 ? inkConversion is null && sink.SourcePixelFormat != PixelFormat.Cmyk32 : inkConversion is not null)
             throw new ArgumentException("A four-component frame, and only it, needs the conversion of its inks, unless its rows are CMYK.", nameof(inkConversion));
@@ -96,12 +96,12 @@ internal sealed class JpegRowWriter : JpegBandWriter
 
     /// <summary>Creates a writer that hands the rows to the container of an embedded datastream instead of an image.</summary>
     public JpegRowWriter(JpegFrameComponent[] components, JpegSampleReceiver receiver, ImageColorModel colorModel, int width, int height, int bandRows, AllocationScope scope)
-        : this(components, sink: null, receiver, colorModel, inkConversion: null, width, height, bandRows, scope)
+        : this(components, sink: null, receiver, colorModel, inkConversion: null, width, height, bandRows, new Rectangle(0, 0, width, height), scope)
     {
     }
 
-    private JpegRowWriter(JpegFrameComponent[] components, DecodedFrameSink? sink, JpegSampleReceiver? receiver, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int bandRows, AllocationScope scope)
-        : base(height, bandRows)
+    private JpegRowWriter(JpegFrameComponent[] components, DecodedFrameSink? sink, JpegSampleReceiver? receiver, ImageColorModel colorModel, IccPipeline? inkConversion, int width, int height, int bandRows, Rectangle window, AllocationScope scope)
+        : base(height, bandRows, window)
     {
         _components = components;
         _sink = sink;
@@ -253,25 +253,26 @@ internal sealed class JpegRowWriter : JpegBandWriter
         if (_components.Length == 1)
         {
             // Grayscale: the luma samples are the output (a single-component frame is never subsampled)
-            var samples = _components[0].GetRow(y)[.._width];
+            var samples = _components[0].GetRow(y).Slice(Left, Columns);
             if (sink.Plan.IsIdentity)
             {
-                samples.CopyTo(storage.GetRowSpanCore(y));
+                samples.CopyTo(storage.GetRowSpanCore(y - Top));
             }
             else
             {
-                sink.Plan.ConvertRow(samples, storage.GetRowSpanCore(y));
+                sink.Plan.ConvertRow(samples, storage.GetRowSpanCore(y - Top));
             }
 
             return;
         }
 
-        var c0 = GetSamples(_components[0], y);
-        var c1 = GetSamples(_components[1], y);
-        var c2 = GetSamples(_components[2], y);
+        // The color conversions are per pixel: the upsampled rows are cut to the columns of the window
+        var c0 = GetSamples(_components[0], y).Slice(Left, Columns);
+        var c1 = GetSamples(_components[1], y).Slice(Left, Columns);
+        var c2 = GetSamples(_components[2], y).Slice(Left, Columns);
         var identity = sink.Plan.IsIdentity;
-        var rowLength = _width * (_opaqueRgba || _nativeInks ? 4 : 3);
-        var row = identity ? storage.GetRowSpanCore(y)[..rowLength] : _sourceRow!.RawBuffer.AsSpan(0, rowLength);
+        var rowLength = Columns * (_opaqueRgba || _nativeInks ? 4 : 3);
+        var row = identity ? storage.GetRowSpanCore(y - Top)[..rowLength] : _sourceRow!.RawBuffer.AsSpan(0, rowLength);
         if (_opaqueRgba)
         {
             if (_colorModel == ImageColorModel.Rgb)
@@ -285,11 +286,11 @@ internal sealed class JpegRowWriter : JpegBandWriter
         }
         else if (_nativeInks)
         {
-            var black = GetSamples(_components[3], y);
+            var black = GetSamples(_components[3], y).Slice(Left, Columns);
             if (_colorModel == ImageColorModel.Ycck)
             {
                 // The ink row holds the cyan, magenta and yellow amounts given by the color conversion
-                var amounts = _inkRow!.RawBuffer.AsSpan(0, _width * 3);
+                var amounts = _inkRow!.RawBuffer.AsSpan(0, Columns * 3);
                 ConvertYCbCr(c0, c1, c2, amounts);
                 InterleaveInkAmounts(amounts, black, row);
             }
@@ -300,8 +301,8 @@ internal sealed class JpegRowWriter : JpegBandWriter
         }
         else if (_inkConversion is not null)
         {
-            var black = GetSamples(_components[3], y);
-            var inks = _inkRow!.RawBuffer.AsSpan(0, _width * 4);
+            var black = GetSamples(_components[3], y).Slice(Left, Columns);
+            var inks = _inkRow!.RawBuffer.AsSpan(0, Columns * 4);
             if (_colorModel == ImageColorModel.Ycck)
             {
                 // The output row is free until the inks are converted: it holds the cyan, magenta and yellow amounts first
@@ -326,7 +327,7 @@ internal sealed class JpegRowWriter : JpegBandWriter
 
         if (!identity)
         {
-            sink.Plan.ConvertRow(row, storage.GetRowSpanCore(y));
+            sink.Plan.ConvertRow(row, storage.GetRowSpanCore(y - Top));
         }
     }
 

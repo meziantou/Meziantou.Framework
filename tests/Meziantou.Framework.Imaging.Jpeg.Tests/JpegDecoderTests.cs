@@ -2162,6 +2162,204 @@ public sealed class JpegDecoderTests
         }
     }
 
+    public static TheoryData<string, int> RegionLayoutCases
+    {
+        get
+        {
+            var data = new TheoryData<string, int>();
+            foreach (var layout in Layouts.Keys)
+            {
+                foreach (var scale in (int[])[1, 2, 4, 8])
+                {
+                    data.Add(layout, scale);
+                }
+            }
+
+            return data;
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(RegionLayoutCases))]
+    public void ARegionHasThePixelsOfTheDecodeOfTheWholeImage(string layout, int scale)
+    {
+        // Single pixels, areas across MCU edges, rows, columns, areas past the image and the whole image, of every process
+        // of a DCT-based frame: the area holds the pixels of the (scaled) full decode that cover it
+        var sampling = Layouts[layout];
+        var all = Enumerable.Range(0, sampling.Length).ToArray();
+        var progression = JpegTestProgressiveScan.ParseScript(GetProgressionScript(sampling.Length));
+        foreach (var (width, height) in (ReadOnlySpan<(int, int)>)[(1, 1), (9, 7), (37, 21), (35, 2), (1, 19), (61, 53)])
+        {
+            var image = JpegTestImage.CreateRandom(width, height, sampling, seed: (width * 13) + height + layout.Length + scale, scaled: scale > 1);
+            var encodings = new (string Name, JpegTestEncodeOptions Options)[]
+            {
+                ("interleaved", new JpegTestEncodeOptions()),
+                ("interleaved, restart 1", new JpegTestEncodeOptions { Huffman = JpegTestHuffmanStyle.Skewed, RestartInterval = 1 }),
+                ("one scan per component (reversed), restart 2", new JpegTestEncodeOptions { Scans = [.. all.Reverse().Select(index => new[] { index })], RestartInterval = 2 }),
+                ("arithmetic, restart 3", new JpegTestEncodeOptions { Arithmetic = true, RestartInterval = 3 }),
+                ("progressive, restart 2", new JpegTestEncodeOptions { Progression = progression, RestartInterval = 2 }),
+                ("arithmetic progressive", new JpegTestEncodeOptions { Progression = progression, Arithmetic = true }),
+            };
+
+            foreach (var (name, options) in encodings)
+            {
+                AssertRegions(image.Encode(options), new ImageDecodeOptions { ScaleDenominator = scale }, GetRegions(width, height), $"{layout} {width}x{height} at 1/{scale}, {name}");
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("4:2:0", "baseline", 1)]
+    [InlineData("4:2:0", "restart-7", 2)]
+    [InlineData("4:2:2", "separate-scans", 1)]
+    [InlineData("gray", "baseline", 4)]
+    [InlineData("4:4:4", "progressive", 1)]
+    [InlineData("4:2:0", "progressive", 2)]
+    [InlineData("4:2:0", "arithmetic", 1)]
+    public void ARegionDecodedByWorkersHasThePixelsOfTheWholeImage(string layout, string coding, int scale)
+    {
+        // 517x601 pixels: several workers transform the blocks and write the bands, and the area starts and ends inside MCUs
+        var sampling = Layouts[layout];
+        var image = JpegTestImage.CreateRandom(517, 601, sampling, seed: layout.Length + coding.Length + scale, acDensity: 0.3, scaled: scale > 1);
+        var data = image.Encode(coding switch
+        {
+            "restart-7" => new JpegTestEncodeOptions { RestartInterval = 7, Huffman = JpegTestHuffmanStyle.Skewed },
+            "separate-scans" => new JpegTestEncodeOptions { Scans = [[2], [0], [1]] },
+            "progressive" => new JpegTestEncodeOptions { Progression = JpegTestProgressiveScan.ParseScript(GetProgressionScript(sampling.Length)) },
+            "arithmetic" => new JpegTestEncodeOptions { Arithmetic = true },
+            _ => new JpegTestEncodeOptions(),
+        });
+        Rectangle[] regions = [new(0, 0, 517, 601), new(3, 5, 400, 500), new(100, 300, 64, 64), new(250, 17, 1, 580), new(0, 590, 517, 11), new(509, 0, 100, 9), new(130, 140, 300, 2)];
+        foreach (var workers in (int[])[1, 2, 16])
+        {
+            AssertRegions(data, new ImageDecodeOptions { ScaleDenominator = scale, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } }, regions, $"{layout} {coding} at 1/{scale}, {workers} workers");
+        }
+    }
+
+    [Theory]
+    [InlineData("gray", 1)]
+    [InlineData("4:2:2", 2)]
+    [InlineData("4:2:0", 1)]
+    public void ARegionOfTwelveBitSamplesHasThePixelsOfTheWholeImage(string layout, int scale)
+    {
+        var sampling = Layouts[layout];
+        var image = JpegTestImage.CreateRandom(37, 21, sampling, seed: layout.Length + scale, precision: 12, scaled: scale > 1);
+        foreach (var options in new[] { new JpegTestEncodeOptions { RestartInterval = 2 }, new JpegTestEncodeOptions { Progression = JpegTestProgressiveScan.ParseScript(GetProgressionScript(sampling.Length)) } })
+        {
+            AssertRegions(image.Encode(options), new ImageDecodeOptions { ScaleDenominator = scale }, GetRegions(37, 21), $"12-bit {layout} at 1/{scale}");
+        }
+    }
+
+    [Theory]
+    [InlineData("chroma-2x2", "Ycck", 1)]
+    [InlineData("mixed", "Cmyk", 2)]
+    [InlineData("full", "CmykWithoutAdobe", 1)]
+    public void ARegionOfInksHasThePixelsOfTheWholeImage(string layout, string coding, int scale)
+    {
+        // The inks converted to RGB, and the inks themselves
+        var image = JpegTestImage.CreateRandom(37, 21, InkLayouts[layout], seed: 5 + scale, inks: Enum.Parse<JpegTestInkCoding>(coding), scaled: scale > 1);
+        var data = image.Encode(new JpegTestEncodeOptions { RestartInterval = 2 });
+        AssertRegions(data, new ImageDecodeOptions { CmykConversion = CmykConversionOptions.Default, ScaleDenominator = scale }, GetRegions(37, 21), $"{coding} {layout} as RGB at 1/{scale}");
+        AssertRegions(data, new ImageDecodeOptions { ScaleDenominator = scale }, GetRegions(37, 21), $"{coding} {layout} as CMYK at 1/{scale}", asCmyk: true);
+    }
+
+    [Fact]
+    public void ARegionWithATargetSizeIsDecodedAtTheScaleOfTheWholeImage()
+    {
+        // The scale is chosen from the size of the image, then the area is divided by it: 1/4 keeps 64x48 of 256x192
+        var data = JpegTestImage.CreateRandom(256, 192, Layouts["4:2:0"], seed: 4, scaled: true).Encode();
+        using var quarter = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = 4 });
+        using var decoded = Image.Load(data, new ImageDecodeOptions { TargetSize = new Size(60, 40), Region = new Rectangle(10, 21, 30, 9) });
+        Assert.Equal(new Size(8, 3), decoded.Size);
+        AssertPixels(Crop(quarter, Rectangle.FromLTRB(2, 5, 10, 8)), decoded, "TargetSize 60x40");
+    }
+
+    [Fact]
+    public void TheRowsBelowARegionOfASequentialFrameAreNotDecoded()
+    {
+        // The end of the entropy-coded data is damaged: the whole image cannot be decoded, the top of it can, with the pixels
+        // of the image that was encoded. A progressive frame needs every scan, and the data of its area are in all of them
+        var image = JpegTestImage.CreateRandom(64, 256, Layouts["4:2:0"], seed: 11);
+        foreach (var options in new[] { new JpegTestEncodeOptions(), new JpegTestEncodeOptions { RestartInterval = 4 }, new JpegTestEncodeOptions { Arithmetic = true }, new JpegTestEncodeOptions { Scans = [[0], [1], [2]] } })
+        {
+            var data = image.Encode(options);
+            using var reference = Image.Load(data);
+            var damaged = data.ToArray();
+            for (var i = damaged.Length - 40; i < damaged.Length - 2; i++)
+            {
+                damaged[i] = 0xFF;
+            }
+
+            Assert.Throws<InvalidImageContentException>(() => Image.Load(damaged));
+            using var top = Image.Load(damaged, new ImageDecodeOptions { Region = new Rectangle(10, 0, 40, 100) });
+            AssertPixels(Crop(reference, new Rectangle(10, 0, 40, 100)), top, options.Scans is null ? "interleaved" : "one scan per component");
+        }
+    }
+
+    [Fact]
+    public void ARegionOfALargePhotoNeedsAFractionOfTheMemoryOfAFullDecode()
+    {
+        // A 256x256 area of a 4:2:0 frame of 3072x2048 pixels: the pixels are those of the area, and the planes are bands
+        var data = JpegTestImage.CreateRandom(3072, 2048, Layouts["4:2:0"], seed: 7, dcOnlyProbability: 1).Encode();
+        using var full = Image.Load<Rgb24>(data);
+        using var area = Image.Load<Rgb24>(data, new ImageDecodeOptions { Region = new Rectangle(1000, 900, 256, 256) });
+        Assert.Equal(new Size(256, 256), area.Size);
+        Assert.Equal(256 * 256 * 3, area.Owner.Scope.GetLiveBytes(AllocationKind.ImagePixels));
+        var fullPeak = full.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        var areaPeak = area.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        Assert.True(areaPeak * 20 < fullPeak, $"Peak {areaPeak} bytes for the area, {fullPeak} bytes for the full decode.");
+    }
+
+    [Fact]
+    public void ARegionOutsideTheImageIsRejected()
+    {
+        var data = JpegTestImage.CreateRandom(37, 21, Layouts["4:2:0"], seed: 2).Encode();
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data, new ImageDecodeOptions { Region = new Rectangle(37, 0, 10, 10) }));
+        Assert.Equal(("Region decoding", ImageFormat.Jpeg), (exception.Feature, exception.Format));
+        Assert.Equal("Region decoding", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data, new ImageDecodeOptions { Region = new Rectangle(0, 21, 10, 10), ScaleDenominator = 2 })).Feature);
+    }
+
+    /// <summary>The areas of the tests of an image: single pixels, areas across MCU edges, a row, a column, areas past the image and the whole image.</summary>
+    private static Rectangle[] GetRegions(int width, int height)
+        => [new(0, 0, 1, 1), new(width - 1, height - 1, 1, 1), new(width / 2, height / 3, 1, 1), new(3, 5, 17, 9), new(7, 0, 20, height), new(0, height / 2, width, 1), new(width / 2, 0, 1, height), new(width / 3, height / 3, 1000, 1000), new(0, 0, width, height), new(15, 15, 18, 18)];
+
+    /// <summary>
+    /// Checks that each area that meets the image has the pixels of the decode of the whole image with the same options:
+    /// the pixels of the (scaled) image that cover the area.
+    /// </summary>
+    private static void AssertRegions(byte[] data, ImageDecodeOptions options, Rectangle[] regions, string context, bool asCmyk = false)
+    {
+        var size = Image.Identify(data).Size;
+        using var full = asCmyk ? Image.Load<Cmyk32>(data, options) : Image.Load(data, options);
+        var scale = options.ScaleDenominator;
+        foreach (var region in regions)
+        {
+            if (region.X >= size.Width || region.Y >= size.Height)
+                continue;
+
+            var area = Rectangle.FromLTRB(region.X / scale, region.Y / scale, (Math.Min(region.Right, size.Width) + scale - 1) / scale, (Math.Min(region.Bottom, size.Height) + scale - 1) / scale);
+            var regionOptions = new ImageDecodeOptions { ScaleDenominator = scale, Configuration = options.Configuration, CmykConversion = options.CmykConversion, Region = region };
+            using var decoded = asCmyk ? Image.Load<Cmyk32>(data, regionOptions) : Image.Load(data, regionOptions);
+            Assert.Equal(area.Size, decoded.Size);
+            Assert.Equal(full.PixelFormat, decoded.PixelFormat);
+            AssertPixels(Crop(full, area), decoded, $"{context}, region {region}");
+        }
+    }
+
+    /// <summary>Gets the bytes of an area of an image, as <see cref="GetBytes"/> gives them.</summary>
+    private static byte[] Crop(Image image, Rectangle area)
+    {
+        var bytes = GetBytes(image);
+        var pixel = bytes.Length / (image.Width * image.Height);
+        var result = new byte[area.Width * area.Height * pixel];
+        for (var y = 0; y < area.Height; y++)
+        {
+            bytes.AsSpan((((area.Y + y) * image.Width) + area.X) * pixel, area.Width * pixel).CopyTo(result.AsSpan(y * area.Width * pixel));
+        }
+
+        return result;
+    }
+
     /// <summary>A valid progression of every component: DC without its lowest bit, each AC band, then the missing bits.</summary>
     private static string GetProgressionScript(int componentCount)
     {

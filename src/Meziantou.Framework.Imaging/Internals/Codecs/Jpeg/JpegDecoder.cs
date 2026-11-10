@@ -168,6 +168,12 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
     private Size _outputSize;
     private int _scanCount;
 
+    // Region decoding: the area of the (scaled) frame that the image holds, whether it is a part of the frame, and the MCU
+    // rows that its bands read (the rows after them are not decoded)
+    private Rectangle _window;
+    private bool _isRegion;
+    private int _endDecodedRows;
+
     // Progressive frames: the scans that were completed, whether the current one codes AC coefficients, and whether one did
     private int _completedScans;
     private bool _scanHasAc;
@@ -276,11 +282,21 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         }
 
         _outputSize = new Size(ImageDecodeRequest.GetScaledLength(structure.Width, _scaleDenominator), ImageDecodeRequest.GetScaledLength(structure.Height, _scaleDenominator));
+        _window = new Rectangle(Point.Empty, _outputSize);
+        if (_request is { Region: not null } regionRequest)
+        {
+            // The pixels of the (scaled) frame that cover the area, at least one in each direction
+            var region = regionRequest.GetRegion(structure.Size, ImageFormat.Jpeg);
+            var scale = _scaleDenominator;
+            _window = Rectangle.FromLTRB(region.Left / scale, region.Top / scale, ImageDecodeRequest.GetScaledLength(region.Right, scale), ImageDecodeRequest.GetScaledLength(region.Bottom, scale));
+            _isRegion = true;
+        }
+
         ConfigureFrame(structure);
         var components = _components;
 
         // The container of an embedded datastream receives the rows on the calling thread, one at a time
-        _workers = _receiver is null && _dataUnitSize == 8 && !_hierarchical ? JpegReconstruction.GetWorkerCount(_outputSize, _mcusY, _context.Configuration.MaxDegreeOfParallelism) : 1;
+        _workers = _receiver is null && _dataUnitSize == 8 && !_hierarchical ? JpegReconstruction.GetWorkerCount(_window.Size, _mcusY, _context.Configuration.MaxDegreeOfParallelism) : 1;
         if (_receiver is not null)
         {
             _colorModel = _embeddedColorModel;
@@ -322,7 +338,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             _context.Sequential?.ScaleHeader(_outputSize);
         }
 
-        _sink = DecodedFrameSink.Create(_context, request, ImageFormat.Jpeg, _outputSize, structure.DefaultPixelFormat, source, profile);
+        _sink = DecodedFrameSink.Create(_context, request, ImageFormat.Jpeg, _window.Size, structure.DefaultPixelFormat, source, profile);
         _sink.BeginFrame(FrameDuration.Zero);
         _sink.SetPartialFrameRenderer(this);
     }
@@ -375,6 +391,19 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _maxVertical = maxVertical;
         _mcusX = (_frameWidth + (_dataUnitSize * maxHorizontal) - 1) / (_dataUnitSize * maxHorizontal);
         _mcusY = (_frameHeight + (_dataUnitSize * maxVertical) - 1) / (_dataUnitSize * maxVertical);
+        _endDecodedRows = _mcusY;
+        if (_isRegion && _dataUnitSize == 8 && !_hierarchical)
+        {
+            // A band of the area reads the last sample row of the MCU row above it and the first one of the MCU row below
+            // it: only the blocks of these MCU rows, and of the columns the area reads, are transformed
+            var bandRows = _blockSize * maxVertical;
+            var firstRow = Math.Max(0, (_window.Top / bandRows) - 1);
+            _endDecodedRows = Math.Min(_mcusY, ((_window.Bottom - 1) / bandRows) + 2);
+            foreach (var component in components)
+            {
+                component.SetTransformWindow(firstRow, _endDecodedRows, _window.Left, _window.Right);
+            }
+        }
     }
 
     /// <summary>
@@ -624,7 +653,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             if (_sink is { WantsRefinement: true } sink && !_hierarchical && _components.All(component => component.IsDecoded))
             {
                 // A rendering counts like the pixels of a frame that is not shown
-                _context.Tracker.ChargeHiddenPixels(_outputSize.Area);
+                _context.Tracker.ChargeHiddenPixels(_window.Size.Area);
                 RenderCoefficients(sink);
             }
 
@@ -637,7 +666,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             var writer = _writer!;
             if (_reconstruction is { } reconstruction)
             {
-                reconstruction.Reconstruct(_mcusY);
+                // The rows below an area were not decoded (_endDecodedRows)
+                reconstruction.Reconstruct(_endDecodedRows);
             }
             else if (_writers.Length > 1)
             {
@@ -958,6 +988,12 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             ? new JpegArithmeticSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken) { AcceptsGarbledRestartNumbers = IsLenient, Differential = _differential }
             : new JpegSequentialScanDecoder(scanComponents, reader, _mcusX, _mcusY, _restartInterval, _streaming ? OnMcuRowDecoded : null, _context.CancellationToken, deferTransforms: _reconstruction is not null) { AcceptsGarbledRestartNumbers = IsLenient, Differential = _differential };
 
+        // The rows below an area are not decoded: block rows of a non-interleaved scan, MCU rows of an interleaved one
+        if (_endDecodedRows < _mcusY)
+        {
+            _scan.EndAfterRows(count == 1 ? _endDecodedRows * scanComponents[0].Component.VerticalSampling : _endDecodedRows);
+        }
+
         // The blocks are decoded with FastLookup but the last MCUs of each segment (most of them when the segments are short)
         // and the stored coefficients of the workers
         if (_reconstruction is not null || _restartInterval > 0)
@@ -1259,13 +1295,13 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             return true;
         }
 
-        var height = _outputSize.Height;
+        var height = _window.Height;
         int writtenRows;
         if (_writer is { } writer && _streaming)
         {
-            // The rows that one worker would have written: every band but the last one decoded
+            // The rows that one worker would have written: every band but the last one decoded (rows of the frame, then of the area)
             _reconstruction?.Reconstruct(_decodedRows);
-            writtenRows = Math.Min(height, writer.BandsWritten * _blockSize * _maxVertical);
+            writtenRows = Math.Clamp((writer.BandsWritten * _blockSize * _maxVertical) - _window.Top, 0, height);
         }
         else if (_writer is null && _components.All(component => component.IsDecoded))
         {
@@ -1431,12 +1467,12 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         {
             return _receiver is not null
                 ? new JpegDeepRowWriter(_components, _receiver, _colorModel, width, height, bandRows, _precision, scope)
-                : new JpegDeepRowWriter(_components, _sink!, _colorModel, _inkConversion, width, height, bandRows, _precision, scope);
+                : new JpegDeepRowWriter(_components, _sink!, _colorModel, _inkConversion, width, height, bandRows, _window, _precision, scope);
         }
 
         return _receiver is not null
             ? new JpegRowWriter(_components, _receiver, _colorModel, width, height, bandRows, scope)
-            : new JpegRowWriter(_components, _sink!, _colorModel, _inkConversion, width, height, bandRows, scope);
+            : new JpegRowWriter(_components, _sink!, _colorModel, _inkConversion, width, height, bandRows, _window, scope);
     }
 
     /// <summary>Streaming: once MCU row <paramref name="row"/> is decoded, the previous one has its lower context row and is written.</summary>

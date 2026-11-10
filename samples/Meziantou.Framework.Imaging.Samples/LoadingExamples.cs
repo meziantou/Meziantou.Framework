@@ -28,9 +28,9 @@ internal static class LoadingExamples
     #region Imaging_DecodeRegion
     public static Image LoadViewport(string path, Rectangle viewport)
     {
-        // The area is in pixels of the stored image, before its orientation. A tiled TIFF page reads only the tiles the
-        // area meets, an AVIF or HEIC grid decodes only the tiles it needs, and the pixels are those of a full decode.
-        // Other formats throw UnsupportedImageFeatureException
+        // The area is in pixels of the stored image, before its orientation. A JPEG file transforms only the blocks the
+        // area reads, a tiled TIFF page reads only the tiles the area meets, an AVIF or HEIC grid decodes only the tiles it
+        // needs, and the pixels are those of a full decode. Other formats throw UnsupportedImageFeatureException
         return Image.Load(path, new ImageDecodeOptions { Region = viewport });
     }
     #endregion

@@ -217,6 +217,17 @@ internal static class FuzzOracle
                 return interrupted.Failure;
         }
 
+        // TIFF: a target size may read a reduced-resolution image of the first page, which is between the target and the page
+        if (detected == ImageFormat.Tiff && eager.Succeeded)
+        {
+            var levels = Run(audit, "load-target-size", () => CheckTiffTargetSize(input, eager.Value!));
+            if (levels.Failure is not null)
+                return levels.Failure;
+
+            if (levels.Value is { Length: > 0 } violation)
+                return FuzzFailure.Property(violation.Split(':')[0], violation);
+        }
+
         // OpenEXR: the default options reject multi-part files and deep data, so that the decoding of a part and the
         // flattening of deep samples are only reached with the options that ask for them
         if (detected == ImageFormat.OpenExr)
@@ -308,6 +319,22 @@ internal static class FuzzOracle
 
         // Re-encode in the source format: metadata found in the input is kept (strict policy) when possible, else stripped
         var format = Image.DetectFormat(input);
+
+        // An area of a JPEG file has the pixels of the full decode at the same scale: whatever the blocks and the rows that
+        // the region decode skips, it succeeds when the full decode does
+        if (format == ImageFormat.Jpeg && CheckJpegRegion(input, image, variant) is { Length: > 0 } region)
+            return region;
+
+        // A JPEG XL image decoded from the LF image of its frame reads a part of what the full decode reads: it succeeds
+        // too, at 1/8 of the size or at full size
+        if (format == ImageFormat.JpegXl)
+        {
+            using var reduced = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, TargetSize = new Size(1, 1) });
+            var eighth = new Size((image.Width + 7) / 8, (image.Height + 7) / 8);
+            if ((reduced.Size != eighth && reduced.Size != image.Size) || reduced.PixelFormat != image.PixelFormat || reduced.Frames.Count != image.Frames.Count)
+                return $"jxl-target-size: a target of 1x1 gave {reduced.Size} {reduced.PixelFormat} with {reduced.Frames.Count} frame(s) for a {decoded} image";
+        }
+
         ImageEncoder[] encoders = format switch
         {
             ImageFormat.Png => [new PngEncoder { CompressionLevel = System.IO.Compression.CompressionLevel.Fastest, Interlaced = (variant & 16) != 0 }, new PngEncoder { MetadataHandling = MetadataHandling.Strip }],
@@ -385,6 +412,61 @@ internal static class FuzzOracle
         var box = image.AnalyzeAutoCrop(expand).Bounds;
         if (image.AutoCrop(expand) && image.Size == size && box.X == expand.PaddingX && box.Y == expand.PaddingY)
             return $"auto-crop-expand: the {size} canvas is reported as changed but the content box {box} and its padding are the canvas";
+
+        return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckTiffTargetSize(byte[] input, DecodedSummary decoded)
+    {
+        // A level whose data are damaged fails like the page would; a level that is used has the pixel format of the page
+        var target = new Size(Math.Max(1, decoded.Width / 3), Math.Max(1, decoded.Height / 5));
+        using var image = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, TargetSize = target });
+        if (image.Width < target.Width || image.Height < target.Height || image.Width > decoded.Width || image.Height > decoded.Height || image.PixelFormat != decoded.PixelFormat)
+            return $"tiff-target-size: the target {target} gave a {image.Width}x{image.Height} {image.PixelFormat} image for a {decoded} page";
+
+        return string.Empty;
+    }
+
+    /// <summary>Returns an empty string, or "name: description" for a violated property; throws for exceptions.</summary>
+    private static string CheckJpegRegion(byte[] input, Image image, int variant)
+    {
+        // The scale and the area depend on the variant; an area may extend past the image
+        var scale = 1 << ((variant >> 2) & 3);
+        var x = (variant * 7) % image.Width;
+        var y = (variant * 13) % image.Height;
+        var region = new Rectangle(x, y, 1 + ((variant * 5) % 41), 1 + ((variant * 11) % 37));
+        var options = new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, ScaleDenominator = scale };
+        Image full;
+        try
+        {
+            full = scale == 1 ? image.Clone() : Image.Load(input, options);
+        }
+        catch (UnsupportedImageFeatureException exception) when (exception.Feature == "Scaled decoding")
+        {
+            // A lossless frame has no blocks to scale
+            return string.Empty;
+        }
+
+        using (full)
+        using (var decoded = Image.Load(input, new ImageDecodeOptions { Configuration = Configuration, Conversion = Conversion, CmykConversion = CmykConversion, ScaleDenominator = scale, Region = region }))
+        {
+            var area = Rectangle.FromLTRB(x / scale, y / scale, (Math.Min(region.Right, image.Width) + scale - 1) / scale, (Math.Min(region.Bottom, image.Height) + scale - 1) / scale);
+            if (decoded.Size != area.Size || decoded.PixelFormat != full.PixelFormat || decoded.Frames.Count != 1)
+                return $"jpeg-region-geometry: the region {region} at 1/{scale} decodes as {decoded.Size} {decoded.PixelFormat} with {decoded.Frames.Count} frame(s), the area {area} of the {full.Size} {full.PixelFormat} image was expected";
+
+            var bytesPerPixel = PixelFormats.GetBytesPerPixel(full.PixelFormat);
+            var fullBytes = new byte[full.Width * full.Height * bytesPerPixel];
+            full.Frames[0].CopyPixelBytesTo(fullBytes);
+            var regionBytes = new byte[area.Width * area.Height * bytesPerPixel];
+            decoded.Frames[0].CopyPixelBytesTo(regionBytes);
+            for (var row = 0; row < area.Height; row++)
+            {
+                var expected = fullBytes.AsSpan((((area.Y + row) * full.Width) + area.X) * bytesPerPixel, area.Width * bytesPerPixel);
+                if (!expected.SequenceEqual(regionBytes.AsSpan(row * area.Width * bytesPerPixel, area.Width * bytesPerPixel)))
+                    return $"jpeg-region-pixels: row {row} of the region {region} at 1/{scale} differs from the full decode";
+            }
+        }
 
         return string.Empty;
     }

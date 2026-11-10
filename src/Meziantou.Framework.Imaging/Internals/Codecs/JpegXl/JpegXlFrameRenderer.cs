@@ -181,6 +181,35 @@ internal sealed class JpegXlFrameRenderer : IDisposable
         }
     }
 
+    /// <summary>
+    /// Renders the LF image of a frame (<see cref="JpegXlFrameDecoder.DecodeLfImage"/>): its color transform only. The frame
+    /// is the only one of the image, shown as it is: it is neither blended nor kept as a reference.
+    /// </summary>
+    /// <param name="decoded">The LF image; its planes are taken from it.</param>
+    /// <param name="frame">The header of the frame.</param>
+    /// <returns>The image at 1/8 of the size of the frame, which the caller disposes.</returns>
+    public JpegXlImageBuffer RenderLfImage(JpegXlDecodedFrame decoded, JpegXlFrameHeader frame)
+    {
+        ArgumentNullException.ThrowIfNull(decoded);
+        ArgumentNullException.ThrowIfNull(frame);
+        var buffer = new JpegXlImageBuffer(decoded.GetPlaneWidth(0), decoded.GetPlaneHeight(0), colorChannelCount: 3, extraChannelCount: 0) { IsBeforeColorTransform = true };
+        try
+        {
+            for (var c = 0; c < 3; c++)
+            {
+                buffer.Adopt(c, decoded.DetachPlane(c), decoded.GetPlaneWidth(c));
+            }
+
+            ApplyColorTransform(buffer, frame);
+            return buffer;
+        }
+        catch
+        {
+            buffer.Dispose();
+            throw;
+        }
+    }
+
     public void Dispose()
     {
         for (var i = 0; i < _references.Length; i++)

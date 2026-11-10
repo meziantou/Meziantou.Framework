@@ -51,7 +51,7 @@ internal abstract class ImageCodec
     public virtual bool SupportsScaledDecoding => false;
 
     /// <summary>
-    /// Gets a value indicating whether the decoder reads <see cref="ImageDecodeRequest.Region"/> (JPEG 2000, TIFF, AVIF, HEIC). The driver
+    /// Gets a value indicating whether the decoder reads <see cref="ImageDecodeRequest.Region"/> (JPEG, JPEG 2000, TIFF, AVIF, HEIC). The driver
     /// rejects a request for a region before the decoders of the other codecs start.
     /// </summary>
     public virtual bool SupportsRegionDecoding => false;

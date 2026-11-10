@@ -136,7 +136,7 @@ public sealed class DnsClient : IDisposable
             new("dns.question.class", questionClass),
             new("network.transport", GetTransportName(_protocol)),
         ];
-        using var activity = DnsTelemetry.ActivitySource.StartActivity("dns.query", ActivityKind.Client, default(ActivityContext), tags, startTime: _options.TimeProvider.GetUtcNow());
+        using var activity = DnsTelemetry.ActivitySource.StartActivity("dns.query", ActivityKind.Client, default(ActivityContext), tags);
 
         try
         {

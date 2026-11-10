@@ -679,16 +679,16 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             static StronglyTypedIdConverters GetUserDeclaredConverters(INamedTypeSymbol typeSymbol, string typeName)
             {
                 var result = StronglyTypedIdConverters.None;
-                if (!typeSymbol.GetTypeMembers(typeName + TypeConverterSuffix).IsEmpty)
+                if (!typeSymbol.GetTypeMembers(typeName + TypeConverterSuffix, arity: 0).IsEmpty)
                     result |= StronglyTypedIdConverters.System_ComponentModel_TypeConverter;
 
-                if (!typeSymbol.GetTypeMembers(typeName + SystemTextJsonConverterSuffix).IsEmpty)
+                if (!typeSymbol.GetTypeMembers(typeName + SystemTextJsonConverterSuffix, arity: 0).IsEmpty)
                     result |= StronglyTypedIdConverters.System_Text_Json;
 
-                if (!typeSymbol.GetTypeMembers(typeName + NewtonsoftJsonConverterSuffix).IsEmpty)
+                if (!typeSymbol.GetTypeMembers(typeName + NewtonsoftJsonConverterSuffix, arity: 0).IsEmpty)
                     result |= StronglyTypedIdConverters.Newtonsoft_Json;
 
-                if (!typeSymbol.GetTypeMembers(typeName + MongoDbConverterSuffix).IsEmpty)
+                if (!typeSymbol.GetTypeMembers(typeName + MongoDbConverterSuffix, arity: 0).IsEmpty)
                     result |= StronglyTypedIdConverters.MongoDB_Bson_Serialization;
 
                 return result;

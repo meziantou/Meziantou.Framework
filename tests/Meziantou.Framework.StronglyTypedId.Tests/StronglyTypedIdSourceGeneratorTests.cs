@@ -740,6 +740,21 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public async Task Converters_GenericTypeWithSameNameDoesNotChangeAccessibility()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test
+            {
+                private sealed class TestJsonConverter<T> { }
+            }
+            """;
+
+        var generatedCode = await GenerateSingleFile(sourceCode);
+        Assert.Contains("public partial class TestJsonConverter :", generatedCode);
+    }
+
+    [Fact]
     public async Task AssemblyDefaults_GuidGenerationStrategy_NotSupportedByTargetFramework()
     {
         var sourceCode = """

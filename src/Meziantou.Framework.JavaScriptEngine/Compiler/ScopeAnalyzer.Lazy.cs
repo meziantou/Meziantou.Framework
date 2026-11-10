@@ -23,7 +23,7 @@ internal sealed partial class ScopeAnalyzer
     /// <summary>Visits a nested function: it is compiled on its first call, unless it contains a direct eval.</summary>
     private void VisitNestedFunction(FunctionNode function, Scope parentScope, FunctionInfoKind kind)
     {
-        if (ReferenceEquals(function, _eagerFunction))
+        if (ReferenceEquals(function, _eagerFunction) || IsDebuggable)
         {
             VisitFunction(function, parentScope, kind);
             return;

@@ -31,6 +31,14 @@ internal sealed partial class ScopeAnalyzer
 
     private void ResolveAll()
     {
+        if (IsDebuggable)
+        {
+            foreach (var scope in _allScopes)
+            {
+                MarkDirectEval(scope);
+            }
+        }
+
         // The functions that contain a direct eval expose their special bindings to the eval code
         foreach (var scope in _allScopes)
         {
@@ -408,6 +416,6 @@ internal sealed partial class ScopeAnalyzer
             flags[variable.Index] = slotFlags;
         }
 
-        return new ScopeInfo(scope.Kind, names, flags, scope.IsVarScope || scope.HasParameterEvalVars, scope.HasParameterEvalVars);
+        return new ScopeInfo(scope.Kind, names, flags, scope.IsVarScope || scope.HasParameterEvalVars, scope.HasParameterEvalVars, isFunctionLexicalScope: scope == scope.Function.LexicalScope);
     }
 }

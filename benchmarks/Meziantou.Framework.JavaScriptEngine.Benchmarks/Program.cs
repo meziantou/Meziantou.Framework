@@ -72,7 +72,7 @@ if (args is ["profile", "Parse" or "CreateRealm", var fixedCostSeconds])
             var program = Meziantou.Framework.JavaScriptEngine.Parsing.JsParser.ParseScript(source, Meziantou.Framework.JavaScriptEngine.Parsing.ParserOptions.Script);
             stages[0] += Stopwatch.GetElapsedTime(stageStart).TotalMilliseconds;
             stageStart = Stopwatch.GetTimestamp();
-            var analysis = Meziantou.Framework.JavaScriptEngine.Compiler.ScopeAnalyzer.Analyze(program, Meziantou.Framework.JavaScriptEngine.Compiler.ProgramKind.Script, isStrict: false);
+            var analysis = Meziantou.Framework.JavaScriptEngine.Compiler.ScopeAnalyzer.Analyze(program, Meziantou.Framework.JavaScriptEngine.Compiler.ProgramKind.Script, isStrict: false, isDebuggable: false);
             stages[1] += Stopwatch.GetElapsedTime(stageStart).TotalMilliseconds;
             GC.KeepAlive(analysis);
             program = Meziantou.Framework.JavaScriptEngine.Parsing.JsParser.ParseScript(source, Meziantou.Framework.JavaScriptEngine.Parsing.ParserOptions.Script);

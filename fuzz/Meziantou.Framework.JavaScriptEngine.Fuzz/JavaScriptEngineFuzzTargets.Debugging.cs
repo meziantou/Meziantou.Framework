@@ -7,7 +7,8 @@ namespace Meziantou.Framework.JavaScriptEngine.Fuzz;
 /// A debugger (<see cref="JsEngineOptions.Debugger"/>) does not change what a script does: a script gives the same result
 /// with a debugger that only observes it, or that runs code and captures the stack in its callbacks, as without debugger.
 /// The events are located at the start of a statement of the script (at the <c>debugger</c> keyword for a
-/// <c>debugger</c> statement), and the code run by a callback raises no event. A <see cref="JsTerminationException"/>
+/// <c>debugger</c> statement), and the code run by a callback raises no event. The call stack of an event has one frame per
+/// level of call depth, the scopes of each frame end with the global object, and code evaluated in a frame runs. A <see cref="JsTerminationException"/>
 /// thrown by a callback stops the script, any other exception goes to the host unchanged, and the engine runs code again
 /// afterward.
 /// </summary>
@@ -367,6 +368,78 @@ public static partial class JavaScriptEngineFuzzTargets
             catch (JsException exception) when (exception.Message.StartsWith("RangeError", StringComparison.Ordinal))
             {
                 // The script is at the recursion limit: the frames of the callback are on the same stack
+            }
+
+            InspectFrames(debugEvent, location);
+        }
+
+        // The call stack, the scopes and the code evaluated in the frames: reading them does not change the script
+        private void InspectFrames(JsDebugEvent debugEvent, JsSourceLocation location)
+        {
+            var stack = debugEvent.GetCallStack();
+            if (stack.Count != debugEvent.CallDepth)
+            {
+                Fail($"The call stack at {location} has {stack.Count} frames, the call depth is {debugEvent.CallDepth}");
+                return;
+            }
+
+            if (stack[0].Location != location || stack[0].FunctionName != debugEvent.FunctionName)
+            {
+                Fail($"The first frame of the call stack is {stack[0].FunctionName}@{stack[0].Location}, the statement is {debugEvent.FunctionName}@{location}");
+            }
+
+            foreach (var frame in stack)
+            {
+                var scopes = frame.GetScopes();
+                if (scopes.Count == 0 || scopes[^1] is not { Kind: JsDebugScopeKind.Global } global || !ReferenceEquals(global.BindingObject, frame.Realm.GlobalObject))
+                {
+                    Fail($"The last scope of the frame at {frame.Location} is not the global object of its realm");
+                    continue;
+                }
+
+                foreach (var scope in scopes)
+                {
+                    if ((scope.Kind is JsDebugScopeKind.Global or JsDebugScopeKind.With) != (scope.BindingObject is not null))
+                    {
+                        Fail($"The {scope.Kind} scope of the frame at {frame.Location} has a binding object: {scope.BindingObject is not null}");
+                    }
+
+                    if (scope.BindingObject is null && scope.Variables.Count == 0)
+                    {
+                        Fail($"The {scope.Kind} scope of the frame at {frame.Location} has no variable");
+                    }
+
+                    foreach (var variable in scope.Variables)
+                    {
+                        if (string.IsNullOrEmpty(variable.Name) || variable.Name is "this" or "new.target" or ['%' or '#', ..])
+                        {
+                            Fail($"The {scope.Kind} scope of the frame at {frame.Location} has the internal binding '{FuzzText.Escape(variable.Name)}'");
+                        }
+
+                        if (!variable.IsInitialized && !variable.Value.IsUndefined)
+                        {
+                            Fail($"The uninitialized variable '{FuzzText.Escape(variable.Name)}' has a value");
+                        }
+                    }
+                }
+
+                // Code that does not read the bindings compiles and runs in any frame
+                try
+                {
+                    var result = frame.Evaluate("6 * 7");
+                    if (result.ToString() != "42")
+                    {
+                        Fail($"The code evaluated in the frame at {frame.Location} returned {result}");
+                    }
+                }
+                catch (JsException exception) when (exception.Message.StartsWith("RangeError", StringComparison.Ordinal))
+                {
+                    // The script is at the recursion limit
+                }
+                catch (JsException exception)
+                {
+                    Fail($"The code evaluated in the frame at {frame.Location} threw {exception.Message}");
+                }
             }
         }
     }

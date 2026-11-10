@@ -22,6 +22,30 @@ namespace Meziantou.Framework.JavaScriptEngine
         public static bool TryGetBufferSource(Meziantou.Framework.JavaScriptEngine.JsValue value, out Meziantou.Framework.JavaScriptEngine.JsBufferKind kind, out bool isShared, out System.Memory<byte> bytes) => throw null;
     }
 
+    public sealed class JsBreakpoint
+    {
+        public int? Column { get => throw null; }
+        public string? Condition { get => throw null; }
+        public int HitCount { get => throw null; }
+        public bool IsEnabled { get => throw null; set { } }
+        public int Line { get => throw null; }
+        public string? Url { get => throw null; }
+    }
+
+    public class JsBreakpointDebugger : Meziantou.Framework.JavaScriptEngine.JsDebugger
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsBreakpoint> Breakpoints { get => throw null; }
+        public bool PauseOnDebuggerStatements { get => throw null; set { } }
+        public JsBreakpointDebugger(System.Func<Meziantou.Framework.JavaScriptEngine.JsDebugPause, Meziantou.Framework.JavaScriptEngine.JsStepAction> onPaused) { }
+        public Meziantou.Framework.JavaScriptEngine.JsBreakpoint AddBreakpoint(string? url, int line, int? column = null, string? condition = null) => throw null;
+        public void ClearBreakpoints() { }
+        protected internal override void OnDebuggerStatement(Meziantou.Framework.JavaScriptEngine.JsDebugEvent debugEvent) { }
+        protected virtual Meziantou.Framework.JavaScriptEngine.JsStepAction OnPaused(Meziantou.Framework.JavaScriptEngine.JsDebugPause pause) => throw null;
+        protected internal override void OnStatement(Meziantou.Framework.JavaScriptEngine.JsDebugEvent debugEvent) { }
+        public bool RemoveBreakpoint(Meziantou.Framework.JavaScriptEngine.JsBreakpoint breakpoint) => throw null;
+        public void RequestPause() { }
+    }
+
     public enum JsBufferKind
     {
         ArrayBuffer = 0,
@@ -65,6 +89,56 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsSourceLocation Location { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsRealm Realm { get => throw null; }
         public string CaptureStackTrace() => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate(string code) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsDebugFrame> GetCallStack() => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsDebugScope> GetScopes() => throw null;
+    }
+
+    public sealed class JsDebugFrame
+    {
+        public Meziantou.Framework.JavaScriptEngine.JsFunction? Function { get => throw null; }
+        public string? FunctionName { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsSourceLocation Location { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsRealm Realm { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate(string code) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsDebugScope> GetScopes() => throw null;
+    }
+
+    public readonly struct JsDebugPause
+    {
+        public Meziantou.Framework.JavaScriptEngine.JsBreakpoint? Breakpoint { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsDebugEvent Event { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsSourceLocation Location { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsPauseReason Reason { get => throw null; }
+    }
+
+    public sealed class JsDebugScope
+    {
+        public Meziantou.Framework.JavaScriptEngine.JsObject? BindingObject { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsDebugScopeKind Kind { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsDebugVariable> Variables { get => throw null; }
+        public bool TryGetVariable(string name, out Meziantou.Framework.JavaScriptEngine.JsDebugVariable variable) => throw null;
+    }
+
+    public enum JsDebugScopeKind
+    {
+        Block = 0,
+        Catch = 1,
+        Local = 2,
+        Closure = 3,
+        With = 4,
+        Eval = 5,
+        Module = 6,
+        Script = 7,
+        Global = 8,
+    }
+
+    public readonly struct JsDebugVariable
+    {
+        public bool IsInitialized { get => throw null; }
+        public string Name { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsValue Value { get => throw null; }
+        public override string ToString() => throw null;
     }
 
     public abstract class JsDebugger
@@ -353,6 +427,14 @@ namespace Meziantou.Framework.JavaScriptEngine
         public bool TrySetErrorStack(string stack) => throw null;
     }
 
+    public enum JsPauseReason
+    {
+        Breakpoint = 0,
+        DebuggerStatement = 1,
+        Step = 2,
+        PauseRequested = 3,
+    }
+
     public sealed class JsPreparedScript
     {
         public string? Url { get => throw null; }
@@ -559,6 +641,14 @@ namespace Meziantou.Framework.JavaScriptEngine
 
     public sealed class JsSourceTextModule : Meziantou.Framework.JavaScriptEngine.JsModule
     {
+    }
+
+    public enum JsStepAction
+    {
+        Continue = 0,
+        StepInto = 1,
+        StepOver = 2,
+        StepOut = 3,
     }
 
     public sealed class JsSymbol : Meziantou.Framework.JavaScriptEngine.JsCell

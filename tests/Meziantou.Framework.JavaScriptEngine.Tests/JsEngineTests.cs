@@ -1444,38 +1444,406 @@ public sealed class JsEngineTests
     {
         #region JavaScriptEngine_Debugger
         var pauses = new List<string>();
-        JsEngine? engine = null;
-        var debugger = new BreakpointDebugger(debugEvent =>
+        var debugger = new JsBreakpointDebugger(pause =>
         {
-            // The script waits here: inspect its state, then return to resume it
-            var total = debugEvent.Realm.Execute("total").AsNumber();
-            pauses.Add($"{debugEvent.FunctionName}@{debugEvent.Location.Line} depth={debugEvent.CallDepth} total={total}");
-        });
-        debugger.Breakpoints.Add(("cart.js", 4));
+            // The script waits here: inspect its state, then return how it resumes
+            var local = pause.Event.GetScopes()[0];
+            pauses.Add($"{pause.Reason} {pause.Event.FunctionName}@{pause.Location.Line}: {string.Join(", ", local.Variables)}");
+            if (pause.Reason is JsPauseReason.Step)
+            {
+                // Evaluate code in the paused function: it reads and changes its variables
+                Assert.Equal(20, pause.Event.Evaluate("amount").AsNumber());
+                pause.Event.Evaluate("amount = 25");
+                return JsStepAction.Continue;
+            }
 
-        using (engine = new JsEngine(new JsEngineOptions { Debugger = debugger }))
+            return JsStepAction.StepOver;
+        });
+
+        // Pause at line 3 when quantity > 1
+        debugger.AddBreakpoint("cart.js", line: 3, condition: "quantity > 1");
+
+        using var engine = new JsEngine(new JsEngineOptions { Debugger = debugger });
+        var realm = engine.CreateRealm();
+        realm.Execute("""
+            var total = 0;
+            function add(price, quantity) {
+              let amount = price * quantity;
+              total += amount;
+            }
+            add(10, 2);
+            add(3, 1);
+            """, "cart.js");
+
+        Assert.Equal(
+            [
+                "Breakpoint add@3: price = 10, quantity = 2, arguments = [object Arguments], amount (uninitialized)",
+                "Step add@4: price = 10, quantity = 2, arguments = [object Arguments], amount = 20",
+            ],
+            pauses);
+        Assert.Equal(28, realm.Execute("total").AsNumber());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CoverageDebugger()
+    {
+        #region JavaScriptEngine_CoverageDebuggerUsage
+        var debugger = new CoverageDebugger();
+        using (var engine = new JsEngine(new JsEngineOptions { Debugger = debugger }))
         {
-            var realm = engine.CreateRealm();
-            realm.Execute("""
-                var total = 0;
-                function add(price, quantity) {
-                  if (quantity > 0) {
-                    total += price * quantity;
+            engine.CreateRealm().Execute("""
+                function check(value) {
+                  if (value < 0) {
+                    return 'negative';
                   }
+                  return 'positive';
                 }
-                add(10, 2);
-                add(5, 0);
-                add(3, 1);
-                debugger;
-                """, "cart.js");
+                check(1);
+                """, "check.js");
         }
 
-        Assert.Equal(["add@4 depth=2 total=0", "add@4 depth=2 total=20", "@10 depth=1 total=23"], pauses);
-
-        // Line 4 did not run for add(5, 0), the coverage has it once
-        Assert.Contains(("cart.js", 4), debugger.CoveredLines);
-        Assert.DoesNotContain(("cart.js", 2), debugger.CoveredLines);
+        // Line 3 did not run
+        Assert.Contains(("check.js", 5), debugger.CoveredLines);
+        Assert.DoesNotContain(("check.js", 3), debugger.CoveredLines);
         #endregion
+    }
+
+    [Fact]
+    public void Debugger_Scopes()
+    {
+        var scopes = new List<string>();
+        var debugger = new JsBreakpointDebugger(pause =>
+        {
+            foreach (var scope in pause.Event.GetScopes())
+            {
+                var variables = scope.Kind is JsDebugScopeKind.Global ? "global object" : scope.BindingObject is { } obj ? "object" : string.Join(", ", scope.Variables);
+                scopes.Add($"{scope.Kind}: {variables}");
+            }
+
+            return JsStepAction.Continue;
+        });
+
+        using var engine = new JsEngine(new JsEngineOptions { Debugger = debugger });
+        var realm = engine.CreateRealm();
+        realm.Execute("""
+            let counter = 1;
+            var notLexical = 2;
+            function outer(a) {
+              'use strict';
+              const captured = a * 2;
+              return (b) => {
+                for (let i = 0; i < 1; i++) {
+                  try {
+                    throw new Error('x');
+                  } catch (error) {
+                    debugger;
+                    let later = 0;
+                  }
+                }
+              };
+            }
+            outer(5)(7);
+            """, "scopes.js");
+
+        Assert.Equal(
+            [
+                "Block: later (uninitialized)",
+                "Catch: error = [object Error]",
+                "Block: i = 0",
+                "Local: b = 7",
+                "Closure: a = 5, arguments = [object Arguments], captured = 10",
+                "Script: counter = 1",
+                "Global: global object",
+            ],
+            scopes);
+
+        // A with statement, sloppy eval vars and a module
+        scopes.Clear();
+        realm.Execute("""
+            function f() {
+              eval('var fromEval = 1');
+              with ({ p: 1 }) {
+                debugger;
+              }
+            }
+            f();
+            """, "with.js");
+        Assert.Equal(["With: object", "Local: arguments = [object Arguments], fromEval = 1", "Script: counter = 1", "Global: global object"], scopes);
+    }
+
+    [Fact]
+    public void Debugger_ScopesOfParametersWithExpressions()
+    {
+        var values = new List<string>();
+        var debugger = new JsBreakpointDebugger(pause =>
+        {
+            // The body var x shadows the parameter x: the scope has the binding that the code sees
+            var local = pause.Event.GetScopes()[0];
+            Assert.True(local.TryGetVariable("x", out var x));
+            values.Add($"{string.Join(", ", local.Variables)} | {x.Value} | {pause.Event.Evaluate("x")}");
+            return JsStepAction.Continue;
+        });
+
+        using var engine = new JsEngine(new JsEngineOptions { Debugger = debugger });
+        engine.CreateRealm().Execute("function f(x = 1, y = 3) { var x = 2; debugger; }\nf();");
+
+        Assert.Equal(["y = 3, arguments = [object Arguments], x = 2 | 2 | 2"], values);
+    }
+
+    [Fact]
+    public void Debugger_EvaluateSuperCallInDerivedConstructor()
+    {
+        var debugger = new JsBreakpointDebugger(pause =>
+        {
+            if (pause.Event.FunctionName is "Derived")
+            {
+                pause.Event.Evaluate("super(5)");
+            }
+            else
+            {
+                // super() is a syntax error outside a derived constructor
+                var exception = Assert.Throws<JsException>(() => pause.Event.Evaluate("super()"));
+                Assert.StartsWith("SyntaxError", exception.Message, StringComparison.Ordinal);
+            }
+
+            return JsStepAction.Continue;
+        });
+
+        using var engine = new JsEngine(new JsEngineOptions { Debugger = debugger });
+        var result = engine.CreateRealm().Execute("""
+            class Base { constructor(v) { this.v = v; debugger; } }
+            class Derived extends Base { constructor() { debugger; } }
+            new Derived().v;
+            """);
+
+        Assert.Equal(5, result.AsNumber());
+    }
+
+    [Fact]
+    public void Debugger_ScopesOfModules()
+    {
+        var scopes = new List<string>();
+        var debugger = new JsBreakpointDebugger(pause =>
+        {
+            scopes.AddRange(pause.Event.GetScopes().Where(scope => scope.Kind is JsDebugScopeKind.Module).Select(scope => string.Join(", ", scope.Variables)));
+            return JsStepAction.Continue;
+        });
+
+        using var engine = new JsEngine(new JsEngineOptions
+        {
+            Debugger = debugger,
+            ModuleLoader = new DictionaryModuleLoader(new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["lib.js"] = "export const value = 42;",
+            }),
+        });
+        var realm = engine.CreateRealm();
+        var module = realm.ParseModule("import { value } from './lib.js';\nconst local = value + 1;\ndebugger;", "main.js");
+        module.LoadRequestedModules();
+        engine.RunJobs();
+        module.Link();
+        module.Evaluate();
+        engine.RunJobs();
+
+        Assert.Equal(["value = 42, local = 43"], scopes);
+    }
+
+    [Fact]
+    public void Debugger_EvaluateInFrames()
+    {
+        var results = new List<string>();
+        var debugger = new JsBreakpointDebugger(pause =>
+        {
+            var stack = pause.Event.GetCallStack();
+            results.Add(string.Join(" < ", stack.Select(frame => $"{frame.FunctionName ?? "(top)"}@{frame.Location.Line}:{frame.Location.Column}")));
+            results.Add(pause.Event.Evaluate("[this.name, x, typeof arguments, new.target === undefined, super.greet(), this.#secret].join()").ToString());
+
+            // The variables of the callers
+            results.Add(stack[1].Evaluate("typeof x + ' ' + instance.name").ToString());
+            results.Add(stack[2].Evaluate("outerValue").ToString());
+
+            // A change made by the debugger is seen by the script
+            pause.Event.Evaluate("x = 100");
+            stack[2].Evaluate("outerValue = 'changed'");
+
+            // Errors are JsException
+            Assert.Throws<JsException>(() => pause.Event.Evaluate("notDefined"));
+            Assert.Throws<JsException>(() => pause.Event.Evaluate("1 +"));
+            return JsStepAction.Continue;
+        });
+
+        using var engine = new JsEngine(new JsEngineOptions { Debugger = debugger, AllowStringCompilation = false });
+        var realm = engine.CreateRealm();
+        var result = realm.Execute("""
+            class Base { greet() { return 'hi'; } }
+            class Derived extends Base {
+              #secret = 's';
+              constructor() { super(); this.name = 'derived'; }
+              run(x) {
+                debugger;
+                return x;
+              }
+            }
+            function call() {
+              const instance = new Derived();
+              return instance.run(1);
+            }
+            var outerValue = 'outer';
+            call() + ' ' + outerValue;
+            """, "eval.js");
+
+        Assert.Equal(
+            [
+                "run@6:5 < call@12:19 < (top)@15:1",
+                "derived,1,object,true,hi,s",
+                "undefined derived",
+                "outer",
+            ],
+            results);
+        Assert.Equal("100 changed", result.ToString());
+    }
+
+    [Fact]
+    public void Debugger_EventsCannotBeUsedAfterTheCallback()
+    {
+        JsDebugEvent? saved = null;
+        IReadOnlyList<JsDebugFrame>? frames = null;
+        var debugger = new JsBreakpointDebugger(pause =>
+        {
+            saved = pause.Event;
+            frames = pause.Event.GetCallStack();
+            return JsStepAction.Continue;
+        });
+
+        using var engine = new JsEngine(new JsEngineOptions { Debugger = debugger });
+        engine.CreateRealm().Execute("debugger;");
+
+        Assert.NotNull(saved);
+        Assert.NotNull(frames);
+        Assert.Throws<InvalidOperationException>(() => saved.Value.Evaluate("1"));
+        Assert.Throws<InvalidOperationException>(() => saved.Value.GetScopes());
+        Assert.Throws<InvalidOperationException>(() => frames[0].GetScopes());
+        Assert.Throws<InvalidOperationException>(() => default(JsDebugEvent).GetCallStack());
+    }
+
+    [Fact]
+    public void Debugger_Stepping()
+    {
+        const string Script = """
+            function inner() {
+              return 1;
+            }
+            function outer() {
+              const a = inner();
+              const b = inner();
+              return a + b;
+            }
+            outer();
+            outer();
+            """;
+
+        Assert.Equal(["9", "5", "2", "6", "2", "7", "10"], Run([JsStepAction.StepInto, JsStepAction.StepInto, JsStepAction.StepInto, JsStepAction.StepInto, JsStepAction.StepInto, JsStepAction.StepInto]));
+        Assert.Equal(["9", "10"], Run([JsStepAction.StepOver, JsStepAction.StepOver]));
+        Assert.Equal(["9", "5", "6", "7", "10"], Run([JsStepAction.StepInto, JsStepAction.StepOver, JsStepAction.StepOver, JsStepAction.StepOver]));
+        Assert.Equal(["9", "5", "2", "6", "10"], Run([JsStepAction.StepInto, JsStepAction.StepInto, JsStepAction.StepOut, JsStepAction.StepOut]));
+
+        List<string> Run(JsStepAction[] actions)
+        {
+            var lines = new List<string>();
+            var index = 0;
+            var debugger = new JsBreakpointDebugger(pause =>
+            {
+                lines.Add(pause.Location.Line.ToString(CultureInfo.InvariantCulture));
+                return index < actions.Length ? actions[index++] : JsStepAction.Continue;
+            });
+            debugger.AddBreakpoint("step.js", 9);
+
+            using var engine = new JsEngine(new JsEngineOptions { Debugger = debugger });
+            engine.CreateRealm().Execute(Script, "step.js");
+            return lines;
+        }
+    }
+
+    [Fact]
+    public void Debugger_Breakpoints()
+    {
+        var pauses = new List<string>();
+        var debugger = new JsBreakpointDebugger(pause =>
+        {
+            pauses.Add($"{pause.Reason}@{pause.Location.Line}:{pause.Location.Column}");
+            return JsStepAction.Continue;
+        });
+
+        var line = debugger.AddBreakpoint("bp.js", 2);
+        var column = debugger.AddBreakpoint("bp.js", 3, column: 8);
+        var condition = debugger.AddBreakpoint("bp.js", 4, condition: "i === 1");
+        var throwing = debugger.AddBreakpoint("bp.js", 5, condition: "notDefined.x");
+        var otherUrl = debugger.AddBreakpoint("other.js", 2);
+        Assert.Equal([line, column, condition, throwing, otherUrl], debugger.Breakpoints);
+        Assert.Throws<ArgumentOutOfRangeException>(() => debugger.AddBreakpoint("bp.js", 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => debugger.AddBreakpoint("bp.js", 1, column: 0));
+
+        const string Script = """
+            for (let i = 0; i < 2; i++) {
+              let x = i; x++;
+              x++; x++;
+              x--;
+              x--;
+            }
+            debugger;
+            """;
+
+        using var engine = new JsEngine(new JsEngineOptions { Debugger = debugger });
+        var realm = engine.CreateRealm();
+        realm.Execute(Script, "bp.js");
+        Assert.Equal(["Breakpoint@2:3", "Breakpoint@2:14", "Breakpoint@3:8", "Breakpoint@2:3", "Breakpoint@2:14", "Breakpoint@3:8", "Breakpoint@4:3", "DebuggerStatement@7:1"], pauses);
+        Assert.Equal(4, line.HitCount);
+        Assert.Equal(2, column.HitCount);
+        Assert.Equal(1, condition.HitCount);
+        Assert.Equal(0, throwing.HitCount);
+
+        // Disabled, removed breakpoints and debugger statements
+        pauses.Clear();
+        line.IsEnabled = false;
+        Assert.True(debugger.RemoveBreakpoint(column));
+        Assert.False(debugger.RemoveBreakpoint(column));
+        debugger.PauseOnDebuggerStatements = false;
+
+        // A breakpoint on a debugger statement pauses even when the debugger statements are ignored
+        var onDebuggerStatement = debugger.AddBreakpoint("bp.js", 7);
+        realm.Execute(Script, "bp.js");
+        Assert.Equal(["Breakpoint@4:3", "Breakpoint@7:1"], pauses);
+        Assert.Equal(1, onDebuggerStatement.HitCount);
+
+        pauses.Clear();
+        debugger.ClearBreakpoints();
+        Assert.Empty(debugger.Breakpoints);
+        debugger.RequestPause();
+        realm.Execute(Script, "bp.js");
+        Assert.Equal(["PauseRequested@1:1"], pauses);
+    }
+
+    [Fact]
+    public void Debugger_DebugCompilationDoesNotChangeTheResults()
+    {
+        const string Script = """
+            'use strict';
+            function sum() { let s = 0; for (let i = 0; i < arguments.length; i++) s += arguments[i]; return s; }
+            function sloppy(a) { return new Function('a', 'arguments[0] = 2; return a;')(1); }
+            class A { #x = 1; get x() { return this.#x; } static create() { return new this(); } }
+            const fns = [];
+            for (let i = 0; i < 3; i++) fns.push(() => i);
+            const gen = (function* () { const v = yield 1; yield v * 2; })();
+            gen.next();
+            [sum(1, 2, 3), sloppy(), A.create().x, fns.map(f => f()).join(), gen.next(21).value, typeof eval('var e = 1; e')].join('|');
+            """;
+
+        using var plain = new JsEngine();
+        using var debugged = new JsEngine(new JsEngineOptions { Debugger = new JsBreakpointDebugger(_ => JsStepAction.StepInto) });
+        var expected = plain.CreateRealm().Execute(Script).ToString();
+        Assert.Equal("6|2|1|0,1,2|42|number", expected);
+        Assert.Equal(expected, debugged.CreateRealm().Execute(Script).ToString());
     }
 
     [Fact]

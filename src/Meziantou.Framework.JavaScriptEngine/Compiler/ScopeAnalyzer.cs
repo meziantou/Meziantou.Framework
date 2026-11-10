@@ -26,6 +26,14 @@ internal sealed partial class ScopeAnalyzer
         _programKind = programKind;
     }
 
+    /// <summary>
+    /// Gets whether the code is compiled for a debugger (<see cref="Text.SourceText.IsInstrumented"/>): each scope is
+    /// analyzed as if it contained a direct eval, so that every binding is stored in an environment where the debugger
+    /// finds it by name (the scopes of a paused frame, and the code it evaluates in the frame). The nested functions are
+    /// compiled with their enclosing code.
+    /// </summary>
+    private bool IsDebuggable { get; init; }
+
     /// <summary>Gets the scope created for a node (a function, a block, a loop, a catch clause, a switch, a class, a with statement).</summary>
     public Dictionary<Node, Scope> Scopes { get; } = [];
 
@@ -49,9 +57,9 @@ internal sealed partial class ScopeAnalyzer
     public EvalContext? EvalContext { get; private init; }
 
     /// <summary>Analyzes a program; its nested functions are compiled on their first call (except <paramref name="eagerFunction"/>).</summary>
-    public static ScopeAnalyzer Analyze(Program program, ProgramKind kind, bool isStrict, FunctionNode? eagerFunction = null, EvalContext? evalContext = null)
+    public static ScopeAnalyzer Analyze(Program program, ProgramKind kind, bool isStrict, bool isDebuggable, FunctionNode? eagerFunction = null, EvalContext? evalContext = null)
     {
-        var analyzer = new ScopeAnalyzer(kind) { _eagerFunction = eagerFunction, EvalContext = evalContext };
+        var analyzer = new ScopeAnalyzer(kind) { _eagerFunction = eagerFunction, EvalContext = evalContext, IsDebuggable = isDebuggable };
 
         // About one reference per 10 characters of source: the lists do not grow from scratch
         analyzer._pending.EnsureCapacity(Math.Max(16, (program.End - program.Start) / 10));

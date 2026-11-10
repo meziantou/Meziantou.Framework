@@ -71,6 +71,77 @@ internal static partial class JsInterpreter
     }
 
     /// <summary>
+    /// Evaluates code in a frame paused by the debugger, like a direct eval at the position of the frame: the code sees the
+    /// bindings of the frame, its this, new.target and super. The code compiled for a debugger stores every binding in an
+    /// environment (<see cref="Compiler.ScopeAnalyzer"/>), so the context of the eval is read from the environments. The
+    /// host is not asked whether the code can be compiled: the debugger, not the script, runs it.
+    /// </summary>
+    public static JsValue EvaluateInFrame(Frame caller, string code)
+    {
+        var allowNewTarget = false;
+        var allowSuperProperty = false;
+        bool? allowSuperCall = null;
+        var privateNames = new List<string>();
+        for (var environment = caller.Environment; environment is not null; environment = environment.Outer)
+        {
+            if (environment is not DeclarativeEnvironment declarative)
+                continue;
+
+            for (var i = 0; i < declarative.Info.SlotCount; i++)
+            {
+                var name = declarative.Info.Names[i];
+                switch (name)
+                {
+                    // The active function of the innermost function that has its own this: super() is allowed in a derived constructor
+                    case "%func" when allowSuperCall is null:
+                        allowSuperCall = declarative.Slots[i].Cell is JsClosure { IsDerivedConstructor: true };
+                        break;
+                    case "new.target":
+                        allowNewTarget = true;
+                        break;
+                    case "%home":
+                        allowSuperProperty = true;
+                        break;
+                    case ['#', ..] when declarative.Info.Kind == ScopeKind.Class:
+                        privateNames.Add(name[1..]);
+                        break;
+                }
+            }
+        }
+
+        var realm = caller.Realm;
+        var context = new EvalContext(caller.IsStrict, allowNewTarget, allowSuperProperty, allowSuperCall ?? false, InClassFieldInitializer: false, [.. privateNames]);
+        var options = new ParserOptions
+        {
+            IsStrict = context.IsStrict,
+            AllowNewTarget = context.AllowNewTarget,
+            AllowSuperProperty = context.AllowSuperProperty,
+            AllowSuperCall = context.AllowSuperCall,
+            PrivateNames = context.PrivateNames,
+        };
+
+        var source = new SourceText(code, GetEvalUrl(code)) { IsInstrumented = realm.Engine.Options.Debugger is not null };
+        FunctionTemplate template;
+        try
+        {
+            var program = JsParser.ParseScript(source, options);
+            template = CodeGenerator.CompileProgram(program, source, ProgramKind.Eval, program.IsStrict || context.IsStrict, context);
+        }
+        catch (JsSyntaxErrorException ex)
+        {
+            throw ThrowHelper.CreateException(ErrorType.SyntaxError, ex.Message);
+        }
+
+        var frame = new Frame(template, realm, caller.Environment, [])
+        {
+            Script = caller.Script,
+            This = caller.This,
+        };
+
+        return RunWithDepth(realm.Engine, frame);
+    }
+
+    /// <summary>
     /// PerformShadowRealmEval(sourceText, callerRealm, evalRealm) (https://tc39.es/proposal-shadowrealm/#sec-performshadowrealmeval):
     /// the code runs as an indirect eval of the ShadowRealm (its lexical declarations are local to the evaluation). A
     /// SyntaxError is thrown in the caller realm; an exception of the code becomes a TypeError of the caller realm.

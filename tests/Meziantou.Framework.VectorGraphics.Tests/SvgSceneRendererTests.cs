@@ -583,7 +583,10 @@ public sealed class SvgSceneRendererTests
 
         // The tangents of curves, and a segment without length that keeps the previous direction
         var curve = new PathBuilder().MoveTo(0, 0).CubicTo(0, 10, 10, 10, 10, 0).LineTo(10, 0).QuadraticTo(20, 0, 20, 10).Build().GetVertices();
-        Assert.Equal([90, -90, -45, 90], curve.Select(vertex => Math.Round(vertex.Angle, 6, MidpointRounding.AwayFromZero)));
+        Assert.Equal([90, -45, -45, 90], curve.Select(vertex => Math.Round(vertex.Angle, 6, MidpointRounding.AwayFromZero)));
+
+        // The segments without length at the start of a subpath take the direction of the first segment that has one
+        Assert.Equal([90, 90, 90], new PathBuilder().MoveTo(0, 0).LineTo(0, 0).LineTo(0, 10).Build().GetVertices().Select(vertex => vertex.Angle));
 
         // Without a move, the path starts at the origin; an empty path has no vertex
         Assert.Equal([new PathPoint(0, 0, 0), new PathPoint(5, 0, 0)], new PathBuilder().LineTo(5, 0).Build().GetVertices());
@@ -633,6 +636,20 @@ public sealed class SvgSceneRendererTests
         withHidden.Root.Add(hidden);
         withHidden.Root.Add(new SceneUse(circle));
         Assert.Contains("<g>\n<defs>\n<circle id=\"scene-element0\"", SvgSceneRenderer.Render(withHidden), StringComparison.Ordinal);
+
+        // The contents of two patterns that paint with each other are written once each, and both uses refer to them
+        var first = new PatternPaint(new SceneBounds(0, 0, 4, 4));
+        var second = new PatternPaint(new SceneBounds(0, 0, 4, 4));
+        first.Content.Add(new SceneRectangle(0, 0, 2, 2) { Fill = second });
+        second.Content.Add(new SceneRectangle(0, 0, 2, 2) { Fill = first });
+        var mutual = new Scene(10, 10, "sans-serif");
+        mutual.Root.Add(new SceneUse(first.Content));
+        mutual.Root.Add(new SceneUse(second.Content));
+        var mutualSvg = SvgSceneRenderer.Render(mutual);
+        Assert.Contains("<use href=\"#scene-element0\"/>", mutualSvg, StringComparison.Ordinal);
+        Assert.Contains("<use href=\"#scene-element1\"/>", mutualSvg, StringComparison.Ordinal);
+        Assert.Equal(1, CountOccurrences(mutualSvg, "id=\"scene-element0\""));
+        Assert.Equal(1, CountOccurrences(mutualSvg, "id=\"scene-element1\""));
 
         // A use that refers to a use in its own content refers to an empty group
         var cycle = new SceneGroup();

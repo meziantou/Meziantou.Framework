@@ -10,12 +10,21 @@ internal static class SceneTree
     /// </summary>
     public static IEnumerable<SceneElement> EnumerateElements(SceneElement root) => Walk(root).Elements;
 
+    /// <summary>The result of <see cref="Walk"/>.</summary>
+    /// <param name="Elements">The elements, as <see cref="EnumerateElements"/> gives them.</param>
+    /// <param name="Detached">The contents of the uses that are written on their own: the scene does not draw them otherwise.</param>
+    /// <param name="Roots">
+    /// The contents of the uses the scene does not draw, without those inside another one: <see cref="Detached"/>, and
+    /// the contents that are written inside a pattern, a marker or a mask of their own content.
+    /// </param>
+    public sealed record WalkResult(List<SceneElement> Elements, List<SceneElement> Detached, List<SceneElement> Roots);
+
     /// <summary>
     /// Walks a scene: <c>Elements</c> as <see cref="EnumerateElements"/> gives them, and <c>Detached</c>, the contents of
     /// the uses that the scene does not draw otherwise, each once: a content inside another one is written with it, so it
     /// is not detached itself.
     /// </summary>
-    public static (List<SceneElement> Elements, List<SceneElement> Detached) Walk(SceneElement root)
+    public static WalkResult Walk(SceneElement root)
     {
         var elements = new List<SceneElement>();
         var seen = new HashSet<SceneElement>(ReferenceEqualityComparer.Instance);
@@ -42,26 +51,49 @@ internal static class SceneTree
             }
         }
 
-        // The roots are the contents that are not inside another one
-        var nested = new HashSet<SceneElement>(ReferenceEqualityComparer.Instance);
+        // The roots are the contents that are not inside another one. Contents that are inside each other (the contents of
+        // two patterns that paint with each other) keep the first one found, which writes the others.
+        var descendants = new Dictionary<SceneElement, HashSet<SceneElement>>(ReferenceEqualityComparer.Instance);
         foreach (var candidate in candidates)
         {
-            foreach (var descendant in GetDescendants(candidate))
+            descendants[candidate] = new HashSet<SceneElement>(GetDescendants(candidate), ReferenceEqualityComparer.Instance);
+        }
+
+        var nested = new HashSet<SceneElement>(ReferenceEqualityComparer.Instance);
+        for (var i = 0; i < candidates.Count; i++)
+        {
+            for (var j = 0; j < candidates.Count; j++)
             {
-                if (!ReferenceEquals(descendant, candidate) && candidateSet.Contains(descendant))
+                var (inner, outer) = (candidates[i], candidates[j]);
+                if (i != j && descendants[outer].Contains(inner) && (!descendants[inner].Contains(outer) || j < i))
                 {
-                    nested.Add(descendant);
+                    nested.Add(inner);
+                    break;
                 }
             }
         }
 
-        var detached = candidates.Where(candidate => !nested.Contains(candidate)).ToList();
-        foreach (var element in detached)
+        // A root that its own content reaches again (the content of a pattern its drawing paints with) is written inside
+        // that pattern: its content is visited, and it is reached through it
+        var roots = candidates.Where(candidate => !nested.Contains(candidate)).ToList();
+        var detached = new List<SceneElement>();
+        foreach (var element in roots)
         {
-            Visit(element);
+            if (IsInItsOwnContents(element))
+            {
+                foreach (var content in GetContents(element, shared))
+                {
+                    Visit(content);
+                }
+            }
+            else
+            {
+                detached.Add(element);
+                Visit(element);
+            }
         }
 
-        return (elements, detached);
+        return new WalkResult(elements, detached, roots);
 
         void Visit(SceneElement start)
         {
@@ -83,6 +115,20 @@ internal static class SceneTree
                 }
             }
         }
+    }
+
+    private static bool IsInItsOwnContents(SceneElement element)
+    {
+        foreach (var content in GetContents(element))
+        {
+            foreach (var descendant in GetDescendants(content))
+            {
+                if (ReferenceEquals(descendant, element))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Enumerates an element and the elements it draws (<see cref="GetContents(SceneElement)"/>), each once, without following the uses.</summary>

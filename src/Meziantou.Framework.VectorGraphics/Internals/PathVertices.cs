@@ -40,7 +40,12 @@ internal static class PathVertices
             var (start, end) = GetDirections(command, x, y, endX, endY);
             if (start is not null)
             {
+                // The vertices of the segments without length before it, from the start of the subpath, take its direction
                 outgoing[^1] = start;
+                for (var i = outgoing.Count - 2; i >= subpathStart && outgoing[i] is null; i--)
+                {
+                    outgoing[i] = start;
+                }
             }
 
             // A segment without length keeps the direction of the previous one

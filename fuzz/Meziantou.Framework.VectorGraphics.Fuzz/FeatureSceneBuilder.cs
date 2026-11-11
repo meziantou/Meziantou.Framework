@@ -120,9 +120,11 @@ internal static class FeatureSceneBuilder
                     continue;
 
                 case 7:
-                    // A use of an element of the scene, of an ancestor (a use in its own content), or of an element that is not in the scene
+                    // A use of an element of the scene, of an ancestor (a use in its own content), of the content of a pattern, or
+                    // of an element that is not in the scene
                     SceneElement content = (kind & 16) != 0 && elements.Count > 0 ? elements[option % elements.Count]
                         : (kind & 32) != 0 ? groups.ElementAt(option % groups.Count)
+                        : (option & 2) != 0 && patterns.Count > 0 ? patterns[option % patterns.Count].Content
                         : new SceneCircle(5, 5, value) { Fill = color, Hyperlink = (option & 1) != 0 ? text : null };
                     element = parent.Add(new SceneUse(content) { Transform = SceneTransform.Translate(value, option % 50) });
                     break;
@@ -181,6 +183,12 @@ internal static class FeatureSceneBuilder
             if ((kind & 2) != 0 && patterns.Count > 0)
             {
                 pattern.Content.Add(new SceneRectangle(0, 4, 4, 4) { Fill = patterns[^1] });
+            }
+
+            // The first pattern paints with the new one: two patterns can paint with each other
+            if ((option & 32) != 0 && patterns.Count > 0)
+            {
+                patterns[0].Content.Add(new SceneRectangle(4, 0, 4, 4) { Fill = pattern });
             }
 
             patterns.Add(pattern);

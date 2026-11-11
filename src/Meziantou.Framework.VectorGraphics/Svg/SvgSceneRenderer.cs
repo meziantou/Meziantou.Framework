@@ -48,6 +48,7 @@ public static class SvgSceneRenderer
         // The generated identifiers of the contents of the uses that have none; the contents that are only drawn by uses
         private readonly Dictionary<SceneElement, string> _contentIds = new(ReferenceEqualityComparer.Instance);
         private List<SceneElement> _detached = [];
+        private List<SceneElement> _roots = [];
         private readonly HashSet<SceneElement> _useTargets = new(ReferenceEqualityComparer.Instance);
         private readonly int _precision = options.Precision;
         private Scene _scene = null!;
@@ -60,9 +61,10 @@ public static class SvgSceneRenderer
         public void Write(Scene scene)
         {
             _scene = scene;
-            var (elements, detached) = SceneTree.Walk(scene.Root);
-            _detached = detached;
-            CollectIds(elements);
+            var walk = SceneTree.Walk(scene.Root);
+            _detached = walk.Detached;
+            _roots = walk.Roots;
+            CollectIds(walk.Elements);
             output.Write("<svg");
             if (options.IncludeNamespace)
             {
@@ -256,8 +258,9 @@ public static class SvgSceneRenderer
             var textPathCount = 0;
             var patternCount = 0;
             var markerCount = 0;
+            var visited = new HashSet<SceneElement>(ReferenceEqualityComparer.Instance);
             Visit(root);
-            foreach (var element in _detached)
+            foreach (var element in _roots)
             {
                 Visit(element);
             }
@@ -269,8 +272,12 @@ public static class SvgSceneRenderer
                 output.Write("</defs>\n");
             }
 
+            // An element is visited once: it is written with the same definitions wherever it is
             void Visit(SceneElement element)
             {
+                if (!visited.Add(element))
+                    return;
+
                 if (element is SceneShape shape)
                 {
                     AddPaint(shape.Fill);

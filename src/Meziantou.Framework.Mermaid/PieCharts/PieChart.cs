@@ -293,8 +293,9 @@ public sealed class PieChart : MermaidChart
         const double MaxLegendTextWidth = 160;
         const double ItemGap = 14;
 
-        var measurer = plot.TextMeasurer ?? AfmTextMeasurer.Default;
-        var titleHeight = string.IsNullOrEmpty(plot.Title) ? 0 : measurer.Measure(plot.Title, new SceneFont(plot.Theme.TitleFontSize, Bold: true)).Height + 8;
+        // The texts are measured with the family of the theme, as the chart measures them
+        var measurer = (plot.TextMeasurer ?? AfmTextMeasurer.Default).WithFontFamily(plot.Theme.FontFamily);
+        var titleHeight = string.IsNullOrEmpty(plot.Title) ? 0 : measurer.Measure(plot.Title, new SceneFont(plot.Theme.TitleFontSize, Weight: SceneFont.BoldWeight)).Height + 8;
         var lineHeight = Math.Max(10, measurer.Measure("Xg", legendFont).Height) + 4;
         if (legendTexts.Length is 0)
         {

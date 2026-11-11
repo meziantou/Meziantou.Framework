@@ -5,65 +5,12 @@ namespace Meziantou.Framework.Diagrams.Rendering;
 /// <summary>Points, paths, polygons and their intersections.</summary>
 internal static class Geometry
 {
-    // The control points of a cubic Bézier curve that approximates a quarter of a circle
-    private const double Kappa = 0.5522847498307936;
-
-    public static PathData Polygon(params ReadOnlySpan<(double X, double Y)> points)
-    {
-        var builder = new PathBuilder();
-        for (var i = 0; i < points.Length; i++)
-        {
-            if (i == 0)
-            {
-                builder.MoveTo(points[i].X, points[i].Y);
-            }
-            else
-            {
-                builder.LineTo(points[i].X, points[i].Y);
-            }
-        }
-
-        return builder.Close().Build();
-    }
-
-    public static PathBuilder AddEllipse(this PathBuilder builder, double centerX, double centerY, double radiusX, double radiusY)
-    {
-        var kx = radiusX * Kappa;
-        var ky = radiusY * Kappa;
-        return builder
-            .MoveTo(centerX + radiusX, centerY)
-            .CubicTo(centerX + radiusX, centerY + ky, centerX + kx, centerY + radiusY, centerX, centerY + radiusY)
-            .CubicTo(centerX - kx, centerY + radiusY, centerX - radiusX, centerY + ky, centerX - radiusX, centerY)
-            .CubicTo(centerX - radiusX, centerY - ky, centerX - kx, centerY - radiusY, centerX, centerY - radiusY)
-            .CubicTo(centerX + kx, centerY - radiusY, centerX + radiusX, centerY - ky, centerX + radiusX, centerY)
-            .Close();
-    }
+    public static PathData Polygon(params ReadOnlySpan<(double X, double Y)> points) => new PathBuilder().AddPolygon(points).Build();
 
     public static PathData Ellipse(double centerX, double centerY, double radiusX, double radiusY) => new PathBuilder().AddEllipse(centerX, centerY, radiusX, radiusY).Build();
 
     /// <summary>Returns a rounded rectangle centered on the origin.</summary>
-    public static PathData RoundedRectangle(double width, double height, double radius)
-    {
-        var x = -width / 2;
-        var y = -height / 2;
-        radius = Math.Max(0, Math.Min(radius, Math.Min(width, height) / 2));
-        if (radius == 0)
-            return Polygon((x, y), (x + width, y), (x + width, y + height), (x, y + height));
-
-        var k = radius * (1 - Kappa);
-        return new PathBuilder()
-            .MoveTo(x + radius, y)
-            .LineTo(x + width - radius, y)
-            .CubicTo(x + width - k, y, x + width, y + k, x + width, y + radius)
-            .LineTo(x + width, y + height - radius)
-            .CubicTo(x + width, y + height - k, x + width - k, y + height, x + width - radius, y + height)
-            .LineTo(x + radius, y + height)
-            .CubicTo(x + k, y + height, x, y + height - k, x, y + height - radius)
-            .LineTo(x, y + radius)
-            .CubicTo(x, y + k, x + k, y, x + radius, y)
-            .Close()
-            .Build();
-    }
+    public static PathData RoundedRectangle(double width, double height, double radius) => new PathBuilder().AddRoundedRectangle(-width / 2, -height / 2, width, height, radius).Build();
 
     /// <summary>Converts the subpaths of a path to polygons, the curves split into segments.</summary>
     public static List<List<LayoutPoint>> Flatten(PathData path)

@@ -17,6 +17,8 @@
     <Project Path="../src/Meziantou.Framework.Imaging.VectorGraphics/Meziantou.Framework.Imaging.VectorGraphics.csproj" />
     <Project Path="../src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
     <Project Path="../src/Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj" />
+    <Project Path="../src/Meziantou.Framework.Pdf.VectorGraphics/Meziantou.Framework.Pdf.VectorGraphics.csproj" />
+    <Project Path="../src/Meziantou.Framework.Pdf/Meziantou.Framework.Pdf.csproj" />
     <Project Path="../src/Meziantou.Framework.SnapshotTesting.Imaging/Meziantou.Framework.SnapshotTesting.Imaging.csproj" />
     <Project Path="../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
     <Project Path="../src/Meziantou.Framework.Unicode.Dictionaries/Meziantou.Framework.Unicode.Dictionaries.csproj" />
@@ -26,5 +28,6 @@
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Charts.Tests/Meziantou.Framework.Charts.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Imaging.VectorGraphics.Tests/Meziantou.Framework.Imaging.VectorGraphics.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Pdf.VectorGraphics.Tests/Meziantou.Framework.Pdf.VectorGraphics.Tests.csproj" />
   </Folder>
 </Solution>

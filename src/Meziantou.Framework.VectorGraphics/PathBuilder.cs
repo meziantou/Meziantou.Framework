@@ -3,6 +3,9 @@ namespace Meziantou.Framework.VectorGraphics;
 /// <summary>Builds a <see cref="PathData"/>.</summary>
 public sealed class PathBuilder
 {
+    // The distance of the control points of a cubic Bézier curve that approximates a quarter of a circle of radius 1
+    private const double Kappa = 0.5522847498307936;
+
     private readonly List<PathCommand> _commands = [];
 
     /// <summary>Gets a value that indicates whether no command was added.</summary>
@@ -79,6 +82,77 @@ public sealed class PathBuilder
         LineTo(x + width, y + height);
         LineTo(x, y + height);
         return Close();
+    }
+
+    /// <summary>Adds an ellipse, as four cubic Bézier curves, clockwise from its rightmost point.</summary>
+    /// <param name="centerX">The x coordinate of the center.</param>
+    /// <param name="centerY">The y coordinate of the center.</param>
+    /// <param name="radiusX">The x radius.</param>
+    /// <param name="radiusY">The y radius.</param>
+    /// <returns>The builder.</returns>
+    public PathBuilder AddEllipse(double centerX, double centerY, double radiusX, double radiusY)
+    {
+        var kx = radiusX * Kappa;
+        var ky = radiusY * Kappa;
+        MoveTo(centerX + radiusX, centerY);
+        CubicTo(centerX + radiusX, centerY + ky, centerX + kx, centerY + radiusY, centerX, centerY + radiusY);
+        CubicTo(centerX - kx, centerY + radiusY, centerX - radiusX, centerY + ky, centerX - radiusX, centerY);
+        CubicTo(centerX - radiusX, centerY - ky, centerX - kx, centerY - radiusY, centerX, centerY - radiusY);
+        CubicTo(centerX + kx, centerY - radiusY, centerX + radiusX, centerY - ky, centerX + radiusX, centerY);
+        return Close();
+    }
+
+    /// <summary>Adds a rectangle with rounded corners, clockwise. The corners are quarters of a circle, as cubic Bézier curves.</summary>
+    /// <param name="x">The left edge.</param>
+    /// <param name="y">The top edge.</param>
+    /// <param name="width">The width.</param>
+    /// <param name="height">The height.</param>
+    /// <param name="radius">The radius of the corners, limited to half the smaller side. When it is not positive, the rectangle is the same as <see cref="AddRectangle"/>.</param>
+    /// <returns>The builder.</returns>
+    public PathBuilder AddRoundedRectangle(double x, double y, double width, double height, double radius)
+    {
+        radius = Math.Min(radius, Math.Min(width, height) / 2);
+        if (!(radius > 0))
+            return AddRectangle(x, y, width, height);
+
+        var k = radius * (1 - Kappa);
+        MoveTo(x + radius, y);
+        LineTo(x + width - radius, y);
+        CubicTo(x + width - k, y, x + width, y + k, x + width, y + radius);
+        LineTo(x + width, y + height - radius);
+        CubicTo(x + width, y + height - k, x + width - k, y + height, x + width - radius, y + height);
+        LineTo(x + radius, y + height);
+        CubicTo(x + k, y + height, x, y + height - k, x, y + height - radius);
+        LineTo(x, y + radius);
+        CubicTo(x, y + k, x + k, y, x + radius, y);
+        return Close();
+    }
+
+    /// <summary>Adds a closed polygon through points, in order. Nothing is added when there are no points.</summary>
+    /// <param name="points">The vertices of the polygon.</param>
+    /// <returns>The builder.</returns>
+    public PathBuilder AddPolygon(params ReadOnlySpan<(double X, double Y)> points)
+    {
+        if (points.IsEmpty)
+            return this;
+
+        MoveTo(points[0].X, points[0].Y);
+        foreach (var point in points[1..])
+        {
+            LineTo(point.X, point.Y);
+        }
+
+        return Close();
+    }
+
+    /// <summary>Adds the commands of a path, unchanged.</summary>
+    /// <param name="path">The path.</param>
+    /// <returns>The builder.</returns>
+    public PathBuilder Append(PathData path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        _commands.AddRange(path.Commands);
+        return this;
     }
 
     /// <summary>Creates the path.</summary>

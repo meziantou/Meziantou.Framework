@@ -41,3 +41,7 @@ var svg = plot.ToSvg();
 [CreateScene](cref:Meziantou.Framework.Charts.Plot.CreateScene) also takes one. The SVG declares the family of the measurer,
 unless the theme sets [FontFamily](cref:Meziantou.Framework.Charts.ChartTheme.FontFamily). The SVG does not embed the
 font: the browser must have it, for instance through a CSS `@font-face` rule of the page.
+
+To give each text its own family, or to embed the fonts in the SVG, create the measurer from a font collection (see
+[fonts of a scene](../VectorGraphics/05-Fonts.md)). The theme's [FontFamily](cref:Meziantou.Framework.Charts.ChartTheme.FontFamily)
+then chooses the family of the texts among the fonts, and the scene draws them with the font that measured them.

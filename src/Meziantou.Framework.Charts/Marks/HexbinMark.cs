@@ -66,14 +66,9 @@ public sealed class HexbinMark<T> : Mark<T>
         foreach (var (x, y, points) in Bin(context, data))
         {
             var corners = Hexbin.Hexagon(context.Frame.X + x, context.Frame.Y + y, Radius);
-            var builder = new PathBuilder().MoveTo(corners[0].X, corners[0].Y);
-            for (var i = 1; i < corners.Length; i++)
-            {
-                builder.LineTo(corners[i].X, corners[i].Y);
-            }
 
             var color = context.Color is ResolvedContinuousColorScale scale ? scale.MapNumber(points.Count) : FillColor ?? context.DefaultColor;
-            group.Add(new ScenePath(builder.Close().Build())
+            group.Add(new ScenePath(new PathBuilder().AddPolygon(corners).Build())
             {
                 Fill = color,
                 Stroke = data.Stroke is null && StrokeColor is null ? stroke : GetStroke(context, data, points[0]),

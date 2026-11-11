@@ -50,6 +50,40 @@ public abstract class SceneElement
     /// <summary>Gets or sets the opacity of the element, from 0 to 1.</summary>
     public double Opacity { get; set; } = 1;
 
+    /// <summary>Gets or sets the effect applied to what the element draws, such as a blur or a drop shadow, or <see langword="null"/> for none.</summary>
+    /// <remarks>PDF has no filters: the PDF renderer throws <see cref="NotSupportedException"/> for a scene that has one.</remarks>
+    public SceneFilter? Filter { get; set; }
+
+    /// <summary>Gets or sets the opacity mask of the element, or <see langword="null"/> for none.</summary>
+    public SceneMask? Mask { get; set; }
+
+    /// <summary>Gets or sets how the element is blended with what is drawn under it. The default is <see cref="SceneBlendMode.Normal"/>.</summary>
+    public SceneBlendMode BlendMode { get; set; }
+
+    /// <summary>
+    /// Gets a rectangle that contains what the element draws, in the coordinates of its parent, or <see langword="null"/>
+    /// when it draws nothing, for a renderer that places what it draws: a filter region, a link, a layer.
+    /// </summary>
+    /// <param name="measureText">
+    /// Gives the rectangle of a text before its rotation, in the coordinates of its parent, or <see langword="null"/> when
+    /// it draws nothing: the size of a text depends on the fonts of the renderer.
+    /// </param>
+    /// <param name="applyClips">
+    /// Whether a group applies its clips (<see cref="SceneGroup.Clip"/>, <see cref="SceneGroup.ClipPath"/>). The filter of
+    /// a group applies before its clips: the region of its filter is the rectangle without them.
+    /// </param>
+    /// <returns>The rectangle, or <see langword="null"/>.</returns>
+    /// <remarks>
+    /// The rectangle contains the strokes, with their joins and their caps, and the blurs and the shadows of the
+    /// children; not the filter of the element itself. A group applies its transform, and its clips unless
+    /// <paramref name="applyClips"/> is <see langword="false"/>.
+    /// </remarks>
+    public SceneBounds? GetBounds(Func<SceneText, SceneBounds?> measureText, bool applyClips = true)
+    {
+        ArgumentNullException.ThrowIfNull(measureText);
+        return SceneGeometry.GetBounds(this, measureText, applyClips);
+    }
+
     /// <summary>Indicates whether a name is a valid name of a <c>data-*</c> attribute: lowercase ASCII letters, digits, hyphens, underscores and dots, without the <c>data-</c> prefix.</summary>
     /// <param name="name">The name.</param>
     /// <returns><see langword="true"/> when the name is valid.</returns>

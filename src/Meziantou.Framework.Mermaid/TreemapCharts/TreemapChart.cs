@@ -168,8 +168,9 @@ public sealed class TreemapChart : MermaidChart
         var top = DiagramPadding;
         if (plot.Title is { } title)
         {
-            var measurer = plot.TextMeasurer ?? AfmTextMeasurer.Default;
-            top = Math.Max(DiagramPadding, ChartsTitleTop) + measurer.Measure(title, new SceneFont(plot.Theme.TitleFontSize, Bold: true)).Height + ChartsTitleGap;
+            // The texts are measured with the family of the theme, as the chart measures them
+            var measurer = (plot.TextMeasurer ?? AfmTextMeasurer.Default).WithFontFamily(plot.Theme.FontFamily);
+            top = Math.Max(DiagramPadding, ChartsTitleTop) + measurer.Measure(title, new SceneFont(plot.Theme.TitleFontSize, Weight: SceneFont.BoldWeight)).Height + ChartsTitleGap;
         }
 
         var contentWidth = Math.Max(0, (NodeWidth * 10) - (2 * SectionPadding));

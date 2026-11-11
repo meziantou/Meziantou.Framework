@@ -29,6 +29,13 @@ public sealed class Scene
     /// <summary>Gets the CSS <c>font-family</c> of the texts.</summary>
     public string FontFamily { get; }
 
+    /// <summary>
+    /// Gets or sets the fonts that draw the texts, or <see langword="null"/> to let each renderer choose them. Set it to
+    /// the fonts the texts were measured with (<see cref="ITextMeasurer.Fonts"/>), so they are drawn with the same fonts.
+    /// </summary>
+    /// <remarks>The family of a text is <see cref="SceneFont.Family"/>, or <see cref="FontFamily"/> when it is <see langword="null"/>.</remarks>
+    public SceneFontCollection? Fonts { get; set; }
+
     /// <summary>Gets or sets the accessible name of the drawing, usually its title.</summary>
     public string? Title { get; set; }
 

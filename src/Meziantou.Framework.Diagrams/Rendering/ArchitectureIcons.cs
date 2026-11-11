@@ -14,7 +14,7 @@ internal static class ArchitectureIcons
     public static void Draw(SceneGroup target, string? name, double x, double y, double size, ITextMeasurer measurer)
     {
         var scale = size / 80;
-        var group = target.Add(new SceneGroup { Transform = new SceneTransform(scale, 0, 0, scale, x, y), CssClass = "icon" });
+        var group = target.Add(new SceneGroup { Transform = SceneTransform.Scale(scale, scale).Then(SceneTransform.Translate(x, y)), CssClass = "icon" });
         group.Add(new SceneRectangle(0, 0, 80, 80) { Fill = Background });
         switch (name)
         {
@@ -72,7 +72,7 @@ internal static class ArchitectureIcons
                 break;
             default:
                 // An icon of an icon pack of Mermaid, which is not available here
-                group.Add(new SceneText(40, 40 + (measurer.Measure("?", new SceneFont(48, Bold: true)).Ascent / 2) - 4, "?", new SceneFont(48, Bold: true), SceneColor.White) { Anchor = SceneTextAnchor.Middle });
+                group.Add(new SceneText(40, 40 + (measurer.Measure("?", new SceneFont(48, Weight: SceneFont.BoldWeight)).Ascent / 2) - 4, "?", new SceneFont(48, Weight: SceneFont.BoldWeight), SceneColor.White) { Anchor = SceneTextAnchor.Middle });
                 break;
         }
     }

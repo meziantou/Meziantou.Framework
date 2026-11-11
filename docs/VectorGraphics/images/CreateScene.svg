@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="80" viewBox="0 0 200 80" role="img" font-family="Helvetica, Arial, sans-serif">
+<title>A box</title>
+<rect width="200" height="80" fill="#ffffff"/>
+<rect x="10" y="10" width="180" height="60" rx="8" fill="#e0f2fe" stroke="#0369a1" stroke-width="2"/>
+<text x="100" y="45" text-anchor="middle" font-size="16" font-weight="bold" fill="#0c4a6e">Hello</text>
+<path d="M20,60 L60,60 L55,55 M60,60 L55,65" fill="none" stroke="#0369a1"/>
+</svg>

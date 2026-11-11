@@ -134,11 +134,12 @@ internal static class Shapes
                     const double Head = 10;
                     var height = boxH + (2 * Head) + 4;
                     var bodyTop = (-height / 2) + (2 * Head) + 4;
+                    var body = Geometry.RoundedRectangle(boxW, boxH, Math.Min(12, boxH / 2));
                     var outline = new PathBuilder()
+                        .Append(body.Translate(0, bodyTop + (boxH / 2)))
                         .AddEllipse(0, (-height / 2) + Head, Head, Head)
                         .Build();
-                    var body = Geometry.RoundedRectangle(boxW, boxH, Math.Min(12, boxH / 2));
-                    var drawing = new ShapeDrawing { Width = boxW, Height = height, Outline = Combine(Translate(body, 0, bodyTop + (boxH / 2)), outline), LabelOffsetY = bodyTop + (boxH / 2) };
+                    var drawing = new ShapeDrawing { Width = boxW, Height = height, Outline = outline, LabelOffsetY = bodyTop + (boxH / 2) };
                     return drawing;
                 }
 
@@ -366,7 +367,7 @@ internal static class Shapes
                     {
                         drawing.Underlays.Add(Wave(10, -10, width, height, amplitude, waveTop: false));
                         drawing.Underlays.Add(Wave(5, -5, width, height, amplitude, waveTop: false));
-                        return new ShapeDrawing { Width = width + 10, Height = height + 10, Outline = Translate(outline, -5, 5), LabelOffsetX = -5, LabelOffsetY = 5 - (amplitude / 2), Underlays = { Translate(drawing.Underlays[0], -5, 5), Translate(drawing.Underlays[1], -5, 5) } };
+                        return new ShapeDrawing { Width = width + 10, Height = height + 10, Outline = outline.Translate(-5, 5), LabelOffsetX = -5, LabelOffsetY = 5 - (amplitude / 2), Underlays = { drawing.Underlays[0].Translate(-5, 5), drawing.Underlays[1].Translate(-5, 5) } };
                     }
 
                     return drawing;
@@ -485,8 +486,8 @@ internal static class Shapes
 
             case FlowchartNodeShape.StackedRectangle:
                 {
-                    var drawing = new ShapeDrawing { Width = boxW + 10, Height = boxH + 10, Outline = Translate(Rectangle(boxW, boxH), -5, 5), LabelOffsetX = -5, LabelOffsetY = 5 };
-                    drawing.Underlays.Add(Translate(Rectangle(boxW, boxH), 5, -5));
+                    var drawing = new ShapeDrawing { Width = boxW + 10, Height = boxH + 10, Outline = Rectangle(boxW, boxH).Translate(-5, 5), LabelOffsetX = -5, LabelOffsetY = 5 };
+                    drawing.Underlays.Add(Rectangle(boxW, boxH).Translate(5, -5));
                     drawing.Underlays.Add(Rectangle(boxW, boxH));
                     return drawing;
                 }
@@ -571,72 +572,5 @@ internal static class Shapes
             .LineTo(x, y - 6)
             .QuadraticTo(x, y, x + (6 * d), y)
             .Build();
-    }
-
-    public static PathData Translate(PathData path, double dx, double dy)
-    {
-        var builder = new PathBuilder();
-        foreach (var command in path.Commands)
-        {
-            switch (command.Kind)
-            {
-                case PathCommandKind.MoveTo:
-                    builder.MoveTo(command.X + dx, command.Y + dy);
-                    break;
-                case PathCommandKind.LineTo:
-                    builder.LineTo(command.X + dx, command.Y + dy);
-                    break;
-                case PathCommandKind.CubicTo:
-                    builder.CubicTo(command.X1 + dx, command.Y1 + dy, command.X2 + dx, command.Y2 + dy, command.X + dx, command.Y + dy);
-                    break;
-                case PathCommandKind.QuadraticTo:
-                    builder.QuadraticTo(command.X1 + dx, command.Y1 + dy, command.X + dx, command.Y + dy);
-                    break;
-                case PathCommandKind.ArcTo:
-                    builder.ArcTo(command.X1, command.Y1, command.X2, command.LargeArc, command.Sweep, command.X + dx, command.Y + dy);
-                    break;
-                case PathCommandKind.Close:
-                    builder.Close();
-                    break;
-            }
-        }
-
-        return builder.Build();
-    }
-
-    public static PathData Combine(PathData first, PathData second) => Concat(first, second);
-
-    private static PathData Concat(PathData first, PathData second)
-    {
-        var builder = new PathBuilder();
-        foreach (var path in new[] { first, second })
-        {
-            foreach (var command in path.Commands)
-            {
-                switch (command.Kind)
-                {
-                    case PathCommandKind.MoveTo:
-                        builder.MoveTo(command.X, command.Y);
-                        break;
-                    case PathCommandKind.LineTo:
-                        builder.LineTo(command.X, command.Y);
-                        break;
-                    case PathCommandKind.CubicTo:
-                        builder.CubicTo(command.X1, command.Y1, command.X2, command.Y2, command.X, command.Y);
-                        break;
-                    case PathCommandKind.QuadraticTo:
-                        builder.QuadraticTo(command.X1, command.Y1, command.X, command.Y);
-                        break;
-                    case PathCommandKind.ArcTo:
-                        builder.ArcTo(command.X1, command.Y1, command.X2, command.LargeArc, command.Sweep, command.X, command.Y);
-                        break;
-                    case PathCommandKind.Close:
-                        builder.Close();
-                        break;
-                }
-            }
-        }
-
-        return builder.Build();
     }
 }

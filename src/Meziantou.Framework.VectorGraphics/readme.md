@@ -1,6 +1,6 @@
 # Meziantou.Framework.VectorGraphics
 
-Describes a drawing as a scene of shapes, paths, texts and groups, writes it as deterministic SVG, and measures, wraps
+Describes a drawing as a scene of shapes, paths, texts, images and groups, writes it as deterministic SVG, and measures, wraps
 and truncates texts with the metrics of Helvetica or any OpenType font. [Meziantou.Framework.Charts](https://www.nuget.org/packages/Meziantou.Framework.Charts)
 and Meziantou.Framework.Diagrams lay themselves out into a scene; [Meziantou.Framework.Imaging.VectorGraphics](https://www.nuget.org/packages/Meziantou.Framework.Imaging.VectorGraphics)
 draws it as an image.
@@ -13,7 +13,7 @@ var scene = new Scene(width: 200, height: 80, fontFamily: AfmTextMeasurer.Defaul
 
 // Shapes are filled and stroked; texts are positioned by their baseline
 scene.Root.Add(new SceneRectangle(10, 10, 180, 60) { Fill = (SceneColor)"#e0f2fe", Stroke = (SceneColor)"#0369a1", StrokeWidth = 2, CornerRadius = 8 });
-scene.Root.Add(new SceneText(100, 45, "Hello", new SceneFont(16, Bold: true), (SceneColor)"#0c4a6e") { Anchor = SceneTextAnchor.Middle });
+scene.Root.Add(new SceneText(100, 45, "Hello", new SceneFont(16, Weight: SceneFont.BoldWeight), (SceneColor)"#0c4a6e") { Anchor = SceneTextAnchor.Middle });
 
 // Paths use the commands of SVG
 var arrow = new PathBuilder().MoveTo(20, 60).LineTo(60, 60).LineTo(55, 55).MoveTo(60, 60).LineTo(55, 65).Build();

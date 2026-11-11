@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100" role="img" font-family="sans-serif">
+<defs>
+<filter id="scene-filter0" filterUnits="userSpaceOnUse" x="-2" y="-2" width="104" height="74" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="3"/><feOffset dx="0" dy="2" result="shadow"/><feFlood flood-color="#000000" flood-opacity="0.251"/><feComposite in2="shadow" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="scene-filter1" filterUnits="userSpaceOnUse" x="123" y="23" width="54" height="54" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="2"/></filter>
+<linearGradient id="scene-gradient0" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="10" y2="0" spreadMethod="reflect" gradientTransform="matrix(0.707107 0.707107 -0.707107 0.707107 0 0)">
+<stop offset="0" stop-color="#ffffff"/>
+<stop offset="1" stop-color="#0369a1"/>
+</linearGradient>
+<linearGradient id="scene-gradient1" gradientUnits="userSpaceOnUse" x1="100" y1="0" x2="200" y2="0">
+<stop offset="0" stop-color="#ffffff"/>
+<stop offset="1" stop-color="#000000"/>
+</linearGradient>
+</defs>
+<defs>
+<mask id="scene-mask0" maskUnits="userSpaceOnUse" x="-100000" y="-100000" width="200000" height="200000">
+<g>
+<rect x="100" y="0" width="100" height="100" fill="url(#scene-gradient1)"/>
+</g>
+</mask>
+</defs>
+<rect x="10" y="10" width="80" height="50" rx="4" fill="#ffffff" filter="url(#scene-filter0)"/>
+<circle cx="150" cy="50" r="20" fill="#0369a1" filter="url(#scene-filter1)"/>
+<rect x="10" y="70" width="180" height="20" fill="url(#scene-gradient0)" style="mix-blend-mode:multiply"/>
+<g mask="url(#scene-mask0)">
+<text x="150" y="95" text-anchor="middle" font-size="12" fill="#000000">Fading</text>
+</g>
+</svg>

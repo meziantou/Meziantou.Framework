@@ -196,8 +196,8 @@ public sealed class ChartImageTests
             var actual = image.Measure(text, new SceneFont(12)).Width;
             Assert.True(Math.Abs(expected - actual) <= expected * 0.02, $"{text}: {expected} vs {actual}");
 
-            var expectedBold = afm.Measure(text, new SceneFont(16, Bold: true)).Width;
-            var actualBold = image.Measure(text, new SceneFont(16, Bold: true)).Width;
+            var expectedBold = afm.Measure(text, new SceneFont(16, Weight: SceneFont.BoldWeight)).Width;
+            var actualBold = image.Measure(text, new SceneFont(16, Weight: SceneFont.BoldWeight)).Width;
             Assert.True(Math.Abs(expectedBold - actualBold) <= expectedBold * 0.02, $"{text}: {expectedBold} vs {actualBold}");
         }
 
@@ -213,7 +213,8 @@ public sealed class ChartImageTests
         Assert.Throws<ArgumentNullException>("scene", () => ((Scene)null!).ToImage());
         Assert.Throws<ArgumentNullException>("source", () => SceneImageRenderer.MeasureScene((ISceneSource)null!));
         Assert.Throws<ArgumentNullException>("scene", () => SceneImageRenderer.MeasureScene((Scene)null!));
-        Assert.Throws<ArgumentNullException>("regular", () => new ImageTextMeasurer(null!));
+        Assert.Throws<ArgumentNullException>("regular", () => new ImageTextMeasurer((Meziantou.Framework.Imaging.Typography.Font)null!));
+        Assert.Throws<ArgumentNullException>("fonts", () => new ImageTextMeasurer((SceneFontCollection)null!));
         Assert.Throws<ArgumentNullException>("text", () => SceneImageRenderer.CreateMeasurer().Measure(null!, new SceneFont(12)));
     }
 

@@ -1,0 +1,23 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Pdf.VectorGraphics</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Draws the scenes of Meziantou.Framework.VectorGraphics (charts, diagrams) as PDF with Meziantou.Framework.Pdf: vector shapes, gradients and text, with subsets of the fonts of the scene embedded.</Description>
+    <PackageTags>pdf;svg;vector;graphics;scene;chart;diagram;drawing</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.VectorGraphics/Meziantou.Framework.VectorGraphics.csproj" />
+    <ProjectReference Include="../Meziantou.Framework.Pdf/Meziantou.Framework.Pdf.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Pdf.VectorGraphics.Tests" />
+  </ItemGroup>
+
+</Project>

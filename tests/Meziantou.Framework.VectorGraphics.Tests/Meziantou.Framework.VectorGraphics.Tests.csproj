@@ -9,6 +9,12 @@
     <!-- An OFL font for the tests of FontFaceTextMeasurer: the Liberation Sans subset of Meziantou.Framework.Pdf -->
     <None Include="../../src/Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationSans-Regular.woff2" Link="TestData/LiberationSans-Regular.woff2" CopyToOutputDirectory="PreserveNewest" />
     <None Include="../../src/Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationSans-Italic.woff2" Link="TestData/LiberationSans-Italic.woff2" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../src/Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationSans-Bold.woff2" Link="TestData/LiberationSans-Bold.woff2" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../src/Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationMono-Regular.woff2" Link="TestData/LiberationMono-Regular.woff2" CopyToOutputDirectory="PreserveNewest" />
+    <!-- An OFL font with the Thai characters that Liberation Sans does not have, for the fallback between families -->
+    <None Include="../Meziantou.Framework.Imaging.Fixtures/fonts/noto-sans-thai/NotoSansThai-Regular.ttf" Link="TestData/NotoSansThai-Regular.ttf" CopyToOutputDirectory="PreserveNewest" />
+    <!-- An OFL color emoji font, for the presentation of the emoji -->
+    <None Include="../Meziantou.Framework.Imaging.Fixtures/fonts/noto-color-emoji/Noto-COLRv1.subset.ttf" Link="TestData/Noto-COLRv1.subset.ttf" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

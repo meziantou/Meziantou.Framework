@@ -796,6 +796,90 @@ public sealed class SvgSceneRendererTests
     }
 
     [Fact]
+    public void ReusedElements()
+    {
+        #region VectorGraphics_Reuse
+        var scene = new Scene(width: 200, height: 60, fontFamily: "sans-serif");
+
+        // A star that is not in the scene: the SVG writes it once in its definitions, and each use refers to it
+        var star = new ScenePath(new PathBuilder().AddPolygon((0, -20), (6, -6), (20, -6), (9, 3), (13, 18), (0, 9), (-13, 18), (-9, 3), (-20, -6), (-6, -6)).Build()) { Fill = (SceneColor)"#eab308" };
+        for (var i = 0; i < 3; i++)
+        {
+            scene.Root.Add(new SceneUse(star) { Transform = SceneTransform.Translate(30 + (i * 50), 30) });
+        }
+
+        // An element of the scene drawn again, smaller
+        var circle = scene.Root.Add(new SceneCircle(0, 0, 10) { Id = "dot", Fill = (SceneColor)"#0369a1", Transform = SceneTransform.Translate(180, 15) });
+        scene.Root.Add(new SceneUse(circle) { Transform = SceneTransform.Scale(0.5, 0.5, 180, 45) });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("Reuse", svg);
+        Assert.Contains("<defs>\n<path id=\"scene-element0\" d=\"M0,-20", svg, StringComparison.Ordinal);
+        Assert.Contains("<use href=\"#scene-element0\" transform=\"translate(80 30)\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<circle id=\"dot\" cx=\"0\" cy=\"0\" r=\"10\" fill=\"#0369a1\" transform=\"translate(180 15)\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<use href=\"#dot\" transform=\"matrix(0.5 0 0 0.5 90 22.5)\"/>", svg, StringComparison.Ordinal);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(svg, "<path "));
+
+        // The bounds of a use are the bounds of its content, transformed by the use
+        Assert.Equal(new SceneBounds(175, 25, 10, 10), new SceneUse(circle) { Transform = SceneTransform.Scale(0.5, 0.5, 180, 45) }.GetBounds(_ => null));
+
+        // A use in its own content is not drawn; the identifier of a linked content is on its link
+        var group = new SceneGroup { Hyperlink = "https://example.com/" };
+        group.Add(new SceneRectangle(0, 0, 5, 5) { Fill = SceneColor.Black });
+        group.Add(new SceneUse(group));
+        var cycle = new Scene(10, 10, "sans-serif");
+        cycle.Root.Add(new SceneUse(group));
+        var cycleSvg = SvgSceneRenderer.Render(cycle);
+        Assert.Contains("<defs>\n<a id=\"scene-element0\" href=\"https://example.com/\">", cycleSvg, StringComparison.Ordinal);
+        Assert.Equal(new SceneBounds(0, 0, 5, 5), new SceneUse(group).GetBounds(_ => null));
+        Assert.Throws<ArgumentNullException>("content", () => new SceneUse(null!));
+    }
+
+    [Fact]
+    public void ViewBoxes()
+    {
+        #region VectorGraphics_ViewBox
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // A drawing of 100 by 100 units, fitted in a viewport of 200 by 80 pixels: scaled by 0.8 and centered
+        var chart = scene.Root.Add(new SceneGroup { ViewBox = new SceneViewBox(new SceneBounds(0, 0, 100, 100), new SceneBounds(0, 10, 200, 80)) });
+        chart.Add(new SceneRectangle(0, 0, 100, 100) { Fill = (SceneColor)"#e0f2fe", Stroke = (SceneColor)"#0369a1" });
+        chart.Add(new SceneCircle(50, 50, 40) { Fill = (SceneColor)"#0369a1" });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("ViewBox", svg);
+        Assert.Contains("<g>\n<svg x=\"0\" y=\"10\" width=\"200\" height=\"80\" viewBox=\"0 0 100 100\">\n<rect", svg, StringComparison.Ordinal);
+        Assert.Equal(new SceneTransform(0.8, 0, 0, 0.8, 60, 10), chart.ViewBox!.GetTransform());
+        // The stroke, with its miter joins, is cut by the viewport
+        var bounds = chart.GetBounds(_ => null)!.Value;
+        Assert.Equal(58.4, bounds.X, 1e-9);
+        Assert.Equal(10, bounds.Y, 1e-9);
+        Assert.Equal(141.6, bounds.Right, 1e-9);
+        Assert.Equal(90, bounds.Bottom, 1e-9);
+
+        var box = new SceneBounds(0, 0, 100, 50);
+        var viewport = new SceneBounds(0, 0, 200, 200);
+        Assert.Equal(new SceneTransform(2, 0, 0, 2, 0, 50), new SceneViewBox(box, viewport).GetTransform());
+        Assert.Equal(new SceneTransform(2, 0, 0, 2, 0, 100), new SceneViewBox(box, viewport) { Alignment = SceneAspectRatio.XMaxYMax }.GetTransform());
+        Assert.Equal(new SceneTransform(4, 0, 0, 4, -100, 0), new SceneViewBox(box, viewport) { Slice = true }.GetTransform());
+        Assert.Equal(new SceneTransform(2, 0, 0, 4, 0, 0), new SceneViewBox(box, viewport) { Alignment = SceneAspectRatio.None, Slice = true }.GetTransform());
+        Assert.Null(new SceneViewBox(new SceneBounds(0, 0, 0, 50), viewport).GetTransform());
+        Assert.Null(new SceneViewBox(box, new SceneBounds(0, 0, double.NaN, 50)).GetTransform());
+
+        // The alignment and the slice are written as preserveAspectRatio; a view box that draws nothing has no children
+        Assert.Contains("preserveAspectRatio=\"none\"", SvgSceneRenderer.Render(Single(new SceneGroup { ViewBox = new SceneViewBox(box, viewport) { Alignment = SceneAspectRatio.None } })), StringComparison.Ordinal);
+        Assert.Contains("preserveAspectRatio=\"xMinYMax slice\"", SvgSceneRenderer.Render(Single(new SceneGroup { ViewBox = new SceneViewBox(box, viewport) { Alignment = SceneAspectRatio.XMinYMax, Slice = true } })), StringComparison.Ordinal);
+        var empty = new SceneGroup { ViewBox = new SceneViewBox(new SceneBounds(0, 0, 0, 0), viewport) };
+        empty.Add(new SceneRectangle(0, 0, 1, 1));
+        Assert.DoesNotContain("<rect", SvgSceneRenderer.Render(Single(empty)), StringComparison.Ordinal);
+        Assert.Null(empty.GetBounds(_ => null));
+    }
+
+    [Fact]
     public void IdentifiersUseThePrefix()
     {
         var scene = new Scene(10, 10, "sans-serif");

@@ -18,6 +18,17 @@ public sealed class SceneGroup : SceneElement
     /// <summary>Gets or sets the rule that decides which points are inside <see cref="ClipPath"/>.</summary>
     public SceneFillRule ClipRule { get; set; }
 
+    /// <summary>
+    /// Gets or sets the view box of the children, as a nested SVG <c>svg</c> element, or <see langword="null"/> for none:
+    /// a rectangle of the coordinates of the children is mapped to a viewport of the coordinates of the group, which cuts
+    /// what is outside of it.
+    /// </summary>
+    /// <remarks>
+    /// It applies inside the <see cref="SceneElement.Transform"/> of the group; <see cref="Clip"/> and <see cref="ClipPath"/>
+    /// stay in the coordinates of the parent. A view box whose box or viewport has no area draws nothing.
+    /// </remarks>
+    public SceneViewBox? ViewBox { get; set; }
+
     /// <summary>Adds an element to the group.</summary>
     /// <param name="element">The element.</param>
     /// <returns>The element.</returns>

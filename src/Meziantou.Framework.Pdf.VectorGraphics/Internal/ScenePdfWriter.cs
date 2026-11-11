@@ -36,6 +36,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     private readonly Dictionary<(PatternPaint Paint, PdfMatrix Matrix), PdfTilingPattern> _tilingPatterns = [];
     private readonly HashSet<PatternPaint> _drawingPatterns = new(ReferenceEqualityComparer.Instance);
     private readonly HashSet<SceneMarker> _drawingMarkers = new(ReferenceEqualityComparer.Instance);
+    private readonly HashSet<SceneUse> _drawingUses = new(ReferenceEqualityComparer.Instance);
     private PdfContentBuilder _content = content;
 
     // The transform from the current user space to the space of the current content stream, and from that space to the page
@@ -83,6 +84,11 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             {
                 VisitPattern(shape.Fill);
                 VisitPattern(shape.Stroke);
+            }
+
+            if (element is SceneUse use && patterns.Add(use.Content))
+            {
+                Visit(use.Content);
             }
 
             switch (element)
@@ -227,6 +233,26 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             case SceneImage image:
                 DrawImage(image, opacity);
                 break;
+
+            // A use draws its content again, as a whole with the opacity of the use; a use in its own content is not drawn
+            case SceneUse use when _drawingUses.Add(use):
+                try
+                {
+                    if (opacity < 1 || isolated)
+                    {
+                        DrawTransparencyGroup([use.Content], opacity);
+                    }
+                    else
+                    {
+                        DrawElement(use.Content);
+                    }
+                }
+                finally
+                {
+                    _drawingUses.Remove(use);
+                }
+
+                break;
         }
     }
 
@@ -353,6 +379,11 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         if (clipPath is not null && (clipPath.IsEmpty || !IsFinite(clipPath)))
             return;
 
+        // A view box that draws nothing has no children
+        SceneTransform? viewBoxTransform = null;
+        if (group.ViewBox is { } viewBox && (viewBoxTransform = viewBox.GetTransform()) is null)
+            return;
+
         Save();
         if (group.Clip is { } groupClip)
         {
@@ -368,6 +399,14 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         if (group.Transform is { } groupTransform)
         {
             Transform(new PdfMatrix(groupTransform.A, groupTransform.B, groupTransform.C, groupTransform.D, groupTransform.E, groupTransform.F));
+        }
+
+        // A view box cuts the children to its viewport, in the coordinates of the group, and maps them to it
+        if (group.ViewBox is { } groupViewBox && viewBoxTransform is { } mapping)
+        {
+            var viewport = groupViewBox.Viewport;
+            _content.Rectangle(viewport.X, viewport.Y, viewport.Width, viewport.Height).Clip().EndPath();
+            Transform(new PdfMatrix(mapping.A, mapping.B, mapping.C, mapping.D, mapping.E, mapping.F));
         }
 
         // The opacity, the mask and the blend mode apply to the group as a whole: it is drawn in a transparency group

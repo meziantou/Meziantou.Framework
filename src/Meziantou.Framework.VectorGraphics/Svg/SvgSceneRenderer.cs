@@ -44,6 +44,10 @@ public static class SvgSceneRenderer
         private readonly List<(string Id, PatternPaint Pattern)> _patterns = [];
         private readonly List<(string Id, SceneMarker Marker)> _markers = [];
         private readonly HashSet<string> _elementIds = new(StringComparer.Ordinal);
+
+        // The generated identifiers of the contents of the uses that have none; the contents that are only drawn by uses
+        private readonly Dictionary<SceneElement, string> _contentIds = new(ReferenceEqualityComparer.Instance);
+        private List<SceneElement> _detached = [];
         private readonly int _precision = options.Precision;
         private Scene _scene = null!;
 
@@ -55,7 +59,9 @@ public static class SvgSceneRenderer
         public void Write(Scene scene)
         {
             _scene = scene;
-            CollectIds(scene.Root);
+            var (elements, detached) = SceneTree.Walk(scene.Root);
+            _detached = detached;
+            CollectIds(elements);
             output.Write("<svg");
             if (options.IncludeNamespace)
             {
@@ -83,7 +89,7 @@ public static class SvgSceneRenderer
             }
 
             WriteDefinitions(scene.Root, options.EmbedFonts && scene.Fonts is { } fonts ? GetFontFaceRules(scene, fonts) : null);
-            if (_masks.Count > 0 || _patterns.Count > 0 || _markers.Count > 0)
+            if (_masks.Count > 0 || _patterns.Count > 0 || _markers.Count > 0 || _detached.Count > 0)
             {
                 // The content of a mask is in the coordinates of the parent of the masked element, on the whole plane
                 output.Write("<defs>\n");
@@ -159,6 +165,12 @@ public static class SvgSceneRenderer
                     output.Write("</marker>\n");
                 }
 
+                // The contents of the uses that are not drawn otherwise
+                foreach (var element in _detached)
+                {
+                    WriteElement(element);
+                }
+
                 output.Write("</defs>\n");
             }
 
@@ -180,12 +192,22 @@ public static class SvgSceneRenderer
         }
 
         // The identifiers of the elements, which must be different: the generated identifiers avoid them
-        private void CollectIds(SceneGroup root)
+        private void CollectIds(List<SceneElement> elements)
         {
-            foreach (var element in SceneTree.EnumerateElements(root))
+            foreach (var element in elements)
             {
                 if (element.Id is { } id && !_elementIds.Add(id))
                     throw new InvalidOperationException($"Two elements of the scene have the identifier '{id}': the identifiers of the elements must be different.");
+            }
+
+            // The content of a use is referenced by its identifier
+            var elementCount = 0;
+            foreach (var element in elements)
+            {
+                if (element is SceneUse { Content: { Id: null } content } && !_contentIds.ContainsKey(content))
+                {
+                    _contentIds[content] = NextId("element", ref elementCount);
+                }
             }
         }
 
@@ -229,6 +251,11 @@ public static class SvgSceneRenderer
             var patternCount = 0;
             var markerCount = 0;
             Visit(root);
+            foreach (var element in _detached)
+            {
+                Visit(element);
+            }
+
             if (definitions.Length > 0)
             {
                 output.Write("<defs>\n");
@@ -466,7 +493,7 @@ public static class SvgSceneRenderer
 
         private void WriteElement(SceneElement element)
         {
-            _pendingId = element.Id;
+            _pendingId = element.Id ?? _contentIds.GetValueOrDefault(element);
             if (!string.IsNullOrEmpty(element.Hyperlink))
             {
                 StartTag("a");
@@ -559,6 +586,13 @@ public static class SvgSceneRenderer
                     WriteText(text);
                     break;
 
+                case SceneUse use:
+                    StartTag("use");
+                    Attribute("href", "#" + (use.Content.Id ?? _contentIds[use.Content]));
+                    CommonAttributes(use);
+                    EndElement("use", use);
+                    break;
+
                 case SceneImage image:
                     StartTag("image");
                     Attribute("x", image.X);
@@ -632,9 +666,38 @@ public static class SvgSceneRenderer
 
             output.Write(">\n");
             WriteTooltip(group);
-            foreach (var child in group.Children)
+            if (group.ViewBox is { } viewBox)
             {
-                WriteElement(child);
+                // A nested svg element maps its view box to its viewport, and cuts what is outside of it. A view box that
+                // draws nothing has no children.
+                if (viewBox.GetTransform() is not null)
+                {
+                    output.Write("<svg");
+                    Attribute("x", viewBox.Viewport.X);
+                    Attribute("y", viewBox.Viewport.Y);
+                    Attribute("width", viewBox.Viewport.Width);
+                    Attribute("height", viewBox.Viewport.Height);
+                    Attribute("viewBox", Number(viewBox.Box.X) + " " + Number(viewBox.Box.Y) + " " + Number(viewBox.Box.Width) + " " + Number(viewBox.Box.Height));
+                    if (AspectRatioValue(viewBox) is { } aspectRatio)
+                    {
+                        Attribute("preserveAspectRatio", aspectRatio);
+                    }
+
+                    output.Write(">\n");
+                    foreach (var child in group.Children)
+                    {
+                        WriteElement(child);
+                    }
+
+                    output.Write("</svg>\n");
+                }
+            }
+            else
+            {
+                foreach (var child in group.Children)
+                {
+                    WriteElement(child);
+                }
             }
 
             output.Write("</g>\n");
@@ -937,6 +1000,28 @@ public static class SvgSceneRenderer
                     Attribute("data-" + name, value);
                 }
             }
+        }
+
+        private static string? AspectRatioValue(SceneViewBox viewBox)
+        {
+            var alignment = viewBox.Alignment switch
+            {
+                SceneAspectRatio.None => "none",
+                SceneAspectRatio.XMinYMin => "xMinYMin",
+                SceneAspectRatio.XMidYMin => "xMidYMin",
+                SceneAspectRatio.XMaxYMin => "xMaxYMin",
+                SceneAspectRatio.XMinYMid => "xMinYMid",
+                SceneAspectRatio.XMaxYMid => "xMaxYMid",
+                SceneAspectRatio.XMinYMax => "xMinYMax",
+                SceneAspectRatio.XMidYMax => "xMidYMax",
+                SceneAspectRatio.XMaxYMax => "xMaxYMax",
+                _ => "xMidYMid",
+            };
+
+            if (viewBox.Slice && viewBox.Alignment is not SceneAspectRatio.None)
+                return alignment + " slice";
+
+            return alignment is "xMidYMid" ? null : alignment;
         }
 
         private void MarkerAttributes(SceneMarker? start, SceneMarker? middle, SceneMarker? end)

@@ -39,6 +39,19 @@ internal static class SceneGeometry
                 if (bounds is not { } box)
                     return null;
 
+                // A view box maps the children to its viewport, which cuts them, inside the transform of the group
+                if (group.ViewBox is { } viewBox)
+                {
+                    if (viewBox.GetTransform() is not { } viewBoxTransform)
+                        return null;
+
+                    box = Transform(box, viewBoxTransform);
+                    if (applyClips)
+                    {
+                        box = Intersect(box, viewBox.Viewport);
+                    }
+                }
+
                 if (group.Transform is { } transform)
                 {
                     box = Transform(box, transform);
@@ -74,6 +87,21 @@ internal static class SceneGeometry
             case SceneImage image:
                 return new SceneBounds(image.X, image.Y, image.Width, image.Height);
 
+            // A use draws its content with its filter; a use in its own content is not drawn
+            case SceneUse use:
+                s_uses ??= new(ReferenceEqualityComparer.Instance);
+                if (!s_uses.Add(use))
+                    return null;
+
+                try
+                {
+                    return GetBounds(use.Content, measureText) is { } contentBounds ? WithFilter(contentBounds, use.Content.Filter) : null;
+                }
+                finally
+                {
+                    s_uses.Remove(use);
+                }
+
             // A text on a path is within its size of the path: its glyphs are above the path, and its descenders below
             case SceneText { Path: { } textPath } text:
                 if (text.Text.Length is 0 || GetPathBounds(textPath) is not { } textPathBounds)
@@ -96,6 +124,9 @@ internal static class SceneGeometry
     // The markers of a shape are drawn on its vertices. A marker drawn on a shape of its own content is not drawn again.
     [ThreadStatic]
     private static HashSet<SceneMarker>? s_markers;
+
+    [ThreadStatic]
+    private static HashSet<SceneUse>? s_uses;
 
     private static SceneBounds? WithMarkers(SceneBounds? bounds, SceneShape shape, Func<SceneText, SceneBounds?> measureText)
     {

@@ -250,6 +250,32 @@ public sealed class SceneRendererTests
         Assert.Equal(new Rgba32(255, 255, 255), pixels[90, 48]);
     }
 
+    [Fact]
+    public void ReusedElementsAndViewBoxes()
+    {
+        // A square drawn twice by uses, moved by them; a use in its own content is not drawn
+        var square = new SceneRectangle(0, 0, 10, 10) { Fill = (SceneColor)"#ff0000" };
+        var cycle = new SceneGroup();
+        cycle.Add(new SceneUse(cycle));
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneUse(square) { Transform = SceneTransform.Translate(10, 10) });
+        scene.Root.Add(new SceneUse(square) { Transform = SceneTransform.Translate(30, 10), Opacity = 0.5 });
+        scene.Root.Add(new SceneUse(cycle));
+
+        // A drawing of 10 by 10 units in a viewport of 40 by 20 pixels: scaled by 2 and centered; the viewport cuts it
+        var viewBox = scene.Root.Add(new SceneGroup { ViewBox = new SceneViewBox(new SceneBounds(0, 0, 10, 10), new SceneBounds(50, 30, 40, 20)) });
+        viewBox.Add(new SceneRectangle(0, 0, 10, 10) { Fill = (SceneColor)"#0000ff" });
+        viewBox.Add(new SceneRectangle(-20, 0, 20, 10) { Fill = (SceneColor)"#0000ff" });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(new Rgba32(255, 0, 0), pixels[15, 15]);
+        Assert.InRange(pixels[35, 15].G, 120, 135);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[25, 15]);
+        Assert.Equal(new Rgba32(0, 0, 255), pixels[70, 40]);
+        Assert.Equal(new Rgba32(0, 0, 255), pixels[55, 40]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[45, 40]);
+    }
+
     private static (int Left, int Top, int Right, int Bottom) GetInkBounds(Image<Rgba32> image, int x0, int y0, int x1, int y1)
     {
         var (left, top, right, bottom) = (int.MaxValue, int.MaxValue, -1, -1);

@@ -329,6 +329,19 @@ internal static class SceneRenderer
             case SceneImage image:
                 DrawImage(canvas, image);
                 break;
+
+            // A use draws its content again; a use in its own content is not drawn
+            case SceneUse use when context.EnterUse(use):
+                try
+                {
+                    DrawElement(canvas, use.Content, context);
+                }
+                finally
+                {
+                    context.ExitUse(use);
+                }
+
+                break;
         }
     }
 
@@ -455,11 +468,28 @@ internal static class SceneRenderer
     {
         if (group.Transform is { } transform)
         {
-            canvas.Transform(new AffineTransform(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F), (group, context), static (canvas, state) => DrawChildren(canvas, state.group, state.context));
+            canvas.Transform(new AffineTransform(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F), (group, context), static (canvas, state) => DrawViewBox(canvas, state.group, state.context));
             return;
         }
 
-        DrawChildren(canvas, group, context);
+        DrawViewBox(canvas, group, context);
+    }
+
+    // A view box cuts the children to its viewport and maps them to it; a view box that draws nothing has no children
+    private static void DrawViewBox(DrawingCanvas canvas, SceneGroup group, DrawContext context)
+    {
+        if (group.ViewBox is not { } viewBox)
+        {
+            DrawChildren(canvas, group, context);
+            return;
+        }
+
+        if (viewBox.GetTransform() is not { } transform)
+            return;
+
+        var viewport = viewBox.Viewport;
+        canvas.Clip(new RectangleD(viewport.X, viewport.Y, viewport.Width, viewport.Height), (group, context, transform), static (canvas, state) =>
+            canvas.Transform(ToTransform(state.transform), (state.group, state.context), static (canvas, state) => DrawChildren(canvas, state.group, state.context)));
     }
 
     private static void DrawText(DrawingCanvas canvas, SceneText text, DrawContext context)
@@ -668,6 +698,12 @@ internal static class SceneRenderer
         // The patterns whose content is being drawn: a pattern cannot paint with itself; the same for the markers
         private readonly HashSet<PatternPaint> _drawingPatterns = new(ReferenceEqualityComparer.Instance);
         private readonly HashSet<SceneMarker> _drawingMarkers = new(ReferenceEqualityComparer.Instance);
+
+        private readonly HashSet<SceneUse> _drawingUses = new(ReferenceEqualityComparer.Instance);
+
+        public bool EnterUse(SceneUse use) => _drawingUses.Add(use);
+
+        public void ExitUse(SceneUse use) => _drawingUses.Remove(use);
 
         public bool EnterMarker(SceneMarker marker) => _drawingMarkers.Add(marker);
 

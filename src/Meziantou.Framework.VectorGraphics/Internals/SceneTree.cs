@@ -5,21 +5,54 @@ internal static class SceneTree
 {
     /// <summary>
     /// Enumerates an element and every element it draws: the children of the groups, the contents of the masks, of the
-    /// patterns and of the markers. An element that is reached several times is enumerated each time; a pattern and a
-    /// marker once.
+    /// patterns and of the markers, then the contents of the uses that are not drawn otherwise. An element that is
+    /// reached several times is enumerated each time; a pattern, a marker and the content of a use once.
     /// </summary>
-    public static IEnumerable<SceneElement> EnumerateElements(SceneElement root)
+    public static IEnumerable<SceneElement> EnumerateElements(SceneElement root) => Walk(root).Elements;
+
+    /// <summary>
+    /// Walks a scene: <c>Elements</c> as <see cref="EnumerateElements"/> gives them, and <c>Detached</c>, the contents of
+    /// the uses that the scene does not draw otherwise, in the order they are found, each once.
+    /// </summary>
+    public static (List<SceneElement> Elements, List<SceneElement> Detached) Walk(SceneElement root)
     {
-        var patterns = new HashSet<object>(ReferenceEqualityComparer.Instance);
-        var stack = new Stack<SceneElement>();
-        stack.Push(root);
-        while (stack.TryPop(out var element))
+        var elements = new List<SceneElement>();
+        var detached = new List<SceneElement>();
+        var seen = new HashSet<SceneElement>(ReferenceEqualityComparer.Instance);
+        var uses = new List<SceneElement>();
+        var shared = new HashSet<object>(ReferenceEqualityComparer.Instance);
+        Visit(root);
+
+        // The content of a use is drawn where it is; otherwise it is detached. Its own uses are followed in turn.
+        for (var i = 0; i < uses.Count; i++)
         {
-            yield return element;
-            var contents = GetContents(element, patterns);
-            for (var i = contents.Count - 1; i >= 0; i--)
+            if (seen.Contains(uses[i]))
+                continue;
+
+            detached.Add(uses[i]);
+            Visit(uses[i]);
+        }
+
+        return (elements, detached);
+
+        void Visit(SceneElement start)
+        {
+            var stack = new Stack<SceneElement>();
+            stack.Push(start);
+            while (stack.TryPop(out var element))
             {
-                stack.Push(contents[i]);
+                elements.Add(element);
+                seen.Add(element);
+                if (element is SceneUse use)
+                {
+                    uses.Add(use.Content);
+                }
+
+                var contents = GetContents(element, shared);
+                for (var i = contents.Count - 1; i >= 0; i--)
+                {
+                    stack.Push(contents[i]);
+                }
             }
         }
     }

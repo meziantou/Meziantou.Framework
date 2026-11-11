@@ -161,6 +161,20 @@ namespace Meziantou.Framework.VectorGraphics
         public Scene(double width, double height, string fontFamily) { }
     }
 
+    public enum SceneAspectRatio
+    {
+        None = 0,
+        XMinYMin = 1,
+        XMidYMin = 2,
+        XMaxYMin = 3,
+        XMinYMid = 4,
+        XMidYMid = 5,
+        XMaxYMid = 6,
+        XMinYMax = 7,
+        XMidYMax = 8,
+        XMaxYMax = 9,
+    }
+
     public enum SceneBlendMode
     {
         Normal = 0,
@@ -411,6 +425,7 @@ namespace Meziantou.Framework.VectorGraphics
         public Meziantou.Framework.VectorGraphics.SceneBounds? Clip { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.PathData? ClipPath { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneFillRule ClipRule { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneViewBox? ViewBox { get => throw null; set { } }
         public T Add<T>(T element) where T : Meziantou.Framework.VectorGraphics.SceneElement => throw null;
     }
 
@@ -598,6 +613,29 @@ namespace Meziantou.Framework.VectorGraphics
         public static Meziantou.Framework.VectorGraphics.SceneTransform Translate(double x, double y) => throw null;
         public static bool operator ==(Meziantou.Framework.VectorGraphics.SceneTransform left, Meziantou.Framework.VectorGraphics.SceneTransform right) => throw null;
         public static bool operator !=(Meziantou.Framework.VectorGraphics.SceneTransform left, Meziantou.Framework.VectorGraphics.SceneTransform right) => throw null;
+    }
+
+    public sealed class SceneUse : Meziantou.Framework.VectorGraphics.SceneElement
+    {
+        public Meziantou.Framework.VectorGraphics.SceneElement Content { get => throw null; }
+        public SceneUse(Meziantou.Framework.VectorGraphics.SceneElement content) { }
+    }
+
+    public sealed class SceneViewBox : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneViewBox>
+    {
+        public Meziantou.Framework.VectorGraphics.SceneAspectRatio Alignment { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneBounds Box { get => throw null; init { } }
+        public bool Slice { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneBounds Viewport { get => throw null; init { } }
+        public SceneViewBox(Meziantou.Framework.VectorGraphics.SceneBounds Box, Meziantou.Framework.VectorGraphics.SceneBounds Viewport) { }
+        public void Deconstruct(out Meziantou.Framework.VectorGraphics.SceneBounds Box, out Meziantou.Framework.VectorGraphics.SceneBounds Viewport) => throw null;
+        public bool Equals(Meziantou.Framework.VectorGraphics.SceneViewBox? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public Meziantou.Framework.VectorGraphics.SceneTransform? GetTransform() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.VectorGraphics.SceneViewBox? left, Meziantou.Framework.VectorGraphics.SceneViewBox? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.VectorGraphics.SceneViewBox? left, Meziantou.Framework.VectorGraphics.SceneViewBox? right) => throw null;
     }
 
     public sealed class SolidPaint : Meziantou.Framework.VectorGraphics.ScenePaint

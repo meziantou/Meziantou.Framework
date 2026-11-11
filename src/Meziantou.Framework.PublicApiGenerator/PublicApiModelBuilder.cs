@@ -24,6 +24,9 @@ internal static class PublicApiModelBuilder
     [ThreadStatic]
     private static bool s_includeAllAttributes;
 
+    [ThreadStatic]
+    private static string? s_assemblyName;
+
     private static readonly HashSet<string> IrrelevantAttributes = new(StringComparer.Ordinal)
     {
         "System.CodeDom.Compiler.GeneratedCodeAttribute",
@@ -120,7 +123,9 @@ internal static class PublicApiModelBuilder
     public static PublicApiModel Build(string assemblyName, IEnumerable<CustomAttributeData> assemblyAttributes, IEnumerable<Type> rootTypes, ImmutableArray<string> assemblyReferences, bool includeAllAttributes)
     {
         var previousIncludeAllAttributes = s_includeAllAttributes;
+        var previousAssemblyName = s_assemblyName;
         s_includeAllAttributes = includeAllAttributes;
+        s_assemblyName = assemblyName;
         try
         {
             var types = rootTypes
@@ -135,6 +140,7 @@ internal static class PublicApiModelBuilder
         finally
         {
             s_includeAllAttributes = previousIncludeAllAttributes;
+            s_assemblyName = previousAssemblyName;
         }
     }
 
@@ -593,7 +599,9 @@ internal static class PublicApiModelBuilder
         var requiresNullableDisableDirective = parametersList.Any(static parameter => RequiresNullableDisableDirective(parameter));
         var initializer = BuildConstructorInitializer(constructor);
         // A parameterless constructor requiring an unsafe context is not equivalent to the implicit one as it doesn't satisfy the new() constraint
-        if (parametersList.Length == 0 && string.IsNullOrEmpty(initializer) && !requiresUnsafe && !constructor.CustomAttributes.Any(IsRequiresPreviewFeaturesAttribute))
+        // With IncludeAllAttributes, a parameterless constructor is written when it has attributes to write, so that they are not lost
+        if (parametersList.Length == 0 && string.IsNullOrEmpty(initializer) && !requiresUnsafe && !constructor.CustomAttributes.Any(IsRequiresPreviewFeaturesAttribute) &&
+            !(s_includeAllAttributes && SortAttributes(constructor.CustomAttributes.Where(ShouldIncludeAttribute)).Any()))
             return null;
 
         AppendMemberWithParameters(
@@ -2248,7 +2256,25 @@ internal static class PublicApiModelBuilder
             return false;
 
         var attributeType = attribute.AttributeType;
-        return CSharpSyntaxFacts.IsAdditionalAttribute(fullName, isNestedOrGeneric: attributeType.IsNested || attributeType.IsGenericType, isDeclaredInAssembly: true, isVisibleType: attributeType.IsVisible);
+        return CSharpSyntaxFacts.IsAdditionalAttribute(
+            fullName,
+            isNestedOrGeneric: attributeType.IsNested || attributeType.IsGenericType,
+            isDeclaredInAssembly: string.Equals(attributeType.Assembly.GetName().Name, s_assemblyName, StringComparison.Ordinal),
+            isUsableOutsideAssembly: () => IsUsableOutsideAssembly(attribute));
+    }
+
+    // The API files must declare what the usage of the attribute needs: a public type, a public constructor, and public fields and setters for the named arguments
+    private static bool IsUsableOutsideAssembly(CustomAttributeData attribute)
+    {
+        if (!attribute.AttributeType.IsVisible || !attribute.Constructor.IsPublic)
+            return false;
+
+        return attribute.NamedArguments.All(static argument => argument.MemberInfo switch
+        {
+            FieldInfo field => field.IsPublic && !field.IsInitOnly && !field.IsLiteral,
+            PropertyInfo property => property.SetMethod?.IsPublic is true,
+            _ => false,
+        });
     }
 
     private static bool IsRequiresPreviewFeaturesAttribute(CustomAttributeData attribute)

@@ -307,8 +307,11 @@ The option adds:
 
 - **`[EditorBrowsable]`**, which hides members from IntelliSense.
 - **The attributes of other namespaces than `System`**, such as the attributes your library declares. An attribute
-  whose type is not visible outside the assembly (an `internal` attribute), or whose type is nested or generic, is not
-  written.
+  declared in the assembly is written only when the files declare what its usage needs: a public type and a public
+  constructor. An attribute whose type is nested or generic is not written. The visibility of the attributes declared
+  in other assemblies is not checked.
+- **Parameterless constructors that have attributes to write.** Without the option, a public parameterless constructor
+  is omitted, as it declares the same API as the implicit one.
 - **The assembly attributes**, such as `[InternalsVisibleTo]`, `[AssemblyMetadata]` or `[CLSCompliant]`, except the ones
   that the SDK generates from the properties of the project (`[AssemblyCompany]`, `[AssemblyProduct]`, the versions,
   `[TargetFramework]`...): they change from one build to another, or would be declared twice when compiling the files.

@@ -43,6 +43,7 @@ internal static class PublicApiModelReader
             Style = PublicApiDeclarationStyle.Compilable,
             NewLine = Environment.NewLine,
             AttributeFilter = includeAllAttributes ? CreateAllAttributesFilter(assembly) : null,
+            WriteParameterlessConstructorsWithAttributes = includeAllAttributes,
         });
 
         var types = assembly.Types.Select(type =>
@@ -62,7 +63,7 @@ internal static class PublicApiModelReader
 
     private static Func<PublicApiAttribute, bool> CreateAllAttributesFilter(PublicApiAssembly assembly)
     {
-        var visibleTypes = assembly.Types.Select(static type => type.FullName).ToHashSet(StringComparer.Ordinal);
+        var visibleTypes = assembly.Types.ToDictionary(static type => type.FullName, StringComparer.Ordinal);
         return attribute =>
         {
             if (CSharpSyntaxFacts.IsDisplayedAttribute(attribute, PublicApiDeclarationStyle.Compilable))
@@ -73,8 +74,55 @@ internal static class PublicApiModelReader
                 attributeType.FullName,
                 isNestedOrGeneric: attributeType.ContainingType is not null || !attributeType.TypeArguments.IsEmpty,
                 isDeclaredInAssembly: attributeType.AssemblyName is null || string.Equals(attributeType.AssemblyName, assembly.Name, StringComparison.Ordinal),
-                isVisibleType: visibleTypes.Contains(attributeType.FullName));
+                isUsableOutsideAssembly: () => visibleTypes.TryGetValue(attributeType.FullName, out var type) && IsUsableOutsideAssembly(attribute, type, visibleTypes));
         };
+    }
+
+    // The model only contains the members visible outside the assembly. Members of base types declared in other assemblies are considered visible.
+    private static bool IsUsableOutsideAssembly(PublicApiAttribute attribute, PublicApiType type, Dictionary<string, PublicApiType> visibleTypes)
+    {
+        if (!attribute.AreArgumentsDecoded)
+            return false;
+
+        var hasConstructor = type.Members.Any(member =>
+            member is PublicApiMethod { MethodKind: PublicApiMethodKind.Constructor, IsStatic: false, Accessibility: PublicApiAccessibility.Public } constructor &&
+            constructor.Parameters.Length == attribute.ConstructorArguments.Length &&
+            constructor.Parameters.Zip(attribute.ConstructorArguments).All(pair => PublicApiTypeReferenceComparer.IgnoreNullability.Equals(pair.First.Type, pair.Second.Type)));
+        if (!hasConstructor)
+            return false;
+
+        foreach (var namedArgument in attribute.NamedArguments)
+        {
+            if (!HasSettableMember(type, namedArgument.Name, visibleTypes))
+                return false;
+        }
+
+        return true;
+
+        static bool HasSettableMember(PublicApiType type, string name, Dictionary<string, PublicApiType> visibleTypes)
+        {
+            for (PublicApiType? current = type; current is not null;)
+            {
+                foreach (var member in current.Members)
+                {
+                    if (!string.Equals(member.Name, name, StringComparison.Ordinal))
+                        continue;
+
+                    if (member is PublicApiProperty { SetMethod.Accessibility: PublicApiAccessibility.Public } or PublicApiField { Accessibility: PublicApiAccessibility.Public, IsReadOnly: false, IsConst: false })
+                        return true;
+                }
+
+                if (current.BaseType is not PublicApiNamedTypeReference baseType)
+                    return false;
+
+                if (baseType.AssemblyName is not null && !string.Equals(baseType.AssemblyName, type.Assembly.Name, StringComparison.Ordinal))
+                    return true;
+
+                current = visibleTypes.GetValueOrDefault(baseType.FullName);
+            }
+
+            return false;
+        }
     }
 
     public static PublicApiModel ReadFromReflection(Assembly assembly, bool includeAllAttributes)

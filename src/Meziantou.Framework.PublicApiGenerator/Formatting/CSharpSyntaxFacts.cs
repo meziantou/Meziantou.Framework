@@ -85,9 +85,11 @@ internal static class CSharpSyntaxFacts
     public const string RequiresPreviewFeaturesAttributeFullName = "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute";
 
     // Whether PublicApiOptions.IncludeAllAttributes writes an attribute that is not written by default: the ones of AdditionalAttributes,
-    // and the ones of the other namespaces than System whose type can be referenced from another assembly. Nested and generic
-    // attribute types are not supported.
-    public static bool IsAdditionalAttribute(string attributeFullName, bool isNestedOrGeneric, bool isDeclaredInAssembly, bool isVisibleType)
+    // and the ones of the other namespaces than System. Nested and generic attribute types are not supported. An attribute declared in the
+    // assembly is written only when the API files declare what its usage needs (isUsableOutsideAssembly): a public type, a public constructor,
+    // and public fields and setters for the named arguments. The visibility of the types of other assemblies is not known from metadata,
+    // so both readers write these attributes.
+    public static bool IsAdditionalAttribute(string attributeFullName, bool isNestedOrGeneric, bool isDeclaredInAssembly, Func<bool> isUsableOutsideAssembly)
     {
         if (AdditionalAttributes.Contains(attributeFullName))
             return true;
@@ -95,7 +97,7 @@ internal static class CSharpSyntaxFacts
         if (isNestedOrGeneric || attributeFullName.StartsWith("System.", StringComparison.Ordinal))
             return false;
 
-        return !isDeclaredInAssembly || isVisibleType;
+        return !isDeclaredInAssembly || isUsableOutsideAssembly();
     }
 
     public static bool IsDisplayedAttribute(PublicApiAttribute attribute, PublicApiDeclarationStyle style)

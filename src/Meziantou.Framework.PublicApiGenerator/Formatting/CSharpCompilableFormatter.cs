@@ -1049,7 +1049,8 @@ internal sealed class CSharpCompilableFormatter
             constructor.Parameters.IsEmpty &&
             initializer.IsEmpty &&
             !requiresUnsafe &&
-            !PublicApiSymbol.HasAttribute(constructor.Attributes, "System.Runtime.Versioning", "RequiresPreviewFeaturesAttribute"))
+            !PublicApiSymbol.HasAttribute(constructor.Attributes, "System.Runtime.Versioning", "RequiresPreviewFeaturesAttribute") &&
+            !(_options.WriteParameterlessConstructorsWithAttributes && GetAttributes(constructor.Attributes).Any()))
         {
             return false;
         }

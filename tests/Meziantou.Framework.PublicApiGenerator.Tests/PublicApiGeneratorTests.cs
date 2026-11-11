@@ -453,11 +453,21 @@ public sealed class PublicApiGeneratorTests
             [AttributeUsage(AttributeTargets.All)]
             public sealed class GenericMarkerAttribute<T> : Attribute;
 
+            [AttributeUsage(AttributeTargets.All)]
+            public sealed class InternalConstructorAttribute : Attribute
+            {
+                internal InternalConstructorAttribute(int value) { }
+            }
+
             [EditorBrowsable(EditorBrowsableState.Never)]
             [PublicMarker("type", Order = 1)]
             [InternalMarker]
+            [InternalConstructor(1)]
             public class Sample
             {
+                [EditorBrowsable(EditorBrowsableState.Never)]
+                public Sample() { }
+
                 [EditorBrowsable(EditorBrowsableState.Advanced)]
                 public string? Name { get; set; }
 
@@ -498,6 +508,11 @@ public sealed class PublicApiGeneratorTests
                 }
 
                 [System.AttributeUsage(System.AttributeTargets.All)]
+                public sealed class InternalConstructorAttribute : System.Attribute
+                {
+                }
+
+                [System.AttributeUsage(System.AttributeTargets.All)]
                 public sealed class PublicMarkerAttribute : System.Attribute
                 {
                     public string Name { get => throw null; }
@@ -511,6 +526,8 @@ public sealed class PublicApiGeneratorTests
                 {
                     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
                     public string? Name { get => throw null; set { } }
+                    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+                    public Sample() { }
                     public void Generated() { }
                     [global::Demo.PublicMarker("method")]
                     [return: global::Demo.PublicMarker("return")]

@@ -79,6 +79,7 @@ Options:
   --include-assembly-reference <include-assembly-reference>      Pattern of the names of the framework assemblies to list with --include-assembly-references ('*' and '?' wildcards). Repeat for several patterns.
   --exclude-assembly-reference <exclude-assembly-reference>      Pattern of the names of the assemblies not to list with --include-assembly-references ('*' and '?' wildcards). Repeat for several patterns.
   --include-all-attributes                                       Write the attributes that are not written by default: EditorBrowsable, the attributes of other namespaces than System, and the assembly attributes
+  --delete-unexpected-files                                      Delete the files of the --output directory that are not generated, such as the files of removed types. Only use it when the directory only contains the generated files
   --verify-no-change                                             Verify generated files are up to date without writing changes
   -?, -h, --help                                                 Show help and usage information
   --version                                                      Show version information

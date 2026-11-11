@@ -43,6 +43,7 @@
                            IncludedAssemblyReferences="$(PublicApiGeneratorIncludedAssemblyReferences)"
                            ExcludedAssemblyReferences="$(PublicApiGeneratorExcludedAssemblyReferences)"
                            VerifyNoChange="$(PublicApiGeneratorVerifyNoChangeOnBuild)"
+                           DeleteUnexpectedFiles="$(PublicApiGeneratorDeleteUnexpectedFiles)"
                            ProjectDirectory="$(MSBuildProjectDirectory)" />
   </Target>
 </Project>

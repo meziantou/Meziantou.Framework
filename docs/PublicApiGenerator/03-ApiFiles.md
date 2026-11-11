@@ -157,13 +157,16 @@ The API can be written to one file or split into several files. The layout is an
 
 When the files have assembly attributes (`[RequiresPreviewFeatures]`, or the ones written with
 [the option that writes all the attributes](#attributes)), the `OneFilePerNamespace` and `OneFilePerType` layouts also
-write an `AssemblyInfo.g.cs` file that declares them. When two files would have the same name, ignoring case (for
-instance for the types `Demo.Foo` and `Demo.foo`), the generation fails instead of losing part of the API: use another
-layout.
+write an `AssemblyInfo.g.cs` file that declares them.
+
+When two files would have the same name, ignoring case, the names are made distinct so that the files are the same on
+every file system. The files are sorted by name, ordinally: the first one keeps its name, and the next ones get a `~2`,
+`~3`... suffix. For instance, the types `Demo.Foo` and `Demo.foo` are written to `Demo.Foo.g.cs` and
+`Demo.foo~2.g.cs`. A C# name cannot contain `~`, so the suffix never gives the name of another file.
 
 A single file is the easiest to review and to check. The other layouts make diffs easier to read for a large API, but
-the files of the types or namespaces you remove stay on disk: see
-[Removed types leave files behind](04-MSBuild.md#removed-types-leave-files-behind).
+the files of the types or namespaces you remove stay on disk unless you turn on the option that deletes them: see
+[Files of removed types](04-MSBuild.md#files-of-removed-types).
 
 ## Order of the declarations
 

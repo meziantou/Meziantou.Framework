@@ -55,6 +55,7 @@ public sealed partial class Glob
                 // These segments consume the rest of the path, whatever it holds
                 case MatchNonEmptyTextSegment:
                 case DirectoryContentSegment when ReferenceEquals(patternSegment, DirectoryContentSegment.IncludingContent):
+                case PathOrContentSegment:
                     return CanMatchLeadingDot(pathReader, matchLeadingDot[i]) ? DirectoryContentMatch.All : DirectoryContentMatch.None;
 
                 // The other segments that consume several path segments depend on the path below the directory
@@ -83,6 +84,7 @@ public sealed partial class Glob
             [RecursiveMatchAllSegment] => matchLeadingDot[0],
             [MatchNonEmptyTextSegment] => matchLeadingDot[0],
             [DirectoryContentSegment segment] when ReferenceEquals(segment, DirectoryContentSegment.IncludingContent) => matchLeadingDot[0],
+            [PathOrContentSegment] => matchLeadingDot[0],
             [RecursiveMatchAllSegment, MatchAllSegment] => matchLeadingDot[0] && matchLeadingDot[1],
             _ => (bool?)null,
         };

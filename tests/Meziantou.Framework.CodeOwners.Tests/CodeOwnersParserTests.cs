@@ -8,9 +8,9 @@ public sealed class CodeOwnersParserTests
 
     private static CodeOwner Role(string name) => CodeOwner.Role(name);
 
-    private static CodeOwnersEntry Entry(string pattern, params CodeOwner[] owners) => new(pattern, owners, section: null, CodeOwnersDialect.GitLab);
+    private static CodeOwnersEntry Entry(string pattern, params CodeOwner[] owners) => new(pattern, pattern, owners, section: null, CodeOwnersDialect.GitLab);
 
-    private static CodeOwnersEntry Entry(string pattern, CodeOwnersSection section, params CodeOwner[] owners) => new(pattern, owners, section, CodeOwnersDialect.GitLab);
+    private static CodeOwnersEntry Entry(string pattern, CodeOwnersSection section, params CodeOwner[] owners) => new(pattern, pattern, owners, section, CodeOwnersDialect.GitLab);
 
     [Fact]
     public void ReadmeExample_Parse()
@@ -35,21 +35,13 @@ public sealed class CodeOwnersParserTests
             CHANGELOG.md
             """, CodeOwnersDialect.GitHub);
 
-        IReadOnlyList<CodeOwner> GetOwners(string path)
-        {
-            CodeOwnersEntry? owningEntry = file.Entries.LastOrDefault(entry => Matches(entry.Pattern, path));
-            return owningEntry?.Owners ?? [];
-        }
+        Assert.Equal("user1", Assert.Single(file.GetOwners("src/Program.cs")).Name);
+        Assert.Equal("docs-team", Assert.Single(file.GetOwners("docs/README.md")).Name);
 
-        Assert.Equal("user1", Assert.Single(GetOwners("src/Program.cs")).Name);
-        Assert.Equal("docs-team", Assert.Single(GetOwners("README.md")).Name);
-
-        // An empty Owners list means the entry explicitly leaves the pattern unowned
-        Assert.Empty(GetOwners("CHANGELOG.md"));
-
-        // The library does not match patterns: this matcher only handles the patterns of this example
-        static bool Matches(string pattern, string path)
-            => pattern == "*" || pattern == path || (pattern.StartsWith("*.", StringComparison.Ordinal) && path.EndsWith(pattern[1..], StringComparison.Ordinal));
+        // The last matching entry wins: CHANGELOG.md matches the 3 patterns, and the last one has no owners
+        CodeOwnersEntry entry = Assert.Single(file.FindEntries("CHANGELOG.md"));
+        Assert.Equal("CHANGELOG.md", entry.Pattern);
+        Assert.Empty(file.GetOwners("CHANGELOG.md"));
         #endregion
     }
 
@@ -912,7 +904,10 @@ public sealed class CodeOwnersParserTests
     [InlineData(CodeOwnersDialect.GitHub, "/src/My\\ Project/ @user1", "/src/My\\ Project/ @user1")]
     [InlineData(CodeOwnersDialect.GitHub, "\\#file.js @user1", "\\#file.js @user1")]
     [InlineData(CodeOwnersDialect.GitHub, "foo\\\\bar\\\tbaz", "foo\\\\bar\\\tbaz")]
-    [InlineData(CodeOwnersDialect.GitHub, "a\\#b\\[c @user1", "a#b[c @user1")]
+    [InlineData(CodeOwnersDialect.GitHub, "a\\#b\\[c @user1", "a\\#b\\[c @user1")]
+    [InlineData(CodeOwnersDialect.GitHub, "\\*.md @user1", "\\*.md @user1")]
+    [InlineData(CodeOwnersDialect.GitHub, "docs\\\n", "docs")]
+    [InlineData(CodeOwnersDialect.GitLab, "docs/\\[a\\].md @user1", "docs/\\[a\\].md @user1")]
     [InlineData(CodeOwnersDialect.GitHub, "[abc].txt @user1", "[abc].txt @user1")]
     [InlineData(CodeOwnersDialect.GitHub, "^[abc].txt @user1", "^[abc].txt @user1")]
     [InlineData(CodeOwnersDialect.GitLab, "\\[abc].txt @user1", "\\[abc].txt @user1")]
@@ -1073,5 +1068,376 @@ public sealed class CodeOwnersParserTests
         Assert.Throws<NotSupportedException>(() => ((IList<CodeOwnersEntry>)file.Entries).Clear());
         Assert.Throws<NotSupportedException>(() => ((IList<CodeOwner>)file.Entries[0].Owners).Clear());
         Assert.Throws<NotSupportedException>(() => ((IList<CodeOwner>)file.Entries[0].Section!.DefaultOwners).Clear());
+    }
+
+    [Fact]
+    public void CodeOwnersFileFindEntriesExample()
+    {
+        #region CodeOwnersFile_FindEntries
+        var file = CodeOwnersFile.Parse("""
+            * @maintainers
+
+            [Backend]
+            *.cs @backend-team
+
+            [Docs]
+            *.md @docs-team
+            /src/ @writers
+            """, CodeOwnersDialect.GitLab);
+
+        // GitLab applies the last matching entry of each section
+        IReadOnlyList<CodeOwnersEntry> entries = file.FindEntries("src/Program.cs");
+        Assert.Equal(["*", "*.cs", "/src/"], entries.Select(entry => entry.Pattern));
+        Assert.Equal([null, "Backend", "Docs"], entries.Select(entry => entry.Section?.Name));
+        #endregion
+    }
+
+    [Fact]
+    public void CodeOwnersFileGetOwnersExample()
+    {
+        #region CodeOwnersFile_GetOwners
+        var file = CodeOwnersFile.Parse("""
+            * @maintainers
+            *.md @docs-team
+            /docs/internal/
+            """, CodeOwnersDialect.GitHub);
+
+        Assert.Equal(["maintainers"], file.GetOwners("src/Program.cs").Select(owner => owner.Name));
+        Assert.Equal(["docs-team"], file.GetOwners("docs/README.md").Select(owner => owner.Name));
+
+        // The last matching entry has no owners: the path is unowned
+        Assert.Empty(file.GetOwners("docs/internal/notes.md"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_GitHubMatching()
+    {
+        #region CodeOwners_GitHubMatching
+        var file = CodeOwnersFile.Parse("""
+            /build/logs/ @doctocat
+            docs/* docs@example.com
+            **/logs @octocat
+            /apps/github @github-team
+            """, CodeOwnersDialect.GitHub);
+
+        // A pattern that matches a directory owns everything below it
+        Assert.Equal("/apps/github", Assert.Single(file.FindEntries("apps/github/src/main.js")).Pattern);
+        Assert.Equal("**/logs", Assert.Single(file.FindEntries("deeply/nested/logs/app.log")).Pattern);
+
+        // Except a pattern that ends with '/*': it only matches the files of the directory
+        Assert.Equal("docs/*", Assert.Single(file.FindEntries("docs/getting-started.md")).Pattern);
+        Assert.Empty(file.FindEntries("docs/build-app/troubleshooting.md"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_GitLabMatching()
+    {
+        #region CodeOwners_GitLabMatching
+        var file = CodeOwnersFile.Parse("""
+            /docs @docs-file-owner
+            /docs/ @docs-team
+            /src/** @src-team
+            """, CodeOwnersDialect.GitLab);
+
+        // Without a trailing '/', the pattern only matches a file
+        Assert.Equal(["docs-file-owner"], file.GetOwners("docs").Select(owner => owner.Name));
+        Assert.Equal(["docs-team"], file.GetOwners("docs/guide/index.md").Select(owner => owner.Name));
+
+        // '/**' at the end only matches the names directly in the directory
+        Assert.Equal(["src-team"], file.GetOwners("src/Program.cs").Select(owner => owner.Name));
+        Assert.Empty(file.GetOwners("src/Api/Controller.cs"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_GitLabExclusion()
+    {
+        #region CodeOwners_GitLabExclusion
+        var file = CodeOwnersFile.Parse("""
+            [Ruby]
+            !/vendor/
+            *.rb @ruby-team
+
+            [Vendor]
+            /vendor/ @vendor-team
+            """, CodeOwnersDialect.GitLab);
+
+        // An exclusion removes its section, whatever the order of the entries
+        Assert.True(file.Entries[0].IsExclusion);
+        Assert.Equal(["ruby-team"], file.GetOwners("app/models/user.rb").Select(owner => owner.Name));
+        Assert.Equal(["vendor-team"], file.GetOwners("vendor/gems/gem.rb").Select(owner => owner.Name));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("*", "README.md", true)]
+    [InlineData("*", "src/a/b.cs", true)]
+    [InlineData("*", ".github/workflows/ci.yml", true)]
+    [InlineData("*.js", "src/app.js", true)]
+    [InlineData("*.js", "app.jsx", false)]
+    [InlineData("*.js", "lib.js/index.ts", true)]
+    [InlineData("*.MD", "README.md", false)]
+    [InlineData("/build/logs/", "build/logs/a.log", true)]
+    [InlineData("/build/logs/", "build/logs/2024/a.log", true)]
+    [InlineData("/build/logs/", "src/build/logs/a.log", false)]
+    [InlineData("/build/logs/", "build/logs", false)]
+    [InlineData("docs/*", "docs/getting-started.md", true)]
+    [InlineData("docs/*", "docs/build-app/troubleshooting.md", false)]
+    [InlineData("docs/*", "src/docs/a.md", false)]
+    [InlineData("/*", "README.md", true)]
+    [InlineData("/*", "src/README.md", false)]
+    [InlineData("apps/", "apps/a.js", true)]
+    [InlineData("apps/", "src/apps/a/b.js", true)]
+    [InlineData("apps/", "apps", false)]
+    [InlineData("docs", "docs", true)]
+    [InlineData("docs", "src/docs/a.md", true)]
+    [InlineData("docs", "docs2/a.md", false)]
+    [InlineData("**/logs", "logs/a.log", true)]
+    [InlineData("**/logs", "deeply/nested/logs/a.log", true)]
+    [InlineData("/apps/github", "apps/github", true)]
+    [InlineData("/apps/github", "apps/github/a/b.js", true)]
+    [InlineData("/apps/github", "apps/github2/a.js", false)]
+    [InlineData("/apps/github", "src/apps/github/a.js", false)]
+    [InlineData("/docs/**", "docs/a/b.md", true)]
+    [InlineData("src/**/test", "src/test/a.cs", true)]
+    [InlineData("src/**/test", "src/a/b/test/c.cs", true)]
+    [InlineData("src/**/test", "lib/src/test/c.cs", false)]
+    [InlineData("a?c", "abc", true)]
+    [InlineData("a?c", "a/c", false)]
+    [InlineData("[abc].txt", "[abc].txt", true)]
+    [InlineData("[abc].txt", "a.txt", false)]
+    [InlineData("!a.txt", "!a.txt", true)]
+    [InlineData("!a.txt", "a.txt", false)]
+    [InlineData("\\*.md", "*.md", true)]
+    [InlineData("\\*.md", "README.md", false)]
+    [InlineData("My\\ Project/", "My Project/a.cs", true)]
+    [InlineData("\\#notes.txt", "#notes.txt", true)]
+    [InlineData("*.js", "/src/app.js", true)]
+    [InlineData("*", "", false)]
+    [InlineData("/docs", "docs/index.md", true)]
+    [InlineData("docs/*.md", "src/docs/index.md", false)]
+    [InlineData("/src/**", "src/Api/Program.cs", true)]
+    [InlineData("/[ab].txt", "a.txt", false)]
+    [InlineData("src\\\\a.cs", "src/a.cs", false)]
+    public void GitHubPatternMatching(string pattern, string path, bool expected)
+    {
+        var entry = Assert.Single(CodeOwnersFile.Parse(pattern + " @owner", CodeOwnersDialect.GitHub).Entries);
+        Assert.Equal(expected, entry.IsMatch(path));
+        Assert.False(entry.IsExclusion);
+    }
+
+    [Theory]
+    [InlineData("*", "README.md", true)]
+    [InlineData("*", "src/a/b.cs", true)]
+    [InlineData("*", ".gitlab/ci.yml", true)]
+    [InlineData("*.md", "docs/README.md", true)]
+    [InlineData("*.md", ".github/a.md", true)]
+    [InlineData("*.md", "a.md/b.txt", false)]
+    [InlineData("docs", "docs", true)]
+    [InlineData("docs", "src/docs", true)]
+    [InlineData("docs", "docs/a.md", false)]
+    [InlineData("/docs", "docs", true)]
+    [InlineData("/docs", "docs/a.md", false)]
+    [InlineData("/docs", "src/docs", false)]
+    [InlineData("docs/", "docs/a/b.md", true)]
+    [InlineData("docs/", "src/docs/a.md", true)]
+    [InlineData("/docs/", "docs/a/b.md", true)]
+    [InlineData("/docs/", "src/docs/a.md", false)]
+    [InlineData("/docs/*", "docs/a.md", true)]
+    [InlineData("/docs/*", "docs/a/b.md", false)]
+    [InlineData("/docs/**", "docs/a.md", true)]
+    [InlineData("/docs/**", "docs/a/b.md", false)]
+    [InlineData("/docs/**/*.md", "docs/a.md", true)]
+    [InlineData("/docs/**/*.md", "docs/a/b/c.md", true)]
+    [InlineData("docs/*.md", "docs/a.md", true)]
+    [InlineData("docs/*.md", "src/docs/a.md", true)]
+    [InlineData("/[ab].txt", "a.txt", true)]
+    [InlineData("/[ab].txt", "c.txt", false)]
+    [InlineData("/[!ab].txt", "c.txt", true)]
+    [InlineData("*.RB", "a.rb", false)]
+    [InlineData("\\*.md", "*.md", true)]
+    [InlineData("\\*.md", "README.md", false)]
+    [InlineData("\\!a.txt", "!a.txt", true)]
+    [InlineData("/", "a/b.txt", true)]
+    [InlineData("*.md", "/docs/a.md", true)]
+    [InlineData("/docs", "docs/index.md", false)]
+    [InlineData("docs/*.md", "src/docs/index.md", true)]
+    [InlineData("/src/**", "src/Api/Program.cs", false)]
+    public void GitLabPatternMatching(string pattern, string path, bool expected)
+    {
+        var entry = Assert.Single(CodeOwnersFile.Parse(pattern + " @owner", CodeOwnersDialect.GitLab).Entries);
+        Assert.Equal(expected, entry.IsMatch(path));
+        Assert.False(entry.IsExclusion);
+    }
+
+    [Theory]
+    [InlineData("!*.md", "a.md", true)]
+    [InlineData("!/vendor/", "vendor/a.rb", true)]
+    [InlineData("!/vendor/", "app/a.rb", false)]
+    [InlineData("!", "README.md", true)]
+    [InlineData("!", "docs/a/b.md", true)]
+    [InlineData("!", ".gitlab/ci.yml", true)]
+    public void GitLabExclusionPatternMatching(string pattern, string path, bool expected)
+    {
+        var entry = Assert.Single(CodeOwnersFile.Parse(pattern, CodeOwnersDialect.GitLab).Entries);
+        Assert.True(entry.IsExclusion);
+        Assert.Equal(pattern, entry.Pattern);
+        Assert.Equal(expected, entry.IsMatch(path));
+    }
+
+    [Fact]
+    public void GitHubFindEntriesReturnsTheLastMatchingEntry()
+    {
+        var file = CodeOwnersFile.Parse("""
+            * @global
+            *.js @js-owner
+            /apps/ @octocat
+            /apps/github
+            """, CodeOwnersDialect.GitHub);
+
+        Assert.Same(file.Entries[0], Assert.Single(file.FindEntries("README.md")));
+        Assert.Same(file.Entries[1], Assert.Single(file.FindEntries("src/app.js")));
+        Assert.Same(file.Entries[2], Assert.Single(file.FindEntries("apps/app.js")));
+        Assert.Same(file.Entries[3], Assert.Single(file.FindEntries("apps/github/app.js")));
+        Assert.Empty(file.GetOwners("apps/github/app.js"));
+    }
+
+    [Fact]
+    public void GitHubFindEntriesReturnsNothingWhenNoEntryMatches()
+    {
+        var file = CodeOwnersFile.Parse("*.js @js-owner", CodeOwnersDialect.GitHub);
+
+        Assert.Empty(file.FindEntries("README.md"));
+        Assert.Empty(file.GetOwners("README.md"));
+    }
+
+    [Fact]
+    public void GitHubHasNoSections()
+    {
+        var file = CodeOwnersFile.Parse("""
+            * @global
+            [Docs]
+            *.md @docs
+            """, CodeOwnersDialect.GitHub);
+
+        Assert.Equal(["docs"], file.GetOwners("README.md").Select(owner => owner.Name));
+    }
+
+    [Fact]
+    public void GitLabMergesTheSectionsWithTheSameName()
+    {
+        var file = CodeOwnersFile.Parse("""
+            [Docs]
+            *.md @first
+            [Backend]
+            *.cs @backend
+            [docs]
+            /docs/ @second
+            """, CodeOwnersDialect.GitLab);
+
+        Assert.Equal(["second"], file.GetOwners("docs/README.md").Select(owner => owner.Name));
+        Assert.Equal(["first"], file.GetOwners("README.md").Select(owner => owner.Name));
+    }
+
+    [Fact]
+    public void GitLabOrdersTheEntriesByTheFirstHeaderOfTheirSection()
+    {
+        var file = CodeOwnersFile.Parse("""
+            [Docs]
+            /src/README.md @first
+            [Backend]
+            /src/ @backend
+            [docs]
+            *.md @second
+            """, CodeOwnersDialect.GitLab);
+
+        Assert.Equal(["second", "backend"], file.GetOwners("src/README.md").Select(owner => owner.Name));
+    }
+
+    [Fact]
+    public void GitLabKeepsTheDefaultSectionApart()
+    {
+        var file = CodeOwnersFile.Parse("""
+            *.md @default
+            [Docs]
+            *.md @docs
+            """, CodeOwnersDialect.GitLab);
+
+        Assert.Equal(["default", "docs"], file.GetOwners("README.md").Select(owner => owner.Name));
+    }
+
+    [Fact]
+    public void GitLabExclusionOnlyRemovesItsSection()
+    {
+        var file = CodeOwnersFile.Parse("""
+            * @default
+            [Docs]
+            *.md @docs
+            !/CHANGELOG.md
+            [Other]
+            *.md @other
+            """, CodeOwnersDialect.GitLab);
+
+        Assert.Equal(["default", "other"], file.GetOwners("CHANGELOG.md").Select(owner => owner.Name));
+        Assert.Equal(["default", "docs", "other"], file.GetOwners("README.md").Select(owner => owner.Name));
+    }
+
+    [Fact]
+    public void GitLabExclusionWithoutPatternRemovesItsSectionForEveryPath()
+    {
+        // GitLab normalizes the empty pattern left by a lone '!' to "/**/**/*", which matches every path
+        var file = CodeOwnersFile.Parse("""
+            * @default
+            [Docs]
+            *.md @docs-team
+            !
+            """, CodeOwnersDialect.GitLab);
+
+        Assert.True(file.Entries[^1].IsExclusion);
+        Assert.Equal(["default"], file.GetOwners("README.md").Select(owner => owner.Name));
+        Assert.Equal(["default"], file.GetOwners("docs/guide/index.md").Select(owner => owner.Name));
+    }
+
+    [Fact]
+    public void GitLabEscapedExclamationMarkIsNotAnExclusion()
+    {
+        var file = CodeOwnersFile.Parse("\\!important.txt @owner", CodeOwnersDialect.GitLab);
+
+        Assert.False(file.Entries[0].IsExclusion);
+        Assert.Equal("!important.txt", file.Entries[0].Pattern);
+        Assert.Equal(["owner"], file.GetOwners("!important.txt").Select(owner => owner.Name));
+    }
+
+    [Fact]
+    public void GetOwnersRemovesDuplicates()
+    {
+        var file = CodeOwnersFile.Parse("""
+            * @maintainers
+            [Docs]
+            *.md @maintainers @docs
+            """, CodeOwnersDialect.GitLab);
+
+        Assert.Equal(["maintainers", "docs"], file.GetOwners("README.md").Select(owner => owner.Name));
+    }
+
+    [Fact]
+    public void GetOwnersRemovesTheDuplicatesOfOneEntry()
+    {
+        var file = CodeOwnersFile.Parse("* @owner @owner", CodeOwnersDialect.GitHub);
+
+        Assert.Equal(["owner"], file.GetOwners("README.md").Select(owner => owner.Name));
+        Assert.Equal(2, file.Entries[0].Owners.Count);
+    }
+
+    [Fact]
+    public void FindEntriesAndIsMatchRejectNull()
+    {
+        var file = CodeOwnersFile.Parse("* @owner", CodeOwnersDialect.GitHub);
+
+        Assert.Throws<ArgumentNullException>("path", () => file.FindEntries(null!));
+        Assert.Throws<ArgumentNullException>("path", () => file.GetOwners(null!));
+        Assert.Throws<ArgumentNullException>("path", () => file.Entries[0].IsMatch(null!));
     }
 }

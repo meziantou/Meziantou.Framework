@@ -237,6 +237,21 @@ public class GlobParserTests
     [InlineData(GlobDialect.Posix, "[[=a]x", "[x", "=x", "ax", "[=a]x")]
     [InlineData(GlobDialect.PosixPath, @"[[=]\=]", "[=]", "==]", "[==]")]
     [InlineData(GlobDialect.PosixPath, "//a/", "//a/", "/a/")]
+    [InlineData(GlobDialect.GitHubCodeOwners, "docs", "docs", "a/docs/b", "docs2")]
+    [InlineData(GlobDialect.GitHubCodeOwners, "/docs", "docs/a", "a/docs")]
+    [InlineData(GlobDialect.GitHubCodeOwners, "docs/", "a/docs/b", "docs")]
+    [InlineData(GlobDialect.GitHubCodeOwners, "docs/*", "docs/a", "docs/a/b")]
+    [InlineData(GlobDialect.GitHubCodeOwners, "*", "a/b", "a")]
+    [InlineData(GlobDialect.GitHubCodeOwners, "[ab]", "[ab]", "a")]
+    [InlineData(GlobDialect.GitHubCodeOwners, "!a", "!a", "a")]
+    [InlineData(GlobDialect.GitLabCodeOwners, "docs", "a/docs", "docs/a")]
+    [InlineData(GlobDialect.GitLabCodeOwners, "/docs", "docs", "a/docs")]
+    [InlineData(GlobDialect.GitLabCodeOwners, "docs/", "a/docs/b", "docs")]
+    [InlineData(GlobDialect.GitLabCodeOwners, "/docs/**", "docs/a", "docs/a/b")]
+    [InlineData(GlobDialect.GitLabCodeOwners, "/", "a/b")]
+    [InlineData(GlobDialect.GitLabCodeOwners, "/[z-a]", "z", "a", "m")]
+    [InlineData(GlobDialect.GitLabCodeOwners, @"a\", "a", "x/a", "ab")]
+    [InlineData(GlobDialect.GitLabCodeOwners, "[!]", "a", "ab")]
     public void ToStringParsesBackToAnEquivalentGlob(GlobDialect dialect, string pattern, params string[] paths)
     {
         var glob = Glob.Parse(pattern, dialect);
@@ -248,6 +263,17 @@ public class GlobParserTests
         {
             Assert.Equal(glob.IsMatch(path), roundTripped.IsMatch(path));
         }
+    }
+
+    [Fact]
+    public void GitLabCodeOwnersToStringKeepsAnEmptyLastSegment()
+    {
+        // fnmatch ignores a trailing '\', so "a/\" ends with an empty segment and matches no file. Written with a
+        // trailing '/', the pattern would match the content of 'a'.
+        var glob = Glob.Parse(@"a/\", GlobDialect.GitLabCodeOwners);
+        Assert.False(glob.IsMatch("a/b"));
+        Assert.Equal(@"**/a/\", glob.ToString());
+        Assert.False(Glob.Parse(glob.ToString(), GlobDialect.GitLabCodeOwners).IsMatch("a/b"));
     }
 
     [Fact]

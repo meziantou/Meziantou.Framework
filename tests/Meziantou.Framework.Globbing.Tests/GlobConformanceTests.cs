@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Globbing.Tests;
 
 /// <summary>
 /// Runs corpora whose expected results come from the reference implementation of each dialect: fnmatch(3) for the
-/// POSIX dialects, git for gitignore content and MSBuild for its item specs. See <c>files/conformance.md</c> for how
+/// POSIX dialects, git for gitignore content, MSBuild for its item specs and GitLab's CODEOWNERS matching. See <c>files/conformance.md</c> for how
 /// they were produced and for the few cases where the library differs on purpose.
 /// </summary>
 public sealed class GlobConformanceTests
@@ -122,6 +122,36 @@ public sealed class GlobConformanceTests
         }
 
         Assert.True(caseCount > 500);
+        AssertNoFailure(failures);
+    }
+
+    [Fact]
+    public void GitLabCodeOwners()
+    {
+        using var document = JsonDocument.Parse(ReadResource("gitlab-codeowners-conformance.json"));
+        var paths = document.RootElement.GetProperty("paths").EnumerateArray().Select(path => path.GetString()!).ToArray();
+
+        var failures = new List<string>();
+        var caseCount = 0;
+        foreach (var testCase in document.RootElement.GetProperty("cases").EnumerateArray())
+        {
+            var pattern = testCase.GetProperty("pattern").GetString()!;
+            var matches = testCase.GetProperty("matches").EnumerateArray().Select(index => index.GetInt32()).ToHashSet();
+            caseCount++;
+
+            // A pattern that the library rejects must not match anything
+            _ = Glob.TryParse(pattern, GlobDialect.GitLabCodeOwners, GlobOptions.None, out var glob);
+            for (var i = 0; i < paths.Length; i++)
+            {
+                var expected = matches.Contains(i);
+                if ((glob?.IsMatch(paths[i]) ?? false) != expected)
+                {
+                    failures.Add($"'{pattern}' should {(expected ? "" : "not ")}match '{paths[i]}'{(glob is null ? " (the pattern is rejected)" : "")}");
+                }
+            }
+        }
+
+        Assert.True(caseCount > 1000);
         AssertNoFailure(failures);
     }
 

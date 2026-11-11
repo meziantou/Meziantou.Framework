@@ -67,6 +67,8 @@ namespace Meziantou.Framework.Globbing
         MSBuild = 2,
         Posix = 3,
         PosixPath = 4,
+        GitHubCodeOwners = 5,
+        GitLabCodeOwners = 6,
     }
 
     public static class GlobExtensions

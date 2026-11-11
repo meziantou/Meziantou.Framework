@@ -17,7 +17,7 @@ specs and POSIX `fnmatch`.
   [Combining patterns](07-CombiningPatterns.md).
 - **Read `.gitignore` files**: load the content of a `.gitignore` file and check which paths git ignores. See
   [Reading .gitignore files](08-GitIgnore.md).
-- **Use the syntax your users know**: parse a pattern as git, MSBuild or `fnmatch` would. See
+- **Use the syntax your users know**: parse a pattern as git, MSBuild, `fnmatch`, GitHub or GitLab would. See
   [Dialects](04-Dialects.md).
 
 ## Principles
@@ -40,4 +40,5 @@ and the `IsMatch` and [EnumerateFiles](cref:Meziantou.Framework.Globbing.GlobExt
 
 - [Getting started](02-GettingStarted.md): install the package, match a path and enumerate files.
 - [Pattern syntax](03-PatternSyntax.md): the wildcards, and how files, directories and hidden names are matched.
-- [Dialects](04-Dialects.md): choose between the standard syntax and the ones of git, MSBuild and `fnmatch`.
+- [Dialects](04-Dialects.md): choose between the standard syntax and the ones of git, MSBuild, `fnmatch` and
+  CODEOWNERS files.

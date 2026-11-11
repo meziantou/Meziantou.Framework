@@ -17,7 +17,7 @@ Assert.Equal("docs@example.com", file.Entries[0].Owners[1].Name);
 ```
 <!-- endref -->
 
-Entries are returned in file order, and CODEOWNERS resolution is last-match-wins, so the owners of a path are those of the last entry whose pattern matches it:
+Entries are returned in file order, and CODEOWNERS resolution is last-match-wins, so the owners of a path are those of the last entry whose pattern matches it. `GetOwners` and `FindEntries` match the patterns as the host of the dialect does (gitignore-like rules for GitHub; per-section matching and exclusions for GitLab):
 
 <!-- ref:../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs;region=CodeOwners_LastMatchWins;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -27,21 +27,13 @@ var file = CodeOwnersFile.Parse("""
     CHANGELOG.md
     """, CodeOwnersDialect.GitHub);
 
-IReadOnlyList<CodeOwner> GetOwners(string path)
-{
-    CodeOwnersEntry? owningEntry = file.Entries.LastOrDefault(entry => Matches(entry.Pattern, path));
-    return owningEntry?.Owners ?? [];
-}
+Assert.Equal("user1", Assert.Single(file.GetOwners("src/Program.cs")).Name);
+Assert.Equal("docs-team", Assert.Single(file.GetOwners("docs/README.md")).Name);
 
-Assert.Equal("user1", Assert.Single(GetOwners("src/Program.cs")).Name);
-Assert.Equal("docs-team", Assert.Single(GetOwners("README.md")).Name);
-
-// An empty Owners list means the entry explicitly leaves the pattern unowned
-Assert.Empty(GetOwners("CHANGELOG.md"));
-
-// The library does not match patterns: this matcher only handles the patterns of this example
-static bool Matches(string pattern, string path)
-    => pattern == "*" || pattern == path || (pattern.StartsWith("*.", StringComparison.Ordinal) && path.EndsWith(pattern[1..], StringComparison.Ordinal));
+// The last matching entry wins: CHANGELOG.md matches the 3 patterns, and the last one has no owners
+CodeOwnersEntry entry = Assert.Single(file.FindEntries("CHANGELOG.md"));
+Assert.Equal("CHANGELOG.md", entry.Pattern);
+Assert.Empty(file.GetOwners("CHANGELOG.md"));
 ```
 <!-- endref -->
 

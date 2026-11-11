@@ -367,6 +367,118 @@ public class GlobTests
     }
 
     [Fact]
+    public void DocumentationExample_GitHubCodeOwnersDialect()
+    {
+        #region Glob_GitHubCodeOwnersDialect
+        // A pattern that matches a directory also matches every path below it
+        Assert.True(Glob.Parse("/apps/github", GlobDialect.GitHubCodeOwners).IsMatch("apps/github/src/main.js"));
+        Assert.True(Glob.Parse("**/logs", GlobDialect.GitHubCodeOwners).IsMatch("deeply/nested/logs/app.log"));
+
+        // Except a pattern whose last segment is '*': it only matches the names directly in the directory
+        Assert.True(Glob.Parse("docs/*", GlobDialect.GitHubCodeOwners).IsMatch("docs/getting-started.md"));
+        Assert.False(Glob.Parse("docs/*", GlobDialect.GitHubCodeOwners).IsMatch("docs/build-app/troubleshooting.md"));
+
+        // Brackets and a leading '!' are ordinary characters
+        Assert.True(Glob.Parse("[ab].txt", GlobDialect.GitHubCodeOwners).IsMatch("[ab].txt"));
+        Assert.False(Glob.Parse("[ab].txt", GlobDialect.GitHubCodeOwners).IsMatch("a.txt"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_GitLabCodeOwnersDialect()
+    {
+        #region Glob_GitLabCodeOwnersDialect
+        // A pattern without a leading '/' matches at any depth, even when it holds a '/'
+        Assert.True(Glob.Parse("docs/*.md", GlobDialect.GitLabCodeOwners).IsMatch("src/docs/index.md"));
+
+        // Without a trailing '/', a pattern only matches that path, not the paths below it
+        Assert.True(Glob.Parse("/docs", GlobDialect.GitLabCodeOwners).IsMatch("docs"));
+        Assert.False(Glob.Parse("/docs", GlobDialect.GitLabCodeOwners).IsMatch("docs/index.md"));
+        Assert.True(Glob.Parse("/docs/", GlobDialect.GitLabCodeOwners).IsMatch("docs/guide/index.md"));
+
+        // '**' only matches several directories when a '/' follows it
+        Assert.True(Glob.Parse("/src/**/*.cs", GlobDialect.GitLabCodeOwners).IsMatch("src/Api/Program.cs"));
+        Assert.False(Glob.Parse("/src/**", GlobDialect.GitLabCodeOwners).IsMatch("src/Api/Program.cs"));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("*", "a/b/c.txt", true)]
+    [InlineData("*", ".github/a.yml", true)]
+    [InlineData("**", "a/b", true)]
+    [InlineData("*.js", "lib.js/index.ts", true)]
+    [InlineData("*.MD", "README.md", false)]
+    [InlineData("/build/logs/", "build/logs/a/b.log", true)]
+    [InlineData("/build/logs/", "build/logs", false)]
+    [InlineData("apps/", "src/apps/a.js", true)]
+    [InlineData("/*", "README.md", true)]
+    [InlineData("/*", "src/README.md", false)]
+    [InlineData("docs/*", "src/docs/a.md", false)]
+    [InlineData("docs/**", "docs/a/b.md", true)]
+    [InlineData("src/**/test", "src/a/b/test/c.cs", true)]
+    [InlineData("a?c", "a/c", false)]
+    [InlineData("!a.txt", "!a.txt", true)]
+    [InlineData(@"\*.md", "*.md", true)]
+    [InlineData(@"\*.md", "a.md", false)]
+    [InlineData("***", "a/b", true)]
+    public void GitHubCodeOwnersDialect(string pattern, string path, bool expected)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.GitHubCodeOwners);
+        Assert.Equal(expected, glob.IsMatch(path.AsSpan(), [], PathItemType.File));
+    }
+
+    [Theory]
+    [InlineData("/")]
+    [InlineData("a//b")]
+    public void GitHubCodeOwnersDialectRejectsPatternsWithoutAName(string pattern)
+    {
+        Assert.False(Glob.TryParse(pattern, GlobDialect.GitHubCodeOwners, GlobOptions.None, out _));
+    }
+
+    [Theory]
+    [InlineData("/", "a/b.txt", true)]
+    [InlineData("*", ".gitlab/ci.yml", true)]
+    [InlineData("**", "a/b", true)]
+    [InlineData("docs", "src/docs", true)]
+    [InlineData("docs", "docs/a.md", false)]
+    [InlineData("docs/", "src/docs/a/b.md", true)]
+    [InlineData("/docs/**/*.md", "docs/a.md", true)]
+    [InlineData("/docs/**/", "docs/a/b.md", true)]
+    [InlineData("/[ab].txt", "a.txt", true)]
+    [InlineData("/[!ab].txt", "c.txt", true)]
+    [InlineData("/[^ab].txt", "a.txt", false)]
+    [InlineData("/[z-a]", "z", true)]
+    [InlineData("/[z-a]", "a", true)]
+    [InlineData("/[z-a]", "m", false)]
+    [InlineData("/[[:digit:]]", "1", false)]
+    [InlineData("/[[:digit:]]", ":]", true)]
+    [InlineData("/a/***/b", "a/x/b", true)]
+    [InlineData("/a/***/b", "a/x/y/b", false)]
+    [InlineData("!a", "!a", true)]
+    [InlineData("a//", "a/b", false)]
+    public void GitLabCodeOwnersDialect(string pattern, string path, bool expected)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.GitLabCodeOwners);
+        Assert.Equal(expected, glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData(GlobDialect.GitHubCodeOwners, "docs/", "src/docs/a.md")]
+    [InlineData(GlobDialect.GitHubCodeOwners, "/docs", "docs/a/b.md")]
+    [InlineData(GlobDialect.GitLabCodeOwners, "docs/", "src/docs/a.md")]
+    [InlineData(GlobDialect.GitLabCodeOwners, "/docs/", "docs/a/b.md")]
+    public void CodeOwnersDialectsEnumerateTheContentOfADirectory(GlobDialect dialect, string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, dialect);
+
+        Assert.True(glob.IsMatch(path));
+        for (var index = path.IndexOf('/', StringComparison.Ordinal); index > 0; index = path.IndexOf('/', index + 1, StringComparison.Ordinal))
+        {
+            Assert.True(glob.IsPartialMatch(path[..index]));
+        }
+    }
+
+    [Fact]
     public void DocumentationExample_MSBuildDialect()
     {
         #region Glob_MSBuildDialect

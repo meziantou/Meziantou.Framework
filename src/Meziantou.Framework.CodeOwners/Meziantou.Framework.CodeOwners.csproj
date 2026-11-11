@@ -2,12 +2,13 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Description>CODEOWNERS file parser</Description>
+    <Description>CODEOWNERS file parser and matcher</Description>
     <PackageTags>codeowners, github, gitlab, git, parser</PackageTags>
     <Version>7.0.4</Version>
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
     <ProjectReference Include="../Meziantou.Framework.ValueStringBuilder/Meziantou.Framework.ValueStringBuilder.csproj" />
   </ItemGroup>
 

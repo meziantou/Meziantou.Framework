@@ -9,7 +9,7 @@ internal static class SceneGeometry
     /// half the width times the square root of 2. The filters of the children (blurs, shadows) extend their bounds; the
     /// filter of the element does not. The rectangle of a text, before its rotation, is given by <paramref name="measureText"/>.
     /// </remarks>
-    public static SceneBounds? GetBounds(SceneElement element, Func<SceneText, SceneBounds?> measureText)
+    public static SceneBounds? GetBounds(SceneElement element, Func<SceneText, SceneBounds?> measureText, bool applyClips = true)
     {
         if (!(element.Opacity > 0))
             return null;
@@ -35,12 +35,12 @@ internal static class SceneGeometry
                     box = Transform(box, transform);
                 }
 
-                if (group.Clip is { } clip)
+                if (applyClips && group.Clip is { } clip)
                 {
                     box = Intersect(box, clip);
                 }
 
-                if (group.ClipPath is { } clipPath)
+                if (applyClips && group.ClipPath is { } clipPath)
                 {
                     if (GetPathBounds(clipPath) is not { } clipBounds)
                         return null;

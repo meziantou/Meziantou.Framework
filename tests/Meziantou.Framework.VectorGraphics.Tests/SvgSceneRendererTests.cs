@@ -410,6 +410,19 @@ public sealed class SvgSceneRendererTests
         Assert.Throws<ArgumentNullException>("measureText", () => text.GetBounds(null!));
     }
 
+    [Fact]
+    public void FilterRegionsOfGroupsIgnoreTheirOwnClips()
+    {
+        // The clip of the group wraps its filtered output: the shadow, 60 units right of the rectangle, is in the clip
+        var scene = new Scene(200, 100, "sans-serif");
+        var group = scene.Root.Add(new SceneGroup { Clip = new SceneBounds(100, 0, 50, 50), Filter = new SceneDropShadowFilter(60, 0, 0, SceneColor.Black) });
+        group.Add(new SceneRectangle(40, 10, 20, 20) { Fill = SceneColor.Black });
+        var svg = SvgSceneRenderer.Render(scene);
+        Assert.Contains("<filter id=\"scene-filter0\" filterUnits=\"userSpaceOnUse\" x=\"-21\" y=\"-51\" width=\"142\" height=\"142\"", svg, StringComparison.Ordinal);
+        Assert.Null(group.GetBounds(_ => null));
+        Assert.Equal(new SceneBounds(40, 10, 20, 20), group.GetBounds(_ => null, applyClips: false));
+    }
+
     private static Scene Single(SceneElement element)
     {
         var scene = new Scene(10, 10, "sans-serif");

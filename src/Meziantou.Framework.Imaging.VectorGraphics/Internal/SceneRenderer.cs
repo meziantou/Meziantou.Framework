@@ -125,7 +125,8 @@ internal static class SceneRenderer
                 // it applies to the bounds of the element only, not to the whole canvas
                 if (colorMatrix.Values[19] != 0)
                 {
-                    if (GetBounds(element, context) is not { } region)
+                    // The filter applies inside the clips of the element: its region is what it draws before them
+                    if (GetBounds(element, context, applyClips: false) is not { } region)
                         break;
 
                     canvas.Clip(region.Inflate(1), (element, context, colorMatrix, action), static (canvas, state) => canvas.Filter(new ColorMatrix([.. state.colorMatrix.Values]), (state.element, state.context), state.action));
@@ -148,7 +149,7 @@ internal static class SceneRenderer
     }
 
     /// <summary>Gets a rectangle that contains what an element draws, with the filters of its children, in the coordinates of its parent.</summary>
-    private static RectangleD? GetBounds(SceneElement element, DrawContext context)
+    private static RectangleD? GetBounds(SceneElement element, DrawContext context, bool applyClips)
     {
         var bounds = element.GetBounds(text =>
         {
@@ -181,7 +182,7 @@ internal static class SceneRenderer
             }
 
             return area is { } value ? new SceneBounds(value.X, value.Y, value.Width, value.Height) : null;
-        });
+        }, applyClips);
 
         return bounds is { } value ? new RectangleD(value.X, value.Y, value.Width, value.Height) : null;
     }

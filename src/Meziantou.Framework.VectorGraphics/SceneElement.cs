@@ -68,15 +68,20 @@ public abstract class SceneElement
     /// Gives the rectangle of a text before its rotation, in the coordinates of its parent, or <see langword="null"/> when
     /// it draws nothing: the size of a text depends on the fonts of the renderer.
     /// </param>
+    /// <param name="applyClips">
+    /// Whether a group applies its clips (<see cref="SceneGroup.Clip"/>, <see cref="SceneGroup.ClipPath"/>). The filter of
+    /// a group applies before its clips: the region of its filter is the rectangle without them.
+    /// </param>
     /// <returns>The rectangle, or <see langword="null"/>.</returns>
     /// <remarks>
     /// The rectangle contains the strokes, with their joins and their caps, and the blurs and the shadows of the
-    /// children; not the filter of the element itself. A group applies its transform and its clips.
+    /// children; not the filter of the element itself. A group applies its transform, and its clips unless
+    /// <paramref name="applyClips"/> is <see langword="false"/>.
     /// </remarks>
-    public SceneBounds? GetBounds(Func<SceneText, SceneBounds?> measureText)
+    public SceneBounds? GetBounds(Func<SceneText, SceneBounds?> measureText, bool applyClips = true)
     {
         ArgumentNullException.ThrowIfNull(measureText);
-        return SceneGeometry.GetBounds(this, measureText);
+        return SceneGeometry.GetBounds(this, measureText, applyClips);
     }
 
     /// <summary>Indicates whether a name is a valid name of a <c>data-*</c> attribute: lowercase ASCII letters, digits, hyphens, underscores and dots, without the <c>data-</c> prefix.</summary>

@@ -203,12 +203,15 @@ public static class SvgSceneRenderer
                 };
 
                 definitions.Append("<filter id=\"").Append(Escape(id)).Append('"');
+                // The filter applies before the clips of the element, which wrap its output
                 var hasText = false;
-                var bounds = element.GetBounds(_ =>
-                {
-                    hasText = true;
-                    return null;
-                });
+                var bounds = element.GetBounds(
+                    _ =>
+                    {
+                        hasText = true;
+                        return null;
+                    },
+                    applyClips: false);
                 if (!hasText)
                 {
                     var region = SceneGeometry.Inflate(bounds ?? default, (3 * deviation) + Math.Max(Math.Abs(offsetX), Math.Abs(offsetY)) + 1);

@@ -41,19 +41,27 @@ The initials are centered with the metrics of the measurer, so pass the measurer
 [CreateMeasurer](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageRenderer.CreateMeasurer) with the same
 [SceneImageOptions](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions) as
 [ToImage](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageRenderer.ToImage). Without a measurer, the scene is
-laid out with the metrics of Helvetica ([AfmTextMeasurer](cref:Meziantou.Framework.VectorGraphics.AfmTextMeasurer)).
+laid out with the metrics of Helvetica ([AfmTextMeasurer](cref:Meziantou.Framework.VectorGraphics.AfmTextMeasurer)),
+for an SVG: the capital letters are centered, whatever font of the Helvetica and Arial family the viewer draws them with.
 [Scale](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.Scale) multiplies the pixels, for
 high-density screens.
 
 ## Fonts
 
-The image is drawn with the fonts of `Meziantou.Framework.Imaging.VectorGraphics`: Liberation Sans, bold, subset to the
-Latin characters. Initials in other scripts, such as `山田` or an emoji, need a font that has them: pass it in
-[SceneImageOptions.Font](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.Font) and
-[BoldFont](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.BoldFont), both to
-[CreateMeasurer](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageRenderer.CreateMeasurer) and to
-[ToImage](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageRenderer.ToImage). See the
+By default, the image is drawn with the fonts of `Meziantou.Framework.Imaging.VectorGraphics`: Liberation Sans, bold,
+subset to the Latin characters. Initials in other scripts, such as `山田` or an emoji, need a font that has them. Put
+the fonts in a [SceneFontCollection](cref:Meziantou.Framework.VectorGraphics.SceneFontCollection), the main font first,
+and pass it in [SceneImageOptions.Fonts](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.Fonts) to
+[CreateMeasurer](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageRenderer.CreateMeasurer). The characters the
+main font does not have are drawn with the other fonts of the collection. See the
 [fonts of image rendering](../VectorGraphics/03-ImageRendering.md#fonts).
+
+[CreateScene](cref:Meziantou.Framework.AvatarGenerator.CreateScene) sets the fonts of the measurer as the fonts of the
+scene ([Scene.Fonts](cref:Meziantou.Framework.VectorGraphics.Scene.Fonts)), so
+[ToImage](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageRenderer.ToImage) draws the initials with the fonts
+that measured them, without options. To write the SVG of such a scene with its fonts, set
+[SvgRenderOptions.EmbedFonts](cref:Meziantou.Framework.VectorGraphics.SvgRenderOptions.EmbedFonts): every viewer then
+draws the initials with these fonts.
 
 The SVG of [CreateSvg](cref:Meziantou.Framework.AvatarGenerator.CreateSvg) uses a monospace font, while a scene uses
 the font of the measurer, so initials such as `WM` are wider: the scene draws them with a smaller font when they would

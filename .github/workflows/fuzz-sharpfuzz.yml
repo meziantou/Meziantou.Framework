@@ -102,7 +102,7 @@ env:
   FUZZ_PROJECTS: |
     [
       { "project": "Meziantou.Framework.AtlassianDataFormat.Fuzz", "component": "atlassian-data-format", "day": 4 },
-      { "project": "Meziantou.Framework.Avatar.Fuzz",              "component": "avatar",                "day": 5 },
+      { "project": "Meziantou.Framework.Avatar.Fuzz",              "component": "avatar",                "day": 2 },
       { "project": "Meziantou.Framework.Barcodes.Fuzz",            "component": "barcodes",              "day": 5 },
       { "project": "Meziantou.Framework.Bencode.Fuzz",             "component": "bencode",               "day": 2 },
       { "project": "Meziantou.Framework.BloomFilters.Fuzz",        "component": "bloomfilter",           "day": 6 },

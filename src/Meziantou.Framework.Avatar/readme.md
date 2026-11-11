@@ -55,7 +55,7 @@ image.Save(png, new PngEncoder());
 ```
 <!-- endref -->
 
-The initials are centered with the metrics of the measurer, so lay the scene out with the measurer of the fonts that draw it. The embedded fonts only cover the Latin characters: pass fonts for other scripts with `SceneImageOptions.Font` and `SceneImageOptions.BoldFont`. A scene only supports the colors that `SceneColor.Parse` accepts (`#rrggbb`, `rgb()`, `hsl()`, CSS color names), not `var(--x)` or `currentColor`.
+The initials are centered with the metrics of the measurer, so lay the scene out with the measurer of the fonts that draw it. The embedded fonts only cover the Latin characters: for other scripts, pass a `SceneFontCollection` with fallback fonts in `SceneImageOptions.Fonts` to `CreateMeasurer`. The scene keeps the fonts of the measurer (`Scene.Fonts`), so `ToImage` draws the initials with them, and `SvgRenderOptions.EmbedFonts` embeds them in its SVG. A scene only supports the colors that `SceneColor.Parse` accepts (`#rrggbb`, `rgb()`, `hsl()`, CSS color names), not `var(--x)` or `currentColor`.
 
 ## How the bigram is chosen
 

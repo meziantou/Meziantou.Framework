@@ -19,6 +19,12 @@ public static class AvatarGenerator
     /// </summary>
     private const double MaxTextWidthRatio = 0.8;
 
+    /// <summary>
+    /// The height of the capital letters of Helvetica Bold, in em (<c>CapHeight</c> of its AFM metrics). The ascender
+    /// that <see cref="AfmTextMeasurer"/> reports is this height, not the top of a line box like the ascent of a font file.
+    /// </summary>
+    private const double HelveticaBoldCapHeight = 0.718;
+
     /// <summary>Optical nudge that centers the glyph on the baseline.</summary>
     private const string BaselineOffset = ".05em";
 
@@ -113,8 +119,10 @@ public static class AvatarGenerator
     /// <remarks>
     /// <para>
     /// The avatar is the same as the one of <see cref="CreateSvg(string, AvatarOptions)"/>: same shape, colors and bigram.
-    /// The initials are drawn in the bold font of the measurer, centered on the metrics it reports, and with a smaller
-    /// font when they would be wider than the shape. The title of the scene is the accessible label, or nothing when
+    /// The initials are drawn in the bold font of the measurer, centered vertically, and with a smaller font when they
+    /// would be wider than the shape. The fonts of the measurer (<see cref="ITextMeasurer.Fonts"/>) become the fonts of the
+    /// scene, so the renderers draw the initials with the fonts that measured them, including the fallback fonts of the
+    /// characters the main font does not have. The title of the scene is the accessible label, or nothing when
     /// <see cref="AvatarOptions.IsDecorative"/> is <see langword="true"/>.
     /// </para>
     /// <para>
@@ -155,6 +163,7 @@ public static class AvatarGenerator
         var center = size / 2;
         var scene = new Scene(size, size, textMeasurer.FontFamily)
         {
+            Fonts = textMeasurer.Fonts,
             Title = options.IsDecorative ? null : options.AccessibleLabel is null ? bigram : RemoveInvalidXmlCharacters(options.AccessibleLabel),
         };
 
@@ -166,7 +175,7 @@ public static class AvatarGenerator
             _ => throw new UnreachableException($"The shape '{options.Shape}' was not rejected by {nameof(ValidateShape)}."),
         });
 
-        var font = new SceneFont(size * FontSizeRatio, Bold: true);
+        var font = new SceneFont(size * FontSizeRatio, Weight: SceneFont.BoldWeight);
         var metrics = textMeasurer.Measure(bigram, font);
         var maxWidth = size * MaxTextWidthRatio;
         if (metrics.Width > maxWidth)
@@ -175,8 +184,12 @@ public static class AvatarGenerator
             metrics = textMeasurer.Measure(bigram, font);
         }
 
-        // The baseline that centers the line box of the font vertically
-        var baseline = center + ((metrics.Ascent - metrics.Descent) / 2);
+        // The metrics of a font file describe its line box, which is centered. The metrics of Helvetica describe its
+        // capital letters, so they are centered instead: browsers draw the SVG with Helvetica or Arial, whose line
+        // boxes differ between platforms but whose capital letters have the same height.
+        var baseline = textMeasurer is AfmTextMeasurer
+            ? center + (font.Size * HelveticaBoldCapHeight / 2)
+            : center + ((metrics.Ascent - metrics.Descent) / 2);
         scene.Root.Add(new SceneText(center, baseline, bigram, font, foregroundColor)
         {
             Anchor = SceneTextAnchor.Middle,

@@ -792,7 +792,7 @@ public class AvatarGeneratorTests
     }
 
     [Fact]
-    public void CreateScene_CentersTheInitials()
+    public void CreateScene_CentersTheCapitalLettersOfHelvetica()
     {
         var scene = AvatarGenerator.CreateScene("John Doe", new AvatarOptions { Size = 100 });
         var text = GetText(scene);
@@ -800,9 +800,23 @@ public class AvatarGeneratorTests
 
         Assert.Equal(SceneTextAnchor.Middle, text.Anchor);
         Assert.Equal(50, text.X);
-        Assert.Equal(new SceneFont(50, Bold: true), text.Font);
+        Assert.Equal(new SceneFont(50, Weight: SceneFont.BoldWeight), text.Font);
         Assert.Equal(metrics.Width, text.MeasuredWidth);
-        Assert.Equal(50, text.Y - metrics.Ascent + ((metrics.Ascent + metrics.Descent) / 2), precision: 9);
+        Assert.Null(scene.Fonts);
+
+        // The ascender of the AFM metrics is the height of the capital letters: they span the middle of the avatar
+        Assert.Equal(0.718 * 50, metrics.Ascent, 1e-9);
+        Assert.Equal(50, text.Y - (metrics.Ascent / 2), 1e-9);
+    }
+
+    [Fact]
+    public void CreateScene_CentersTheLineBoxOfAFontFile()
+    {
+        var measurer = SceneImageRenderer.CreateMeasurer();
+        var text = GetText(AvatarGenerator.CreateScene("John Doe", new AvatarOptions { Size = 100 }, measurer));
+        var metrics = measurer.Measure("JD", text.Font);
+
+        Assert.Equal(50, text.Y - metrics.Ascent + (metrics.Height / 2), 1e-9);
     }
 
     [Fact]
@@ -812,7 +826,7 @@ public class AvatarGeneratorTests
 
         Assert.Equal("WM", text.Text);
         Assert.True(text.Font.Size < 50);
-        Assert.Equal(80, text.MeasuredWidth, precision: 9);
+        Assert.Equal(80, text.MeasuredWidth, 1e-9);
     }
 
     [Fact]
@@ -823,6 +837,36 @@ public class AvatarGeneratorTests
 
         Assert.Equal(measurer.FontFamily, scene.FontFamily);
         Assert.Equal(measurer.Measure("JD", GetText(scene).Font).Width, GetText(scene).MeasuredWidth);
+    }
+
+    [Fact]
+    public void CreateScene_DrawsWithTheFontsOfTheMeasurer()
+    {
+        var fonts = new SceneFontCollection(LoadFontFace("LiberationSans-Bold.woff2"), LoadFontFace("NotoSansCJKjp-Regular.subset.otf"));
+        var measurer = SceneImageRenderer.CreateMeasurer(new SceneImageOptions { Fonts = fonts });
+        var options = new AvatarOptions { Size = 128 };
+        options.Palette.Clear();
+        options.Palette.Add(new AvatarColorPair("#000000", "#ffffff"));
+
+        var scene = AvatarGenerator.CreateScene("\u65E5\u672C", options, measurer);
+        Assert.Same(fonts, scene.Fonts);
+        Assert.Equal(fonts.FontFamily, scene.FontFamily);
+
+        // Liberation Sans has no Japanese characters: the fallback font draws them
+        using var image = scene.ToImage();
+        var (left, top, right, bottom) = GetInkBounds(image);
+        Assert.True(right - left > 40, $"The initials span {left}..{right} horizontally");
+        Assert.True(Math.Abs(((top + bottom) / 2d) - 63.5) <= 6, $"The initials span {top}..{bottom} vertically");
+    }
+
+    [Fact]
+    public void CreateScene_EmbedsTheFontsOfTheMeasurerInTheSvg()
+    {
+        var fonts = new SceneFontCollection(LoadFontFace("LiberationSans-Bold.woff2"));
+        var scene = AvatarGenerator.CreateScene("John Doe", new AvatarOptions(), SceneImageRenderer.CreateMeasurer(new SceneImageOptions { Fonts = fonts }));
+
+        var svg = SvgSceneRenderer.Render(scene, new SvgRenderOptions { EmbedFonts = true });
+        Assert.Contains("@font-face", svg);
     }
 
     [Fact]
@@ -869,6 +913,16 @@ public class AvatarGeneratorTests
         options.Palette.Add(new AvatarColorPair("#000000", "#ffffff"));
         using var image = AvatarGenerator.CreateScene("Hugo Hill", options, SceneImageRenderer.CreateMeasurer()).ToImage();
 
+        var (left, top, right, bottom) = GetInkBounds(image);
+
+        // "HH" has no descender: the capitals are centered within a few pixels
+        Assert.True(Math.Abs(((left + right) / 2d) - 63.5) <= 2, $"The initials span {left}..{right} horizontally");
+        Assert.True(Math.Abs(((top + bottom) / 2d) - 63.5) <= 4, $"The initials span {top}..{bottom} vertically");
+    }
+
+    /// <summary>Gets the bounds of the light pixels: the initials, drawn in white on black.</summary>
+    private static (int Left, int Top, int Right, int Bottom) GetInkBounds(Image<Rgba32> image)
+    {
         var pixels = new byte[image.Width * image.Height * 4];
         image.Frames[0].CopyPixelBytesTo(pixels);
         var (left, top, right, bottom) = (int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
@@ -884,10 +938,10 @@ public class AvatarGeneratorTests
             }
         }
 
-        // "HH" has no descender: the capitals are centered within a few pixels
-        Assert.True(Math.Abs(((left + right) / 2d) - 63.5) <= 2, $"The initials span {left}..{right} horizontally");
-        Assert.True(Math.Abs(((top + bottom) / 2d) - 63.5) <= 4, $"The initials span {top}..{bottom} vertically");
+        return (left, top, right, bottom);
     }
+
+    private static SceneFontFace LoadFontFace(string fileName) => SceneFontFace.Load(Path.Combine(AppContext.BaseDirectory, "TestData", fileName))[0];
 
     private static SceneShape GetBackground(Scene scene) => Assert.IsAssignableTo<SceneShape>(scene.Root.Children[0]);
 

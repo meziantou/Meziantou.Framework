@@ -47,7 +47,11 @@ namespace Meziantou.Framework.VectorGraphics
     {
         public bool IsEmpty { get => throw null; }
         public Meziantou.Framework.VectorGraphics.PathBuilder AddCircle(double centerX, double centerY, double radius) => throw null;
+        public Meziantou.Framework.VectorGraphics.PathBuilder AddEllipse(double centerX, double centerY, double radiusX, double radiusY) => throw null;
+        public Meziantou.Framework.VectorGraphics.PathBuilder AddPolygon(params System.ReadOnlySpan<(double X, double Y)> points) => throw null;
         public Meziantou.Framework.VectorGraphics.PathBuilder AddRectangle(double x, double y, double width, double height) => throw null;
+        public Meziantou.Framework.VectorGraphics.PathBuilder AddRoundedRectangle(double x, double y, double width, double height, double radius) => throw null;
+        public Meziantou.Framework.VectorGraphics.PathBuilder Append(Meziantou.Framework.VectorGraphics.PathData path) => throw null;
         public Meziantou.Framework.VectorGraphics.PathBuilder ArcTo(double radiusX, double radiusY, double rotation, bool largeArc, bool sweep, double x, double y) => throw null;
         public Meziantou.Framework.VectorGraphics.PathData Build() => throw null;
         public Meziantou.Framework.VectorGraphics.PathBuilder Close() => throw null;
@@ -97,6 +101,7 @@ namespace Meziantou.Framework.VectorGraphics
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.PathCommand> Commands { get => throw null; }
         public bool IsEmpty { get => throw null; }
         public override string ToString() => throw null;
+        public Meziantou.Framework.VectorGraphics.PathData Translate(double offsetX, double offsetY) => throw null;
     }
 
     public sealed class Scene
@@ -329,6 +334,8 @@ namespace Meziantou.Framework.VectorGraphics
         #nullable restore
         public override int GetHashCode() => throw null;
         public static Meziantou.Framework.VectorGraphics.SceneTransform Rotate(double degrees, double centerX = 0d, double centerY = 0d) => throw null;
+        public static Meziantou.Framework.VectorGraphics.SceneTransform Scale(double scaleX, double scaleY, double centerX = 0d, double centerY = 0d) => throw null;
+        public Meziantou.Framework.VectorGraphics.SceneTransform Then(Meziantou.Framework.VectorGraphics.SceneTransform next) => throw null;
         #nullable disable
         public override string ToString() => throw null;
         #nullable restore

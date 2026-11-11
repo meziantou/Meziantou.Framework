@@ -472,7 +472,7 @@ internal sealed class SequenceLayout
         }
     }
 
-    private static PathData Polygon(LayoutPoint a, LayoutPoint b, LayoutPoint c) => new PathBuilder().MoveTo(a.X, a.Y).LineTo(b.X, b.Y).LineTo(c.X, c.Y).Close().Build();
+    private static PathData Polygon(LayoutPoint a, LayoutPoint b, LayoutPoint c) => Geometry.Polygon((a.X, a.Y), (b.X, b.Y), (c.X, c.Y));
 
     private void DrawNote(SequenceNote note)
     {

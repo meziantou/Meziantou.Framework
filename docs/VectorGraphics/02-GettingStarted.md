@@ -59,6 +59,33 @@ var svg = SvgSceneRenderer.Render(scene);
 ```
 <!-- endref -->
 
+### Several styles in one text
+
+A text made of [SceneTextSpan](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan) has parts with their own font,
+color or lines; what a span does not set is the style of the text. The spans are drawn one after the other on the
+baseline of the text, and the anchor applies to the whole text. Measure them with
+[Measure](cref:Meziantou.Framework.VectorGraphics.TextMeasurerExtensions.Measure):
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_TextSpans;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 300, height: 40, fontFamily: "sans-serif");
+var font = new SceneFont(16);
+
+// A text whose parts have their own font, color or lines: what a span does not set is the style of the text
+SceneTextSpan[] spans =
+[
+    new("Total: "),
+    new("42") { Font = font with { Weight = SceneFont.BoldWeight }, Color = (SceneColor)"#0369a1" },
+    new(" items, "),
+    new("3 removed") { Decorations = SceneTextDecorations.Strikethrough },
+];
+var measurer = AfmTextMeasurer.Default;
+scene.Root.Add(new SceneText(10, 25, spans, font, SceneColor.Black) { MeasuredWidth = measurer.Measure(spans, font).Width });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
 ## Strokes
 
 The outline of a shape ([SceneShape](cref:Meziantou.Framework.VectorGraphics.SceneShape)) has a
@@ -132,9 +159,12 @@ skews or stretches it, as the `gradientTransform` of SVG.
 
 ## Effects
 
-Every element has a [Filter](cref:Meziantou.Framework.VectorGraphics.SceneElement.Filter), a
-[SceneBlurFilter](cref:Meziantou.Framework.VectorGraphics.SceneBlurFilter) or a
-[SceneDropShadowFilter](cref:Meziantou.Framework.VectorGraphics.SceneDropShadowFilter), an opacity
+Every element has a [Filter](cref:Meziantou.Framework.VectorGraphics.SceneElement.Filter): a
+[SceneBlurFilter](cref:Meziantou.Framework.VectorGraphics.SceneBlurFilter), a
+[SceneDropShadowFilter](cref:Meziantou.Framework.VectorGraphics.SceneDropShadowFilter), or a
+[SceneColorMatrixFilter](cref:Meziantou.Framework.VectorGraphics.SceneColorMatrixFilter), whose factories are the
+color functions of CSS (`Grayscale`, `Sepia`, `Saturate`, `HueRotate`, `Invert`, `Brightness`, `Contrast`). It also
+has an opacity
 [Mask](cref:Meziantou.Framework.VectorGraphics.SceneElement.Mask), whose content shows the element by its luminance or
 its alpha, and a [BlendMode](cref:Meziantou.Framework.VectorGraphics.SceneElement.BlendMode), the blend modes of CSS
 and PDF. As in SVG, the filter applies first, then the clips, the mask, the opacity and the blend mode. The masks and
@@ -165,7 +195,8 @@ var svg = SvgSceneRenderer.Render(scene);
 ```
 <!-- endref -->
 
-PDF has no filters: the PDF renderer throws for a scene that has one. See the [limitations](07-Limitations.md).
+PDF has no filters, not even the color matrices: the PDF renderer throws for a scene that has one. See the
+[limitations](07-Limitations.md).
 
 ## Groups
 

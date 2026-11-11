@@ -370,6 +370,28 @@ public sealed class SceneRendererTests
     }
 
     [Fact]
+    public void TextSpansAndColorMatrices()
+    {
+        var scene = new Scene(200, 60, "sans-serif") { Background = SceneColor.White };
+        var font = new SceneFont(30, Weight: SceneFont.BoldWeight);
+        scene.Root.Add(new SceneText(10, 40, [new SceneTextSpan("MM") { Color = (SceneColor)"#ff0000" }, new SceneTextSpan("MM") { Color = (SceneColor)"#0000ff", Decorations = SceneTextDecorations.Underline }], font, SceneColor.Black));
+        scene.Root.Add(new SceneRectangle(150, 10, 40, 40) { Fill = (SceneColor)"#ff0000", Filter = SceneColorMatrixFilter.Grayscale() });
+        using var image = scene.ToImage();
+
+        // The first two letters are red, the last two blue and underlined
+        var pixels = image.Frames[0];
+        Assert.Contains(Enumerable.Range(10, 40), x => pixels[x, 30].R > 200 && pixels[x, 30].B < 80);
+        Assert.Contains(Enumerable.Range(60, 60), x => pixels[x, 30].B > 200 && pixels[x, 30].R < 80);
+        Assert.DoesNotContain(Enumerable.Range(60, 60), x => pixels[x, 30].R > 200 && pixels[x, 30].B < 80);
+        Assert.Contains(Enumerable.Range(41, 5), y => pixels[100, y].B > 150 && pixels[100, y].R < 150);
+
+        // Red in gray is 0.2126 of white
+        Assert.InRange(pixels[170, 30].R, 50, 58);
+        Assert.Equal(pixels[170, 30].R, pixels[170, 30].G);
+        Assert.Equal(pixels[170, 30].R, pixels[170, 30].B);
+    }
+
+    [Fact]
     public void SourcesAreLaidOutWithTheFontsOfTheImage()
     {
         var source = new TestSource();

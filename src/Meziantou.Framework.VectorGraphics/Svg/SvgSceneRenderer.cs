@@ -221,6 +221,10 @@ public static class SvgSceneRenderer
                         definitions.Append("<feGaussianBlur stdDeviation=\"").Append(Number(deviation)).Append("\"/>");
                         break;
 
+                    case SceneColorMatrixFilter colorMatrix:
+                        definitions.Append("<feColorMatrix type=\"matrix\" values=\"").Append(string.Join(' ', colorMatrix.Values.Select(value => SvgNumber.Format(value, 6)))).Append("\"/>");
+                        break;
+
                     case SceneDropShadowFilter shadow:
                         definitions.Append("<feGaussianBlur in=\"SourceAlpha\" stdDeviation=\"").Append(Number(deviation)).Append("\"/>")
                             .Append("<feOffset dx=\"").Append(Number(offsetX)).Append("\" dy=\"").Append(Number(offsetY)).Append("\" result=\"shadow\"/>")
@@ -490,17 +494,10 @@ public static class SvgSceneRenderer
                     break;
             }
 
-            switch (text.Decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough))
+            // The lines of a text are drawn under its spans too, and a span cannot remove them: with spans, each span has its lines
+            if (text.Spans.Count is 0 && DecorationValue(text.Decorations) is { } decoration)
             {
-                case SceneTextDecorations.Underline:
-                    Attribute("text-decoration", "underline");
-                    break;
-                case SceneTextDecorations.Strikethrough:
-                    Attribute("text-decoration", "line-through");
-                    break;
-                case SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough:
-                    Attribute("text-decoration", "underline line-through");
-                    break;
+                Attribute("text-decoration", decoration);
             }
 
             if (text.Font.Italic)
@@ -523,9 +520,82 @@ public static class SvgSceneRenderer
                 output.Write("</title>");
             }
 
-            output.Write(Escape(text.Text));
+            if (text.Spans.Count is 0)
+            {
+                output.Write(Escape(text.Text));
+            }
+            else
+            {
+                foreach (var span in text.Spans)
+                {
+                    WriteSpan(text, span);
+                }
+            }
+
             output.Write("</text>\n");
         }
+
+        // A span is a tspan with the attributes that differ from the text, or its characters when it has none
+        private void WriteSpan(SceneText text, SceneTextSpan span)
+        {
+            var font = span.Font ?? text.Font;
+            var color = span.Color ?? text.Color;
+            var decoration = DecorationValue(span.Decorations ?? text.Decorations);
+            var hasStyle = font != text.Font || color != text.Color || decoration is not null;
+            if (!hasStyle)
+            {
+                output.Write(Escape(span.Text));
+                return;
+            }
+
+            output.Write("<tspan");
+            if (!string.Equals(font.Family, text.Font.Family, StringComparison.Ordinal))
+            {
+                Attribute("font-family", FamilyList(font.Family ?? _scene.FontFamily));
+            }
+
+            if (font.Size != text.Font.Size)
+            {
+                Attribute("font-size", font.Size);
+            }
+
+            if (font.ClampedWeight != text.Font.ClampedWeight)
+            {
+                Attribute("font-weight", font.ClampedWeight switch
+                {
+                    SceneFont.NormalWeight => "normal",
+                    SceneFont.BoldWeight => "bold",
+                    var weight => weight.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                });
+            }
+
+            if (font.Italic != text.Font.Italic)
+            {
+                Attribute("font-style", font.Italic ? "italic" : "normal");
+            }
+
+            if (color != text.Color)
+            {
+                Paint("fill", color);
+            }
+
+            if (decoration is not null)
+            {
+                Attribute("text-decoration", decoration);
+            }
+
+            output.Write('>');
+            output.Write(Escape(span.Text));
+            output.Write("</tspan>");
+        }
+
+        private static string? DecorationValue(SceneTextDecorations decorations) => (decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough)) switch
+        {
+            SceneTextDecorations.Underline => "underline",
+            SceneTextDecorations.Strikethrough => "line-through",
+            SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough => "underline line-through",
+            _ => null,
+        };
 
         private void ShapeAttributes(SceneShape shape, bool isLine = false)
         {

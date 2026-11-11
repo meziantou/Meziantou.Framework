@@ -2,8 +2,9 @@
 
 Draws the scenes of [Meziantou.Framework.VectorGraphics](https://www.nuget.org/packages/Meziantou.Framework.VectorGraphics)
 (charts, diagrams, your own drawings) as PDF with [Meziantou.Framework.Pdf](https://www.nuget.org/packages/Meziantou.Framework.Pdf):
-vector shapes, images, gradients, clipping, masks, blend modes, transparency and links. PDF has no filters: a scene with
-a blur or a drop shadow throws `NotSupportedException`. Each text is drawn with the face of its family of the fonts
+vector shapes, images, gradients, clipping, masks, blend modes, transparency and links. The drawing is tagged for the assistive
+technologies, described by the title and the description of the scene. PDF has no filters: a scene with a blur, a drop
+shadow or a color matrix throws `NotSupportedException`. Each text is drawn with the face of its family of the fonts
 of the scene, and the PDF embeds the subsets of the faces it uses. Without fonts, the texts are drawn with Helvetica,
 whose widths the default text measurer uses.
 

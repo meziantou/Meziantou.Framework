@@ -249,6 +249,57 @@ public sealed class SvgSceneRendererTests
         Assert.DoesNotContain("height=\"0\"", svg, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void TextSpans()
+    {
+        #region VectorGraphics_TextSpans
+        var scene = new Scene(width: 300, height: 40, fontFamily: "sans-serif");
+        var font = new SceneFont(16);
+
+        // A text whose parts have their own font, color or lines: what a span does not set is the style of the text
+        SceneTextSpan[] spans =
+        [
+            new("Total: "),
+            new("42") { Font = font with { Weight = SceneFont.BoldWeight }, Color = (SceneColor)"#0369a1" },
+            new(" items, "),
+            new("3 removed") { Decorations = SceneTextDecorations.Strikethrough },
+        ];
+        var measurer = AfmTextMeasurer.Default;
+        scene.Root.Add(new SceneText(10, 25, spans, font, SceneColor.Black) { MeasuredWidth = measurer.Measure(spans, font).Width });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        Assert.Contains(">Total: <tspan font-weight=\"bold\" fill=\"#0369a1\">42</tspan> items, <tspan text-decoration=\"line-through\">3 removed</tspan></text>", svg, StringComparison.Ordinal);
+        Assert.Equal("Total: 42 items, 3 removed", ((SceneText)scene.Root.Children[0]).Text);
+        Assert.Equal(measurer.Measure("Total: ", font).Width + measurer.Measure("42", font with { Weight = SceneFont.BoldWeight }).Width + measurer.Measure(" items, 3 removed", font).Width, measurer.Measure(spans, font).Width, 0.5);
+
+        // The lines of an underlined text are on each span, so a span can have none
+        var underlined = new SceneText(0, 10, [new SceneTextSpan("a"), new SceneTextSpan("b") { Decorations = SceneTextDecorations.None, Font = new SceneFont(20, Weight: 300, Italic: true, Family: "Mono") }], new SceneFont(10), SceneColor.Black) { Decorations = SceneTextDecorations.Underline };
+        var underlinedSvg = SvgSceneRenderer.Render(Single(underlined));
+        Assert.Contains("font-size=\"10\" fill=\"#000000\"><tspan text-decoration=\"underline\">a</tspan><tspan font-family=\"Mono\" font-size=\"20\" font-weight=\"300\" font-style=\"italic\">b</tspan></text>", underlinedSvg, StringComparison.Ordinal);
+        Assert.Throws<ArgumentException>("spans", () => new SceneText(0, 0, [null!], new SceneFont(10), SceneColor.Black));
+        Assert.Throws<ArgumentNullException>("text", () => new SceneTextSpan(null!));
+    }
+
+    [Fact]
+    public void ColorMatrixFilters()
+    {
+        var scene = Single(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black, Filter = SceneColorMatrixFilter.Grayscale() });
+        Assert.Contains("<feColorMatrix type=\"matrix\" values=\"0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0\"/>", SvgSceneRenderer.Render(scene), StringComparison.Ordinal);
+
+        // The functions of CSS: 0 keeps the colors
+        double[] identity = [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0];
+        foreach (var filter in new[] { SceneColorMatrixFilter.Grayscale(0), SceneColorMatrixFilter.Sepia(0), SceneColorMatrixFilter.Saturate(1), SceneColorMatrixFilter.HueRotate(0), SceneColorMatrixFilter.Invert(0), SceneColorMatrixFilter.Brightness(1), SceneColorMatrixFilter.Contrast(1) })
+        {
+            Assert.Equal(identity, filter.Values.Select(value => Math.Round(value, 3, MidpointRounding.AwayFromZero)));
+        }
+
+        Assert.Equal([-1, 0, 0, 0, 1], SceneColorMatrixFilter.Invert().Values.Take(5));
+        Assert.Throws<ArgumentException>("values", () => new SceneColorMatrixFilter(1, 2, 3));
+        Assert.Throws<ArgumentException>("values", () => new SceneColorMatrixFilter([double.NaN, .. identity[1..]]));
+    }
+
     private static Scene Single(SceneElement element)
     {
         var scene = new Scene(10, 10, "sans-serif");

@@ -6,7 +6,7 @@ using Meziantou.Framework.VectorGraphics;
 namespace Meziantou.Framework.Pdf.VectorGraphics.Fuzz;
 
 /// <summary>
-/// The PDF of any scene (shapes, gradients, images, clips, texts, links) opens again, has one page of the size of the scene, its text can be extracted and its page
+/// The PDF of any scene (shapes, gradients, images, clips, masks, texts and their spans, links) opens again, tagged, has one page of the size of the scene, its text can be extracted and its page
 /// rendered, and drawing the scene twice gives the same file. A link annotation is written for a group with an absolute
 /// hyperlink only.
 /// </summary>
@@ -112,6 +112,14 @@ public static class PdfVectorGraphicsFuzzTargets
 
                     element = parent.Add(new ScenePath(path.Build()) { Fill = paint, Stroke = SceneColor.Black, StrokeWidth = 1 + (kind % 4), MiterLimit = value, FillRule = (SceneFillRule)(kind % 2) });
                     break;
+                case 5 when (kind & 128) != 0:
+                    // The text split in two spans: the second has its own font, color and lines
+                    element = parent.Add(new SceneText(value, 40, [new SceneTextSpan(text[..(text.Length / 2)]), new SceneTextSpan(text[(text.Length / 2)..]) { Font = new SceneFont(1 + (kind % 30), Weight: 100 * (kind % 11), Family: (kind & 64) != 0 ? "Liberation Mono" : null), Color = color, Decorations = (SceneTextDecorations)(kind % 4) }], new SceneFont(12), SceneColor.Black)
+                    {
+                        Anchor = (SceneTextAnchor)(kind % 3),
+                        Decorations = (SceneTextDecorations)(kind % 3),
+                    });
+                    break;
                 case 4:
                 case 5:
                     element = parent.Add(new SceneText(value, 40, text, new SceneFont(1 + (kind % 30), Weight: (kind & 8) != 0 ? 100 * (1 + (kind % 9)) : SceneFont.NormalWeight, Italic: (kind & 16) != 0, Family: (kind & 64) != 0 ? "Liberation Mono" : null), color)
@@ -159,7 +167,7 @@ public static class PdfVectorGraphicsFuzzTargets
             element.BlendMode = (kind & 0x10) != 0 ? (SceneBlendMode)(kind % 16) : SceneBlendMode.Normal;
             if (kind % 31 == 7)
             {
-                element.Filter = new SceneBlurFilter(value);
+                element.Filter = (kind & 1) != 0 ? new SceneBlurFilter(value) : SceneColorMatrixFilter.Sepia(value);
                 hasFilter = true;
             }
         }

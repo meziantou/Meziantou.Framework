@@ -121,6 +121,10 @@ internal static class SceneRenderer
                 canvas.Blur(Math.Min(blur.StandardDeviation, MaxBlur), (element, context), action);
                 break;
 
+            case SceneColorMatrixFilter colorMatrix:
+                canvas.Filter(new ColorMatrix([.. colorMatrix.Values]), (element, context), action);
+                break;
+
             case SceneDropShadowFilter shadow:
                 var deviation = shadow.StandardDeviation > 0 && double.IsFinite(shadow.StandardDeviation) ? Math.Min(shadow.StandardDeviation, MaxBlur) : 0;
                 var offset = new PointD(double.IsFinite(shadow.OffsetX) ? shadow.OffsetX : 0, double.IsFinite(shadow.OffsetY) ? shadow.OffsetY : 0);
@@ -329,12 +333,34 @@ internal static class SceneRenderer
         if (text.Text.Length is 0)
             return;
 
-        var decorations = (text.Decorations.HasFlag(SceneTextDecorations.Underline) ? TextDecorations.Underline : TextDecorations.None)
-            | (text.Decorations.HasFlag(SceneTextDecorations.Strikethrough) ? TextDecorations.Strikethrough : TextDecorations.None);
-        FontStack? stack = context.Fonts is { } fonts ? SceneFontCache.GetStack(fonts, text.Font, context.FontFamily) : null;
-        var layout = stack is null && decorations is TextDecorations.None
-            ? TextLayout.Create(text.Text, context.Options.GetFont(text.Font), text.Font.Size)
-            : TextLayout.Create(text.Text, new TextStyle(stack ?? context.Options.GetFont(text.Font), text.Font.Size) { Decorations = decorations });
+        TextLayout layout;
+        if (text.Spans.Count > 0)
+        {
+            // Each span has its own style: a rich text, whose spans share a baseline
+            var builder = new RichTextBuilder();
+            foreach (var span in text.Spans)
+            {
+                var font = span.Font ?? text.Font;
+                if (span.Text.Length > 0 && font.Size > 0)
+                {
+                    builder.Append(span.Text, CreateStyle(font, ToDecorations(span.Decorations ?? text.Decorations), context, ToBrush(span.Color ?? text.Color)));
+                }
+            }
+
+            var richText = builder.Build();
+            if (richText.Text.Length is 0)
+                return;
+
+            layout = TextLayout.Create(richText);
+        }
+        else
+        {
+            var decorations = ToDecorations(text.Decorations);
+            layout = context.Fonts is null && decorations is TextDecorations.None
+                ? TextLayout.Create(text.Text, context.Options.GetFont(text.Font), text.Font.Size)
+                : TextLayout.Create(text.Text, CreateStyle(text.Font, decorations, context));
+        }
+
         var x = text.Anchor switch
         {
             SceneTextAnchor.Middle => text.X - (layout.Width / 2),
@@ -352,6 +378,18 @@ internal static class SceneRenderer
         }
 
         canvas.Transform(AffineTransform.CreateRotation(text.Rotation, new PointD(text.X, text.Y)), (brush, layout, origin), static (canvas, state) => canvas.FillText(state.brush, state.layout, state.origin));
+    }
+
+    private static TextStyle CreateStyle(SceneFont font, TextDecorations decorations, DrawContext context, Brush? brush = null)
+    {
+        FontStack fonts = context.Fonts is { } collection ? SceneFontCache.GetStack(collection, font, context.FontFamily) : context.Options.GetFont(font);
+        return new TextStyle(fonts, font.Size) { Decorations = decorations, Brush = brush };
+    }
+
+    private static TextDecorations ToDecorations(SceneTextDecorations decorations)
+    {
+        return (decorations.HasFlag(SceneTextDecorations.Underline) ? TextDecorations.Underline : TextDecorations.None)
+            | (decorations.HasFlag(SceneTextDecorations.Strikethrough) ? TextDecorations.Strikethrough : TextDecorations.None);
     }
 
     private static Pen CreatePen(SceneShape shape, DrawContext context)

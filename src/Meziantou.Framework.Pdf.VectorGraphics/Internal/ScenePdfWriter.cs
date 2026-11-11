@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Pdf.VectorGraphics.Internal;
 /// The writer keeps the transform of the current content stream (<see cref="_matrix"/>) because the patterns of the
 /// gradients are placed in the space of the stream, not in the current user space (ISO 32000-2, 8.7.2).
 /// </remarks>
-internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Scene scene, SceneFontCollection? fonts)
+internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Scene scene, SceneFontCollection? fonts, PdfStructureElement? figure)
 {
     // The miter limit of SVG (the default of PDF is 10)
     private const double DefaultMiterLimit = 4;
@@ -194,7 +194,10 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             var area = linkBounds.Transform(PdfMatrix.Multiply(_matrix, _streamToPage));
             if (area.IsFinite && area.Width > 0 && area.Height > 0)
             {
-                page.Annotations.AddLink(new PdfRectangle(area.Left, area.Top, area.Right, area.Bottom), uri);
+                var link = page.Annotations.AddLink(new PdfRectangle(area.Left, area.Top, area.Right, area.Bottom), uri);
+
+                // In a tagged document, a link is a Link element of the figure (14.8.4.4.2)
+                figure?.AddElement("Link").AddAnnotation(link);
             }
         }
 
@@ -587,16 +590,14 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
     private void DrawText(SceneText text, double opacity)
     {
-        var size = text.Font.Size;
-        var alpha = text.Color.A / 255.0 * opacity;
-        if (text.Text.Length is 0 || !(size > 0) || !(alpha > 0) || !IsFinite(text.X, text.Y, size, text.Rotation))
+        if (text.Text.Length is 0 || !(opacity > 0) || !IsFinite(text.X, text.Y, text.Rotation))
             return;
 
-        var runs = GetTextRuns(text);
-        if (runs.Count is 0)
+        var textParts = GetTextParts(text);
+        if (textParts.Count is 0)
             return;
 
-        var width = runs.Sum(run => run.Width);
+        var width = textParts.Sum(part => part.Width);
         var startX = text.Anchor switch
         {
             SceneTextAnchor.Middle => text.X - (width / 2),
@@ -604,74 +605,101 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             _ => text.X,
         };
 
-        // The glyphs are drawn upright in the flipped space, and rotated clockwise around the anchor
+        // The glyphs are drawn upright in the flipped space, and rotated clockwise around the anchor. Each part (a span,
+        // or the characters of a span that a face draws) is a text object of its own, with its color and its opacity.
         var rotation = SceneTransform.Rotate(text.Rotation, text.X, text.Y);
-        var matrix = PdfMatrix.Multiply(new PdfMatrix(1, 0, 0, -1, startX, text.Y), new PdfMatrix(rotation.A, rotation.B, rotation.C, rotation.D, rotation.E, rotation.F));
-        Save();
-        SetColor(text.Color, stroke: false);
-        SetAlpha(alpha, strokeAlpha: 1);
-        _content.BeginText().SetTextMatrix(matrix);
-        foreach (var run in runs)
+        var rotationMatrix = new PdfMatrix(rotation.A, rotation.B, rotation.C, rotation.D, rotation.E, rotation.F);
+        var offset = 0.0;
+        foreach (var part in textParts)
         {
-            _content.SetFont(run.Font, size).ShowText(run.Text);
-        }
+            var alpha = part.Color.A / 255.0 * opacity;
+            if (alpha > 0)
+            {
+                Save();
+                SetColor(part.Color, stroke: false);
+                SetAlpha(alpha, strokeAlpha: 1);
+                _content.BeginText().SetTextMatrix(PdfMatrix.Multiply(new PdfMatrix(1, 0, 0, -1, startX + offset, text.Y), rotationMatrix));
+                _content.SetFont(part.Font, part.Size).ShowText(part.Text);
+                _content.EndText();
+                DrawDecorations(part, startX + offset, text.Y, rotationMatrix);
+                Restore();
+            }
 
-        _content.EndText();
-        DrawDecorations(text, startX, width, rotation);
-        Restore();
+            offset += part.Width;
+        }
     }
 
-    // The lines of a text are rectangles of the color of the text, at the position and of the thickness its face gives
-    private void DrawDecorations(SceneText text, double startX, double width, SceneTransform rotation)
+    // The lines of a part are rectangles of its color, at the position and of the thickness the face of its span gives
+    private void DrawDecorations(TextPart part, double x, double baseline, PdfMatrix rotation)
     {
-        if ((text.Decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough)) is SceneTextDecorations.None || !(width > 0))
+        if ((part.Decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough)) is SceneTextDecorations.None || !(part.Width > 0))
             return;
 
-        var face = fonts?.GetFace(text.Font, scene.FontFamily);
-        var size = text.Font.Size;
         Save();
-        Transform(new PdfMatrix(rotation.A, rotation.B, rotation.C, rotation.D, rotation.E, rotation.F));
-        if (text.Decorations.HasFlag(SceneTextDecorations.Underline))
+        Transform(rotation);
+        if (part.Decorations.HasFlag(SceneTextDecorations.Underline))
         {
-            var top = face?.UnderlinePosition ?? HelveticaUnderlinePosition;
-            var thickness = face?.UnderlineThickness ?? HelveticaLineThickness;
-            _content.Rectangle(startX, text.Y - (top * size), width, thickness * size).Fill();
+            var top = part.Face?.UnderlinePosition ?? HelveticaUnderlinePosition;
+            var thickness = part.Face?.UnderlineThickness ?? HelveticaLineThickness;
+            _content.Rectangle(x, baseline - (top * part.Size), part.Width, thickness * part.Size).Fill();
         }
 
-        if (text.Decorations.HasFlag(SceneTextDecorations.Strikethrough))
+        if (part.Decorations.HasFlag(SceneTextDecorations.Strikethrough))
         {
-            var top = face?.StrikeoutPosition ?? HelveticaStrikeoutPosition;
-            var thickness = face?.StrikeoutThickness ?? HelveticaLineThickness;
-            _content.Rectangle(startX, text.Y - (top * size), width, thickness * size).Fill();
+            var top = part.Face?.StrikeoutPosition ?? HelveticaStrikeoutPosition;
+            var thickness = part.Face?.StrikeoutThickness ?? HelveticaLineThickness;
+            _content.Rectangle(x, baseline - (top * part.Size), part.Width, thickness * part.Size).Fill();
         }
 
         Restore();
     }
 
-    /// <summary>Splits a text into the parts that one font draws, with their widths.</summary>
-    internal List<(PdfFont Font, string Text, double Width)> GetTextRuns(SceneText text)
+    /// <summary>A part of a text that one font draws, with its style and its width.</summary>
+    internal sealed record TextPart(PdfFont Font, string Text, double Width, double Size, SceneColor Color, SceneTextDecorations Decorations, SceneFontFace? Face);
+
+    /// <summary>Splits a text into the parts that one font draws: its spans, and the characters of a span that each face draws.</summary>
+    internal List<TextPart> GetTextParts(SceneText text)
     {
-        var runs = new List<(PdfFont Font, string Text, double Width)>();
-        var standard = GetStandardFont(text.Font);
-        if (fonts is null)
+        var parts = new List<TextPart>();
+        if (text.Spans.Count is 0)
         {
-            Add(standard, text.Text);
-            return runs;
+            AddSpan(text.Text, text.Font, text.Color, text.Decorations);
         }
-
-        foreach (var run in fonts.GetRuns(text.Text, text.Font, scene.FontFamily))
+        else
         {
-            Add(GetEmbeddedFont(run.Face) ?? standard, text.Text.Substring(run.Start, run.Length));
-        }
-
-        return runs;
-
-        void Add(PdfFont font, string value)
-        {
-            value = Sanitize(font, value);
-            if (value.Length > 0)
+            foreach (var span in text.Spans)
             {
-                runs.Add((font, value, font.GetTextWidth(value, text.Font.Size)));
+                AddSpan(span.Text, span.Font ?? text.Font, span.Color ?? text.Color, span.Decorations ?? text.Decorations);
+            }
+        }
+
+        return parts;
+
+        void AddSpan(string value, SceneFont font, SceneColor color, SceneTextDecorations decorations)
+        {
+            if (value.Length is 0 || !(font.Size > 0) || !double.IsFinite(font.Size))
+                return;
+
+            var standard = GetStandardFont(font);
+            if (fonts is null)
+            {
+                Add(standard, value, null);
+                return;
+            }
+
+            var face = fonts.GetFace(font, scene.FontFamily);
+            foreach (var run in fonts.GetRuns(value, font, scene.FontFamily))
+            {
+                Add(GetEmbeddedFont(run.Face) ?? standard, value.Substring(run.Start, run.Length), face);
+            }
+
+            void Add(PdfFont pdfFont, string runText, SceneFontFace? spanFace)
+            {
+                runText = Sanitize(pdfFont, runText);
+                if (runText.Length > 0)
+                {
+                    parts.Add(new TextPart(pdfFont, runText, pdfFont.GetTextWidth(runText, font.Size), font.Size, color, decorations, spanFace));
+                }
             }
         }
     }
@@ -886,9 +914,11 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                 case ScenePath path:
                     return OfPath(path.Data)?.Inflate(stroke);
 
-                case SceneText text when text.Text.Length > 0 && text.Font.Size > 0:
+                case SceneText text when text.Text.Length > 0:
                     // The glyphs fit in an em above the baseline and half an em below it, from the start to the end of the text
-                    var width = writer.GetTextRuns(text).Sum(run => run.Width);
+                    var parts = writer.GetTextParts(text);
+                    var width = parts.Sum(part => part.Width);
+                    var size = parts.Count is 0 ? text.Font.Size : parts.Max(part => part.Size);
                     var start = text.Anchor switch
                     {
                         SceneTextAnchor.Middle => text.X - (width / 2),
@@ -896,7 +926,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                         _ => text.X,
                     };
                     var rotation = SceneTransform.Rotate(text.Rotation, text.X, text.Y);
-                    return new Bounds(start, text.Y - text.Font.Size, start + width, text.Y + (text.Font.Size / 2))
+                    return new Bounds(start, text.Y - size, start + width, text.Y + (size / 2))
                         .Transform(new PdfMatrix(rotation.A, rotation.B, rotation.C, rotation.D, rotation.E, rotation.F));
 
                 default:

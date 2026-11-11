@@ -34,7 +34,11 @@ public static class ScenePdfRenderer
         return ToPdf(source.CreateScene(CreateMeasurer(options)), options);
     }
 
-    /// <summary>Draws a scene as a document of one page of its size times <see cref="ScenePdfOptions.Scale"/>. The title and the description of the scene are the title and the subject of the document.</summary>
+    /// <summary>
+    /// Draws a scene as a document of one page of its size times <see cref="ScenePdfOptions.Scale"/>. The title and the
+    /// description of the scene are the title and the subject of the document. Unless <see cref="ScenePdfOptions.Tagged"/>
+    /// is <see langword="false"/>, the document is tagged: its structure is a document whose figure is the drawing.
+    /// </summary>
     /// <param name="scene">The scene, laid out with <see cref="CreateMeasurer"/> so its texts fit.</param>
     /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
     /// <returns>The document. Save it with <see cref="PdfDocument.Save(string, PdfSaveOptions?)"/>.</returns>
@@ -62,7 +66,13 @@ public static class ScenePdfRenderer
         }
 
         var page = document.Pages.Add(new PdfSize(width, height));
-        page.DrawScene(scene, new PdfPoint(0, height), options);
+        page.DrawScene(scene, new PdfPoint(0, height), new ScenePdfOptions
+        {
+            Scale = options.Scale,
+            Fonts = options.Fonts,
+            Tagged = options.Tagged,
+            StructureParent = options.Tagged ? document.StructureTree.AddElement("Document") : null,
+        });
         return document;
     }
 
@@ -98,9 +108,39 @@ public static class ScenePdfRenderer
         options ??= new ScenePdfOptions();
         ScenePdfWriter.ThrowIfUnsupported(scene);
         var content = page.CreateContentBuilder();
-        new ScenePdfWriter(page, content, scene, scene.Fonts ?? options.Fonts).Draw(position, options.Scale);
+
+        // Tagged, the drawing is a figure of the structure tree, whose alternate description is the title and the
+        // description of the scene (ISO 32000-2, 14.8.4.6)
+        PdfStructureElement? figure = null;
+        if (options.Tagged)
+        {
+            figure = options.StructureParent is { } parent ? parent.AddElement("Figure") : page.Document.StructureTree.AddElement("Figure");
+            figure.AlternateDescription = GetAlternateDescription(scene);
+            content.BeginStructureElement(figure);
+        }
+
+        new ScenePdfWriter(page, content, scene, scene.Fonts ?? options.Fonts, figure).Draw(position, options.Scale);
+        if (figure is not null)
+        {
+            content.EndMarkedContent();
+        }
+
         content.Complete();
         return PdfRectangle.FromSize(position.X, position.Y - (scene.Height * options.Scale), scene.Width * options.Scale, scene.Height * options.Scale);
+    }
+
+    // The title and the description, as one sentence each
+    private static string? GetAlternateDescription(Scene scene)
+    {
+        var title = scene.Title?.Trim();
+        var description = scene.Description?.Trim();
+        if (string.IsNullOrEmpty(title))
+            return string.IsNullOrEmpty(description) ? null : description;
+
+        if (string.IsNullOrEmpty(description))
+            return title;
+
+        return title[^1] is '.' or '!' or '?' or ':' ? title + " " + description : title + ". " + description;
     }
 
     /// <summary>Creates the text measurer of the fonts of the options, to lay a source out with <see cref="ISceneSource.CreateScene"/>.</summary>

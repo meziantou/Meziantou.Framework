@@ -14,6 +14,8 @@ namespace Meziantou.Framework.Pdf.VectorGraphics
     {
         public Meziantou.Framework.VectorGraphics.SceneFontCollection? Fonts { get => throw null; set { } }
         public double Scale { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfStructureElement? StructureParent { get => throw null; set { } }
+        public bool Tagged { get => throw null; set { } }
     }
 
     public static class ScenePdfRenderer

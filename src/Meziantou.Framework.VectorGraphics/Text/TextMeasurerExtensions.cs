@@ -26,6 +26,27 @@ public static class TextMeasurerExtensions
         return new FamilyTextMeasurer(measurer is FamilyTextMeasurer family ? family.Inner : measurer, fontFamily);
     }
 
+    /// <summary>Measures a text made of spans: the spans one after the other, on the same baseline.</summary>
+    /// <param name="measurer">The measurer.</param>
+    /// <param name="spans">The spans.</param>
+    /// <param name="font">The font of the spans that set none.</param>
+    /// <returns>The sum of the widths of the spans, and the largest ascent and descent.</returns>
+    public static TextMetrics Measure(this ITextMeasurer measurer, IEnumerable<SceneTextSpan> spans, SceneFont font)
+    {
+        ArgumentNullException.ThrowIfNull(measurer);
+        ArgumentNullException.ThrowIfNull(spans);
+        var (width, ascent, descent) = (0.0, 0.0, 0.0);
+        foreach (var span in spans)
+        {
+            var metrics = measurer.Measure(span.Text, span.Font ?? font);
+            width += metrics.Width;
+            ascent = Math.Max(ascent, metrics.Ascent);
+            descent = Math.Max(descent, metrics.Descent);
+        }
+
+        return new TextMetrics(width, ascent, descent);
+    }
+
     private sealed class FamilyTextMeasurer(ITextMeasurer inner, string fontFamily) : ITextMeasurer
     {
         public ITextMeasurer Inner { get; } = inner;

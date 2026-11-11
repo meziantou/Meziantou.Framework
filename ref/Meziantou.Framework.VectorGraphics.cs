@@ -218,6 +218,19 @@ namespace Meziantou.Framework.VectorGraphics
         public static implicit operator Meziantou.Framework.VectorGraphics.SceneColor(string value) => throw null;
     }
 
+    public sealed class SceneColorMatrixFilter : Meziantou.Framework.VectorGraphics.SceneFilter
+    {
+        public System.Collections.Generic.IReadOnlyList<double> Values { get => throw null; }
+        public SceneColorMatrixFilter(params System.ReadOnlySpan<double> values) { }
+        public static Meziantou.Framework.VectorGraphics.SceneColorMatrixFilter Brightness(double amount) => throw null;
+        public static Meziantou.Framework.VectorGraphics.SceneColorMatrixFilter Contrast(double amount) => throw null;
+        public static Meziantou.Framework.VectorGraphics.SceneColorMatrixFilter Grayscale(double amount = 1d) => throw null;
+        public static Meziantou.Framework.VectorGraphics.SceneColorMatrixFilter HueRotate(double degrees) => throw null;
+        public static Meziantou.Framework.VectorGraphics.SceneColorMatrixFilter Invert(double amount = 1d) => throw null;
+        public static Meziantou.Framework.VectorGraphics.SceneColorMatrixFilter Saturate(double amount) => throw null;
+        public static Meziantou.Framework.VectorGraphics.SceneColorMatrixFilter Sepia(double amount = 1d) => throw null;
+    }
+
     public sealed class SceneDropShadowFilter : Meziantou.Framework.VectorGraphics.SceneFilter
     {
         public Meziantou.Framework.VectorGraphics.SceneColor Color { get => throw null; }
@@ -457,9 +470,11 @@ namespace Meziantou.Framework.VectorGraphics
         public Meziantou.Framework.VectorGraphics.SceneFont Font { get => throw null; }
         public double MeasuredWidth { get => throw null; set { } }
         public double Rotation { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneTextSpan> Spans { get => throw null; }
         public string Text { get => throw null; }
         public double X { get => throw null; }
         public double Y { get => throw null; }
+        public SceneText(double x, double y, System.Collections.Generic.IEnumerable<Meziantou.Framework.VectorGraphics.SceneTextSpan> spans, Meziantou.Framework.VectorGraphics.SceneFont font, Meziantou.Framework.VectorGraphics.SceneColor color) { }
         public SceneText(double x, double y, string text, Meziantou.Framework.VectorGraphics.SceneFont font, Meziantou.Framework.VectorGraphics.SceneColor color) { }
     }
 
@@ -476,6 +491,15 @@ namespace Meziantou.Framework.VectorGraphics
         None = 0,
         Underline = 1,
         Strikethrough = 2,
+    }
+
+    public sealed class SceneTextSpan
+    {
+        public Meziantou.Framework.VectorGraphics.SceneColor? Color { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneTextDecorations? Decorations { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneFont? Font { get => throw null; init { } }
+        public string Text { get => throw null; }
+        public SceneTextSpan(string text) { }
     }
 
     public readonly struct SceneTransform : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneTransform>
@@ -536,6 +560,7 @@ namespace Meziantou.Framework.VectorGraphics
 
     public static class TextMeasurerExtensions
     {
+        public static Meziantou.Framework.VectorGraphics.TextMetrics Measure(this Meziantou.Framework.VectorGraphics.ITextMeasurer measurer, System.Collections.Generic.IEnumerable<Meziantou.Framework.VectorGraphics.SceneTextSpan> spans, Meziantou.Framework.VectorGraphics.SceneFont font) => throw null;
         public static Meziantou.Framework.VectorGraphics.ITextMeasurer WithFontFamily(this Meziantou.Framework.VectorGraphics.ITextMeasurer measurer, string? fontFamily) => throw null;
     }
 

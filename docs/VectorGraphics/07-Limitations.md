@@ -7,7 +7,7 @@ The SVG, image and PDF renderers draw the same scene the same way, except in the
 
 ## PDF
 
-- **Filters are not supported.** PDF has no blur and no drop shadow that it draws as vectors:
+- **Filters are not supported.** PDF has no blur, no drop shadow and no color matrix that it draws as vectors:
   [ToPdf](cref:Meziantou.Framework.Pdf.VectorGraphics.ScenePdfRenderer.ToPdf) and
   [DrawScene](cref:Meziantou.Framework.Pdf.VectorGraphics.ScenePdfRenderer.DrawScene) throw
   `NotSupportedException` for a scene that has a [Filter](cref:Meziantou.Framework.VectorGraphics.SceneElement.Filter),
@@ -41,8 +41,13 @@ The SVG, image and PDF renderers draw the same scene the same way, except in the
   shadow offset can be cut.
 - The alpha masks (`mask-type`) and the blend modes (`mix-blend-mode`) are features of SVG 2 and CSS: the current
   browsers draw them, some older viewers and editors do not.
+- The lines of a text made of spans are written on each span (a span cannot remove the lines of its parent in SVG), so
+  an underline is drawn in pieces, one per span.
 
 ## All renderers
+
+- The spans of a text are measured and drawn one after the other: the kerning between the last letter of a span and
+  the first letter of the next one is not applied.
 
 - An image that the image or PDF renderer cannot decode is not drawn; the SVG embeds its bytes as they are.
 - A value that is not valid, such as a negative blur or a miter limit below 1, falls back to the default of SVG.

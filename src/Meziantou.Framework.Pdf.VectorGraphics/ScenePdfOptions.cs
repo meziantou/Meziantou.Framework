@@ -31,4 +31,19 @@ public sealed class ScenePdfOptions
     /// (<see cref="Scene.Fonts"/>) take precedence over them.
     /// </summary>
     public SceneFontCollection? Fonts { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value that indicates whether the drawing is tagged, for the assistive technologies: it is a
+    /// <c>Figure</c> element of the structure tree of the document, whose alternate description is the title and the
+    /// description of the scene (<see cref="Scene.Title"/>, <see cref="Scene.Description"/>), and its hyperlinks are
+    /// <c>Link</c> elements of the figure. The default is <see langword="true"/>. Set it to <see langword="false"/> to draw
+    /// on a page of a document that is not tagged.
+    /// </summary>
+    public bool Tagged { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the element of the structure tree the figure of the drawing is added to, or <see langword="null"/> to
+    /// add it at the root of the tree. It must be an element of the document of the page.
+    /// </summary>
+    public PdfStructureElement? StructureParent { get; set; }
 }

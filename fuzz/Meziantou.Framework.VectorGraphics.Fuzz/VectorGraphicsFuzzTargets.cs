@@ -249,6 +249,10 @@ public static partial class VectorGraphicsFuzzTargets
                 case 3:
                     element = parent.Add(new ScenePath(new PathBuilder().MoveTo(0, 0).LineTo(value, 1).ArcTo(value, 2, 3, largeArc: (kind & 8) != 0, sweep: (kind & 16) != 0, 4, 5).Close().Build()) { FillRule = (SceneFillRule)(kind % 2) });
                     break;
+                case 4 when (kind & 128) != 0:
+                    // The text split in two spans: the second has its own font, color and lines
+                    element = parent.Add(new SceneText(value, value, [new SceneTextSpan(text[..(text.Length / 2)]), new SceneTextSpan(text[(text.Length / 2)..]) { Font = new SceneFont(kind % 30, Weight: 100 * (kind % 11), Family: text), Color = new SceneColor(kind, 0, 0, kind), Decorations = (SceneTextDecorations)(kind % 4) }], new SceneFont(10), SceneColor.Black) { Decorations = (SceneTextDecorations)(kind % 3) });
+                    break;
                 case 4:
                     element = parent.Add(new SceneText(value, value, text, new SceneFont(kind % 20, Weight: (kind & 8) != 0 ? 100 * (1 + (kind % 9)) : SceneFont.NormalWeight, Italic: (kind & 16) != 0), SceneColor.Black) { Anchor = (SceneTextAnchor)(kind % 3), Rotation = value, Decorations = (SceneTextDecorations)(kind % 4) });
                     break;
@@ -282,6 +286,7 @@ public static partial class VectorGraphicsFuzzTargets
             {
                 1 => new SceneBlurFilter(value),
                 2 => new SceneDropShadowFilter(value, 1, value, new SceneColor(0, 0, 0, kind)),
+                3 => SceneColorMatrixFilter.HueRotate(value),
                 _ => element.Filter,
             };
             if (kind % 7 == 3)

@@ -39,6 +39,31 @@ returns the rectangle it covers.
 unit of the drawing. It is 0.75 by default: a unit is a CSS pixel, so a chart of 640 by 400 pixels is a page of
 480 by 300 points, the size a browser gives its SVG.
 
+## Accessibility
+
+By default, the drawing is tagged for the assistive technologies, such as screen readers: it is a `Figure` element of
+the structure tree of the document, whose alternate description is the title and the description of the scene
+([Scene.Title](cref:Meziantou.Framework.VectorGraphics.Scene.Title),
+[Scene.Description](cref:Meziantou.Framework.VectorGraphics.Scene.Description)), and its hyperlinks are `Link`
+elements of the figure. [ToPdf](cref:Meziantou.Framework.Pdf.VectorGraphics.ScenePdfRenderer.ToPdf) puts the figure in a
+`Document` element:
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.VectorGraphics.Tests/ScenePdfRendererTests.cs;region=PdfVectorGraphics_Tagged;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(100, 50, "sans-serif") { Title = "Sales by region", Description = "North sold 12 units, South 7." };
+scene.Root.Add(new SceneGroup { Hyperlink = "https://example.com/sales" }).Add(new SceneRectangle(10, 10, 40, 20) { Fill = SceneColor.Black });
+
+// The drawing is a figure of the structure tree, described by the title and the description of the scene
+var document = scene.ToPdf();
+```
+<!-- endref -->
+
+To draw on a page of a tagged document, set
+[StructureParent](cref:Meziantou.Framework.Pdf.VectorGraphics.ScenePdfOptions.StructureParent) to the element the
+figure belongs to, such as a section. On a document that is not tagged, set
+[Tagged](cref:Meziantou.Framework.Pdf.VectorGraphics.ScenePdfOptions.Tagged) to `false`. Give the scenes a title and a
+description: a figure without them has no text for the assistive technologies.
+
 ## Fonts
 
 Each text is drawn with the face of its family of the [fonts of the scene](05-Fonts.md)
@@ -60,7 +85,7 @@ The shapes, the paths (arcs and quadratic curves are converted to cubic curves),
 gradients, the opacity (a group is drawn as a transparency group), the clipping rectangles and paths and the transforms
 are drawn as in the SVG, with the repeated and reflected gradients, the gradient transforms, the masks (soft masks),
 the blend modes and the underlines and strikethroughs. A JPEG image is embedded as it is; the other formats are
-decoded and compressed again. PDF has no filters: a scene with a blur or a drop shadow throws
+decoded and compressed again. PDF has no filters: a scene with a blur, a drop shadow or a color matrix throws
 `NotSupportedException`. See the [limitations](07-Limitations.md). The hyperlinks of
 the groups become link annotations of the page; only absolute addresses are linked. The tooltips, the CSS classes and
 the data attributes are not drawn. A gradient whose stops have different opacities is drawn with their average

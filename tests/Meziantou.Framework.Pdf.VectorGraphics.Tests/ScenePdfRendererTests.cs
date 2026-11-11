@@ -214,6 +214,59 @@ public sealed class ScenePdfRendererTests
     }
 
     [Fact]
+    public void TextSpans()
+    {
+        var scene = new Scene(200, 60, "sans-serif") { Background = SceneColor.White };
+        var font = new SceneFont(30, Weight: SceneFont.BoldWeight);
+        scene.Root.Add(new SceneText(10, 40, [new SceneTextSpan("MM") { Color = (SceneColor)"#ff0000" }, new SceneTextSpan("MM") { Color = (SceneColor)"#0000ff", Decorations = SceneTextDecorations.Underline }], font, SceneColor.Black));
+        var document = scene.ToPdf();
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+
+        // The first two letters are red, the last two blue and underlined
+        var pixels = image.Frames[0];
+        Assert.Contains(Enumerable.Range(10, 40), x => pixels[x, 30].R > 200 && pixels[x, 30].B < 80);
+        Assert.Contains(Enumerable.Range(60, 60), x => pixels[x, 30].B > 200 && pixels[x, 30].R < 80);
+        Assert.DoesNotContain(Enumerable.Range(60, 60), x => pixels[x, 30].R > 200 && pixels[x, 30].B < 80);
+        Assert.Contains(Enumerable.Range(41, 5), y => pixels[100, y].B > 150 && pixels[100, y].R < 150);
+        Assert.Contains("MMMM", document.Pages[0].ExtractText(), StringComparison.Ordinal);
+
+        // A color matrix is a filter: PDF cannot draw it
+        scene.Root.Add(new SceneRectangle(150, 10, 40, 40) { Fill = (SceneColor)"#ff0000", Filter = SceneColorMatrixFilter.Grayscale() });
+        Assert.Throws<NotSupportedException>(() => scene.ToPdf());
+    }
+
+    [Fact]
+    public void DocumentsAreTagged()
+    {
+        #region PdfVectorGraphics_Tagged
+        var scene = new Scene(100, 50, "sans-serif") { Title = "Sales by region", Description = "North sold 12 units, South 7." };
+        scene.Root.Add(new SceneGroup { Hyperlink = "https://example.com/sales" }).Add(new SceneRectangle(10, 10, 40, 20) { Fill = SceneColor.Black });
+
+        // The drawing is a figure of the structure tree, described by the title and the description of the scene
+        var document = scene.ToPdf();
+        #endregion
+
+        var root = Assert.Single(document.StructureTree.Elements);
+        Assert.Equal("Document", root.Type);
+        var figure = Assert.Single(root.Children);
+        Assert.Equal("Figure", figure.Type);
+        Assert.Equal("Sales by region. North sold 12 units, South 7.", figure.AlternateDescription);
+        Assert.Equal("Link", Assert.Single(figure.Children).Type);
+
+        // Saved and opened again, the tree is there
+        var reopened = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal("Figure", Assert.Single(Assert.Single(reopened.StructureTree.Elements).Children).Type);
+
+        // Not tagged, or in an element of an existing document
+        Assert.False(scene.ToPdf(new ScenePdfOptions { Tagged = false }).StructureTree.Exists);
+        var report = new PdfDocument();
+        var section = report.StructureTree.AddElement("Sect");
+        report.Pages.Add(new PdfSize(200, 200)).DrawScene(new Scene(10, 10, "sans-serif") { Title = "Chart:" , Description = "Details" }, new PdfPoint(0, 200), new ScenePdfOptions { StructureParent = section });
+        Assert.Equal("Chart: Details", Assert.Single(section.Children).AlternateDescription);
+        Assert.Null(new Scene(10, 10, "sans-serif").ToPdf().StructureTree.Elements[0].Children[0].AlternateDescription);
+    }
+
+    [Fact]
     public void TextsWithoutFontsUseHelvetica()
     {
         var measurer = ScenePdfRenderer.CreateMeasurer();

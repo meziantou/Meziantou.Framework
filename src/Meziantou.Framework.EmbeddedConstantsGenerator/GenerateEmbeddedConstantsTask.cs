@@ -3,6 +3,7 @@ using Microsoft.Build.Framework;
 
 namespace Meziantou.Framework.EmbeddedConstantsGenerator;
 
+[MSBuildMultiThreadableTask]
 public sealed class GenerateEmbeddedConstantsTask : Microsoft.Build.Utilities.Task
 {
     private const string UnexpectedFailureCode = "MFECG0011";
@@ -58,7 +59,7 @@ public sealed class GenerateEmbeddedConstantsTask : Microsoft.Build.Utilities.Ta
         var source = EmbeddedConstantsGeneratorTask.GenerateSource(result.Options, result.Entries);
         try
         {
-            WriteFileIfChanged(OutputPath, source);
+            WriteFileIfChanged(GetOutputFullPath(), source);
         }
         catch (Exception ex)
         {
@@ -67,6 +68,15 @@ public sealed class GenerateEmbeddedConstantsTask : Microsoft.Build.Utilities.Ta
         }
 
         return !Log.HasLoggedErrors;
+    }
+
+    // In multithreaded builds, tasks share the process, so the current directory is not the project directory
+    private string GetOutputFullPath()
+    {
+        if (Path.IsPathRooted(OutputPath) || string.IsNullOrWhiteSpace(ProjectDirectory))
+            return OutputPath;
+
+        return Path.GetFullPath(Path.Combine(ProjectDirectory, OutputPath));
     }
 
     private void LogValidationError(EmbeddedConstantsGeneratorTask.ValidationError error)

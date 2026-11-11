@@ -355,6 +355,58 @@ public sealed class PublicApiGeneratorMsBuildTests(PublicApiGeneratorMsBuildPack
         Assert.Equal("// stale", await File.ReadAllTextAsync(generatedFilePath, XunitCancellationToken));
     }
 
+    [Fact]
+    public async Task MultiThreadedBuild_RelativePaths_ResolveAgainstTheProjectDirectory()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("multithreaded");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile("multithreaded/Sample.csproj", $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net10.0</TargetFramework>
+                <PublicApiGeneratorOutputPath>PublicApi/PublicApi.g.cs</PublicApiGeneratorOutputPath>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="Meziantou.Framework.PublicApiGenerator.MSBuild" Version="{{fixture.PackageVersion}}" PrivateAssets="all" />
+              </ItemGroup>
+
+              <Target Name="GenerateWithRelativePaths" AfterTargets="GeneratePublicApiOnBuild">
+                <GeneratePublicApiTask Assemblies="$([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '$(TargetPath)'))"
+                                       OutputPath="Relative/PublicApi.g.cs"
+                                       ProjectDirectory="$(MSBuildProjectDirectory)" />
+              </Target>
+
+              <!-- Without ProjectDirectory, the relative path resolves against the current directory, which MSBuild moves away
+                   from the project directory only for tasks that run in-process -->
+              <Target Name="ProbeInProcessExecution" AfterTargets="GenerateWithRelativePaths">
+                <GeneratePublicApiTask Assemblies="$(TargetPath)"
+                                       OutputPath="InProcessProbe/PublicApi.g.cs" />
+              </Target>
+            </Project>
+            """);
+        temporaryDirectory.CreateTextFile("multithreaded/Sample.cs", """
+            public class Sample
+            {
+            }
+            """);
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+
+        // In multithreaded builds, MSBuild moves the current directory of the process to a sentinel directory and reports
+        // the files written there with MSB4287. Only the probe, which does not set ProjectDirectory, writes there.
+        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo", "-mt"], expectedExitCode: 0);
+
+        var warnings = result.Output.Select(line => line.Text).Where(line => line.Contains("MSB4287", StringComparison.Ordinal)).ToArray();
+        Assert.NotEmpty(warnings);
+        Assert.All(warnings, warning => Assert.Contains("\"InProcessProbe\"", warning));
+        Assert.Contains("public class Sample", await File.ReadAllTextAsync(projectDirectory / "PublicApi" / "PublicApi.g.cs", XunitCancellationToken));
+        Assert.Contains("public class Sample", await File.ReadAllTextAsync(projectDirectory / "Relative" / "PublicApi.g.cs", XunitCancellationToken));
+    }
+
     private static void CreateGlobalJson(FullPath projectDirectory, string dotnetSdkVersion)
     {
         File.WriteAllText(projectDirectory / "global.json", $$"""

@@ -506,6 +506,56 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
         Assert.Contains("'SharedText'", output);
     }
 
+    [Fact]
+    public async Task MultiThreadedBuild_RelativePaths_ResolveAgainstTheProjectDirectory()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("multithreaded");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile("multithreaded/Sample.csproj", $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net10.0</TargetFramework>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="{{EmbeddedConstantsGeneratorPackageFixture.PackageName}}" Version="{{fixture.PackageVersion}}" PrivateAssets="all" />
+                <EmbeddedConstant Include="Assets/hello.txt" Kind="Text" />
+              </ItemGroup>
+
+              <Target Name="GenerateWithRelativePaths" AfterTargets="GenerateEmbeddedConstants">
+                <GenerateEmbeddedConstantsTask EmbeddedConstants="@(EmbeddedConstant)"
+                                               OutputPath="Relative/Custom.g.cs"
+                                               ClassName="Custom"
+                                               ProjectDirectory="$(MSBuildProjectDirectory)" />
+              </Target>
+
+              <!-- Without ProjectDirectory, the relative path resolves against the current directory, which MSBuild moves away
+                   from the project directory only for tasks that run in-process -->
+              <Target Name="ProbeInProcessExecution" AfterTargets="GenerateWithRelativePaths">
+                <GenerateEmbeddedConstantsTask EmbeddedConstants="@(EmbeddedConstant->'%(FullPath)')"
+                                               OutputPath="InProcessProbe/Probe.g.cs"
+                                               ClassName="Probe" />
+              </Target>
+            </Project>
+            """);
+        temporaryDirectory.CreateTextFile("multithreaded/Assets/hello.txt", "Hello");
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+
+        // In multithreaded builds, MSBuild moves the current directory of the process to a sentinel directory and reports
+        // the files written there with MSB4287. Only the probe, which does not set ProjectDirectory, writes there.
+        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo", "-mt"], expectedExitCode: 0);
+
+        var warnings = result.Output.Select(line => line.Text).Where(line => line.Contains("MSB4287", StringComparison.Ordinal)).ToArray();
+        Assert.NotEmpty(warnings);
+        Assert.All(warnings, warning => Assert.Contains("\"InProcessProbe\"", warning));
+        Assert.Contains("public const string HelloText = \"Hello\";", await File.ReadAllTextAsync(GetGeneratedFilePath(projectDirectory), XunitCancellationToken));
+        Assert.Contains("public const string HelloText = \"Hello\";", await File.ReadAllTextAsync(projectDirectory / "Relative" / "Custom.g.cs", XunitCancellationToken));
+    }
+
     private static string CreateProjectFile(EmbeddedConstantsGeneratorPackageFixture fixture, string embeddedConstants)
     {
         return $$"""

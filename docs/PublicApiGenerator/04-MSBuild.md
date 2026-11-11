@@ -59,6 +59,12 @@ does nothing. To split the API into one file per namespace:
 </PropertyGroup>
 ```
 
+## Multithreaded builds
+
+The task supports the multithreaded mode of MSBuild 18.6 and later (`dotnet build -mt`): MSBuild runs it in the build
+process instead of a separate task host. Earlier versions of MSBuild are still supported. Relative paths are resolved
+against the project directory, not the current directory of the process.
+
 ## Multi-targeted projects
 
 For a project that sets `TargetFrameworks`, the files are written once, after all the target frameworks are built: the

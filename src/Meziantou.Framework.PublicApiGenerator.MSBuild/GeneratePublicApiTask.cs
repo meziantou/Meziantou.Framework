@@ -2,6 +2,7 @@ using Microsoft.Build.Framework;
 
 namespace Meziantou.Framework.PublicApiGenerator.MSBuild;
 
+[MSBuildMultiThreadableTask]
 public sealed class GeneratePublicApiTask : Microsoft.Build.Utilities.Task
 {
     [SuppressMessage("Performance", "CA1819:Properties should not return arrays", Justification = "MSBuild task item parameters are represented as arrays.")]
@@ -25,6 +26,9 @@ public sealed class GeneratePublicApiTask : Microsoft.Build.Utilities.Task
 
     public bool VerifyNoChange { get; set; }
 
+    /// <summary>Gets or sets the directory used to resolve relative paths. Relative paths resolve against the current directory when it is not set.</summary>
+    public string? ProjectDirectory { get; set; }
+
     public override bool Execute()
     {
         if (Assemblies.Length == 0)
@@ -44,7 +48,7 @@ public sealed class GeneratePublicApiTask : Microsoft.Build.Utilities.Task
             .OrderBy(item => item.GetMetadata("TargetFramework"), StringComparer.Ordinal)
             .ThenBy(item => item.ItemSpec, StringComparer.Ordinal))
         {
-            var assemblyPath = FullPath.FromPath(assembly.ItemSpec);
+            var assemblyPath = GetFullPath(assembly.ItemSpec);
             if (!File.Exists(assemblyPath))
             {
                 Log.LogError("The assembly '{0}' does not exist.", assemblyPath);
@@ -80,7 +84,7 @@ public sealed class GeneratePublicApiTask : Microsoft.Build.Utilities.Task
                 return false;
             }
 
-            var outputFilePath = FullPath.FromPath(OutputPath);
+            var outputFilePath = GetFullPath(OutputPath);
             if (VerifyNoChange)
             {
                 LogValidationErrors(ValidateSingleFile(files[0], outputFilePath));
@@ -92,7 +96,7 @@ public sealed class GeneratePublicApiTask : Microsoft.Build.Utilities.Task
             return !Log.HasLoggedErrors;
         }
 
-        var outputDirectoryPath = FullPath.FromPath(OutputPath);
+        var outputDirectoryPath = GetFullPath(OutputPath);
         if (VerifyNoChange)
         {
             var files = PublicApi.Generate(assemblySources, options);
@@ -103,6 +107,15 @@ public sealed class GeneratePublicApiTask : Microsoft.Build.Utilities.Task
         Directory.CreateDirectory(outputDirectoryPath);
         PublicApi.GenerateToDirectory(assemblySources, outputDirectoryPath, options);
         return !Log.HasLoggedErrors;
+    }
+
+    // In multithreaded builds, tasks share the process, so the current directory is not the project directory
+    private FullPath GetFullPath(string path)
+    {
+        if (string.IsNullOrEmpty(ProjectDirectory))
+            return FullPath.FromPath(path);
+
+        return FullPath.Combine(ProjectDirectory, path);
     }
 
     private void LogValidationErrors(IReadOnlyList<string> errors)

@@ -102,9 +102,30 @@ namespace Meziantou.Framework.VectorGraphics
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.PathCommand> Commands { get => throw null; }
         public bool IsEmpty { get => throw null; }
+        public double GetLength() => throw null;
+        public Meziantou.Framework.VectorGraphics.PathPoint GetPointAtLength(double distance) => throw null;
         public Meziantou.Framework.VectorGraphics.PathData ToCubicCurves() => throw null;
         public override string ToString() => throw null;
         public Meziantou.Framework.VectorGraphics.PathData Translate(double offsetX, double offsetY) => throw null;
+    }
+
+    public readonly struct PathPoint : System.IEquatable<Meziantou.Framework.VectorGraphics.PathPoint>
+    {
+        public double Angle { get => throw null; init { } }
+        public double X { get => throw null; init { } }
+        public double Y { get => throw null; init { } }
+        public PathPoint(double X, double Y, double Angle) { }
+        public void Deconstruct(out double X, out double Y, out double Angle) => throw null;
+        public bool Equals(Meziantou.Framework.VectorGraphics.PathPoint other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.VectorGraphics.PathPoint left, Meziantou.Framework.VectorGraphics.PathPoint right) => throw null;
+        public static bool operator !=(Meziantou.Framework.VectorGraphics.PathPoint left, Meziantou.Framework.VectorGraphics.PathPoint right) => throw null;
     }
 
     public sealed class RadialGradientPaint : Meziantou.Framework.VectorGraphics.SceneGradientPaint
@@ -473,6 +494,8 @@ namespace Meziantou.Framework.VectorGraphics
         public Meziantou.Framework.VectorGraphics.SceneFont Font { get => throw null; }
         public double LetterSpacing { get => throw null; set { } }
         public double MeasuredWidth { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.PathData? Path { get => throw null; set { } }
+        public double PathStartOffset { get => throw null; set { } }
         public double Rotation { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneTextSpan> Spans { get => throw null; }
         public string Text { get => throw null; }

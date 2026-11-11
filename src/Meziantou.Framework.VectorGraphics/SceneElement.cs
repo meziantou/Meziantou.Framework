@@ -106,7 +106,8 @@ public abstract class SceneElement
     /// </summary>
     /// <param name="measureText">
     /// Gives the rectangle of a text before its rotation, in the coordinates of its parent, or <see langword="null"/> when
-    /// it draws nothing: the size of a text depends on the fonts of the renderer.
+    /// it draws nothing: the size of a text depends on the fonts of the renderer. It is not called for a text on a path
+    /// (<see cref="SceneText.Path"/>), whose rectangle is the one of its path enlarged by the size of its font.
     /// </param>
     /// <param name="applyClips">
     /// Whether a group applies its clips (<see cref="SceneGroup.Clip"/>, <see cref="SceneGroup.ClipPath"/>). The filter of

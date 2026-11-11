@@ -74,6 +74,14 @@ internal static class SceneGeometry
             case SceneImage image:
                 return new SceneBounds(image.X, image.Y, image.Width, image.Height);
 
+            // A text on a path is within its size of the path: its glyphs are above the path, and its descenders below
+            case SceneText { Path: { } textPath } text:
+                if (text.Text.Length is 0 || GetPathBounds(textPath) is not { } textPathBounds)
+                    return null;
+
+                var size = text.Spans.Count is 0 ? text.Font.Size : text.Spans.Max(span => (span.Font ?? text.Font).Size);
+                return Inflate(textPathBounds, double.IsFinite(size) ? Math.Abs(size) : 0);
+
             case SceneText text:
                 if (measureText(text) is not { } textBounds)
                     return null;

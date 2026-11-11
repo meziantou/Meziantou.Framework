@@ -39,6 +39,7 @@ public static class SvgSceneRenderer
         private readonly Dictionary<SceneGroup, string> _clipPathIds = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<SceneElement, string> _filterIds = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<SceneElement, string> _maskIds = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<SceneText, string> _textPathIds = new(ReferenceEqualityComparer.Instance);
         private readonly List<(string Id, SceneMask Mask)> _masks = [];
         private readonly HashSet<string> _elementIds = new(StringComparer.Ordinal);
         private readonly int _precision = options.Precision;
@@ -175,6 +176,7 @@ public static class SvgSceneRenderer
             var clipCount = 0;
             var filterCount = 0;
             var maskCount = 0;
+            var textPathCount = 0;
             Visit(root);
             if (definitions.Length > 0)
             {
@@ -189,6 +191,14 @@ public static class SvgSceneRenderer
                 {
                     AddGradient(shape.Fill);
                     AddGradient(shape.Stroke);
+                }
+
+                // The path of a text is referenced by its textPath
+                if (element is SceneText { Path: { } textPath } pathText && !_textPathIds.ContainsKey(pathText))
+                {
+                    var id = NextId("textpath", ref textPathCount);
+                    _textPathIds[pathText] = id;
+                    definitions.Append("<path id=\"").Append(Escape(id)).Append("\" d=\"").Append(SvgNumber.FormatPath(textPath, _precision)).Append("\"/>\n");
                 }
 
                 if (element.Filter is { } filter)
@@ -545,8 +555,12 @@ public static class SvgSceneRenderer
         private void WriteText(SceneText text)
         {
             StartTag("text");
-            Attribute("x", text.X);
-            Attribute("y", text.Y);
+            var textPathId = _textPathIds.GetValueOrDefault(text);
+            if (textPathId is null)
+            {
+                Attribute("x", text.X);
+                Attribute("y", text.Y);
+            }
             switch (text.Anchor)
             {
                 case SceneTextAnchor.Middle:
@@ -599,7 +613,7 @@ public static class SvgSceneRenderer
 
             Paint("fill", text.Color);
             // The rotation applies before the transform: it is on its right
-            var rotation = text.Rotation != 0 ? "rotate(" + Number(text.Rotation) + " " + Number(text.X) + " " + Number(text.Y) + ")" : null;
+            var rotation = text.Rotation != 0 && textPathId is null ? "rotate(" + Number(text.Rotation) + " " + Number(text.X) + " " + Number(text.Y) + ")" : null;
             if (text.Transform is { } textTransform)
             {
                 Attribute("transform", rotation is null ? Transform(textTransform) : Transform(textTransform) + " " + rotation);
@@ -618,6 +632,18 @@ public static class SvgSceneRenderer
                 output.Write("</title>");
             }
 
+            if (textPathId is not null)
+            {
+                output.Write("<textPath");
+                Attribute("href", "#" + textPathId);
+                if (text.PathStartOffset != 0 && double.IsFinite(text.PathStartOffset))
+                {
+                    Attribute("startOffset", text.PathStartOffset);
+                }
+
+                output.Write('>');
+            }
+
             if (text.Spans.Count is 0)
             {
                 output.Write(Escape(text.Text));
@@ -628,6 +654,11 @@ public static class SvgSceneRenderer
                 {
                     WriteSpan(text, span);
                 }
+            }
+
+            if (textPathId is not null)
+            {
+                output.Write("</textPath>");
             }
 
             output.Write("</text>\n");

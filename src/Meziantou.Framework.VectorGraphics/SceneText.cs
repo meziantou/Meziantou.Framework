@@ -68,6 +68,21 @@ public sealed class SceneText(double x, double y, string text, SceneFont font, S
     /// </summary>
     public IReadOnlyList<SceneTextSpan> Spans { get; } = [];
 
+    /// <summary>
+    /// Gets or sets the path the text follows, as an SVG <c>textPath</c>, or <see langword="null"/> for a straight text
+    /// on its baseline. With a path, <see cref="X"/>, <see cref="Y"/> and <see cref="Rotation"/> are ignored.
+    /// </summary>
+    /// <remarks>
+    /// The baseline of the text is on the path, and each character is turned to the direction of the path at the middle
+    /// of its advance. The text starts at <see cref="PathStartOffset"/> along the path, where <see cref="Anchor"/> places
+    /// it: its start, its middle or its end is there. The characters whose middle is beyond the ends of the path are not
+    /// drawn. The subpaths are followed one after the other.
+    /// </remarks>
+    public PathData? Path { get; set; }
+
+    /// <summary>Gets or sets the distance along <see cref="Path"/> at which the text is anchored, in pixels. The default is 0.</summary>
+    public double PathStartOffset { get; set; }
+
     /// <summary>Gets or sets the advance width of the text, as the layout measured it.</summary>
     public double MeasuredWidth { get; set; }
 

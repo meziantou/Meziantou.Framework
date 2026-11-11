@@ -639,6 +639,12 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
     private void DrawText(SceneText text, double opacity)
     {
+        if (text.Path is { } path)
+        {
+            DrawTextOnPath(text, path, opacity);
+            return;
+        }
+
         if (text.Text.Length is 0 || !(opacity > 0) || !IsFinite(text.X, text.Y, text.Rotation))
             return;
 
@@ -671,11 +677,87 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                 _content.SetFont(part.Font, part.Size);
                 ShowPart(part);
                 _content.EndText();
-                DrawDecorations(part, startX + offset, text.Y, rotationMatrix);
+                DrawDecorations(part, startX + offset, text.Y, part.Width, rotationMatrix);
                 Restore();
             }
 
             offset += part.Width;
+        }
+    }
+
+    // Each cluster is a text of its own, turned to the direction of the path at the middle of its advance, with the
+    // middle of its advance on the path; the clusters whose middle is beyond the ends of the path are not drawn, as in
+    // SVG. Its lines are pieces of the same length, turned with it.
+    private void DrawTextOnPath(SceneText text, PathData path, double opacity)
+    {
+        if (text.Text.Length is 0 || !(opacity > 0) || path.IsEmpty)
+            return;
+
+        var parts = GetTextParts(text, layoutClusters: true);
+        var length = path.GetLength();
+        if (parts.Count is 0 || !(length > 0) || !double.IsFinite(length))
+            return;
+
+        var width = parts.Sum(part => part.Width);
+        var start = (double.IsFinite(text.PathStartOffset) ? text.PathStartOffset : 0) - text.Anchor switch
+        {
+            SceneTextAnchor.Middle => width / 2,
+            SceneTextAnchor.End => width,
+            _ => 0,
+        };
+
+        foreach (var part in parts)
+        {
+            var alpha = part.Color.A / 255.0 * opacity;
+            var clusters = new List<(TextCluster Cluster, PdfMatrix Matrix)>();
+            foreach (var cluster in part.Clusters!)
+            {
+                var middle = start + cluster.X + (cluster.Advance / 2);
+                if (middle < 0 || middle > length)
+                    continue;
+
+                var point = path.GetPointAtLength(middle);
+                var rotation = SceneTransform.Rotate(point.Angle);
+                var matrix = PdfMatrix.Multiply(new PdfMatrix(1, 0, 0, 1, -cluster.Advance / 2, 0), new PdfMatrix(rotation.A, rotation.B, rotation.C, rotation.D, point.X, point.Y));
+                if (IsFinite(matrix.A, matrix.B, matrix.C, matrix.D, matrix.E, matrix.F))
+                {
+                    clusters.Add((cluster, matrix));
+                }
+            }
+
+            start += part.Width;
+            if (!(alpha > 0) || clusters.Count is 0)
+                continue;
+
+            Save();
+            SetColor(part.Color, stroke: false);
+            SetAlpha(alpha, strokeAlpha: 1);
+            _content.BeginText().SetFont(part.Font, part.Size);
+            _content.BeginMarkedContent("Span", new PdfDictionary { ["ActualText"] = PdfString.FromText(part.Text) });
+            foreach (var (cluster, matrix) in clusters)
+            {
+                _content.SetTextMatrix(PdfMatrix.Multiply(new PdfMatrix(1, 0, 0, -1, 0, 0), matrix));
+                if (cluster.Glyphs is { } glyphs)
+                {
+                    if (glyphs.Length > 0)
+                    {
+                        _content.ShowGlyphs(glyphs);
+                    }
+                }
+                else
+                {
+                    _content.ShowText(cluster.Text);
+                }
+            }
+
+            _content.EndMarkedContent();
+            _content.EndText();
+            foreach (var (cluster, matrix) in clusters)
+            {
+                DrawDecorations(part, 0, 0, cluster.Advance, matrix);
+            }
+
+            Restore();
         }
     }
 
@@ -726,9 +808,9 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     }
 
     // The lines of a part are rectangles of its color, at the position and of the thickness the face of its span gives
-    private void DrawDecorations(TextPart part, double x, double baseline, PdfMatrix rotation)
+    private void DrawDecorations(TextPart part, double x, double baseline, double width, PdfMatrix rotation)
     {
-        if ((part.Decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough | SceneTextDecorations.Overline)) is SceneTextDecorations.None || !(part.Width > 0))
+        if ((part.Decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough | SceneTextDecorations.Overline)) is SceneTextDecorations.None || !(width > 0))
             return;
 
         Save();
@@ -737,21 +819,21 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         {
             var top = part.Face?.UnderlinePosition ?? HelveticaUnderlinePosition;
             var thickness = part.Face?.UnderlineThickness ?? HelveticaLineThickness;
-            _content.Rectangle(x, baseline - (top * part.Size), part.Width, thickness * part.Size).Fill();
+            _content.Rectangle(x, baseline - (top * part.Size), width, thickness * part.Size).Fill();
         }
 
         if (part.Decorations.HasFlag(SceneTextDecorations.Strikethrough))
         {
             var top = part.Face?.StrikeoutPosition ?? HelveticaStrikeoutPosition;
             var thickness = part.Face?.StrikeoutThickness ?? HelveticaLineThickness;
-            _content.Rectangle(x, baseline - (top * part.Size), part.Width, thickness * part.Size).Fill();
+            _content.Rectangle(x, baseline - (top * part.Size), width, thickness * part.Size).Fill();
         }
 
         // An overline is at the ascent of the font, as thick as an underline, as in the image renderer
         if (part.Decorations.HasFlag(SceneTextDecorations.Overline))
         {
             var thickness = part.Face?.UnderlineThickness ?? HelveticaLineThickness;
-            _content.Rectangle(x, baseline - (part.Font.Ascent / 1000 * part.Size), part.Width, thickness * part.Size).Fill();
+            _content.Rectangle(x, baseline - (part.Font.Ascent / 1000 * part.Size), width, thickness * part.Size).Fill();
         }
 
         Restore();

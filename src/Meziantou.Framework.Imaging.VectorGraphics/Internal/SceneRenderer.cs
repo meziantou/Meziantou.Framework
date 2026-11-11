@@ -401,6 +401,12 @@ internal static class SceneRenderer
             return;
 
         var width = parts.Sum(part => part.Layout.Width);
+        if (text.Path is { } path)
+        {
+            DrawTextOnPath(canvas, text, path, parts, width);
+            return;
+        }
+
         var x = text.Anchor switch
         {
             SceneTextAnchor.Middle => text.X - (width / 2),
@@ -416,6 +422,34 @@ internal static class SceneRenderer
 
         canvas.Transform(AffineTransform.CreateRotation(text.Rotation, new PointD(text.X, text.Y)), (parts, x, text.Y), static (canvas, state) => DrawTextParts(canvas, state.parts, state.x, state.Y));
     }
+
+    // The parts follow the path one after the other, from where the anchor puts the text. The characters beyond the
+    // ends of the path are not drawn, as in SVG.
+    private static void DrawTextOnPath(DrawingCanvas canvas, SceneText text, PathData path, List<(TextLayout Layout, Brush Brush)> parts, double width)
+    {
+        if (ToVectorPath(path) is not { } vector)
+            return;
+
+        var start = (double.IsFinite(text.PathStartOffset) ? text.PathStartOffset : 0) - text.Anchor switch
+        {
+            SceneTextAnchor.Middle => width / 2,
+            SceneTextAnchor.End => width,
+            _ => 0,
+        };
+
+        foreach (var (layout, brush) in parts)
+        {
+            if (Math.Abs(start) <= MaxPathOffset)
+            {
+                canvas.FillText(brush, layout, vector, new TextPathOptions { StartOffset = start, Overflow = TextPathOverflow.Clip });
+            }
+
+            start += layout.Width;
+        }
+    }
+
+    // The largest distance along a path of the canvas
+    private const double MaxPathOffset = 16777216;
 
     // The scene positions a text by its baseline; a layout is drawn from its top-left corner. The parts are drawn one
     // after the other, as the measurers measure them.

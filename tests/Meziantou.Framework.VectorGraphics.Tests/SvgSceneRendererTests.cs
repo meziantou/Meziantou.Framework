@@ -446,6 +446,77 @@ public sealed class SvgSceneRendererTests
     }
 
     [Fact]
+    public void PathLengthAndPoints()
+    {
+        #region VectorGraphics_PathMeasure
+        var path = new PathBuilder().MoveTo(0, 0).LineTo(30, 40).LineTo(30, 100).Build();
+
+        // The length of the path, and a point at a distance along it with the direction of the path there
+        Assert.Equal(110, path.GetLength(), 1e-9);
+        var point = path.GetPointAtLength(80);
+        Assert.Equal(30, point.X, 1e-9);
+        Assert.Equal(70, point.Y, 1e-9);
+        Assert.Equal(90, point.Angle, 1e-9); // Down: the y axis points down
+        #endregion
+
+        // At the end of a segment, the direction of the next one; beyond the ends, the ends
+        Assert.Equal(90, path.GetPointAtLength(50).Angle, 1e-9);
+        Assert.Equal(new PathPoint(0, 0, path.GetPointAtLength(0).Angle), path.GetPointAtLength(-10));
+        Assert.Equal(30, path.GetPointAtLength(1000).X, 1e-9);
+        Assert.Equal(100, path.GetPointAtLength(1000).Y, 1e-9);
+        Assert.Equal(0, path.GetPointAtLength(double.NaN).X, 1e-9);
+
+        // A closed rectangle goes back to its start; the moves between subpaths have no length
+        Assert.Equal(40, new PathBuilder().AddRectangle(0, 0, 10, 10).Build().GetLength(), 1e-9);
+        Assert.Equal(20, new PathBuilder().MoveTo(0, 0).LineTo(10, 0).MoveTo(100, 100).LineTo(100, 110).Build().GetLength(), 1e-9);
+        Assert.Equal(new PathPoint(100, 105, 90), new PathBuilder().MoveTo(0, 0).LineTo(10, 0).MoveTo(100, 100).LineTo(100, 110).Build().GetPointAtLength(15));
+
+        // The curves are measured by their chords
+        Assert.Equal(2 * Math.PI * 10, new PathBuilder().AddCircle(0, 0, 10).Build().GetLength(), 0.05);
+        var top = new PathBuilder().MoveTo(0, 0).ArcTo(10, 10, 0, largeArc: false, sweep: true, 20, 0).Build();
+        var middle = top.GetPointAtLength(top.GetLength() / 2);
+        Assert.Equal(10, middle.X, 0.01);
+        Assert.Equal(-10, middle.Y, 0.01);
+        Assert.Equal(0, middle.Angle, 0.5);
+
+        // A path without length gives its first point; an empty path has none
+        Assert.Equal(new PathPoint(5, 6, 0), new PathBuilder().MoveTo(5, 6).Build().GetPointAtLength(1));
+        Assert.Equal(0, new PathBuilder().Build().GetLength());
+        Assert.Throws<InvalidOperationException>(() => new PathBuilder().Build().GetPointAtLength(0));
+        Assert.Equal(10, new PathBuilder().MoveTo(0, 0).LineTo(double.NaN, 0).LineTo(10, 0).LineTo(20, 0).Build().GetLength(), 1e-9);
+    }
+
+    [Fact]
+    public void TextOnAPath()
+    {
+        #region VectorGraphics_TextOnPath
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // The text follows the arc, centered on its middle
+        var arc = new PathBuilder().MoveTo(20, 90).ArcTo(80, 80, 0, largeArc: false, sweep: true, 180, 90).Build();
+        scene.Root.Add(new ScenePath(arc) { Stroke = (SceneColor)"#cbd5e1" });
+        scene.Root.Add(new SceneText(0, 0, "Text along a path", new SceneFont(16), SceneColor.Black)
+        {
+            Path = arc,
+            PathStartOffset = arc.GetLength() / 2,
+            Anchor = SceneTextAnchor.Middle,
+        });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("TextOnPath", svg);
+        Assert.Contains("<path id=\"scene-textpath0\" d=\"M20,90 A80,80 0 0,1 180,90\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<text text-anchor=\"middle\" font-size=\"16\"", svg, StringComparison.Ordinal);
+        Assert.Contains("><textPath href=\"#scene-textpath0\" startOffset=\"", svg, StringComparison.Ordinal);
+        Assert.Contains("\">Text along a path</textPath></text>", svg, StringComparison.Ordinal);
+
+        // The bounds of a text on a path are the bounds of the path, enlarged by the size of its font
+        var text = new SceneText(0, 0, "a", new SceneFont(10), SceneColor.Black) { Path = new PathBuilder().MoveTo(0, 50).LineTo(100, 50).Build() };
+        Assert.Equal(new SceneBounds(-10, 40, 120, 20), text.GetBounds(_ => throw new InvalidOperationException()));
+    }
+
+    [Fact]
     public void ToCubicCurves()
     {
         // A quadratic curve becomes the cubic curve of the same shape; the other commands are kept

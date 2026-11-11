@@ -280,6 +280,31 @@ public sealed class ScenePdfRendererTests
     }
 
     [Fact]
+    public void TextOnAPath()
+    {
+        // A text along a horizontal path from 10 to 60: the characters beyond its end are not drawn
+        var scene = new Scene(200, 100, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneText(0, 0, "MMMMMMMMMM", new SceneFont(20), SceneColor.Black) { Path = new PathBuilder().MoveTo(10, 50).LineTo(60, 50).Build(), Decorations = SceneTextDecorations.Underline });
+
+        // Vertical, going down, centered on the middle of the path: the tops of the glyphs are on its right, as in SVG
+        scene.Root.Add(new SceneText(0, 0, "MM", new SceneFont(20), SceneColor.Black) { Path = new PathBuilder().MoveTo(150, 10).LineTo(150, 90).Build(), PathStartOffset = 40, Anchor = SceneTextAnchor.Middle });
+        var document = scene.ToPdf();
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+        var inked = Enumerable.Range(0, 100).Where(x => Enumerable.Range(30, 19).Any(y => image.Frames[0][x, y].R < 128)).ToList();
+        Assert.InRange(inked.Min(), 10, 13);
+        Assert.InRange(inked.Max(), 50, 62);
+
+        // The underline is below the path
+        Assert.Contains(Enumerable.Range(50, 5), y => image.Frames[0][30, y].R < 200);
+
+        var columns = Enumerable.Range(100, 100).Where(x => Enumerable.Range(0, 100).Any(y => image.Frames[0][x, y].R < 128)).ToList();
+        Assert.InRange(columns.Min(), 150, 152);
+        Assert.InRange(columns.Max(), 163, 170);
+        var text = document.Pages[0].ExtractText();
+        Assert.Contains("MMM", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void DocumentsAreTagged()
     {
         #region PdfVectorGraphics_Tagged

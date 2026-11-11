@@ -178,6 +178,28 @@ public sealed class SceneRendererTests
         Assert.InRange(top, 70, 76);
     }
 
+    [Fact]
+    public void TextOnAPath()
+    {
+        // A text along a horizontal path from 10 to 60: the characters beyond its end are not drawn
+        var scene = new Scene(200, 100, "sans-serif");
+        scene.Root.Add(new SceneText(0, 0, "MMMMMMMMMM", new SceneFont(20), SceneColor.Black) { Path = new PathBuilder().MoveTo(10, 50).LineTo(60, 50).Build() });
+
+        // Vertical, going down, centered on the middle of the path: the tops of the glyphs are on its right, as in SVG
+        scene.Root.Add(new SceneText(0, 0, "MM", new SceneFont(20), SceneColor.Black) { Path = new PathBuilder().MoveTo(150, 10).LineTo(150, 90).Build(), PathStartOffset = 40, Anchor = SceneTextAnchor.Middle });
+        using var image = scene.ToImage();
+        var (left, top, right, bottom) = GetInkBounds(image, 0, 0, 100, 100);
+        Assert.InRange(left, 10, 13);
+        Assert.InRange(right, 50, 62);
+        Assert.InRange(bottom, 48, 50);
+        Assert.InRange(top, 33, 38);
+
+        (left, top, right, bottom) = GetInkBounds(image, 100, 0, 200, 100);
+        Assert.InRange(left, 150, 152);
+        Assert.InRange(right, 163, 170);
+        Assert.InRange((top + bottom) / 2.0, 48, 52);
+    }
+
     private static (int Left, int Top, int Right, int Bottom) GetInkBounds(Image<Rgba32> image, int x0, int y0, int x1, int y1)
     {
         var (left, top, right, bottom) = (int.MaxValue, int.MaxValue, -1, -1);

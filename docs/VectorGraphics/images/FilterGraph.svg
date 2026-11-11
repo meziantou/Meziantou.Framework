@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100" role="img" font-family="sans-serif">
+<defs>
+<filter id="scene-filter0" filterUnits="userSpaceOnUse" x="15" y="15" width="90" height="70" primitiveUnits="userSpaceOnUse"><feMorphology in="SourceAlpha" operator="dilate" radius="2"/><feGaussianBlur result="r1" stdDeviation="4"/><feFlood flood-color="#38bdf8"/><feComposite in2="r1" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="scene-filter1" filterUnits="userSpaceOnUse" x="110" y="10" width="80" height="80" primitiveUnits="userSpaceOnUse"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="10" xChannelSelector="R" yChannelSelector="G"/></filter>
+</defs>
+<rect x="30" y="30" width="60" height="40" rx="6" fill="#0369a1" filter="url(#scene-filter0)"/>
+<circle cx="150" cy="50" r="30" fill="#b91c1c" filter="url(#scene-filter1)"/>
+</svg>

@@ -524,6 +524,110 @@ public sealed class SceneRendererTests
     }
 
     [Fact]
+    public void FilterGraphsDrawInTheirRegion()
+    {
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+
+        // A flood fills the region of its graph, beyond the shape
+        scene.Root.Add(new SceneRectangle(10, 10, 10, 10) { Fill = SceneColor.Black, Filter = new SceneFilterGraph([new SceneFloodPrimitive((SceneColor)"#ff0000")]) { Region = new SceneBounds(0, 0, 30, 30) } });
+
+        // The drawing, moved 20 pixels right, merged under itself: the default region contains the move
+        var copy = new SceneFilterGraph([new SceneOffsetPrimitive(20, 0) { Input = SceneFilterInput.SourceGraphic }, new SceneMergePrimitive(SceneFilterInput.Previous, SceneFilterInput.SourceGraphic)]);
+        scene.Root.Add(new SceneRectangle(40, 10, 10, 10) { Fill = (SceneColor)"#0000ff", Filter = copy });
+
+        // The region is in the coordinates of the parent of the element, outside its transform
+        var group = scene.Root.Add(new SceneGroup { Transform = SceneTransform.Translate(50, 0), Filter = new SceneFilterGraph([new SceneFloodPrimitive((SceneColor)"#00ff00")]) { Region = new SceneBounds(80, 40, 10, 10) } });
+        group.Add(new SceneRectangle(0, 40, 10, 10) { Fill = SceneColor.Black });
+
+        // A graph without region on an element that draws nothing draws nothing; with a region, it draws
+        scene.Root.Add(new SceneGroup { Filter = new SceneFilterGraph([new SceneFloodPrimitive(SceneColor.Black)]) });
+        scene.Root.Add(new SceneGroup { Filter = new SceneFilterGraph([new SceneFloodPrimitive(SceneColor.Black)]) { Region = new SceneBounds(0, 50, 5, 5) } });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+
+        Assert.Equal(Red, pixels[2, 2]);
+        Assert.Equal(Red, pixels[15, 15]);
+        Assert.Equal(Colors.White, pixels[35, 5]);
+        Assert.Equal(Blue, pixels[45, 15]);
+        Assert.Equal(Blue, pixels[65, 15]);
+        Assert.Equal(Colors.White, pixels[55, 15]);
+        Assert.Equal(new Rgba32(0, 255, 0), pixels[85, 45]);
+        Assert.Equal(Colors.White, pixels[55, 45]);
+        Assert.Equal(Colors.Black, pixels[2, 52]);
+        Assert.Equal(Colors.White, pixels[2, 45]);
+    }
+
+    [Fact]
+    public void FilterGraphPrimitivesAndImages()
+    {
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+
+        // A glow: the alpha, blurred and colored, under the shape
+        var glow = new SceneFilterGraph(
+        [
+            new SceneGaussianBlurPrimitive(3) { Input = SceneFilterInput.SourceAlpha },
+            new SceneFloodPrimitive((SceneColor)"#0000ff"),
+            new SceneCompositePrimitive(SceneCompositeOperator.In, SceneFilterInput.Result(0)),
+            new SceneMergePrimitive(SceneFilterInput.Previous, SceneFilterInput.SourceGraphic),
+        ]);
+        scene.Root.Add(new SceneRectangle(10, 10, 20, 20) { Fill = SceneColor.Black, Filter = glow });
+
+        // An image primitive draws an element that is not in the scene; an element that draws itself through its own filter stops there
+        var dot = new SceneCircle(70, 20, 8) { Fill = (SceneColor)"#ff0000" };
+        scene.Root.Add(new SceneRectangle(50, 0, 40, 40) { Filter = new SceneFilterGraph([new SceneImagePrimitive(dot)]) { Region = new SceneBounds(50, 0, 40, 40) } });
+        var loop = scene.Root.Add(new SceneGroup());
+        var inner = loop.Add(new SceneRectangle(40, 45, 10, 10) { Fill = SceneColor.Black });
+        inner.Filter = new SceneFilterGraph([new SceneImagePrimitive(loop), new SceneMergePrimitive(SceneFilterInput.Previous, SceneFilterInput.SourceGraphic)]);
+
+        // Every primitive is drawn
+        var light = new SceneSpotLight(5, 5, 20, 5, 5, 0) { SpecularExponent = 300, LimitingConeAngle = 45 };
+        var everything = new SceneFilterGraph(
+        [
+            new SceneMorphologyPrimitive(SceneMorphologyOperator.Erode, 1, 1),
+            new SceneTurbulencePrimitive(SceneTurbulenceType.Turbulence, 0.1, 0.1, 1, 1) { StitchTiles = true, ColorSpace = SceneFilterColorSpace.Srgb },
+            new SceneDisplacementMapPrimitive(2, SceneFilterInput.Previous) { Input = SceneFilterInput.Result(0) },
+            new SceneConvolveMatrixPrimitive(3, 3, 0, 0, 0, 0, 1, 0, 0, 0, 0) { Bias = 0, PreserveAlpha = true, TargetX = 1 },
+            new SceneDiffuseLightingPrimitive(new SceneDistantLight(0, 90), SceneColor.White),
+            new SceneSpecularLightingPrimitive(light, SceneColor.White) { Input = SceneFilterInput.SourceAlpha },
+            new SceneDiffuseLightingPrimitive(new ScenePointLight(5, 5, 10), SceneColor.White) { Input = SceneFilterInput.SourceAlpha },
+            new SceneComponentTransferPrimitive { Red = SceneTransferFunction.CreateTable(1, 0), Green = SceneTransferFunction.CreateDiscrete(0, 1), Blue = SceneTransferFunction.CreateLinear(1, 0), Alpha = SceneTransferFunction.CreateGamma(1, 1, 0) },
+            new SceneBlendPrimitive(SceneBlendMode.Multiply, SceneFilterInput.SourceGraphic),
+            new SceneTilePrimitive { Input = SceneFilterInput.Result(0), Subregion = new SceneBounds(0, 40, 10, 10) },
+            new SceneColorMatrixPrimitive(SceneColorMatrixFilter.Grayscale()),
+            new SceneDropShadowPrimitive(1, 1, 1, 1, SceneColor.Black) { Input = SceneFilterInput.SourceGraphic },
+        ]);
+        scene.Root.Add(new SceneRectangle(0, 40, 10, 10) { Fill = SceneColor.Black, Filter = everything });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+
+        Assert.Equal(Colors.Black, pixels[20, 20]);
+        Assert.True(pixels[8, 20].B > 200 && pixels[8, 20].R < 230, "the glow is blue outside the shape");
+        Assert.Equal(Colors.White, pixels[45, 20]);
+        Assert.Equal(Red, pixels[70, 20]);
+        Assert.Equal(Colors.White, pixels[55, 5]);
+        Assert.Equal(Colors.Black, pixels[45, 50]);
+
+        // The values beyond the limits of the canvas are brought within them
+        var extreme = new Scene(20, 20, "sans-serif") { Background = SceneColor.White };
+        var far = new SceneFilterGraph(
+        [
+            new SceneGaussianBlurPrimitive(1e6) { Subregion = new SceneBounds(-1e9, -1e9, 2e9, 2e9) },
+            new SceneOffsetPrimitive(1e9, -1e9),
+            new SceneMorphologyPrimitive(SceneMorphologyOperator.Dilate, 1e9, 0),
+            new SceneDisplacementMapPrimitive(1e9, SceneFilterInput.SourceGraphic),
+            new SceneDiffuseLightingPrimitive(new ScenePointLight(1e9, -1e9, 1e9), SceneColor.White) { SurfaceScale = 1e9, DiffuseConstant = 1e9 },
+            new SceneFloodPrimitive(SceneColor.Black) { Subregion = new SceneBounds(0, 0, 0, 0) },
+        ])
+        {
+            Region = new SceneBounds(-1e9, -1e9, 2e9, 2e9),
+        };
+        extreme.Root.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black, Filter = far });
+        extreme.Root.Add(new SceneRectangle(0, 0, 10, 10) { Filter = new SceneFilterGraph([new SceneFloodPrimitive(SceneColor.Black)]) { Region = new SceneBounds(5, 5, 0, 10) } });
+        using var extremeImage = extreme.ToImage();
+        Assert.Equal(Colors.White, extremeImage.Frames[0][15, 15]);
+    }
+
+    [Fact]
     public void WeightsSelectTheNearestFace()
     {
         var fonts = new SceneFontCollection(LoadFace("LiberationSans-Regular.woff2"), LoadFace("LiberationSans-Bold.woff2"));

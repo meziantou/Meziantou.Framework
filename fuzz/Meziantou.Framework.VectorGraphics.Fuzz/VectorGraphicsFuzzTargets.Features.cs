@@ -8,8 +8,9 @@ namespace Meziantou.Framework.VectorGraphics.Fuzz;
 public static partial class VectorGraphicsFuzzTargets
 {
     /// <summary>
-    /// The SVG of a scene of patterns, markers, uses, view boxes, texts with a spacing or on a path, and elements with a
-    /// transform, a hyperlink or an identifier (<see cref="FeatureSceneBuilder"/>) is a well-formed XML document whose root
+    /// The SVG of a scene of patterns, markers, uses, view boxes, texts with a spacing or on a path, filter graphs whose
+    /// image primitives draw elements, and elements with a transform, a hyperlink or an identifier
+    /// (<see cref="FeatureSceneBuilder"/>) is a well-formed XML document whose root
     /// is <c>svg</c>, and the output is deterministic. Its identifiers are different, and every reference
     /// (<c>href="#id"</c>, <c>url(#id)</c>) is to one of them, and a <c>clipPath</c> has only shapes and texts. A scene where two elements have the same identifier
     /// throws <see cref="InvalidOperationException"/>. The bounds of the scene are computed without looping.
@@ -231,6 +232,9 @@ public static partial class VectorGraphicsFuzzTargets
             // clipping path cut by itself, transformed and masked elements; the paint options
             [12, 4 | 16, .. "Clip"u8, 0, 12 | 16, 1 | 2 | 16 | 32, .. "text"u8, 0, 12 | 32, 2 | 64, 0, 12 | 64, 3, 0],
             [13, 0, 0, 13 | 16, 1 | 2, 0, 13, 4 | 8 | 16 | 32 | 64, 0, 13 | 32, 4 | 32, 0, 13 | 64, 8, 0],
+
+            // Filter graphs whose image primitive draws a new element, an element of the scene, or an ancestor
+            [0, 3, 0, 9, 2 | 32, 0, 9, 2 | 32 | 64, 0, 5, 4, 0, 9, 2 | 16 | 32 | 128, 0],
         ];
         for (var i = 0; i < seeds.Length; i++)
         {

@@ -48,6 +48,8 @@ internal static class SceneTree
                 {
                     uses.Add(use.Content);
                 }
+
+                uses.AddRange(GetFilterImageReferences(descendant));
             }
         }
 
@@ -112,6 +114,9 @@ internal static class SceneTree
                     uses.Add(use.Content);
                 }
 
+                // The elements of the image primitives of a filter are referenced as the contents of the uses
+                uses.AddRange(GetFilterImageReferences(element));
+
                 var contents = GetContents(element, shared);
                 for (var i = contents.Count - 1; i >= 0; i--)
                 {
@@ -119,6 +124,18 @@ internal static class SceneTree
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Gets the elements the image primitives of the filter of an element draw by reference, as the contents of the uses:
+    /// the images that SVG writes inline (<see cref="SceneImagePrimitive.IsInlineImage"/>) are not referenced.
+    /// </summary>
+    public static IEnumerable<SceneElement> GetFilterImageReferences(SceneElement element)
+    {
+        if (element.Filter is not SceneFilterGraph graph)
+            return [];
+
+        return graph.Primitives.OfType<SceneImagePrimitive>().Where(primitive => !primitive.IsInlineImage).Select(primitive => primitive.Content);
     }
 
     private static bool IsInItsOwnContents(SceneElement element)

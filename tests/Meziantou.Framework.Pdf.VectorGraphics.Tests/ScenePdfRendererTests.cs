@@ -200,6 +200,11 @@ public sealed class ScenePdfRendererTests
         mask.Content.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.White, Filter = new SceneBlurFilter(1) });
         masked.Root.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black, Mask = mask });
         Assert.Throws<NotSupportedException>(() => masked.ToPdf());
+
+        // A filter graph neither
+        var graph = new Scene(10, 10, "sans-serif");
+        graph.Root.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black, Filter = new SceneFilterGraph([new SceneFloodPrimitive(SceneColor.White)]) });
+        Assert.Contains("SceneFilterGraph", Assert.Throws<NotSupportedException>(() => graph.ToPdf()).Message, StringComparison.Ordinal);
     }
 
     [Fact]

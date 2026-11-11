@@ -45,6 +45,7 @@ public static partial class VectorGraphicsFuzzTargets
         new("vectorgraphics-curves", CurvesTarget) { Seeds = GetCurvesSeeds },
         new("vectorgraphics-svg-features", SvgFeaturesTarget) { Seeds = GetSvgFeaturesSeeds, Dictionary = FeatureTokens },
         new("vectorgraphics-path-measure", PathMeasureTarget) { Seeds = GetPathMeasureSeeds },
+        new("vectorgraphics-filter-graph", FilterGraphTarget) { Seeds = GetFilterGraphSeeds, Dictionary = FilterTokens },
     ];
 
     /// <summary>

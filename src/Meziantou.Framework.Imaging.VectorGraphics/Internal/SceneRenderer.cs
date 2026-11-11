@@ -298,14 +298,26 @@ internal static class SceneRenderer
                 canvas.Shadow(Rgba64.FromRgba32(new Rgba32(shadow.Color.R, shadow.Color.G, shadow.Color.B, shadow.Color.A)), offset, deviation, (element, context), action);
                 break;
 
+            // A graph without a region of its own, on an element that draws nothing, draws nothing
+            case SceneFilterGraph graph:
+                if (SceneFilterGraphs.Create(element, graph, context) is { } filterGraph)
+                {
+                    canvas.Filter(filterGraph, (element, context), action);
+                }
+
+                break;
+
             default:
                 action(canvas, (element, context));
                 break;
         }
     }
 
+    /// <summary>Draws an element: its effects, its transform and its content.</summary>
+    internal static void DrawSceneElement(DrawingCanvas canvas, SceneElement element, DrawContext context) => DrawElement(canvas, element, context);
+
     /// <summary>Gets a rectangle that contains what an element draws, with the filters of its children, in the coordinates of its parent.</summary>
-    private static RectangleD? GetBounds(SceneElement element, DrawContext context, bool applyClips)
+    internal static RectangleD? GetBounds(SceneElement element, DrawContext context, bool applyClips)
     {
         var bounds = element.GetBounds(text =>
         {
@@ -346,7 +358,7 @@ internal static class SceneRenderer
     // The largest standard deviation of the blurs of the canvas
     private const double MaxBlur = 10000;
 
-    private static BlendMode ToBlendMode(SceneBlendMode mode) => mode switch
+    internal static BlendMode ToBlendMode(SceneBlendMode mode) => mode switch
     {
         SceneBlendMode.Multiply => BlendMode.Multiply,
         SceneBlendMode.Screen => BlendMode.Screen,
@@ -921,6 +933,14 @@ internal static class SceneRenderer
 
         /// <summary>Gets the paint a context paint stands for, or the paint itself.</summary>
         public ScenePaint? Resolve(ScenePaint? paint) => paint is ContextPaint context ? (context.IsStroke ? ContextStroke : ContextFill) : paint;
+
+        // The image primitives of the filters whose element is being drawn: an element that draws itself through its own
+        // filter draws nothing there
+        private readonly HashSet<SceneImagePrimitive> _drawingFilterImages = new(ReferenceEqualityComparer.Instance);
+
+        public bool EnterFilterImage(SceneImagePrimitive primitive) => _drawingFilterImages.Add(primitive);
+
+        public void ExitFilterImage(SceneImagePrimitive primitive) => _drawingFilterImages.Remove(primitive);
 
         public bool EnterMarker(SceneMarker marker) => _drawingMarkers.Add(marker);
 

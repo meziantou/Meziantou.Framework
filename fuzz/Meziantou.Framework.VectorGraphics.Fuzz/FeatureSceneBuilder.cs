@@ -148,7 +148,7 @@ internal static class FeatureSceneBuilder
                         Fill = color,
                         Transform = SceneTransform.Rotate(value).Then(SceneTransform.Translate(30, 30)),
                         Mask = (option & 1) != 0 ? mask : null,
-                        Filter = allowFilters && (option & 2) != 0 ? new SceneBlurFilter(value) : null,
+                        Filter = allowFilters && (option & 2) != 0 ? (option & 32) != 0 ? CreateFilterGraph(option, value, color) : new SceneBlurFilter(value) : null,
                         Hyperlink = (option & 4) != 0 ? text : null,
                     });
                     break;
@@ -285,6 +285,19 @@ internal static class FeatureSceneBuilder
             }
 
             return clipPath;
+        }
+
+        // A filter graph whose image primitive draws an element of the scene (an ancestor of the filtered element, or the
+        // content of a pattern) or a new one, which the SVG refers to
+        SceneFilterGraph CreateFilterGraph(byte option, double value, SceneColor color)
+        {
+            SceneElement content = (option & 64) != 0 && elements.Count > 0 ? elements[option % elements.Count]
+                : (option & 128) != 0 ? groups.ElementAt(option % groups.Count)
+                : new SceneCircle(5, 5, 5) { Fill = color };
+            return new SceneFilterGraph([new SceneImagePrimitive(content), new SceneMergePrimitive(SceneFilterInput.SourceGraphic, SceneFilterInput.Previous)])
+            {
+                Region = (option & 16) != 0 && double.IsFinite(value) ? new SceneBounds(value, 0, 50, 50) : null,
+            };
         }
 
         // A marker of the pool, or a new one; the content of a new marker can be marked with the marker itself

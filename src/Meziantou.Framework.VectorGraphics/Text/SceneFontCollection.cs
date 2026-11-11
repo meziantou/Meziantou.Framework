@@ -200,8 +200,21 @@ public sealed class SceneFontCollection
         return best!;
     }
 
+    // As the image renderer chooses the font of a cluster: an emoji presented with colors (a selector U+FE0F, a sequence,
+    // or its default presentation) is drawn with the first face with color glyphs that has it, one presented as text
+    // (U+FE0E) with the first face without them; then the first face that has the cluster
     private static SceneFontFace SelectFace(IReadOnlyList<SceneFontFace> stack, ReadOnlySpan<char> cluster)
     {
+        var presentation = GetEmojiPresentation(cluster);
+        if (presentation is not null)
+        {
+            foreach (var face in stack)
+            {
+                if (face.Face.HasColorGlyphs == presentation && HasCluster(face, cluster, out _))
+                    return face;
+            }
+        }
+
         var withFirst = -1;
         for (var i = 0; i < stack.Count; i++)
         {
@@ -215,6 +228,29 @@ public sealed class SceneFontCollection
         }
 
         return stack[Math.Max(withFirst, 0)];
+    }
+
+    // Unicode Technical Standard #51: true for the emoji presentation, false for the text presentation, null for none
+    private static bool? GetEmojiPresentation(ReadOnlySpan<char> cluster)
+    {
+        const int TextSelector = 0xFE0E;
+        const int EmojiSelector = 0xFE0F;
+        const int ZeroWidthJoiner = 0x200D;
+        if (System.Text.Rune.DecodeFromUtf16(cluster, out var first, out var consumed) != System.Buffers.OperationStatus.Done || !UnicodeEmoji.IsEmoji(first))
+            return null;
+
+        var isFirst = true;
+        var isSequence = false;
+        foreach (var rune in cluster[consumed..].EnumerateRunes())
+        {
+            if (isFirst && rune.Value == TextSelector)
+                return false;
+
+            isSequence |= rune.Value is EmojiSelector or ZeroWidthJoiner || UnicodeEmoji.IsEmojiModifier(rune);
+            isFirst = false;
+        }
+
+        return isSequence || UnicodeEmoji.HasEmojiPresentation(first) ? true : null;
     }
 
     // A face has a cluster when it has a glyph for each of its characters that needs one, alone or composed with the one before

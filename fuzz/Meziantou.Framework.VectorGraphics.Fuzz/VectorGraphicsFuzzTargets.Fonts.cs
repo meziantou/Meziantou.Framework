@@ -69,9 +69,10 @@ public static partial class VectorGraphicsFuzzTargets
         FuzzAssert.Equal(fonts.Families.Count, faces.Count, "GetFaces does not have one face per family");
         FuzzAssert.Equal(fonts.Families.Count, faces.Select(face => face.FamilyName).Distinct(StringComparer.OrdinalIgnoreCase).Count(), "GetFaces has a family twice");
         FuzzAssert.True(faces.All(face => fonts.Faces.Contains(face)), "GetFaces returned a face of another collection");
-        // The names of a list are its words, unescaped: a family none of them can name resolves to the default family
-        var words = string.Join(' ', family.Replace("\\", "", StringComparison.Ordinal).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
-        if (!fonts.Families.Any(name => words.Contains(name, StringComparison.OrdinalIgnoreCase)))
+        // The names of a list are its words: a family none of them can name resolves to the default family. A name with
+        // escapes can name any family (CSS escapes, such as \20 for a space), so it is not checked
+        var words = string.Join(' ', family.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        if (!family.Contains('\\', StringComparison.Ordinal) && !fonts.Families.Any(name => words.Contains(name, StringComparison.OrdinalIgnoreCase)))
         {
             FuzzAssert.Equal(fonts.DefaultFamily, faces[0].FamilyName, $"The unknown family {FuzzAssert.Format(family)} does not resolve to the default family");
         }

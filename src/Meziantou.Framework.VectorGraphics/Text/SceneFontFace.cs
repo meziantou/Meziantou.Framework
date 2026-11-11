@@ -76,9 +76,7 @@ public sealed class SceneFontFace
     public static IReadOnlyList<SceneFontFace> Load(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        return Create(buffer.ToArray());
+        return Create(ReadBounded(stream, Environment.Limits.MaxEncodedBytes));
     }
 
     /// <summary>Loads every face of a font file.</summary>
@@ -89,7 +87,26 @@ public sealed class SceneFontFace
     public static IReadOnlyList<SceneFontFace> Load(string path)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
-        return Create(File.ReadAllBytes(path));
+        using var stream = File.OpenRead(path);
+        return Create(ReadBounded(stream, Environment.Limits.MaxEncodedBytes));
+    }
+
+    // Reads at most one byte more than the limit of the font engine: a longer file is refused by FontLoader with a
+    // FontResourceLimitException, without reading the rest of it
+    internal static byte[] ReadBounded(Stream stream, long limit)
+    {
+        using var buffer = new MemoryStream();
+        var chunk = new byte[81920];
+        while (buffer.Length <= limit)
+        {
+            var read = stream.Read(chunk, 0, (int)Math.Min(chunk.Length, limit + 1 - buffer.Length));
+            if (read is 0)
+                break;
+
+            buffer.Write(chunk, 0, read);
+        }
+
+        return buffer.ToArray();
     }
 
     /// <inheritdoc/>

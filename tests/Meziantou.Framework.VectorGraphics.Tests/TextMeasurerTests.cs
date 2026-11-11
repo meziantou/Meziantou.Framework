@@ -230,6 +230,72 @@ public sealed class TextMeasurerTests
     }
 
     [Fact]
+    public void SceneFontCollection_EmojiPresentationChoosesTheFace()
+    {
+        var sans = LoadFace("LiberationSans-Regular.woff2");
+        var emoji = LoadFace("Noto-COLRv1.subset.ttf");
+        Assert.True(emoji.Face.HasColorGlyphs);
+        var fonts = new SceneFontCollection(sans, emoji);
+
+        // An emoji both faces have: the text face draws it, unless a selector asks for the emoji presentation
+        var codePoint = Enumerable.Range(0x20, 0x1FFFF - 0x20).FirstOrDefault(value => (value is < 0xD800 or > 0xDFFF) && UnicodeEmoji.IsEmoji(value) && !UnicodeEmoji.HasEmojiPresentation(value) && sans.Face.MapCodePoint(value) != 0 && emoji.Face.MapCodePoint(value) != 0);
+        Assert.NotEqual(0, codePoint);
+        var character = char.ConvertFromUtf32(codePoint);
+        Assert.Same(sans, Assert.Single(fonts.GetRuns(character, new SceneFont(10))).Face);
+        Assert.Same(emoji, Assert.Single(fonts.GetRuns(character + "\uFE0F", new SceneFont(10))).Face);
+        Assert.Same(sans, Assert.Single(fonts.GetRuns(character + "\uFE0E", new SceneFont(10, Family: emoji.FamilyName))).Face);
+    }
+
+    [Fact]
+    public void SceneFontFace_ReadsAtMostTheLimit()
+    {
+        // A stream that never ends is read up to one byte more than the limit, which the font engine refuses
+        using var stream = new EndlessStream();
+        Assert.HasCount(11, SceneFontFace.ReadBounded(stream, 10));
+    }
+
+    private sealed class EndlessStream : Stream
+    {
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            buffer.AsSpan(offset, count).Fill(1);
+            return count;
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
+    [Theory]
+    [InlineData("Liberation\\ Mono")]
+    [InlineData("\"Liberation\\20 Mono\"")]
+    [InlineData("'Liberation\\000020Mono'")]
+    [InlineData("Unknown, Liberation\\ Mono")]
+    public void SceneFontCollection_FamilyNamesDecodeTheEscapesOfCss(string family)
+    {
+        var mono = LoadFace("LiberationMono-Regular.woff2");
+        var fonts = new SceneFontCollection(LoadFace("LiberationSans-Regular.woff2"), mono);
+        Assert.Same(mono, fonts.GetFace(new SceneFont(10, Family: family)));
+    }
+
+    [Fact]
     public void SceneFontCollection_InvalidArguments()
     {
         var sans = LoadFace("LiberationSans-Regular.woff2");

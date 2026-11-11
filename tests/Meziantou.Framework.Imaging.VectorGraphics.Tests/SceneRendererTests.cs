@@ -392,6 +392,51 @@ public sealed class SceneRendererTests
     }
 
     [Fact]
+    public void SpansAreDrawnAsTheyAreMeasured()
+    {
+        // Each span is laid out alone, as the measurer measures it: the text, anchored at its end, starts where its measured width says
+        var measurer = SceneImageRenderer.CreateMeasurer();
+        var font = new SceneFont(40);
+        SceneTextSpan[] spans = [new("A") { Color = (SceneColor)"#ff0000" }, new("V") { Color = (SceneColor)"#0000ff" }];
+        var width = measurer.Measure(spans, font).Width;
+        Assert.Equal(measurer.Measure("A", font).Width + measurer.Measure("V", font).Width, width);
+
+        var scene = new Scene(200, 60, "sans-serif");
+        scene.Root.Add(new SceneText(100, 45, spans, font, SceneColor.Black) { Anchor = SceneTextAnchor.End });
+        using var image = scene.ToImage();
+        var (left, _, right, _) = GetInkBounds(image, 0, 0, 200, 60);
+        Assert.InRange(right, 96, 100);
+        Assert.InRange(left, 100 - width - 2, 100 - width + 4);
+    }
+
+    [Fact]
+    public void ColorMatricesWithAConstantAlphaApplyToTheElementOnly()
+    {
+        // The alpha of the result is 1 for every pixel, the transparent ones too: only the bounds of the rectangle are painted
+        double[] opaqueRed = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+        var scene = new Scene(100, 100, "sans-serif");
+        scene.Root.Add(new SceneRectangle(10, 10, 20, 20) { Fill = SceneColor.Black, Filter = new SceneColorMatrixFilter(opaqueRed) });
+        using var image = scene.ToImage();
+        Assert.Equal(new Rgba32(255, 0, 0), image.Frames[0][20, 20]);
+        Assert.Equal(0, image.Frames[0][60, 60].A);
+    }
+
+    [Fact]
+    public async Task ImagesCanBeDrawnByConcurrentRenders()
+    {
+        var scene = new Scene(40, 40, "sans-serif");
+        scene.Root.Add(new SceneImage(0, 0, 40, 40, Png));
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(() =>
+        {
+            for (var i = 0; i < 20; i++)
+            {
+                using var image = scene.ToImage();
+                Assert.True(image.Frames[0][2, 2].R > 200);
+            }
+        }, XunitCancellationToken)));
+    }
+
+    [Fact]
     public void SourcesAreLaidOutWithTheFontsOfTheImage()
     {
         var source = new TestSource();

@@ -8,7 +8,10 @@ internal static class SceneGeometry
     public static bool TryGetBounds(SceneElement element, out SceneBounds? bounds)
     {
         bounds = null;
-        var stroke = element is SceneShape { Stroke: not null } shape && shape.StrokeWidth > 0 ? shape.StrokeWidth * Math.Max(1, shape.MiterLimit) : 0;
+        // A stroke extends by half its width, and a miter join by half the miter limit times the width (4 when the limit is not valid)
+        var stroke = element is SceneShape { Stroke: not null } shape && shape.StrokeWidth > 0 && double.IsFinite(shape.StrokeWidth)
+            ? shape.StrokeWidth / 2 * Math.Max(shape.LineJoin is SceneLineJoin.Miter ? (shape.MiterLimit >= 1 && double.IsFinite(shape.MiterLimit) ? shape.MiterLimit : 4) : 1, shape.LineCap is SceneLineCap.Square ? Math.Sqrt(2) : 1)
+            : 0;
         switch (element)
         {
             case SceneGroup group:

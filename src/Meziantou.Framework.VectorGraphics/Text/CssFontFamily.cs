@@ -17,15 +17,15 @@ internal static class CssFontFamily
         for (var i = 0; i < value.Length; i++)
         {
             var c = value[i];
-            if (quote != '\0')
+            if (c == '\\')
+            {
+                i = Unescape(value, i, name);
+            }
+            else if (quote != '\0')
             {
                 if (c == quote)
                 {
                     quote = '\0';
-                }
-                else if (c == '\\' && i + 1 < value.Length)
-                {
-                    name.Append(value[++i]);
                 }
                 else
                 {
@@ -62,6 +62,43 @@ internal static class CssFontFamily
             name.Clear();
             quoted = false;
         }
+    }
+
+    // CSS Syntax Module Level 3, 4.3.7 "Consume an escaped code point": up to 6 hexadecimal digits and one optional white
+    // space, or the next character. A code point of 0, a surrogate or beyond U+10FFFF is U+FFFD; a backslash at the end
+    // is U+FFFD too. Returns the index of the last character of the escape.
+    private static int Unescape(string value, int index, StringBuilder name)
+    {
+        if (index + 1 >= value.Length)
+        {
+            name.Append('\uFFFD');
+            return index;
+        }
+
+        var start = index + 1;
+        var end = start;
+        while (end < value.Length && end - start < 6 && char.IsAsciiHexDigit(value[end]))
+        {
+            end++;
+        }
+
+        if (end == start)
+        {
+            // A line feed after a backslash continues a quoted string
+            if (value[start] is not ('\n' or '\r' or '\f'))
+            {
+                name.Append(value[start]);
+            }
+
+            return start;
+        }
+
+        var codePoint = int.Parse(value.AsSpan(start, end - start), System.Globalization.NumberStyles.AllowHexSpecifier, System.Globalization.CultureInfo.InvariantCulture);
+        name.Append(codePoint is 0 or > 0x10FFFF or (>= 0xD800 and <= 0xDFFF) ? "\uFFFD" : char.ConvertFromUtf32(codePoint));
+        if (end < value.Length && value[end] is ' ' or '\t' or '\n' or '\r' or '\f')
+            return end;
+
+        return end - 1;
     }
 
     /// <summary>Writes a family name, quoted unless it is a sequence of identifiers made of ASCII letters, digits, hyphens and underscores.</summary>

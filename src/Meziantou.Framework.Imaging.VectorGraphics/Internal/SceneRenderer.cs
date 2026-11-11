@@ -7,7 +7,6 @@ namespace Meziantou.Framework.Imaging.VectorGraphics.Internal;
 /// <summary>Draws the primitives of a <see cref="Scene"/> with the canvas of <c>Meziantou.Framework.Imaging</c>. Hyperlinks are ignored.</summary>
 internal static class SceneRenderer
 {
-    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<SceneImage, DecodedImage> DecodedImages = [];
 
     public static void Draw(DrawingCanvas canvas, Scene scene, PointD position, SceneImageOptions options)
     {
@@ -122,6 +121,17 @@ internal static class SceneRenderer
                 break;
 
             case SceneColorMatrixFilter colorMatrix:
+                // A matrix with a constant alpha gives a color to the transparent pixels: as the filter region of SVG,
+                // it applies to the bounds of the element only, not to the whole canvas
+                if (colorMatrix.Values[19] != 0)
+                {
+                    if (GetBounds(element, context) is not { } region)
+                        break;
+
+                    canvas.Clip(region.Inflate(1), (element, context, colorMatrix, action), static (canvas, state) => canvas.Filter(new ColorMatrix([.. state.colorMatrix.Values]), (state.element, state.context), state.action));
+                    break;
+                }
+
                 canvas.Filter(new ColorMatrix([.. colorMatrix.Values]), (element, context), action);
                 break;
 
@@ -135,6 +145,112 @@ internal static class SceneRenderer
                 action(canvas, (element, context));
                 break;
         }
+    }
+
+    /// <summary>Gets a rectangle that contains what an element draws, with the filters of its children, in the coordinates of its parent.</summary>
+    private static RectangleD? GetBounds(SceneElement element, DrawContext context)
+    {
+        var stroke = element is SceneShape { Stroke: not null } shape && shape.StrokeWidth > 0 && double.IsFinite(shape.StrokeWidth) ? StrokeExtent(shape) : 0;
+        RectangleD? bounds;
+        switch (element)
+        {
+            case SceneGroup group:
+                bounds = null;
+                foreach (var child in group.Children)
+                {
+                    if (GetBounds(child, context) is { } childBounds)
+                    {
+                        var filtered = WithFilter(childBounds, child.Filter);
+                        bounds = bounds is { } union ? RectangleD.Union(union, filtered) : filtered;
+                    }
+                }
+
+                if (bounds is { } box && group.Transform is { } transform)
+                {
+                    bounds = TransformBounds(box, new AffineTransform(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F));
+                }
+
+                if (bounds is { } clipped && group.Clip is { } clip)
+                {
+                    bounds = RectangleD.Intersect(clipped, new RectangleD(clip.X, clip.Y, clip.Width, clip.Height));
+                }
+
+                return bounds;
+
+            case SceneRectangle rectangle:
+                return new RectangleD(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height).Inflate(stroke);
+
+            case SceneCircle circle:
+                return new RectangleD(circle.CenterX - circle.Radius, circle.CenterY - circle.Radius, 2 * circle.Radius, 2 * circle.Radius).Inflate(stroke);
+
+            case SceneLine line:
+                return RectangleD.FromLTRB(Math.Min(line.X1, line.X2), Math.Min(line.Y1, line.Y2), Math.Max(line.X1, line.X2), Math.Max(line.Y1, line.Y2)).Inflate(stroke);
+
+            case ScenePath path:
+                return ToVectorPath(path.Data) is { } vector ? vector.Bounds.Inflate(stroke) : null;
+
+            case SceneImage image:
+                return new RectangleD(image.X, image.Y, image.Width, image.Height);
+
+            case SceneText text:
+                var parts = CreateTextParts(text, context);
+                if (parts.Count is 0)
+                    return null;
+
+                var width = parts.Sum(part => part.Layout.Width);
+                var ascent = parts.Max(part => part.Layout.Baseline);
+                var descent = parts.Max(part => part.Layout.Height - part.Layout.Baseline);
+                var start = text.Anchor switch
+                {
+                    SceneTextAnchor.Middle => text.X - (width / 2),
+                    SceneTextAnchor.End => text.X - width,
+                    _ => text.X,
+                };
+                var textBounds = RectangleD.FromLTRB(start, text.Y - ascent, start + width, text.Y + descent);
+                return text.Rotation == 0 ? textBounds : TransformBounds(textBounds, AffineTransform.CreateRotation(text.Rotation, new PointD(text.X, text.Y)));
+
+            default:
+                return null;
+        }
+    }
+
+    private static RectangleD WithFilter(RectangleD bounds, SceneFilter? filter)
+    {
+        switch (filter)
+        {
+            case SceneBlurFilter blur when blur.StandardDeviation > 0 && double.IsFinite(blur.StandardDeviation):
+                return bounds.Inflate(3 * blur.StandardDeviation);
+
+            case SceneDropShadowFilter shadow:
+                var deviation = shadow.StandardDeviation > 0 && double.IsFinite(shadow.StandardDeviation) ? shadow.StandardDeviation : 0;
+                var shadowBounds = bounds.Inflate(3 * deviation).Offset(double.IsFinite(shadow.OffsetX) ? shadow.OffsetX : 0, double.IsFinite(shadow.OffsetY) ? shadow.OffsetY : 0);
+                return RectangleD.Union(bounds, shadowBounds);
+
+            default:
+                return bounds;
+        }
+    }
+
+    private static RectangleD TransformBounds(RectangleD bounds, AffineTransform transform)
+    {
+        var p1 = transform.Transform(new PointD(bounds.Left, bounds.Top));
+        var p2 = transform.Transform(new PointD(bounds.Right, bounds.Top));
+        var p3 = transform.Transform(new PointD(bounds.Left, bounds.Bottom));
+        var p4 = transform.Transform(new PointD(bounds.Right, bounds.Bottom));
+        return RectangleD.FromLTRB(
+            Math.Min(Math.Min(p1.X, p2.X), Math.Min(p3.X, p4.X)),
+            Math.Min(Math.Min(p1.Y, p2.Y), Math.Min(p3.Y, p4.Y)),
+            Math.Max(Math.Max(p1.X, p2.X), Math.Max(p3.X, p4.X)),
+            Math.Max(Math.Max(p1.Y, p2.Y), Math.Max(p3.Y, p4.Y)));
+    }
+
+    // A stroke extends half its width beyond the path; a miter join up to half the miter limit times the width, a
+    // square cap half the width times the square root of 2
+    private static double StrokeExtent(SceneShape shape)
+    {
+        var miterLimit = shape.MiterLimit >= 1 && double.IsFinite(shape.MiterLimit) ? shape.MiterLimit : 4;
+        var factor = Math.Max(shape.LineJoin is SceneLineJoin.Miter ? miterLimit : 1, shape.LineCap is SceneLineCap.Square ? Math.Sqrt(2) : 1);
+        return shape.StrokeWidth / 2 * factor;
     }
 
     // The largest standard deviation of the blurs of the canvas
@@ -296,26 +412,24 @@ internal static class SceneRenderer
         if (!(image.Width > 0) || !(image.Height > 0) || !double.IsFinite(image.X) || !double.IsFinite(image.Y) || !double.IsFinite(image.Width) || !double.IsFinite(image.Height))
             return;
 
-        if (DecodedImages.GetValue(image, static image => Decode(image)).Image is { } decoded)
+        // Each draw decodes its own image: drawing takes an exclusive lease on the pixels of its source, so an image
+        // shared by concurrent renders would fail. The canvas reads the pixels during the call.
+        Image decoded;
+        try
+        {
+            decoded = Image.Load(image.Data.Span);
+        }
+        catch (ImageException)
+        {
+            // An image that cannot be decoded is not drawn
+            return;
+        }
+
+        using (decoded)
         {
             canvas.DrawImage(decoded.Frames[0], new RectangleD(image.X, image.Y, image.Width, image.Height));
         }
     }
-
-    // An image that cannot be decoded is not drawn
-    private static DecodedImage Decode(SceneImage image)
-    {
-        try
-        {
-            return new DecodedImage(Image.Load(image.Data.Span));
-        }
-        catch (ImageException)
-        {
-            return new DecodedImage(null);
-        }
-    }
-
-    private sealed record DecodedImage(Image? Image);
 
     private static void DrawTransformed(DrawingCanvas canvas, SceneGroup group, DrawContext context)
     {
@@ -330,54 +444,65 @@ internal static class SceneRenderer
 
     private static void DrawText(DrawingCanvas canvas, SceneText text, DrawContext context)
     {
-        if (text.Text.Length is 0)
+        var parts = CreateTextParts(text, context);
+        if (parts.Count is 0)
             return;
 
-        TextLayout layout;
-        if (text.Spans.Count > 0)
-        {
-            // Each span has its own style: a rich text, whose spans share a baseline
-            var builder = new RichTextBuilder();
-            foreach (var span in text.Spans)
-            {
-                var font = span.Font ?? text.Font;
-                if (span.Text.Length > 0 && font.Size > 0)
-                {
-                    builder.Append(span.Text, CreateStyle(font, ToDecorations(span.Decorations ?? text.Decorations), context, ToBrush(span.Color ?? text.Color)));
-                }
-            }
-
-            var richText = builder.Build();
-            if (richText.Text.Length is 0)
-                return;
-
-            layout = TextLayout.Create(richText);
-        }
-        else
-        {
-            var decorations = ToDecorations(text.Decorations);
-            layout = context.Fonts is null && decorations is TextDecorations.None
-                ? TextLayout.Create(text.Text, context.Options.GetFont(text.Font), text.Font.Size)
-                : TextLayout.Create(text.Text, CreateStyle(text.Font, decorations, context));
-        }
-
+        var width = parts.Sum(part => part.Layout.Width);
         var x = text.Anchor switch
         {
-            SceneTextAnchor.Middle => text.X - (layout.Width / 2),
-            SceneTextAnchor.End => text.X - layout.Width,
+            SceneTextAnchor.Middle => text.X - (width / 2),
+            SceneTextAnchor.End => text.X - width,
             _ => text.X,
         };
 
-        // The scene positions a text by its baseline; a layout is drawn from its top-left corner
-        var origin = new PointD(x, text.Y - layout.Baseline);
-        var brush = ToBrush(text.Color);
         if (text.Rotation == 0)
         {
-            canvas.FillText(brush, layout, origin);
+            DrawTextParts(canvas, parts, x, text.Y);
             return;
         }
 
-        canvas.Transform(AffineTransform.CreateRotation(text.Rotation, new PointD(text.X, text.Y)), (brush, layout, origin), static (canvas, state) => canvas.FillText(state.brush, state.layout, state.origin));
+        canvas.Transform(AffineTransform.CreateRotation(text.Rotation, new PointD(text.X, text.Y)), (parts, x, text.Y), static (canvas, state) => DrawTextParts(canvas, state.parts, state.x, state.Y));
+    }
+
+    // The scene positions a text by its baseline; a layout is drawn from its top-left corner. The parts are drawn one
+    // after the other, as the measurers measure them.
+    private static void DrawTextParts(DrawingCanvas canvas, List<(TextLayout Layout, Brush Brush)> parts, double x, double baseline)
+    {
+        foreach (var (layout, brush) in parts)
+        {
+            canvas.FillText(brush, layout, new PointD(x, baseline - layout.Baseline));
+            x += layout.Width;
+        }
+    }
+
+    /// <summary>Lays out a text: one layout, or one per span, each with its own style, so that no kerning crosses the spans.</summary>
+    private static List<(TextLayout Layout, Brush Brush)> CreateTextParts(SceneText text, DrawContext context)
+    {
+        var parts = new List<(TextLayout Layout, Brush Brush)>();
+        if (text.Text.Length is 0)
+            return parts;
+
+        if (text.Spans.Count is 0)
+        {
+            var decorations = ToDecorations(text.Decorations);
+            var layout = context.Fonts is null && decorations is TextDecorations.None
+                ? TextLayout.Create(text.Text, context.Options.GetFont(text.Font), text.Font.Size)
+                : TextLayout.Create(text.Text, CreateStyle(text.Font, decorations, context));
+            parts.Add((layout, ToBrush(text.Color)));
+            return parts;
+        }
+
+        foreach (var span in text.Spans)
+        {
+            var font = span.Font ?? text.Font;
+            if (span.Text.Length > 0 && font.Size > 0 && double.IsFinite(font.Size))
+            {
+                parts.Add((TextLayout.Create(span.Text, CreateStyle(font, ToDecorations(span.Decorations ?? text.Decorations), context)), ToBrush(span.Color ?? text.Color)));
+            }
+        }
+
+        return parts;
     }
 
     private static TextStyle CreateStyle(SceneFont font, TextDecorations decorations, DrawContext context, Brush? brush = null)

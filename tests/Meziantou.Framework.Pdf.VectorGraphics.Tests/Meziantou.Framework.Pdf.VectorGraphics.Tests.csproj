@@ -16,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.Pdf.VectorGraphics/Meziantou.Framework.Pdf.VectorGraphics.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Diagrams/Meziantou.Framework.Diagrams.csproj" />
   </ItemGroup>
 
   <ItemGroup>

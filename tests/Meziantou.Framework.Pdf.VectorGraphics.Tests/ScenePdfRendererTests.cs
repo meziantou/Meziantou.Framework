@@ -423,6 +423,26 @@ public sealed class ScenePdfRendererTests
     }
 
     [Fact]
+    public void ChartsAndDiagramsHaveAlternateDescriptions()
+    {
+        // The title and the description of a chart describe its figure, and are the title and the subject of the document
+        var plot = new Plot { Title = "Sales by region", Description = "North sold 12 units, South 7.", Width = 200, Height = 100 };
+        plot.Add(new BarMark<(string Region, double Amount)>([("North", 12), ("South", 7)], x: sale => sale.Region, y: sale => sale.Amount));
+        var chart = plot.ToPdf();
+        Assert.Equal("Sales by region. North sold 12 units, South 7.", Assert.Single(Assert.Single(chart.StructureTree.Elements).Children).AlternateDescription);
+        Assert.Equal("Sales by region", chart.Information.Title);
+        Assert.Equal("North sold 12 units, South 7.", chart.Information.Subject);
+
+        // The accessible title of a diagram replaces its title, which is drawn
+        var flowchart = new Meziantou.Framework.Diagrams.FlowchartDiagram { Title = "Checkout", AccessibleTitle = "Checkout flow", Description = "From the cart to the payment." };
+        flowchart.AddEdge(flowchart.AddNode("cart", "Cart"), flowchart.AddNode("pay", "Payment"));
+        var diagram = flowchart.ToPdf();
+        Assert.Equal("Checkout flow. From the cart to the payment.", Assert.Single(Assert.Single(diagram.StructureTree.Elements).Children).AlternateDescription);
+        Assert.Equal("Checkout flow", diagram.Information.Title);
+        Assert.Contains("Checkout", diagram.Pages[0].ExtractText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void TransparencyGroupsContainTheMiters()
     {
         // The miter of this corner reaches 16.8 units above it, to y = 23.2: the transparency group of the faded group

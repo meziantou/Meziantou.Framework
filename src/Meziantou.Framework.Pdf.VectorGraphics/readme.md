@@ -2,7 +2,7 @@
 
 Draws the scenes of [Meziantou.Framework.VectorGraphics](https://www.nuget.org/packages/Meziantou.Framework.VectorGraphics)
 (charts, diagrams, your own drawings) as PDF with [Meziantou.Framework.Pdf](https://www.nuget.org/packages/Meziantou.Framework.Pdf):
-vector shapes, gradients, clipping, transparency and links. Each text is drawn with the face of its family of the fonts
+vector shapes, images, gradients, clipping, transparency and links. Each text is drawn with the face of its family of the fonts
 of the scene, and the PDF embeds the subsets of the faces it uses. Without fonts, the texts are drawn with Helvetica,
 whose widths the default text measurer uses.
 

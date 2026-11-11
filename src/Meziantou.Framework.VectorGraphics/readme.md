@@ -1,6 +1,6 @@
 # Meziantou.Framework.VectorGraphics
 
-Describes a drawing as a scene of shapes, paths, texts and groups, writes it as deterministic SVG, and measures, wraps
+Describes a drawing as a scene of shapes, paths, texts, images and groups, writes it as deterministic SVG, and measures, wraps
 and truncates texts with the metrics of Helvetica or any OpenType font. [Meziantou.Framework.Charts](https://www.nuget.org/packages/Meziantou.Framework.Charts)
 and Meziantou.Framework.Diagrams lay themselves out into a scene; [Meziantou.Framework.Imaging.VectorGraphics](https://www.nuget.org/packages/Meziantou.Framework.Imaging.VectorGraphics)
 draws it as an image.

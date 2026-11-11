@@ -6,13 +6,16 @@ using Meziantou.Framework.VectorGraphics;
 namespace Meziantou.Framework.Pdf.VectorGraphics.Fuzz;
 
 /// <summary>
-/// The PDF of any scene opens again, has one page of the size of the scene, its text can be extracted and its page
+/// The PDF of any scene (shapes, gradients, images, clips, texts, links) opens again, has one page of the size of the scene, its text can be extracted and its page
 /// rendered, and drawing the scene twice gives the same file. A link annotation is written for a group with an absolute
 /// hyperlink only.
 /// </summary>
 public static class PdfVectorGraphicsFuzzTargets
 {
     private static readonly string[] Tokens = ["<", "&", "(", ")", "\\", "https://", "mailto:", "a", "W", "i", " ", "ส", "中", "\U0001F600", "́", "\uD800", "\0"];
+
+    // A PNG image of 2 by 2 pixels
+    private static readonly byte[] Png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC");
 
     private static readonly double[] Values = [0, 1, -1, 0.5, 2.5, 10, -10, 50, 100, 1e-9, 1e6, -1e6, double.NaN, double.PositiveInfinity, double.NegativeInfinity, 3.3];
 
@@ -63,12 +66,19 @@ public static class PdfVectorGraphicsFuzzTargets
             var text = FuzzText.Decode(FuzzInput.ReadUntil(ref data, 0));
             var parent = groups.Peek();
             var color = new SceneColor((byte)(kind * 37), (byte)(kind * 11), (byte)(kind * 5), (byte)(255 - (kind & 0xC0)));
-            ScenePaint paint = (kind & 0x20) != 0
-                ? new LinearGradientPaint(0, 0, value, 10, [new(value, color), new(0.5, SceneColor.Black), new((kind & 7) / 7.0, SceneColor.White)])
-                : color;
+            ScenePaint paint = (kind & 0x30) switch
+            {
+                0x20 => new LinearGradientPaint(0, 0, value, 10, [new(value, color), new(0.5, SceneColor.Black), new((kind & 7) / 7.0, SceneColor.White)]),
+                0x30 => new RadialGradientPaint(40, 30, value, 45, value, [new(0, color), new((kind & 7) / 7.0, SceneColor.White)]),
+                _ => color,
+            };
             SceneElement element;
             switch (kind & 7)
             {
+                case 0 when (kind & 0x40) != 0:
+                    // A valid image, or the signature of a PNG file followed by the text
+                    element = parent.Add(new SceneImage(value, 10, 30, 20, (kind & 8) != 0 ? Png : [0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A, .. System.Text.Encoding.UTF8.GetBytes(text)]));
+                    break;
                 case 0:
                     element = parent.Add(new SceneRectangle(value, 10, 30, 20) { Fill = paint, CornerRadius = kind % 9 });
                     break;
@@ -101,6 +111,8 @@ public static class PdfVectorGraphicsFuzzTargets
                         Hyperlink = (kind & 8) != 0 ? text : null,
                         Clip = (kind & 16) != 0 ? new SceneBounds(value, 5, 60, 60) : null,
                         Transform = (kind & 32) != 0 ? SceneTransform.Rotate(value, 50, 40).Then(SceneTransform.Scale(0.5, 2)) : null,
+                        ClipPath = (kind & 64) != 0 ? new PathBuilder().AddCircle(50, 40, value).Build() : null,
+                        ClipRule = (SceneFillRule)(kind % 2),
                     });
                     if (group.Hyperlink is not null && Uri.TryCreate(group.Hyperlink, UriKind.Absolute, out _))
                     {
@@ -133,6 +145,7 @@ public static class PdfVectorGraphicsFuzzTargets
             [1, 6 | 8 | 32, 4, .. "https://example.com/"u8, 0, 0x80 | 0x20 | 0, 7, 0, 4 | 64, 3, .. "code"u8, 0, 7, 0, 0],
             [3, 0x80 | 6, 2, 0, 0x20 | 3 | 8 | 16, 6, 0, 5 | 32, 15, 0xE0, 0xB8, 0xAA, 0xE4, 0xB8, 0xAD, 0xF0, 0x9F, 0x98, 0x80, 0],
             [0, 3 | 64, 13, 0, 1 | 8, 14, 0, 2, 12, 0, 6 | 16 | 32, 12, 0, 0, 13, 0],
+            [0, 6 | 64, 8, 0, 0x40 | 8, 3, 0, 0x30 | 0, 7, 0, 0x40, 2, .. "not an image"u8, 0, 7, 0, 0],
         ];
         for (var i = 0; i < seeds.Length; i++)
         {

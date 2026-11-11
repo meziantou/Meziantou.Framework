@@ -87,6 +87,67 @@ public sealed class SvgSceneRendererTests
     }
 
     [Fact]
+    public void ImagesClipPathsAndRadialGradients()
+    {
+        #region VectorGraphics_ImagesAndClipping
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC");
+        var scene = new Scene(width: 100, height: 100, fontFamily: "sans-serif");
+
+        // A radial gradient, from white at the center to blue on the circle
+        scene.Root.Add(new SceneRectangle(0, 0, 100, 100) { Fill = new RadialGradientPaint(50, 50, 50, [new(0, SceneColor.White), new(1, (SceneColor)"#0369a1")]) });
+
+        // An image, stretched to its rectangle and clipped to a circle
+        var avatar = scene.Root.Add(new SceneGroup { ClipPath = new PathBuilder().AddCircle(50, 50, 30).Build() });
+        avatar.Add(new SceneImage(20, 20, 60, 60, png));
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        Assert.Contains("<radialGradient id=\"scene-gradient0\" gradientUnits=\"userSpaceOnUse\" cx=\"50\" cy=\"50\" r=\"50\">", svg, StringComparison.Ordinal);
+        Assert.Contains("fill=\"url(#scene-gradient0)\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<clipPath id=\"scene-clip0\"><path d=\"M50,20 A30,30 0 0,1 50,80 A30,30 0 0,1 50,20 Z\"/></clipPath>", svg, StringComparison.Ordinal);
+        Assert.Contains("<g clip-path=\"url(#scene-clip0)\">", svg, StringComparison.Ordinal);
+        Assert.Contains("<image x=\"20\" y=\"20\" width=\"60\" height=\"60\" preserveAspectRatio=\"none\" href=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC\"/>", svg, StringComparison.Ordinal);
+        Assert.Equal("image/png", new SceneImage(0, 0, 1, 1, png).MediaType);
+    }
+
+    [Fact]
+    public void ClipsAndFocalPoints()
+    {
+        // A clip rectangle and a clip path both apply, in the coordinates of the parent: they clip outer groups
+        var scene = new Scene(100, 100, "sans-serif");
+        var group = scene.Root.Add(new SceneGroup
+        {
+            Clip = new SceneBounds(0, 0, 50, 50),
+            ClipPath = new PathBuilder().AddRectangle(10, 10, 80, 80).AddRectangle(20, 20, 10, 10).Build(),
+            ClipRule = SceneFillRule.EvenOdd,
+            Transform = SceneTransform.Translate(5, 5),
+        });
+        group.Add(new SceneCircle(0, 0, 10) { Fill = new RadialGradientPaint(0, 0, 10, 2, 3, [new(0, SceneColor.White), new(1, SceneColor.Black)]) });
+        var svg = SvgSceneRenderer.Render(scene);
+        Assert.Contains("<clipPath id=\"scene-clip1\"><path d=\"M10,10 L90,10 L90,90 L10,90 Z M20,20 L30,20 L30,30 L20,30 Z\" clip-rule=\"evenodd\"/></clipPath>", svg, StringComparison.Ordinal);
+        Assert.Contains("<g clip-path=\"url(#scene-clip0)\">\n<g clip-path=\"url(#scene-clip1)\">\n<g transform=\"translate(5 5)\">", svg, StringComparison.Ordinal);
+        Assert.Contains("cx=\"0\" cy=\"0\" r=\"10\" fx=\"2\" fy=\"3\">", svg, StringComparison.Ordinal);
+        Assert.Contains("</g>\n</g>\n</g>\n", svg, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 }, "image/jpeg")]
+    [InlineData(new byte[] { (byte)'G', (byte)'I', (byte)'F', (byte)'8', (byte)'9', (byte)'a' }, "image/gif")]
+    [InlineData(new byte[] { (byte)'R', (byte)'I', (byte)'F', (byte)'F', 0, 0, 0, 0, (byte)'W', (byte)'E', (byte)'B', (byte)'P' }, "image/webp")]
+    [InlineData(new byte[] { (byte)'R', (byte)'I', (byte)'F', (byte)'F', 0, 0, 0, 0, (byte)'W', (byte)'A', (byte)'V', (byte)'E' }, null)]
+    [InlineData(new byte[] { 0x89, (byte)'P', (byte)'N' }, null)]
+    [InlineData(new byte[0], null)]
+    public void ImageMediaTypes(byte[] data, string? expected)
+    {
+        Assert.Equal(expected, SceneImage.GetMediaType(data));
+        if (expected is null)
+        {
+            Assert.Throws<ArgumentException>(nameof(data), () => new SceneImage(0, 0, 1, 1, data));
+        }
+    }
+
+    [Fact]
     public void ToCubicCurves()
     {
         // A quadratic curve becomes the cubic curve of the same shape; the other commands are kept

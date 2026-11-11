@@ -65,6 +65,32 @@ Assert.HasCount(2 * path.Commands.Count, both.Commands);
 ```
 <!-- endref -->
 
+## Images, clipping and radial gradients
+
+A [SceneImage](cref:Meziantou.Framework.VectorGraphics.SceneImage) draws a PNG, JPEG, GIF or WebP image, stretched to
+its rectangle: the SVG embeds its bytes. [SceneGroup.ClipPath](cref:Meziantou.Framework.VectorGraphics.SceneGroup.ClipPath)
+clips a group to any path, in the coordinates of its parent, and
+[RadialGradientPaint](cref:Meziantou.Framework.VectorGraphics.RadialGradientPaint) paints a gradient from a focal
+point to a circle:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_ImagesAndClipping;format=md-fenced-code-block;dedent=true -->
+```csharp
+var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC");
+var scene = new Scene(width: 100, height: 100, fontFamily: "sans-serif");
+
+// A radial gradient, from white at the center to blue on the circle
+scene.Root.Add(new SceneRectangle(0, 0, 100, 100) { Fill = new RadialGradientPaint(50, 50, 50, [new(0, SceneColor.White), new(1, (SceneColor)"#0369a1")]) });
+
+// An image, stretched to its rectangle and clipped to a circle
+var avatar = scene.Root.Add(new SceneGroup { ClipPath = new PathBuilder().AddCircle(50, 50, 30).Build() });
+avatar.Add(new SceneImage(20, 20, 60, 60, png));
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+The image and PDF renderers decode the images: an image they cannot decode is not drawn.
+
 ## Groups
 
 A [SceneGroup](cref:Meziantou.Framework.VectorGraphics.SceneGroup) applies a transform, a clip rectangle and an opacity

@@ -216,7 +216,7 @@ public static partial class VectorGraphicsFuzzTargets
 
     /// <summary>
     /// The input is a list of elements: a byte selects the kind of element (rectangle, circle, line, path, text, group,
-    /// end of group) and its options, and the text up to the next NUL byte gives its text, tooltip, CSS class, hyperlink or
+    /// end of group, image) and its options, and the text up to the next NUL byte gives its text, tooltip, CSS class, hyperlink or
     /// data attribute. The SVG is a well-formed XML document whose root is <c>svg</c>, and rendering twice gives the same text.
     /// </summary>
     private static void SvgTarget(ReadOnlySpan<byte> data)
@@ -235,7 +235,10 @@ public static partial class VectorGraphicsFuzzTargets
             switch (kind & 7)
             {
                 case 0:
-                    element = parent.Add(new SceneRectangle(value, value, kind % 13, kind % 7) { Fill = new LinearGradientPaint(0, 0, 1, 1, [new(0, SceneColor.White), new(1, new SceneColor(1, 2, 3, kind))]), CornerRadius = kind % 3 });
+                    ScenePaint gradient = (kind & 8) != 0
+                        ? new RadialGradientPaint(value, 1, kind % 9, 2, value, [new(0, SceneColor.White), new(1, new SceneColor(1, 2, 3, kind))])
+                        : new LinearGradientPaint(0, 0, 1, 1, [new(0, SceneColor.White), new(1, new SceneColor(1, 2, 3, kind))]);
+                    element = parent.Add(new SceneRectangle(value, value, kind % 13, kind % 7) { Fill = gradient, CornerRadius = kind % 3 });
                     break;
                 case 1:
                     element = parent.Add(new SceneCircle(value, value, kind % 5) { Stroke = new SceneColor(kind, 0, 0, kind), StrokeDashArray = [1, value] });
@@ -255,6 +258,8 @@ public static partial class VectorGraphicsFuzzTargets
                         Hyperlink = (kind & 8) != 0 ? text : null,
                         Clip = (kind & 16) != 0 ? new SceneBounds(value, value, 10, 10) : null,
                         Transform = (kind & 32) != 0 ? SceneTransform.Translate(value, value) : null,
+                        ClipPath = (kind & 128) != 0 ? new PathBuilder().AddCircle(value, 5, kind % 7).Build() : null,
+                        ClipRule = (SceneFillRule)(kind % 2),
                     });
                     groups.Push(group);
                     element = group;
@@ -267,7 +272,8 @@ public static partial class VectorGraphicsFuzzTargets
 
                     continue;
                 default:
-                    element = parent;
+                    // An image whose bytes have the signature of a PNG file, and the text as their content
+                    element = (kind & 8) != 0 ? parent.Add(new SceneImage(value, value, kind % 9, kind % 5, (byte[])[0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A, .. Encoding.UTF8.GetBytes(text)])) : parent;
                     break;
             }
 
@@ -509,6 +515,7 @@ public static partial class VectorGraphicsFuzzTargets
             [.. "sans-serif"u8, 0, 0, 0, 1, 0, 2, 0, 3, 0, 4, .. "Hello & <world>"u8, 0],
             [.. "Helvetica, \"Arial\""u8, 0, 5 | 8 | 16 | 32, .. "https://example.com/?a=1&b=2"u8, 0, 4 | 64, .. "tooltip"u8, 0, 6, 0, 7 | 128, .. "css"u8, 0],
             [0, 4, 0xFF, 0xFE, 0, 5 | 64, 0xED, 0xA0, 0x80, 0, 7, .. "node-id"u8, 0],
+            [.. "sans-serif"u8, 0, 0 | 8, 0, 5 | 128 | 32, 0, 7 | 8, .. "IHDR"u8, 0, 6, 0, 0 | 8 | 16, 0],
         ];
         for (var i = 0; i < seeds.Length; i++)
         {

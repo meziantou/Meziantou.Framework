@@ -108,6 +108,18 @@ namespace Meziantou.Framework.VectorGraphics
         public Meziantou.Framework.VectorGraphics.PathData Translate(double offsetX, double offsetY) => throw null;
     }
 
+    public sealed class RadialGradientPaint : Meziantou.Framework.VectorGraphics.ScenePaint
+    {
+        public double CenterX { get => throw null; }
+        public double CenterY { get => throw null; }
+        public double FocalX { get => throw null; }
+        public double FocalY { get => throw null; }
+        public double Radius { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneGradientStop> Stops { get => throw null; }
+        public RadialGradientPaint(double centerX, double centerY, double radius, System.Collections.Generic.IEnumerable<Meziantou.Framework.VectorGraphics.SceneGradientStop> stops) { }
+        public RadialGradientPaint(double centerX, double centerY, double radius, double focalX, double focalY, System.Collections.Generic.IEnumerable<Meziantou.Framework.VectorGraphics.SceneGradientStop> stops) { }
+    }
+
     public sealed class Scene
     {
         public Meziantou.Framework.VectorGraphics.SceneColor? Background { get => throw null; set { } }
@@ -288,9 +300,23 @@ namespace Meziantou.Framework.VectorGraphics
     {
         public System.Collections.Generic.IList<Meziantou.Framework.VectorGraphics.SceneElement> Children { get => throw null; }
         public Meziantou.Framework.VectorGraphics.SceneBounds? Clip { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.PathData? ClipPath { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneFillRule ClipRule { get => throw null; set { } }
         public string? Hyperlink { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneTransform? Transform { get => throw null; set { } }
         public T Add<T>(T element) where T : Meziantou.Framework.VectorGraphics.SceneElement => throw null;
+    }
+
+    public sealed class SceneImage : Meziantou.Framework.VectorGraphics.SceneElement
+    {
+        public System.ReadOnlyMemory<byte> Data { get => throw null; }
+        public double Height { get => throw null; }
+        public string MediaType { get => throw null; }
+        public double Width { get => throw null; }
+        public double X { get => throw null; }
+        public double Y { get => throw null; }
+        public SceneImage(double x, double y, double width, double height, System.ReadOnlyMemory<byte> data) { }
+        public static string? GetMediaType(System.ReadOnlySpan<byte> data) => throw null;
     }
 
     public sealed class SceneLine : Meziantou.Framework.VectorGraphics.SceneShape

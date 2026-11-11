@@ -36,6 +36,7 @@ public static class SvgSceneRenderer
     private sealed class Writer(TextWriter output, SvgRenderOptions options)
     {
         private readonly Dictionary<object, string> _ids = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<SceneGroup, string> _clipPathIds = new(ReferenceEqualityComparer.Instance);
         private readonly int _precision = options.Precision;
         private Scene _scene = null!;
 
@@ -124,6 +125,20 @@ public static class SvgSceneRenderer
                             .Append("\" height=\"").Append(Number(clip.Height)).Append("\"/></clipPath>\n");
                     }
 
+                    if (group.ClipPath is { } clipPath)
+                    {
+                        var id = options.IdPrefix + "-clip" + clipCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                        clipCount++;
+                        _clipPathIds[group] = id;
+                        definitions.Append("<clipPath id=\"").Append(Escape(id)).Append("\"><path d=\"").Append(SvgNumber.FormatPath(clipPath, _precision)).Append('"');
+                        if (group.ClipRule is SceneFillRule.EvenOdd)
+                        {
+                            definitions.Append(" clip-rule=\"evenodd\"");
+                        }
+
+                        definitions.Append("/></clipPath>\n");
+                    }
+
                     foreach (var child in group.Children)
                     {
                         Visit(child);
@@ -133,16 +148,38 @@ public static class SvgSceneRenderer
 
             void AddGradient(ScenePaint? paint)
             {
-                if (paint is not LinearGradientPaint gradient || _ids.ContainsKey(gradient))
+                if (paint is not (LinearGradientPaint or RadialGradientPaint) || _ids.ContainsKey(paint))
                     return;
 
                 var id = options.IdPrefix + "-gradient" + gradientCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 gradientCount++;
-                _ids[gradient] = id;
-                definitions.Append("<linearGradient id=\"").Append(Escape(id)).Append("\" gradientUnits=\"userSpaceOnUse\" x1=\"").Append(Number(gradient.X1))
-                    .Append("\" y1=\"").Append(Number(gradient.Y1)).Append("\" x2=\"").Append(Number(gradient.X2))
-                    .Append("\" y2=\"").Append(Number(gradient.Y2)).Append("\">\n");
-                foreach (var stop in gradient.Stops)
+                _ids[paint] = id;
+                IReadOnlyList<SceneGradientStop> stops;
+                string elementName;
+                if (paint is LinearGradientPaint gradient)
+                {
+                    elementName = "linearGradient";
+                    stops = gradient.Stops;
+                    definitions.Append("<linearGradient id=\"").Append(Escape(id)).Append("\" gradientUnits=\"userSpaceOnUse\" x1=\"").Append(Number(gradient.X1))
+                        .Append("\" y1=\"").Append(Number(gradient.Y1)).Append("\" x2=\"").Append(Number(gradient.X2))
+                        .Append("\" y2=\"").Append(Number(gradient.Y2)).Append("\">\n");
+                }
+                else
+                {
+                    var radial = (RadialGradientPaint)paint;
+                    elementName = "radialGradient";
+                    stops = radial.Stops;
+                    definitions.Append("<radialGradient id=\"").Append(Escape(id)).Append("\" gradientUnits=\"userSpaceOnUse\" cx=\"").Append(Number(radial.CenterX))
+                        .Append("\" cy=\"").Append(Number(radial.CenterY)).Append("\" r=\"").Append(Number(radial.Radius)).Append('"');
+                    if (radial.FocalX != radial.CenterX || radial.FocalY != radial.CenterY)
+                    {
+                        definitions.Append(" fx=\"").Append(Number(radial.FocalX)).Append("\" fy=\"").Append(Number(radial.FocalY)).Append('"');
+                    }
+
+                    definitions.Append(">\n");
+                }
+
+                foreach (var stop in stops)
                 {
                     definitions.Append("<stop offset=\"").Append(SvgNumber.Format(stop.Offset, 4)).Append("\" stop-color=\"").Append(stop.Color.ToHexRgb()).Append('"');
                     if (!stop.Color.IsOpaque)
@@ -153,7 +190,7 @@ public static class SvgSceneRenderer
                     definitions.Append("/>\n");
                 }
 
-                definitions.Append("</linearGradient>\n");
+                definitions.Append("</").Append(elementName).Append(">\n");
             }
         }
 
@@ -214,6 +251,18 @@ public static class SvgSceneRenderer
                 case SceneText text:
                     WriteText(text);
                     break;
+
+                case SceneImage image:
+                    output.Write("<image");
+                    Attribute("x", image.X);
+                    Attribute("y", image.Y);
+                    Attribute("width", image.Width);
+                    Attribute("height", image.Height);
+                    Attribute("preserveAspectRatio", "none");
+                    Attribute("href", "data:" + image.MediaType + ";base64," + Convert.ToBase64String(image.Data.Span));
+                    CommonAttributes(image);
+                    EndElement("image", image);
+                    break;
             }
         }
 
@@ -234,12 +283,24 @@ public static class SvgSceneRenderer
 
         private void WriteGroupContent(SceneGroup group)
         {
-            var clipped = _ids.TryGetValue(group, out var clipId);
-            if (clipped && group.Transform is not null)
+            // The clips are in the coordinates of the parent: an outer group clips, an inner one transforms. The last
+            // clip is on the group itself when it has no transform.
+            List<string> clipIds = [];
+            if (_ids.TryGetValue(group, out var clipId))
             {
-                // The clip rectangle is in the coordinates of the parent: clip an outer group, transform an inner one
+                clipIds.Add(clipId);
+            }
+
+            if (_clipPathIds.TryGetValue(group, out var clipPathId))
+            {
+                clipIds.Add(clipPathId);
+            }
+
+            var outerClips = group.Transform is null && clipIds.Count > 0 ? clipIds.Count - 1 : clipIds.Count;
+            for (var i = 0; i < outerClips; i++)
+            {
                 output.Write("<g");
-                Attribute("clip-path", "url(#" + clipId + ")");
+                Attribute("clip-path", "url(#" + clipIds[i] + ")");
                 output.Write(">\n");
             }
 
@@ -249,9 +310,9 @@ public static class SvgSceneRenderer
             {
                 Attribute("transform", Transform(transform));
             }
-            else if (clipped)
+            else if (clipIds.Count > 0)
             {
-                Attribute("clip-path", "url(#" + clipId + ")");
+                Attribute("clip-path", "url(#" + clipIds[^1] + ")");
             }
 
             output.Write(">\n");
@@ -262,7 +323,7 @@ public static class SvgSceneRenderer
             }
 
             output.Write("</g>\n");
-            if (clipped && group.Transform is not null)
+            for (var i = 0; i < outerClips; i++)
             {
                 output.Write("</g>\n");
             }
@@ -422,8 +483,8 @@ public static class SvgSceneRenderer
                 case SolidPaint solid:
                     Paint(name, solid.Color);
                     break;
-                case LinearGradientPaint gradient:
-                    Attribute(name, "url(#" + _ids[gradient] + ")");
+                case LinearGradientPaint or RadialGradientPaint:
+                    Attribute(name, "url(#" + _ids[paint] + ")");
                     break;
             }
         }

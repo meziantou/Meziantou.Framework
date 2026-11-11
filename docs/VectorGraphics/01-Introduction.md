@@ -4,8 +4,8 @@ description: What the vector graphics libraries do, and how the charts and diagr
 ---
 
 `Meziantou.Framework.VectorGraphics` describes a drawing as a [Scene](cref:Meziantou.Framework.VectorGraphics.Scene):
-rectangles, circles, lines, paths, texts and groups, in pixels, with fills, strokes, gradients, opacity, clipping and
-transforms. It writes a scene as SVG, and measures texts so a layout fits the font that draws it.
+rectangles, circles, lines, paths, texts, images and groups, in pixels, with fills, strokes, linear and radial
+gradients, opacity, clipping and transforms. It writes a scene as SVG, and measures texts so a layout fits the font that draws it.
 `Meziantou.Framework.Imaging.VectorGraphics` draws the same scene as an image (PNG, WebP, JPEG...) or on the canvas of
 [Meziantou.Framework.Imaging](../Imaging/01-Introduction.md). `Meziantou.Framework.Pdf.VectorGraphics` draws it as a
 PDF document or on a page of [Meziantou.Framework.Pdf](../Pdf/01-Introduction.md).

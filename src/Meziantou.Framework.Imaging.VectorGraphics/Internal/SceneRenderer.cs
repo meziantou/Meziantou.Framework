@@ -7,6 +7,8 @@ namespace Meziantou.Framework.Imaging.VectorGraphics.Internal;
 /// <summary>Draws the primitives of a <see cref="Scene"/> with the canvas of <c>Meziantou.Framework.Imaging</c>. Hyperlinks are ignored.</summary>
 internal static class SceneRenderer
 {
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<SceneImage, DecodedImage> DecodedImages = [];
+
     public static void Draw(DrawingCanvas canvas, Scene scene, PointD position, SceneImageOptions options)
     {
         var context = new DrawContext(options, CreateBrushCache()) { Fonts = scene.Fonts ?? options.Fonts, FontFamily = scene.FontFamily };
@@ -178,6 +180,10 @@ internal static class SceneRenderer
             case SceneText text:
                 DrawText(canvas, text, context);
                 break;
+
+            case SceneImage image:
+                DrawImage(canvas, image);
+                break;
         }
     }
 
@@ -185,12 +191,53 @@ internal static class SceneRenderer
     {
         if (group.Clip is { } clip)
         {
-            canvas.Clip(new RectangleD(clip.X, clip.Y, clip.Width, clip.Height), (group, context), static (canvas, state) => DrawTransformed(canvas, state.group, state.context));
+            canvas.Clip(new RectangleD(clip.X, clip.Y, clip.Width, clip.Height), (group, context), static (canvas, state) => DrawClipPath(canvas, state.group, state.context));
+            return;
+        }
+
+        DrawClipPath(canvas, group, context);
+    }
+
+    private static void DrawClipPath(DrawingCanvas canvas, SceneGroup group, DrawContext context)
+    {
+        if (group.ClipPath is { } clipPath)
+        {
+            // An empty clip path leaves nothing visible, as in SVG
+            if (ToVectorPath(clipPath) is not { } vector)
+                return;
+
+            canvas.Clip(vector, (group, context), static (canvas, state) => DrawTransformed(canvas, state.group, state.context), group.ClipRule is SceneFillRule.EvenOdd ? FillRule.EvenOdd : FillRule.NonZero);
             return;
         }
 
         DrawTransformed(canvas, group, context);
     }
+
+    private static void DrawImage(DrawingCanvas canvas, SceneImage image)
+    {
+        if (!(image.Width > 0) || !(image.Height > 0) || !double.IsFinite(image.X) || !double.IsFinite(image.Y) || !double.IsFinite(image.Width) || !double.IsFinite(image.Height))
+            return;
+
+        if (DecodedImages.GetValue(image, static image => Decode(image)).Image is { } decoded)
+        {
+            canvas.DrawImage(decoded.Frames[0], new RectangleD(image.X, image.Y, image.Width, image.Height));
+        }
+    }
+
+    // An image that cannot be decoded is not drawn
+    private static DecodedImage Decode(SceneImage image)
+    {
+        try
+        {
+            return new DecodedImage(Image.Load(image.Data.Span));
+        }
+        catch (ImageException)
+        {
+            return new DecodedImage(null);
+        }
+    }
+
+    private sealed record DecodedImage(Image? Image);
 
     private static void DrawTransformed(DrawingCanvas canvas, SceneGroup group, DrawContext context)
     {
@@ -250,6 +297,24 @@ internal static class SceneRenderer
         };
     }
 
+    // A radius of 0 paints the color of the last stop, as in SVG; an invalid gradient paints nothing
+    private static Brush CreateRadialBrush(RadialGradientPaint gradient)
+    {
+        if (gradient.Stops.Count is 0 || !double.IsFinite(gradient.CenterX) || !double.IsFinite(gradient.CenterY) || !double.IsFinite(gradient.FocalX) || !double.IsFinite(gradient.FocalY) || !double.IsFinite(gradient.Radius) || gradient.Radius < 0)
+            return new SolidBrush(new Rgba32(0, 0, 0, 0));
+
+        if (gradient.Radius == 0)
+            return ToBrush(gradient.Stops[^1].Color);
+
+        return new RadialGradientBrush(
+            new PointD(gradient.CenterX, gradient.CenterY),
+            gradient.Radius,
+            [.. gradient.Stops.Select(stop => new GradientStop(stop.Offset, Rgba64.FromRgba32(new Rgba32(stop.Color.R, stop.Color.G, stop.Color.B, stop.Color.A))))])
+        {
+            FocalPoint = new PointD(gradient.FocalX, gradient.FocalY),
+        };
+    }
+
     internal sealed class DrawContext(SceneImageOptions options, Dictionary<ScenePaint, Brush> brushes)
     {
         public SceneImageOptions Options { get; } = options;
@@ -268,6 +333,7 @@ internal static class SceneRenderer
             brush = paint switch
             {
                 SolidPaint solid => ToBrush(solid.Color),
+                RadialGradientPaint radial => CreateRadialBrush(radial),
                 LinearGradientPaint gradient => new LinearGradientBrush(
                     new PointD(gradient.X1, gradient.Y1),
                     new PointD(gradient.X2, gradient.Y2),

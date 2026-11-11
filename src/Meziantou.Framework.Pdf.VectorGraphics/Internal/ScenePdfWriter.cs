@@ -17,6 +17,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     private const double MiterLimit = 4;
 
     private static readonly ConditionalWeakTable<SceneFontFace, EmbeddedFont> EmbeddedFonts = [];
+    private static readonly ConditionalWeakTable<SceneImage, LoadedImage> Images = [];
 
     private readonly Stack<PdfMatrix> _saved = new();
     private PdfContentBuilder _content = content;
@@ -77,6 +78,38 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             case SceneText text:
                 DrawText(text, opacity);
                 break;
+
+            case SceneImage image:
+                DrawImage(image, opacity);
+                break;
+        }
+    }
+
+    private void DrawImage(SceneImage image, double opacity)
+    {
+        if (!(image.Width > 0) || !(image.Height > 0) || !IsFinite(image.X, image.Y, image.Width, image.Height))
+            return;
+
+        if (Images.GetValue(image, static image => LoadImage(image)).Image is not { } pdfImage)
+            return;
+
+        // The image space has its first row at the top: in the flipped space, the image is placed from its bottom edge upward
+        Save();
+        SetAlpha(opacity, opacity);
+        _content.DrawImage(pdfImage, image.X, image.Y + image.Height, image.Width, -image.Height);
+        Restore();
+    }
+
+    // An image that cannot be decoded is not drawn
+    private static LoadedImage LoadImage(SceneImage image)
+    {
+        try
+        {
+            return new LoadedImage(PdfImage.Load(image.Data.Span));
+        }
+        catch (Exception exception) when (exception is ArgumentException or Imaging.ImageException)
+        {
+            return new LoadedImage(null);
         }
     }
 
@@ -89,6 +122,11 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             return;
 
         if (group.Transform is { } transform && !IsFinite(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F))
+            return;
+
+        // An empty clip path leaves nothing visible, as in SVG
+        var clipPath = group.ClipPath?.ToCubicCurves();
+        if (clipPath is not null && (clipPath.IsEmpty || !IsFinite(clipPath)))
             return;
 
         if (group.Hyperlink is { } hyperlink && Uri.TryCreate(hyperlink, UriKind.Absolute, out var uri) && Bounds.Of(group, this) is { } linkBounds)
@@ -104,6 +142,12 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         if (group.Clip is { } groupClip)
         {
             _content.Rectangle(groupClip.X, groupClip.Y, groupClip.Width, groupClip.Height).Clip().EndPath();
+        }
+
+        if (clipPath is not null)
+        {
+            AppendPath(clipPath);
+            _content.Clip(group.ClipRule is SceneFillRule.EvenOdd ? PdfFillRule.EvenOdd : PdfFillRule.NonZero).EndPath();
         }
 
         if (group.Transform is { } groupTransform)
@@ -260,8 +304,29 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                 SetColor(solid.Color, stroke);
                 return solid.Color.A / 255.0;
 
+            case RadialGradientPaint radial:
+                {
+                    var radialStops = GetStops(radial.Stops);
+                    if (radialStops.Count is 0 || !IsFinite(radial.CenterX, radial.CenterY, radial.Radius, radial.FocalX, radial.FocalY) || radial.Radius < 0)
+                        return null;
+
+                    var radialOpacity = radialStops.Average(stop => stop.Color.A / 255.0);
+                    if (radialStops.Count is 1 || radial.Radius == 0)
+                    {
+                        // SVG paints a gradient of one stop, or of no radius, with the color of its last stop
+                        SetColor(radialStops[^1].Color, stroke);
+                        return radialOpacity;
+                    }
+
+                    // The circles go from the focal point, of radius 0, to the circle of the gradient (8.7.4.5.4, type 3)
+                    var radialFunction = PdfFunction.Gradient([.. radialStops.Select(stop => (stop.Offset, ToColor(stop.Color)))]);
+                    var radialShading = PdfShading.Radial(PdfDeviceColorSpace.Rgb, radial.FocalX, radial.FocalY, 0, radial.CenterX, radial.CenterY, radial.Radius, radialFunction, extendStart: true, extendEnd: true);
+                    SetPattern(new PdfShadingPattern(radialShading, _matrix), stroke);
+                    return radialOpacity;
+                }
+
             case LinearGradientPaint gradient:
-                var stops = GetStops(gradient);
+                var stops = GetStops(gradient.Stops);
                 if (stops.Count is 0)
                     return null;
 
@@ -275,16 +340,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
                 var function = PdfFunction.Gradient([.. stops.Select(stop => (stop.Offset, ToColor(stop.Color)))]);
                 var shading = PdfShading.Axial(PdfDeviceColorSpace.Rgb, gradient.X1, gradient.Y1, gradient.X2, gradient.Y2, function, extendStart: true, extendEnd: true);
-                var pattern = new PdfShadingPattern(shading, _matrix);
-                if (stroke)
-                {
-                    _content.SetStrokePattern(pattern);
-                }
-                else
-                {
-                    _content.SetFillPattern(pattern);
-                }
-
+                SetPattern(new PdfShadingPattern(shading, _matrix), stroke);
                 return opacity;
 
             default:
@@ -294,10 +350,22 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
     // The stops as SVG reads them: the offsets clamped to [0, 1] and never less than the one before. PDF needs
     // increasing bounds from 0 to 1: the stops of a hard edge are moved apart a little, and the ends are added.
-    private static List<(double Offset, SceneColor Color)> GetStops(LinearGradientPaint gradient)
+    private void SetPattern(PdfPattern pattern, bool stroke)
+    {
+        if (stroke)
+        {
+            _content.SetStrokePattern(pattern);
+        }
+        else
+        {
+            _content.SetFillPattern(pattern);
+        }
+    }
+
+    private static List<(double Offset, SceneColor Color)> GetStops(IReadOnlyList<SceneGradientStop> gradientStops)
     {
         var stops = new List<(double Offset, SceneColor Color)>();
-        foreach (var stop in gradient.Stops)
+        foreach (var stop in gradientStops)
         {
             var offset = double.IsNaN(stop.Offset) ? 0 : Math.Clamp(stop.Offset, 0, 1);
             if (stops.Count > 0 && offset <= stops[^1].Offset)
@@ -486,6 +554,8 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
     private sealed record EmbeddedFont(PdfFont? Font);
 
+    private sealed record LoadedImage(PdfImage? Image);
+
     /// <summary>A rectangle aligned with the axes, to place the links and the transparency groups.</summary>
     [StructLayout(LayoutKind.Auto)]
     internal readonly record struct Bounds(double Left, double Top, double Right, double Bottom)
@@ -518,6 +588,25 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
         private Bounds Inflate(double amount) => amount > 0 ? new Bounds(Left - amount, Top - amount, Right + amount, Bottom + amount) : this;
 
+        // A cubic curve stays in the convex hull of its control points
+        private static Bounds? OfPath(PathData data)
+        {
+            Bounds? points = null;
+            foreach (var command in data.ToCubicCurves().Commands)
+            {
+                if (command.Kind is PathCommandKind.Close)
+                    continue;
+
+                points = Union(points, new Bounds(command.X, command.Y, command.X, command.Y));
+                if (command.Kind is PathCommandKind.CubicTo)
+                {
+                    points = Union(points, new Bounds(Math.Min(command.X1, command.X2), Math.Min(command.Y1, command.Y2), Math.Max(command.X1, command.X2), Math.Max(command.Y1, command.Y2)));
+                }
+            }
+
+            return points;
+        }
+
         /// <summary>Gets a rectangle that contains what an element draws, in the coordinates of its parent, or null when it draws nothing.</summary>
         public static Bounds? Of(SceneElement element, ScenePdfWriter writer)
         {
@@ -546,11 +635,23 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                     if (group.Clip is { } clip)
                     {
                         box = new Bounds(Math.Max(box.Left, clip.X), Math.Max(box.Top, clip.Y), Math.Min(box.Right, clip.Right), Math.Min(box.Bottom, clip.Bottom));
-                        if (!(box.Width > 0) || !(box.Height > 0))
-                            return null;
                     }
 
+                    if (group.ClipPath is { } clipPath)
+                    {
+                        if (OfPath(clipPath) is not { } clipBox)
+                            return null;
+
+                        box = new Bounds(Math.Max(box.Left, clipBox.Left), Math.Max(box.Top, clipBox.Top), Math.Min(box.Right, clipBox.Right), Math.Min(box.Bottom, clipBox.Bottom));
+                    }
+
+                    if (!(box.Width > 0) || !(box.Height > 0))
+                        return null;
+
                     return box;
+
+                case SceneImage image:
+                    return new Bounds(image.X, image.Y, image.X + image.Width, image.Y + image.Height);
 
                 case SceneRectangle rectangle:
                     return new Bounds(rectangle.X, rectangle.Y, rectangle.X + rectangle.Width, rectangle.Y + rectangle.Height).Inflate(stroke);
@@ -562,21 +663,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                     return new Bounds(Math.Min(line.X1, line.X2), Math.Min(line.Y1, line.Y2), Math.Max(line.X1, line.X2), Math.Max(line.Y1, line.Y2)).Inflate(stroke);
 
                 case ScenePath path:
-                    // A cubic curve stays in the convex hull of its control points
-                    Bounds? points = null;
-                    foreach (var command in path.Data.ToCubicCurves().Commands)
-                    {
-                        if (command.Kind is PathCommandKind.Close)
-                            continue;
-
-                        points = Union(points, new Bounds(command.X, command.Y, command.X, command.Y));
-                        if (command.Kind is PathCommandKind.CubicTo)
-                        {
-                            points = Union(points, new Bounds(Math.Min(command.X1, command.X2), Math.Min(command.Y1, command.Y2), Math.Max(command.X1, command.X2), Math.Max(command.Y1, command.Y2)));
-                        }
-                    }
-
-                    return points?.Inflate(stroke);
+                    return OfPath(path.Data)?.Inflate(stroke);
 
                 case SceneText text when text.Text.Length > 0 && text.Font.Size > 0:
                     // The glyphs fit in an em above the baseline and half an em below it, from the start to the end of the text

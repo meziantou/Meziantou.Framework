@@ -84,6 +84,30 @@ public sealed class ScenePdfRendererTests
     }
 
     [Fact]
+    public void ImagesClipPathsAndRadialGradients()
+    {
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC");
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+        var clipped = scene.Root.Add(new SceneGroup { ClipPath = new PathBuilder().AddCircle(20, 20, 20).Build() });
+        clipped.Add(new SceneImage(0, 0, 40, 40, png));
+        scene.Root.Add(new SceneRectangle(50, 50, 50, 50) { Fill = new RadialGradientPaint(75, 75, 25, [new(0, SceneColor.Black), new(1, SceneColor.White)]) });
+        scene.Root.Add(new SceneImage(50, 0, 40, 40, new byte[] { 0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3 }));
+        using var image = Render(scene);
+
+        // The image is upright: red at the top left, blue at the top right
+        var red = image.Frames[0][8, 8];
+        Assert.True(red.R > 200 && red.G < 80 && red.B < 80, red.ToString());
+        var blue = image.Frames[0][32, 8];
+        Assert.True(blue.B > 200 && blue.R < 80, blue.ToString());
+        var green = image.Frames[0][8, 32];
+        Assert.True(green.G > 200 && green.R < 80, green.ToString());
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][1, 1]);
+        Assert.True(image.Frames[0][75, 75].R < 30);
+        Assert.True(image.Frames[0][98, 75].R > 220);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][70, 20]);
+    }
+
+    [Fact]
     public void TextsWithoutFontsUseHelvetica()
     {
         var measurer = ScenePdfRenderer.CreateMeasurer();

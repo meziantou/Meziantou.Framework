@@ -56,8 +56,9 @@ other scripts.
 
 ## What is drawn
 
-The shapes, the paths (arcs and quadratic curves are converted to cubic curves), the linear gradients, the opacity
-(a group is drawn as a transparency group), the clipping and the transforms are drawn as in the SVG. The hyperlinks of
+The shapes, the paths (arcs and quadratic curves are converted to cubic curves), the images, the linear and radial
+gradients, the opacity (a group is drawn as a transparency group), the clipping rectangles and paths and the transforms
+are drawn as in the SVG. A JPEG image is embedded as it is; the other formats are decoded and compressed again. The hyperlinks of
 the groups become link annotations of the page; only absolute addresses are linked. The tooltips, the CSS classes and
 the data attributes are not drawn. A gradient whose stops have different opacities is drawn with their average
 opacity.

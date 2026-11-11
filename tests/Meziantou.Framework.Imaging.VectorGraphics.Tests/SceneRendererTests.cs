@@ -240,6 +240,34 @@ public sealed class SceneRendererTests
         Assert.NotEqual(GetInkBounds(withFallback, 30, 0, 200, 40), GetInkBounds(withoutFallback, 30, 0, 200, 40));
     }
 
+    private static readonly byte[] Png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC");
+
+    [Fact]
+    public void ImagesClipPathsAndRadialGradients()
+    {
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+
+        // A 2 by 2 image (red, blue / green, white), stretched to 40 by 40 and clipped to a circle
+        var clipped = scene.Root.Add(new SceneGroup { ClipPath = new PathBuilder().AddCircle(20, 20, 20).Build() });
+        clipped.Add(new SceneImage(0, 0, 40, 40, Png));
+
+        // A radial gradient from black at its focal point to white on its circle
+        scene.Root.Add(new SceneRectangle(50, 50, 50, 50) { Fill = new RadialGradientPaint(75, 75, 25, [new(0, SceneColor.Black), new(1, SceneColor.White)]) });
+
+        // An image that is not valid is not drawn
+        scene.Root.Add(new SceneImage(50, 0, 40, 40, new byte[] { 0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3 }));
+        using var image = scene.ToImage();
+
+        var red = image.Frames[0][8, 8];
+        Assert.True(red.R > 200 && red.G < 80 && red.B < 80, red.ToString());
+        var blue = image.Frames[0][32, 8];
+        Assert.True(blue.B > 200 && blue.R < 80, blue.ToString());
+        Assert.Equal(Colors.White, image.Frames[0][1, 1]);
+        Assert.True(image.Frames[0][75, 75].R < 30);
+        Assert.True(image.Frames[0][98, 75].R > 220);
+        Assert.Equal(Colors.White, image.Frames[0][70, 20]);
+    }
+
     [Fact]
     public void SourcesAreLaidOutWithTheFontsOfTheImage()
     {

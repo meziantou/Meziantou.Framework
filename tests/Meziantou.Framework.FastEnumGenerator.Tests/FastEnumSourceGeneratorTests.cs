@@ -706,7 +706,7 @@ public sealed class FastEnumSourceGeneratorTests
     {
         var frameworkReferences = netFramework
             ? await NuGetHelpers.GetNuGetReferences("Microsoft.NETFramework.ReferenceAssemblies.net472", "1.0.3", "")
-            : await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
+            : await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "10.0.0", "ref/net10.0/");
         var references = frameworkReferences.Select(static location => MetadataReference.CreateFromFile(location)).ToArray();
         var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(languageVersion);
         if (interceptorsEnabled)
@@ -800,7 +800,7 @@ public sealed class FastEnumSourceGeneratorTests
         var workspace = new AdhocWorkspace();
         var projectId = ProjectId.CreateNewId();
         var documentId = DocumentId.CreateNewId(projectId);
-        var netcoreReferences = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
+        var netcoreReferences = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "10.0.0", "ref/net10.0/");
 
         var solution = workspace.CurrentSolution
             .AddProject(projectId, "Project", "Project", LanguageNames.CSharp)

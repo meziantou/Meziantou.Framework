@@ -226,7 +226,7 @@ public sealed class JsExportGeneratorTests
 
         var result = Assert.Single(driver.GetRunResult().Results);
         Assert.Single(result.GeneratedSources);
-        var outputs = result.TrackedSteps["JsExportOutputs"].SelectMany(static step => step.Outputs);
+        var outputs = result.TrackedSteps["JsExportOutputs"].SelectMany(step => step.Outputs);
         Assert.All(outputs, output => Assert.True(output.Reason is IncrementalStepRunReason.Cached or IncrementalStepRunReason.Unchanged, output.Reason.ToString()));
     }
 
@@ -238,7 +238,7 @@ public sealed class JsExportGeneratorTests
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var generatorDiagnostics);
 
         var inputTrees = compilation.SyntaxTrees.ToHashSet();
-        var generatedSources = driver.GetRunResult().Results.SelectMany(static result => result.GeneratedSources).Select(static generated => generated.SourceText.ToString()).ToImmutableArray();
+        var generatedSources = driver.GetRunResult().Results.SelectMany(result => result.GeneratedSources).Select(generated => generated.SourceText.ToString()).ToImmutableArray();
         var outputDiagnostics = outputCompilation.GetDiagnostics();
         var generatedCodeDiagnostics = outputDiagnostics
             .Where(diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning && diagnostic.Location.SourceTree is { } tree && !inputTrees.Contains(tree))

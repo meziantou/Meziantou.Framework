@@ -78,11 +78,11 @@ public sealed class JsExportGenerator : IIncrementalGenerator
         // does not add the source again
         var outputs = context.SyntaxProvider.ForAttributeWithMetadataName(
                 RuntimeNamespace + ".JsExportAttribute",
-                static (node, _) => node is ClassDeclarationSyntax or RecordDeclarationSyntax,
-                static (context, cancellationToken) => CreateOutput(context, cancellationToken))
+                (node, _) => node is ClassDeclarationSyntax or RecordDeclarationSyntax,
+                (context, cancellationToken) => CreateOutput(context, cancellationToken))
             .WithTrackingName(OutputsTrackingName);
 
-        context.RegisterSourceOutput(outputs, static (context, output) =>
+        context.RegisterSourceOutput(outputs, (context, output) =>
         {
             if (output.Source is not null)
             {
@@ -91,9 +91,9 @@ public sealed class JsExportGenerator : IIncrementalGenerator
         });
 
         // Diagnostics are reported at a location in the syntax trees of the compilation, so '#pragma warning disable' applies to them
-        var diagnostics = outputs.Select(static (output, _) => output.Diagnostics).Collect()
-            .Select(static (diagnostics, _) => diagnostics.SelectMany(static items => items).Distinct().ToImmutableEquatableArray());
-        context.RegisterSourceOutput(diagnostics.Combine(context.CompilationProvider), static (context, input) =>
+        var diagnostics = outputs.Select((output, _) => output.Diagnostics).Collect()
+            .Select((diagnostics, _) => diagnostics.SelectMany(items => items).Distinct().ToImmutableEquatableArray());
+        context.RegisterSourceOutput(diagnostics.Combine(context.CompilationProvider), (context, input) =>
         {
             if (input.Left.Length == 0)
             {
@@ -874,7 +874,7 @@ public sealed class JsExportGenerator : IIncrementalGenerator
     private sealed record DiagnosticInfo(DiagnosticDescriptor Descriptor, LocationInfo? Location, ImmutableEquatableArray<string> Arguments)
     {
         public static DiagnosticInfo Create(DiagnosticDescriptor descriptor, Location? location, params object?[] arguments)
-            => new(descriptor, LocationInfo.Create(location), arguments.Select(static argument => argument?.ToString() ?? string.Empty).ToImmutableEquatableArray());
+            => new(descriptor, LocationInfo.Create(location), arguments.Select(argument => argument?.ToString() ?? string.Empty).ToImmutableEquatableArray());
 
         public Diagnostic ToDiagnostic(Dictionary<string, SyntaxTree?> trees) => Diagnostic.Create(Descriptor, Location?.ToLocation(trees), [.. Arguments]);
     }

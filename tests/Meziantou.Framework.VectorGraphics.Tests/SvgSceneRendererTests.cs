@@ -653,6 +653,12 @@ public sealed class SvgSceneRendererTests
         Assert.Equal(1, CountOccurrences(mutualSvg, "id=\"first-square\""));
         Assert.Equal(1, CountOccurrences(mutualSvg, "id=\"second-square\""));
 
+        // The same element twice in such a content is written twice: its identifier is a duplicate
+        var square = new SceneRectangle(0, 0, 1, 1) { Id = "twice", Fill = SceneColor.Black };
+        first.Content.Add(square);
+        first.Content.Add(square);
+        Assert.Throws<InvalidOperationException>(() => SvgSceneRenderer.Render(mutual));
+
         // A use that refers to a use in its own content refers to an empty group
         var cycle = new SceneGroup();
         var circular = cycle.Add(new SceneUse(cycle));

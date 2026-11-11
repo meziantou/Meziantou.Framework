@@ -74,14 +74,14 @@ internal static class SceneTree
         }
 
         // A root that its own content reaches again (the content of a pattern its drawing paints with) is written inside
-        // that pattern only: its elements are enumerated once, as the pattern writes them
+        // that pattern only: it is not entered again through the pattern, so its elements are enumerated as it writes them
         var roots = candidates.Where(candidate => !nested.Contains(candidate)).ToList();
         var detached = new List<SceneElement>();
         foreach (var element in roots)
         {
             if (IsInItsOwnContents(element))
             {
-                Visit(element, once: true);
+                Visit(element, rootOnce: true);
             }
             else
             {
@@ -92,16 +92,18 @@ internal static class SceneTree
 
         return new WalkResult(elements, detached, roots);
 
-        // An element reached several times is enumerated each time, unless once is set
-        void Visit(SceneElement start, bool once = false)
+        // An element reached several times is enumerated each time; with rootOnce, the start is not entered again
+        void Visit(SceneElement start, bool rootOnce = false)
         {
-            var visited = once ? new HashSet<SceneElement>(ReferenceEqualityComparer.Instance) : null;
             var stack = new Stack<SceneElement>();
             stack.Push(start);
+            var isStart = true;
             while (stack.TryPop(out var element))
             {
-                if (visited is not null && !visited.Add(element))
+                if (rootOnce && !isStart && ReferenceEquals(element, start))
                     continue;
+
+                isStart = false;
 
                 elements.Add(element);
                 seen.Add(element);

@@ -34,6 +34,19 @@ public sealed class JsSourceTextModule : JsModule
 
     internal List<ExportEntry> StarExportEntries { get; } = [];
 
+    /// <summary>
+    /// [[OptionalIndirectExportEntries]] (https://tc39.es/proposal-deferred-reexports/): the entries of the <c>export defer</c>
+    /// declarations, and of the <c>export * from</c> declarations that may re-export the <c>export defer</c> bindings of
+    /// other modules, in source order.
+    /// </summary>
+    internal List<ExportEntry> OptionalIndirectExportEntries { get; } = [];
+
+    /// <summary>The filtered namespace objects of the <c>export { a } as ns from</c> declarations (the <c>*ns*</c> bindings), created on first use.</summary>
+    private Dictionary<ExportEntry, JsObject>? _filteredNamespaceExports;
+
+    /// <summary>Whether ValidateOwnNamespaceExports(module, ~all~) succeeded (its result does not change).</summary>
+    internal bool NamespaceExportsValidated { get; set; }
+
     /// <summary>[[HasTLA]]</summary>
     internal bool HasTopLevelAwait => Code.HasTopLevelAwait;
 
@@ -90,14 +103,14 @@ public sealed class JsSourceTextModule : JsModule
             {
                 case ImportDeclaration import:
                     {
-                        var request = AddRequest(import.Source, import.Attributes, import.Phase);
+                        var request = AddRequest(import.Source, import.Attributes, import.Phase, GetImportedNames(import));
                         foreach (var specifier in import.Specifiers)
                         {
                             ImportEntries.Add(specifier switch
                             {
                                 ImportDefaultSpecifier s when import.Phase == ModulePhase.Source => new ImportEntry(request, ImportName: null, s.Local.Name),
                                 ImportDefaultSpecifier s => new ImportEntry(request, "default", s.Local.Name),
-                                ImportNamespaceSpecifier s => new ImportEntry(request, ImportName: null, s.Local.Name),
+                                ImportNamespaceSpecifier s => new ImportEntry(request, ImportName: null, s.Local.Name, GetNames(s.Names)),
                                 ImportSpecifier s => new ImportEntry(request, GetName(s.Imported), s.Local.Name),
                                 _ => throw new InvalidOperationException("Unknown import specifier"),
                             });
@@ -109,23 +122,34 @@ public sealed class JsSourceTextModule : JsModule
                 case ExportNamedDeclaration { Declaration: { } declaration }:
                     foreach (var name in GetDeclarationNames(declaration))
                     {
-                        exportEntries.Add(new ExportEntry(name, ModuleRequest: null, ExportImportKind.None, ImportName: null, name));
+                        exportEntries.Add(new ExportEntry(name, moduleRequest: null, ExportImportKind.None, importName: null, name));
                     }
 
                     break;
                 case ExportNamedDeclaration { Source: null } export:
                     foreach (var specifier in export.Specifiers)
                     {
-                        exportEntries.Add(new ExportEntry(GetName(specifier.Exported), ModuleRequest: null, ExportImportKind.None, ImportName: null, GetName(specifier.Local)));
+                        exportEntries.Add(new ExportEntry(GetName(specifier.Exported), moduleRequest: null, ExportImportKind.None, importName: null, GetName(specifier.Local)));
                     }
 
                     break;
                 case ExportNamedDeclaration export:
                     {
-                        var request = AddRequest(export.Source!, export.Attributes);
+                        var importedNames = new ImportedNames([.. export.Specifiers.Select(s => GetName(s.Local)).Distinct(StringComparer.Ordinal)], []);
+                        var request = export.IsDeferred
+                            ? CreateRequest(export.Source!, export.Attributes, ModulePhase.Evaluation, importedNames)
+                            : AddRequest(export.Source!, export.Attributes, ModulePhase.Evaluation, importedNames);
                         foreach (var specifier in export.Specifiers)
                         {
-                            exportEntries.Add(new ExportEntry(GetName(specifier.Exported), request, ExportImportKind.Name, GetName(specifier.Local), LocalName: null));
+                            var entry = new ExportEntry(GetName(specifier.Exported), request, ExportImportKind.Name, GetName(specifier.Local), localName: null);
+                            if (export.IsDeferred)
+                            {
+                                OptionalIndirectExportEntries.Add(entry);
+                            }
+                            else
+                            {
+                                exportEntries.Add(entry);
+                            }
                         }
 
                         break;
@@ -133,10 +157,31 @@ public sealed class JsSourceTextModule : JsModule
 
                 case ExportAllDeclaration exportAll:
                     {
-                        var request = AddRequest(exportAll.Source, exportAll.Attributes);
-                        exportEntries.Add(exportAll.Exported is null
-                            ? new ExportEntry(ExportName: null, request, ExportImportKind.AllButDefault, ImportName: null, LocalName: null)
-                            : new ExportEntry(GetName(exportAll.Exported), request, ExportImportKind.All, ImportName: null, LocalName: null));
+                        var filter = GetNames(exportAll.Names);
+                        if (exportAll.IsDeferred)
+                        {
+                            // A deferred re-export of a namespace object is a deferred namespace, like import defer
+                            var request = CreateRequest(exportAll.Source, exportAll.Attributes, ModulePhase.Defer, new ImportedNames([], filter));
+                            OptionalIndirectExportEntries.Add(filter is null
+                                ? new ExportEntry(GetName(exportAll.Exported!), request, ExportImportKind.All, importName: null, localName: null)
+                                : new ExportEntry(GetName(exportAll.Exported!), request, ExportImportKind.FilteredNamespace, importName: null, localName: null, filter));
+                        }
+                        else if (exportAll.Exported is null)
+                        {
+                            // export * from may re-export the export defer bindings of the module: it is also an optional entry
+                            var request = AddRequest(exportAll.Source, exportAll.Attributes, ModulePhase.Evaluation, ImportedNames.Empty());
+                            var entry = new ExportEntry(exportName: null, request, ExportImportKind.AllButDefault, importName: null, localName: null);
+                            exportEntries.Add(entry);
+                            OptionalIndirectExportEntries.Add(entry);
+                        }
+                        else
+                        {
+                            var request = AddRequest(exportAll.Source, exportAll.Attributes, ModulePhase.Evaluation, new ImportedNames([], filter));
+                            exportEntries.Add(filter is null
+                                ? new ExportEntry(GetName(exportAll.Exported), request, ExportImportKind.All, importName: null, localName: null)
+                                : new ExportEntry(GetName(exportAll.Exported), request, ExportImportKind.FilteredNamespace, importName: null, localName: null, filter));
+                        }
+
                         break;
                     }
 
@@ -149,7 +194,7 @@ public sealed class JsSourceTextModule : JsModule
                             _ => "*default*",
                         };
 
-                        exportEntries.Add(new ExportEntry("default", ModuleRequest: null, ExportImportKind.None, ImportName: null, localName));
+                        exportEntries.Add(new ExportEntry("default", moduleRequest: null, ExportImportKind.None, importName: null, localName));
                         break;
                     }
             }
@@ -167,12 +212,14 @@ public sealed class JsSourceTextModule : JsModule
                 else if (import.IsNamespace)
                 {
                     // The re-export of an imported namespace object
-                    IndirectExportEntries.Add(new ExportEntry(entry.ExportName, import.ModuleRequest, ExportImportKind.All, ImportName: null, LocalName: null));
+                    IndirectExportEntries.Add(import.NamespaceNamesFilter is null
+                        ? new ExportEntry(entry.ExportName, import.ModuleRequest, ExportImportKind.All, importName: null, localName: null)
+                        : new ExportEntry(entry.ExportName, import.ModuleRequest, ExportImportKind.FilteredNamespace, importName: null, localName: null, import.NamespaceNamesFilter));
                 }
                 else
                 {
                     // The re-export of an imported binding
-                    IndirectExportEntries.Add(new ExportEntry(entry.ExportName, import.ModuleRequest, ExportImportKind.Name, import.ImportName, LocalName: null));
+                    IndirectExportEntries.Add(new ExportEntry(entry.ExportName, import.ModuleRequest, ExportImportKind.Name, import.ImportName, localName: null));
                 }
             }
             else if (entry.ImportKind == ExportImportKind.AllButDefault)
@@ -186,22 +233,60 @@ public sealed class JsSourceTextModule : JsModule
         }
     }
 
+    /// <summary>The [[ImportedNames]] of the request of an import declaration (DirectImportedNames and FilteredNamespaceImportedNames).</summary>
+    private static ImportedNames GetImportedNames(ImportDeclaration import)
+    {
+        var names = ImportedNames.Empty();
+
+        // The source of a module is not its exports
+        if (import.Phase == ModulePhase.Source)
+            return names;
+
+        foreach (var specifier in import.Specifiers)
+        {
+            switch (specifier)
+            {
+                case ImportDefaultSpecifier:
+                    names.Direct = ImportedNames.Merge(names.Direct, ["default"]);
+                    break;
+                case ImportSpecifier s:
+                    names.Direct = ImportedNames.Merge(names.Direct, [GetName(s.Imported)]);
+                    break;
+                case ImportNamespaceSpecifier s:
+                    names.Namespace = ImportedNames.Merge(names.Namespace, GetNames(s.Names));
+                    break;
+            }
+        }
+
+        return names;
+    }
+
+    private static List<string>? GetNames(List<Node>? names) => names?.ConvertAll(GetName);
+
     /// <summary>
     /// Adds a request to [[RequestedModules]] (ModuleRequests): the requests of the same module with the same phase are
-    /// merged (a module imported deferred and not deferred has a request for each phase).
+    /// merged (a module imported deferred and not deferred has a request for each phase), and so are their imported names.
     /// </summary>
-    private ModuleRequest AddRequest(StringLiteral source, List<ImportAttribute> attributes, ModulePhase phase = ModulePhase.Evaluation)
+    private ModuleRequest AddRequest(StringLiteral source, List<ImportAttribute> attributes, ModulePhase phase, ImportedNames importedNames)
     {
-        var request = ModuleRequest.Create(source.Value, attributes.Select(a => new KeyValuePair<string, string>(GetName(a.Key), a.Value.Value)), phase);
+        var request = CreateRequest(source, attributes, phase, importedNames);
         foreach (var existing in RequestedModules)
         {
             if (existing.Phase == phase && existing.Equals(request))
+            {
+                existing.ImportedNames.Direct = ImportedNames.Merge(existing.ImportedNames.Direct, importedNames.Direct);
+                existing.ImportedNames.Namespace = ImportedNames.Merge(existing.ImportedNames.Namespace, importedNames.Namespace);
                 return existing;
+            }
         }
 
         RequestedModules.Add(request);
         return request;
     }
+
+    /// <summary>Creates a request that is not in [[RequestedModules]] (the request of an <c>export defer</c> declaration).</summary>
+    private static ModuleRequest CreateRequest(StringLiteral source, List<ImportAttribute> attributes, ModulePhase phase, ImportedNames importedNames)
+        => ModuleRequest.Create(source.Value, attributes.Select(a => new KeyValuePair<string, string>(GetName(a.Key), a.Value.Value)), phase, importedNames);
 
     private static string GetName(Node node) => node switch
     {
@@ -251,7 +336,26 @@ public sealed class JsSourceTextModule : JsModule
             return [];
 
         exportStarSet.Add(this);
-        var names = new List<string>();
+        var names = GetOwnExportedNames();
+        foreach (var entry in StarExportEntries)
+        {
+            var requested = GetImportedModule(entry.ModuleRequest!);
+            foreach (var name in requested.GetExportedNames(exportStarSet))
+            {
+                if (name != "default" && !names.Contains(name, StringComparer.Ordinal))
+                {
+                    names.Add(name);
+                }
+            }
+        }
+
+        return names;
+    }
+
+    /// <summary>GetOwnExportedNames(module): the names exported by the module, except those of its star exports.</summary>
+    private List<string> GetOwnExportedNames()
+    {
+        var names = new List<string>(LocalExportEntries.Count + IndirectExportEntries.Count + OptionalIndirectExportEntries.Count);
         foreach (var entry in LocalExportEntries)
         {
             names.Add(entry.ExportName!);
@@ -262,15 +366,11 @@ public sealed class JsSourceTextModule : JsModule
             names.Add(entry.ExportName!);
         }
 
-        foreach (var entry in StarExportEntries)
+        foreach (var entry in OptionalIndirectExportEntries)
         {
-            var requested = GetImportedModule(entry.ModuleRequest!);
-            foreach (var name in requested.GetExportedNames(exportStarSet))
+            if (entry.ExportName is not null)
             {
-                if (name != "default" && !names.Contains(name, StringComparer.Ordinal))
-                {
-                    names.Add(name);
-                }
+                names.Add(entry.ExportName);
             }
         }
 
@@ -293,17 +393,8 @@ public sealed class JsSourceTextModule : JsModule
                 return new ResolvedBinding(this, entry.LocalName);
         }
 
-        foreach (var entry in IndirectExportEntries)
-        {
-            if (entry.ExportName == exportName)
-            {
-                var imported = GetImportedModule(entry.ModuleRequest!);
-                if (entry.ImportKind == ExportImportKind.All)
-                    return new ResolvedBinding(imported, bindingName: null, entry.ModuleRequest!.Phase);
-
-                return imported.ResolveExport(entry.ImportName!, resolveSet);
-            }
-        }
+        if (ResolveIndirectExport(IndirectExportEntries, exportName, resolveSet, out var resolution) || ResolveIndirectExport(OptionalIndirectExportEntries, exportName, resolveSet, out resolution))
+            return resolution;
 
         // A default export cannot be provided by export *
         if (exportName == "default")
@@ -313,7 +404,7 @@ public sealed class JsSourceTextModule : JsModule
         foreach (var entry in StarExportEntries)
         {
             var imported = GetImportedModule(entry.ModuleRequest!);
-            var resolution = imported.ResolveExport(exportName, resolveSet);
+            resolution = imported.ResolveExport(exportName, resolveSet);
             if (resolution == ResolvedBinding.Ambiguous)
                 return resolution;
 
@@ -331,6 +422,105 @@ public sealed class JsSourceTextModule : JsModule
         }
 
         return starResolution;
+    }
+
+    private bool ResolveIndirectExport(List<ExportEntry> entries, string exportName, List<(JsModule Module, string ExportName)> resolveSet, out ResolvedBinding? resolution)
+    {
+        foreach (var entry in entries)
+        {
+            if (entry.ExportName != exportName)
+                continue;
+
+            switch (entry.ImportKind)
+            {
+                case ExportImportKind.All:
+                    resolution = new ResolvedBinding(GetImportedModule(entry.ModuleRequest!), bindingName: null, entry.ModuleRequest!.Phase);
+                    return true;
+
+                case ExportImportKind.FilteredNamespace:
+                    // export { a } as ns from introduces the internal binding *ns* of this module
+                    resolution = new ResolvedBinding(this, "*" + exportName + "*", filteredNamespaceExport: entry);
+                    return true;
+
+                default:
+                    resolution = GetImportedModule(entry.ModuleRequest!).ResolveExport(entry.ImportName!, resolveSet);
+                    return true;
+            }
+        }
+
+        resolution = null;
+        return false;
+    }
+
+    /// <summary>The value of the internal binding of a filtered namespace export (<c>export { a } as ns from</c>), created on first use.</summary>
+    internal JsObject GetFilteredNamespaceExport(ExportEntry entry)
+    {
+        _filteredNamespaceExports ??= [];
+        if (!_filteredNamespaceExports.TryGetValue(entry, out var ns))
+        {
+            ns = ModuleOperations.GetModuleNamespace(GetImportedModule(entry.ModuleRequest!), entry.ModuleRequest!.Phase, entry.NamespaceNamesFilter);
+            _filteredNamespaceExports.Add(entry, ns);
+        }
+
+        return ns;
+    }
+
+    /// <summary>
+    /// GetOptionalIndirectExportsModuleRequests(importedNames): the requests of the <c>export defer</c> declarations that
+    /// provide <paramref name="importedNames"/> (null for all of them), and of the <c>export * from</c> declarations that
+    /// may re-export them from other modules.
+    /// </summary>
+    internal List<ModuleRequest> GetOptionalIndirectExportsModuleRequests(List<string>? importedNames)
+    {
+        var requests = new List<ModuleRequest>();
+        if (OptionalIndirectExportEntries.Count == 0)
+            return requests;
+
+        List<string>? ownExportedNames = null;
+        foreach (var entry in OptionalIndirectExportEntries)
+        {
+            List<string>? direct;
+            List<string>? ns;
+            var isStarExport = false;
+            if (entry.ImportKind == ExportImportKind.AllButDefault)
+            {
+                // export * from: the names that the module does not export itself may be export defer bindings of the module
+                ownExportedNames ??= GetOwnExportedNames();
+                ns = [];
+                direct = ImportedNames.Exclude(ImportedNames.Exclude(importedNames, ["default"]), ownExportedNames);
+                if (direct is { Count: 0 })
+                    continue;
+
+                isStarExport = true;
+            }
+            else if (ImportedNames.Contains(importedNames, entry.ExportName!))
+            {
+                (direct, ns) = entry.ImportKind switch
+                {
+                    ExportImportKind.Name => ([entry.ImportName!], []),
+                    ExportImportKind.FilteredNamespace => ([], entry.NamespaceNamesFilter),
+                    _ => (new List<string>(), (List<string>?)null),
+                };
+            }
+            else
+            {
+                continue;
+            }
+
+            var next = entry.ModuleRequest!;
+            var existing = requests.Find(r => r.Equals(next) && r.Phase == next.Phase && r.IsStarExport == isStarExport);
+            if (existing is null)
+            {
+                requests.Add(new ModuleRequest(next.Specifier, next.Attributes, next.Phase, new ImportedNames(direct, ns)) { IsStarExport = isStarExport });
+            }
+            else
+            {
+                existing.ImportedNames.Direct = ImportedNames.Merge(existing.ImportedNames.Direct, direct);
+                existing.ImportedNames.Namespace = ImportedNames.Merge(existing.ImportedNames.Namespace, ns);
+            }
+        }
+
+        return requests;
     }
 
     internal override int GetBindingSlot(string bindingName) => Code.Environment.IndexOf(bindingName);

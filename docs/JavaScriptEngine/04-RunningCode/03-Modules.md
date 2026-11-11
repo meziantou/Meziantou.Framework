@@ -231,6 +231,55 @@ Assert.Equal("DONE", realm.Execute("result").AsString());
 
 Without a module loader, the scripts and the modules cannot import modules.
 
+## Deferred re-exports
+
+`export defer` ([deferred re-exports](https://github.com/tc39/proposal-deferred-reexports)) marks the re-exports of a
+module, such as the entry point of a library, to load only when another module uses them:
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_ExportDefer;format=md-fenced-code-block;dedent=true -->
+```csharp
+var files = new Dictionary<string, string>(StringComparer.Ordinal)
+{
+    ["main.js"] = "import { log } from 'app:log'; import { add } from './math.js'; log(`main.js: ${add(1, 2)}`);",
+
+    // The entry point of a library: a deferred re-export is loaded only when one of its bindings is imported
+    ["./math.js"] = """
+        import { log } from 'app:log';
+        export defer { add } from './add.js';
+        export defer { subtract } from './subtract.js';
+        log('math.js');
+        """,
+    ["./add.js"] = "import { log } from 'app:log'; log('add.js'); export function add(a, b) { return a + b; }",
+
+    // './subtract.js' is not in the files: nothing imports subtract, so the loader is never asked for it
+};
+
+var logs = new List<string>();
+using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = new AppModuleLoader(files, logs) });
+var realm = engine.CreateRealm();
+var module = realm.ParseModule(files["main.js"], "main.js");
+module.LoadRequestedModules();
+engine.RunJobs();
+module.Link();
+module.Evaluate();
+engine.RunJobs();
+
+// A deferred re-export runs after the module that re-exports it
+Assert.Equal(["math.js", "add.js", "main.js: 3"], logs);
+```
+<!-- endref -->
+
+- The module of an `export defer { ... } from` declaration is loaded, linked and evaluated only when a module imports
+  one of its bindings. It runs after the module that re-exports it, in the order of the declarations.
+- `import * as ns` loads all the deferred re-exports, and runs each one on the first access to one of its exports.
+  To load fewer modules, name the exports you use: `import { add, multiply } as math from './math.js'` or
+  `import('./math.js', { exports: ['add', 'multiply'] })` give a namespace object with these exports only.
+- `export defer * as ns from` and `export defer { a, b } as ns from` re-export a deferred namespace: the module runs
+  on the first access to one of its exports, as with `import defer`.
+- `export * from` forwards the deferred re-exports of the module: they are loaded only when they are imported.
+- The module that you load with [LoadRequestedModules](cref:Meziantou.Framework.JavaScriptEngine.JsModule.LoadRequestedModules) and [Link](cref:Meziantou.Framework.JavaScriptEngine.JsModule.Link) loads all its own deferred re-exports: its
+  exports are available from [GetNamespace](cref:Meziantou.Framework.JavaScriptEngine.JsModule.GetNamespace).
+
 ## Source phase imports
 
 `import source x from '...'` and `import.source()` give the *module source* of a module, set by the loader in

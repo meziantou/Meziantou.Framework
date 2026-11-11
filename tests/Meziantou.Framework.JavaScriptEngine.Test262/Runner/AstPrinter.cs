@@ -254,6 +254,11 @@ internal static class AstPrinter
                 builder.Append("(ImportNamespaceSpecifier");
                 builder.Append(" Local=");
                 Print(builder, n.Local);
+                if (n.Names is not null)
+                {
+                    AppendList(builder, "Names", n.Names);
+                }
+
                 break;
             case ImportAttribute n:
                 builder.Append("(ImportAttribute");
@@ -264,6 +269,11 @@ internal static class AstPrinter
                 break;
             case ExportNamedDeclaration n:
                 builder.Append("(ExportNamedDeclaration");
+                if (n.IsDeferred)
+                {
+                    builder.Append(" IsDeferred=true");
+                }
+
                 builder.Append(" Declaration=");
                 Print(builder, n.Declaration);
                 AppendList(builder, "Specifiers", n.Specifiers);
@@ -285,8 +295,18 @@ internal static class AstPrinter
                 break;
             case ExportAllDeclaration n:
                 builder.Append("(ExportAllDeclaration");
+                if (n.IsDeferred)
+                {
+                    builder.Append(" IsDeferred=true");
+                }
+
                 builder.Append(" Exported=");
                 Print(builder, n.Exported);
+                if (n.Names is not null)
+                {
+                    AppendList(builder, "Names", n.Names);
+                }
+
                 builder.Append(" Source=");
                 Print(builder, n.Source);
                 AppendList(builder, "Attributes", n.Attributes);

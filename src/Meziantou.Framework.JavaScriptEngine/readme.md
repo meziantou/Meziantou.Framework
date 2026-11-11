@@ -15,8 +15,8 @@ imports (the module sources are given by the host),
 [immutable `ArrayBuffer`](https://github.com/tc39/proposal-immutable-arraybuffer) (`transferToImmutable`,
 `sliceToImmutable`), Await Dictionary (`Promise.allKeyed` and `Promise.allSettledKeyed`) and Non-extensible Applies to
 Private (a private field or method cannot be added to a non-extensible object), and the `ShadowRealm`,
-[Import Text](https://github.com/tc39/proposal-import-text) and [Import Bytes](https://github.com/tc39/proposal-import-bytes)
-proposals. It uses no reflection: it is trimming- and Native AOT-compatible, and its results do not depend
+[Import Text](https://github.com/tc39/proposal-import-text), [Import Bytes](https://github.com/tc39/proposal-import-bytes)
+and [deferred re-exports](https://github.com/tc39/proposal-deferred-reexports) (`export defer`) proposals. It uses no reflection: it is trimming- and Native AOT-compatible, and its results do not depend
 on the globalization settings of the process (the Unicode, time zone and CLDR data are part of the library, and the word
 lists of ICU that `Intl.Segmenter` uses for Chinese, Japanese, Thai, Lao, Khmer and Burmese come from
 [Meziantou.Framework.Unicode.Dictionaries](../Meziantou.Framework.Unicode.Dictionaries/readme.md)).

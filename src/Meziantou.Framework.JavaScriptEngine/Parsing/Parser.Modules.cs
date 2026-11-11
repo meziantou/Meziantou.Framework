@@ -15,15 +15,28 @@ internal sealed partial class Parser
         {
             node.Source = ParseModuleSpecifier();
         }
-        else if (_token.Kind == TokenKind.Identifier && _token.Value == "defer" && !_token.IsEscaped && PeekToken().Kind == TokenKind.Star)
+        else if (_token.Kind == TokenKind.Identifier && _token.Value == "defer" && !_token.IsEscaped && PeekToken().Kind is TokenKind.Star or TokenKind.LeftBrace)
         {
-            // import defer * as ns from '...' (https://tc39.es/proposal-defer-import-eval/): only a namespace import can be deferred
+            // import defer * as ns from '...' (https://tc39.es/proposal-defer-import-eval/): only a namespace import can be
+            // deferred, or a filtered namespace (import defer { a } as ns from '...', https://tc39.es/proposal-deferred-reexports/)
             Next();
             var specifierStart = _token.Start;
-            Next();
-            ExpectContextual("as");
-            var local = ParseImportedBinding();
-            node.Specifiers.Add(Finish(new ImportNamespaceSpecifier { Local = local }, specifierStart));
+            if (_token.Kind == TokenKind.Star)
+            {
+                Next();
+                ExpectContextual("as");
+                var local = ParseImportedBinding();
+                node.Specifiers.Add(Finish(new ImportNamespaceSpecifier { Local = local }, specifierStart));
+            }
+            else
+            {
+                var specifiers = ParseNamedImportsList();
+                if (!IsContextual("as"))
+                    Unexpected();
+
+                node.Specifiers.Add(ParseFilteredNamespaceImport(specifierStart, specifiers));
+            }
+
             node.Phase = Modules.ModulePhase.Defer;
             ExpectContextual("from");
             node.Source = ParseModuleSpecifier();
@@ -74,22 +87,19 @@ internal sealed partial class Parser
                 }
                 else if (_token.Kind == TokenKind.LeftBrace)
                 {
-                    Next();
-                    var first = true;
-                    while (!Eat(TokenKind.RightBrace))
+                    var specifierStart = _token.Start;
+                    var specifiers = ParseNamedImportsList();
+                    if (IsContextual("as"))
                     {
-                        if (!first)
+                        // import { a, b } as ns from '...': a filtered namespace (https://tc39.es/proposal-deferred-reexports/)
+                        node.Specifiers.Add(ParseFilteredNamespaceImport(specifierStart, specifiers));
+                    }
+                    else
+                    {
+                        foreach (var specifier in specifiers)
                         {
-                            Expect(TokenKind.Comma);
-                            if (Eat(TokenKind.RightBrace))
-                                break;
+                            node.Specifiers.Add(CreateImportSpecifier(specifier));
                         }
-                        else
-                        {
-                            first = false;
-                        }
-
-                        node.Specifiers.Add(ParseImportSpecifier());
                     }
                 }
                 else
@@ -110,34 +120,81 @@ internal sealed partial class Parser
         return Finish(node, start);
     }
 
-    private ImportSpecifier ParseImportSpecifier()
+    /// <summary>
+    /// Parses the NamedImports of an import declaration. The bindings are checked once it is known whether the list is
+    /// a filtered namespace (<c>{ a, b } as ns</c>), whose names are not bindings.
+    /// </summary>
+    private List<ParsedImportSpecifier> ParseNamedImportsList()
     {
-        var start = _token.Start;
-        if (_token.Kind == TokenKind.StringLiteral)
+        Expect(TokenKind.LeftBrace);
+        var specifiers = new List<ParsedImportSpecifier>();
+        var first = true;
+        while (!Eat(TokenKind.RightBrace))
         {
-            var imported = ParseModuleExportName();
-            ExpectContextual("as");
-            var local = ParseImportedBinding();
-            return Finish(new ImportSpecifier { Imported = imported, Local = local }, start);
+            if (!first)
+            {
+                Expect(TokenKind.Comma);
+                if (Eat(TokenKind.RightBrace))
+                    break;
+            }
+            else
+            {
+                first = false;
+            }
+
+            var start = _token.Start;
+            var importedToken = _token;
+            var imported = _token.Kind == TokenKind.StringLiteral ? ParseModuleExportName() : ParseIdentifierName();
+            var alias = EatContextual("as") ? ParseBindingIdentifier() : null;
+            specifiers.Add(new ParsedImportSpecifier(start, _prevEnd, importedToken, imported, alias));
         }
 
-        var importedToken = _token;
-        var importedName = ParseIdentifierName();
-        if (EatContextual("as"))
+        return specifiers;
+    }
+
+    private ImportSpecifier CreateImportSpecifier(ParsedImportSpecifier specifier)
+    {
+        if (specifier.Alias is { } alias)
         {
-            var local = ParseImportedBinding();
-            return Finish(new ImportSpecifier { Imported = importedName, Local = local }, start);
+            CheckLValSimple(alias, BindingKind.Lexical);
+            return FinishAt(new ImportSpecifier { Imported = specifier.Imported, Local = alias }, specifier.Start, specifier.End);
         }
 
         // import { x } from '...': x is also the binding
-        if (importedToken.Kind != TokenKind.Identifier)
-            Unexpected(importedToken);
+        if (specifier.ImportedToken.Kind != TokenKind.Identifier)
+            Unexpected(specifier.ImportedToken);
 
+        var importedName = (Identifier)specifier.Imported;
         CheckUnreserved(importedName.Name, importedName.Start);
         var binding = FinishAt(new Identifier { Name = importedName.Name }, importedName.Start, importedName.End);
         CheckLValSimple(binding, BindingKind.Lexical);
-        return Finish(new ImportSpecifier { Imported = importedName, Local = binding }, start);
+        return FinishAt(new ImportSpecifier { Imported = importedName, Local = binding }, specifier.Start, specifier.End);
     }
+
+    /// <summary>Parses <c>as ns</c> after the names of a filtered namespace import (<c>import { a, b } as ns from</c>).</summary>
+    private ImportNamespaceSpecifier ParseFilteredNamespaceImport(int start, List<ParsedImportSpecifier> specifiers)
+    {
+        var names = new List<Node>(specifiers.Count);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var specifier in specifiers)
+        {
+            if (specifier.Alias is not null)
+                Raise(specifier.Start, "The names of a filtered namespace cannot be renamed");
+
+            var name = GetModuleExportName(specifier.Imported);
+            if (!seen.Add(name))
+                Raise(specifier.Start, "Duplicate name '" + name + "' in a filtered namespace");
+
+            names.Add(specifier.Imported);
+        }
+
+        ExpectContextual("as");
+        var local = ParseImportedBinding();
+        return Finish(new ImportNamespaceSpecifier { Local = local, Names = names }, start);
+    }
+
+    /// <summary>An ImportSpecifier whose binding is not checked yet.</summary>
+    private sealed record ParsedImportSpecifier(int Start, int End, Token ImportedToken, Node Imported, Identifier? Alias);
 
     private Identifier ParseImportedBinding()
     {
@@ -255,14 +312,27 @@ internal sealed partial class Parser
         if (decorators is not null && _token.Kind is not TokenKind.Class and not TokenKind.Default)
             Unexpected();
 
+        // export defer { a } from '...', export defer * as ns from '...' (https://tc39.es/proposal-deferred-reexports/)
+        var isDeferred = false;
+        if (_token.Kind == TokenKind.Identifier && _token.Value == "defer" && !_token.IsEscaped && PeekToken().Kind is TokenKind.Star or TokenKind.LeftBrace)
+        {
+            Next();
+            isDeferred = true;
+        }
+
         if (_token.Kind == TokenKind.Star)
         {
             Next();
-            var node = new ExportAllDeclaration();
+            var node = new ExportAllDeclaration { IsDeferred = isDeferred };
             if (EatContextual("as"))
             {
                 node.Exported = ParseModuleExportName();
                 AddExportedName(GetModuleExportName(node.Exported), node.Exported.Start);
+            }
+            else if (isDeferred)
+            {
+                // export defer * from '...' is not valid: the deferred names must be known without loading the module
+                Unexpected();
             }
 
             ExpectContextual("from");
@@ -357,6 +427,17 @@ internal sealed partial class Parser
             named.Specifiers.Add(Finish(new ExportSpecifier { Local = local, Exported = exported }, specifierStart));
         }
 
+        if (IsContextual("as"))
+            return ParseFilteredNamespaceExport(start, named.Specifiers, isDeferred);
+
+        if (isDeferred)
+        {
+            // export defer { a } from '...': only a re-export can be deferred
+            named.IsDeferred = true;
+            if (!IsContextual("from"))
+                Unexpected();
+        }
+
         if (EatContextual("from"))
         {
             named.Source = ParseModuleSpecifier();
@@ -385,6 +466,34 @@ internal sealed partial class Parser
         }
 
         return Finish(named, start);
+    }
+
+    /// <summary>Parses <c>as ns from '...'</c> after the names of a filtered namespace export (<c>export { a, b } as ns from</c>).</summary>
+    private ExportAllDeclaration ParseFilteredNamespaceExport(int start, List<ExportSpecifier> specifiers, bool isDeferred)
+    {
+        var names = new List<Node>(specifiers.Count);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var specifier in specifiers)
+        {
+            if (!ReferenceEquals(specifier.Local, specifier.Exported))
+                Raise(specifier.Start, "The names of a filtered namespace cannot be renamed");
+
+            var name = GetModuleExportName(specifier.Local);
+            if (!seen.Add(name))
+                Raise(specifier.Start, "Duplicate name '" + name + "' in a filtered namespace");
+
+            names.Add(specifier.Local);
+        }
+
+        ExpectContextual("as");
+        var node = new ExportAllDeclaration { Names = names, IsDeferred = isDeferred };
+        node.Exported = ParseModuleExportName();
+        AddExportedName(GetModuleExportName(node.Exported), node.Exported.Start);
+        ExpectContextual("from");
+        node.Source = ParseModuleSpecifier();
+        ParseImportAttributes(node.Attributes);
+        Semicolon();
+        return Finish(node, start);
     }
 
     private void AddBoundNamesAsExports(Node pattern)

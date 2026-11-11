@@ -71,6 +71,10 @@ internal static class JavaScriptSeeds
         ("bad-export", "export { notDefined };"),
         ("duplicate-export", "export const a = 1; export { a };"),
         ("defer", "import defer * as ns from './a.js'; ns.x;"),
+        ("export-defer", "import { x, z, all, some, eager, filtered } from './barrel.js'; globalThis.r = [x, z, all.y, some.g(), eager, filtered.y];"),
+        ("export-defer-namespace", "import * as ns from './barrel.js'; import defer * as lazy from './barrel.js'; import { x, all } as filtered from './proxy.js'; Object.keys(ns); lazy.x; filtered.all.y;"),
+        ("export-defer-reexport", "export defer { x, z } from './barrel.js'; export defer * as deferred from './proxy.js'; export { again } as some from './proxy.js'; import { again } from './proxy.js';"),
+        ("export-defer-dynamic", "const ns = await import('./barrel.js', { exports: ['x', 'all'] }); const lazy = await import.defer('./proxy.js', { exports: ['again'] }); ns.all.y; lazy.again;"),
     ];
 
     public static IReadOnlyList<(string Name, string Json)> Json { get; } =

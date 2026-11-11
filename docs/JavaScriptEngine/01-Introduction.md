@@ -27,7 +27,7 @@ because it uses no reflection.
 The engine implements ECMAScript 2025 (including the proper tail calls of strict code), ECMA-402 (`Intl`) and
 `Temporal`. It also implements the stage 3 proposals decorators (with the `accessor` fields and `Symbol.metadata`),
 `import defer`, source phase imports, immutable `ArrayBuffer`, `Promise.allKeyed` and `Promise.allSettledKeyed`, and
-the `ShadowRealm`, Import Text and Import Bytes proposals.
+the `ShadowRealm`, Import Text, Import Bytes and deferred re-exports (`export defer`) proposals.
 
 It is validated by [test262](https://github.com/tc39/test262), the conformance suite of ECMAScript (see the
 [pass rate per area](10-Conformance.md)), by the build tools of the Web Tooling Benchmark (babel, TypeScript,

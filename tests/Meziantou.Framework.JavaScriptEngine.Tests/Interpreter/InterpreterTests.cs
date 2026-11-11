@@ -857,6 +857,9 @@ public sealed class InterpreterTests
     {
         private readonly Dictionary<string, JsModule> _modules = new(StringComparer.Ordinal);
 
+        /// <summary>The specifiers of the modules created by the loader, in order.</summary>
+        public List<string> Loaded { get; } = [];
+
         protected internal override void LoadImportedModule(JsModuleLoadRequest request)
         {
             var key = request.Type is null ? request.Specifier : request.Specifier + "|" + request.Type;
@@ -879,6 +882,7 @@ public sealed class InterpreterTests
                     return;
                 }
 
+                Loaded.Add(request.Specifier);
                 module = request.Type switch
                 {
                     "json" => request.Realm.CreateJsonModule(code, request.Specifier),
@@ -895,9 +899,21 @@ public sealed class InterpreterTests
         public void Register(string specifier, JsModule module) => _modules[specifier] = module;
     }
 
-    private static string RunModule(Dictionary<string, string> files, string main = "main")
+    private static string RunModule(Dictionary<string, string> files, string main = "main", List<string>? loaded = null)
     {
         var loader = new InMemoryModuleLoader(files);
+        try
+        {
+            return RunModule(loader, files, main);
+        }
+        finally
+        {
+            loaded?.AddRange(loader.Loaded);
+        }
+    }
+
+    private static string RunModule(InMemoryModuleLoader loader, Dictionary<string, string> files, string main)
+    {
         using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = loader });
         var realm = engine.CreateRealm();
         var module = realm.ParseModule(files[main], main);
@@ -921,6 +937,186 @@ public sealed class InterpreterTests
             throw new JsException(jsPromise.Result);
 
         Assert.Equal(PromiseState.Fulfilled, jsPromise.State);
+    }
+
+    [Fact]
+    public void Module_ExportDefer_LoadsAndEvaluatesOnlyTheImportedReexportsAfterTheBarrel()
+    {
+        var loaded = new List<string>();
+        var result = RunModule(
+            new()
+            {
+                ["main"] = "import { e, a, d } from 'barrel'; log.push('main'); globalThis.result = log.join() + ':' + a + e + d;",
+                ["barrel"] = "export defer { a } from 'a'; export { b } from 'b'; export defer { c } from 'c'; export { d } from 'd'; export defer { e } from 'e'; log.push('barrel');",
+                ["a"] = "(globalThis.log ??= []).push('a'); export const a = 'A';",
+                ["b"] = "(globalThis.log ??= []).push('b'); export const b = 'B';",
+                ["c"] = "(globalThis.log ??= []).push('c'); export const c = 'C';",
+                ["d"] = "(globalThis.log ??= []).push('d'); export const d = 'D';",
+                ["e"] = "(globalThis.log ??= []).push('e'); export const e = 'E';",
+            },
+            loaded: loaded);
+
+        Assert.Equal("b,d,barrel,a,e,main:AED", result);
+        Assert.DoesNotContain("c", loaded);
+    }
+
+    [Fact]
+    public void Module_ExportDefer_NamespaceImportLoadsEveryReexportAndEvaluatesThemOnAccess()
+    {
+        var loaded = new List<string>();
+        var result = RunModule(
+            new()
+            {
+                ["main"] = "import * as math from 'math'; log.push('main'); const add = math.add; log.push(typeof add, 'sub' in math); globalThis.result = log.join();",
+                ["math"] = "export defer { add } from 'add'; export defer { sub } from 'sub'; export { mul } from 'mul'; log.push('math');",
+                ["add"] = "log.push('add'); export function add(a, b) { return a + b; }",
+                ["sub"] = "log.push('sub'); export function sub(a, b) { return a - b; }",
+                ["mul"] = "globalThis.log = ['mul']; export function mul(a, b) { return a * b; }",
+            },
+            loaded: loaded);
+
+        Assert.Equal("mul,math,main,add,function,true", result);
+        Assert.Contains("sub", loaded);
+    }
+
+    [Fact]
+    public void Module_ExportDefer_ImportDeferEvaluatesTheBarrelThenTheReexportOnAccess()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = "globalThis.log = []; import defer * as math from 'math'; log.push('main'); math.add; globalThis.result = log.join();",
+            ["math"] = "export defer { add } from 'add'; export defer { sub } from 'sub'; log.push('math');",
+            ["add"] = "log.push('add'); export const add = 1;",
+            ["sub"] = "log.push('sub'); export const sub = 2;",
+        });
+
+        Assert.Equal("main,math,add", result);
+    }
+
+    [Fact]
+    public void Module_ExportDefer_FilteredNamespaceImportLoadsOnlyItsNames()
+    {
+        var loaded = new List<string>();
+        var result = RunModule(
+            new()
+            {
+                ["main"] = "import { add, mul } as math from 'math'; globalThis.result = [Object.keys(math).join('|'), math.add(1, 2), typeof math.sub, 'add' in math, 'sub' in math].join();",
+                ["math"] = "export defer { add } from 'add'; export defer { sub } from 'sub'; export { mul } from 'mul';",
+                ["add"] = "export function add(a, b) { return a + b; }",
+                ["sub"] = "export function sub(a, b) { return a - b; }",
+                ["mul"] = "export function mul(a, b) { return a * b; }",
+            },
+            loaded: loaded);
+
+        Assert.Equal("add|mul,3,undefined,true,false", result);
+        Assert.DoesNotContain("sub", loaded);
+    }
+
+    [Fact]
+    public void Module_ExportDefer_NamespaceReexportsAreDeferredNamespaces()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = """
+                import { all, some, eager } from 'barrel';
+                log.push('main', all[Symbol.toStringTag], eager[Symbol.toStringTag]);
+                log.push(all.value, Object.keys(some).join('|'));
+                globalThis.result = log.join();
+                """,
+            ["barrel"] = "export defer * as all from 'dep'; export defer { value } as some from 'dep'; export { other } as eager from 'eager'; log.push('barrel');",
+            ["dep"] = "log.push('dep'); export const value = 42; export const other = 0;",
+            ["eager"] = "globalThis.log = ['eager']; export const other = 0;",
+        });
+
+        Assert.Equal("eager,barrel,main,Deferred Module,Module,dep,42,value", result);
+    }
+
+    [Fact]
+    public void Module_ExportDefer_StarExportsForwardTheDeferredBindings()
+    {
+        var loaded = new List<string>();
+        var result = RunModule(
+            new()
+            {
+                ["main"] = "import { add } from 'proxy'; log.push('main'); globalThis.result = log.join() + ':' + add;",
+                ["proxy"] = "export * from 'math'; log.push('proxy');",
+                ["math"] = "export defer { add } from 'add'; export defer { sub } from 'sub'; export { mul } from 'mul'; log.push('math');",
+                ["add"] = "log.push('add'); export const add = 1;",
+                ["sub"] = "log.push('sub'); export const sub = 2;",
+                ["mul"] = "globalThis.log = ['mul']; export const mul = 3;",
+            },
+            loaded: loaded);
+
+        Assert.Equal("mul,math,proxy,add,main:1", result);
+        Assert.DoesNotContain("sub", loaded);
+    }
+
+    [Fact]
+    public void Module_ExportDefer_DynamicImportWithExports()
+    {
+        var loaded = new List<string>();
+        var result = RunModule(
+            new()
+            {
+                ["main"] = """
+                    const math = await import('math', { exports: ['add'] });
+                    const error = await import('math', { exports: 'add' }).catch(e => e.constructor.name);
+                    const missing = await import('math', { exports: ['missing'] }).catch(e => e.constructor.name);
+                    globalThis.result = [Object.keys(math).join('|'), math.add, error, missing].join();
+                    """,
+                ["math"] = "export defer { add } from 'add'; export defer { sub } from 'sub';",
+                ["add"] = "export const add = 1;",
+                ["sub"] = "export const sub = 2;",
+            },
+            loaded: loaded);
+
+        Assert.Equal("add,1,TypeError,ReferenceError", result);
+        Assert.DoesNotContain("sub", loaded);
+    }
+
+    [Fact]
+    public void Module_ExportDefer_MissingReexportedBindingIsASyntaxError()
+    {
+        var exception = Assert.Throws<JsException>(() => RunModule(new()
+        {
+            ["main"] = "import { missing } from 'barrel';",
+            ["barrel"] = "export defer { missing } from 'dep';",
+            ["dep"] = "export const x = 1;",
+        }));
+
+        Assert.StartsWith("SyntaxError:", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("export defer * from 'dep';")]
+    [InlineData("export defer { x };")]
+    [InlineData("export defer default 1;")]
+    [InlineData("export defer const x = 1;")]
+    [InlineData("export defer function f() {}")]
+    [InlineData("export d\\u0065fer { x } from 'dep';")]
+    [InlineData("export defer { x as y } as ns from 'dep';")]
+    [InlineData("export { x, x } as ns from 'dep';")]
+    [InlineData("export defer { x } from 'dep'; export { x } from 'dep';")]
+    [InlineData("import { x as y } as ns from 'dep';")]
+    [InlineData("import { x, x } as ns from 'dep';")]
+    [InlineData("import defer { x } from 'dep';")]
+    [InlineData("import { 'a-b' } from 'dep';")]
+    public void Module_ExportDefer_SyntaxErrors(string code)
+    {
+        var exception = Assert.Throws<JsException>(() => RunModule(new() { ["main"] = code, ["dep"] = "export const x = 1;" }));
+        Assert.StartsWith("SyntaxError:", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Module_ExportDefer_FilteredNamespaceNamesAreNotBindings()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = "import { if, 'a-b' } as ns from 'dep'; globalThis.result = Object.keys(ns).join('|');",
+            ["dep"] = "const a = 1, b = 2; export { a as if, b as 'a-b' };",
+        });
+
+        Assert.Equal("a-b|if", result);
     }
 
     [Fact]

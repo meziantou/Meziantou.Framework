@@ -16,6 +16,12 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
 {
     private const string ResxGeneratorNamespace = "https://meziantou.net/meziantou.framework/resxgenerator";
 
+    // The newline XElement.ToString() and StringBuilder.AppendLine() write, so the generated comments split on it.
+    // It is not a setting, which is what RS1035 guards against.
+#pragma warning disable RS1035
+    private static readonly string NewLine = Environment.NewLine;
+#pragma warning restore RS1035
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var compilationProvider = context.CompilationProvider.Select(static (compilation, cancellationToken) =>
@@ -350,7 +356,7 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
                         summary.Add(new XElement("para", $"Value: \"{entry.Value}\"."));
                     }
 
-                    var comment = summary.ToString().Replace(Environment.NewLine, Environment.NewLine + "       /// ", StringComparison.Ordinal);
+                    var comment = summary.ToString().Replace(NewLine, NewLine + "       /// ", StringComparison.Ordinal);
 
                     sb.AppendLine(@"
         /// " + comment + @"
@@ -576,10 +582,10 @@ public sealed partial class ResxGenerator : IIncrementalGenerator
                 continue;
 
             var element = new XElement("param", new XAttribute("name", parameter.Name), parameter.Comment);
-            elements.Add(element.ToString().Replace(Environment.NewLine, Environment.NewLine + "       /// ", StringComparison.Ordinal));
+            elements.Add(element.ToString().Replace(NewLine, NewLine + "       /// ", StringComparison.Ordinal));
         }
 
-        return string.Join(Environment.NewLine + "        /// ", elements);
+        return string.Join(NewLine + "        /// ", elements);
     }
 
     /// <summary>

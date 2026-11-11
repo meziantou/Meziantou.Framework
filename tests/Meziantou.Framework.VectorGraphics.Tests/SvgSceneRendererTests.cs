@@ -211,6 +211,225 @@ public sealed class SvgSceneRendererTests
     }
 
     [Fact]
+    public void TextPaints()
+    {
+        #region VectorGraphics_TextPaints
+        var scene = new Scene(width: 300, height: 100, fontFamily: "sans-serif");
+        var font = new SceneFont(28, Weight: SceneFont.BoldWeight);
+
+        // A text filled with a gradient, and an outlined text: a stroke and a transparent fill
+        var gradient = new LinearGradientPaint(10, 0, 140, 0, [new(0, (SceneColor)"#0369a1"), new(1, (SceneColor)"#be123c")]);
+        scene.Root.Add(new SceneText(10, 35, "Gradient", font, SceneColor.Black) { Fill = gradient });
+        scene.Root.Add(new SceneText(160, 35, "Outline", font, SceneColor.Transparent) { Stroke = (SceneColor)"#0369a1", StrokeWidth = 1.5 });
+
+        // A thick outline painted under the fill, as a halo
+        scene.Root.Add(new SceneText(10, 80, "Halo", font, SceneColor.Black) { Stroke = (SceneColor)"#fde047", StrokeWidth = 6, LineJoin = SceneLineJoin.Round, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+
+        // Lines painted with the color of the text under spans of other colors, as SVG paints the lines of a parent element
+        SceneTextSpan[] spans = [new("Red and "), new("blue") { Color = (SceneColor)"#0000ff" }];
+        scene.Root.Add(new SceneText(110, 80, spans, new SceneFont(20), (SceneColor)"#ff0000") { Decorations = SceneTextDecorations.Underline, DecorationFill = (SceneColor)"#ff0000" });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("TextPaints", svg);
+        Assert.Contains("<linearGradient id=\"scene-gradient0\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<text x=\"10\" y=\"35\" font-size=\"28\" font-weight=\"bold\" fill=\"url(#scene-gradient0)\">Gradient</text>", svg, StringComparison.Ordinal);
+        Assert.Contains("<text x=\"160\" y=\"35\" font-size=\"28\" font-weight=\"bold\" fill=\"#000000\" fill-opacity=\"0\" stroke=\"#0369a1\" stroke-width=\"1.5\">Outline</text>", svg, StringComparison.Ordinal);
+        Assert.Contains("fill=\"#000000\" stroke=\"#fde047\" stroke-width=\"6\" stroke-linejoin=\"round\" paint-order=\"stroke\">Halo</text>", svg, StringComparison.Ordinal);
+        Assert.Contains("fill=\"#ff0000\"><tspan text-decoration=\"underline\">Red and </tspan><tspan fill=\"#ff0000\" text-decoration=\"underline\"><tspan fill=\"#0000ff\">blue</tspan></tspan></text>", svg, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TextPaintsOfSpans()
+    {
+        // A span overrides the paints of the text; an opaque paint resets the opacity the span inherits
+        var pattern = new PatternPaint(new SceneBounds(0, 0, 4, 4));
+        pattern.Content.Add(new SceneRectangle(0, 0, 2, 2) { Fill = SceneColor.Black });
+        SceneTextSpan[] spans =
+        [
+            new("a"),
+            new("b") { Fill = pattern },
+            new("c") { Stroke = (SceneColor)"#00ff00" },
+            new("d") { Color = (SceneColor)"#ff0000", Fill = (SceneColor)"#0000ff" },
+            new("e") { Color = (SceneColor)"#ff0000" },
+        ];
+        var text = new SceneText(0, 10, spans, new SceneFont(10), (SceneColor)"#00000080") { Stroke = (SceneColor)"#ff000080", StrokeWidth = 2, StrokeDashArray = [1, 2], StrokeDashOffset = 1, LineCap = SceneLineCap.Round, MiterLimit = 8 };
+        var svg = SvgSceneRenderer.Render(Single(text));
+        Assert.Contains("<pattern id=\"scene-pattern0\"", svg, StringComparison.Ordinal);
+        Assert.Contains("fill=\"#000000\" fill-opacity=\"0.502\" stroke=\"#ff0000\" stroke-opacity=\"0.502\" stroke-width=\"2\" stroke-dasharray=\"1 2\" stroke-dashoffset=\"1\" stroke-linecap=\"round\" stroke-miterlimit=\"8\">a", svg, StringComparison.Ordinal);
+        Assert.Contains("<tspan fill=\"url(#scene-pattern0)\" fill-opacity=\"1\">b</tspan>", svg, StringComparison.Ordinal);
+        Assert.Contains("<tspan stroke=\"#00ff00\" stroke-opacity=\"1\">c</tspan>", svg, StringComparison.Ordinal);
+        Assert.Contains("<tspan fill=\"#0000ff\" fill-opacity=\"1\">d</tspan>", svg, StringComparison.Ordinal);
+        Assert.Contains("<tspan fill=\"#ff0000\" fill-opacity=\"1\">e</tspan>", svg, StringComparison.Ordinal);
+
+        // A text without spans whose lines have their own paint: the glyphs are in a tspan of their own fill
+        var lined = new SceneText(0, 10, "x", new SceneFont(10), SceneColor.Black) { Decorations = SceneTextDecorations.Underline, DecorationFill = (SceneColor)"#ff000080" };
+        Assert.Contains("text-decoration=\"underline\" fill=\"#ff0000\" fill-opacity=\"0.502\"><tspan fill=\"#000000\" fill-opacity=\"1\">x</tspan></text>", SvgSceneRenderer.Render(Single(lined)), StringComparison.Ordinal);
+
+        // Lines of the paint of the glyphs, an outline without width, and a stroke without paint are not written
+        Assert.Contains(">x</text>", SvgSceneRenderer.Render(Single(new SceneText(0, 10, "x", new SceneFont(10), SceneColor.Black) { Decorations = SceneTextDecorations.Underline, DecorationFill = SceneColor.Black })), StringComparison.Ordinal);
+        Assert.DoesNotContain("stroke", SvgSceneRenderer.Render(Single(new SceneText(0, 10, "x", new SceneFont(10), SceneColor.Black) { Stroke = SceneColor.Black, StrokeWidth = 0 })), StringComparison.Ordinal);
+        Assert.DoesNotContain("stroke", SvgSceneRenderer.Render(Single(new SceneText(0, 10, "x", new SceneFont(10), SceneColor.Black) { StrokeWidth = 3, PaintOrder = ScenePaintOrder.StrokeFillMarkers })), StringComparison.Ordinal);
+
+        // The outline of a text extends its bounds
+        var outlined = new SceneText(0, 10, "x", new SceneFont(10), SceneColor.Black) { Stroke = SceneColor.Black, StrokeWidth = 4, LineJoin = SceneLineJoin.Round };
+        Assert.Equal(new SceneBounds(-2, -2, 24, 24), outlined.GetBounds(_ => new SceneBounds(0, 0, 20, 20)));
+    }
+
+    [Fact]
+    public void TextPositions()
+    {
+        #region VectorGraphics_TextPositions
+        var scene = new Scene(width: 300, height: 150, fontFamily: "sans-serif");
+        var font = new SceneFont(16);
+        var small = font with { Size = 10 };
+
+        // A formula with a subscript and a superscript: the shift applies to its span only
+        scene.Root.Add(new SceneText(10, 30, [new("H"), new("2") { Font = small, BaselineShift = -4 }, new("O and x"), new("2") { Font = small, BaselineShift = 7 }], font, SceneColor.Black));
+
+        // Spans at their own positions: each line is a text chunk, centered on its x
+        scene.Root.Add(new SceneText(220, 30, [new("First line"), new("Second line") { X = 220, Dy = 20 }, new("Third") { X = 220, Dy = 20 }], font, SceneColor.Black) { Anchor = SceneTextAnchor.Middle });
+
+        // Turned letters, and a span moved to the right
+        scene.Root.Add(new SceneText(10, 75, [new("Wavy") { GlyphRotation = 15 }, new("text") { Dx = 8 }], font, SceneColor.Black));
+
+        // A text centered vertically on its y, and a text stretched to 120 pixels
+        scene.Root.Add(new SceneLine(10, 110, 140, 110) { Stroke = (SceneColor)"#cbd5e1" });
+        scene.Root.Add(new SceneText(10, 110, "Middle", font, SceneColor.Black) { Baseline = SceneTextBaseline.Middle });
+        scene.Root.Add(new SceneText(10, 140, "Stretched", font, SceneColor.Black) { TextLength = 120, LengthAdjust = SceneTextLengthAdjust.SpacingAndGlyphs });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("TextPositions", svg);
+        Assert.Contains("fill=\"#000000\">H<tspan baseline-shift=\"-4\" font-size=\"10\">2</tspan>O and x<tspan baseline-shift=\"7\" font-size=\"10\">2</tspan></text>", svg, StringComparison.Ordinal);
+        Assert.Contains(">First line<tspan x=\"220\" dy=\"20\">Second line</tspan><tspan x=\"220\" dy=\"20\">Third</tspan></text>", svg, StringComparison.Ordinal);
+        Assert.Contains("><tspan rotate=\"15\">Wavy</tspan><tspan dx=\"8\">text</tspan></text>", svg, StringComparison.Ordinal);
+        Assert.Contains("<text x=\"10\" y=\"110\" dominant-baseline=\"middle\" font-size=\"16\"", svg, StringComparison.Ordinal);
+        Assert.Contains("textLength=\"120\" lengthAdjust=\"spacingAndGlyphs\"", svg, StringComparison.Ordinal);
+
+        // A right-to-left text; values that are not finite are not written; on a path, the absolute positions and the rotations are not written
+        var rightToLeft = SvgSceneRenderer.Render(Single(new SceneText(100, 10, "\u05E9\u05DC\u05D5\u05DD", font, SceneColor.Black) { Direction = SceneTextDirection.RightToLeft, TextLength = double.NaN }));
+        Assert.Contains("<text x=\"100\" y=\"10\" direction=\"rtl\" font-size=\"16\" fill=\"#000000\">", rightToLeft, StringComparison.Ordinal);
+        Assert.Contains(">a<tspan dy=\"3\">b</tspan></text>", SvgSceneRenderer.Render(Single(new SceneText(0, 10, [new("a"), new("b") { X = double.NaN, Dx = double.PositiveInfinity, Dy = 3, GlyphRotation = double.NaN, BaselineShift = double.NaN }], font, SceneColor.Black) { TextLength = -1 })), StringComparison.Ordinal);
+        var onPath = new SceneText(0, 0, [new("a"), new("b") { X = 5, Y = 5, Dx = 2, GlyphRotation = 30 }], font, SceneColor.Black) { Path = new PathBuilder().MoveTo(0, 0).LineTo(100, 0).Build() };
+        Assert.Contains("<textPath href=\"#scene-textpath0\">a<tspan dx=\"2\">b</tspan></textPath>", SvgSceneRenderer.Render(Single(onPath)), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TextPlacementOfChunksAndShifts()
+    {
+        // Three spans of 10 pixels: the second one starts a chunk at x = 100, moved 5 down; the third one follows it
+        var text = new SceneText(0, 50, [new("a"), new("b") { X = 100, Dy = 5 }, new("c") { Dx = 2, BaselineShift = 3 }], new SceneFont(10), SceneColor.Black) { Anchor = SceneTextAnchor.Middle };
+        var placement = TextPlacement.Place(text, [new(0, 10, 1, 0), new(1, 10, 1, 0), new(2, 10, 1, 0)]);
+        Assert.Equal([-5.0, 89, 101], placement.X);
+        Assert.Equal([50.0, 55, 52], placement.Y);
+
+        // The anchor of a chunk is the position of its first character, after its shift
+        text = new SceneText(0, 0, [new("a") { Dx = 20 }, new("b")], new SceneFont(10), SceneColor.Black) { Anchor = SceneTextAnchor.End };
+        placement = TextPlacement.Place(text, [new(0, 10, 1, 0), new(1, 10, 1, 0)]);
+        Assert.Equal([0.0, 10], placement.X);
+
+        // From right to left, the spans follow each other to the left of the start
+        text = new SceneText(100, 0, [new("a"), new("b")], new SceneFont(10), SceneColor.Black) { Direction = SceneTextDirection.RightToLeft };
+        placement = TextPlacement.Place(text, [new(0, 10, 1, 0), new(1, 30, 1, 0)]);
+        Assert.Equal([90.0, 60], placement.X);
+        text.Anchor = SceneTextAnchor.End;
+        placement = TextPlacement.Place(text, [new(0, 10, 1, 0), new(1, 30, 1, 0)]);
+        Assert.Equal([130.0, 100], placement.X);
+
+        // The baseline offset moves the alphabetic baseline down from the y of the text
+        placement = TextPlacement.Place(new SceneText(0, 10, "a", new SceneFont(10), SceneColor.Black), [new(-1, 10, 1, 4)]);
+        Assert.Equal([14.0], placement.Y);
+    }
+
+    [Fact]
+    public void TextPlacementOfTheLength()
+    {
+        // 5 clusters of 10 pixels stretched to 70: 5 pixels in each of the 4 gaps, none after the last cluster
+        var text = new SceneText(0, 0, [new("ab"), new("cde")], new SceneFont(10), SceneColor.Black) { TextLength = 70 };
+        var placement = TextPlacement.Place(text, [new(0, 20, 2, 0), new(1, 30, 3, 0)]);
+        Assert.Equal(5, placement.GapSpacing);
+        Assert.Equal(1, placement.LastItem);
+        Assert.Equal([30.0, 40], placement.Width);
+        Assert.Equal([0.0, 30], placement.X);
+        Assert.Equal(1, placement.Scale);
+
+        // Scaled with the glyphs, from the start; centered with the new length
+        text = new SceneText(100, 0, "abcde", new SceneFont(10), SceneColor.Black) { TextLength = 100, LengthAdjust = SceneTextLengthAdjust.SpacingAndGlyphs, Anchor = SceneTextAnchor.Middle };
+        placement = TextPlacement.Place(text, [new(-1, 50, 5, 0)]);
+        Assert.Equal(2, placement.Scale);
+        Assert.Equal([50.0], placement.X);
+        Assert.Equal([100.0], placement.Width);
+
+        // On a path, the glyphs are not scaled: the spacing changes
+        text = new SceneText(0, 0, "ab", new SceneFont(10), SceneColor.Black) { TextLength = 30, LengthAdjust = SceneTextLengthAdjust.SpacingAndGlyphs, Path = new PathBuilder().MoveTo(0, 0).LineTo(100, 0).Build() };
+        placement = TextPlacement.Place(text, [new(-1, 20, 2, 0)]);
+        Assert.Equal(1, placement.Scale);
+        Assert.Equal(10, placement.GapSpacing);
+
+        // A length that is negative or not finite is ignored, as one cluster has no gap
+        foreach (var length in new[] { -1, double.NaN, double.PositiveInfinity })
+        {
+            placement = TextPlacement.Place(new SceneText(0, 0, "ab", new SceneFont(10), SceneColor.Black) { TextLength = length }, [new(-1, 20, 2, 0)]);
+            Assert.Equal([20.0], placement.Width);
+        }
+
+        Assert.Equal([10.0], TextPlacement.Place(new SceneText(0, 0, "a", new SceneFont(10), SceneColor.Black) { TextLength = 50 }, [new(-1, 10, 1, 0)]).Width);
+
+        // The measurers give the length of the text, and the extent of its moved spans
+        var measurer = AfmTextMeasurer.Default;
+        Assert.Equal(70, measurer.Measure(new SceneText(0, 0, "abc", new SceneFont(10), SceneColor.Black) { TextLength = 70 }).Width, 6);
+        var width = measurer.Measure("a", new SceneFont(10)).Width + measurer.Measure("b", new SceneFont(10)).Width;
+        Assert.Equal(width + 20, measurer.Measure(new SceneText(0, 0, [new("a"), new("b") { Dx = 20 }], new SceneFont(10), SceneColor.Black)).Width, 6);
+    }
+
+    [Theory]
+    [InlineData(SceneTextBaseline.Alphabetic, 0)]
+    [InlineData(SceneTextBaseline.Middle, 2.5)]
+    [InlineData(SceneTextBaseline.Central, 3)]
+    [InlineData(SceneTextBaseline.Hanging, 6.4)]
+    [InlineData(SceneTextBaseline.Mathematical, 4)]
+    [InlineData(SceneTextBaseline.Ideographic, -2)]
+    [InlineData(SceneTextBaseline.TextTop, 8)]
+    [InlineData(SceneTextBaseline.TextBottom, -2)]
+    public void BaselineOffsets(SceneTextBaseline baseline, double expected)
+    {
+        // An ascent of 8, a descent of 2 and an x-height of 5
+        Assert.Equal(expected, TextPlacement.GetBaselineOffset(baseline, 8, 2, 5), 9);
+    }
+
+    [Fact]
+    public void BaselineOffsetWithoutXHeight()
+    {
+        // The x-height is half the ascent when the font does not give it
+        Assert.Equal(2, TextPlacement.GetBaselineOffset(SceneTextBaseline.Middle, 8, 2, 0), 9);
+    }
+
+    [Fact]
+    public void ReversedPaths()
+    {
+        // The segments are followed back: the control points of a curve are swapped, an arc turns the other way
+        var path = new PathBuilder().MoveTo(0, 0).LineTo(10, 0).CubicTo(12, 1, 14, 2, 20, 5).QuadraticTo(25, 10, 30, 5).ArcTo(5, 5, 0, largeArc: false, sweep: true, 40, 5).Build();
+        Assert.Equal("M40,5 A5,5 0 0,0 30,5 Q25,10 20,5 C14,2 12,1 10,0 L0,0", path.Reverse().ToString());
+        Assert.Equal(path.ToString(), path.Reverse().Reverse().ToString());
+        Assert.Equal(path.GetLength(), path.Reverse().GetLength(), 6);
+
+        // The subpaths are in the reverse order; a closed subpath starts and closes at the end of its last segment
+        var square = new PathBuilder().MoveTo(0, 0).LineTo(10, 0).LineTo(10, 10).Close().MoveTo(20, 20).LineTo(30, 20).Build();
+        Assert.Equal("M30,20 L20,20 M10,10 L10,0 L0,0 Z", square.Reverse().ToString());
+        Assert.Equal(square.ToString(), square.Reverse().Reverse().ToString());
+        Assert.Equal(square.GetLength(), square.Reverse().GetLength(), 6);
+
+        // A path without a move starts at the origin, and a segment after a close starts at the start of the closed subpath
+        Assert.Equal("M10,10 L0,0", new PathBuilder().LineTo(10, 10).Build().Reverse().ToString());
+        Assert.Equal("M5,5 L0,0 M10,0 L0,0 Z", new PathBuilder().MoveTo(0, 0).LineTo(10, 0).Close().LineTo(5, 5).Build().Reverse().ToString());
+        Assert.Equal("M1,1 M0,0", new PathBuilder().MoveTo(0, 0).MoveTo(1, 1).Build().Reverse().ToString());
+        Assert.True(new PathBuilder().Build().Reverse().IsEmpty);
+    }
+
+    [Fact]
     public void EffectsAndGradientSpread()
     {
         #region VectorGraphics_Effects

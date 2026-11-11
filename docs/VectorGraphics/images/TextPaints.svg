@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100" viewBox="0 0 300 100" role="img" font-family="sans-serif">
+<defs>
+<linearGradient id="scene-gradient0" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="140" y2="0">
+<stop offset="0" stop-color="#0369a1"/>
+<stop offset="1" stop-color="#be123c"/>
+</linearGradient>
+</defs>
+<text x="10" y="35" font-size="28" font-weight="bold" fill="url(#scene-gradient0)">Gradient</text>
+<text x="160" y="35" font-size="28" font-weight="bold" fill="#000000" fill-opacity="0" stroke="#0369a1" stroke-width="1.5">Outline</text>
+<text x="10" y="80" font-size="28" font-weight="bold" fill="#000000" stroke="#fde047" stroke-width="6" stroke-linejoin="round" paint-order="stroke">Halo</text>
+<text x="110" y="80" font-size="20" fill="#ff0000"><tspan text-decoration="underline">Red and </tspan><tspan fill="#ff0000" text-decoration="underline"><tspan fill="#0000ff">blue</tspan></tspan></text>
+</svg>

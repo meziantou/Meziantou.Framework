@@ -26,6 +26,11 @@ The SVG, image and PDF renderers draw the same scene the same way, except in the
   are link annotations of the page, for absolute addresses only. The hyperlinks of the contents of the masks, the
   patterns and the markers are not links.
 - **Text along a path.** The decorations are drawn under each character, turned with it, rather than along the curve.
+- **Text outlines.** A text with both a fill and an outline painted under it
+  ([PaintOrder](cref:Meziantou.Framework.VectorGraphics.SceneText.PaintOrder)) is shown twice, once outlined and once
+  filled: the outline has an empty replacement text, so the text is extracted once.
+- **Baselines.** The baselines of a text drawn with Helvetica (without the fonts of the scene) are computed from the
+  metrics of Helvetica, whose ascent is smaller than the one of Liberation Sans, the font of the images.
 
 ## Images
 
@@ -48,6 +53,13 @@ The SVG, image and PDF renderers draw the same scene the same way, except in the
   an underline is drawn in pieces, one per span.
 - The markers turned back at the start of a path (`orient="auto-start-reverse"`) are a feature of SVG 2: some older
   viewers draw them turned as the other markers.
+- The lines of a text whose paint differs from its glyphs
+  ([DecorationFill](cref:Meziantou.Framework.VectorGraphics.SceneText.DecorationFill)) are written on an element whose
+  fill is that paint, and the glyphs in a `tspan` of their own fill, as SVG paints the lines with the fill of the element
+  that declares them. A viewer that paints the lines with the fill of the characters draws them in the color of the
+  glyphs.
+- The viewer computes the baselines (`dominant-baseline`) from the metrics of its own fonts, and stretches a text to its
+  `textLength` its own way: the positions can differ by a pixel or two from the image and the PDF.
 
 ## All renderers
 
@@ -58,6 +70,17 @@ The SVG, image and PDF renderers draw the same scene the same way, except in the
   ([FontFaceTextMeasurer](cref:Meziantou.Framework.VectorGraphics.FontFaceTextMeasurer), the measurer of the images)
   measure the texts the same way; [AfmTextMeasurer](cref:Meziantou.Framework.VectorGraphics.AfmTextMeasurer) adds the
   spacing after each grapheme cluster. A browser drawing the SVG with its own fonts can space a text differently.
+- **Text direction.** A text is written from left to right or from right to left
+  ([Direction](cref:Meziantou.Framework.VectorGraphics.SceneText.Direction)), on a horizontal line: there is no
+  vertical writing mode (SVG `writing-mode`). The Unicode Bidirectional Algorithm orders the characters of each span,
+  not the spans themselves: a span of Arabic in a text from left to right is reversed on its own, but a sentence that
+  mixes directions across several spans keeps its spans in their order.
+- The characters of a span turned by [GlyphRotation](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.GlyphRotation)
+  are shaped one grapheme cluster at a time, without kerning between them. On a path, the rotation and the absolute
+  positions of the spans are ignored, and a text fitted to its length with its glyphs
+  ([SceneTextLengthAdjust.SpacingAndGlyphs](cref:Meziantou.Framework.VectorGraphics.SceneTextLengthAdjust.SpacingAndGlyphs))
+  changes its spacing only. The image and PDF renderers do not outline the lines of a text with its
+  [Stroke](cref:Meziantou.Framework.VectorGraphics.SceneText.Stroke); SVG viewers do.
 
 - An image that the image or PDF renderer cannot decode is not drawn; the SVG embeds its bytes as they are.
 - A value that is not valid, such as a negative blur or a miter limit below 1, falls back to the default of SVG.

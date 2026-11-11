@@ -23,10 +23,11 @@ internal static class TextClusterLayout
     /// <param name="size">The size of the font.</param>
     /// <param name="letterSpacing">The space added after each cluster.</param>
     /// <param name="wordSpacing">The space added after each space.</param>
+    /// <param name="rightToLeft">Whether the paragraph is right to left; else its direction is the one of its first strong character.</param>
     /// <returns>The clusters from left to right, and the width of the text.</returns>
-    public static (List<TextCluster> Clusters, double Width) Layout(PdfFont font, FontFace? face, string text, double size, double letterSpacing, double wordSpacing)
+    public static (List<TextCluster> Clusters, double Width) Layout(PdfFont font, FontFace? face, string text, double size, double letterSpacing, double wordSpacing, bool rightToLeft = false)
     {
-        return face is null ? LayoutStandard(font, text, size, letterSpacing, wordSpacing) : LayoutEmbedded(face, text, size, letterSpacing, wordSpacing);
+        return face is null ? LayoutStandard(font, text, size, letterSpacing, wordSpacing) : LayoutEmbedded(face, text, size, letterSpacing, wordSpacing, rightToLeft);
     }
 
     private static (List<TextCluster> Clusters, double Width) LayoutStandard(PdfFont font, string text, double size, double letterSpacing, double wordSpacing)
@@ -45,14 +46,14 @@ internal static class TextClusterLayout
         return (clusters, x);
     }
 
-    private static (List<TextCluster> Clusters, double Width) LayoutEmbedded(FontFace face, string text, double size, double letterSpacing, double wordSpacing)
+    private static (List<TextCluster> Clusters, double Width) LayoutEmbedded(FontFace face, string text, double size, double letterSpacing, double wordSpacing, bool rightToLeft)
     {
         var clusters = new List<TextCluster>();
         if (text.Length is 0)
             return (clusters, 0);
 
         var levels = new byte[text.Length];
-        UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.Auto, levels);
+        UnicodeBidi.ResolveLevels(text, rightToLeft ? UnicodeBidiDirection.RightToLeft : UnicodeBidiDirection.Auto, levels);
         var runs = new List<(int Start, int Length, UnicodeScript Script)>();
         var runLevels = new List<byte>();
         foreach (var scriptRun in Unicode.EnumerateScriptRuns(text))

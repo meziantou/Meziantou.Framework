@@ -77,7 +77,8 @@ renderers draw.
 
 A text made of [SceneTextSpan](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan) has parts with their own font,
 color or lines; what a span does not set is the style of the text. The spans are drawn one after the other on the
-baseline of the text, and the anchor applies to the whole text. Measure them with
+baseline of the text, unless they are moved (see below), and the anchor applies to the whole
+text. Measure them with
 [Measure](cref:Meziantou.Framework.VectorGraphics.TextMeasurerExtensions.Measure):
 
 <!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_TextSpans;format=md-fenced-code-block;dedent=true -->
@@ -128,6 +129,97 @@ var svg = SvgSceneRenderer.Render(scene);
 <!-- endref -->
 
 ![The words Text along a path, curved along a gray arc](images/TextOnPath.svg)
+
+The text stands on the left of the path, in the direction it goes. To draw it on the other side, as the SVG
+`textPath` does with `side="right"`, follow the path backwards:
+[PathData.Reverse](cref:Meziantou.Framework.VectorGraphics.PathData.Reverse) gives the same path, drawn from its end to
+its start.
+
+### Paints and outlines
+
+A text is painted with its [Color](cref:Meziantou.Framework.VectorGraphics.SceneText.Color), or with a
+[Fill](cref:Meziantou.Framework.VectorGraphics.SceneText.Fill) of any paint: a gradient or a pattern, in the
+coordinates of the text. A [Stroke](cref:Meziantou.Framework.VectorGraphics.SceneText.Stroke) draws the outline of
+the glyphs, with the width, the dashes, the caps and the joins of a shape;
+[PaintOrder](cref:Meziantou.Framework.VectorGraphics.SceneText.PaintOrder) paints it under the fill, as the SVG
+`paint-order` property, for a halo that leaves the glyphs whole. A span has its own
+[Fill](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.Fill) and
+[Stroke](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.Stroke). The lines of a text have the paint of its
+glyphs, or their own [DecorationFill](cref:Meziantou.Framework.VectorGraphics.SceneText.DecorationFill): SVG paints the
+lines of an element with its own fill, under children of other colors:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_TextPaints;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 300, height: 100, fontFamily: "sans-serif");
+var font = new SceneFont(28, Weight: SceneFont.BoldWeight);
+
+// A text filled with a gradient, and an outlined text: a stroke and a transparent fill
+var gradient = new LinearGradientPaint(10, 0, 140, 0, [new(0, (SceneColor)"#0369a1"), new(1, (SceneColor)"#be123c")]);
+scene.Root.Add(new SceneText(10, 35, "Gradient", font, SceneColor.Black) { Fill = gradient });
+scene.Root.Add(new SceneText(160, 35, "Outline", font, SceneColor.Transparent) { Stroke = (SceneColor)"#0369a1", StrokeWidth = 1.5 });
+
+// A thick outline painted under the fill, as a halo
+scene.Root.Add(new SceneText(10, 80, "Halo", font, SceneColor.Black) { Stroke = (SceneColor)"#fde047", StrokeWidth = 6, LineJoin = SceneLineJoin.Round, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+
+// Lines painted with the color of the text under spans of other colors, as SVG paints the lines of a parent element
+SceneTextSpan[] spans = [new("Red and "), new("blue") { Color = (SceneColor)"#0000ff" }];
+scene.Root.Add(new SceneText(110, 80, spans, new SceneFont(20), (SceneColor)"#ff0000") { Decorations = SceneTextDecorations.Underline, DecorationFill = (SceneColor)"#ff0000" });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+![A word filled with a blue to red gradient, an outlined word, a black word with a yellow halo, and a red underline under red and blue words](images/TextPaints.svg)
+
+### Positions, baselines and length
+
+A span can be placed as an SVG `tspan`: [X](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.X) and
+[Y](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.Y) move it to a position, and start a new chunk of text,
+which the anchor of the text applies to; [Dx](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.Dx) and
+[Dy](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.Dy) shift it and the spans that follow it.
+[BaselineShift](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.BaselineShift) raises or lowers the span alone,
+for a superscript or a subscript, and
+[GlyphRotation](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.GlyphRotation) turns each of its characters.
+
+The [Baseline](cref:Meziantou.Framework.VectorGraphics.SceneText.Baseline) of a text is the line on its y coordinate,
+as the SVG `dominant-baseline` property: the alphabetic baseline, the middle of the lowercase letters, the middle or
+the edges of the em box. [TextLength](cref:Meziantou.Framework.VectorGraphics.SceneText.TextLength) stretches or
+compresses the text to a length, by its spacing or by scaling its glyphs
+([LengthAdjust](cref:Meziantou.Framework.VectorGraphics.SceneText.LengthAdjust)), and
+[Direction](cref:Meziantou.Framework.VectorGraphics.SceneText.Direction) writes it from right to left: it starts at its
+right end, and its spans follow each other to the left:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_TextPositions;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 300, height: 150, fontFamily: "sans-serif");
+var font = new SceneFont(16);
+var small = font with { Size = 10 };
+
+// A formula with a subscript and a superscript: the shift applies to its span only
+scene.Root.Add(new SceneText(10, 30, [new("H"), new("2") { Font = small, BaselineShift = -4 }, new("O and x"), new("2") { Font = small, BaselineShift = 7 }], font, SceneColor.Black));
+
+// Spans at their own positions: each line is a text chunk, centered on its x
+scene.Root.Add(new SceneText(220, 30, [new("First line"), new("Second line") { X = 220, Dy = 20 }, new("Third") { X = 220, Dy = 20 }], font, SceneColor.Black) { Anchor = SceneTextAnchor.Middle });
+
+// Turned letters, and a span moved to the right
+scene.Root.Add(new SceneText(10, 75, [new("Wavy") { GlyphRotation = 15 }, new("text") { Dx = 8 }], font, SceneColor.Black));
+
+// A text centered vertically on its y, and a text stretched to 120 pixels
+scene.Root.Add(new SceneLine(10, 110, 140, 110) { Stroke = (SceneColor)"#cbd5e1" });
+scene.Root.Add(new SceneText(10, 110, "Middle", font, SceneColor.Black) { Baseline = SceneTextBaseline.Middle });
+scene.Root.Add(new SceneText(10, 140, "Stretched", font, SceneColor.Black) { TextLength = 120, LengthAdjust = SceneTextLengthAdjust.SpacingAndGlyphs });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+![A formula with a subscript and a superscript, three centered lines, turned letters, a text centered on a line, and a stretched text](images/TextPositions.svg)
+
+The renderers compute the baselines from the ascent, the descent and the x-height of the font of each span: the
+middle baseline is half the x-height above the alphabetic baseline, the central one halfway between the ascent and the
+descent, the hanging one at eight tenths of the ascent and the mathematical one at half of it, as browsers do.
+[Measure(SceneText)](cref:Meziantou.Framework.VectorGraphics.TextMeasurerExtensions.Measure) gives the length of a
+fitted text, and the extent of a text whose spans are moved.
 
 ## Strokes
 

@@ -110,13 +110,17 @@ internal static class SceneGeometry
                 if (text.Text.Length is 0 || GetPathBounds(textPath) is not { } textPathBounds)
                     return null;
 
+                // The shifts across the path and the baselines move the glyphs away from it
                 var size = text.Spans.Count is 0 ? text.Font.Size : text.Spans.Max(span => (span.Font ?? text.Font).Size);
-                return Inflate(textPathBounds, double.IsFinite(size) ? Math.Abs(size) : 0);
+                var shifts = text.Spans.Sum(span => Math.Abs(Finite(span.Dy))) + text.Spans.Select(span => Math.Abs(Finite(span.BaselineShift))).DefaultIfEmpty().Max();
+                var extent = (double.IsFinite(size) ? Math.Abs(size) : 0) + (text.Baseline is SceneTextBaseline.Alphabetic ? 0 : Math.Abs(size)) + shifts;
+                return Inflate(textPathBounds, Finite(extent) + TextStrokeExtent(text));
 
             case SceneText text:
                 if (measureText(text) is not { } textBounds)
                     return null;
 
+                textBounds = Inflate(textBounds, TextStrokeExtent(text));
                 return text.Rotation == 0 ? textBounds : Transform(textBounds, SceneTransform.Rotate(text.Rotation, text.X, text.Y));
 
             default:
@@ -229,6 +233,19 @@ internal static class SceneGeometry
         var factor = Math.Max(shape.LineJoin is SceneLineJoin.Miter ? miterLimit : 1, shape.LineCap is SceneLineCap.Square ? Math.Sqrt(2) : 1);
         return shape.StrokeWidth / 2 * factor;
     }
+
+    // The outline of the glyphs of a text extends as the stroke of a shape
+    private static double TextStrokeExtent(SceneText text)
+    {
+        if (!TextPlacement.HasStroke(text))
+            return 0;
+
+        var miterLimit = text.MiterLimit >= 1 && double.IsFinite(text.MiterLimit) ? text.MiterLimit : 4;
+        var factor = Math.Max(text.LineJoin is SceneLineJoin.Miter ? miterLimit : 1, text.LineCap is SceneLineCap.Square ? Math.Sqrt(2) : 1);
+        return Finite(text.StrokeWidth / 2 * factor);
+    }
+
+    private static double Finite(double value) => double.IsFinite(value) ? value : 0;
 
     // A cubic curve stays in the convex hull of its control points
     private static SceneBounds? GetPathBounds(PathData data)

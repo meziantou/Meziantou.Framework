@@ -2,6 +2,7 @@
 // Target Frameworks: net10.0, net11.0
 // Assembly References:
 //   Meziantou.Framework.Imaging
+//   Meziantou.Framework.Unicode
 //   Meziantou.Framework.VectorGraphics
 #nullable enable
 

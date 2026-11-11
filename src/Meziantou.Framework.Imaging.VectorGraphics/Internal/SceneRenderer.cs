@@ -174,31 +174,38 @@ internal static class SceneRenderer
         var bounds = element.GetBounds(text =>
         {
             // The box of each part, and the ink of its glyphs, which overhang their advance (italic letters) and rise
-            // above the ascent (marks), at the position the part is drawn
-            var parts = CreateTextParts(text, context);
-            if (parts.Count is 0)
+            // above the ascent (marks), at the position the part is drawn. A character turned around its origin stays
+            // within its advance and its height of it.
+            if (CreateTextPlan(text, context) is not { } plan)
                 return null;
 
-            var width = parts.Sum(part => part.Layout.Width);
-            var x = text.Anchor switch
-            {
-                SceneTextAnchor.Middle => text.X - (width / 2),
-                SceneTextAnchor.End => text.X - width,
-                _ => text.X,
-            };
-
             RectangleD? area = null;
-            foreach (var (layout, _) in parts)
+            var placement = plan.Placement;
+            for (var i = 0; i < plan.Parts.Count; i++)
             {
-                var origin = new PointD(x, text.Y - layout.Baseline);
-                var box = new RectangleD(origin.X, origin.Y, layout.Width, layout.Height);
-                if (!layout.InkBounds.IsEmpty)
+                var (layout, _, _, rotation) = plan.Parts[i];
+                var (x, baseline, width) = (placement.X[i], placement.Y[i], placement.Width[i]);
+                if (!double.IsFinite(x) || !double.IsFinite(baseline) || !double.IsFinite(width))
+                    continue;
+
+                var top = baseline - layout.Baseline;
+                RectangleD box;
+                if (rotation != 0)
                 {
-                    box = RectangleD.Union(box, layout.InkBounds.Offset(origin.X, origin.Y));
+                    var reach = Math.Abs(width) + layout.Height;
+                    box = new RectangleD(x - reach, baseline - reach, 2 * reach, 2 * reach);
+                }
+                else
+                {
+                    box = new RectangleD(Math.Min(x, x + width), top, Math.Abs(width), layout.Height);
+                    if (!layout.InkBounds.IsEmpty)
+                    {
+                        var ink = layout.InkBounds;
+                        box = RectangleD.Union(box, new RectangleD(x + (ink.X * placement.Scale), top + ink.Y, ink.Width * placement.Scale, ink.Height));
+                    }
                 }
 
                 area = area is { } union ? RectangleD.Union(union, box) : box;
-                x += layout.Width;
             }
 
             return area is { } value ? new SceneBounds(value.X, value.Y, value.Width, value.Height) : null;
@@ -494,118 +501,215 @@ internal static class SceneRenderer
 
     private static void DrawText(DrawingCanvas canvas, SceneText text, DrawContext context)
     {
-        var parts = CreateTextParts(text, context);
-        if (parts.Count is 0)
+        if (CreateTextPlan(text, context) is not { } plan)
             return;
 
-        var width = parts.Sum(part => part.Layout.Width);
         if (text.Path is { } path)
         {
-            DrawTextOnPath(canvas, text, path, parts, width);
+            DrawTextOnPath(canvas, text, path, plan);
             return;
         }
-
-        var x = text.Anchor switch
-        {
-            SceneTextAnchor.Middle => text.X - (width / 2),
-            SceneTextAnchor.End => text.X - width,
-            _ => text.X,
-        };
 
         if (text.Rotation == 0)
         {
-            DrawTextParts(canvas, parts, x, text.Y);
+            DrawTextParts(canvas, text, plan);
             return;
         }
 
-        canvas.Transform(AffineTransform.CreateRotation(text.Rotation, new PointD(text.X, text.Y)), (parts, x, text.Y), static (canvas, state) => DrawTextParts(canvas, state.parts, state.x, state.Y));
+        canvas.Transform(AffineTransform.CreateRotation(text.Rotation, new PointD(text.X, text.Y)), (text, plan), static (canvas, state) => DrawTextParts(canvas, state.text, state.plan));
     }
 
-    // The parts follow the path one after the other, from where the anchor puts the text. The characters beyond the
-    // ends of the path are not drawn, as in SVG.
-    private static void DrawTextOnPath(DrawingCanvas canvas, SceneText text, PathData path, List<(TextLayout Layout, Brush Brush)> parts, double width)
+    // The parts follow the path from where TextPlacement puts them, their baseline moved across it by their shifts. The
+    // characters beyond the ends of the path are not drawn, as in SVG.
+    private static void DrawTextOnPath(DrawingCanvas canvas, SceneText text, PathData path, TextPlan plan)
     {
         if (ToVectorPath(path) is not { } vector)
             return;
 
-        var start = (double.IsFinite(text.PathStartOffset) ? text.PathStartOffset : 0) - text.Anchor switch
+        var strokeFirst = TextPlacement.IsStrokeFirst(text.PaintOrder);
+        for (var i = 0; i < plan.Parts.Count; i++)
         {
-            SceneTextAnchor.Middle => width / 2,
-            SceneTextAnchor.End => width,
-            _ => 0,
-        };
+            var part = plan.Parts[i];
+            var (start, offset) = (plan.Placement.X[i], -plan.Placement.Y[i]);
+            if (!(Math.Abs(start) <= MaxPathOffset) || !(Math.Abs(offset) <= MaxPathOffset))
+                continue;
 
-        foreach (var (layout, brush) in parts)
-        {
-            if (Math.Abs(start) <= MaxPathOffset)
+            var options = new TextPathOptions { StartOffset = start, BaselineOffset = offset, Overflow = TextPathOverflow.Clip };
+            if (strokeFirst && part.Stroke is { } firstStroke)
             {
-                canvas.FillText(brush, layout, vector, new TextPathOptions { StartOffset = start, Overflow = TextPathOverflow.Clip });
+                canvas.StrokeText(firstStroke, part.Layout, vector, options);
             }
 
-            start += layout.Width;
+            canvas.FillText(part.Fill, part.Layout, vector, options);
+            if (!strokeFirst && part.Stroke is { } lastStroke)
+            {
+                canvas.StrokeText(lastStroke, part.Layout, vector, options);
+            }
         }
     }
 
-    // The largest distance along a path of the canvas
+    // The largest distance along a path of the canvas, and the largest coordinate of a text
     private const double MaxPathOffset = 16777216;
 
-    // The scene positions a text by its baseline; a layout is drawn from its top-left corner. The parts are drawn one
-    // after the other, as the measurers measure them.
-    private static void DrawTextParts(DrawingCanvas canvas, List<(TextLayout Layout, Brush Brush)> parts, double x, double baseline)
+    // The scene positions a text by its baseline; a layout is drawn from its top-left corner. Each part is drawn where
+    // TextPlacement puts it, scaled to the length of the text and turned around its origin on the baseline.
+    private static void DrawTextParts(DrawingCanvas canvas, SceneText text, TextPlan plan)
     {
-        foreach (var (layout, brush) in parts)
+        var strokeFirst = TextPlacement.IsStrokeFirst(text.PaintOrder);
+        var scale = plan.Placement.Scale;
+        for (var i = 0; i < plan.Parts.Count; i++)
         {
-            canvas.FillText(brush, layout, new PointD(x, baseline - layout.Baseline));
-            x += layout.Width;
+            var part = plan.Parts[i];
+            var (x, baseline) = (plan.Placement.X[i], plan.Placement.Y[i]);
+            if (!(Math.Abs(x) <= MaxPathOffset) || !(Math.Abs(baseline) <= MaxPathOffset))
+                continue;
+
+            var origin = new PointD(x, baseline - part.Layout.Baseline);
+            if (part.Rotation == 0 && scale == 1)
+            {
+                DrawTextPart(canvas, part, origin, strokeFirst);
+                continue;
+            }
+
+            var center = new PointD(x, baseline);
+            var transform = AffineTransform.CreateScale(scale, 1, center).Then(AffineTransform.CreateRotation(part.Rotation, center));
+            canvas.Transform(transform, (part, origin, strokeFirst), static (canvas, state) => DrawTextPart(canvas, state.part, state.origin, state.strokeFirst));
         }
     }
 
-    /// <summary>Lays out a text: one layout, or one per span, each with its own style, so that no kerning crosses the spans.</summary>
-    private static List<(TextLayout Layout, Brush Brush)> CreateTextParts(SceneText text, DrawContext context)
+    // The fill draws the lines of the text too; the outline is drawn before or after it
+    private static void DrawTextPart(DrawingCanvas canvas, TextPart part, PointD origin, bool strokeFirst)
     {
-        var parts = new List<(TextLayout Layout, Brush Brush)>();
-        if (text.Text.Length is 0)
-            return parts;
-
-        if (text.Spans.Count is 0)
+        if (strokeFirst && part.Stroke is { } firstStroke)
         {
-            var decorations = ToDecorations(text.Decorations);
-            var spacing = new Spacing(text.LetterSpacing, text.WordSpacing);
-            var layout = context.Fonts is null && decorations is TextDecorations.None && spacing.IsNone
-                ? TextLayout.Create(text.Text, context.Options.GetFont(text.Font), text.Font.Size)
-                : TextLayout.Create(text.Text, CreateStyle(text.Font, decorations, spacing, context));
-            parts.Add((layout, ToBrush(text.Color)));
-            return parts;
+            canvas.StrokeText(firstStroke, part.Layout, origin);
         }
 
-        foreach (var span in text.Spans)
+        canvas.FillText(part.Fill, part.Layout, origin);
+        if (!strokeFirst && part.Stroke is { } lastStroke)
         {
-            var font = span.Font ?? text.Font;
-            if (span.Text.Length > 0 && font.Size > 0 && double.IsFinite(font.Size))
+            canvas.StrokeText(lastStroke, part.Layout, origin);
+        }
+    }
+
+    /// <summary>A part of a text: characters that one layout draws, with the paint of their glyphs, their outline and the rotation of their glyph.</summary>
+    private sealed record TextPart(TextLayout Layout, Brush Fill, Pen? Stroke, double Rotation);
+
+    /// <summary>The parts of a text, and where <see cref="TextPlacement"/> puts them.</summary>
+    private sealed record TextPlan(List<TextPart> Parts, TextPlacement.Result Placement);
+
+    /// <summary>The characters of a span drawn with one layout, before they are laid out.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct TextPiece(int Span, string Text, SceneFont Font, SceneTextDecorations Decorations, Spacing Spacing, Brush Fill, Brush? DecorationFill, Pen? Stroke, double Rotation);
+
+    private static readonly TextLayoutOptions RightToLeftOptions = new() { Direction = TextDirection.RightToLeft };
+
+    /// <summary>
+    /// Lays out a text: one layout per span, each with its own style, so that no kerning crosses the spans; one per
+    /// grapheme cluster of a span whose characters are turned; the last cluster of a text fitted to its length by its
+    /// spacing on its own, as it gets no spacing.
+    /// </summary>
+    private static TextPlan? CreateTextPlan(SceneText text, DrawContext context)
+    {
+        if (text.Text.Length is 0)
+            return null;
+
+        var pieces = new List<TextPiece>();
+        if (text.Spans.Count is 0)
+        {
+            AddPieces(-1, null, text.Text, text.Font, text.Decorations, new Spacing(text.LetterSpacing, text.WordSpacing));
+        }
+        else
+        {
+            for (var i = 0; i < text.Spans.Count; i++)
             {
-                var spacing = new Spacing(span.LetterSpacing ?? text.LetterSpacing, span.WordSpacing ?? text.WordSpacing);
-                parts.Add((TextLayout.Create(span.Text, CreateStyle(font, ToDecorations(span.Decorations ?? text.Decorations), spacing, context)), ToBrush(span.Color ?? text.Color)));
+                var span = text.Spans[i];
+                var font = span.Font ?? text.Font;
+                if (span.Text.Length > 0 && font.Size > 0 && double.IsFinite(font.Size))
+                {
+                    AddPieces(i, span, span.Text, font, span.Decorations ?? text.Decorations, new Spacing(span.LetterSpacing ?? text.LetterSpacing, span.WordSpacing ?? text.WordSpacing));
+                }
             }
         }
 
-        return parts;
+        if (pieces.Count is 0)
+            return null;
+
+        if (TextPlacement.IsFittedBySpacing(text) && TextPlacement.GetClusters(pieces[^1].Text) is { Count: > 1 } lastClusters)
+        {
+            var last = pieces[^1];
+            pieces[^1] = last with { Text = last.Text[..^lastClusters[^1].Length] };
+            pieces.Add(last with { Text = lastClusters[^1] });
+        }
+
+        var direction = text.Direction is SceneTextDirection.RightToLeft ? TextDirection.RightToLeft : TextDirection.Auto;
+        var layouts = new TextLayout[pieces.Count];
+        var items = new TextPlacement.Item[pieces.Count];
+        for (var i = 0; i < pieces.Count; i++)
+        {
+            var piece = pieces[i];
+            layouts[i] = CreateLayout(piece, gapSpacing: 0, direction, context);
+            var metrics = GetFonts(piece.Font, context).Primary.GetMetrics(piece.Font.Size);
+            items[i] = new TextPlacement.Item(piece.Span, layouts[i].Width, TextPlacement.CountClusters(piece.Text), TextPlacement.GetBaselineOffset(text.Baseline, metrics.Ascent, metrics.Descent, metrics.XHeight));
+        }
+
+        var placement = TextPlacement.Place(text, items);
+        var parts = new List<TextPart>(pieces.Count);
+        for (var i = 0; i < pieces.Count; i++)
+        {
+            var piece = pieces[i];
+            var layout = placement.GapSpacing != 0 && i != placement.LastItem ? CreateLayout(piece, placement.GapSpacing, direction, context) : layouts[i];
+            parts.Add(new TextPart(layout, piece.Fill, piece.Stroke, piece.Rotation));
+        }
+
+        return new TextPlan(parts, placement);
+
+        void AddPieces(int index, SceneTextSpan? span, string value, SceneFont font, SceneTextDecorations decorations, Spacing spacing)
+        {
+            var (fillPaint, fillColor) = TextPlacement.GetFill(text, span);
+            var fill = fillPaint is null ? ToBrush(fillColor) : context.GetBrush(fillPaint);
+            var (decorationPaint, decorationColor) = TextPlacement.GetDecorationFill(text, span);
+            var decorationFill = TextPlacement.IsSamePaint((decorationPaint, decorationColor), (fillPaint, fillColor))
+                ? null
+                : decorationPaint is null ? ToBrush(decorationColor) : context.GetBrush(decorationPaint);
+            var stroke = TextPlacement.GetStroke(text, span) is { } strokePaint ? CreateTextPen(text, strokePaint, context) : null;
+            var rotation = text.Path is null ? TextPlacement.GetGlyphRotation(span) : 0;
+            if (rotation == 0)
+            {
+                pieces.Add(new TextPiece(index, value, font, decorations, spacing, fill, decorationFill, stroke, rotation));
+                return;
+            }
+
+            foreach (var cluster in TextPlacement.GetClusters(value))
+            {
+                pieces.Add(new TextPiece(index, cluster, font, decorations, spacing, fill, decorationFill, stroke, rotation));
+            }
+        }
     }
+
+    private static TextLayout CreateLayout(TextPiece piece, double gapSpacing, TextDirection direction, DrawContext context)
+    {
+        var decorations = ToDecorations(piece.Decorations);
+        var spacing = gapSpacing == 0 ? piece.Spacing : new Spacing(piece.Spacing.Letter + gapSpacing, piece.Spacing.Word);
+        if (context.Fonts is null && decorations is TextDecorations.None && spacing.IsNone && piece.DecorationFill is null && direction is TextDirection.Auto)
+            return TextLayout.Create(piece.Text, context.Options.GetFont(piece.Font), piece.Font.Size);
+
+        var style = CreateStyle(GetFonts(piece.Font, context), piece.Font.Size, decorations, spacing, piece.DecorationFill);
+        return TextLayout.Create(piece.Text, style, direction is TextDirection.RightToLeft ? RightToLeftOptions : null);
+    }
+
+    private static FontStack GetFonts(SceneFont font, DrawContext context) => context.Fonts is { } collection ? SceneFontCache.GetStack(collection, font, context.FontFamily) : context.Options.GetFont(font);
 
     // A letter spacing turns the optional ligatures off, as in CSS: the space goes between the letters they would join
     private static readonly FontFeature[] NoLigatures = [new("liga", 0), new("clig", 0), new("dlig", 0)];
 
-    private static TextStyle CreateStyle(SceneFont font, TextDecorations decorations, Spacing spacing, DrawContext context)
-    {
-        FontStack fonts = context.Fonts is { } collection ? SceneFontCache.GetStack(collection, font, context.FontFamily) : context.Options.GetFont(font);
-        return CreateStyle(fonts, font.Size, decorations, spacing);
-    }
-
     /// <summary>Creates the style of a text: <see cref="ImageTextMeasurer"/> measures the texts with the styles that draw them.</summary>
-    internal static TextStyle CreateStyle(FontStack fonts, double size, TextDecorations decorations, Spacing spacing)
+    internal static TextStyle CreateStyle(FontStack fonts, double size, TextDecorations decorations, Spacing spacing, Brush? decorationBrush = null)
     {
         return new TextStyle(fonts, size)
         {
             Decorations = decorations,
+            DecorationBrush = decorationBrush,
             LetterSpacing = spacing.Letter,
             WordSpacing = spacing.Word,
             Features = spacing.Letter is 0 ? [] : NoLigatures,
@@ -642,18 +746,29 @@ internal static class SceneRenderer
 
     private static Pen CreatePen(SceneShape shape, DrawContext context)
     {
-        return new Pen(context.GetBrush(shape.Stroke!), shape.StrokeWidth)
+        return CreatePen(context.GetBrush(shape.Stroke!), shape.StrokeWidth, shape.StrokeDashArray, shape.StrokeDashOffset, shape.MiterLimit, shape.LineCap, shape.LineJoin);
+    }
+
+    // The outline of the glyphs of a text, with the width, the dashes and the joins of the text
+    private static Pen CreateTextPen(SceneText text, ScenePaint stroke, DrawContext context)
+    {
+        return CreatePen(context.GetBrush(stroke), text.StrokeWidth, text.StrokeDashArray, text.StrokeDashOffset, text.MiterLimit, text.LineCap, text.LineJoin);
+    }
+
+    private static Pen CreatePen(Brush brush, double width, IReadOnlyList<double>? dashArray, double dashOffset, double miterLimit, SceneLineCap lineCap, SceneLineJoin lineJoin)
+    {
+        return new Pen(brush, width)
         {
-            DashPattern = shape.StrokeDashArray is { Count: > 0 } dashes ? [.. dashes] : default,
-            DashOffset = double.IsFinite(shape.StrokeDashOffset) ? shape.StrokeDashOffset : 0,
-            MiterLimit = shape.MiterLimit >= 1 && double.IsFinite(shape.MiterLimit) ? Math.Min(shape.MiterLimit, 1048576) : 4,
-            LineCap = shape.LineCap switch
+            DashPattern = dashArray is { Count: > 0 } dashes ? [.. dashes] : default,
+            DashOffset = double.IsFinite(dashOffset) ? dashOffset : 0,
+            MiterLimit = miterLimit >= 1 && double.IsFinite(miterLimit) ? Math.Min(miterLimit, 1048576) : 4,
+            LineCap = lineCap switch
             {
                 SceneLineCap.Round => LineCap.Round,
                 SceneLineCap.Square => LineCap.Square,
                 _ => LineCap.Butt,
             },
-            LineJoin = shape.LineJoin switch
+            LineJoin = lineJoin switch
             {
                 SceneLineJoin.Round => LineJoin.Round,
                 SceneLineJoin.Bevel => LineJoin.Bevel,

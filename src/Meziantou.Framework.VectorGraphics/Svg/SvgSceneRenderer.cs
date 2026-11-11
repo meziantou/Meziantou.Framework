@@ -298,6 +298,20 @@ public static class SvgSceneRenderer
                         break;
                 }
 
+                // The paints of a text and of its spans
+                if (element is SceneText paintedText)
+                {
+                    AddPaint(paintedText.Fill);
+                    AddPaint(paintedText.Stroke);
+                    AddPaint(paintedText.DecorationFill);
+                    foreach (var span in paintedText.Spans)
+                    {
+                        AddPaint(span.Fill);
+                        AddPaint(span.Stroke);
+                        AddPaint(span.DecorationFill);
+                    }
+                }
+
                 // The path of a text is referenced by its textPath
                 if (element is SceneText { Path: { } textPath } pathText && !_textPathIds.ContainsKey(pathText))
                 {
@@ -762,6 +776,16 @@ public static class SvgSceneRenderer
                     break;
             }
 
+            if (text.Direction is SceneTextDirection.RightToLeft)
+            {
+                Attribute("direction", "rtl");
+            }
+
+            if (BaselineValue(text.Baseline) is { } baseline)
+            {
+                Attribute("dominant-baseline", baseline);
+            }
+
             if (text.Font.Family is { } family && !string.Equals(family, _scene.FontFamily, StringComparison.Ordinal))
             {
                 Attribute("font-family", FamilyList(family));
@@ -781,8 +805,13 @@ public static class SvgSceneRenderer
                     break;
             }
 
-            // The lines of a text are drawn under its spans too, and a span cannot remove them: with spans, each span has its lines
-            if (text.Spans.Count is 0 && DecorationValue(text.Decorations) is { } decoration)
+            // The lines of a text are drawn under its spans too, and a span cannot remove them: with spans, each span has
+            // its lines. SVG paints the lines with the fill of the element that has them: lines of another paint are on
+            // the text, and the glyphs in a tspan with their own fill.
+            var (fill, fillColor) = TextPlacement.GetFill(text, null);
+            var decoration = text.Spans.Count is 0 ? DecorationValue(text.Decorations) : null;
+            var decorationFill = decoration is not null && text.DecorationFill is { } linePaint && !TextPlacement.IsSamePaint((linePaint, default), (fill, fillColor)) ? linePaint : null;
+            if (decoration is not null)
             {
                 Attribute("text-decoration", decoration);
             }
@@ -802,7 +831,38 @@ public static class SvgSceneRenderer
                 Attribute("word-spacing", wordSpacing);
             }
 
-            Paint("fill", text.Color);
+            if (text.TextLength is { } length && length >= 0 && double.IsFinite(length))
+            {
+                Attribute("textLength", length);
+                if (text.LengthAdjust is SceneTextLengthAdjust.SpacingAndGlyphs)
+                {
+                    Attribute("lengthAdjust", "spacingAndGlyphs");
+                }
+            }
+
+            if (decorationFill is not null)
+            {
+                Paint("fill", decorationFill);
+            }
+            else
+            {
+                Fill(fill, fillColor);
+            }
+
+            if (TextPlacement.HasStroke(text))
+            {
+                if (text.Stroke is not null)
+                {
+                    Paint("stroke", text.Stroke);
+                }
+
+                TextStrokeAttributes(text);
+                if (TextPlacement.IsStrokeFirst(text.PaintOrder))
+                {
+                    Attribute("paint-order", "stroke");
+                }
+            }
+
             // The rotation applies before the transform: it is on its right
             var rotation = text.Rotation != 0 && textPathId is null ? "rotate(" + Number(text.Rotation) + " " + Number(text.X) + " " + Number(text.Y) + ")" : null;
             if (text.Transform is { } textTransform)
@@ -837,13 +897,25 @@ public static class SvgSceneRenderer
 
             if (text.Spans.Count is 0)
             {
-                output.Write(Escape(text.Text));
+                if (decorationFill is not null)
+                {
+                    output.Write("<tspan");
+                    Fill(fill, fillColor);
+                    ResetOpacity("fill-opacity", fill, fillColor, decorationFill, default);
+                    output.Write('>');
+                    output.Write(Escape(text.Text));
+                    output.Write("</tspan>");
+                }
+                else
+                {
+                    output.Write(Escape(text.Text));
+                }
             }
             else
             {
                 foreach (var span in text.Spans)
                 {
-                    WriteSpan(text, span);
+                    WriteSpan(text, span, onPath: textPathId is not null);
                 }
             }
 
@@ -855,17 +927,30 @@ public static class SvgSceneRenderer
             output.Write("</text>\n");
         }
 
-        // A span is a tspan with the attributes that differ from the text, or its characters when it has none
-        private void WriteSpan(SceneText text, SceneTextSpan span)
+        // A span is a tspan with the attributes that differ from the text, or its characters when it has none. A span
+        // whose lines have another paint than its glyphs has them, and its glyphs are in a tspan with their own fill.
+        private void WriteSpan(SceneText text, SceneTextSpan span, bool onPath)
         {
             var font = span.Font ?? text.Font;
-            var color = span.Color ?? text.Color;
+            var (fill, fillColor) = TextPlacement.GetFill(text, span);
+            var (textFill, textFillColor) = TextPlacement.GetFill(text, null);
+            var hasFill = !TextPlacement.IsSamePaint((fill, fillColor), (textFill, textFillColor));
+            var stroke = TextPlacement.HasStrokeWidth(text) ? span.Stroke : null;
+            var hasStroke = stroke is not null && !ReferenceEquals(stroke, text.Stroke);
             var decoration = DecorationValue(span.Decorations ?? text.Decorations);
+            var decorationFill = decoration is not null && (span.DecorationFill ?? text.DecorationFill) is { } linePaint && !TextPlacement.IsSamePaint((linePaint, default), (fill, fillColor)) ? linePaint : null;
             var letterSpacing = TextSpacing.Normalize(span.LetterSpacing ?? text.LetterSpacing);
             var wordSpacing = TextSpacing.Normalize(span.WordSpacing ?? text.WordSpacing);
             var hasLetterSpacing = letterSpacing != TextSpacing.Normalize(text.LetterSpacing);
             var hasWordSpacing = wordSpacing != TextSpacing.Normalize(text.WordSpacing);
-            var hasStyle = font != text.Font || color != text.Color || decoration is not null || hasLetterSpacing || hasWordSpacing;
+            var x = !onPath && span.X is { } spanX && double.IsFinite(spanX) ? spanX : (double?)null;
+            var y = !onPath && span.Y is { } spanY && double.IsFinite(spanY) ? spanY : (double?)null;
+            var dx = double.IsFinite(span.Dx) ? span.Dx : 0;
+            var dy = double.IsFinite(span.Dy) ? span.Dy : 0;
+            var rotate = onPath ? 0 : TextPlacement.GetGlyphRotation(span);
+            var shift = double.IsFinite(span.BaselineShift) ? span.BaselineShift : 0;
+            var hasPosition = x is not null || y is not null || dx != 0 || dy != 0 || rotate != 0 || shift != 0;
+            var hasStyle = font != text.Font || hasFill || hasStroke || decoration is not null || hasLetterSpacing || hasWordSpacing || hasPosition;
             if (!hasStyle)
             {
                 output.Write(Escape(span.Text));
@@ -873,6 +958,36 @@ public static class SvgSceneRenderer
             }
 
             output.Write("<tspan");
+            if (x is { } xValue)
+            {
+                Attribute("x", xValue);
+            }
+
+            if (y is { } yValue)
+            {
+                Attribute("y", yValue);
+            }
+
+            if (dx != 0)
+            {
+                Attribute("dx", dx);
+            }
+
+            if (dy != 0)
+            {
+                Attribute("dy", dy);
+            }
+
+            if (rotate != 0)
+            {
+                Attribute("rotate", rotate);
+            }
+
+            if (shift != 0)
+            {
+                Attribute("baseline-shift", shift);
+            }
+
             if (!string.Equals(font.Family, text.Font.Family, StringComparison.Ordinal))
             {
                 Attribute("font-family", FamilyList(font.Family ?? _scene.FontFamily));
@@ -898,20 +1013,28 @@ public static class SvgSceneRenderer
                 Attribute("font-style", font.Italic ? "italic" : "normal");
             }
 
-            if (color != text.Color)
+            if (decorationFill is not null)
             {
-                Paint("fill", color);
-
+                // The lines have the fill of the tspan, the glyphs the fill of the inner tspan
+                Paint("fill", decorationFill);
+                ResetOpacity("fill-opacity", decorationFill, default, textFill, textFillColor);
+            }
+            else if (hasFill)
+            {
                 // A span inherits the opacity of the text: an opaque span of a translucent text resets it
-                if (color.IsOpaque && !text.Color.IsOpaque)
-                {
-                    Attribute("fill-opacity", "1");
-                }
+                Fill(fill, fillColor);
+                ResetOpacity("fill-opacity", fill, fillColor, textFill, textFillColor);
             }
 
             if (decoration is not null)
             {
                 Attribute("text-decoration", decoration);
+            }
+
+            if (hasStroke)
+            {
+                Paint("stroke", stroke);
+                ResetOpacity("stroke-opacity", stroke, default, text.Stroke, default);
             }
 
             if (hasLetterSpacing)
@@ -925,9 +1048,105 @@ public static class SvgSceneRenderer
             }
 
             output.Write('>');
-            output.Write(Escape(span.Text));
+            if (decorationFill is not null)
+            {
+                output.Write("<tspan");
+                Fill(fill, fillColor);
+                ResetOpacity("fill-opacity", fill, fillColor, decorationFill, default);
+                output.Write('>');
+                output.Write(Escape(span.Text));
+                output.Write("</tspan>");
+            }
+            else
+            {
+                output.Write(Escape(span.Text));
+            }
+
             output.Write("</tspan>");
         }
+
+        // The fill of a text: its paint, or its color
+        private void Fill(ScenePaint? paint, SceneColor color)
+        {
+            if (paint is null)
+            {
+                Paint("fill", color);
+            }
+            else
+            {
+                Paint("fill", paint);
+            }
+        }
+
+        // An element inherits the opacity of the paint of its parent when its own paint has none: it is reset to 1
+        private void ResetOpacity(string name, ScenePaint? paint, SceneColor color, ScenePaint? parentPaint, SceneColor parentColor)
+        {
+            if (WrittenOpacity(paint, color) >= 1 && WrittenOpacity(parentPaint, parentColor) < 1)
+            {
+                Attribute(name, "1");
+            }
+
+            // The opacity a paint attribute is written with: the one of a color; the other paints have none
+            static double WrittenOpacity(ScenePaint? paint, SceneColor color) => paint switch
+            {
+                null => color.Opacity,
+                SolidPaint solid => solid.Color.Opacity,
+                _ => 1,
+            };
+        }
+
+        // The width, the dashes, the caps and the joins of the outline of a text
+        private void TextStrokeAttributes(SceneText text)
+        {
+            if (text.StrokeWidth != 1)
+            {
+                Attribute("stroke-width", text.StrokeWidth);
+            }
+
+            if (text.StrokeDashArray is { Count: > 0 } dashes)
+            {
+                Attribute("stroke-dasharray", string.Join(' ', dashes.Select(Number)));
+                if (text.StrokeDashOffset != 0 && double.IsFinite(text.StrokeDashOffset))
+                {
+                    Attribute("stroke-dashoffset", text.StrokeDashOffset);
+                }
+            }
+
+            switch (text.LineCap)
+            {
+                case SceneLineCap.Round:
+                    Attribute("stroke-linecap", "round");
+                    break;
+                case SceneLineCap.Square:
+                    Attribute("stroke-linecap", "square");
+                    break;
+            }
+
+            switch (text.LineJoin)
+            {
+                case SceneLineJoin.Round:
+                    Attribute("stroke-linejoin", "round");
+                    break;
+                case SceneLineJoin.Bevel:
+                    Attribute("stroke-linejoin", "bevel");
+                    break;
+                case SceneLineJoin.Miter when text.MiterLimit != 4 && text.MiterLimit >= 1 && double.IsFinite(text.MiterLimit):
+                    Attribute("stroke-miterlimit", text.MiterLimit);
+                    break;
+            }
+        }
+
+        private static string? BaselineValue(SceneTextBaseline baseline) => baseline switch
+        {
+            SceneTextBaseline.Middle => "middle",
+            SceneTextBaseline.Central => "central",
+            SceneTextBaseline.Hanging => "hanging",
+            SceneTextBaseline.Mathematical => "mathematical",
+            SceneTextBaseline.Ideographic => "ideographic",
+            SceneTextBaseline.TextTop => "text-top",
+            SceneTextBaseline.TextBottom => "text-bottom",
+            _ => null,
+        };
 
         private static string? DecorationValue(SceneTextDecorations decorations)
         {

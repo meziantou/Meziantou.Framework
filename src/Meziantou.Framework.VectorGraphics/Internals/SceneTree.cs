@@ -208,6 +208,20 @@ internal static class SceneTree
                 AddMarker(line.MarkerStart);
                 AddMarker(line.MarkerEnd);
                 break;
+
+            // The paints of a text and of its spans
+            case SceneText text:
+                AddPattern(text.Fill);
+                AddPattern(text.Stroke);
+                AddPattern(text.DecorationFill);
+                foreach (var span in text.Spans)
+                {
+                    AddPattern(span.Fill);
+                    AddPattern(span.Stroke);
+                    AddPattern(span.DecorationFill);
+                }
+
+                break;
         }
 
         if (element is SceneGroup group)

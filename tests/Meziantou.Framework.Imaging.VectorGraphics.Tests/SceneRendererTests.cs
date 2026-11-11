@@ -201,6 +201,109 @@ public sealed class SceneRendererTests
     }
 
     [Fact]
+    public void TextPaintsAndOutlines()
+    {
+        var font = new SceneFont(30, Weight: SceneFont.BoldWeight);
+        var scene = new Scene(300, 160, "sans-serif") { Background = SceneColor.White };
+
+        // A gradient from blue to red along the text; an outline without fill
+        scene.Root.Add(new SceneText(10, 30, "MMMMMM", font, SceneColor.Black) { Fill = new LinearGradientPaint(10, 0, 140, 0, [new(0, (SceneColor)"#0000ff"), new(1, (SceneColor)"#ff0000")]) });
+        scene.Root.Add(new SceneText(160, 30, "MMMMMM", font, SceneColor.Transparent) { Stroke = (SceneColor)"#ff0000" });
+
+        // A wide outline under the fill leaves more of the glyphs black than the same outline over them
+        scene.Root.Add(new SceneText(10, 80, "MMMMMM", font, SceneColor.Black) { Stroke = (SceneColor)"#ffff00", StrokeWidth = 6, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+        scene.Root.Add(new SceneText(160, 80, "MMMMMM", font, SceneColor.Black) { Stroke = (SceneColor)"#ffff00", StrokeWidth = 6 });
+
+        // The line of the text is red under a blue span
+        scene.Root.Add(new SceneText(10, 130, [new SceneTextSpan("MMM"), new SceneTextSpan("MMM") { Color = (SceneColor)"#0000ff" }], font, (SceneColor)"#ff0000") { Decorations = SceneTextDecorations.Underline, DecorationFill = (SceneColor)"#ff0000" });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+
+        Assert.Contains(Enumerable.Range(10, 30), x => Enumerable.Range(10, 20).Any(y => pixels[x, y].B > 200 && pixels[x, y].R < 100));
+        Assert.Contains(Enumerable.Range(110, 30), x => Enumerable.Range(10, 20).Any(y => pixels[x, y].R > 200 && pixels[x, y].B < 100));
+        Assert.Equal(0, Count(160, 0, 300, 40, pixel => pixel.R < 100 && pixel.G < 100));
+        Assert.True(Count(160, 0, 300, 40, pixel => pixel.R > 200 && pixel.G < 100) > 50);
+
+        var blackUnder = Count(0, 45, 150, 95, pixel => pixel.R < 60 && pixel.G < 60);
+        var blackOver = Count(150, 45, 300, 95, pixel => pixel.R < 60 && pixel.G < 60);
+        Assert.True(blackUnder > blackOver + 100, $"{blackUnder} black pixels with the outline under the fill, {blackOver} with the outline over it");
+        Assert.True(Count(0, 45, 150, 95, pixel => pixel.R > 200 && pixel.G > 200 && pixel.B < 100) > 50);
+
+        // The underline is red under both spans; the glyphs of the second span are blue
+        Assert.Contains(Enumerable.Range(130, 8), y => pixels[110, y].R > 200 && pixels[110, y].B < 100);
+        Assert.True(Count(90, 100, 160, 125, pixel => pixel.B > 200 && pixel.R < 100) > 50);
+        Assert.Equal(0, Count(90, 100, 160, 125, pixel => pixel.R > 200 && pixel.B < 100));
+
+        int Count(int x0, int y0, int x1, int y1, Func<Rgba32, bool> predicate) => Enumerable.Range(y0, y1 - y0).Sum(y => Enumerable.Range(x0, x1 - x0).Count(x => predicate(pixels[x, y])));
+    }
+
+    [Fact]
+    public void TextPositionsAndBaselines()
+    {
+        var font = new SceneFont(20);
+        var scene = new Scene(300, 200, "sans-serif");
+
+        // The top of the em box on y, and a span raised by 10 pixels
+        scene.Root.Add(new SceneText(10, 20, "MM", font, SceneColor.Black) { Baseline = SceneTextBaseline.TextTop });
+        scene.Root.Add(new SceneText(100, 40, [new SceneTextSpan("MM"), new SceneTextSpan("MM") { BaselineShift = 10 }], font, SceneColor.Black));
+
+        // A span at x = 250, 20 pixels lower: a chunk of its own, anchored at its end
+        scene.Root.Add(new SceneText(80, 80, [new SceneTextSpan("MM"), new SceneTextSpan("MM") { X = 250, Dy = 20 }], font, SceneColor.Black) { Anchor = SceneTextAnchor.End });
+
+        // From right to left, the text starts at its right end
+        scene.Root.Add(new SceneText(290, 140, "MM", font, SceneColor.Black) { Direction = SceneTextDirection.RightToLeft });
+
+        // Characters turned by a quarter of a turn go down from the baseline
+        scene.Root.Add(new SceneText(10, 150, [new SceneTextSpan("MM") { GlyphRotation = 90 }], font, SceneColor.Black));
+        using var image = scene.ToImage();
+
+        var (_, top, _, bottom) = GetInkBounds(image, 0, 0, 90, 60);
+        Assert.InRange(top, 20, 26);
+        Assert.InRange(bottom, 34, 40);
+
+        var (_, _, _, firstBottom) = GetInkBounds(image, 100, 0, 128, 60);
+        var (_, _, _, shiftedBottom) = GetInkBounds(image, 136, 0, 200, 60);
+        Assert.InRange(firstBottom, 38, 40);
+        Assert.InRange(shiftedBottom, 28, 30);
+
+        var (_, _, right, _) = GetInkBounds(image, 0, 62, 100, 82);
+        Assert.InRange(right, 76, 80);
+        var (_, chunkTop, chunkRight, chunkBottom) = GetInkBounds(image, 100, 82, 300, 110);
+        Assert.InRange(chunkRight, 246, 250);
+        Assert.InRange(chunkBottom, 98, 100);
+        Assert.InRange(chunkTop, 84, 90);
+
+        (_, _, right, _) = GetInkBounds(image, 200, 120, 300, 145);
+        Assert.InRange(right, 286, 290);
+
+        (_, top, _, bottom) = GetInkBounds(image, 0, 130, 100, 200);
+        Assert.InRange(top, 148, 152);
+        Assert.InRange(bottom, 160, 172);
+    }
+
+    [Fact]
+    public void TextLength()
+    {
+        var font = new SceneFont(20);
+        var measurer = SceneImageRenderer.CreateMeasurer();
+        var width = measurer.Measure("MMMM", font).Width;
+        var scene = new Scene(300, 120, "sans-serif");
+        scene.Root.Add(new SceneText(10, 30, "MMMM", font, SceneColor.Black));
+
+        // 30 pixels more, in the 3 gaps between the 4 letters; twice as wide, the glyphs scaled
+        scene.Root.Add(new SceneText(10, 70, "MMMM", font, SceneColor.Black) { TextLength = width + 30 });
+        scene.Root.Add(new SceneText(10, 110, "MMMM", font, SceneColor.Black) { TextLength = 2 * width, LengthAdjust = SceneTextLengthAdjust.SpacingAndGlyphs });
+        using var image = scene.ToImage();
+        var (left, _, right, _) = GetInkBounds(image, 0, 0, 300, 40);
+        var (spacedLeft, _, spacedRight, _) = GetInkBounds(image, 0, 40, 300, 80);
+        var (scaledLeft, _, scaledRight, _) = GetInkBounds(image, 0, 80, 300, 120);
+        Assert.Equal(left, spacedLeft);
+        Assert.InRange(spacedRight - right, 29, 31);
+        Assert.InRange(scaledLeft - 10, (left - 10) * 2 - 1, ((left - 10) * 2) + 1);
+        Assert.InRange(scaledRight - 10, ((right - 10) * 2) - 2, ((right - 10) * 2) + 2);
+    }
+
+    [Fact]
     public void Patterns()
     {
         // A tile of 10 by 10 pixels with a red square in its top-left quarter, repeated, and scaled by 2

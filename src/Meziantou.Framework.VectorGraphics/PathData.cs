@@ -70,6 +70,85 @@ public sealed class PathData
     }
 
     /// <summary>
+    /// Returns the path drawn backwards: its subpaths in the reverse order, each from its end to its start, as SVG 2
+    /// reverses the path of a <c>textPath</c> whose <c>side</c> is <c>right</c>.
+    /// </summary>
+    /// <returns>The reversed path, which covers the same points.</returns>
+    /// <remarks>
+    /// Each subpath starts with a move to its last point, then follows its segments back: the control points of the
+    /// curves are swapped, and the arcs turn the other way (their <see cref="PathCommand.Sweep"/> flag is inverted). A
+    /// closed subpath starts at the end of its last segment and closes at the same point. A path that does not start with
+    /// a move starts at the origin, and a segment that follows a <see cref="PathCommandKind.Close"/> command starts at the
+    /// start of the closed subpath, as in SVG: the reversed path has explicit moves to these points. Reversing the
+    /// reversed path gives the original geometry.
+    /// </remarks>
+    public PathData Reverse()
+    {
+        // The subpaths: their start, their segments, and whether they are closed
+        var subpaths = new List<(double X, double Y, List<PathCommand> Segments, bool Closed)>();
+        List<PathCommand>? segments = null;
+        var (startX, startY) = (0.0, 0.0);
+        foreach (var command in Commands)
+        {
+            switch (command.Kind)
+            {
+                case PathCommandKind.MoveTo:
+                    segments = [];
+                    (startX, startY) = (command.X, command.Y);
+                    subpaths.Add((startX, startY, segments, false));
+                    break;
+
+                case PathCommandKind.Close:
+                    if (segments is null)
+                    {
+                        segments = [];
+                        subpaths.Add((startX, startY, segments, false));
+                    }
+
+                    subpaths[^1] = subpaths[^1] with { Closed = true };
+                    segments = null;
+                    break;
+
+                default:
+                    if (segments is null)
+                    {
+                        segments = [];
+                        subpaths.Add((startX, startY, segments, false));
+                    }
+
+                    segments.Add(command);
+                    break;
+            }
+        }
+
+        var commands = new List<PathCommand>(Commands.Count + subpaths.Count);
+        for (var i = subpaths.Count - 1; i >= 0; i--)
+        {
+            var (x, y, subpathSegments, closed) = subpaths[i];
+            var (endX, endY) = subpathSegments.Count is 0 ? (x, y) : (subpathSegments[^1].X, subpathSegments[^1].Y);
+            commands.Add(new PathCommand(PathCommandKind.MoveTo, endX, endY));
+            for (var j = subpathSegments.Count - 1; j >= 0; j--)
+            {
+                var segment = subpathSegments[j];
+                var (previousX, previousY) = j is 0 ? (x, y) : (subpathSegments[j - 1].X, subpathSegments[j - 1].Y);
+                commands.Add(segment.Kind switch
+                {
+                    PathCommandKind.CubicTo => segment with { X = previousX, Y = previousY, X1 = segment.X2, Y1 = segment.Y2, X2 = segment.X1, Y2 = segment.Y1 },
+                    PathCommandKind.ArcTo => segment with { X = previousX, Y = previousY, Sweep = !segment.Sweep },
+                    _ => segment with { X = previousX, Y = previousY },
+                });
+            }
+
+            if (closed)
+            {
+                commands.Add(new PathCommand(PathCommandKind.Close, 0, 0));
+            }
+        }
+
+        return new([.. commands]);
+    }
+
+    /// <summary>
     /// Returns the path with its quadratic curves and its arcs converted to cubic Bézier curves, for the formats that
     /// have no other curve, such as PDF and PostScript. The other commands are kept.
     /// </summary>

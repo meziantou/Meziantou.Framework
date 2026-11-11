@@ -91,8 +91,11 @@ clipping rectangles and paths, the clipping paths of shapes and texts (soft mask
 and the transforms are drawn as in the SVG, with the repeated and reflected gradients, the focal radius of the radial
 gradients, the gradient transforms, the masks (soft masks), the blend modes, the reused elements, the paint order, the
 context paints of the markers, the strokes that do not scale, the aspect ratio of the images, and the underlines,
-strikethroughs and overlines. The texts with a letter or word spacing and the texts along a path are drawn
-glyph by glyph, and keep their characters for the extraction of the text. A JPEG image is embedded as it is; the other formats are
+strikethroughs and overlines. The texts are filled with any paint and outlined with the stroke rendering mode of PDF;
+their spans are placed, shifted and turned, and their baselines computed from the metrics of their fonts, as in the
+images. The texts with a letter or word spacing, a length, a direction from right to left and the texts along a path
+are drawn glyph by glyph, and keep their characters for the extraction of the text. A JPEG image is embedded as it is;
+the other formats are
 decoded and compressed again. PDF has no filters: a scene with a blur, a drop shadow or a color matrix throws
 `NotSupportedException`. See the [limitations](07-Limitations.md). The hyperlinks of
 the elements become link annotations of the page; only absolute addresses are linked. The tooltips, the CSS classes and

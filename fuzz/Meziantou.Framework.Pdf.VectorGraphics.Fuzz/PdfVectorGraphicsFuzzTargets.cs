@@ -68,8 +68,8 @@ public static class PdfVectorGraphicsFuzzTargets
     }
 
     /// <summary>
-    /// The PDF of a scene of patterns, markers, uses, view boxes, texts with a spacing or on a path, and elements with a
-    /// transform or a hyperlink (<c>FeatureSceneBuilder</c>), drawn with or without fonts, opens again with one page, its
+    /// The PDF of a scene of patterns, markers, uses, view boxes, texts with a spacing, on a path, painted, outlined or
+    /// with moved spans, and elements with a transform or a hyperlink (<c>FeatureSceneBuilder</c>), drawn with or without fonts, opens again with one page, its
     /// text can be extracted and its page rendered, and drawing the scene twice gives the same file. A pattern, a marker
     /// or a use that draws itself does not loop.
     /// </summary>
@@ -95,6 +95,10 @@ public static class PdfVectorGraphicsFuzzTargets
             [1, 3, 5, .. "Spaced and overlined"u8, 0, 4, 0, .. "Text along a path"u8, 0, 4, 1, .. "around"u8, 0],
             [0, 5, 4, 0, 0, 3, 0, 6, 0, 0, 7 | 32, 1, 0, 7 | 16, 0, 0, 7, 5, .. "https://example.com/"u8, 0],
             [1, 9, 7, .. "https://example.com/"u8, 0, 0x80 | 11, 1, .. "link"u8, 0, 8, 3, .. "https://example.com/"u8, 0],
+
+            // Texts with paints, outlines, moved and turned spans, baselines, lengths and directions, with and without fonts
+            [0, 3, 8 | 16 | 32 | 64 | 128 | 5, .. "Moved and outlined"u8, 0, 3 | 32, 8 | 4 | 2, .. "Shifted"u8, 0, 3 | 16, 128 | 1, .. "Stretched"u8, 0],
+            [1, 3, 8 | 16 | 32 | 64 | 128 | 5, .. "Moved and outlined"u8, 0, 4 | 32, 32 | 64 | 2, .. "Reversed path"u8, 0, 3 | 16, 32 | 1, .. "\u05E9\u05DC\u05D5\u05DD ab"u8, 0],
         ];
         for (var i = 0; i < seeds.Length; i++)
         {

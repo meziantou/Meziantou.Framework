@@ -317,6 +317,123 @@ public sealed class ScenePdfRendererTests
     }
 
     [Fact]
+    public void TextPaintsAndOutlines()
+    {
+        var font = new SceneFont(30, Weight: SceneFont.BoldWeight);
+        var scene = new Scene(300, 160, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneText(10, 30, "MMMMMM", font, SceneColor.Black) { Fill = new LinearGradientPaint(10, 0, 140, 0, [new(0, (SceneColor)"#0000ff"), new(1, (SceneColor)"#ff0000")]) });
+        scene.Root.Add(new SceneText(160, 30, "WWWWWW", font, SceneColor.Transparent) { Stroke = (SceneColor)"#ff0000" });
+        scene.Root.Add(new SceneText(10, 80, "Under", font, SceneColor.Black) { Stroke = (SceneColor)"#ffff00", StrokeWidth = 6, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+        scene.Root.Add(new SceneText(160, 80, "Over", font, SceneColor.Black) { Stroke = (SceneColor)"#ffff00", StrokeWidth = 6 });
+        scene.Root.Add(new SceneText(10, 130, [new SceneTextSpan("MMM"), new SceneTextSpan("MMM") { Color = (SceneColor)"#0000ff" }], font, (SceneColor)"#ff0000") { Decorations = SceneTextDecorations.Underline, DecorationFill = (SceneColor)"#ff0000" });
+        var document = scene.ToPdf();
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+        var pixels = image.Frames[0];
+
+        // The gradient goes from blue to red; the outline is red, without fill
+        Assert.True(Count(10, 0, 40, 40, pixel => pixel.B > 200 && pixel.R < 100) > 20);
+        Assert.True(Count(110, 0, 150, 40, pixel => pixel.R > 200 && pixel.B < 100) > 20);
+        Assert.Equal(0, Count(160, 0, 300, 40, pixel => pixel.R < 100 && pixel.G < 100));
+        Assert.True(Count(160, 0, 300, 40, pixel => pixel.R > 200 && pixel.G < 100) > 50);
+
+        // A wide outline under the fill leaves more of the glyphs black than the same outline over them
+        var blackUnder = Count(0, 45, 150, 95, pixel => pixel.R < 60 && pixel.G < 60);
+        var blackOver = Count(150, 45, 300, 95, pixel => pixel.R < 60 && pixel.G < 60);
+        Assert.True(blackUnder > blackOver, $"{blackUnder} black pixels with the outline under the fill, {blackOver} with the outline over it");
+
+        // The underline is red under both spans; the glyphs of the second span are blue
+        Assert.Contains(Enumerable.Range(130, 8), y => pixels[110, y].R > 200 && pixels[110, y].B < 100);
+        Assert.True(Count(90, 100, 160, 125, pixel => pixel.B > 200 && pixel.R < 100) > 50);
+
+        // The outline is the stroke rendering mode; an outline under the fill is drawn first, and the text is extracted once
+        var content = Uncompressed(document);
+        Assert.Contains("1 Tr", content, StringComparison.Ordinal);
+        Assert.Contains("2 Tr", content, StringComparison.Ordinal);
+        Assert.Contains("0 Tr", content, StringComparison.Ordinal);
+        var text = document.Pages[0].ExtractText();
+        Assert.Equal(text.IndexOf("Under", StringComparison.Ordinal), text.LastIndexOf("Under", StringComparison.Ordinal));
+        Assert.Contains("Under", text, StringComparison.Ordinal);
+        Assert.Contains("Over", text, StringComparison.Ordinal);
+        Assert.Contains("WWWWWW", text, StringComparison.Ordinal);
+
+        int Count(int x0, int y0, int x1, int y1, Func<Rgba32, bool> predicate) => Enumerable.Range(y0, y1 - y0).Sum(y => Enumerable.Range(x0, x1 - x0).Count(x => predicate(pixels[x, y])));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TextPositionsAndBaselines(bool embedFonts)
+    {
+        var font = new SceneFont(20);
+        var scene = new Scene(300, 200, "sans-serif") { Background = SceneColor.White };
+        if (embedFonts)
+        {
+            scene.Fonts = SceneFontCollection.Load(Path.Combine(TestData, "LiberationSans-Regular.woff2"));
+        }
+
+        scene.Root.Add(new SceneText(10, 20, "MM", font, SceneColor.Black) { Baseline = SceneTextBaseline.TextTop });
+        scene.Root.Add(new SceneText(100, 40, [new SceneTextSpan("MM"), new SceneTextSpan("MM") { BaselineShift = 10 }], font, SceneColor.Black));
+        scene.Root.Add(new SceneText(80, 80, [new SceneTextSpan("MM"), new SceneTextSpan("MM") { X = 250, Dy = 20 }], font, SceneColor.Black) { Anchor = SceneTextAnchor.End });
+        scene.Root.Add(new SceneText(290, 140, "MM", font, SceneColor.Black) { Direction = SceneTextDirection.RightToLeft });
+        scene.Root.Add(new SceneText(10, 150, [new SceneTextSpan("MM") { GlyphRotation = 90 }], font, SceneColor.Black));
+        var document = scene.ToPdf();
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+
+        // The ascent of Helvetica (0.718 em) is smaller than the one of Liberation Sans (0.905 em)
+        var (_, top, _, bottom) = GetInkBounds(image, 0, 0, 90, 60);
+        Assert.InRange(top, 20, 26);
+        Assert.InRange(bottom, embedFonts ? 37 : 33, embedFonts ? 39 : 35);
+
+        var (_, _, _, firstBottom) = GetInkBounds(image, 100, 0, 128, 60);
+        var (_, _, _, shiftedBottom) = GetInkBounds(image, 136, 0, 200, 60);
+        Assert.InRange(firstBottom, 38, 40);
+        Assert.InRange(shiftedBottom, 28, 30);
+
+        var (_, _, right, _) = GetInkBounds(image, 0, 62, 100, 82);
+        Assert.InRange(right, 76, 80);
+        var (_, _, chunkRight, chunkBottom) = GetInkBounds(image, 100, 82, 300, 110);
+        Assert.InRange(chunkRight, 246, 250);
+        Assert.InRange(chunkBottom, 98, 100);
+
+        (_, _, right, _) = GetInkBounds(image, 200, 120, 300, 145);
+        Assert.InRange(right, 286, 290);
+
+        (_, top, _, bottom) = GetInkBounds(image, 0, 130, 100, 200);
+        Assert.InRange(top, 148, 152);
+        Assert.InRange(bottom, 160, 172);
+        Assert.Contains("MMMM", document.Pages[0].ExtractText(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TextLength(bool embedFonts)
+    {
+        var font = new SceneFont(20);
+        var scene = new Scene(300, 120, "sans-serif") { Background = SceneColor.White };
+        if (embedFonts)
+        {
+            scene.Fonts = SceneFontCollection.Load(Path.Combine(TestData, "LiberationSans-Regular.woff2"));
+        }
+
+        // 30 pixels more, in the 3 gaps between the 4 letters; twice as wide, the glyphs scaled
+        var width = PdfFont.GetStandardFont(PdfStandardFont.Helvetica).GetTextWidth("MMMM", 20);
+        scene.Root.Add(new SceneText(10, 30, "MMMM", font, SceneColor.Black));
+        scene.Root.Add(new SceneText(10, 70, "MMMM", font, SceneColor.Black) { TextLength = width + 30 });
+        scene.Root.Add(new SceneText(10, 110, "MMMM", font, SceneColor.Black) { TextLength = 2 * width, LengthAdjust = SceneTextLengthAdjust.SpacingAndGlyphs });
+        var document = scene.ToPdf();
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+        var (left, right) = GetInkColumns(image, 0, 40);
+        var (spacedLeft, spacedRight) = GetInkColumns(image, 40, 80);
+        var (scaledLeft, scaledRight) = GetInkColumns(image, 80, 120);
+        Assert.InRange(spacedLeft, left - 1, left + 1);
+        Assert.InRange(spacedRight - right, 29, 31);
+        Assert.InRange(scaledLeft - 10, ((left - 10) * 2) - 2, ((left - 10) * 2) + 2);
+        Assert.InRange(scaledRight - 10, ((right - 10) * 2) - 2, ((right - 10) * 2) + 2);
+        Assert.Contains("MMMM", document.Pages[0].ExtractText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Patterns()
     {
         // A tile of 10 by 10 pixels with a red square in its top-left quarter, repeated, and scaled by 2
@@ -753,6 +870,26 @@ public sealed class ScenePdfRendererTests
     private static string Uncompressed(PdfDocument document) => System.Text.Encoding.Latin1.GetString(document.ToByteArray(new PdfSaveOptions { CompressStreams = false, UseObjectStreams = false }));
 
     private static Image<Rgba32> Render(Scene scene) => scene.ToPdf().Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+
+    private static (int Left, int Top, int Right, int Bottom) GetInkBounds(Image<Rgba32> image, int x0, int y0, int x1, int y1)
+    {
+        var (left, top, right, bottom) = (int.MaxValue, int.MaxValue, -1, -1);
+        for (var y = y0; y < y1; y++)
+        {
+            for (var x = x0; x < x1; x++)
+            {
+                if (image.Frames[0][x, y].R < 128)
+                {
+                    left = Math.Min(left, x);
+                    top = Math.Min(top, y);
+                    right = Math.Max(right, x);
+                    bottom = Math.Max(bottom, y);
+                }
+            }
+        }
+
+        return (left, top, right, bottom);
+    }
 
     private static (int Left, int Right) GetInkColumns(Image<Rgba32> image, int top = 0, int bottom = -1)
     {

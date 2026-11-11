@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="150" viewBox="0 0 300 150" role="img" font-family="sans-serif">
+<text x="10" y="30" font-size="16" fill="#000000">H<tspan baseline-shift="-4" font-size="10">2</tspan>O and x<tspan baseline-shift="7" font-size="10">2</tspan></text>
+<text x="220" y="30" text-anchor="middle" font-size="16" fill="#000000">First line<tspan x="220" dy="20">Second line</tspan><tspan x="220" dy="20">Third</tspan></text>
+<text x="10" y="75" font-size="16" fill="#000000"><tspan rotate="15">Wavy</tspan><tspan dx="8">text</tspan></text>
+<line x1="10" y1="110" x2="140" y2="110" stroke="#cbd5e1"/>
+<text x="10" y="110" dominant-baseline="middle" font-size="16" fill="#000000">Middle</text>
+<text x="10" y="140" font-size="16" textLength="120" lengthAdjust="spacingAndGlyphs" fill="#000000">Stretched</text>
+</svg>

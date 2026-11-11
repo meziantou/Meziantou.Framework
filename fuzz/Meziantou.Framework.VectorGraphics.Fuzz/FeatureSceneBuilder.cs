@@ -4,9 +4,10 @@ namespace Meziantou.Framework.VectorGraphics.Fuzz;
 
 /// <summary>
 /// Builds a scene of the elements that refer to other content (patterns, markers, uses, clipping paths), of the texts with
-/// a spacing or on a path, of the view boxes, of the paint options (paint orders, context paints, strokes that do not
-/// scale, focal radii, aspect ratios of images), and of the elements with a transform, a hyperlink or an identifier. The
-/// SVG and the PDF targets share it (the PDF fuzzing project links this file).
+/// a spacing, on a path, with paints, outlines, moved spans, baselines, lengths and directions, of the view boxes, of the
+/// paint options (paint orders, context paints, strokes that do not scale, focal radii, aspect ratios of images), and of
+/// the elements with a transform, a hyperlink or an identifier. The SVG and the PDF targets share it (the PDF fuzzing
+/// project links this file).
 /// </summary>
 /// <remarks>
 /// The input is a list of elements: a byte selects the kind of element and its options, a byte picks a number and more
@@ -77,13 +78,39 @@ internal static class FeatureSceneBuilder
                     break;
 
                 case 3:
-                    // A text with a spacing and lines, split in two spans that have their own spacing
-                    element = parent.Add(new SceneText(value, 40, [new SceneTextSpan(text[..(text.Length / 2)]), new SceneTextSpan(text[(text.Length / 2)..]) { LetterSpacing = (option & 1) != 0 ? -value : null, WordSpacing = (option & 2) != 0 ? value : null, Decorations = (SceneTextDecorations)(option % 8) }], new SceneFont(1 + (kind % 20)), color)
+                    // A text with a spacing and lines, split in two spans that have their own spacing; the second span can
+                    // be moved, shifted and turned, and have its own paints; the text can be outlined, painted with a
+                    // pattern, stretched to a length, written from right to left, on another baseline
+                    var moved = (option & 8) != 0;
+                    var secondSpan = new SceneTextSpan(text[(text.Length / 2)..])
+                    {
+                        LetterSpacing = (option & 1) != 0 ? -value : null,
+                        WordSpacing = (option & 2) != 0 ? value : null,
+                        Decorations = (SceneTextDecorations)(option % 8),
+                        X = moved && (kind & 32) != 0 ? value : null,
+                        Y = moved && (option & 64) != 0 ? 60 : null,
+                        Dx = moved ? value : 0,
+                        Dy = moved ? option % 20 : 0,
+                        BaselineShift = moved ? -value : 0,
+                        GlyphRotation = moved && (option & 128) != 0 ? value : 0,
+                        Fill = (option & 16) != 0 ? GetPattern(kind, option, value, color) : null,
+                        Stroke = (option & 32) != 0 ? new SolidPaint(color) : null,
+                        DecorationFill = (option & 4) != 0 ? new SolidPaint(SceneColor.Black) : null,
+                    };
+                    element = parent.Add(new SceneText(value, 40, [new SceneTextSpan(text[..(text.Length / 2)]), secondSpan], new SceneFont(1 + (kind % 20)), color)
                     {
                         LetterSpacing = value,
                         WordSpacing = (kind & 16) != 0 ? value : 0,
                         Anchor = (SceneTextAnchor)(option % 3),
                         Decorations = (SceneTextDecorations)(kind % 8),
+                        Stroke = (option & 32) != 0 ? GetPattern((byte)(kind >> 1), option, value, color) : null,
+                        StrokeWidth = option % 4,
+                        StrokeDashArray = (option & 64) != 0 ? [value, 2] : null,
+                        PaintOrder = (ScenePaintOrder)(option % 6),
+                        Baseline = (SceneTextBaseline)(kind % 8),
+                        TextLength = (option & 128) != 0 ? value : null,
+                        LengthAdjust = (SceneTextLengthAdjust)(kind % 2),
+                        Direction = (SceneTextDirection)((kind >> 4) % 2),
                     });
                     break;
 
@@ -98,11 +125,15 @@ internal static class FeatureSceneBuilder
                     };
                     element = parent.Add(new SceneText(0, 0, text, new SceneFont(1 + (kind % 20)), color)
                     {
-                        Path = textPath,
+                        Path = (kind & 32) != 0 ? textPath.Reverse() : textPath,
                         PathStartOffset = value,
                         Anchor = (SceneTextAnchor)(kind % 3),
                         LetterSpacing = (option & 16) != 0 ? 2 : 0,
                         Decorations = (SceneTextDecorations)(option % 8),
+                        Baseline = (SceneTextBaseline)(option % 8),
+                        Stroke = (option & 32) != 0 ? new SolidPaint(color) : null,
+                        TextLength = (option & 64) != 0 ? value : null,
+                        LengthAdjust = (SceneTextLengthAdjust)((option >> 7) % 2),
                     });
                     break;
 

@@ -114,6 +114,7 @@ namespace Meziantou.Framework.VectorGraphics
         public double GetLength() => throw null;
         public Meziantou.Framework.VectorGraphics.PathPoint GetPointAtLength(double distance) => throw null;
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.PathPoint> GetVertices() => throw null;
+        public Meziantou.Framework.VectorGraphics.PathData Reverse() => throw null;
         public Meziantou.Framework.VectorGraphics.PathData ToCubicCurves() => throw null;
         public override string ToString() => throw null;
         public Meziantou.Framework.VectorGraphics.PathData Translate(double offsetX, double offsetY) => throw null;
@@ -826,16 +827,30 @@ namespace Meziantou.Framework.VectorGraphics
     public sealed class SceneText : Meziantou.Framework.VectorGraphics.SceneElement
     {
         public Meziantou.Framework.VectorGraphics.SceneTextAnchor Anchor { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneTextBaseline Baseline { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneColor Color { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.ScenePaint? DecorationFill { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneTextDecorations Decorations { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneTextDirection Direction { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.ScenePaint? Fill { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneFont Font { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneTextLengthAdjust LengthAdjust { get => throw null; set { } }
         public double LetterSpacing { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneLineCap LineCap { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneLineJoin LineJoin { get => throw null; set { } }
         public double MeasuredWidth { get => throw null; set { } }
+        public double MiterLimit { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.ScenePaintOrder PaintOrder { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.PathData? Path { get => throw null; set { } }
         public double PathStartOffset { get => throw null; set { } }
         public double Rotation { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneTextSpan> Spans { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.ScenePaint? Stroke { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<double>? StrokeDashArray { get => throw null; set { } }
+        public double StrokeDashOffset { get => throw null; set { } }
+        public double StrokeWidth { get => throw null; set { } }
         public string Text { get => throw null; }
+        public double? TextLength { get => throw null; set { } }
         public double WordSpacing { get => throw null; set { } }
         public double X { get => throw null; }
         public double Y { get => throw null; }
@@ -850,6 +865,18 @@ namespace Meziantou.Framework.VectorGraphics
         End = 2,
     }
 
+    public enum SceneTextBaseline
+    {
+        Alphabetic = 0,
+        Middle = 1,
+        Central = 2,
+        Hanging = 3,
+        Mathematical = 4,
+        Ideographic = 5,
+        TextTop = 6,
+        TextBottom = 7,
+    }
+
     [System.Flags]
     public enum SceneTextDecorations
     {
@@ -859,14 +886,35 @@ namespace Meziantou.Framework.VectorGraphics
         Overline = 4,
     }
 
+    public enum SceneTextDirection
+    {
+        LeftToRight = 0,
+        RightToLeft = 1,
+    }
+
+    public enum SceneTextLengthAdjust
+    {
+        Spacing = 0,
+        SpacingAndGlyphs = 1,
+    }
+
     public sealed class SceneTextSpan
     {
+        public double BaselineShift { get => throw null; init { } }
         public Meziantou.Framework.VectorGraphics.SceneColor? Color { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.ScenePaint? DecorationFill { get => throw null; init { } }
         public Meziantou.Framework.VectorGraphics.SceneTextDecorations? Decorations { get => throw null; init { } }
+        public double Dx { get => throw null; init { } }
+        public double Dy { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.ScenePaint? Fill { get => throw null; init { } }
         public Meziantou.Framework.VectorGraphics.SceneFont? Font { get => throw null; init { } }
+        public double GlyphRotation { get => throw null; init { } }
         public double? LetterSpacing { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.ScenePaint? Stroke { get => throw null; init { } }
         public string Text { get => throw null; }
         public double? WordSpacing { get => throw null; init { } }
+        public double? X { get => throw null; init { } }
+        public double? Y { get => throw null; init { } }
         public SceneTextSpan(string text) { }
     }
 

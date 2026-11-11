@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/fuzz/">
     <Project Path="../fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Avatar.Fuzz/Meziantou.Framework.Avatar.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Barcodes.Fuzz/Meziantou.Framework.Barcodes.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Bencode.Fuzz/Meziantou.Framework.Bencode.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.BloomFilters.Fuzz/Meziantou.Framework.BloomFilters.Fuzz.csproj" />
@@ -49,6 +50,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.AtlassianDataFormat/Meziantou.Framework.AtlassianDataFormat.csproj" />
+    <Project Path="../src/Meziantou.Framework.Avatar/Meziantou.Framework.Avatar.csproj" />
     <Project Path="../src/Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
     <Project Path="../src/Meziantou.Framework.Bencode/Meziantou.Framework.Bencode.csproj" />
     <Project Path="../src/Meziantou.Framework.BloomFilters/Meziantou.Framework.BloomFilters.csproj" />

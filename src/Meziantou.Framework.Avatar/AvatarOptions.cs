@@ -1,7 +1,7 @@
 namespace Meziantou.Framework;
 
 /// <summary>
-/// Provides options used to generate an avatar SVG.
+/// Provides options used to generate an avatar.
 /// </summary>
 public class AvatarOptions
 {
@@ -57,7 +57,7 @@ public class AvatarOptions
     public AvatarShape Shape { get; set; }
 
     /// <summary>
-    /// Gets or sets the size of the generated SVG in pixels.
+    /// Gets or sets the size of the generated avatar in pixels.
     /// </summary>
     public int Size { get; set; }
 

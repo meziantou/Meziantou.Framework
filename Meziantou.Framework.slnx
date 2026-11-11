@@ -732,6 +732,7 @@
   </Folder>
   <Folder Name="/fuzz/">
     <Project Path="fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Avatar.Fuzz/Meziantou.Framework.Avatar.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Barcodes.Fuzz/Meziantou.Framework.Barcodes.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Bencode.Fuzz/Meziantou.Framework.Bencode.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.BloomFilters.Fuzz/Meziantou.Framework.BloomFilters.Fuzz.csproj" />

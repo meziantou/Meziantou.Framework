@@ -1,16 +1,23 @@
 using System.Diagnostics;
 using System.IO.Hashing;
 using System.Security;
+using Meziantou.Framework.VectorGraphics;
 
 namespace Meziantou.Framework;
 
 /// <summary>
-/// Generates SVG avatars from names and options.
+/// Generates avatars from names and options, as SVG strings or as scenes of <c>Meziantou.Framework.VectorGraphics</c>.
 /// </summary>
 public static class AvatarGenerator
 {
     private const double FontSizeRatio = 0.5;
     private const double RoundedCornerRadiusRatio = 0.25;
+
+    /// <summary>
+    /// The widest the initials of a scene can be, as a ratio of the size. A circle is still 0.93 times the size wide at
+    /// the top and the bottom of capital letters, so wider initials are drawn with a smaller font.
+    /// </summary>
+    private const double MaxTextWidthRatio = 0.8;
 
     /// <summary>Optical nudge that centers the glyph on the baseline.</summary>
     private const string BaselineOffset = ".05em";
@@ -62,6 +69,121 @@ public static class AvatarGenerator
         var bigram = GetBigram(sanitizedName, options);
         var colorPair = GetColorPair(sanitizedName, options.Palette);
         return CreateSvg(options, bigram, colorPair);
+    }
+
+    /// <summary>
+    /// Creates the avatar of the specified name as a scene, using the default options.
+    /// </summary>
+    /// <param name="name">The full name used to compute the color and the bigram.</param>
+    /// <returns>The scene of the avatar.</returns>
+    /// <remarks>
+    /// The scene can be written as SVG with <c>SvgSceneRenderer</c>, or drawn as an image (PNG, WebP, JPEG...) with
+    /// <c>Meziantou.Framework.Imaging.VectorGraphics</c>.
+    /// </remarks>
+    public static Scene CreateScene(string name)
+    {
+        return CreateScene(name, AvatarOptions.Default, textMeasurer: null);
+    }
+
+    /// <summary>
+    /// Creates the avatar of the specified name as a scene.
+    /// </summary>
+    /// <param name="name">The full name used to compute the color and default bigram.</param>
+    /// <param name="options">The generation options.</param>
+    /// <returns>The scene of the avatar.</returns>
+    /// <remarks>
+    /// The scene can be written as SVG with <c>SvgSceneRenderer</c>, or drawn as an image (PNG, WebP, JPEG...) with
+    /// <c>Meziantou.Framework.Imaging.VectorGraphics</c>.
+    /// </remarks>
+    public static Scene CreateScene(string name, AvatarOptions options)
+    {
+        return CreateScene(name, options, textMeasurer: null);
+    }
+
+    /// <summary>
+    /// Creates the avatar of the specified name as a scene, laid out with the specified fonts.
+    /// </summary>
+    /// <param name="name">The full name used to compute the color and default bigram.</param>
+    /// <param name="options">The generation options.</param>
+    /// <param name="textMeasurer">
+    /// The measurer of the fonts that draw the scene, or <see langword="null"/> for <see cref="AfmTextMeasurer.Default"/>.
+    /// The initials are centered and sized with its metrics, so pass the measurer of the fonts that draw the image.
+    /// </param>
+    /// <returns>The scene of the avatar.</returns>
+    /// <remarks>
+    /// <para>
+    /// The avatar is the same as the one of <see cref="CreateSvg(string, AvatarOptions)"/>: same shape, colors and bigram.
+    /// The initials are drawn in the bold font of the measurer, centered on the metrics it reports, and with a smaller
+    /// font when they would be wider than the shape. The title of the scene is the accessible label, or nothing when
+    /// <see cref="AvatarOptions.IsDecorative"/> is <see langword="true"/>.
+    /// </para>
+    /// <para>
+    /// The colors of every pair of the palette must be colors that <see cref="SceneColor.Parse(string)"/> accepts:
+    /// <c>#rrggbb</c>, <c>rgb()</c>, <c>hsl()</c>, a CSS color name... CSS variables and <c>currentColor</c> are only
+    /// supported by <see cref="CreateSvg(string, AvatarOptions)"/>.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Avatar.Tests/AvatarGeneratorTests.cs" ref:region="AvatarGenerator_CreatePng" ref:dedent="true">
+    /// // Lay the avatar out with the fonts that draw the image, so the initials are centered
+    /// var measurer = SceneImageRenderer.CreateMeasurer();
+    /// var scene = AvatarGenerator.CreateScene("John Doe", new AvatarOptions { Size = 128 }, measurer);
+    ///
+    /// using var image = scene.ToImage();
+    /// Assert.Equal((128, 128), (image.Width, image.Height));
+    ///
+    /// // Save to a file (image.Save("avatar.png")) or to a stream, in any format
+    /// using var png = new MemoryStream();
+    /// image.Save(png, new PngEncoder());
+    /// </code>
+    /// </example>
+    public static Scene CreateScene(string name, AvatarOptions options, ITextMeasurer? textMeasurer)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.Size, $"{nameof(options)}.{nameof(options.Size)}");
+        ValidatePalette(options);
+        ValidateShape(options);
+        var colors = ParseSceneColors(options);
+
+        var sanitizedName = RemoveInvalidXmlCharacters(name);
+        var bigram = GetBigram(sanitizedName, options);
+        var (backgroundColor, foregroundColor) = colors[GetColorIndex(sanitizedName, options.Palette.Count)];
+        textMeasurer ??= AfmTextMeasurer.Default;
+
+        var size = (double)options.Size;
+        var center = size / 2;
+        var scene = new Scene(size, size, textMeasurer.FontFamily)
+        {
+            Title = options.IsDecorative ? null : options.AccessibleLabel is null ? bigram : RemoveInvalidXmlCharacters(options.AccessibleLabel),
+        };
+
+        scene.Root.Add<SceneShape>(options.Shape switch
+        {
+            AvatarShape.Round => new SceneCircle(center, center, center) { Fill = backgroundColor },
+            AvatarShape.Square => new SceneRectangle(0, 0, size, size) { Fill = backgroundColor },
+            AvatarShape.RoundedSquare => new SceneRectangle(0, 0, size, size) { Fill = backgroundColor, CornerRadius = size * RoundedCornerRadiusRatio },
+            _ => throw new UnreachableException($"The shape '{options.Shape}' was not rejected by {nameof(ValidateShape)}."),
+        });
+
+        var font = new SceneFont(size * FontSizeRatio, Bold: true);
+        var metrics = textMeasurer.Measure(bigram, font);
+        var maxWidth = size * MaxTextWidthRatio;
+        if (metrics.Width > maxWidth)
+        {
+            font = font with { Size = font.Size * maxWidth / metrics.Width };
+            metrics = textMeasurer.Measure(bigram, font);
+        }
+
+        // The baseline that centers the line box of the font vertically
+        var baseline = center + ((metrics.Ascent - metrics.Descent) / 2);
+        scene.Root.Add(new SceneText(center, baseline, bigram, font, foregroundColor)
+        {
+            Anchor = SceneTextAnchor.Middle,
+            MeasuredWidth = metrics.Width,
+        });
+
+        return scene;
     }
 
     private static string CreateSvg(AvatarOptions options, string bigram, AvatarColorPair colorPair)
@@ -173,14 +295,34 @@ public static class AvatarGenerator
             throw new ArgumentOutOfRangeException(nameof(options), options.Shape, "Unsupported avatar shape.");
     }
 
+    private static (SceneColor Background, SceneColor Foreground)[] ParseSceneColors(AvatarOptions options)
+    {
+        var palette = options.Palette;
+        var result = new (SceneColor Background, SceneColor Foreground)[palette.Count];
+        for (var i = 0; i < palette.Count; i++)
+        {
+            var pair = palette[i];
+            if (!SceneColor.TryParse(pair.BackgroundColor, out var background) || !SceneColor.TryParse(pair.ForegroundColor, out var foreground))
+                throw new ArgumentException($"The palette entry at index {i.ToString(CultureInfo.InvariantCulture)} has a color that a scene does not support. Use #rgb, #rrggbb, #rrggbbaa, rgb(), hsl() or a CSS color name.", nameof(options));
+
+            result[i] = (background, foreground);
+        }
+
+        return result;
+    }
+
     private static AvatarColorPair GetColorPair(string sanitizedName, IList<AvatarColorPair> palette)
+    {
+        return palette[GetColorIndex(sanitizedName, palette.Count)];
+    }
+
+    private static int GetColorIndex(string sanitizedName, int paletteCount)
     {
         // Normalization requires ICU. Under InvariantGlobalization it is a no-op, so a name that is not
         // already in Form C selects a different entry there. See the readme.
         var normalizedName = sanitizedName.Trim().Normalize(NormalizationForm.FormC);
         var hash = XxHash32.HashToUInt32(Encoding.UTF8.GetBytes(normalizedName));
-        var index = (int)(hash % (uint)palette.Count);
-        return palette[index];
+        return (int)(hash % (uint)paletteCount);
     }
 
     private static string GetBigram(string sanitizedName, AvatarOptions options)

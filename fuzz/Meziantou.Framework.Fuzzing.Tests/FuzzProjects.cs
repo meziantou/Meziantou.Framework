@@ -8,6 +8,7 @@ internal static class FuzzProjects
     public static IReadOnlyList<(string Project, IReadOnlyList<FuzzTarget> Targets)> All { get; } =
     [
         ("Meziantou.Framework.AtlassianDataFormat.Fuzz", AtlassianDataFormat.Fuzz.AtlassianDataFormatFuzzTargets.All),
+        ("Meziantou.Framework.Avatar.Fuzz", Avatar.Fuzz.AvatarFuzzTargets.All),
         ("Meziantou.Framework.Barcodes.Fuzz", Barcodes.Fuzz.BarcodesFuzzTargets.All),
         ("Meziantou.Framework.Bencode.Fuzz", Bencode.Fuzz.BencodeFuzzTargets.All),
         ("Meziantou.Framework.BloomFilters.Fuzz", BloomFilters.Fuzz.BloomFiltersFuzzTargets.All),

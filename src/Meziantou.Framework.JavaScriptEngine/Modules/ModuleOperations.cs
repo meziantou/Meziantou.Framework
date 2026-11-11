@@ -405,6 +405,12 @@ internal static class ModuleOperations
         foreach (var entry in module.IndirectExportEntries)
         {
             EnsureResolvableBinding(module, entry.ExportName!, allowAmbiguous: false);
+
+            // The re-export of the source of a module (import source s from; export { s }): the exports of the module are
+            // not used, and its dependencies are not loaded
+            if (entry.ModuleRequest!.Phase == ModulePhase.Source)
+                continue;
+
             switch (entry.ImportKind)
             {
                 case ExportImportKind.All:

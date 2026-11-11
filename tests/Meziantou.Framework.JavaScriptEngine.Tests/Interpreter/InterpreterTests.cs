@@ -876,6 +876,17 @@ public sealed class InterpreterTests
                     return;
                 }
 
+                if (request.Specifier == "module-source-with-reexports")
+                {
+                    // A parsed module whose source is a host object: its dependencies are not loaded by a source phase import
+                    var abstractModuleSourcePrototype = request.Realm.AbstractModuleSource.GetProperty("prototype").AsObject();
+                    module = request.Realm.ParseModule("export * from 'missing'; export defer { x } from 'missing';", request.Specifier);
+                    module.ModuleSource = new JsHostObject(request.Realm.CreateObject(abstractModuleSourcePrototype)) { ModuleSourceClassName = "Test.ModuleSource" };
+                    _modules[request.Specifier] = module;
+                    request.Complete(module);
+                    return;
+                }
+
                 if (!files.TryGetValue(request.Specifier, out var code))
                 {
                     request.Fail("Cannot find the module '" + request.Specifier + "'");
@@ -1105,6 +1116,18 @@ public sealed class InterpreterTests
     {
         var exception = Assert.Throws<JsException>(() => RunModule(new() { ["main"] = code, ["dep"] = "export const x = 1;" }));
         Assert.StartsWith("SyntaxError:", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Module_ExportDefer_ReexportedModuleSourceDoesNotValidateTheExportsOfTheModule()
+    {
+        var result = RunModule(new()
+        {
+            ["main"] = "import { s } from 'reexport'; globalThis.result = Object.prototype.toString.call(s);",
+            ["reexport"] = "import source s from 'module-source-with-reexports'; export { s };",
+        });
+
+        Assert.Equal("[object Test.ModuleSource]", result);
     }
 
     [Fact]

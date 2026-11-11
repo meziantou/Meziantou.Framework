@@ -132,6 +132,8 @@ internal sealed class PathMeasure
         AddCubic(mx, my, ex, ey, cx, cy, x3, y3, depth + 1);
     }
 
+    // A curve is flat when its control points are on its chord, within the tolerance, and between its ends: control
+    // points on the line of the chord but beyond an end make the curve double back
     private static bool IsFlat(double x0, double y0, double x1, double y1, double x2, double y2, double x3, double y3)
     {
         if (!double.IsFinite(x1) || !double.IsFinite(y1) || !double.IsFinite(x2) || !double.IsFinite(y2))
@@ -141,12 +143,20 @@ internal sealed class PathMeasure
         var (dx, dy) = (x3 - x0, y3 - y0);
         var chord = Math.Sqrt((dx * dx) + (dy * dy));
         if (!(chord > 0))
-            return Math.Max(Math.Abs(x1 - x0) + Math.Abs(y1 - y0), Math.Abs(x2 - x0) + Math.Abs(y2 - y0)) <= Tolerance;
+            return Math.Max(Distance(x0, y0, x1, y1), Distance(x0, y0, x2, y2)) <= Tolerance;
 
         var d1 = Math.Abs(((x1 - x0) * dy) - ((y1 - y0) * dx)) / chord;
         var d2 = Math.Abs(((x2 - x0) * dy) - ((y2 - y0) * dx)) / chord;
-        return !(Math.Max(d1, d2) > Tolerance);
+        if (Math.Max(d1, d2) > Tolerance)
+            return false;
+
+        // The position of the control points along the chord, from its start
+        var p1 = (((x1 - x0) * dx) + ((y1 - y0) * dy)) / chord;
+        var p2 = (((x2 - x0) * dx) + ((y2 - y0) * dy)) / chord;
+        return Math.Min(p1, p2) >= -Tolerance && Math.Max(p1, p2) <= chord + Tolerance;
     }
+
+    private static double Distance(double x0, double y0, double x1, double y1) => Math.Sqrt(((x1 - x0) * (x1 - x0)) + ((y1 - y0) * (y1 - y0)));
 
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct Segment(double X0, double Y0, double X1, double Y1, double Start, double Length, double StartAngle, double EndAngle);

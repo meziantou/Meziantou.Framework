@@ -604,6 +604,48 @@ public sealed class SvgSceneRendererTests
     }
 
     [Fact]
+    public void CurvesThatDoubleBackAreMeasuredAlongTheCurve()
+    {
+        // The control points are on the chord, beyond its ends: the curve goes to x = 29, back to x = -24, then to x = 10
+        var path = new PathBuilder().MoveTo(0, 0).CubicTo(100, 0, -100, 0, 10, 0).Build();
+        Assert.InRange(path.GetLength(), 116, 116.3);
+        Assert.InRange(path.GetPointAtLength(25).X, 24, 26);
+    }
+
+    [Fact]
+    public void ReusedElementsInsideOtherReusedElementsAreWrittenOnce()
+    {
+        // A group that is not in the scene, and its rectangle used before it: the rectangle is written with the group
+        var group = new SceneGroup();
+        var rectangle = group.Add(new SceneRectangle(0, 0, 5, 5) { Id = "square", Fill = SceneColor.Black });
+        var scene = new Scene(10, 10, "sans-serif");
+        scene.Root.Add(new SceneUse(rectangle));
+        scene.Root.Add(new SceneUse(group));
+        var svg = SvgSceneRenderer.Render(scene);
+        Assert.Equal(1, CountOccurrences(svg, "id=\"square\""));
+        Assert.Equal(1, CountOccurrences(svg, "id=\"scene-element0\""));
+        Assert.Contains("<defs>\n<g id=\"scene-element0\">\n<rect id=\"square\"", svg, StringComparison.Ordinal);
+
+        // A view box that draws nothing keeps, in definitions, the children a use draws
+        var hidden = new SceneGroup { ViewBox = new SceneViewBox(new SceneBounds(0, 0, 0, 0), new SceneBounds(0, 0, 10, 10)) };
+        var circle = hidden.Add(new SceneCircle(5, 5, 5) { Fill = SceneColor.Black });
+        var withHidden = new Scene(10, 10, "sans-serif");
+        withHidden.Root.Add(hidden);
+        withHidden.Root.Add(new SceneUse(circle));
+        Assert.Contains("<g>\n<defs>\n<circle id=\"scene-element0\"", SvgSceneRenderer.Render(withHidden), StringComparison.Ordinal);
+
+        // A use that refers to a use in its own content refers to an empty group
+        var cycle = new SceneGroup();
+        var circular = cycle.Add(new SceneUse(cycle));
+        var withCircular = new Scene(10, 10, "sans-serif");
+        withCircular.Root.Add(cycle);
+        withCircular.Root.Add(new SceneUse(circular));
+        var circularSvg = SvgSceneRenderer.Render(withCircular);
+        Assert.Contains("<g id=\"scene-element0\"/>", circularSvg, StringComparison.Ordinal);
+        Assert.Contains("<use href=\"#scene-element0\"/>", circularSvg, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void TextOnAPath()
     {
         #region VectorGraphics_TextOnPath

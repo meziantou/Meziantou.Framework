@@ -84,6 +84,22 @@ public sealed class TextMeasurerTests
     }
 
     [Fact]
+    public void Measure_SpacingOfShapedTexts()
+    {
+        // With a letter spacing, the optional ligatures are not formed: each of the 10 characters gets its spacing
+        var measurer = new FontFaceTextMeasurer(SceneFontCollection.Load(Path.Combine(AppContext.BaseDirectory, "TestData", "LiberationSans-Regular.woff2")));
+        var font = new SceneFont(20);
+        var once = measurer.Measure("ffi office", font, letterSpacing: 1, wordSpacing: 0).Width;
+        var twice = measurer.Measure("ffi office", font, letterSpacing: 2, wordSpacing: 0).Width;
+        Assert.Equal(10, twice - once, 1e-9);
+
+        // The word spacing goes after the space only, and a measurer that renames the family keeps the shaping
+        Assert.Equal(3, measurer.Measure("ffi office", font, letterSpacing: 1, wordSpacing: 3).Width - once, 1e-9);
+        Assert.Equal(once, measurer.WithFontFamily("Other").Measure("ffi office", font, letterSpacing: 1, wordSpacing: 0).Width, 1e-9);
+        Assert.Equal(measurer.Measure("ffi office", font).Width, measurer.Measure("ffi office", font, 0, 0).Width);
+    }
+
+    [Fact]
     public void Truncate()
     {
         var font = new SceneFont(10);

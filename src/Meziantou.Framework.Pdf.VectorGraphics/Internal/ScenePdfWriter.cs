@@ -271,16 +271,14 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             _hiddenDepth++;
             try
             {
+                // The content is a group: its transform, its opacity and its effects apply
                 if (opacity < 1)
                 {
-                    DrawTransparencyGroup(marker.Content.Children, opacity);
+                    DrawTransparencyGroup([marker.Content], opacity);
                 }
                 else
                 {
-                    foreach (var child in marker.Content.Children)
-                    {
-                        DrawElement(child);
-                    }
+                    DrawElement(marker.Content);
                 }
             }
             finally
@@ -719,11 +717,8 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             _hiddenDepth++;
             try
             {
-                foreach (var child in paint.Content.Children)
-                {
-                    DrawElement(child);
-                }
-
+                // The content is a group: its transform, its opacity and its effects apply
+                DrawElement(paint.Content);
                 _content.Complete();
             }
             finally

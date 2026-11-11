@@ -399,6 +399,42 @@ public sealed class ScenePdfRendererTests
     }
 
     [Fact]
+    public void SpacedTextsAreDrawnAsTheyAreMeasured()
+    {
+        // A spaced text of an embedded font that ends where its measured width says starts where the same text anchored at its start starts
+        var fonts = SceneFontCollection.Load(Path.Combine(TestData, "LiberationSans-Regular.woff2"));
+        var font = new SceneFont(20);
+        var width = new FontFaceTextMeasurer(fonts).Measure("ffi office", font, letterSpacing: 3, wordSpacing: 5).Width;
+        var scene = new Scene(260, 80, fonts.FontFamily) { Fonts = fonts, Background = SceneColor.White };
+        scene.Root.Add(new SceneText(10, 30, "ffi office", font, SceneColor.Black) { LetterSpacing = 3, WordSpacing = 5 });
+        scene.Root.Add(new SceneText(10 + width, 70, "ffi office", font, SceneColor.Black) { LetterSpacing = 3, WordSpacing = 5, Anchor = SceneTextAnchor.End });
+        using var image = Render(scene);
+        var (left, right) = GetInkColumns(image, 0, 40);
+        var (endLeft, endRight) = GetInkColumns(image, 40, 80);
+        Assert.InRange(endLeft, left - 1, left + 1);
+        Assert.InRange(endRight, right - 1, right + 1);
+    }
+
+    [Fact]
+    public void TheContentGroupsOfPatternsAndMarkersApplyTheirSettings()
+    {
+        // A pattern whose content is invisible paints nothing; a marker whose content is moved by its transform
+        var invisible = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        invisible.Content.Opacity = 0;
+        invisible.Content.Add(new SceneRectangle(0, 0, 10, 10) { Fill = (SceneColor)"#ff0000" });
+        var moved = new SceneMarker { Units = SceneMarkerUnits.UserSpace };
+        moved.Content.Transform = SceneTransform.Translate(10, 0);
+        moved.Content.Add(new SceneRectangle(-2, -2, 4, 4) { Fill = (SceneColor)"#0000ff" });
+        var scene = new Scene(60, 30, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneRectangle(0, 0, 20, 20) { Fill = invisible });
+        scene.Root.Add(new SceneLine(30, 10, 40, 10) { MarkerEnd = moved });
+        using var image = Render(scene);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][5, 5]);
+        Assert.Equal(new Rgba32(0, 0, 255), image.Frames[0][50, 10]);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][40, 10]);
+    }
+
+    [Fact]
     public void DocumentsAreTagged()
     {
         #region PdfVectorGraphics_Tagged

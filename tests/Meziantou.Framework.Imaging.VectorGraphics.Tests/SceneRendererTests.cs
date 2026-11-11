@@ -276,6 +276,44 @@ public sealed class SceneRendererTests
         Assert.Equal(new Rgba32(255, 255, 255), pixels[45, 40]);
     }
 
+    [Fact]
+    public void SpacedTextsAreDrawnAsTheyAreMeasured()
+    {
+        // A spaced text that ends where its measured width says starts where the same text anchored at its start starts
+        var fonts = SceneFontCollection.Load(Path.Combine(AppContext.BaseDirectory, "TestData", "LiberationSans-Regular.woff2"));
+        var measurer = new ImageTextMeasurer(fonts);
+        var font = new SceneFont(20);
+        var width = measurer.Measure("ffi office", font, letterSpacing: 3, wordSpacing: 5).Width;
+        Assert.Equal(new FontFaceTextMeasurer(fonts).Measure("ffi office", font, letterSpacing: 3, wordSpacing: 5).Width, width, 0.5);
+        var scene = new Scene(260, 80, fonts.FontFamily) { Fonts = fonts };
+        scene.Root.Add(new SceneText(10, 30, "ffi office", font, SceneColor.Black) { LetterSpacing = 3, WordSpacing = 5 });
+        scene.Root.Add(new SceneText(10 + width, 70, "ffi office", font, SceneColor.Black) { LetterSpacing = 3, WordSpacing = 5, Anchor = SceneTextAnchor.End });
+        using var image = scene.ToImage();
+        var (left, _, right, _) = GetInkBounds(image, 0, 0, 260, 40);
+        var (endLeft, _, endRight, _) = GetInkBounds(image, 0, 40, 260, 80);
+        Assert.InRange(endLeft, left - 1, left + 1);
+        Assert.InRange(endRight, right - 1, right + 1);
+    }
+
+    [Fact]
+    public void TheContentGroupsOfPatternsAndMarkersApplyTheirSettings()
+    {
+        // A pattern whose content is invisible paints nothing; a marker whose content is moved by its transform
+        var invisible = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        invisible.Content.Opacity = 0;
+        invisible.Content.Add(new SceneRectangle(0, 0, 10, 10) { Fill = (SceneColor)"#ff0000" });
+        var moved = new SceneMarker { Units = SceneMarkerUnits.UserSpace };
+        moved.Content.Transform = SceneTransform.Translate(10, 0);
+        moved.Content.Add(new SceneRectangle(-2, -2, 4, 4) { Fill = (SceneColor)"#0000ff" });
+        var scene = new Scene(60, 30, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneRectangle(0, 0, 20, 20) { Fill = invisible });
+        scene.Root.Add(new SceneLine(30, 10, 40, 10) { MarkerEnd = moved });
+        using var image = scene.ToImage();
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][5, 5]);
+        Assert.Equal(Blue, image.Frames[0][50, 10]);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][40, 10]);
+    }
+
     private static (int Left, int Top, int Right, int Bottom) GetInkBounds(Image<Rgba32> image, int x0, int y0, int x1, int y1)
     {
         var (left, top, right, bottom) = (int.MaxValue, int.MaxValue, -1, -1);

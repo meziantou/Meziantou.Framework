@@ -345,7 +345,7 @@ internal static class SceneRenderer
         }
     }
 
-    // The content of each marker is drawn on its vertex, after the shape. A marker drawn on a shape of its own content
+    // The content of each marker is drawn on its vertex, after the shape, as a group with its own transform and effects. A marker drawn on a shape of its own content
     // is not drawn again.
     private static void DrawMarkers(DrawingCanvas canvas, SceneShape shape, DrawContext context)
     {
@@ -357,7 +357,7 @@ internal static class SceneRenderer
 
             try
             {
-                canvas.Transform(ToTransform(transform), (marker, context), static (canvas, state) => DrawChildren(canvas, state.marker.Content, state.context));
+                canvas.Transform(ToTransform(transform), (marker, context), static (canvas, state) => DrawElement(canvas, state.marker.Content, state.context));
             }
             finally
             {
@@ -597,7 +597,13 @@ internal static class SceneRenderer
     private static TextStyle CreateStyle(SceneFont font, TextDecorations decorations, Spacing spacing, DrawContext context)
     {
         FontStack fonts = context.Fonts is { } collection ? SceneFontCache.GetStack(collection, font, context.FontFamily) : context.Options.GetFont(font);
-        return new TextStyle(fonts, font.Size)
+        return CreateStyle(fonts, font.Size, decorations, spacing);
+    }
+
+    /// <summary>Creates the style of a text: <see cref="ImageTextMeasurer"/> measures the texts with the styles that draw them.</summary>
+    internal static TextStyle CreateStyle(FontStack fonts, double size, TextDecorations decorations, Spacing spacing)
+    {
+        return new TextStyle(fonts, size)
         {
             Decorations = decorations,
             LetterSpacing = spacing.Letter,
@@ -615,7 +621,7 @@ internal static class SceneRenderer
 
     /// <summary>The letter spacing and the word spacing of a text: 0 when they are not finite, within the limits of <see cref="TextStyle"/>.</summary>
     [StructLayout(LayoutKind.Auto)]
-    private readonly record struct Spacing
+    internal readonly record struct Spacing
     {
         private const double MaxSpacing = 65536;
 
@@ -766,7 +772,7 @@ internal static class SceneRenderer
 
             try
             {
-                DrawChildren(canvas, pattern.Content, this);
+                DrawElement(canvas, pattern.Content, this);
             }
             finally
             {

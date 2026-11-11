@@ -48,6 +48,7 @@ public static class SvgSceneRenderer
         // The generated identifiers of the contents of the uses that have none; the contents that are only drawn by uses
         private readonly Dictionary<SceneElement, string> _contentIds = new(ReferenceEqualityComparer.Instance);
         private List<SceneElement> _detached = [];
+        private readonly HashSet<SceneElement> _useTargets = new(ReferenceEqualityComparer.Instance);
         private readonly int _precision = options.Precision;
         private Scene _scene = null!;
 
@@ -204,6 +205,11 @@ public static class SvgSceneRenderer
             var elementCount = 0;
             foreach (var element in elements)
             {
+                if (element is SceneUse { Content: var target })
+                {
+                    _useTargets.Add(target);
+                }
+
                 if (element is SceneUse { Content: { Id: null } content } use && !_contentIds.ContainsKey(content) && !use.IsCircular())
                 {
                     _contentIds[content] = NextId("element", ref elementCount);
@@ -586,8 +592,17 @@ public static class SvgSceneRenderer
                     WriteText(text);
                     break;
 
-                // A use in its own content draws nothing: it is not written
-                case SceneUse use when !use.IsCircular():
+                // A use in its own content draws nothing: it is an empty group, which the uses that refer to it can draw
+                case SceneUse use when use.IsCircular():
+                    if (_pendingId is not null)
+                    {
+                        StartTag("g");
+                        output.Write("/>\n");
+                    }
+
+                    break;
+
+                case SceneUse use:
                     StartTag("use");
                     Attribute("href", "#" + (use.Content.Id ?? _contentIds[use.Content]));
                     CommonAttributes(use);
@@ -670,8 +685,21 @@ public static class SvgSceneRenderer
             if (group.ViewBox is { } viewBox)
             {
                 // A nested svg element maps its view box to its viewport, and cuts what is outside of it. A view box that
-                // draws nothing has no children.
-                if (viewBox.GetTransform() is not null)
+                // draws nothing has no children, except in definitions when a use draws one of them.
+                if (viewBox.GetTransform() is null)
+                {
+                    if (group.Children.SelectMany(SceneTree.GetDescendants).Any(_useTargets.Contains))
+                    {
+                        output.Write("<defs>\n");
+                        foreach (var child in group.Children)
+                        {
+                            WriteElement(child);
+                        }
+
+                        output.Write("</defs>\n");
+                    }
+                }
+                else
                 {
                     output.Write("<svg");
                     Attribute("x", viewBox.Viewport.X);

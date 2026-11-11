@@ -12,25 +12,53 @@ internal static class SceneTree
 
     /// <summary>
     /// Walks a scene: <c>Elements</c> as <see cref="EnumerateElements"/> gives them, and <c>Detached</c>, the contents of
-    /// the uses that the scene does not draw otherwise, in the order they are found, each once.
+    /// the uses that the scene does not draw otherwise, each once: a content inside another one is written with it, so it
+    /// is not detached itself.
     /// </summary>
     public static (List<SceneElement> Elements, List<SceneElement> Detached) Walk(SceneElement root)
     {
         var elements = new List<SceneElement>();
-        var detached = new List<SceneElement>();
         var seen = new HashSet<SceneElement>(ReferenceEqualityComparer.Instance);
         var uses = new List<SceneElement>();
         var shared = new HashSet<object>(ReferenceEqualityComparer.Instance);
         Visit(root);
 
-        // The content of a use is drawn where it is; otherwise it is detached. Its own uses are followed in turn.
+        // The contents of the uses the scene does not draw, then the contents of their own uses, in the order they are found
+        var candidates = new List<SceneElement>();
+        var candidateSet = new HashSet<SceneElement>(ReferenceEqualityComparer.Instance);
         for (var i = 0; i < uses.Count; i++)
         {
-            if (seen.Contains(uses[i]))
+            var content = uses[i];
+            if (seen.Contains(content) || !candidateSet.Add(content))
                 continue;
 
-            detached.Add(uses[i]);
-            Visit(uses[i]);
+            candidates.Add(content);
+            foreach (var descendant in GetDescendants(content))
+            {
+                if (descendant is SceneUse use)
+                {
+                    uses.Add(use.Content);
+                }
+            }
+        }
+
+        // The roots are the contents that are not inside another one
+        var nested = new HashSet<SceneElement>(ReferenceEqualityComparer.Instance);
+        foreach (var candidate in candidates)
+        {
+            foreach (var descendant in GetDescendants(candidate))
+            {
+                if (!ReferenceEquals(descendant, candidate) && candidateSet.Contains(descendant))
+                {
+                    nested.Add(descendant);
+                }
+            }
+        }
+
+        var detached = candidates.Where(candidate => !nested.Contains(candidate)).ToList();
+        foreach (var element in detached)
+        {
+            Visit(element);
         }
 
         return (elements, detached);
@@ -53,6 +81,26 @@ internal static class SceneTree
                 {
                     stack.Push(contents[i]);
                 }
+            }
+        }
+    }
+
+    /// <summary>Enumerates an element and the elements it draws (<see cref="GetContents(SceneElement)"/>), each once, without following the uses.</summary>
+    public static IEnumerable<SceneElement> GetDescendants(SceneElement root)
+    {
+        var visited = new HashSet<SceneElement>(ReferenceEqualityComparer.Instance);
+        var shared = new HashSet<object>(ReferenceEqualityComparer.Instance);
+        var stack = new Stack<SceneElement>();
+        stack.Push(root);
+        while (stack.TryPop(out var element))
+        {
+            if (!visited.Add(element))
+                continue;
+
+            yield return element;
+            foreach (var content in GetContents(element, shared))
+            {
+                stack.Push(content);
             }
         }
     }

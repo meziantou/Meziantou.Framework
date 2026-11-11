@@ -26,7 +26,11 @@ public static class TextMeasurerExtensions
         return new FamilyTextMeasurer(measurer is FamilyTextMeasurer family ? family.Inner : measurer, fontFamily);
     }
 
-    /// <summary>Measures a line of text with a letter spacing and a word spacing (<see cref="SceneText.LetterSpacing"/>, <see cref="SceneText.WordSpacing"/>).</summary>
+    /// <summary>
+    /// Measures a line of text with a letter spacing and a word spacing (<see cref="SceneText.LetterSpacing"/>,
+    /// <see cref="SceneText.WordSpacing"/>), as the renderers draw it: see
+    /// <see cref="ITextMeasurer.Measure(string, SceneFont, double, double)"/>.
+    /// </summary>
     /// <param name="measurer">The measurer.</param>
     /// <param name="text">The text, on one line.</param>
     /// <param name="font">The font.</param>
@@ -36,9 +40,7 @@ public static class TextMeasurerExtensions
     public static TextMetrics Measure(this ITextMeasurer measurer, string text, SceneFont font, double letterSpacing, double wordSpacing)
     {
         ArgumentNullException.ThrowIfNull(measurer);
-        ArgumentNullException.ThrowIfNull(text);
-        var metrics = measurer.Measure(text, font);
-        return metrics with { Width = metrics.Width + TextSpacing.GetWidth(text, letterSpacing, wordSpacing) };
+        return measurer.Measure(text, font, letterSpacing, wordSpacing);
     }
 
     /// <summary>Measures a text made of spans: the spans one after the other, on the same baseline.</summary>
@@ -91,5 +93,7 @@ public static class TextMeasurerExtensions
         public SceneFontCollection? Fonts => Inner.Fonts;
 
         public TextMetrics Measure(string text, SceneFont font) => Inner.Measure(text, font.Family is null ? font with { Family = FontFamily } : font);
+
+        public TextMetrics Measure(string text, SceneFont font, double letterSpacing, double wordSpacing) => Inner.Measure(text, font.Family is null ? font with { Family = FontFamily } : font, letterSpacing, wordSpacing);
     }
 }

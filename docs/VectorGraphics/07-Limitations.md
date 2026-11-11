@@ -53,8 +53,11 @@ The SVG, image and PDF renderers draw the same scene the same way, except in the
 
 - The spans of a text are measured and drawn one after the other: the kerning between the last letter of a span and
   the first letter of the next one is not applied.
-- A letter spacing is measured after each grapheme cluster. The renderers do not form the optional ligatures of a
-  spaced text, as browsers do, but they may still form the ligatures a script requires, which then get one spacing.
+- The renderers do not form the optional ligatures of a text with a letter spacing, as browsers do, and add the spacing
+  after each cluster of glyphs: a ligature a script requires gets one spacing. The measurers of font files
+  ([FontFaceTextMeasurer](cref:Meziantou.Framework.VectorGraphics.FontFaceTextMeasurer), the measurer of the images)
+  measure the texts the same way; [AfmTextMeasurer](cref:Meziantou.Framework.VectorGraphics.AfmTextMeasurer) adds the
+  spacing after each grapheme cluster. A browser drawing the SVG with its own fonts can space a text differently.
 
 - An image that the image or PDF renderer cannot decode is not drawn; the SVG embeds its bytes as they are.
 - A value that is not valid, such as a negative blur or a miter limit below 1, falls back to the default of SVG.

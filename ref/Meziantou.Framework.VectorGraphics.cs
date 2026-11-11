@@ -22,6 +22,7 @@ namespace Meziantou.Framework.VectorGraphics
         public FontFaceTextMeasurer(Meziantou.Framework.Fonts.FontFace regular, Meziantou.Framework.Fonts.FontFace? bold = null, string? fontFamily = null) { }
         public FontFaceTextMeasurer(Meziantou.Framework.Fonts.FontFace regular, Meziantou.Framework.Fonts.FontFace? bold, Meziantou.Framework.Fonts.FontFace? italic, Meziantou.Framework.Fonts.FontFace? boldItalic, string? fontFamily = null) { }
         public Meziantou.Framework.VectorGraphics.TextMetrics Measure(string text, Meziantou.Framework.VectorGraphics.SceneFont font) => throw null;
+        public Meziantou.Framework.VectorGraphics.TextMetrics Measure(string text, Meziantou.Framework.VectorGraphics.SceneFont font, double letterSpacing, double wordSpacing) => throw null;
     }
 
     public interface ISceneSource
@@ -34,6 +35,7 @@ namespace Meziantou.Framework.VectorGraphics
         string FontFamily { get; }
         public Meziantou.Framework.VectorGraphics.SceneFontCollection? Fonts { get => throw null; }
         Meziantou.Framework.VectorGraphics.TextMetrics Measure(string text, Meziantou.Framework.VectorGraphics.SceneFont font);
+        public Meziantou.Framework.VectorGraphics.TextMetrics Measure(string text, Meziantou.Framework.VectorGraphics.SceneFont font, double letterSpacing, double wordSpacing) => throw null;
     }
 
     public sealed class LinearGradientPaint : Meziantou.Framework.VectorGraphics.SceneGradientPaint

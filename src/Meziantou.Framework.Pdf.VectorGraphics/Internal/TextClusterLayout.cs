@@ -91,11 +91,14 @@ internal static class TextClusterLayout
 
                 var info = buffer.Info;
                 var positions = buffer.Positions;
-                var clusterStarts = new SortedSet<int>();
-                foreach (var item in info)
+                // The starts of the clusters, in logical order: a cluster ends where the next one starts
+                var clusterStarts = new int[info.Length];
+                for (var k = 0; k < info.Length; k++)
                 {
-                    clusterStarts.Add(item.Cluster);
+                    clusterStarts[k] = info[k].Cluster;
                 }
+
+                Array.Sort(clusterStarts);
 
                 for (var i = 0; i < info.Length;)
                 {
@@ -107,7 +110,7 @@ internal static class TextClusterLayout
                         end++;
                     }
 
-                    var clusterEnd = clusterStarts.GetViewBetween(cluster + 1, int.MaxValue) is { Count: > 0 } after ? after.Min : start + length;
+                    var clusterEnd = GetNextClusterStart(clusterStarts, cluster) ?? (start + length);
                     var spacing = GetSpacing(text[cluster], letterSpacing, wordSpacing);
 
                     // In a right-to-left run, the glyphs are in display order: the space goes before the cluster
@@ -136,6 +139,26 @@ internal static class TextClusterLayout
         }
 
         return (clusters, x);
+    }
+
+    // The first start greater than a cluster, by binary search
+    private static int? GetNextClusterStart(int[] sortedStarts, int cluster)
+    {
+        var (low, high) = (0, sortedStarts.Length);
+        while (low < high)
+        {
+            var middle = (low + high) / 2;
+            if (sortedStarts[middle] <= cluster)
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+
+        return low < sortedStarts.Length ? sortedStarts[low] : null;
     }
 
     private static double GetSpacing(char first, double letterSpacing, double wordSpacing) => letterSpacing + (first is ' ' or '\u00A0' ? wordSpacing : 0);

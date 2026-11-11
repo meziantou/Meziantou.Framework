@@ -531,17 +531,27 @@ public sealed class EmbeddedConstantsGeneratorTests(EmbeddedConstantsGeneratorPa
                                                ClassName="Custom"
                                                ProjectDirectory="$(MSBuildProjectDirectory)" />
               </Target>
+
+              <!-- Without ProjectDirectory, the relative path resolves against the current directory, which MSBuild moves away
+                   from the project directory only for tasks that run in-process -->
+              <Target Name="ProbeInProcessExecution" AfterTargets="GenerateWithRelativePaths">
+                <GenerateEmbeddedConstantsTask EmbeddedConstants="@(EmbeddedConstant->'%(FullPath)')"
+                                               OutputPath="InProcessProbe/Probe.g.cs"
+                                               ClassName="Probe" />
+              </Target>
             </Project>
             """);
         temporaryDirectory.CreateTextFile("multithreaded/Assets/hello.txt", "Hello");
 
         await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
 
-        // In multithreaded builds, MSBuild runs the task in-process and moves the current directory away from the project directory.
-        // MSB4287 reports files written to that directory.
-        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo", "-mt", "-warnAsError:MSB4287"], expectedExitCode: 0);
+        // In multithreaded builds, MSBuild moves the current directory of the process to a sentinel directory and reports
+        // the files written there with MSB4287. Only the probe, which does not set ProjectDirectory, writes there.
+        var result = await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo", "-mt"], expectedExitCode: 0);
 
-        Assert.DoesNotContain("MSB4287", string.Join('\n', result.Output));
+        var warnings = result.Output.Select(line => line.Text).Where(line => line.Contains("MSB4287", StringComparison.Ordinal)).ToArray();
+        Assert.NotEmpty(warnings);
+        Assert.All(warnings, warning => Assert.Contains("\"InProcessProbe\"", warning));
         Assert.Contains("public const string HelloText = \"Hello\";", await File.ReadAllTextAsync(GetGeneratedFilePath(projectDirectory), XunitCancellationToken));
         Assert.Contains("public const string HelloText = \"Hello\";", await File.ReadAllTextAsync(projectDirectory / "Relative" / "Custom.g.cs", XunitCancellationToken));
     }

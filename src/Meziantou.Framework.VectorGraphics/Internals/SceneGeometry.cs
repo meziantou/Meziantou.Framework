@@ -87,8 +87,11 @@ internal static class SceneGeometry
             case SceneImage image:
                 return new SceneBounds(image.X, image.Y, image.Width, image.Height);
 
-            // A use draws its content with its filter; a use in its own content is not drawn
+            // A use draws its content with its filter; a use in its own content draws nothing
             case SceneUse use:
+                if (use.IsCircular())
+                    return null;
+
                 s_uses ??= new(ReferenceEqualityComparer.Instance);
                 if (!s_uses.Add(use))
                     return null;

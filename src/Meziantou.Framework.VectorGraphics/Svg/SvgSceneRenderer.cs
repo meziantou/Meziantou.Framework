@@ -204,7 +204,7 @@ public static class SvgSceneRenderer
             var elementCount = 0;
             foreach (var element in elements)
             {
-                if (element is SceneUse { Content: { Id: null } content } && !_contentIds.ContainsKey(content))
+                if (element is SceneUse { Content: { Id: null } content } use && !_contentIds.ContainsKey(content) && !use.IsCircular())
                 {
                     _contentIds[content] = NextId("element", ref elementCount);
                 }
@@ -586,7 +586,8 @@ public static class SvgSceneRenderer
                     WriteText(text);
                     break;
 
-                case SceneUse use:
+                // A use in its own content draws nothing: it is not written
+                case SceneUse use when !use.IsCircular():
                     StartTag("use");
                     Attribute("href", "#" + (use.Content.Id ?? _contentIds[use.Content]));
                     CommonAttributes(use);

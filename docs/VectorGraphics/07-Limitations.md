@@ -22,12 +22,15 @@ The SVG, image and PDF renderers draw the same scene the same way, except in the
 - **Fonts.** Without the fonts of the scene, the texts are drawn with the standard Helvetica fonts, which are not
   embedded and only have the characters of Western European languages: the other characters are drawn as question
   marks. A face that cannot be embedded (a license that forbids it, CFF2 or bitmap outlines) is replaced by Helvetica.
-- The tooltips, the CSS classes and the data attributes are not drawn; the hyperlinks of the groups are link
-  annotations of the page, for absolute addresses only.
+- The tooltips, the CSS classes, the identifiers and the data attributes are not drawn; the hyperlinks of the elements
+  are link annotations of the page, for absolute addresses only. The hyperlinks of the contents of the masks, the
+  patterns and the markers are not links.
+- **Text along a path.** The decorations are drawn under each character, turned with it, rather than along the curve.
 
 ## Images
 
-- The hyperlinks, the tooltips, the CSS classes and the data attributes are not drawn.
+- The hyperlinks, the tooltips, the CSS classes, the identifiers and the data attributes are not drawn.
+- A text longer than a closed path goes around it again, where SVG does not draw the characters beyond its end.
 - Without the fonts of the scene, the texts are drawn with the embedded Liberation Sans, subset to the Latin characters.
 
 ## SVG
@@ -43,11 +46,15 @@ The SVG, image and PDF renderers draw the same scene the same way, except in the
   browsers draw them, some older viewers and editors do not.
 - The lines of a text made of spans are written on each span (a span cannot remove the lines of its parent in SVG), so
   an underline is drawn in pieces, one per span.
+- The markers turned back at the start of a path (`orient="auto-start-reverse"`) are a feature of SVG 2: some older
+  viewers draw them turned as the other markers.
 
 ## All renderers
 
 - The spans of a text are measured and drawn one after the other: the kerning between the last letter of a span and
   the first letter of the next one is not applied.
+- A letter spacing is measured after each grapheme cluster. The renderers do not form the optional ligatures of a
+  spaced text, as browsers do, but they may still form the ligatures a script requires, which then get one spacing.
 
 - An image that the image or PDF renderer cannot decode is not drawn; the SVG embeds its bytes as they are.
 - A value that is not valid, such as a negative blur or a miter limit below 1, falls back to the default of SVG.

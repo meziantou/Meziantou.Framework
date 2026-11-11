@@ -531,7 +531,7 @@ public sealed class ScenePdfRendererTests
         Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][10, 5]);
 
         var annotations = document.Pages[0].Annotations.OfType<PdfLinkAnnotation>().ToList();
-        Assert.Equal(2, annotations.Count);
+        Assert.HasCount(2, annotations);
         Assert.Equal(new Uri("https://example.com/"), annotations[0].Uri);
         Assert.Equal(30, annotations[0].Rectangle.Left, 1e-9);
         Assert.Equal(50, annotations[0].Rectangle.Right, 1e-9);

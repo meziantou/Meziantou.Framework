@@ -28,6 +28,8 @@ public static partial class VectorGraphicsFuzzTargets
 
     private static readonly string[] SvgTokens = ["<", ">", "&", "\"", "'", "\0", "\u0001", "\uFFFE", "\uFFFF", "\uD800", "\uDC00", "\U0001F600", "]]>", "-->", "javascript:", "https://", "a-b", "x"];
 
+    private static readonly string[] FeatureTokens = ["https://", "a", "id", "scene-element0", "scene-pattern0", "scene-marker0", "p1-clip0", " ", "\u00A0", "\u0301", "\u05E9", "<", "&"];
+
     private static readonly double[] PathValues = [0, 1, -1, 0.5, 2.5, 10, -10, 100, -0.0, 1e-9, 1e6, -1e6, 3.3, double.NaN, double.PositiveInfinity, double.NegativeInfinity];
 
     private static readonly double[] Widths = [0, 1, 5, 10, 20, 40, 60, 100, 200, 1000, double.PositiveInfinity, double.NaN, -1, 0.5, 3, 15];
@@ -41,6 +43,8 @@ public static partial class VectorGraphicsFuzzTargets
         new("vectorgraphics-fonts", FontsTarget) { Seeds = GetFontsSeeds, Dictionary = FontFamilyTokens },
         new("vectorgraphics-path", PathTarget) { Seeds = GetPathSeeds },
         new("vectorgraphics-curves", CurvesTarget) { Seeds = GetCurvesSeeds },
+        new("vectorgraphics-svg-features", SvgFeaturesTarget) { Seeds = GetSvgFeaturesSeeds, Dictionary = FeatureTokens },
+        new("vectorgraphics-path-measure", PathMeasureTarget) { Seeds = GetPathMeasureSeeds },
     ];
 
     /// <summary>

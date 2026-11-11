@@ -18,8 +18,10 @@ directly to draw your own graphics, or to read the layout of a chart.
 
 - **Build a scene** of shapes and texts, and write it as SVG: the output is deterministic, with a fixed number of
   decimals, numbered identifiers and one element per line, so you can compare drawings in snapshot tests. The SVG
-  has a `role="img"`, a title, a description, tooltips, CSS classes, `data-*` attributes and links. See
+  has a `role="img"`, a title, a description, tooltips, CSS classes, identifiers, `data-*` attributes and links. See
   [getting started](02-GettingStarted.md).
+- **Draw more than shapes**: gradients and patterns, markers such as arrowheads, texts along a path, spaced and
+  decorated texts, view boxes, and elements drawn again, which the SVG writes once.
 - **Draw a scene as an image** or on an existing image, at any scale, with the embedded Liberation Sans fonts. See
   [image rendering](03-ImageRendering.md).
 - **Draw a scene as PDF**, as vector shapes and text, with the fonts of the scene embedded. See

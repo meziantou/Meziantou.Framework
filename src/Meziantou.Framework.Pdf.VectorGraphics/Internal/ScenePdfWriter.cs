@@ -234,8 +234,8 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                 DrawImage(image, opacity);
                 break;
 
-            // A use draws its content again, as a whole with the opacity of the use; a use in its own content is not drawn
-            case SceneUse use when _drawingUses.Add(use):
+            // A use draws its content again, as a whole with the opacity of the use; a use in its own content draws nothing
+            case SceneUse use when !use.IsCircular() && _drawingUses.Add(use):
                 try
                 {
                     if (opacity < 1 || isolated)

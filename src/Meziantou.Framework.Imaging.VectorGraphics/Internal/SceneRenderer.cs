@@ -330,8 +330,8 @@ internal static class SceneRenderer
                 DrawImage(canvas, image);
                 break;
 
-            // A use draws its content again; a use in its own content is not drawn
-            case SceneUse use when context.EnterUse(use):
+            // A use draws its content again; a use in its own content draws nothing
+            case SceneUse use when !use.IsCircular() && context.EnterUse(use):
                 try
                 {
                     DrawElement(canvas, use.Content, context);

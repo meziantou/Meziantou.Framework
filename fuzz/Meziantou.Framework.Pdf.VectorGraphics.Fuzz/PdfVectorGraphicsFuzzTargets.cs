@@ -28,6 +28,7 @@ public static class PdfVectorGraphicsFuzzTargets
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("pdf-vectorgraphics-scene", SceneTarget) { Seeds = GetSeeds, Dictionary = Tokens },
+        new("pdf-vectorgraphics-features", FeaturesTarget) { Seeds = GetFeaturesSeeds, Dictionary = Tokens },
     ];
 
     /// <summary>
@@ -64,6 +65,41 @@ public static class PdfVectorGraphicsFuzzTargets
         FuzzAssert.True(page.Annotations.Count <= absoluteLinks, $"The page has {page.Annotations.Count} links for {absoluteLinks} groups with an absolute hyperlink");
         _ = page.ExtractText();
         using var image = page.Render(new PdfRenderOptions { Dpi = 18 });
+    }
+
+    /// <summary>
+    /// The PDF of a scene of patterns, markers, uses, view boxes, texts with a spacing or on a path, and elements with a
+    /// transform or a hyperlink (<c>FeatureSceneBuilder</c>), drawn with or without fonts, opens again with one page, its
+    /// text can be extracted and its page rendered, and drawing the scene twice gives the same file. A pattern, a marker
+    /// or a use that draws itself does not loop.
+    /// </summary>
+    private static void FeaturesTarget(ReadOnlySpan<byte> data)
+    {
+        var options = FuzzInput.ReadByte(ref data);
+        var pdfOptions = new ScenePdfOptions { Fonts = (options & 1) != 0 ? Fonts.Value : null };
+        var scene = Meziantou.Framework.VectorGraphics.Fuzz.FeatureSceneBuilder.Create(data, allowFilters: false, out _);
+        var bytes = scene.ToPdf(pdfOptions).ToByteArray();
+        FuzzAssert.True(bytes.AsSpan().SequenceEqual(Meziantou.Framework.VectorGraphics.Fuzz.FeatureSceneBuilder.Create(data, allowFilters: false, out _).ToPdf(pdfOptions).ToByteArray()), "Drawing the scene twice gives different files");
+        var reopened = PdfDocument.Open(bytes);
+        FuzzAssert.Equal(1, reopened.Pages.Count, "The document does not have one page");
+        _ = reopened.Pages[0].ExtractText();
+        using var image = reopened.Pages[0].Render(new PdfRenderOptions { Dpi = 18 });
+    }
+
+    private static IEnumerable<FuzzSeed> GetFeaturesSeeds()
+    {
+        // The scenes of the unit tests: patterns, markers, uses, view boxes, spaced texts and texts along a path, with and without fonts
+        byte[][] seeds =
+        [
+            [0, 0, 3, 0, 0 | 4 | 16, 4, 0, 1, 4 | 8 | 16, 0, 2, 4 | 8, 0],
+            [1, 3, 5, .. "Spaced and overlined"u8, 0, 4, 0, .. "Text along a path"u8, 0, 4, 1, .. "around"u8, 0],
+            [0, 5, 4, 0, 0, 3, 0, 6, 0, 0, 7 | 32, 1, 0, 7 | 16, 0, 0, 7, 5, .. "https://example.com/"u8, 0],
+            [1, 9, 7, .. "https://example.com/"u8, 0, 0x80 | 11, 1, .. "link"u8, 0, 8, 3, .. "https://example.com/"u8, 0],
+        ];
+        for (var i = 0; i < seeds.Length; i++)
+        {
+            yield return new FuzzSeed("features-" + i.ToString(CultureInfo.InvariantCulture), seeds[i]);
+        }
     }
 
     private static Scene CreateScene(ReadOnlySpan<byte> data, out int absoluteLinks, out bool hasFilter)

@@ -619,6 +619,7 @@ namespace Meziantou.Framework.VectorGraphics
     {
         public Meziantou.Framework.VectorGraphics.SceneElement Content { get => throw null; }
         public SceneUse(Meziantou.Framework.VectorGraphics.SceneElement content) { }
+        public bool IsCircular() => throw null;
     }
 
     public sealed class SceneViewBox : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneViewBox>

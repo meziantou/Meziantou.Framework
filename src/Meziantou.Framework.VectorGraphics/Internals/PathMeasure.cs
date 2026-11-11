@@ -18,6 +18,12 @@ internal sealed class PathMeasure
 
     public PathMeasure(PathData path)
     {
+        // The first point of the path, also when the cubic curves omit its commands (an arc that ends where it starts)
+        if (!path.IsEmpty)
+        {
+            _firstPoint = path.Commands[0].Kind is PathCommandKind.MoveTo ? (path.Commands[0].X, path.Commands[0].Y) : (0, 0);
+        }
+
         var (x, y) = (0.0, 0.0);
         var (startX, startY) = (0.0, 0.0);
         foreach (var command in path.ToCubicCurves().Commands)
@@ -27,7 +33,6 @@ internal sealed class PathMeasure
                 case PathCommandKind.MoveTo:
                     (x, y) = (command.X, command.Y);
                     (startX, startY) = (x, y);
-                    _firstPoint ??= (x, y);
                     break;
 
                 case PathCommandKind.LineTo:
@@ -45,9 +50,6 @@ internal sealed class PathMeasure
                     (x, y) = (startX, startY);
                     break;
             }
-
-            // A path that starts without a move starts at the origin, as the renderers draw it
-            _firstPoint ??= (0, 0);
         }
     }
 

@@ -278,7 +278,7 @@ public sealed class SvgSceneRendererTests
         offset.Content.Add(new SceneRectangle(5, 5, 5, 5) { Fill = offset, Id = "inner" });
         var offsetSvg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 10, 10) { Stroke = offset }));
         Assert.Contains("<pattern id=\"scene-pattern0\" patternUnits=\"userSpaceOnUse\" x=\"5\" y=\"5\" width=\"10\" height=\"10\" viewBox=\"5 5 10 10\">\n<g>\n<rect id=\"inner\" x=\"5\" y=\"5\" width=\"5\" height=\"5\" fill=\"url(#scene-pattern0)\"/>", offsetSvg, StringComparison.Ordinal);
-        Assert.Single(System.Text.RegularExpressions.Regex.Matches(offsetSvg, "<pattern "));
+        Assert.Equal(1, CountOccurrences(offsetSvg, "<pattern "));
         Assert.Contains("stroke=\"url(#scene-pattern0)\"", offsetSvg, StringComparison.Ordinal);
     }
 
@@ -471,6 +471,8 @@ public sealed class SvgSceneRendererTests
         Assert.Equal(new SceneBounds(40, 10, 20, 20), group.GetBounds(_ => null, applyClips: false));
     }
 
+    private static int CountOccurrences(string text, string value) => (text.Length - text.Replace(value, "", StringComparison.Ordinal).Length) / value.Length;
+
     private static Scene Single(SceneElement element)
     {
         var scene = new Scene(10, 10, "sans-serif");
@@ -558,7 +560,7 @@ public sealed class SvgSceneRendererTests
         // A marker drawn on a shape of its own content is not drawn again
         var recursive = new SceneMarker();
         recursive.Content.Add(new SceneLine(0, 0, 1, 0) { Stroke = SceneColor.Black, MarkerEnd = recursive });
-        Assert.Single(System.Text.RegularExpressions.Regex.Matches(SvgSceneRenderer.Render(Single(new SceneLine(0, 0, 1, 0) { MarkerEnd = recursive })), "<marker "));
+        Assert.Equal(1, CountOccurrences(SvgSceneRenderer.Render(Single(new SceneLine(0, 0, 1, 0) { MarkerEnd = recursive })), "<marker "));
         Assert.NotNull(new SceneLine(0, 0, 1, 0) { MarkerEnd = recursive }.GetBounds(_ => null));
     }
 
@@ -581,7 +583,7 @@ public sealed class SvgSceneRendererTests
 
         // The tangents of curves, and a segment without length that keeps the previous direction
         var curve = new PathBuilder().MoveTo(0, 0).CubicTo(0, 10, 10, 10, 10, 0).LineTo(10, 0).QuadraticTo(20, 0, 20, 10).Build().GetVertices();
-        Assert.Equal([90, -90, -45, 90], curve.Select(vertex => Math.Round(vertex.Angle, 6)));
+        Assert.Equal([90, -90, -45, 90], curve.Select(vertex => Math.Round(vertex.Angle, 6, MidpointRounding.AwayFromZero)));
 
         // Without a move, the path starts at the origin; an empty path has no vertex
         Assert.Equal([new PathPoint(0, 0, 0), new PathPoint(5, 0, 0)], new PathBuilder().LineTo(5, 0).Build().GetVertices());
@@ -605,10 +607,10 @@ public sealed class SvgSceneRendererTests
     public void TextOnAPath()
     {
         #region VectorGraphics_TextOnPath
-        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+        var scene = new Scene(width: 200, height: 110, fontFamily: "sans-serif");
 
         // The text follows the arc, centered on its middle
-        var arc = new PathBuilder().MoveTo(20, 90).ArcTo(80, 80, 0, largeArc: false, sweep: true, 180, 90).Build();
+        var arc = new PathBuilder().MoveTo(20, 105).ArcTo(80, 80, 0, largeArc: false, sweep: true, 180, 105).Build();
         scene.Root.Add(new ScenePath(arc) { Stroke = (SceneColor)"#cbd5e1" });
         scene.Root.Add(new SceneText(0, 0, "Text along a path", new SceneFont(16), SceneColor.Black)
         {
@@ -621,7 +623,7 @@ public sealed class SvgSceneRendererTests
         #endregion
 
         DocumentationImages.AssertSvg("TextOnPath", svg);
-        Assert.Contains("<path id=\"scene-textpath0\" d=\"M20,90 A80,80 0 0,1 180,90\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<path id=\"scene-textpath0\" d=\"M20,105 A80,80 0 0,1 180,105\"/>", svg, StringComparison.Ordinal);
         Assert.Contains("<text text-anchor=\"middle\" font-size=\"16\"", svg, StringComparison.Ordinal);
         Assert.Contains("><textPath href=\"#scene-textpath0\" startOffset=\"", svg, StringComparison.Ordinal);
         Assert.Contains("\">Text along a path</textPath></text>", svg, StringComparison.Ordinal);
@@ -820,19 +822,24 @@ public sealed class SvgSceneRendererTests
         Assert.Contains("<use href=\"#scene-element0\" transform=\"translate(80 30)\"/>", svg, StringComparison.Ordinal);
         Assert.Contains("<circle id=\"dot\" cx=\"0\" cy=\"0\" r=\"10\" fill=\"#0369a1\" transform=\"translate(180 15)\"/>", svg, StringComparison.Ordinal);
         Assert.Contains("<use href=\"#dot\" transform=\"matrix(0.5 0 0 0.5 90 22.5)\"/>", svg, StringComparison.Ordinal);
-        Assert.Single(System.Text.RegularExpressions.Regex.Matches(svg, "<path "));
+        Assert.Equal(1, CountOccurrences(svg, "<path "));
 
         // The bounds of a use are the bounds of its content, transformed by the use
         Assert.Equal(new SceneBounds(175, 25, 10, 10), new SceneUse(circle) { Transform = SceneTransform.Scale(0.5, 0.5, 180, 45) }.GetBounds(_ => null));
 
-        // A use in its own content is not drawn; the identifier of a linked content is on its link
+        // A use in its own content draws nothing, as in SVG; the identifier of a linked content is on its link
         var group = new SceneGroup { Hyperlink = "https://example.com/" };
         group.Add(new SceneRectangle(0, 0, 5, 5) { Fill = SceneColor.Black });
-        group.Add(new SceneUse(group));
+        var inner = group.Add(new SceneUse(group));
         var cycle = new Scene(10, 10, "sans-serif");
-        cycle.Root.Add(new SceneUse(group));
+        var outer = cycle.Root.Add(new SceneUse(group));
+        var root = cycle.Root.Add(new SceneUse(cycle.Root));
+        Assert.True(inner.IsCircular());
+        Assert.True(root.IsCircular());
+        Assert.False(outer.IsCircular());
         var cycleSvg = SvgSceneRenderer.Render(cycle);
         Assert.Contains("<defs>\n<a id=\"scene-element0\" href=\"https://example.com/\">", cycleSvg, StringComparison.Ordinal);
+        Assert.Equal(1, CountOccurrences(cycleSvg, "<use "));
         Assert.Equal(new SceneBounds(0, 0, 5, 5), new SceneUse(group).GetBounds(_ => null));
         Assert.Throws<ArgumentNullException>("content", () => new SceneUse(null!));
     }

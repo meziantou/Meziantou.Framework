@@ -57,7 +57,10 @@ internal static class SceneTree
         }
     }
 
-    // The elements an element draws, in order: its mask, the patterns of its paints, its children
+    /// <summary>Gets the elements an element draws, in order: its mask, the patterns of its paints, its markers, its children; not the content of a use.</summary>
+    public static List<SceneElement> GetContents(SceneElement element) => GetContents(element, new HashSet<object>(ReferenceEqualityComparer.Instance));
+
+    // The elements an element draws, in order: its mask, the patterns of its paints, its markers, its children
     private static List<SceneElement> GetContents(SceneElement element, HashSet<object> patterns)
     {
         var contents = new List<SceneElement>();

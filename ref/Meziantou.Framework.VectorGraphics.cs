@@ -509,6 +509,16 @@ namespace Meziantou.Framework.VectorGraphics
         public static implicit operator Meziantou.Framework.VectorGraphics.ScenePaint(Meziantou.Framework.VectorGraphics.SceneColor color) => throw null;
     }
 
+    public enum ScenePaintOrder
+    {
+        FillStrokeMarkers = 0,
+        FillMarkersStroke = 1,
+        StrokeFillMarkers = 2,
+        StrokeMarkersFill = 3,
+        MarkersFillStroke = 4,
+        MarkersStrokeFill = 5,
+    }
+
     public sealed class ScenePath : Meziantou.Framework.VectorGraphics.SceneShape
     {
         public Meziantou.Framework.VectorGraphics.PathData Data { get => throw null; }
@@ -535,6 +545,7 @@ namespace Meziantou.Framework.VectorGraphics
         public Meziantou.Framework.VectorGraphics.SceneLineCap LineCap { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneLineJoin LineJoin { get => throw null; set { } }
         public double MiterLimit { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.ScenePaintOrder PaintOrder { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.ScenePaint? Stroke { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<double>? StrokeDashArray { get => throw null; set { } }
         public double StrokeDashOffset { get => throw null; set { } }

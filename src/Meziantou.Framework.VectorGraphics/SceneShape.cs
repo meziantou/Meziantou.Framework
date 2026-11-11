@@ -37,4 +37,10 @@ public abstract class SceneShape : SceneElement
 
     /// <summary>Gets or sets the shape of the corners of outlines.</summary>
     public SceneLineJoin LineJoin { get; set; }
+
+    /// <summary>
+    /// Gets or sets the order in which the fill, the stroke and the markers are painted, as the SVG <c>paint-order</c>
+    /// property. The default is the fill, then the stroke, then the markers.
+    /// </summary>
+    public ScenePaintOrder PaintOrder { get; set; }
 }

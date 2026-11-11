@@ -17,6 +17,8 @@ namespace Meziantou.Framework.VectorGraphics
     public sealed class FontFaceTextMeasurer : Meziantou.Framework.VectorGraphics.ITextMeasurer
     {
         public string FontFamily { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneFontCollection? Fonts { get => throw null; }
+        public FontFaceTextMeasurer(Meziantou.Framework.VectorGraphics.SceneFontCollection fonts) { }
         public FontFaceTextMeasurer(Meziantou.Framework.Fonts.FontFace regular, Meziantou.Framework.Fonts.FontFace? bold = null, string? fontFamily = null) { }
         public FontFaceTextMeasurer(Meziantou.Framework.Fonts.FontFace regular, Meziantou.Framework.Fonts.FontFace? bold, Meziantou.Framework.Fonts.FontFace? italic, Meziantou.Framework.Fonts.FontFace? boldItalic, string? fontFamily = null) { }
         public Meziantou.Framework.VectorGraphics.TextMetrics Measure(string text, Meziantou.Framework.VectorGraphics.SceneFont font) => throw null;
@@ -30,6 +32,7 @@ namespace Meziantou.Framework.VectorGraphics
     public interface ITextMeasurer
     {
         string FontFamily { get; }
+        public Meziantou.Framework.VectorGraphics.SceneFontCollection? Fonts { get => throw null; }
         Meziantou.Framework.VectorGraphics.TextMetrics Measure(string text, Meziantou.Framework.VectorGraphics.SceneFont font);
     }
 
@@ -104,6 +107,7 @@ namespace Meziantou.Framework.VectorGraphics
         public Meziantou.Framework.VectorGraphics.SceneColor? Background { get => throw null; set { } }
         public string? Description { get => throw null; set { } }
         public string FontFamily { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneFontCollection? Fonts { get => throw null; set { } }
         public double Height { get => throw null; }
         public Meziantou.Framework.VectorGraphics.SceneGroup Root { get => throw null; }
         public string? Title { get => throw null; set { } }
@@ -192,10 +196,11 @@ namespace Meziantou.Framework.VectorGraphics
     public readonly struct SceneFont : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneFont>
     {
         public bool Bold { get => throw null; init { } }
+        public string? Family { get => throw null; init { } }
         public bool Italic { get => throw null; init { } }
         public double Size { get => throw null; init { } }
-        public SceneFont(double Size, bool Bold = false, bool Italic = false) { }
-        public void Deconstruct(out double Size, out bool Bold, out bool Italic) => throw null;
+        public SceneFont(double Size, bool Bold = false, bool Italic = false, string? Family = null) { }
+        public void Deconstruct(out double Size, out bool Bold, out bool Italic, out string? Family) => throw null;
         public bool Equals(Meziantou.Framework.VectorGraphics.SceneFont other) => throw null;
         #nullable disable
         public override bool Equals(object obj) => throw null;
@@ -206,6 +211,33 @@ namespace Meziantou.Framework.VectorGraphics
         #nullable restore
         public static bool operator ==(Meziantou.Framework.VectorGraphics.SceneFont left, Meziantou.Framework.VectorGraphics.SceneFont right) => throw null;
         public static bool operator !=(Meziantou.Framework.VectorGraphics.SceneFont left, Meziantou.Framework.VectorGraphics.SceneFont right) => throw null;
+    }
+
+    public sealed class SceneFontCollection
+    {
+        public string DefaultFamily { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneFontFace> Faces { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Families { get => throw null; }
+        public string FontFamily { get => throw null; }
+        public SceneFontCollection(params System.Collections.Generic.IEnumerable<Meziantou.Framework.VectorGraphics.SceneFontFace> faces) { }
+        public SceneFontCollection(System.Collections.Generic.IEnumerable<Meziantou.Framework.VectorGraphics.SceneFontFace> faces, string? defaultFamily) { }
+        public bool ContainsFamily(string family) => throw null;
+        public Meziantou.Framework.VectorGraphics.SceneFontFace GetFace(Meziantou.Framework.VectorGraphics.SceneFont font, string? defaultFamily = null) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneFontFace> GetFaces(Meziantou.Framework.VectorGraphics.SceneFont font, string? defaultFamily = null) => throw null;
+        public static Meziantou.Framework.VectorGraphics.SceneFontCollection Load(params System.Collections.Generic.IEnumerable<string> paths) => throw null;
+    }
+
+    public sealed class SceneFontFace
+    {
+        public System.ReadOnlyMemory<byte> Data { get => throw null; }
+        public string FamilyName { get => throw null; }
+        public int Index { get => throw null; }
+        public bool IsItalic { get => throw null; }
+        public int Weight { get => throw null; }
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneFontFace> Load(System.IO.Stream stream) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneFontFace> Load(System.ReadOnlySpan<byte> data) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneFontFace> Load(string path) => throw null;
+        public override string ToString() => throw null;
     }
 
     public readonly struct SceneGradientStop : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneGradientStop>
@@ -345,6 +377,7 @@ namespace Meziantou.Framework.VectorGraphics
 
     public sealed class SvgRenderOptions
     {
+        public bool EmbedFonts { get => throw null; set { } }
         public string IdPrefix { get => throw null; set { } }
         public bool IncludeNamespace { get => throw null; set { } }
         public int Precision { get => throw null; set { } }
@@ -361,6 +394,11 @@ namespace Meziantou.Framework.VectorGraphics
         public const string Ellipsis = "…";
         public static string? Truncate(Meziantou.Framework.VectorGraphics.ITextMeasurer measurer, string text, Meziantou.Framework.VectorGraphics.SceneFont font, double maxWidth) => throw null;
         public static System.Collections.Generic.IReadOnlyList<string> Wrap(Meziantou.Framework.VectorGraphics.ITextMeasurer measurer, string text, Meziantou.Framework.VectorGraphics.SceneFont font, double maxWidth) => throw null;
+    }
+
+    public static class TextMeasurerExtensions
+    {
+        public static Meziantou.Framework.VectorGraphics.ITextMeasurer WithFontFamily(this Meziantou.Framework.VectorGraphics.ITextMeasurer measurer, string? fontFamily) => throw null;
     }
 
     public readonly struct TextMetrics : System.IEquatable<Meziantou.Framework.VectorGraphics.TextMetrics>

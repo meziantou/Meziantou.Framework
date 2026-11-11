@@ -53,8 +53,9 @@ internal sealed class PlotRenderer
 
         _color = ScaleResolver.ResolveColor(plot.ColorScale, Collect(data => [data.Fill, data.Stroke, .. data.ExtraColor]), _theme);
         _size = ScaleResolver.ResolveSize(plot.SizeScale, Collect(data => [data.Size]));
-        _scene = new Scene(plot.Width, plot.Height, _theme.FontFamily ?? measurer.FontFamily)
+        _scene = new Scene(plot.Width, plot.Height, _measurer.FontFamily)
         {
+            Fonts = _measurer.Fonts,
             Title = plot.Title,
             Description = plot.Description,
             Background = _theme.Background,
@@ -68,7 +69,8 @@ internal sealed class PlotRenderer
     public static Scene Render(Plot plot, ITextMeasurer measurer)
     {
         ArgumentNullException.ThrowIfNull(measurer);
-        return new PlotRenderer(plot, measurer).Render();
+        // The texts are measured with the family of the theme, so the scene draws them with the family that measured them
+        return new PlotRenderer(plot, measurer.WithFontFamily(plot.Theme.FontFamily)).Render();
     }
 
     private Scene Render()

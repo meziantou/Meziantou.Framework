@@ -103,12 +103,15 @@ public static class SceneImageRenderer
         return new RectangleD(position.X, position.Y, scene.Width * options.Scale, scene.Height * options.Scale);
     }
 
-    /// <summary>Creates the text measurer of the fonts of the options, to lay a source out with <see cref="ISceneSource.CreateScene"/>.</summary>
+    /// <summary>Creates the text measurer of the fonts of the options (<see cref="SceneImageOptions.Fonts"/>, or the fonts of each style), to lay a source out with <see cref="ISceneSource.CreateScene"/>.</summary>
     /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
     /// <returns>The measurer.</returns>
     public static ImageTextMeasurer CreateMeasurer(SceneImageOptions? options = null)
     {
         options ??= new SceneImageOptions();
+        if (options.Fonts is { } fonts)
+            return new ImageTextMeasurer(fonts);
+
         return new ImageTextMeasurer(
             options.GetFont(new SceneFont(1)),
             options.GetFont(new SceneFont(1, Bold: true)),

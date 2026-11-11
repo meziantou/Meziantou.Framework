@@ -213,7 +213,8 @@ public sealed class ChartImageTests
         Assert.Throws<ArgumentNullException>("scene", () => ((Scene)null!).ToImage());
         Assert.Throws<ArgumentNullException>("source", () => SceneImageRenderer.MeasureScene((ISceneSource)null!));
         Assert.Throws<ArgumentNullException>("scene", () => SceneImageRenderer.MeasureScene((Scene)null!));
-        Assert.Throws<ArgumentNullException>("regular", () => new ImageTextMeasurer(null!));
+        Assert.Throws<ArgumentNullException>("regular", () => new ImageTextMeasurer((Meziantou.Framework.Imaging.Typography.Font)null!));
+        Assert.Throws<ArgumentNullException>("fonts", () => new ImageTextMeasurer((SceneFontCollection)null!));
         Assert.Throws<ArgumentNullException>("text", () => SceneImageRenderer.CreateMeasurer().Measure(null!, new SceneFont(12)));
     }
 

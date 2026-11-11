@@ -11,4 +11,11 @@ public interface ITextMeasurer
     /// <param name="font">The size, the weight and the style of the font.</param>
     /// <returns>The dimensions of the text.</returns>
     TextMetrics Measure(string text, SceneFont font);
+
+    /// <summary>
+    /// Gets the fonts the text is measured with, or <see langword="null"/> when the measurer does not have font files (for
+    /// instance, the metrics of <see cref="AfmTextMeasurer"/>). A chart or a diagram sets them as the fonts of its scene
+    /// (<see cref="Scene.Fonts"/>), so the renderers draw the text with the fonts that measured it.
+    /// </summary>
+    SceneFontCollection? Fonts => null;
 }

@@ -37,9 +37,11 @@ public static class SvgSceneRenderer
     {
         private readonly Dictionary<object, string> _ids = new(ReferenceEqualityComparer.Instance);
         private readonly int _precision = options.Precision;
+        private Scene _scene = null!;
 
         public void Write(Scene scene)
         {
+            _scene = scene;
             output.Write("<svg");
             if (options.IncludeNamespace)
             {
@@ -50,7 +52,7 @@ public static class SvgSceneRenderer
             Attribute("height", scene.Height);
             Attribute("viewBox", "0 0 " + Number(scene.Width) + " " + Number(scene.Height));
             Attribute("role", "img");
-            Attribute("font-family", scene.FontFamily);
+            Attribute("font-family", FamilyList(scene.FontFamily));
             output.Write(">\n");
             if (!string.IsNullOrEmpty(scene.Title))
             {
@@ -66,7 +68,7 @@ public static class SvgSceneRenderer
                 output.Write("</desc>\n");
             }
 
-            WriteDefinitions(scene.Root);
+            WriteDefinitions(scene.Root, options.EmbedFonts && scene.Fonts is { } fonts ? GetFontFaceRules(scene, fonts) : null);
             if (scene.Background is { } background)
             {
                 output.Write("<rect");
@@ -84,9 +86,14 @@ public static class SvgSceneRenderer
             output.Write("</svg>\n");
         }
 
-        private void WriteDefinitions(SceneGroup root)
+        private void WriteDefinitions(SceneGroup root, string? fontFaceRules)
         {
             var definitions = new StringBuilder();
+            if (!string.IsNullOrEmpty(fontFaceRules))
+            {
+                definitions.Append("<style>").Append(Escape(fontFaceRules)).Append("</style>\n");
+            }
+
             var gradientCount = 0;
             var clipCount = 0;
             Visit(root);
@@ -276,6 +283,11 @@ public static class SvgSceneRenderer
                     break;
             }
 
+            if (text.Font.Family is { } family && !string.Equals(family, _scene.FontFamily, StringComparison.Ordinal))
+            {
+                Attribute("font-family", FamilyList(family));
+            }
+
             Attribute("font-size", text.Font.Size);
             if (text.Font.Bold)
             {
@@ -431,6 +443,98 @@ public static class SvgSceneRenderer
                 return "translate(" + Number(transform.E) + " " + Number(transform.F) + ")";
 
             return "matrix(" + string.Join(' ', new[] { transform.A, transform.B, transform.C, transform.D, transform.E, transform.F }.Select(value => SvgNumber.Format(value, Math.Max(_precision, 6)))) + ")";
+        }
+
+        // With fonts, the other families of the collection follow the requested ones, so a viewer looks for the
+        // characters a family does not have in the same faces as the layout
+        private string FamilyList(string requested)
+        {
+            if (_scene.Fonts is not { } fonts)
+                return requested;
+
+            var names = CssFontFamily.Parse(requested);
+            var others = fonts.Families.Where(family => !names.Contains(family, StringComparer.OrdinalIgnoreCase)).ToList();
+            if (others.Count is 0)
+                return requested;
+
+            return requested.Trim().Length is 0 ? CssFontFamily.Format(others) : requested + ", " + CssFontFamily.Format(others);
+        }
+
+        private static string GetFontFaceRules(Scene scene, SceneFontCollection fonts)
+        {
+            var used = new HashSet<SceneFontFace>();
+            Visit(scene.Root);
+            var rules = new StringBuilder();
+            foreach (var face in fonts.Faces)
+            {
+                if (!used.Contains(face) || face.FaceCount > 1 || GetMediaType(face.Data.Span) is not { } mediaType)
+                    continue;
+
+                rules.Append("@font-face{font-family:").Append(CssString(face.FamilyName))
+                    .Append(";font-weight:").Append(face.Weight.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                    .Append(";font-style:").Append(face.IsItalic ? "italic" : "normal")
+                    .Append(";src:url(data:").Append(mediaType).Append(";base64,").Append(Convert.ToBase64String(face.Data.Span)).Append(")}\n");
+            }
+
+            return rules.ToString();
+
+            void Visit(SceneElement element)
+            {
+                switch (element)
+                {
+                    case SceneGroup group:
+                        foreach (var child in group.Children)
+                        {
+                            Visit(child);
+                        }
+
+                        break;
+
+                    case SceneText text:
+                        foreach (var (_, face) in SceneFontCollection.SplitRuns(text.Text, fonts.GetFaces(text.Font, scene.FontFamily)))
+                        {
+                            used.Add(face);
+                        }
+
+                        break;
+                }
+            }
+        }
+
+        private static string? GetMediaType(ReadOnlySpan<byte> data)
+        {
+            return data.Length < 4 ? null : (data[0], data[1], data[2], data[3]) switch
+            {
+                ((byte)'w', (byte)'O', (byte)'F', (byte)'2') => "font/woff2",
+                ((byte)'w', (byte)'O', (byte)'F', (byte)'F') => "font/woff",
+                ((byte)'O', (byte)'T', (byte)'T', (byte)'O') => "font/otf",
+                (0, 1, 0, 0) or ((byte)'t', (byte)'r', (byte)'u', (byte)'e') => "font/ttf",
+                _ => null,
+            };
+        }
+
+        // A CSS string: the quotes, the backslashes and the control characters are escaped. The XML escaping of the
+        // style element handles the other characters
+        private static string CssString(string value)
+        {
+            var builder = new StringBuilder(value.Length + 2).Append('"');
+            foreach (var c in value)
+            {
+                if (c is '"' or '\\')
+                {
+                    builder.Append('\\').Append(c);
+                }
+                else if (char.IsControl(c))
+                {
+                    builder.Append('\\').Append(((int)c).ToString("x", System.Globalization.CultureInfo.InvariantCulture)).Append(' ');
+                }
+                else
+                {
+                    builder.Append(c);
+                }
+            }
+
+            return builder.Append('"').ToString();
         }
 
         private void Attribute(string name, double value) => Attribute(name, Number(value));

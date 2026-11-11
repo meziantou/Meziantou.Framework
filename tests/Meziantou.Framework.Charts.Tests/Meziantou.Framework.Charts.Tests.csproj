@@ -10,6 +10,7 @@
   <ItemGroup>
     <!-- An OFL font for the tests of FontFaceTextMeasurer: the Liberation Sans subset of Meziantou.Framework.Pdf -->
     <None Include="../../src/Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationSans-Regular.woff2" Link="TestData/LiberationSans-Regular.woff2" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../src/Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationMono-Regular.woff2" Link="TestData/LiberationMono-Regular.woff2" CopyToOutputDirectory="PreserveNewest" />
     <!-- The countries of Natural Earth (public domain), at 1:110m, reduced to a few properties: the data of the map tests -->
     <None Update="TestData/countries-110m.geojson" CopyToOutputDirectory="PreserveNewest" />
     <!-- The map bundle of Switzerland of the tests of Meziantou.Framework.Geo.Maps, in a maps folder next to the tests, as the packages of bundles copy it -->

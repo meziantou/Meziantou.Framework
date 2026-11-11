@@ -9,7 +9,7 @@ internal static class SceneRenderer
 {
     public static void Draw(DrawingCanvas canvas, Scene scene, PointD position, SceneImageOptions options)
     {
-        var context = new DrawContext(options, CreateBrushCache());
+        var context = new DrawContext(options, CreateBrushCache()) { Fonts = scene.Fonts ?? options.Fonts, FontFamily = scene.FontFamily };
         var transform = AffineTransform.CreateScale(options.Scale, options.Scale).Then(AffineTransform.CreateTranslation(position.X, position.Y));
         canvas.Transform(transform, (scene, context), static (canvas, state) =>
         {
@@ -208,8 +208,9 @@ internal static class SceneRenderer
         if (text.Text.Length is 0)
             return;
 
-        var font = context.Options.GetFont(text.Font);
-        var layout = TextLayout.Create(text.Text, font, text.Font.Size);
+        var layout = context.Fonts is { } fonts
+            ? TextLayout.Create(text.Text, new TextStyle(SceneFontCache.GetStack(fonts, text.Font, context.FontFamily), text.Font.Size))
+            : TextLayout.Create(text.Text, context.Options.GetFont(text.Font), text.Font.Size);
         var x = text.Anchor switch
         {
             SceneTextAnchor.Middle => text.X - (layout.Width / 2),
@@ -252,6 +253,12 @@ internal static class SceneRenderer
     internal sealed class DrawContext(SceneImageOptions options, Dictionary<ScenePaint, Brush> brushes)
     {
         public SceneImageOptions Options { get; } = options;
+
+        /// <summary>Gets the fonts that draw the texts, or <see langword="null"/> to draw them with the fonts of each style of <see cref="Options"/>.</summary>
+        public SceneFontCollection? Fonts { get; init; }
+
+        /// <summary>Gets the family of the texts that name none (<see cref="Scene.FontFamily"/>).</summary>
+        public string? FontFamily { get; init; }
 
         public Brush GetBrush(ScenePaint paint)
         {

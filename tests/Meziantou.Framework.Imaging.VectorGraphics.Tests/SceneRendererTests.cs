@@ -185,6 +185,61 @@ public sealed class SceneRendererTests
         Assert.Same(SceneFonts.SansBold, SceneImageRenderer.CreateMeasurer(options).GetFont(new SceneFont(10, Bold: true, Italic: true)));
     }
 
+    private static SceneFontFace LoadFace(string fileName) => SceneFontFace.Load(Path.Combine(AppContext.BaseDirectory, "TestData", fileName))[0];
+
+    [Fact]
+    public void EachTextIsDrawnWithTheFamilyOfTheFonts()
+    {
+        var fonts = new SceneFontCollection(LoadFace("LiberationSans-Regular.woff2"), LoadFace("LiberationMono-Regular.woff2"));
+        var measurer = new ImageTextMeasurer(fonts);
+        Assert.Same(fonts, measurer.Fonts);
+        Assert.Equal("Liberation Sans, Liberation Mono", measurer.FontFamily);
+
+        // The widths are the ones the measurer of VectorGraphics gives with the same fonts
+        var mono = new SceneFont(20, Family: "Liberation Mono");
+        Assert.Equal(new FontFaceTextMeasurer(fonts).Measure("iiiii", mono).Width, measurer.Measure("iiiii", mono).Width, 0.01);
+        Assert.Equal(new FontFaceTextMeasurer(fonts).Measure("iiiii", new SceneFont(20)).Width, measurer.Measure("iiiii", new SceneFont(20)).Width, 0.01);
+
+        // The scene draws the first text with Liberation Sans and the second with Liberation Mono: 'i' is 0.6 em wide in Liberation Mono
+        var scene = new Scene(200, 60, measurer.FontFamily) { Fonts = fonts };
+        scene.Root.Add(new SceneText(0, 25, "iiiii", new SceneFont(20), SceneColor.Black));
+        scene.Root.Add(new SceneText(0, 55, "iiiii", mono, SceneColor.Black));
+        using var image = scene.ToImage();
+        var (_, _, sansRight, _) = GetInkBounds(image, 0, 0, 200, 30);
+        var (_, _, monoRight, _) = GetInkBounds(image, 0, 30, 200, 60);
+        Assert.InRange(sansRight, 15, 25);
+        Assert.InRange(monoRight, 50, 60);
+
+        // The fonts of the options draw a scene that has none
+        scene.Fonts = null;
+        using var withOptions = scene.ToImage(new SceneImageOptions { Fonts = fonts });
+        Assert.Equal(monoRight, GetInkBounds(withOptions, 0, 30, 200, 60).Right);
+        Assert.Same(fonts, SceneImageRenderer.CreateMeasurer(new SceneImageOptions { Fonts = fonts }).Fonts);
+        Assert.Null(SceneImageRenderer.CreateMeasurer().Fonts);
+    }
+
+    [Fact]
+    public void CharactersAFamilyDoesNotHaveAreDrawnWithTheNextFamily()
+    {
+        var sans = LoadFace("LiberationSans-Regular.woff2");
+        var fonts = new SceneFontCollection(sans, LoadFace("NotoSansThai-Regular.ttf"));
+        const string Text = "ab \u0E2A\u0E27\u0E31\u0E2A\u0E14\u0E35";
+        var font = new SceneFont(20);
+        Assert.Equal(new FontFaceTextMeasurer(fonts).Measure(Text, font).Width, new ImageTextMeasurer(fonts).Measure(Text, font).Width, 0.01);
+
+        // Liberation Sans alone draws missing glyphs, which are not the Thai glyphs
+        Image<Rgba32> Draw(SceneFontCollection collection)
+        {
+            var scene = new Scene(200, 40, collection.FontFamily) { Fonts = collection };
+            scene.Root.Add(new SceneText(0, 30, Text, font, SceneColor.Black));
+            return scene.ToImage();
+        }
+
+        using var withFallback = Draw(fonts);
+        using var withoutFallback = Draw(new SceneFontCollection(sans));
+        Assert.NotEqual(GetInkBounds(withFallback, 30, 0, 200, 40), GetInkBounds(withoutFallback, 30, 0, 200, 40));
+    }
+
     [Fact]
     public void SourcesAreLaidOutWithTheFontsOfTheImage()
     {

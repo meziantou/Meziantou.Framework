@@ -9,6 +9,11 @@
   <ItemGroup>
     <!-- The inputs of the unit tests seed the targets -->
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.VectorGraphics.Tests\TextMeasurerTests.cs" LogicalName="TextMeasurerTests.cs" Link="Seeds\TextMeasurerTests.cs" />
+    <!-- OFL fonts: the fonts of the scenes, and the seeds of the font files -->
+    <EmbeddedResource Include="..\..\src\Meziantou.Framework.Pdf\Rendering\Fonts\Substitution\LiberationSans-Regular.woff2" LogicalName="LiberationSans-Regular.woff2" Link="Seeds\LiberationSans-Regular.woff2" />
+    <EmbeddedResource Include="..\..\src\Meziantou.Framework.Pdf\Rendering\Fonts\Substitution\LiberationSans-Bold.woff2" LogicalName="LiberationSans-Bold.woff2" Link="Seeds\LiberationSans-Bold.woff2" />
+    <EmbeddedResource Include="..\..\src\Meziantou.Framework.Pdf\Rendering\Fonts\Substitution\LiberationMono-Regular.woff2" LogicalName="LiberationMono-Regular.woff2" Link="Seeds\LiberationMono-Regular.woff2" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Imaging.Fixtures\fonts\noto-sans-thai\NotoSansThai-Regular.ttf" LogicalName="NotoSansThai-Regular.ttf" Link="Seeds\NotoSansThai-Regular.ttf" />
   </ItemGroup>
 
   <ItemGroup>

@@ -30,8 +30,10 @@ The properties have the names of the theme variables of Mermaid, in the document
 [FontSize](cref:Meziantou.Framework.Diagrams.DiagramTheme.FontSize) is 16 pixels, as in Mermaid. The texts are measured
 with the metrics of Helvetica, and the SVG asks for `Helvetica, Arial, sans-serif`. To measure with another font, set
 [TextMeasurer](cref:Meziantou.Framework.Diagrams.Diagram.TextMeasurer) (see
-[text measurement](../VectorGraphics/04-TextMeasurement.md)); [FontFamily](cref:Meziantou.Framework.Diagrams.DiagramTheme.FontFamily)
-only changes the CSS `font-family` of the SVG.
+[text measurement](../VectorGraphics/04-TextMeasurement.md)). When the measurer has fonts
+([fonts of a scene](../VectorGraphics/05-Fonts.md)), [FontFamily](cref:Meziantou.Framework.Diagrams.DiagramTheme.FontFamily)
+chooses the family of the texts among them: the texts are measured and drawn with it. Otherwise it only changes the CSS
+`font-family` of the SVG.
 
 ## Themes in Mermaid text
 

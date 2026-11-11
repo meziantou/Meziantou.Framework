@@ -22,6 +22,14 @@ public sealed class SceneImageOptions
         }
     }
 
+    /// <summary>
+    /// Gets or sets the fonts of the texts, or <see langword="null"/> to use <see cref="Font"/>, <see cref="BoldFont"/>,
+    /// <see cref="ItalicFont"/> and <see cref="BoldItalicFont"/>. The layout measures the texts with them, and each text is
+    /// drawn with the face of its family (<see cref="SceneFont.Family"/>). The fonts of a scene (<see cref="Scene.Fonts"/>)
+    /// take precedence over them.
+    /// </summary>
+    public SceneFontCollection? Fonts { get; set; }
+
     /// <summary>Gets or sets the font of the regular texts, or <see langword="null"/> for <see cref="SceneFonts.Sans"/>. The layout measures the texts with it.</summary>
     public Font? Font { get; set; }
 

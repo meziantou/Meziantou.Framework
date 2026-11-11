@@ -119,4 +119,58 @@ public sealed class SvgSceneRendererTests
         Assert.Throws<ArgumentException>("name", () => element.SetDataAttribute("Id", "a"));
         Assert.Throws<ArgumentException>("paramName", () => SceneElement.ThrowIfInvalidDataAttributeName("node id", "paramName"));
     }
+
+    [Fact]
+    public void SceneFonts()
+    {
+        var testData = Path.Combine(AppContext.BaseDirectory, "TestData");
+
+        #region VectorGraphics_SceneFonts
+        // The fonts of the texts: the family of the first face is the default one
+        var fonts = SceneFontCollection.Load(
+            Path.Combine(testData, "LiberationSans-Regular.woff2"),
+            Path.Combine(testData, "LiberationSans-Bold.woff2"),
+            Path.Combine(testData, "LiberationMono-Regular.woff2"));
+
+        // The layout measures the texts with the fonts, and the scene keeps them so every renderer draws with them
+        var measurer = new FontFaceTextMeasurer(fonts);
+        var scene = new Scene(width: 300, height: 60, fontFamily: measurer.FontFamily) { Fonts = measurer.Fonts };
+
+        // Each text has its own family, or the family of the scene
+        var code = new SceneFont(12, Family: "Liberation Mono");
+        scene.Root.Add(new SceneText(10, 20, "Title", new SceneFont(16, Bold: true), SceneColor.Black));
+        scene.Root.Add(new SceneText(10, 45, "var x = 1;", code, SceneColor.Black) { MeasuredWidth = measurer.Measure("var x = 1;", code).Width });
+
+        // The SVG can embed the fonts, so every viewer draws the texts with them
+        var svg = SvgSceneRenderer.Render(scene, new SvgRenderOptions { EmbedFonts = true });
+        #endregion
+
+        Assert.Contains("font-family=\"Liberation Sans, Liberation Mono\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<text x=\"10\" y=\"45\" font-family=\"Liberation Mono, Liberation Sans\" font-size=\"12\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<text x=\"10\" y=\"20\" font-size=\"16\" font-weight=\"bold\"", svg, StringComparison.Ordinal);
+
+        // Only the faces that draw a character are embedded: the regular face of Liberation Sans draws none
+        Assert.Contains("<style>@font-face{font-family:&quot;Liberation Sans&quot;;font-weight:700;font-style:normal;src:url(data:font/woff2;base64,", svg, StringComparison.Ordinal);
+        Assert.Contains("@font-face{font-family:&quot;Liberation Mono&quot;;font-weight:400;", svg, StringComparison.Ordinal);
+        Assert.DoesNotContain("font-family:&quot;Liberation Sans&quot;;font-weight:400", svg, StringComparison.Ordinal);
+        Assert.Equal(svg, SvgSceneRenderer.Render(scene, new SvgRenderOptions { EmbedFonts = true }));
+
+        // Without the option, or without fonts, nothing is embedded
+        Assert.DoesNotContain("@font-face", SvgSceneRenderer.Render(scene), StringComparison.Ordinal);
+        scene.Fonts = null;
+        var withoutFonts = SvgSceneRenderer.Render(scene, new SvgRenderOptions { EmbedFonts = true });
+        Assert.DoesNotContain("@font-face", withoutFonts, StringComparison.Ordinal);
+        Assert.Contains("<text x=\"10\" y=\"45\" font-family=\"Liberation Mono\" font-size=\"12\"", withoutFonts, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TextWithTheFamilyOfTheSceneHasNoFontFamily()
+    {
+        var scene = new Scene(100, 20, "Helvetica");
+        scene.Root.Add(new SceneText(0, 10, "a", new SceneFont(10, Family: "Helvetica"), SceneColor.Black));
+        scene.Root.Add(new SceneText(0, 10, "b", new SceneFont(10, Family: "Courier \"New\" & <Co>"), SceneColor.Black));
+        var svg = SvgSceneRenderer.Render(scene);
+        Assert.Contains("<text x=\"0\" y=\"10\" font-size=\"10\"", svg, StringComparison.Ordinal);
+        Assert.Contains("font-family=\"Courier &quot;New&quot; &amp; &lt;Co&gt;\"", svg, StringComparison.Ordinal);
+    }
 }

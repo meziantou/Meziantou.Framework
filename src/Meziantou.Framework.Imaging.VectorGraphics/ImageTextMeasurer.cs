@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Typography;
+using Meziantou.Framework.Imaging.VectorGraphics.Internal;
 using Meziantou.Framework.VectorGraphics;
 
 namespace Meziantou.Framework.Imaging.VectorGraphics;
@@ -33,13 +34,38 @@ public sealed class ImageTextMeasurer : ITextMeasurer
         _boldItalic = boldItalic ?? bold ?? italic ?? regular;
     }
 
-    /// <summary>Gets the family name of the regular font.</summary>
-    public string FontFamily => _regular.FamilyName;
+    /// <summary>Initializes a new instance of the <see cref="ImageTextMeasurer"/> class that measures the texts with the fonts of a collection.</summary>
+    /// <param name="fonts">The fonts. A chart or a diagram sets them as the fonts of its scene, so the renderers draw the texts with them.</param>
+    /// <remarks>
+    /// The family of a text is <see cref="SceneFont.Family"/>, or <see cref="SceneFontCollection.DefaultFamily"/>. The
+    /// characters its face does not have are measured with the face that draws them. The ascent and the descent are the
+    /// ones of the face of the family.
+    /// </remarks>
+    public ImageTextMeasurer(SceneFontCollection fonts)
+    {
+        ArgumentNullException.ThrowIfNull(fonts);
+        Fonts = fonts;
+        _regular = _bold = _italic = _boldItalic = SceneFontCache.GetStack(fonts, new SceneFont(1), defaultFamily: null).Primary;
+    }
+
+    /// <summary>Gets the family of the texts: the family name of the regular font, or the families of <see cref="Fonts"/>.</summary>
+    public string FontFamily => Fonts?.FontFamily ?? _regular.FamilyName;
+
+    /// <summary>Gets the fonts the texts are measured with, or <see langword="null"/> when the measurer was created from fonts of <c>Meziantou.Framework.Imaging</c>.</summary>
+    public SceneFontCollection? Fonts { get; }
 
     /// <inheritdoc/>
     public TextMetrics Measure(string text, SceneFont font)
     {
         ArgumentNullException.ThrowIfNull(text);
+        if (Fonts is not null)
+        {
+            var stack = SceneFontCache.GetStack(Fonts, font, defaultFamily: null);
+            var primaryMetrics = stack.Primary.GetMetrics(font.Size);
+            var layoutWidth = text.Length is 0 ? 0 : TextLayout.Create(text, new TextStyle(stack, font.Size)).Width;
+            return new TextMetrics(layoutWidth, primaryMetrics.Ascent, primaryMetrics.Descent);
+        }
+
         var face = GetFont(font);
         var metrics = face.GetMetrics(font.Size);
         var width = text.Length is 0 ? 0 : TextLayout.Create(text, face, font.Size).Width;

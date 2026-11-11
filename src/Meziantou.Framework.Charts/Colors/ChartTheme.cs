@@ -54,7 +54,11 @@ public sealed record ChartTheme
     /// <summary>Gets the color of totals and of neutral elements.</summary>
     public SceneColor NeutralColor { get; init; } = "#6e7781";
 
-    /// <summary>Gets the font family, or <see langword="null"/> to use the family of the text measurer.</summary>
+    /// <summary>Gets the font family, as a CSS <c>font-family</c> value, or <see langword="null"/> to use the family of the text measurer.</summary>
+    /// <remarks>
+    /// When the text measurer has fonts (<see cref="ITextMeasurer.Fonts"/>), the texts are measured and drawn with the first
+    /// family of the list the fonts have. Otherwise the texts are laid out with the metrics of the measurer.
+    /// </remarks>
     public string? FontFamily { get; init; }
 
     /// <summary>Gets the size of the axis and legend labels.</summary>

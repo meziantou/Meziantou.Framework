@@ -9,7 +9,9 @@ namespace Meziantou.Framework.VectorGraphics.Fuzz;
 /// <summary>
 /// A color parses back from its notation. Wrapping a text keeps its characters in order, and gives lines that fit the
 /// width unless they hold a single grapheme cluster. The SVG of any scene is a well-formed XML document whose root is
-/// <c>svg</c>, whatever the texts, tooltips, hyperlinks and data attributes hold, and the output is deterministic.
+/// <c>svg</c>, whatever the texts, tooltips, hyperlinks and data attributes hold, and the output is deterministic. A
+/// font file loads or throws a <see cref="Fonts.FontException"/>; the fonts of a scene resolve every family to one of
+/// their faces, measure a text as the sum of its runs, and give a well-formed SVG whatever the families hold.
 /// </summary>
 public static partial class VectorGraphicsFuzzTargets
 {
@@ -30,6 +32,8 @@ public static partial class VectorGraphicsFuzzTargets
         new("vectorgraphics-color", ColorTarget) { Seeds = GetColorSeeds, Dictionary = ColorTokens },
         new("vectorgraphics-wrap", WrapTarget) { Seeds = GetWrapSeeds, Dictionary = TextTokens },
         new("vectorgraphics-svg", SvgTarget) { Seeds = GetSvgSeeds, Dictionary = SvgTokens },
+        new("vectorgraphics-fontface", FontFaceTarget) { Seeds = GetFontFaceSeeds, Dictionary = FontFileTokens },
+        new("vectorgraphics-fonts", FontsTarget) { Seeds = GetFontsSeeds, Dictionary = FontFamilyTokens },
     ];
 
     /// <summary>

@@ -60,6 +60,25 @@ public abstract class SceneElement
     /// <summary>Gets or sets how the element is blended with what is drawn under it. The default is <see cref="SceneBlendMode.Normal"/>.</summary>
     public SceneBlendMode BlendMode { get; set; }
 
+    /// <summary>
+    /// Gets a rectangle that contains what the element draws, in the coordinates of its parent, or <see langword="null"/>
+    /// when it draws nothing, for a renderer that places what it draws: a filter region, a link, a layer.
+    /// </summary>
+    /// <param name="measureText">
+    /// Gives the rectangle of a text before its rotation, in the coordinates of its parent, or <see langword="null"/> when
+    /// it draws nothing: the size of a text depends on the fonts of the renderer.
+    /// </param>
+    /// <returns>The rectangle, or <see langword="null"/>.</returns>
+    /// <remarks>
+    /// The rectangle contains the strokes, with their joins and their caps, and the blurs and the shadows of the
+    /// children; not the filter of the element itself. A group applies its transform and its clips.
+    /// </remarks>
+    public SceneBounds? GetBounds(Func<SceneText, SceneBounds?> measureText)
+    {
+        ArgumentNullException.ThrowIfNull(measureText);
+        return SceneGeometry.GetBounds(this, measureText);
+    }
+
     /// <summary>Indicates whether a name is a valid name of a <c>data-*</c> attribute: lowercase ASCII letters, digits, hyphens, underscores and dots, without the <c>data-</c> prefix.</summary>
     /// <param name="name">The name.</param>
     /// <returns><see langword="true"/> when the name is valid.</returns>

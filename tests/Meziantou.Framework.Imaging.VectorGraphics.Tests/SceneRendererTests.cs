@@ -422,6 +422,20 @@ public sealed class SceneRendererTests
     }
 
     [Fact]
+    public void ColorMatricesWithAConstantAlphaContainTheInkOfTheTexts()
+    {
+        // An italic f overhangs its advance on the right: the region of the filter contains its ink
+        double[] opaqueRed = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+        var scene = new Scene(100, 100, "sans-serif");
+        var text = scene.Root.Add(new SceneText(20, 60, "f", new SceneFont(60, Italic: true), SceneColor.Black) { Filter = new SceneColorMatrixFilter(opaqueRed) });
+        var layout = Meziantou.Framework.Imaging.Typography.TextLayout.Create("f", SceneFonts.SansItalic, 60);
+        Assert.True(layout.InkBounds.Right > layout.Width + 1);
+        using var image = scene.ToImage();
+        var right = (int)Math.Floor(20 + layout.InkBounds.Right);
+        Assert.Equal(255, image.Frames[0][right, 60 - (int)layout.Baseline + (int)layout.InkBounds.Top + 2].A);
+    }
+
+    [Fact]
     public async Task ImagesCanBeDrawnByConcurrentRenders()
     {
         var scene = new Scene(40, 40, "sans-serif");

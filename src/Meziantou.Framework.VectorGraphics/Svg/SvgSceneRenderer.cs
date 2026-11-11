@@ -203,7 +203,13 @@ public static class SvgSceneRenderer
                 };
 
                 definitions.Append("<filter id=\"").Append(Escape(id)).Append('"');
-                if (SceneGeometry.TryGetBounds(element, out var bounds))
+                var hasText = false;
+                var bounds = element.GetBounds(_ =>
+                {
+                    hasText = true;
+                    return null;
+                });
+                if (!hasText)
                 {
                     var region = SceneGeometry.Inflate(bounds ?? default, (3 * deviation) + Math.Max(Math.Abs(offsetX), Math.Abs(offsetY)) + 1);
                     definitions.Append(" filterUnits=\"userSpaceOnUse\" x=\"").Append(Number(region.X)).Append("\" y=\"").Append(Number(region.Y))
@@ -792,12 +798,20 @@ public static class SvgSceneRenderer
             if (_scene.Fonts is not { } fonts)
                 return requested;
 
+            // The families the collection has come first, in the order of the request (the default family when it has
+            // none of them), then the other families of the collection: a family it does not have would draw the texts
+            // with other widths than the measured ones. A generic family (sans-serif) stays last, for a viewer without
+            // the fonts.
             var names = CssFontFamily.Parse(requested);
-            var others = fonts.Families.Where(family => !names.Contains(family, StringComparer.OrdinalIgnoreCase)).ToList();
-            if (others.Count is 0)
-                return requested;
+            var resolved = names.Select(name => fonts.Families.FirstOrDefault(family => string.Equals(family, name, StringComparison.OrdinalIgnoreCase))).OfType<string>().ToList();
+            if (resolved.Count is 0)
+            {
+                resolved.Add(fonts.DefaultFamily);
+            }
 
-            return requested.Trim().Length is 0 ? CssFontFamily.Format(others) : requested + ", " + CssFontFamily.Format(others);
+            resolved.AddRange(fonts.Families.Where(family => !resolved.Contains(family, StringComparer.OrdinalIgnoreCase)));
+            var generic = names.Where(CssFontFamily.IsGenericFamily).Distinct(StringComparer.OrdinalIgnoreCase);
+            return string.Join(", ", resolved.Distinct(StringComparer.OrdinalIgnoreCase).Select(CssFontFamily.Format).Concat(generic));
         }
 
         private static string GetFontFaceRules(Scene scene, SceneFontCollection fonts)

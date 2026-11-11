@@ -27,6 +27,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     private static readonly ConditionalWeakTable<SceneImage, LoadedImage> Images = [];
 
     private readonly Stack<PdfMatrix> _saved = new();
+    private int _maskDepth;
     private PdfContentBuilder _content = content;
 
     // The transform from the current user space to the space of the current content stream, and from that space to the page
@@ -189,7 +190,8 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         if (clipPath is not null && (clipPath.IsEmpty || !IsFinite(clipPath)))
             return;
 
-        if (group.Hyperlink is { } hyperlink && Uri.TryCreate(hyperlink, UriKind.Absolute, out var uri) && Bounds.Of(group, this) is { } linkBounds)
+        // The content of a mask is never visible: its hyperlinks are not links of the page
+        if (_maskDepth is 0 && group.Hyperlink is { } hyperlink && Uri.TryCreate(hyperlink, UriKind.Absolute, out var uri) && Bounds.Of(group, this) is { } linkBounds)
         {
             var area = linkBounds.Transform(PdfMatrix.Multiply(_matrix, _streamToPage));
             if (area.IsFinite && area.Width > 0 && area.Height > 0)
@@ -276,7 +278,17 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         if (Bounds.Of(mask.Content, this) is not { IsFinite: true, Width: > 0, Height: > 0 } box)
             return false;
 
-        var form = CreateForm([mask.Content], box, new PdfTransparencyGroup { ColorSpace = PdfDeviceColorSpace.Rgb });
+        _maskDepth++;
+        PdfForm form;
+        try
+        {
+            form = CreateForm([mask.Content], box, new PdfTransparencyGroup { ColorSpace = PdfDeviceColorSpace.Rgb });
+        }
+        finally
+        {
+            _maskDepth--;
+        }
+
         _content.SetGraphicsState(new PdfExtGState { SoftMask = mask.Mode is SceneMaskMode.Alpha ? PdfSoftMask.FromAlpha(form) : PdfSoftMask.FromLuminosity(form) });
         return true;
     }
@@ -654,6 +666,25 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         Restore();
     }
 
+    // The glyphs fit in an em above the baseline and half an em below it, from the start to the end of the text
+    private SceneBounds? GetTextBounds(SceneText text)
+    {
+        var parts = GetTextParts(text);
+        if (parts.Count is 0)
+            return null;
+
+        var width = parts.Sum(part => part.Width);
+        var size = parts.Max(part => part.Size);
+        var start = text.Anchor switch
+        {
+            SceneTextAnchor.Middle => text.X - (width / 2),
+            SceneTextAnchor.End => text.X - width,
+            _ => text.X,
+        };
+
+        return new SceneBounds(start, text.Y - size, width, size * 1.5);
+    }
+
     /// <summary>A part of a text that one font draws, with its style and its width.</summary>
     internal sealed record TextPart(PdfFont Font, string Text, double Width, double Size, SceneColor Color, SceneTextDecorations Decorations, SceneFontFace? Face);
 
@@ -835,111 +866,10 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             return new Bounds(Math.Min(Math.Min(x1, x2), Math.Min(x3, x4)), Math.Min(Math.Min(y1, y2), Math.Min(y3, y4)), Math.Max(Math.Max(x1, x2), Math.Max(x3, x4)), Math.Max(Math.Max(y1, y2), Math.Max(y3, y4)));
         }
 
-        private Bounds Inflate(double amount) => amount > 0 ? new Bounds(Left - amount, Top - amount, Right + amount, Bottom + amount) : this;
-
-        // A stroke extends half its width beyond the path; a miter join up to half the miter limit times the width, a
-        // square cap half the width times the square root of 2 (a corner of its square)
-        private static double StrokeExtent(SceneShape shape)
-        {
-            var miterLimit = shape.MiterLimit >= 1 && double.IsFinite(shape.MiterLimit) ? shape.MiterLimit : DefaultMiterLimit;
-            var factor = Math.Max(shape.LineJoin is SceneLineJoin.Miter ? miterLimit : 1, shape.LineCap is SceneLineCap.Square ? Math.Sqrt(2) : 1);
-            return shape.StrokeWidth / 2 * factor;
-        }
-
-        // A cubic curve stays in the convex hull of its control points
-        private static Bounds? OfPath(PathData data)
-        {
-            Bounds? points = null;
-            foreach (var command in data.ToCubicCurves().Commands)
-            {
-                if (command.Kind is PathCommandKind.Close)
-                    continue;
-
-                points = Union(points, new Bounds(command.X, command.Y, command.X, command.Y));
-                if (command.Kind is PathCommandKind.CubicTo)
-                {
-                    points = Union(points, new Bounds(Math.Min(command.X1, command.X2), Math.Min(command.Y1, command.Y2), Math.Max(command.X1, command.X2), Math.Max(command.Y1, command.Y2)));
-                }
-            }
-
-            return points;
-        }
-
         /// <summary>Gets a rectangle that contains what an element draws, in the coordinates of its parent, or null when it draws nothing.</summary>
         public static Bounds? Of(SceneElement element, ScenePdfWriter writer)
         {
-            if (!(element.Opacity > 0))
-                return null;
-
-            var stroke = element is SceneShape { Stroke: not null } shape && shape.StrokeWidth > 0 && double.IsFinite(shape.StrokeWidth) ? StrokeExtent(shape) : 0;
-            switch (element)
-            {
-                case SceneGroup group:
-                    Bounds? children = null;
-                    foreach (var child in group.Children)
-                    {
-                        children = Union(children, Of(child, writer));
-                    }
-
-                    if (children is not { } box)
-                        return null;
-
-                    if (group.Transform is { } transform)
-                    {
-                        box = box.Transform(new PdfMatrix(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F));
-                    }
-
-                    if (group.Clip is { } clip)
-                    {
-                        box = new Bounds(Math.Max(box.Left, clip.X), Math.Max(box.Top, clip.Y), Math.Min(box.Right, clip.Right), Math.Min(box.Bottom, clip.Bottom));
-                    }
-
-                    if (group.ClipPath is { } clipPath)
-                    {
-                        if (OfPath(clipPath) is not { } clipBox)
-                            return null;
-
-                        box = new Bounds(Math.Max(box.Left, clipBox.Left), Math.Max(box.Top, clipBox.Top), Math.Min(box.Right, clipBox.Right), Math.Min(box.Bottom, clipBox.Bottom));
-                    }
-
-                    if (!(box.Width > 0) || !(box.Height > 0))
-                        return null;
-
-                    return box;
-
-                case SceneImage image:
-                    return new Bounds(image.X, image.Y, image.X + image.Width, image.Y + image.Height);
-
-                case SceneRectangle rectangle:
-                    return new Bounds(rectangle.X, rectangle.Y, rectangle.X + rectangle.Width, rectangle.Y + rectangle.Height).Inflate(stroke);
-
-                case SceneCircle circle:
-                    return new Bounds(circle.CenterX - circle.Radius, circle.CenterY - circle.Radius, circle.CenterX + circle.Radius, circle.CenterY + circle.Radius).Inflate(stroke);
-
-                case SceneLine line:
-                    return new Bounds(Math.Min(line.X1, line.X2), Math.Min(line.Y1, line.Y2), Math.Max(line.X1, line.X2), Math.Max(line.Y1, line.Y2)).Inflate(stroke);
-
-                case ScenePath path:
-                    return OfPath(path.Data)?.Inflate(stroke);
-
-                case SceneText text when text.Text.Length > 0:
-                    // The glyphs fit in an em above the baseline and half an em below it, from the start to the end of the text
-                    var parts = writer.GetTextParts(text);
-                    var width = parts.Sum(part => part.Width);
-                    var size = parts.Count is 0 ? text.Font.Size : parts.Max(part => part.Size);
-                    var start = text.Anchor switch
-                    {
-                        SceneTextAnchor.Middle => text.X - (width / 2),
-                        SceneTextAnchor.End => text.X - width,
-                        _ => text.X,
-                    };
-                    var rotation = SceneTransform.Rotate(text.Rotation, text.X, text.Y);
-                    return new Bounds(start, text.Y - size, start + width, text.Y + (size / 2))
-                        .Transform(new PdfMatrix(rotation.A, rotation.B, rotation.C, rotation.D, rotation.E, rotation.F));
-
-                default:
-                    return null;
-            }
+            return element.GetBounds(writer.GetTextBounds) is { } bounds ? new Bounds(bounds.X, bounds.Y, bounds.Right, bounds.Bottom) : null;
         }
     }
 }

@@ -121,6 +121,9 @@ internal static class CssFontFamily
         return builder.Append('"').ToString();
     }
 
+    /// <summary>Indicates whether a name is a generic family of CSS, such as <c>sans-serif</c>.</summary>
+    public static bool IsGenericFamily(string name) => name.ToUpperInvariant() is "SERIF" or "SANS-SERIF" or "MONOSPACE" or "CURSIVE" or "FANTASY" or "SYSTEM-UI" or "MATH" or "EMOJI" or "FANGSONG" or "UI-SERIF" or "UI-SANS-SERIF" or "UI-MONOSPACE" or "UI-ROUNDED";
+
     /// <summary>Writes a list of family names.</summary>
     public static string Format(IEnumerable<string> names) => string.Join(", ", names.Select(Format));
 

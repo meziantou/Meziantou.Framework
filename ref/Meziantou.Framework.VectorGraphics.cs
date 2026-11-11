@@ -249,6 +249,7 @@ namespace Meziantou.Framework.VectorGraphics
         public Meziantou.Framework.VectorGraphics.SceneMask? Mask { get => throw null; set { } }
         public double Opacity { get => throw null; set { } }
         public string? Tooltip { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneBounds? GetBounds(System.Func<Meziantou.Framework.VectorGraphics.SceneText, Meziantou.Framework.VectorGraphics.SceneBounds?> measureText) => throw null;
         public static bool IsValidDataAttributeName([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? name) => throw null;
         public void SetDataAttribute(string name, string? value) { }
         public static void ThrowIfInvalidDataAttributeName(string name, string paramName) { }

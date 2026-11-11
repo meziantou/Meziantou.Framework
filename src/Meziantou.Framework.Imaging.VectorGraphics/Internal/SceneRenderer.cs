@@ -150,107 +150,40 @@ internal static class SceneRenderer
     /// <summary>Gets a rectangle that contains what an element draws, with the filters of its children, in the coordinates of its parent.</summary>
     private static RectangleD? GetBounds(SceneElement element, DrawContext context)
     {
-        var stroke = element is SceneShape { Stroke: not null } shape && shape.StrokeWidth > 0 && double.IsFinite(shape.StrokeWidth) ? StrokeExtent(shape) : 0;
-        RectangleD? bounds;
-        switch (element)
+        var bounds = element.GetBounds(text =>
         {
-            case SceneGroup group:
-                bounds = null;
-                foreach (var child in group.Children)
-                {
-                    if (GetBounds(child, context) is { } childBounds)
-                    {
-                        var filtered = WithFilter(childBounds, child.Filter);
-                        bounds = bounds is { } union ? RectangleD.Union(union, filtered) : filtered;
-                    }
-                }
-
-                if (bounds is { } box && group.Transform is { } transform)
-                {
-                    bounds = TransformBounds(box, new AffineTransform(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F));
-                }
-
-                if (bounds is { } clipped && group.Clip is { } clip)
-                {
-                    bounds = RectangleD.Intersect(clipped, new RectangleD(clip.X, clip.Y, clip.Width, clip.Height));
-                }
-
-                return bounds;
-
-            case SceneRectangle rectangle:
-                return new RectangleD(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height).Inflate(stroke);
-
-            case SceneCircle circle:
-                return new RectangleD(circle.CenterX - circle.Radius, circle.CenterY - circle.Radius, 2 * circle.Radius, 2 * circle.Radius).Inflate(stroke);
-
-            case SceneLine line:
-                return RectangleD.FromLTRB(Math.Min(line.X1, line.X2), Math.Min(line.Y1, line.Y2), Math.Max(line.X1, line.X2), Math.Max(line.Y1, line.Y2)).Inflate(stroke);
-
-            case ScenePath path:
-                return ToVectorPath(path.Data) is { } vector ? vector.Bounds.Inflate(stroke) : null;
-
-            case SceneImage image:
-                return new RectangleD(image.X, image.Y, image.Width, image.Height);
-
-            case SceneText text:
-                var parts = CreateTextParts(text, context);
-                if (parts.Count is 0)
-                    return null;
-
-                var width = parts.Sum(part => part.Layout.Width);
-                var ascent = parts.Max(part => part.Layout.Baseline);
-                var descent = parts.Max(part => part.Layout.Height - part.Layout.Baseline);
-                var start = text.Anchor switch
-                {
-                    SceneTextAnchor.Middle => text.X - (width / 2),
-                    SceneTextAnchor.End => text.X - width,
-                    _ => text.X,
-                };
-                var textBounds = RectangleD.FromLTRB(start, text.Y - ascent, start + width, text.Y + descent);
-                return text.Rotation == 0 ? textBounds : TransformBounds(textBounds, AffineTransform.CreateRotation(text.Rotation, new PointD(text.X, text.Y)));
-
-            default:
+            // The box of each part, and the ink of its glyphs, which overhang their advance (italic letters) and rise
+            // above the ascent (marks), at the position the part is drawn
+            var parts = CreateTextParts(text, context);
+            if (parts.Count is 0)
                 return null;
-        }
-    }
 
-    private static RectangleD WithFilter(RectangleD bounds, SceneFilter? filter)
-    {
-        switch (filter)
-        {
-            case SceneBlurFilter blur when blur.StandardDeviation > 0 && double.IsFinite(blur.StandardDeviation):
-                return bounds.Inflate(3 * blur.StandardDeviation);
+            var width = parts.Sum(part => part.Layout.Width);
+            var x = text.Anchor switch
+            {
+                SceneTextAnchor.Middle => text.X - (width / 2),
+                SceneTextAnchor.End => text.X - width,
+                _ => text.X,
+            };
 
-            case SceneDropShadowFilter shadow:
-                var deviation = shadow.StandardDeviation > 0 && double.IsFinite(shadow.StandardDeviation) ? shadow.StandardDeviation : 0;
-                var shadowBounds = bounds.Inflate(3 * deviation).Offset(double.IsFinite(shadow.OffsetX) ? shadow.OffsetX : 0, double.IsFinite(shadow.OffsetY) ? shadow.OffsetY : 0);
-                return RectangleD.Union(bounds, shadowBounds);
+            RectangleD? area = null;
+            foreach (var (layout, _) in parts)
+            {
+                var origin = new PointD(x, text.Y - layout.Baseline);
+                var box = new RectangleD(origin.X, origin.Y, layout.Width, layout.Height);
+                if (!layout.InkBounds.IsEmpty)
+                {
+                    box = RectangleD.Union(box, layout.InkBounds.Offset(origin.X, origin.Y));
+                }
 
-            default:
-                return bounds;
-        }
-    }
+                area = area is { } union ? RectangleD.Union(union, box) : box;
+                x += layout.Width;
+            }
 
-    private static RectangleD TransformBounds(RectangleD bounds, AffineTransform transform)
-    {
-        var p1 = transform.Transform(new PointD(bounds.Left, bounds.Top));
-        var p2 = transform.Transform(new PointD(bounds.Right, bounds.Top));
-        var p3 = transform.Transform(new PointD(bounds.Left, bounds.Bottom));
-        var p4 = transform.Transform(new PointD(bounds.Right, bounds.Bottom));
-        return RectangleD.FromLTRB(
-            Math.Min(Math.Min(p1.X, p2.X), Math.Min(p3.X, p4.X)),
-            Math.Min(Math.Min(p1.Y, p2.Y), Math.Min(p3.Y, p4.Y)),
-            Math.Max(Math.Max(p1.X, p2.X), Math.Max(p3.X, p4.X)),
-            Math.Max(Math.Max(p1.Y, p2.Y), Math.Max(p3.Y, p4.Y)));
-    }
+            return area is { } value ? new SceneBounds(value.X, value.Y, value.Width, value.Height) : null;
+        });
 
-    // A stroke extends half its width beyond the path; a miter join up to half the miter limit times the width, a
-    // square cap half the width times the square root of 2
-    private static double StrokeExtent(SceneShape shape)
-    {
-        var miterLimit = shape.MiterLimit >= 1 && double.IsFinite(shape.MiterLimit) ? shape.MiterLimit : 4;
-        var factor = Math.Max(shape.LineJoin is SceneLineJoin.Miter ? miterLimit : 1, shape.LineCap is SceneLineCap.Square ? Math.Sqrt(2) : 1);
-        return shape.StrokeWidth / 2 * factor;
+        return bounds is { } value ? new RectangleD(value.X, value.Y, value.Width, value.Height) : null;
     }
 
     // The largest standard deviation of the blurs of the canvas

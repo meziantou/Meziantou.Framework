@@ -366,6 +366,50 @@ public sealed class SvgSceneRendererTests
         Assert.Contains("<filter id=\"scene-filter0\" filterUnits=\"userSpaceOnUse\" x=\"-1\" y=\"-1\" width=\"42\" height=\"12\"", svg, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void FamiliesTheFontsDoNotHaveAreNotWritten()
+    {
+        // The texts are measured with the families of the fonts: a family they do not have would draw them with other widths
+        var testData = Path.Combine(AppContext.BaseDirectory, "TestData");
+        var fonts = SceneFontCollection.Load(Path.Combine(testData, "LiberationSans-Regular.woff2"), Path.Combine(testData, "LiberationMono-Regular.woff2"));
+        var scene = new Scene(100, 40, "Comic Sans MS, sans-serif") { Fonts = fonts };
+        scene.Root.Add(new SceneText(0, 10, "a", new SceneFont(10, Family: "Courier New, 'Liberation Mono', monospace"), SceneColor.Black));
+        var svg = SvgSceneRenderer.Render(scene);
+
+        Assert.Contains("font-family=\"Liberation Sans, Liberation Mono, sans-serif\">", svg, StringComparison.Ordinal);
+        Assert.Contains("font-family=\"Liberation Mono, Liberation Sans, monospace\"", svg, StringComparison.Ordinal);
+        Assert.DoesNotContain("Comic", svg, StringComparison.Ordinal);
+        Assert.DoesNotContain("Courier", svg, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BoundsOfElements()
+    {
+        static SceneBounds? NoText(SceneText text) => null;
+
+        // A stroke extends by half its width, a miter join by half the miter limit times the width
+        Assert.Equal(new SceneBounds(9, 9, 22, 22), new SceneRectangle(10, 10, 20, 20) { Stroke = SceneColor.Black, StrokeWidth = 2, LineJoin = SceneLineJoin.Round }.GetBounds(NoText));
+        Assert.Equal(new SceneBounds(6, 6, 28, 28), new SceneRectangle(10, 10, 20, 20) { Stroke = SceneColor.Black, StrokeWidth = 2 }.GetBounds(NoText));
+        Assert.Equal(new SceneBounds(6, 6, 28, 28), new SceneRectangle(10, 10, 20, 20) { Stroke = SceneColor.Black, StrokeWidth = 2, MiterLimit = double.NaN }.GetBounds(NoText));
+        Assert.Null(new SceneRectangle(0, 0, 10, 10) { Opacity = 0 }.GetBounds(NoText));
+
+        // A group transforms and clips its children, and contains the shadow of a child, not its own filter
+        var group = new SceneGroup { Transform = SceneTransform.Translate(100, 0), Clip = new SceneBounds(0, 0, 145, 100), Filter = new SceneBlurFilter(50) };
+        group.Add(new SceneRectangle(0, 0, 10, 10) { Filter = new SceneDropShadowFilter(30, 0, 0, SceneColor.Black) });
+        Assert.Equal(new SceneBounds(100, 0, 40, 10), group.GetBounds(NoText));
+        group.Clip = new SceneBounds(0, 0, 120, 100);
+        Assert.Equal(new SceneBounds(100, 0, 20, 10), group.GetBounds(NoText));
+
+        // A text is measured by the renderer, then rotated around its anchor
+        var text = new SceneText(0, 0, "a", new SceneFont(10), SceneColor.Black) { Rotation = 90 };
+        var rotated = text.GetBounds(_ => new SceneBounds(0, -10, 20, 10))!.Value;
+        Assert.Equal(0, rotated.X, 1e-9);
+        Assert.Equal(0, rotated.Y, 1e-9);
+        Assert.Equal(10, rotated.Width, 1e-9);
+        Assert.Equal(20, rotated.Height, 1e-9);
+        Assert.Throws<ArgumentNullException>("measureText", () => text.GetBounds(null!));
+    }
+
     private static Scene Single(SceneElement element)
     {
         var scene = new Scene(10, 10, "sans-serif");

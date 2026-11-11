@@ -348,6 +348,19 @@ public sealed class ScenePdfRendererTests
     }
 
     [Fact]
+    public void HyperlinksOfMasksAreNotLinks()
+    {
+        // The content of a mask is never visible: its hyperlinks are not links of the page
+        var scene = new Scene(100, 100, "sans-serif");
+        var mask = new SceneMask();
+        mask.Content.Add(new SceneGroup { Hyperlink = "https://example.com/hidden" }).Add(new SceneRectangle(0, 0, 50, 50) { Fill = SceneColor.White });
+        scene.Root.Add(new SceneRectangle(0, 0, 100, 100) { Fill = SceneColor.Black, Mask = mask });
+        var document = scene.ToPdf();
+        Assert.Empty(document.Pages[0].Annotations);
+        Assert.Empty(Assert.Single(Assert.Single(document.StructureTree.Elements).Children).Children);
+    }
+
+    [Fact]
     public void DrawOnAnExistingPage()
     {
         var document = new PdfDocument();

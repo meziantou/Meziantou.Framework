@@ -953,8 +953,23 @@ jobs:
       - name: Compare the HTML trees with Chromium
         if: steps.changes.outputs.changed == 'true' && matrix.check == 'chromium-diff'
         run: |
-          dotnet run --project tools/Meziantou.Framework.WebPlatform.ChromiumDiff --configuration Release -- install --with-deps
-          if ($LASTEXITCODE -ne 0) { throw "The installation of Chromium failed with exit code $LASTEXITCODE" }
+          # --with-deps installs the system packages of Chromium from the Ubuntu archive, which the runners sometimes
+          # cannot resolve for hours. The runner image already has the libraries of Chromium: the packages it lacks are
+          # fonts, which the comparison of the trees does not use. So the browser is installed alone when the archive
+          # stays unreachable; a missing library still fails the comparison, when Chromium starts.
+          $installed = $false
+          for ($attempt = 1; $attempt -le 3 -and -not $installed; $attempt++) {
+            if ($attempt -gt 1) { Start-Sleep -Seconds 30 }
+            dotnet run --project tools/Meziantou.Framework.WebPlatform.ChromiumDiff --configuration Release -- install --with-deps
+            $installed = $LASTEXITCODE -eq 0
+          }
+
+          if (-not $installed) {
+            Write-Output "::warning::The system dependencies of Chromium could not be installed: installing the browser alone"
+            dotnet run --project tools/Meziantou.Framework.WebPlatform.ChromiumDiff --configuration Release --no-build -- install
+            if ($LASTEXITCODE -ne 0) { throw "The installation of Chromium failed with exit code $LASTEXITCODE" }
+          }
+
           dotnet run --project tools/Meziantou.Framework.WebPlatform.ChromiumDiff --configuration Release --no-build
           if ($LASTEXITCODE -ne 0) { throw "The HTML trees differ from Chromium" }
 

@@ -130,7 +130,9 @@ unavailable. To read the position from another source, such as the operating sys
 override [GetPositionAsync](cref:Meziantou.Framework.WebPlatform.Dom.GeolocationProvider.GetPositionAsync), and call
 [OnPositionChanged](cref:Meziantou.Framework.WebPlatform.Dom.GeolocationProvider.OnPositionChanged) when the device
 moves. The library handles the `timeout` and `maximumAge` options of the pages: the cancellation token passed to
-`GetPositionAsync` is canceled when the timeout elapses.
+`GetPositionAsync` is canceled when the timeout elapses. Once it elapsed, the page gets a `TIMEOUT` error, even when
+the provider fails because of the canceled token, or before it started. Other failures of the provider are reported as
+`POSITION_UNAVAILABLE`.
 
 ## Notifications
 

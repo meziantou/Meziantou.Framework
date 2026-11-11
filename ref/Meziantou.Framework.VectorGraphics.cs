@@ -369,8 +369,10 @@ namespace Meziantou.Framework.VectorGraphics
         public Meziantou.Framework.VectorGraphics.ScenePaint? Fill { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneLineCap LineCap { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneLineJoin LineJoin { get => throw null; set { } }
+        public double MiterLimit { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.ScenePaint? Stroke { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<double>? StrokeDashArray { get => throw null; set { } }
+        public double StrokeDashOffset { get => throw null; set { } }
         public double StrokeWidth { get => throw null; set { } }
     }
 

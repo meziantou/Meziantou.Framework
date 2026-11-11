@@ -282,6 +282,8 @@ internal static class SceneRenderer
         return new Pen(context.GetBrush(shape.Stroke!), shape.StrokeWidth)
         {
             DashPattern = shape.StrokeDashArray is { Count: > 0 } dashes ? [.. dashes] : default,
+            DashOffset = double.IsFinite(shape.StrokeDashOffset) ? shape.StrokeDashOffset : 0,
+            MiterLimit = shape.MiterLimit >= 1 && double.IsFinite(shape.MiterLimit) ? Math.Min(shape.MiterLimit, 1048576) : 4,
             LineCap = shape.LineCap switch
             {
                 SceneLineCap.Round => LineCap.Round,

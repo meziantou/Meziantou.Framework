@@ -108,6 +108,28 @@ public sealed class ScenePdfRendererTests
     }
 
     [Fact]
+    public void DashOffsetAndMiterLimit()
+    {
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+
+        // Dashes of 10 and gaps of 10: the offset of 10 starts the line with a gap
+        scene.Root.Add(new SceneLine(0, 5, 40, 5) { Stroke = SceneColor.Black, StrokeWidth = 4, StrokeDashArray = [10, 10] });
+        scene.Root.Add(new SceneLine(0, 15, 40, 15) { Stroke = SceneColor.Black, StrokeWidth = 4, StrokeDashArray = [10, 10], StrokeDashOffset = 10 });
+
+        // A corner of about 20 degrees needs a miter 5.6 times the width of the line: a limit of 4 bevels it, 10 does not
+        scene.Root.Add(new ScenePath(new PathBuilder().MoveTo(15, 95).LineTo(25, 40).LineTo(35, 95).Build()) { Stroke = SceneColor.Black, StrokeWidth = 6 });
+        scene.Root.Add(new ScenePath(new PathBuilder().MoveTo(65, 95).LineTo(75, 40).LineTo(85, 95).Build()) { Stroke = SceneColor.Black, StrokeWidth = 6, MiterLimit = 10 });
+        using var image = Render(scene);
+
+        Assert.True(image.Frames[0][5, 5].R < 100);
+        Assert.True(image.Frames[0][15, 5].R > 200);
+        Assert.True(image.Frames[0][5, 15].R > 200);
+        Assert.True(image.Frames[0][15, 15].R < 100);
+        Assert.True(image.Frames[0][25, 30].R > 200);
+        Assert.True(image.Frames[0][75, 30].R < 160);
+    }
+
+    [Fact]
     public void TextsWithoutFontsUseHelvetica()
     {
         var measurer = ScenePdfRenderer.CreateMeasurer();

@@ -397,6 +397,10 @@ public static class SvgSceneRenderer
                 if (shape.StrokeDashArray is { Count: > 0 } dashes)
                 {
                     Attribute("stroke-dasharray", string.Join(' ', dashes.Select(Number)));
+                    if (shape.StrokeDashOffset != 0 && double.IsFinite(shape.StrokeDashOffset))
+                    {
+                        Attribute("stroke-dashoffset", shape.StrokeDashOffset);
+                    }
                 }
 
                 switch (shape.LineCap)
@@ -416,6 +420,9 @@ public static class SvgSceneRenderer
                         break;
                     case SceneLineJoin.Bevel:
                         Attribute("stroke-linejoin", "bevel");
+                        break;
+                    case SceneLineJoin.Miter when shape.MiterLimit != 4 && shape.MiterLimit >= 1 && double.IsFinite(shape.MiterLimit):
+                        Attribute("stroke-miterlimit", shape.MiterLimit);
                         break;
                 }
             }

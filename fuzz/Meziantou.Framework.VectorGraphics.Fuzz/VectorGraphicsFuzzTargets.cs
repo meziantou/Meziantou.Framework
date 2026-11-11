@@ -241,7 +241,7 @@ public static partial class VectorGraphicsFuzzTargets
                     element = parent.Add(new SceneRectangle(value, value, kind % 13, kind % 7) { Fill = gradient, CornerRadius = kind % 3 });
                     break;
                 case 1:
-                    element = parent.Add(new SceneCircle(value, value, kind % 5) { Stroke = new SceneColor(kind, 0, 0, kind), StrokeDashArray = [1, value] });
+                    element = parent.Add(new SceneCircle(value, value, kind % 5) { Stroke = new SceneColor(kind, 0, 0, kind), StrokeDashArray = [1, value], StrokeDashOffset = value, MiterLimit = value });
                     break;
                 case 2:
                     element = parent.Add(new SceneLine(0, value, value, 0) { Stroke = SceneColor.Black, LineCap = (SceneLineCap)(kind % 3), LineJoin = (SceneLineJoin)(kind % 3) });

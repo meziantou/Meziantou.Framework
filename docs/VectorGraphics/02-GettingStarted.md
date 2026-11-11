@@ -37,6 +37,18 @@ The coordinates are in pixels, with the origin at the top-left corner and the y 
 anchored at its start, its middle or its end; its [SceneFont](cref:Meziantou.Framework.VectorGraphics.SceneFont) sets
 the size, the weight and the style. The family is the one of the scene.
 
+## Strokes
+
+The outline of a shape ([SceneShape](cref:Meziantou.Framework.VectorGraphics.SceneShape)) has a
+[StrokeWidth](cref:Meziantou.Framework.VectorGraphics.SceneShape.StrokeWidth), a
+[LineCap](cref:Meziantou.Framework.VectorGraphics.SceneShape.LineCap) for the ends of open outlines, and a
+[LineJoin](cref:Meziantou.Framework.VectorGraphics.SceneShape.LineJoin) for the corners: a miter join is beveled when
+the corner is so sharp that its point would be longer than
+[MiterLimit](cref:Meziantou.Framework.VectorGraphics.SceneShape.MiterLimit) times the width (4 by default, as in SVG).
+[StrokeDashArray](cref:Meziantou.Framework.VectorGraphics.SceneShape.StrokeDashArray) draws the outline as dashes and
+gaps, and [StrokeDashOffset](cref:Meziantou.Framework.VectorGraphics.SceneShape.StrokeDashOffset) shifts where the
+pattern starts.
+
 ## Paths
 
 A [PathBuilder](cref:Meziantou.Framework.VectorGraphics.PathBuilder) adds the commands of SVG one by one, and common

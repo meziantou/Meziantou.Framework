@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Pdf.VectorGraphics.Internal;
 internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Scene scene, SceneFontCollection? fonts)
 {
     // The miter limit of SVG (the default of PDF is 10)
-    private const double MiterLimit = 4;
+    private const double DefaultMiterLimit = 4;
 
     private static readonly ConditionalWeakTable<SceneFontFace, EmbeddedFont> EmbeddedFonts = [];
     private static readonly ConditionalWeakTable<SceneImage, LoadedImage> Images = [];
@@ -230,14 +230,18 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                     SceneLineJoin.Bevel => PdfLineJoin.Bevel,
                     _ => PdfLineJoin.Miter,
                 })
-                .SetMiterLimit(MiterLimit);
+                .SetMiterLimit(shape.MiterLimit >= 1 && double.IsFinite(shape.MiterLimit) ? shape.MiterLimit : DefaultMiterLimit);
 
             // SVG draws a solid line when a length of the pattern is negative or when they are all 0
             if (shape.StrokeDashArray is { Count: > 0 } dashes && dashes.All(dash => dash >= 0 && double.IsFinite(dash)) && dashes.Sum() > 0)
             {
                 // An odd number of lengths is repeated, as in SVG
                 double[] pattern = dashes.Count % 2 == 0 ? [.. dashes] : [.. dashes, .. dashes];
-                _content.SetDashPattern(pattern);
+
+                // The phase is brought into the pattern: a negative offset starts before it
+                var offset = double.IsFinite(shape.StrokeDashOffset) ? shape.StrokeDashOffset : 0;
+                var phase = offset % pattern.Sum();
+                _content.SetDashPattern(pattern, phase < 0 ? phase + pattern.Sum() : phase);
             }
         }
 

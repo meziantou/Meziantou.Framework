@@ -83,7 +83,7 @@ public static class PdfVectorGraphicsFuzzTargets
                     element = parent.Add(new SceneRectangle(value, 10, 30, 20) { Fill = paint, CornerRadius = kind % 9 });
                     break;
                 case 1:
-                    element = parent.Add(new SceneCircle(50, 40, value) { Stroke = paint, StrokeWidth = kind % 5, StrokeDashArray = (kind & 8) != 0 ? [2, value] : null, LineCap = (SceneLineCap)(kind % 3) });
+                    element = parent.Add(new SceneCircle(50, 40, value) { Stroke = paint, StrokeWidth = kind % 5, StrokeDashArray = (kind & 8) != 0 ? [2, value] : null, StrokeDashOffset = value, LineCap = (SceneLineCap)(kind % 3) });
                     break;
                 case 2:
                     element = parent.Add(new SceneLine(0, value, 90, 70) { Stroke = paint, StrokeWidth = value, LineJoin = (SceneLineJoin)(kind % 3) });
@@ -95,7 +95,7 @@ public static class PdfVectorGraphicsFuzzTargets
                         path.Close().LineTo(5, value);
                     }
 
-                    element = parent.Add(new ScenePath(path.Build()) { Fill = paint, Stroke = SceneColor.Black, FillRule = (SceneFillRule)(kind % 2) });
+                    element = parent.Add(new ScenePath(path.Build()) { Fill = paint, Stroke = SceneColor.Black, StrokeWidth = 1 + (kind % 4), MiterLimit = value, FillRule = (SceneFillRule)(kind % 2) });
                     break;
                 case 4:
                 case 5:

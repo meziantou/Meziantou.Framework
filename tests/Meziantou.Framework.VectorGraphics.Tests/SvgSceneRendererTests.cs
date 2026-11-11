@@ -148,6 +148,25 @@ public sealed class SvgSceneRendererTests
     }
 
     [Fact]
+    public void DashOffsetAndMiterLimit()
+    {
+        var scene = new Scene(100, 100, "sans-serif");
+        scene.Root.Add(new SceneLine(0, 10, 90, 10) { Stroke = SceneColor.Black, StrokeDashArray = [4, 2], StrokeDashOffset = 3 });
+        scene.Root.Add(new ScenePath(new PathBuilder().MoveTo(0, 0).LineTo(5, 50).LineTo(10, 0).Build()) { Stroke = SceneColor.Black, MiterLimit = 10 });
+
+        // The defaults, a miter limit that does not apply, and invalid values write nothing
+        scene.Root.Add(new SceneLine(0, 20, 90, 20) { Stroke = SceneColor.Black, StrokeDashOffset = 3, MiterLimit = 10, LineJoin = SceneLineJoin.Round });
+        scene.Root.Add(new SceneLine(0, 30, 90, 30) { Stroke = SceneColor.Black, StrokeDashArray = [4, 2], StrokeDashOffset = double.NaN, MiterLimit = 0.5 });
+        var svg = SvgSceneRenderer.Render(scene);
+
+        Assert.Contains("stroke-dasharray=\"4 2\" stroke-dashoffset=\"3\"", svg, StringComparison.Ordinal);
+        Assert.Contains("stroke-miterlimit=\"10\"", svg, StringComparison.Ordinal);
+        Assert.Equal(1, svg.Split("stroke-dashoffset").Length - 1);
+        Assert.Equal(1, svg.Split("stroke-miterlimit").Length - 1);
+        Assert.Equal(4, new SceneRectangle(0, 0, 1, 1).MiterLimit);
+    }
+
+    [Fact]
     public void ToCubicCurves()
     {
         // A quadratic curve becomes the cubic curve of the same shape; the other commands are kept

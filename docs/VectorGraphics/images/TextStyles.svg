@@ -1,5 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100" viewBox="0 0 300 100" role="img" font-family="sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="125" viewBox="0 0 300 125" role="img" font-family="sans-serif">
 <text x="10" y="20" font-size="16" font-weight="300" fill="#000000">Light</text>
 <text x="10" y="45" font-size="16" font-weight="bold" text-decoration="underline" fill="#000000">Bold and underlined</text>
 <text x="10" y="70" font-size="16" text-decoration="line-through" fill="#000000">Removed</text>
+<text x="10" y="105" font-size="16" text-decoration="overline" letter-spacing="2" word-spacing="6" fill="#000000">Spaced and overlined</text>
 </svg>

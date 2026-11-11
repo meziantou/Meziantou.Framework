@@ -42,8 +42,25 @@ public sealed class SceneText(double x, double y, string text, SceneFont font, S
     /// <summary>Gets or sets the rotation of the text around its anchor, in degrees, clockwise.</summary>
     public double Rotation { get; set; }
 
-    /// <summary>Gets or sets the lines drawn with the text: an underline, a strikethrough, or both. They have the color of the text, and the position and the thickness the font gives them.</summary>
+    /// <summary>Gets or sets the lines drawn with the text: an underline, a strikethrough, an overline, or several of them. They have the color of the text, and the position and the thickness the font gives them.</summary>
     public SceneTextDecorations Decorations { get; set; }
+
+    /// <summary>
+    /// Gets or sets the space added after each character, in pixels, as the CSS <c>letter-spacing</c>; negative to
+    /// tighten. The default is 0.
+    /// </summary>
+    /// <remarks>
+    /// The space is added after each grapheme cluster (a character with its marks), the last one included, and the
+    /// optional ligatures are not formed when it is not 0. A value that is not finite is 0.
+    /// </remarks>
+    public double LetterSpacing { get; set; }
+
+    /// <summary>
+    /// Gets or sets the space added to each space (U+0020 and U+00A0), in pixels, as the CSS <c>word-spacing</c>;
+    /// negative to tighten. The default is 0.
+    /// </summary>
+    /// <remarks>A value that is not finite is 0.</remarks>
+    public double WordSpacing { get; set; }
 
     /// <summary>
     /// Gets the parts of the text that have their own styles, or an empty list when the whole text has the style of the

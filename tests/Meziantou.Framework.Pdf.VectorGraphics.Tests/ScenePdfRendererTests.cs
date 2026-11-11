@@ -241,6 +241,45 @@ public sealed class ScenePdfRendererTests
     }
 
     [Fact]
+    public void LetterSpacingAndOverline()
+    {
+        var font = new SceneFont(20);
+        var scene = new Scene(200, 130, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneText(10, 30, "MMMM", font, SceneColor.Black));
+        scene.Root.Add(new SceneText(10, 70, "MM MM", font, SceneColor.Black) { LetterSpacing = 10, WordSpacing = 5 });
+        scene.Root.Add(new SceneText(190, 120, "xx", font, SceneColor.Black) { Anchor = SceneTextAnchor.End, Decorations = SceneTextDecorations.Overline });
+        var document = scene.ToPdf();
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+
+        // 4 spaces of 10 pixels between the 5 characters, and 5 more after the space, which is 0.278 em in Helvetica
+        var (left, right) = GetInkColumns(image, 0, 40);
+        var (spacedLeft, spacedRight) = GetInkColumns(image, 40, 80);
+        Assert.InRange(spacedLeft, left - 1, left + 1);
+        Assert.InRange(spacedRight - right - (0.278 * font.Size), 44, 46);
+
+        // The spaces are not read as spaces between the letters
+        Assert.Contains("MM MM", document.Pages[0].ExtractText(), StringComparison.Ordinal);
+
+        // The overline is above the x-height, at the ascent of the font
+        var top = Enumerable.Range(90, 30).First(y => Enumerable.Range(150, 50).Any(x => image.Frames[0][x, y].R < 128));
+        Assert.InRange(top, 100, 106);
+    }
+
+    [Fact]
+    public void LetterSpacingOfEmbeddedFonts()
+    {
+        // The glyphs are placed with the spacing after each cluster: 10 pixels are 500 thousandths of the size
+        var fonts = SceneFontCollection.Load(Path.Combine(TestData, "LiberationSans-Regular.woff2"));
+        var scene = new Scene(200, 100, fonts.FontFamily) { Fonts = fonts };
+        scene.Root.Add(new SceneText(10, 70, "MM MM", new SceneFont(20), SceneColor.Black) { LetterSpacing = 10, WordSpacing = 5 });
+        var document = scene.ToPdf();
+        var content = Uncompressed(document);
+        Assert.Matches(@"\[<[0-9A-F]{4}>-500<[0-9A-F]{4}>-500<[0-9A-F]{4}>-750<[0-9A-F]{4}>-500<[0-9A-F]{4}>\] TJ", content);
+        Assert.Contains("/ActualText", content, StringComparison.Ordinal);
+        Assert.Contains("MM MM", document.Pages[0].ExtractText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void DocumentsAreTagged()
     {
         #region PdfVectorGraphics_Tagged

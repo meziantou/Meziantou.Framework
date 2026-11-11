@@ -142,6 +142,27 @@ public sealed class SceneRendererTests
         Assert.True(top < 80);
     }
 
+    [Fact]
+    public void LetterSpacingAndOverline()
+    {
+        // 3 spaces of 10 pixels between the 4 letters
+        var font = new SceneFont(20);
+        var scene = new Scene(200, 100, "sans-serif");
+        scene.Root.Add(new SceneText(10, 30, "MMMM", font, SceneColor.Black));
+        scene.Root.Add(new SceneText(10, 70, "MMMM", font, SceneColor.Black) { LetterSpacing = 10 });
+        scene.Root.Add(new SceneText(150, 90, "xx", font, SceneColor.Black) { Decorations = SceneTextDecorations.Overline });
+        using var image = scene.ToImage();
+        var (left, _, right, _) = GetInkBounds(image, 0, 0, 140, 40);
+        var (spacedLeft, _, spacedRight, _) = GetInkBounds(image, 0, 40, 140, 80);
+        Assert.Equal(left, spacedLeft);
+        Assert.InRange(spacedRight - right, 29, 31);
+
+        // The overline is above the x-height, at the ascent of the font
+        var (_, top, _, bottom) = GetInkBounds(image, 140, 60, 200, 100);
+        Assert.InRange(bottom, 88, 90);
+        Assert.InRange(top, 70, 76);
+    }
+
     private static (int Left, int Top, int Right, int Bottom) GetInkBounds(Image<Rgba32> image, int x0, int y0, int x1, int y1)
     {
         var (left, top, right, bottom) = (int.MaxValue, int.MaxValue, -1, -1);

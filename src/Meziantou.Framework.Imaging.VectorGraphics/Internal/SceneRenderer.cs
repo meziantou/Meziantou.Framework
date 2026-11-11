@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Meziantou.Framework.VectorGraphics;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Typography;
@@ -420,9 +421,10 @@ internal static class SceneRenderer
         if (text.Spans.Count is 0)
         {
             var decorations = ToDecorations(text.Decorations);
-            var layout = context.Fonts is null && decorations is TextDecorations.None
+            var spacing = new Spacing(text.LetterSpacing, text.WordSpacing);
+            var layout = context.Fonts is null && decorations is TextDecorations.None && spacing.IsNone
                 ? TextLayout.Create(text.Text, context.Options.GetFont(text.Font), text.Font.Size)
-                : TextLayout.Create(text.Text, CreateStyle(text.Font, decorations, context));
+                : TextLayout.Create(text.Text, CreateStyle(text.Font, decorations, spacing, context));
             parts.Add((layout, ToBrush(text.Color)));
             return parts;
         }
@@ -432,23 +434,55 @@ internal static class SceneRenderer
             var font = span.Font ?? text.Font;
             if (span.Text.Length > 0 && font.Size > 0 && double.IsFinite(font.Size))
             {
-                parts.Add((TextLayout.Create(span.Text, CreateStyle(font, ToDecorations(span.Decorations ?? text.Decorations), context)), ToBrush(span.Color ?? text.Color)));
+                var spacing = new Spacing(span.LetterSpacing ?? text.LetterSpacing, span.WordSpacing ?? text.WordSpacing);
+                parts.Add((TextLayout.Create(span.Text, CreateStyle(font, ToDecorations(span.Decorations ?? text.Decorations), spacing, context)), ToBrush(span.Color ?? text.Color)));
             }
         }
 
         return parts;
     }
 
-    private static TextStyle CreateStyle(SceneFont font, TextDecorations decorations, DrawContext context, Brush? brush = null)
+    // A letter spacing turns the optional ligatures off, as in CSS: the space goes between the letters they would join
+    private static readonly FontFeature[] NoLigatures = [new("liga", 0), new("clig", 0), new("dlig", 0)];
+
+    private static TextStyle CreateStyle(SceneFont font, TextDecorations decorations, Spacing spacing, DrawContext context)
     {
         FontStack fonts = context.Fonts is { } collection ? SceneFontCache.GetStack(collection, font, context.FontFamily) : context.Options.GetFont(font);
-        return new TextStyle(fonts, font.Size) { Decorations = decorations, Brush = brush };
+        return new TextStyle(fonts, font.Size)
+        {
+            Decorations = decorations,
+            LetterSpacing = spacing.Letter,
+            WordSpacing = spacing.Word,
+            Features = spacing.Letter is 0 ? [] : NoLigatures,
+        };
     }
 
     private static TextDecorations ToDecorations(SceneTextDecorations decorations)
     {
         return (decorations.HasFlag(SceneTextDecorations.Underline) ? TextDecorations.Underline : TextDecorations.None)
-            | (decorations.HasFlag(SceneTextDecorations.Strikethrough) ? TextDecorations.Strikethrough : TextDecorations.None);
+            | (decorations.HasFlag(SceneTextDecorations.Strikethrough) ? TextDecorations.Strikethrough : TextDecorations.None)
+            | (decorations.HasFlag(SceneTextDecorations.Overline) ? TextDecorations.Overline : TextDecorations.None);
+    }
+
+    /// <summary>The letter spacing and the word spacing of a text: 0 when they are not finite, within the limits of <see cref="TextStyle"/>.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct Spacing
+    {
+        private const double MaxSpacing = 65536;
+
+        public Spacing(double letter, double word)
+        {
+            Letter = Normalize(letter);
+            Word = Normalize(word);
+        }
+
+        public double Letter { get; }
+
+        public double Word { get; }
+
+        public bool IsNone => Letter is 0 && Word is 0;
+
+        private static double Normalize(double value) => double.IsFinite(value) ? Math.Clamp(value, -MaxSpacing, MaxSpacing) : 0;
     }
 
     private static Pen CreatePen(SceneShape shape, DrawContext context)

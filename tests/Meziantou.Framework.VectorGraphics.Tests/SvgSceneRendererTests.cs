@@ -174,12 +174,15 @@ public sealed class SvgSceneRendererTests
     public void TextWeightsAndDecorations()
     {
         #region VectorGraphics_TextStyles
-        var scene = new Scene(width: 300, height: 100, fontFamily: "sans-serif");
+        var scene = new Scene(width: 300, height: 125, fontFamily: "sans-serif");
 
         // A weight from 1 to 1000, as in CSS, and lines drawn with the text
         scene.Root.Add(new SceneText(10, 20, "Light", new SceneFont(16, Weight: 300), SceneColor.Black));
         scene.Root.Add(new SceneText(10, 45, "Bold and underlined", new SceneFont(16, Weight: SceneFont.BoldWeight), SceneColor.Black) { Decorations = SceneTextDecorations.Underline });
         scene.Root.Add(new SceneText(10, 70, "Removed", new SceneFont(16), SceneColor.Black) { Decorations = SceneTextDecorations.Strikethrough });
+
+        // Space between the letters and the words, in pixels, and a line over the text
+        scene.Root.Add(new SceneText(10, 105, "Spaced and overlined", new SceneFont(16), SceneColor.Black) { LetterSpacing = 2, WordSpacing = 6, Decorations = SceneTextDecorations.Overline });
 
         var svg = SvgSceneRenderer.Render(scene);
         #endregion
@@ -193,6 +196,18 @@ public sealed class SvgSceneRendererTests
         Assert.Contains("text-decoration=\"underline line-through\"", SvgSceneRenderer.Render(Single(new SceneText(0, 0, "a", new SceneFont(10), SceneColor.Black) { Decorations = SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough })), StringComparison.Ordinal);
         Assert.True(new SceneFont(10, Weight: 600).IsBold);
         Assert.False(new SceneFont(10, Weight: 599).IsBold);
+        Assert.Contains("letter-spacing=\"2\" word-spacing=\"6\" fill=\"#000000\"", svg, StringComparison.Ordinal);
+        Assert.Contains("text-decoration=\"overline\"", svg, StringComparison.Ordinal);
+        Assert.Contains("text-decoration=\"underline overline line-through\"", SvgSceneRenderer.Render(Single(new SceneText(0, 0, "a", new SceneFont(10), SceneColor.Black) { Decorations = SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough | SceneTextDecorations.Overline })), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SpacingOfSpans()
+    {
+        // A span writes the spacing that differs from the text; a spacing that is not finite is 0
+        var text = new SceneText(0, 10, [new SceneTextSpan("a"), new SceneTextSpan("b") { LetterSpacing = 3 }, new SceneTextSpan("c") { LetterSpacing = 1, WordSpacing = double.NaN }], new SceneFont(10), SceneColor.Black) { LetterSpacing = 1, WordSpacing = double.PositiveInfinity };
+        var svg = SvgSceneRenderer.Render(Single(text));
+        Assert.Contains("<text x=\"0\" y=\"10\" font-size=\"10\" letter-spacing=\"1\" fill=\"#000000\">a<tspan letter-spacing=\"3\">b</tspan>c</text>", svg, StringComparison.Ordinal);
     }
 
     [Fact]

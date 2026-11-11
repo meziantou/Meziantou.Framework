@@ -19,4 +19,10 @@ public sealed class SceneTextSpan(string text)
 
     /// <summary>Gets the lines drawn with the span, or <see langword="null"/> for the lines of the text.</summary>
     public SceneTextDecorations? Decorations { get; init; }
+
+    /// <summary>Gets the space added after each character of the span, or <see langword="null"/> for the spacing of the text (<see cref="SceneText.LetterSpacing"/>).</summary>
+    public double? LetterSpacing { get; init; }
+
+    /// <summary>Gets the space added to each space of the span, or <see langword="null"/> for the spacing of the text (<see cref="SceneText.WordSpacing"/>).</summary>
+    public double? WordSpacing { get; init; }
 }

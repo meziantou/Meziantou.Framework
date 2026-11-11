@@ -469,10 +469,12 @@ namespace Meziantou.Framework.VectorGraphics
         public Meziantou.Framework.VectorGraphics.SceneColor Color { get => throw null; }
         public Meziantou.Framework.VectorGraphics.SceneTextDecorations Decorations { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneFont Font { get => throw null; }
+        public double LetterSpacing { get => throw null; set { } }
         public double MeasuredWidth { get => throw null; set { } }
         public double Rotation { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneTextSpan> Spans { get => throw null; }
         public string Text { get => throw null; }
+        public double WordSpacing { get => throw null; set { } }
         public double X { get => throw null; }
         public double Y { get => throw null; }
         public SceneText(double x, double y, System.Collections.Generic.IEnumerable<Meziantou.Framework.VectorGraphics.SceneTextSpan> spans, Meziantou.Framework.VectorGraphics.SceneFont font, Meziantou.Framework.VectorGraphics.SceneColor color) { }
@@ -492,6 +494,7 @@ namespace Meziantou.Framework.VectorGraphics
         None = 0,
         Underline = 1,
         Strikethrough = 2,
+        Overline = 4,
     }
 
     public sealed class SceneTextSpan
@@ -499,7 +502,9 @@ namespace Meziantou.Framework.VectorGraphics
         public Meziantou.Framework.VectorGraphics.SceneColor? Color { get => throw null; init { } }
         public Meziantou.Framework.VectorGraphics.SceneTextDecorations? Decorations { get => throw null; init { } }
         public Meziantou.Framework.VectorGraphics.SceneFont? Font { get => throw null; init { } }
+        public double? LetterSpacing { get => throw null; init { } }
         public string Text { get => throw null; }
+        public double? WordSpacing { get => throw null; init { } }
         public SceneTextSpan(string text) { }
     }
 
@@ -561,7 +566,9 @@ namespace Meziantou.Framework.VectorGraphics
 
     public static class TextMeasurerExtensions
     {
+        public static Meziantou.Framework.VectorGraphics.TextMetrics Measure(this Meziantou.Framework.VectorGraphics.ITextMeasurer measurer, Meziantou.Framework.VectorGraphics.SceneText text) => throw null;
         public static Meziantou.Framework.VectorGraphics.TextMetrics Measure(this Meziantou.Framework.VectorGraphics.ITextMeasurer measurer, System.Collections.Generic.IEnumerable<Meziantou.Framework.VectorGraphics.SceneTextSpan> spans, Meziantou.Framework.VectorGraphics.SceneFont font) => throw null;
+        public static Meziantou.Framework.VectorGraphics.TextMetrics Measure(this Meziantou.Framework.VectorGraphics.ITextMeasurer measurer, string text, Meziantou.Framework.VectorGraphics.SceneFont font, double letterSpacing, double wordSpacing) => throw null;
         public static Meziantou.Framework.VectorGraphics.ITextMeasurer WithFontFamily(this Meziantou.Framework.VectorGraphics.ITextMeasurer measurer, string? fontFamily) => throw null;
     }
 

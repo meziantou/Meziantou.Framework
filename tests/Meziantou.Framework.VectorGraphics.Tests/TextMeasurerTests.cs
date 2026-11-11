@@ -66,6 +66,24 @@ public sealed class TextMeasurerTests
     }
 
     [Fact]
+    public void Measure_AddsTheSpacing()
+    {
+        var font = new SceneFont(10);
+        var width = Afm.Measure("a b", font).Width;
+
+        // The letter spacing after each of the 3 characters, the word spacing after the space
+        Assert.Equal(width + 3 + 2, Afm.Measure("a b", font, letterSpacing: 1, wordSpacing: 2).Width, 1e-9);
+        Assert.Equal(Afm.Measure("a\u00A0b", font).Width + 2, Afm.Measure("a\u00A0b", font, letterSpacing: 0, wordSpacing: 2).Width, 1e-9);
+        Assert.Equal(width, Afm.Measure("a b", font, double.NaN, double.PositiveInfinity).Width, 1e-9);
+
+        // A text applies its spacing to the spans that set none
+        var text = new SceneText(0, 0, [new SceneTextSpan("ab"), new SceneTextSpan("c") { LetterSpacing = 5 }], font, SceneColor.Black) { LetterSpacing = 1 };
+        Assert.Equal(Afm.Measure("ab", font).Width + 2 + Afm.Measure("c", font).Width + 5, Afm.Measure(text).Width, 1e-9);
+        Assert.Equal(Afm.Measure("ab", font).Width + Afm.Measure("c", font).Width + 5, Afm.Measure(text.Spans, font).Width, 1e-9);
+        Assert.Equal(width + 3, Afm.Measure(new SceneText(0, 0, "a b", font, SceneColor.Black) { LetterSpacing = 1 }).Width, 1e-9);
+    }
+
+    [Fact]
     public void Truncate()
     {
         var font = new SceneFont(10);

@@ -521,6 +521,16 @@ public static class SvgSceneRenderer
                 Attribute("font-style", "italic");
             }
 
+            if (TextSpacing.Normalize(text.LetterSpacing) is not 0 and var letterSpacing)
+            {
+                Attribute("letter-spacing", letterSpacing);
+            }
+
+            if (TextSpacing.Normalize(text.WordSpacing) is not 0 and var wordSpacing)
+            {
+                Attribute("word-spacing", wordSpacing);
+            }
+
             Paint("fill", text.Color);
             if (text.Rotation != 0)
             {
@@ -557,7 +567,11 @@ public static class SvgSceneRenderer
             var font = span.Font ?? text.Font;
             var color = span.Color ?? text.Color;
             var decoration = DecorationValue(span.Decorations ?? text.Decorations);
-            var hasStyle = font != text.Font || color != text.Color || decoration is not null;
+            var letterSpacing = TextSpacing.Normalize(span.LetterSpacing ?? text.LetterSpacing);
+            var wordSpacing = TextSpacing.Normalize(span.WordSpacing ?? text.WordSpacing);
+            var hasLetterSpacing = letterSpacing != TextSpacing.Normalize(text.LetterSpacing);
+            var hasWordSpacing = wordSpacing != TextSpacing.Normalize(text.WordSpacing);
+            var hasStyle = font != text.Font || color != text.Color || decoration is not null || hasLetterSpacing || hasWordSpacing;
             if (!hasStyle)
             {
                 output.Write(Escape(span.Text));
@@ -606,18 +620,41 @@ public static class SvgSceneRenderer
                 Attribute("text-decoration", decoration);
             }
 
+            if (hasLetterSpacing)
+            {
+                Attribute("letter-spacing", letterSpacing);
+            }
+
+            if (hasWordSpacing)
+            {
+                Attribute("word-spacing", wordSpacing);
+            }
+
             output.Write('>');
             output.Write(Escape(span.Text));
             output.Write("</tspan>");
         }
 
-        private static string? DecorationValue(SceneTextDecorations decorations) => (decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough)) switch
+        private static string? DecorationValue(SceneTextDecorations decorations)
         {
-            SceneTextDecorations.Underline => "underline",
-            SceneTextDecorations.Strikethrough => "line-through",
-            SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough => "underline line-through",
-            _ => null,
-        };
+            var values = new List<string>(3);
+            if (decorations.HasFlag(SceneTextDecorations.Underline))
+            {
+                values.Add("underline");
+            }
+
+            if (decorations.HasFlag(SceneTextDecorations.Overline))
+            {
+                values.Add("overline");
+            }
+
+            if (decorations.HasFlag(SceneTextDecorations.Strikethrough))
+            {
+                values.Add("line-through");
+            }
+
+            return values.Count is 0 ? null : string.Join(' ', values);
+        }
 
         private void ShapeAttributes(SceneShape shape, bool isLine = false)
         {

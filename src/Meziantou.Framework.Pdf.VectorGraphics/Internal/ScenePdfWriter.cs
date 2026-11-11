@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Fonts;
+using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.VectorGraphics;
 
 namespace Meziantou.Framework.Pdf.VectorGraphics.Internal;
@@ -631,7 +632,8 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                 SetColor(part.Color, stroke: false);
                 SetAlpha(alpha, strokeAlpha: 1);
                 _content.BeginText().SetTextMatrix(PdfMatrix.Multiply(new PdfMatrix(1, 0, 0, -1, startX + offset, text.Y), rotationMatrix));
-                _content.SetFont(part.Font, part.Size).ShowText(part.Text);
+                _content.SetFont(part.Font, part.Size);
+                ShowPart(part);
                 _content.EndText();
                 DrawDecorations(part, startX + offset, text.Y, rotationMatrix);
                 Restore();
@@ -641,10 +643,56 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         }
     }
 
+    // A part laid out in clusters is shown with the positions of its glyphs (an embedded font), or with an adjustment
+    // after each cluster (a standard font, whose codes are single bytes and which the PDF does not shape). The spacing
+    // would read as spaces: the characters are the replacement text of what is shown (14.9.4).
+    private void ShowPart(TextPart part)
+    {
+        if (part.Clusters is not { } clusters)
+        {
+            _content.ShowText(part.Text);
+            return;
+        }
+
+        if (clusters.Count is 0)
+            return;
+
+        _content.BeginMarkedContent("Span", new PdfDictionary { ["ActualText"] = PdfString.FromText(part.Text) });
+        if (clusters[0].Glyphs is null)
+        {
+            var segments = new List<PdfTextSegment>(clusters.Count * 2);
+            foreach (var cluster in clusters)
+            {
+                segments.Add(cluster.Text);
+                if (cluster.Spacing != 0)
+                {
+                    segments.Add(-cluster.Spacing * 1000 / part.Size);
+                }
+            }
+
+            _content.ShowText([.. segments]);
+        }
+        else
+        {
+            var glyphs = new List<PdfGlyph>();
+            foreach (var cluster in clusters)
+            {
+                foreach (var glyph in cluster.Glyphs!)
+                {
+                    glyphs.Add(glyph with { X = cluster.X + glyph.X });
+                }
+            }
+
+            _content.ShowGlyphs([.. glyphs]);
+        }
+
+        _content.EndMarkedContent();
+    }
+
     // The lines of a part are rectangles of its color, at the position and of the thickness the face of its span gives
     private void DrawDecorations(TextPart part, double x, double baseline, PdfMatrix rotation)
     {
-        if ((part.Decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough)) is SceneTextDecorations.None || !(part.Width > 0))
+        if ((part.Decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough | SceneTextDecorations.Overline)) is SceneTextDecorations.None || !(part.Width > 0))
             return;
 
         Save();
@@ -661,6 +709,13 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             var top = part.Face?.StrikeoutPosition ?? HelveticaStrikeoutPosition;
             var thickness = part.Face?.StrikeoutThickness ?? HelveticaLineThickness;
             _content.Rectangle(x, baseline - (top * part.Size), part.Width, thickness * part.Size).Fill();
+        }
+
+        // An overline is at the ascent of the font, as thick as an underline, as in the image renderer
+        if (part.Decorations.HasFlag(SceneTextDecorations.Overline))
+        {
+            var thickness = part.Face?.UnderlineThickness ?? HelveticaLineThickness;
+            _content.Rectangle(x, baseline - (part.Font.Ascent / 1000 * part.Size), part.Width, thickness * part.Size).Fill();
         }
 
         Restore();
@@ -686,54 +741,78 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     }
 
     /// <summary>A part of a text that one font draws, with its style and its width.</summary>
-    internal sealed record TextPart(PdfFont Font, string Text, double Width, double Size, SceneColor Color, SceneTextDecorations Decorations, SceneFontFace? Face);
+    /// <remarks>
+    /// <see cref="Clusters"/> places the characters of a part that the PDF font cannot place by itself, such as a spaced
+    /// text: its width includes the spacing. It is <see langword="null"/> otherwise.
+    /// </remarks>
+    internal sealed record TextPart(PdfFont Font, string Text, double Width, double Size, SceneColor Color, SceneTextDecorations Decorations, SceneFontFace? Face, List<TextCluster>? Clusters);
 
     /// <summary>Splits a text into the parts that one font draws: its spans, and the characters of a span that each face draws.</summary>
-    internal List<TextPart> GetTextParts(SceneText text)
+    internal List<TextPart> GetTextParts(SceneText text, bool layoutClusters = false)
     {
         var parts = new List<TextPart>();
         if (text.Spans.Count is 0)
         {
-            AddSpan(text.Text, text.Font, text.Color, text.Decorations);
+            AddSpan(text.Text, text.Font, text.Color, text.Decorations, text.LetterSpacing, text.WordSpacing);
         }
         else
         {
             foreach (var span in text.Spans)
             {
-                AddSpan(span.Text, span.Font ?? text.Font, span.Color ?? text.Color, span.Decorations ?? text.Decorations);
+                AddSpan(span.Text, span.Font ?? text.Font, span.Color ?? text.Color, span.Decorations ?? text.Decorations, span.LetterSpacing ?? text.LetterSpacing, span.WordSpacing ?? text.WordSpacing);
             }
         }
 
         return parts;
 
-        void AddSpan(string value, SceneFont font, SceneColor color, SceneTextDecorations decorations)
+        void AddSpan(string value, SceneFont font, SceneColor color, SceneTextDecorations decorations, double letterSpacing, double wordSpacing)
         {
             if (value.Length is 0 || !(font.Size > 0) || !double.IsFinite(font.Size))
                 return;
 
+            letterSpacing = NormalizeSpacing(letterSpacing);
+            wordSpacing = NormalizeSpacing(wordSpacing);
             var standard = GetStandardFont(font);
             if (fonts is null)
             {
-                Add(standard, value, null);
+                Add(standard, null, value, null);
                 return;
             }
 
             var face = fonts.GetFace(font, scene.FontFamily);
             foreach (var run in fonts.GetRuns(value, font, scene.FontFamily))
             {
-                Add(GetEmbeddedFont(run.Face) ?? standard, value.Substring(run.Start, run.Length), face);
+                var embedded = GetEmbeddedFont(run.Face);
+                if (embedded.Font is not null)
+                {
+                    Add(embedded.Font, embedded.Face, value.Substring(run.Start, run.Length), face);
+                }
+                else
+                {
+                    Add(standard, null, value.Substring(run.Start, run.Length), face);
+                }
             }
 
-            void Add(PdfFont pdfFont, string runText, SceneFontFace? spanFace)
+            void Add(PdfFont pdfFont, FontFace? fontFace, string runText, SceneFontFace? spanFace)
             {
                 runText = Sanitize(pdfFont, runText);
-                if (runText.Length > 0)
+                if (runText.Length is 0)
+                    return;
+
+                if (layoutClusters || letterSpacing != 0 || wordSpacing != 0)
                 {
-                    parts.Add(new TextPart(pdfFont, runText, pdfFont.GetTextWidth(runText, font.Size), font.Size, color, decorations, spanFace));
+                    var (clusters, width) = TextClusterLayout.Layout(pdfFont, fontFace, runText, font.Size, letterSpacing, wordSpacing);
+                    parts.Add(new TextPart(pdfFont, runText, width, font.Size, color, decorations, spanFace, clusters));
+                    return;
                 }
+
+                parts.Add(new TextPart(pdfFont, runText, pdfFont.GetTextWidth(runText, font.Size), font.Size, color, decorations, spanFace, Clusters: null));
             }
         }
     }
+
+    // The largest magnitude of a spacing, as in the other renderers
+    private static double NormalizeSpacing(double spacing) => double.IsFinite(spacing) ? Math.Clamp(spacing, -65536, 65536) : 0;
 
     // A grapheme cluster the font cannot show is drawn as a question mark
     private static string Sanitize(PdfFont font, string text)
@@ -763,20 +842,27 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         });
     }
 
-    // A face that cannot be embedded (bitmap or CFF2 outlines, a license that forbids it) is replaced by Helvetica
-    private static PdfFont? GetEmbeddedFont(SceneFontFace face)
+    // A face that cannot be embedded (bitmap or CFF2 outlines, a license that forbids it) is replaced by Helvetica.
+    // The face of the font file shapes the texts the PDF font cannot place by itself: spaced texts, texts on a path.
+    private static EmbeddedFont GetEmbeddedFont(SceneFontFace face)
     {
         return EmbeddedFonts.GetValue(face, static face =>
         {
             try
             {
-                return new EmbeddedFont(PdfFont.Load(face.Data.Span, face.Index));
+                // Each font has its own environment, as PdfFont.Load gives it: the face keeps its buffers
+                var faces = FontLoader.Load(face.Data.Span, new PooledFontEnvironment(FontResourceLimits.Default, 64L * 1024 * 1024));
+                if ((uint)face.Index >= (uint)faces.Length)
+                    return new EmbeddedFont(null, null);
+
+                var fontFace = faces[face.Index];
+                return new EmbeddedFont(PdfFont.Load(face.Data.Span, face.Index), fontFace);
             }
             catch (Exception exception) when (exception is FontException or UnsupportedPdfFeatureException or ArgumentOutOfRangeException)
             {
-                return new EmbeddedFont(null);
+                return new EmbeddedFont(null, null);
             }
-        }).Font;
+        });
     }
 
     private void SetColor(SceneColor color, bool stroke)
@@ -832,7 +918,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
     private static bool IsFinite(PathData path) => path.Commands.All(command => IsFinite(command.X, command.Y, command.X1, command.Y1, command.X2, command.Y2));
 
-    private sealed record EmbeddedFont(PdfFont? Font);
+    private sealed record EmbeddedFont(PdfFont? Font, FontFace? Face);
 
     private sealed record LoadedImage(PdfImage? Image);
 

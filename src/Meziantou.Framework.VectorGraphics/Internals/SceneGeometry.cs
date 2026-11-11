@@ -14,10 +14,131 @@ internal static class SceneGeometry
         if (!(element.Opacity > 0))
             return null;
 
+        SceneBounds? bounds;
         if (element is SceneGroup || element.Transform is not { } elementTransform)
-            return GetUntransformedBounds(element, measureText, applyClips);
+        {
+            bounds = GetUntransformedBounds(element, measureText, applyClips);
+        }
+        else
+        {
+            bounds = GetUntransformedBounds(element, measureText, applyClips) is { } untransformed ? Transform(untransformed, elementTransform) : null;
+        }
 
-        return GetUntransformedBounds(element, measureText, applyClips) is { } untransformed ? Transform(untransformed, elementTransform) : null;
+        // The clipping path is in the coordinates of the parent, outside of the transform
+        if (applyClips && bounds is { } box && element.ClippingPath is { } clippingPath)
+        {
+            if (GetClipBounds(clippingPath, measureText) is not { } clipBounds)
+                return null;
+
+            box = Intersect(box, clipBounds);
+            return box.Width > 0 && box.Height > 0 ? box : null;
+        }
+
+        return bounds;
+    }
+
+    [ThreadStatic]
+    private static HashSet<SceneClipPath>? s_clipPaths;
+
+    /// <summary>Gets a rectangle that contains the geometry of a clipping path, cut by its own clipping path, or <see langword="null"/> when it leaves nothing visible.</summary>
+    /// <remarks>The rectangle of a shape of the content is its own, without its stroke. A clipping path that cuts itself leaves nothing visible.</remarks>
+    public static SceneBounds? GetClipBounds(SceneClipPath clipPath, Func<SceneText, SceneBounds?> measureText)
+    {
+        s_clipPaths ??= new(ReferenceEqualityComparer.Instance);
+        if (!s_clipPaths.Add(clipPath))
+            return null;
+
+        try
+        {
+            if (GetClipContentBounds(clipPath.Content, measureText) is not { } bounds)
+                return null;
+
+            if (clipPath.ClippingPath is { } outer)
+            {
+                if (GetClipBounds(outer, measureText) is not { } outerBounds)
+                    return null;
+
+                bounds = Intersect(bounds, outerBounds);
+            }
+
+            return bounds.Width > 0 && bounds.Height > 0 ? bounds : null;
+        }
+        finally
+        {
+            s_clipPaths.Remove(clipPath);
+        }
+    }
+
+    // The geometry an element adds to a clipping path, in the coordinates of its parent: the interiors of the shapes,
+    // without their strokes, the glyphs of the texts; not the lines and the images
+    private static SceneBounds? GetClipContentBounds(SceneElement element, Func<SceneText, SceneBounds?> measureText)
+    {
+        SceneBounds? bounds;
+        switch (element)
+        {
+            case SceneGroup group:
+                bounds = null;
+                foreach (var child in group.Children)
+                {
+                    bounds = Union(bounds, GetClipContentBounds(child, measureText));
+                }
+
+                break;
+
+            case SceneUse use:
+                if (use.IsCircular())
+                    return null;
+
+                s_uses ??= new(ReferenceEqualityComparer.Instance);
+                if (!s_uses.Add(use))
+                    return null;
+
+                try
+                {
+                    bounds = GetClipContentBounds(use.Content, measureText);
+                }
+                finally
+                {
+                    s_uses.Remove(use);
+                }
+
+                break;
+
+            case SceneRectangle rectangle:
+                bounds = rectangle.Width > 0 && rectangle.Height > 0 ? new SceneBounds(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height) : null;
+                break;
+
+            case SceneCircle circle:
+                bounds = circle.Radius > 0 ? new SceneBounds(circle.CenterX - circle.Radius, circle.CenterY - circle.Radius, 2 * circle.Radius, 2 * circle.Radius) : null;
+                break;
+
+            case ScenePath path:
+                bounds = GetPathBounds(path.Data);
+                break;
+
+            // The opacity of the content does not matter
+            case SceneText text:
+                bounds = GetUntransformedBounds(text, measureText, applyClips: true);
+                break;
+
+            default:
+                return null;
+        }
+
+        if (bounds is { } box && element.Transform is { } transform)
+        {
+            bounds = Transform(box, transform);
+        }
+
+        if (element is not (SceneGroup or SceneUse) && bounds is { } clipped && element.ClippingPath is { } clippingPath)
+        {
+            if (GetClipBounds(clippingPath, measureText) is not { } clipBounds)
+                return null;
+
+            bounds = Intersect(clipped, clipBounds);
+        }
+
+        return bounds;
     }
 
     // The bounds of an element before its transform; a group applies its transform before its clips

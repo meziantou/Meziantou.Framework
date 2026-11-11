@@ -5,7 +5,7 @@ internal static class SceneTree
 {
     /// <summary>
     /// Enumerates an element and every element it draws: the children of the groups, the contents of the masks, of the
-    /// patterns and of the markers, then the contents of the uses that are not drawn otherwise. An element that is
+    /// patterns, of the markers and of the clipping paths, then the contents of the uses that are not drawn otherwise. An element that is
     /// reached several times is enumerated each time; a pattern, a marker and the content of a use once.
     /// </summary>
     public static IEnumerable<SceneElement> EnumerateElements(SceneElement root) => Walk(root).Elements;
@@ -155,16 +155,22 @@ internal static class SceneTree
         }
     }
 
-    /// <summary>Gets the elements an element draws, in order: its mask, the patterns of its paints, its markers, its children; not the content of a use.</summary>
+    /// <summary>Gets the elements an element draws, in order: its mask, its clipping paths, the patterns of its paints, its markers, its children; not the content of a use.</summary>
     public static List<SceneElement> GetContents(SceneElement element) => GetContents(element, new HashSet<object>(ReferenceEqualityComparer.Instance));
 
-    // The elements an element draws, in order: its mask, the patterns of its paints, its markers, its children
+    // The elements an element draws, in order: its mask, its clipping paths, the patterns of its paints, its markers, its children
     private static List<SceneElement> GetContents(SceneElement element, HashSet<object> patterns)
     {
         var contents = new List<SceneElement>();
         if (element.Mask is { } mask)
         {
             contents.Add(mask.Content);
+        }
+
+        // A clipping path, and the clipping paths that cut it
+        for (var clipPath = element.ClippingPath; clipPath is not null && patterns.Add(clipPath); clipPath = clipPath.ClippingPath)
+        {
+            contents.Add(clipPath.Content);
         }
 
         if (element is SceneShape shape)

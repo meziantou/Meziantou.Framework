@@ -668,4 +668,144 @@ public sealed class SceneRendererTests
         Assert.Null(SceneRenderer.ToVectorPath(new PathBuilder().Build()));
         Assert.NotNull(SceneRenderer.ToVectorPath(new PathBuilder().AddRectangle(0, 0, 1, 1).Build()));
     }
+
+    [Fact]
+    public void ContextPaintsOfMarkers()
+    {
+        var scene = new Scene(60, 60, "sans-serif") { Background = SceneColor.White };
+        var square = new SceneMarker { Units = SceneMarkerUnits.UserSpace };
+        square.Content.Add(new SceneRectangle(-4, -4, 8, 8) { Fill = ContextPaint.Stroke, Stroke = ContextPaint.Fill, StrokeWidth = 2 });
+        scene.Root.Add(new SceneLine(5, 10.5, 40, 10.5) { Stroke = (SceneColor)"#ff0000", Fill = (SceneColor)"#0000ff", MarkerEnd = square });
+        scene.Root.Add(new SceneLine(5, 30.5, 40, 30.5) { Stroke = (SceneColor)"#0000ff", MarkerEnd = square });
+
+        // Outside of the markers, a context paint paints nothing
+        scene.Root.Add(new SceneRectangle(0, 45, 10, 10) { Fill = ContextPaint.Fill });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(Red, pixels[40, 10]);
+        Assert.Equal(Blue, pixels[44, 10]);
+        Assert.Equal(Blue, pixels[40, 30]);
+        Assert.Equal(Blue, pixels[34, 30]);
+        Assert.Equal(Colors.White, pixels[44, 30]);
+        Assert.Equal(Colors.White, pixels[5, 50]);
+    }
+
+    [Fact]
+    public void PaintOrderAndNonScalingStrokes()
+    {
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneRectangle(10, 10, 20, 20) { Fill = (SceneColor)"#ff0000", Stroke = (SceneColor)"#0000ff", StrokeWidth = 6 });
+        scene.Root.Add(new SceneRectangle(50, 10, 20, 20) { Fill = (SceneColor)"#ff0000", Stroke = (SceneColor)"#0000ff", StrokeWidth = 6, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+
+        // A stroke of 1 pixel in a group scaled 10 times stays 1 pixel wide; dashes of 4 pixels
+        var zoomed = scene.Root.Add(new SceneGroup { Transform = SceneTransform.Scale(10, 10) });
+        zoomed.Add(new SceneLine(1, 4.55, 9, 4.55) { Stroke = (SceneColor)"#0000ff", NonScalingStroke = true });
+        zoomed.Add(new SceneLine(1, 5.5, 9, 5.5) { Stroke = (SceneColor)"#0000ff", StrokeWidth = 2, StrokeDashArray = [4, 4], NonScalingStroke = true });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(Blue, pixels[11, 20]);
+        Assert.Equal(Red, pixels[51, 20]);
+        Assert.Equal(Blue, pixels[48, 20]);
+        Assert.Equal(Blue, pixels[50, 45]);
+        Assert.Equal(Colors.White, pixels[50, 43]);
+        Assert.Equal(Colors.White, pixels[50, 47]);
+        Assert.Equal(Blue, pixels[11, 54]);
+        Assert.Equal(Colors.White, pixels[15, 54]);
+
+        // The width and the dashes are scaled with the image
+        using var large = scene.ToImage(new SceneImageOptions { Scale = 2 });
+        Assert.Equal(Blue, large.Frames[0][100, 90]);
+        Assert.Equal(Blue, large.Frames[0][100, 91]);
+        Assert.Equal(Colors.White, large.Frames[0][100, 89]);
+        Assert.Equal(Colors.White, large.Frames[0][100, 92]);
+        Assert.Equal(Blue, large.Frames[0][22, 109]);
+        Assert.Equal(Colors.White, large.Frames[0][30, 109]);
+    }
+
+    [Fact]
+    public void FocalRadiusOfRadialGradients()
+    {
+        var scene = new Scene(40, 40, "sans-serif");
+        scene.Root.Add(new SceneRectangle(0, 0, 40, 40) { Fill = new RadialGradientPaint(20, 20, 20, [new(0, (SceneColor)"#ff0000"), new(1, (SceneColor)"#0000ff")]) { FocalRadius = 10 } });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(Red, pixels[20, 20]);
+        Assert.Equal(Red, pixels[28, 20]);
+        Assert.True(pixels[38, 20].B > 150 && pixels[38, 20].R < 100, pixels[38, 20].ToString());
+    }
+
+    [Fact]
+    public void AspectRatiosOfImages()
+    {
+        var scene = new Scene(80, 80, "sans-serif") { Background = SceneColor.White };
+
+        // The square image fits in the middle of a wide rectangle, or covers it and is cut
+        scene.Root.Add(new SceneImage(0, 0, 80, 40, Png) { Alignment = SceneAspectRatio.XMidYMid });
+        scene.Root.Add(new SceneImage(0, 40, 80, 40, Png) { Alignment = SceneAspectRatio.XMinYMin, Slice = true });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(Colors.White, pixels[10, 20]);
+        Assert.Equal(Colors.White, pixels[70, 20]);
+        Assert.True(pixels[25, 5].R > 200 && pixels[25, 5].B < 80, pixels[25, 5].ToString());
+        Assert.True(pixels[55, 5].B > 200 && pixels[55, 5].R < 80, pixels[55, 5].ToString());
+
+        // Sliced: the top half of the image, 80 pixels wide, fills the rectangle
+        Assert.True(pixels[10, 50].R > 200 && pixels[10, 50].B < 80, pixels[10, 50].ToString());
+        Assert.True(pixels[70, 50].B > 200 && pixels[70, 50].R < 80, pixels[70, 50].ToString());
+    }
+
+    [Fact]
+    public void ClippingPaths()
+    {
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+
+        // The union of a square and of a ring whose hole is empty (even-odd)
+        var shapes = new SceneClipPath();
+        shapes.Content.Add(new SceneRectangle(0, 0, 10, 10));
+        shapes.Content.Add(new ScenePath(new PathBuilder().AddRectangle(20, 0, 30, 30).AddRectangle(30, 10, 10, 10).Build()) { FillRule = SceneFillRule.EvenOdd });
+        scene.Root.Add(new SceneRectangle(0, 0, 60, 40) { Fill = (SceneColor)"#0000ff", ClippingPath = shapes });
+
+        // In the coordinates of the parent, outside of the transform of the element; cut by another clipping path
+        var outer = new SceneClipPath();
+        outer.Content.Add(new SceneRectangle(60, 50, 40, 10));
+        var cut = new SceneClipPath { ClippingPath = outer };
+        cut.Content.Add(new SceneRectangle(70, 50, 30, 30));
+        scene.Root.Add(new SceneRectangle(0, 0, 50, 50) { Fill = (SceneColor)"#ff0000", Transform = SceneTransform.Translate(50, 50), ClippingPath = cut });
+
+        // A text shows its glyphs, even translucent; a clipping path that cuts itself leaves nothing visible
+        var letters = new SceneClipPath();
+        letters.Content.Add(new SceneText(0, 90, "II", new SceneFont(40), SceneColor.Black.WithOpacity(0.2)));
+        scene.Root.Add(new SceneRectangle(0, 50, 50, 50) { Fill = (SceneColor)"#ff0000", ClippingPath = letters });
+        var circular = new SceneClipPath();
+        circular.Content.Add(new SceneRectangle(0, 0, 100, 100));
+        circular.ClippingPath = circular;
+        scene.Root.Add(new SceneRectangle(55, 0, 45, 45) { Fill = (SceneColor)"#ff0000", ClippingPath = circular });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(Blue, pixels[5, 5]);
+        Assert.Equal(Colors.White, pixels[15, 5]);
+        Assert.Equal(Blue, pixels[25, 5]);
+        Assert.Equal(Colors.White, pixels[35, 15]);
+        Assert.Equal(Colors.White, pixels[55, 35]);
+        Assert.Equal(Red, pixels[75, 55]);
+        Assert.Equal(Colors.White, pixels[65, 55]);
+        Assert.Equal(Colors.White, pixels[75, 65]);
+        Assert.Equal(Colors.White, pixels[80, 20]);
+
+        // The glyphs are red, opaque; the rest of the rectangle is not drawn
+        var red = 0;
+        for (var y = 50; y < 100; y++)
+        {
+            for (var x = 0; x < 50; x++)
+            {
+                if (pixels[x, y] == Red)
+                {
+                    red++;
+                }
+            }
+        }
+
+        Assert.InRange(red, 50, 1000);
+        Assert.Equal(Colors.White, pixels[45, 95]);
+    }
 }

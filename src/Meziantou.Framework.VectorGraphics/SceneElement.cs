@@ -97,6 +97,16 @@ public abstract class SceneElement
     /// <summary>Gets or sets the opacity mask of the element, or <see langword="null"/> for none.</summary>
     public SceneMask? Mask { get; set; }
 
+    /// <summary>
+    /// Gets or sets the shapes and texts outside of which the element is not drawn, as the SVG <c>clip-path</c> property,
+    /// or <see langword="null"/> for none.
+    /// </summary>
+    /// <remarks>
+    /// The clipping path is in the coordinates of the parent of the element, as <see cref="Mask"/>: outside of the
+    /// <see cref="Transform"/> of the element. It applies after the <see cref="Filter"/> and before the mask, as in SVG.
+    /// </remarks>
+    public SceneClipPath? ClippingPath { get; set; }
+
     /// <summary>Gets or sets how the element is blended with what is drawn under it. The default is <see cref="SceneBlendMode.Normal"/>.</summary>
     public SceneBlendMode BlendMode { get; set; }
 
@@ -110,8 +120,8 @@ public abstract class SceneElement
     /// (<see cref="SceneText.Path"/>), whose rectangle is the one of its path enlarged by the size of its font.
     /// </param>
     /// <param name="applyClips">
-    /// Whether a group applies its clips (<see cref="SceneGroup.Clip"/>, <see cref="SceneGroup.ClipPath"/>). The filter of
-    /// a group applies before its clips: the region of its filter is the rectangle without them.
+    /// Whether the clips apply (<see cref="SceneGroup.Clip"/>, <see cref="SceneGroup.ClipPath"/>, <see cref="ClippingPath"/>).
+    /// The filter of an element applies before its clips: the region of its filter is the rectangle without them.
     /// </param>
     /// <returns>The rectangle, or <see langword="null"/>.</returns>
     /// <remarks>

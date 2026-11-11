@@ -26,6 +26,9 @@ internal static class SceneRenderer
 
     private static readonly Brush Transparent = new SolidBrush(new Rgba32(0, 0, 0, 0));
 
+    // The paint of the silhouettes of the content of a clipping path
+    private static readonly Brush Opaque = new SolidBrush(new Rgba32(0, 0, 0, 255));
+
     internal static Brush ToBrush(SceneColor color) => new SolidBrush(new Rgba32(color.R, color.G, color.B, color.A));
 
     internal static VectorPath? ToVectorPath(PathData data)
@@ -103,8 +106,141 @@ internal static class SceneRenderer
         DrawUnmasked(canvas, element, context);
     }
 
-    // A group applies its clips before its filter, and its transform after it
+    // The clipping path is in the coordinates of the parent, outside of the filter and of the transform
     private static void DrawUnmasked(DrawingCanvas canvas, SceneElement element, DrawContext context)
+    {
+        if (element.ClippingPath is { } clippingPath)
+        {
+            DrawClipped(canvas, clippingPath, (element, context), static (canvas, state) => DrawUnclipped(canvas, state.Element, state.Context), context);
+            return;
+        }
+
+        DrawUnclipped(canvas, element, context);
+    }
+
+    // Draws inside a clipping path: an alpha mask of the silhouettes of its content, cut by the clipping paths that cut it.
+    // A clipping path that cuts itself leaves nothing visible.
+    private static void DrawClipped(DrawingCanvas canvas, SceneClipPath clipPath, (SceneElement Element, DrawContext Context) state, DrawingAction<(SceneElement Element, DrawContext Context)> action, DrawContext context)
+    {
+        canvas.Mask(
+            (clipPath, state, action, context),
+            static (canvas, mask) => DrawClipSilhouette(canvas, mask.clipPath, mask.context),
+            static (canvas, mask) => mask.action(canvas, mask.state),
+            MaskMode.Alpha);
+    }
+
+    private static void DrawClipSilhouette(DrawingCanvas canvas, SceneClipPath clipPath, DrawContext context)
+    {
+        if (!context.EnterClipPath(clipPath))
+            return;
+
+        try
+        {
+            if (clipPath.ClippingPath is { } outer)
+            {
+                DrawClipped(canvas, outer, (clipPath.Content, context), static (canvas, state) => DrawSilhouette(canvas, state.Element, state.Context), context);
+            }
+            else
+            {
+                DrawSilhouette(canvas, clipPath.Content, context);
+            }
+        }
+        finally
+        {
+            context.ExitClipPath(clipPath);
+        }
+    }
+
+    // The geometry an element adds to a clipping path, opaque: the interiors of the shapes, the glyphs of the texts. The
+    // clipping path of a shape or a text cuts it, in the coordinates of its parent.
+    private static void DrawSilhouette(DrawingCanvas canvas, SceneElement element, DrawContext context)
+    {
+        if (element is SceneRectangle or SceneCircle or ScenePath or SceneText && element.ClippingPath is { } clippingPath)
+        {
+            DrawClipped(canvas, clippingPath, (element, context), static (canvas, state) => DrawTransformedSilhouette(canvas, state.Element, state.Context), context);
+            return;
+        }
+
+        DrawTransformedSilhouette(canvas, element, context);
+    }
+
+    private static void DrawTransformedSilhouette(DrawingCanvas canvas, SceneElement element, DrawContext context)
+    {
+        if (element.Transform is { } transform)
+        {
+            if (!IsFinite(transform))
+                return;
+
+            canvas.Transform(ToTransform(transform), (element, context), static (canvas, state) => DrawSilhouetteContent(canvas, state.element, state.context));
+            return;
+        }
+
+        DrawSilhouetteContent(canvas, element, context);
+    }
+
+    private static void DrawSilhouetteContent(DrawingCanvas canvas, SceneElement element, DrawContext context)
+    {
+        switch (element)
+        {
+            case SceneGroup group:
+                foreach (var child in group.Children)
+                {
+                    DrawSilhouette(canvas, child, context);
+                }
+
+                break;
+
+            case SceneUse use when !use.IsCircular() && context.EnterUse(use):
+                try
+                {
+                    DrawSilhouette(canvas, use.Content, context);
+                }
+                finally
+                {
+                    context.ExitUse(use);
+                }
+
+                break;
+
+            case SceneRectangle rectangle when rectangle.Width > 0 && rectangle.Height > 0:
+                var bounds = new RectangleD(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height);
+                if (rectangle.CornerRadius > 0)
+                {
+                    canvas.FillRoundedRectangle(Opaque, bounds, rectangle.CornerRadius);
+                }
+                else
+                {
+                    canvas.FillRectangle(Opaque, bounds);
+                }
+
+                break;
+
+            case SceneCircle circle when circle.Radius > 0:
+                canvas.FillCircle(Opaque, new PointD(circle.CenterX, circle.CenterY), circle.Radius);
+                break;
+
+            case ScenePath path when ToVectorPath(path.Data) is { } vector:
+                canvas.Fill(Opaque, vector, path.FillRule is SceneFillRule.EvenOdd ? FillRule.EvenOdd : FillRule.NonZero);
+                break;
+
+            // The glyphs of a text are drawn opaque, without its stroke
+            case SceneText text:
+                context.SilhouetteDepth++;
+                try
+                {
+                    DrawText(canvas, text, context);
+                }
+                finally
+                {
+                    context.SilhouetteDepth--;
+                }
+
+                break;
+        }
+    }
+
+    // A group applies its clips before its filter, and its transform after it
+    private static void DrawUnclipped(DrawingCanvas canvas, SceneElement element, DrawContext context)
     {
         if (element is SceneGroup group)
         {
@@ -235,92 +371,9 @@ internal static class SceneRenderer
         switch (element)
         {
 
-            case SceneRectangle rectangle:
-                {
-                    var bounds = new RectangleD(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height);
-                    if (rectangle.Width <= 0 || rectangle.Height <= 0)
-                    {
-                        if (rectangle.Stroke is not null && (rectangle.Width > 0 || rectangle.Height > 0))
-                        {
-                            canvas.StrokeLine(CreatePen(rectangle, context), new PointD(rectangle.X, rectangle.Y), new PointD(rectangle.X + rectangle.Width, rectangle.Y + rectangle.Height));
-                        }
-
-                        break;
-                    }
-
-                    if (rectangle.Fill is { } fill)
-                    {
-                        if (rectangle.CornerRadius > 0)
-                        {
-                            canvas.FillRoundedRectangle(context.GetBrush(fill), bounds, rectangle.CornerRadius);
-                        }
-                        else
-                        {
-                            canvas.FillRectangle(context.GetBrush(fill), bounds);
-                        }
-                    }
-
-                    if (rectangle.Stroke is not null)
-                    {
-                        if (rectangle.CornerRadius > 0)
-                        {
-                            canvas.StrokeRoundedRectangle(CreatePen(rectangle, context), bounds, rectangle.CornerRadius);
-                        }
-                        else
-                        {
-                            canvas.StrokeRectangle(CreatePen(rectangle, context), bounds);
-                        }
-                    }
-
-                    break;
-                }
-
-            case SceneCircle circle:
-                {
-                    if (circle.Radius <= 0)
-                        break;
-
-                    var center = new PointD(circle.CenterX, circle.CenterY);
-                    if (circle.Fill is { } fill)
-                    {
-                        canvas.FillCircle(context.GetBrush(fill), center, circle.Radius);
-                    }
-
-                    if (circle.Stroke is not null)
-                    {
-                        canvas.StrokeCircle(CreatePen(circle, context), center, circle.Radius);
-                    }
-
-                    break;
-                }
-
-            case SceneLine line:
-                if (line.Stroke is not null)
-                {
-                    canvas.StrokeLine(CreatePen(line, context), new PointD(line.X1, line.Y1), new PointD(line.X2, line.Y2));
-                }
-
-                DrawMarkers(canvas, line, context);
+            case SceneShape shape:
+                DrawShape(canvas, shape, context);
                 break;
-
-            case ScenePath path:
-                {
-                    if (ToVectorPath(path.Data) is not { } vector)
-                        break;
-
-                    if (path.Fill is { } fill)
-                    {
-                        canvas.Fill(context.GetBrush(fill), vector, path.FillRule is SceneFillRule.EvenOdd ? FillRule.EvenOdd : FillRule.NonZero);
-                    }
-
-                    if (path.Stroke is not null)
-                    {
-                        canvas.Stroke(CreatePen(path, context), vector);
-                    }
-
-                    DrawMarkers(canvas, path, context);
-                    break;
-                }
 
             case SceneText text:
                 DrawText(canvas, text, context);
@@ -345,8 +398,117 @@ internal static class SceneRenderer
         }
     }
 
-    // The content of each marker is drawn on its vertex, after the shape, as a group with its own transform and effects. A marker drawn on a shape of its own content
-    // is not drawn again.
+    private enum ShapePart
+    {
+        Fill,
+        Stroke,
+        Markers,
+    }
+
+    // The fill, the stroke and the markers of a shape, in its paint order
+    private static void DrawShape(DrawingCanvas canvas, SceneShape shape, DrawContext context)
+    {
+        var (first, second, third) = shape.PaintOrder switch
+        {
+            ScenePaintOrder.FillMarkersStroke => (ShapePart.Fill, ShapePart.Markers, ShapePart.Stroke),
+            ScenePaintOrder.StrokeFillMarkers => (ShapePart.Stroke, ShapePart.Fill, ShapePart.Markers),
+            ScenePaintOrder.StrokeMarkersFill => (ShapePart.Stroke, ShapePart.Markers, ShapePart.Fill),
+            ScenePaintOrder.MarkersFillStroke => (ShapePart.Markers, ShapePart.Fill, ShapePart.Stroke),
+            ScenePaintOrder.MarkersStrokeFill => (ShapePart.Markers, ShapePart.Stroke, ShapePart.Fill),
+            _ => (ShapePart.Fill, ShapePart.Stroke, ShapePart.Markers),
+        };
+
+        DrawShapePart(canvas, shape, context, first);
+        DrawShapePart(canvas, shape, context, second);
+        DrawShapePart(canvas, shape, context, third);
+    }
+
+    private static void DrawShapePart(DrawingCanvas canvas, SceneShape shape, DrawContext context, ShapePart part)
+    {
+        if (part is ShapePart.Markers)
+        {
+            DrawMarkers(canvas, shape, context);
+            return;
+        }
+
+        if ((part is ShapePart.Fill ? shape.Fill : shape.Stroke) is null)
+            return;
+
+        switch (shape)
+        {
+            case SceneRectangle rectangle:
+                {
+                    var bounds = new RectangleD(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height);
+                    if (rectangle.Width <= 0 || rectangle.Height <= 0)
+                    {
+                        // A rectangle without area is stroked as a line when it has a length
+                        if (part is ShapePart.Stroke && (rectangle.Width > 0 || rectangle.Height > 0))
+                        {
+                            canvas.StrokeLine(CreatePen(rectangle, context), new PointD(rectangle.X, rectangle.Y), new PointD(rectangle.X + rectangle.Width, rectangle.Y + rectangle.Height));
+                        }
+
+                        break;
+                    }
+
+                    if (part is ShapePart.Fill)
+                    {
+                        if (rectangle.CornerRadius > 0)
+                        {
+                            canvas.FillRoundedRectangle(context.GetBrush(rectangle.Fill!), bounds, rectangle.CornerRadius);
+                        }
+                        else
+                        {
+                            canvas.FillRectangle(context.GetBrush(rectangle.Fill!), bounds);
+                        }
+                    }
+                    else if (rectangle.CornerRadius > 0)
+                    {
+                        canvas.StrokeRoundedRectangle(CreatePen(rectangle, context), bounds, rectangle.CornerRadius);
+                    }
+                    else
+                    {
+                        canvas.StrokeRectangle(CreatePen(rectangle, context), bounds);
+                    }
+
+                    break;
+                }
+
+            case SceneCircle circle when circle.Radius > 0:
+                {
+                    var center = new PointD(circle.CenterX, circle.CenterY);
+                    if (part is ShapePart.Fill)
+                    {
+                        canvas.FillCircle(context.GetBrush(circle.Fill!), center, circle.Radius);
+                    }
+                    else
+                    {
+                        canvas.StrokeCircle(CreatePen(circle, context), center, circle.Radius);
+                    }
+
+                    break;
+                }
+
+            // A line is not filled
+            case SceneLine line when part is ShapePart.Stroke:
+                canvas.StrokeLine(CreatePen(line, context), new PointD(line.X1, line.Y1), new PointD(line.X2, line.Y2));
+                break;
+
+            case ScenePath path when ToVectorPath(path.Data) is { } vector:
+                if (part is ShapePart.Fill)
+                {
+                    canvas.Fill(context.GetBrush(path.Fill!), vector, path.FillRule is SceneFillRule.EvenOdd ? FillRule.EvenOdd : FillRule.NonZero);
+                }
+                else
+                {
+                    canvas.Stroke(CreatePen(path, context), vector);
+                }
+
+                break;
+        }
+    }
+
+    // The content of each marker is drawn on its vertex, as a group with its own transform and effects. Its context paints
+    // are the fill and the stroke of the shape. A marker drawn on a shape of its own content is not drawn again.
     private static void DrawMarkers(DrawingCanvas canvas, SceneShape shape, DrawContext context)
     {
         foreach (var (marker, vertex, isStart) in GetMarkers(shape))
@@ -355,12 +517,15 @@ internal static class SceneRenderer
             if (!IsFinite(transform) || (transform.A * transform.D) - (transform.B * transform.C) == 0 || !context.EnterMarker(marker))
                 continue;
 
+            var (outerFill, outerStroke) = (context.ContextFill, context.ContextStroke);
+            (context.ContextFill, context.ContextStroke) = (context.Resolve(shape.Fill), context.Resolve(shape.Stroke));
             try
             {
                 canvas.Transform(ToTransform(transform), (marker, context), static (canvas, state) => DrawElement(canvas, state.marker.Content, state.context));
             }
             finally
             {
+                (context.ContextFill, context.ContextStroke) = (outerFill, outerStroke);
                 context.ExitMarker(marker);
             }
         }
@@ -460,7 +625,28 @@ internal static class SceneRenderer
 
         using (decoded)
         {
-            canvas.DrawImage(decoded.Frames[0], new RectangleD(image.X, image.Y, image.Width, image.Height));
+            var frame = decoded.Frames[0];
+            var viewport = new RectangleD(image.X, image.Y, image.Width, image.Height);
+            if (image.Alignment is SceneAspectRatio.None)
+            {
+                canvas.DrawImage(frame, viewport);
+                return;
+            }
+
+            // The image is placed as the view box of its pixels in its rectangle, which cuts it when it covers it
+            var viewBox = new SceneViewBox(new SceneBounds(0, 0, frame.Width, frame.Height), new SceneBounds(image.X, image.Y, image.Width, image.Height)) { Alignment = image.Alignment, Slice = image.Slice };
+            if (viewBox.GetTransform() is not { } transform)
+                return;
+
+            var destination = new RectangleD(transform.E, transform.F, frame.Width * transform.A, frame.Height * transform.D);
+            if (image.Slice)
+            {
+                canvas.Clip(viewport, (frame, destination), static (canvas, state) => canvas.DrawImage(state.frame, state.destination));
+            }
+            else
+            {
+                canvas.DrawImage(frame, destination);
+            }
         }
     }
 
@@ -574,7 +760,7 @@ internal static class SceneRenderer
             var layout = context.Fonts is null && decorations is TextDecorations.None && spacing.IsNone
                 ? TextLayout.Create(text.Text, context.Options.GetFont(text.Font), text.Font.Size)
                 : TextLayout.Create(text.Text, CreateStyle(text.Font, decorations, spacing, context));
-            parts.Add((layout, ToBrush(text.Color)));
+            parts.Add((layout, context.SilhouetteDepth > 0 ? Opaque : ToBrush(text.Color)));
             return parts;
         }
 
@@ -584,7 +770,7 @@ internal static class SceneRenderer
             if (span.Text.Length > 0 && font.Size > 0 && double.IsFinite(font.Size))
             {
                 var spacing = new Spacing(span.LetterSpacing ?? text.LetterSpacing, span.WordSpacing ?? text.WordSpacing);
-                parts.Add((TextLayout.Create(span.Text, CreateStyle(font, ToDecorations(span.Decorations ?? text.Decorations), spacing, context)), ToBrush(span.Color ?? text.Color)));
+                parts.Add((TextLayout.Create(span.Text, CreateStyle(font, ToDecorations(span.Decorations ?? text.Decorations), spacing, context)), context.SilhouetteDepth > 0 ? Opaque : ToBrush(span.Color ?? text.Color)));
             }
         }
 
@@ -640,12 +826,15 @@ internal static class SceneRenderer
         private static double Normalize(double value) => double.IsFinite(value) ? Math.Clamp(value, -MaxSpacing, MaxSpacing) : 0;
     }
 
+    // A stroke that does not scale is measured in pixels of the canvas: its width and its dashes are scaled with the scene
     private static Pen CreatePen(SceneShape shape, DrawContext context)
     {
-        return new Pen(context.GetBrush(shape.Stroke!), shape.StrokeWidth)
+        var scale = shape.NonScalingStroke ? context.Options.Scale : 1;
+        return new Pen(context.GetBrush(shape.Stroke!), shape.StrokeWidth * scale)
         {
-            DashPattern = shape.StrokeDashArray is { Count: > 0 } dashes ? [.. dashes] : default,
-            DashOffset = double.IsFinite(shape.StrokeDashOffset) ? shape.StrokeDashOffset : 0,
+            DashPattern = shape.StrokeDashArray is { Count: > 0 } dashes ? [.. dashes.Select(dash => dash * scale)] : default,
+            DashOffset = double.IsFinite(shape.StrokeDashOffset) ? shape.StrokeDashOffset * scale : 0,
+            ScalesWithTransform = !shape.NonScalingStroke,
             MiterLimit = shape.MiterLimit >= 1 && double.IsFinite(shape.MiterLimit) ? Math.Min(shape.MiterLimit, 1048576) : 4,
             LineCap = shape.LineCap switch
             {
@@ -677,10 +866,14 @@ internal static class SceneRenderer
             [.. gradient.Stops.Select(stop => new GradientStop(stop.Offset, Rgba64.FromRgba32(new Rgba32(stop.Color.R, stop.Color.G, stop.Color.B, stop.Color.A))))])
         {
             FocalPoint = new PointD(gradient.FocalX, gradient.FocalY),
+            FocalRadius = gradient.FocalRadius > 0 && double.IsFinite(gradient.FocalRadius) ? Math.Min(gradient.FocalRadius, MaxFocalRadius) : 0,
             SpreadMode = ToSpreadMode(gradient.Spread),
             Transform = ToTransform(gradient.Transform),
         };
     }
+
+    // The largest focal radius of the canvas
+    private const double MaxFocalRadius = 16777216;
 
     private static GradientSpreadMode ToSpreadMode(SceneGradientSpread spread) => spread switch
     {
@@ -711,12 +904,36 @@ internal static class SceneRenderer
 
         public void ExitUse(SceneUse use) => _drawingUses.Remove(use);
 
+        private readonly HashSet<SceneClipPath> _drawingClipPaths = new(ReferenceEqualityComparer.Instance);
+
+        /// <summary>Gets or sets the fill of the shape whose marker is being drawn, which <see cref="ContextPaint.Fill"/> paints with.</summary>
+        public ScenePaint? ContextFill { get; set; }
+
+        /// <summary>Gets or sets the stroke of the shape whose marker is being drawn, which <see cref="ContextPaint.Stroke"/> paints with.</summary>
+        public ScenePaint? ContextStroke { get; set; }
+
+        /// <summary>Gets or sets the depth of the silhouettes of clipping paths being drawn: every paint is opaque, and the texts are not stroked.</summary>
+        public int SilhouetteDepth { get; set; }
+
+        public bool EnterClipPath(SceneClipPath clipPath) => _drawingClipPaths.Add(clipPath);
+
+        public void ExitClipPath(SceneClipPath clipPath) => _drawingClipPaths.Remove(clipPath);
+
+        /// <summary>Gets the paint a context paint stands for, or the paint itself.</summary>
+        public ScenePaint? Resolve(ScenePaint? paint) => paint is ContextPaint context ? (context.IsStroke ? ContextStroke : ContextFill) : paint;
+
         public bool EnterMarker(SceneMarker marker) => _drawingMarkers.Add(marker);
 
         public void ExitMarker(SceneMarker marker) => _drawingMarkers.Remove(marker);
 
         public Brush GetBrush(ScenePaint paint)
         {
+            if (SilhouetteDepth > 0)
+                return Opaque;
+
+            if (paint is ContextPaint)
+                return Resolve(paint) is { } resolved ? GetBrush(resolved) : Transparent;
+
             if (paint is PatternPaint drawing && _drawingPatterns.Contains(drawing))
                 return Transparent;
 
@@ -770,12 +987,16 @@ internal static class SceneRenderer
             if (!_drawingPatterns.Add(pattern))
                 return;
 
+            // The content of a pattern has no context paint: the brush is shared by the shapes it paints
+            var (outerFill, outerStroke, outerSilhouette) = (ContextFill, ContextStroke, SilhouetteDepth);
+            (ContextFill, ContextStroke, SilhouetteDepth) = (null, null, 0);
             try
             {
                 DrawElement(canvas, pattern.Content, this);
             }
             finally
             {
+                (ContextFill, ContextStroke, SilhouetteDepth) = (outerFill, outerStroke, outerSilhouette);
                 _drawingPatterns.Remove(pattern);
             }
         }

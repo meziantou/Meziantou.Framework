@@ -141,6 +141,43 @@ the corner is so sharp that its point would be longer than
 gaps, and [StrokeDashOffset](cref:Meziantou.Framework.VectorGraphics.SceneShape.StrokeDashOffset) shifts where the
 pattern starts.
 
+### Paint order, context paints and non-scaling strokes
+
+A shape paints its fill, then its stroke, then its markers;
+[PaintOrder](cref:Meziantou.Framework.VectorGraphics.SceneShape.PaintOrder) changes that order, as the `paint-order` of
+SVG: with the stroke first, the fill covers the inner half of the stroke.
+[NonScalingStroke](cref:Meziantou.Framework.VectorGraphics.SceneShape.NonScalingStroke) keeps the width and the dashes
+of the stroke in the coordinates of the scene, whatever the transforms of the shape and of its groups
+(`vector-effect="non-scaling-stroke"`). In the content of a marker,
+[ContextPaint](cref:Meziantou.Framework.VectorGraphics.ContextPaint) paints with the fill or the stroke of the shape
+the marker is drawn on (`context-fill` and `context-stroke`), so one arrowhead serves lines of every color.
+[FocalRadius](cref:Meziantou.Framework.VectorGraphics.RadialGradientPaint.FocalRadius) starts a radial gradient on a
+circle around its focal point (`fr`):
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_PaintOptions;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+// One arrowhead for lines of every color: it is painted with the stroke of the line it ends
+var arrow = new SceneMarker { RefX = 10, RefY = 5 };
+arrow.Content.Add(new ScenePath(new PathBuilder().AddPolygon((0, 0), (10, 5), (0, 10)).Build()) { Fill = ContextPaint.Stroke });
+scene.Root.Add(new SceneLine(10, 20, 90, 20) { Stroke = (SceneColor)"#0369a1", StrokeWidth = 2, MarkerEnd = arrow });
+scene.Root.Add(new SceneLine(10, 50, 90, 50) { Stroke = (SceneColor)"#e11d48", StrokeWidth = 2, MarkerEnd = arrow });
+
+// The stroke under the fill, and a stroke of 1 pixel in a group scaled 20 times
+scene.Root.Add(new SceneRectangle(110, 10, 80, 30) { Fill = (SceneColor)"#e0f2fe", Stroke = (SceneColor)"#0369a1", StrokeWidth = 8, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+var zoomed = scene.Root.Add(new SceneGroup { Transform = SceneTransform.Scale(20, 20) });
+zoomed.Add(new SceneCircle(7.5, 3.5, 1) { Fill = (SceneColor)"#e0f2fe", Stroke = (SceneColor)"#0369a1", NonScalingStroke = true });
+
+// A radial gradient whose first color fills a circle of 10 pixels around the focal point
+scene.Root.Add(new SceneCircle(30, 80, 15) { Fill = new RadialGradientPaint(30, 80, 15, [new(0, (SceneColor)"#e11d48"), new(1, (SceneColor)"#0369a1")]) { FocalRadius = 10 } });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+![Two arrows, blue and red, whose heads have the color of their line, a rectangle whose fill covers half of its thick border, a small circle with a thin border, and a disc red in its middle and blue at its edge](images/PaintOptions.svg)
+
 ## Paths
 
 A [PathBuilder](cref:Meziantou.Framework.VectorGraphics.PathBuilder) adds the commands of SVG one by one, and common
@@ -224,7 +261,9 @@ path back (an arrowhead that points out of both ends), or by a fixed angle.
 ## Images, clipping and radial gradients
 
 A [SceneImage](cref:Meziantou.Framework.VectorGraphics.SceneImage) draws a PNG, JPEG, GIF or WebP image, stretched to
-its rectangle: the SVG embeds its bytes. [SceneGroup.ClipPath](cref:Meziantou.Framework.VectorGraphics.SceneGroup.ClipPath)
+its rectangle: the SVG embeds its bytes. Its [Alignment](cref:Meziantou.Framework.VectorGraphics.SceneImage.Alignment)
+keeps its proportions instead, as the `preserveAspectRatio` of SVG: the image fits in the rectangle, aligned as the value
+says, or covers it and is cut to it with [Slice](cref:Meziantou.Framework.VectorGraphics.SceneImage.Slice). [SceneGroup.ClipPath](cref:Meziantou.Framework.VectorGraphics.SceneGroup.ClipPath)
 clips a group to any path, in the coordinates of its parent, and
 [RadialGradientPaint](cref:Meziantou.Framework.VectorGraphics.RadialGradientPaint) paints a gradient from a focal
 point to a circle:
@@ -248,6 +287,37 @@ var svg = SvgSceneRenderer.Render(scene);
 ![A square image of four colors cropped to a circle, over a radial gradient from white to blue](images/ImagesAndClipping.svg)
 
 The image and PDF renderers decode the images: an image they cannot decode is not drawn.
+
+### Clipping paths
+
+Every element has a [ClippingPath](cref:Meziantou.Framework.VectorGraphics.SceneElement.ClippingPath), as the
+`clip-path` of SVG: a [SceneClipPath](cref:Meziantou.Framework.VectorGraphics.SceneClipPath) whose content is shapes and
+texts. The element is drawn inside the union of their geometry: the interior of each shape by its fill rule, whatever
+its paints, and the glyphs of each text. The content is in the coordinates of the parent of the element, as a mask, and
+a clipping path can be cut by another one
+([SceneClipPath.ClippingPath](cref:Meziantou.Framework.VectorGraphics.SceneClipPath.ClippingPath)):
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_ClippingPaths;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+// The union of two circles, in the coordinates of the parent of the clipped element
+var circles = new SceneClipPath();
+circles.Content.Add(new SceneCircle(40, 50, 30));
+circles.Content.Add(new SceneCircle(80, 50, 30));
+scene.Root.Add(new SceneRectangle(0, 0, 120, 100) { Fill = (SceneColor)"#0369a1", ClippingPath = circles });
+
+// The glyphs of a text show a gradient
+var letters = new SceneClipPath();
+letters.Content.Add(new SceneText(130, 70, "Clip", new SceneFont(40, Weight: SceneFont.BoldWeight), SceneColor.Black));
+var gradient = new LinearGradientPaint(130, 0, 200, 0, [new(0, (SceneColor)"#0369a1"), new(1, (SceneColor)"#e11d48")]);
+scene.Root.Add(new SceneRectangle(120, 0, 80, 100) { Fill = gradient, ClippingPath = letters });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+![A blue shape made of two overlapping circles, and the word Clip filled with a gradient from blue to red](images/ClippingPaths.svg)
 
 A gradient ([SceneGradientPaint](cref:Meziantou.Framework.VectorGraphics.SceneGradientPaint)) pads its end colors
 beyond its ends by default; [Spread](cref:Meziantou.Framework.VectorGraphics.SceneGradientPaint.Spread) repeats it or

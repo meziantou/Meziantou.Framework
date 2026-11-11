@@ -1065,4 +1065,126 @@ public sealed class SvgSceneRendererTests
         Assert.Contains("<text x=\"0\" y=\"10\" font-size=\"10\"", svg, StringComparison.Ordinal);
         Assert.Contains("font-family=\"Courier &quot;New&quot; &amp; &lt;Co&gt;\"", svg, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void ClippingPaths()
+    {
+        #region VectorGraphics_ClippingPaths
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // The union of two circles, in the coordinates of the parent of the clipped element
+        var circles = new SceneClipPath();
+        circles.Content.Add(new SceneCircle(40, 50, 30));
+        circles.Content.Add(new SceneCircle(80, 50, 30));
+        scene.Root.Add(new SceneRectangle(0, 0, 120, 100) { Fill = (SceneColor)"#0369a1", ClippingPath = circles });
+
+        // The glyphs of a text show a gradient
+        var letters = new SceneClipPath();
+        letters.Content.Add(new SceneText(130, 70, "Clip", new SceneFont(40, Weight: SceneFont.BoldWeight), SceneColor.Black));
+        var gradient = new LinearGradientPaint(130, 0, 200, 0, [new(0, (SceneColor)"#0369a1"), new(1, (SceneColor)"#e11d48")]);
+        scene.Root.Add(new SceneRectangle(120, 0, 80, 100) { Fill = gradient, ClippingPath = letters });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("ClippingPaths", svg);
+        Assert.Contains("<clipPath id=\"scene-clip0\">\n<circle cx=\"40\" cy=\"50\" r=\"30\"/>\n<circle cx=\"80\" cy=\"50\" r=\"30\"/>\n</clipPath>", svg, StringComparison.Ordinal);
+        Assert.Contains("<rect x=\"0\" y=\"0\" width=\"120\" height=\"100\" fill=\"#0369a1\" clip-path=\"url(#scene-clip0)\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<clipPath id=\"scene-clip1\">\n<text x=\"130\" y=\"70\" font-size=\"40\" font-weight=\"bold\" fill=\"#000000\">Clip</text>", svg, StringComparison.Ordinal);
+
+        // The bounds of a clipped element are cut by its clipping path
+        Assert.Equal(new SceneBounds(10, 20, 100, 60), scene.Root.Children[0].GetBounds(_ => null));
+        Assert.Equal(new SceneBounds(0, 0, 120, 100), scene.Root.Children[0].GetBounds(_ => null, applyClips: false));
+    }
+
+    [Fact]
+    public void ClippingPathsOfTransformedElementsAndGroups()
+    {
+        // The groups of the content are flattened, with their transforms on the shapes; the fill rule is the clip rule
+        var clipPath = new SceneClipPath();
+        var group = clipPath.Content.Add(new SceneGroup { Transform = SceneTransform.Translate(10, 0) });
+        group.Add(new ScenePath(new PathBuilder().AddRectangle(0, 0, 10, 10).Build()) { FillRule = SceneFillRule.EvenOdd, Transform = SceneTransform.Translate(0, 5) });
+        group.Add(new SceneLine(0, 0, 10, 10));
+        var svg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 50, 50) { Fill = SceneColor.Black, ClippingPath = clipPath, Transform = SceneTransform.Scale(2, 2) }));
+        Assert.Contains("<clipPath id=\"scene-clip0\">\n<path d=\"M0,0 L10,0 L10,10 L0,10 Z\" clip-rule=\"evenodd\" transform=\"translate(10 5)\"/>\n</clipPath>", svg, StringComparison.Ordinal);
+
+        // The clipping path of a transformed element is in the coordinates of its parent: a group has it
+        Assert.Contains("<g clip-path=\"url(#scene-clip0)\">\n<rect x=\"0\" y=\"0\" width=\"50\" height=\"50\" fill=\"#000000\" transform=\"matrix(2 0 0 2 0 0)\"/>\n</g>", svg, StringComparison.Ordinal);
+
+        // A group writes it on a group outside of its transform
+        var clippedGroup = new SceneGroup { ClippingPath = clipPath, Transform = SceneTransform.Translate(1, 2) };
+        clippedGroup.Add(new SceneRectangle(0, 0, 1, 1));
+        Assert.Contains("<g clip-path=\"url(#scene-clip0)\">\n<g transform=\"translate(1 2)\">", SvgSceneRenderer.Render(Single(clippedGroup)), StringComparison.Ordinal);
+
+        // A clipping path that cuts another one is its clip-path, in the same coordinates; the clipping path of a shape
+        // of the content is in the coordinates of its parent: it is written for the space of the shape
+        var outer = new SceneClipPath();
+        outer.Content.Add(new SceneRectangle(0, 0, 5, 5));
+        var inner = new SceneClipPath();
+        inner.Content.Add(new SceneRectangle(0, 0, 20, 20));
+        var nested = new SceneClipPath { ClippingPath = outer };
+        nested.Content.Add(new SceneCircle(0, 0, 10) { ClippingPath = inner, Transform = SceneTransform.Translate(5, 5) });
+        var nestedSvg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 50, 50) { ClippingPath = nested }));
+        Assert.Contains("<clipPath id=\"scene-clip0\" clip-path=\"url(#scene-clip1)\">\n<circle cx=\"0\" cy=\"0\" r=\"10\" transform=\"translate(5 5)\" clip-path=\"url(#scene-clip2)\"/>\n</clipPath>", nestedSvg, StringComparison.Ordinal);
+        Assert.Contains("<clipPath id=\"scene-clip1\">\n<rect x=\"0\" y=\"0\" width=\"5\" height=\"5\"/>\n</clipPath>", nestedSvg, StringComparison.Ordinal);
+        Assert.Contains("<clipPath id=\"scene-clip2\">\n<rect x=\"0\" y=\"0\" width=\"20\" height=\"20\" transform=\"translate(-5 -5)\"/>\n</clipPath>", nestedSvg, StringComparison.Ordinal);
+        Assert.Equal(new SceneBounds(0, 0, 5, 5), new SceneRectangle(0, 0, 50, 50) { ClippingPath = nested }.GetBounds(_ => null));
+
+        // A clipping path that cuts itself leaves nothing visible
+        var circular = new SceneClipPath();
+        circular.Content.Add(new SceneRectangle(0, 0, 5, 5));
+        circular.ClippingPath = circular;
+        Assert.Contains("<clipPath id=\"scene-clip0\"/>", SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 50, 50) { ClippingPath = circular })), StringComparison.Ordinal);
+        Assert.Null(new SceneRectangle(0, 0, 50, 50) { ClippingPath = circular }.GetBounds(_ => null));
+    }
+
+    [Fact]
+    public void PaintOptions()
+    {
+        #region VectorGraphics_PaintOptions
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // One arrowhead for lines of every color: it is painted with the stroke of the line it ends
+        var arrow = new SceneMarker { RefX = 10, RefY = 5 };
+        arrow.Content.Add(new ScenePath(new PathBuilder().AddPolygon((0, 0), (10, 5), (0, 10)).Build()) { Fill = ContextPaint.Stroke });
+        scene.Root.Add(new SceneLine(10, 20, 90, 20) { Stroke = (SceneColor)"#0369a1", StrokeWidth = 2, MarkerEnd = arrow });
+        scene.Root.Add(new SceneLine(10, 50, 90, 50) { Stroke = (SceneColor)"#e11d48", StrokeWidth = 2, MarkerEnd = arrow });
+
+        // The stroke under the fill, and a stroke of 1 pixel in a group scaled 20 times
+        scene.Root.Add(new SceneRectangle(110, 10, 80, 30) { Fill = (SceneColor)"#e0f2fe", Stroke = (SceneColor)"#0369a1", StrokeWidth = 8, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+        var zoomed = scene.Root.Add(new SceneGroup { Transform = SceneTransform.Scale(20, 20) });
+        zoomed.Add(new SceneCircle(7.5, 3.5, 1) { Fill = (SceneColor)"#e0f2fe", Stroke = (SceneColor)"#0369a1", NonScalingStroke = true });
+
+        // A radial gradient whose first color fills a circle of 10 pixels around the focal point
+        scene.Root.Add(new SceneCircle(30, 80, 15) { Fill = new RadialGradientPaint(30, 80, 15, [new(0, (SceneColor)"#e11d48"), new(1, (SceneColor)"#0369a1")]) { FocalRadius = 10 } });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("PaintOptions", svg);
+        Assert.Contains("fill=\"context-stroke\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<line x1=\"10\" y1=\"20\" x2=\"90\" y2=\"20\" fill=\"none\" stroke=\"#0369a1\" stroke-width=\"2\" marker-end=\"url(#scene-marker0)\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("stroke-width=\"8\" paint-order=\"stroke\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("stroke=\"#0369a1\" vector-effect=\"non-scaling-stroke\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<radialGradient id=\"scene-gradient0\" gradientUnits=\"userSpaceOnUse\" cx=\"30\" cy=\"80\" r=\"15\" fr=\"10\">", svg, StringComparison.Ordinal);
+
+        // The other paint orders, and the context fill
+        Assert.Contains("paint-order=\"markers stroke\"", SvgSceneRenderer.Render(Single(new SceneCircle(0, 0, 1) { PaintOrder = ScenePaintOrder.MarkersStrokeFill })), StringComparison.Ordinal);
+        Assert.Contains("paint-order=\"fill markers\"", SvgSceneRenderer.Render(Single(new SceneCircle(0, 0, 1) { PaintOrder = ScenePaintOrder.FillMarkersStroke })), StringComparison.Ordinal);
+        Assert.Contains("fill=\"context-fill\"", SvgSceneRenderer.Render(Single(new SceneCircle(0, 0, 1) { Fill = ContextPaint.Fill })), StringComparison.Ordinal);
+        Assert.DoesNotContain("fr=", SvgSceneRenderer.Render(Single(new SceneCircle(0, 0, 1) { Fill = new RadialGradientPaint(0, 0, 1, [new(0, SceneColor.Black)]) { FocalRadius = double.NaN } })), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(SceneAspectRatio.None, false, "none")]
+    [InlineData(SceneAspectRatio.XMidYMid, false, "xMidYMid")]
+    [InlineData(SceneAspectRatio.XMinYMax, false, "xMinYMax")]
+    [InlineData(SceneAspectRatio.XMidYMid, true, "xMidYMid slice")]
+    [InlineData(SceneAspectRatio.None, true, "none")]
+    public void AspectRatiosOfImages(SceneAspectRatio alignment, bool slice, string expected)
+    {
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC");
+        var svg = SvgSceneRenderer.Render(Single(new SceneImage(0, 0, 40, 20, png) { Alignment = alignment, Slice = slice }));
+        Assert.Contains("preserveAspectRatio=\"" + expected + "\"", svg, StringComparison.Ordinal);
+    }
 }

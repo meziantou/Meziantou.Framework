@@ -14,6 +14,13 @@ namespace Meziantou.Framework.VectorGraphics
         public Meziantou.Framework.VectorGraphics.TextMetrics Measure(string text, Meziantou.Framework.VectorGraphics.SceneFont font) => throw null;
     }
 
+    public sealed class ContextPaint : Meziantou.Framework.VectorGraphics.ScenePaint
+    {
+        public static Meziantou.Framework.VectorGraphics.ContextPaint Fill { get => throw null; }
+        public bool IsStroke { get => throw null; }
+        public static Meziantou.Framework.VectorGraphics.ContextPaint Stroke { get => throw null; }
+    }
+
     public sealed class FontFaceTextMeasurer : Meziantou.Framework.VectorGraphics.ITextMeasurer
     {
         public string FontFamily { get => throw null; }
@@ -143,6 +150,7 @@ namespace Meziantou.Framework.VectorGraphics
     {
         public double CenterX { get => throw null; }
         public double CenterY { get => throw null; }
+        public double FocalRadius { get => throw null; init { } }
         public double FocalX { get => throw null; }
         public double FocalY { get => throw null; }
         public double Radius { get => throw null; }
@@ -235,6 +243,12 @@ namespace Meziantou.Framework.VectorGraphics
         public SceneCircle(double centerX, double centerY, double radius) { }
     }
 
+    public sealed class SceneClipPath
+    {
+        public Meziantou.Framework.VectorGraphics.SceneClipPath? ClippingPath { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneGroup Content { get => throw null; }
+    }
+
     public readonly struct SceneColor : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneColor>
     {
         public byte A { get => throw null; init { } }
@@ -289,6 +303,7 @@ namespace Meziantou.Framework.VectorGraphics
     public abstract class SceneElement
     {
         public Meziantou.Framework.VectorGraphics.SceneBlendMode BlendMode { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneClipPath? ClippingPath { get => throw null; set { } }
         public string? CssClass { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyDictionary<string, string> DataAttributes { get => throw null; }
         public Meziantou.Framework.VectorGraphics.SceneFilter? Filter { get => throw null; set { } }
@@ -433,9 +448,11 @@ namespace Meziantou.Framework.VectorGraphics
 
     public sealed class SceneImage : Meziantou.Framework.VectorGraphics.SceneElement
     {
+        public Meziantou.Framework.VectorGraphics.SceneAspectRatio Alignment { get => throw null; set { } }
         public System.ReadOnlyMemory<byte> Data { get => throw null; }
         public double Height { get => throw null; }
         public string MediaType { get => throw null; }
+        public bool Slice { get => throw null; set { } }
         public double Width { get => throw null; }
         public double X { get => throw null; }
         public double Y { get => throw null; }
@@ -545,6 +562,7 @@ namespace Meziantou.Framework.VectorGraphics
         public Meziantou.Framework.VectorGraphics.SceneLineCap LineCap { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneLineJoin LineJoin { get => throw null; set { } }
         public double MiterLimit { get => throw null; set { } }
+        public bool NonScalingStroke { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.ScenePaintOrder PaintOrder { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.ScenePaint? Stroke { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<double>? StrokeDashArray { get => throw null; set { } }

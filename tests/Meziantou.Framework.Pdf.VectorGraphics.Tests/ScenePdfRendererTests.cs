@@ -624,6 +624,127 @@ public sealed class ScenePdfRendererTests
         Assert.Throws<ArgumentException>("position", () => new PdfDocument().Pages.Add(new PdfSize(10, 10)).DrawScene(scene, new PdfPoint(double.NaN, 0)));
     }
 
+    [Fact]
+    public void ContextPaintsPaintOrderAndNonScalingStrokes()
+    {
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+
+        // A marker painted with the stroke of its line; a context paint paints nothing outside of the markers
+        var square = new SceneMarker { Units = SceneMarkerUnits.UserSpace };
+        square.Content.Add(new SceneRectangle(-4, -4, 8, 8) { Fill = ContextPaint.Stroke });
+        scene.Root.Add(new SceneLine(5, 10.5, 40, 10.5) { Stroke = (SceneColor)"#ff0000", MarkerEnd = square });
+        scene.Root.Add(new SceneLine(5, 30.5, 40, 30.5) { Stroke = (SceneColor)"#0000ff", MarkerEnd = square });
+        scene.Root.Add(new SceneRectangle(0, 45, 10, 10) { Fill = ContextPaint.Fill });
+
+        // The stroke under the fill
+        scene.Root.Add(new SceneRectangle(60, 10, 20, 20) { Fill = (SceneColor)"#ff0000", Stroke = (SceneColor)"#0000ff", StrokeWidth = 6, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+
+        // A stroke of 2 pixels in a group scaled 10 times stays 2 pixels wide
+        var zoomed = scene.Root.Add(new SceneGroup { Transform = SceneTransform.Scale(10, 10) });
+        zoomed.Add(new SceneLine(2, 7, 9, 7) { Stroke = (SceneColor)"#0000ff", StrokeWidth = 2, NonScalingStroke = true });
+        using var image = Render(scene);
+        var pixels = image.Frames[0];
+
+        static bool IsRed(Rgba32 color) => color.R > 200 && color.B < 80;
+        static bool IsBlue(Rgba32 color) => color.B > 200 && color.R < 80;
+        static bool IsWhite(Rgba32 color) => color.R > 230 && color.G > 230 && color.B > 230;
+        Assert.True(IsRed(pixels[42, 10]), pixels[42, 10].ToString());
+        Assert.True(IsBlue(pixels[42, 30]), pixels[42, 30].ToString());
+        Assert.True(IsWhite(pixels[5, 50]), pixels[5, 50].ToString());
+        Assert.True(IsRed(pixels[61, 20]), pixels[61, 20].ToString());
+        Assert.True(IsBlue(pixels[58, 20]), pixels[58, 20].ToString());
+        Assert.True(IsBlue(pixels[50, 70]), pixels[50, 70].ToString());
+        Assert.True(IsWhite(pixels[50, 66]), pixels[50, 66].ToString());
+        Assert.True(IsWhite(pixels[50, 74]), pixels[50, 74].ToString());
+    }
+
+    [Fact]
+    public void FocalRadiusAndAspectRatiosOfImages()
+    {
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC");
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneImage(0, 0, 80, 40, png) { Alignment = SceneAspectRatio.XMidYMid });
+        scene.Root.Add(new SceneImage(0, 40, 80, 20, png) { Alignment = SceneAspectRatio.XMinYMin, Slice = true });
+        scene.Root.Add(new SceneRectangle(60, 60, 40, 40) { Fill = new RadialGradientPaint(80, 80, 20, [new(0, (SceneColor)"#ff0000"), new(1, (SceneColor)"#0000ff")]) { FocalRadius = 10 } });
+        using var image = Render(scene);
+        var pixels = image.Frames[0];
+        Assert.True(pixels[10, 20].R > 230 && pixels[10, 20].B > 230, "meet leaves the sides empty");
+        Assert.True(pixels[25, 5].R > 200 && pixels[25, 5].B < 80, pixels[25, 5].ToString());
+        Assert.True(pixels[55, 5].B > 200 && pixels[55, 5].R < 80, pixels[55, 5].ToString());
+        Assert.True(pixels[10, 45].R > 200 && pixels[10, 45].B < 80, "slice: the top left of the image");
+        Assert.True(pixels[70, 45].B > 200 && pixels[70, 45].R < 80, "slice: the top right of the image");
+        Assert.True(pixels[10, 62].R > 230 && pixels[10, 62].G > 230, "slice is cut to the rectangle");
+        Assert.True(pixels[80, 80].R > 230 && pixels[80, 80].B < 30, "the focal circle has the first color");
+        Assert.True(pixels[87, 80].R > 230 && pixels[87, 80].B < 30, "the focal circle has the first color");
+        Assert.True(pixels[98, 80].B > 150 && pixels[98, 80].R < 100, pixels[98, 80].ToString());
+    }
+
+    [Fact]
+    public void ClippingPaths()
+    {
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+
+        // One shape is a clipping path of PDF; in the coordinates of the parent, outside of the transform of the element
+        var single = new SceneClipPath();
+        single.Content.Add(new SceneCircle(10, 10, 8));
+        scene.Root.Add(new SceneRectangle(0, 0, 30, 30) { Fill = (SceneColor)"#0000ff", Transform = SceneTransform.Translate(-5, 0), ClippingPath = single });
+
+        // The union of a square and of a ring whose hole is empty (even-odd) is a soft mask
+        var shapes = new SceneClipPath();
+        shapes.Content.Add(new SceneRectangle(30, 0, 10, 10));
+        shapes.Content.Add(new ScenePath(new PathBuilder().AddRectangle(50, 0, 30, 30).AddRectangle(60, 10, 10, 10).Build()) { FillRule = SceneFillRule.EvenOdd });
+        scene.Root.Add(new SceneRectangle(30, 0, 70, 40) { Fill = (SceneColor)"#0000ff", ClippingPath = shapes });
+
+        // Cut by another clipping path, with a mask of its own
+        var outer = new SceneClipPath();
+        outer.Content.Add(new SceneRectangle(60, 50, 40, 10));
+        var cut = new SceneClipPath { ClippingPath = outer };
+        cut.Content.Add(new SceneRectangle(70, 50, 30, 30));
+        var mask = new SceneMask();
+        mask.Content.Add(new SceneRectangle(0, 0, 100, 100) { Fill = SceneColor.White });
+        scene.Root.Add(new SceneRectangle(50, 50, 50, 50) { Fill = (SceneColor)"#ff0000", ClippingPath = cut, Mask = mask });
+
+        // A translucent text shows its glyphs; a clipping path that cuts itself leaves nothing visible
+        var letters = new SceneClipPath();
+        letters.Content.Add(new SceneText(0, 90, "II", new SceneFont(40), SceneColor.Black.WithOpacity(0.2)));
+        scene.Root.Add(new SceneRectangle(0, 50, 50, 50) { Fill = (SceneColor)"#ff0000", ClippingPath = letters });
+        var circular = new SceneClipPath();
+        circular.Content.Add(new SceneRectangle(0, 0, 100, 100));
+        circular.ClippingPath = circular;
+        scene.Root.Add(new SceneRectangle(0, 40, 100, 5) { Fill = (SceneColor)"#ff0000", ClippingPath = circular });
+        using var image = Render(scene);
+        var pixels = image.Frames[0];
+
+        static bool IsRed(Rgba32 color) => color.R > 200 && color.G < 80 && color.B < 80;
+        static bool IsBlue(Rgba32 color) => color.B > 200 && color.R < 80;
+        static bool IsWhite(Rgba32 color) => color.R > 230 && color.G > 230 && color.B > 230;
+        Assert.True(IsBlue(pixels[10, 10]), "single shape");
+        Assert.True(IsWhite(pixels[1, 1]), "outside of the circle");
+        Assert.True(IsBlue(pixels[35, 5]), "square");
+        Assert.True(IsWhite(pixels[45, 5]), "between the shapes");
+        Assert.True(IsBlue(pixels[55, 5]), "ring");
+        Assert.True(IsWhite(pixels[65, 15]), "hole of the ring");
+        Assert.True(IsWhite(pixels[90, 35]), "outside of the shapes");
+        Assert.True(IsRed(pixels[75, 55]), "inside both");
+        Assert.True(IsWhite(pixels[65, 55]), "outside of the inner clipping path");
+        Assert.True(IsWhite(pixels[75, 65]), "outside of the outer clipping path");
+        Assert.True(IsWhite(pixels[50, 42]), "circular");
+        Assert.True(IsWhite(pixels[45, 95]), "outside of the glyphs");
+        var red = 0;
+        for (var y = 50; y < 100; y++)
+        {
+            for (var x = 0; x < 50; x++)
+            {
+                if (IsRed(pixels[x, y]))
+                {
+                    red++;
+                }
+            }
+        }
+
+        Assert.InRange(red, 50, 1000);
+    }
+
     private static string Uncompressed(PdfDocument document) => System.Text.Encoding.Latin1.GetString(document.ToByteArray(new PdfSaveOptions { CompressStreams = false, UseObjectStreams = false }));
 
     private static Image<Rgba32> Render(Scene scene) => scene.ToPdf().Pages[0].Render(new PdfRenderOptions { Dpi = 96 });

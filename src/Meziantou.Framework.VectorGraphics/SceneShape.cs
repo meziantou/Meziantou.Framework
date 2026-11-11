@@ -43,4 +43,16 @@ public abstract class SceneShape : SceneElement
     /// property. The default is the fill, then the stroke, then the markers.
     /// </summary>
     public ScenePaintOrder PaintOrder { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value that indicates whether the stroke keeps its width whatever the transforms of the shape and of
+    /// its groups, as the SVG <c>vector-effect="non-scaling-stroke"</c>. The default is <see langword="false"/>.
+    /// </summary>
+    /// <remarks>
+    /// The width and the dashes of the stroke are then in the coordinates of the scene: a stroke 1 pixel wide stays 1
+    /// pixel wide in a group scaled 10 times. The image and PDF renderers scale it with the scene, as the rest of the
+    /// drawing. The bounds of the shape (<see cref="SceneElement.GetBounds"/>) count its width in the coordinates of the
+    /// shape.
+    /// </remarks>
+    public bool NonScalingStroke { get; set; }
 }

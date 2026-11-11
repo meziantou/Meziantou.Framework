@@ -39,6 +39,20 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     private readonly HashSet<SceneUse> _drawingUses = new(ReferenceEqualityComparer.Instance);
     private PdfContentBuilder _content = content;
 
+    // The clipping paths whose silhouettes are being drawn, and the elements drawn inside their clipping path
+    private readonly HashSet<SceneClipPath> _drawingClipPaths = new(ReferenceEqualityComparer.Instance);
+    private readonly HashSet<SceneElement> _clippedElements = new(ReferenceEqualityComparer.Instance);
+
+    // While the silhouettes of a clipping path are drawn: every paint is opaque black, and the texts are not stroked
+    private int _silhouetteDepth;
+
+    // The fill and the stroke of the shape whose marker is being drawn, which the context paints paint with
+    private ScenePaint? _contextFill;
+    private ScenePaint? _contextStroke;
+
+    // The transform from the coordinates of the scene to the page: the strokes that do not scale are in these coordinates
+    private PdfMatrix _sceneToPage = PdfMatrix.Identity;
+
     // The transform from the current user space to the space of the current content stream, and from that space to the page
     private PdfMatrix _matrix = PdfMatrix.Identity;
     private PdfMatrix _streamToPage = PdfMatrix.Identity;
@@ -47,6 +61,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     {
         Save();
         Transform(new PdfMatrix(scale, 0, 0, -scale, position.X, position.Y));
+        _sceneToPage = PdfMatrix.Multiply(_matrix, _streamToPage);
         if (scene.Background is { A: > 0 } background && IsFinite(scene.Width, scene.Height))
         {
             Save();
@@ -137,6 +152,33 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         if (!(opacity > 0))
             return;
 
+        // The clipping path is set in the graphics state, outside of the element: a clipping path that needs a soft mask
+        // draws an element that has a mask of its own in a group, which has the mask
+        if (element.ClippingPath is { } clippingPath && _clippedElements.Add(element))
+        {
+            try
+            {
+                Save();
+                var clip = SetClipPath(clippingPath);
+                if (clip is ClipKind.SoftMask && element.Mask is not null)
+                {
+                    DrawTransparencyGroup([element], 1);
+                }
+                else if (clip is not ClipKind.Empty)
+                {
+                    DrawElement(element);
+                }
+
+                Restore();
+            }
+            finally
+            {
+                _clippedElements.Remove(element);
+            }
+
+            return;
+        }
+
         AddLink(element);
 
         opacity = Math.Min(opacity, 1);
@@ -209,21 +251,19 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                 break;
 
             case SceneRectangle rectangle when rectangle.Width > 0 && rectangle.Height > 0:
-                DrawShape(rectangle, new PathBuilder().AddRoundedRectangle(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, rectangle.CornerRadius).Build(), opacity, PdfFillRule.NonZero, canFill: true);
+                DrawShapeParts(rectangle, GetShapePath(rectangle)!, opacity, PdfFillRule.NonZero, canFill: true);
                 break;
 
             case SceneCircle circle when circle.Radius > 0:
-                DrawShape(circle, new PathBuilder().AddEllipse(circle.CenterX, circle.CenterY, circle.Radius, circle.Radius).Build(), opacity, PdfFillRule.NonZero, canFill: true);
+                DrawShapeParts(circle, GetShapePath(circle)!, opacity, PdfFillRule.NonZero, canFill: true);
                 break;
 
             case SceneLine line:
-                DrawShape(line, new PathBuilder().MoveTo(line.X1, line.Y1).LineTo(line.X2, line.Y2).Build(), opacity, PdfFillRule.NonZero, canFill: false);
-                DrawMarkers(line, opacity);
+                DrawShapeParts(line, new PathBuilder().MoveTo(line.X1, line.Y1).LineTo(line.X2, line.Y2).Build(), opacity, PdfFillRule.NonZero, canFill: false);
                 break;
 
             case ScenePath path:
-                DrawShape(path, path.Data.ToCubicCurves(), opacity, path.FillRule is SceneFillRule.EvenOdd ? PdfFillRule.EvenOdd : PdfFillRule.NonZero, canFill: true);
-                DrawMarkers(path, opacity);
+                DrawShapeParts(path, path.Data.ToCubicCurves(), opacity, path.FillRule is SceneFillRule.EvenOdd ? PdfFillRule.EvenOdd : PdfFillRule.NonZero, canFill: true);
                 break;
 
             case SceneText text:
@@ -256,8 +296,60 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         }
     }
 
-    // The content of each marker is drawn on its vertex, after the shape, with the opacity of the shape. A marker drawn on
-    // a shape of its own content is not drawn again; its hyperlinks are not links of the page.
+    // The geometry of a rectangle (with its corners) or a circle, in cubic curves, or null when it has no area
+    private static PathData? GetShapePath(SceneShape shape) => shape switch
+    {
+        SceneRectangle rectangle when rectangle.Width > 0 && rectangle.Height > 0 => new PathBuilder().AddRoundedRectangle(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, rectangle.CornerRadius).Build(),
+        SceneCircle circle when circle.Radius > 0 => new PathBuilder().AddEllipse(circle.CenterX, circle.CenterY, circle.Radius, circle.Radius).Build(),
+        ScenePath path => path.Data.ToCubicCurves(),
+        _ => null,
+    };
+
+    // The fill, the stroke and the markers of a shape, in its paint order: the fill and the stroke are one operation when
+    // the fill comes first and no marker is between them
+    private void DrawShapeParts(SceneShape shape, PathData path, double opacity, PdfFillRule fillRule, bool canFill)
+    {
+        switch (shape.PaintOrder)
+        {
+            case ScenePaintOrder.FillMarkersStroke:
+                DrawShape(shape, path, opacity, fillRule, canFill, drawStroke: false);
+                DrawMarkers(shape, opacity);
+                DrawShape(shape, path, opacity, fillRule, canFill: false, drawStroke: true);
+                break;
+
+            case ScenePaintOrder.StrokeFillMarkers:
+                DrawShape(shape, path, opacity, fillRule, canFill: false, drawStroke: true);
+                DrawShape(shape, path, opacity, fillRule, canFill, drawStroke: false);
+                DrawMarkers(shape, opacity);
+                break;
+
+            case ScenePaintOrder.StrokeMarkersFill:
+                DrawShape(shape, path, opacity, fillRule, canFill: false, drawStroke: true);
+                DrawMarkers(shape, opacity);
+                DrawShape(shape, path, opacity, fillRule, canFill, drawStroke: false);
+                break;
+
+            case ScenePaintOrder.MarkersFillStroke:
+                DrawMarkers(shape, opacity);
+                DrawShape(shape, path, opacity, fillRule, canFill, drawStroke: true);
+                break;
+
+            case ScenePaintOrder.MarkersStrokeFill:
+                DrawMarkers(shape, opacity);
+                DrawShape(shape, path, opacity, fillRule, canFill: false, drawStroke: true);
+                DrawShape(shape, path, opacity, fillRule, canFill, drawStroke: false);
+                break;
+
+            default:
+                DrawShape(shape, path, opacity, fillRule, canFill, drawStroke: true);
+                DrawMarkers(shape, opacity);
+                break;
+        }
+    }
+
+    // The content of each marker is drawn on its vertex, with the opacity of the shape, and the fill and the stroke of the
+    // shape as context paints. A marker drawn on a shape of its own content is not drawn again; its hyperlinks are not
+    // links of the page.
     private void DrawMarkers(SceneShape shape, double opacity)
     {
         foreach (var (marker, vertex, isStart) in GetMarkers(shape))
@@ -269,6 +361,8 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             Save();
             Transform(new PdfMatrix(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F));
             _hiddenDepth++;
+            var (outerFill, outerStroke) = (_contextFill, _contextStroke);
+            (_contextFill, _contextStroke) = (ResolvePaint(shape.Fill), ResolvePaint(shape.Stroke));
             try
             {
                 // The content is a group: its transform, its opacity and its effects apply
@@ -283,6 +377,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             }
             finally
             {
+                (_contextFill, _contextStroke) = (outerFill, outerStroke);
                 _hiddenDepth--;
                 _drawingMarkers.Remove(marker);
                 Restore();
@@ -341,10 +436,26 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         if (Images.GetValue(image, static image => LoadImage(image)).Image is not { } pdfImage)
             return;
 
+        // The image is placed as the view box of its pixels in its rectangle, which cuts it when it covers it
+        var destination = new SceneBounds(image.X, image.Y, image.Width, image.Height);
+        if (image.Alignment is not SceneAspectRatio.None)
+        {
+            var viewBox = new SceneViewBox(new SceneBounds(0, 0, pdfImage.Width, pdfImage.Height), destination) { Alignment = image.Alignment, Slice = image.Slice };
+            if (viewBox.GetTransform() is not { } transform)
+                return;
+
+            destination = new SceneBounds(transform.E, transform.F, pdfImage.Width * transform.A, pdfImage.Height * transform.D);
+        }
+
         // The image space has its first row at the top: in the flipped space, the image is placed from its bottom edge upward
         Save();
+        if (image.Slice && image.Alignment is not SceneAspectRatio.None)
+        {
+            _content.Rectangle(image.X, image.Y, image.Width, image.Height).Clip().EndPath();
+        }
+
         SetAlpha(opacity, opacity);
-        _content.DrawImage(pdfImage, image.X, image.Y + image.Height, image.Width, -image.Height);
+        _content.DrawImage(pdfImage, destination.X, destination.Bottom, destination.Width, -destination.Height);
         Restore();
     }
 
@@ -443,19 +554,207 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     // Draws elements in a form whose space is the current user space
     private PdfForm CreateForm(IEnumerable<SceneElement> elements, Bounds box, PdfTransparencyGroup group)
     {
+        return CreateForm(box, group, elements, static (writer, elements) =>
+        {
+            foreach (var element in elements)
+            {
+                writer.DrawElement(element);
+            }
+        });
+    }
+
+    private PdfForm CreateForm<TState>(Bounds box, PdfTransparencyGroup group, TState state, Action<ScenePdfWriter, TState> draw)
+    {
         var form = page.Document.CreateForm(new PdfRectangle(box.Left, box.Top, box.Right, box.Bottom), matrix: null, group);
         var (outerContent, outerMatrix, outerStreamToPage) = (_content, _matrix, _streamToPage);
         _streamToPage = PdfMatrix.Multiply(_matrix, _streamToPage);
         _matrix = PdfMatrix.Identity;
         _content = form.CreateContentBuilder();
-        foreach (var element in elements)
-        {
-            DrawElement(element);
-        }
-
+        draw(this, state);
         _content.Complete();
         (_content, _matrix, _streamToPage) = (outerContent, outerMatrix, outerStreamToPage);
         return form;
+    }
+
+    private enum ClipKind
+    {
+        // The clipping path leaves nothing visible
+        Empty,
+
+        // A clipping path of the graphics state
+        Path,
+
+        // A soft mask of the graphics state: the alpha of the silhouettes of the content
+        SoftMask,
+    }
+
+    // Sets a clipping path in the current graphics state, in the current user space. A clipping path of one shape is a
+    // clipping path of PDF; the others (several shapes, whose union PDF cannot clip to, texts, clipping paths that cut
+    // them) are a soft mask whose form draws the silhouettes of the content, opaque.
+    private ClipKind SetClipPath(SceneClipPath clipPath)
+    {
+        if (!_drawingClipPaths.Add(clipPath))
+            return ClipKind.Empty;
+
+        try
+        {
+            if (clipPath.ClippingPath is null)
+            {
+                var leaves = new List<(SceneElement Leaf, PdfMatrix Matrix)>();
+                if (!CollectClipLeaves(clipPath.Content, PdfMatrix.Identity, leaves, new HashSet<SceneUse>(ReferenceEqualityComparer.Instance)))
+                {
+                    // Only shapes: none leaves nothing visible, one is a clipping path of PDF
+                    if (leaves.Count is 0)
+                        return ClipKind.Empty;
+
+                    if (leaves.Count is 1 && leaves[0].Leaf is SceneShape shape && GetShapePath(shape) is { } shapePath && IsFinite(shapePath))
+                    {
+                        AppendPath(TransformPath(shapePath, leaves[0].Matrix));
+                        _content.Clip(shape is ScenePath { FillRule: SceneFillRule.EvenOdd } ? PdfFillRule.EvenOdd : PdfFillRule.NonZero).EndPath();
+                        return ClipKind.Path;
+                    }
+                }
+            }
+
+            if (clipPath.Content.GetBounds(text => GetTextBounds(text)) is not { } bounds)
+                return ClipKind.Empty;
+
+            var box = new Bounds(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
+            if (!box.IsFinite || !(box.Width > 0) || !(box.Height > 0))
+                return ClipKind.Empty;
+
+            _hiddenDepth++;
+            _silhouetteDepth++;
+            PdfForm form;
+            try
+            {
+                form = CreateForm(box, new PdfTransparencyGroup(), clipPath, static (writer, clipPath) =>
+                {
+                    writer.Save();
+                    if (clipPath.ClippingPath is not { } outer || writer.SetClipPath(outer) is not ClipKind.Empty)
+                    {
+                        writer.DrawSilhouette(clipPath.Content);
+                    }
+
+                    writer.Restore();
+                });
+            }
+            finally
+            {
+                _silhouetteDepth--;
+                _hiddenDepth--;
+            }
+
+            _content.SetGraphicsState(new PdfExtGState { SoftMask = PdfSoftMask.FromAlpha(form) });
+            return ClipKind.SoftMask;
+        }
+        finally
+        {
+            _drawingClipPaths.Remove(clipPath);
+        }
+    }
+
+    // The shapes of the content of a clipping path that has only shapes and groups, with the transform from their
+    // coordinates to the ones of the content. Returns true when the content has something else: a text, a clipping path.
+    private static bool CollectClipLeaves(SceneElement element, PdfMatrix parent, List<(SceneElement Leaf, PdfMatrix Matrix)> leaves, HashSet<SceneUse> uses)
+    {
+        var matrix = element.Transform is { } transform ? PdfMatrix.Multiply(new PdfMatrix(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F), parent) : parent;
+        switch (element)
+        {
+            case SceneGroup group:
+                foreach (var child in group.Children)
+                {
+                    if (CollectClipLeaves(child, matrix, leaves, uses))
+                        return true;
+                }
+
+                return false;
+
+            case SceneUse use when !use.IsCircular() && uses.Add(use):
+                var result = CollectClipLeaves(use.Content, matrix, leaves, uses);
+                uses.Remove(use);
+                return result;
+
+            case SceneText:
+                return true;
+
+            case SceneRectangle or SceneCircle or ScenePath when element.ClippingPath is not null:
+                return true;
+
+            case SceneRectangle or SceneCircle or ScenePath when GetShapePath((SceneShape)element) is not null:
+                leaves.Add((element, matrix));
+                return false;
+
+            default:
+                return false;
+        }
+    }
+
+    // The geometry an element adds to a clipping path, opaque: the interiors of the shapes, the glyphs of the texts. The
+    // clipping path of a shape or a text cuts it, in the coordinates of its parent.
+    private void DrawSilhouette(SceneElement element)
+    {
+        if (element is SceneRectangle or SceneCircle or ScenePath or SceneText && element.ClippingPath is { } clippingPath)
+        {
+            Save();
+            if (SetClipPath(clippingPath) is not ClipKind.Empty)
+            {
+                DrawTransformedSilhouette(element);
+            }
+
+            Restore();
+            return;
+        }
+
+        DrawTransformedSilhouette(element);
+    }
+
+    private void DrawTransformedSilhouette(SceneElement element)
+    {
+        var transform = element.Transform;
+        if (transform is { } value && !IsFinite(value.A, value.B, value.C, value.D, value.E, value.F))
+            return;
+
+        Save();
+        if (transform is { } elementTransform)
+        {
+            Transform(new PdfMatrix(elementTransform.A, elementTransform.B, elementTransform.C, elementTransform.D, elementTransform.E, elementTransform.F));
+        }
+
+        switch (element)
+        {
+            case SceneGroup group:
+                foreach (var child in group.Children)
+                {
+                    DrawSilhouette(child);
+                }
+
+                break;
+
+            case SceneUse use when !use.IsCircular() && _drawingUses.Add(use):
+                try
+                {
+                    DrawSilhouette(use.Content);
+                }
+                finally
+                {
+                    _drawingUses.Remove(use);
+                }
+
+                break;
+
+            case SceneShape shape when shape is not SceneLine && GetShapePath(shape) is { } path && IsFinite(path):
+                _content.SetFillColor(ToColor(SceneColor.Black));
+                AppendPath(path);
+                _content.Fill(shape is ScenePath { FillRule: SceneFillRule.EvenOdd } ? PdfFillRule.EvenOdd : PdfFillRule.NonZero);
+                break;
+
+            case SceneText text:
+                DrawText(text, opacity: 1);
+                break;
+        }
+
+        Restore();
     }
 
     // The content of a mask is drawn in a group whose luminosity or alpha is the soft mask: outside of it, the
@@ -500,10 +799,10 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         _ => PdfBlendMode.Normal,
     };
 
-    private void DrawShape(SceneShape shape, PathData path, double opacity, PdfFillRule fillRule, bool canFill)
+    private void DrawShape(SceneShape shape, PathData path, double opacity, PdfFillRule fillRule, bool canFill, bool drawStroke)
     {
         var fill = canFill ? shape.Fill : null;
-        var stroke = shape.StrokeWidth > 0 && double.IsFinite(shape.StrokeWidth) ? shape.Stroke : null;
+        var stroke = drawStroke && shape.StrokeWidth > 0 && double.IsFinite(shape.StrokeWidth) ? shape.Stroke : null;
         if ((fill is null && stroke is null) || path.IsEmpty || !IsFinite(path))
             return;
 
@@ -547,6 +846,21 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             }
         }
 
+        // A stroke that does not scale is drawn in the coordinates of the scene, with the path mapped to them; the paints
+        // are already placed in the space of the stream
+        if (strokeAlpha is not null && shape.NonScalingStroke)
+        {
+            var toScene = GetTransformToScene();
+            if (!toScene.TryInvert(out var fromScene) || !IsFinite(fromScene.A, fromScene.B, fromScene.C, fromScene.D, fromScene.E, fromScene.F))
+            {
+                Restore();
+                return;
+            }
+
+            Transform(fromScene);
+            path = TransformPath(path, toScene);
+        }
+
         AppendPath(path);
         if (fillAlpha is not null && strokeAlpha is not null)
         {
@@ -562,6 +876,46 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         }
 
         Restore();
+    }
+
+    // The transform from the current user space to the coordinates of the scene
+    private PdfMatrix GetTransformToScene()
+    {
+        var toPage = PdfMatrix.Multiply(_matrix, _streamToPage);
+        return _sceneToPage.TryInvert(out var pageToScene) ? PdfMatrix.Multiply(toPage, pageToScene) : PdfMatrix.Identity;
+    }
+
+    // A path in cubic curves, mapped by a transform: an affine transform maps the control points of a curve to the ones of
+    // the mapped curve
+    private static PathData TransformPath(PathData path, PdfMatrix matrix)
+    {
+        var builder = new PathBuilder();
+        foreach (var command in path.ToCubicCurves().Commands)
+        {
+            var (x, y) = matrix.Transform(command.X, command.Y);
+            switch (command.Kind)
+            {
+                case PathCommandKind.MoveTo:
+                    builder.MoveTo(x, y);
+                    break;
+
+                case PathCommandKind.LineTo:
+                    builder.LineTo(x, y);
+                    break;
+
+                case PathCommandKind.CubicTo:
+                    var (x1, y1) = matrix.Transform(command.X1, command.Y1);
+                    var (x2, y2) = matrix.Transform(command.X2, command.Y2);
+                    builder.CubicTo(x1, y1, x2, y2, x, y);
+                    break;
+
+                case PathCommandKind.Close:
+                    builder.Close();
+                    break;
+            }
+        }
+
+        return builder.Build();
     }
 
     private void AppendPath(PathData path)
@@ -604,7 +958,13 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     // Sets a paint and returns its opacity, or null when it paints nothing
     private double? SetPaint(ScenePaint paint, bool stroke, SceneShape shape)
     {
-        switch (paint)
+        if (_silhouetteDepth > 0)
+        {
+            SetColor(SceneColor.Black, stroke);
+            return 1;
+        }
+
+        switch (ResolvePaint(paint))
         {
             case SolidPaint solid:
                 SetColor(solid.Color, stroke);
@@ -621,6 +981,9 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         }
     }
 
+    // A context paint is the paint of the shape whose marker is being drawn; nothing elsewhere
+    private ScenePaint? ResolvePaint(ScenePaint? paint) => paint is ContextPaint context ? (context.IsStroke ? _contextStroke : _contextFill) : paint;
+
     private double? SetGradient(SceneGradientPaint gradient, bool stroke, SceneShape shape)
     {
         var stops = GetStops(gradient.Stops);
@@ -635,7 +998,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         var degenerate = stops.Count is 1 || gradient switch
         {
             LinearGradientPaint linear => (linear.X1 == linear.X2 && linear.Y1 == linear.Y2) || !IsFinite(linear.X1, linear.Y1, linear.X2, linear.Y2),
-            RadialGradientPaint radial => !(radial.Radius > 0) || !IsFinite(radial.CenterX, radial.CenterY, radial.Radius, radial.FocalX, radial.FocalY),
+            RadialGradientPaint radial => !(radial.Radius > 0) || !IsFinite(radial.CenterX, radial.CenterY, radial.Radius, radial.FocalX, radial.FocalY) || FocalRadius(radial) >= radial.Radius && radial.FocalX == radial.CenterX && radial.FocalY == radial.CenterY,
             _ => true,
         };
 
@@ -667,11 +1030,11 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                 linear.X1 + (last * (linear.X2 - linear.X1)), linear.Y1 + (last * (linear.Y2 - linear.Y1)),
                 function, extendStart: true, extendEnd: true),
 
-            // The circles go from the focal point, of radius 0, to the circle of the gradient (8.7.4.5.4, type 3)
+            // The circles go from the circle of the focal point to the circle of the gradient (8.7.4.5.4, type 3)
             RadialGradientPaint radial => PdfShading.Radial(
                 PdfDeviceColorSpace.Rgb,
-                radial.FocalX, radial.FocalY, 0,
-                radial.FocalX + (last * (radial.CenterX - radial.FocalX)), radial.FocalY + (last * (radial.CenterY - radial.FocalY)), last * radial.Radius,
+                radial.FocalX, radial.FocalY, FocalRadius(radial),
+                radial.FocalX + (last * (radial.CenterX - radial.FocalX)), radial.FocalY + (last * (radial.CenterY - radial.FocalY)), FocalRadius(radial) + (last * (radial.Radius - FocalRadius(radial))),
                 function, extendStart: true, extendEnd: true),
             _ => throw new UnreachableException(),
         };
@@ -715,6 +1078,10 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             _content = pattern.CreateContentBuilder();
             _drawingPatterns.Add(paint);
             _hiddenDepth++;
+
+            // The content of a pattern has no context paint: the pattern is shared by the shapes it paints
+            var (outerFill, outerStroke, outerSilhouette) = (_contextFill, _contextStroke, _silhouetteDepth);
+            (_contextFill, _contextStroke, _silhouetteDepth) = (null, null, 0);
             try
             {
                 // The content is a group: its transform, its opacity and its effects apply
@@ -723,6 +1090,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             }
             finally
             {
+                (_contextFill, _contextStroke, _silhouetteDepth) = (outerFill, outerStroke, outerSilhouette);
                 _hiddenDepth--;
                 _drawingPatterns.Remove(paint);
                 (_content, _matrix, _streamToPage) = (outerContent, outerMatrix, outerStreamToPage);
@@ -755,17 +1123,19 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             }
             else
             {
-                // The circle of a parameter t is centered t of the way from the focal point to the center, of radius t r:
-                // the parameter of a point is the positive root of |q - t d|^2 = (t r)^2
+                // The circle of a parameter t is centered t of the way from the focal point to the center, of radius
+                // fr + t (r - fr): the parameter of a point is the largest root of |q - t d|^2 = (fr + t (r - fr))^2
                 var radial = (RadialGradientPaint)gradient;
+                var focalRadius = FocalRadius(radial);
+                var growth = radial.Radius - focalRadius;
                 var (dx, dy) = (radial.CenterX - radial.FocalX, radial.CenterY - radial.FocalY);
                 var (qx, qy) = (x - radial.FocalX, y - radial.FocalY);
-                var a = (dx * dx) + (dy * dy) - (radial.Radius * radial.Radius);
+                var a = (dx * dx) + (dy * dy) - (growth * growth);
                 if (a >= 0)
                     return null;
 
-                var b = -2 * ((qx * dx) + (qy * dy));
-                var c = (qx * qx) + (qy * qy);
+                var b = -2 * ((qx * dx) + (qy * dy) + (focalRadius * growth));
+                var c = (qx * qx) + (qy * qy) - (focalRadius * focalRadius);
                 t = (-b - Math.Sqrt((b * b) - (4 * a * c))) / (2 * a);
             }
 
@@ -779,6 +1149,9 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         var last = (int)Math.Clamp(Math.Ceiling(max), first + 1, first + MaxPeriods);
         return (first, last);
     }
+
+    // The radius of the circle of offset 0: 0 when it is not valid, as in SVG
+    private static double FocalRadius(RadialGradientPaint radial) => radial.FocalRadius > 0 && double.IsFinite(radial.FocalRadius) ? radial.FocalRadius : 0;
 
     // The stops of the periods from first to last, their offsets brought back to [0, 1]
     private static List<(double Offset, SceneColor Color)> Repeat(List<(double Offset, SceneColor Color)> stops, int first, int last, bool reflect)
@@ -875,7 +1248,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         var offset = 0.0;
         foreach (var part in textParts)
         {
-            var alpha = part.Color.A / 255.0 * opacity;
+            var alpha = GetTextAlpha(part.Color, opacity);
             if (alpha > 0)
             {
                 Save();
@@ -916,7 +1289,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
         foreach (var part in parts)
         {
-            var alpha = part.Color.A / 255.0 * opacity;
+            var alpha = GetTextAlpha(part.Color, opacity);
             var clusters = new List<(TextCluster Cluster, PdfMatrix Matrix)>();
             foreach (var cluster in part.Clusters!)
             {
@@ -1191,8 +1564,16 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         });
     }
 
+    // A text in the silhouette of a clipping path is opaque
+    private double GetTextAlpha(SceneColor color, double opacity) => _silhouetteDepth > 0 ? 1 : color.A / 255.0 * opacity;
+
     private void SetColor(SceneColor color, bool stroke)
     {
+        if (_silhouetteDepth > 0)
+        {
+            color = SceneColor.Black;
+        }
+
         if (stroke)
         {
             _content.SetStrokeColor(ToColor(color));

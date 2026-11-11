@@ -43,6 +43,16 @@ public static class SvgSceneRenderer
         private readonly List<(string Id, SceneMask Mask)> _masks = [];
         private readonly List<(string Id, PatternPaint Pattern)> _patterns = [];
         private readonly List<(string Id, SceneMarker Marker)> _markers = [];
+
+        // The clipping paths of the elements, by the transform from the coordinates of their content to the user space
+        // that refers to them (null for the parent of a clipped element); the ones to write, in order
+        private readonly Dictionary<(SceneClipPath ClipPath, SceneTransform? Base), string> _clipPathDefinitionIds = [];
+        private readonly List<(string Id, SceneClipPath ClipPath, SceneTransform? Base)> _clipPathDefinitions = [];
+        private int _clipCount;
+
+        // While a clipping path is written: the transform of the group of its content being written, and of the text being written
+        private bool _inClipPath;
+        private SceneTransform? _clipTextTransform;
         private readonly HashSet<string> _elementIds = new(StringComparer.Ordinal);
 
         // The generated identifiers of the contents of the uses that have none; the contents that are only drawn by uses
@@ -92,7 +102,7 @@ public static class SvgSceneRenderer
             }
 
             WriteDefinitions(scene.Root, options.EmbedFonts && scene.Fonts is { } fonts ? GetFontFaceRules(scene, fonts) : null);
-            if (_masks.Count > 0 || _patterns.Count > 0 || _markers.Count > 0 || _detached.Count > 0)
+            if (_masks.Count > 0 || _patterns.Count > 0 || _markers.Count > 0 || _detached.Count > 0 || _clipPathDefinitions.Count > 0)
             {
                 // The content of a mask is in the coordinates of the parent of the masked element, on the whole plane
                 output.Write("<defs>\n");
@@ -174,6 +184,12 @@ public static class SvgSceneRenderer
                     WriteElement(element);
                 }
 
+                // The clipping paths; writing one adds the clipping paths of its content to the list
+                for (var i = 0; i < _clipPathDefinitions.Count; i++)
+                {
+                    WriteClipPathDefinition(_clipPathDefinitions[i].Id, _clipPathDefinitions[i].ClipPath, _clipPathDefinitions[i].Base);
+                }
+
                 output.Write("</defs>\n");
             }
 
@@ -252,13 +268,14 @@ public static class SvgSceneRenderer
             }
 
             var gradientCount = 0;
-            var clipCount = 0;
             var filterCount = 0;
             var maskCount = 0;
             var textPathCount = 0;
             var patternCount = 0;
             var markerCount = 0;
             var visited = new HashSet<SceneElement>(ReferenceEqualityComparer.Instance);
+            var visitedClipPaths = new HashSet<SceneClipPath>(ReferenceEqualityComparer.Instance);
+            var visitedClipContents = new HashSet<SceneElement>(ReferenceEqualityComparer.Instance);
             Visit(root);
             foreach (var element in _roots)
             {
@@ -298,19 +315,19 @@ public static class SvgSceneRenderer
                         break;
                 }
 
-                // The path of a text is referenced by its textPath
-                if (element is SceneText { Path: { } textPath } pathText && !_textPathIds.ContainsKey(pathText))
-                {
-                    var id = NextId("textpath", ref textPathCount);
-                    _textPathIds[pathText] = id;
-                    definitions.Append("<path id=\"").Append(Escape(id)).Append("\" d=\"").Append(SvgNumber.FormatPath(textPath, _precision)).Append("\"/>\n");
-                }
+                AddTextPath(element);
 
                 if (element.Filter is { } filter)
                 {
                     var id = NextId("filter", ref filterCount);
                     _filterIds[element] = id;
                     AddFilter(id, element, filter);
+                }
+
+                if (element.ClippingPath is { } clippingPath)
+                {
+                    GetClipPathId(clippingPath, transform: null);
+                    VisitClipPath(clippingPath);
                 }
 
                 if (element.Mask is { } mask)
@@ -325,7 +342,7 @@ public static class SvgSceneRenderer
                 {
                     if (group.Clip is { } clip)
                     {
-                        var id = NextId("clip", ref clipCount);
+                        var id = NextId("clip", ref _clipCount);
                         _ids[group] = id;
                         definitions.Append("<clipPath id=\"").Append(Escape(id)).Append("\"><rect x=\"").Append(Number(clip.X))
                             .Append("\" y=\"").Append(Number(clip.Y)).Append("\" width=\"").Append(Number(clip.Width))
@@ -334,7 +351,7 @@ public static class SvgSceneRenderer
 
                     if (group.ClipPath is { } clipPath)
                     {
-                        var id = NextId("clip", ref clipCount);
+                        var id = NextId("clip", ref _clipCount);
                         _clipPathIds[group] = id;
                         definitions.Append("<clipPath id=\"").Append(Escape(id)).Append("\"><path d=\"").Append(SvgNumber.FormatPath(clipPath, _precision)).Append('"');
                         if (group.ClipRule is SceneFillRule.EvenOdd)
@@ -349,6 +366,54 @@ public static class SvgSceneRenderer
                     {
                         Visit(child);
                     }
+                }
+            }
+
+            // The path of a text is referenced by its textPath
+            void AddTextPath(SceneElement element)
+            {
+                if (element is SceneText { Path: { } textPath } pathText && !_textPathIds.ContainsKey(pathText))
+                {
+                    var id = NextId("textpath", ref textPathCount);
+                    _textPathIds[pathText] = id;
+                    definitions.Append("<path id=\"").Append(Escape(id)).Append("\" d=\"").Append(SvgNumber.FormatPath(textPath, _precision)).Append("\"/>\n");
+                }
+            }
+
+            // The texts of a clipping path, of the clipping paths that cut it, and of the clipping paths of its content,
+            // are written with it: their paths are referenced by their textPath
+            void VisitClipPath(SceneClipPath clipPath)
+            {
+                for (var current = clipPath; current is not null && visitedClipPaths.Add(current); current = current.ClippingPath)
+                {
+                    VisitClipContent(current.Content);
+                }
+            }
+
+            void VisitClipContent(SceneElement element)
+            {
+                if (!visitedClipContents.Add(element))
+                    return;
+
+                AddTextPath(element);
+                switch (element)
+                {
+                    case SceneGroup group:
+                        foreach (var child in group.Children)
+                        {
+                            VisitClipContent(child);
+                        }
+
+                        break;
+
+                    case SceneUse use when !use.IsCircular():
+                        VisitClipContent(use.Content);
+                        break;
+                }
+
+                if (element.ClippingPath is { } clippingPath)
+                {
+                    VisitClipPath(clippingPath);
                 }
             }
 
@@ -469,6 +534,11 @@ public static class SvgSceneRenderer
                     {
                         definitions.Append(" fx=\"").Append(Number(radial.FocalX)).Append("\" fy=\"").Append(Number(radial.FocalY)).Append('"');
                     }
+
+                    if (radial.FocalRadius > 0 && double.IsFinite(radial.FocalRadius))
+                    {
+                        definitions.Append(" fr=\"").Append(Number(radial.FocalRadius)).Append('"');
+                    }
                 }
 
                 var gradientPaint = (SceneGradientPaint)paint;
@@ -520,11 +590,12 @@ public static class SvgSceneRenderer
             WriteLinkedElement(element);
         }
 
-        // An element with a transform and a mask or a filter is wrapped in a group that has them: they are in the
-        // coordinates of its parent, as for a group
+        // An element with a transform (or a rotated text) and a mask, a filter or a clipping path is wrapped in a group
+        // that has them: they are in the coordinates of its parent, as for a group
         private void WriteLinkedElement(SceneElement element)
         {
-            if (element is not SceneGroup && element.Transform is not null && (element.Mask is not null || element.Filter is not null))
+            var hasTransform = element.Transform is not null || element is SceneText { Path: null } text && text.Rotation != 0;
+            if (element is not SceneGroup && hasTransform && (element.Mask is not null || element.Filter is not null || element.ClippingPath is not null))
             {
                 StartTag("g");
                 EffectAttributes(element);
@@ -622,7 +693,7 @@ public static class SvgSceneRenderer
                     Attribute("y", image.Y);
                     Attribute("width", image.Width);
                     Attribute("height", image.Height);
-                    Attribute("preserveAspectRatio", "none");
+                    Attribute("preserveAspectRatio", AspectRatioValue(image.Alignment, image.Slice) ?? "xMidYMid");
                     Attribute("href", "data:" + image.MediaType + ";base64," + Convert.ToBase64String(image.Data.Span));
                     CommonAttributes(image);
                     EndElement("image", image);
@@ -661,6 +732,11 @@ public static class SvgSceneRenderer
             if (_clipPathIds.TryGetValue(group, out var clipPathId))
             {
                 layers.Add(("clip-path", "url(#" + clipPathId + ")"));
+            }
+
+            if (group.ClippingPath is { } clippingPath)
+            {
+                layers.Add(("clip-path", "url(#" + GetClipPathId(clippingPath, transform: null) + ")"));
             }
 
             if (_filterIds.TryGetValue(group, out var filterId))
@@ -743,7 +819,7 @@ public static class SvgSceneRenderer
             }
         }
 
-        private void WriteText(SceneText text)
+        private void WriteText(SceneText text, string? clipPathId = null)
         {
             StartTag("text");
             var textPathId = _textPathIds.GetValueOrDefault(text);
@@ -803,9 +879,10 @@ public static class SvgSceneRenderer
             }
 
             Paint("fill", text.Color);
-            // The rotation applies before the transform: it is on its right
+            // The rotation applies before the transform: it is on its right. In a clipping path, the transform has the
+            // transforms of the groups of its content.
             var rotation = text.Rotation != 0 && textPathId is null ? "rotate(" + Number(text.Rotation) + " " + Number(text.X) + " " + Number(text.Y) + ")" : null;
-            if (text.Transform is { } textTransform)
+            if ((_inClipPath ? _clipTextTransform : text.Transform) is { } textTransform)
             {
                 Attribute("transform", rotation is null ? Transform(textTransform) : Transform(textTransform) + " " + rotation);
             }
@@ -815,6 +892,11 @@ public static class SvgSceneRenderer
             }
 
             CommonAttributes(text);
+            if (clipPathId is not null)
+            {
+                Attribute("clip-path", "url(#" + clipPathId + ")");
+            }
+
             output.Write('>');
             if (!string.IsNullOrEmpty(text.Tooltip))
             {
@@ -952,7 +1034,8 @@ public static class SvgSceneRenderer
 
         private void ShapeAttributes(SceneShape shape, bool isLine = false)
         {
-            if (!isLine)
+            // A line is not filled; its fill is the context-fill of its markers
+            if (!isLine || shape is SceneLine { MarkerStart: not null } or SceneLine { MarkerEnd: not null })
             {
                 Paint("fill", shape.Fill);
             }
@@ -996,10 +1079,31 @@ public static class SvgSceneRenderer
                         Attribute("stroke-miterlimit", shape.MiterLimit);
                         break;
                 }
+
+                if (shape.NonScalingStroke)
+                {
+                    Attribute("vector-effect", "non-scaling-stroke");
+                }
+            }
+
+            if (PaintOrderValue(shape.PaintOrder) is { } paintOrder)
+            {
+                Attribute("paint-order", paintOrder);
             }
 
             CommonAttributes(shape);
         }
+
+        // The shortest value of paint-order: the parts that are not named follow in the order of normal
+        private static string? PaintOrderValue(ScenePaintOrder order) => order switch
+        {
+            ScenePaintOrder.FillMarkersStroke => "fill markers",
+            ScenePaintOrder.StrokeFillMarkers => "stroke",
+            ScenePaintOrder.StrokeMarkersFill => "stroke markers",
+            ScenePaintOrder.MarkersFillStroke => "markers",
+            ScenePaintOrder.MarkersStrokeFill => "markers stroke",
+            _ => null,
+        };
 
         private bool HasOuterOpacity(SceneElement element) => element is SceneGroup && element.Opacity < 1 && _filterIds.ContainsKey(element);
 
@@ -1019,7 +1123,7 @@ public static class SvgSceneRenderer
                     Attribute("opacity", SvgNumber.Format(Math.Max(0, element.Opacity), 3));
                 }
             }
-            else if (element != _effectsOnWrapper)
+            else if (element != _effectsOnWrapper && !_inClipPath)
             {
                 EffectAttributes(element);
             }
@@ -1038,9 +1142,12 @@ public static class SvgSceneRenderer
             }
         }
 
-        private static string? AspectRatioValue(SceneViewBox viewBox)
+        private static string? AspectRatioValue(SceneViewBox viewBox) => AspectRatioValue(viewBox.Alignment, viewBox.Slice);
+
+        // The value of preserveAspectRatio, or null for the default (xMidYMid meet)
+        private static string? AspectRatioValue(SceneAspectRatio aspectRatio, bool slice)
         {
-            var alignment = viewBox.Alignment switch
+            var alignment = aspectRatio switch
             {
                 SceneAspectRatio.None => "none",
                 SceneAspectRatio.XMinYMin => "xMinYMin",
@@ -1054,7 +1161,7 @@ public static class SvgSceneRenderer
                 _ => "xMidYMid",
             };
 
-            if (viewBox.Slice && viewBox.Alignment is not SceneAspectRatio.None)
+            if (slice && aspectRatio is not SceneAspectRatio.None)
                 return alignment + " slice";
 
             return alignment is "xMidYMid" ? null : alignment;
@@ -1091,6 +1198,11 @@ public static class SvgSceneRenderer
                 Attribute("filter", "url(#" + filterId + ")");
             }
 
+            if (element.ClippingPath is { } clippingPath)
+            {
+                Attribute("clip-path", "url(#" + GetClipPathId(clippingPath, transform: null) + ")");
+            }
+
             if (_maskIds.TryGetValue(element, out var maskId))
             {
                 Attribute("mask", "url(#" + maskId + ")");
@@ -1100,6 +1212,173 @@ public static class SvgSceneRenderer
             {
                 Attribute("style", "mix-blend-mode:" + blendMode);
             }
+        }
+
+        // The identifier of the definition of a clipping path whose content is mapped by a transform, created the first
+        // time it is needed. The clipping paths that cut it have the same transform.
+        private string GetClipPathId(SceneClipPath clipPath, SceneTransform? transform)
+        {
+            if (_clipPathDefinitionIds.TryGetValue((clipPath, transform), out var id))
+                return id;
+
+            id = NextId("clip", ref _clipCount);
+            _clipPathDefinitionIds[(clipPath, transform)] = id;
+            _clipPathDefinitions.Add((id, clipPath, transform));
+            return id;
+        }
+
+        // A clipping path that cuts itself leaves nothing visible: it is written empty
+        private void WriteClipPathDefinition(string id, SceneClipPath clipPath, SceneTransform? transform)
+        {
+            output.Write("<clipPath");
+            Attribute("id", id);
+            var isCircular = false;
+            for (var outer = clipPath.ClippingPath; outer is not null; outer = outer.ClippingPath)
+            {
+                if (ReferenceEquals(outer, clipPath))
+                {
+                    isCircular = true;
+                    break;
+                }
+            }
+
+            if (isCircular)
+            {
+                output.Write("/>\n");
+                return;
+            }
+
+            if (clipPath.ClippingPath is { } outerClipPath)
+            {
+                Attribute("clip-path", "url(#" + GetClipPathId(outerClipPath, transform) + ")");
+            }
+
+            output.Write(">\n");
+            _inClipPath = true;
+            try
+            {
+                WriteClipContent(clipPath.Content, transform, writeIds: transform is null, new HashSet<SceneUse>(ReferenceEqualityComparer.Instance));
+            }
+            finally
+            {
+                _inClipPath = false;
+            }
+
+            output.Write("</clipPath>\n");
+        }
+
+        // The content of a clipping path is made of shapes and texts: the groups and the uses are flattened, their
+        // transforms on the shapes. The clipping path of a shape is in the coordinates of its parent, outside of its
+        // transform: it is written for the space of the shape.
+        private void WriteClipContent(SceneElement element, SceneTransform? parentTransform, bool writeIds, HashSet<SceneUse> uses)
+        {
+            var transform = element.Transform is { } own ? (parentTransform is { } parent ? own.Then(parent) : own) : parentTransform;
+            switch (element)
+            {
+                case SceneGroup group:
+                    foreach (var child in group.Children)
+                    {
+                        WriteClipContent(child, transform, writeIds, uses);
+                    }
+
+                    return;
+
+                case SceneUse use when !use.IsCircular() && uses.Add(use):
+                    WriteClipContent(use.Content, transform, writeIds, uses);
+                    uses.Remove(use);
+                    return;
+
+                case SceneRectangle or SceneCircle or ScenePath or SceneText:
+                    break;
+
+                default:
+                    return;
+            }
+
+            string? clipPathId = null;
+            if (element.ClippingPath is { } clippingPath)
+            {
+                SceneTransform? inverse = null;
+                if (element.Transform is { } elementTransform && (inverse = Invert(elementTransform)) is null)
+                    return;
+
+                clipPathId = GetClipPathId(clippingPath, inverse);
+            }
+
+            _pendingId = writeIds ? element.Id ?? _contentIds.GetValueOrDefault(element) : null;
+            switch (element)
+            {
+                case SceneRectangle rectangle:
+                    StartTag("rect");
+                    Attribute("x", rectangle.X);
+                    Attribute("y", rectangle.Y);
+                    Attribute("width", rectangle.Width);
+                    Attribute("height", rectangle.Height);
+                    if (rectangle.CornerRadius > 0)
+                    {
+                        Attribute("rx", rectangle.CornerRadius);
+                    }
+
+                    break;
+
+                case SceneCircle circle:
+                    StartTag("circle");
+                    Attribute("cx", circle.CenterX);
+                    Attribute("cy", circle.CenterY);
+                    Attribute("r", circle.Radius);
+                    break;
+
+                case ScenePath path:
+                    StartTag("path");
+                    Attribute("d", SvgNumber.FormatPath(path.Data, _precision));
+                    if (path.FillRule is SceneFillRule.EvenOdd)
+                    {
+                        Attribute("clip-rule", "evenodd");
+                    }
+
+                    break;
+
+                case SceneText text:
+                    _clipTextTransform = transform;
+                    try
+                    {
+                        WriteText(text, clipPathId);
+                    }
+                    finally
+                    {
+                        _clipTextTransform = null;
+                    }
+
+                    return;
+            }
+
+            if (transform is { } shapeTransform)
+            {
+                Attribute("transform", Transform(shapeTransform));
+            }
+
+            if (clipPathId is not null)
+            {
+                Attribute("clip-path", "url(#" + clipPathId + ")");
+            }
+
+            output.Write("/>\n");
+        }
+
+        private static SceneTransform? Invert(SceneTransform transform)
+        {
+            var determinant = (transform.A * transform.D) - (transform.B * transform.C);
+            if (determinant == 0 || !double.IsFinite(determinant))
+                return null;
+
+            var inverse = new SceneTransform(
+                transform.D / determinant,
+                -transform.B / determinant,
+                -transform.C / determinant,
+                transform.A / determinant,
+                ((transform.C * transform.F) - (transform.D * transform.E)) / determinant,
+                ((transform.B * transform.E) - (transform.A * transform.F)) / determinant);
+            return double.IsFinite(inverse.A) && double.IsFinite(inverse.B) && double.IsFinite(inverse.C) && double.IsFinite(inverse.D) && double.IsFinite(inverse.E) && double.IsFinite(inverse.F) ? inverse : null;
         }
 
         private void EndElement(string name, SceneElement element)
@@ -1143,6 +1422,9 @@ public static class SvgSceneRenderer
                     break;
                 case SceneGradientPaint or PatternPaint:
                     Attribute(name, "url(#" + _ids[paint] + ")");
+                    break;
+                case ContextPaint context:
+                    Attribute(name, context.IsStroke ? "context-stroke" : "context-fill");
                     break;
             }
         }

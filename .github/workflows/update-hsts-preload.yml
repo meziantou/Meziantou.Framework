@@ -30,7 +30,7 @@ jobs:
           # Built first and run with --no-build: `dotnet run` exits 1 for a build or restore failure, which is
           # also how the generator reports "files updated", so a broken build would otherwise be committed as
           # an empty update.
-          dotnet build tools/Meziantou.Framework.Http.Hsts.Generator --configuration Release
+          dotnet build tools/Meziantou.Framework.Http.Hsts.Generator -mt --configuration Release
           if ($LASTEXITCODE -ne 0) {
             throw "The HSTS preload generator failed to build (exit code $LASTEXITCODE)"
           }

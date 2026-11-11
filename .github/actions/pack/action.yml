@@ -26,7 +26,7 @@ runs:
       env:
         PROJECT: ${{ inputs.project }}
         BUILD_VERSION_SUFFIX: ${{ inputs.build-version-suffix }}
-      run: dotnet restore $env:PROJECT -p:Configuration=Release /p:IsOfficialBuild=true /p:EnableGitHubBuildVersionSuffix=$env:BUILD_VERSION_SUFFIX /bl:restore.binlog
+      run: dotnet restore $env:PROJECT -mt -p:Configuration=Release /p:IsOfficialBuild=true /p:EnableGitHubBuildVersionSuffix=$env:BUILD_VERSION_SUFFIX /bl:restore.binlog
 
     # Building a package project generates its public API with this tool, and the traversal project does not
     # necessarily contain it
@@ -34,14 +34,14 @@ runs:
       shell: pwsh
       env:
         BUILD_VERSION_SUFFIX: ${{ inputs.build-version-suffix }}
-      run: dotnet build src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj --configuration Release /p:IsOfficialBuild=true /p:EnableGitHubBuildVersionSuffix=$env:BUILD_VERSION_SUFFIX /bl:build.publicapi.binlog
+      run: dotnet build src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj -mt --configuration Release /p:IsOfficialBuild=true /p:EnableGitHubBuildVersionSuffix=$env:BUILD_VERSION_SUFFIX /bl:build.publicapi.binlog
 
     - name: Build
       shell: pwsh
       env:
         PROJECT: ${{ inputs.project }}
         BUILD_VERSION_SUFFIX: ${{ inputs.build-version-suffix }}
-      run: dotnet build $env:PROJECT -graph --configuration Release --no-restore /p:IsOfficialBuild=true /p:PublicApiGeneratorVerifyNoChangeOnBuild=true /p:EnableGitHubBuildVersionSuffix=$env:BUILD_VERSION_SUFFIX /bl:build.binlog
+      run: dotnet build $env:PROJECT -graph -mt --configuration Release --no-restore /p:IsOfficialBuild=true /p:PublicApiGeneratorVerifyNoChangeOnBuild=true /p:EnableGitHubBuildVersionSuffix=$env:BUILD_VERSION_SUFFIX /bl:build.binlog
 
     - name: Pack
       shell: pwsh
@@ -49,4 +49,4 @@ runs:
         PROJECT: ${{ inputs.project }}
         OUTPUT: ${{ inputs.output }}
         BUILD_VERSION_SUFFIX: ${{ inputs.build-version-suffix }}
-      run: dotnet pack $env:PROJECT --configuration Release --no-build /p:IsOfficialBuild=true /p:EnableGitHubBuildVersionSuffix=$env:BUILD_VERSION_SUFFIX --output $env:OUTPUT /p:RepositoryBranch="$env:GITHUB_REF" "/p:PromptFolder=$env:RUNNER_TEMP/prompt" /bl:pack.binlog
+      run: dotnet pack $env:PROJECT -mt --configuration Release --no-build /p:IsOfficialBuild=true /p:EnableGitHubBuildVersionSuffix=$env:BUILD_VERSION_SUFFIX --output $env:OUTPUT /p:RepositoryBranch="$env:GITHUB_REF" "/p:PromptFolder=$env:RUNNER_TEMP/prompt" /bl:pack.binlog

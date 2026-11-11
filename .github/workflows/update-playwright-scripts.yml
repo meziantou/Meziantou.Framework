@@ -34,7 +34,7 @@ jobs:
           # Built first and run with --no-build: `dotnet run` exits 1 for a build or restore failure, which is
           # also how the script reports "files updated", so a broken build would otherwise be committed as
           # an empty update.
-          dotnet build ./eng/update-playwright-scripts.cs --configuration Release
+          dotnet build ./eng/update-playwright-scripts.cs -mt --configuration Release
           if ($LASTEXITCODE -ne 0) {
             throw "The Playwright update script failed to build (exit code $LASTEXITCODE)"
           }
@@ -62,7 +62,7 @@ jobs:
             # must be part of the same commit: the publish workflow builds main with
             # PublicApiGeneratorVerifyNoChangeOnBuild and fails when it is out of date.
             # PublicApiGeneratorGenerateOnBuild defaults to false on GitHub Actions, hence the explicit value.
-            dotnet build src/Meziantou.Framework.WebPlatform.Playwright/Meziantou.Framework.WebPlatform.Playwright.csproj --configuration Release /p:IsOfficialBuild=true /p:PublicApiGeneratorGenerateOnBuild=true
+            dotnet build src/Meziantou.Framework.WebPlatform.Playwright/Meziantou.Framework.WebPlatform.Playwright.csproj -mt --configuration Release /p:IsOfficialBuild=true /p:PublicApiGeneratorGenerateOnBuild=true
             if ($LASTEXITCODE -ne 0) {
               throw "Failed to regenerate ref/Meziantou.Framework.WebPlatform.Playwright.cs (exit code $LASTEXITCODE)"
             }
@@ -70,11 +70,11 @@ jobs:
             # Pull requests created with GITHUB_TOKEN run no workflow, so this is the only test run the new version
             # gets before it is merged. A new version of Playwright can change the protocol: the pull request is
             # still opened, as a draft, so that the update is not lost.
-            dotnet test --project "$PWD/tests/Meziantou.Framework.WebPlatform.Playwright.Tests/Meziantou.Framework.WebPlatform.Playwright.Tests.csproj" --configuration Release
+            dotnet test --project "$PWD/tests/Meziantou.Framework.WebPlatform.Playwright.Tests/Meziantou.Framework.WebPlatform.Playwright.Tests.csproj" -mt --configuration Release
             $testsPassed = $LASTEXITCODE -eq 0
 
             # The samples use Microsoft.Playwright too: CI compiles them but this pull request runs no CI
-            dotnet build samples/Meziantou.Framework.WebPlatform.Playwright.Samples/Meziantou.Framework.WebPlatform.Playwright.Samples.csproj --configuration Release
+            dotnet build samples/Meziantou.Framework.WebPlatform.Playwright.Samples/Meziantou.Framework.WebPlatform.Playwright.Samples.csproj -mt --configuration Release
             $testsPassed = $testsPassed -and $LASTEXITCODE -eq 0
 
             git config --global user.email "git@meziantou.net"

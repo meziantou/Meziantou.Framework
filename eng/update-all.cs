@@ -2251,7 +2251,8 @@ static void BuildProjects(FullPath rootPath, IReadOnlyCollection<FullPath> proje
 
     // Use the same properties as a regular build: otherwise each build recompiles the dependencies shared with the other
     // builds, including Meziantou.Framework.FullPath that this script references, which recompiles this script at its next start.
-    string[] buildArgs = ["build", solutionPath, "--framework", targetFramework];
+    // -mt (MSBuild multithreaded mode) builds the projects on threads of one process; it does not change the outputs.
+    string[] buildArgs = ["build", solutionPath, "--framework", targetFramework, "-mt"];
     TimeSpan[] retryDelays = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15)];
     _ = RunProcessAndCaptureOutput("dotnet", buildArgs, timeout: TimeSpan.FromMinutes(15), retryDelays: retryDelays);
 }

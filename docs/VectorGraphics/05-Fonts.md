@@ -74,6 +74,11 @@ instance through the `@font-face` rules of the page. Set
 that draw a character of a text, whole, as `@font-face` rules. Prefer WOFF2 files: they are the smallest. The faces of
 font collections (`.ttc`, `.otc`) are not embedded.
 
+## PDF
+
+The PDF renderer draws each text with the face of its family, and embeds the subsets of the faces the texts use. See
+[PDF rendering](06-PdfRendering.md).
+
 ## Images
 
 The image renderer draws the texts of a scene with its fonts. Without them, it uses the fonts of the options:

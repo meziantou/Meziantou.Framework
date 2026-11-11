@@ -491,9 +491,9 @@ public static class SvgSceneRenderer
                         break;
 
                     case SceneText text:
-                        foreach (var (_, face) in SceneFontCollection.SplitRuns(text.Text, fonts.GetFaces(text.Font, scene.FontFamily)))
+                        foreach (var run in fonts.GetRuns(text.Text, text.Font, scene.FontFamily))
                         {
-                            used.Add(face);
+                            used.Add(run.Face);
                         }
 
                         break;

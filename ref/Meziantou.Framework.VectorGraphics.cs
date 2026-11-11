@@ -103,6 +103,7 @@ namespace Meziantou.Framework.VectorGraphics
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.PathCommand> Commands { get => throw null; }
         public bool IsEmpty { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.PathData ToCubicCurves() => throw null;
         public override string ToString() => throw null;
         public Meziantou.Framework.VectorGraphics.PathData Translate(double offsetX, double offsetY) => throw null;
     }
@@ -229,6 +230,7 @@ namespace Meziantou.Framework.VectorGraphics
         public bool ContainsFamily(string family) => throw null;
         public Meziantou.Framework.VectorGraphics.SceneFontFace GetFace(Meziantou.Framework.VectorGraphics.SceneFont font, string? defaultFamily = null) => throw null;
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneFontFace> GetFaces(Meziantou.Framework.VectorGraphics.SceneFont font, string? defaultFamily = null) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneFontRun> GetRuns(string text, Meziantou.Framework.VectorGraphics.SceneFont font, string? defaultFamily = null) => throw null;
         public static Meziantou.Framework.VectorGraphics.SceneFontCollection Load(params System.Collections.Generic.IEnumerable<string> paths) => throw null;
     }
 
@@ -243,6 +245,25 @@ namespace Meziantou.Framework.VectorGraphics
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneFontFace> Load(System.ReadOnlySpan<byte> data) => throw null;
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneFontFace> Load(string path) => throw null;
         public override string ToString() => throw null;
+    }
+
+    public readonly struct SceneFontRun : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneFontRun>
+    {
+        public Meziantou.Framework.VectorGraphics.SceneFontFace Face { get => throw null; init { } }
+        public int Length { get => throw null; init { } }
+        public int Start { get => throw null; init { } }
+        public SceneFontRun(int Start, int Length, Meziantou.Framework.VectorGraphics.SceneFontFace Face) { }
+        public void Deconstruct(out int Start, out int Length, out Meziantou.Framework.VectorGraphics.SceneFontFace Face) => throw null;
+        public bool Equals(Meziantou.Framework.VectorGraphics.SceneFontRun other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.VectorGraphics.SceneFontRun left, Meziantou.Framework.VectorGraphics.SceneFontRun right) => throw null;
+        public static bool operator !=(Meziantou.Framework.VectorGraphics.SceneFontRun left, Meziantou.Framework.VectorGraphics.SceneFontRun right) => throw null;
     }
 
     public readonly struct SceneGradientStop : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneGradientStop>

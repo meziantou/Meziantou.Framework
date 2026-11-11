@@ -87,6 +87,29 @@ public sealed class SvgSceneRendererTests
     }
 
     [Fact]
+    public void ToCubicCurves()
+    {
+        // A quadratic curve becomes the cubic curve of the same shape; the other commands are kept
+        Assert.Equal("M0,0 C2,4 4,4 6,0 L6,6 Z", new PathBuilder().MoveTo(0, 0).QuadraticTo(3, 6, 6, 0).LineTo(6, 6).Close().Build().ToCubicCurves().ToString());
+
+        // A half circle of radius 5 is two quarters; with the sweep flag, it goes through the top (the y axis points down)
+        var half = new PathBuilder().MoveTo(0, 0).ArcTo(5, 5, 0, largeArc: false, sweep: true, 10, 0).Build().ToCubicCurves();
+        Assert.Equal([PathCommandKind.MoveTo, PathCommandKind.CubicTo, PathCommandKind.CubicTo], half.Commands.Select(command => command.Kind));
+        Assert.Equal(5, half.Commands[1].X, 1e-9);
+        Assert.Equal(-5, half.Commands[1].Y, 1e-9);
+        Assert.Equal((10.0, 0.0), (half.Commands[2].X, half.Commands[2].Y));
+        Assert.Equal(5, new PathBuilder().MoveTo(0, 0).ArcTo(5, 5, 0, largeArc: false, sweep: false, 10, 0).Build().ToCubicCurves().Commands[1].Y, 1e-9);
+
+        // Radii too small are scaled up, a radius of 0 gives a line, and an arc that ends where it starts is omitted
+        Assert.Equal(-5, new PathBuilder().MoveTo(0, 0).ArcTo(1, 1, 0, largeArc: false, sweep: true, 10, 0).Build().ToCubicCurves().Commands[1].Y, 1e-9);
+        Assert.Equal("M0,0 L10,0", new PathBuilder().MoveTo(0, 0).ArcTo(0, 5, 0, largeArc: false, sweep: true, 10, 0).Build().ToCubicCurves().ToString());
+        Assert.Equal("M1,1", new PathBuilder().MoveTo(1, 1).ArcTo(5, 5, 0, largeArc: true, sweep: true, 1, 1).Build().ToCubicCurves().ToString());
+
+        // A large arc of three quarters of a circle is three curves
+        Assert.HasCount(4, new PathBuilder().MoveTo(5, 0).ArcTo(5, 5, 0, largeArc: true, sweep: true, 0, 5).Build().ToCubicCurves().Commands);
+    }
+
+    [Fact]
     public void Transforms()
     {
         #region VectorGraphics_Transforms

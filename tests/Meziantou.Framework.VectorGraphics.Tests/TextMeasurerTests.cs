@@ -261,13 +261,15 @@ public sealed class TextMeasurerTests
         Assert.Equal(latin + thaiOnly, measurer.Measure("ab \u0E2A\u0E27\u0E31\u0E2A\u0E14\u0E35", font).Width, 1e-9);
         Assert.Equal(
             [("ab ", "Liberation Sans"), ("\u0E2A\u0E27\u0E31\u0E2A\u0E14\u0E35", "Noto Sans Thai")],
-            SceneFontCollection.SplitRuns("ab \u0E2A\u0E27\u0E31\u0E2A\u0E14\u0E35", fonts.GetFaces(font)).Select(run => ("ab \u0E2A\u0E27\u0E31\u0E2A\u0E14\u0E35"[run.Range], run.Face.FamilyName)));
+            fonts.GetRuns("ab \u0E2A\u0E27\u0E31\u0E2A\u0E14\u0E35", font).Select(run => ("ab \u0E2A\u0E27\u0E31\u0E2A\u0E14\u0E35".Substring(run.Start, run.Length), run.Face.FamilyName)));
 
         // The ascent and the descent are the ones of the family of the text
         Assert.Equal(new FontFaceTextMeasurer(new SceneFontCollection(sans)).Measure("a", font).Ascent, measurer.Measure("\u0E2A", font).Ascent);
 
         // A character no family has is measured with the family of the text
-        Assert.Single(SceneFontCollection.SplitRuns("a\u4E2Db", fonts.GetFaces(font)));
+        Assert.Single(fonts.GetRuns("a\u4E2Db", font));
+        Assert.Empty(fonts.GetRuns("", font));
+        Assert.Throws<ArgumentNullException>("text", () => fonts.GetRuns(null!, font));
         Assert.Equal(0, measurer.Measure("", font).Width);
     }
 }

@@ -88,9 +88,9 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
         var (ascender, descender) = GetVerticalMetrics(primary);
         var primaryScale = font.Size / primary.UnitsPerEm;
         var width = 0.0;
-        foreach (var (range, face) in SceneFontCollection.SplitRuns(text, stack))
+        foreach (var run in SceneFontCollection.SplitRuns(text, stack))
         {
-            width += Shape(face.Face, text[range]) * (font.Size / face.Face.UnitsPerEm);
+            width += Shape(run.Face.Face, text.Substring(run.Start, run.Length)) * (font.Size / run.Face.Face.UnitsPerEm);
         }
 
         return new TextMetrics(width, ascender * primaryScale, -descender * primaryScale);

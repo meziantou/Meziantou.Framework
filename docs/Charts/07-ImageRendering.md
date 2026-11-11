@@ -76,3 +76,8 @@ for instance a font installed on the machine, from `SystemFontCollection`.
 [BoldFont](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.BoldFont) sets the font of the bold texts,
 [ItalicFont](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.ItalicFont) and
 [BoldItalicFont](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.BoldItalicFont) the ones of the italic texts.
+
+## PDF
+
+`Meziantou.Framework.Pdf.VectorGraphics` draws the same scene as a PDF document, or on a page of an existing one, as
+vector shapes and text: `ToPdf` lays the source out with the fonts that draw it. See [PDF rendering](../VectorGraphics/06-PdfRendering.md).

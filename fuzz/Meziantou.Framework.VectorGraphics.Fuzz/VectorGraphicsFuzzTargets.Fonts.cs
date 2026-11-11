@@ -83,13 +83,13 @@ public static partial class VectorGraphicsFuzzTargets
 
         var expected = 0.0;
         var position = 0;
-        foreach (var (range, face) in SceneFontCollection.SplitRuns(text, faces))
+        foreach (var run in fonts.GetRuns(text, font))
         {
-            var (offset, length) = range.GetOffsetAndLength(text.Length);
-            FuzzAssert.Equal(position, offset, "The runs do not cover the text in order");
-            position += length;
-            FuzzAssert.True(length > 0, "A run is empty");
-            expected += new FontFaceTextMeasurer(new SceneFontCollection(face)).Measure(text[range], font with { Family = null }).Width;
+            FuzzAssert.Equal(position, run.Start, "The runs do not cover the text in order");
+            position += run.Length;
+            FuzzAssert.True(run.Length > 0, "A run is empty");
+            FuzzAssert.True(faces.Contains(run.Face), "A run is drawn with a face that does not draw the text");
+            expected += new FontFaceTextMeasurer(new SceneFontCollection(run.Face)).Measure(text.Substring(run.Start, run.Length), font with { Family = null }).Width;
         }
 
         FuzzAssert.Equal(text.Length, position, "The runs do not cover the text");

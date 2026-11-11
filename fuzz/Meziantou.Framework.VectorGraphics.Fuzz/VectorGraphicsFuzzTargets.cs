@@ -11,7 +11,8 @@ namespace Meziantou.Framework.VectorGraphics.Fuzz;
 /// width unless they hold a single grapheme cluster. The SVG of any scene is a well-formed XML document whose root is
 /// <c>svg</c>, whatever the texts, tooltips, hyperlinks and data attributes hold, and the output is deterministic. The
 /// shapes of <see cref="PathBuilder"/> have the expected commands and stay in their bounds, and moving a path or
-/// combining transforms agrees with moving or transforming the points. A font file loads or throws a
+/// combining transforms agrees with moving or transforming the points; converting a path to cubic curves keeps its ends
+/// and its shape. A font file loads or throws a
 /// <see cref="Fonts.FontException"/>; the fonts of a scene resolve every family to one of their faces, measure a text
 /// as the sum of its runs, and give a well-formed SVG whatever the families hold.
 /// </summary>
@@ -39,6 +40,7 @@ public static partial class VectorGraphicsFuzzTargets
         new("vectorgraphics-fontface", FontFaceTarget) { Seeds = GetFontFaceSeeds, Dictionary = FontFileTokens },
         new("vectorgraphics-fonts", FontsTarget) { Seeds = GetFontsSeeds, Dictionary = FontFamilyTokens },
         new("vectorgraphics-path", PathTarget) { Seeds = GetPathSeeds },
+        new("vectorgraphics-curves", CurvesTarget) { Seeds = GetCurvesSeeds },
     ];
 
     /// <summary>
@@ -389,6 +391,9 @@ public static partial class VectorGraphicsFuzzTargets
             }
         }
 
+        // The shapes have no arc and no quadratic curve: ToCubicCurves keeps their commands
+        FuzzAssert.True(path.ToCubicCurves().Commands.SequenceEqual(path.Commands), "ToCubicCurves changed a path without arcs and quadratic curves");
+
         var combined = new PathBuilder().Append(path).Append(moved).Build();
         FuzzAssert.True(combined.Commands.SequenceEqual(path.Commands.Concat(moved.Commands)), "Append does not concatenate the commands");
         FuzzAssert.Equal(combined.ToString(), combined.ToString(), "The path data is not deterministic");
@@ -409,6 +414,40 @@ public static partial class VectorGraphicsFuzzTargets
             FuzzAssert.Equal(first, first.Then(SceneTransform.Identity), "Then with the identity changed the transform");
             FuzzAssert.Equal(first, SceneTransform.Identity.Then(first), "The identity then the transform is not the transform");
         }
+    }
+
+    /// <summary>
+    /// The input picks a start point, the radii, the rotation, the flags and the end point of an arc, and the control
+    /// point of a quadratic curve back to the start. <see cref="PathData.ToCubicCurves"/> leaves only lines and cubic
+    /// curves, at most four curves for the arc, which ends at its end point; the cubic curve of the quadratic curve has its
+    /// shape.
+    /// </summary>
+    private static void CurvesTarget(ReadOnlySpan<byte> data)
+    {
+        var (startX, startY) = (ReadPathValue(ref data), ReadPathValue(ref data));
+        var (arcX, arcY, controlX, controlY) = (ReadPathValue(ref data), ReadPathValue(ref data), ReadPathValue(ref data), ReadPathValue(ref data));
+        var arcFlags = FuzzInput.ReadByte(ref data);
+        var curves = new PathBuilder().MoveTo(startX, startY)
+            .ArcTo(ReadPathValue(ref data), ReadPathValue(ref data), ReadPathValue(ref data), largeArc: (arcFlags & 1) != 0, sweep: (arcFlags & 2) != 0, arcX, arcY)
+            .QuadraticTo(controlX, controlY, startX, startY)
+            .Build().ToCubicCurves();
+        FuzzAssert.True(curves.Commands.All(command => command.Kind is PathCommandKind.MoveTo or PathCommandKind.LineTo or PathCommandKind.CubicTo), "ToCubicCurves left an arc or a quadratic curve");
+        FuzzAssert.True(curves.Commands.Count <= 6, $"An arc gave {curves.Commands.Count - 2} curves");
+        if (startX != arcX || startY != arcY)
+        {
+            FuzzAssert.Equal((arcX, arcY), (curves.Commands[^2].X, curves.Commands[^2].Y), "The arc does not end at its end point");
+        }
+
+        var quadratic = curves.Commands[^1];
+        FuzzAssert.Equal((startX, startY), (quadratic.X, quadratic.Y), "The quadratic curve does not end at its end point");
+        if (double.IsFinite(arcX) && double.IsFinite(arcY) && double.IsFinite(controlX) && double.IsFinite(controlY) && double.IsFinite(startX) && double.IsFinite(startY))
+        {
+            // The middle of a quadratic curve is (P0 + 2 Q + P2) / 4, and the middle of a cubic curve (P0 + 3 C1 + 3 C2 + P3) / 8
+            var middleX = (arcX + (3 * quadratic.X1) + (3 * quadratic.X2) + startX) / 8;
+            var middleY = (arcY + (3 * quadratic.Y1) + (3 * quadratic.Y2) + startY) / 8;
+            FuzzAssert.True(AreClose(middleX, (arcX + (2 * controlX) + startX) / 4) && AreClose(middleY, (arcY + (2 * controlY) + startY) / 4), "The cubic curve of a quadratic curve has another shape");
+        }
+
     }
 
     private static double ReadPathValue(ref ReadOnlySpan<byte> data) => FuzzInput.Pick(PathValues, FuzzInput.ReadByte(ref data));
@@ -490,6 +529,24 @@ public static partial class VectorGraphicsFuzzTargets
         for (var i = 0; i < seeds.Length; i++)
         {
             yield return new FuzzSeed("path-" + i.ToString(CultureInfo.InvariantCulture), seeds[i]);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetCurvesSeeds()
+    {
+        // A half circle (start, end, control, flags, radii, rotation), a large arc with small radii, a rotated ellipse, an arc of no radius, and an arc that ends at its start
+        byte[][] seeds =
+        [
+            [0, 0, 5, 0, 5, 5, 2, 1, 1, 0],
+            [0, 0, 7, 7, 1, 2, 3, 3, 3, 12],
+            [1, 2, 7, 8, 4, 6, 1, 5, 4, 5],
+            [0, 0, 5, 5, 3, 3, 0, 0, 5, 0],
+            [5, 5, 5, 5, 0, 0, 3, 5, 5, 0],
+            [13, 14, 5, 15, 0, 0, 1, 13, 14, 15],
+        ];
+        for (var i = 0; i < seeds.Length; i++)
+        {
+            yield return new FuzzSeed("curves-" + i.ToString(CultureInfo.InvariantCulture), seeds[i]);
         }
     }
 }

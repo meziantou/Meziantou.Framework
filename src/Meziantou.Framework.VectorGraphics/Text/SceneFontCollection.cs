@@ -105,16 +105,27 @@ public sealed class SceneFontCollection
     /// <returns>The faces, by order of preference.</returns>
     public IReadOnlyList<SceneFontFace> GetFaces(SceneFont font, string? defaultFamily = null) => GetStack(font, defaultFamily);
 
-    /// <summary>Splits a text into the runs that one face draws: each grapheme cluster uses the first face of the stack that has all its characters.</summary>
-    internal static List<(Range Range, SceneFontFace Face)> SplitRuns(string text, IReadOnlyList<SceneFontFace> stack)
+    /// <summary>Splits a text into the runs that one face draws: the characters the face of its family does not have are drawn with the faces of the other families.</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="font">The font of the text.</param>
+    /// <param name="defaultFamily">The family of the text when <see cref="SceneFont.Family"/> is <see langword="null"/>, usually <see cref="Scene.FontFamily"/>, or <see langword="null"/> for <see cref="DefaultFamily"/>.</param>
+    /// <returns>The runs, in the order of the text: none for an empty text.</returns>
+    /// <remarks>Each grapheme cluster uses the first face of <see cref="GetFaces"/> that has all its characters, and the first face when none has them. The adjacent clusters of a face are one run.</remarks>
+    public IReadOnlyList<SceneFontRun> GetRuns(string text, SceneFont font, string? defaultFamily = null)
     {
-        var runs = new List<(Range Range, SceneFontFace Face)>();
+        ArgumentNullException.ThrowIfNull(text);
+        return SplitRuns(text, GetStack(font, defaultFamily));
+    }
+
+    internal static List<SceneFontRun> SplitRuns(string text, IReadOnlyList<SceneFontFace> stack)
+    {
+        var runs = new List<SceneFontRun>();
         if (text.Length is 0)
             return runs;
 
         if (stack.Count is 1)
         {
-            runs.Add((0..text.Length, stack[0]));
+            runs.Add(new SceneFontRun(0, text.Length, stack[0]));
             return runs;
         }
 
@@ -126,14 +137,14 @@ public sealed class SceneFontCollection
             var (offset, _) = cluster.GetOffsetAndLength(text.Length);
             if (current is not null && face != current)
             {
-                runs.Add((start..offset, current));
+                runs.Add(new SceneFontRun(start, offset - start, current));
                 start = offset;
             }
 
             current = face;
         }
 
-        runs.Add((start..text.Length, current!));
+        runs.Add(new SceneFontRun(start, text.Length - start, current!));
         return runs;
     }
 

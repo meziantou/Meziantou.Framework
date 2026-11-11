@@ -128,6 +128,14 @@ namespace Meziantou.Framework.VectorGraphics
         public static bool operator !=(Meziantou.Framework.VectorGraphics.PathPoint left, Meziantou.Framework.VectorGraphics.PathPoint right) => throw null;
     }
 
+    public sealed class PatternPaint : Meziantou.Framework.VectorGraphics.ScenePaint
+    {
+        public Meziantou.Framework.VectorGraphics.SceneGroup Content { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneBounds Tile { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneTransform? Transform { get => throw null; init { } }
+        public PatternPaint(Meziantou.Framework.VectorGraphics.SceneBounds tile) { }
+    }
+
     public sealed class RadialGradientPaint : Meziantou.Framework.VectorGraphics.SceneGradientPaint
     {
         public double CenterX { get => throw null; }

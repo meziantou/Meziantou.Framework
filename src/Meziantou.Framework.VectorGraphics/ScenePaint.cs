@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.VectorGraphics;
 
-/// <summary>How a shape is painted.</summary>
+/// <summary>How a shape is painted: <see cref="SolidPaint"/>, <see cref="LinearGradientPaint"/>, <see cref="RadialGradientPaint"/> or <see cref="PatternPaint"/>.</summary>
 public abstract class ScenePaint
 {
     private protected ScenePaint()

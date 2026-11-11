@@ -200,6 +200,35 @@ public sealed class SceneRendererTests
         Assert.InRange((top + bottom) / 2.0, 48, 52);
     }
 
+    [Fact]
+    public void Patterns()
+    {
+        // A tile of 10 by 10 pixels with a red square in its top-left quarter, repeated, and scaled by 2
+        var pattern = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        pattern.Content.Add(new SceneRectangle(0, 0, 5, 5) { Fill = (SceneColor)"#ff0000" });
+        var scaled = new PatternPaint(new SceneBounds(0, 0, 10, 10)) { Transform = SceneTransform.Scale(2, 2) };
+        scaled.Content.Add(new SceneRectangle(0, 0, 5, 5) { Fill = (SceneColor)"#0000ff" });
+
+        // A pattern that paints with itself does not draw its content again
+        var recursive = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        recursive.Content.Add(new SceneRectangle(0, 0, 10, 10) { Fill = recursive });
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneRectangle(0, 0, 40, 40) { Fill = pattern });
+        scene.Root.Add(new SceneGroup { Transform = SceneTransform.Translate(50, 0) }).Add(new SceneRectangle(0, 0, 40, 40) { Fill = scaled });
+        scene.Root.Add(new SceneRectangle(0, 45, 10, 10) { Fill = recursive });
+        scene.Root.Add(new SceneRectangle(20, 45, 10, 10) { Fill = new PatternPaint(new SceneBounds(0, 0, 0, 10)) });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(Red, pixels[2, 2]);
+        Assert.Equal(Red, pixels[12, 22]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[7, 7]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[17, 2]);
+        Assert.Equal(Blue, pixels[58, 8]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[62, 2]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[5, 50]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[25, 50]);
+    }
+
     private static (int Left, int Top, int Right, int Bottom) GetInkBounds(Image<Rgba32> image, int x0, int y0, int x1, int y1)
     {
         var (left, top, right, bottom) = (int.MaxValue, int.MaxValue, -1, -1);

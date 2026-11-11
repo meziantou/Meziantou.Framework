@@ -24,6 +24,8 @@ internal static class SceneRenderer
         });
     }
 
+    private static readonly Brush Transparent = new SolidBrush(new Rgba32(0, 0, 0, 0));
+
     internal static Brush ToBrush(SceneColor color) => new SolidBrush(new Rgba32(color.R, color.G, color.B, color.A));
 
     internal static VectorPath? ToVectorPath(PathData data)
@@ -597,14 +599,21 @@ internal static class SceneRenderer
         /// <summary>Gets the family of the texts that name none (<see cref="Scene.FontFamily"/>).</summary>
         public string? FontFamily { get; init; }
 
+        // The patterns whose content is being drawn: a pattern cannot paint with itself
+        private readonly HashSet<PatternPaint> _drawingPatterns = new(ReferenceEqualityComparer.Instance);
+
         public Brush GetBrush(ScenePaint paint)
         {
+            if (paint is PatternPaint drawing && _drawingPatterns.Contains(drawing))
+                return Transparent;
+
             if (brushes.TryGetValue(paint, out var brush))
                 return brush;
 
             brush = paint switch
             {
                 SolidPaint solid => ToBrush(solid.Color),
+                PatternPaint pattern => CreatePatternBrush(pattern),
                 RadialGradientPaint radial => CreateRadialBrush(radial),
                 LinearGradientPaint gradient => new LinearGradientBrush(
                     new PointD(gradient.X1, gradient.Y1),
@@ -618,6 +627,44 @@ internal static class SceneRenderer
             };
             brushes.Add(paint, brush);
             return brush;
+        }
+
+        // The largest magnitude of a coordinate of the tile of a pattern brush
+        private const double MaxTileCoordinate = 16777216;
+
+        // A tile without area, or out of the limits of the canvas, paints nothing
+        private Brush CreatePatternBrush(PatternPaint pattern)
+        {
+            var tile = pattern.Tile;
+            ReadOnlySpan<double> coordinates = [tile.X, tile.Y, tile.Width, tile.Height, tile.Right, tile.Bottom];
+            foreach (var coordinate in coordinates)
+            {
+                if (!double.IsFinite(coordinate) || Math.Abs(coordinate) > MaxTileCoordinate)
+                    return Transparent;
+            }
+
+            if (!(tile.Width > 0 && tile.Height > 0) || (pattern.Transform is { } transform && !IsFinite(transform)))
+                return Transparent;
+
+            return new PatternBrush(new RectangleD(tile.X, tile.Y, tile.Width, tile.Height), canvas => DrawPattern(canvas, pattern))
+            {
+                Transform = ToTransform(pattern.Transform),
+            };
+        }
+
+        private void DrawPattern(DrawingCanvas canvas, PatternPaint pattern)
+        {
+            if (!_drawingPatterns.Add(pattern))
+                return;
+
+            try
+            {
+                DrawChildren(canvas, pattern.Content, this);
+            }
+            finally
+            {
+                _drawingPatterns.Remove(pattern);
+            }
         }
     }
 }

@@ -41,6 +41,7 @@ public static class SvgSceneRenderer
         private readonly Dictionary<SceneElement, string> _maskIds = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<SceneText, string> _textPathIds = new(ReferenceEqualityComparer.Instance);
         private readonly List<(string Id, SceneMask Mask)> _masks = [];
+        private readonly List<(string Id, PatternPaint Pattern)> _patterns = [];
         private readonly HashSet<string> _elementIds = new(StringComparer.Ordinal);
         private readonly int _precision = options.Precision;
         private Scene _scene = null!;
@@ -81,7 +82,7 @@ public static class SvgSceneRenderer
             }
 
             WriteDefinitions(scene.Root, options.EmbedFonts && scene.Fonts is { } fonts ? GetFontFaceRules(scene, fonts) : null);
-            if (_masks.Count > 0)
+            if (_masks.Count > 0 || _patterns.Count > 0)
             {
                 // The content of a mask is in the coordinates of the parent of the masked element, on the whole plane
                 output.Write("<defs>\n");
@@ -98,6 +99,32 @@ public static class SvgSceneRenderer
                     output.Write(">\n");
                     WriteElement(mask.Content);
                     output.Write("</mask>\n");
+                }
+
+                // The content of a pattern is in the coordinates of its tile: its view box is the tile, of the same size
+                foreach (var (id, pattern) in _patterns)
+                {
+                    var tile = pattern.Tile;
+                    output.Write("<pattern");
+                    Attribute("id", id);
+                    output.Write(" patternUnits=\"userSpaceOnUse\"");
+                    Attribute("x", tile.X);
+                    Attribute("y", tile.Y);
+                    Attribute("width", tile.Width);
+                    Attribute("height", tile.Height);
+                    if (tile.X != 0 || tile.Y != 0)
+                    {
+                        Attribute("viewBox", Number(tile.X) + " " + Number(tile.Y) + " " + Number(tile.Width) + " " + Number(tile.Height));
+                    }
+
+                    if (pattern.Transform is { } patternTransform)
+                    {
+                        Attribute("patternTransform", Transform(patternTransform));
+                    }
+
+                    output.Write(">\n");
+                    WriteElement(pattern.Content);
+                    output.Write("</pattern>\n");
                 }
 
                 output.Write("</defs>\n");
@@ -121,22 +148,12 @@ public static class SvgSceneRenderer
         }
 
         // The identifiers of the elements, which must be different: the generated identifiers avoid them
-        private void CollectIds(SceneElement element)
+        private void CollectIds(SceneGroup root)
         {
-            if (element.Id is { } id && !_elementIds.Add(id))
-                throw new InvalidOperationException($"Two elements of the scene have the identifier '{id}': the identifiers of the elements must be different.");
-
-            if (element.Mask is { } mask)
+            foreach (var element in SceneTree.EnumerateElements(root))
             {
-                CollectIds(mask.Content);
-            }
-
-            if (element is SceneGroup group)
-            {
-                foreach (var child in group.Children)
-                {
-                    CollectIds(child);
-                }
+                if (element.Id is { } id && !_elementIds.Add(id))
+                    throw new InvalidOperationException($"Two elements of the scene have the identifier '{id}': the identifiers of the elements must be different.");
             }
         }
 
@@ -177,6 +194,7 @@ public static class SvgSceneRenderer
             var filterCount = 0;
             var maskCount = 0;
             var textPathCount = 0;
+            var patternCount = 0;
             Visit(root);
             if (definitions.Length > 0)
             {
@@ -189,8 +207,8 @@ public static class SvgSceneRenderer
             {
                 if (element is SceneShape shape)
                 {
-                    AddGradient(shape.Fill);
-                    AddGradient(shape.Stroke);
+                    AddPaint(shape.Fill);
+                    AddPaint(shape.Stroke);
                 }
 
                 // The path of a text is referenced by its textPath
@@ -311,8 +329,21 @@ public static class SvgSceneRenderer
 
             static double Finite(double value) => double.IsFinite(value) ? value : 0;
 
-            void AddGradient(ScenePaint? paint)
+            void AddPaint(ScenePaint? paint)
             {
+                if (paint is PatternPaint pattern)
+                {
+                    // The identifier is set before the content is visited: a pattern that paints with itself is not visited again
+                    if (_ids.ContainsKey(pattern))
+                        return;
+
+                    var patternId = NextId("pattern", ref patternCount);
+                    _ids[pattern] = patternId;
+                    _patterns.Add((patternId, pattern));
+                    Visit(pattern.Content);
+                    return;
+                }
+
                 if (paint is not SceneGradientPaint || _ids.ContainsKey(paint))
                     return;
 
@@ -910,7 +941,7 @@ public static class SvgSceneRenderer
                 case SolidPaint solid:
                     Paint(name, solid.Color);
                     break;
-                case SceneGradientPaint:
+                case SceneGradientPaint or PatternPaint:
                     Attribute(name, "url(#" + _ids[paint] + ")");
                     break;
             }
@@ -979,39 +1010,10 @@ public static class SvgSceneRenderer
         private static string GetFontFaceRules(Scene scene, SceneFontCollection fonts)
         {
             var used = new HashSet<SceneFontFace>();
-            Visit(scene.Root);
-            var rules = new StringBuilder();
-            foreach (var face in fonts.Faces)
+            foreach (var element in SceneTree.EnumerateElements(scene.Root))
             {
-                if (!used.Contains(face) || face.FaceCount > 1 || GetMediaType(face.Data.Span) is not { } mediaType)
-                    continue;
-
-                rules.Append("@font-face{font-family:").Append(CssString(face.FamilyName))
-                    .Append(";font-weight:").Append(face.Weight.ToString(System.Globalization.CultureInfo.InvariantCulture))
-                    .Append(";font-style:").Append(face.IsItalic ? "italic" : "normal")
-                    .Append(";src:url(data:").Append(mediaType).Append(";base64,").Append(Convert.ToBase64String(face.Data.Span)).Append(")}\n");
-            }
-
-            return rules.ToString();
-
-            // The faces of the texts, of their spans, and of the contents of the masks
-            void Visit(SceneElement element)
-            {
-                if (element.Mask is { } mask)
-                {
-                    Visit(mask.Content);
-                }
-
                 switch (element)
                 {
-                    case SceneGroup group:
-                        foreach (var child in group.Children)
-                        {
-                            Visit(child);
-                        }
-
-                        break;
-
                     case SceneText { Spans.Count: > 0 } text:
                         foreach (var span in text.Spans)
                         {
@@ -1025,6 +1027,20 @@ public static class SvgSceneRenderer
                         break;
                 }
             }
+
+            var rules = new StringBuilder();
+            foreach (var face in fonts.Faces)
+            {
+                if (!used.Contains(face) || face.FaceCount > 1 || GetMediaType(face.Data.Span) is not { } mediaType)
+                    continue;
+
+                rules.Append("@font-face{font-family:").Append(CssString(face.FamilyName))
+                    .Append(";font-weight:").Append(face.Weight.ToString(System.Globalization.CultureInfo.InvariantCulture))
+                    .Append(";font-style:").Append(face.IsItalic ? "italic" : "normal")
+                    .Append(";src:url(data:").Append(mediaType).Append(";base64,").Append(Convert.ToBase64String(face.Data.Span)).Append(")}\n");
+            }
+
+            return rules.ToString();
 
             void AddRuns(string text, SceneFont font)
             {

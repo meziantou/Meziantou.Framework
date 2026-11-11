@@ -305,6 +305,43 @@ public sealed class ScenePdfRendererTests
     }
 
     [Fact]
+    public void Patterns()
+    {
+        // A tile of 10 by 10 pixels with a red square in its top-left quarter, repeated, and scaled by 2
+        var pattern = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        pattern.Content.Add(new SceneRectangle(0, 0, 5, 5) { Fill = (SceneColor)"#ff0000" });
+        var scaled = new PatternPaint(new SceneBounds(0, 0, 10, 10)) { Transform = SceneTransform.Scale(2, 2) };
+        scaled.Content.Add(new SceneRectangle(0, 0, 5, 5) { Fill = (SceneColor)"#0000ff" });
+        scaled.Content.Add(new SceneGroup { Hyperlink = "https://example.com/" }).Add(new SceneRectangle(0, 0, 5, 5) { Fill = (SceneColor)"#0000ff" });
+
+        // A pattern that paints with itself does not draw its content again
+        var recursive = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        recursive.Content.Add(new SceneRectangle(0, 0, 10, 10) { Fill = recursive });
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneRectangle(0, 0, 40, 40) { Fill = pattern });
+        scene.Root.Add(new SceneGroup { Transform = SceneTransform.Translate(50, 0) }).Add(new SceneRectangle(0, 0, 40, 40) { Fill = scaled });
+        scene.Root.Add(new SceneRectangle(0, 45, 10, 10) { Fill = recursive });
+        var document = scene.ToPdf();
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+        var pixels = image.Frames[0];
+        Assert.Equal(new Rgba32(255, 0, 0), pixels[2, 2]);
+        Assert.Equal(new Rgba32(255, 0, 0), pixels[12, 22]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[7, 7]);
+        Assert.Equal(new Rgba32(0, 0, 255), pixels[58, 8]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[62, 2]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[5, 50]);
+        Assert.Contains("/PatternType 1", Uncompressed(document), StringComparison.Ordinal);
+        Assert.Empty(document.Pages[0].Annotations);
+
+        // A filter in the content of a pattern cannot be drawn
+        var filtered = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        filtered.Content.Add(new SceneRectangle(0, 0, 5, 5) { Fill = SceneColor.Black, Filter = new SceneBlurFilter(1) });
+        var withFilter = new Scene(10, 10, "sans-serif");
+        withFilter.Root.Add(new SceneRectangle(0, 0, 10, 10) { Stroke = filtered });
+        Assert.Throws<NotSupportedException>(() => withFilter.ToPdf());
+    }
+
+    [Fact]
     public void DocumentsAreTagged()
     {
         #region PdfVectorGraphics_Tagged

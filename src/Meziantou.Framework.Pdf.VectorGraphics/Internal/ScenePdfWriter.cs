@@ -28,7 +28,13 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     private static readonly ConditionalWeakTable<SceneImage, LoadedImage> Images = [];
 
     private readonly Stack<PdfMatrix> _saved = new();
-    private int _maskDepth;
+    // The depth of the contents that are not links of the page: masks and patterns
+    private int _hiddenDepth;
+
+    // The tiling patterns, by paint and by the transform from their space to the space of their content stream; the
+    // patterns whose content is being drawn
+    private readonly Dictionary<(PatternPaint Paint, PdfMatrix Matrix), PdfTilingPattern> _tilingPatterns = [];
+    private readonly HashSet<PatternPaint> _drawingPatterns = new(ReferenceEqualityComparer.Instance);
     private PdfContentBuilder _content = content;
 
     // The transform from the current user space to the space of the current content stream, and from that space to the page
@@ -59,9 +65,10 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     /// <exception cref="NotSupportedException">An element has a filter.</exception>
     public static void ThrowIfUnsupported(Scene scene)
     {
+        var patterns = new HashSet<PatternPaint>(ReferenceEqualityComparer.Instance);
         Visit(scene.Root);
 
-        static void Visit(SceneElement element)
+        void Visit(SceneElement element)
         {
             if (element.Filter is not null)
                 throw new NotSupportedException($"PDF has no filters: the {element.GetType().Name} has a {element.Filter.GetType().Name}, which cannot be drawn as vectors. Remove the filters of the scene, or draw it as an image.");
@@ -71,12 +78,26 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                 Visit(mask.Content);
             }
 
+            if (element is SceneShape shape)
+            {
+                VisitPattern(shape.Fill);
+                VisitPattern(shape.Stroke);
+            }
+
             if (element is SceneGroup group)
             {
                 foreach (var child in group.Children)
                 {
                     Visit(child);
                 }
+            }
+        }
+
+        void VisitPattern(ScenePaint? paint)
+        {
+            if (paint is PatternPaint pattern && patterns.Add(pattern))
+            {
+                Visit(pattern.Content);
             }
         }
     }
@@ -115,11 +136,11 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         }
     }
 
-    // The link of an element is an annotation of the page over what it draws. The content of a mask is never visible:
-    // its hyperlinks are not links of the page.
+    // The link of an element is an annotation of the page over what it draws. The contents of a mask and of a pattern
+    // are not elements of the page: their hyperlinks are not links of the page.
     private void AddLink(SceneElement element)
     {
-        if (_maskDepth is not 0 || element.Hyperlink is not { } hyperlink || !Uri.TryCreate(hyperlink, UriKind.Absolute, out var uri) || Bounds.Of(element, this) is not { } linkBounds)
+        if (_hiddenDepth is not 0 || element.Hyperlink is not { } hyperlink || !Uri.TryCreate(hyperlink, UriKind.Absolute, out var uri) || Bounds.Of(element, this) is not { } linkBounds)
             return;
 
         var area = linkBounds.Transform(PdfMatrix.Multiply(_matrix, _streamToPage));
@@ -303,7 +324,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         if (Bounds.Of(mask.Content, this) is not { IsFinite: true, Width: > 0, Height: > 0 } box)
             return false;
 
-        _maskDepth++;
+        _hiddenDepth++;
         PdfForm form;
         try
         {
@@ -311,7 +332,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         }
         finally
         {
-            _maskDepth--;
+            _hiddenDepth--;
         }
 
         _content.SetGraphicsState(new PdfExtGState { SoftMask = mask.Mode is SceneMaskMode.Alpha ? PdfSoftMask.FromAlpha(form) : PdfSoftMask.FromLuminosity(form) });
@@ -451,6 +472,9 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             case SceneGradientPaint gradient:
                 return SetGradient(gradient, stroke, shape);
 
+            case PatternPaint pattern:
+                return SetTilingPattern(pattern, stroke);
+
             default:
                 return null;
         }
@@ -525,6 +549,52 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             return bounds;
 
         return new PdfMatrix(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F).TryInvert(out var inverse) ? bounds.Transform(inverse) : null;
+    }
+
+    // A pattern is a tiling pattern whose cell is the tile (8.7.3); its matrix places it in the space of the current
+    // content stream, as the one of a gradient. A pattern that paints with itself, or whose tile has no area, paints
+    // nothing.
+    private double? SetTilingPattern(PatternPaint paint, bool stroke)
+    {
+        var tile = paint.Tile;
+        if (!(tile.Width > 0 && tile.Height > 0) || !IsFinite(tile.X, tile.Y, tile.Width, tile.Height, tile.Right, tile.Bottom) || _drawingPatterns.Contains(paint))
+            return null;
+
+        var transform = paint.Transform is { } value ? new PdfMatrix(value.A, value.B, value.C, value.D, value.E, value.F) : PdfMatrix.Identity;
+        var matrix = PdfMatrix.Multiply(transform, _matrix);
+        if (!IsFinite(matrix.A, matrix.B, matrix.C, matrix.D, matrix.E, matrix.F))
+            return null;
+
+        if (!_tilingPatterns.TryGetValue((paint, matrix), out var pattern))
+        {
+            pattern = page.Document.CreateTilingPattern(new PdfRectangle(tile.X, tile.Y, tile.Right, tile.Bottom), tile.Width, tile.Height, isColored: true, matrix);
+            var (outerContent, outerMatrix, outerStreamToPage) = (_content, _matrix, _streamToPage);
+            _streamToPage = PdfMatrix.Multiply(matrix, _streamToPage);
+            _matrix = PdfMatrix.Identity;
+            _content = pattern.CreateContentBuilder();
+            _drawingPatterns.Add(paint);
+            _hiddenDepth++;
+            try
+            {
+                foreach (var child in paint.Content.Children)
+                {
+                    DrawElement(child);
+                }
+
+                _content.Complete();
+            }
+            finally
+            {
+                _hiddenDepth--;
+                _drawingPatterns.Remove(paint);
+                (_content, _matrix, _streamToPage) = (outerContent, outerMatrix, outerStreamToPage);
+            }
+
+            _tilingPatterns.Add((paint, matrix), pattern);
+        }
+
+        SetPattern(pattern, stroke);
+        return 1;
     }
 
     // The most periods a repeated gradient is drawn with; beyond them, it is padded

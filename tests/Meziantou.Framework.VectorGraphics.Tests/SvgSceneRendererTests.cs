@@ -250,6 +250,39 @@ public sealed class SvgSceneRendererTests
     }
 
     [Fact]
+    public void Patterns()
+    {
+        #region VectorGraphics_Patterns
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // A tile of 10 by 10 pixels with a dot, repeated over the shapes it paints
+        var dots = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        dots.Content.Add(new SceneCircle(5, 5, 2) { Fill = (SceneColor)"#0369a1" });
+        scene.Root.Add(new SceneRectangle(10, 10, 80, 80) { Fill = dots, Stroke = SceneColor.Black });
+
+        // Hatches: a line in a tile, turned by the transform of the pattern
+        var hatches = new PatternPaint(new SceneBounds(0, 0, 8, 8)) { Transform = SceneTransform.Rotate(45) };
+        hatches.Content.Add(new SceneLine(0, 4, 8, 4) { Stroke = (SceneColor)"#b91c1c", StrokeWidth = 2 });
+        scene.Root.Add(new SceneCircle(150, 50, 40) { Fill = hatches, Stroke = SceneColor.Black });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("Patterns", svg);
+        Assert.Contains("<pattern id=\"scene-pattern0\" patternUnits=\"userSpaceOnUse\" x=\"0\" y=\"0\" width=\"10\" height=\"10\">\n<g>\n<circle cx=\"5\" cy=\"5\" r=\"2\" fill=\"#0369a1\"/>\n</g>\n</pattern>", svg, StringComparison.Ordinal);
+        Assert.Contains("<pattern id=\"scene-pattern1\" patternUnits=\"userSpaceOnUse\" x=\"0\" y=\"0\" width=\"8\" height=\"8\" patternTransform=\"matrix(", svg, StringComparison.Ordinal);
+        Assert.Contains("<rect x=\"10\" y=\"10\" width=\"80\" height=\"80\" fill=\"url(#scene-pattern0)\" stroke=\"#000000\"/>", svg, StringComparison.Ordinal);
+
+        // A tile that does not start at the origin keeps the coordinates of its content; a pattern that paints with itself is written once
+        var offset = new PatternPaint(new SceneBounds(5, 5, 10, 10));
+        offset.Content.Add(new SceneRectangle(5, 5, 5, 5) { Fill = offset, Id = "inner" });
+        var offsetSvg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 10, 10) { Stroke = offset }));
+        Assert.Contains("<pattern id=\"scene-pattern0\" patternUnits=\"userSpaceOnUse\" x=\"5\" y=\"5\" width=\"10\" height=\"10\" viewBox=\"5 5 10 10\">\n<g>\n<rect id=\"inner\" x=\"5\" y=\"5\" width=\"5\" height=\"5\" fill=\"url(#scene-pattern0)\"/>", offsetSvg, StringComparison.Ordinal);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(offsetSvg, "<pattern "));
+        Assert.Contains("stroke=\"url(#scene-pattern0)\"", offsetSvg, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void EffectsOfTransformedGroupsAreInTheCoordinatesOfTheParent()
     {
         var scene = new Scene(100, 100, "sans-serif");

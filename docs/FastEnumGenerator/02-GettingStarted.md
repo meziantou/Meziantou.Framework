@@ -9,9 +9,6 @@ Add the `Meziantou.Framework.FastEnumGenerator` package to the project that decl
 
 <InstallNuGetPackage Id="Meziantou.Framework.FastEnumGenerator" />
 
-The generator requires the C# compiler of Roslyn 5.0 or later, which ships with the .NET 10 SDK and
-Visual Studio 2026. An older compiler cannot load it: it reports warning `CS8032`, and the generated code is missing.
-
 The package contains the source generator, the analyzer and its code fixes. The generator also adds
 `FastEnumAttribute` to the project, in the `Meziantou.Framework.Annotations` namespace. When the project enables implicit
 usings (`<ImplicitUsings>enable</ImplicitUsings>`), the package adds `global using Meziantou.Framework.Annotations;`;

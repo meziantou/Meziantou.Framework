@@ -9,9 +9,6 @@ Add the `Meziantou.Framework.ResxSourceGenerator` package to the project that co
 
 <InstallNuGetPackage Id="Meziantou.Framework.ResxSourceGenerator" />
 
-The generator requires the C# compiler of Roslyn 5.0 or later, which ships with the .NET 10 SDK and
-Visual Studio 2026. An older compiler cannot load it: it reports warning `CS8032`, and the generated code is missing.
-
 ## Enable the generator
 
 The generator processes the `.resx` files that are `AdditionalFiles` of the project. Add them in the project file:

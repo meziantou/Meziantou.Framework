@@ -10,9 +10,6 @@ type for any capacity, from 1 to 32,767 characters, with the same members as the
 
 <InstallNuGetPackage Id="Meziantou.Framework.FixedStringBuilder.Generator" />
 
-The generator requires the C# compiler of Roslyn 5.0 or later, which ships with the .NET 10 SDK and
-Visual Studio 2026. An older compiler cannot load it: it reports warning `CS8032`, and the generated code is missing.
-
 Also reference the `Meziantou.Framework.FixedStringBuilder` package if you want the generated types to implement the
 [`IFixedString` interfaces](03-WorkingWithFixedStrings.md#write-generic-code): they are added only when the project
 can use them.

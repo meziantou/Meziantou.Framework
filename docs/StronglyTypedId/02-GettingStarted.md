@@ -9,9 +9,6 @@ Add the `Meziantou.Framework.StronglyTypedId` package to your project:
 
 <InstallNuGetPackage Id="Meziantou.Framework.StronglyTypedId" />
 
-The generator requires the C# compiler of Roslyn 5.0 or later, which ships with the .NET 10 SDK and
-Visual Studio 2026. An older compiler cannot load it: it reports warning `CS8032`, and the generated code is missing.
-
 The package contains the source generator and the attributes. When the project enables implicit usings
 (`<ImplicitUsings>enable</ImplicitUsings>`), the package also adds `global using Meziantou.Framework.Annotations;`;
 otherwise, add the `using` directive yourself.

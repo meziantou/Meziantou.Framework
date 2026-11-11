@@ -567,18 +567,38 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
 
     /// <summary>
     /// Smooths the LF image once every LF group is read (section I.2.7): where a sample is close to the weighted average of
-    /// its neighbors, compared with the quantization step, it is moved towards it. The border is kept.
+    /// its neighbors, compared with the quantization step, it is moved towards it. The border is kept. The three channels
+    /// of a frame whose channels are not subsampled are smoothed together; the channels of another frame are smoothed one
+    /// by one, each at its own size, as libjxl 0.13 and the other decoders do (the specification only describes the first
+    /// case; libjxl writes the second one for a recompressed JPEG file with subsampled chroma since that version).
     /// </summary>
     public void FinishLf()
     {
         if ((_frame.Flags & JpegXlFrameHeader.FlagSkipAdaptiveLfSmoothing) != 0 || _usesLfFrame)
             return;
 
-        if (!_is444)
-            throw JpegXlFormat.Invalid("a frame with subsampled channels smooths its LF image.");
+        if (_blocksWide <= 2 || _blocksHigh <= 2)
+            return;
 
-        var width = _blocksWide;
-        var height = _blocksHigh;
+        if (_is444)
+        {
+            SmoothLf(firstChannel: 0, channelCount: 3, _blocksWide, _blocksHigh);
+            return;
+        }
+
+        for (var c = 0; c < 3; c++)
+        {
+            SmoothLf(c, channelCount: 1, _blocksWide >> _horizontalShift[c], _blocksHigh >> _verticalShift[c]);
+        }
+    }
+
+    /// <summary>Smooths channels of the LF image that have the same size: a sample moves less when the sample of any of them is far from the average of its neighbors.</summary>
+    /// <param name="firstChannel">The first channel (X, Y, B).</param>
+    /// <param name="channelCount">The number of channels.</param>
+    /// <param name="width">The width of the channels, in blocks.</param>
+    /// <param name="height">The height of the channels, in blocks.</param>
+    private void SmoothLf(int firstChannel, int channelCount, int width, int height)
+    {
         if (width <= 2 || height <= 2)
             return;
 
@@ -587,11 +607,11 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
         const float CenterWeight = 1f - (4f * (SideWeight + CornerWeight));
 
         // The filter reads the samples before they are smoothed: two rows of each channel are kept
-        using var saved = Av1PooledArray<float>.Rent(_scope, 6L * width, clear: false);
+        using var saved = Av1PooledArray<float>.Rent(_scope, 2L * channelCount * width, clear: false);
         Span<float> smoothed = stackalloc float[3];
-        for (var c = 0; c < 3; c++)
+        for (var i = 0; i < channelCount; i++)
         {
-            _lf[c]!.Span[..width].CopyTo(saved.Span.Slice(((c * 2) + 1) * width, width));
+            _lf[firstChannel + i]!.Span[..width].CopyTo(saved.Span.Slice(((i * 2) + 1) * width, width));
         }
 
         for (var y = 1; y < height - 1; y++)
@@ -603,30 +623,30 @@ internal sealed class JpegXlVarDctDecoder : IDisposable
 
             // The saved rows alternate: the one of the row above, then the one of this row
             var above = (y & 1) != 0 ? 1 : 0;
-            for (var c = 0; c < 3; c++)
+            for (var i = 0; i < channelCount; i++)
             {
-                _lf[c]!.Span.Slice(y * width, width).CopyTo(saved.Span.Slice(((c * 2) + (above ^ 1)) * width, width));
+                _lf[firstChannel + i]!.Span.Slice(y * width, width).CopyTo(saved.Span.Slice(((i * 2) + (above ^ 1)) * width, width));
             }
 
             for (var x = 1; x < width - 1; x++)
             {
                 var gap = 0.5f;
-                for (var c = 0; c < 3; c++)
+                for (var i = 0; i < channelCount; i++)
                 {
-                    var top = saved.Span.Slice(((c * 2) + above) * width, width);
-                    var middle = saved.Span.Slice(((c * 2) + (above ^ 1)) * width, width);
-                    var bottom = _lf[c]!.Span.Slice((y + 1) * width, width);
+                    var top = saved.Span.Slice(((i * 2) + above) * width, width);
+                    var middle = saved.Span.Slice(((i * 2) + (above ^ 1)) * width, width);
+                    var bottom = _lf[firstChannel + i]!.Span.Slice((y + 1) * width, width);
                     var corners = top[x - 1] + top[x + 1] + bottom[x - 1] + bottom[x + 1];
                     var sides = middle[x - 1] + middle[x + 1] + top[x] + bottom[x];
-                    smoothed[c] = (corners * CornerWeight) + ((sides * SideWeight) + (middle[x] * CenterWeight));
-                    gap = MathF.Max(gap, MathF.Abs((middle[x] - smoothed[c]) / _lfFactor[c]));
+                    smoothed[i] = (corners * CornerWeight) + ((sides * SideWeight) + (middle[x] * CenterWeight));
+                    gap = MathF.Max(gap, MathF.Abs((middle[x] - smoothed[i]) / _lfFactor[firstChannel + i]));
                 }
 
                 var factor = MathF.Max(0, 3f - (4f * gap));
-                for (var c = 0; c < 3; c++)
+                for (var i = 0; i < channelCount; i++)
                 {
-                    var sample = saved.Span[(((c * 2) + (above ^ 1)) * width) + x];
-                    _lf[c]!.Span[(y * width) + x] = ((smoothed[c] - sample) * factor) + sample;
+                    var sample = saved.Span[(((i * 2) + (above ^ 1)) * width) + x];
+                    _lf[firstChannel + i]!.Span[(y * width) + x] = ((smoothed[i] - sample) * factor) + sample;
                 }
             }
         }

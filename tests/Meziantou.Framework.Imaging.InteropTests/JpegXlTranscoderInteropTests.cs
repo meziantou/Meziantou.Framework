@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
@@ -27,7 +28,7 @@ public sealed class JpegXlTranscoderInteropTests
         => id is "jpeg/baseline-411-odd" or "jpeg/progressive-411-separate-dc" or "jpeg/progressive-420-odd-restart-rows-deep"
             || id.Contains("arithmetic", StringComparison.Ordinal) || id.Contains("precision12", StringComparison.Ordinal) || id.Contains("lossless", StringComparison.Ordinal);
 
-    /// <summary>cjxl 0.12.0 also refuses a file whose metadata it cannot place in the reconstruction data; the library recompresses it.</summary>
+    /// <summary>cjxl (0.12 and 0.13) also refuses a file whose metadata it cannot place in the reconstruction data; the library recompresses it.</summary>
     private static bool IsRefusedByCjxl(string id) => IsRefusedByTheLibrary(id) || id is "jpeg/metadata-icc-exif-dpcm";
 
     [Theory]
@@ -65,13 +66,14 @@ public sealed class JpegXlTranscoderInteropTests
         Assert.True(jpeg.AsSpan().SequenceEqual(rebuilt), $"{id}: djxl {jxl.Version} rebuilds {rebuilt.Length} bytes that are not the {jpeg.Length} bytes of the JPEG file.");
 
         // jxl-oxide 0.12.6 does not rebuild every JPEG file. When it fails on the file of the library, it must fail in the
-        // same way on the file cjxl makes from the same JPEG file: the limit is then its own
+        // same way on the file cjxl makes from the same JPEG file: the limit is then its own. Like the file of the library,
+        // that file does not smooth its LF image, which jxl-oxide 0.12.6 refuses to rebuild
         var oxideRebuilt = await oxide.TryReconstructJpegAsync(path, XunitCancellationToken);
         if (oxideRebuilt is null || !jpeg.AsSpan().SequenceEqual(oxideRebuilt))
         {
             Assert.False(IsRefusedByCjxl(id), $"{id}: jxl-oxide {oxide.Version} does not rebuild the file, and there is no file of cjxl to compare with.");
             var referencePath = directory / (name + ".cjxl.jxl");
-            await jxl.EncodeAsync(fixture.InputPath, referencePath, ["--lossless_jpeg=1"], XunitCancellationToken);
+            await jxl.EncodeAsync(fixture.InputPath, referencePath, ["--lossless_jpeg=1", "--jpeg_reconstruction_lfs=0"], XunitCancellationToken);
             var oxideReference = await oxide.TryReconstructJpegAsync(referencePath, XunitCancellationToken);
             Assert.True(oxideReference is null || !jpeg.AsSpan().SequenceEqual(oxideReference), $"{id}: jxl-oxide {oxide.Version} rebuilds the file of cjxl but not the file of the library.");
         }
@@ -173,6 +175,68 @@ public sealed class JpegXlTranscoderInteropTests
         }
 
         Assert.True(jpeg.AsSpan().SequenceEqual(rebuilt.GetBuffer().AsSpan(0, (int)rebuilt.Length)), $"{name}: the library does not rebuild the JPEG file from the output of cjxl {jxl.Version}.");
+    }
+
+    /// <summary>
+    /// Since libjxl 0.13, a recompressed JPEG file may let decoders smooth its LF image: cjxl does it by default when the
+    /// chroma is not subsampled, and with <c>--jpeg_reconstruction_lfs=1</c> otherwise, where each channel is smoothed
+    /// alone. The library writes the same frames when asked (its transcoder does not, by default), decodes them like the
+    /// reference decoders, and still rebuilds the JPEG file. A frame with subsampled channels that smooths its LF image
+    /// makes jxl-oxide 0.12.6 panic, so only djxl (0.13) checks those. The smoothing must move the pixels of the library a
+    /// little from the ones of the same file without smoothing, so that the test checks the smoothing.
+    /// </summary>
+    [Theory]
+    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio444, 20)]
+    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio422, 20)]
+    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio420, 20)]
+    [InlineData("large-rgb8", JpegChromaSubsampling.Ratio420, 30)]
+    [InlineData("smooth-rgb8", JpegChromaSubsampling.Ratio422, 50)]
+    public async Task ASmoothedLfImageIsDecodedLikeTheReferences(string patternName, JpegChromaSubsampling subsampling, int quality)
+    {
+        var pattern = JpegXlPattern.Get(patternName);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(ASmoothedLfImageIsDecodedLikeTheReferences));
+        var name = $"{patternName}-{subsampling}-q{quality}";
+        var jpegPath = directory / (name + ".jpg");
+        var smoothedPath = directory / (name + ".smoothed.jxl");
+        using (var image = CreateImage(pattern))
+        {
+            await image.SaveAsync(jpegPath, new JpegEncoder { Quality = quality, ChromaSubsampling = subsampling }, XunitCancellationToken);
+        }
+
+        var jpeg = await File.ReadAllBytesAsync(jpegPath, XunitCancellationToken);
+        var context = new ImageCodecContext(ImageConfiguration.Default, nameof(ASmoothedLfImageIsDecodedLikeTheReferences), XunitCancellationToken);
+        var smoothed = JpegXlJpegRecompressor.Recompress(jpeg, effort: 7, context, smoothLf: true);
+        var plain = JpegXlJpegRecompressor.Recompress(jpeg, effort: 7, context);
+        await File.WriteAllBytesAsync(smoothedPath, smoothed, XunitCancellationToken);
+
+        // The smoothing changes the pixels, not the coefficients: the JPEG file is rebuilt
+        using (var rebuilt = new MemoryStream())
+        {
+            Assert.True(JpegXlTranscoder.TryReconstructJpeg(new MemoryStream(smoothed), rebuilt));
+            Assert.True(jpeg.AsSpan().SequenceEqual(rebuilt.GetBuffer().AsSpan(0, (int)rebuilt.Length)), $"{name}: the library does not rebuild the JPEG file.");
+        }
+
+        var oxideTolerance = subsampling is JpegChromaSubsampling.Ratio444 ? JpegXlReferenceComparison.OxideTolerance : JpegXlReferenceComparison.Skip;
+        using var smoothedImage = await JpegXlReferenceComparison.AssertDecodesLikeTheReferencesAsync(smoothedPath, JpegXlReferenceComparison.DjxlTolerance, oxideTolerance, name);
+
+        using var plainImage = Image.Load(plain);
+        var smoothedPixels = GetPixelBytes(smoothedImage);
+        var plainPixels = GetPixelBytes(plainImage);
+        var total = 0L;
+        for (var i = 0; i < smoothedPixels.Length; i++)
+        {
+            total += Math.Abs(smoothedPixels[i] - plainPixels[i]);
+        }
+
+        var meanDifference = (double)total / smoothedPixels.Length;
+        Assert.True(meanDifference is > 0 and < 2, $"{name}: the smoothing moves the samples by {meanDifference:F3} on average.");
+
+        static byte[] GetPixelBytes(Image image)
+        {
+            var bytes = new byte[image.Width * image.Height * PixelFormats.GetBytesPerPixel(image.PixelFormat)];
+            image.Frames[0].CopyPixelBytesTo(bytes);
+            return bytes;
+        }
     }
 
     public static TheoryData<string> VariantNames => [.. CreateVariants().Select(variant => variant.Name)];

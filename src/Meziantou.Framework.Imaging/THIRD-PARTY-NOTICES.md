@@ -19,7 +19,10 @@ available are reproduced below.
   `tools/gauss_blur.cc`; the Butteraugli metric (`Internals/Processing/Butteraugli*.cs`), ported from
   `lib/jxl/butteraugli/butteraugli.cc`, `lib/jxl/enc_comparator.cc` and `lib/extras/metrics.cc`; and the
   sRGB curve and cube root approximations they use (`Internals/Processing/LinearRgbLoader.cs`,
-  `lib/jxl/cms/transfer_functions-inl.h`, `lib/jxl/base/fast_math-inl.h`).
+  `lib/jxl/cms/transfer_functions-inl.h`, `lib/jxl/base/fast_math-inl.h`). From version 0.13.0 (tag `v0.13.0`), which
+  the specification does not describe yet: the adaptive LF smoothing of a VarDCT frame whose channels are subsampled,
+  each channel at its own size (`JpegXlVarDctDecoder.FinishLf`, from `lib/jxl/compressed_dc.cc`), and the shifts that
+  undoing a squeeze gives a meta-channel (`JpegXlModularTransform`, from `lib/jxl/modular/transform/squeeze.cc`).
 
 ```
 Copyright (c) the JPEG XL Project Authors.

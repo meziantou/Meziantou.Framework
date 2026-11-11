@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.WebPlatform.Compression;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Dom.FileApi;
@@ -84,6 +85,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             }));
             Adapter.Set(hooks, Key("createCompressionContext"), adapter.CreateFunction("createCompressionContext", 2, (_, args) => CreateCompressionContext(CompressionFormats.Parse(Adapter.ToString(args[0]))!.Value, Adapter.ToBoolean(args[1]))));
             Adapter.Set(hooks, Key("structuredClone"), adapter.CreateFunction("structuredClone", 1, (_, args) => StructuredDeserialize(StructuredSerialize(args[0], transferList: null))));
+            Adapter.Set(hooks, Key("crossRealm"), CreateCrossRealmHooks());
 
             var result = Adapter.Call(EvaluateBuiltIn(script), Adapter.Undefined, [hooks]);
             _streams = result;
@@ -141,6 +143,87 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             return CreateArray(chunks);
         }
     }
+
+    // The message ports of the cross-realm transforms (https://streams.spec.whatwg.org/#cross-realm-transforms), held by
+    // opaque objects of the realm: the ports are never exposed to the scripts
+    private readonly ConditionalWeakTable<TValue, MessagePort> _crossRealmPorts = [];
+
+    /// <summary>
+    /// Creates the functions with which Streams.js uses the message ports of the transferred streams: createChannel()
+    /// returns the handle of a new port and the transferred data of the port entangled with it (the transfer steps of the
+    /// port, without the transfer list of the message: it is not a port of MessageEvent.ports), and receivePort() runs
+    /// the transfer-receiving steps of the port in this realm.
+    /// </summary>
+    private TValue CreateCrossRealmHooks()
+    {
+        var adapter = Adapter;
+        var hooks = CreateObject();
+        SetMember(hooks, "createChannel", adapter.CreateFunction("createChannel", 0, (_, _) =>
+        {
+            var channel = new MessageChannel();
+            channel.Port1.SetRelevantGlobalCore(GlobalScope);
+            var transferred = CreateObject();
+            Agent.SerializedPlatformObjects.AddOrUpdate(transferred, ((IStructuredTransferable)channel.Port2).Transfer());
+            return CreateArray([CreatePortHandle(channel.Port1), transferred]);
+        }));
+        SetMember(hooks, "receivePort", adapter.CreateFunction("receivePort", 1, (_, args) =>
+        {
+            if (!Agent.SerializedPlatformObjects.TryGetValue(args[0], out var data) || data is not ITransferredData transferred || transferred.Receive(GlobalScope) is not MessagePort port)
+                throw adapter.CreateException(ToJsError(new DomException("The stream could not be deserialized", "DataCloneError")));
+
+            return CreatePortHandle(port);
+        }));
+
+        // https://streams.spec.whatwg.org/#abstract-opdef-packandpostmessage: the serialization errors are thrown
+        SetMember(hooks, "postMessage", adapter.CreateFunction("postMessage", 2, (_, args) =>
+        {
+            try
+            {
+                GetPort(args[0]).PostMessageCore(args[1], [], source: null);
+            }
+            catch (DomException ex)
+            {
+                throw adapter.CreateException(ToJsError(ex));
+            }
+
+            return adapter.Undefined;
+        }));
+
+        // Adds the handlers of the message and messageerror events, and enables the port message queue
+        SetMember(hooks, "listen", adapter.CreateFunction("listen", 3, (_, args) =>
+        {
+            var port = GetPort(args[0]);
+            var onMessage = args[1];
+            var onMessageError = args[2];
+            port.AddEventListener("message", e =>
+            {
+                var data = ((MessageEvent)e).Data;
+                adapter.Call(onMessage, adapter.Undefined, [TryAsValue(data, out var value) ? value : ToJs(data)]);
+            });
+            port.AddEventListener("messageerror", _ => adapter.Call(onMessageError, adapter.Undefined, []));
+            port.Start();
+            return adapter.Undefined;
+        }));
+        SetMember(hooks, "disentangle", adapter.CreateFunction("disentangle", 1, (_, args) =>
+        {
+            GetPort(args[0]).Disentangle();
+            return adapter.Undefined;
+        }));
+        SetMember(hooks, "dataCloneError", adapter.CreateFunction("dataCloneError", 1, (_, args) => ToJsError(new DomException(adapter.ToString(args[0]), "DataCloneError"))));
+        return hooks;
+
+        TValue CreatePortHandle(MessagePort port)
+        {
+            var handle = CreateObject();
+            _crossRealmPorts.AddOrUpdate(handle, port);
+            return handle;
+        }
+
+        MessagePort GetPort(TValue handle) => _crossRealmPorts.TryGetValue(handle, out var port) ? port : throw new InvalidOperationException("The value is not the handle of a message port");
+    }
+
+    /// <summary>Returns the functions of Streams.js used by the structured clone to transfer the streams.</summary>
+    private TValue GetStreamTransferSupport() => Adapter.Get(GetStreams(), Key("transferSupport"));
 
     /// <summary>Whether <paramref name="value"/> is a ReadableStream (of any realm of the agent).</summary>
     internal bool IsReadableStream(TValue value)

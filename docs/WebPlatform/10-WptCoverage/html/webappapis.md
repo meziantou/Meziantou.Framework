@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of html/webappapis, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 320 | 338 | 1 | 95% |
+| [Stable](#stable-tests) | 321 | 338 | 1 | 95% |
 | [Tentative](#tentative-tests) | 2 | 6 | 0 | 33% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **322** | **344** | **1** | **94%** |
+| **All** | **323** | **344** | **1** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 3
-- **NOT IMPLEMENTED**: 8
+- **NOT IMPLEMENTED**: 7
 - **TEST RUNNER**: 11
 
 ## Stable tests
@@ -326,7 +326,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scripting/reporterror-cross-realm-method.html`](https://wpt.fyi/results/html/webappapis/scripting/reporterror-cross-realm-method.html) | Pass | 1 / 1 |  |  |
 | [`scripting/reporterror.any.js`](https://wpt.fyi/results/html/webappapis/scripting/reporterror.any.js) | Pass | 10 / 10 |  |  |
 | [`structured-clone/structured-clone-cross-realm-method.html`](https://wpt.fyi/results/html/webappapis/structured-clone/structured-clone-cross-realm-method.html) | Pass | 4 / 4 |  |  |
-| [`structured-clone/structured-clone.any.js`](https://wpt.fyi/results/html/webappapis/structured-clone/structured-clone.any.js) | Fail | 287 / 289 | NOT IMPLEMENTED | transferring the streams (the `ReadableStream` subclass subtest is a precondition failure) |
+| [`structured-clone/structured-clone.any.js`](https://wpt.fyi/results/html/webappapis/structured-clone/structured-clone.any.js) | Pass | 289 / 289 |  |  |
 | [`system-state-and-capabilities/the-navigator-object/clientinformation.window.js`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/clientinformation.window.js) | Pass | 2 / 2 |  |  |
 | [`system-state-and-capabilities/the-navigator-object/historical.https.window.js`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/historical.https.window.js) | Pass | 5 / 5 |  |  |
 | [`system-state-and-capabilities/the-navigator-object/navigator-indexed.html`](https://wpt.fyi/results/html/webappapis/system-state-and-capabilities/the-navigator-object/navigator-indexed.html) | Pass | 4 / 4 |  |  |

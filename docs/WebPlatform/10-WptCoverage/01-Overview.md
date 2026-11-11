@@ -48,10 +48,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,421 | 29,911 | 2,117 | 95% |
+| [Stable](#stable-tests) | 26,437 | 29,911 | 2,117 | 95% |
 | [Tentative](#tentative-tests) | 1,383 | 3,169 | 698 | 56% |
 | [Reftests](#reftests) | 28,250 | 29,507 | 171 | 96% |
-| **All** | **56,054** | **62,587** | **2,986** | **94%** |
+| **All** | **56,070** | **62,587** | **2,986** | **94%** |
 
 ## Failure reasons
 
@@ -59,7 +59,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 184
 - **TEST BUG**: 1,019
-- **NOT IMPLEMENTED**: 4,350
+- **NOT IMPLEMENTED**: 4,334
 - **REQUIRES**: 765
   - `hardware`: 573
   - `layout`: 23
@@ -67,7 +67,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
   - `service-workers`: 1
   - `user-input`: 154
   - `workers`: 3
-- **TEST RUNNER**: 320
+- **TEST RUNNER**: 310
 - **OUT OF SCOPE**: 206
 - **FLAKY**: 17
 - **PERFORMANCE**: 7
@@ -245,7 +245,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/cross-origin-opener-policy`](html/cross-origin-opener-policy.md) | 68 | 115 | 0 | 59% |
 | [`html/dom`](html/dom.md) | 212 | 216 | 0 | 98% |
 | [`html/editing`](html/editing.md) | 121 | 137 | 0 | 88% |
-| [`html/infrastructure`](html/infrastructure.md) | 64 | 69 | 0 | 93% |
+| [`html/infrastructure`](html/infrastructure.md) | 66 | 69 | 0 | 96% |
 | [`html/interaction`](html/interaction.md) | 56 | 58 | 0 | 97% |
 | [`html/links`](html/links.md) | 6 | 6 | 0 | 100% |
 | [`html/meta`](html/meta.md) | 1 | 1 | 0 | 100% |
@@ -257,7 +257,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/syntax`](html/syntax.md) | 105 | 106 | 0 | 99% |
 | [`html/the-xhtml-syntax`](html/the-xhtml-syntax.md) | 13 | 13 | 0 | 100% |
 | [`html/user-activation`](html/user-activation.md) | 15 | 18 | 0 | 83% |
-| [`html/webappapis`](html/webappapis.md) | 320 | 338 | 1 | 95% |
+| [`html/webappapis`](html/webappapis.md) | 321 | 338 | 1 | 95% |
 | [`idle-detection`](idle-detection.md) | 7 | 10 | 0 | 70% |
 | [`imagebitmap-renderingcontext`](imagebitmap-renderingcontext.md) | 14 | 14 | 0 | 100% |
 | [`import-maps`](import-maps.md) | 49 | 49 | 0 | 100% |
@@ -360,7 +360,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`speech-api`](speech-api.md) | 0 | 16 | 16 | – |
 | [`storage`](storage.md) | 11 | 14 | 0 | 79% |
 | [`storage-access-api`](storage-access-api.md) | 0 | 37 | 37 | – |
-| [`streams`](streams.md) | 70 | 85 | 4 | 86% |
+| [`streams`](streams.md) | 81 | 85 | 4 | 100% |
 | [`subresource-integrity`](subresource-integrity.md) | 0 | 5 | 5 | – |
 | [`svg`](svg.md) | 720 | 746 | 2 | 97% |
 | [`svg-aam`](svg-aam.md) | 5 | 5 | 0 | 100% |
@@ -414,12 +414,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webusb`](webusb.md) | 0 | 32 | 32 | – |
 | [`webvtt`](webvtt.md) | 75 | 75 | 0 | 100% |
 | [`webxr`](webxr.md) | 0 | 180 | 180 | – |
-| [`workers`](workers.md) | 287 | 290 | 0 | 99% |
+| [`workers`](workers.md) | 289 | 290 | 0 | 99.6% |
 | [`worklets`](worklets.md) | 20 | 21 | 0 | 95% |
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 320 | 331 | 0 | 97% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,421** | **29,911** | **2,117** | **95%** |
+| **Total (343 sections)** | **26,437** | **29,911** | **2,117** | **95%** |
 
 ## Tentative tests
 

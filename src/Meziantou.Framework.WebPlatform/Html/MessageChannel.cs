@@ -432,17 +432,22 @@ public sealed class MessagePort : EventTarget, IStructuredTransferable
                 }
 
                 messages.Clear();
-                if (entanglement is { Closed: false })
+                if (entanglement is not null)
                 {
-                    port._entanglement = entanglement;
-                    port._side = side;
-                    entanglement.Holders[side] = port;
+                    // The messages posted while the port was transferred are in its port message queue, even when the
+                    // other port has been disentangled since (e.g. the chunks and the close message of a transferred stream)
                     foreach (var message in entanglement.Pending[side])
                     {
                         port._messages.Enqueue(message);
                     }
 
                     entanglement.Pending[side].Clear();
+                    if (!entanglement.Closed)
+                    {
+                        port._entanglement = entanglement;
+                        port._side = side;
+                        entanglement.Holders[side] = port;
+                    }
                 }
             }
 

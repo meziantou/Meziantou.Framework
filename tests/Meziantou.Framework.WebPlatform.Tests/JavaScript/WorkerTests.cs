@@ -423,6 +423,104 @@ public sealed class WorkerTests : IDisposable
         Assert.Equal("queued before the transfer|after the transfer", title);
     }
 
+    [Fact]
+    public async Task Worker_TransfersReadableAndWritableStreams()
+    {
+        AddScript("https://example.com/dir/worker.js", """
+            onmessage = async e => {
+              const chunks = [];
+              for await (const chunk of e.data) chunks.push(chunk);
+              const written = [];
+              const writable = new WritableStream({
+                write(chunk) { written.push(chunk); },
+                close() { postMessage(chunks.join('') + '|' + written.join('')); },
+              });
+              postMessage(writable, [writable]);
+            };
+            """);
+        var document = Load("""
+            <script>
+              const readable = new ReadableStream({
+                start(controller) {
+                  for (const chunk of ['a', 'b', 'c']) controller.enqueue(chunk);
+                  controller.close();
+                },
+              });
+              const worker = new Worker('worker.js');
+              worker.onmessage = async e => {
+                if (typeof e.data === 'string') { document.title = e.data + ' ' + lockedAfterTransfer + ' ' + e.ports.length; return; }
+                const writer = e.data.getWriter();
+                await writer.write('x');
+                await writer.write('y');
+                await writer.close();
+              };
+              worker.postMessage(readable, [readable]);
+              const lockedAfterTransfer = readable.locked;
+            </script>
+            """);
+
+        var title = await WaitForTitleAsync(document);
+        Assert.Equal("abc|xy true 0", title);
+    }
+
+    [Fact]
+    public async Task Worker_TransfersTransformStreamsAndPropagatesCancellation()
+    {
+        AddScript("https://example.com/dir/worker.js", """
+            let reason;
+            const source = new ReadableStream({ pull(controller) { controller.enqueue('chunk'); }, cancel(r) { reason = r; } });
+            const transform = new TransformStream({ transform(chunk, controller) { controller.enqueue(chunk.toUpperCase()); } });
+            onmessage = () => postMessage('canceled: ' + reason);
+            postMessage({ source, transform }, [source, transform]);
+            """);
+        var document = Load("""
+            <script>
+              const worker = new Worker('worker.js');
+              let result;
+              worker.onmessage = async e => {
+                if (typeof e.data === 'string') { document.title = result + ' ' + e.data; return; }
+                const { source, transform } = e.data;
+                const reader = source.getReader();
+                await reader.read();
+                await reader.cancel('done');
+                const writer = transform.writable.getWriter();
+                writer.write('abc');
+                const { value } = await transform.readable.getReader().read();
+                result = value;
+                setTimeout(() => worker.postMessage('ping'), 10);
+              };
+            </script>
+            """);
+
+        var title = await WaitForTitleAsync(document);
+        Assert.Equal("ABC canceled: done", title);
+    }
+
+    [Fact]
+    public async Task StructuredClone_StreamsThatCannotBeTransferred_ThrowDataCloneError()
+    {
+        var document = Load("""
+            <script>
+              const results = [];
+              const check = (name, fn) => { try { fn(); results.push(name + ':ok'); } catch (e) { results.push(name + ':' + e.name); } };
+              const locked = new ReadableStream();
+              locked.getReader();
+              check('locked', () => structuredClone(locked, { transfer: [locked] }));
+              check('not transferred', () => structuredClone(new WritableStream()));
+              const transform = new TransformStream();
+              transform.writable.getWriter();
+              check('locked transform', () => structuredClone(transform, { transfer: [transform] }));
+              const stream = new ReadableStream();
+              const clone = structuredClone(stream, { transfer: [stream] });
+              check('transferred', () => { if (!(clone instanceof ReadableStream) || !stream.locked) throw new Error(); });
+              document.title = results.join(' ');
+            </script>
+            """);
+
+        var title = await WaitForTitleAsync(document);
+        Assert.Equal("locked:DataCloneError not transferred:DataCloneError locked transform:DataCloneError transferred:ok", title);
+    }
+
     private void AddScript(string url, string source, params KeyValuePair<string, string>[] headers)
         => _loader.Resources[url] = new DocumentResource(source) { Headers = [new("Content-Type", "text/javascript"), .. headers] };
 

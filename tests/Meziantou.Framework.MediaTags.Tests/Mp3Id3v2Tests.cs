@@ -682,6 +682,20 @@ public sealed class Mp3Id3v2Tests
     }
 
     [Fact]
+    public void ReadTags_CompressedFrameWithAPresetDictionary_IsIgnored()
+    {
+        // A zlib header with the FDICT flag and a dictionary identifier: zlib cannot inflate it without the dictionary
+        byte[] compressed = [0x78, 0xBB, 0, 0, 0, 1, .. TextBody("Compressed title")];
+        var bytes = BuildId3Tag(4, 0,
+            ("TIT2", 0x0009, [.. EncodeSynchsafe(16), .. compressed]),
+            ("TPE1", 0, TextBody("Artist")));
+
+        var tags = ReadMp3(bytes);
+        Assert.Null(tags.Title);
+        Assert.Equal("Artist", tags.Artist);
+    }
+
+    [Fact]
     public void ReadTags_EncryptedFrame_IsIgnored()
     {
         var bytes = BuildId3Tag(4, 0,

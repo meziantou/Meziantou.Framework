@@ -9,7 +9,7 @@ internal static class PublicApiModelBuilder
     private static readonly ConditionalWeakTable<Module, StrongBox<bool>> UpdatedMemorySafetyRulesCache = new();
     private static readonly ConditionalWeakTable<Type, InheritedMemberSet> InheritedMembersCache = new();
     private const string CompilerGeneratedRefStructObsoleteMessage = "Types with embedded references are not supported in this version of your compiler.";
-    private const string RequiresPreviewFeaturesAttributeFullName = "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute";
+    private const string RequiresPreviewFeaturesAttributeFullName = CSharpSyntaxFacts.RequiresPreviewFeaturesAttributeFullName;
     private const string ClosedAttributeFullName = "System.Runtime.CompilerServices.ClosedAttribute";
     private const string IsClosedTypeAttributeFullName = "System.Runtime.CompilerServices.IsClosedTypeAttribute";
     private const string UnionAttributeFullName = "System.Runtime.CompilerServices.UnionAttribute";
@@ -19,6 +19,10 @@ internal static class PublicApiModelBuilder
     private const string MemberNotNullAttributeFullName = "System.Diagnostics.CodeAnalysis.MemberNotNullAttribute";
     private const string MemberNotNullWhenAttributeFullName = "System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute";
     private const GenericParameterAttributes AllowByRefLikeGenericParameterConstraint = (GenericParameterAttributes)0x20;
+
+    // Set while building a model, so that the methods that write attributes do not need another parameter
+    [ThreadStatic]
+    private static bool s_includeAllAttributes;
 
     private static readonly HashSet<string> IrrelevantAttributes = new(StringComparer.Ordinal)
     {
@@ -113,22 +117,35 @@ internal static class PublicApiModelBuilder
         "System.Runtime.CompilerServices.UnsafeValueTypeAttribute",
     };
 
-    public static PublicApiModel Build(string assemblyName, IEnumerable<CustomAttributeData> assemblyAttributes, IEnumerable<Type> rootTypes, ImmutableArray<string> assemblyReferences)
+    public static PublicApiModel Build(string assemblyName, IEnumerable<CustomAttributeData> assemblyAttributes, IEnumerable<Type> rootTypes, ImmutableArray<string> assemblyReferences, bool includeAllAttributes)
     {
-        var types = rootTypes
-            .Where(type => type.DeclaringType is null)
-            .Where(IsExternallyVisible)
-            .OrderBy(type => type.Namespace, StringComparer.Ordinal)
-            .ThenBy(type => type.FullName, StringComparer.Ordinal)
-            .Select(BuildTypeModel)
-            .ToImmutableArray();
-        return new PublicApiModel(assemblyName, BuildAssemblyAttributesSource(assemblyAttributes), types, assemblyReferences);
+        var previousIncludeAllAttributes = s_includeAllAttributes;
+        s_includeAllAttributes = includeAllAttributes;
+        try
+        {
+            var types = rootTypes
+                .Where(type => type.DeclaringType is null)
+                .Where(IsExternallyVisible)
+                .OrderBy(type => type.Namespace, StringComparer.Ordinal)
+                .ThenBy(type => type.FullName, StringComparer.Ordinal)
+                .Select(BuildTypeModel)
+                .ToImmutableArray();
+            return new PublicApiModel(assemblyName, BuildAssemblyAttributesSource(assemblyAttributes), types, assemblyReferences);
+        }
+        finally
+        {
+            s_includeAllAttributes = previousIncludeAllAttributes;
+        }
     }
 
+    // By default, [RequiresPreviewFeatures] is the only assembly attribute that is written, as the metadata reader does
     private static string BuildAssemblyAttributesSource(IEnumerable<CustomAttributeData> attributes)
     {
         var sb = new StringBuilder();
-        foreach (var attribute in SortAttributes(attributes.Where(IsRequiresPreviewFeaturesAttribute)))
+        var writtenAttributes = s_includeAllAttributes
+            ? attributes.Where(static attribute => ShouldIncludeAttribute(attribute) && !CSharpSyntaxFacts.ExcludedAssemblyAttributes.Contains(attribute.AttributeType.FullName ?? string.Empty))
+            : attributes.Where(IsRequiresPreviewFeaturesAttribute);
+        foreach (var attribute in SortAttributes(writtenAttributes))
         {
             sb.Append("[assembly: ");
             sb.Append(attribute);
@@ -269,10 +286,9 @@ internal static class PublicApiModelBuilder
             sb.Append(text);
         }
 
-        // Each member is written in its own block, as the metadata reader does
+        // The blocks are sorted as the metadata reader does
         foreach (var extensionBlock in extensionBlocks
                      .OrderBy(block => block.ReceiverType, StringComparer.Ordinal)
-                     .ThenBy(block => block.SortKey, MemberSortKey.Comparer)
                      .ThenBy(block => block.Content, StringComparer.Ordinal))
         {
             sb.Append(extensionBlock.Content);
@@ -1139,7 +1155,7 @@ internal static class PublicApiModelBuilder
 
     // C# 14 extension blocks. See PublicApiMetadataReader.Extensions.cs for how the compiler emits them.
     // The members of a block are written in the block, and their implementation methods are not written: the compiler generates them.
-    // Instance methods are the exception: their implementation is a classic extension method, which declares the same API.
+    // The compiler merges the blocks that declare the same receiver, so there is one block per receiver declaration.
     private static List<ExtensionBlockReflection> BuildExtensionBlocks(Type type, IReadOnlyList<MethodInfo> methods, int indentationLevel)
     {
         var result = new List<ExtensionBlockReflection>();
@@ -1176,6 +1192,8 @@ internal static class PublicApiModelBuilder
                 var header = BuildExtensionBlockHeader(receiver, blockTypeParameters);
                 var receiverType = receiver.ParameterType.IsByRef ? receiver.ParameterType.GetElementType()! : receiver.ParameterType;
                 var receiverTypeText = FormatType(receiverType, new NullabilityInfoContext().Create(receiver), CreateTypeAnnotations(receiver));
+                var implementations = new List<MethodInfo>();
+                var members = new List<(MemberSortKey SortKey, string Text)>();
                 foreach (var member in GetExtensionBlockMembers(blockMembersType, markerType.Name))
                 {
                     var accessors = member switch
@@ -1185,7 +1203,6 @@ internal static class PublicApiModelBuilder
                         _ => [],
                     };
 
-                    var implementations = new List<MethodInfo>();
                     foreach (var accessor in accessors)
                     {
                         var implementation = methods.FirstOrDefault(method => !usedImplementations.Contains(method) && IsExtensionImplementation(accessor, receiver, blockTypeParameters.Length, method));
@@ -1196,27 +1213,32 @@ internal static class PublicApiModelBuilder
                         }
                     }
 
-                    if (member is MethodInfo { IsStatic: false, IsSpecialName: false } && implementations is [var classicExtensionMethod] && IsExtensionMethod(classicExtensionMethod))
-                        continue;
-
-                    var sb = new StringBuilder();
-                    AppendIndentedLine(sb, indentationLevel, header);
-                    AppendIndentedLine(sb, indentationLevel, "{");
-                    MemberSortKey sortKey;
                     if (member is PropertyInfo property)
                     {
                         var indexParameters = GetIndexParameters(property);
-                        sortKey = new MemberSortKey(MemberSortKind.Property, property.Name, parameterCount: indexParameters.Length, signature: GetSignatureSortText(indexParameters));
-                        sb.Append(BuildProperty(property, indentationLevel + 1));
+                        var sortKey = new MemberSortKey(MemberSortKind.Property, property.Name, parameterCount: indexParameters.Length, signature: GetSignatureSortText(indexParameters));
+                        members.Add((sortKey, BuildProperty(property, indentationLevel + 1)));
                     }
                     else
                     {
-                        sb.Append(BuildMethod((MethodInfo)member, indentationLevel + 1, out sortKey));
+                        var text = BuildMethod((MethodInfo)member, indentationLevel + 1, out var sortKey);
+                        members.Add((sortKey, text));
                     }
-
-                    AppendIndentedLine(sb, indentationLevel, "}");
-                    result.Add(new ExtensionBlockReflection(sb.ToString(), implementations, receiverTypeText, sortKey));
                 }
+
+                if (members.Count == 0)
+                    continue;
+
+                var sb = new StringBuilder();
+                AppendIndentedLine(sb, indentationLevel, header);
+                AppendIndentedLine(sb, indentationLevel, "{");
+                foreach (var (_, text) in members.OrderBy(static member => member.SortKey, MemberSortKey.Comparer).ThenBy(static member => member.Text, StringComparer.Ordinal))
+                {
+                    sb.Append(text);
+                }
+
+                AppendIndentedLine(sb, indentationLevel, "}");
+                result.Add(new ExtensionBlockReflection(sb.ToString(), implementations, receiverTypeText));
             }
         }
 
@@ -2195,6 +2217,9 @@ internal static class PublicApiModelBuilder
         if (string.IsNullOrEmpty(fullName))
             return false;
 
+        if (s_includeAllAttributes && CSharpSyntaxFacts.AdditionalAttributes.Contains(fullName))
+            return true;
+
         if (IrrelevantAttributes.Contains(fullName))
             return false;
 
@@ -2216,7 +2241,14 @@ internal static class PublicApiModelBuilder
         if (fullName.StartsWith("System.Runtime.Versioning.", StringComparison.Ordinal))
             return true;
 
-        return fullName.StartsWith("System.", StringComparison.Ordinal);
+        if (fullName.StartsWith("System.", StringComparison.Ordinal))
+            return true;
+
+        if (!s_includeAllAttributes)
+            return false;
+
+        var attributeType = attribute.AttributeType;
+        return CSharpSyntaxFacts.IsAdditionalAttribute(fullName, isNestedOrGeneric: attributeType.IsNested || attributeType.IsGenericType, isDeclaredInAssembly: true, isVisibleType: attributeType.IsVisible);
     }
 
     private static bool IsRequiresPreviewFeaturesAttribute(CustomAttributeData attribute)
@@ -2945,5 +2977,5 @@ internal static class PublicApiModelBuilder
     private sealed record ParameterDeclaration(string Text, bool RequiresNullableDirectives, string SortText);
 
     // The blocks are sorted by the type of the receiver, then by the member
-    private sealed record ExtensionBlockReflection(string Content, IReadOnlyList<MethodInfo> Implementations, string ReceiverType, MemberSortKey SortKey);
+    private sealed record ExtensionBlockReflection(string Content, IReadOnlyList<MethodInfo> Implementations, string ReceiverType);
 }

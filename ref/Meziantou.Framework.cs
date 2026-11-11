@@ -183,17 +183,8 @@ namespace Meziantou.Framework
         extension<TEnum>(TEnum) where TEnum : struct, System.Enum
         {
             public static TEnum Parse(System.ReadOnlySpan<char> value, bool ignoreCase) => throw null;
-        }
-        extension<TEnum>(TEnum) where TEnum : struct, System.Enum
-        {
             public static TEnum Parse(string value, bool ignoreCase) => throw null;
-        }
-        extension<TEnum>(TEnum) where TEnum : struct, System.Enum
-        {
             public static bool TryParse(System.ReadOnlySpan<char> value, bool ignoreCase, out TEnum result) => throw null;
-        }
-        extension<TEnum>(TEnum) where TEnum : struct, System.Enum
-        {
             public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? value, bool ignoreCase, out TEnum result) => throw null;
         }
     }
@@ -256,9 +247,6 @@ namespace Meziantou.Framework
         extension(System.Environment)
         {
             public static string GetEnvironmentVariableOrDefault(string variableName, string defaultValue) => throw null;
-        }
-        extension(System.Environment)
-        {
             public static string GetRequiredEnvironmentVariable(string variableName) => throw null;
         }
     }
@@ -800,9 +788,6 @@ namespace Meziantou.Framework
         extension(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate)
         {
             public System.DateTimeOffset NotAfterUtc { get => throw null; }
-        }
-        extension(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate)
-        {
             public System.DateTimeOffset NotBeforeUtc { get => throw null; }
         }
     }

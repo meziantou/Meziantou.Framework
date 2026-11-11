@@ -27,6 +27,7 @@ Generate public API stubs from a .NET assembly.
 | `--include-assembly-references` | List the names of the referenced assemblies in the header of generated files. With a .deps.json file, the assemblies of the framework are not listed |  |
 | `--include-assembly-reference <include-assembly-reference>` | Pattern of the names of the framework assemblies to list with --include-assembly-references ('\*' and '?' wildcards). Repeat for several patterns. |  |
 | `--exclude-assembly-reference <exclude-assembly-reference>` | Pattern of the names of the assemblies not to list with --include-assembly-references ('\*' and '?' wildcards). Repeat for several patterns. |  |
+| `--include-all-attributes` | Write the attributes that are not written by default: EditorBrowsable, the attributes of other namespaces than System, and the assembly attributes |  |
 | `--verify-no-change` | Verify generated files are up to date without writing changes |  |
 | `-?`, `-h`, `--help` | Show help and usage information |  |
 | `--version` | Show version information |  |

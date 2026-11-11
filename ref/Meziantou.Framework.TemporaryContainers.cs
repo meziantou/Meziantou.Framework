@@ -104,9 +104,6 @@ namespace Meziantou.Framework.TemporaryContainers
         extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
         {
             public static Meziantou.Framework.TemporaryContainers.MongoDbContainerDefinition CreateMongoDb() => throw null;
-        }
-        extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
-        {
             public static Meziantou.Framework.TemporaryContainers.MongoDbContainerDefinition CreateMongoDb(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
         }
     }
@@ -116,9 +113,6 @@ namespace Meziantou.Framework.TemporaryContainers
         extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
         {
             public static Meziantou.Framework.TemporaryContainers.PostgreSqlContainerDefinition CreatePostgreSql() => throw null;
-        }
-        extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
-        {
             public static Meziantou.Framework.TemporaryContainers.PostgreSqlContainerDefinition CreatePostgreSql(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
         }
     }
@@ -128,9 +122,6 @@ namespace Meziantou.Framework.TemporaryContainers
         extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
         {
             public static Meziantou.Framework.TemporaryContainers.RedisContainerDefinition CreateRedis() => throw null;
-        }
-        extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
-        {
             public static Meziantou.Framework.TemporaryContainers.RedisContainerDefinition CreateRedis(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
         }
     }
@@ -140,9 +131,6 @@ namespace Meziantou.Framework.TemporaryContainers
         extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
         {
             public static Meziantou.Framework.TemporaryContainers.SqlServerContainerDefinition CreateSqlServer() => throw null;
-        }
-        extension(Meziantou.Framework.TemporaryContainers.ContainerDefinition)
-        {
             public static Meziantou.Framework.TemporaryContainers.SqlServerContainerDefinition CreateSqlServer(Meziantou.Framework.TemporaryContainers.ImageSource image) => throw null;
         }
     }
@@ -714,6 +702,9 @@ namespace Meziantou.Framework.TemporaryContainers
 
     public static class WaitStrategyExtensions
     {
-        public static Meziantou.Framework.TemporaryContainers.IWaitStrategy WithTimeout(this Meziantou.Framework.TemporaryContainers.IWaitStrategy strategy, System.TimeSpan timeout) => throw null;
+        extension(Meziantou.Framework.TemporaryContainers.IWaitStrategy strategy)
+        {
+            public Meziantou.Framework.TemporaryContainers.IWaitStrategy WithTimeout(System.TimeSpan timeout) => throw null;
+        }
     }
 }

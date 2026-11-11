@@ -68,6 +68,36 @@ internal static class CSharpSyntaxFacts
         "System.Runtime.CompilerServices.DecimalConstantAttribute",
     };
 
+    // Attributes that are not written by default, but that PublicApiOptions.IncludeAllAttributes writes
+    public static readonly HashSet<string> AdditionalAttributes = new(StringComparer.Ordinal)
+    {
+        "System.ComponentModel.EditorBrowsableAttribute",
+    };
+
+    // Assembly attributes that PublicApiOptions.IncludeAllAttributes does not write: the target frameworks are written in the header of the files.
+    // The SDK generates them, as the other attributes of IrrelevantAttributes (company, product, versions...), so they would be duplicated when compiling the files.
+    public static readonly HashSet<string> ExcludedAssemblyAttributes = new(StringComparer.Ordinal)
+    {
+        "System.Runtime.Versioning.TargetFrameworkAttribute",
+        "System.Runtime.Versioning.TargetPlatformAttribute",
+    };
+
+    public const string RequiresPreviewFeaturesAttributeFullName = "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute";
+
+    // Whether PublicApiOptions.IncludeAllAttributes writes an attribute that is not written by default: the ones of AdditionalAttributes,
+    // and the ones of the other namespaces than System whose type can be referenced from another assembly. Nested and generic
+    // attribute types are not supported.
+    public static bool IsAdditionalAttribute(string attributeFullName, bool isNestedOrGeneric, bool isDeclaredInAssembly, bool isVisibleType)
+    {
+        if (AdditionalAttributes.Contains(attributeFullName))
+            return true;
+
+        if (isNestedOrGeneric || attributeFullName.StartsWith("System.", StringComparison.Ordinal))
+            return false;
+
+        return !isDeclaredInAssembly || isVisibleType;
+    }
+
     public static bool IsDisplayedAttribute(PublicApiAttribute attribute, PublicApiDeclarationStyle style)
     {
         var attributeType = attribute.AttributeType;

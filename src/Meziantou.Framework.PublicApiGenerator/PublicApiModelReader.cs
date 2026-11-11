@@ -30,18 +30,19 @@ internal static class PublicApiModelReader
         return PublicApiMetadataReader.Read(peReader, options);
     }
 
-    public static PublicApiModel ReadFromMetadata(string assemblyPath)
+    public static PublicApiModel ReadFromMetadata(string assemblyPath, bool includeAllAttributes)
     {
         var assembly = ReadAssembly(assemblyPath, options: null);
-        return CreateModel(assembly) with { ExternalAssemblyNames = DependencyFileReader.ReadExternalAssemblyNames(assemblyPath) };
+        return CreateModel(assembly, includeAllAttributes) with { ExternalAssemblyNames = DependencyFileReader.ReadExternalAssemblyNames(assemblyPath) };
     }
 
-    public static PublicApiModel CreateModel(PublicApiAssembly assembly)
+    public static PublicApiModel CreateModel(PublicApiAssembly assembly, bool includeAllAttributes)
     {
         var formatter = new CSharpCompilableFormatter(new PublicApiFormattingOptions
         {
             Style = PublicApiDeclarationStyle.Compilable,
             NewLine = Environment.NewLine,
+            AttributeFilter = includeAllAttributes ? CreateAllAttributesFilter(assembly) : null,
         });
 
         var types = assembly.Types.Select(type =>
@@ -54,12 +55,29 @@ internal static class PublicApiModelReader
 
         return new PublicApiModel(
             assembly.IsModuleOnly ? string.Empty : assembly.Name,
-            formatter.FormatAssemblyAttributes(assembly),
+            formatter.FormatAssemblyAttributes(assembly, includeAllAttributes),
             [.. types],
             assembly.AssemblyReferences);
     }
 
-    public static PublicApiModel ReadFromReflection(Assembly assembly)
+    private static Func<PublicApiAttribute, bool> CreateAllAttributesFilter(PublicApiAssembly assembly)
+    {
+        var visibleTypes = assembly.Types.Select(static type => type.FullName).ToHashSet(StringComparer.Ordinal);
+        return attribute =>
+        {
+            if (CSharpSyntaxFacts.IsDisplayedAttribute(attribute, PublicApiDeclarationStyle.Compilable))
+                return true;
+
+            var attributeType = attribute.AttributeType;
+            return CSharpSyntaxFacts.IsAdditionalAttribute(
+                attributeType.FullName,
+                isNestedOrGeneric: attributeType.ContainingType is not null || !attributeType.TypeArguments.IsEmpty,
+                isDeclaredInAssembly: attributeType.AssemblyName is null || string.Equals(attributeType.AssemblyName, assembly.Name, StringComparison.Ordinal),
+                isVisibleType: visibleTypes.Contains(attributeType.FullName));
+        };
+    }
+
+    public static PublicApiModel ReadFromReflection(Assembly assembly, bool includeAllAttributes)
     {
         ArgumentNullException.ThrowIfNull(assembly);
 
@@ -72,7 +90,7 @@ internal static class PublicApiModelReader
             .Distinct(StringComparer.Ordinal)
             .Order(AssemblyReferenceNameComparer.Instance)
             .ToImmutableArray();
-        var model = PublicApiModelBuilder.Build(assemblyName, assembly.CustomAttributes, types, assemblyReferences);
+        var model = PublicApiModelBuilder.Build(assemblyName, assembly.CustomAttributes, types, assemblyReferences, includeAllAttributes);
         if (string.IsNullOrEmpty(assembly.Location))
             return model;
 

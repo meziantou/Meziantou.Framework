@@ -105,6 +105,7 @@ preprocessor symbol.
 | [IncludeAssemblyReferences](cref:Meziantou.Framework.PublicApiGenerator.PublicApiOptions.IncludeAssemblyReferences) | `false` | Lists the referenced assemblies that are not part of the framework in the header. See [Referenced assemblies](../03-ApiFiles.md#referenced-assemblies). |
 | [IncludedAssemblyReferences](cref:Meziantou.Framework.PublicApiGenerator.PublicApiOptions.IncludedAssemblyReferences) | (empty) | Patterns of the framework assemblies to list too, for instance `System.Net.*`. |
 | [ExcludedAssemblyReferences](cref:Meziantou.Framework.PublicApiGenerator.PublicApiOptions.ExcludedAssemblyReferences) | (empty) | Patterns of the assemblies not to list. They win over [IncludedAssemblyReferences](cref:Meziantou.Framework.PublicApiGenerator.PublicApiOptions.IncludedAssemblyReferences). |
+| [IncludeAllAttributes](cref:Meziantou.Framework.PublicApiGenerator.PublicApiOptions.IncludeAllAttributes) | `false` | Writes `[EditorBrowsable]`, the attributes of other namespaces than `System` and the assembly attributes. See [Attributes](../03-ApiFiles.md#attributes). |
 
 When two files would have the same name, ignoring case, [Generate](cref:Meziantou.Framework.PublicApiGenerator.PublicApi.Generate) throws an `InvalidOperationException` instead of
 losing part of the API.

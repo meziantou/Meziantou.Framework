@@ -8,7 +8,7 @@ public static class PublicApi
     public static IReadOnlyList<PublicApiFile> Generate(string assemblyPath, PublicApiOptions? options = null)
     {
         options ??= new PublicApiOptions();
-        var model = ReadModel(assemblyPath);
+        var model = ReadModel(assemblyPath, options);
         var targetFrameworks = NormalizeAndSortTargetFrameworks([PublicApiTargetFramework.GetTargetFrameworkFromAssembly(assemblyPath)]);
         return Generate(model, options, targetFrameworks);
     }
@@ -16,7 +16,7 @@ public static class PublicApi
     public static IReadOnlyList<PublicApiFile> Generate(Assembly assembly, PublicApiOptions? options = null)
     {
         options ??= new PublicApiOptions();
-        var model = ReadModel(assembly);
+        var model = ReadModel(assembly, options);
         var targetFrameworks = NormalizeAndSortTargetFrameworks([PublicApiTargetFramework.GetTargetFrameworkFromAssembly(assembly)]);
         return Generate(model, options, targetFrameworks);
     }
@@ -33,7 +33,7 @@ public static class PublicApi
 
         if (assemblySources.Count == 1)
         {
-            var model = ReadModel(assemblySources[0]);
+            var model = ReadModel(assemblySources[0], options);
             var singleTargetFrameworks = NormalizeAndSortTargetFrameworks([ResolveTargetFramework(assemblySources[0])]);
             return Generate(model, options, singleTargetFrameworks);
         }
@@ -82,30 +82,30 @@ public static class PublicApi
         WriteToDirectory(files, outputDirectory);
     }
 
-    private static PublicApiModel ReadModel(string assemblyPath)
+    private static PublicApiModel ReadModel(string assemblyPath, PublicApiOptions options)
     {
         ArgumentException.ThrowIfNullOrEmpty(assemblyPath);
-        return PublicApiModelReader.ReadFromMetadata(assemblyPath);
+        return PublicApiModelReader.ReadFromMetadata(assemblyPath, options.IncludeAllAttributes);
     }
 
-    private static PublicApiModel ReadModel(Assembly assembly)
+    private static PublicApiModel ReadModel(Assembly assembly, PublicApiOptions options)
     {
         ArgumentNullException.ThrowIfNull(assembly);
-        return PublicApiModelReader.ReadFromReflection(assembly);
+        return PublicApiModelReader.ReadFromReflection(assembly, options.IncludeAllAttributes);
     }
 
-    private static PublicApiModel ReadModel(AssemblySource assemblySource)
+    private static PublicApiModel ReadModel(AssemblySource assemblySource, PublicApiOptions options)
     {
         ArgumentNullException.ThrowIfNull(assemblySource);
 
         if (assemblySource.Assembly is not null)
         {
-            return ReadModel(assemblySource.Assembly);
+            return ReadModel(assemblySource.Assembly, options);
         }
 
         if (!string.IsNullOrEmpty(assemblySource.Path))
         {
-            return ReadModel(assemblySource.Path);
+            return ReadModel(assemblySource.Path, options);
         }
 
         throw new InvalidOperationException("AssemblySource must provide either an Assembly instance or an assembly path.");
@@ -184,7 +184,7 @@ public static class PublicApi
             var targetFramework = ResolveTargetFramework(assemblySource);
             resolvedTargetFrameworks.Add(targetFramework);
             var symbol = PublicApiTargetFramework.ToPreprocessorSymbol(targetFramework);
-            var model = ReadModel(assemblySource);
+            var model = ReadModel(assemblySource, options);
             if (isFirstAssemblySource)
             {
                 firstAssemblyName = model.AssemblyName;

@@ -74,7 +74,8 @@ namespace Demo
   accessors that are not visible (such as a `private set`), static constructors and compiler-generated types are not in
   the file.
 - **The details of each declaration**: modifiers, nullable annotations, default values of parameters, generic
-  constraints, values of the enum members, and attributes such as `[SupportedOSPlatform("windows")]`.
+  constraints, values of the enum members, and attributes such as `[SupportedOSPlatform("windows")]`. See
+  [Attributes](#attributes) for the attributes that are written.
 - **Stubs**: a method or a property getter that returns a value is `=> throw null;`, the others are `{ }`.
 - **Fully qualified type names**: the file has no `using` directive, so a type name never depends on the context.
   `global::` is added where a name could be ambiguous.
@@ -117,10 +118,10 @@ namespace Demo
 {
     public static class StringExtensions
     {
-        public static string Repeat(this string value, int count) => throw null;
         extension(string value)
         {
             public bool IsBlank { get => throw null; }
+            public string Repeat(int count) => throw null;
         }
         extension(string)
         {
@@ -131,13 +132,16 @@ namespace Demo
 ```
 <!-- endref -->
 
-- **Each member has its own block**, after the other members of the class, so that the output does not depend on how
-  you group the members in your code. The blocks are sorted by the type of the receiver, then as the other members.
-- **Static members, properties and operators** are in their block, with the receiver as declared (`extension(string)`
-  for a block that only has static members). The methods the compiler generates for them, such as
-  `get_IsBlank(string)`, are not in the file.
-- **Instance methods** are written as classic extension methods, with a `this` parameter: the compiler generates this
-  method for them, and it declares the same API.
+- **One block per receiver**: the compiler merges the blocks that declare the same receiver (same type, name,
+  modifiers, attributes and type parameters), so the generator writes them as one block, whatever their order in your
+  code. Two blocks whose receivers differ, such as `extension(string value)` and `extension(string)`, stay apart.
+- **The blocks are after the other members of the class**, sorted by the type of the receiver, then by their text. The
+  members of a block are sorted as the other members.
+- **All the members are in their block**: methods, properties and operators, instance and static. The methods the
+  compiler generates for them, such as `Repeat(this string value, int count)` or `get_IsBlank(string)`, are not in the
+  file. A classic extension method, declared outside of an extension block, is written as declared.
+- **Multi-targeted libraries**: a member that is not in every target framework is wrapped in an `#if` block inside its
+  extension block, not the whole block.
 
 ## File layouts
 
@@ -151,8 +155,9 @@ The API can be written to one file or split into several files. The layout is an
 | `OneFilePerNamespace` | One file per namespace: `Demo.g.cs`, and `GlobalNamespace.g.cs` for the types that have no namespace. |
 | `OneFilePerType` | One file per top-level type, named after its full name: `Demo.Thermometer.g.cs`. Nested types are in the file of their containing type. |
 
-When the assembly has a `[RequiresPreviewFeatures]` attribute, the `OneFilePerNamespace` and `OneFilePerType` layouts
-also write an `AssemblyInfo.g.cs` file that declares it. When two files would have the same name, ignoring case (for
+When the files have assembly attributes (`[RequiresPreviewFeatures]`, or the ones written with
+[the option that writes all the attributes](#attributes)), the `OneFilePerNamespace` and `OneFilePerType` layouts also
+write an `AssemblyInfo.g.cs` file that declares them. When two files would have the same name, ignoring case (for
 instance for the types `Demo.Foo` and `Demo.foo`), the generation fails instead of losing part of the API: use another
 layout.
 
@@ -239,6 +244,82 @@ differ.
 The MSBuild package merges all the target frameworks of the project automatically. With the
 [tool](05-CommandLineTool.md#multi-targeted-libraries) and the
 [library](06-Library/02-GeneratingFiles.md#multi-targeted-libraries), pass the build of each target framework.
+
+## Attributes
+
+By default, the files contain the attributes of the `System` namespaces that change how the API is used, such as
+`[Obsolete]`, `[SupportedOSPlatform("windows")]` or `[NotNullWhen(true)]`, and `[RequiresPreviewFeatures]` on the
+assembly. Other attributes are part of the API contract too: turn on the option that writes all the attributes
+(`PublicApiGeneratorIncludeAllAttributes` with the [MSBuild package](04-MSBuild.md#options),
+`--include-all-attributes` with the [tool](05-CommandLineTool.md#options), or
+[IncludeAllAttributes](cref:Meziantou.Framework.PublicApiGenerator.PublicApiOptions.IncludeAllAttributes) with the
+[library](06-Library/02-GeneratingFiles.md#options)). For this code:
+
+<!-- ref:../../tests/Meziantou.Framework.PublicApiGenerator.Tests/PublicApiGeneratorTests.cs;region=PublicApi_AllAttributesInput;format=md-fenced-code-block;dedent=true -->
+```csharp
+using System.ComponentModel;
+
+[assembly: System.Reflection.AssemblyMetadata("RepositoryUrl", "https://example.com/demo")]
+
+namespace Demo;
+
+[AttributeUsage(AttributeTargets.All)]
+public sealed class StableAttribute : Attribute;
+
+public sealed class Thermometer
+{
+    [Stable]
+    public double Read() => 0;
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public void Calibrate(double value) { }
+}
+```
+<!-- endref -->
+
+The generator writes:
+
+<!-- ref:../../tests/Meziantou.Framework.PublicApiGenerator.Tests/PublicApiGeneratorTests.cs;region=PublicApi_AllAttributesOutput;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Target Frameworks: net10.0
+[assembly: System.Reflection.AssemblyMetadata("RepositoryUrl", "https://example.com/demo")]
+#nullable enable
+
+namespace Demo
+{
+    [System.AttributeUsage(System.AttributeTargets.All)]
+    public sealed class StableAttribute : System.Attribute
+    {
+    }
+
+    public sealed class Thermometer
+    {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public void Calibrate(double value) { }
+        [global::Demo.Stable]
+        public double Read() => throw null;
+    }
+}
+```
+<!-- endref -->
+
+The option adds:
+
+- **`[EditorBrowsable]`**, which hides members from IntelliSense.
+- **The attributes of other namespaces than `System`**, such as the attributes your library declares. An attribute
+  whose type is not visible outside the assembly (an `internal` attribute), or whose type is nested or generic, is not
+  written.
+- **The assembly attributes**, such as `[InternalsVisibleTo]`, `[AssemblyMetadata]` or `[CLSCompliant]`, except the ones
+  that the SDK generates from the properties of the project (`[AssemblyCompany]`, `[AssemblyProduct]`, the versions,
+  `[TargetFramework]`...): they change from one build to another, or would be declared twice when compiling the files.
+
+Some attributes are never written:
+
+- **The attributes represented by the C# syntax**, such as `NullableAttribute` (`string?`), `ExtensionAttribute`
+  (`this`), `IsReadOnlyAttribute` (`readonly`), `ParamArrayAttribute` (`params`) or `TupleElementNamesAttribute`. The
+  compiler rejects most of them when they are written explicitly.
+- **The attributes that describe the implementation**, such as `[CompilerGenerated]`, `[AsyncStateMachine]`,
+  `[DebuggerStepThrough]` or `[GeneratedCode]`.
 
 ## Referenced assemblies
 

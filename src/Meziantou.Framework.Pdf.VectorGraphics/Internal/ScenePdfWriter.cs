@@ -87,6 +87,8 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         if (!(opacity > 0))
             return;
 
+        AddLink(element);
+
         opacity = Math.Min(opacity, 1);
 
         // A mask and a blend mode are set in the graphics state of the element (11.6.4.3, 11.3.5)
@@ -113,7 +115,42 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         }
     }
 
+    // The link of an element is an annotation of the page over what it draws. The content of a mask is never visible:
+    // its hyperlinks are not links of the page.
+    private void AddLink(SceneElement element)
+    {
+        if (_maskDepth is not 0 || element.Hyperlink is not { } hyperlink || !Uri.TryCreate(hyperlink, UriKind.Absolute, out var uri) || Bounds.Of(element, this) is not { } linkBounds)
+            return;
+
+        var area = linkBounds.Transform(PdfMatrix.Multiply(_matrix, _streamToPage));
+        if (area.IsFinite && area.Width > 0 && area.Height > 0)
+        {
+            var link = page.Annotations.AddLink(new PdfRectangle(area.Left, area.Top, area.Right, area.Bottom), uri);
+
+            // In a tagged document, a link is a Link element of the figure (14.8.4.4.2)
+            figure?.AddElement("Link").AddAnnotation(link);
+        }
+    }
+
     private void DrawElementContent(SceneElement element, double opacity, bool isolated)
+    {
+        // The transform of an element applies inside its mask, as the one of a group does
+        if (element is not SceneGroup && element.Transform is { } transform)
+        {
+            if (!IsFinite(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F))
+                return;
+
+            Save();
+            Transform(new PdfMatrix(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F));
+            DrawUntransformedContent(element, opacity, isolated);
+            Restore();
+            return;
+        }
+
+        DrawUntransformedContent(element, opacity, isolated);
+    }
+
+    private void DrawUntransformedContent(SceneElement element, double opacity, bool isolated)
     {
         switch (element)
         {
@@ -190,19 +227,6 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         var clipPath = group.ClipPath?.ToCubicCurves();
         if (clipPath is not null && (clipPath.IsEmpty || !IsFinite(clipPath)))
             return;
-
-        // The content of a mask is never visible: its hyperlinks are not links of the page
-        if (_maskDepth is 0 && group.Hyperlink is { } hyperlink && Uri.TryCreate(hyperlink, UriKind.Absolute, out var uri) && Bounds.Of(group, this) is { } linkBounds)
-        {
-            var area = linkBounds.Transform(PdfMatrix.Multiply(_matrix, _streamToPage));
-            if (area.IsFinite && area.Width > 0 && area.Height > 0)
-            {
-                var link = page.Annotations.AddLink(new PdfRectangle(area.Left, area.Top, area.Right, area.Bottom), uri);
-
-                // In a tagged document, a link is a Link element of the figure (14.8.4.4.2)
-                figure?.AddElement("Link").AddAnnotation(link);
-            }
-        }
 
         Save();
         if (group.Clip is { } groupClip)
@@ -459,7 +483,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
         // Repeat and reflect: the stops are repeated over the periods the shape covers, in the space of the gradient
         var (first, last) = (0, 1);
-        if (gradient.Spread is not SceneGradientSpread.Pad && Bounds.Of(shape, this)?.Transform(inverse) is { IsFinite: true } box)
+        if (gradient.Spread is not SceneGradientSpread.Pad && GetLocalBounds(shape)?.Transform(inverse) is { IsFinite: true } box)
         {
             var range = GetRange(gradient, box);
             if (range is { } periods)
@@ -489,6 +513,18 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
         SetPattern(new PdfShadingPattern(shading, PdfMatrix.Multiply(transform, _matrix)), stroke);
         return opacity;
+    }
+
+    // The bounds of a shape in its own coordinates, inside its transform
+    private Bounds? GetLocalBounds(SceneShape shape)
+    {
+        if (Bounds.Of(shape, this) is not { } bounds)
+            return null;
+
+        if (shape.Transform is not { } transform)
+            return bounds;
+
+        return new PdfMatrix(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F).TryInvert(out var inverse) ? bounds.Transform(inverse) : null;
     }
 
     // The most periods a repeated gradient is drawn with; beyond them, it is padded

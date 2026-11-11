@@ -14,6 +14,15 @@ internal static class SceneGeometry
         if (!(element.Opacity > 0))
             return null;
 
+        if (element is SceneGroup || element.Transform is not { } elementTransform)
+            return GetUntransformedBounds(element, measureText, applyClips);
+
+        return GetUntransformedBounds(element, measureText, applyClips) is { } untransformed ? Transform(untransformed, elementTransform) : null;
+    }
+
+    // The bounds of an element before its transform; a group applies its transform before its clips
+    private static SceneBounds? GetUntransformedBounds(SceneElement element, Func<SceneText, SceneBounds?> measureText, bool applyClips)
+    {
         var stroke = element is SceneShape { Stroke: not null } shape && shape.StrokeWidth > 0 && double.IsFinite(shape.StrokeWidth) ? StrokeExtent(shape) : 0;
         switch (element)
         {

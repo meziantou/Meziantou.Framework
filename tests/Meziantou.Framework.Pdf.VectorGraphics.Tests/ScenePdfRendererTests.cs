@@ -387,6 +387,29 @@ public sealed class ScenePdfRendererTests
     }
 
     [Fact]
+    public void ElementsHaveTransformsAndHyperlinks()
+    {
+        // A rectangle moved by its transform links to an address, over the rectangle it draws
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneRectangle(0, 0, 20, 10) { Fill = (SceneColor)"#ff0000", Transform = SceneTransform.Translate(30, 40), Hyperlink = "https://example.com/" });
+        scene.Root.Add(new SceneText(0, 0, "a", new SceneFont(10), SceneColor.Black) { Transform = SceneTransform.Translate(80, 90), Hyperlink = "https://example.com/text" });
+        var document = scene.ToPdf(new ScenePdfOptions { Scale = 1 });
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 72 });
+        Assert.Equal(new Rgba32(255, 0, 0), image.Frames[0][40, 45]);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][10, 5]);
+
+        var annotations = document.Pages[0].Annotations.OfType<PdfLinkAnnotation>().ToList();
+        Assert.Equal(2, annotations.Count);
+        Assert.Equal(new Uri("https://example.com/"), annotations[0].Uri);
+        Assert.Equal(30, annotations[0].Rectangle.Left, 1e-9);
+        Assert.Equal(50, annotations[0].Rectangle.Right, 1e-9);
+        Assert.Equal(60, annotations[0].Rectangle.Top, 1e-9);
+        Assert.Equal(50, annotations[0].Rectangle.Bottom, 1e-9);
+        Assert.InRange(annotations[1].Rectangle.Left, 79, 81);
+        Assert.Equal(2, Assert.Single(Assert.Single(document.StructureTree.Elements).Children).Children.Count);
+    }
+
+    [Fact]
     public void HyperlinksOfMasksAreNotLinks()
     {
         // The content of a mask is never visible: its hyperlinks are not links of the page

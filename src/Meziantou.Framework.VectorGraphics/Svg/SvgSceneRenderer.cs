@@ -40,12 +40,19 @@ public static class SvgSceneRenderer
         private readonly Dictionary<SceneElement, string> _filterIds = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<SceneElement, string> _maskIds = new(ReferenceEqualityComparer.Instance);
         private readonly List<(string Id, SceneMask Mask)> _masks = [];
+        private readonly HashSet<string> _elementIds = new(StringComparer.Ordinal);
         private readonly int _precision = options.Precision;
         private Scene _scene = null!;
+
+        // The identifier of the element being written, for the first tag it writes; the element whose effects are on
+        // the group that wraps it
+        private string? _pendingId;
+        private SceneElement? _effectsOnWrapper;
 
         public void Write(Scene scene)
         {
             _scene = scene;
+            CollectIds(scene.Root);
             output.Write("<svg");
             if (options.IncludeNamespace)
             {
@@ -112,6 +119,50 @@ public static class SvgSceneRenderer
             output.Write("</svg>\n");
         }
 
+        // The identifiers of the elements, which must be different: the generated identifiers avoid them
+        private void CollectIds(SceneElement element)
+        {
+            if (element.Id is { } id && !_elementIds.Add(id))
+                throw new InvalidOperationException($"Two elements of the scene have the identifier '{id}': the identifiers of the elements must be different.");
+
+            if (element.Mask is { } mask)
+            {
+                CollectIds(mask.Content);
+            }
+
+            if (element is SceneGroup group)
+            {
+                foreach (var child in group.Children)
+                {
+                    CollectIds(child);
+                }
+            }
+        }
+
+        // An identifier the renderer generates: the prefix, the kind and a number, skipping the identifiers of the elements
+        private string NextId(string kind, ref int count)
+        {
+            while (true)
+            {
+                var id = options.IdPrefix + "-" + kind + count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                count++;
+                if (!_elementIds.Contains(id))
+                    return id;
+            }
+        }
+
+        // Writes the start of a tag, with the identifier of the element being written when it is its first tag
+        private void StartTag(string name)
+        {
+            output.Write('<');
+            output.Write(name);
+            if (_pendingId is { } id)
+            {
+                _pendingId = null;
+                Attribute("id", id);
+            }
+        }
+
         private void WriteDefinitions(SceneGroup root, string? fontFaceRules)
         {
             var definitions = new StringBuilder();
@@ -142,16 +193,14 @@ public static class SvgSceneRenderer
 
                 if (element.Filter is { } filter)
                 {
-                    var id = options.IdPrefix + "-filter" + filterCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                    filterCount++;
+                    var id = NextId("filter", ref filterCount);
                     _filterIds[element] = id;
                     AddFilter(id, element, filter);
                 }
 
                 if (element.Mask is { } mask)
                 {
-                    var id = options.IdPrefix + "-mask" + maskCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                    maskCount++;
+                    var id = NextId("mask", ref maskCount);
                     _maskIds[element] = id;
                     _masks.Add((id, mask));
                     Visit(mask.Content);
@@ -161,8 +210,7 @@ public static class SvgSceneRenderer
                 {
                     if (group.Clip is { } clip)
                     {
-                        var id = options.IdPrefix + "-clip" + clipCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                        clipCount++;
+                        var id = NextId("clip", ref clipCount);
                         _ids[group] = id;
                         definitions.Append("<clipPath id=\"").Append(Escape(id)).Append("\"><rect x=\"").Append(Number(clip.X))
                             .Append("\" y=\"").Append(Number(clip.Y)).Append("\" width=\"").Append(Number(clip.Width))
@@ -171,8 +219,7 @@ public static class SvgSceneRenderer
 
                     if (group.ClipPath is { } clipPath)
                     {
-                        var id = options.IdPrefix + "-clip" + clipCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                        clipCount++;
+                        var id = NextId("clip", ref clipCount);
                         _clipPathIds[group] = id;
                         definitions.Append("<clipPath id=\"").Append(Escape(id)).Append("\"><path d=\"").Append(SvgNumber.FormatPath(clipPath, _precision)).Append('"');
                         if (group.ClipRule is SceneFillRule.EvenOdd)
@@ -259,8 +306,7 @@ public static class SvgSceneRenderer
                 if (paint is not SceneGradientPaint || _ids.ContainsKey(paint))
                     return;
 
-                var id = options.IdPrefix + "-gradient" + gradientCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                gradientCount++;
+                var id = NextId("gradient", ref gradientCount);
                 _ids[paint] = id;
                 IReadOnlyList<SceneGradientStop> stops;
                 string elementName;
@@ -320,14 +366,49 @@ public static class SvgSceneRenderer
 
         private void WriteElement(SceneElement element)
         {
+            _pendingId = element.Id;
+            if (!string.IsNullOrEmpty(element.Hyperlink))
+            {
+                StartTag("a");
+                Attribute("href", element.Hyperlink);
+                output.Write(">\n");
+                WriteLinkedElement(element);
+                output.Write("</a>\n");
+                return;
+            }
+
+            WriteLinkedElement(element);
+        }
+
+        // An element with a transform and a mask or a filter is wrapped in a group that has them: they are in the
+        // coordinates of its parent, as for a group
+        private void WriteLinkedElement(SceneElement element)
+        {
+            if (element is not SceneGroup && element.Transform is not null && (element.Mask is not null || element.Filter is not null))
+            {
+                StartTag("g");
+                EffectAttributes(element);
+                output.Write(">\n");
+                _effectsOnWrapper = element;
+                WriteElementContent(element);
+                _effectsOnWrapper = null;
+                output.Write("</g>\n");
+                return;
+            }
+
+            WriteElementContent(element);
+        }
+
+        private void WriteElementContent(SceneElement element)
+        {
             switch (element)
             {
                 case SceneGroup group:
-                    WriteGroup(group);
+                    WriteGroupContent(group);
                     break;
 
                 case SceneRectangle rectangle:
-                    output.Write("<rect");
+                    StartTag("rect");
                     Attribute("x", rectangle.X);
                     Attribute("y", rectangle.Y);
                     Attribute("width", rectangle.Width);
@@ -342,7 +423,7 @@ public static class SvgSceneRenderer
                     break;
 
                 case SceneCircle circle:
-                    output.Write("<circle");
+                    StartTag("circle");
                     Attribute("cx", circle.CenterX);
                     Attribute("cy", circle.CenterY);
                     Attribute("r", circle.Radius);
@@ -351,7 +432,7 @@ public static class SvgSceneRenderer
                     break;
 
                 case SceneLine line:
-                    output.Write("<line");
+                    StartTag("line");
                     Attribute("x1", line.X1);
                     Attribute("y1", line.Y1);
                     Attribute("x2", line.X2);
@@ -361,7 +442,7 @@ public static class SvgSceneRenderer
                     break;
 
                 case ScenePath path:
-                    output.Write("<path");
+                    StartTag("path");
                     Attribute("d", SvgNumber.FormatPath(path.Data, _precision));
                     if (path.FillRule is SceneFillRule.EvenOdd)
                     {
@@ -377,7 +458,7 @@ public static class SvgSceneRenderer
                     break;
 
                 case SceneImage image:
-                    output.Write("<image");
+                    StartTag("image");
                     Attribute("x", image.X);
                     Attribute("y", image.Y);
                     Attribute("width", image.Width);
@@ -388,21 +469,6 @@ public static class SvgSceneRenderer
                     EndElement("image", image);
                     break;
             }
-        }
-
-        private void WriteGroup(SceneGroup group)
-        {
-            if (!string.IsNullOrEmpty(group.Hyperlink))
-            {
-                output.Write("<a");
-                Attribute("href", group.Hyperlink);
-                output.Write(">\n");
-                WriteGroupContent(group);
-                output.Write("</a>\n");
-                return;
-            }
-
-            WriteGroupContent(group);
         }
 
         private void WriteGroupContent(SceneGroup group)
@@ -446,12 +512,12 @@ public static class SvgSceneRenderer
             var outerClips = group.Transform is null && layers.Count > 0 ? layers.Count - 1 : layers.Count;
             for (var i = 0; i < outerClips; i++)
             {
-                output.Write("<g");
+                StartTag("g");
                 Attribute(layers[i].Name, layers[i].Value);
                 output.Write(">\n");
             }
 
-            output.Write("<g");
+            StartTag("g");
             CommonAttributes(group);
             if (group.Transform is { } transform)
             {
@@ -478,7 +544,7 @@ public static class SvgSceneRenderer
 
         private void WriteText(SceneText text)
         {
-            output.Write("<text");
+            StartTag("text");
             Attribute("x", text.X);
             Attribute("y", text.Y);
             switch (text.Anchor)
@@ -532,9 +598,15 @@ public static class SvgSceneRenderer
             }
 
             Paint("fill", text.Color);
-            if (text.Rotation != 0)
+            // The rotation applies before the transform: it is on its right
+            var rotation = text.Rotation != 0 ? "rotate(" + Number(text.Rotation) + " " + Number(text.X) + " " + Number(text.Y) + ")" : null;
+            if (text.Transform is { } textTransform)
             {
-                Attribute("transform", "rotate(" + Number(text.Rotation) + " " + Number(text.X) + " " + Number(text.Y) + ")");
+                Attribute("transform", rotation is null ? Transform(textTransform) : Transform(textTransform) + " " + rotation);
+            }
+            else if (rotation is not null)
+            {
+                Attribute("transform", rotation);
             }
 
             CommonAttributes(text);
@@ -711,28 +783,23 @@ public static class SvgSceneRenderer
 
         private void CommonAttributes(SceneElement element)
         {
-            if (element.Opacity < 1 && !HasOuterOpacity(element))
+            // The transform of a group is written by WriteGroupContent, the one of a text with its rotation
+            if (element is not (SceneGroup or SceneText) && element.Transform is { } transform)
             {
-                Attribute("opacity", SvgNumber.Format(Math.Max(0, element.Opacity), 3));
+                Attribute("transform", Transform(transform));
             }
 
             // The layers of a group are written by WriteGroupContent
-            if (element is not SceneGroup)
+            if (element is SceneGroup)
             {
-                if (_filterIds.TryGetValue(element, out var filterId))
+                if (element.Opacity < 1 && !HasOuterOpacity(element))
                 {
-                    Attribute("filter", "url(#" + filterId + ")");
+                    Attribute("opacity", SvgNumber.Format(Math.Max(0, element.Opacity), 3));
                 }
-
-                if (_maskIds.TryGetValue(element, out var maskId))
-                {
-                    Attribute("mask", "url(#" + maskId + ")");
-                }
-
-                if (BlendModeName(element.BlendMode) is { } blendMode)
-                {
-                    Attribute("style", "mix-blend-mode:" + blendMode);
-                }
+            }
+            else if (element != _effectsOnWrapper)
+            {
+                EffectAttributes(element);
             }
 
             if (!string.IsNullOrEmpty(element.CssClass))
@@ -746,6 +813,30 @@ public static class SvgSceneRenderer
                 {
                     Attribute("data-" + name, value);
                 }
+            }
+        }
+
+        // The opacity, the filter, the mask and the blend mode of an element that is not a group
+        private void EffectAttributes(SceneElement element)
+        {
+            if (element.Opacity < 1)
+            {
+                Attribute("opacity", SvgNumber.Format(Math.Max(0, element.Opacity), 3));
+            }
+
+            if (_filterIds.TryGetValue(element, out var filterId))
+            {
+                Attribute("filter", "url(#" + filterId + ")");
+            }
+
+            if (_maskIds.TryGetValue(element, out var maskId))
+            {
+                Attribute("mask", "url(#" + maskId + ")");
+            }
+
+            if (BlendModeName(element.BlendMode) is { } blendMode)
+            {
+                Attribute("style", "mix-blend-mode:" + blendMode);
             }
         }
 

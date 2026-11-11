@@ -519,6 +519,97 @@ public sealed class SvgSceneRendererTests
     }
 
     [Fact]
+    public void TransformsAndHyperlinksOfElements()
+    {
+        #region VectorGraphics_ElementTransformAndLink
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // Any element has a transform and a hyperlink, without a group around it
+        scene.Root.Add(new SceneRectangle(0, 0, 40, 20)
+        {
+            Fill = (SceneColor)"#0369a1",
+            Transform = SceneTransform.Rotate(30).Then(SceneTransform.Translate(20, 10)),
+            Hyperlink = "https://example.com/",
+        });
+
+        // The rotation of a text applies before its transform
+        scene.Root.Add(new SceneText(0, 0, "Moved", new SceneFont(12), SceneColor.Black) { Rotation = -90, Transform = SceneTransform.Translate(150, 90) });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        Assert.Equal(
+            """
+            <svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100" role="img" font-family="sans-serif">
+            <a href="https://example.com/">
+            <rect x="0" y="0" width="40" height="20" fill="#0369a1" transform="matrix(0.866025 0.5 -0.5 0.866025 20 10)"/>
+            </a>
+            <text x="0" y="0" font-size="12" fill="#000000" transform="translate(150 90) rotate(-90 0 0)">Moved</text>
+            </svg>
+
+            """.ReplaceLineEndings("\n"),
+            svg);
+
+        // The mask and the filter of a transformed element are in the coordinates of its parent: a group around it has them
+        var effects = new Scene(100, 100, "sans-serif");
+        var mask = new SceneMask();
+        mask.Content.Add(new SceneRectangle(0, 0, 50, 100) { Fill = SceneColor.White });
+        effects.Root.Add(new SceneCircle(0, 0, 10) { Fill = SceneColor.Black, Opacity = 0.5, Mask = mask, Filter = new SceneBlurFilter(2), Transform = SceneTransform.Translate(50, 50) });
+        Assert.Contains("<g opacity=\"0.5\" filter=\"url(#scene-filter0)\" mask=\"url(#scene-mask0)\">\n<circle cx=\"0\" cy=\"0\" r=\"10\" fill=\"#000000\" transform=\"translate(50 50)\"/>\n</g>", SvgSceneRenderer.Render(effects), StringComparison.Ordinal);
+
+        // The bounds of an element are in the coordinates of its parent
+        Assert.Equal(new SceneBounds(10, 20, 4, 2), new SceneRectangle(0, 0, 2, 1) { Transform = SceneTransform.Scale(2, 2).Then(SceneTransform.Translate(10, 20)) }.GetBounds(_ => null));
+        Assert.Equal(new SceneBounds(150, 80, 10, 10), new SceneText(0, 0, "a", new SceneFont(10), SceneColor.Black) { Transform = SceneTransform.Translate(150, 90) }.GetBounds(_ => new SceneBounds(0, -10, 10, 10)));
+    }
+
+    [Fact]
+    public void IdentifiersOfElements()
+    {
+        #region VectorGraphics_Ids
+        var scene = new Scene(width: 100, height: 50, fontFamily: "sans-serif");
+
+        // The identifier of an element is its id attribute: a script or a style sheet finds the element with it
+        scene.Root.Add(new SceneRectangle(10, 10, 30, 30) { Id = "north", Fill = SceneColor.Black });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        Assert.Contains("<rect id=\"north\" x=\"10\"", svg, StringComparison.Ordinal);
+
+        // The identifier is on the outermost element written for it: the link, the groups of the effects
+        var linked = new Scene(100, 50, "sans-serif");
+        linked.Root.Add(new SceneCircle(5, 5, 5) { Id = "linked", Hyperlink = "https://example.com/", Fill = SceneColor.Black });
+        var masked = linked.Root.Add(new SceneGroup { Id = "masked", Mask = new SceneMask(), Transform = SceneTransform.Translate(1, 1) });
+        masked.Mask!.Content.Add(new SceneRectangle(0, 0, 10, 10) { Id = "mask-content", Fill = SceneColor.White });
+        masked.Add(new SceneRectangle(0, 0, 10, 10) { Id = "child", Fill = SceneColor.Black });
+        var linkedSvg = SvgSceneRenderer.Render(linked);
+        Assert.Contains("<a id=\"linked\" href=\"https://example.com/\">\n<circle cx=", linkedSvg, StringComparison.Ordinal);
+        Assert.Contains("<g id=\"masked\" mask=\"url(#scene-mask0)\">\n<g transform=\"translate(1 1)\">\n<rect id=\"child\"", linkedSvg, StringComparison.Ordinal);
+        Assert.Contains("<rect id=\"mask-content\"", linkedSvg, StringComparison.Ordinal);
+
+        // The generated identifiers skip the identifiers of the elements
+        var clipped = new Scene(10, 10, "sans-serif");
+        clipped.Root.Add(new SceneGroup { Id = "scene-clip0", Clip = new SceneBounds(0, 0, 5, 5) });
+        Assert.Contains("<clipPath id=\"scene-clip1\">", SvgSceneRenderer.Render(clipped), StringComparison.Ordinal);
+
+        // Two elements cannot have the same identifier, even in the content of a mask
+        var duplicate = new Scene(10, 10, "sans-serif");
+        duplicate.Root.Add(new SceneRectangle(0, 0, 1, 1) { Id = "a" });
+        var duplicateMask = new SceneMask();
+        duplicateMask.Content.Add(new SceneRectangle(0, 0, 1, 1) { Id = "a" });
+        duplicate.Root.Add(new SceneRectangle(0, 0, 1, 1) { Mask = duplicateMask });
+        Assert.Throws<InvalidOperationException>(() => SvgSceneRenderer.Render(duplicate));
+
+        Assert.True(SceneElement.IsValidId("a-b_c.1"));
+        Assert.False(SceneElement.IsValidId("1a"));
+        Assert.False(SceneElement.IsValidId("a b"));
+        Assert.False(SceneElement.IsValidId("é"));
+        Assert.False(SceneElement.IsValidId(""));
+        Assert.False(SceneElement.IsValidId(null));
+        Assert.Throws<ArgumentException>("value", () => new SceneRectangle(0, 0, 1, 1) { Id = "a\"b" });
+    }
+
+    [Fact]
     public void IdentifiersUseThePrefix()
     {
         var scene = new Scene(10, 10, "sans-serif");

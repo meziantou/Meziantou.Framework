@@ -114,6 +114,21 @@ public sealed class SceneRendererTests
     }
 
     [Fact]
+    public void ElementsHaveTransforms()
+    {
+        // A rectangle moved by its transform, masked in the coordinates of its parent: only its left half is drawn
+        var scene = new Scene(40, 20, "sans-serif") { Background = SceneColor.White };
+        var mask = new SceneMask();
+        mask.Content.Add(new SceneRectangle(0, 0, 25, 20) { Fill = SceneColor.White });
+        scene.Root.Add(new SceneRectangle(0, 0, 10, 10) { Fill = (SceneColor)"#ff0000", Transform = SceneTransform.Translate(20, 5), Mask = mask });
+        scene.Root.Add(new SceneRectangle(0, 0, 10, 10) { Fill = (SceneColor)"#0000ff", Transform = new SceneTransform(double.NaN, 0, 0, 1, 0, 0) });
+        using var image = scene.ToImage();
+        Assert.Equal(Red, image.Frames[0][22, 10]);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][27, 10]);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][5, 5]);
+    }
+
+    [Fact]
     public void TextIsDrawnFromItsBaselineAndAnchor()
     {
         var scene = new Scene(200, 100, "sans-serif");

@@ -110,8 +110,25 @@ internal static class SceneRenderer
             return;
         }
 
-        DrawFiltered(canvas, element, context, static (canvas, state) => DrawContent(canvas, state.element, state.context));
+        DrawFiltered(canvas, element, context, static (canvas, state) => DrawTransformedContent(canvas, state.element, state.context));
     }
+
+    // The transform of an element applies inside its filter, its clips and its mask, as for a group
+    private static void DrawTransformedContent(DrawingCanvas canvas, SceneElement element, DrawContext context)
+    {
+        if (element.Transform is { } transform)
+        {
+            if (!IsFinite(transform))
+                return;
+
+            canvas.Transform(ToTransform(transform), (element, context), static (canvas, state) => DrawContent(canvas, state.element, state.context));
+            return;
+        }
+
+        DrawContent(canvas, element, context);
+    }
+
+    private static bool IsFinite(SceneTransform transform) => double.IsFinite(transform.A) && double.IsFinite(transform.B) && double.IsFinite(transform.C) && double.IsFinite(transform.D) && double.IsFinite(transform.E) && double.IsFinite(transform.F);
 
     private static void DrawFiltered(DrawingCanvas canvas, SceneElement element, DrawContext context, DrawingAction<(SceneElement element, DrawContext context)> action)
     {

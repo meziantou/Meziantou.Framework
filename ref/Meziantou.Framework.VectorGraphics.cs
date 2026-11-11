@@ -246,11 +246,15 @@ namespace Meziantou.Framework.VectorGraphics
         public string? CssClass { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyDictionary<string, string> DataAttributes { get => throw null; }
         public Meziantou.Framework.VectorGraphics.SceneFilter? Filter { get => throw null; set { } }
+        public string? Hyperlink { get => throw null; set { } }
+        public string? Id { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneMask? Mask { get => throw null; set { } }
         public double Opacity { get => throw null; set { } }
         public string? Tooltip { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneTransform? Transform { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneBounds? GetBounds(System.Func<Meziantou.Framework.VectorGraphics.SceneText, Meziantou.Framework.VectorGraphics.SceneBounds?> measureText, bool applyClips = true) => throw null;
         public static bool IsValidDataAttributeName([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? name) => throw null;
+        public static bool IsValidId([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? id) => throw null;
         public void SetDataAttribute(string name, string? value) { }
         public static void ThrowIfInvalidDataAttributeName(string name, string paramName) { }
     }
@@ -377,8 +381,6 @@ namespace Meziantou.Framework.VectorGraphics
         public Meziantou.Framework.VectorGraphics.SceneBounds? Clip { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.PathData? ClipPath { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneFillRule ClipRule { get => throw null; set { } }
-        public string? Hyperlink { get => throw null; set { } }
-        public Meziantou.Framework.VectorGraphics.SceneTransform? Transform { get => throw null; set { } }
         public T Add<T>(T element) where T : Meziantou.Framework.VectorGraphics.SceneElement => throw null;
     }
 

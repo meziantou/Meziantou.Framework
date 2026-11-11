@@ -60,7 +60,6 @@ fails.
 
 ## Scripting
 
-- The streams cannot be transferred between workers or windows.
 - WebAssembly threads are not supported.
 - The scripts run in your process: read [Running untrusted pages](06-Scripting/04-RunningUntrustedPages.md) before you
   load pages you do not control.

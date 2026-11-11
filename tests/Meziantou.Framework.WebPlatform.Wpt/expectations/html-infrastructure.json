@@ -30,22 +30,13 @@
     "total": 1
   },
   "html/infrastructure/safe-passing-of-structured-data/messagechannel.any.js": {
-    "total": 152,
-    "failures": {
-      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
-    }
+    "total": 152
   },
   "html/infrastructure/safe-passing-of-structured-data/messagechannel.any.js#dedicatedworker": {
-    "total": 137,
-    "failures": {
-      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
-    }
+    "total": 137
   },
   "html/infrastructure/safe-passing-of-structured-data/messagechannel.any.js#sharedworker": {
-    "total": 137,
-    "failures": {
-      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
-    }
+    "total": 137
   },
   "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/blob-data.https.html": {
     "harness": "ERROR",
@@ -159,10 +150,7 @@
     }
   },
   "html/infrastructure/safe-passing-of-structured-data/window-postmessage.window.js": {
-    "total": 152,
-    "failures": {
-      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
-    }
+    "total": 152
   },
   "html/infrastructure/terminology/plugins/text-plain.html": {
     "total": 1

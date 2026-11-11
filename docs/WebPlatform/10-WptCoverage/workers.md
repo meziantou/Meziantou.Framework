@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of workers, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 287 | 290 | 0 | 99% |
+| [Stable](#stable-tests) | 289 | 290 | 0 | 99.6% |
 | [Tentative](#tentative-tests) | 1 | 8 | 0 | 13% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **288** | **298** | **0** | **97%** |
+| **All** | **290** | **298** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 10
+- **NOT IMPLEMENTED**: 8
 - **TEST RUNNER**: 7
 
 ## Stable tests
@@ -298,8 +298,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`semantics/run-a-worker/001.html`](https://wpt.fyi/results/workers/semantics/run-a-worker/001.html) | Pass | 1 / 1 |  |  |
 | [`semantics/run-a-worker/002.html`](https://wpt.fyi/results/workers/semantics/run-a-worker/002.html) | Pass | 1 / 1 |  |  |
 | [`semantics/run-a-worker/003.html`](https://wpt.fyi/results/workers/semantics/run-a-worker/003.html) | Pass | 2 / 2 |  |  |
-| [`semantics/structured-clone/dedicated.html`](https://wpt.fyi/results/workers/semantics/structured-clone/dedicated.html) | Fail | 151 / 152 | NOT IMPLEMENTED | transferring the streams (the `ReadableStream` subclass subtest is a precondition failure) |
-| [`semantics/structured-clone/shared.html`](https://wpt.fyi/results/workers/semantics/structured-clone/shared.html) | Fail | 151 / 152 | NOT IMPLEMENTED | transferring the streams (the `ReadableStream` subclass subtest is a precondition failure) |
+| [`semantics/structured-clone/dedicated.html`](https://wpt.fyi/results/workers/semantics/structured-clone/dedicated.html) | Pass | 152 / 152 |  |  |
+| [`semantics/structured-clone/shared.html`](https://wpt.fyi/results/workers/semantics/structured-clone/shared.html) | Pass | 152 / 152 |  |  |
 | [`semantics/xhr/001.html`](https://wpt.fyi/results/workers/semantics/xhr/001.html) | Pass | 1 / 1 |  |  |
 | [`semantics/xhr/002.html`](https://wpt.fyi/results/workers/semantics/xhr/002.html) | Pass | 1 / 1 |  |  |
 | [`semantics/xhr/003.html`](https://wpt.fyi/results/workers/semantics/xhr/003.html) | Pass | 1 / 1 |  |  |

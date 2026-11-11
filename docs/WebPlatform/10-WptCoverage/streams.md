@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of streams, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 70 | 85 | 4 | 86% |
+| [Stable](#stable-tests) | 81 | 85 | 4 | 100% |
 | [Tentative](#tentative-tests) | 1 | 4 | 0 | 25% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **71** | **89** | **4** | **84%** |
+| **All** | **82** | **89** | **4** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 14
-- **TEST RUNNER**: 14
+- **NOT IMPLEMENTED**: 3
+- **TEST RUNNER**: 4
 
 ## Stable tests
 
@@ -71,18 +71,18 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`readable-streams/reentrant-strategies.any.js`](https://wpt.fyi/results/streams/readable-streams/reentrant-strategies.any.js) | Pass | 30 / 30 |  |  |
 | [`readable-streams/tee.any.js`](https://wpt.fyi/results/streams/readable-streams/tee.any.js) | Pass | 78 / 78 |  |  |
 | [`readable-streams/templated.any.js`](https://wpt.fyi/results/streams/readable-streams/templated.any.js) | Pass | 273 / 273 |  |  |
-| [`transferable/audioworklet.https.html`](https://wpt.fyi/results/streams/transferable/audioworklet.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED, TEST RUNNER | transferable streams (`ReadableStream`/`WritableStream`/`TransformStream` in a transfer list); the `window.postMessage()` stand-in does not transfer, so `event.ports` is empty |
-| [`transferable/deserialize-error.window.js`](https://wpt.fyi/results/streams/transferable/deserialize-error.window.js) | Error | 0 / 2 | NOT IMPLEMENTED, TEST RUNNER | transferable streams (`ReadableStream`/`WritableStream`/`TransformStream` in a transfer list); the `window.postMessage()` stand-in does not transfer, so `event.ports` is empty |
-| [`transferable/readable-stream.html`](https://wpt.fyi/results/streams/transferable/readable-stream.html) | Fail | 0 / 16 | NOT IMPLEMENTED, TEST RUNNER | transferable streams (`ReadableStream`/`WritableStream`/`TransformStream` in a transfer list); the `window.postMessage()` stand-in does not transfer, so `event.ports` is empty |
-| [`transferable/reason.html`](https://wpt.fyi/results/streams/transferable/reason.html) | Fail | 2 / 26 | NOT IMPLEMENTED, TEST RUNNER | transferable streams (`ReadableStream`/`WritableStream`/`TransformStream` in a transfer list); the `window.postMessage()` stand-in does not transfer, so `event.ports` is empty |
-| [`transferable/service-worker.https.html`](https://wpt.fyi/results/streams/transferable/service-worker.https.html) | Fail | 1 / 3 | NOT IMPLEMENTED | the transfer of the streams to a service worker |
-| [`transferable/shared-worker.html`](https://wpt.fyi/results/streams/transferable/shared-worker.html) | Fail | 0 / 2 | NOT IMPLEMENTED, TEST RUNNER | transferable streams (`ReadableStream`/`WritableStream`/`TransformStream` in a transfer list); the `window.postMessage()` stand-in does not transfer, so `event.ports` is empty |
-| [`transferable/transfer-with-messageport.window.js`](https://wpt.fyi/results/streams/transferable/transfer-with-messageport.window.js) | Fail | 3 / 10 | NOT IMPLEMENTED, TEST RUNNER | transferable streams and `MessagePort`s; the `window.postMessage()` stand-in does not transfer, so `event.ports` is empty |
+| [`transferable/audioworklet.https.html`](https://wpt.fyi/results/streams/transferable/audioworklet.https.html) | Pass | 3 / 3 |  |  |
+| [`transferable/deserialize-error.window.js`](https://wpt.fyi/results/streams/transferable/deserialize-error.window.js) | Pass | 2 / 2 |  |  |
+| [`transferable/readable-stream.html`](https://wpt.fyi/results/streams/transferable/readable-stream.html) | Pass | 16 / 16 |  |  |
+| [`transferable/reason.html`](https://wpt.fyi/results/streams/transferable/reason.html) | Pass | 26 / 26 |  |  |
+| [`transferable/service-worker.https.html`](https://wpt.fyi/results/streams/transferable/service-worker.https.html) | Pass | 3 / 3 |  |  |
+| [`transferable/shared-worker.html`](https://wpt.fyi/results/streams/transferable/shared-worker.html) | Pass | 2 / 2 |  |  |
+| [`transferable/transfer-with-messageport.window.js`](https://wpt.fyi/results/streams/transferable/transfer-with-messageport.window.js) | Pass | 10 / 10 |  |  |
 | [`transferable/transform-stream-members.any.js`](https://wpt.fyi/results/streams/transferable/transform-stream-members.any.js) | Pass | 8 / 8 |  |  |
-| [`transferable/transform-stream.html`](https://wpt.fyi/results/streams/transferable/transform-stream.html) | Fail | 3 / 5 | NOT IMPLEMENTED, TEST RUNNER | transferable streams (`ReadableStream`/`WritableStream`/`TransformStream` in a transfer list); the `window.postMessage()` stand-in does not transfer, so `event.ports` is empty |
-| [`transferable/window.html`](https://wpt.fyi/results/streams/transferable/window.html) | Fail | 0 / 4 | NOT IMPLEMENTED, TEST RUNNER | transferable streams (`ReadableStream`/`WritableStream`/`TransformStream` in a transfer list); the `window.postMessage()` stand-in does not transfer, so `event.ports` is empty |
-| [`transferable/worker.html`](https://wpt.fyi/results/streams/transferable/worker.html) | Fail | 0 / 3 | NOT IMPLEMENTED, TEST RUNNER | transferable streams (`ReadableStream`/`WritableStream`/`TransformStream` in a transfer list); the `window.postMessage()` stand-in does not transfer, so `event.ports` is empty |
-| [`transferable/writable-stream.html`](https://wpt.fyi/results/streams/transferable/writable-stream.html) | Fail | 1 / 8 | NOT IMPLEMENTED, TEST RUNNER | transferable streams (`ReadableStream`/`WritableStream`/`TransformStream` in a transfer list); the `window.postMessage()` stand-in does not transfer, so `event.ports` is empty |
+| [`transferable/transform-stream.html`](https://wpt.fyi/results/streams/transferable/transform-stream.html) | Pass | 5 / 5 |  |  |
+| [`transferable/window.html`](https://wpt.fyi/results/streams/transferable/window.html) | Pass | 4 / 4 |  |  |
+| [`transferable/worker.html`](https://wpt.fyi/results/streams/transferable/worker.html) | Pass | 3 / 3 |  |  |
+| [`transferable/writable-stream.html`](https://wpt.fyi/results/streams/transferable/writable-stream.html) | Pass | 8 / 8 |  |  |
 | [`transform-streams/backpressure.any.js`](https://wpt.fyi/results/streams/transform-streams/backpressure.any.js) | Pass | 42 / 42 |  |  |
 | [`transform-streams/cancel.any.js`](https://wpt.fyi/results/streams/transform-streams/cancel.any.js) | Pass | 33 / 33 |  |  |
 | [`transform-streams/errors.any.js`](https://wpt.fyi/results/streams/transform-streams/errors.any.js) | Pass | 63 / 63 |  |  |

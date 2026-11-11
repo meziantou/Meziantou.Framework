@@ -939,16 +939,10 @@
     "total": 2
   },
   "workers/semantics/structured-clone/dedicated.html": {
-    "total": 152,
-    "failures": {
-      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
-    }
+    "total": 152
   },
   "workers/semantics/structured-clone/shared.html": {
-    "total": 152,
-    "failures": {
-      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
-    }
+    "total": 152
   },
   "workers/semantics/xhr/001.html": {
     "total": 1

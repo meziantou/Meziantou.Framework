@@ -10,7 +10,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     // The internal slots are read with the intrinsic functions, captured when the helper is created (before the user code
     // can replace them). The records: { t: type, v: value, ... }.
     private const string StructuredCloneScript = """
-        (function (platformSerialize, platformDeserialize, platformCanTransfer, platformTransfer, dataCloneError, crossOriginIsolated, scriptPlatformObjects, fetchPlatformObjects, cryptoPlatformObjects, platformDeserializeCryptoKey, hasInternalSlot, setErrorStack, SharedArrayBuffer_, platformShareBuffer, platformReceiveBuffer) {
+        (function (platformSerialize, platformDeserialize, platformCanTransfer, platformTransfer, dataCloneError, crossOriginIsolated, scriptPlatformObjects, fetchPlatformObjects, cryptoPlatformObjects, platformDeserializeCryptoKey, hasInternalSlot, setErrorStack, SharedArrayBuffer_, platformShareBuffer, platformReceiveBuffer, platformStreams) {
           'use strict';
           const getter = (o, k) => Object.getOwnPropertyDescriptor(o, k).get;
           const getOwnPropertyDescriptorOrNull = (o, k) => Object.getOwnPropertyDescriptor(o, k) ?? null;
@@ -201,7 +201,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
               record.t = 'CryptoKey'; record.v = result.realm.serializeKey(result);
             }
             // The platform objects implemented in JavaScript (Streams.js: the streams, their readers and controllers...;
-            // Fetch.js: Request and Response) are not serializable
+            // Fetch.js: Request and Response) are not serializable (the streams are only transferable)
             else if ((result = apply(weakMapGet, scriptPlatformObjects, [value])) !== undefined) throw dataCloneError(`The ${result.kind} object could not be cloned`);
             else if (fetchPlatformObjects !== null && (result = apply(weakMapGet, fetchPlatformObjects, [value])) !== undefined) throw dataCloneError(`The ${result.kind} object could not be cloned`);
             else if (type === 'function') throw dataCloneError('A function could not be cloned');
@@ -276,18 +276,27 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 if ('stack' in record && !setErrorStack(value, record.stack)) defineProperty(value, 'stack', { value: record.stack, writable: true, enumerable: false, configurable: true });
                 break;
               case 'CryptoKey': value = platformDeserializeCryptoKey(record.v); break;
+              // The transfer-receiving steps of a stream (https://streams.spec.whatwg.org/#transferrable-streams)
+              case 'Stream': value = platformStreams().receive(record.kind, record.v); break;
             }
 
             memory.set(record, value);
             return value;
           }
 
+          // The streams (Streams.js) are transferable: ReadableStream, WritableStream and TransformStream
+          const isTransferableStream = (value) => {
+            const record = apply(weakMapGet, scriptPlatformObjects, [value]);
+            return record !== undefined && (record.kind === 'ReadableStream' || record.kind === 'WritableStream' || record.kind === 'TransformStream') && platformStreams().isTransferable(value);
+          };
+
           // https://html.spec.whatwg.org/multipage/structured-data.html#structuredserializewithtransfer: the ArrayBuffer
-          // objects and the transferable platform objects (e.g. MessagePort)
+          // objects and the transferable platform objects (e.g. MessagePort, ReadableStream)
           function serializeWithTransfer(value, transferList) {
             const memory = new Map();
             const buffers = [];
             const platformObjects = [];
+            const streams = [];
             for (const transferable of transferList) {
               if (memory.has(transferable)) throw dataCloneError('An object could not be transferred twice');
               if (hasSlotOf(slots.arrayBuffer, arrayBufferByteLength, transferable)) {
@@ -295,6 +304,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 record.t = 'ArrayBuffer';
                 memory.set(transferable, record);
                 append(buffers, transferable);
+              } else if (isTransferableStream(transferable)) {
+                const record = objectCreate(null);
+                record.t = 'Stream';
+                record.kind = apply(weakMapGet, scriptPlatformObjects, [transferable]).kind;
+                memory.set(transferable, record);
+                append(streams, transferable);
               } else if (platformCanTransfer(transferable, false)) {
                 const record = objectCreate(null);
                 record.t = 'Platform';
@@ -313,6 +328,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             // The platform objects are checked after the serialization too (e.g. a detached MessagePort)
             for (const transferable of platformObjects) platformCanTransfer(transferable, true);
 
+            // A locked stream cannot be transferred (the transfer steps of the streams): it is checked before any object is
+            // transferred
+            for (const transferable of streams) platformStreams().validate(transferable);
+
             for (const transferable of buffers) {
               // The transferred buffer keeps the data, and the maximum length of a resizable buffer; the transferable is detached
               const record = memory.get(transferable);
@@ -322,6 +341,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
             // The transfer steps of the platform objects (e.g. a MessagePort is detached)
             for (const transferable of platformObjects) memory.get(transferable).v = platformTransfer(transferable);
+
+            // The transfer steps of the streams: the stream is piped through a message port, whose other side is received
+            for (const transferable of streams) memory.get(transferable).v = platformStreams().transfer(transferable);
             return serialized;
           }
 
@@ -346,7 +368,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// <paramref name="value"/> is a value of the engine, a .NET platform object, or null for <c>undefined</c>. Throws a
     /// <c>DataCloneError</c> when the value cannot be serialized. The objects of <paramref name="transferList"/> (values of
     /// the engine) are transferred (https://html.spec.whatwg.org/multipage/structured-data.html#structuredserializewithtransfer):
-    /// only the <c>ArrayBuffer</c> objects are transferable.
+    /// the <c>ArrayBuffer</c> objects, the streams and the transferable platform objects (e.g. <c>MessagePort</c>).
     /// </summary>
     internal object StructuredSerialize(object? value, IReadOnlyList<object>? transferList = null, bool forStorage = false)
     {
@@ -677,7 +699,11 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             throw adapter.CreateException(ToJsError(new DomException("A SharedArrayBuffer could not be sent to another agent", "DataCloneError")));
         }));
 
-        var helpers = Adapter.Call(EvaluateBuiltIn(StructuredCloneScript), Adapter.Undefined, [platformSerialize, platformDeserialize, platformCanTransfer, platformTransfer, dataCloneError, Adapter.FromBoolean(GlobalScope.CrossOriginIsolated), scriptPlatformObjects, fetchPlatformObjects, cryptoPlatformObjects, platformDeserializeCryptoKey, hasInternalSlot, setErrorStack, SharedArrayBufferConstructor ?? Adapter.Undefined, platformShareBuffer, platformReceiveBuffer]);
+        // The functions of Streams.js that transfer the streams (https://streams.spec.whatwg.org/#transferrable-streams),
+        // evaluated when a stream is first transferred or received
+        var platformStreams = Adapter.RunInRealm(EngineRealm, () => adapter.CreateFunction("platformStreams", 0, (_, _) => GetStreamTransferSupport()));
+
+        var helpers = Adapter.Call(EvaluateBuiltIn(StructuredCloneScript), Adapter.Undefined, [platformSerialize, platformDeserialize, platformCanTransfer, platformTransfer, dataCloneError, Adapter.FromBoolean(GlobalScope.CrossOriginIsolated), scriptPlatformObjects, fetchPlatformObjects, cryptoPlatformObjects, platformDeserializeCryptoKey, hasInternalSlot, setErrorStack, SharedArrayBufferConstructor ?? Adapter.Undefined, platformShareBuffer, platformReceiveBuffer, platformStreams]);
         helper = (Adapter.Get(helpers, Adapter.FromString("serialize")), Adapter.Get(helpers, Adapter.FromString("deserialize")));
         _structuredClone = helper;
         return helper;

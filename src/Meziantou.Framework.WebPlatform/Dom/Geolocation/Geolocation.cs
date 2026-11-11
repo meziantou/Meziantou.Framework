@@ -342,7 +342,8 @@ public sealed class Geolocation
 
             if (reading.IsCompleted)
             {
-                Complete(reading.AsTask(), timedOut: !reading.IsCompletedSuccessfully && cancellation.IsCancellationRequested);
+                var completed = reading.AsTask();
+                Complete(completed, timedOut: !completed.IsCompletedSuccessfully && cancellation.IsCancellationRequested);
                 return;
             }
 

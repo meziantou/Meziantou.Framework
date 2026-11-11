@@ -181,54 +181,6 @@ internal static class RMQRVersion
         return false;
     }
 
-    public static int DetermineVersion(string data, ErrorCorrectionLevel ecLevel, EncodingMode mode, RMQRSizeConstraints constraints)
-    {
-        var charCount = mode switch
-        {
-            EncodingMode.Byte => Encoding.UTF8.GetByteCount(data),
-            EncodingMode.Kanji => data.Length,
-            _ => data.Length,
-        };
-
-        var bestVersion = -1;
-        var bestArea = int.MaxValue;
-
-        for (var version = 1; version <= 32; version++)
-        {
-            if (!constraints.Allows(GetHeight(version), GetWidth(version)))
-            {
-                continue;
-            }
-
-            var totalDataBits = GetDataCodewords(version, ecLevel) * 8;
-            var cciBits = GetCharacterCountBits(version, mode);
-            if (charCount >= (1 << cciBits))
-            {
-                continue;
-            }
-
-            var neededBits = GetModeIndicatorBits() + cciBits + GetDataBitsForMode(data, mode);
-            if (neededBits > totalDataBits)
-            {
-                continue;
-            }
-
-            var area = GetHeight(version) * GetWidth(version);
-            if (area < bestArea)
-            {
-                bestArea = area;
-                bestVersion = version;
-            }
-        }
-
-        if (bestVersion < 0)
-        {
-            throw new InvalidOperationException(constraints.IsEmpty ? "The data is too long to be encoded in an rMQR code." : $"The data is too long to be encoded in an rMQR code of the allowed sizes ({constraints}).");
-        }
-
-        return bestVersion;
-    }
-
     public static int[] GetAlignmentPatternColumnPositions(int version)
     {
         var width = GetWidth(version);
@@ -263,38 +215,5 @@ internal static class RMQRVersion
             ErrorCorrectionLevel.H => HProfiles[version - 1],
             _ => throw new ArgumentOutOfRangeException(nameof(ecLevel), $"rMQR only supports EC levels M and H, got {ecLevel}."),
         };
-    }
-
-    private static int GetDataBitsForMode(string data, EncodingMode mode)
-    {
-        return mode switch
-        {
-            EncodingMode.Numeric => GetNumericBits(data.Length),
-            EncodingMode.Alphanumeric => GetAlphanumericBits(data.Length),
-            EncodingMode.Byte => Encoding.UTF8.GetByteCount(data) * 8,
-            EncodingMode.Kanji => data.Length * 13,
-            _ => throw new ArgumentOutOfRangeException(nameof(mode)),
-        };
-    }
-
-    private static int GetNumericBits(int length)
-    {
-        var fullGroups = length / 3;
-        var remainder = length % 3;
-        var bits = fullGroups * 10;
-        bits += remainder switch
-        {
-            2 => 7,
-            1 => 4,
-            _ => 0,
-        };
-        return bits;
-    }
-
-    private static int GetAlphanumericBits(int length)
-    {
-        var fullPairs = length / 2;
-        var remainder = length % 2;
-        return (fullPairs * 11) + (remainder * 6);
     }
 }

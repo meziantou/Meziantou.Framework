@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Barcodes;
 
 /// <summary>
-/// Options for the creation of standard QR codes by <see cref="QRCode.Create(string, ErrorCorrectionLevel, QRCodeOptions)"/>.
+/// Options for the creation of standard QR codes by <see cref="QRCode.Create(string, ErrorCorrectionLevel, QRCodeOptions)"/> and its overloads, and of structured append sequences by <see cref="QRCode.CreateStructuredAppend(string, ErrorCorrectionLevel, QRCodeOptions)"/>.
 /// </summary>
 /// <remarks>
 /// The version sets the number of modules of the symbol (17 + 4 × version per side), not the size of the image: the
@@ -20,7 +20,7 @@ public sealed class QRCodeOptions
     /// <remarks>
     /// <para>
     /// A text is encoded as UTF-8, so the only assignment number it accepts is <see cref="Utf8EciAssignmentNumber"/>.
-    /// Binary data accepts any assignment number from 0 to 999999, such as 3 for ISO-8859-1.
+    /// Binary data and segments accept any assignment number from 0 to 999999, such as 3 for ISO-8859-1.
     /// </para>
     /// <para>
     /// The designator takes 12 to 28 bits, which can give a larger symbol. With an ECI designator, a text is never encoded

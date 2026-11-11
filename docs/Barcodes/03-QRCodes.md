@@ -1,6 +1,6 @@
 ---
 title: QR codes
-description: Create standard QR codes, Micro QR codes and rectangular Micro QR codes, choose the error correction level, and read the modules.
+description: Create standard QR codes, Micro QR codes and rectangular Micro QR codes, choose the error correction level and the segments, split data across several codes, and read the modules.
 ---
 
 ## Choose the kind of QR code
@@ -147,8 +147,7 @@ A QR code stores text in modes that take more or fewer bits per character:
 segments of different modes when that gives a smaller code, such as a long number after a few lowercase letters. Each
 segment has a header of a few bits, so short runs stay in the mode of their neighbors. Without an ECI designator (see
 below), readers guess the encoding of each byte-mode segment, so a text with non-ASCII characters other than kanji and
-kana is not split: it stays in one byte-mode segment. Micro QR codes and rMQR codes always encode the whole text in one
-mode.
+kana is not split: it stays in one byte-mode segment.
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_EncodingModes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -167,6 +166,26 @@ Assert.Equal(1, QRCode.Create([0x00, 0x01, 0xFE, 0xFF]).Version);
 // the lowercase letters in byte mode, the order number in numeric mode
 Assert.Equal(1, QRCode.Create("order 1234567890123456").Version);
 Assert.Equal(2, QRCode.Create(Encoding.UTF8.GetBytes("order 1234567890123456")).Version);
+```
+<!-- endref -->
+
+[CreateMicroQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateMicroQR) and [CreateRMQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateRMQR) split a text the same way, with the modes of each
+version: Micro QR version M1 holds digits only, M2 digits and alphanumeric characters, M3 and M4 every mode.
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/MicroQRCodeTests.cs;region=QRCode_SmallSymbolSegments;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Micro QR and rMQR codes split a text into segments of different modes, like standard QR codes: the lowercase
+// letters in byte mode, the digits in numeric mode
+var microQr = QRCode.CreateMicroQR("abc12345678");
+var rmqr = QRCode.CreateRMQR("Order 12345678901234567890");
+Assert.Equal((3, 15, 15), (microQr.Version, microQr.Width, microQr.Height));
+Assert.Equal((43, 11), (rmqr.Width, rmqr.Height));
+
+// The same text in a single byte segment needs a larger symbol
+var microQrByte = QRCode.CreateMicroQR([QRCodeSegment.CreateByte("abc12345678")]);
+var rmqrByte = QRCode.CreateRMQR([QRCodeSegment.CreateByte("Order 12345678901234567890")]);
+Assert.Equal((4, 17, 17), (microQrByte.Version, microQrByte.Width, microQrByte.Height));
+Assert.Equal((43, 13), (rmqrByte.Width, rmqrByte.Height));
 ```
 <!-- endref -->
 
@@ -200,6 +219,85 @@ var latin1 = QRCode.Create([0x63, 0x61, 0x66, 0xE9], ErrorCorrectionLevel.M, new
 - A text accepts only the assignment number 26, since it is encoded as UTF-8: another one throws an
   `ArgumentException`. Encode the text yourself and pass the bytes to declare another encoding.
 - Micro QR codes cannot hold an ECI designator, and [CreateRMQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateRMQR) does not write one.
+
+## Choose the segments yourself
+
+To control how the data is encoded, pass the segments to [Create](cref:Meziantou.Framework.Barcodes.QRCode.Create), [CreateMicroQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateMicroQR) or
+[CreateRMQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateRMQR). A [QRCodeSegment](cref:Meziantou.Framework.Barcodes.QRCodeSegment) is a run of data in one mode, and the code holds the segments as they are, in
+order:
+
+| Method | Holds |
+| --- | --- |
+| [QRCodeSegment.CreateNumeric](cref:Meziantou.Framework.Barcodes.QRCodeSegment.CreateNumeric) | Digits |
+| [QRCodeSegment.CreateAlphanumeric](cref:Meziantou.Framework.Barcodes.QRCodeSegment.CreateAlphanumeric) | Digits, uppercase letters, the space and `$%*+-./:` |
+| [QRCodeSegment.CreateByte](cref:Meziantou.Framework.Barcodes.QRCodeSegment.CreateByte) | Bytes, or a text as UTF-8 |
+| [QRCodeSegment.CreateKanji](cref:Meziantou.Framework.Barcodes.QRCodeSegment.CreateKanji) | Kanji and kana that every reader decodes the same way |
+| [QRCodeSegment.CreateEci](cref:Meziantou.Framework.Barcodes.QRCodeSegment.CreateEci) | An ECI designator: the encoding of the byte segments that follow it |
+
+Choose the segments yourself to mix bytes in several encodings, each after its ECI designator, to put digits or
+uppercase letters of binary data in their own mode, or to split a non-ASCII text that has an ECI designator your own way:
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_Segments;format=md-fenced-code-block;dedent=true -->
+```csharp
+// An ISO-8859-1 text followed by a long number: the text in byte mode, after an ECI designator that declares its
+// encoding (assignment number 3), and the digits in numeric mode
+QRCodeSegment[] segments =
+[
+    QRCodeSegment.CreateEci(3),
+    QRCodeSegment.CreateByte(Encoding.Latin1.GetBytes("Facture n\u00B0")),
+    QRCodeSegment.CreateNumeric("12345678901234567890123456789012345"),
+];
+var qrCode = QRCode.Create(segments, ErrorCorrectionLevel.M);
+
+// The same bytes in a single byte segment need a larger symbol
+var bytes = Encoding.Latin1.GetBytes("Facture n\u00B012345678901234567890123456789012345");
+var singleSegment = QRCode.Create(bytes, ErrorCorrectionLevel.M, new QRCodeOptions { EciAssignmentNumber = 3 });
+Assert.Equal((3, 4), (qrCode.Version, singleSegment.Version));
+```
+<!-- endref -->
+
+- A character the mode cannot encode, or an empty segment, throws an `ArgumentException` when you create the segment.
+  A list without a segment of data throws an `ArgumentException` too.
+- Each segment has a header of 12 to 20 bits in a standard QR code (fewer in Micro QR and rMQR codes), so a short
+  segment can take more room than it saves. The automatic segmentation of a text takes these headers into account.
+- [QRCodeOptions.EciAssignmentNumber](cref:Meziantou.Framework.Barcodes.QRCodeOptions.EciAssignmentNumber) adds an ECI designator before the segments, with any assignment number.
+- Micro QR codes and rMQR codes have no ECI designator: a segment from [CreateEci](cref:Meziantou.Framework.Barcodes.QRCodeSegment.CreateEci) throws an `ArgumentException`.
+  Micro QR version M1 holds a single numeric segment, and M2 numeric and alphanumeric segments only.
+
+## Split the data across several codes
+
+A structured append sequence splits data across up to 16 standard QR codes, which readers that support it put back
+together in order. Use it for data too large for one code, or to print several small codes instead of a large one.
+[QRCode.CreateStructuredAppend](cref:Meziantou.Framework.Barcodes.QRCode.CreateStructuredAppend) takes a text, bytes or segments, and returns the codes in order:
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_StructuredAppend;format=md-fenced-code-block;dedent=true -->
+```csharp
+var data = string.Concat(Enumerable.Repeat("The quick brown fox jumps over the lazy dog. ", 30));
+
+// Symbols of version 10 at most (57 × 57 modules), instead of one symbol of version 30 (137 × 137 modules)
+var symbols = QRCode.CreateStructuredAppend(data, ErrorCorrectionLevel.M, new QRCodeOptions { MaximumVersion = 10 });
+Assert.Equal(7, symbols.Count);
+Assert.Equal((10, 30), (symbols[0].Version, QRCode.Create(data, ErrorCorrectionLevel.M).Version));
+
+// Each symbol knows its position in the sequence
+Assert.Equal((0, 7), (symbols[0].StructuredAppend!.Index, symbols[0].StructuredAppend!.Count));
+Assert.Equal((6, 7), (symbols[6].StructuredAppend!.Index, symbols[6].StructuredAppend!.Count));
+
+// Print the symbols in order, side by side
+var images = symbols.Select(symbol => symbol.ToPng(new QRCodePngOptions { ModuleSize = 4 })).ToList();
+```
+<!-- endref -->
+
+- [QRCodeOptions.MaximumVersion](cref:Meziantou.Framework.Barcodes.QRCodeOptions.MaximumVersion) sets the largest code. The sequence has the fewest codes of that version that hold the data, then
+  every code has the smallest version that needs no more codes. Data that does not fit in 16 codes throws an
+  `InvalidOperationException`; data that fits in one code gives a sequence of one code.
+- Each code holds the next part of the data, split into segments like a text given to [Create](cref:Meziantou.Framework.Barcodes.QRCode.Create). A text is never
+  split in the middle of a character, and each code repeats the ECI designator, so each code also reads alone. Bytes and
+  segments are split between two bytes or two characters.
+- [QRCode.StructuredAppend](cref:Meziantou.Framework.Barcodes.QRCode.StructuredAppend) gives the [Index](cref:Meziantou.Framework.Barcodes.QRCodeStructuredAppend.Index) of a code in the sequence, the [Count](cref:Meziantou.Framework.Barcodes.QRCodeStructuredAppend.Count) of codes, and the
+  [Parity](cref:Meziantou.Framework.Barcodes.QRCodeStructuredAppend.Parity) of the data, which is the same in every code of the sequence. It is `null` for a code that holds all its data.
+- Print the codes in order, near each other. A reader that does not support structured append reads each code alone,
+  as a part of the data.
 
 ## Read the modules
 

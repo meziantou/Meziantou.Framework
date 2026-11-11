@@ -241,17 +241,30 @@ namespace Meziantou.Framework.Barcodes
         public int Height { get => throw null; }
         public bool this[int row, int column] { get => throw null; }
         public int Size { get => throw null; }
+        public Meziantou.Framework.Barcodes.QRCodeStructuredAppend? StructuredAppend { get => throw null; }
         public Meziantou.Framework.Barcodes.QRCodeType Type { get => throw null; }
         public int Version { get => throw null; }
         public int Width { get => throw null; }
+        public static Meziantou.Framework.Barcodes.QRCode Create(System.Collections.Generic.IEnumerable<Meziantou.Framework.Barcodes.QRCodeSegment> segments, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) => throw null;
         public static Meziantou.Framework.Barcodes.QRCode Create(System.ReadOnlySpan<byte> data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) => throw null;
         public static Meziantou.Framework.Barcodes.QRCode Create(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCode Create(System.Collections.Generic.IEnumerable<Meziantou.Framework.Barcodes.QRCodeSegment> segments, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.QRCodeOptions? options) => throw null;
         public static Meziantou.Framework.Barcodes.QRCode Create(System.ReadOnlySpan<byte> data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.QRCodeOptions? options) => throw null;
         public static Meziantou.Framework.Barcodes.QRCode Create(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.QRCodeOptions? options) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCode CreateMicroQR(System.Collections.Generic.IEnumerable<Meziantou.Framework.Barcodes.QRCodeSegment> segments, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L) => throw null;
         public static Meziantou.Framework.Barcodes.QRCode CreateMicroQR(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCode CreateMicroQR(System.Collections.Generic.IEnumerable<Meziantou.Framework.Barcodes.QRCodeSegment> segments, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.MicroQRCodeOptions? options) => throw null;
         public static Meziantou.Framework.Barcodes.QRCode CreateMicroQR(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.MicroQRCodeOptions? options) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCode CreateRMQR(System.Collections.Generic.IEnumerable<Meziantou.Framework.Barcodes.QRCodeSegment> segments, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) => throw null;
         public static Meziantou.Framework.Barcodes.QRCode CreateRMQR(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCode CreateRMQR(System.Collections.Generic.IEnumerable<Meziantou.Framework.Barcodes.QRCodeSegment> segments, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.RMQRCodeOptions? options) => throw null;
         public static Meziantou.Framework.Barcodes.QRCode CreateRMQR(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.RMQRCodeOptions? options) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Barcodes.QRCode> CreateStructuredAppend(System.Collections.Generic.IEnumerable<Meziantou.Framework.Barcodes.QRCodeSegment> segments, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Barcodes.QRCode> CreateStructuredAppend(System.ReadOnlySpan<byte> data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Barcodes.QRCode> CreateStructuredAppend(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Barcodes.QRCode> CreateStructuredAppend(System.Collections.Generic.IEnumerable<Meziantou.Framework.Barcodes.QRCodeSegment> segments, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.QRCodeOptions? options) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Barcodes.QRCode> CreateStructuredAppend(System.ReadOnlySpan<byte> data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.QRCodeOptions? options) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Barcodes.QRCode> CreateStructuredAppend(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.QRCodeOptions? options) => throw null;
     }
 
     public sealed class QRCodeConsoleOptions
@@ -309,6 +322,34 @@ namespace Meziantou.Framework.Barcodes
         public static byte[] ToPng(this Meziantou.Framework.Barcodes.QRCode qrCode, Meziantou.Framework.Barcodes.QRCodePngOptions options) => throw null;
         public static void WriteToPng(this Meziantou.Framework.Barcodes.QRCode qrCode, System.IO.Stream stream) { }
         public static void WriteToPng(this Meziantou.Framework.Barcodes.QRCode qrCode, System.IO.Stream stream, Meziantou.Framework.Barcodes.QRCodePngOptions options) { }
+    }
+
+    public sealed class QRCodeSegment
+    {
+        public Meziantou.Framework.Barcodes.QRCodeSegmentMode Mode { get => throw null; }
+        public static Meziantou.Framework.Barcodes.QRCodeSegment CreateAlphanumeric(string text) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCodeSegment CreateByte(System.ReadOnlySpan<byte> data) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCodeSegment CreateByte(string text) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCodeSegment CreateEci(int assignmentNumber) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCodeSegment CreateKanji(string text) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCodeSegment CreateNumeric(string digits) => throw null;
+    }
+
+    public enum QRCodeSegmentMode
+    {
+        Numeric = 0,
+        Alphanumeric = 1,
+        Byte = 2,
+        Kanji = 3,
+        Eci = 4,
+    }
+
+    public sealed class QRCodeStructuredAppend
+    {
+        public int Count { get => throw null; }
+        public int Index { get => throw null; }
+        public byte Parity { get => throw null; }
+        public override string ToString() => throw null;
     }
 
     public sealed class QRCodeSvgOptions

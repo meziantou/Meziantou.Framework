@@ -245,6 +245,126 @@ public sealed class DecodeInteropTests
     }
 
     [Fact]
+    public async Task MixedModeSmallQRCodes_AreDecoded()
+    {
+        (QRCodeType Type, string Data, ErrorCorrectionLevel Level)[] values =
+        [
+            (QRCodeType.MicroQR, "abc12345678", ErrorCorrectionLevel.L),
+            (QRCodeType.MicroQR, "ab12345678901234567890", ErrorCorrectionLevel.L),
+            (QRCodeType.MicroQR, "HELLO 123456789012", ErrorCorrectionLevel.M),
+            (QRCodeType.MicroQR, "漢字12345678", ErrorCorrectionLevel.L),
+            (QRCodeType.RMQR, "Order 12345678901234567890", ErrorCorrectionLevel.M),
+            (QRCodeType.RMQR, "https://example.com/ITEM/1234567890123456789012345", ErrorCorrectionLevel.M),
+            (QRCodeType.RMQR, "漢字テスト abc 12345678901234567890 ABCDEFGHIJ", ErrorCorrectionLevel.H),
+        ];
+
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, string Data)>();
+        foreach (var (type, data, level) in values)
+        {
+            var qr = type is QRCodeType.MicroQR ? QRCode.CreateMicroQR(data, level) : QRCode.CreateRMQR(data, level);
+            var path = directory.FullPath / $"small-mixed-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
+            await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 4 }), XunitCancellationToken);
+            cases.Add((path, data));
+        }
+
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, data) in cases)
+        {
+            var result = Assert.Single(results, result => result.FilePath == path, message: Escape(data));
+            Assert.Equal(data, result.Text, message: Escape(data));
+        }
+    }
+
+    [Fact]
+    public async Task SegmentQRCodes_AreDecoded()
+    {
+        (QRCode QRCode, string Data, bool ZBar)[] values =
+        [
+            (QRCode.Create([QRCodeSegment.CreateAlphanumeric("ORDER "), QRCodeSegment.CreateNumeric("0123456789"), QRCodeSegment.CreateByte("/item"), QRCodeSegment.CreateKanji("漢字")]), "ORDER 0123456789/item漢字", true),
+            (QRCode.Create([QRCodeSegment.CreateEci(QRCodeOptions.Utf8EciAssignmentNumber), QRCodeSegment.CreateByte("Café "), QRCodeSegment.CreateNumeric("20261110")]), "Café 20261110", true),
+            (QRCode.Create([QRCodeSegment.CreateByte([0x63, 0x61, 0x66, 0xE9]), QRCodeSegment.CreateNumeric("42")], ErrorCorrectionLevel.Q, new QRCodeOptions { EciAssignmentNumber = 3 }), "café42", true),
+            (QRCode.Create([QRCodeSegment.CreateEci(3), QRCodeSegment.CreateByte([0xE9]), QRCodeSegment.CreateEci(QRCodeOptions.Utf8EciAssignmentNumber), QRCodeSegment.CreateByte("€")]), "é€", false),
+            (QRCode.CreateMicroQR([QRCodeSegment.CreateNumeric("12345")]), "12345", false),
+            (QRCode.CreateMicroQR([QRCodeSegment.CreateAlphanumeric("AB"), QRCodeSegment.CreateNumeric("1234")], ErrorCorrectionLevel.M), "AB1234", false),
+            (QRCode.CreateMicroQR([QRCodeSegment.CreateByte("ab"), QRCodeSegment.CreateKanji("漢"), QRCodeSegment.CreateNumeric("123456")]), "ab漢123456", false),
+            (QRCode.CreateRMQR([QRCodeSegment.CreateByte("item "), QRCodeSegment.CreateNumeric("12345678901234567890"), QRCodeSegment.CreateAlphanumeric(" OK")]), "item 12345678901234567890 OK", false),
+        ];
+
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, string Data, bool ZBar)>();
+        foreach (var (qr, data, zbar) in values)
+        {
+            var path = directory.FullPath / $"segments-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
+            await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 4 }), XunitCancellationToken);
+            cases.Add((path, data, zbar));
+        }
+
+        // zbarimg reads no Micro QR or rMQR code, and switches encodings between ECI designators of one symbol
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, data, zbar) in cases)
+        {
+            var result = Assert.Single(results, result => result.FilePath == path, message: Escape(data));
+            Assert.Equal(data, result.Text, message: Escape(data));
+            if (zbar)
+            {
+                Assert.Equal(["QR-Code:" + data], await tools.ReadWithZBarAsync(path));
+            }
+        }
+    }
+
+    [Fact]
+    public async Task StructuredAppendQRCodes_AreDecoded()
+    {
+        var latin1 = new byte[300];
+        for (var i = 0; i < latin1.Length; i++)
+        {
+            latin1[i] = (byte)(0x41 + (i % 26) + (i % 3 is 0 ? 0x80 : 0));
+        }
+
+        (IReadOnlyList<QRCode> Symbols, string Data)[] values =
+        [
+            (QRCode.CreateStructuredAppend("HELLO"), "HELLO"),
+            (QRCode.CreateStructuredAppend(string.Join(' ', Enumerable.Repeat("Lorem ipsum dolor sit amet 0123456789", 10)), ErrorCorrectionLevel.M, new QRCodeOptions { MaximumVersion = 5 }), string.Join(' ', Enumerable.Repeat("Lorem ipsum dolor sit amet 0123456789", 10))),
+            (QRCode.CreateStructuredAppend("漢字のテスト 12345678901234567890 ABCDEF 漢字のテスト 漢字のテスト", ErrorCorrectionLevel.L, new QRCodeOptions { MaximumVersion = 1 }), "漢字のテスト 12345678901234567890 ABCDEF 漢字のテスト 漢字のテスト"),
+            (QRCode.CreateStructuredAppend("Café crème brûlée 😀 à la française, s'il vous plaît", ErrorCorrectionLevel.M, new QRCodeOptions { MaximumVersion = 2, EciAssignmentNumber = QRCodeOptions.Utf8EciAssignmentNumber }), "Café crème brûlée 😀 à la française, s'il vous plaît"),
+            (QRCode.CreateStructuredAppend(latin1, ErrorCorrectionLevel.H, new QRCodeOptions { MaximumVersion = 4, EciAssignmentNumber = 3 }), Encoding.Latin1.GetString(latin1)),
+            (QRCode.CreateStructuredAppend([QRCodeSegment.CreateAlphanumeric("PART LIST "), QRCodeSegment.CreateNumeric(new string('7', 120)), QRCodeSegment.CreateEci(QRCodeOptions.Utf8EciAssignmentNumber), QRCodeSegment.CreateByte(" end ✓")], ErrorCorrectionLevel.M, new QRCodeOptions { MaximumVersion = 1 }), "PART LIST " + new string('7', 120) + " end ✓"),
+        ];
+
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        foreach (var (symbols, data) in values)
+        {
+            Assert.InRange(symbols.Count, 1, 16);
+
+            // zbarimg trims the text it prints
+            Assert.Equal(data.Trim(), data);
+
+            // ZXingReader reads each symbol, then puts the sequence back together when it reads all of them
+            var paths = new List<string>();
+            foreach (var symbol in symbols)
+            {
+                var path = directory.FullPath / $"sequence-{paths.Count.ToString(CultureInfo.InvariantCulture)}.png";
+                await File.WriteAllBytesAsync(path, symbol.ToPng(new QRCodePngOptions { ModuleSize = 4 }), XunitCancellationToken);
+                paths.Add(path);
+            }
+
+            var results = await tools.ReadWithZXingAsync(paths);
+            var parts = paths.Select(path => results.First(result => result.FilePath == path).Text);
+            Assert.Equal(data, string.Concat(parts), message: Escape(data));
+            Assert.Contains(data, results.Select(result => result.Text));
+
+            // zbarimg reads a sequence only when all of its symbols are in the image
+            var imagePath = directory.FullPath / "sequence.png";
+            await File.WriteAllBytesAsync(imagePath, RenderQRCodes(symbols), XunitCancellationToken);
+            Assert.Equal(["QR-Code:" + data], await tools.ReadWithZBarAsync(imagePath));
+        }
+    }
+
+    [Fact]
     public async Task SizeConstrainedQRCodes_AreDecoded()
     {
         var tools = await BarcodeTools.GetAsync();
@@ -738,6 +858,24 @@ public sealed class DecodeInteropTests
 
         using var canvas = new Image<Rgba32>((int)Math.Ceiling(size.Width) + 60, (int)Math.Ceiling(size.Height) + 60, Colors.White);
         canvas.Draw((qr, options), static (canvas, state) => canvas.DrawQRCode(state.qr, new PointD(30.3, 30.6), state.options));
+        return Encode(canvas);
+    }
+
+    // The symbols side by side, each with its quiet zone
+    private static byte[] RenderQRCodes(IReadOnlyList<QRCode> symbols)
+    {
+        var options = new QRCodeDrawingOptions { ModuleSize = 4 };
+        var sizes = symbols.Select(symbol => QRCodeImageRenderer.MeasureQRCode(symbol, options)).ToArray();
+        using var canvas = new Image<Rgba32>((int)Math.Ceiling(sizes.Sum(size => size.Width)) + 20, (int)Math.Ceiling(sizes.Max(size => size.Height)) + 20, Colors.White);
+        canvas.Draw((symbols, sizes, options), static (canvas, state) =>
+        {
+            var x = 10.0;
+            for (var i = 0; i < state.symbols.Count; i++)
+            {
+                canvas.DrawQRCode(state.symbols[i], new PointD(x, 10), state.options);
+                x += state.sizes[i].Width;
+            }
+        });
         return Encode(canvas);
     }
 

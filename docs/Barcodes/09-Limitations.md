@@ -11,13 +11,14 @@ description: What the barcode packages do not do.
   of element strings unless you pass [Gs1ValidationMode.Dictionary](cref:Meziantou.Framework.Barcodes.Gs1ValidationMode.Dictionary). The
   dictionary does not know which GS1 Company Prefixes are allocated: a key is checked for its format and check digit,
   not for its owner.
-- **Mixed modes in standard QR codes only.** [QRCode.Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) splits a text into segments of different modes,
-  except a text with non-ASCII characters other than kanji and kana; Micro QR codes and rMQR codes encode the whole
-  text in one mode. There is no API to choose the segments yourself.
+- **No automatic segments for other non-ASCII texts without ECI.** [QRCode.Create](cref:Meziantou.Framework.Barcodes.QRCode.Create), [QRCode.CreateMicroQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateMicroQR) and
+  [QRCode.CreateRMQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateRMQR) keep a text with non-ASCII characters other than kanji and kana in one byte segment, unless
+  it has an ECI designator. Pass [QRCodeSegment](cref:Meziantou.Framework.Barcodes.QRCodeSegment) instances to choose the segments yourself.
 - **ECI in standard QR codes only, and opt-in.** Without [QRCodeOptions.EciAssignmentNumber](cref:Meziantou.Framework.Barcodes.QRCodeOptions.EciAssignmentNumber), the byte mode holds
   UTF-8 without an ECI designator. Micro QR codes and rMQR codes never have one.
-- **No structured append**: data too large for one QR code, Data Matrix, PDF417 or Aztec symbol is not split across
-  several symbols.
+- **Structured append in standard QR codes only**: [QRCode.CreateStructuredAppend](cref:Meziantou.Framework.Barcodes.QRCode.CreateStructuredAppend) splits data across up to 16 QR
+  codes, but data too large for one Micro QR, rMQR, Data Matrix, PDF417 or Aztec symbol is not split across several
+  symbols.
 - **ECI for text only in two-dimensional symbols**: [Barcode2D](cref:Meziantou.Framework.Barcodes.Barcode2D) declares UTF-8 for a text that is not ASCII, and
   encodes bytes without an ECI designator: there is no option to declare another encoding.
 - **Logos in SVG only.** The PNG renderer and the image renderer do not draw logos; draw them on the image yourself.

@@ -84,12 +84,94 @@ public class MicroQRCodeTests
         Snapshot.Validate(RenderAsSvg(qr), SnapshotType.Svg);
     }
 
+    // ───── Mixed modes and segments ─────
+
+    [Fact]
+    public void Documentation_SmallSymbolSegments()
+    {
+        #region QRCode_SmallSymbolSegments
+        // Micro QR and rMQR codes split a text into segments of different modes, like standard QR codes: the lowercase
+        // letters in byte mode, the digits in numeric mode
+        var microQr = QRCode.CreateMicroQR("abc12345678");
+        var rmqr = QRCode.CreateRMQR("Order 12345678901234567890");
+        Assert.Equal((3, 15, 15), (microQr.Version, microQr.Width, microQr.Height));
+        Assert.Equal((43, 11), (rmqr.Width, rmqr.Height));
+
+        // The same text in a single byte segment needs a larger symbol
+        var microQrByte = QRCode.CreateMicroQR([QRCodeSegment.CreateByte("abc12345678")]);
+        var rmqrByte = QRCode.CreateRMQR([QRCodeSegment.CreateByte("Order 12345678901234567890")]);
+        Assert.Equal((4, 17, 17), (microQrByte.Version, microQrByte.Width, microQrByte.Height));
+        Assert.Equal((43, 13), (rmqrByte.Width, rmqrByte.Height));
+        #endregion
+    }
+
+    [Fact]
+    public void CreateMicroQR_MixedModes_Snapshot()
+    {
+        // The lowercase letters in byte mode, the digits in numeric mode; large modules and a quiet zone, so that the snapshot can be scanned
+        var qr = QRCode.CreateMicroQR("abc12345678");
+
+        Snapshot.Validate(qr.ToPng(new QRCodePngOptions { ModuleSize = 8, QuietZoneModules = 2 }), SnapshotType.Png);
+    }
+
+    [Theory]
+    [InlineData("12345")]
+    [InlineData("HELLO")]
+    [InlineData("hello")]
+    [InlineData("漢字")]
+    [InlineData("\u00E9t\u00E9 2026")]
+    public void CreateMicroQR_SingleMode_WhenSegmentsAreNotSmaller(string data)
+    {
+        // A text with characters other than ASCII and kanji stays in one byte segment, as readers guess the encoding of each segment
+        QRCodeSegment segment = data switch
+        {
+            "12345" => QRCodeSegment.CreateNumeric(data),
+            "HELLO" => QRCodeSegment.CreateAlphanumeric(data),
+            "漢字" => QRCodeSegment.CreateKanji(data),
+            _ => QRCodeSegment.CreateByte(data),
+        };
+
+        Assert.Equal(RenderAsSvg(QRCode.CreateMicroQR(data)), RenderAsSvg(QRCode.CreateMicroQR([segment])));
+    }
+
+    [Fact]
+    public void CreateMicroQR_MixedModes_UseTheModesOfTheVersion()
+    {
+        // M2-L holds 40 bits: "A1234567" takes 39 bits in two segments (10 + 29), 48 bits in alphanumeric mode
+        Assert.Equal(2, QRCode.CreateMicroQR("A1234567").Version);
+        Assert.Equal(2, QRCode.CreateMicroQR([QRCodeSegment.CreateAlphanumeric("A"), QRCodeSegment.CreateNumeric("1234567")]).Version);
+        Assert.Equal(3, QRCode.CreateMicroQR([QRCodeSegment.CreateAlphanumeric("A1234567")]).Version);
+
+        // M2 has no byte mode: digits and uppercase letters only
+        Assert.Equal(3, QRCode.CreateMicroQR("a1234567").Version);
+        Assert.Throws<InvalidOperationException>(() => QRCode.CreateMicroQR("a1234567", ErrorCorrectionLevel.L, new MicroQRCodeOptions { MaximumVersion = 2 }));
+        Assert.Throws<InvalidOperationException>(() => QRCode.CreateMicroQR([QRCodeSegment.CreateByte("a")], ErrorCorrectionLevel.L, new MicroQRCodeOptions { MaximumVersion = 2 }));
+    }
+
+    [Fact]
+    public void CreateMicroQR_M1_HoldsASingleNumericSegment()
+    {
+        Assert.Equal(1, QRCode.CreateMicroQR([QRCodeSegment.CreateNumeric("12345")]).Version);
+        Assert.Equal(2, QRCode.CreateMicroQR([QRCodeSegment.CreateNumeric("12"), QRCodeSegment.CreateNumeric("345")]).Version);
+        Assert.Throws<InvalidOperationException>(() => QRCode.CreateMicroQR([QRCodeSegment.CreateNumeric("1"), QRCodeSegment.CreateNumeric("2")], ErrorCorrectionLevel.L, new MicroQRCodeOptions { MaximumVersion = 1 }));
+    }
+
+    [Fact]
+    public void CreateMicroQR_Segments_InvalidArguments_Throw()
+    {
+        Assert.Throws<ArgumentNullException>("segments", () => QRCode.CreateMicroQR((IEnumerable<QRCodeSegment>)null!));
+        Assert.Throws<ArgumentException>("segments", () => QRCode.CreateMicroQR(Array.Empty<QRCodeSegment>()));
+        Assert.Throws<ArgumentException>("segments", () => QRCode.CreateMicroQR([QRCodeSegment.CreateEci(26), QRCodeSegment.CreateNumeric("1")]));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.CreateMicroQR([QRCodeSegment.CreateNumeric("1")], ErrorCorrectionLevel.H));
+        Assert.Throws<InvalidOperationException>(() => QRCode.CreateMicroQR([QRCodeSegment.CreateNumeric(new string('1', 36))]));
+    }
+
     // ───── Error cases ─────
 
     [Fact]
     public void CreateMicroQR_NullData_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => QRCode.CreateMicroQR(null!));
+        Assert.Throws<ArgumentNullException>(() => QRCode.CreateMicroQR((string)null!));
     }
 
     [Fact]

@@ -2,40 +2,23 @@ namespace Meziantou.Framework.Barcodes.Internal;
 
 internal static class DataEncoder
 {
-    public static byte[] Encode(string data, QRSegment[] segments, int version, ErrorCorrectionLevel ecLevel, int? eciAssignmentNumber)
+    /// <summary>The number of bits of a structured append header: the mode indicator, the position, the count and the parity.</summary>
+    public const int StructuredAppendBitCount = 4 + 4 + 4 + 8;
+
+    /// <summary>Gets the data codewords of a standard QR code that holds the segments, after a structured append header when <paramref name="structuredAppend"/> is set.</summary>
+    public static byte[] Encode(IReadOnlyList<QRCodeSegment> segments, int version, ErrorCorrectionLevel ecLevel, QRCodeStructuredAppend? structuredAppend)
     {
         var buffer = new BitBuffer();
-        if (eciAssignmentNumber is { } eci)
+        if (structuredAppend is not null)
         {
-            AppendEci(buffer, eci);
+            // ISO/IEC 18004, 8.3: the position and the count minus 1 on 4 bits each, then the parity of the whole data
+            buffer.Append((int)EncodingMode.StructuredAppend, 4);
+            buffer.Append(structuredAppend.Index, 4);
+            buffer.Append(structuredAppend.Count - 1, 4);
+            buffer.Append(structuredAppend.Parity, 8);
         }
 
-        foreach (var segment in segments)
-        {
-            buffer.Append((int)segment.Mode, 4);
-            buffer.Append(segment.GetCharacterCount(data), QRCodeVersion.GetCharacterCountBits(version, segment.Mode));
-            DataEncoderHelper.EncodeData(buffer, data.Substring(segment.Start, segment.Length), segment.Mode);
-        }
-
-        DataEncoderHelper.AddTerminatorAndPadding(buffer, QRCodeVersion.GetDataCodewords(version, ecLevel) * 8, terminatorMaxBits: 4);
-        return buffer.ToByteArray();
-    }
-
-    public static byte[] Encode(ReadOnlySpan<byte> data, int version, ErrorCorrectionLevel ecLevel, int? eciAssignmentNumber)
-    {
-        var buffer = new BitBuffer();
-        if (eciAssignmentNumber is { } eci)
-        {
-            AppendEci(buffer, eci);
-        }
-
-        buffer.Append((int)EncodingMode.Byte, 4);
-        buffer.Append(data.Length, QRCodeVersion.GetCharacterCountBits(version, EncodingMode.Byte));
-        foreach (var b in data)
-        {
-            buffer.Append(b, 8);
-        }
-
+        QRSymbolFormat.Write(buffer, segments, QRCodeType.Standard, version);
         DataEncoderHelper.AddTerminatorAndPadding(buffer, QRCodeVersion.GetDataCodewords(version, ecLevel) * 8, terminatorMaxBits: 4);
         return buffer.ToByteArray();
     }
@@ -52,9 +35,9 @@ internal static class DataEncoder
     }
 
     // ISO/IEC 18004, 7.4.3.2: 0bbbbbbb, 10bbbbbb bbbbbbbb, or 110bbbbb bbbbbbbb bbbbbbbb
-    private static void AppendEci(BitBuffer buffer, int assignmentNumber)
+    public static void AppendEci(BitBuffer buffer, int assignmentNumber)
     {
-        buffer.Append(0b0111, 4);
+        buffer.Append((int)EncodingMode.Eci, 4);
         switch (assignmentNumber)
         {
             case < 128:

@@ -4,45 +4,71 @@ internal static class RMQREncoder
 {
     public static QRCode Encode(string data, ErrorCorrectionLevel ecLevel, RMQRSizeConstraints constraints)
     {
-        var mode = DataAnalyzer.DetermineMode(data);
-        var version = RMQRVersion.DetermineVersion(data, ecLevel, mode, constraints);
+        var allowSegments = DataAnalyzer.CanSegmentWithoutEci(data);
+        QRSegment[]? bestSegments = null;
+        var bestVersion = -1;
+        var bestArea = int.MaxValue;
+        for (var version = 1; version <= 32; version++)
+        {
+            var area = RMQRVersion.GetHeight(version) * RMQRVersion.GetWidth(version);
+            if (area >= bestArea || !constraints.Allows(RMQRVersion.GetHeight(version), RMQRVersion.GetWidth(version)))
+                continue;
 
-        var dataCodewords = EncodeData(data, version, ecLevel, mode);
-        var allCodewords = AddErrorCorrection(dataCodewords, version, ecLevel);
+            var segments = QRSegmentOptimizer.ChooseSegments(data, QRCodeType.RMQR, version, allowSegments, allowKanji: true, out var bitCount);
+            if (segments is not null && bitCount >= 0 && bitCount <= RMQRVersion.GetDataCodewords(version, ecLevel) * 8)
+            {
+                bestSegments = segments;
+                bestVersion = version;
+                bestArea = area;
+            }
+        }
 
+        if (bestSegments is null)
+            throw CreateDataTooLongException(constraints);
+
+        return Build(QRSegmentOptimizer.ToSegments(data, bestSegments), bestVersion, ecLevel);
+    }
+
+    public static QRCode Encode(IReadOnlyList<QRCodeSegment> segments, ErrorCorrectionLevel ecLevel, RMQRSizeConstraints constraints)
+    {
+        var bestVersion = -1;
+        var bestArea = int.MaxValue;
+        for (var version = 1; version <= 32; version++)
+        {
+            var area = RMQRVersion.GetHeight(version) * RMQRVersion.GetWidth(version);
+            if (area >= bestArea || !constraints.Allows(RMQRVersion.GetHeight(version), RMQRVersion.GetWidth(version)))
+                continue;
+
+            var bitCount = QRSymbolFormat.GetBitCount(segments, QRCodeType.RMQR, version);
+            if (bitCount >= 0 && bitCount <= RMQRVersion.GetDataCodewords(version, ecLevel) * 8)
+            {
+                bestVersion = version;
+                bestArea = area;
+            }
+        }
+
+        if (bestVersion < 0)
+            throw CreateDataTooLongException(constraints);
+
+        return Build(segments, bestVersion, ecLevel);
+    }
+
+    private static InvalidOperationException CreateDataTooLongException(RMQRSizeConstraints constraints)
+    {
+        return new InvalidOperationException(constraints.IsEmpty ? "The data is too long to be encoded in an rMQR code." : $"The data is too long to be encoded in an rMQR code of the allowed sizes ({constraints}).");
+    }
+
+    private static QRCode Build(IReadOnlyList<QRCodeSegment> segments, int version, ErrorCorrectionLevel ecLevel)
+    {
+        var buffer = new BitBuffer();
+        QRSymbolFormat.Write(buffer, segments, QRCodeType.RMQR, version);
+        DataEncoderHelper.AddTerminatorAndPadding(buffer, RMQRVersion.GetDataCodewords(version, ecLevel) * 8, RMQRVersion.GetTerminatorBits());
+
+        var allCodewords = AddErrorCorrection(buffer.ToByteArray(), version, ecLevel);
         var builder = new RMQRMatrixBuilder(version);
         builder.Build(allCodewords, ecLevel);
 
         return new QRCode(builder.Modules, version, QRCodeType.RMQR, ecLevel);
-    }
-
-    private static byte[] EncodeData(string data, int version, ErrorCorrectionLevel ecLevel, EncodingMode mode)
-    {
-        var buffer = new BitBuffer();
-
-        // Mode indicator (3 bits)
-        var modeValue = RMQRVersion.GetModeIndicatorValue(mode);
-        buffer.Append(modeValue, RMQRVersion.GetModeIndicatorBits());
-
-        // Character count indicator
-        var cciBits = RMQRVersion.GetCharacterCountBits(version, mode);
-        var charCount = mode switch
-        {
-            EncodingMode.Byte => Encoding.UTF8.GetByteCount(data),
-            EncodingMode.Kanji => data.Length,
-            _ => data.Length,
-        };
-        buffer.Append(charCount, cciBits);
-
-        // Data encoding using shared helper
-        DataEncoderHelper.EncodeData(buffer, data, mode);
-
-        // Add terminator and padding
-        var totalDataBits = RMQRVersion.GetDataCodewords(version, ecLevel) * 8;
-        var terminatorMaxBits = RMQRVersion.GetTerminatorBits();
-        DataEncoderHelper.AddTerminatorAndPadding(buffer, totalDataBits, terminatorMaxBits);
-
-        return buffer.ToByteArray();
     }
 
     private static byte[] AddErrorCorrection(byte[] dataCodewords, int version, ErrorCorrectionLevel ecLevel)

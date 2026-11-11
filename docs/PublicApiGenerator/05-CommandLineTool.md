@@ -75,6 +75,7 @@ when the files are up to date. Line endings are ignored. The checks are the same
 | `--include-assembly-references` | Lists the referenced assemblies that are not part of the framework in the header. See [Referenced assemblies](03-ApiFiles.md#referenced-assemblies). |
 | `--include-assembly-reference <pattern>` | A pattern of the framework assemblies to list too, for instance `System.Net.*`. Repeat it for several patterns. |
 | `--exclude-assembly-reference <pattern>` | A pattern of the assemblies not to list. Repeat it for several patterns. It wins over `--include-assembly-reference`. |
+| `--include-all-attributes` | Writes `[EditorBrowsable]`, the attributes of other namespaces than `System` and the assembly attributes. See [Attributes](03-ApiFiles.md#attributes). |
 | `--verify-no-change` | Checks that the files are up to date, without writing anything. |
 | `-?`, `-h`, `--help` | Shows the help. |
 | `--version` | Shows the version of the tool. |

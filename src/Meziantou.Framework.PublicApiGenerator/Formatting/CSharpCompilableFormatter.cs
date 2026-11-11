@@ -62,13 +62,16 @@ internal sealed class CSharpCompilableFormatter
         }
     }
 
-    public string FormatAssemblyAttributes(PublicApiAssembly assembly)
+    // By default, [RequiresPreviewFeatures] is the only assembly attribute that is written. Otherwise, the attributes are filtered as the other ones,
+    // except the ones that depend on the target framework, which is written in the header of the files.
+    public string FormatAssemblyAttributes(PublicApiAssembly assembly, bool includeAllAttributes)
     {
         var writer = new DeclarationWriter(_options.NewLine);
-        foreach (var attribute in assembly.Attributes)
+        var attributes = includeAllAttributes
+            ? GetAttributes(assembly.Attributes).Where(static attribute => !CSharpSyntaxFacts.ExcludedAssemblyAttributes.Contains(attribute.AttributeType.FullName))
+            : assembly.Attributes.Where(static attribute => string.Equals(attribute.AttributeType.FullName, CSharpSyntaxFacts.RequiresPreviewFeaturesAttributeFullName, StringComparison.Ordinal));
+        foreach (var attribute in attributes)
         {
-            if (!string.Equals(attribute.AttributeType.FullName, "System.Runtime.Versioning.RequiresPreviewFeaturesAttribute", StringComparison.Ordinal))
-                continue;
 
             writer.Punctuation("[");
             writer.Keyword("assembly");
@@ -194,13 +197,10 @@ internal sealed class CSharpCompilableFormatter
         writer.WriteLine();
         writer.Indentation++;
 
-        // The members of the C# 14 extension blocks are written in their blocks, and their implementation methods are not written: the compiler generates them.
-        // Instance methods are the exception: their implementation is a classic extension method, which declares the same API.
-        var extensionMembers = type.ExtensionBlocks
-            .SelectMany(block => block.Members.Where(member => !IsWrittenAsClassicExtensionMethod(member)).Select(member => (Block: block, Member: member)))
-            .ToList();
-        var extensionImplementations = extensionMembers
-            .SelectMany(item => GetAccessors(item.Member))
+        // The members of the C# 14 extension blocks are written in their blocks, and their implementation methods are not written: the compiler generates them
+        var extensionImplementations = type.ExtensionBlocks
+            .SelectMany(block => block.Members)
+            .SelectMany(GetAccessors)
             .Select(accessor => accessor.ExtensionImplementation)
             .OfType<PublicApiMethod>()
             .ToHashSet();
@@ -230,20 +230,19 @@ internal sealed class CSharpCompilableFormatter
             writer.WriteLine();
         }
 
-        var extensionBlockWriters = new List<(PublicApiExtensionBlock Block, PublicApiMember Member, DeclarationWriter Writer)>();
-        foreach (var (block, member) in extensionMembers)
+        // The compiler merges the blocks that declare the same receiver, so there is one block per receiver declaration, whatever the order of the blocks in source
+        var extensionBlockWriters = new List<(PublicApiExtensionBlock Block, DeclarationWriter Writer)>();
+        foreach (var block in type.ExtensionBlocks)
         {
             var blockWriter = writer.CreateWriter();
-            if (TryWriteExtensionBlock(blockWriter, type, block, member))
+            if (TryWriteExtensionBlock(blockWriter, type, block))
             {
-                extensionBlockWriters.Add((block, member, blockWriter));
+                extensionBlockWriters.Add((block, blockWriter));
             }
         }
 
-        // Each member is written in its own block, so the output does not depend on how the members are grouped in source
-        foreach (var (_, _, blockWriter) in extensionBlockWriters
+        foreach (var (_, blockWriter) in extensionBlockWriters
                      .OrderBy(item => PublicApiOrdering.GetTypeSortText(item.Block.Receiver.Type), StringComparer.Ordinal)
-                     .ThenBy(item => item.Member.SortKey, MemberSortKey.Comparer)
                      .ThenBy(item => item.Writer.GetText(), StringComparer.Ordinal))
         {
             writer.Write(blockWriter);
@@ -1050,7 +1049,8 @@ internal sealed class CSharpCompilableFormatter
             constructor.Parameters.IsEmpty &&
             initializer.IsEmpty &&
             !requiresUnsafe &&
-            !PublicApiSymbol.HasAttribute(constructor.Attributes, "System.Runtime.Versioning", "RequiresPreviewFeaturesAttribute"))
+            !PublicApiSymbol.HasAttribute(constructor.Attributes, "System.Runtime.Versioning", "RequiresPreviewFeaturesAttribute") &&
+            !(_options.WriteParameterlessConstructorsWithAttributes && GetAttributes(constructor.Attributes).Any()))
         {
             return false;
         }
@@ -1931,11 +1931,6 @@ internal sealed class CSharpCompilableFormatter
                type.IsSystemType("Object");
     }
 
-    private static bool IsWrittenAsClassicExtensionMethod(PublicApiMember member)
-    {
-        return member is PublicApiMethod { IsStatic: false, MethodKind: PublicApiMethodKind.Ordinary, ExtensionImplementation.IsExtensionMethod: true };
-    }
-
     private static IEnumerable<PublicApiMethod> GetAccessors(PublicApiMember member)
     {
         return member switch
@@ -1947,12 +1942,27 @@ internal sealed class CSharpCompilableFormatter
         };
     }
 
-    // extension<T>(Receiver receiver) where T : constraint { member }
-    private bool TryWriteExtensionBlock(DeclarationWriter writer, PublicApiType type, PublicApiExtensionBlock block, PublicApiMember member)
+    // extension<T>(Receiver receiver) where T : constraint { members }
+    private bool TryWriteExtensionBlock(DeclarationWriter writer, PublicApiType type, PublicApiExtensionBlock block)
     {
-        var memberWriter = writer.CreateWriter();
-        if (!TryWriteTypeMember(memberWriter, type, member))
+        var members = new List<(PublicApiMember Member, DeclarationWriter Writer)>();
+        foreach (var member in block.Members)
+        {
+            var memberWriter = writer.CreateWriter();
+            if (TryWriteTypeMember(memberWriter, type, member))
+            {
+                members.Add((member, memberWriter));
+            }
+        }
+
+        if (members.Count == 0)
             return false;
+
+        members.Sort(static (x, y) =>
+        {
+            var result = MemberSortKey.Compare(x.Member.SortKey, y.Member.SortKey);
+            return result != 0 ? result : string.CompareOrdinal(x.Writer.GetText(), y.Writer.GetText());
+        });
 
         writer.Keyword("extension");
         WriteGenericParameterNames(writer, block.GenericParameters);
@@ -1970,9 +1980,13 @@ internal sealed class CSharpCompilableFormatter
         writer.Punctuation("{");
         writer.WriteLine();
         writer.Indentation++;
-        writer.Write(memberWriter);
+        foreach (var (_, memberWriter) in members)
+        {
+            writer.Write(memberWriter);
+            writer.WriteLine();
+        }
+
         writer.Indentation--;
-        writer.WriteLine();
         writer.Punctuation("}");
         return true;
     }

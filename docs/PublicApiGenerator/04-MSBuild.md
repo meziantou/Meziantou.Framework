@@ -46,6 +46,7 @@ on the command line with `-p:<Name>=<Value>`:
 | `PublicApiGeneratorIncludeAssemblyReferences` | `false` | Lists the referenced assemblies that are not part of the framework in the header, so that adding or removing a dependency changes the API files. See [Referenced assemblies](03-ApiFiles.md#referenced-assemblies). |
 | `PublicApiGeneratorIncludedAssemblyReferences` | (empty) | Semicolon-separated patterns of the framework assemblies to list too, for instance `System.Net.*`. |
 | `PublicApiGeneratorExcludedAssemblyReferences` | (empty) | Semicolon-separated patterns of the assemblies not to list. They win over the included patterns. |
+| `PublicApiGeneratorIncludeAllAttributes` | `false` | Writes `[EditorBrowsable]`, the attributes of other namespaces than `System` and the assembly attributes. See [Attributes](03-ApiFiles.md#attributes). |
 | `PublicApiGeneratorGenerateOnBuild` | `true` | Writes the API files after each build. |
 | `PublicApiGeneratorVerifyNoChangeOnBuild` | `false` | Checks the API files instead of writing them. See [Check the API files in CI](#check-the-api-files-in-ci). |
 

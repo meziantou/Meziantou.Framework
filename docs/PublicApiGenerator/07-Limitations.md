@@ -14,12 +14,15 @@ description: What the public API generator does not do, and how to work around i
   members are not marked `new`. See [The `new` modifier](06-Library/03-ReadingTheApiModel.md#the-new-modifier).
 - **Some members cannot be written in C#.** Members with names that are not valid C# identifiers (such as `<Clone>$`),
   static constructors and compiler-generated types are not part of the API files or of the model.
-- **Extension blocks are not grouped as in the source code.** The API files write each member of a C# 14 extension block
-  in its own block, and instance extension methods as classic extension methods. See
+- **Extension blocks are grouped by receiver.** The compiler merges the C# 14 extension blocks that declare the same
+  receiver, so the API files cannot tell whether the members were declared in one block or in several. See
   [Extension members](03-ApiFiles.md#extension-members).
-- **Some attributes are not written to the API files**, such as `EditorBrowsableAttribute` or `NullableAttribute`, and
-  `[RequiresPreviewFeatures]` is the only assembly attribute written. The
-  [model](06-Library/03-ReadingTheApiModel.md#what-the-model-contains) has all of them.
+- **Some attributes are not written to the API files.** By default, `EditorBrowsableAttribute`, the attributes of other
+  namespaces than `System` and most assembly attributes are not written: turn on the option that writes them. The
+  attributes represented by the C# syntax (such as `NullableAttribute`), the attributes that describe the
+  implementation, and attributes whose type is nested or generic are never written. See
+  [Attributes](03-ApiFiles.md#attributes). The [model](06-Library/03-ReadingTheApiModel.md#what-the-model-contains)
+  has all of them.
 - **File names must be distinct ignoring case.** With a layout that writes several files, two namespaces or types whose
   names only differ by case make the generation fail. Use another layout.
 - **Each target framework needs a preprocessor symbol.** Merging several builds fails when two of them have the same

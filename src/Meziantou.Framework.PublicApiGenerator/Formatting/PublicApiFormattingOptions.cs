@@ -22,4 +22,7 @@ public sealed class PublicApiFormattingOptions
 
     /// <summary>Gets or sets the string used to separate lines. The default value is <see cref="Environment.NewLine"/>.</summary>
     public string NewLine { get; set; } = Environment.NewLine;
+
+    // Set by PublicApiOptions.IncludeAllAttributes: a parameterless constructor is written when it has attributes to write, so that they are not lost
+    internal bool WriteParameterlessConstructorsWithAttributes { get; set; }
 }

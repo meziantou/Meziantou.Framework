@@ -448,6 +448,11 @@ public sealed class PublicApiGeneratorTests
             {
                 [AttributeUsage(AttributeTargets.All)]
                 public sealed class NestedMarkerAttribute : Attribute;
+
+                public abstract class BaseMarkerAttribute : Attribute
+                {
+                    public int Order { get; set; }
+                }
             }
 
             [AttributeUsage(AttributeTargets.All)]
@@ -459,10 +464,17 @@ public sealed class PublicApiGeneratorTests
                 internal InternalConstructorAttribute(int value) { }
             }
 
+            [AttributeUsage(AttributeTargets.All)]
+            public sealed class ObjectValueAttribute(object? value) : Container.BaseMarkerAttribute
+            {
+                public object? Value { get; } = value;
+            }
+
             [EditorBrowsable(EditorBrowsableState.Never)]
             [PublicMarker("type", Order = 1)]
             [InternalMarker]
             [InternalConstructor(1)]
+            [ObjectValue(42, Order = 2)]
             public class Sample
             {
                 [EditorBrowsable(EditorBrowsableState.Never)]
@@ -496,6 +508,10 @@ public sealed class PublicApiGeneratorTests
             {
                 public static class Container
                 {
+                    public abstract class BaseMarkerAttribute : System.Attribute
+                    {
+                        public int Order { get => throw null; set { } }
+                    }
                     [System.AttributeUsage(System.AttributeTargets.All)]
                     public sealed class NestedMarkerAttribute : System.Attribute
                     {
@@ -513,6 +529,13 @@ public sealed class PublicApiGeneratorTests
                 }
 
                 [System.AttributeUsage(System.AttributeTargets.All)]
+                public sealed class ObjectValueAttribute : global::Demo.Container.BaseMarkerAttribute
+                {
+                    public object? Value { get => throw null; }
+                    public ObjectValueAttribute(object? value) { }
+                }
+
+                [System.AttributeUsage(System.AttributeTargets.All)]
                 public sealed class PublicMarkerAttribute : System.Attribute
                 {
                     public string Name { get => throw null; }
@@ -520,6 +543,7 @@ public sealed class PublicApiGeneratorTests
                     public PublicMarkerAttribute(string name) { }
                 }
 
+                [global::Demo.ObjectValue(42, Order = 2)]
                 [global::Demo.PublicMarker("type", Order = 1)]
                 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 public class Sample

@@ -63,7 +63,8 @@ internal static class PublicApiModelReader
 
     private static Func<PublicApiAttribute, bool> CreateAllAttributesFilter(PublicApiAssembly assembly)
     {
-        var visibleTypes = assembly.Types.ToDictionary(static type => type.FullName, StringComparer.Ordinal);
+        // Nested types are included, as the base type of an attribute can be nested
+        var visibleTypes = GetTypesAndNestedTypes(assembly.Types).ToDictionary(static type => type.FullName, StringComparer.Ordinal);
         return attribute =>
         {
             if (CSharpSyntaxFacts.IsDisplayedAttribute(attribute, PublicApiDeclarationStyle.Compilable))
@@ -78,6 +79,25 @@ internal static class PublicApiModelReader
         };
     }
 
+    private static IEnumerable<PublicApiType> GetTypesAndNestedTypes(IEnumerable<PublicApiType> types)
+    {
+        foreach (var type in types)
+        {
+            yield return type;
+            foreach (var nestedType in GetTypesAndNestedTypes(type.NestedTypes))
+            {
+                yield return nestedType;
+            }
+        }
+    }
+
+    // An argument of an object parameter has the type of its boxed value (e.g. int for [Marker(42)])
+    private static bool IsMatchingParameterType(PublicApiTypeReference parameterType, PublicApiTypeReference argumentType)
+    {
+        return parameterType is PublicApiNamedTypeReference namedType && namedType.IsSystemType("Object") ||
+               PublicApiTypeReferenceComparer.IgnoreNullability.Equals(parameterType, argumentType);
+    }
+
     // The model only contains the members visible outside the assembly. Members of base types declared in other assemblies are considered visible.
     private static bool IsUsableOutsideAssembly(PublicApiAttribute attribute, PublicApiType type, Dictionary<string, PublicApiType> visibleTypes)
     {
@@ -87,7 +107,7 @@ internal static class PublicApiModelReader
         var hasConstructor = type.Members.Any(member =>
             member is PublicApiMethod { MethodKind: PublicApiMethodKind.Constructor, IsStatic: false, Accessibility: PublicApiAccessibility.Public } constructor &&
             constructor.Parameters.Length == attribute.ConstructorArguments.Length &&
-            constructor.Parameters.Zip(attribute.ConstructorArguments).All(pair => PublicApiTypeReferenceComparer.IgnoreNullability.Equals(pair.First.Type, pair.Second.Type)));
+            constructor.Parameters.Zip(attribute.ConstructorArguments).All(pair => IsMatchingParameterType(pair.First.Type, pair.Second.Type)));
         if (!hasConstructor)
             return false;
 

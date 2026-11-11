@@ -116,7 +116,10 @@ namespace Meziantou.Framework.InlineSnapshotTesting
 
     public static class InlineSnapshotSettingsCloneExtensions
     {
-        public static Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings Clone(this Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings) => throw null;
+        extension(Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings settings)
+        {
+            public Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings Clone() => throw null;
+        }
     }
 
     public static class InlineSnapshotSettingsHumanReadableSerializerExtensions

@@ -7,6 +7,11 @@
 
 namespace Meziantou.Framework.JavaScriptEngine
 {
+    public interface IJsExportable
+    {
+        Meziantou.Framework.JavaScriptEngine.JsClass JsClass { get; }
+    }
+
     public sealed class JsArray : Meziantou.Framework.JavaScriptEngine.JsObject
     {
         public Meziantou.Framework.JavaScriptEngine.JsValue this[uint index] { get => throw null; set { } }
@@ -69,11 +74,34 @@ namespace Meziantou.Framework.JavaScriptEngine
     {
     }
 
+    public abstract class JsClass
+    {
+        public Meziantou.Framework.JavaScriptEngine.JsClass? BaseClass { get => throw null; }
+        protected virtual int ConstructorLength { get => throw null; }
+        public bool IsStatic { get => throw null; }
+        public string Name { get => throw null; }
+        public System.Type Type { get => throw null; }
+        protected JsClass(string name, System.Type type, Meziantou.Framework.JavaScriptEngine.JsClass? baseClass) { }
+        protected virtual object? CreateInstance(Meziantou.Framework.JavaScriptEngine.JsRealm realm, System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments) => throw null;
+        protected static void DefineAccessor(Meziantou.Framework.JavaScriptEngine.JsRealm realm, Meziantou.Framework.JavaScriptEngine.JsObject target, string name, Meziantou.Framework.JavaScriptEngine.JsNativeFunction getter, Meziantou.Framework.JavaScriptEngine.JsNativeFunction? setter) { }
+        protected abstract void DefineMembers(Meziantou.Framework.JavaScriptEngine.JsRealm realm, Meziantou.Framework.JavaScriptEngine.JsObject constructor, Meziantou.Framework.JavaScriptEngine.JsObject? prototype);
+        protected static void DefineMethod(Meziantou.Framework.JavaScriptEngine.JsRealm realm, Meziantou.Framework.JavaScriptEngine.JsObject target, string name, int length, Meziantou.Framework.JavaScriptEngine.JsNativeFunction function) { }
+        protected static T GetArgument<T>(Meziantou.Framework.JavaScriptEngine.JsRealm realm, System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments, int index) => throw null;
+        protected static T GetArgument<T>(Meziantou.Framework.JavaScriptEngine.JsRealm realm, System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments, int index, T defaultValue) => throw null;
+        protected static T GetRequiredArgument<T>(Meziantou.Framework.JavaScriptEngine.JsRealm realm, System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments, int index) where T : class => throw null;
+        protected static T GetThis<T>(Meziantou.Framework.JavaScriptEngine.JsValue thisValue) where T : class => throw null;
+    }
+
     public enum JsCompilationType
     {
         DirectEval = 0,
         IndirectEval = 1,
         Function = 2,
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Constructor, AllowMultiple = false, Inherited = false)]
+    public sealed class JsConstructorAttribute : System.Attribute
+    {
     }
 
     public ref struct JsContinuation
@@ -254,6 +282,12 @@ namespace Meziantou.Framework.JavaScriptEngine
         public void Dispose() { }
     }
 
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public sealed class JsExportAttribute : System.Attribute
+    {
+        public string? Name { get => throw null; set { } }
+    }
+
     public abstract class JsFunction : Meziantou.Framework.JavaScriptEngine.JsObject
     {
         public Meziantou.Framework.JavaScriptEngine.JsRealm Realm { get => throw null; }
@@ -307,6 +341,11 @@ namespace Meziantou.Framework.JavaScriptEngine
         protected virtual bool PreventExtensionsCore() => throw null;
         protected virtual bool SetCore(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, Meziantou.Framework.JavaScriptEngine.JsValue value, Meziantou.Framework.JavaScriptEngine.JsValue receiver) => throw null;
         protected virtual bool SetPrototypeOfCore(Meziantou.Framework.JavaScriptEngine.JsObject? prototype) => throw null;
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
+    public sealed class JsIgnoreAttribute : System.Attribute
+    {
     }
 
     public enum JsInternalSlot
@@ -389,6 +428,13 @@ namespace Meziantou.Framework.JavaScriptEngine
         Evaluating = 4,
         EvaluatingAsync = 5,
         Evaluated = 6,
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
+    public sealed class JsNameAttribute : System.Attribute
+    {
+        public string Name { get => throw null; }
+        public JsNameAttribute(string name) { }
     }
 
     public delegate Meziantou.Framework.JavaScriptEngine.JsValue JsNativeConstructor(Meziantou.Framework.JavaScriptEngine.JsValue thisValue, System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments, Meziantou.Framework.JavaScriptEngine.JsObject? newTarget);
@@ -563,6 +609,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsValue Execute(Meziantou.Framework.JavaScriptEngine.JsPreparedScript script, object? hostDefined = null, bool mutedErrors = false) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue FromDotNet(object? value) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue FromDotNet<T>(T value) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsObject GetClass(Meziantou.Framework.JavaScriptEngine.JsClass jsClass) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSourceTextModule ParseModule(string code, string? url = null, object? hostDefined = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSourceTextModule ParseModule(string code, string? url, object? hostDefined, int lineOffset, int columnOffset) => throw null;
         public void SetGlobalThis(Meziantou.Framework.JavaScriptEngine.JsObject thisValue) { }

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Numerics;
 
 namespace Meziantou.Framework.JavaScriptEngine.Tests;
 
@@ -906,6 +907,246 @@ public sealed class JsEngineEmbeddingTests
         #endregion
     }
 
+    [Fact]
+    public void Export_Class()
+    {
+        #region JavaScriptEngine_ExportClass
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            // The constructor of the JavaScript class of Counter, created once per realm
+            realm.GlobalObject.SetProperty("Counter", realm.GetClass(Counter.JsClass));
+        }
+
+        Assert.Equal(3, realm.Execute("const counter = new Counter(1); counter.increment(); counter.increment(); counter.value").AsNumber());
+        Assert.Equal("Counter(13)", realm.Execute("counter.value += 10; `${counter}`").AsString());
+        Assert.Equal(5, realm.Execute("Counter.parse('5').value").AsNumber());
+        Assert.True(realm.Execute("counter.reset === undefined").AsBoolean());
+
+        // The scripts can extend the class
+        Assert.Equal(15, realm.Execute("class Double extends Counter { increment() { return super.increment(2); } } new Double(13).increment()").AsNumber());
+
+        // An argument that cannot be converted is a TypeError of the script
+        Assert.Equal("TypeError: 1.5 is not an integer", realm.Execute("try { counter.increment(1.5); } catch (e) { `${e}` }").AsString());
+
+        // The .NET object of a JavaScript object, and the JavaScript object of a .NET object
+        var counter = engine.ToDotNet<Counter>(realm.Execute("counter"));
+        Assert.Equal(13, counter.Value);
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("sameCounter", realm.FromDotNet(counter));
+        }
+
+        Assert.True(realm.Execute("sameCounter === counter").AsBoolean());
+        #endregion
+
+        Assert.True(realm.Execute("counter.clone() !== counter && counter.clone() instanceof Counter && counter.clone().value === 13").AsBoolean());
+        Assert.Equal("function|Counter|0", realm.Execute("[typeof Counter, Counter.name, Counter.length].join('|')").AsString());
+        Assert.Equal("increment|0|get value|set value", realm.Execute("""
+            const descriptor = Object.getOwnPropertyDescriptor(Counter.prototype, 'value');
+            [Counter.prototype.increment.name, Counter.prototype.increment.length, descriptor.get.name, descriptor.set.name].join('|')
+            """).AsString());
+        Assert.Equal("clone,constructor,increment,incrementLaterAsync,toString,value", realm.Execute("Object.getOwnPropertyNames(Counter.prototype).sort().join()").AsString());
+        Assert.Equal("length,name,parse,prototype", realm.Execute("Object.getOwnPropertyNames(Counter).sort().join()").AsString());
+        Assert.Equal("false|true|true|false|0", realm.Execute("""
+            const method = Object.getOwnPropertyDescriptor(Counter.prototype, 'increment');
+            const prototype = Object.getOwnPropertyDescriptor(Counter, 'prototype');
+            [method.enumerable, method.writable, method.configurable, prototype.writable, Object.keys(counter).length].join('|')
+            """).AsString());
+        Assert.True(realm.Execute("Counter.prototype.constructor === Counter && Object.getPrototypeOf(counter) === Counter.prototype").AsBoolean());
+        Assert.Equal("TypeError: Class constructor Counter cannot be invoked without 'new'", realm.Execute("try { Counter(); } catch (e) { `${e}` }").AsString());
+        Assert.Equal("TypeError: Illegal invocation", realm.Execute("try { Counter.prototype.increment.call({}); } catch (e) { `${e}` }").AsString());
+        Assert.Equal("TypeError", realm.Execute("try { Object.getOwnPropertyDescriptor(Counter.prototype, 'value').get.call(1); } catch (e) { e.name }").AsString());
+        Assert.Equal(9, realm.Execute("const fromDefault = new Counter(); fromDefault.increment(); fromDefault.increment(undefined) + fromDefault.increment(5)").AsNumber());
+
+        // The class is created once per realm
+        using (engine.Enter())
+        {
+            Assert.Same(realm.GetClass(Counter.JsClass), realm.GetClass(Counter.JsClass));
+            Assert.NotSame(realm.GetClass(Counter.JsClass), engine.CreateRealm().GetClass(Counter.JsClass));
+            Assert.Equal("Counter", Counter.JsClass.Name);
+            Assert.Equal(typeof(Counter), Counter.JsClass.Type);
+            Assert.False(Counter.JsClass.IsStatic);
+            Assert.Null(Counter.JsClass.BaseClass);
+        }
+    }
+
+    [Fact]
+    public void Export_StaticClass()
+    {
+        #region JavaScriptEngine_ExportStaticClass
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            // The object of a static class
+            realm.GlobalObject.SetProperty("app", realm.GetClass(AppApi.JsClass));
+        }
+
+        Assert.Equal("Hello, Ada!", realm.Execute("app.greet('Ada')").AsString());
+        Assert.Equal("Hi, Ada!", realm.Execute("app.greet('Ada', 'Hi')").AsString());
+        Assert.Equal("1.0", realm.Execute("app.version").AsString());
+        Assert.Equal(5, realm.Execute("const point = app.createPoint(3, 4); Math.hypot(point.x, point.y)").AsNumber());
+
+        // A parameter whose type is a non-nullable reference type requires a value
+        Assert.Equal("TypeError: A value is required: undefined cannot be converted", realm.Execute("try { app.greet(); } catch (e) { `${e}` }").AsString());
+        #endregion
+
+        Assert.Equal("object|[object App]|2|1", realm.Execute("[typeof app, Object.prototype.toString.call(app), app.createPoint.length, app.greet.length].join('|')").AsString());
+        Assert.Equal("TypeError", realm.Execute("try { app.greet(null); } catch (e) { e.name }").AsString());
+        Assert.True(AppApi.JsClass.IsStatic);
+    }
+
+    [Fact]
+    public void Export_Inheritance()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("ExportedSquare", realm.GetClass(ExportedSquare.JsClass));
+            Assert.Same(realm.GetClass(ExportedShape.JsClass), realm.GetClass(ExportedSquare.JsClass).GetPrototype());
+            Assert.Same(ExportedShape.JsClass, ExportedSquare.JsClass.BaseClass);
+        }
+
+        // The methods of the base class call the overrides of the .NET class
+        Assert.Equal("9|square 9|square|3", realm.Execute("const square = new ExportedSquare(3); [square.area(), square.describe(), square.baseName(), square.side].join('|')").AsString());
+        Assert.Equal(16, realm.Execute("square.side = 4; square.area()").AsNumber());
+        Assert.True(realm.Execute("""
+            const Shape = Object.getPrototypeOf(ExportedSquare);
+            Shape.name === 'ExportedShape' && square instanceof Shape && square instanceof ExportedSquare
+              && Object.hasOwn(Shape.prototype, 'area') && !Object.hasOwn(ExportedSquare.prototype, 'area')
+              && Object.hasOwn(ExportedSquare.prototype, 'side') && typeof ExportedSquare.count === 'number'
+            """).AsBoolean());
+        Assert.Equal("base static", realm.Execute("ExportedSquare.baseStatic()").AsString());
+
+        // An abstract class cannot be created by the scripts
+        Assert.Equal("TypeError: Illegal constructor", realm.Execute("try { new Shape(); } catch (e) { `${e}` }").AsString());
+
+        // A .NET object is an object of the class of its runtime type
+        using (engine.Enter())
+        {
+            ExportedShape shape = new ExportedSquare(2);
+            realm.GlobalObject.SetProperty("shape", realm.FromDotNet(shape));
+        }
+
+        Assert.True(realm.Execute("shape instanceof ExportedSquare && shape.area() === 4").AsBoolean());
+    }
+
+    [Fact]
+    public void Export_Conversions()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("Conversions", realm.GetClass(ExportedConversions.JsClass));
+            realm.GlobalObject.SetProperty("Counter", realm.GetClass(Counter.JsClass));
+        }
+
+        realm.Execute("const c = new Conversions('ignored')");
+        Assert.True(realm.Execute("c.name === null && Conversions.length === 0").AsBoolean());
+        Assert.Equal("Number|null|String", realm.Execute("c.describe(1, null, 'x')").AsString());
+        Assert.Equal("Undefined|object|null", realm.Execute("c.describe(undefined, {}, undefined)").AsString());
+        Assert.Equal("1,null,2,NaN,1.5,10,1.25,-2,True,null,5", realm.Execute("c.numbers(1, undefined, 2)").AsString());
+        Assert.Equal("9007199254740991,1.5,255,1,2,3,4,5,False,j,7", realm.Execute("c.numbers(2 ** 53 - 1, 1.5, 255, 1, 2, 3, 4, 5, false, 'j', 7)").AsString());
+        Assert.Equal("RangeError", realm.Execute("try { c.numbers(1, 2, 256); } catch (e) { e.name }").AsString());
+        Assert.Equal("RangeError|RangeError", realm.Execute("[2 ** 96, -(2 ** 96)].map(value => { try { c.numbers(1, value, 1); } catch (e) { return e.name; } }).join('|')").AsString());
+        Assert.StartsWith("792281625142643", realm.Execute("c.numbers(1, 2 ** 96 - 2 ** 43, 1).split(',')[1]").AsString(), StringComparison.Ordinal);
+        Assert.Equal("0|null", realm.Execute("c.dates(new Date(0))").AsString());
+        Assert.Equal("0|2001", realm.Execute("c.dates(new Date(0), new Date(Date.UTC(2001, 0, 1)))").AsString());
+
+        // A Date outside the range of DateTimeOffset, and a value that cannot be converted to object, are errors of the script
+        Assert.Equal("RangeError|RangeError|TypeError", realm.Execute("""
+            [new Date(8.64e15), new Date(-8.64e15), 'not a date'].map(date => { try { c.dates(date); } catch (e) { return e.name; } }).join('|')
+            """).AsString());
+        Assert.Equal("TypeError|TypeError|TypeError", realm.Execute("""
+            const cycle = {};
+            cycle.self = cycle;
+            [() => 1, cycle, Symbol()].map(value => { try { c.describe(1, null, value); } catch (e) { return e.name; } }).join('|')
+            """).AsString());
+        Assert.Equal("bigint|9", realm.Execute("const big = c.square(3n); `${typeof big}|${big}`").AsString());
+        Assert.Equal("a2", realm.Execute("c.required('a', new Counter(2))").AsString());
+        Assert.Equal("TypeError", realm.Execute("try { c.required('a', {}); } catch (e) { e.name }").AsString());
+        Assert.Equal("TypeError", realm.Execute("try { c.required(undefined, new Counter()); } catch (e) { e.name }").AsString());
+        Assert.True(realm.Execute("const k = new Counter(); c.optionalCounter(null) === null && c.optionalCounter(k) === k").AsBoolean());
+        Assert.Equal("true|1,2,3|a,b|1|x", realm.Execute("[Array.isArray(c.array()), c.array().join(), c.list().join(), c.dictionary().a, c.char()].join('|')").AsString());
+        Assert.Equal("v|TypeError", realm.Execute("""
+            c.set('v');
+            const value = c.lastValue;
+            c.lastValue = 'ignored';
+            [value, (() => { 'use strict'; try { c.lastValue = 'w'; } catch (e) { return e.name; } })()].join('|')
+            """).AsString());
+        Assert.True(realm.Execute("c.name = 'n'; const named = c.name === 'n'; c.name = null; named && c.name === null").AsBoolean());
+        Assert.Equal("TypeError", realm.Execute("try { c.requiredName = null; } catch (e) { e.name }").AsString());
+        Assert.Equal("5|42|7|3|class", realm.Execute("c.field = 5; [c.field, c.readOnlyField, Conversions.constant, c.initOnly, c.class()].join('|')").AsString());
+
+        // A .NET exception of a member is not a JavaScript error
+        Assert.Throws<InvalidOperationException>(() => realm.Execute("try { c.throw(); } catch { }"));
+
+        var conversions = engine.ToDotNet<ExportedConversions>(realm.Execute("c"));
+        Assert.Equal(5, conversions.Field);
+    }
+
+    [Fact]
+    public async Task Export_Tasks()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("Conversions", realm.GetClass(ExportedConversions.JsClass));
+            realm.GlobalObject.SetProperty("Counter", realm.GetClass(Counter.JsClass));
+        }
+
+        var promise = realm.Execute("""
+            const c = new Conversions();
+            Promise.all([new Counter(1).incrementLaterAsync(), c.valueAsync(), c.completeAsync()]).then(values => values.join())
+            """);
+        var result = await engine.RunUntilSettledAsync(promise);
+        Assert.Equal("2,value,", result.AsString());
+    }
+
+    [Fact]
+    public void Export_Marshalling()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var counter = new Counter(4);
+        JsValue first;
+        using (engine.Enter())
+        {
+            // FromDotNet creates the class of an exported .NET object, and always returns the same JavaScript object for it
+            first = realm.FromDotNet(counter);
+            Assert.True(JsEngine.SameValue(first, realm.FromDotNet(counter)));
+            Assert.True(JsEngine.SameValue(first, realm.FromDotNet(new object[] { counter }).AsObject().GetProperty("0")));
+            Assert.False(JsEngine.SameValue(first, engine.CreateRealm().FromDotNet(counter)));
+
+            // The typed functions accept and return the exported classes
+            realm.GlobalObject.SetProperty("counter", first);
+            realm.GlobalObject.SetProperty("twice", realm.CreateFunction("twice", (Counter value) => value.Increment(value.Value)));
+            realm.GlobalObject.SetProperty("make", realm.CreateFunction("make", (int value) => new Counter(value)));
+            realm.GlobalObject.SetProperty("NotConstructible", realm.GetClass(ExportedNotConstructible.JsClass));
+            realm.GlobalObject.SetProperty("Nested", realm.GetClass(ExportedContainer.Nested.JsClass));
+        }
+
+        Assert.Equal(8, realm.Execute("twice(counter)").AsNumber());
+        Assert.Equal(8, counter.Value);
+        Assert.Equal("Counter(2)", realm.Execute("String(make(2))").AsString());
+        Assert.Same(counter, engine.ToDotNet(realm.Execute("counter")));
+        Assert.Same(counter, engine.ToDotNet<Counter>(first));
+        Assert.Null(engine.ToDotNet<Counter>(JsValue.Null));
+        Assert.Throws<JsException>(() => engine.ToDotNet<Counter>(realm.Execute("({})")));
+        Assert.Throws<JsException>(() => engine.ToDotNet(realm.Execute("new Date(-8.64e15)")));
+        Assert.Throws<JsException>(() => engine.ToDotNet<DateTimeOffset>(realm.Execute("new Date(8.64e15)")));
+        Assert.Equal("TypeError", realm.Execute("try { twice({}); } catch (e) { e.name }").AsString());
+
+        // A class without public constructor cannot be created by the scripts
+        Assert.Equal("TypeError: Illegal constructor", realm.Execute("try { new NotConstructible(); } catch (e) { `${e}` }").AsString());
+        Assert.Equal("hello|Nested|nested", realm.Execute("[NotConstructible.create().hello(), Nested.name, new Nested().hello()].join('|')").AsString());
+    }
+
     private sealed class FixedTimeProvider : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => new(2000, 1, 1, 0, 0, 0, TimeSpan.Zero);
@@ -918,5 +1159,169 @@ public sealed class JsEngineEmbeddingTests
     private sealed class NoModuleLoader : JsModuleLoader
     {
         protected internal override void LoadImportedModule(JsModuleLoadRequest request) => throw new NotSupportedException();
+    }
+}
+
+#region JavaScriptEngine_ExportClassDeclaration
+// The source generator creates the JavaScript class: the class must be partial
+[JsExport]
+public sealed partial class Counter
+{
+    // The constructor of the JavaScript class: "new Counter()" or "new Counter(5)"
+    public Counter(int start = 0) => Value = start;
+
+    // An accessor of the prototype, named in camelCase: "counter.value"
+    public int Value { get; set; }
+
+    // A method of the prototype: "counter.increment(2)"
+    public int Increment(int step = 1) => Value += step;
+
+    // An instance of an exported class is converted to its JavaScript object
+    public Counter Clone() => new(Value);
+
+    [JsName("toString")]
+    public override string ToString() => "Counter(" + Value.ToString(CultureInfo.InvariantCulture) + ")";
+
+    [JsIgnore]
+    public void Reset() => Value = 0;
+
+    // A static member is a property of the constructor: "Counter.parse('5')"
+    public static Counter Parse(string text) => new(int.Parse(text, CultureInfo.InvariantCulture));
+
+    // A task is a promise
+    public async Task<int> IncrementLaterAsync()
+    {
+        await Task.Yield();
+        return Increment();
+    }
+}
+#endregion
+
+#region JavaScriptEngine_ExportStaticClassDeclaration
+// A static class is a plain object, as Math
+[JsExport(Name = "App")]
+public static partial class AppApi
+{
+    public const string Version = "1.0";
+
+    public static string Greet(string name, string greeting = "Hello") => greeting + ", " + name + "!";
+
+    // A JsRealm parameter receives the realm of the function: it is not an argument of the script
+    public static JsObject CreatePoint(JsRealm realm, double x, double y)
+    {
+        var point = realm.CreateObject();
+        point.SetProperty("x", x);
+        point.SetProperty("y", y);
+        return point;
+    }
+}
+#endregion
+
+[JsExport]
+public abstract partial class ExportedShape
+{
+    public abstract double Area();
+
+    public virtual string Describe() => GetType().Name + " " + Area().ToString(CultureInfo.InvariantCulture);
+
+    public static int Count { get; set; }
+}
+
+public abstract class ExportedSquareBase : ExportedShape
+{
+    public double Side { get; set; }
+
+    public string BaseName() => "square base";
+
+    public static string BaseStatic() => "base static";
+}
+
+[JsExport]
+public sealed partial class ExportedSquare : ExportedSquareBase
+{
+    public ExportedSquare(double side) => Side = side;
+
+    public override double Area() => Side * Side;
+
+    public override string Describe() => "square " + Area().ToString(CultureInfo.InvariantCulture);
+
+    public new string BaseName() => "square";
+}
+
+[JsExport]
+internal sealed partial class ExportedConversions
+{
+    [JsConstructor]
+    public ExportedConversions()
+    {
+    }
+
+    public ExportedConversions(string name) => Name = name;
+
+    public string? Name { get; set; }
+
+    public string RequiredName { get; set; } = "";
+
+    public string? LastValue { get; private set; }
+
+    public int Field;
+
+    public readonly int ReadOnlyField = 42;
+
+    public const int Constant = 7;
+
+    public int InitOnly { get; init; } = 3;
+
+    public string Describe(JsValue value, JsObject? obj, object? any) => value.Kind + "|" + (obj is null ? "null" : "object") + "|" + (any?.GetType().Name ?? "null");
+
+    public string Numbers(long a, decimal? b, byte c, double d = double.NaN, float e = 1.5f, ulong f = 10, decimal g = 1.25m, short h = -2, bool i = true, string? j = null, int? k = 5)
+        => string.Join(',', a, b?.ToString(CultureInfo.InvariantCulture) ?? "null", c, d.ToString(CultureInfo.InvariantCulture), e.ToString(CultureInfo.InvariantCulture), f, g.ToString(CultureInfo.InvariantCulture), h, i, j ?? "null", k);
+
+    public string Dates(DateTimeOffset date, DateTime? other) => date.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture) + "|" + (other?.Year.ToString(CultureInfo.InvariantCulture) ?? "null");
+
+    public BigInteger Square(BigInteger value) => value * value;
+
+    public string Required(string text, Counter counter) => text + counter.Value.ToString(CultureInfo.InvariantCulture);
+
+    public Counter? OptionalCounter(Counter? counter) => counter;
+
+    public int[] Array() => [1, 2, 3];
+
+    public List<string> List() => ["a", "b"];
+
+    public Dictionary<string, int> Dictionary() => new(StringComparer.Ordinal) { ["a"] = 1 };
+
+    public char Char() => 'x';
+
+    public void Set(string value) => LastValue = value;
+
+    public Task CompleteAsync() => Task.CompletedTask;
+
+    public ValueTask<string> ValueAsync() => ValueTask.FromResult("value");
+
+    public void Throw() => throw new InvalidOperationException("boom");
+
+    [JsName("class")]
+    public string @Class() => "class";
+}
+
+[JsExport]
+public sealed partial class ExportedNotConstructible
+{
+    private ExportedNotConstructible()
+    {
+    }
+
+    public static ExportedNotConstructible Create() => new();
+
+    public string Hello() => "hello";
+}
+
+public static partial class ExportedContainer
+{
+    [JsExport]
+    internal sealed partial class Nested
+    {
+        public string Hello() => "nested";
     }
 }

@@ -17,6 +17,7 @@ public sealed partial class JsRealm
     /// <item><description>a boolean, a string and a char are a boolean and a string; the numeric types are a number (a <see cref="long"/> or a <see cref="decimal"/> may lose precision), a <see cref="BigInteger"/> is a BigInt;</description></item>
     /// <item><description>a <see cref="DateTimeOffset"/> and a <see cref="DateTime"/> are a Date (a <see cref="DateTime"/> whose kind is unspecified is a UTC date);</description></item>
     /// <item><description>a <see cref="JsonElement"/> and a <see cref="JsonNode"/> are the value that <c>JSON.parse</c> would create;</description></item>
+    /// <item><description>an instance of a class marked with <see cref="JsExportAttribute"/> is an object of its JavaScript class (always the same object for the same instance, see <see cref="GetClass(JsClass)"/>);</description></item>
     /// <item><description>a dictionary whose keys are strings (<see cref="IDictionary{TKey, TValue}"/>, <see cref="IReadOnlyDictionary{TKey, TValue}"/> or <see cref="IDictionary"/>) is an ordinary object;</description></item>
     /// <item><description>any other <see cref="IEnumerable"/> is an array.</description></item>
     /// </list>
@@ -191,6 +192,8 @@ public sealed partial class JsRealm
                     return ConvertJson(element);
                 case JsonNode node:
                     return ConvertJson(node);
+                case IJsExportable exportable:
+                    return realm.GetExportedObject(exportable);
                 case Delegate:
                     throw new NotSupportedException("A delegate cannot be converted to a JavaScript value: use JsRealm.CreateFunction");
             }
@@ -311,12 +314,13 @@ public sealed partial class JsEngine
     /// <summary>
     /// Converts a JavaScript value to a .NET value: undefined and null are null; a boolean, a number, a string and a BigInt
     /// are a <see cref="bool"/>, a <see cref="double"/>, a <see cref="string"/> and a <see cref="BigInteger"/>; a Date is a
-    /// <see cref="DateTimeOffset"/> (null for an invalid date); an array is a <see cref="List{T}"/> of the converted
-    /// elements; another object is a <see cref="Dictionary{TKey, TValue}"/> of its own enumerable properties whose key is a
+    /// <see cref="DateTimeOffset"/> (null for an invalid date); an object of a class marked with <see cref="JsExportAttribute"/>
+    /// is its .NET object; an array is a <see cref="List{T}"/> of the converted elements; another object is a <see cref="Dictionary{TKey, TValue}"/> of its own enumerable properties whose key is a
     /// string (read with [[Get]], so the getters run).
     /// </summary>
     /// <exception cref="NotSupportedException">The value is, or contains, a symbol or a function.</exception>
     /// <exception cref="InvalidOperationException">The value contains a cycle.</exception>
+    /// <exception cref="JsException">The value contains a Date outside the range of <see cref="DateTimeOffset"/> (a RangeError), or a getter threw an exception.</exception>
     public object? ToDotNet(JsValue value)
     {
         using var scope = Enter();
@@ -329,8 +333,9 @@ public sealed partial class JsEngine
     /// <item><description><see cref="JsValue"/>: the value; <see cref="JsObject"/>: the object, or null for undefined and null;</description></item>
     /// <item><description><see cref="string"/>: ToString (null for undefined and null); <see cref="bool"/>: ToBoolean; <see cref="BigInteger"/>: ToBigInt;</description></item>
     /// <item><description><see cref="double"/> and <see cref="float"/>: ToNumber; the integer types: ToNumber, which must be an integer in the range of the type;</description></item>
-    /// <item><description><see cref="DateTimeOffset"/> and <see cref="DateTime"/> (UTC): a valid Date;</description></item>
+    /// <item><description><see cref="DateTimeOffset"/> and <see cref="DateTime"/> (UTC): a valid Date in the range of <see cref="DateTimeOffset"/>;</description></item>
     /// <item><description><see cref="object"/>: <see cref="ToDotNet(JsValue)"/>;</description></item>
+    /// <item><description>a class marked with <see cref="JsExportAttribute"/>: the .NET object of an object of its JavaScript class (or of a derived class), null for undefined and null;</description></item>
     /// <item><description>a nullable value type: null for undefined and null, the conversion of the underlying type otherwise.</description></item>
     /// </list>
     /// undefined and null cannot be converted to a value type that is not nullable, except <see cref="bool"/>.
@@ -369,7 +374,10 @@ public sealed partial class JsEngine
             throw new NotSupportedException("A function cannot be converted to a .NET value");
 
         if (obj is JsDateObject date)
-            return double.IsNaN(date.DateValue) ? null : DateTimeOffset.FromUnixTimeMilliseconds((long)date.DateValue);
+            return double.IsNaN(date.DateValue) ? null : DotNetConversions.ToDateTimeOffset(date.DateValue);
+
+        if (obj is JsHostObject { Target: IJsExportable exportable })
+            return exportable;
 
         visiting ??= new HashSet<JsObject>(ReferenceEqualityComparer.Instance);
         if (!visiting.Add(obj))
@@ -424,7 +432,7 @@ internal static class DotNetConversions
         return type == typeof(JsValue) || type == typeof(JsObject) || type == typeof(object) || type == typeof(string) || type == typeof(bool)
             || type == typeof(double) || type == typeof(float) || type == typeof(int) || type == typeof(long) || type == typeof(short) || type == typeof(byte)
             || type == typeof(sbyte) || type == typeof(ushort) || type == typeof(uint) || type == typeof(ulong) || type == typeof(decimal)
-            || type == typeof(BigInteger) || type == typeof(DateTimeOffset) || type == typeof(DateTime);
+            || type == typeof(BigInteger) || type == typeof(DateTimeOffset) || type == typeof(DateTime) || typeof(IJsExportable).IsAssignableFrom(type);
     }
 
     public static T Convert<T>(JsEngine engine, JsValue value)
@@ -437,6 +445,8 @@ internal static class DotNetConversions
             return value.IsNullOrUndefined ? default! : (T)(object)JsOperations.ToString(value);
         if (typeof(T) == typeof(JsObject))
             return value.IsNullOrUndefined ? default! : value.Cell is JsObject obj ? (T)(object)obj : ThrowHelper.ThrowTypeError<T>(JsOperations.DescribeForError(value) + " is not an object");
+        if (typeof(IJsExportable).IsAssignableFrom(typeof(T)))
+            return value.IsNullOrUndefined ? default! : value.Cell is JsHostObject { Target: T target } ? target : ThrowHelper.ThrowTypeError<T>(JsOperations.DescribeForError(value) + " is not a " + typeof(T).Name);
         if (typeof(T) == typeof(bool))
             return (T)(object)JsOperations.ToBoolean(value);
 
@@ -484,7 +494,8 @@ internal static class DotNetConversions
         if (type == typeof(decimal))
         {
             var number = ToNumber(value);
-            return double.IsFinite(number) && Math.Abs(number) <= (double)decimal.MaxValue ? (decimal)number : ThrowHelper.ThrowRangeError<decimal>("The number cannot be converted to a decimal");
+            // (double)decimal.MaxValue rounds up to 2^96, which is out of range
+            return double.IsFinite(number) && Math.Abs(number) < (double)decimal.MaxValue ? (decimal)number : ThrowHelper.ThrowRangeError<decimal>("The number cannot be converted to a decimal");
         }
 
         if (type == typeof(BigInteger))
@@ -523,10 +534,22 @@ internal static class DotNetConversions
         return number;
     }
 
+    // A Date spans the years -271821 to 275760, a DateTimeOffset the years 1 to 9999
+    internal static DateTimeOffset ToDateTimeOffset(double timeValue)
+    {
+        if (timeValue < MinDateTimeOffsetMilliseconds || timeValue > MaxDateTimeOffsetMilliseconds)
+            return ThrowHelper.ThrowRangeError<DateTimeOffset>("The date is outside the range of DateTimeOffset");
+
+        return DateTimeOffset.FromUnixTimeMilliseconds((long)timeValue);
+    }
+
+    private const double MinDateTimeOffsetMilliseconds = -62135596800000; // DateTimeOffset.MinValue
+    private const double MaxDateTimeOffsetMilliseconds = 253402300799999; // DateTimeOffset.MaxValue
+
     private static DateTimeOffset ToDate(JsValue value)
     {
         if (value.Cell is JsDateObject date && !double.IsNaN(date.DateValue))
-            return DateTimeOffset.FromUnixTimeMilliseconds((long)date.DateValue);
+            return ToDateTimeOffset(date.DateValue);
 
         return ThrowHelper.ThrowTypeError<DateTimeOffset>(JsOperations.DescribeForError(value) + " is not a valid Date");
     }

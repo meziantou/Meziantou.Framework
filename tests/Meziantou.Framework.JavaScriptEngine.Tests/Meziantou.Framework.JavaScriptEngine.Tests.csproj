@@ -21,4 +21,9 @@
     <!-- The classes of the documentation site (docs/JavaScriptEngine), run by JsEngineTests.cs -->
     <ProjectReference Include="../../samples/Meziantou.Framework.JavaScriptEngine.Samples/Meziantou.Framework.JavaScriptEngine.Samples.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Runs the generator of [JsExport] on the tests, and lets JsExportGeneratorTests run it on test compilations -->
+    <ProjectReference Include="../../src/Meziantou.Framework.JavaScriptEngine.SourceGenerator/Meziantou.Framework.JavaScriptEngine.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" SetTargetFramework="TargetFramework=netstandard2.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+  </ItemGroup>
 </Project>

@@ -13,8 +13,9 @@ because it uses no reflection.
   [Running code](04-RunningCode/01-Overview.md).
 - **Exchange values with .NET**: read the results of scripts, give them objects, arrays, dates and binary data, and call
   JavaScript functions from .NET. See [Exchanging values](05-Interop/01-Overview.md).
-- **Expose .NET functions and objects** to the scripts, from a single function to a class with a prototype. See
-  [Functions](05-Interop/04-Functions.md) and [Exposing .NET objects](05-Interop/05-ExposingDotNetObjects.md).
+- **Expose .NET functions and objects** to the scripts, from a single function to a class whose JavaScript binding a
+  source generator writes (`[JsExport]`). See [Functions](05-Interop/04-Functions.md) and
+  [Exposing .NET objects](05-Interop/05-ExposingDotNetObjects.md).
 - **Run asynchronous code**: promises and `async` functions run from a job queue that your application drives, and a
   promise can wait for a .NET `Task`. See [Async code and promises](06-AsyncAndPromises.md).
 - **Run untrusted code** with a timeout, a statement limit, a memory limit, a recursion limit and cancellation. See

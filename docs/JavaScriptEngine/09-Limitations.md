@@ -32,11 +32,13 @@ them with this engine.
 
 ## .NET interop
 
-- No automatic binding: .NET objects, methods, properties, events and enumerables are not exposed by reflection. You
-  create the JavaScript objects and functions that represent them. See
-  [Exposing .NET objects](05-Interop/05-ExposingDotNetObjects.md).
+- No binding by reflection: a .NET class is exposed when you mark it with `[JsExport]`, whose source generator writes
+  its JavaScript class at build time, or when you create the JavaScript objects and functions that represent it. The
+  generated classes do not expose the events, the indexers, the generic methods and the overloads (one JavaScript name
+  per member), and require a `partial` class that is not generic: expose the other classes, such as the classes of
+  other libraries, by hand. See [Exposing .NET objects](05-Interop/05-ExposingDotNetObjects.md).
 - The conversions of [Converting .NET values](05-Interop/08-DotNetValues.md) cover the primitives, the dates, the
-  collections, the dictionaries and JSON, not the other classes.
+  collections, the dictionaries, JSON and the classes marked with `[JsExport]`, not the other classes.
 - The promises of tasks settle while the host runs the jobs of the engine. See
   [Async code and promises](06-AsyncAndPromises.md).
 

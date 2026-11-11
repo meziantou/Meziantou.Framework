@@ -14,6 +14,11 @@
     <ProjectReference Include="../Meziantou.Framework.Unicode.Dictionaries/Meziantou.Framework.Unicode.Dictionaries.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The source generator of [JsExport], shipped in the package -->
+    <ProjectReference Include="../Meziantou.Framework.JavaScriptEngine.SourceGenerator/Meziantou.Framework.JavaScriptEngine.SourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" />
+    <None Include="$(OutputPath)/../../Meziantou.Framework.JavaScriptEngine.SourceGenerator/$(Configuration.ToLowerInvariant())_netstandard2.0/Meziantou.Framework.JavaScriptEngine.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+  <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.JavaScriptEngine.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.JavaScriptEngine.Test262" />
     <InternalsVisibleTo Include="Meziantou.Framework.JavaScriptEngine.Benchmarks" />

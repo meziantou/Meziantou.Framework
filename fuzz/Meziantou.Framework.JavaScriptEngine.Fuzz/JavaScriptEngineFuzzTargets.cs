@@ -75,6 +75,7 @@ public static partial class JavaScriptEngineFuzzTargets
         new("javascript-debugger", Debugger) { Seeds = GetDebuggerSeeds, Dictionary = Tokens },
         new("javascript-source-map", SourceMap) { Seeds = GetSourceMapSeeds, Dictionary = SourceMapTokens },
         new("javascript-source-map-mappings", SourceMapMappings) { Seeds = GetSourceMapMappingsSeeds },
+        new("javascript-binding", Binding) { Seeds = GetBindingSeeds, Dictionary = BindingTokens },
     ];
 
     private static void Parse(ReadOnlySpan<byte> data)

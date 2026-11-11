@@ -640,8 +640,8 @@ public sealed class SvgSceneRendererTests
         // The contents of two patterns that paint with each other are written once each, and both uses refer to them
         var first = new PatternPaint(new SceneBounds(0, 0, 4, 4));
         var second = new PatternPaint(new SceneBounds(0, 0, 4, 4));
-        first.Content.Add(new SceneRectangle(0, 0, 2, 2) { Fill = second });
-        second.Content.Add(new SceneRectangle(0, 0, 2, 2) { Fill = first });
+        first.Content.Add(new SceneRectangle(0, 0, 2, 2) { Fill = second, Id = "first-square" });
+        second.Content.Add(new SceneRectangle(0, 0, 2, 2) { Fill = first, Id = "second-square" });
         var mutual = new Scene(10, 10, "sans-serif");
         mutual.Root.Add(new SceneUse(first.Content));
         mutual.Root.Add(new SceneUse(second.Content));
@@ -650,6 +650,8 @@ public sealed class SvgSceneRendererTests
         Assert.Contains("<use href=\"#scene-element1\"/>", mutualSvg, StringComparison.Ordinal);
         Assert.Equal(1, CountOccurrences(mutualSvg, "id=\"scene-element0\""));
         Assert.Equal(1, CountOccurrences(mutualSvg, "id=\"scene-element1\""));
+        Assert.Equal(1, CountOccurrences(mutualSvg, "id=\"first-square\""));
+        Assert.Equal(1, CountOccurrences(mutualSvg, "id=\"second-square\""));
 
         // A use that refers to a use in its own content refers to an empty group
         var cycle = new SceneGroup();

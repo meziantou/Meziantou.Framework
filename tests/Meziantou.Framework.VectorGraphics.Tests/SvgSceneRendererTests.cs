@@ -41,6 +41,79 @@ public sealed class SvgSceneRendererTests
     }
 
     [Fact]
+    public void PathShapes()
+    {
+        #region VectorGraphics_PathShapes
+        // A triangle, an ellipse and a rounded rectangle in a single path
+        var path = new PathBuilder()
+            .AddPolygon((0, 0), (10, 0), (5, 8))
+            .AddEllipse(centerX: 30, centerY: 5, radiusX: 10, radiusY: 5)
+            .AddRoundedRectangle(x: 50, y: 0, width: 20, height: 10, radius: 2)
+            .Build();
+
+        // Paths can be moved, and combined into a new path
+        var moved = path.Translate(offsetX: 0, offsetY: 20);
+        var both = new PathBuilder().Append(path).Append(moved).Build();
+        Assert.HasCount(2 * path.Commands.Count, both.Commands);
+        #endregion
+
+        Assert.Equal(
+            "M0,0 L10,0 L5,8 Z M40,5 C40,7.76 35.52,10 30,10 C24.48,10 20,7.76 20,5 C20,2.24 24.48,0 30,0 C35.52,0 40,2.24 40,5 Z " +
+            "M52,0 L68,0 C69.1,0 70,0.9 70,2 L70,8 C70,9.1 69.1,10 68,10 L52,10 C50.9,10 50,9.1 50,8 L50,2 C50,0.9 50.9,0 52,0 Z",
+            path.ToString());
+        Assert.Equal(
+            "M0,20 L10,20 L5,28 Z M40,25 C40,27.76 35.52,30 30,30 C24.48,30 20,27.76 20,25 C20,22.24 24.48,20 30,20 C35.52,20 40,22.24 40,25 Z " +
+            "M52,20 L68,20 C69.1,20 70,20.9 70,22 L70,28 C70,29.1 69.1,30 68,30 L52,30 C50.9,30 50,29.1 50,28 L50,22 C50,20.9 50.9,20 52,20 Z",
+            moved.ToString());
+    }
+
+    [Fact]
+    public void PathShapesEdgeCases()
+    {
+        Assert.True(new PathBuilder().AddPolygon().IsEmpty);
+        Assert.Equal("M1,2 Z", new PathBuilder().AddPolygon((1, 2)).Build().ToString());
+
+        // The radius is limited to half the smaller side, and no radius gives a plain rectangle
+        Assert.Equal("M0,0 L10,0 L10,4 L0,4 Z", new PathBuilder().AddRoundedRectangle(0, 0, 10, 4, 0).Build().ToString());
+        Assert.Equal("M0,0 L10,0 L10,4 L0,4 Z", new PathBuilder().AddRoundedRectangle(0, 0, 10, 4, -3).Build().ToString());
+        Assert.Equal(new PathBuilder().AddRoundedRectangle(0, 0, 10, 4, 2).Build().ToString(), new PathBuilder().AddRoundedRectangle(0, 0, 10, 4, 50).Build().ToString());
+
+        // Translating keeps the radii and the rotation of the arcs, and Close has no coordinates
+        var arc = new PathBuilder().MoveTo(0, 0).ArcTo(5, 6, 30, largeArc: true, sweep: false, 10, 0).QuadraticTo(1, 2, 3, 4).Close().Build();
+        Assert.Equal("M1,2 A5,6 30 1,0 11,2 Q2,4 4,6 Z", arc.Translate(1, 2).ToString());
+        Assert.Equal(new PathCommand(PathCommandKind.Close, 0, 0), arc.Translate(1, 2).Commands[^1]);
+
+        Assert.Throws<ArgumentNullException>("path", () => new PathBuilder().Append(null!));
+    }
+
+    [Fact]
+    public void Transforms()
+    {
+        #region VectorGraphics_Transforms
+        // Scale by 2 around the origin, then move by (10, 20)
+        var transform = SceneTransform.Scale(2, 2).Then(SceneTransform.Translate(10, 20));
+        Assert.Equal((16.0, 28.0), transform.Apply(3, 4));
+        Assert.Equal(new SceneTransform(2, 0, 0, 2, 10, 20), transform);
+        #endregion
+
+        // A scale around a point keeps the point in place
+        Assert.Equal((5.0, 5.0), SceneTransform.Scale(3, 4, 5, 5).Apply(5, 5));
+
+        // Then applies the transforms in order
+        var rotate = SceneTransform.Rotate(90);
+        var translate = SceneTransform.Translate(1, 0);
+        var (x, y) = rotate.Then(translate).Apply(1, 0);
+        Assert.Equal(1.0, x, 1e-12);
+        Assert.Equal(1.0, y, 1e-12);
+        (x, y) = translate.Then(rotate).Apply(1, 0);
+        Assert.Equal(0.0, x, 1e-12);
+        Assert.Equal(2.0, y, 1e-12);
+
+        Assert.Equal(rotate, rotate.Then(SceneTransform.Identity));
+        Assert.Equal(rotate, SceneTransform.Identity.Then(rotate));
+    }
+
+    [Fact]
     public void ItalicTextAndHyperlinks()
     {
         var scene = new Scene(100, 50, "sans-serif");

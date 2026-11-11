@@ -29,24 +29,24 @@ internal static class EdgeMarkers
         // The axes of the marker: u goes back along the edge, v across it
         var dx = (tip.X - from.X) / length;
         var dy = (tip.Y - from.Y) / length;
-        LayoutPoint P(double u, double v) => new(tip.X - (dx * u) - (dy * v), tip.Y - (dy * u) + (dx * v));
+        (double X, double Y) P(double u, double v) => (tip.X - (dx * u) - (dy * v), tip.Y - (dy * u) + (dx * v));
 
         switch (marker)
         {
             case EdgeMarker.Arrow:
-                Fill(Polygon(P(0, 0), P(8, -4), P(8, 4)), color);
+                Fill(Geometry.Polygon(P(0, 0), P(8, -4), P(8, 4)), color);
                 break;
             case EdgeMarker.OpenArrow:
                 Stroke(new PathBuilder().MoveTo(P(9, -5).X, P(9, -5).Y).LineTo(tip.X, tip.Y).LineTo(P(9, 5).X, P(9, 5).Y).Build());
                 break;
             case EdgeMarker.OpenTriangle:
-                FillAndStroke(Polygon(P(0, 0), P(17, -6), P(17, 6)), background);
+                FillAndStroke(Geometry.Polygon(P(0, 0), P(17, -6), P(17, 6)), background);
                 break;
             case EdgeMarker.FilledDiamond:
-                FillAndStroke(Polygon(P(0, 0), P(8.5, -6), P(17, 0), P(8.5, 6)), color);
+                FillAndStroke(Geometry.Polygon(P(0, 0), P(8.5, -6), P(17, 0), P(8.5, 6)), color);
                 break;
             case EdgeMarker.OpenDiamond:
-                FillAndStroke(Polygon(P(0, 0), P(8.5, -6), P(17, 0), P(8.5, 6)), background);
+                FillAndStroke(Geometry.Polygon(P(0, 0), P(8.5, -6), P(17, 0), P(8.5, 6)), background);
                 break;
             case EdgeMarker.Circle:
                 Fill(Circle(P(4.5, 0), 4.5), color);
@@ -95,18 +95,7 @@ internal static class EdgeMarkers
         void Stroke(PathData path, double width = 0) => group.Add(new ScenePath(path) { Stroke = color, StrokeWidth = width > 0 ? width : strokeWidth, CssClass = "marker" });
     }
 
-    private static PathData Polygon(params ReadOnlySpan<LayoutPoint> points)
-    {
-        var builder = new PathBuilder().MoveTo(points[0].X, points[0].Y);
-        for (var i = 1; i < points.Length; i++)
-        {
-            builder.LineTo(points[i].X, points[i].Y);
-        }
+    private static PathData Line((double X, double Y) from, (double X, double Y) to) => new PathBuilder().MoveTo(from.X, from.Y).LineTo(to.X, to.Y).Build();
 
-        return builder.Close().Build();
-    }
-
-    private static PathData Line(LayoutPoint from, LayoutPoint to) => new PathBuilder().MoveTo(from.X, from.Y).LineTo(to.X, to.Y).Build();
-
-    private static PathData Circle(LayoutPoint center, double radius) => Geometry.Ellipse(center.X, center.Y, radius, radius);
+    private static PathData Circle((double X, double Y) center, double radius) => Geometry.Ellipse(center.X, center.Y, radius, radius);
 }

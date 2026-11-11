@@ -9,9 +9,11 @@ namespace Meziantou.Framework.VectorGraphics.Fuzz;
 /// <summary>
 /// A color parses back from its notation. Wrapping a text keeps its characters in order, and gives lines that fit the
 /// width unless they hold a single grapheme cluster. The SVG of any scene is a well-formed XML document whose root is
-/// <c>svg</c>, whatever the texts, tooltips, hyperlinks and data attributes hold, and the output is deterministic. A
-/// font file loads or throws a <see cref="Fonts.FontException"/>; the fonts of a scene resolve every family to one of
-/// their faces, measure a text as the sum of its runs, and give a well-formed SVG whatever the families hold.
+/// <c>svg</c>, whatever the texts, tooltips, hyperlinks and data attributes hold, and the output is deterministic. The
+/// shapes of <see cref="PathBuilder"/> have the expected commands and stay in their bounds, and moving a path or
+/// combining transforms agrees with moving or transforming the points. A font file loads or throws a
+/// <see cref="Fonts.FontException"/>; the fonts of a scene resolve every family to one of their faces, measure a text
+/// as the sum of its runs, and give a well-formed SVG whatever the families hold.
 /// </summary>
 public static partial class VectorGraphicsFuzzTargets
 {
@@ -25,6 +27,8 @@ public static partial class VectorGraphicsFuzzTargets
 
     private static readonly string[] SvgTokens = ["<", ">", "&", "\"", "'", "\0", "\u0001", "\uFFFE", "\uFFFF", "\uD800", "\uDC00", "\U0001F600", "]]>", "-->", "javascript:", "https://", "a-b", "x"];
 
+    private static readonly double[] PathValues = [0, 1, -1, 0.5, 2.5, 10, -10, 100, -0.0, 1e-9, 1e6, -1e6, 3.3, double.NaN, double.PositiveInfinity, double.NegativeInfinity];
+
     private static readonly double[] Widths = [0, 1, 5, 10, 20, 40, 60, 100, 200, 1000, double.PositiveInfinity, double.NaN, -1, 0.5, 3, 15];
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
@@ -34,6 +38,7 @@ public static partial class VectorGraphicsFuzzTargets
         new("vectorgraphics-svg", SvgTarget) { Seeds = GetSvgSeeds, Dictionary = SvgTokens },
         new("vectorgraphics-fontface", FontFaceTarget) { Seeds = GetFontFaceSeeds, Dictionary = FontFileTokens },
         new("vectorgraphics-fonts", FontsTarget) { Seeds = GetFontsSeeds, Dictionary = FontFamilyTokens },
+        new("vectorgraphics-path", PathTarget) { Seeds = GetPathSeeds },
     ];
 
     /// <summary>
@@ -291,6 +296,142 @@ public static partial class VectorGraphicsFuzzTargets
         FuzzAssert.Equal("svg", document.DocumentElement?.LocalName, "The root of the SVG is not svg");
     }
 
+    /// <summary>
+    /// The input is a list of shapes: a byte selects the shape (polygon, ellipse, rounded rectangle) and the next bytes
+    /// pick its numbers from <see cref="PathValues"/>; the last bytes give an offset and a transform. Each shape adds the
+    /// expected commands and, when its numbers are finite, stays in its bounds. <see cref="PathData.Translate"/> moves
+    /// every point and keeps the arcs, <see cref="PathBuilder.Append"/> concatenates the commands, and
+    /// <see cref="SceneTransform.Then"/> agrees with applying the two transforms one after the other.
+    /// </summary>
+    private static void PathTarget(ReadOnlySpan<byte> data)
+    {
+        var builder = new PathBuilder();
+        var count = 0;
+        while (data.Length > 8 && count++ < 50)
+        {
+            var kind = FuzzInput.ReadByte(ref data);
+            var before = builder.Build().Commands.Count;
+            switch (kind % 3)
+            {
+                case 0:
+                    {
+                        var points = new (double X, double Y)[(kind >> 2) % 8];
+                        for (var i = 0; i < points.Length; i++)
+                        {
+                            points[i] = (ReadPathValue(ref data), ReadPathValue(ref data));
+                        }
+
+                        builder.AddPolygon(points);
+                        var added = builder.Build().Commands.Skip(before).ToArray();
+                        FuzzAssert.Equal(points.Length is 0 ? 0 : points.Length + 1, added.Length, "AddPolygon added a wrong number of commands");
+                        for (var i = 0; i < points.Length; i++)
+                        {
+                            FuzzAssert.Equal(new PathCommand(i is 0 ? PathCommandKind.MoveTo : PathCommandKind.LineTo, points[i].X, points[i].Y), added[i], $"The command {i} of the polygon is wrong");
+                        }
+
+                        if (points.Length > 0)
+                        {
+                            FuzzAssert.Equal(PathCommandKind.Close, added[^1].Kind, "The polygon is not closed");
+                        }
+
+                        break;
+                    }
+
+                case 1:
+                    {
+                        var (centerX, centerY, radiusX, radiusY) = (ReadPathValue(ref data), ReadPathValue(ref data), ReadPathValue(ref data), ReadPathValue(ref data));
+                        builder.AddEllipse(centerX, centerY, radiusX, radiusY);
+                        var added = builder.Build().Commands.Skip(before).ToArray();
+                        FuzzAssert.Equal("MoveTo CubicTo CubicTo CubicTo CubicTo Close", string.Join(' ', added.Select(command => command.Kind)), "The commands of the ellipse are wrong");
+                        FuzzAssert.Equal((added[0].X, added[0].Y), (added[4].X, added[4].Y), "The ellipse does not end at its start");
+                        AssertInBounds(added, centerX - Math.Abs(radiusX), centerY - Math.Abs(radiusY), centerX + Math.Abs(radiusX), centerY + Math.Abs(radiusY), "ellipse");
+                        break;
+                    }
+
+                default:
+                    {
+                        var (x, y, width, height, radius) = (ReadPathValue(ref data), ReadPathValue(ref data), ReadPathValue(ref data), ReadPathValue(ref data), ReadPathValue(ref data));
+                        builder.AddRoundedRectangle(x, y, width, height, radius);
+                        var added = builder.Build().Commands.Skip(before).ToArray();
+                        if (!(Math.Min(radius, Math.Min(width, height)) > 0))
+                        {
+                            FuzzAssert.True(added.SequenceEqual(new PathBuilder().AddRectangle(x, y, width, height).Build().Commands), "A rounded rectangle without a radius is not a rectangle");
+                        }
+
+                        FuzzAssert.True(added.Length is 5 or 10, $"The rounded rectangle has {added.Length} commands");
+                        FuzzAssert.Equal(PathCommandKind.Close, added[^1].Kind, "The rounded rectangle is not closed");
+                        if (width >= 0 && height >= 0)
+                        {
+                            AssertInBounds(added, x, y, x + width, y + height, "rounded rectangle");
+                        }
+
+                        break;
+                    }
+            }
+        }
+
+        var path = builder.Build();
+        var (offsetX, offsetY) = (ReadPathValue(ref data), ReadPathValue(ref data));
+        var moved = path.Translate(offsetX, offsetY);
+        FuzzAssert.Equal(path.Commands.Count, moved.Commands.Count, "Translate changed the number of commands");
+        for (var i = 0; i < path.Commands.Count; i++)
+        {
+            var (original, translated) = (path.Commands[i], moved.Commands[i]);
+            FuzzAssert.Equal(original.Kind, translated.Kind, $"Translate changed the kind of the command {i}");
+            FuzzAssert.Equal(original.Kind is PathCommandKind.Close ? original : original with { X = original.X + offsetX, Y = original.Y + offsetY }, translated with { X1 = original.X1, Y1 = original.Y1, X2 = original.X2, Y2 = original.Y2 }, $"Translate moved the end of the command {i} wrongly");
+            if (original.Kind is PathCommandKind.ArcTo or PathCommandKind.Close or PathCommandKind.MoveTo or PathCommandKind.LineTo)
+            {
+                FuzzAssert.Equal((original.X1, original.Y1, original.X2, original.Y2), (translated.X1, translated.Y1, translated.X2, translated.Y2), $"Translate changed the parameters of the command {i}");
+            }
+            else
+            {
+                FuzzAssert.Equal((original.X1 + offsetX, original.Y1 + offsetY), (translated.X1, translated.Y1), $"Translate moved the first control point of the command {i} wrongly");
+            }
+        }
+
+        var combined = new PathBuilder().Append(path).Append(moved).Build();
+        FuzzAssert.True(combined.Commands.SequenceEqual(path.Commands.Concat(moved.Commands)), "Append does not concatenate the commands");
+        FuzzAssert.Equal(combined.ToString(), combined.ToString(), "The path data is not deterministic");
+
+        var first = SceneTransform.Scale(ReadPathValue(ref data), ReadPathValue(ref data), offsetX, offsetY).Then(SceneTransform.Rotate(ReadPathValue(ref data)));
+        var second = SceneTransform.Translate(ReadPathValue(ref data), ReadPathValue(ref data));
+        var (pointX, pointY) = (ReadPathValue(ref data), ReadPathValue(ref data));
+        var stepwise = first.Apply(pointX, pointY);
+        stepwise = second.Apply(stepwise.X, stepwise.Y);
+        var combinedPoint = first.Then(second).Apply(pointX, pointY);
+        if (double.IsFinite(stepwise.X) && double.IsFinite(stepwise.Y))
+        {
+            FuzzAssert.True(AreClose(stepwise.X, combinedPoint.X) && AreClose(stepwise.Y, combinedPoint.Y), $"Then gives {combinedPoint} instead of {stepwise}");
+        }
+
+        if (double.IsFinite(first.A) && double.IsFinite(first.B) && double.IsFinite(first.C) && double.IsFinite(first.D) && double.IsFinite(first.E) && double.IsFinite(first.F))
+        {
+            FuzzAssert.Equal(first, first.Then(SceneTransform.Identity), "Then with the identity changed the transform");
+            FuzzAssert.Equal(first, SceneTransform.Identity.Then(first), "The identity then the transform is not the transform");
+        }
+    }
+
+    private static double ReadPathValue(ref ReadOnlySpan<byte> data) => FuzzInput.Pick(PathValues, FuzzInput.ReadByte(ref data));
+
+    private static void AssertInBounds(PathCommand[] commands, double left, double top, double right, double bottom, string shape)
+    {
+        if (!double.IsFinite(left) || !double.IsFinite(top) || !double.IsFinite(right) || !double.IsFinite(bottom))
+            return;
+
+        foreach (var command in commands.Where(command => command.Kind is not PathCommandKind.Close))
+        {
+            var points = command.Kind is PathCommandKind.CubicTo ? new[] { (command.X, command.Y), (command.X1, command.Y1), (command.X2, command.Y2) } : [(command.X, command.Y)];
+            foreach (var (x, y) in points)
+            {
+                FuzzAssert.True(x >= left - Tolerance(left, right) && x <= right + Tolerance(left, right) && y >= top - Tolerance(top, bottom) && y <= bottom + Tolerance(top, bottom), $"The point ({x}, {y}) of the {shape} is outside of ({left}, {top}, {right}, {bottom})");
+            }
+        }
+    }
+
+    private static double Tolerance(double a, double b) => 1e-9 * (1 + Math.Max(Math.Abs(a), Math.Abs(b)));
+
+    private static bool AreClose(double a, double b) => Math.Abs(a - b) <= 1e-6 * (1 + Math.Max(Math.Abs(a), Math.Abs(b)));
+
     private static IEnumerable<FuzzSeed> GetColorSeeds()
     {
         string[] colors = ["#fff", "#FFFA", "#336699", "#33669980", " #abc ", "#ggg", "#12345", "#", "", " ", "steelblue", "SteelBlue", "transparent", "notacolor", "#+12345", "#\uFF10\uFF10\uFF10", "\u00A0red\u00A0", "#0x1234"];
@@ -333,6 +474,22 @@ public static partial class VectorGraphicsFuzzTargets
         for (var i = 0; i < seeds.Length; i++)
         {
             yield return new FuzzSeed("svg-" + i.ToString(CultureInfo.InvariantCulture), seeds[i]);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetPathSeeds()
+    {
+        // The shapes of the unit tests: a triangle, an ellipse and a rounded rectangle, moved by (0, 20)
+        byte[][] seeds =
+        [
+            [0 | (3 << 2), 0, 0, 5, 0, 4, 7, 1, 4, 5, 5, 4, 2, 5, 0, 5, 5, 4, 0, 0, 5, 1, 1, 2, 3, 4, 5],
+            [1, 13, 13, 5, 14, 2, 0, 0, 10, 15, 4, 0, 0, 0, 0, 1, 2],
+            [2, 2, 10, 1, 1, 8, 2, 7, 7, 6, 6, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        ];
+        for (var i = 0; i < seeds.Length; i++)
+        {
+            yield return new FuzzSeed("path-" + i.ToString(CultureInfo.InvariantCulture), seeds[i]);
         }
     }
 }

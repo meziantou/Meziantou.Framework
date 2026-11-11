@@ -89,24 +89,23 @@ public sealed class DotMark<T> : Mark<T>
             case DotSymbol.Triangle:
                 {
                     var size = radius * 1.347;
-                    return new ScenePath(new PathBuilder().MoveTo(x, y - size).LineTo(x + (size * 0.866), y + (size / 2)).LineTo(x - (size * 0.866), y + (size / 2)).Close().Build());
+                    return new ScenePath(new PathBuilder().AddPolygon((x, y - size), (x + (size * 0.866), y + (size / 2)), (x - (size * 0.866), y + (size / 2))).Build());
                 }
 
             case DotSymbol.Diamond:
                 {
                     var size = radius * 1.253;
-                    return new ScenePath(new PathBuilder().MoveTo(x, y - size).LineTo(x + size, y).LineTo(x, y + size).LineTo(x - size, y).Close().Build());
+                    return new ScenePath(new PathBuilder().AddPolygon((x, y - size), (x + size, y), (x, y + size), (x - size, y)).Build());
                 }
 
             case DotSymbol.Cross:
                 {
                     var arm = radius * 1.1;
                     var half = radius * 0.4;
-                    return new ScenePath(new PathBuilder()
-                        .MoveTo(x - half, y - arm).LineTo(x + half, y - arm).LineTo(x + half, y - half).LineTo(x + arm, y - half)
-                        .LineTo(x + arm, y + half).LineTo(x + half, y + half).LineTo(x + half, y + arm).LineTo(x - half, y + arm)
-                        .LineTo(x - half, y + half).LineTo(x - arm, y + half).LineTo(x - arm, y - half).LineTo(x - half, y - half)
-                        .Close().Build());
+                    return new ScenePath(new PathBuilder().AddPolygon(
+                        (x - half, y - arm), (x + half, y - arm), (x + half, y - half), (x + arm, y - half),
+                        (x + arm, y + half), (x + half, y + half), (x + half, y + arm), (x - half, y + arm),
+                        (x - half, y + half), (x - arm, y + half), (x - arm, y - half), (x - half, y - half)).Build());
                 }
 
             default:

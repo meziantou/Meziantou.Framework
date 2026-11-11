@@ -37,6 +37,34 @@ The coordinates are in pixels, with the origin at the top-left corner and the y 
 anchored at its start, its middle or its end; its [SceneFont](cref:Meziantou.Framework.VectorGraphics.SceneFont) sets
 the size, the weight and the style. The family is the one of the scene.
 
+## Paths
+
+A [PathBuilder](cref:Meziantou.Framework.VectorGraphics.PathBuilder) adds the commands of SVG one by one, and common
+shapes in one call: [AddRectangle](cref:Meziantou.Framework.VectorGraphics.PathBuilder.AddRectangle),
+[AddRoundedRectangle](cref:Meziantou.Framework.VectorGraphics.PathBuilder.AddRoundedRectangle),
+[AddCircle](cref:Meziantou.Framework.VectorGraphics.PathBuilder.AddCircle),
+[AddEllipse](cref:Meziantou.Framework.VectorGraphics.PathBuilder.AddEllipse) and
+[AddPolygon](cref:Meziantou.Framework.VectorGraphics.PathBuilder.AddPolygon). Each shape is a closed contour, so one
+path can hold several of them.
+[PathData.Translate](cref:Meziantou.Framework.VectorGraphics.PathData.Translate) moves a path, and
+[Append](cref:Meziantou.Framework.VectorGraphics.PathBuilder.Append) copies the commands of a path into another one:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_PathShapes;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A triangle, an ellipse and a rounded rectangle in a single path
+var path = new PathBuilder()
+    .AddPolygon((0, 0), (10, 0), (5, 8))
+    .AddEllipse(centerX: 30, centerY: 5, radiusX: 10, radiusY: 5)
+    .AddRoundedRectangle(x: 50, y: 0, width: 20, height: 10, radius: 2)
+    .Build();
+
+// Paths can be moved, and combined into a new path
+var moved = path.Translate(offsetX: 0, offsetY: 20);
+var both = new PathBuilder().Append(path).Append(moved).Build();
+Assert.HasCount(2 * path.Commands.Count, both.Commands);
+```
+<!-- endref -->
+
 ## Groups
 
 A [SceneGroup](cref:Meziantou.Framework.VectorGraphics.SceneGroup) applies a transform, a clip rectangle and an opacity
@@ -46,6 +74,18 @@ the SVG; the address is written as is, so only set addresses you trust. Every el
 [Tooltip](cref:Meziantou.Framework.VectorGraphics.SceneElement.Tooltip) and `data-*` attributes
 ([SetDataAttribute](cref:Meziantou.Framework.VectorGraphics.SceneElement.SetDataAttribute)) for the scripts of a web
 page.
+
+[SceneTransform](cref:Meziantou.Framework.VectorGraphics.SceneTransform) creates translations, rotations and scales;
+[Then](cref:Meziantou.Framework.VectorGraphics.SceneTransform.Then) combines two transforms, in the order they apply:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_Transforms;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Scale by 2 around the origin, then move by (10, 20)
+var transform = SceneTransform.Scale(2, 2).Then(SceneTransform.Translate(10, 20));
+Assert.Equal((16.0, 28.0), transform.Apply(3, 4));
+Assert.Equal(new SceneTransform(2, 0, 0, 2, 10, 20), transform);
+```
+<!-- endref -->
 
 ## SVG options
 

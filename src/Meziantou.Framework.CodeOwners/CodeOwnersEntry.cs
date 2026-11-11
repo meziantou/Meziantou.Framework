@@ -17,17 +17,20 @@ namespace Meziantou.Framework.CodeOwners;
 /// <remarks>Entries are returned in the order they appear in the file. CODEOWNERS resolution is last-match-wins, so the last entry whose <see cref="Pattern"/> matches a path owns it.</remarks>
 public sealed class CodeOwnersEntry : IEquatable<CodeOwnersEntry>
 {
+    private readonly string _escapedPattern;
     private readonly CodeOwnersDialect _dialect;
+    private CodeOwnersPatternMatcher? _matcher;
 
-    internal CodeOwnersEntry(string pattern, IReadOnlyList<CodeOwner> owners, CodeOwnersSection? section, CodeOwnersDialect dialect)
+    internal CodeOwnersEntry(string pattern, string escapedPattern, IReadOnlyList<CodeOwner> owners, CodeOwnersSection? section, CodeOwnersDialect dialect)
     {
         Pattern = pattern;
+        _escapedPattern = escapedPattern;
         Owners = owners;
         Section = section;
         _dialect = dialect;
     }
 
-    /// <summary>Gets the file pattern (e.g., "*.js", "/docs/*", or "*") that this entry applies to.</summary>
+    /// <summary>Gets the file pattern (e.g., "*.js", "/docs/*", or "*") that this entry applies to, without its escape characters.</summary>
     public string Pattern { get; }
 
     /// <summary>Gets the owners of the pattern. Empty when the entry explicitly leaves the pattern unowned.</summary>
@@ -39,22 +42,40 @@ public sealed class CodeOwnersEntry : IEquatable<CodeOwnersEntry>
     /// <summary>Gets a value indicating whether this entry belongs to an optional section.</summary>
     public bool IsOptional => Section?.IsOptional ?? false;
 
-    /// <summary>Returns the entry as written in a CODEOWNERS file of the dialect it was parsed with: the escaped pattern followed by the owners.</summary>
+    /// <summary>Gets a value indicating whether the entry is a GitLab exclusion: its pattern starts with an unescaped <c>!</c>.</summary>
+    /// <remarks>
+    /// A path that matches an exclusion of a section has no owners in this section, whatever the order of the entries.
+    /// The <see cref="Pattern"/> of an exclusion keeps its leading <c>!</c>. The GitHub dialect has no exclusions: a <c>!</c> is an ordinary character.
+    /// </remarks>
+    public bool IsExclusion => CodeOwnersPatternMatcher.IsExclusion(_escapedPattern, _dialect);
+
+    /// <summary>Determines whether the pattern of the entry matches the path of a file, as the host of the dialect does.</summary>
+    /// <param name="path">The path of a file, relative to the root of the repository, with <c>/</c> as the separator. A leading <c>/</c> is ignored. The comparison is case-sensitive.</param>
+    /// <returns><see langword="true"/> when the pattern matches <paramref name="path"/>; otherwise, <see langword="false"/>. For an exclusion, the pattern is read without its leading <c>!</c>.</returns>
+    /// <remarks>
+    /// This method ignores the other entries of the file. Use <see cref="CodeOwnersFile.FindEntries(string)"/> to find the entries that own a path,
+    /// which applies the last-match-wins rule, the sections and the exclusions.
+    /// </remarks>
+    public bool IsMatch(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+
+        var span = path.AsSpan();
+        if (span.StartsWith('/'))
+        {
+            span = span[1..];
+        }
+
+        var matcher = _matcher ??= CodeOwnersPatternMatcher.Create(_escapedPattern, _dialect);
+        return matcher.IsMatch(span);
+    }
+
+    /// <summary>Returns the entry as written in a CODEOWNERS file: the pattern, with its escape characters, followed by the owners.</summary>
     /// <remarks>The section header is not part of the entry: parse the line after <see cref="CodeOwnersSection.ToString"/> to read the entry back.</remarks>
     public override string ToString()
     {
-        var sb = new StringBuilder(Pattern.Length + (Owners.Count * 16));
-        for (var i = 0; i < Pattern.Length; i++)
-        {
-            var c = Pattern[i];
-            if (MustEscape(c, i))
-            {
-                sb.Append('\\');
-            }
-
-            sb.Append(c);
-        }
-
+        var sb = new StringBuilder(_escapedPattern.Length + (Owners.Count * 16));
+        sb.Append(_escapedPattern);
         foreach (var owner in Owners)
         {
             sb.Append(' ').Append(owner.ToString());
@@ -62,21 +83,6 @@ public sealed class CodeOwnersEntry : IEquatable<CodeOwnersEntry>
 
         return sb.ToString();
     }
-
-    /// <summary>Gets a value indicating whether the character of the pattern at the index is read as something else than text of the pattern when written as is.</summary>
-    private bool MustEscape(char c, int index) => c switch
-    {
-        // A backslash escapes the next character, and spaces separate the pattern from the owners
-        '\\' or ' ' or '\t' => true,
-
-        // A line starting with '#' is a comment
-        '#' => index is 0,
-
-        // In the GitLab syntax, a line starting with '[' or '^[' is a section header
-        '[' => index is 0 && _dialect is CodeOwnersDialect.GitLab,
-        '^' => index is 0 && _dialect is CodeOwnersDialect.GitLab && Pattern.Length > 1 && Pattern[1] is '[',
-        _ => false,
-    };
 
     public override bool Equals([NotNullWhen(true)] object? obj) => Equals(obj as CodeOwnersEntry);
 

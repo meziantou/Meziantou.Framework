@@ -42,4 +42,27 @@ public enum GlobDialect
     ///     significant, including a leading one. The syntax is the one of <see cref="Posix"/>.
     /// </summary>
     PosixPath = 4,
+
+    /// <summary>
+    ///     Use the pattern syntax of GitHub CODEOWNERS files, which follows most of the gitignore rules: a pattern
+    ///     without a <c>/</c> matches a name at any depth, a leading <c>/</c> anchors it, a trailing <c>/</c> only
+    ///     matches a directory and everything below it, and <c>**</c> matches any number of directories. A pattern
+    ///     that matches a directory also matches every path below it, except a pattern whose last segment is
+    ///     <c>*</c>, such as <c>docs/*</c>, which only matches the names directly in the directory. GitHub does not
+    ///     support bracket expressions or negations, so <c>[</c>, <c>]</c> and a leading <c>!</c> are ordinary
+    ///     characters. Wildcards match a leading dot.
+    /// </summary>
+    GitHubCodeOwners = 5,
+
+    /// <summary>
+    ///     Use the pattern syntax of GitLab CODEOWNERS files: GitLab adds <c>/**/</c> before a pattern that does not
+    ///     start with a <c>/</c> and <c>**/*</c> after a pattern that ends with a <c>/</c>, then matches the whole path
+    ///     with Ruby's <c>File.fnmatch</c> and the <c>FNM_PATHNAME</c> and <c>FNM_DOTMATCH</c> flags. A pattern that
+    ///     does not end with a <c>/</c>, such as <c>/docs</c>, only matches that path, not the paths below it.
+    ///     <c>**</c> only matches any number of directories when a <c>/</c> follows it; otherwise it is a <c>*</c>.
+    ///     Bracket expressions accept <c>!</c> and <c>^</c> as a negation and escapes, but no character classes.
+    ///     Wildcards match a leading dot. A leading <c>!</c> is an ordinary character: GitLab reads it as an
+    ///     exclusion of the CODEOWNERS file, not as a part of the pattern.
+    /// </summary>
+    GitLabCodeOwners = 6,
 }

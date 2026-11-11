@@ -76,3 +76,6 @@ Any other word after `@@` makes the file invalid, and so does `@@` in the GitHub
 
 Each header creates its own [CodeOwnersSection](cref:Meziantou.Framework.CodeOwners.CodeOwnersSection), even when an earlier header has the same name, and the entries keep the
 section they were written in. Group the entries by `Section.Name` to see all the entries of a name together.
+
+When it matches a path, GitLab merges the sections with the same name, ignoring case, and so do
+[FindEntries](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.FindEntries) and [GetOwners](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.GetOwners). See [Sections](06-MatchingPaths.md#sections).

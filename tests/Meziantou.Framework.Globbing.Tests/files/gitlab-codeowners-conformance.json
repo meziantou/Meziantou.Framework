@@ -1,0 +1,4240 @@
+{
+  "paths": [
+    "!a",
+    "!a/*",
+    "!a/logs/src/[ab]",
+    "!a/src/src/*",
+    "#a",
+    "#a/#a/x.md",
+    "#a/.git/ab/a b",
+    "#a/.x.md",
+    "*",
+    "*/.git/b",
+    ".git",
+    ".git/[ab]",
+    ".git/config",
+    ".x.md",
+    ".x.md/a/a",
+    ".x.md/logs",
+    "[ab]",
+    "a",
+    "a b",
+    "a.b/a b",
+    "a.b/ab",
+    "a/logs",
+    "a/logs/b",
+    "ab/!a",
+    "ab/.git",
+    "ab/a",
+    "b",
+    "b/a.b/y.cs",
+    "b/logs/[ab]/b",
+    "docs",
+    "docs/#a",
+    "docs/a.b",
+    "docs/a/x.md",
+    "docs/docs",
+    "docs/x.md",
+    "logs",
+    "logs/*/[ab]",
+    "logs/a",
+    "logs/logs",
+    "src",
+    "src/a/b/y.cs",
+    "src/ab/y.cs",
+    "src/docs/x.md",
+    "src/x.md",
+    "x.md",
+    "x.md/.git/a b",
+    "y.cs/!a",
+    "y.cs/y.cs/!a",
+    "]",
+    "-",
+    "c",
+    "a]",
+    "a-c",
+    "^",
+    "!",
+    ".",
+    "x/]/y",
+    "a/-",
+    "b]c",
+    "A",
+    "Z",
+    "é",
+    "a.",
+    "[",
+    "{a,b}",
+    ":"
+  ],
+  "cases": [
+    {
+      "pattern": "*",
+      "matches": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65]
+    },
+    {
+      "pattern": "**",
+      "matches": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65]
+    },
+    {
+      "pattern": "**.md/",
+      "matches": [14, 15, 45]
+    },
+    {
+      "pattern": "**.md/**",
+      "matches": [15]
+    },
+    {
+      "pattern": "**.md/**/",
+      "matches": [14, 15, 45]
+    },
+    {
+      "pattern": "**.md/*b",
+      "matches": []
+    },
+    {
+      "pattern": "**.md/[ab]/\\#a",
+      "matches": []
+    },
+    {
+      "pattern": "**.md/\\!a",
+      "matches": []
+    },
+    {
+      "pattern": "**.md/\\[ab]/]/",
+      "matches": []
+    },
+    {
+      "pattern": "**.md/b/a\\ b",
+      "matches": []
+    },
+    {
+      "pattern": "**/",
+      "matches": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65]
+    },
+    {
+      "pattern": "**/.git/",
+      "matches": [6, 9, 11, 12, 45]
+    },
+    {
+      "pattern": "**/.git/]",
+      "matches": []
+    },
+    {
+      "pattern": "**/[^a]/*b",
+      "matches": []
+    },
+    {
+      "pattern": "**/logs",
+      "matches": [15, 21, 35, 38]
+    },
+    {
+      "pattern": "*.cs",
+      "matches": [27, 40, 41]
+    },
+    {
+      "pattern": "*.cs/**/b",
+      "matches": []
+    },
+    {
+      "pattern": "*.cs/*.md",
+      "matches": []
+    },
+    {
+      "pattern": "*.cs/*/docs",
+      "matches": []
+    },
+    {
+      "pattern": "*.cs/.*/",
+      "matches": []
+    },
+    {
+      "pattern": "*.cs/.git/**.md/",
+      "matches": []
+    },
+    {
+      "pattern": "*.cs/[!a]",
+      "matches": []
+    },
+    {
+      "pattern": "*.cs/y.cs/\\#a/",
+      "matches": []
+    },
+    {
+      "pattern": "*.md",
+      "matches": [5, 7, 13, 32, 34, 42, 43, 44]
+    },
+    {
+      "pattern": "*.md/",
+      "matches": [14, 15, 45]
+    },
+    {
+      "pattern": "*.md/?",
+      "matches": []
+    },
+    {
+      "pattern": "*.md/a*",
+      "matches": []
+    },
+    {
+      "pattern": "*.md/a**",
+      "matches": []
+    },
+    {
+      "pattern": "*.md/a?",
+      "matches": []
+    },
+    {
+      "pattern": "*.md/src",
+      "matches": []
+    },
+    {
+      "pattern": "*.md/src/",
+      "matches": []
+    },
+    {
+      "pattern": "*/",
+      "matches": [1, 2, 3, 5, 6, 7, 9, 11, 12, 14, 15, 19, 20, 21, 22, 23, 24, 25, 27, 28, 30, 31, 32, 33, 34, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 56, 57]
+    },
+    {
+      "pattern": "*/*.cs",
+      "matches": [27, 40, 41]
+    },
+    {
+      "pattern": "*/*.cs/[!a]",
+      "matches": []
+    },
+    {
+      "pattern": "*/*.md",
+      "matches": [5, 7, 32, 34, 42, 43]
+    },
+    {
+      "pattern": "*/*b",
+      "matches": [6, 9, 19, 20, 22, 28, 31, 45]
+    },
+    {
+      "pattern": "*/.*",
+      "matches": [7, 24]
+    },
+    {
+      "pattern": "*/.*/",
+      "matches": [6, 9, 45]
+    },
+    {
+      "pattern": "*/[/\\!a",
+      "matches": []
+    },
+    {
+      "pattern": "*b",
+      "matches": [6, 9, 18, 19, 20, 22, 26, 28, 31, 45]
+    },
+    {
+      "pattern": "*b/",
+      "matches": [6, 19, 20, 23, 24, 25, 27, 28, 40, 41]
+    },
+    {
+      "pattern": "*b/!a/\\[ab]",
+      "matches": []
+    },
+    {
+      "pattern": "*b/*b/[[:alpha:]]/",
+      "matches": []
+    },
+    {
+      "pattern": "*b/[",
+      "matches": []
+    },
+    {
+      "pattern": "*b/[a-c]",
+      "matches": [25]
+    },
+    {
+      "pattern": "*b/[z-a]",
+      "matches": [25]
+    },
+    {
+      "pattern": "*b/\\#a",
+      "matches": []
+    },
+    {
+      "pattern": "*b/\\*/**.md",
+      "matches": []
+    },
+    {
+      "pattern": "*b/a*",
+      "matches": [6, 19, 20, 25]
+    },
+    {
+      "pattern": "*b/logs/",
+      "matches": [28]
+    },
+    {
+      "pattern": ".*",
+      "matches": [7, 10, 13, 24, 55]
+    },
+    {
+      "pattern": ".*/!a/",
+      "matches": []
+    },
+    {
+      "pattern": ".*/*.md",
+      "matches": []
+    },
+    {
+      "pattern": ".*/[!a]/*.cs",
+      "matches": []
+    },
+    {
+      "pattern": ".*/\\*/\\*",
+      "matches": []
+    },
+    {
+      "pattern": ".*/a*/a?",
+      "matches": []
+    },
+    {
+      "pattern": ".*/a\\ b",
+      "matches": [45]
+    },
+    {
+      "pattern": ".git",
+      "matches": [10, 24]
+    },
+    {
+      "pattern": ".git/",
+      "matches": [6, 9, 11, 12, 45]
+    },
+    {
+      "pattern": ".git/*/*.md",
+      "matches": []
+    },
+    {
+      "pattern": ".git/*b",
+      "matches": [9, 45]
+    },
+    {
+      "pattern": ".git/.git",
+      "matches": []
+    },
+    {
+      "pattern": ".git/\\#a/[[:alpha:]]/",
+      "matches": []
+    },
+    {
+      "pattern": ".git/]/\\!a",
+      "matches": []
+    },
+    {
+      "pattern": ".git/a?",
+      "matches": []
+    },
+    {
+      "pattern": ".git/docs",
+      "matches": []
+    },
+    {
+      "pattern": "/",
+      "matches": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65]
+    },
+    {
+      "pattern": "/!a",
+      "matches": [0]
+    },
+    {
+      "pattern": "/!a/?/",
+      "matches": []
+    },
+    {
+      "pattern": "/!a/\\!a",
+      "matches": []
+    },
+    {
+      "pattern": "/!a/a*/\\[ab]/",
+      "matches": []
+    },
+    {
+      "pattern": "/**",
+      "matches": [0, 4, 8, 10, 13, 16, 17, 18, 26, 29, 35, 39, 44, 48, 49, 50, 51, 52, 53, 54, 55, 58, 59, 60, 61, 62, 63, 64, 65]
+    },
+    {
+      "pattern": "/**.md/]",
+      "matches": []
+    },
+    {
+      "pattern": "/**.md/y.cs/",
+      "matches": []
+    },
+    {
+      "pattern": "/**/",
+      "matches": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65]
+    },
+    {
+      "pattern": "/**/!a/!a/",
+      "matches": []
+    },
+    {
+      "pattern": "/**/**.md",
+      "matches": [5, 7, 13, 32, 34, 42, 43, 44]
+    },
+    {
+      "pattern": "/**/a",
+      "matches": [14, 17, 25, 37]
+    },
+    {
+      "pattern": "/**/a**",
+      "matches": [6, 14, 17, 18, 19, 20, 25, 31, 37, 45, 51, 52, 62]
+    },
+    {
+      "pattern": "/**/a\\ b/",
+      "matches": []
+    },
+    {
+      "pattern": "/*.cs",
+      "matches": []
+    },
+    {
+      "pattern": "/*.cs/",
+      "matches": [46, 47]
+    },
+    {
+      "pattern": "/*.cs/**",
+      "matches": [46]
+    },
+    {
+      "pattern": "/*.cs/a/",
+      "matches": []
+    },
+    {
+      "pattern": "/*.md/",
+      "matches": [14, 15, 45]
+    },
+    {
+      "pattern": "/*.md/[!a]/?/",
+      "matches": []
+    },
+    {
+      "pattern": "/*.md/[[:alpha:]]/",
+      "matches": []
+    },
+    {
+      "pattern": "/*.md/\\[ab]/\\!a",
+      "matches": []
+    },
+    {
+      "pattern": "/*.md/a\\ b",
+      "matches": []
+    },
+    {
+      "pattern": "/*/",
+      "matches": [1, 2, 3, 5, 6, 7, 9, 11, 12, 14, 15, 19, 20, 21, 22, 23, 24, 25, 27, 28, 30, 31, 32, 33, 34, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 56, 57]
+    },
+    {
+      "pattern": "/*/*",
+      "matches": [1, 7, 11, 12, 15, 19, 20, 21, 23, 24, 25, 30, 31, 33, 34, 37, 38, 43, 46, 57]
+    },
+    {
+      "pattern": "/*/.git",
+      "matches": [24]
+    },
+    {
+      "pattern": "/*/]/y.cs/",
+      "matches": []
+    },
+    {
+      "pattern": "/*/src",
+      "matches": []
+    },
+    {
+      "pattern": "/*/y.cs",
+      "matches": []
+    },
+    {
+      "pattern": "/*b",
+      "matches": [18, 26]
+    },
+    {
+      "pattern": "/*b/*",
+      "matches": [19, 20, 23, 24, 25]
+    },
+    {
+      "pattern": "/*b/a\\ b",
+      "matches": [19]
+    },
+    {
+      "pattern": "/*b/x.md",
+      "matches": []
+    },
+    {
+      "pattern": "/*b/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "/.*",
+      "matches": [10, 13, 55]
+    },
+    {
+      "pattern": "/.*/\\!a",
+      "matches": []
+    },
+    {
+      "pattern": "/.*/b/",
+      "matches": []
+    },
+    {
+      "pattern": "/.*/logs/",
+      "matches": []
+    },
+    {
+      "pattern": "/.git",
+      "matches": [10]
+    },
+    {
+      "pattern": "/.git/",
+      "matches": [11, 12]
+    },
+    {
+      "pattern": "/.git/*",
+      "matches": [11, 12]
+    },
+    {
+      "pattern": "/.git/y.cs/**",
+      "matches": []
+    },
+    {
+      "pattern": "/?",
+      "matches": [8, 17, 26, 48, 49, 50, 53, 54, 55, 59, 60, 61, 63, 65]
+    },
+    {
+      "pattern": "/?/.git/",
+      "matches": [9]
+    },
+    {
+      "pattern": "/?/[ab]",
+      "matches": []
+    },
+    {
+      "pattern": "/?/\\#a/",
+      "matches": []
+    },
+    {
+      "pattern": "/[",
+      "matches": []
+    },
+    {
+      "pattern": "/[!a]/docs",
+      "matches": []
+    },
+    {
+      "pattern": "/[/",
+      "matches": []
+    },
+    {
+      "pattern": "/[/!a/]",
+      "matches": [17, 54]
+    },
+    {
+      "pattern": "/[/**.md/",
+      "matches": []
+    },
+    {
+      "pattern": "/[/**/",
+      "matches": []
+    },
+    {
+      "pattern": "/[/.*",
+      "matches": []
+    },
+    {
+      "pattern": "/[/x.md",
+      "matches": []
+    },
+    {
+      "pattern": "/[[:alpha:]]",
+      "matches": [51]
+    },
+    {
+      "pattern": "/[[:alpha:]]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[[:alpha:]]/*.md",
+      "matches": []
+    },
+    {
+      "pattern": "/[[:alpha:]]/docs/\\!a",
+      "matches": []
+    },
+    {
+      "pattern": "/[^a]/[!a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[^a]/\\!a",
+      "matches": []
+    },
+    {
+      "pattern": "/[a-c]",
+      "matches": [17, 26, 50]
+    },
+    {
+      "pattern": "/[a-c]/?",
+      "matches": [57]
+    },
+    {
+      "pattern": "/[a-c]/a*",
+      "matches": []
+    },
+    {
+      "pattern": "/[a-c]/b/",
+      "matches": []
+    },
+    {
+      "pattern": "/[ab]",
+      "matches": [17, 26]
+    },
+    {
+      "pattern": "/[ab]/a\\ b/\\[ab]",
+      "matches": []
+    },
+    {
+      "pattern": "/[z-a]",
+      "matches": [17]
+    },
+    {
+      "pattern": "/[z-a]/**",
+      "matches": [21, 57]
+    },
+    {
+      "pattern": "/[z-a]/b",
+      "matches": []
+    },
+    {
+      "pattern": "/[z-a]/x.md",
+      "matches": []
+    },
+    {
+      "pattern": "/\\!a",
+      "matches": [0]
+    },
+    {
+      "pattern": "/\\!a/b/",
+      "matches": []
+    },
+    {
+      "pattern": "/\\#a/*/",
+      "matches": [5, 6]
+    },
+    {
+      "pattern": "/\\#a/\\#a",
+      "matches": []
+    },
+    {
+      "pattern": "/\\#a/a*/logs",
+      "matches": []
+    },
+    {
+      "pattern": "/\\*",
+      "matches": [8]
+    },
+    {
+      "pattern": "/\\*/",
+      "matches": [9]
+    },
+    {
+      "pattern": "/\\*/*.md/",
+      "matches": []
+    },
+    {
+      "pattern": "/\\[ab]",
+      "matches": [16]
+    },
+    {
+      "pattern": "/\\[ab]/[/**.md/",
+      "matches": []
+    },
+    {
+      "pattern": "/\\[ab]/[^a]/",
+      "matches": []
+    },
+    {
+      "pattern": "/\\[ab]/[z-a]",
+      "matches": []
+    },
+    {
+      "pattern": "/\\[ab]/b/",
+      "matches": []
+    },
+    {
+      "pattern": "/]",
+      "matches": [48]
+    },
+    {
+      "pattern": "/]/",
+      "matches": []
+    },
+    {
+      "pattern": "/]/a**/",
+      "matches": []
+    },
+    {
+      "pattern": "/a",
+      "matches": [17]
+    },
+    {
+      "pattern": "/a*",
+      "matches": [17, 18, 51, 52, 62]
+    },
+    {
+      "pattern": "/a**",
+      "matches": [17, 18, 51, 52, 62]
+    },
+    {
+      "pattern": "/a**/x.md",
+      "matches": []
+    },
+    {
+      "pattern": "/a*/[ab]",
+      "matches": [25]
+    },
+    {
+      "pattern": "/a*/[z-a]",
+      "matches": [25]
+    },
+    {
+      "pattern": "/a/**.md/",
+      "matches": []
+    },
+    {
+      "pattern": "/a/]/docs/",
+      "matches": []
+    },
+    {
+      "pattern": "/a/b/",
+      "matches": []
+    },
+    {
+      "pattern": "/a?",
+      "matches": [51, 62]
+    },
+    {
+      "pattern": "/a?/*/",
+      "matches": []
+    },
+    {
+      "pattern": "/a?/[a-c]",
+      "matches": [25]
+    },
+    {
+      "pattern": "/a\\ b",
+      "matches": [18]
+    },
+    {
+      "pattern": "/a\\ b/",
+      "matches": []
+    },
+    {
+      "pattern": "/a\\ b/*/*.cs/",
+      "matches": []
+    },
+    {
+      "pattern": "/a\\ b/\\!a/[^a]",
+      "matches": []
+    },
+    {
+      "pattern": "/b/?/[a-c]/",
+      "matches": []
+    },
+    {
+      "pattern": "/b/src/[ab]",
+      "matches": []
+    },
+    {
+      "pattern": "/docs",
+      "matches": [29]
+    },
+    {
+      "pattern": "/docs/",
+      "matches": [30, 31, 32, 33, 34]
+    },
+    {
+      "pattern": "/docs/*",
+      "matches": [30, 31, 33, 34]
+    },
+    {
+      "pattern": "/docs/**",
+      "matches": [30, 31, 33, 34]
+    },
+    {
+      "pattern": "/docs/**.md/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "/docs/**/*.md",
+      "matches": [32, 34]
+    },
+    {
+      "pattern": "/docs/[!a]/",
+      "matches": []
+    },
+    {
+      "pattern": "/docs/[^a]",
+      "matches": []
+    },
+    {
+      "pattern": "/docs/[a-c]",
+      "matches": []
+    },
+    {
+      "pattern": "/logs",
+      "matches": [35]
+    },
+    {
+      "pattern": "/logs/!a/**.md",
+      "matches": []
+    },
+    {
+      "pattern": "/logs/[",
+      "matches": []
+    },
+    {
+      "pattern": "/x.md/",
+      "matches": [45]
+    },
+    {
+      "pattern": "/x.md/**.md",
+      "matches": []
+    },
+    {
+      "pattern": "/x.md/]/[^a]",
+      "matches": []
+    },
+    {
+      "pattern": "/x.md/logs",
+      "matches": []
+    },
+    {
+      "pattern": "/y.cs/",
+      "matches": [46, 47]
+    },
+    {
+      "pattern": "/y.cs/[[:alpha:]]/[a-c]",
+      "matches": []
+    },
+    {
+      "pattern": "/y.cs/a?/b",
+      "matches": []
+    },
+    {
+      "pattern": "/{a,b}",
+      "matches": [64]
+    },
+    {
+      "pattern": "/{a,b}/",
+      "matches": []
+    },
+    {
+      "pattern": "/{a,b}/**",
+      "matches": []
+    },
+    {
+      "pattern": "/{a,b}/logs",
+      "matches": []
+    },
+    {
+      "pattern": "?",
+      "matches": [1, 3, 8, 9, 14, 17, 22, 25, 26, 28, 37, 48, 49, 50, 53, 54, 55, 56, 57, 59, 60, 61, 63, 65]
+    },
+    {
+      "pattern": "?/",
+      "matches": [9, 14, 21, 22, 27, 28, 32, 36, 40, 56, 57]
+    },
+    {
+      "pattern": "?/.git",
+      "matches": []
+    },
+    {
+      "pattern": "?/\\*/",
+      "matches": []
+    },
+    {
+      "pattern": "?/\\*/[z-a]",
+      "matches": []
+    },
+    {
+      "pattern": "?/\\[ab]",
+      "matches": [36]
+    },
+    {
+      "pattern": "?/]",
+      "matches": []
+    },
+    {
+      "pattern": "?/docs/*.cs",
+      "matches": []
+    },
+    {
+      "pattern": "?/src",
+      "matches": []
+    },
+    {
+      "pattern": "[",
+      "matches": []
+    },
+    {
+      "pattern": "[!a]",
+      "matches": [1, 3, 8, 9, 22, 26, 28, 48, 49, 50, 53, 54, 55, 56, 57, 59, 60, 61, 63, 65]
+    },
+    {
+      "pattern": "[!a]/*.cs/*b",
+      "matches": []
+    },
+    {
+      "pattern": "[!a]/.*/[",
+      "matches": []
+    },
+    {
+      "pattern": "[!a]/?",
+      "matches": [56]
+    },
+    {
+      "pattern": "[!a]/docs",
+      "matches": []
+    },
+    {
+      "pattern": "[/",
+      "matches": []
+    },
+    {
+      "pattern": "[/!a/src",
+      "matches": []
+    },
+    {
+      "pattern": "[/[ab]/y.cs/",
+      "matches": []
+    },
+    {
+      "pattern": "[/\\!a/",
+      "matches": []
+    },
+    {
+      "pattern": "[/\\*/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "[/]",
+      "matches": []
+    },
+    {
+      "pattern": "[/a?",
+      "matches": []
+    },
+    {
+      "pattern": "[/docs",
+      "matches": []
+    },
+    {
+      "pattern": "[/x.md",
+      "matches": []
+    },
+    {
+      "pattern": "[/x.md/",
+      "matches": []
+    },
+    {
+      "pattern": "[[:alpha:]]",
+      "matches": [51]
+    },
+    {
+      "pattern": "[[:alpha:]]/**/!a/",
+      "matches": []
+    },
+    {
+      "pattern": "[[:alpha:]]/.*",
+      "matches": []
+    },
+    {
+      "pattern": "[[:alpha:]]/?",
+      "matches": []
+    },
+    {
+      "pattern": "[[:alpha:]]/[/a?",
+      "matches": []
+    },
+    {
+      "pattern": "[[:alpha:]]/[[:alpha:]]/",
+      "matches": []
+    },
+    {
+      "pattern": "[[:alpha:]]/\\*/",
+      "matches": []
+    },
+    {
+      "pattern": "[[:alpha:]]/a?",
+      "matches": []
+    },
+    {
+      "pattern": "[[:alpha:]]/docs",
+      "matches": []
+    },
+    {
+      "pattern": "[[:alpha:]]/x.md",
+      "matches": []
+    },
+    {
+      "pattern": "[[:alpha:]]/y.cs",
+      "matches": []
+    },
+    {
+      "pattern": "[[:alpha:]]/{a,b}/docs/",
+      "matches": []
+    },
+    {
+      "pattern": "[^a]",
+      "matches": [1, 3, 8, 9, 22, 26, 28, 48, 49, 50, 53, 54, 55, 56, 57, 59, 60, 61, 63, 65]
+    },
+    {
+      "pattern": "[^a]/",
+      "matches": [9, 27, 28, 36, 40, 56]
+    },
+    {
+      "pattern": "[^a]/?/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "[^a]/\\[ab]",
+      "matches": [36]
+    },
+    {
+      "pattern": "[^a]/]/",
+      "matches": [56]
+    },
+    {
+      "pattern": "[^a]/a",
+      "matches": []
+    },
+    {
+      "pattern": "[^a]/a**",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]",
+      "matches": [9, 14, 17, 22, 25, 26, 28, 37, 50]
+    },
+    {
+      "pattern": "[a-c]/!a/?",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]/*",
+      "matches": [14, 21, 32, 40, 57]
+    },
+    {
+      "pattern": "[a-c]/*.cs/b",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]/*.md",
+      "matches": [32]
+    },
+    {
+      "pattern": "[a-c]/[[:alpha:]]/*b/",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]/[^a]/[z-a]",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]/[z-a]",
+      "matches": [14]
+    },
+    {
+      "pattern": "[a-c]/\\*/.git/",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]/a",
+      "matches": [14]
+    },
+    {
+      "pattern": "[a-c]/a?/",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]/a\\ b",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]/b/x.md/",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]/src",
+      "matches": []
+    },
+    {
+      "pattern": "[ab]",
+      "matches": [9, 14, 17, 22, 25, 26, 28, 37]
+    },
+    {
+      "pattern": "[ab]/",
+      "matches": [14, 21, 22, 27, 28, 32, 40, 57]
+    },
+    {
+      "pattern": "[ab]/.git",
+      "matches": []
+    },
+    {
+      "pattern": "[ab]/[z-a]",
+      "matches": [14]
+    },
+    {
+      "pattern": "[ab]/\\#a/**/",
+      "matches": []
+    },
+    {
+      "pattern": "[ab]/a\\ b",
+      "matches": []
+    },
+    {
+      "pattern": "[ab]/a\\ b/",
+      "matches": []
+    },
+    {
+      "pattern": "[ab]/x.md/*.cs",
+      "matches": []
+    },
+    {
+      "pattern": "[z-a]",
+      "matches": [14, 17, 25, 37]
+    },
+    {
+      "pattern": "[z-a]/",
+      "matches": [14, 21, 22, 32, 40, 57]
+    },
+    {
+      "pattern": "[z-a]/[!a]",
+      "matches": [57]
+    },
+    {
+      "pattern": "[z-a]/\\!a/",
+      "matches": []
+    },
+    {
+      "pattern": "[z-a]/a?/[[:alpha:]]",
+      "matches": []
+    },
+    {
+      "pattern": "[z-a]/a\\ b",
+      "matches": []
+    },
+    {
+      "pattern": "\\!a",
+      "matches": [0, 23, 46, 47]
+    },
+    {
+      "pattern": "\\!a/",
+      "matches": [1, 2, 3]
+    },
+    {
+      "pattern": "\\!a/[!a]",
+      "matches": [1]
+    },
+    {
+      "pattern": "\\!a/[!a]/",
+      "matches": []
+    },
+    {
+      "pattern": "\\!a/[^a]",
+      "matches": [1]
+    },
+    {
+      "pattern": "\\!a/\\[ab]",
+      "matches": []
+    },
+    {
+      "pattern": "\\#a",
+      "matches": [4, 30]
+    },
+    {
+      "pattern": "\\#a/",
+      "matches": [5, 6, 7]
+    },
+    {
+      "pattern": "\\#a/**.md/logs/",
+      "matches": []
+    },
+    {
+      "pattern": "\\#a/\\!a",
+      "matches": []
+    },
+    {
+      "pattern": "\\#a/\\#a",
+      "matches": []
+    },
+    {
+      "pattern": "\\#a/b",
+      "matches": []
+    },
+    {
+      "pattern": "\\#a/x.md",
+      "matches": [5]
+    },
+    {
+      "pattern": "\\*",
+      "matches": [1, 3, 8]
+    },
+    {
+      "pattern": "\\*/",
+      "matches": [9, 36]
+    },
+    {
+      "pattern": "\\*/*.cs",
+      "matches": []
+    },
+    {
+      "pattern": "\\*/a*",
+      "matches": []
+    },
+    {
+      "pattern": "\\*/a?",
+      "matches": []
+    },
+    {
+      "pattern": "\\*/src",
+      "matches": []
+    },
+    {
+      "pattern": "\\[ab]",
+      "matches": [2, 11, 16, 36]
+    },
+    {
+      "pattern": "\\[ab]/",
+      "matches": [28]
+    },
+    {
+      "pattern": "\\[ab]/!a/**",
+      "matches": []
+    },
+    {
+      "pattern": "\\[ab]/*.cs",
+      "matches": []
+    },
+    {
+      "pattern": "\\[ab]/*b/b/",
+      "matches": []
+    },
+    {
+      "pattern": "\\[ab]/[/\\*/",
+      "matches": []
+    },
+    {
+      "pattern": "\\[ab]/[a-c]/.git",
+      "matches": []
+    },
+    {
+      "pattern": "\\[ab]/x.md",
+      "matches": []
+    },
+    {
+      "pattern": "\\[ab]/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "]",
+      "matches": [48]
+    },
+    {
+      "pattern": "]/[!a]",
+      "matches": [56]
+    },
+    {
+      "pattern": "]/]",
+      "matches": []
+    },
+    {
+      "pattern": "]/a**/",
+      "matches": []
+    },
+    {
+      "pattern": "]/docs",
+      "matches": []
+    },
+    {
+      "pattern": "]/src",
+      "matches": []
+    },
+    {
+      "pattern": "a",
+      "matches": [14, 17, 25, 37]
+    },
+    {
+      "pattern": "a*",
+      "matches": [6, 14, 17, 18, 19, 20, 25, 31, 37, 45, 51, 52, 62]
+    },
+    {
+      "pattern": "a**",
+      "matches": [6, 14, 17, 18, 19, 20, 25, 31, 37, 45, 51, 52, 62]
+    },
+    {
+      "pattern": "a**/!a",
+      "matches": [23]
+    },
+    {
+      "pattern": "a**/[^a]/",
+      "matches": [40]
+    },
+    {
+      "pattern": "a**/\\!a/b/",
+      "matches": []
+    },
+    {
+      "pattern": "a**/a",
+      "matches": [14, 25]
+    },
+    {
+      "pattern": "a**/a\\ b",
+      "matches": [6, 19]
+    },
+    {
+      "pattern": "a**/logs/",
+      "matches": [22]
+    },
+    {
+      "pattern": "a*/",
+      "matches": [6, 14, 19, 20, 21, 22, 23, 24, 25, 27, 32, 40, 41, 57]
+    },
+    {
+      "pattern": "a*/.*/",
+      "matches": []
+    },
+    {
+      "pattern": "a*/a",
+      "matches": [14, 25]
+    },
+    {
+      "pattern": "a*/a**/.git/",
+      "matches": []
+    },
+    {
+      "pattern": "a*/src/**",
+      "matches": []
+    },
+    {
+      "pattern": "a/",
+      "matches": [14, 21, 22, 32, 40, 57]
+    },
+    {
+      "pattern": "a/**.md/[",
+      "matches": []
+    },
+    {
+      "pattern": "a/**/b",
+      "matches": [22]
+    },
+    {
+      "pattern": "a/[/[z-a]",
+      "matches": [14]
+    },
+    {
+      "pattern": "a/[a-c]/**",
+      "matches": [40]
+    },
+    {
+      "pattern": "a/[z-a]/b",
+      "matches": []
+    },
+    {
+      "pattern": "a/b/docs",
+      "matches": []
+    },
+    {
+      "pattern": "a/x.md/",
+      "matches": []
+    },
+    {
+      "pattern": "a?",
+      "matches": [20, 51, 62]
+    },
+    {
+      "pattern": "a?/!a/",
+      "matches": []
+    },
+    {
+      "pattern": "a?/.*",
+      "matches": [24]
+    },
+    {
+      "pattern": "a?/{a,b}/a?",
+      "matches": []
+    },
+    {
+      "pattern": "a\\ b",
+      "matches": [6, 18, 19, 45]
+    },
+    {
+      "pattern": "a\\ b/",
+      "matches": []
+    },
+    {
+      "pattern": "a\\ b/**",
+      "matches": []
+    },
+    {
+      "pattern": "a\\ b/.*",
+      "matches": []
+    },
+    {
+      "pattern": "a\\ b/\\!a/*.md",
+      "matches": []
+    },
+    {
+      "pattern": "a\\ b/src/",
+      "matches": []
+    },
+    {
+      "pattern": "a\\ b/y.cs",
+      "matches": []
+    },
+    {
+      "pattern": "a\\ b/{a,b}/",
+      "matches": []
+    },
+    {
+      "pattern": "b",
+      "matches": [9, 22, 26, 28]
+    },
+    {
+      "pattern": "b/",
+      "matches": [27, 28, 40]
+    },
+    {
+      "pattern": "b/!a/\\*/",
+      "matches": []
+    },
+    {
+      "pattern": "b/**.md",
+      "matches": []
+    },
+    {
+      "pattern": "b/*.cs",
+      "matches": [40]
+    },
+    {
+      "pattern": "b/.*/logs",
+      "matches": []
+    },
+    {
+      "pattern": "b/[^a]",
+      "matches": []
+    },
+    {
+      "pattern": "b/[a-c]/.*",
+      "matches": []
+    },
+    {
+      "pattern": "b/\\#a",
+      "matches": []
+    },
+    {
+      "pattern": "b/\\*/",
+      "matches": []
+    },
+    {
+      "pattern": "docs",
+      "matches": [29, 33]
+    },
+    {
+      "pattern": "docs/",
+      "matches": [30, 31, 32, 33, 34, 42]
+    },
+    {
+      "pattern": "docs/*",
+      "matches": [30, 31, 33, 34, 42]
+    },
+    {
+      "pattern": "docs/**",
+      "matches": [30, 31, 33, 34, 42]
+    },
+    {
+      "pattern": "docs/**/]/",
+      "matches": []
+    },
+    {
+      "pattern": "docs/*.cs/",
+      "matches": []
+    },
+    {
+      "pattern": "docs/*.md",
+      "matches": [34, 42]
+    },
+    {
+      "pattern": "docs/?/",
+      "matches": [32]
+    },
+    {
+      "pattern": "docs/\\[ab]",
+      "matches": []
+    },
+    {
+      "pattern": "docs/a**",
+      "matches": [31]
+    },
+    {
+      "pattern": "docs/a**/a?",
+      "matches": []
+    },
+    {
+      "pattern": "docs/docs/",
+      "matches": []
+    },
+    {
+      "pattern": "docs/x.md/?",
+      "matches": []
+    },
+    {
+      "pattern": "logs",
+      "matches": [15, 21, 35, 38]
+    },
+    {
+      "pattern": "logs/",
+      "matches": [2, 22, 28, 36, 37, 38]
+    },
+    {
+      "pattern": "logs/.*",
+      "matches": []
+    },
+    {
+      "pattern": "logs/.*/?",
+      "matches": []
+    },
+    {
+      "pattern": "logs/?",
+      "matches": [22, 37]
+    },
+    {
+      "pattern": "logs/\\*",
+      "matches": []
+    },
+    {
+      "pattern": "logs/\\*/*b/",
+      "matches": []
+    },
+    {
+      "pattern": "logs/src/logs",
+      "matches": []
+    },
+    {
+      "pattern": "logs/x.md",
+      "matches": []
+    },
+    {
+      "pattern": "logs/{a,b}/",
+      "matches": []
+    },
+    {
+      "pattern": "src",
+      "matches": [39]
+    },
+    {
+      "pattern": "src/",
+      "matches": [2, 3, 40, 41, 42, 43]
+    },
+    {
+      "pattern": "src/*",
+      "matches": [2, 3, 43]
+    },
+    {
+      "pattern": "src/**/docs/",
+      "matches": [42]
+    },
+    {
+      "pattern": "src/.*",
+      "matches": []
+    },
+    {
+      "pattern": "src/?/logs",
+      "matches": []
+    },
+    {
+      "pattern": "src/[[:alpha:]]/",
+      "matches": []
+    },
+    {
+      "pattern": "src/[z-a]/b",
+      "matches": []
+    },
+    {
+      "pattern": "src/a**",
+      "matches": []
+    },
+    {
+      "pattern": "src/a?",
+      "matches": []
+    },
+    {
+      "pattern": "src/src",
+      "matches": []
+    },
+    {
+      "pattern": "src/src/",
+      "matches": [3]
+    },
+    {
+      "pattern": "x.md",
+      "matches": [5, 32, 34, 42, 43, 44]
+    },
+    {
+      "pattern": "x.md/",
+      "matches": [45]
+    },
+    {
+      "pattern": "x.md/**",
+      "matches": []
+    },
+    {
+      "pattern": "x.md/**.md",
+      "matches": []
+    },
+    {
+      "pattern": "x.md/**/\\!a",
+      "matches": []
+    },
+    {
+      "pattern": "x.md/*.cs",
+      "matches": []
+    },
+    {
+      "pattern": "x.md/*.md/*",
+      "matches": []
+    },
+    {
+      "pattern": "x.md/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "y.cs",
+      "matches": [27, 40, 41]
+    },
+    {
+      "pattern": "y.cs/",
+      "matches": [46, 47]
+    },
+    {
+      "pattern": "y.cs/!a/[a-c]",
+      "matches": []
+    },
+    {
+      "pattern": "y.cs/*.cs",
+      "matches": []
+    },
+    {
+      "pattern": "y.cs/[[:alpha:]]",
+      "matches": []
+    },
+    {
+      "pattern": "y.cs/[^a]",
+      "matches": []
+    },
+    {
+      "pattern": "y.cs/\\!a",
+      "matches": [46, 47]
+    },
+    {
+      "pattern": "y.cs/a",
+      "matches": []
+    },
+    {
+      "pattern": "y.cs/a?/.*",
+      "matches": []
+    },
+    {
+      "pattern": "y.cs/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "{a,b}",
+      "matches": [64]
+    },
+    {
+      "pattern": "{a,b}/",
+      "matches": []
+    },
+    {
+      "pattern": "{a,b}/*",
+      "matches": []
+    },
+    {
+      "pattern": "{a,b}/*.md/",
+      "matches": []
+    },
+    {
+      "pattern": "{a,b}/*.md/b",
+      "matches": []
+    },
+    {
+      "pattern": "{a,b}/*b",
+      "matches": []
+    },
+    {
+      "pattern": "{a,b}/[^a]",
+      "matches": []
+    },
+    {
+      "pattern": "{a,b}/\\#a",
+      "matches": []
+    },
+    {
+      "pattern": "{a,b}/\\[ab]",
+      "matches": []
+    },
+    {
+      "pattern": "{a,b}/a**",
+      "matches": []
+    },
+    {
+      "pattern": "{a,b}/src",
+      "matches": []
+    },
+    {
+      "pattern": "{a,b}/y.cs/[ab]",
+      "matches": []
+    },
+    {
+      "pattern": "/*",
+      "matches": [0, 4, 8, 10, 13, 16, 17, 18, 26, 29, 35, 39, 44, 48, 49, 50, 51, 52, 53, 54, 55, 58, 59, 60, 61, 62, 63, 64, 65]
+    },
+    {
+      "pattern": "/*/[a-é]",
+      "matches": [25, 37]
+    },
+    {
+      "pattern": "/?/",
+      "matches": [9, 21, 22, 27, 28, 56, 57]
+    },
+    {
+      "pattern": "/?/[\\]]",
+      "matches": []
+    },
+    {
+      "pattern": "/[!-]",
+      "matches": [8, 17, 26, 48, 50, 53, 54, 55, 59, 60, 61, 63, 65]
+    },
+    {
+      "pattern": "/[!-]/",
+      "matches": [9, 21, 22, 27, 28, 56, 57]
+    },
+    {
+      "pattern": "/[!-]/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "/[!]",
+      "matches": [8, 17, 26, 48, 49, 50, 53, 54, 55, 59, 60, 61, 63, 65]
+    },
+    {
+      "pattern": "/[!]/",
+      "matches": [9, 21, 22, 27, 28, 56, 57]
+    },
+    {
+      "pattern": "/[!]/[/]",
+      "matches": []
+    },
+    {
+      "pattern": "/[!]]",
+      "matches": [51]
+    },
+    {
+      "pattern": "/[!]]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[!]]/[A-Z]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[!]]/a\\",
+      "matches": []
+    },
+    {
+      "pattern": "/[*]",
+      "matches": [8]
+    },
+    {
+      "pattern": "/[*]/*/",
+      "matches": [9]
+    },
+    {
+      "pattern": "/[*]/?",
+      "matches": []
+    },
+    {
+      "pattern": "/[*]/[!-]",
+      "matches": []
+    },
+    {
+      "pattern": "/[*]/[.]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[*]/[[:alpha:]]",
+      "matches": []
+    },
+    {
+      "pattern": "/[-a]",
+      "matches": [17, 49]
+    },
+    {
+      "pattern": "/[-a]/",
+      "matches": [21, 22, 57]
+    },
+    {
+      "pattern": "/[-a]/a\\",
+      "matches": []
+    },
+    {
+      "pattern": "/[.]",
+      "matches": [55]
+    },
+    {
+      "pattern": "/[.]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[.]/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "/[/]",
+      "matches": []
+    },
+    {
+      "pattern": "/[/]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[/]/?/",
+      "matches": []
+    },
+    {
+      "pattern": "/[/]/[a/",
+      "matches": []
+    },
+    {
+      "pattern": "/[/]/\\a/",
+      "matches": []
+    },
+    {
+      "pattern": "/[:alpha:]",
+      "matches": [17, 65]
+    },
+    {
+      "pattern": "/[:alpha:]/",
+      "matches": [21, 22, 57]
+    },
+    {
+      "pattern": "/[:alpha:]/[[:alpha:]]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[?]",
+      "matches": []
+    },
+    {
+      "pattern": "/[A-Z]",
+      "matches": [59, 60]
+    },
+    {
+      "pattern": "/[A-Z]/[é]",
+      "matches": []
+    },
+    {
+      "pattern": "/[[:alpha:]]/[]]",
+      "matches": []
+    },
+    {
+      "pattern": "/[[]",
+      "matches": [63]
+    },
+    {
+      "pattern": "/[[]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[[]/[?]",
+      "matches": []
+    },
+    {
+      "pattern": "/[[]/[a-é]",
+      "matches": []
+    },
+    {
+      "pattern": "/[\\!a]",
+      "matches": [17, 54]
+    },
+    {
+      "pattern": "/[\\!a]/[^-a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[\\!a]/[é]",
+      "matches": []
+    },
+    {
+      "pattern": "/[\\\\]",
+      "matches": []
+    },
+    {
+      "pattern": "/[\\\\]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[\\\\]/[]-a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[\\\\]/[a",
+      "matches": []
+    },
+    {
+      "pattern": "/[\\\\]/\\a",
+      "matches": []
+    },
+    {
+      "pattern": "/[\\]]",
+      "matches": [48]
+    },
+    {
+      "pattern": "/[\\]]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[\\]]/[]-a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[]-a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[]-a]/[-a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[]-a]/[/]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[]-a]/a",
+      "matches": []
+    },
+    {
+      "pattern": "/[]]",
+      "matches": []
+    },
+    {
+      "pattern": "/[]]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[]a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[]a]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[^-a]",
+      "matches": [8, 26, 48, 50, 53, 54, 55, 59, 60, 61, 63, 65]
+    },
+    {
+      "pattern": "/[^-a]/",
+      "matches": [9, 27, 28, 56]
+    },
+    {
+      "pattern": "/[^-a]/[-a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[^-a]/a\\",
+      "matches": []
+    },
+    {
+      "pattern": "/[^]a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[^]a]/[?]",
+      "matches": []
+    },
+    {
+      "pattern": "/[a",
+      "matches": []
+    },
+    {
+      "pattern": "/[a-]",
+      "matches": [17, 49]
+    },
+    {
+      "pattern": "/[a-]/",
+      "matches": [21, 22, 57]
+    },
+    {
+      "pattern": "/[a-c-e]",
+      "matches": [17, 26, 49, 50]
+    },
+    {
+      "pattern": "/[a-c-e]/",
+      "matches": [21, 22, 27, 28, 57]
+    },
+    {
+      "pattern": "/[a-c-e]/[!]",
+      "matches": [57]
+    },
+    {
+      "pattern": "/[a-c-e]/[\\]]",
+      "matches": []
+    },
+    {
+      "pattern": "/[a-é]",
+      "matches": [17, 26, 50, 61]
+    },
+    {
+      "pattern": "/[a-é]/[\\]]",
+      "matches": []
+    },
+    {
+      "pattern": "/[a-é]/[]-a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[a/",
+      "matches": []
+    },
+    {
+      "pattern": "/[a/[a\\-c]",
+      "matches": [17, 49, 50, 63]
+    },
+    {
+      "pattern": "/[a/a",
+      "matches": []
+    },
+    {
+      "pattern": "/[a/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "/[a\\-c]",
+      "matches": [17, 49, 50]
+    },
+    {
+      "pattern": "/[é]",
+      "matches": [61]
+    },
+    {
+      "pattern": "/[é]/[?]/",
+      "matches": []
+    },
+    {
+      "pattern": "/\\a",
+      "matches": [17]
+    },
+    {
+      "pattern": "/\\a/",
+      "matches": [21, 22, 57]
+    },
+    {
+      "pattern": "/\\a/[\\!a]",
+      "matches": []
+    },
+    {
+      "pattern": "/\\a/[^]a]",
+      "matches": []
+    },
+    {
+      "pattern": "/\\a/[a-]",
+      "matches": [57]
+    },
+    {
+      "pattern": "/\\a/\\a/",
+      "matches": []
+    },
+    {
+      "pattern": "/]a",
+      "matches": []
+    },
+    {
+      "pattern": "/]a/",
+      "matches": []
+    },
+    {
+      "pattern": "/a/]a",
+      "matches": []
+    },
+    {
+      "pattern": "/a[",
+      "matches": []
+    },
+    {
+      "pattern": "/a[/[a",
+      "matches": []
+    },
+    {
+      "pattern": "/a\\",
+      "matches": [17]
+    },
+    {
+      "pattern": "/{a,b}/[]-a]",
+      "matches": []
+    },
+    {
+      "pattern": "/{a,b}/[]a]",
+      "matches": []
+    },
+    {
+      "pattern": "?/[A-Z]",
+      "matches": []
+    },
+    {
+      "pattern": "?/[a",
+      "matches": []
+    },
+    {
+      "pattern": "[!-]",
+      "matches": [1, 3, 8, 9, 14, 17, 22, 25, 26, 28, 37, 48, 50, 53, 54, 55, 56, 59, 60, 61, 63, 65]
+    },
+    {
+      "pattern": "[!-]/",
+      "matches": [9, 14, 21, 22, 27, 28, 32, 36, 40, 56, 57]
+    },
+    {
+      "pattern": "[!-]/*",
+      "matches": [14, 21, 32, 36, 40, 56, 57]
+    },
+    {
+      "pattern": "[!-]/[é]",
+      "matches": []
+    },
+    {
+      "pattern": "[!]",
+      "matches": [1, 3, 8, 9, 14, 17, 22, 25, 26, 28, 37, 48, 49, 50, 53, 54, 55, 56, 57, 59, 60, 61, 63, 65]
+    },
+    {
+      "pattern": "[!]/",
+      "matches": [9, 14, 21, 22, 27, 28, 32, 36, 40, 56, 57]
+    },
+    {
+      "pattern": "[!]/[^]a]",
+      "matches": []
+    },
+    {
+      "pattern": "[!]]",
+      "matches": [51]
+    },
+    {
+      "pattern": "[*]",
+      "matches": [1, 3, 8]
+    },
+    {
+      "pattern": "[*]/",
+      "matches": [9, 36]
+    },
+    {
+      "pattern": "[*]/[.]",
+      "matches": []
+    },
+    {
+      "pattern": "[*]/[/]",
+      "matches": []
+    },
+    {
+      "pattern": "[*]/[\\]]",
+      "matches": []
+    },
+    {
+      "pattern": "[*]/[^-a]",
+      "matches": []
+    },
+    {
+      "pattern": "[-a]",
+      "matches": [14, 17, 25, 37, 49, 57]
+    },
+    {
+      "pattern": "[-a]/",
+      "matches": [14, 21, 22, 32, 40, 57]
+    },
+    {
+      "pattern": "[-a]/[!]]/",
+      "matches": []
+    },
+    {
+      "pattern": "[-a]/[\\!a]",
+      "matches": [14]
+    },
+    {
+      "pattern": "[.]",
+      "matches": [55]
+    },
+    {
+      "pattern": "[.]/[!]",
+      "matches": []
+    },
+    {
+      "pattern": "[.]/[/]/",
+      "matches": []
+    },
+    {
+      "pattern": "[.]/[\\]]",
+      "matches": []
+    },
+    {
+      "pattern": "[.]/\\a",
+      "matches": []
+    },
+    {
+      "pattern": "[/]/",
+      "matches": []
+    },
+    {
+      "pattern": "[/]/[/]",
+      "matches": []
+    },
+    {
+      "pattern": "[:alpha:]",
+      "matches": [14, 17, 25, 37, 65]
+    },
+    {
+      "pattern": "[:alpha:]/[/]",
+      "matches": []
+    },
+    {
+      "pattern": "[:alpha:]/[\\]]/",
+      "matches": []
+    },
+    {
+      "pattern": "[:alpha:]/[a-c-e]",
+      "matches": [14, 57]
+    },
+    {
+      "pattern": "[:alpha:]/a\\",
+      "matches": [14]
+    },
+    {
+      "pattern": "[?]",
+      "matches": []
+    },
+    {
+      "pattern": "[?]/[]-a]",
+      "matches": []
+    },
+    {
+      "pattern": "[?]/[]a]",
+      "matches": []
+    },
+    {
+      "pattern": "[?]/[^-a]",
+      "matches": []
+    },
+    {
+      "pattern": "[A-Z]",
+      "matches": [59, 60]
+    },
+    {
+      "pattern": "[A-Z]/",
+      "matches": []
+    },
+    {
+      "pattern": "[A-Z]/[!-]",
+      "matches": []
+    },
+    {
+      "pattern": "[A-Z]/[a-é]",
+      "matches": []
+    },
+    {
+      "pattern": "[[:alpha:]]/",
+      "matches": []
+    },
+    {
+      "pattern": "[[]",
+      "matches": [63]
+    },
+    {
+      "pattern": "[[]/",
+      "matches": []
+    },
+    {
+      "pattern": "[[]/[\\!a]",
+      "matches": []
+    },
+    {
+      "pattern": "[[]/a\\",
+      "matches": []
+    },
+    {
+      "pattern": "[\\!a]",
+      "matches": [14, 17, 25, 37, 54]
+    },
+    {
+      "pattern": "[\\!a]/[A-Z]",
+      "matches": []
+    },
+    {
+      "pattern": "[\\!a]/[\\]]",
+      "matches": []
+    },
+    {
+      "pattern": "[\\!a]/]a",
+      "matches": []
+    },
+    {
+      "pattern": "[\\\\]",
+      "matches": []
+    },
+    {
+      "pattern": "[\\\\]/",
+      "matches": []
+    },
+    {
+      "pattern": "[\\\\]/\\a",
+      "matches": []
+    },
+    {
+      "pattern": "[\\]]",
+      "matches": [48]
+    },
+    {
+      "pattern": "[\\]]/",
+      "matches": [56]
+    },
+    {
+      "pattern": "[\\]]/[!]/",
+      "matches": []
+    },
+    {
+      "pattern": "[\\]]/[\\!a]",
+      "matches": []
+    },
+    {
+      "pattern": "[]-a]",
+      "matches": []
+    },
+    {
+      "pattern": "[]-a]/",
+      "matches": []
+    },
+    {
+      "pattern": "[]-a]/[\\\\]",
+      "matches": []
+    },
+    {
+      "pattern": "[]-a]/[]-a]/",
+      "matches": []
+    },
+    {
+      "pattern": "[]-a]/]a",
+      "matches": []
+    },
+    {
+      "pattern": "[]]",
+      "matches": []
+    },
+    {
+      "pattern": "[]]/[\\!a]",
+      "matches": []
+    },
+    {
+      "pattern": "[]a]",
+      "matches": []
+    },
+    {
+      "pattern": "[]a]/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "[^-a]",
+      "matches": [1, 3, 8, 9, 22, 26, 28, 48, 50, 53, 54, 55, 56, 59, 60, 61, 63, 65]
+    },
+    {
+      "pattern": "[^-a]/",
+      "matches": [9, 27, 28, 36, 40, 56]
+    },
+    {
+      "pattern": "[^-a]/[]]",
+      "matches": []
+    },
+    {
+      "pattern": "[^-a]/[a-é]",
+      "matches": [56]
+    },
+    {
+      "pattern": "[^]a]",
+      "matches": []
+    },
+    {
+      "pattern": "[^]a]/[\\\\]",
+      "matches": []
+    },
+    {
+      "pattern": "[^]a]/]a",
+      "matches": []
+    },
+    {
+      "pattern": "[a",
+      "matches": []
+    },
+    {
+      "pattern": "[a-]",
+      "matches": [14, 17, 25, 37, 49, 57]
+    },
+    {
+      "pattern": "[a-]/[:alpha:]",
+      "matches": [14]
+    },
+    {
+      "pattern": "[a-]/[a-c-e]",
+      "matches": [14, 57]
+    },
+    {
+      "pattern": "[a-c-e]",
+      "matches": [9, 14, 17, 22, 25, 26, 28, 37, 49, 50, 57]
+    },
+    {
+      "pattern": "[a-c-e]/",
+      "matches": [14, 21, 22, 27, 28, 32, 40, 57]
+    },
+    {
+      "pattern": "[a-c-e]/[]a]",
+      "matches": []
+    },
+    {
+      "pattern": "[a-é]",
+      "matches": [9, 14, 17, 22, 25, 26, 28, 37, 50, 56, 61]
+    },
+    {
+      "pattern": "[a-é]/",
+      "matches": [14, 21, 22, 27, 28, 32, 40, 56, 57]
+    },
+    {
+      "pattern": "[a-é]/?",
+      "matches": [14, 57]
+    },
+    {
+      "pattern": "[a-é]/[\\]]/",
+      "matches": [56]
+    },
+    {
+      "pattern": "[a-é]/a",
+      "matches": [14]
+    },
+    {
+      "pattern": "[a-é]/a[",
+      "matches": []
+    },
+    {
+      "pattern": "[a/[/]",
+      "matches": [14, 17, 25, 37, 63]
+    },
+    {
+      "pattern": "[a/[?]",
+      "matches": [14, 17, 25, 37, 63]
+    },
+    {
+      "pattern": "[a/[^-a]",
+      "matches": [14, 17, 25, 37, 53, 63]
+    },
+    {
+      "pattern": "[a\\-c]",
+      "matches": [14, 17, 25, 37, 49, 50, 57]
+    },
+    {
+      "pattern": "[a\\-c]/[a",
+      "matches": []
+    },
+    {
+      "pattern": "[é]",
+      "matches": [61]
+    },
+    {
+      "pattern": "[é]/",
+      "matches": []
+    },
+    {
+      "pattern": "\\a",
+      "matches": [14, 17, 25, 37]
+    },
+    {
+      "pattern": "\\a/",
+      "matches": [14, 21, 22, 32, 40, 57]
+    },
+    {
+      "pattern": "\\a/[\\]]",
+      "matches": []
+    },
+    {
+      "pattern": "]a",
+      "matches": []
+    },
+    {
+      "pattern": "]a/",
+      "matches": []
+    },
+    {
+      "pattern": "]a/?",
+      "matches": []
+    },
+    {
+      "pattern": "]a/[!]]",
+      "matches": []
+    },
+    {
+      "pattern": "a/[A-Z]/",
+      "matches": []
+    },
+    {
+      "pattern": "a[",
+      "matches": []
+    },
+    {
+      "pattern": "a[/[\\]]",
+      "matches": [51]
+    },
+    {
+      "pattern": "a\\",
+      "matches": [14, 17, 25, 37]
+    },
+    {
+      "pattern": "a\\/[?]",
+      "matches": []
+    },
+    {
+      "pattern": "a\\/[a",
+      "matches": []
+    },
+    {
+      "pattern": "{a,b}/[\\\\]",
+      "matches": []
+    },
+    {
+      "pattern": "{a,b}/[a\\-c]/",
+      "matches": []
+    },
+    {
+      "pattern": "{a,b}/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "***",
+      "matches": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65]
+    },
+    {
+      "pattern": "***/",
+      "matches": [1, 2, 3, 5, 6, 7, 9, 11, 12, 14, 15, 19, 20, 21, 22, 23, 24, 25, 27, 28, 30, 31, 32, 33, 34, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 56, 57]
+    },
+    {
+      "pattern": "***/**.md/a",
+      "matches": []
+    },
+    {
+      "pattern": "***/.*/",
+      "matches": [6, 9, 45]
+    },
+    {
+      "pattern": "***/[!]",
+      "matches": [1, 3, 9, 14, 22, 25, 28, 37, 56, 57]
+    },
+    {
+      "pattern": "***/[!]/**.md",
+      "matches": [32]
+    },
+    {
+      "pattern": "***/[\\]]",
+      "matches": []
+    },
+    {
+      "pattern": "***/a",
+      "matches": [14, 25, 37]
+    },
+    {
+      "pattern": "***/docs",
+      "matches": [33]
+    },
+    {
+      "pattern": "**.md",
+      "matches": [5, 7, 13, 32, 34, 42, 43, 44]
+    },
+    {
+      "pattern": "**.md/*.md/[^a]",
+      "matches": []
+    },
+    {
+      "pattern": "**.md/[",
+      "matches": []
+    },
+    {
+      "pattern": "**.md/[^]/[\\]]",
+      "matches": []
+    },
+    {
+      "pattern": "**.md/b",
+      "matches": []
+    },
+    {
+      "pattern": "**/[-a]",
+      "matches": [14, 17, 25, 37, 49, 57]
+    },
+    {
+      "pattern": "**/[.]",
+      "matches": [55]
+    },
+    {
+      "pattern": "**/[\\!]",
+      "matches": [54]
+    },
+    {
+      "pattern": "**/[\\!]/[]",
+      "matches": []
+    },
+    {
+      "pattern": "**/[]",
+      "matches": []
+    },
+    {
+      "pattern": "*.md/!a/a/",
+      "matches": []
+    },
+    {
+      "pattern": "*.md/***",
+      "matches": [15]
+    },
+    {
+      "pattern": "*.md/[!]a]",
+      "matches": []
+    },
+    {
+      "pattern": "*.md/[A-Z]",
+      "matches": []
+    },
+    {
+      "pattern": "*.md/[]a]/.git",
+      "matches": []
+    },
+    {
+      "pattern": "*/*",
+      "matches": [1, 2, 3, 5, 6, 7, 9, 11, 12, 14, 15, 19, 20, 21, 22, 23, 24, 25, 27, 28, 30, 31, 32, 33, 34, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 56, 57]
+    },
+    {
+      "pattern": "*/[",
+      "matches": []
+    },
+    {
+      "pattern": "*/[\\!]/[a-]/",
+      "matches": []
+    },
+    {
+      "pattern": "*/[]a]",
+      "matches": []
+    },
+    {
+      "pattern": "*/\\*/[]",
+      "matches": []
+    },
+    {
+      "pattern": "*/\\\\/[.]",
+      "matches": []
+    },
+    {
+      "pattern": ".*/",
+      "matches": [6, 9, 11, 12, 14, 15, 45]
+    },
+    {
+      "pattern": ".*/\\*",
+      "matches": []
+    },
+    {
+      "pattern": ".*/\\]",
+      "matches": []
+    },
+    {
+      "pattern": ".git/!a",
+      "matches": []
+    },
+    {
+      "pattern": ".git/***/[a-]",
+      "matches": []
+    },
+    {
+      "pattern": ".git/[.]/?/",
+      "matches": []
+    },
+    {
+      "pattern": ".git/[a-]",
+      "matches": []
+    },
+    {
+      "pattern": ".git/\\*",
+      "matches": []
+    },
+    {
+      "pattern": ".git/\\]",
+      "matches": []
+    },
+    {
+      "pattern": ".git/]",
+      "matches": []
+    },
+    {
+      "pattern": "/!a/",
+      "matches": [1, 2, 3]
+    },
+    {
+      "pattern": "/!a/*/**.md",
+      "matches": []
+    },
+    {
+      "pattern": "/!a/[!a]/[a-]",
+      "matches": []
+    },
+    {
+      "pattern": "/!a/[a-]/",
+      "matches": []
+    },
+    {
+      "pattern": "/!a/a\\",
+      "matches": []
+    },
+    {
+      "pattern": "/!a/{a,b}/a",
+      "matches": []
+    },
+    {
+      "pattern": "/***",
+      "matches": [0, 4, 8, 10, 13, 16, 17, 18, 26, 29, 35, 39, 44, 48, 49, 50, 51, 52, 53, 54, 55, 58, 59, 60, 61, 62, 63, 64, 65]
+    },
+    {
+      "pattern": "/***/",
+      "matches": [1, 2, 3, 5, 6, 7, 9, 11, 12, 14, 15, 19, 20, 21, 22, 23, 24, 25, 27, 28, 30, 31, 32, 33, 34, 36, 37, 38, 40, 41, 42, 43, 45, 46, 47, 56, 57]
+    },
+    {
+      "pattern": "/***/[]a]/",
+      "matches": []
+    },
+    {
+      "pattern": "/***/\\]",
+      "matches": []
+    },
+    {
+      "pattern": "/***/a",
+      "matches": [25, 37]
+    },
+    {
+      "pattern": "/**.md",
+      "matches": [13, 44]
+    },
+    {
+      "pattern": "/**.md/x.md/[^]",
+      "matches": []
+    },
+    {
+      "pattern": "/**/*.md",
+      "matches": [5, 7, 13, 32, 34, 42, 43, 44]
+    },
+    {
+      "pattern": "/**/[ab]/**",
+      "matches": [14, 21, 32, 40, 57]
+    },
+    {
+      "pattern": "/**/\\",
+      "matches": []
+    },
+    {
+      "pattern": "/**/é/",
+      "matches": []
+    },
+    {
+      "pattern": "/*.md",
+      "matches": [13, 44]
+    },
+    {
+      "pattern": "/*.md/***",
+      "matches": [15]
+    },
+    {
+      "pattern": "/*.md/*.md",
+      "matches": []
+    },
+    {
+      "pattern": "/*.md/?",
+      "matches": []
+    },
+    {
+      "pattern": "/*.md/[a\\-c]/a**",
+      "matches": [14]
+    },
+    {
+      "pattern": "/*/**/[.]",
+      "matches": []
+    },
+    {
+      "pattern": "/*/[!]",
+      "matches": [1, 25, 37, 57]
+    },
+    {
+      "pattern": "/*/[!]a]/[]",
+      "matches": []
+    },
+    {
+      "pattern": "/*/[]a]",
+      "matches": []
+    },
+    {
+      "pattern": "/*/[a-c]/",
+      "matches": [14, 32, 40]
+    },
+    {
+      "pattern": "/*/\\*",
+      "matches": [1]
+    },
+    {
+      "pattern": "/*/\\[",
+      "matches": []
+    },
+    {
+      "pattern": "/.*/",
+      "matches": [11, 12, 14, 15]
+    },
+    {
+      "pattern": "/.*/.git",
+      "matches": []
+    },
+    {
+      "pattern": "/.*/[\\]]/[.]",
+      "matches": []
+    },
+    {
+      "pattern": "/.*/[a-c]",
+      "matches": []
+    },
+    {
+      "pattern": "/.git/**",
+      "matches": [11, 12]
+    },
+    {
+      "pattern": "/.git/***",
+      "matches": [11, 12]
+    },
+    {
+      "pattern": "/.git/**/a\\",
+      "matches": []
+    },
+    {
+      "pattern": "/.git/[!]",
+      "matches": []
+    },
+    {
+      "pattern": "/.git/[!a]",
+      "matches": []
+    },
+    {
+      "pattern": "/.git/é/**/",
+      "matches": []
+    },
+    {
+      "pattern": "/?/[[:alpha:]]/[a-c]",
+      "matches": []
+    },
+    {
+      "pattern": "/?/[a-c]/[A-Z]",
+      "matches": []
+    },
+    {
+      "pattern": "/?/]/**.md",
+      "matches": []
+    },
+    {
+      "pattern": "/A",
+      "matches": [59]
+    },
+    {
+      "pattern": "/A/",
+      "matches": []
+    },
+    {
+      "pattern": "/A/*",
+      "matches": []
+    },
+    {
+      "pattern": "/A/*.md",
+      "matches": []
+    },
+    {
+      "pattern": "/A/.git/[é]/",
+      "matches": []
+    },
+    {
+      "pattern": "/A/?/x.md/",
+      "matches": []
+    },
+    {
+      "pattern": "/A/[.]/[]/",
+      "matches": []
+    },
+    {
+      "pattern": "/A/[[:alpha:]]",
+      "matches": []
+    },
+    {
+      "pattern": "/A/[]a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[!]/*",
+      "matches": [21, 57]
+    },
+    {
+      "pattern": "/[!]/[]a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[!]/[^]/",
+      "matches": [56]
+    },
+    {
+      "pattern": "/[!]/\\*/",
+      "matches": []
+    },
+    {
+      "pattern": "/[!]a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[!]a]/**.md/[/",
+      "matches": []
+    },
+    {
+      "pattern": "/[!]a]/.*/**.md",
+      "matches": []
+    },
+    {
+      "pattern": "/[!]a]/]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[!a]",
+      "matches": [8, 26, 48, 49, 50, 53, 54, 55, 59, 60, 61, 63, 65]
+    },
+    {
+      "pattern": "/[!a]/**/",
+      "matches": [9, 27, 28, 56]
+    },
+    {
+      "pattern": "/[-a]/?/",
+      "matches": []
+    },
+    {
+      "pattern": "/[-a]/[.]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[-a]/[]a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[-a]/a**",
+      "matches": []
+    },
+    {
+      "pattern": "/[.]/[é]/a/",
+      "matches": []
+    },
+    {
+      "pattern": "/[.]/\\\\",
+      "matches": []
+    },
+    {
+      "pattern": "/[.]/\\]/[^]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[A-Z]/[a-]",
+      "matches": []
+    },
+    {
+      "pattern": "/[A-Z]/[a-c]",
+      "matches": []
+    },
+    {
+      "pattern": "/[A-Z]/[a\\-c]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[A-Z]/a",
+      "matches": []
+    },
+    {
+      "pattern": "/[[:alpha:]]/!a",
+      "matches": []
+    },
+    {
+      "pattern": "/[[:alpha:]]/?",
+      "matches": []
+    },
+    {
+      "pattern": "/[[:alpha:]]/\\",
+      "matches": []
+    },
+    {
+      "pattern": "/[\\!]",
+      "matches": [54]
+    },
+    {
+      "pattern": "/[\\!]/[!a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[\\!]/[\\]]",
+      "matches": []
+    },
+    {
+      "pattern": "/[\\!]/[^]/\\",
+      "matches": []
+    },
+    {
+      "pattern": "/[\\!]/\\\\/",
+      "matches": []
+    },
+    {
+      "pattern": "/[\\!]/a*/",
+      "matches": []
+    },
+    {
+      "pattern": "/[\\]]/[!a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[]",
+      "matches": []
+    },
+    {
+      "pattern": "/[]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[]a]/**",
+      "matches": []
+    },
+    {
+      "pattern": "/[]a]/**/a\\/",
+      "matches": []
+    },
+    {
+      "pattern": "/[]a]/[^]",
+      "matches": []
+    },
+    {
+      "pattern": "/[]a]/\\[",
+      "matches": []
+    },
+    {
+      "pattern": "/[^]",
+      "matches": [8, 17, 26, 48, 49, 50, 53, 54, 55, 59, 60, 61, 63, 65]
+    },
+    {
+      "pattern": "/[^]/",
+      "matches": [9, 21, 22, 27, 28, 56, 57]
+    },
+    {
+      "pattern": "/[^]/[\\]]",
+      "matches": []
+    },
+    {
+      "pattern": "/[^a]",
+      "matches": [8, 26, 48, 49, 50, 53, 54, 55, 59, 60, 61, 63, 65]
+    },
+    {
+      "pattern": "/[^a]/.git",
+      "matches": []
+    },
+    {
+      "pattern": "/[^a]/[-a]/docs/",
+      "matches": []
+    },
+    {
+      "pattern": "/[a-]/A/*.md",
+      "matches": []
+    },
+    {
+      "pattern": "/[a-]/[!a]",
+      "matches": [57]
+    },
+    {
+      "pattern": "/[a-]/\\*/\\[/",
+      "matches": []
+    },
+    {
+      "pattern": "/[a-]/\\]/**",
+      "matches": []
+    },
+    {
+      "pattern": "/[a-]/a*/[]a]",
+      "matches": []
+    },
+    {
+      "pattern": "/[a-c]/",
+      "matches": [21, 22, 27, 28, 57]
+    },
+    {
+      "pattern": "/[a-c]/!a",
+      "matches": []
+    },
+    {
+      "pattern": "/[a-c]/\\",
+      "matches": []
+    },
+    {
+      "pattern": "/[a-c]/a**",
+      "matches": []
+    },
+    {
+      "pattern": "/[a\\-c]/",
+      "matches": [21, 22, 57]
+    },
+    {
+      "pattern": "/[ab]/**/",
+      "matches": [21, 22, 27, 28, 57]
+    },
+    {
+      "pattern": "/[z-a]/",
+      "matches": [21, 22, 57]
+    },
+    {
+      "pattern": "/[z-a]/[]a]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[z-a]/[a\\-c]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[é]/",
+      "matches": []
+    },
+    {
+      "pattern": "/[é]/[a-c]/docs/",
+      "matches": []
+    },
+    {
+      "pattern": "/[é]/\\]",
+      "matches": []
+    },
+    {
+      "pattern": "/[é]/a\\",
+      "matches": []
+    },
+    {
+      "pattern": "/\\",
+      "matches": []
+    },
+    {
+      "pattern": "/\\*/[",
+      "matches": []
+    },
+    {
+      "pattern": "/\\*/[A-Z]/[A-Z]",
+      "matches": []
+    },
+    {
+      "pattern": "/\\*/[a-]/[z-a]",
+      "matches": []
+    },
+    {
+      "pattern": "/\\*/docs",
+      "matches": []
+    },
+    {
+      "pattern": "/\\/[]",
+      "matches": []
+    },
+    {
+      "pattern": "/\\/a*",
+      "matches": []
+    },
+    {
+      "pattern": "/\\[",
+      "matches": [63]
+    },
+    {
+      "pattern": "/\\[/",
+      "matches": []
+    },
+    {
+      "pattern": "/\\[/[-a]/",
+      "matches": []
+    },
+    {
+      "pattern": "/\\\\",
+      "matches": []
+    },
+    {
+      "pattern": "/\\\\/[]/a*",
+      "matches": []
+    },
+    {
+      "pattern": "/\\\\/[ab]",
+      "matches": []
+    },
+    {
+      "pattern": "/\\\\/a",
+      "matches": []
+    },
+    {
+      "pattern": "/\\]/",
+      "matches": []
+    },
+    {
+      "pattern": "/\\]/A",
+      "matches": []
+    },
+    {
+      "pattern": "/\\]/[^a]",
+      "matches": []
+    },
+    {
+      "pattern": "/\\]/\\]",
+      "matches": []
+    },
+    {
+      "pattern": "/]/*.md",
+      "matches": []
+    },
+    {
+      "pattern": "/a**/",
+      "matches": [19, 20, 21, 22, 23, 24, 25, 57]
+    },
+    {
+      "pattern": "/a**/[\\]]/[]/",
+      "matches": []
+    },
+    {
+      "pattern": "/a**/[z-a]",
+      "matches": [25]
+    },
+    {
+      "pattern": "/a**/a/",
+      "matches": []
+    },
+    {
+      "pattern": "/a*/",
+      "matches": [19, 20, 21, 22, 23, 24, 25, 57]
+    },
+    {
+      "pattern": "/a*/[/**",
+      "matches": []
+    },
+    {
+      "pattern": "/a*/[^a]/",
+      "matches": []
+    },
+    {
+      "pattern": "/a*/b",
+      "matches": []
+    },
+    {
+      "pattern": "/a/",
+      "matches": [21, 22, 57]
+    },
+    {
+      "pattern": "/a/**/",
+      "matches": [21, 22, 57]
+    },
+    {
+      "pattern": "/a/\\/[é]",
+      "matches": []
+    },
+    {
+      "pattern": "/a/a\\/\\*",
+      "matches": []
+    },
+    {
+      "pattern": "/a\\/[",
+      "matches": []
+    },
+    {
+      "pattern": "/a\\/[A-Z]/",
+      "matches": []
+    },
+    {
+      "pattern": "/a\\/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "/b",
+      "matches": [26]
+    },
+    {
+      "pattern": "/b/[^a]",
+      "matches": []
+    },
+    {
+      "pattern": "/b/[z-a]",
+      "matches": []
+    },
+    {
+      "pattern": "/docs/**/[!]",
+      "matches": []
+    },
+    {
+      "pattern": "/x.md",
+      "matches": [44]
+    },
+    {
+      "pattern": "/x.md/!a/[]a]",
+      "matches": []
+    },
+    {
+      "pattern": "/x.md/[!a]",
+      "matches": []
+    },
+    {
+      "pattern": "/x.md/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "/{a,b}/**/[^]",
+      "matches": []
+    },
+    {
+      "pattern": "/{a,b}/?",
+      "matches": []
+    },
+    {
+      "pattern": "/{a,b}/[a\\-c]/b",
+      "matches": []
+    },
+    {
+      "pattern": "/{a,b}/docs",
+      "matches": []
+    },
+    {
+      "pattern": "/é",
+      "matches": [61]
+    },
+    {
+      "pattern": "/é/[.]/[[:alpha:]]/",
+      "matches": []
+    },
+    {
+      "pattern": "/é/[A-Z]/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "/é/[[:alpha:]]/",
+      "matches": []
+    },
+    {
+      "pattern": "?/!a/",
+      "matches": []
+    },
+    {
+      "pattern": "?/[-a]",
+      "matches": [14, 57]
+    },
+    {
+      "pattern": "?/[a-]/\\",
+      "matches": []
+    },
+    {
+      "pattern": "A",
+      "matches": [59]
+    },
+    {
+      "pattern": "A/!a",
+      "matches": []
+    },
+    {
+      "pattern": "A/*.md",
+      "matches": []
+    },
+    {
+      "pattern": "A/[!]/[]",
+      "matches": []
+    },
+    {
+      "pattern": "A/\\]",
+      "matches": []
+    },
+    {
+      "pattern": "[!]/[]/!a",
+      "matches": []
+    },
+    {
+      "pattern": "[!]/[a-c]",
+      "matches": [14]
+    },
+    {
+      "pattern": "[!]/]/",
+      "matches": [56]
+    },
+    {
+      "pattern": "[!]/]/\\[/",
+      "matches": []
+    },
+    {
+      "pattern": "[!]a]",
+      "matches": []
+    },
+    {
+      "pattern": "[!]a]/**.md/*.md",
+      "matches": []
+    },
+    {
+      "pattern": "[!]a]/[/a",
+      "matches": []
+    },
+    {
+      "pattern": "[!]a]/[a-]/[]a]/",
+      "matches": []
+    },
+    {
+      "pattern": "[!]a]/x.md",
+      "matches": []
+    },
+    {
+      "pattern": "[!a]/",
+      "matches": [9, 27, 28, 36, 40, 56]
+    },
+    {
+      "pattern": "[!a]/*",
+      "matches": [36, 40, 56]
+    },
+    {
+      "pattern": "[!a]/?/\\]/",
+      "matches": []
+    },
+    {
+      "pattern": "[!a]/[!]",
+      "matches": [56]
+    },
+    {
+      "pattern": "[!a]/[.]",
+      "matches": []
+    },
+    {
+      "pattern": "[!a]/[[:alpha:]]/\\\\",
+      "matches": []
+    },
+    {
+      "pattern": "[!a]/[]",
+      "matches": []
+    },
+    {
+      "pattern": "[-a]/[!a]",
+      "matches": [57]
+    },
+    {
+      "pattern": "[-a]/[]",
+      "matches": []
+    },
+    {
+      "pattern": "[.]/",
+      "matches": []
+    },
+    {
+      "pattern": "[.]/[a-c]/{a,b}/",
+      "matches": []
+    },
+    {
+      "pattern": "[.]/]",
+      "matches": []
+    },
+    {
+      "pattern": "[.]/docs",
+      "matches": []
+    },
+    {
+      "pattern": "[/!a/[.]",
+      "matches": [14, 17, 25, 37, 54, 55, 63]
+    },
+    {
+      "pattern": "[/[-a]",
+      "matches": [14, 17, 25, 37, 48, 53, 63]
+    },
+    {
+      "pattern": "[/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "[A-Z]/**",
+      "matches": []
+    },
+    {
+      "pattern": "[A-Z]/*.md",
+      "matches": []
+    },
+    {
+      "pattern": "[A-Z]/[ab]",
+      "matches": []
+    },
+    {
+      "pattern": "[A-Z]/[z-a]/",
+      "matches": []
+    },
+    {
+      "pattern": "[A-Z]/\\",
+      "matches": []
+    },
+    {
+      "pattern": "[A-Z]/\\*",
+      "matches": []
+    },
+    {
+      "pattern": "[A-Z]/a*/***",
+      "matches": []
+    },
+    {
+      "pattern": "[[:alpha:]]/***",
+      "matches": []
+    },
+    {
+      "pattern": "[[:alpha:]]/[^]",
+      "matches": []
+    },
+    {
+      "pattern": "[[:alpha:]]/[ab]",
+      "matches": []
+    },
+    {
+      "pattern": "[\\!]",
+      "matches": [54]
+    },
+    {
+      "pattern": "[\\!]/**",
+      "matches": []
+    },
+    {
+      "pattern": "[\\!]/*/x.md",
+      "matches": []
+    },
+    {
+      "pattern": "[\\!]/.git",
+      "matches": []
+    },
+    {
+      "pattern": "[\\!]/[[:alpha:]]",
+      "matches": []
+    },
+    {
+      "pattern": "[\\!]/[z-a]",
+      "matches": []
+    },
+    {
+      "pattern": "[\\!]/\\/",
+      "matches": []
+    },
+    {
+      "pattern": "[\\!]/\\[",
+      "matches": []
+    },
+    {
+      "pattern": "[\\!]/b",
+      "matches": []
+    },
+    {
+      "pattern": "[\\]]/.*/docs",
+      "matches": []
+    },
+    {
+      "pattern": "[\\]]/A/\\\\",
+      "matches": []
+    },
+    {
+      "pattern": "[\\]]/[\\]]/a*",
+      "matches": []
+    },
+    {
+      "pattern": "[\\]]/[z-a]/*.md",
+      "matches": []
+    },
+    {
+      "pattern": "[\\]]/[z-a]/b",
+      "matches": []
+    },
+    {
+      "pattern": "[\\]]/\\*/\\",
+      "matches": []
+    },
+    {
+      "pattern": "[\\]]/\\[/***",
+      "matches": []
+    },
+    {
+      "pattern": "[\\]]/\\\\",
+      "matches": []
+    },
+    {
+      "pattern": "[\\]]/a**",
+      "matches": []
+    },
+    {
+      "pattern": "[\\]]/b",
+      "matches": []
+    },
+    {
+      "pattern": "[]",
+      "matches": []
+    },
+    {
+      "pattern": "[]/",
+      "matches": []
+    },
+    {
+      "pattern": "[]/*.md",
+      "matches": []
+    },
+    {
+      "pattern": "[]/[!]a]",
+      "matches": []
+    },
+    {
+      "pattern": "[]/[-a]",
+      "matches": []
+    },
+    {
+      "pattern": "[]/[]/***/",
+      "matches": []
+    },
+    {
+      "pattern": "[]/\\",
+      "matches": []
+    },
+    {
+      "pattern": "[]/\\]/a\\",
+      "matches": []
+    },
+    {
+      "pattern": "[]a]/",
+      "matches": []
+    },
+    {
+      "pattern": "[]a]/*.md",
+      "matches": []
+    },
+    {
+      "pattern": "[]a]/[/docs",
+      "matches": []
+    },
+    {
+      "pattern": "[]a]/a*/[!a]",
+      "matches": []
+    },
+    {
+      "pattern": "[^]",
+      "matches": [1, 3, 8, 9, 14, 17, 22, 25, 26, 28, 37, 48, 49, 50, 53, 54, 55, 56, 57, 59, 60, 61, 63, 65]
+    },
+    {
+      "pattern": "[^]/",
+      "matches": [9, 14, 21, 22, 27, 28, 32, 36, 40, 56, 57]
+    },
+    {
+      "pattern": "[^]/.git/",
+      "matches": [9]
+    },
+    {
+      "pattern": "[^]/[.]/[A-Z]",
+      "matches": []
+    },
+    {
+      "pattern": "[^]/[\\!]",
+      "matches": []
+    },
+    {
+      "pattern": "[^]/[]/.git",
+      "matches": []
+    },
+    {
+      "pattern": "[^]/\\[/.git",
+      "matches": []
+    },
+    {
+      "pattern": "[^]/x.md",
+      "matches": [32]
+    },
+    {
+      "pattern": "[^a]/!a",
+      "matches": []
+    },
+    {
+      "pattern": "[^a]/**",
+      "matches": [36, 40, 56]
+    },
+    {
+      "pattern": "[^a]/.git/",
+      "matches": [9]
+    },
+    {
+      "pattern": "[^a]/[!]/[a-]",
+      "matches": []
+    },
+    {
+      "pattern": "[^a]/[!]a]/[é]",
+      "matches": []
+    },
+    {
+      "pattern": "[^a]/[ab]",
+      "matches": []
+    },
+    {
+      "pattern": "[^a]/]",
+      "matches": []
+    },
+    {
+      "pattern": "[^a]/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "[a-]/",
+      "matches": [14, 21, 22, 32, 40, 57]
+    },
+    {
+      "pattern": "[a-]/[-a]",
+      "matches": [14, 57]
+    },
+    {
+      "pattern": "[a-]/[.]",
+      "matches": []
+    },
+    {
+      "pattern": "[a-]/\\*/",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]/**",
+      "matches": [14, 21, 32, 40, 57]
+    },
+    {
+      "pattern": "[a-c]/***",
+      "matches": [14, 21, 32, 40, 57]
+    },
+    {
+      "pattern": "[a-c]/.*",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]/[!]",
+      "matches": [14, 57]
+    },
+    {
+      "pattern": "[a-c]/[!]a]/**",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]/[!]a]/[a-]",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]/[A-Z]/\\[",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]/[]a]/",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]/[^]/!a/",
+      "matches": []
+    },
+    {
+      "pattern": "[a-c]/[^a]",
+      "matches": [57]
+    },
+    {
+      "pattern": "[a-c]/[ab]",
+      "matches": [14]
+    },
+    {
+      "pattern": "[a-c]/x.md",
+      "matches": [32]
+    },
+    {
+      "pattern": "[a-c]/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "[a\\-c]/.git/[]a]",
+      "matches": []
+    },
+    {
+      "pattern": "[a\\-c]/A/[^a]",
+      "matches": []
+    },
+    {
+      "pattern": "[a\\-c]/[-a]",
+      "matches": [14, 57]
+    },
+    {
+      "pattern": "[a\\-c]/[]a]/[^a]",
+      "matches": []
+    },
+    {
+      "pattern": "[a\\-c]/[^]",
+      "matches": [14, 57]
+    },
+    {
+      "pattern": "[a\\-c]/[a-c]",
+      "matches": [14]
+    },
+    {
+      "pattern": "[a\\-c]/[é]",
+      "matches": []
+    },
+    {
+      "pattern": "[a\\-c]/\\*",
+      "matches": []
+    },
+    {
+      "pattern": "[a\\-c]/docs/a",
+      "matches": []
+    },
+    {
+      "pattern": "[a\\-c]/{a,b}/.git",
+      "matches": []
+    },
+    {
+      "pattern": "[ab]/[\\]]",
+      "matches": []
+    },
+    {
+      "pattern": "[ab]/[a-c]",
+      "matches": [14]
+    },
+    {
+      "pattern": "[ab]/[a-c]/",
+      "matches": [40]
+    },
+    {
+      "pattern": "[ab]/\\[",
+      "matches": []
+    },
+    {
+      "pattern": "[ab]/x.md/",
+      "matches": []
+    },
+    {
+      "pattern": "[z-a]/!a",
+      "matches": []
+    },
+    {
+      "pattern": "[z-a]/***/",
+      "matches": [22, 40]
+    },
+    {
+      "pattern": "[z-a]/.git",
+      "matches": []
+    },
+    {
+      "pattern": "[z-a]/A",
+      "matches": []
+    },
+    {
+      "pattern": "[z-a]/[A-Z]/[A-Z]",
+      "matches": []
+    },
+    {
+      "pattern": "[z-a]/[a\\-c]/[A-Z]",
+      "matches": []
+    },
+    {
+      "pattern": "[z-a]/é/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "[é]/.git/[z-a]",
+      "matches": []
+    },
+    {
+      "pattern": "[é]/[\\!]",
+      "matches": []
+    },
+    {
+      "pattern": "[é]/[^a]",
+      "matches": []
+    },
+    {
+      "pattern": "[é]/[a-c]",
+      "matches": []
+    },
+    {
+      "pattern": "[é]/[ab]",
+      "matches": []
+    },
+    {
+      "pattern": "[é]/\\\\",
+      "matches": []
+    },
+    {
+      "pattern": "[é]/a**",
+      "matches": []
+    },
+    {
+      "pattern": "[é]/a**/",
+      "matches": []
+    },
+    {
+      "pattern": "\\",
+      "matches": []
+    },
+    {
+      "pattern": "\\*/!a",
+      "matches": []
+    },
+    {
+      "pattern": "\\*/A/[!]a]",
+      "matches": []
+    },
+    {
+      "pattern": "\\*/[a-c]",
+      "matches": []
+    },
+    {
+      "pattern": "\\*/b/",
+      "matches": []
+    },
+    {
+      "pattern": "\\/!a",
+      "matches": []
+    },
+    {
+      "pattern": "\\/***",
+      "matches": []
+    },
+    {
+      "pattern": "\\/[z-a]",
+      "matches": []
+    },
+    {
+      "pattern": "\\/\\/[ab]",
+      "matches": []
+    },
+    {
+      "pattern": "\\[",
+      "matches": [63]
+    },
+    {
+      "pattern": "\\[/",
+      "matches": []
+    },
+    {
+      "pattern": "\\[/**.md",
+      "matches": []
+    },
+    {
+      "pattern": "\\[/[-a]/[^a]",
+      "matches": []
+    },
+    {
+      "pattern": "\\[/[a-]",
+      "matches": []
+    },
+    {
+      "pattern": "\\[/[z-a]/\\[/",
+      "matches": []
+    },
+    {
+      "pattern": "\\\\",
+      "matches": []
+    },
+    {
+      "pattern": "\\\\/",
+      "matches": []
+    },
+    {
+      "pattern": "\\\\/!a/\\]",
+      "matches": []
+    },
+    {
+      "pattern": "\\\\/.git",
+      "matches": []
+    },
+    {
+      "pattern": "\\\\/.git/[a\\-c]/",
+      "matches": []
+    },
+    {
+      "pattern": "\\\\/[[:alpha:]]/",
+      "matches": []
+    },
+    {
+      "pattern": "\\\\/[]a]",
+      "matches": []
+    },
+    {
+      "pattern": "\\\\/[]a]/\\[",
+      "matches": []
+    },
+    {
+      "pattern": "\\\\/a/[A-Z]",
+      "matches": []
+    },
+    {
+      "pattern": "\\\\/b/a**",
+      "matches": []
+    },
+    {
+      "pattern": "\\]",
+      "matches": [48]
+    },
+    {
+      "pattern": "\\]/[A-Z]/",
+      "matches": []
+    },
+    {
+      "pattern": "\\]/[[:alpha:]]",
+      "matches": []
+    },
+    {
+      "pattern": "\\]/[ab]",
+      "matches": []
+    },
+    {
+      "pattern": "\\]/[z-a]",
+      "matches": []
+    },
+    {
+      "pattern": "\\]/[é]/{a,b}",
+      "matches": []
+    },
+    {
+      "pattern": "\\]/{a,b}/[z-a]",
+      "matches": []
+    },
+    {
+      "pattern": "]/[!a]/*/",
+      "matches": []
+    },
+    {
+      "pattern": "]/x.md",
+      "matches": []
+    },
+    {
+      "pattern": "a**/",
+      "matches": [6, 14, 19, 20, 21, 22, 23, 24, 25, 27, 32, 40, 41, 57]
+    },
+    {
+      "pattern": "a**/[\\!]",
+      "matches": []
+    },
+    {
+      "pattern": "a**/\\*/[a-c]",
+      "matches": []
+    },
+    {
+      "pattern": "a**/\\\\",
+      "matches": []
+    },
+    {
+      "pattern": "a**/docs/***",
+      "matches": []
+    },
+    {
+      "pattern": "a*/!a",
+      "matches": [23]
+    },
+    {
+      "pattern": "a*/?",
+      "matches": [14, 25, 57]
+    },
+    {
+      "pattern": "a*/?/",
+      "matches": [40]
+    },
+    {
+      "pattern": "a*/[.]/[é]",
+      "matches": []
+    },
+    {
+      "pattern": "a*/[a-c]",
+      "matches": [14, 25]
+    },
+    {
+      "pattern": "a*/a/",
+      "matches": []
+    },
+    {
+      "pattern": "a*/x.md",
+      "matches": [32]
+    },
+    {
+      "pattern": "a*/é",
+      "matches": []
+    },
+    {
+      "pattern": "a/!a/[]",
+      "matches": []
+    },
+    {
+      "pattern": "a/*",
+      "matches": [14, 21, 32, 57]
+    },
+    {
+      "pattern": "a/[a-]/",
+      "matches": []
+    },
+    {
+      "pattern": "a/[a-c]",
+      "matches": [14]
+    },
+    {
+      "pattern": "a/[ab]",
+      "matches": [14]
+    },
+    {
+      "pattern": "a/[é]",
+      "matches": []
+    },
+    {
+      "pattern": "a/\\[",
+      "matches": []
+    },
+    {
+      "pattern": "a/a*",
+      "matches": [14]
+    },
+    {
+      "pattern": "a/a\\",
+      "matches": [14]
+    },
+    {
+      "pattern": "a/docs/[!a]",
+      "matches": []
+    },
+    {
+      "pattern": "a\\/",
+      "matches": [14, 21, 22, 32, 40, 57]
+    },
+    {
+      "pattern": "a\\/[[:alpha:]]/.*",
+      "matches": []
+    },
+    {
+      "pattern": "a\\/[^a]",
+      "matches": [57]
+    },
+    {
+      "pattern": "a\\/[z-a]",
+      "matches": [14]
+    },
+    {
+      "pattern": "a\\/\\\\",
+      "matches": []
+    },
+    {
+      "pattern": "a\\/\\]",
+      "matches": []
+    },
+    {
+      "pattern": "a\\/b",
+      "matches": []
+    },
+    {
+      "pattern": "b/A/]",
+      "matches": []
+    },
+    {
+      "pattern": "b/[\\]]",
+      "matches": []
+    },
+    {
+      "pattern": "b/[a\\-c]",
+      "matches": []
+    },
+    {
+      "pattern": "b/\\[",
+      "matches": []
+    },
+    {
+      "pattern": "b/\\[/",
+      "matches": []
+    },
+    {
+      "pattern": "b/b/a*",
+      "matches": []
+    },
+    {
+      "pattern": "b/é",
+      "matches": []
+    },
+    {
+      "pattern": "docs/A/",
+      "matches": []
+    },
+    {
+      "pattern": "docs/[\\!]",
+      "matches": []
+    },
+    {
+      "pattern": "docs/[]/**.md",
+      "matches": []
+    },
+    {
+      "pattern": "docs/[z-a]",
+      "matches": []
+    },
+    {
+      "pattern": "docs/[z-a]/[\\]]/",
+      "matches": []
+    },
+    {
+      "pattern": "x.md/[",
+      "matches": []
+    },
+    {
+      "pattern": "x.md/[!]",
+      "matches": []
+    },
+    {
+      "pattern": "x.md/[z-a]",
+      "matches": []
+    },
+    {
+      "pattern": "x.md/\\[",
+      "matches": []
+    },
+    {
+      "pattern": "x.md/é/",
+      "matches": []
+    },
+    {
+      "pattern": "{a,b}/\\[",
+      "matches": []
+    },
+    {
+      "pattern": "é",
+      "matches": [61]
+    },
+    {
+      "pattern": "é/***/",
+      "matches": []
+    },
+    {
+      "pattern": "é/[-a]/[[:alpha:]]",
+      "matches": []
+    },
+    {
+      "pattern": "é/[]a]",
+      "matches": []
+    },
+    {
+      "pattern": "é/a\\/[^a]",
+      "matches": []
+    },
+    {
+      "pattern": "é/b",
+      "matches": []
+    },
+    {
+      "pattern": "é/x.md/",
+      "matches": []
+    }
+  ]
+}

@@ -460,6 +460,24 @@ public static class GlobbingFuzzTargets
             var matches = testCase.GetProperty("matches").EnumerateArray().Select(item => files[item.GetInt32()]);
             yield return CreateSeed("msbuild " + pattern, GlobDialect.MSBuild, GlobOptions.IgnoreCase, pattern, [.. matches.Concat(files.Take(3)).Distinct(StringComparer.Ordinal).Take(MaxPaths)]);
         }
+
+        using var gitLab = FuzzResources.ReadJson(typeof(GlobbingFuzzTargets).Assembly, "gitlab-codeowners-conformance.json");
+        var gitLabPaths = gitLab.RootElement.GetProperty("paths").EnumerateArray().Select(path => path.GetString()!).ToArray();
+        foreach (var testCase in gitLab.RootElement.GetProperty("cases").EnumerateArray())
+        {
+            var pattern = testCase.GetProperty("pattern").GetString()!;
+            var matches = testCase.GetProperty("matches").EnumerateArray().Select(item => gitLabPaths[item.GetInt32()]);
+            yield return CreateSeed("gitlab-codeowners " + pattern, GlobDialect.GitLabCodeOwners, GlobOptions.None, pattern, [.. matches.Concat(gitLabPaths.Take(3)).Distinct(StringComparer.Ordinal).Take(MaxPaths)]);
+        }
+
+        // The examples of the GitHub documentation
+        string[] gitHubPatterns = ["*", "*.js", "*.go", "/build/logs/", "docs/*", "apps/", "/docs/", "/scripts/", "**/logs", "/apps/", "/apps/github", "[abc].txt", "!a", "\\#a", "a/**/b", "***"];
+        string[] gitHubPaths = ["README.md", "src/app.js", "build/logs/a/b.log", "docs/getting-started.md", "docs/build-app/troubleshooting.md", "src/apps/a.js", "deeply/nested/logs/a", "apps/github/a.js", "[abc].txt", "a.txt"];
+        foreach (var pattern in gitHubPatterns)
+        {
+            yield return CreateSeed("github-codeowners " + pattern, GlobDialect.GitHubCodeOwners, GlobOptions.None, pattern, gitHubPaths);
+            yield return CreateSeed("github-codeowners ignore-case " + pattern, GlobDialect.GitHubCodeOwners, GlobOptions.IgnoreCase, pattern, gitHubPaths);
+        }
     }
 
     private static FuzzSeed CreateSeed(string name, GlobDialect dialect, GlobOptions options, string pattern, IEnumerable<string> paths)

@@ -101,14 +101,14 @@ internal ref struct CodeOwnersParserContext
         }
 
         // Parse pattern
-        var pattern = ParsePattern();
-        if (string.IsNullOrEmpty(pattern))
+        var (pattern, escapedPattern) = ParsePattern();
+        if (pattern.Length is 0)
             return;
 
-        ParseEntry(pattern);
+        ParseEntry(pattern, escapedPattern);
     }
 
-    private void ParseEntry(string pattern)
+    private void ParseEntry(string pattern, string escapedPattern)
     {
         var owners = ParseOwners();
         IReadOnlyList<CodeOwner> entryOwners;
@@ -128,7 +128,7 @@ internal ref struct CodeOwnersParserContext
             entryOwners = [];
         }
 
-        _entries.Add(new CodeOwnersEntry(pattern, entryOwners, _currentSection, _dialect));
+        _entries.Add(new CodeOwnersEntry(pattern, escapedPattern, entryOwners, _currentSection, _dialect));
     }
 
     private bool TryParseSection([NotNullWhen(true)] out CodeOwnersSection? section)
@@ -277,14 +277,16 @@ internal ref struct CodeOwnersParserContext
         return defaultOwners;
     }
 
-    private string? ParsePattern()
+    /// <summary>Parses the pattern of the current line, without its escape characters and as written in the file.</summary>
+    private (string Pattern, string EscapedPattern) ParsePattern()
     {
         var remaining = _content[_index..];
         var separatorIndex = remaining.IndexOfAny(PatternSeparatorSearchValues);
         if (separatorIndex < 0)
         {
             _index = _content.Length;
-            return remaining.ToString();
+            var text = remaining.ToString();
+            return (text, text);
         }
 
         var separator = remaining[separatorIndex];
@@ -297,27 +299,26 @@ internal ref struct CodeOwnersParserContext
                 _index++;
             }
 
-            return pattern;
+            return (pattern, pattern);
         }
 
+        var startIndex = _index;
         Span<char> initialBuffer = stackalloc char[128];
         using var sb = new ValueStringBuilder(initialBuffer);
         while (!EndOfFile)
         {
             var c = Peek();
             if (c is null or '\r' or '\n')
-                return sb.ToString();
+                break;
 
-            c = Consume();
-            if (c is null)
-                return sb.ToString();
-
+            _ = Consume();
             switch (c)
             {
-                // The next character is escaped, unless the line ends: an entry never spans several lines
+                // The next character is escaped, unless the line ends: an entry never spans several lines.
+                // The dangling backslash is not part of the pattern as written.
                 case '\\':
                     if (Peek() is not { } escaped || escaped is '\r' or '\n')
-                        return sb.ToString();
+                        return (sb.ToString(), _content[startIndex..(_index - 1)].ToString());
 
                     _ = Consume();
                     sb.Append(escaped);
@@ -325,7 +326,7 @@ internal ref struct CodeOwnersParserContext
 
                 case ' ':
                 case '\t':
-                    return sb.ToString();
+                    return (sb.ToString(), _content[startIndex..(_index - 1)].ToString());
 
                 default:
                     sb.Append(c.GetValueOrDefault());
@@ -333,7 +334,7 @@ internal ref struct CodeOwnersParserContext
             }
         }
 
-        return sb.ToString();
+        return (sb.ToString(), _content[startIndex.._index].ToString());
     }
 
     /// <summary>Parses the owners declared on the current line, or returns <see langword="null"/> when the line declares none.</summary>

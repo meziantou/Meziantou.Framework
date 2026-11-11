@@ -12,12 +12,18 @@ namespace Meziantou.Framework.CodeOwners.Fuzz;
 /// that ends a line parses into a prefix of its entries, and an entry is a non-empty pattern without a line break and
 /// well-formed owners. Both dialects read a file without sections or roles the same way. Writing the entries back
 /// (<see cref="CodeOwnersSection.ToString"/>, <see cref="CodeOwnersEntry.ToString"/>) gives a file that
-/// parses into equal entries whatever its line endings, and writing is a fixed point.
+/// parses into equal entries whatever its line endings, and writing is a fixed point. <see cref="CodeOwnersFile.FindEntries"/>
+/// agrees with a search of the entries from the end (the last match of the file for GitHub, of each section without a
+/// matching exclusion for GitLab), <see cref="CodeOwnersFile.GetOwners"/> is the union of their owners, a leading '/' does
+/// not change a match, and the written entries match the same paths.
 /// </summary>
 public static partial class CodeOwnersFuzzTargets
 {
     private const int MaxPrefixChecks = 32;
     private const int MaxEqualityChecks = 16;
+    private const int MaxMatchPaths = 16;
+
+    private static readonly string[] DefaultPaths = ["README.md", "src/Program.cs", "docs/a/b.md", ".github/CODEOWNERS", "apps/github/app.js", "a"];
 
     private static readonly CodeOwnersDialect[] Dialects = Enum.GetValues<CodeOwnersDialect>();
 
@@ -47,6 +53,7 @@ public static partial class CodeOwnersFuzzTargets
     [
         new("codeowners-parse", Parse) { Seeds = GetSeeds, Dictionary = Tokens },
         new("codeowners-round-trip", RoundTrip) { Seeds = GetSeeds, Dictionary = Tokens },
+        new("codeowners-match", Match) { Seeds = GetMatchSeeds, Dictionary = Tokens },
     ];
 
     /// <summary>The input is a dialect byte, then a CODEOWNERS file.</summary>
@@ -94,6 +101,146 @@ public static partial class CodeOwnersFuzzTargets
             FuzzAssert.True(file.Entries.SequenceEqual(reparsed.Entries), "The entries of the written file are not equal to the parsed entries");
             FuzzAssert.Equal(written, Write(reparsed), "Writing the entries is not a fixed point");
         }
+    }
+
+    /// <summary>
+    /// The input is a dialect byte, a CODEOWNERS file, then paths, each after a NUL character. Without paths, the paths
+    /// are made of the patterns of the file.
+    /// </summary>
+    private static void Match(ReadOnlySpan<byte> data)
+    {
+        var dialect = FuzzInput.Pick(Dialects, FuzzInput.ReadByte(ref data));
+        var content = FuzzText.Decode(FuzzInput.ReadUntil(ref data, 0));
+        if (!CodeOwnersFile.TryParse(content, dialect, out var file))
+            return;
+
+        var paths = new List<string>();
+        while (!data.IsEmpty && paths.Count < MaxMatchPaths)
+        {
+            paths.Add(FuzzText.Decode(FuzzInput.ReadUntil(ref data, 0)));
+        }
+
+        if (paths.Count is 0)
+        {
+            paths.AddRange(GetPaths(file).Distinct(StringComparer.Ordinal).Take(MaxMatchPaths));
+        }
+
+        var written = Write(file);
+        FuzzAssert.True(CodeOwnersFile.TryParse(written, dialect, out var reparsed, out var error), $"The written file does not parse ({error}): {FuzzAssert.Format(written)}");
+        FuzzAssert.Equal(file.Entries.Count, reparsed.Entries.Count, "The written file has another number of entries");
+
+        foreach (var path in paths)
+        {
+            CheckMatch(file, reparsed, dialect, path);
+        }
+    }
+
+    private static void CheckMatch(CodeOwnersFile file, CodeOwnersFile reparsed, CodeOwnersDialect dialect, string path)
+    {
+        var entries = file.Entries;
+        var matches = new bool[entries.Count];
+        for (var i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            matches[i] = entry.IsMatch(path);
+            if (!path.StartsWith('/', StringComparison.Ordinal))
+            {
+                FuzzAssert.Equal(matches[i], entry.IsMatch("/" + path), $"A leading '/' changes the match of {entry} with {FuzzAssert.Format(path)}");
+            }
+
+            FuzzAssert.Equal(matches[i], reparsed.Entries[i].IsMatch(path), $"The written entry {reparsed.Entries[i]} and the entry do not match {FuzzAssert.Format(path)} the same way");
+            FuzzAssert.True(path.Length > 0 || !matches[i], $"The entry {entry} matches an empty path");
+            FuzzAssert.True(dialect is CodeOwnersDialect.GitLab || !entry.IsExclusion, $"The {dialect} entry {entry} is an exclusion");
+        }
+
+        // Search from the end: GitHub stops at the last match, GitLab looks for the last match of each section
+        var expected = new List<CodeOwnersEntry>();
+        if (dialect is CodeOwnersDialect.GitHub)
+        {
+            var index = Array.LastIndexOf(matches, true);
+            if (index >= 0)
+            {
+                expected.Add(entries[index]);
+            }
+        }
+        else
+        {
+            var sectionNames = entries.Select(entry => entry.Section?.Name).Distinct(SectionNameComparer.Instance);
+            foreach (var name in sectionNames)
+            {
+                var sectionIndices = Enumerable.Range(0, entries.Count).Where(i => SectionNameComparer.Instance.Equals(entries[i].Section?.Name, name)).ToArray();
+                if (sectionIndices.Any(i => matches[i] && entries[i].IsExclusion))
+                    continue;
+
+                var last = sectionIndices.LastOrDefault(i => matches[i], -1);
+                if (last >= 0)
+                {
+                    expected.Add(entries[last]);
+                }
+            }
+        }
+
+        var found = file.FindEntries(path);
+        FuzzAssert.True(found.SequenceEqual(expected, ReferenceEqualityComparer.Instance), $"FindEntries({FuzzAssert.Format(path)}) returns [{string.Join(", ", found)}] instead of [{string.Join(", ", expected)}]");
+
+        var owners = file.GetOwners(path);
+        var expectedOwners = expected.SelectMany(entry => entry.Owners).Distinct().ToArray();
+        FuzzAssert.Equal(Describe(expectedOwners), Describe(owners), $"GetOwners({FuzzAssert.Format(path)}) is not the union of the owners of the entries");
+    }
+
+    /// <summary>Gets paths that the patterns of the file are likely to match, or nearly match.</summary>
+    private static IEnumerable<string> GetPaths(CodeOwnersFile file)
+    {
+        foreach (var entry in file.Entries)
+        {
+            var path = entry.Pattern.TrimStart('!').TrimStart('/');
+            if (path.EndsWith('/', StringComparison.Ordinal))
+            {
+                path += "file.txt";
+            }
+
+            yield return path;
+            yield return path.Replace("**", "a/b", StringComparison.Ordinal).Replace('*', 'c').Replace('?', 'd');
+            yield return "src/" + path + "/file.txt";
+        }
+
+        foreach (var path in DefaultPaths)
+        {
+            yield return path;
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetMatchSeeds()
+    {
+        foreach (var seed in GetSeeds())
+        {
+            yield return seed;
+        }
+
+        // The patterns and the paths of the unit tests
+        var source = FuzzResources.ReadText(typeof(CodeOwnersFuzzTargets).Assembly, "CodeOwnersParserTests.cs");
+        var index = 0;
+        foreach (Match match in PatternMatchingRegex().Matches(source))
+        {
+            var pattern = Regex.Unescape(match.Groups["pattern"].Value);
+            var path = Regex.Unescape(match.Groups["path"].Value);
+            foreach (var dialect in Dialects)
+            {
+                yield return FuzzSeed.FromText(string.Create(CultureInfo.InvariantCulture, $"match-{index}-{dialect}"), [(byte)dialect], pattern + " @owner\0" + path);
+            }
+
+            index++;
+        }
+    }
+
+    /// <summary>Compares section names as GitLab does: the entries before the first section are apart, and names ignore case.</summary>
+    private sealed class SectionNameComparer : IEqualityComparer<string?>
+    {
+        public static SectionNameComparer Instance { get; } = new();
+
+        public bool Equals(string? x, string? y) => x is null || y is null ? x is null && y is null : string.Equals(x, y, StringComparison.OrdinalIgnoreCase);
+
+        public int GetHashCode(string? obj) => obj is null ? 0 : StringComparer.OrdinalIgnoreCase.GetHashCode(obj);
     }
 
     /// <summary>Parses with every overload, checks they agree, and returns the file or the error.</summary>
@@ -435,6 +582,9 @@ public static partial class CodeOwnersFuzzTargets
 
     [GeneratedRegex(@"""(?<value>(?:[^""\\]|\\.)*)""", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10_000)]
     private static partial Regex StringLiteralRegex();
+
+    [GeneratedRegex(@"InlineData\(""(?<pattern>(?:[^""\\]|\\.)*)"", ""(?<path>(?:[^""\\]|\\.)*)"", (?:true|false)\)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10_000)]
+    private static partial Regex PatternMatchingRegex();
 
     [GeneratedRegex(@"(?:Parse|InlineData)\(""(?<value>(?:[^""\\]|\\.)*)""", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10_000)]
     private static partial Regex ArgumentRegex();

@@ -1,11 +1,11 @@
 ---
 title: Dialects
-description: Choose the syntax of your patterns, the standard one or the ones of git, MSBuild and POSIX fnmatch.
+description: Choose the syntax of your patterns, the standard one or the ones of git, MSBuild, POSIX fnmatch and the CODEOWNERS files of GitHub and GitLab.
 ---
 
 Every pattern is parsed in a dialect, the second argument of [Glob.Parse](cref:Meziantou.Framework.Globbing.Glob.Parse). Use [GlobDialect.Standard](cref:Meziantou.Framework.Globbing.GlobDialect.Standard) for patterns
 you write, and the dialect of the tool your users know when you read their patterns: a `.gitignore` file, an MSBuild
-item, a shell pattern.
+item, a shell pattern, a CODEOWNERS file.
 
 | Dialect | Follows | Use it for |
 | --- | --- | --- |
@@ -14,8 +14,11 @@ item, a shell pattern.
 | [MSBuild](cref:Meziantou.Framework.Globbing.GlobDialect.MSBuild) | MSBuild item specs | The `Include` and `Exclude` patterns of a project file |
 | [Posix](cref:Meziantou.Framework.Globbing.GlobDialect.Posix) | `fnmatch(3)` without flags | Patterns that match any string, not only paths |
 | [PosixPath](cref:Meziantou.Framework.Globbing.GlobDialect.PosixPath) | `fnmatch(3)` with `FNM_PATHNAME` | Shell-like path patterns |
+| [GitHubCodeOwners](cref:Meziantou.Framework.Globbing.GlobDialect.GitHubCodeOwners) | The CODEOWNERS files of GitHub | The patterns of a GitHub CODEOWNERS file |
+| [GitLabCodeOwners](cref:Meziantou.Framework.Globbing.GlobDialect.GitLabCodeOwners) | The CODEOWNERS files of GitLab, matched with Ruby's `File.fnmatch` | The patterns of a GitLab CODEOWNERS file |
 
-The [Git](cref:Meziantou.Framework.Globbing.GlobDialect.Git), [MSBuild](cref:Meziantou.Framework.Globbing.GlobDialect.MSBuild), [Posix](cref:Meziantou.Framework.Globbing.GlobDialect.Posix) and [PosixPath](cref:Meziantou.Framework.Globbing.GlobDialect.PosixPath) dialects are tested against the results of git, MSBuild and `fnmatch`.
+The [Git](cref:Meziantou.Framework.Globbing.GlobDialect.Git), [MSBuild](cref:Meziantou.Framework.Globbing.GlobDialect.MSBuild), [Posix](cref:Meziantou.Framework.Globbing.GlobDialect.Posix), [PosixPath](cref:Meziantou.Framework.Globbing.GlobDialect.PosixPath) and [GitLabCodeOwners](cref:Meziantou.Framework.Globbing.GlobDialect.GitLabCodeOwners) dialects are tested against the results of git,
+MSBuild, `fnmatch` and the matching code of GitLab.
 They differ from these tools on purpose in a few points:
 
 - Characters are compared as UTF-16 code units. git compares the bytes of their UTF-8 encoding, so `?` matches `é` here
@@ -119,3 +122,62 @@ Assert.True(Glob.Parse("[^a]*", GlobDialect.Posix).IsMatch("Readme"));
 - [PosixPath](cref:Meziantou.Framework.Globbing.GlobDialect.PosixPath) only matches a `/` with a `/` of the pattern, and every `/` counts, including a leading one.
 - A `[` that does not open a complete bracket expression is an ordinary character.
 - A collating symbol can be a range bound: `[[.-.]-0]`.
+
+## CODEOWNERS
+
+[GitHubCodeOwners](cref:Meziantou.Framework.Globbing.GlobDialect.GitHubCodeOwners) and [GitLabCodeOwners](cref:Meziantou.Framework.Globbing.GlobDialect.GitLabCodeOwners) read the patterns of a CODEOWNERS file. To find the owners of a path in a whole
+file, with its sections and the last-match-wins rule, use the `Meziantou.Framework.CodeOwners` package: see
+[Matching paths](../CodeOwners/06-MatchingPaths.md).
+
+GitHub follows most of the gitignore rules, and a pattern that matches a directory owns everything below it:
+
+<!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_GitHubCodeOwnersDialect;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A pattern that matches a directory also matches every path below it
+Assert.True(Glob.Parse("/apps/github", GlobDialect.GitHubCodeOwners).IsMatch("apps/github/src/main.js"));
+Assert.True(Glob.Parse("**/logs", GlobDialect.GitHubCodeOwners).IsMatch("deeply/nested/logs/app.log"));
+
+// Except a pattern whose last segment is '*': it only matches the names directly in the directory
+Assert.True(Glob.Parse("docs/*", GlobDialect.GitHubCodeOwners).IsMatch("docs/getting-started.md"));
+Assert.False(Glob.Parse("docs/*", GlobDialect.GitHubCodeOwners).IsMatch("docs/build-app/troubleshooting.md"));
+
+// Brackets and a leading '!' are ordinary characters
+Assert.True(Glob.Parse("[ab].txt", GlobDialect.GitHubCodeOwners).IsMatch("[ab].txt"));
+Assert.False(Glob.Parse("[ab].txt", GlobDialect.GitHubCodeOwners).IsMatch("a.txt"));
+```
+<!-- endref -->
+
+GitLab rewrites the pattern, then matches the whole path with Ruby's `File.fnmatch`:
+
+<!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_GitLabCodeOwnersDialect;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A pattern without a leading '/' matches at any depth, even when it holds a '/'
+Assert.True(Glob.Parse("docs/*.md", GlobDialect.GitLabCodeOwners).IsMatch("src/docs/index.md"));
+
+// Without a trailing '/', a pattern only matches that path, not the paths below it
+Assert.True(Glob.Parse("/docs", GlobDialect.GitLabCodeOwners).IsMatch("docs"));
+Assert.False(Glob.Parse("/docs", GlobDialect.GitLabCodeOwners).IsMatch("docs/index.md"));
+Assert.True(Glob.Parse("/docs/", GlobDialect.GitLabCodeOwners).IsMatch("docs/guide/index.md"));
+
+// '**' only matches several directories when a '/' follows it
+Assert.True(Glob.Parse("/src/**/*.cs", GlobDialect.GitLabCodeOwners).IsMatch("src/Api/Program.cs"));
+Assert.False(Glob.Parse("/src/**", GlobDialect.GitLabCodeOwners).IsMatch("src/Api/Program.cs"));
+```
+<!-- endref -->
+
+| Syntax | [GitHubCodeOwners](cref:Meziantou.Framework.Globbing.GlobDialect.GitHubCodeOwners) | [GitLabCodeOwners](cref:Meziantou.Framework.Globbing.GlobDialect.GitLabCodeOwners) |
+| --- | --- | --- |
+| A pattern without a leading `/` | Matches at any depth when it holds no other `/` | Matches at any depth |
+| A pattern without a trailing `/`, such as `/docs` | Matches the path and everything below it | Only matches the path |
+| A last segment made of `*`, such as `docs/*` | Only matches the names directly in the directory | Only matches the names directly in the directory |
+| A trailing `**`, such as `/docs/**` | Matches everything below the directory | Read as `*` |
+| `[abc]`, `[a-z]`, `[!abc]`, `[^abc]` | No, plain text | Yes, and a reversed range such as `[z-a]` matches its two bounds |
+| `[]`, `[!]` | No, plain text | A `]` always closes the expression: `[]` matches nothing, `[!]` matches any character |
+| `[[:alpha:]]` | No, plain text | No |
+| A leading `!` | Plain text | Plain text: GitLab reads it as an exclusion of the file |
+| A trailing `\` | Invalid | Ignored |
+
+- Both dialects match a leading dot with a wildcard, and are case-sensitive unless [GlobOptions.IgnoreCase](cref:Meziantou.Framework.Globbing.GlobOptions.IgnoreCase) is set.
+- GitHub does not publish its matcher: [GitHubCodeOwners](cref:Meziantou.Framework.Globbing.GlobDialect.GitHubCodeOwners) follows the documentation of GitHub. A pattern that GitHub would
+  report as invalid, such as one with an empty path segment, is invalid.
+

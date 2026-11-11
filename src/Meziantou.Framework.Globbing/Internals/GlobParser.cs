@@ -52,8 +52,9 @@ internal static class GlobParser
         var matchLeadingDot = new List<bool>();
         var matchType = settings.PathSeparatorAware ? GlobMatchType.File : GlobMatchType.Any;
         var gitMustBeDirectory = false;
+        var gitLabMatchesContent = false;
 
-        if (dialect is GlobDialect.Git)
+        if (dialect is GlobDialect.Git or GlobDialect.GitHubCodeOwners)
         {
             // gitignore(5) reads an entry in this order: a trailing '/' restricts it to directories, an entry without
             // any other '/' matches a name at any depth, and a leading '/' only anchors the entry to the root.
@@ -84,12 +85,31 @@ internal static class GlobParser
             // is decided by DirectoryContentSegment, which knows where the path ends.
             matchType = GlobMatchType.Any;
         }
+        else if (dialect is GlobDialect.GitLabCodeOwners)
+        {
+            // GitLab normalizes the pattern before calling fnmatch: a pattern that does not start with a '/' starts
+            // with '/**/', and a pattern that ends with a '/' ends with '/**/*'. The trailing '/' stays in the pattern,
+            // where it separates the last segment from the '**/*' added once the pattern is parsed.
+            gitLabMatchesContent = pattern[^1] == '/';
+            if (pattern[0] == '/')
+            {
+                pattern = pattern[1..];
+            }
+            else
+            {
+                segments.Add(RecursiveMatchAllSegment.Instance);
+                matchLeadingDot.Add(settings.MatchLeadingDot);
+            }
+
+            matchType = GlobMatchType.Any;
+        }
         else if (settings.PathSeparatorAware && !pattern.IsEmpty && settings.IsPatternSeparator(pattern[^1]))
         {
             matchType = GlobMatchType.Directory;
         }
 
-        if (pattern.IsEmpty)
+        // The GitLab pattern "/" is normalized to "/**/*"
+        if (pattern.IsEmpty && !gitLabMatchesContent)
         {
             errorMessage = "the pattern does not contain any segment";
             return false;
@@ -131,6 +151,19 @@ internal static class GlobParser
                 {
                     if (i + 1 >= pattern.Length)
                     {
+                        if (dialect is GlobDialect.GitLabCodeOwners)
+                        {
+                            // fnmatch ignores a trailing '\'. After a '/', the last segment stays empty: "a/\" only
+                            // matches a path that ends with a '/'.
+                            if (subSegments is null && currentLiteral.Length == 0)
+                            {
+                                segments.Add(EmptySegment.Instance);
+                                matchLeadingDot.Add(true);
+                            }
+
+                            continue;
+                        }
+
                         errorMessage = "Expecting a character after '\\'";
                         return false;
                     }
@@ -175,6 +208,9 @@ internal static class GlobParser
                         }
 
                         var isWholeSegment = isAtSegmentStart && IsEndOfSegment(pattern, i + starCount, settings);
+
+                        // fnmatch only reads '**' as any number of directories when a '/' follows it
+                        var isRecursiveWildcard = dialect is not GlobDialect.GitLabCodeOwners || i + starCount < pattern.Length;
                         if (dialect is GlobDialect.MSBuild && starCount > 1 && !(isWholeSegment && starCount == 2))
                         {
                             errorMessage = "the recursive wildcard '**' must be its own path segment";
@@ -183,7 +219,7 @@ internal static class GlobParser
 
                         if (isWholeSegment)
                         {
-                            if (starCount > 1 && settings.SupportsRecursiveWildcard && (starCount == 2 || settings.ReadsStarRunAsRecursiveWildcard))
+                            if (starCount > 1 && isRecursiveWildcard && settings.SupportsRecursiveWildcard && (starCount == 2 || settings.ReadsStarRunAsRecursiveWildcard))
                             {
                                 // Merge two consecutive '**' (**/**)
                                 if (segments.Count == 0 || segments[^1] is not RecursiveMatchAllSegment)
@@ -264,6 +300,19 @@ internal static class GlobParser
 
             FinishSegment(segments, matchLeadingDot, ref subSegments, ref currentLiteral, settings.IgnoreCase, currentSegmentMatchLeadingDot, settings.PathSeparatorAware);
 
+            if (gitLabMatchesContent)
+            {
+                // The '**/*' GitLab adds after a pattern that ends with a '/'
+                if (segments.Count == 0 || segments[^1] is not RecursiveMatchAllSegment)
+                {
+                    segments.Add(RecursiveMatchAllSegment.Instance);
+                    matchLeadingDot.Add(settings.MatchLeadingDot);
+                }
+
+                segments.Add(MatchAllSegment.Instance);
+                matchLeadingDot.Add(settings.MatchLeadingDot);
+            }
+
             // '.' and '..' normalization can remove every segment (".", "./", "a/.."). Such a pattern cannot match
             // anything, and a Glob without any segment is not usable, so reject it instead of returning it. A pattern
             // that is only made of separators is rejected as well.
@@ -279,6 +328,13 @@ internal static class GlobParser
                 // excludes its content, but re-including one does not re-include its content, so a negated entry
                 // never matches the paths below the directory.
                 segments.Add(matchGitDirectoryContent && !exclude ? DirectoryContentSegment.IncludingContent : DirectoryContentSegment.DirectoryOnly);
+                matchLeadingDot.Add(settings.MatchLeadingDot);
+            }
+            else if (dialect is GlobDialect.GitHubCodeOwners && segments[^1] is not (MatchAllSegment or RecursiveMatchAllSegment))
+            {
+                // A CODEOWNERS pattern that matches a directory owns every path below it. A last segment made of a
+                // single '*' only matches the names directly in the directory: 'docs/*' does not match 'docs/a/b'.
+                segments.Add(PathOrContentSegment.Instance);
                 matchLeadingDot.Add(settings.MatchLeadingDot);
             }
 
@@ -821,8 +877,9 @@ internal static class GlobParser
             i++;
         }
 
-        // A ']' that comes first is an ordinary character: '[]a]' matches ']' or 'a'
-        var isFirst = true;
+        // A ']' that comes first is an ordinary character: '[]a]' matches ']' or 'a'. Ruby's fnmatch closes the
+        // expression on any ']', so '[]' matches nothing and '[!]' matches any character.
+        var isFirst = settings.ReadsLeadingClosingBracketAsLiteral;
         while (true)
         {
             if (i >= pattern.Length)
@@ -904,6 +961,12 @@ internal static class GlobParser
                         case ReversedRangeHandling.MatchStart:
                             // wildmatch compares the character before it sees the '-', so it still matches the start
                             ranges.Add(new CharacterRange(rangeStart));
+                            break;
+
+                        case ReversedRangeHandling.MatchBounds:
+                            // Ruby's fnmatch tests each bound of the range on its own before the interval
+                            ranges.Add(new CharacterRange(rangeStart));
+                            ranges.Add(new CharacterRange(rangeEnd));
                             break;
                     }
 
@@ -1284,6 +1347,9 @@ internal static class GlobParser
 
         /// <summary>The range only contains its start.</summary>
         MatchStart,
+
+        /// <summary>The range only contains its start and its end.</summary>
+        MatchBounds,
     }
 
     /// <summary>How a pattern reads an empty path segment, which comes before a leading separator or between two consecutive ones.</summary>
@@ -1330,31 +1396,36 @@ internal static class GlobParser
 
         // git treats '{' and '}' as ordinary characters.
         public bool SupportsBraceExpression => Dialect is GlobDialect.Standard;
-        public bool SupportsRecursiveWildcard => Dialect is GlobDialect.Standard or GlobDialect.Git or GlobDialect.MSBuild;
+        public bool SupportsRecursiveWildcard => Dialect is GlobDialect.Standard or GlobDialect.Git or GlobDialect.MSBuild or GlobDialect.GitHubCodeOwners or GlobDialect.GitLabCodeOwners;
 
         // gitignore reads any run of '*' that makes a whole path segment as '**'
-        public bool ReadsStarRunAsRecursiveWildcard => Dialect is GlobDialect.Git;
+        public bool ReadsStarRunAsRecursiveWildcard => Dialect is GlobDialect.Git or GlobDialect.GitHubCodeOwners;
 
         public EmptySegmentHandling EmptySegmentHandling => Dialect switch
         {
             GlobDialect.PosixPath => EmptySegmentHandling.Match,
             GlobDialect.MSBuild => EmptySegmentHandling.MatchLeading,
-            GlobDialect.Git => EmptySegmentHandling.Reject,
+            GlobDialect.Git or GlobDialect.GitHubCodeOwners => EmptySegmentHandling.Reject,
+            GlobDialect.GitLabCodeOwners => EmptySegmentHandling.Match,
             GlobDialect.Standard => EmptySegmentHandling.MatchLeading,
             _ => EmptySegmentHandling.Ignore,
         };
 
-        public bool SupportsBracketExpression => Dialect is not GlobDialect.MSBuild;
+        // GitHub CODEOWNERS files do not support character ranges
+        public bool SupportsBracketExpression => Dialect is not (GlobDialect.MSBuild or GlobDialect.GitHubCodeOwners);
         public bool SupportsCaretNegation => Dialect is not GlobDialect.Standard;
         public bool SupportsEscapeInBracketExpression => Dialect is not GlobDialect.Standard;
-        public bool SupportsNamedCharacterClass => Dialect is not GlobDialect.Standard;
+        // Ruby's fnmatch has no character classes
+        public bool SupportsNamedCharacterClass => Dialect is not (GlobDialect.Standard or GlobDialect.GitLabCodeOwners);
         public bool SupportsEquivalenceClass => IsPosix;
         public bool SupportsCollatingSymbol => IsPosix;
         public bool ReadsUnterminatedBracketAsLiteral => IsPosix;
+        public bool ReadsLeadingClosingBracketAsLiteral => Dialect is not GlobDialect.GitLabCodeOwners;
         public ReversedRangeHandling ReversedRangeHandling => Dialect switch
         {
             GlobDialect.Standard => ReversedRangeHandling.Reject,
             GlobDialect.Git => ReversedRangeHandling.MatchStart,
+            GlobDialect.GitLabCodeOwners => ReversedRangeHandling.MatchBounds,
             _ => ReversedRangeHandling.Empty,
         };
 

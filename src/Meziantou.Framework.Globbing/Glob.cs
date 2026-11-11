@@ -811,6 +811,10 @@ public sealed partial class Glob : IGlobEvaluatable
         var patternStart = sb.Length;
         for (var i = 0; i < _segments.Length; i++)
         {
+            // A GitHub CODEOWNERS pattern implies this segment, which matches the paths below a directory
+            if (_segments[i] is PathOrContentSegment)
+                continue;
+
             if (i > 0)
             {
                 sb.Append('/');
@@ -832,10 +836,24 @@ public sealed partial class Glob : IGlobEvaluatable
             sb.Append('/');
         }
 
-        if (_dialect is GlobDialect.Git && _segments[0] is not RecursiveMatchAllSegment && !ContainsSeparator(sb.AsSpan(patternStart), _segments[^1] is DirectoryContentSegment))
+        if (_dialect is GlobDialect.Git or GlobDialect.GitHubCodeOwners && _segments[0] is not RecursiveMatchAllSegment && !ContainsSeparator(sb.AsSpan(patternStart), _segments[^1] is DirectoryContentSegment))
         {
             // gitignore matches an entry without a '/' at any depth, whereas this one is anchored to the root
             sb.Insert(patternStart, "/");
+        }
+        else if (_dialect is GlobDialect.GitLabCodeOwners)
+        {
+            // GitLab matches a pattern that does not start with a '/' at any depth
+            if (_segments[0] is not RecursiveMatchAllSegment)
+            {
+                sb.Insert(patternStart, "/");
+            }
+
+            // A trailing '/' would match the content of the directory. An empty last segment comes from a trailing '\'.
+            if (_segments[^1] is EmptySegment or LastSegment { InnerSegment: EmptySegment })
+            {
+                sb.Append('\\');
+            }
         }
         else if (_dialect is GlobDialect.Standard or GlobDialect.Git && Mode is GlobMode.Include && sb.Length > patternStart && sb[patternStart] == '!')
         {

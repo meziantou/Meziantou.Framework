@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100" role="img" font-family="sans-serif">
+<defs>
+<marker id="scene-marker0" markerUnits="userSpaceOnUse" orient="auto" overflow="visible">
+<g>
+<circle cx="0" cy="0" r="3" fill="#0369a1"/>
+</g>
+</marker>
+<marker id="scene-marker1" refX="10" refY="5" orient="auto" overflow="visible">
+<g>
+<path d="M0,0 L10,5 L0,10 Z" fill="#0369a1"/>
+</g>
+</marker>
+</defs>
+<path d="M10,80 L60,20 L110,80 L170,30" fill="none" stroke="#0369a1" stroke-width="2" marker-mid="url(#scene-marker0)" marker-end="url(#scene-marker1)"/>
+</svg>

@@ -300,6 +300,7 @@ internal static class SceneRenderer
                     canvas.StrokeLine(CreatePen(line, context), new PointD(line.X1, line.Y1), new PointD(line.X2, line.Y2));
                 }
 
+                DrawMarkers(canvas, line, context);
                 break;
 
             case ScenePath path:
@@ -317,6 +318,7 @@ internal static class SceneRenderer
                         canvas.Stroke(CreatePen(path, context), vector);
                     }
 
+                    DrawMarkers(canvas, path, context);
                     break;
                 }
 
@@ -327,6 +329,70 @@ internal static class SceneRenderer
             case SceneImage image:
                 DrawImage(canvas, image);
                 break;
+        }
+    }
+
+    // The content of each marker is drawn on its vertex, after the shape. A marker drawn on a shape of its own content
+    // is not drawn again.
+    private static void DrawMarkers(DrawingCanvas canvas, SceneShape shape, DrawContext context)
+    {
+        foreach (var (marker, vertex, isStart) in GetMarkers(shape))
+        {
+            var transform = marker.GetTransform(vertex, shape.StrokeWidth, isStart);
+            if (!IsFinite(transform) || (transform.A * transform.D) - (transform.B * transform.C) == 0 || !context.EnterMarker(marker))
+                continue;
+
+            try
+            {
+                canvas.Transform(ToTransform(transform), (marker, context), static (canvas, state) => DrawChildren(canvas, state.marker.Content, state.context));
+            }
+            finally
+            {
+                context.ExitMarker(marker);
+            }
+        }
+    }
+
+    // The markers of a path or a line, with the vertex each one is drawn on, as SceneGeometry gives them to the bounds
+    private static IEnumerable<(SceneMarker Marker, PathPoint Vertex, bool IsStart)> GetMarkers(SceneShape shape)
+    {
+        var (start, middle, end) = shape switch
+        {
+            ScenePath path => (path.MarkerStart, path.MarkerMid, path.MarkerEnd),
+            SceneLine line => (line.MarkerStart, null, line.MarkerEnd),
+            _ => (null, null, null),
+        };
+
+        if (start is null && middle is null && end is null)
+            yield break;
+
+        var vertices = shape switch
+        {
+            ScenePath path => path.Data.GetVertices(),
+            SceneLine line => new PathBuilder().MoveTo(line.X1, line.Y1).LineTo(line.X2, line.Y2).Build().GetVertices(),
+            _ => [],
+        };
+
+        for (var i = 0; i < vertices.Count; i++)
+        {
+            var vertex = vertices[i];
+            if (!double.IsFinite(vertex.X) || !double.IsFinite(vertex.Y))
+                continue;
+
+            if (i == 0 && start is not null)
+            {
+                yield return (start, vertex, true);
+            }
+
+            if (i > 0 && i < vertices.Count - 1 && middle is not null)
+            {
+                yield return (middle, vertex, false);
+            }
+
+            if (i == vertices.Count - 1 && end is not null)
+            {
+                yield return (end, vertex, false);
+            }
         }
     }
 
@@ -599,8 +665,13 @@ internal static class SceneRenderer
         /// <summary>Gets the family of the texts that name none (<see cref="Scene.FontFamily"/>).</summary>
         public string? FontFamily { get; init; }
 
-        // The patterns whose content is being drawn: a pattern cannot paint with itself
+        // The patterns whose content is being drawn: a pattern cannot paint with itself; the same for the markers
         private readonly HashSet<PatternPaint> _drawingPatterns = new(ReferenceEqualityComparer.Instance);
+        private readonly HashSet<SceneMarker> _drawingMarkers = new(ReferenceEqualityComparer.Instance);
+
+        public bool EnterMarker(SceneMarker marker) => _drawingMarkers.Add(marker);
+
+        public void ExitMarker(SceneMarker marker) => _drawingMarkers.Remove(marker);
 
         public Brush GetBrush(ScenePaint paint)
         {

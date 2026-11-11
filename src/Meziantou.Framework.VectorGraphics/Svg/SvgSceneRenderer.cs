@@ -42,6 +42,7 @@ public static class SvgSceneRenderer
         private readonly Dictionary<SceneText, string> _textPathIds = new(ReferenceEqualityComparer.Instance);
         private readonly List<(string Id, SceneMask Mask)> _masks = [];
         private readonly List<(string Id, PatternPaint Pattern)> _patterns = [];
+        private readonly List<(string Id, SceneMarker Marker)> _markers = [];
         private readonly HashSet<string> _elementIds = new(StringComparer.Ordinal);
         private readonly int _precision = options.Precision;
         private Scene _scene = null!;
@@ -82,7 +83,7 @@ public static class SvgSceneRenderer
             }
 
             WriteDefinitions(scene.Root, options.EmbedFonts && scene.Fonts is { } fonts ? GetFontFaceRules(scene, fonts) : null);
-            if (_masks.Count > 0 || _patterns.Count > 0)
+            if (_masks.Count > 0 || _patterns.Count > 0 || _markers.Count > 0)
             {
                 // The content of a mask is in the coordinates of the parent of the masked element, on the whole plane
                 output.Write("<defs>\n");
@@ -125,6 +126,37 @@ public static class SvgSceneRenderer
                     output.Write(">\n");
                     WriteElement(pattern.Content);
                     output.Write("</pattern>\n");
+                }
+
+                // The content of a marker is not cut: its size does not matter
+                foreach (var (id, marker) in _markers)
+                {
+                    output.Write("<marker");
+                    Attribute("id", id);
+                    if (marker.Units is SceneMarkerUnits.UserSpace)
+                    {
+                        output.Write(" markerUnits=\"userSpaceOnUse\"");
+                    }
+
+                    if (marker.RefX != 0)
+                    {
+                        Attribute("refX", marker.RefX);
+                    }
+
+                    if (marker.RefY != 0)
+                    {
+                        Attribute("refY", marker.RefY);
+                    }
+
+                    Attribute("orient", marker.Orientation switch
+                    {
+                        SceneMarkerOrientation.Auto => "auto",
+                        SceneMarkerOrientation.AutoStartReverse => "auto-start-reverse",
+                        _ => Number(double.IsFinite(marker.Angle) ? marker.Angle : 0),
+                    });
+                    output.Write(" overflow=\"visible\">\n");
+                    WriteElement(marker.Content);
+                    output.Write("</marker>\n");
                 }
 
                 output.Write("</defs>\n");
@@ -195,6 +227,7 @@ public static class SvgSceneRenderer
             var maskCount = 0;
             var textPathCount = 0;
             var patternCount = 0;
+            var markerCount = 0;
             Visit(root);
             if (definitions.Length > 0)
             {
@@ -209,6 +242,20 @@ public static class SvgSceneRenderer
                 {
                     AddPaint(shape.Fill);
                     AddPaint(shape.Stroke);
+                }
+
+                switch (element)
+                {
+                    case ScenePath path:
+                        AddMarker(path.MarkerStart);
+                        AddMarker(path.MarkerMid);
+                        AddMarker(path.MarkerEnd);
+                        break;
+
+                    case SceneLine line:
+                        AddMarker(line.MarkerStart);
+                        AddMarker(line.MarkerEnd);
+                        break;
                 }
 
                 // The path of a text is referenced by its textPath
@@ -328,6 +375,18 @@ public static class SvgSceneRenderer
             static double Sanitize(double deviation) => deviation > 0 && double.IsFinite(deviation) ? deviation : 0;
 
             static double Finite(double value) => double.IsFinite(value) ? value : 0;
+
+            // The identifier is set before the content is visited: a marker drawn on its own content is not visited again
+            void AddMarker(SceneMarker? marker)
+            {
+                if (marker is null || _ids.ContainsKey(marker))
+                    return;
+
+                var markerId = NextId("marker", ref markerCount);
+                _ids[marker] = markerId;
+                _markers.Add((markerId, marker));
+                Visit(marker.Content);
+            }
 
             void AddPaint(ScenePaint? paint)
             {
@@ -479,6 +538,7 @@ public static class SvgSceneRenderer
                     Attribute("x2", line.X2);
                     Attribute("y2", line.Y2);
                     ShapeAttributes(line, isLine: true);
+                    MarkerAttributes(line.MarkerStart, null, line.MarkerEnd);
                     EndElement("line", line);
                     break;
 
@@ -491,6 +551,7 @@ public static class SvgSceneRenderer
                     }
 
                     ShapeAttributes(path);
+                    MarkerAttributes(path.MarkerStart, path.MarkerMid, path.MarkerEnd);
                     EndElement("path", path);
                     break;
 
@@ -875,6 +936,24 @@ public static class SvgSceneRenderer
                 {
                     Attribute("data-" + name, value);
                 }
+            }
+        }
+
+        private void MarkerAttributes(SceneMarker? start, SceneMarker? middle, SceneMarker? end)
+        {
+            if (start is not null)
+            {
+                Attribute("marker-start", "url(#" + _ids[start] + ")");
+            }
+
+            if (middle is not null)
+            {
+                Attribute("marker-mid", "url(#" + _ids[middle] + ")");
+            }
+
+            if (end is not null)
+            {
+                Attribute("marker-end", "url(#" + _ids[end] + ")");
             }
         }
 

@@ -4,12 +4,13 @@ namespace Meziantou.Framework.VectorGraphics;
 internal static class SceneTree
 {
     /// <summary>
-    /// Enumerates an element and every element it draws: the children of the groups, the contents of the masks and of
-    /// the patterns. An element that is reached several times is enumerated each time; a pattern once.
+    /// Enumerates an element and every element it draws: the children of the groups, the contents of the masks, of the
+    /// patterns and of the markers. An element that is reached several times is enumerated each time; a pattern and a
+    /// marker once.
     /// </summary>
     public static IEnumerable<SceneElement> EnumerateElements(SceneElement root)
     {
-        var patterns = new HashSet<PatternPaint>(ReferenceEqualityComparer.Instance);
+        var patterns = new HashSet<object>(ReferenceEqualityComparer.Instance);
         var stack = new Stack<SceneElement>();
         stack.Push(root);
         while (stack.TryPop(out var element))
@@ -24,7 +25,7 @@ internal static class SceneTree
     }
 
     // The elements an element draws, in order: its mask, the patterns of its paints, its children
-    private static List<SceneElement> GetContents(SceneElement element, HashSet<PatternPaint> patterns)
+    private static List<SceneElement> GetContents(SceneElement element, HashSet<object> patterns)
     {
         var contents = new List<SceneElement>();
         if (element.Mask is { } mask)
@@ -38,12 +39,34 @@ internal static class SceneTree
             AddPattern(shape.Stroke);
         }
 
+        switch (element)
+        {
+            case ScenePath path:
+                AddMarker(path.MarkerStart);
+                AddMarker(path.MarkerMid);
+                AddMarker(path.MarkerEnd);
+                break;
+
+            case SceneLine line:
+                AddMarker(line.MarkerStart);
+                AddMarker(line.MarkerEnd);
+                break;
+        }
+
         if (element is SceneGroup group)
         {
             contents.AddRange(group.Children);
         }
 
         return contents;
+
+        void AddMarker(SceneMarker? marker)
+        {
+            if (marker is not null && patterns.Add(marker))
+            {
+                contents.Add(marker.Content);
+            }
+        }
 
         void AddPattern(ScenePaint? paint)
         {

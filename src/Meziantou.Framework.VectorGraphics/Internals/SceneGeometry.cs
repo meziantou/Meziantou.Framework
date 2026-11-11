@@ -66,10 +66,10 @@ internal static class SceneGeometry
                 return Inflate(new SceneBounds(circle.CenterX - circle.Radius, circle.CenterY - circle.Radius, 2 * circle.Radius, 2 * circle.Radius), stroke);
 
             case SceneLine line:
-                return Inflate(new SceneBounds(Math.Min(line.X1, line.X2), Math.Min(line.Y1, line.Y2), Math.Abs(line.X2 - line.X1), Math.Abs(line.Y2 - line.Y1)), stroke);
+                return WithMarkers(Inflate(new SceneBounds(Math.Min(line.X1, line.X2), Math.Min(line.Y1, line.Y2), Math.Abs(line.X2 - line.X1), Math.Abs(line.Y2 - line.Y1)), stroke), line, measureText);
 
             case ScenePath path:
-                return GetPathBounds(path.Data) is { } pathBounds ? Inflate(pathBounds, stroke) : null;
+                return WithMarkers(GetPathBounds(path.Data) is { } pathBounds ? Inflate(pathBounds, stroke) : null, path, measureText);
 
             case SceneImage image:
                 return new SceneBounds(image.X, image.Y, image.Width, image.Height);
@@ -90,6 +90,77 @@ internal static class SceneGeometry
 
             default:
                 return null;
+        }
+    }
+
+    // The markers of a shape are drawn on its vertices. A marker drawn on a shape of its own content is not drawn again.
+    [ThreadStatic]
+    private static HashSet<SceneMarker>? s_markers;
+
+    private static SceneBounds? WithMarkers(SceneBounds? bounds, SceneShape shape, Func<SceneText, SceneBounds?> measureText)
+    {
+        foreach (var (marker, vertex, isStart) in GetMarkers(shape))
+        {
+            s_markers ??= new(ReferenceEqualityComparer.Instance);
+            if (!s_markers.Add(marker))
+                continue;
+
+            try
+            {
+                if (GetBounds(marker.Content, measureText) is { } content)
+                {
+                    bounds = Union(bounds, Transform(content, marker.GetTransform(vertex, shape.StrokeWidth, isStart)));
+                }
+            }
+            finally
+            {
+                s_markers.Remove(marker);
+            }
+        }
+
+        return bounds;
+    }
+
+    /// <summary>Gets the markers of a path or a line, with the vertex each one is drawn on.</summary>
+    public static IEnumerable<(SceneMarker Marker, PathPoint Vertex, bool IsStart)> GetMarkers(SceneShape shape)
+    {
+        var (start, middle, end) = shape switch
+        {
+            ScenePath path => (path.MarkerStart, path.MarkerMid, path.MarkerEnd),
+            SceneLine line => (line.MarkerStart, null, line.MarkerEnd),
+            _ => (null, null, null),
+        };
+
+        if (start is null && middle is null && end is null)
+            yield break;
+
+        var vertices = shape switch
+        {
+            ScenePath path => path.Data.GetVertices(),
+            SceneLine line => new PathBuilder().MoveTo(line.X1, line.Y1).LineTo(line.X2, line.Y2).Build().GetVertices(),
+            _ => [],
+        };
+
+        for (var i = 0; i < vertices.Count; i++)
+        {
+            var vertex = vertices[i];
+            if (!double.IsFinite(vertex.X) || !double.IsFinite(vertex.Y))
+                continue;
+
+            if (i == 0 && start is not null)
+            {
+                yield return (start, vertex, true);
+            }
+
+            if (i > 0 && i < vertices.Count - 1 && middle is not null)
+            {
+                yield return (middle, vertex, false);
+            }
+
+            if (i == vertices.Count - 1 && end is not null)
+            {
+                yield return (end, vertex, false);
+            }
         }
     }
 

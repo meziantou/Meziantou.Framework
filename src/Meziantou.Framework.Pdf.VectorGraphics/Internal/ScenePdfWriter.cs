@@ -28,13 +28,14 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     private static readonly ConditionalWeakTable<SceneImage, LoadedImage> Images = [];
 
     private readonly Stack<PdfMatrix> _saved = new();
-    // The depth of the contents that are not links of the page: masks and patterns
+    // The depth of the contents that are not links of the page: masks, patterns and markers
     private int _hiddenDepth;
 
     // The tiling patterns, by paint and by the transform from their space to the space of their content stream; the
     // patterns whose content is being drawn
     private readonly Dictionary<(PatternPaint Paint, PdfMatrix Matrix), PdfTilingPattern> _tilingPatterns = [];
     private readonly HashSet<PatternPaint> _drawingPatterns = new(ReferenceEqualityComparer.Instance);
+    private readonly HashSet<SceneMarker> _drawingMarkers = new(ReferenceEqualityComparer.Instance);
     private PdfContentBuilder _content = content;
 
     // The transform from the current user space to the space of the current content stream, and from that space to the page
@@ -65,7 +66,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     /// <exception cref="NotSupportedException">An element has a filter.</exception>
     public static void ThrowIfUnsupported(Scene scene)
     {
-        var patterns = new HashSet<PatternPaint>(ReferenceEqualityComparer.Instance);
+        var patterns = new HashSet<object>(ReferenceEqualityComparer.Instance);
         Visit(scene.Root);
 
         void Visit(SceneElement element)
@@ -84,6 +85,20 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                 VisitPattern(shape.Stroke);
             }
 
+            switch (element)
+            {
+                case ScenePath path:
+                    VisitMarker(path.MarkerStart);
+                    VisitMarker(path.MarkerMid);
+                    VisitMarker(path.MarkerEnd);
+                    break;
+
+                case SceneLine line:
+                    VisitMarker(line.MarkerStart);
+                    VisitMarker(line.MarkerEnd);
+                    break;
+            }
+
             if (element is SceneGroup group)
             {
                 foreach (var child in group.Children)
@@ -98,6 +113,14 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             if (paint is PatternPaint pattern && patterns.Add(pattern))
             {
                 Visit(pattern.Content);
+            }
+        }
+
+        void VisitMarker(SceneMarker? marker)
+        {
+            if (marker is not null && patterns.Add(marker))
+            {
+                Visit(marker.Content);
             }
         }
     }
@@ -189,10 +212,12 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
             case SceneLine line:
                 DrawShape(line, new PathBuilder().MoveTo(line.X1, line.Y1).LineTo(line.X2, line.Y2).Build(), opacity, PdfFillRule.NonZero, canFill: false);
+                DrawMarkers(line, opacity);
                 break;
 
             case ScenePath path:
                 DrawShape(path, path.Data.ToCubicCurves(), opacity, path.FillRule is SceneFillRule.EvenOdd ? PdfFillRule.EvenOdd : PdfFillRule.NonZero, canFill: true);
+                DrawMarkers(path, opacity);
                 break;
 
             case SceneText text:
@@ -202,6 +227,85 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             case SceneImage image:
                 DrawImage(image, opacity);
                 break;
+        }
+    }
+
+    // The content of each marker is drawn on its vertex, after the shape, with the opacity of the shape. A marker drawn on
+    // a shape of its own content is not drawn again; its hyperlinks are not links of the page.
+    private void DrawMarkers(SceneShape shape, double opacity)
+    {
+        foreach (var (marker, vertex, isStart) in GetMarkers(shape))
+        {
+            var transform = marker.GetTransform(vertex, shape.StrokeWidth, isStart);
+            if (!IsFinite(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F) || (transform.A * transform.D) - (transform.B * transform.C) == 0 || marker.Content.Children.Count is 0 || !_drawingMarkers.Add(marker))
+                continue;
+
+            Save();
+            Transform(new PdfMatrix(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F));
+            _hiddenDepth++;
+            try
+            {
+                if (opacity < 1)
+                {
+                    DrawTransparencyGroup(marker.Content.Children, opacity);
+                }
+                else
+                {
+                    foreach (var child in marker.Content.Children)
+                    {
+                        DrawElement(child);
+                    }
+                }
+            }
+            finally
+            {
+                _hiddenDepth--;
+                _drawingMarkers.Remove(marker);
+                Restore();
+            }
+        }
+    }
+
+    // The markers of a path or a line, with the vertex each one is drawn on, as SceneGeometry gives them to the bounds
+    private static IEnumerable<(SceneMarker Marker, PathPoint Vertex, bool IsStart)> GetMarkers(SceneShape shape)
+    {
+        var (start, middle, end) = shape switch
+        {
+            ScenePath path => (path.MarkerStart, path.MarkerMid, path.MarkerEnd),
+            SceneLine line => (line.MarkerStart, null, line.MarkerEnd),
+            _ => (null, null, null),
+        };
+
+        if (start is null && middle is null && end is null)
+            yield break;
+
+        var vertices = shape switch
+        {
+            ScenePath path => path.Data.GetVertices(),
+            SceneLine line => new PathBuilder().MoveTo(line.X1, line.Y1).LineTo(line.X2, line.Y2).Build().GetVertices(),
+            _ => [],
+        };
+
+        for (var i = 0; i < vertices.Count; i++)
+        {
+            var vertex = vertices[i];
+            if (!double.IsFinite(vertex.X) || !double.IsFinite(vertex.Y))
+                continue;
+
+            if (i == 0 && start is not null)
+            {
+                yield return (start, vertex, true);
+            }
+
+            if (i > 0 && i < vertices.Count - 1 && middle is not null)
+            {
+                yield return (middle, vertex, false);
+            }
+
+            if (i == vertices.Count - 1 && end is not null)
+            {
+                yield return (end, vertex, false);
+            }
         }
     }
 

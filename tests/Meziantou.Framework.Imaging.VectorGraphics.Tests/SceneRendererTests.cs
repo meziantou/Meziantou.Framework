@@ -229,6 +229,27 @@ public sealed class SceneRendererTests
         Assert.Equal(new Rgba32(255, 255, 255), pixels[25, 50]);
     }
 
+    [Fact]
+    public void Markers()
+    {
+        // A square of 4 by 4 at the end of a line, centered on it and scaled by the stroke width of 2; a dot on the middle vertex of a path
+        var square = new SceneMarker { RefX = 2, RefY = 2 };
+        square.Content.Add(new SceneRectangle(0, 0, 4, 4) { Fill = (SceneColor)"#ff0000" });
+        var dot = new SceneMarker { Units = SceneMarkerUnits.UserSpace };
+        dot.Content.Add(new SceneCircle(0, 0, 3) { Fill = (SceneColor)"#0000ff" });
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneLine(10, 20, 60, 20) { StrokeWidth = 2, MarkerEnd = square });
+        scene.Root.Add(new ScenePath(new PathBuilder().MoveTo(10, 50).LineTo(50, 50).LineTo(90, 50).Build()) { Stroke = SceneColor.Black, MarkerMid = dot });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(Red, pixels[63, 22]);
+        Assert.Equal(Red, pixels[56, 16]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[66, 20]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[30, 20]);
+        Assert.Equal(Blue, pixels[50, 48]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[90, 48]);
+    }
+
     private static (int Left, int Top, int Right, int Bottom) GetInkBounds(Image<Rgba32> image, int x0, int y0, int x1, int y1)
     {
         var (left, top, right, bottom) = (int.MaxValue, int.MaxValue, -1, -1);

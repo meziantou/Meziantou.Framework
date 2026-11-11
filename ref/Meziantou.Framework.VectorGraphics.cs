@@ -104,6 +104,7 @@ namespace Meziantou.Framework.VectorGraphics
         public bool IsEmpty { get => throw null; }
         public double GetLength() => throw null;
         public Meziantou.Framework.VectorGraphics.PathPoint GetPointAtLength(double distance) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.PathPoint> GetVertices() => throw null;
         public Meziantou.Framework.VectorGraphics.PathData ToCubicCurves() => throw null;
         public override string ToString() => throw null;
         public Meziantou.Framework.VectorGraphics.PathData Translate(double offsetX, double offsetY) => throw null;
@@ -427,6 +428,8 @@ namespace Meziantou.Framework.VectorGraphics
 
     public sealed class SceneLine : Meziantou.Framework.VectorGraphics.SceneShape
     {
+        public Meziantou.Framework.VectorGraphics.SceneMarker? MarkerEnd { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneMarker? MarkerStart { get => throw null; set { } }
         public double X1 { get => throw null; }
         public double X2 { get => throw null; }
         public double Y1 { get => throw null; }
@@ -446,6 +449,30 @@ namespace Meziantou.Framework.VectorGraphics
         Miter = 0,
         Round = 1,
         Bevel = 2,
+    }
+
+    public sealed class SceneMarker
+    {
+        public double Angle { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneGroup Content { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneMarkerOrientation Orientation { get => throw null; set { } }
+        public double RefX { get => throw null; set { } }
+        public double RefY { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneMarkerUnits Units { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneTransform GetTransform(Meziantou.Framework.VectorGraphics.PathPoint vertex, double strokeWidth, bool isStart = false) => throw null;
+    }
+
+    public enum SceneMarkerOrientation
+    {
+        Auto = 0,
+        AutoStartReverse = 1,
+        Angle = 2,
+    }
+
+    public enum SceneMarkerUnits
+    {
+        StrokeWidth = 0,
+        UserSpace = 1,
     }
 
     public sealed class SceneMask
@@ -469,6 +496,9 @@ namespace Meziantou.Framework.VectorGraphics
     {
         public Meziantou.Framework.VectorGraphics.PathData Data { get => throw null; }
         public Meziantou.Framework.VectorGraphics.SceneFillRule FillRule { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneMarker? MarkerEnd { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneMarker? MarkerMid { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneMarker? MarkerStart { get => throw null; set { } }
         public ScenePath(Meziantou.Framework.VectorGraphics.PathData data) { }
     }
 

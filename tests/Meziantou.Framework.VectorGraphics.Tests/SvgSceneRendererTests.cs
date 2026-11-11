@@ -520,6 +520,88 @@ public sealed class SvgSceneRendererTests
     }
 
     [Fact]
+    public void Markers()
+    {
+        #region VectorGraphics_Markers
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // An arrowhead whose tip, at (10, 5), is on the vertex: it follows the direction of the path, scaled by the stroke width
+        var arrow = new SceneMarker { RefX = 10, RefY = 5 };
+        arrow.Content.Add(new ScenePath(new PathBuilder().AddPolygon((0, 0), (10, 5), (0, 10)).Build()) { Fill = (SceneColor)"#0369a1" });
+
+        // A dot on every vertex between the ends, in the coordinates of the path
+        var dot = new SceneMarker { Units = SceneMarkerUnits.UserSpace };
+        dot.Content.Add(new SceneCircle(0, 0, 3) { Fill = (SceneColor)"#0369a1" });
+
+        var path = new PathBuilder().MoveTo(10, 80).LineTo(60, 20).LineTo(110, 80).LineTo(170, 30).Build();
+        scene.Root.Add(new ScenePath(path) { Stroke = (SceneColor)"#0369a1", StrokeWidth = 2, MarkerMid = dot, MarkerEnd = arrow });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("Markers", svg);
+        Assert.Contains("<marker id=\"scene-marker0\" markerUnits=\"userSpaceOnUse\" orient=\"auto\" overflow=\"visible\">\n<g>\n<circle cx=\"0\" cy=\"0\" r=\"3\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<marker id=\"scene-marker1\" refX=\"10\" refY=\"5\" orient=\"auto\" overflow=\"visible\">", svg, StringComparison.Ordinal);
+        Assert.Contains("stroke-width=\"2\" marker-mid=\"url(#scene-marker0)\" marker-end=\"url(#scene-marker1)\"/>", svg, StringComparison.Ordinal);
+
+        // A line has a start and an end; the other orientations
+        var reversed = new SceneMarker { Orientation = SceneMarkerOrientation.AutoStartReverse };
+        var fixedAngle = new SceneMarker { Orientation = SceneMarkerOrientation.Angle, Angle = 30 };
+        var lineSvg = SvgSceneRenderer.Render(Single(new SceneLine(0, 0, 10, 0) { Stroke = SceneColor.Black, MarkerStart = reversed, MarkerEnd = fixedAngle }));
+        Assert.Contains("orient=\"auto-start-reverse\"", lineSvg, StringComparison.Ordinal);
+        Assert.Contains("orient=\"30\"", lineSvg, StringComparison.Ordinal);
+        Assert.Contains("marker-start=\"url(#scene-marker0)\" marker-end=\"url(#scene-marker1)\"", lineSvg, StringComparison.Ordinal);
+
+        // The bounds of a shape contain its markers: the arrowhead is 20 by 20 pixels with a stroke of 2, before the vertex
+        Assert.Equal(new SceneBounds(-4, 40, 108, 20), new SceneLine(0, 50, 100, 50) { Stroke = SceneColor.Black, MarkerEnd = arrow, StrokeWidth = 2 }.GetBounds(_ => null));
+
+        // A marker drawn on a shape of its own content is not drawn again
+        var recursive = new SceneMarker();
+        recursive.Content.Add(new SceneLine(0, 0, 1, 0) { Stroke = SceneColor.Black, MarkerEnd = recursive });
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(SvgSceneRenderer.Render(Single(new SceneLine(0, 0, 1, 0) { MarkerEnd = recursive })), "<marker "));
+        Assert.NotNull(new SceneLine(0, 0, 1, 0) { MarkerEnd = recursive }.GetBounds(_ => null));
+    }
+
+    [Fact]
+    public void PathVertices()
+    {
+        // The end points of the commands; between two segments, the direction halfway between them
+        var polyline = new PathBuilder().MoveTo(0, 0).LineTo(10, 0).LineTo(10, 10).Build();
+        Assert.Equal([new PathPoint(0, 0, 0), new PathPoint(10, 0, 45), new PathPoint(10, 10, 90)], polyline.GetVertices());
+
+        // A closed subpath joins its last segment and its first one, at its start and where it closes
+        var square = new PathBuilder().MoveTo(0, 0).LineTo(10, 0).LineTo(10, 10).LineTo(0, 10).Close().Build();
+        Assert.Equal([new PathPoint(0, 0, -45), new PathPoint(10, 0, 45), new PathPoint(10, 10, 135), new PathPoint(0, 10, -135), new PathPoint(0, 0, -45)], square.GetVertices());
+
+        // The tangents of an arc: a half circle through the top goes up, then down
+        var arc = new PathBuilder().MoveTo(0, 0).ArcTo(5, 5, 0, largeArc: false, sweep: true, 10, 0).Build().GetVertices();
+        Assert.Equal(2, arc.Count);
+        Assert.Equal(-90, arc[0].Angle, 1e-6);
+        Assert.Equal(90, arc[1].Angle, 1e-6);
+
+        // The tangents of curves, and a segment without length that keeps the previous direction
+        var curve = new PathBuilder().MoveTo(0, 0).CubicTo(0, 10, 10, 10, 10, 0).LineTo(10, 0).QuadraticTo(20, 0, 20, 10).Build().GetVertices();
+        Assert.Equal([90, -90, -45, 90], curve.Select(vertex => Math.Round(vertex.Angle, 6)));
+
+        // Without a move, the path starts at the origin; an empty path has no vertex
+        Assert.Equal([new PathPoint(0, 0, 0), new PathPoint(5, 0, 0)], new PathBuilder().LineTo(5, 0).Build().GetVertices());
+        Assert.Empty(new PathBuilder().Build().GetVertices());
+
+        // The transform of a marker: its reference point on the vertex, scaled by the stroke, turned to the direction
+        var marker = new SceneMarker { RefX = 1, RefY = 2 };
+        var transform = marker.GetTransform(new PathPoint(10, 20, 90), strokeWidth: 3);
+        var (x, y) = transform.Apply(1, 2);
+        Assert.Equal(10, x, 1e-9);
+        Assert.Equal(20, y, 1e-9);
+        (x, y) = transform.Apply(2, 2);
+        Assert.Equal(10, x, 1e-9);
+        Assert.Equal(23, y, 1e-9);
+        Assert.Equal(new SceneTransform(1, 0, 0, 1, 10, 20), new SceneMarker { Orientation = SceneMarkerOrientation.Angle, Angle = double.NaN, Units = SceneMarkerUnits.UserSpace }.GetTransform(new PathPoint(10, 20, 45), 3));
+        (x, y) = new SceneMarker { Orientation = SceneMarkerOrientation.AutoStartReverse }.GetTransform(new PathPoint(0, 0, 0), 1, isStart: true).Apply(1, 0);
+        Assert.Equal(-1, x, 1e-9);
+    }
+
+    [Fact]
     public void TextOnAPath()
     {
         #region VectorGraphics_TextOnPath

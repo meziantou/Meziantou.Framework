@@ -1,44 +1,74 @@
+using System.Globalization;
+
 namespace Meziantou.Framework.Barcodes.Internal.MicroQR;
 
 internal static class MicroQREncoder
 {
     public static QRCode Encode(string data, ErrorCorrectionLevel ecLevel, int minVersion, int maxVersion)
     {
-        var mode = DataAnalyzer.DetermineMode(data);
-        var version = MicroQRVersion.DetermineVersion(data, ecLevel, mode, minVersion, maxVersion);
-        var effectiveECLevel = MicroQRVersion.ResolveECLevel(version, ecLevel);
+        var allowSegments = DataAnalyzer.CanSegmentWithoutEci(data);
+        var isEncodable = false;
+        for (var version = minVersion; version <= maxVersion; version++)
+        {
+            if (!MicroQRVersion.IsECLevelSupported(version, ecLevel))
+                continue;
 
-        var dataCodewords = EncodeData(data, version, effectiveECLevel, mode);
+            var segments = QRSegmentOptimizer.ChooseSegments(data, QRCodeType.MicroQR, version, allowSegments, allowKanji: true, out var bitCount);
+            if (segments is null)
+                continue;
+
+            isEncodable = true;
+            var effectiveECLevel = MicroQRVersion.ResolveECLevel(version, ecLevel);
+            if (bitCount >= 0 && bitCount <= MicroQRVersion.GetDataBitCapacity(version, effectiveECLevel))
+                return Build(QRSegmentOptimizer.ToSegments(data, segments), version, effectiveECLevel);
+        }
+
+        throw CreateException(isEncodable, ecLevel, minVersion, maxVersion, "The data has characters that a Micro QR code of version {0} cannot encode with the error correction level {1}: M1 encodes digits, M2 digits and uppercase alphanumeric characters.");
+    }
+
+    public static QRCode Encode(IReadOnlyList<QRCodeSegment> segments, ErrorCorrectionLevel ecLevel, int minVersion, int maxVersion)
+    {
+        var isEncodable = false;
+        for (var version = minVersion; version <= maxVersion; version++)
+        {
+            if (!MicroQRVersion.IsECLevelSupported(version, ecLevel) || (version is 1 && segments.Count is not 1) || !segments.All(segment => QRSymbolFormat.GetCharacterCountBits(QRCodeType.MicroQR, version, segment.EncodingMode) >= 0))
+                continue;
+
+            isEncodable = true;
+            var effectiveECLevel = MicroQRVersion.ResolveECLevel(version, ecLevel);
+            var bitCount = QRSymbolFormat.GetBitCount(segments, QRCodeType.MicroQR, version);
+            if (bitCount >= 0 && bitCount <= MicroQRVersion.GetDataBitCapacity(version, effectiveECLevel))
+                return Build(segments, version, effectiveECLevel);
+        }
+
+        throw CreateException(isEncodable, ecLevel, minVersion, maxVersion, "The segments have a mode that a Micro QR code of version {0} cannot encode with the error correction level {1}: M1 holds a single numeric segment, M2 numeric and alphanumeric segments.");
+    }
+
+    private static InvalidOperationException CreateException(bool isEncodable, ErrorCorrectionLevel ecLevel, int minVersion, int maxVersion, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string unsupportedMessage)
+    {
+        var range = minVersion == maxVersion ? $"M{maxVersion}" : $"M{minVersion} to M{maxVersion}";
+        if (!isEncodable)
+            return new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, unsupportedMessage, range, ecLevel));
+
+        if (minVersion == 1 && maxVersion == 4)
+            return new InvalidOperationException("The data is too long to be encoded in a Micro QR code.");
+
+        return new InvalidOperationException($"The data is too long to be encoded in a Micro QR code of version {range}.");
+    }
+
+    private static QRCode Build(IReadOnlyList<QRCodeSegment> segments, int version, ErrorCorrectionLevel effectiveECLevel)
+    {
+        var dataCodewords = EncodeData(segments, version, effectiveECLevel);
         var allCodewords = AddErrorCorrection(dataCodewords, version, effectiveECLevel);
 
         var modules = BuildMatrix(allCodewords, version, effectiveECLevel);
         return new QRCode(modules, version, QRCodeType.MicroQR, effectiveECLevel);
     }
 
-    private static byte[] EncodeData(string data, int version, ErrorCorrectionLevel ecLevel, EncodingMode mode)
+    private static byte[] EncodeData(IReadOnlyList<QRCodeSegment> segments, int version, ErrorCorrectionLevel ecLevel)
     {
         var buffer = new BitBuffer();
-
-        // Mode indicator
-        var modeIndicatorBits = MicroQRVersion.GetModeIndicatorBits(version);
-        if (modeIndicatorBits > 0)
-        {
-            var modeValue = MicroQRVersion.GetModeIndicatorValue(version, mode);
-            buffer.Append(modeValue, modeIndicatorBits);
-        }
-
-        // Character count indicator
-        var cciBits = MicroQRVersion.GetCharacterCountBits(version, mode);
-        var charCount = mode switch
-        {
-            EncodingMode.Byte => Encoding.UTF8.GetByteCount(data),
-            EncodingMode.Kanji => data.Length,
-            _ => data.Length,
-        };
-        buffer.Append(charCount, cciBits);
-
-        // Data encoding using shared helper
-        DataEncoderHelper.EncodeData(buffer, data, mode);
+        QRSymbolFormat.Write(buffer, segments, QRCodeType.MicroQR, version);
 
         // Add terminator and padding
         var dataCodewords = MicroQRVersion.GetDataCodewords(version, ecLevel);

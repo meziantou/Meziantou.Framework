@@ -10,6 +10,9 @@ namespace Meziantou.Framework.SnapshotTesting.Roslyn
 {
     public static class SnapshotSettingsRoslynExtensions
     {
-        public static void AddRoslyn(this Meziantou.Framework.SnapshotTesting.SnapshotSettings snapshotSettings) { }
+        extension(Meziantou.Framework.SnapshotTesting.SnapshotSettings snapshotSettings)
+        {
+            public void AddRoslyn() { }
+        }
     }
 }

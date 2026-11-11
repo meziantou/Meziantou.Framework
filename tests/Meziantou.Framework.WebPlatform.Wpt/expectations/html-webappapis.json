@@ -992,16 +992,10 @@
     "total": 4
   },
   "html/webappapis/structured-clone/structured-clone.any.js": {
-    "total": 152,
-    "failures": {
-      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
-    }
+    "total": 152
   },
   "html/webappapis/structured-clone/structured-clone.any.js#dedicatedworker": {
-    "total": 137,
-    "failures": {
-      "A subclass instance will be received as its closest transferable superclass": "PRECONDITION_FAILED"
-    }
+    "total": 137
   },
   "html/webappapis/system-state-and-capabilities/the-navigator-object/clientinformation.window.js": {
     "total": 2

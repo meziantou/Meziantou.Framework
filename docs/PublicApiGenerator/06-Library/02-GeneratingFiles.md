@@ -42,8 +42,9 @@ Assert.True(File.Exists(Path.Combine(outputDirectory, "Meziantou.Framework.Publi
 ```
 <!-- endref -->
 
-Existing files are overwritten, and files that the generator does not write are left in place: delete the directory
-first to remove the files of types that no longer exist.
+Existing files are overwritten, and files that the generator does not write are left in place. Set
+[DeleteUnexpectedFiles](cref:Meziantou.Framework.PublicApiGenerator.PublicApiOptions.DeleteUnexpectedFiles) to delete them, such as the files of types that no longer exist, when the directory only
+contains the API files.
 
 ## Read a file or a loaded assembly
 
@@ -105,6 +106,8 @@ preprocessor symbol.
 | [IncludeAssemblyReferences](cref:Meziantou.Framework.PublicApiGenerator.PublicApiOptions.IncludeAssemblyReferences) | `false` | Lists the referenced assemblies that are not part of the framework in the header. See [Referenced assemblies](../03-ApiFiles.md#referenced-assemblies). |
 | [IncludedAssemblyReferences](cref:Meziantou.Framework.PublicApiGenerator.PublicApiOptions.IncludedAssemblyReferences) | (empty) | Patterns of the framework assemblies to list too, for instance `System.Net.*`. |
 | [ExcludedAssemblyReferences](cref:Meziantou.Framework.PublicApiGenerator.PublicApiOptions.ExcludedAssemblyReferences) | (empty) | Patterns of the assemblies not to list. They win over [IncludedAssemblyReferences](cref:Meziantou.Framework.PublicApiGenerator.PublicApiOptions.IncludedAssemblyReferences). |
+| [IncludeAllAttributes](cref:Meziantou.Framework.PublicApiGenerator.PublicApiOptions.IncludeAllAttributes) | `false` | Writes `[EditorBrowsable]`, the attributes of other namespaces than `System` and the assembly attributes. See [Attributes](../03-ApiFiles.md#attributes). |
+| [DeleteUnexpectedFiles](cref:Meziantou.Framework.PublicApiGenerator.PublicApiOptions.DeleteUnexpectedFiles) | `false` | Makes [GenerateToDirectory](cref:Meziantou.Framework.PublicApiGenerator.PublicApi.GenerateToDirectory) delete the files of the directory that it does not write. [Generate](cref:Meziantou.Framework.PublicApiGenerator.PublicApi.Generate) ignores it. |
 
-When two files would have the same name, ignoring case, [Generate](cref:Meziantou.Framework.PublicApiGenerator.PublicApi.Generate) throws an `InvalidOperationException` instead of
-losing part of the API.
+When two files would have the same name, ignoring case, the next ones get a `~2`, `~3`... suffix. See
+[File layouts](../03-ApiFiles.md#file-layouts).

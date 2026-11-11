@@ -46,8 +46,10 @@ on the command line with `-p:<Name>=<Value>`:
 | `PublicApiGeneratorIncludeAssemblyReferences` | `false` | Lists the referenced assemblies that are not part of the framework in the header, so that adding or removing a dependency changes the API files. See [Referenced assemblies](03-ApiFiles.md#referenced-assemblies). |
 | `PublicApiGeneratorIncludedAssemblyReferences` | (empty) | Semicolon-separated patterns of the framework assemblies to list too, for instance `System.Net.*`. |
 | `PublicApiGeneratorExcludedAssemblyReferences` | (empty) | Semicolon-separated patterns of the assemblies not to list. They win over the included patterns. |
+| `PublicApiGeneratorIncludeAllAttributes` | `false` | Writes `[EditorBrowsable]`, the attributes of other namespaces than `System` and the assembly attributes. See [Attributes](03-ApiFiles.md#attributes). |
 | `PublicApiGeneratorGenerateOnBuild` | `true` | Writes the API files after each build. |
 | `PublicApiGeneratorVerifyNoChangeOnBuild` | `false` | Checks the API files instead of writing them. See [Check the API files in CI](#check-the-api-files-in-ci). |
+| `PublicApiGeneratorDeleteUnexpectedFiles` | `false` | Deletes the files of the output directory that the build does not write. See [Files of removed types](#files-of-removed-types). |
 
 When both `PublicApiGeneratorGenerateOnBuild` and `PublicApiGeneratorVerifyNoChangeOnBuild` are `false`, the package
 does nothing. To split the API into one file per namespace:
@@ -94,9 +96,22 @@ build without the property, and commit the changes of the API files.
 Run the check in the same configuration as the one you generate the files with: when it is not the same, the API can be
 different, for instance when some code is only compiled in `Debug`.
 
-## Removed types leave files behind
+## Files of removed types
 
-With the `OneFilePerNamespace` and `OneFilePerType` layouts, the build writes the files of the current API but never
-deletes a file. When you remove or rename a type or a namespace, its old file stays in the directory, and the
-[check](#check-the-api-files-in-ci) reports it as an unexpected file. Delete the directory and build again to get
-exactly the files of the current API. The `SingleFile` layout does not have this issue.
+With the `OneFilePerNamespace` and `OneFilePerType` layouts, the build writes the files of the current API but does
+not delete a file by default. When you remove or rename a type or a namespace, its old file stays in the directory, and
+the [check](#check-the-api-files-in-ci) reports it as an unexpected file.
+
+Set `PublicApiGeneratorDeleteUnexpectedFiles` to `true` to delete them: the build then deletes every file of the
+directory, subdirectories included, that it does not write, and the directories that are empty after that. Only use it
+when the directory only contains the API files:
+
+```xml
+<PropertyGroup>
+  <PublicApiGeneratorOutputPath>PublicApi</PublicApiGeneratorOutputPath>
+  <PublicApiGeneratorFileLayout>OneFilePerType</PublicApiGeneratorFileLayout>
+  <PublicApiGeneratorDeleteUnexpectedFiles>true</PublicApiGeneratorDeleteUnexpectedFiles>
+</PropertyGroup>
+```
+
+The property does not apply to the `SingleFile` layout, which writes one file at the path you set.

@@ -1,0 +1,24 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Pdf.VectorGraphics. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- OFL fonts: the fonts of the scenes -->
+    <EmbeddedResource Include="..\..\src\Meziantou.Framework.Pdf\Rendering\Fonts\Substitution\LiberationSans-Regular.woff2" LogicalName="LiberationSans-Regular.woff2" Link="Seeds\LiberationSans-Regular.woff2" />
+    <EmbeddedResource Include="..\..\src\Meziantou.Framework.Pdf\Rendering\Fonts\Substitution\LiberationMono-Regular.woff2" LogicalName="LiberationMono-Regular.woff2" Link="Seeds\LiberationMono-Regular.woff2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The scenes of patterns, markers, uses and view boxes, shared with the SVG targets -->
+    <Compile Include="..\Meziantou.Framework.VectorGraphics.Fuzz\FeatureSceneBuilder.cs" Link="FeatureSceneBuilder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf.VectorGraphics\Meziantou.Framework.Pdf.VectorGraphics.csproj" />
+  </ItemGroup>
+</Project>

@@ -20,9 +20,12 @@
 | `MSBuild` | MSBuild item specs | `/` and `\` are separators, `%XX` escapes, `*.*` matches every file, a leading `..` is kept |
 | `Posix` | `fnmatch(3)` without flags | Matches a plain string: `*` and `?` match `/`; `[[:alpha:]]`, `[[=a=]]`, `[[.-.]]`, `[^a]` |
 | `PosixPath` | `fnmatch(3)` with `FNM_PATHNAME` | Same syntax as `Posix`, but a `/` is only matched by a `/` |
+| `GitHubCodeOwners` | GitHub CODEOWNERS files | gitignore-like; a pattern that matches a directory matches everything below it, except `dir/*`; `[` and `!` are literal |
+| `GitLabCodeOwners` | GitLab CODEOWNERS files | GitLab's normalization, then Ruby's `File.fnmatch` with `FNM_PATHNAME \| FNM_DOTMATCH`; `/docs` only matches `docs` |
 
-The `Git`, `MSBuild`, `Posix` and `PosixPath` dialects are tested against corpora produced by git, MSBuild and
-fnmatch. Characters are compared as UTF-16 code units, whereas git compares the bytes of their UTF-8 encoding.
+The `Git`, `MSBuild`, `Posix`, `PosixPath` and `GitLabCodeOwners` dialects are tested against corpora produced by git,
+MSBuild, fnmatch and GitLab's matching code. Characters are compared as UTF-16 code units, whereas git compares the
+bytes of their UTF-8 encoding.
 
 ## Usage
 

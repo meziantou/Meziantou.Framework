@@ -53,8 +53,9 @@ internal sealed class PlotRenderer
 
         _color = ScaleResolver.ResolveColor(plot.ColorScale, Collect(data => [data.Fill, data.Stroke, .. data.ExtraColor]), _theme);
         _size = ScaleResolver.ResolveSize(plot.SizeScale, Collect(data => [data.Size]));
-        _scene = new Scene(plot.Width, plot.Height, _theme.FontFamily ?? measurer.FontFamily)
+        _scene = new Scene(plot.Width, plot.Height, _measurer.FontFamily)
         {
+            Fonts = _measurer.Fonts,
             Title = plot.Title,
             Description = plot.Description,
             Background = _theme.Background,
@@ -68,7 +69,8 @@ internal sealed class PlotRenderer
     public static Scene Render(Plot plot, ITextMeasurer measurer)
     {
         ArgumentNullException.ThrowIfNull(measurer);
-        return new PlotRenderer(plot, measurer).Render();
+        // The texts are measured with the family of the theme, so the scene draws them with the family that measured them
+        return new PlotRenderer(plot, measurer.WithFontFamily(plot.Theme.FontFamily)).Render();
     }
 
     private Scene Render()
@@ -79,7 +81,7 @@ internal sealed class PlotRenderer
         var bottom = Padding;
         var right = Padding;
         var titles = new List<SceneText>();
-        top = AddTitle(titles, _plot.Title, new SceneFont(_theme.TitleFontSize, Bold: true), _theme.Foreground, top);
+        top = AddTitle(titles, _plot.Title, new SceneFont(_theme.TitleFontSize, Weight: SceneFont.BoldWeight), _theme.Foreground, top);
         top = AddTitle(titles, _plot.Subtitle, new SceneFont(_theme.SubtitleFontSize), _theme.MutedForeground, top);
         if (titles.Count > 0)
         {
@@ -258,7 +260,7 @@ internal sealed class PlotRenderer
 
     private SceneBounds FromMargin(ChartMargin margin) => new(margin.Left, margin.Top, Math.Max(1, _plot.Width - margin.Left - margin.Right), Math.Max(1, _plot.Height - margin.Top - margin.Bottom));
 
-    private SceneFont HeaderFont => new(_theme.FontSize, Bold: true);
+    private SceneFont HeaderFont => new(_theme.FontSize, Weight: SceneFont.BoldWeight);
 
     private void LayoutCartesianCells(SceneBounds area, FacetGrid facets, SceneGroup grid, SceneGroup axes, Action<FacetCell, CoordinateSystem, SceneBounds> renderCell)
     {

@@ -27,17 +27,26 @@ namespace Meziantou.Framework.SnapshotTesting.Imaging
 
     public static class SnapshotComparerCollectionImageComparerExtensions
     {
-        public static void AddImageComparer(this Meziantou.Framework.SnapshotTesting.SnapshotComparerCollection comparers, Meziantou.Framework.SnapshotTesting.Imaging.ImageComparisonSettings? settings = null) { }
+        extension(Meziantou.Framework.SnapshotTesting.SnapshotComparerCollection comparers)
+        {
+            public void AddImageComparer(Meziantou.Framework.SnapshotTesting.Imaging.ImageComparisonSettings? settings = null) { }
+        }
     }
 
     public static class SnapshotSerializerCollectionImagingExtensions
     {
-        public static void AddGifSerializer(this Meziantou.Framework.SnapshotTesting.SnapshotSerializerCollection serializers) { }
-        public static void AddIcoSerializer(this Meziantou.Framework.SnapshotTesting.SnapshotSerializerCollection serializers) { }
+        extension(Meziantou.Framework.SnapshotTesting.SnapshotSerializerCollection serializers)
+        {
+            public void AddGifSerializer() { }
+            public void AddIcoSerializer() { }
+        }
     }
 
     public static class SnapshotSettingsImagingExtensions
     {
-        public static void AddImaging(this Meziantou.Framework.SnapshotTesting.SnapshotSettings snapshotSettings, Meziantou.Framework.SnapshotTesting.Imaging.ImageComparisonSettings? settings = null) { }
+        extension(Meziantou.Framework.SnapshotTesting.SnapshotSettings snapshotSettings)
+        {
+            public void AddImaging(Meziantou.Framework.SnapshotTesting.Imaging.ImageComparisonSettings? settings = null) { }
+        }
     }
 }

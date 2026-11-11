@@ -55,7 +55,8 @@ public abstract class Diagram : ISceneSource
     /// <returns>The scene.</returns>
     public Scene CreateScene(ITextMeasurer? textMeasurer = null)
     {
-        var measurer = textMeasurer ?? TextMeasurer ?? AfmTextMeasurer.Default;
+        // The texts are measured with the family of the theme, so the scene draws them with the family that measured them
+        var measurer = (textMeasurer ?? TextMeasurer ?? AfmTextMeasurer.Default).WithFontFamily(Theme.FontFamily);
         var context = new DiagramRenderContext(Theme, measurer);
         var content = new SceneGroup { CssClass = "diagram" };
         var bounds = Render(context, content);
@@ -70,8 +71,9 @@ public abstract class Diagram : ISceneSource
         var contentWidth = Math.Max(bounds.Width, title?.Width ?? 0);
         var width = contentWidth + (2 * Padding);
         var height = bounds.Height + titleHeight + (2 * Padding);
-        var scene = new Scene(Math.Max(width, 1), Math.Max(height, 1), Theme.FontFamily ?? measurer.FontFamily)
+        var scene = new Scene(Math.Max(width, 1), Math.Max(height, 1), measurer.FontFamily)
         {
+            Fonts = measurer.Fonts,
             Title = string.IsNullOrEmpty(AccessibleTitle) ? Title : AccessibleTitle,
             Description = Description,
             Background = Theme.Background,

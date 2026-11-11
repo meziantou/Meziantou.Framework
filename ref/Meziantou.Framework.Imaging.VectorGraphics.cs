@@ -10,9 +10,12 @@ namespace Meziantou.Framework.Imaging.VectorGraphics
     public sealed class ImageTextMeasurer : Meziantou.Framework.VectorGraphics.ITextMeasurer
     {
         public string FontFamily { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneFontCollection? Fonts { get => throw null; }
+        public ImageTextMeasurer(Meziantou.Framework.VectorGraphics.SceneFontCollection fonts) { }
         public ImageTextMeasurer(Meziantou.Framework.Imaging.Typography.Font regular, Meziantou.Framework.Imaging.Typography.Font? bold = null) { }
         public ImageTextMeasurer(Meziantou.Framework.Imaging.Typography.Font regular, Meziantou.Framework.Imaging.Typography.Font? bold, Meziantou.Framework.Imaging.Typography.Font? italic, Meziantou.Framework.Imaging.Typography.Font? boldItalic) { }
         public Meziantou.Framework.VectorGraphics.TextMetrics Measure(string text, Meziantou.Framework.VectorGraphics.SceneFont font) => throw null;
+        public Meziantou.Framework.VectorGraphics.TextMetrics Measure(string text, Meziantou.Framework.VectorGraphics.SceneFont font, double letterSpacing, double wordSpacing) => throw null;
     }
 
     public static class SceneFonts
@@ -28,6 +31,7 @@ namespace Meziantou.Framework.Imaging.VectorGraphics
         public Meziantou.Framework.Imaging.Typography.Font? BoldFont { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Typography.Font? BoldItalicFont { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Typography.Font? Font { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneFontCollection? Fonts { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Typography.Font? ItalicFont { get => throw null; set { } }
         public double Scale { get => throw null; set { } }
     }

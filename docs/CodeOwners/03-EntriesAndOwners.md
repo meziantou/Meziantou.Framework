@@ -1,6 +1,6 @@
 ---
 title: Entries and owners
-description: Read the pattern and the owners of each entry, find the entry that owns a path, and write entries back.
+description: Read the pattern and the owners of each entry, find the owners of a path, and write entries back.
 ---
 
 ## Read the owners of an entry
@@ -31,8 +31,7 @@ a username nor an email address makes the file invalid. See [Handling errors](05
 ## Find the owners of a path
 
 Entries are in the order of the file, and CODEOWNERS resolution is last-match-wins: a path is owned by the last entry
-whose pattern matches it. The library does not match patterns, so bring your own matcher (for instance the `.gitignore`
-dialect of [Globbing](../Globbing/04-Dialects.md)) and search the entries from the end:
+whose pattern matches it. [GetOwners](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.GetOwners) returns the owners of a path, and [FindEntries](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.FindEntries) the entries that own it:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs;region=CodeOwners_LastMatchWins;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -42,25 +41,22 @@ var file = CodeOwnersFile.Parse("""
     CHANGELOG.md
     """, CodeOwnersDialect.GitHub);
 
-IReadOnlyList<CodeOwner> GetOwners(string path)
-{
-    CodeOwnersEntry? owningEntry = file.Entries.LastOrDefault(entry => Matches(entry.Pattern, path));
-    return owningEntry?.Owners ?? [];
-}
+Assert.Equal("user1", Assert.Single(file.GetOwners("src/Program.cs")).Name);
+Assert.Equal("docs-team", Assert.Single(file.GetOwners("docs/README.md")).Name);
 
-Assert.Equal("user1", Assert.Single(GetOwners("src/Program.cs")).Name);
-Assert.Equal("docs-team", Assert.Single(GetOwners("README.md")).Name);
-
-// An empty Owners list means the entry explicitly leaves the pattern unowned
-Assert.Empty(GetOwners("CHANGELOG.md"));
-
-// The library does not match patterns: this matcher only handles the patterns of this example
-static bool Matches(string pattern, string path)
-    => pattern == "*" || pattern == path || (pattern.StartsWith("*.", StringComparison.Ordinal) && path.EndsWith(pattern[1..], StringComparison.Ordinal));
+// The last matching entry wins: CHANGELOG.md matches the 3 patterns, and the last one has no owners
+CodeOwnersEntry entry = Assert.Single(file.FindEntries("CHANGELOG.md"));
+Assert.Equal("CHANGELOG.md", entry.Pattern);
+Assert.Empty(file.GetOwners("CHANGELOG.md"));
 ```
 <!-- endref -->
 
-The matcher of this example only handles the patterns it uses. A real one must follow the pattern syntax of the host.
+- The path is the path of a file, relative to the root of the repository, with `/` as the separator. A leading `/` is
+  ignored, and the comparison is case-sensitive.
+- The patterns are matched with the rules of the dialect the file was parsed with. With GitLab, a path can have an owning
+  entry in each section. See [Matching paths](06-MatchingPaths.md).
+- [GetOwners](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.GetOwners) returns an empty list both when no entry matches the path and when the matching entry leaves it unowned. Use
+  [FindEntries](cref:Meziantou.Framework.CodeOwners.CodeOwnersFile.FindEntries) to tell them apart.
 
 ## Patterns without owners
 
@@ -86,8 +82,8 @@ Assert.Empty(generated.Owners);
 
 ## Escaped patterns
 
-A backslash escapes the next character of a pattern, so that a pattern can contain a space or start with `#`. The
-[Pattern](cref:Meziantou.Framework.CodeOwners.CodeOwnersEntry.Pattern) property holds the pattern without the backslashes:
+A backslash escapes the next character of a pattern, so that a pattern can contain a space, start with `#`, or match a
+`*` literally. The [Pattern](cref:Meziantou.Framework.CodeOwners.CodeOwnersEntry.Pattern) property holds the pattern without the backslashes:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs;region=CodeOwners_EscapedPattern;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -102,12 +98,13 @@ Assert.Equal("#notes.txt", file.Entries[1].Pattern);
 ```
 <!-- endref -->
 
-A backslash at the end of a line does not join the next line: an entry never spans several lines.
+A backslash at the end of a line does not join the next line: an entry never spans several lines. Matching uses the
+pattern as written, so `\*.md` only matches a file named `*.md`.
 
 ## Write entries back
 
-`ToString` returns a value as written in a CODEOWNERS file of the dialect it was parsed with. The pattern is escaped
-again, so the text can be parsed back to the same entry:
+`ToString` returns a value as written in a CODEOWNERS file of the dialect it was parsed with. The pattern keeps the
+backslashes it was written with, so the text can be parsed back to an entry that matches the same paths:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs;region=CodeOwners_ToString;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -126,7 +123,7 @@ Assert.Equal("[Docs][2] @docs-team", entry.Section?.ToString());
 ```
 <!-- endref -->
 
-- [CodeOwnersEntry.ToString](cref:Meziantou.Framework.CodeOwners.CodeOwnersEntry.ToString) returns the pattern and the owners. The section header is not part of the entry: write
+- [CodeOwnersEntry.ToString](cref:Meziantou.Framework.CodeOwners.CodeOwnersEntry.ToString) returns the pattern, as written in the file, and the owners. The section header is not part of the entry: write
   [CodeOwnersSection.ToString](cref:Meziantou.Framework.CodeOwners.CodeOwnersSection.ToString) on the line before.
 - [CodeOwner.ToString](cref:Meziantou.Framework.CodeOwners.CodeOwner.ToString) returns `@user`, `@@role` or the email address.
 - Comments are not kept, and an entry that got the default owners of its section writes them on its own line.
@@ -134,4 +131,5 @@ Assert.Equal("[Docs][2] @docs-team", entry.Section?.ToString());
 ## Compare entries
 
 [CodeOwnersEntry](cref:Meziantou.Framework.CodeOwners.CodeOwnersEntry), [CodeOwner](cref:Meziantou.Framework.CodeOwners.CodeOwner) and [CodeOwnersSection](cref:Meziantou.Framework.CodeOwners.CodeOwnersSection) have value equality: two entries are equal when they have the
-same pattern, the same owners in the same order, and equal sections. The `==` and `!=` operators compare the same way.
+same pattern, the same owners in the same order, and equal sections. The patterns are compared without their
+backslashes. The `==` and `!=` operators compare the same way.

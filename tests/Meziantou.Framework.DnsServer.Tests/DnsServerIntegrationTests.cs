@@ -1561,10 +1561,12 @@ public sealed class DnsServerIntegrationTests
         // so it is repeated: it can only fail when the listener is actually unsafe.
         for (var attempt = 0; attempt < 25; attempt++)
         {
+            // Port 0 lets the OS pick a free port for each listener when it binds. Probing ports up front
+            // and binding them again later races with the other processes on the machine.
             var options = new DnsServerOptions();
-            foreach (var port in GetAvailableUdpPorts(20))
+            for (var i = 0; i < 20; i++)
             {
-                options.AddUdpListener(port, IPAddress.Loopback);
+                options.AddUdpListener(port: 0, IPAddress.Loopback);
             }
 
             var processor = new DnsRequestProcessor(new DnsRequestDelegateHolder(), options, NullLogger<DnsRequestProcessor>.Instance);
@@ -1583,19 +1585,17 @@ public sealed class DnsServerIntegrationTests
     {
         // A hosted service registered after the DNS server fails once the UDP listener is already
         // running, so the host unwinds and disposes it while ExecuteAsync is still starting up.
-        var completedAttempts = 0;
-        var portCollisions = 0;
-        while (completedAttempts < 20)
+        for (var attempt = 0; attempt < 20; attempt++)
         {
             var builder = WebApplication.CreateBuilder();
             builder.WebHost.UseUrls("http://127.0.0.1:0");
             builder.AddDnsServer(options =>
             {
-                // The ports are reserved in one go: 4 separate calls can hand back the same port twice, and the
-                // duplicate listener then fails the startup with a SocketException instead of the expected one.
-                foreach (var port in GetAvailableUdpPorts(4))
+                // Port 0 lets the OS pick a distinct free port for each listener, so no other process can
+                // take one between probing and binding and fail the startup with a SocketException.
+                for (var i = 0; i < 4; i++)
                 {
-                    options.AddUdpListener(port, IPAddress.Loopback);
+                    options.AddUdpListener(port: 0, IPAddress.Loopback);
                 }
             });
             builder.Services.AddHostedService<FailingHostedService>();
@@ -1605,21 +1605,9 @@ public sealed class DnsServerIntegrationTests
 
             var exception = await Assert.ThrowsAnyAsync<Exception>(() => app.StartAsync(XunitCancellationToken));
 
-            // The ports are probed by binding and releasing them, so anything else on the machine can take
-            // one back before the listener binds it - the other target framework running this same test, for
-            // one. That collision says nothing about the race under test, so re-roll the attempt rather than
-            // read the SocketException as the startup failure. A run that only ever collides still fails.
-            if (exception is SocketException { SocketErrorCode: SocketError.AddressAlreadyInUse })
-            {
-                portCollisions++;
-                Assert.True(portCollisions <= 20, "Could not reserve the listener ports often enough to exercise the race.");
-                continue;
-            }
-
             // The startup failure has to be the one the service reported, not a collection-modified
             // race inside the listener.
             Assert.IsType<InvalidTimeZoneException>(exception);
-            completedAttempts++;
         }
     }
 
@@ -1702,32 +1690,6 @@ public sealed class DnsServerIntegrationTests
         query.Questions.Add(new DnsQuestion(name, type));
 
         return DnsMessageEncoder.EncodeResponse(query);
-    }
-
-    /// <summary>Reserves several distinct ports at once; probing them one at a time tends to hand back the same port twice.</summary>
-    private static List<int> GetAvailableUdpPorts(int count)
-    {
-        var sockets = new List<Socket>(count);
-        try
-        {
-            var ports = new List<int>(count);
-            for (var i = 0; i < count; i++)
-            {
-                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                sockets.Add(socket);
-                ports.Add(((IPEndPoint)socket.LocalEndPoint!).Port);
-            }
-
-            return ports;
-        }
-        finally
-        {
-            foreach (var socket in sockets)
-            {
-                socket.Dispose();
-            }
-        }
     }
 
     private static int GetAvailableUdpPort()

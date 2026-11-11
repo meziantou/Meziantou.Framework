@@ -93,8 +93,9 @@ internal static class SankeyChartPlot
         var top = PlotPadding;
         if (plot.Title is { } title)
         {
-            var measurer = plot.TextMeasurer ?? AfmTextMeasurer.Default;
-            top += measurer.Measure(title, new SceneFont(plot.Theme.TitleFontSize, Bold: true)).Height + TitleSpacing;
+            // The texts are measured with the family of the theme, as the chart measures them
+            var measurer = (plot.TextMeasurer ?? AfmTextMeasurer.Default).WithFontFamily(plot.Theme.FontFamily);
+            top += measurer.Measure(title, new SceneFont(plot.Theme.TitleFontSize, Weight: SceneFont.BoldWeight)).Height + TitleSpacing;
         }
 
         plot.Width = chart.Width + (2 * PlotPadding);

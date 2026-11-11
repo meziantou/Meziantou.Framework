@@ -3417,8 +3417,9 @@ flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling
   `GetPositionAsync()` to read another source, and call `OnPositionChanged()` when the position changes. The library
   handles the `geolocation` permission (denied in insecure contexts and by the permissions policy, else asked with
   `RequestPermission`), the `timeout` (measured with the clock of the event loop; the token given to the provider is
-  canceled when it elapses) and `maximumAge` options, and the watches; the requests of a hidden document wait until it
-  is visible, and those of a prerendering document until it is activated. Without provider, the position is unavailable
+  canceled when it elapses, and a provider that fails once it elapsed reports `TIMEOUT`) and `maximumAge` options, and
+  the watches; the requests of a hidden document wait until it is visible, and those of a prerendering document until
+  it is activated. Without provider, the position is unavailable
   (`POSITION_UNAVAILABLE`). The `accuracyMode` option is not implemented.
 - **Notifications** ([Notifications API](https://notifications.spec.whatwg.org/)): `new Notification()` (in the windows
   and the dedicated and shared workers), `Notification.permission`, `Notification.requestPermission()` (answered by

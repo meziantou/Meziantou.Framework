@@ -336,6 +336,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpServer\Meziantou.Framework.NtpServer.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NuGetPackageValidation\Meziantou.Framework.NuGetPackageValidation.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf\Meziantou.Framework.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf.VectorGraphics\Meziantou.Framework.Pdf.VectorGraphics.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.PooledMemoryStream\Meziantou.Framework.PooledMemoryStream.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ProcessWrapper\Meziantou.Framework.ProcessWrapper.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.RelativeDate\Meziantou.Framework.RelativeDate.csproj" />
@@ -699,6 +700,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpServer" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NuGetPackageValidation" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Pdf" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Pdf.VectorGraphics" />
     <TrimmerRootAssembly Include="Meziantou.Framework.PooledMemoryStream" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ProcessWrapper" />
     <TrimmerRootAssembly Include="Meziantou.Framework.RelativeDate" />

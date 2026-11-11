@@ -53,7 +53,7 @@ jobs:
 
       - name: Build
         if: matrix.build-mode == 'manual'
-        run: dotnet build eng/build.proj -graph --configuration Release
+        run: dotnet build eng/build.proj -graph -mt --configuration Release
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4

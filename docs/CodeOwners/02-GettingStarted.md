@@ -72,5 +72,6 @@ file, so that your tool and the host agree.
 
 ## Next steps
 
-- [Entries and owners](03-EntriesAndOwners.md): patterns, owners, unowned paths and the last-match-wins rule.
+- [Entries and owners](03-EntriesAndOwners.md): patterns, owners, unowned paths and the owners of a path.
+- [Matching paths](06-MatchingPaths.md): how GitHub and GitLab match a path against the patterns.
 - [GitLab sections](04-GitLabSections.md): sections, default owners and roles.

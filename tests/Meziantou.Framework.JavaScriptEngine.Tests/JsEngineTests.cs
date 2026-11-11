@@ -2595,6 +2595,41 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void Documentation_ExportDefer()
+    {
+        #region JavaScriptEngine_ExportDefer
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["main.js"] = "import { log } from 'app:log'; import { add } from './math.js'; log(`main.js: ${add(1, 2)}`);",
+
+            // The entry point of a library: a deferred re-export is loaded only when one of its bindings is imported
+            ["./math.js"] = """
+                import { log } from 'app:log';
+                export defer { add } from './add.js';
+                export defer { subtract } from './subtract.js';
+                log('math.js');
+                """,
+            ["./add.js"] = "import { log } from 'app:log'; log('add.js'); export function add(a, b) { return a + b; }",
+
+            // './subtract.js' is not in the files: nothing imports subtract, so the loader is never asked for it
+        };
+
+        var logs = new List<string>();
+        using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = new AppModuleLoader(files, logs) });
+        var realm = engine.CreateRealm();
+        var module = realm.ParseModule(files["main.js"], "main.js");
+        module.LoadRequestedModules();
+        engine.RunJobs();
+        module.Link();
+        module.Evaluate();
+        engine.RunJobs();
+
+        // A deferred re-export runs after the module that re-exports it
+        Assert.Equal(["math.js", "add.js", "main.js: 3"], logs);
+        #endregion
+    }
+
+    [Fact]
     public void Documentation_CatchErrors()
     {
         #region JavaScriptEngine_CatchErrors

@@ -75,3 +75,9 @@ not stop the page: the next scripts run, as in a browser.
 `<script type="module">`, `import()`, the import maps, the JSON and CSS modules, the dedicated and shared workers and the
 worklets are supported. Each worker runs its own event loop on its own thread; the event loop of the page waits for its
 workers in [RunUntilIdleAsync()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.RunUntilIdleAsync).
+
+The messages posted between the windows, the workers and the worklets (`postMessage()`) are cloned as in a browser. The
+transfer list moves the `ArrayBuffer` objects, the message ports and the streams: a `ReadableStream`, a `WritableStream`
+or a `TransformStream` posted with `[stream]` is received as a stream of the other side, whose chunks, backpressure,
+cancellation and errors go through a message port. The chunks are cloned when they are read, so a chunk that cannot be
+cloned errors both sides of the stream.

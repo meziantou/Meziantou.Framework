@@ -188,7 +188,7 @@ internal static class TreeViewDiagramRenderer
     {
         // The built-in icons of Mermaid are drawn in a square of 24 units
         var scale = IconSize / 24;
-        var iconGroup = target.Add(new SceneGroup { Transform = new SceneTransform(scale, 0, 0, scale, x, y), CssClass = "icon" });
+        var iconGroup = target.Add(new SceneGroup { Transform = SceneTransform.Scale(scale, scale).Then(SceneTransform.Translate(x, y)), CssClass = "icon" });
         switch (icon)
         {
             case "folder":
@@ -211,7 +211,7 @@ internal static class TreeViewDiagramRenderer
                 break;
             default:
                 // An icon of an icon pack, which is not available here: a question mark, as Mermaid draws an unknown icon
-                var font = new SceneFont(20, Bold: true);
+                var font = new SceneFont(20, Weight: SceneFont.BoldWeight);
                 var ascent = context.Measurer.Measure("?", font).Ascent;
                 iconGroup.Add(new SceneText(12, 12 + (ascent / 2) - 1, "?", font, color) { Anchor = SceneTextAnchor.Middle });
                 break;

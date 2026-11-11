@@ -194,8 +194,12 @@ public sealed class FlowchartTests
         flowchart.AddEdge(node, plain);
         var document = XDocument.Parse(flowchart.ToSvg());
         var texts = document.Descendants().Where(element => element.Name.LocalName == "text").ToList();
-        Assert.Contains(texts, text => text.Value == "bold" && (string?)text.Attribute("font-weight") == "bold");
-        Assert.Contains(texts, text => text.Value == "italic" && (string?)text.Attribute("font-style") == "italic");
+
+        // A line of several styles is one text, whose spans have the styles
+        var spans = document.Descendants().Where(element => element.Name.LocalName == "tspan").ToList();
+        Assert.Contains(spans, span => span.Value == "bold" && (string?)span.Attribute("font-weight") == "bold");
+        Assert.Contains(spans, span => span.Value == "italic" && (string?)span.Attribute("font-style") == "italic");
+        Assert.Contains(texts, text => text.Value.StartsWith("A bold", StringComparison.Ordinal) && text.Elements().Any(element => element.Name.LocalName == "tspan"));
         Assert.Contains(texts, text => text.Value == "first line");
         Assert.Contains(texts, text => text.Value == "second line");
 
@@ -380,5 +384,30 @@ public sealed class FlowchartTests
                     break;
             }
         }
+    }
+
+    [Fact]
+    public void ThemeFontFamilyIsMeasuredAndDrawnWithTheFonts()
+    {
+        var testData = Path.Combine(AppContext.BaseDirectory, "TestData");
+        var fonts = SceneFontCollection.Load(Path.Combine(testData, "LiberationSans-Regular.woff2"), Path.Combine(testData, "LiberationMono-Regular.woff2"));
+        var measurer = new FontFaceTextMeasurer(fonts);
+
+        var sans = new FlowchartDiagram();
+        sans.AddNode("a", "iiiiiiiiiiiiiiii");
+        var mono = new FlowchartDiagram { Theme = DiagramTheme.Default with { FontFamily = "Liberation Mono" } };
+        mono.AddNode("a", "iiiiiiiiiiiiiiii");
+
+        // The node is laid out with the family of the theme, which the scene draws with its fonts
+        var sansScene = sans.CreateScene(measurer);
+        var monoScene = mono.CreateScene(measurer);
+        Assert.Same(fonts, monoScene.Fonts);
+        Assert.Equal("Liberation Mono", monoScene.FontFamily);
+        Assert.Equal(fonts.FontFamily, sansScene.FontFamily);
+        Assert.True(monoScene.Width > sansScene.Width + 50);
+
+        // The image draws the node with Liberation Mono: its text is as wide as it was measured
+        using var image = mono.ToImage(new SceneImageOptions { Fonts = fonts });
+        Assert.Equal((int)Math.Ceiling(monoScene.Width), image.Width);
     }
 }

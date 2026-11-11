@@ -1394,7 +1394,10 @@
   }
 
   // https://streams.spec.whatwg.org/#readable-stream-pipe-to
-  function readableStreamPipeTo(source, dest, preventClose, preventAbort, preventCancel, signal) {
+  // eagerRead: the first chunk is read synchronously when the destination has no backpressure (as the pipe of Chromium),
+  // instead of in a reaction to its ready promise. The transfer steps of the streams use it, so that the read request
+  // of the pipe is the one that makes the source pull (https://github.com/web-platform-tests/wpt/blob/master/streams/transferable/readable-stream.html).
+  function readableStreamPipeTo(source, dest, preventClose, preventAbort, preventCancel, signal, eagerRead = false) {
     const reader = acquireReadableStreamDefaultReader(source);
     const writer = acquireWritableStreamDefaultWriter(dest);
     source.disturbed = true;
@@ -1458,20 +1461,26 @@
 
     const pipeStep = () => {
       if (shuttingDown) return promiseResolvedWith(true);
-      return performPromiseThen(writer.readyPromise.promise, () => {
-        const read = newPromise();
-        readableStreamDefaultReaderRead(reader, {
-          chunk(chunk) {
-            // The chunk steps run synchronously when enqueue() fulfills the read request: the write is done in a microtask, so
-            // that enqueue() does not call the write algorithm of the destination synchronously
-            currentWrite = performPromiseThen(resolvedPromise, () => performPromiseThen(writableStreamDefaultWriterWrite(writer, chunk), undefined, noop));
-            resolvePromise(read, false);
-          },
-          close() { resolvePromise(read, true); },
-          error(e) { rejectPromise(read, e); },
-        });
-        return read.promise;
+      if (eagerRead) {
+        eagerRead = false;
+        if (dest.state === 'writable' && !dest.backpressure) return readStep();
+      }
+
+      return performPromiseThen(writer.readyPromise.promise, readStep);
+    };
+    const readStep = () => {
+      const read = newPromise();
+      readableStreamDefaultReaderRead(reader, {
+        chunk(chunk) {
+          // The chunk steps run synchronously when enqueue() fulfills the read request: the write is done in a microtask, so
+          // that enqueue() does not call the write algorithm of the destination synchronously
+          currentWrite = performPromiseThen(resolvedPromise, () => performPromiseThen(writableStreamDefaultWriterWrite(writer, chunk), undefined, noop));
+          resolvePromise(read, false);
+        },
+        close() { resolvePromise(read, true); },
+        error(e) { rejectPromise(read, e); },
       });
+      return read.promise;
     };
     const pipeLoop = () => {
       const loop = newPromise();
@@ -3642,6 +3651,205 @@
     return transformRecord.readable;
   };
 
+  // ------------------------------------------------------------------------------------------------------------------
+  // Transferable streams (https://streams.spec.whatwg.org/#transferrable-streams)
+  // ------------------------------------------------------------------------------------------------------------------
+
+  // The message ports of the cross-realm transforms are .NET MessagePort objects, held by opaque handles: the host
+  // posts the messages, delivers the message events, and disentangles the ports (hooks.crossRealm)
+  const crossRealm = hooks.crossRealm;
+
+  // https://streams.spec.whatwg.org/#abstract-opdef-packandpostmessage
+  function packAndPostMessage(port, type, value) {
+    const message = ObjectCreate(null);
+    message.type = type;
+    message.value = value;
+    crossRealm.postMessage(port, message);
+  }
+
+  // https://streams.spec.whatwg.org/#abstract-opdef-crossrealmtransformsenderror
+  function crossRealmTransformSendError(port, error) {
+    try { packAndPostMessage(port, 'error', error); } catch { /* The result is discarded */ }
+  }
+
+  // https://streams.spec.whatwg.org/#abstract-opdef-packandpostmessagehandlingerror: returns whether the message was posted
+  function packAndPostMessageHandlingError(port, type, value) {
+    try {
+      packAndPostMessage(port, type, value);
+      return { ok: true };
+    } catch (error) {
+      crossRealmTransformSendError(port, error);
+      return { ok: false, error };
+    }
+  }
+
+  // https://streams.spec.whatwg.org/#abstract-opdef-setupcrossrealmtransformreadable
+  function setUpCrossRealmTransformReadable(stream, port) {
+    initializeReadableStream(stream);
+    const controller = createObject(stream.realm, 'ReadableStreamDefaultController');
+    crossRealm.listen(port, (data) => {
+      const type = data.type;
+      const value = data.value;
+      if (type === 'chunk') {
+        readableStreamDefaultControllerEnqueue(controller, value);
+      } else if (type === 'close') {
+        readableStreamDefaultControllerClose(controller);
+        crossRealm.disentangle(port);
+      } else if (type === 'error') {
+        readableStreamDefaultControllerError(controller, value);
+        crossRealm.disentangle(port);
+      }
+    }, () => {
+      const error = crossRealm.dataCloneError('The chunk could not be deserialized');
+      crossRealmTransformSendError(port, error);
+      readableStreamDefaultControllerError(controller, error);
+      crossRealm.disentangle(port);
+    });
+    const startAlgorithm = () => undefined;
+    const pullAlgorithm = () => {
+      packAndPostMessage(port, 'pull', undefined);
+      return promiseResolvedWith(undefined);
+    };
+    const cancelAlgorithm = (reason) => {
+      const result = packAndPostMessageHandlingError(port, 'error', reason);
+      crossRealm.disentangle(port);
+      return result.ok ? promiseResolvedWith(undefined) : promiseRejectedWith(result.error);
+    };
+    setUpReadableStreamDefaultController(stream, controller, startAlgorithm, pullAlgorithm, cancelAlgorithm, 0, () => 1);
+  }
+
+  // https://streams.spec.whatwg.org/#abstract-opdef-setupcrossrealmtransformwritable
+  function setUpCrossRealmTransformWritable(stream, port) {
+    initializeWritableStream(stream);
+    const controller = createObject(stream.realm, 'WritableStreamDefaultController');
+    let backpressurePromise = newPromise();
+    const relieveBackpressure = () => {
+      if (backpressurePromise !== undefined) {
+        resolvePromise(backpressurePromise, undefined);
+        backpressurePromise = undefined;
+      }
+    };
+    crossRealm.listen(port, (data) => {
+      const type = data.type;
+      const value = data.value;
+      if (type === 'pull') {
+        relieveBackpressure();
+      } else if (type === 'error') {
+        writableStreamDefaultControllerErrorIfNeeded(controller, value);
+        relieveBackpressure();
+      }
+    }, () => {
+      const error = crossRealm.dataCloneError('The message could not be deserialized');
+      crossRealmTransformSendError(port, error);
+      writableStreamDefaultControllerErrorIfNeeded(controller, error);
+      crossRealm.disentangle(port);
+    });
+    const startAlgorithm = () => undefined;
+    const writeAlgorithm = (chunk) => {
+      if (backpressurePromise === undefined) backpressurePromise = resolvedDeferred(undefined);
+      return performPromiseThen(backpressurePromise.promise, () => {
+        backpressurePromise = newPromise();
+        const result = packAndPostMessageHandlingError(port, 'chunk', chunk);
+        if (!result.ok) {
+          crossRealm.disentangle(port);
+          return promiseRejectedWith(result.error);
+        }
+
+        return promiseResolvedWith(undefined);
+      });
+    };
+    const closeAlgorithm = () => {
+      packAndPostMessage(port, 'close', undefined);
+      crossRealm.disentangle(port);
+      return promiseResolvedWith(undefined);
+    };
+    const abortAlgorithm = (reason) => {
+      const result = packAndPostMessageHandlingError(port, 'error', reason);
+      crossRealm.disentangle(port);
+      return result.ok ? promiseResolvedWith(undefined) : promiseRejectedWith(result.error);
+    };
+    setUpWritableStreamDefaultController(stream, controller, startAlgorithm, writeAlgorithm, closeAlgorithm, abortAlgorithm, 1, () => 1);
+  }
+
+  // The functions used by the structured clone of the realm (WebIdlRealm.StructuredClone.cs). The transferable streams
+  // are the ReadableStream, WritableStream and TransformStream objects (not a FileSystemWritableFileStream, whose
+  // interface is not [Transferable]).
+  const transferSupport = ObjectCreate(null);
+  transferSupport.isTransferable = (value) => {
+    const record = apply(weakMapGet, internals, [value]);
+    if (record === undefined) return false;
+    if (record.kind === 'WritableStream') return record.fileSystemSink === undefined;
+    return record.kind === 'ReadableStream' || record.kind === 'TransformStream';
+  };
+
+  // The checks of the transfer steps (the stream is not locked), before any object is transferred
+  transferSupport.validate = (value) => {
+    const record = apply(weakMapGet, internals, [value]);
+    const locked = record.kind === 'ReadableStream' ? isReadableStreamLocked(record)
+      : record.kind === 'WritableStream' ? isWritableStreamLocked(record)
+      : isReadableStreamLocked(record.readable) || isWritableStreamLocked(record.writable);
+    if (locked) throw crossRealm.dataCloneError(`A locked ${record.kind} could not be transferred`);
+  };
+
+  // https://streams.spec.whatwg.org/#rs-transfer: the stream is piped to a cross-realm writable stream; returns the
+  // handle of the transferred port
+  function transferReadableStream(stream) {
+    const [port, transferredPort] = crossRealm.createChannel();
+    const writable = createObject(realm, 'WritableStream');
+    setUpCrossRealmTransformWritable(writable, port);
+    setPromiseIsHandledToTrue(readableStreamPipeTo(stream, writable, false, false, false, undefined, true));
+    return transferredPort;
+  }
+
+  // https://streams.spec.whatwg.org/#ws-transfer: a cross-realm readable stream is piped to the stream
+  function transferWritableStream(stream) {
+    const [port, transferredPort] = crossRealm.createChannel();
+    const readable = createObject(realm, 'ReadableStream');
+    setUpCrossRealmTransformReadable(readable, port);
+    setPromiseIsHandledToTrue(readableStreamPipeTo(readable, stream, false, false, false, undefined, true));
+    return transferredPort;
+  }
+
+  // The transfer steps: returns the data from which the transfer-receiving steps create the stream
+  transferSupport.transfer = (value) => {
+    const record = apply(weakMapGet, internals, [value]);
+    transferSupport.validate(value);
+    if (record.kind === 'ReadableStream') return transferReadableStream(record);
+    if (record.kind === 'WritableStream') return transferWritableStream(record);
+
+    // https://streams.spec.whatwg.org/#ts-transfer
+    const data = ObjectCreate(null);
+    data.readable = transferReadableStream(record.readable);
+    data.writable = transferWritableStream(record.writable);
+    return data;
+  };
+
+  // The transfer-receiving steps (https://streams.spec.whatwg.org/#rs-transfer, #ws-transfer, #ts-transfer): the stream
+  // is created in this realm
+  function receiveReadableStream(data) {
+    const stream = createObject(realm, 'ReadableStream');
+    setUpCrossRealmTransformReadable(stream, crossRealm.receivePort(data));
+    return stream;
+  }
+
+  function receiveWritableStream(data) {
+    const stream = createObject(realm, 'WritableStream');
+    setUpCrossRealmTransformWritable(stream, crossRealm.receivePort(data));
+    return stream;
+  }
+
+  transferSupport.receive = (kind, data) => {
+    if (kind === 'ReadableStream') return receiveReadableStream(data).object;
+    if (kind === 'WritableStream') return receiveWritableStream(data).object;
+    const stream = createObject(realm, 'TransformStream');
+    stream.readable = receiveReadableStream(data.readable);
+    stream.writable = receiveWritableStream(data.writable);
+    stream.backpressure = undefined;
+    stream.backpressureChangePromise = undefined;
+    stream.controller = undefined;
+    return stream.object;
+  };
+
   const realm = {
     ReadableStream,
     ReadableStreamDefaultReader,
@@ -3682,5 +3890,6 @@
     FileSystemWritableFileStream,
     createFileSystemWritableFileStream,
     fetchSupport,
+    transferSupport,
   };
 });

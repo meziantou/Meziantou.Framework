@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <!-- Lowest supported Roslyn version. NuGet lifts it to the version used by the test project referencing this package. -->
-    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="5.0.0" />
   </ItemGroup>
 
 </Project>

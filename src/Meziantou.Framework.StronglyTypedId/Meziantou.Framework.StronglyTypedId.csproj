@@ -10,6 +10,7 @@
     <PackageTags>strongly-typed-id, source-generator, roslyn, ddd, codegen</PackageTags>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddAnnotationsToPackage</TargetsForTfmSpecificContentInPackage>
     <IncludeRoslynHelpers>true</IncludeRoslynHelpers>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,6 +28,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.3.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all" />
   </ItemGroup>
 </Project>

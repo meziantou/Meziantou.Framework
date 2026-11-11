@@ -75,6 +75,8 @@ when the files are up to date. Line endings are ignored. The checks are the same
 | `--include-assembly-references` | Lists the referenced assemblies that are not part of the framework in the header. See [Referenced assemblies](03-ApiFiles.md#referenced-assemblies). |
 | `--include-assembly-reference <pattern>` | A pattern of the framework assemblies to list too, for instance `System.Net.*`. Repeat it for several patterns. |
 | `--exclude-assembly-reference <pattern>` | A pattern of the assemblies not to list. Repeat it for several patterns. It wins over `--include-assembly-reference`. |
+| `--include-all-attributes` | Writes `[EditorBrowsable]`, the attributes of other namespaces than `System` and the assembly attributes. See [Attributes](03-ApiFiles.md#attributes). |
+| `--delete-unexpected-files` | Deletes the files of the `--output` directory that the tool does not write. Only use it when the directory only contains the API files. |
 | `--verify-no-change` | Checks that the files are up to date, without writing anything. |
 | `-?`, `-h`, `--help` | Shows the help. |
 | `--version` | Shows the version of the tool. |
@@ -82,5 +84,6 @@ when the files are up to date. Line endings are ignored. The checks are the same
 An invalid combination of options, such as both `--output` and `--output-file`, makes the command fail with exit code
 `1`.
 
-Like the MSBuild package, the tool never deletes a file: with a directory layout, the files of removed types stay in the
-output directory. See [Removed types leave files behind](04-MSBuild.md#removed-types-leave-files-behind).
+Like the MSBuild package, the tool does not delete a file by default: with a directory layout, the files of removed types
+stay in the output directory. Add `--delete-unexpected-files` to delete them. See
+[Files of removed types](04-MSBuild.md#files-of-removed-types).

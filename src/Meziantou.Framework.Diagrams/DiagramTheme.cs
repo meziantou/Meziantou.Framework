@@ -29,7 +29,11 @@ public sealed record DiagramTheme
     public static DiagramTheme Base => BaseTheme.Value;
 
     /// <summary>Gets the CSS <c>font-family</c> of the texts, or <see langword="null"/> for the family of the text measurer.</summary>
-    /// <remarks>The texts are laid out with the text measurer: a family with other widths can overflow the shapes.</remarks>
+    /// <remarks>
+    /// When the text measurer has fonts (<see cref="ITextMeasurer.Fonts"/>), the texts are measured and drawn with the first
+    /// family of the list the fonts have. Otherwise the texts are laid out with the metrics of the measurer: a family with
+    /// other widths can overflow the shapes.
+    /// </remarks>
     public string? FontFamily { get; init; }
 
     /// <summary>Gets the size of the texts, in pixels. The default is 16, the size of Mermaid.</summary>

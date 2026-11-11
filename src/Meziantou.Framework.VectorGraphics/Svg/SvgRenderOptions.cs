@@ -28,4 +28,12 @@ public sealed class SvgRenderOptions
 
     /// <summary>Gets or sets a value that indicates whether the <c>xmlns</c> attribute is written. Turn it off for SVG inlined in HTML. The default is <see langword="true"/>.</summary>
     public bool IncludeNamespace { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets a value that indicates whether the fonts of the scene (<see cref="Scene.Fonts"/>) are embedded in the
+    /// SVG, as <c>@font-face</c> rules, so every viewer draws the texts with the fonts that measured them. Only the faces
+    /// that draw a character of a text are embedded, whole; the faces of font collections (<c>.ttc</c>, <c>.otc</c>) are
+    /// not embedded. The default is <see langword="false"/>.
+    /// </summary>
+    public bool EmbedFonts { get; set; }
 }

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" role="img" font-family="sans-serif">
+<defs>
+<radialGradient id="scene-gradient0" gradientUnits="userSpaceOnUse" cx="50" cy="50" r="50">
+<stop offset="0" stop-color="#ffffff"/>
+<stop offset="1" stop-color="#0369a1"/>
+</radialGradient>
+<clipPath id="scene-clip0"><path d="M50,20 A30,30 0 0,1 50,80 A30,30 0 0,1 50,20 Z"/></clipPath>
+</defs>
+<rect x="0" y="0" width="100" height="100" fill="url(#scene-gradient0)"/>
+<g clip-path="url(#scene-clip0)">
+<image x="20" y="20" width="60" height="60" preserveAspectRatio="none" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC"/>
+</g>
+</svg>

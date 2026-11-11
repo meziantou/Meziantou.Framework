@@ -1,3 +1,4 @@
+using Meziantou.Framework.Barcodes.Internal;
 using Meziantou.Framework.SnapshotTesting;
 namespace Meziantou.Framework.Barcodes.Tests;
 
@@ -457,6 +458,333 @@ public class QRCodeTests
         var options = new QRCodeOptions();
 
         Assert.Throws<ArgumentOutOfRangeException>(nameof(value), () => options.EciAssignmentNumber = value);
+    }
+
+    // ───── Segments ─────
+
+    [Fact]
+    public void Documentation_Segments()
+    {
+        #region QRCode_Segments
+        // An ISO-8859-1 text followed by a long number: the text in byte mode, after an ECI designator that declares its
+        // encoding (assignment number 3), and the digits in numeric mode
+        QRCodeSegment[] segments =
+        [
+            QRCodeSegment.CreateEci(3),
+            QRCodeSegment.CreateByte(Encoding.Latin1.GetBytes("Facture n\u00B0")),
+            QRCodeSegment.CreateNumeric("12345678901234567890123456789012345"),
+        ];
+        var qrCode = QRCode.Create(segments, ErrorCorrectionLevel.M);
+
+        // The same bytes in a single byte segment need a larger symbol
+        var bytes = Encoding.Latin1.GetBytes("Facture n\u00B012345678901234567890123456789012345");
+        var singleSegment = QRCode.Create(bytes, ErrorCorrectionLevel.M, new QRCodeOptions { EciAssignmentNumber = 3 });
+        Assert.Equal((3, 4), (qrCode.Version, singleSegment.Version));
+        #endregion
+    }
+
+    [Fact]
+    public void CreateSegments_SameSymbolAsTheOtherOverloads()
+    {
+        var utf8 = new QRCodeOptions { EciAssignmentNumber = QRCodeOptions.Utf8EciAssignmentNumber };
+
+        Assert.True(HasSameModules(QRCode.Create("HELLO WORLD"), QRCode.Create([QRCodeSegment.CreateAlphanumeric("HELLO WORLD")])));
+        Assert.True(HasSameModules(QRCode.Create("0123456789"), QRCode.Create([QRCodeSegment.CreateNumeric("0123456789")])));
+        Assert.True(HasSameModules(QRCode.Create("漢字のテスト"), QRCode.Create([QRCodeSegment.CreateKanji("漢字のテスト")])));
+        Assert.True(HasSameModules(QRCode.Create("h\u00E9llo"), QRCode.Create([QRCodeSegment.CreateByte("h\u00E9llo")])));
+        Assert.True(HasSameModules(QRCode.Create([1, 2, 255]), QRCode.Create([QRCodeSegment.CreateByte([1, 2, 255])])));
+        Assert.True(HasSameModules(QRCode.Create("h\u00E9llo", ErrorCorrectionLevel.Q, utf8), QRCode.Create([QRCodeSegment.CreateEci(QRCodeOptions.Utf8EciAssignmentNumber), QRCodeSegment.CreateByte("h\u00E9llo")], ErrorCorrectionLevel.Q)));
+        Assert.True(HasSameModules(QRCode.Create([QRCodeSegment.CreateEci(26), QRCodeSegment.CreateByte("h\u00E9llo")]), QRCode.Create([QRCodeSegment.CreateByte("h\u00E9llo")], ErrorCorrectionLevel.M, utf8)));
+        Assert.True(HasSameModules(QRCode.Create("order 1234567890123456"), QRCode.Create([QRCodeSegment.CreateByte("order "), QRCodeSegment.CreateNumeric("1234567890123456")])));
+    }
+
+    [Fact]
+    public void CreateSegments_AreEncodedAsTheyAre()
+    {
+        // Version 1-L holds 152 bits: 41 digits in one numeric segment (4 + 10 + 137 bits), not in two (2 × 14 + 137 bits),
+        // nor in byte mode (4 + 8 + 328 bits)
+        Assert.Equal(1, QRCode.Create([QRCodeSegment.CreateNumeric(new string('1', 41))], ErrorCorrectionLevel.L).Version);
+        Assert.Equal(2, QRCode.Create([QRCodeSegment.CreateNumeric(new string('1', 20)), QRCodeSegment.CreateNumeric(new string('1', 21))], ErrorCorrectionLevel.L).Version);
+        Assert.Equal(3, QRCode.Create([QRCodeSegment.CreateByte(new string('1', 41))], ErrorCorrectionLevel.L).Version);
+    }
+
+    [Fact]
+    public void CreateSegments_VersionRange()
+    {
+        Assert.Equal(7, QRCode.Create([QRCodeSegment.CreateNumeric("1")], ErrorCorrectionLevel.M, new QRCodeOptions { MinimumVersion = 7 }).Version);
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create([QRCodeSegment.CreateByte(new byte[100])], ErrorCorrectionLevel.M, new QRCodeOptions { MaximumVersion = 3 }));
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create([QRCodeSegment.CreateByte(new byte[3000])], ErrorCorrectionLevel.L));
+        Assert.Throws<ArgumentException>("options", () => QRCode.Create([QRCodeSegment.CreateNumeric("1")], ErrorCorrectionLevel.M, new QRCodeOptions { MinimumVersion = 3, MaximumVersion = 2 }));
+    }
+
+    [Fact]
+    public void CreateSegments_InvalidSegments_Throw()
+    {
+        Assert.Throws<ArgumentNullException>("segments", () => QRCode.Create((IEnumerable<QRCodeSegment>)null!));
+        Assert.Throws<ArgumentException>("segments", () => QRCode.Create(Array.Empty<QRCodeSegment>()));
+        Assert.Throws<ArgumentException>("segments", () => QRCode.Create([QRCodeSegment.CreateEci(26)]));
+        Assert.Throws<ArgumentException>("segments", () => QRCode.Create([QRCodeSegment.CreateNumeric("1"), null!]));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.Create([QRCodeSegment.CreateNumeric("1")], (ErrorCorrectionLevel)42));
+    }
+
+    [Fact]
+    public void QRCodeSegment_Mode()
+    {
+        Assert.Equal(QRCodeSegmentMode.Numeric, QRCodeSegment.CreateNumeric("0123456789").Mode);
+        Assert.Equal(QRCodeSegmentMode.Alphanumeric, QRCodeSegment.CreateAlphanumeric("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:").Mode);
+        Assert.Equal(QRCodeSegmentMode.Byte, QRCodeSegment.CreateByte("any text \u00E9 😀").Mode);
+        Assert.Equal(QRCodeSegmentMode.Byte, QRCodeSegment.CreateByte([0]).Mode);
+        Assert.Equal(QRCodeSegmentMode.Kanji, QRCodeSegment.CreateKanji("漢字ひらがなカタカナ").Mode);
+        Assert.Equal(QRCodeSegmentMode.Eci, QRCodeSegment.CreateEci(999999).Mode);
+    }
+
+    [Theory]
+    [InlineData("12a")]
+    [InlineData("１２")]
+    [InlineData("-1")]
+    public void QRCodeSegment_CreateNumeric_InvalidCharacter_Throws(string value)
+    {
+        Assert.Throws<ArgumentException>("digits", () => QRCodeSegment.CreateNumeric(value));
+    }
+
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("A_B")]
+    [InlineData("\u00C9")]
+    public void QRCodeSegment_CreateAlphanumeric_InvalidCharacter_Throws(string value)
+    {
+        Assert.Throws<ArgumentException>("text", () => QRCodeSegment.CreateAlphanumeric(value));
+    }
+
+    [Theory]
+    [InlineData("a")]
+    [InlineData("漢a")]
+    [InlineData("ｱ")]
+    [InlineData("\uFF5E")]
+    [InlineData("\u00A2")]
+    public void QRCodeSegment_CreateKanji_InvalidCharacter_Throws(string value)
+    {
+        Assert.Throws<ArgumentException>("text", () => QRCodeSegment.CreateKanji(value));
+    }
+
+    [Fact]
+    public void QRCodeSegment_InvalidArguments_Throw()
+    {
+        Assert.Throws<ArgumentNullException>("digits", () => QRCodeSegment.CreateNumeric(null!));
+        Assert.Throws<ArgumentException>("digits", () => QRCodeSegment.CreateNumeric(""));
+        Assert.Throws<ArgumentNullException>("text", () => QRCodeSegment.CreateAlphanumeric(null!));
+        Assert.Throws<ArgumentException>("text", () => QRCodeSegment.CreateAlphanumeric(""));
+        Assert.Throws<ArgumentNullException>("text", () => QRCodeSegment.CreateByte((string)null!));
+        Assert.Throws<ArgumentException>("text", () => QRCodeSegment.CreateByte(""));
+        Assert.Throws<ArgumentException>("data", () => QRCodeSegment.CreateByte(ReadOnlySpan<byte>.Empty));
+        Assert.Throws<ArgumentNullException>("text", () => QRCodeSegment.CreateKanji(null!));
+        Assert.Throws<ArgumentException>("text", () => QRCodeSegment.CreateKanji(""));
+        Assert.Throws<ArgumentOutOfRangeException>("assignmentNumber", () => QRCodeSegment.CreateEci(-1));
+        Assert.Throws<ArgumentOutOfRangeException>("assignmentNumber", () => QRCodeSegment.CreateEci(1_000_000));
+    }
+
+    [Fact]
+    public void QRCodeSegment_CreateByte_CopiesTheData()
+    {
+        var data = new byte[] { 1, 2, 3 };
+        var segment = QRCodeSegment.CreateByte(data);
+        var expected = QRCode.Create([segment]);
+        data[0] = 42;
+
+        Assert.True(HasSameModules(expected, QRCode.Create([segment])));
+    }
+
+    [Fact]
+    public void CreateSegments_Snapshot()
+    {
+        // Large modules and a quiet zone, so that the snapshot can be scanned
+        var qr = QRCode.Create([QRCodeSegment.CreateAlphanumeric("ORDER "), QRCodeSegment.CreateNumeric("20261110123456"), QRCodeSegment.CreateByte(" ok")], ErrorCorrectionLevel.M);
+
+        Snapshot.Validate(qr.ToPng(new QRCodePngOptions { ModuleSize = 8 }), SnapshotType.Png);
+    }
+
+    // ───── Structured append ─────
+
+    [Fact]
+    public void Documentation_StructuredAppend()
+    {
+        #region QRCode_StructuredAppend
+        var data = string.Concat(Enumerable.Repeat("The quick brown fox jumps over the lazy dog. ", 30));
+
+        // Symbols of version 10 at most (57 × 57 modules), instead of one symbol of version 30 (137 × 137 modules)
+        var symbols = QRCode.CreateStructuredAppend(data, ErrorCorrectionLevel.M, new QRCodeOptions { MaximumVersion = 10 });
+        Assert.Equal(7, symbols.Count);
+        Assert.Equal((10, 30), (symbols[0].Version, QRCode.Create(data, ErrorCorrectionLevel.M).Version));
+
+        // Each symbol knows its position in the sequence
+        Assert.Equal((0, 7), (symbols[0].StructuredAppend!.Index, symbols[0].StructuredAppend!.Count));
+        Assert.Equal((6, 7), (symbols[6].StructuredAppend!.Index, symbols[6].StructuredAppend!.Count));
+
+        // Print the symbols in order, side by side
+        var images = symbols.Select(symbol => symbol.ToPng(new QRCodePngOptions { ModuleSize = 4 })).ToList();
+        #endregion
+
+        Assert.HasCount(7, images);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void CreateStructuredAppend_Snapshot(int index)
+    {
+        // One snapshot per symbol of a sequence of 3, with large modules and a quiet zone, so that each one can be scanned
+        var symbols = QRCode.CreateStructuredAppend("Structured append splits this text across three QR codes.", ErrorCorrectionLevel.M, new QRCodeOptions { MaximumVersion = 2 });
+
+        Assert.HasCount(3, symbols);
+        Snapshot.Validate(symbols[index].ToPng(new QRCodePngOptions { ModuleSize = 8 }), SnapshotType.Png);
+    }
+
+    [Fact]
+    public void CreateStructuredAppend_SmallData_GivesOneSymbol()
+    {
+        var symbols = QRCode.CreateStructuredAppend("HELLO");
+
+        var symbol = Assert.Single(symbols);
+        Assert.Equal((1, QRCodeType.Standard, ErrorCorrectionLevel.M), (symbol.Version, symbol.Type, symbol.ErrorCorrectionLevel));
+        Assert.Equal((0, 1), (symbol.StructuredAppend!.Index, symbol.StructuredAppend.Count));
+        Assert.Equal("1/1", symbol.StructuredAppend.ToString());
+
+        // 'H' ^ 'E' ^ 'L' ^ 'L' ^ 'O'
+        Assert.Equal(0x42, symbol.StructuredAppend.Parity);
+        Assert.False(HasSameModules(symbol, QRCode.Create("HELLO")));
+    }
+
+    [Fact]
+    public void Create_IsNotPartOfASequence()
+    {
+        Assert.Null(QRCode.Create("HELLO").StructuredAppend);
+        Assert.Null(QRCode.CreateMicroQR("12345").StructuredAppend);
+        Assert.Null(QRCode.CreateRMQR("12345").StructuredAppend);
+    }
+
+    [Fact]
+    public void CreateStructuredAppend_HeaderPrecedesTheData()
+    {
+        // ISO/IEC 18004, 8.3: mode indicator 0011, the position and the count minus 1 on 4 bits, then the parity on 8 bits
+        var codewords = DataEncoder.Encode([QRCodeSegment.CreateNumeric("1")], 1, ErrorCorrectionLevel.L, new QRCodeStructuredAppend(index: 2, count: 5, parity: 0xA7));
+
+        Assert.Equal(0b0011_0010, codewords[0]);
+        Assert.Equal(0b0100_1010, codewords[1]);
+        Assert.Equal(0b0111, codewords[2] >> 4);
+
+        // Then the numeric segment: 0001, a count of 1 on 10 bits, and the digit on 4 bits
+        Assert.Equal(0b0001, codewords[2] & 0xF);
+        Assert.Equal(0b0000_0000, codewords[3]);
+        Assert.Equal(0b01_0001, codewords[4] >> 2);
+    }
+
+    [Theory]
+    [InlineData(ErrorCorrectionLevel.L)]
+    [InlineData(ErrorCorrectionLevel.H)]
+    public void CreateStructuredAppend_UsesTheFewestSymbolsThenTheSmallestVersion(ErrorCorrectionLevel ecLevel)
+    {
+        var data = string.Concat(Enumerable.Repeat("Lorem ipsum 0123456789 DOLOR SIT AMET ", 40));
+        var options = new QRCodeOptions { MaximumVersion = 12 };
+
+        var symbols = QRCode.CreateStructuredAppend(data, ecLevel, options);
+        var version = symbols[0].Version;
+        for (var i = 0; i < symbols.Count; i++)
+        {
+            Assert.Equal((i, symbols.Count, symbols[0].StructuredAppend!.Parity), (symbols[i].StructuredAppend!.Index, symbols[i].StructuredAppend!.Count, symbols[i].StructuredAppend!.Parity));
+            Assert.Equal((version, ecLevel), (symbols[i].Version, symbols[i].ErrorCorrectionLevel));
+        }
+
+        // The largest version gives no fewer symbols, and the version below gives more
+        Assert.Equal(symbols.Count, QRCode.CreateStructuredAppend(data, ecLevel, new QRCodeOptions { MinimumVersion = 12, MaximumVersion = 12 }).Count);
+        Assert.HasCountGreaterThan(symbols.Count, QRCode.CreateStructuredAppend(data, ecLevel, new QRCodeOptions { MaximumVersion = version - 1 }));
+    }
+
+    [Fact]
+    public void CreateStructuredAppend_ShortSegments_SmallerVersionsCanNeedFewerSymbols()
+    {
+        // The byte count indicator grows from 8 to 16 bits at version 10: a version 9-L symbol holds 91 segments of one byte,
+        // a version 10-L symbol 77
+        var options = new QRCodeOptions { MaximumVersion = 10 };
+
+        var symbols = QRCode.CreateStructuredAppend(Enumerable.Repeat(QRCodeSegment.CreateByte("a"), 1300), ErrorCorrectionLevel.L, options);
+        Assert.Equal((15, 9), (symbols.Count, symbols[0].Version));
+
+        var single = Assert.Single(QRCode.CreateStructuredAppend(Enumerable.Repeat(QRCodeSegment.CreateByte("a"), 90), ErrorCorrectionLevel.L, options));
+        Assert.Equal(9, single.Version);
+    }
+
+    [Fact]
+    public void CreateStructuredAppend_MinimumVersion()
+    {
+        var symbols = QRCode.CreateStructuredAppend("HELLO", ErrorCorrectionLevel.M, new QRCodeOptions { MinimumVersion = 5 });
+
+        Assert.Equal(5, Assert.Single(symbols).Version);
+    }
+
+    [Fact]
+    public void CreateStructuredAppend_ParityIsTheXorOfTheBytes()
+    {
+        var data = new byte[1000];
+        for (var i = 0; i < data.Length; i++)
+        {
+            data[i] = (byte)((i * 7) + 3);
+        }
+
+        var parity = 0;
+        foreach (var b in data)
+        {
+            parity ^= b;
+        }
+
+        var symbols = QRCode.CreateStructuredAppend(data, ErrorCorrectionLevel.M, new QRCodeOptions { MaximumVersion = 5 });
+        Assert.HasCountGreaterThan(1, symbols);
+        foreach (var symbol in symbols)
+        {
+            Assert.Equal(parity, symbol.StructuredAppend!.Parity);
+        }
+
+        // Kanji are counted as their Shift JIS bytes (漢 is 0x8ABF), the other characters as their UTF-8 bytes
+        Assert.Equal(0x8A ^ 0xBF, Assert.Single(QRCode.CreateStructuredAppend("漢")).StructuredAppend!.Parity);
+        Assert.Equal(0xC3 ^ 0xA9, Assert.Single(QRCode.CreateStructuredAppend("\u00E9")).StructuredAppend!.Parity);
+        Assert.Equal('A' ^ '1', Assert.Single(QRCode.CreateStructuredAppend([QRCodeSegment.CreateAlphanumeric("A"), QRCodeSegment.CreateEci(26), QRCodeSegment.CreateNumeric("1")])).StructuredAppend!.Parity);
+    }
+
+    [Fact]
+    public void CreateStructuredAppend_SixteenSymbolsAtMost()
+    {
+        // A version 1-L symbol has 19 data codewords: 15 bytes after the structured append header (20 bits) and the byte
+        // segment header (12 bits)
+        var options = new QRCodeOptions { MaximumVersion = 1 };
+
+        Assert.HasCount(16, QRCode.CreateStructuredAppend(new byte[16 * 15], ErrorCorrectionLevel.L, options));
+        Assert.Throws<InvalidOperationException>(() => QRCode.CreateStructuredAppend(new byte[(16 * 15) + 1], ErrorCorrectionLevel.L, options));
+        // A version 40-L symbol holds 2,951 bytes after the headers
+        Assert.HasCount(16, QRCode.CreateStructuredAppend(new string('x', 16 * 2951), ErrorCorrectionLevel.L));
+        Assert.Throws<InvalidOperationException>(() => QRCode.CreateStructuredAppend(new string('x', (16 * 2951) + 1), ErrorCorrectionLevel.L));
+    }
+
+    [Fact]
+    public void CreateStructuredAppend_Segments()
+    {
+        // The numeric segment is split across the symbols, and each symbol repeats the ECI designator in force at its start
+        QRCodeSegment[] segments = [QRCodeSegment.CreateAlphanumeric("PART LIST "), QRCodeSegment.CreateNumeric(new string('7', 120)), QRCodeSegment.CreateEci(26), QRCodeSegment.CreateByte(" end \u2713")];
+        var symbols = QRCode.CreateStructuredAppend(segments, ErrorCorrectionLevel.M, new QRCodeOptions { MaximumVersion = 1 });
+
+        Assert.HasCount(6, symbols);
+        Assert.Throws<ArgumentException>("segments", () => QRCode.CreateStructuredAppend([QRCodeSegment.CreateEci(26)]));
+        Assert.Throws<ArgumentNullException>("segments", () => QRCode.CreateStructuredAppend((IEnumerable<QRCodeSegment>)null!));
+    }
+
+    [Fact]
+    public void CreateStructuredAppend_InvalidArguments_Throw()
+    {
+        Assert.Throws<ArgumentNullException>("data", () => QRCode.CreateStructuredAppend((string)null!));
+        Assert.Throws<ArgumentException>("data", () => QRCode.CreateStructuredAppend(""));
+        Assert.Throws<ArgumentException>("data", () => QRCode.CreateStructuredAppend(ReadOnlySpan<byte>.Empty));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.CreateStructuredAppend("A", (ErrorCorrectionLevel)42));
+        Assert.Throws<ArgumentException>("options", () => QRCode.CreateStructuredAppend("A", ErrorCorrectionLevel.M, new QRCodeOptions { EciAssignmentNumber = 3 }));
+        Assert.Throws<ArgumentException>("options", () => QRCode.CreateStructuredAppend("A", ErrorCorrectionLevel.M, new QRCodeOptions { MinimumVersion = 3, MaximumVersion = 2 }));
     }
 
     // ───── Size constraints ─────

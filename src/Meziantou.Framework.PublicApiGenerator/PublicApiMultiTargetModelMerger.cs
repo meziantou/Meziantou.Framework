@@ -45,32 +45,16 @@ internal static class PublicApiMultiTargetModelMerger
         return new PublicApiModel(assemblyName, MergeAssemblyAttributes(modelsBySymbol, orderedSymbols), [.. mergedTypes], AssemblyReferences: []);
     }
 
+    // Each attribute is on its own line, so the attributes are merged as the members of a type
     private static string MergeAssemblyAttributes(IReadOnlyDictionary<string, PublicApiModel> modelsBySymbol, string[] orderedSymbols)
     {
-        var sourcesBySymbol = modelsBySymbol.ToDictionary(
-            model => model.Key,
-            model => model.Value.AssemblyAttributesSource,
+        var attributesBySymbol = orderedSymbols.ToDictionary(
+            symbol => symbol,
+            symbol => modelsBySymbol[symbol].AssemblyAttributesSource.ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries).ToImmutableArray(),
             StringComparer.Ordinal);
-        var sourceGroups = sourcesBySymbol
-            .GroupBy(source => source.Value, StringComparer.Ordinal)
-            .Where(group => !string.IsNullOrEmpty(group.Key))
-            .OrderBy(group => BuildCondition(group.Select(item => item.Key).ToArray()), StringComparer.Ordinal)
-            .ToArray();
-        if (sourceGroups.Length == 0)
-            return string.Empty;
-
-        if (sourceGroups.Length == 1 && sourceGroups[0].Count() == orderedSymbols.Length)
-            return sourceGroups[0].Key;
 
         var sb = new StringBuilder();
-        foreach (var sourceGroup in sourceGroups)
-        {
-            sb.Append("#if ");
-            sb.AppendLine(BuildCondition(sourceGroup.Select(item => item.Key).ToArray()));
-            sb.Append(sourceGroup.Key);
-            sb.AppendLine("#endif");
-        }
-
+        AppendMergedMembers(sb, attributesBySymbol, orderedSymbols, indentationLevel: 0);
         return sb.ToString();
     }
 
@@ -173,21 +157,38 @@ internal static class PublicApiMultiTargetModelMerger
 
         AppendConditionalSegment(sb, typeAttributesBySymbol, orderedSymbols, indentationLevel: 0);
         sb.Append(mergedDeclaration);
+        AppendMergedMembers(sb, membersBySymbol, orderedSymbols, indentationLevel: 1);
+        sb.Append(firstParsedType.Suffix);
+        mergedSource = sb.ToString();
+        return true;
+    }
+
+    // The members found in every target framework are written as is, and the others are wrapped in conditional blocks.
+    // An extension block is found by its declaration, and its members are merged the same way, so a member that is not
+    // in every target framework does not make the whole block conditional.
+    private static void AppendMergedMembers(StringBuilder sb, Dictionary<string, ImmutableArray<string>> membersBySymbol, string[] orderedSymbols, int indentationLevel)
+    {
         var commonAnchors = FindCommonAnchors(membersBySymbol, orderedSymbols);
         var previousIndexesBySymbol = orderedSymbols.ToDictionary(symbol => symbol, _ => -1, StringComparer.Ordinal);
         foreach (var commonAnchor in commonAnchors)
         {
             var segmentBySymbol = new Dictionary<string, ImmutableArray<string>>(StringComparer.Ordinal);
+            var anchorBySymbol = new Dictionary<string, ImmutableArray<string>>(StringComparer.Ordinal);
             foreach (var symbol in orderedSymbols)
             {
                 var members = membersBySymbol[symbol];
                 var startIndex = previousIndexesBySymbol[symbol] + 1;
                 var endIndex = commonAnchor.IndexesBySymbol[symbol];
                 segmentBySymbol[symbol] = Slice(members, startIndex, endIndex);
+                anchorBySymbol[symbol] = [members[endIndex]];
             }
 
-            AppendConditionalSegment(sb, segmentBySymbol, orderedSymbols, indentationLevel: 1);
-            AppendIndentedBlock(sb, commonAnchor.Member, 1);
+            AppendConditionalSegment(sb, segmentBySymbol, orderedSymbols, indentationLevel);
+            if (!TryAppendMergedExtensionBlock(sb, anchorBySymbol, orderedSymbols, indentationLevel))
+            {
+                AppendConditionalSegment(sb, anchorBySymbol, orderedSymbols, indentationLevel);
+            }
+
             foreach (var symbol in orderedSymbols)
             {
                 previousIndexesBySymbol[symbol] = commonAnchor.IndexesBySymbol[symbol];
@@ -202,9 +203,61 @@ internal static class PublicApiMultiTargetModelMerger
             trailingSegmentBySymbol[symbol] = Slice(members, startIndex, members.Length);
         }
 
-        AppendConditionalSegment(sb, trailingSegmentBySymbol, orderedSymbols, indentationLevel: 1);
-        sb.Append(firstParsedType.Suffix);
-        mergedSource = sb.ToString();
+        AppendConditionalSegment(sb, trailingSegmentBySymbol, orderedSymbols, indentationLevel);
+    }
+
+    private static bool TryAppendMergedExtensionBlock(StringBuilder sb, Dictionary<string, ImmutableArray<string>> blockBySymbol, string[] orderedSymbols, int indentationLevel)
+    {
+        var firstBlock = blockBySymbol[orderedSymbols[0]][0];
+        if (orderedSymbols.All(symbol => string.Equals(blockBySymbol[symbol][0], firstBlock, StringComparison.Ordinal)))
+            return false;
+
+        var membersBySymbol = new Dictionary<string, ImmutableArray<string>>(StringComparer.Ordinal);
+        string? header = null;
+        foreach (var symbol in orderedSymbols)
+        {
+            if (!TryParseExtensionBlock(blockBySymbol[symbol][0], out var blockHeader, out var members))
+                return false;
+
+            header ??= blockHeader;
+            membersBySymbol[symbol] = members;
+        }
+
+        AppendIndentedBlock(sb, header!, indentationLevel);
+        AppendIndentedDirective(sb, "{", indentationLevel);
+        AppendMergedMembers(sb, membersBySymbol, orderedSymbols, indentationLevel + 1);
+        AppendIndentedDirective(sb, "}", indentationLevel);
+        return true;
+    }
+
+    // An extension block is "extension(...)" (with its constraints), a line with "{", the members, and a line with "}"
+    private static bool IsExtensionBlock(string member)
+    {
+        return member.StartsWith("extension(", StringComparison.Ordinal) || member.StartsWith("extension<", StringComparison.Ordinal);
+    }
+
+    private static string GetMergeKey(string member)
+    {
+        return IsExtensionBlock(member) && TryParseExtensionBlock(member, out var header, out _) ? header : member;
+    }
+
+    private static bool TryParseExtensionBlock(string member, out string header, out ImmutableArray<string> members)
+    {
+        header = string.Empty;
+        members = [];
+        if (!IsExtensionBlock(member))
+            return false;
+
+        var lines = member.ReplaceLineEndings("\n").Split('\n');
+        var openingBraceLine = Array.FindIndex(lines, line => line == "{");
+        if (openingBraceLine <= 0 || lines[^1] != "}")
+            return false;
+
+        if (!TryParseMembers(string.Join('\n', lines[(openingBraceLine + 1)..^1]), out var parsedMembers))
+            return false;
+
+        header = string.Join(Environment.NewLine, lines[..openingBraceLine]);
+        members = [.. parsedMembers];
         return true;
     }
 
@@ -358,13 +411,13 @@ internal static class PublicApiMultiTargetModelMerger
         var firstSymbol = orderedSymbols[0];
         var referenceMembers = membersBySymbol[firstSymbol];
         var currentIndexesBySymbol = orderedSymbols.ToDictionary(symbol => symbol, _ => -1, StringComparer.Ordinal);
-        foreach (var referenceMember in referenceMembers)
+        foreach (var referenceKey in referenceMembers.Select(GetMergeKey))
         {
             var indexesBySymbol = new Dictionary<string, int>(StringComparer.Ordinal);
             var foundInAllSymbols = true;
             foreach (var symbol in orderedSymbols)
             {
-                var memberIndex = IndexOf(membersBySymbol[symbol], referenceMember, currentIndexesBySymbol[symbol] + 1);
+                var memberIndex = IndexOf(membersBySymbol[symbol], referenceKey, currentIndexesBySymbol[symbol] + 1);
                 if (memberIndex < 0)
                 {
                     foundInAllSymbols = false;
@@ -379,7 +432,7 @@ internal static class PublicApiMultiTargetModelMerger
                 continue;
             }
 
-            anchors.Add(new MemberAnchor(referenceMember, indexesBySymbol));
+            anchors.Add(new MemberAnchor(referenceKey, indexesBySymbol));
             foreach (var symbol in orderedSymbols)
             {
                 currentIndexesBySymbol[symbol] = indexesBySymbol[symbol];
@@ -393,7 +446,7 @@ internal static class PublicApiMultiTargetModelMerger
     {
         for (var index = startIndex; index < items.Length; index++)
         {
-            if (string.Equals(items[index], value, StringComparison.Ordinal))
+            if (string.Equals(GetMergeKey(items[index]), value, StringComparison.Ordinal))
             {
                 return index;
             }
@@ -979,7 +1032,7 @@ internal static class PublicApiMultiTargetModelMerger
 
     private sealed record ParsedDeclaration(string Head, ImmutableArray<string> BaseTypes, string Trailer);
 
-    private sealed record MemberAnchor(string Member, IReadOnlyDictionary<string, int> IndexesBySymbol);
+    private sealed record MemberAnchor(string Key, IReadOnlyDictionary<string, int> IndexesBySymbol);
 
     private sealed record SourceGroup(string Source)
     {

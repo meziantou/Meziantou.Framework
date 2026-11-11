@@ -49,7 +49,7 @@ internal sealed class SizeLegendRenderer : ILegendBlock
     public void Measure(double maxWidth, bool vertical)
     {
         _items.Clear();
-        var titleMetrics = _title is null ? default : _measurer.Measure(_title, Font with { Bold = true });
+        var titleMetrics = _title is null ? default : _measurer.Measure(_title, Font with { Weight = SceneFont.BoldWeight });
         _titleHeight = _title is null ? 0 : titleMetrics.Height + 4;
         _textHeight = _measurer.Measure("0", TickFont).Height;
         var values = GetValues(_scale.Maximum, _values);
@@ -82,8 +82,8 @@ internal sealed class SizeLegendRenderer : ILegendBlock
         var group = target.Add(new SceneGroup { CssClass = "legend-size" });
         if (_title is not null)
         {
-            var titleMetrics = _measurer.Measure(_title, Font with { Bold = true });
-            group.Add(new SceneText(left, top + titleMetrics.Ascent, _title, Font with { Bold = true }, _theme.Foreground) { MeasuredWidth = titleMetrics.Width });
+            var titleMetrics = _measurer.Measure(_title, Font with { Weight = SceneFont.BoldWeight });
+            group.Add(new SceneText(left, top + titleMetrics.Ascent, _title, Font with { Weight = SceneFont.BoldWeight }, _theme.Foreground) { MeasuredWidth = titleMetrics.Width });
         }
 
         // The circles stand on the same bottom point; a short line leads from the top of each one to its label

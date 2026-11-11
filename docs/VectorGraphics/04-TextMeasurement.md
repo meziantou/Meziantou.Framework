@@ -16,7 +16,9 @@ A layout measures its texts to place them: the margins of a chart, the size of t
   nothing when it is a combining mark, and as the average width of the font otherwise.
 - [FontFaceTextMeasurer](cref:Meziantou.Framework.VectorGraphics.FontFaceTextMeasurer) shapes the texts with a font of
   `Meziantou.Framework.Fonts` (TrueType, OpenType, WOFF or WOFF2): ligatures, kerning and every script are taken into
-  account. Use it when the SVG uses another font; the browser must have that font.
+  account. Use it when the SVG uses another font; the browser must have that font. Created from a
+  [SceneFontCollection](cref:Meziantou.Framework.VectorGraphics.SceneFontCollection), it measures each text with the
+  family it names, and the renderers draw the texts with the same fonts. See [fonts of a scene](05-Fonts.md).
 - [ImageTextMeasurer](cref:Meziantou.Framework.Imaging.VectorGraphics.ImageTextMeasurer) measures with the fonts that
   draw an image. See [image rendering](03-ImageRendering.md).
 

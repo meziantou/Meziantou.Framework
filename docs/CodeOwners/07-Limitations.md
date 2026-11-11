@@ -3,9 +3,11 @@ title: Limitations
 description: What the parser does not do, and how to work around it.
 ---
 
-- **Patterns are not matched.** The library returns the patterns as written, without their escape characters: it does
-  not tell which entry owns a path. Match the patterns with your own code, and apply the last-match-wins rule. See
-  [Find the owners of a path](03-EntriesAndOwners.md#find-the-owners-of-a-path).
+- **Paths are not read from the repository.** Matching compares the path you pass with the patterns: it does not check
+  that the file exists, and it does not list the files a pattern matches. Pass the paths of files, not of directories.
+  See [The paths](06-MatchingPaths.md#the-paths).
+- **Unsupported GitHub syntax is not reported.** GitHub skips the lines it cannot read. The library reads `[`, `]` and
+  a leading `!` as ordinary characters instead. See [GitHub](06-MatchingPaths.md#github).
 - **Owners are not checked against the host.** The parser checks the syntax of an owner, not that the user, the team or
   the email address exists, or that it has access to the repository.
 - **One error per parse.** Parsing stops at the first error. See [Handling errors](05-HandlingErrors.md).

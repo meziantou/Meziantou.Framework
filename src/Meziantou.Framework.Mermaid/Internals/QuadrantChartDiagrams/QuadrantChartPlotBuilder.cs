@@ -17,14 +17,15 @@ internal static class QuadrantChartPlotBuilder
 
     public static void Configure(QuadrantChart chart, Plot plot)
     {
-        var measurer = plot.TextMeasurer ?? AfmTextMeasurer.Default;
+        // The texts are measured with the family of the theme, as the chart measures them
+        var measurer = (plot.TextMeasurer ?? AfmTextMeasurer.Default).WithFontFamily(plot.Theme.FontFamily);
         var theme = chart.Theme;
         var colors = Resolve(chart.Colors, theme);
 
         // As in Mermaid, the title is drawn with the primary text color (quadrantTitleFill)
         plot.Theme = plot.Theme with { Foreground = theme.PrimaryTextColor };
 
-        var titleSpace = string.IsNullOrEmpty(plot.Title) ? 0 : TitlePadding + measurer.Measure(plot.Title, new SceneFont(plot.Theme.TitleFontSize, Bold: true)).Height + TitleGap;
+        var titleSpace = string.IsNullOrEmpty(plot.Title) ? 0 : TitlePadding + measurer.Measure(plot.Title, new SceneFont(plot.Theme.TitleFontSize, Weight: SceneFont.BoldWeight)).Height + TitleGap;
 
         var xAxisLeft = ToPlainText(chart.XAxisLeftLabel);
         var xAxisRight = ToPlainText(chart.XAxisRightLabel);

@@ -151,7 +151,7 @@ public sealed class PlotTests
         group.Add(new ScenePath(new PathBuilder().AddCircle(5, 5, 2).Build()) { FillRule = SceneFillRule.EvenOdd, Fill = (SceneColor)"#0000ff" });
         scene.Root.Add(new SceneGroup { Clip = new SceneBounds(1, 2, 3, 4) });
         scene.Root.Add(new SceneGroup { Transform = SceneTransform.Translate(1, 2) });
-        scene.Root.Add(new SceneText(10, 10, "rotated", new SceneFont(10, Bold: true), SceneColor.Black) { Rotation = 30, Anchor = SceneTextAnchor.End, Opacity = 0.5, CssClass = "label" });
+        scene.Root.Add(new SceneText(10, 10, "rotated", new SceneFont(10, Weight: SceneFont.BoldWeight), SceneColor.Black) { Rotation = 30, Anchor = SceneTextAnchor.End, Opacity = 0.5, CssClass = "label" });
         scene.Root.Add(new SceneText(10, 10, "middle", new SceneFont(10), SceneColor.Black) { Anchor = SceneTextAnchor.Middle });
 
         var svg = SvgSceneRenderer.Render(scene, new SvgRenderOptions { IdPrefix = "p", Precision = 3 });

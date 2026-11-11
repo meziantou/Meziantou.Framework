@@ -41,3 +41,8 @@ var position = new PointD(report.Width - size.Width - 10, 10);
 report.Draw(canvas => canvas.DrawScene(flowchart, position));
 ```
 <!-- endref -->
+
+## PDF
+
+`Meziantou.Framework.Pdf.VectorGraphics` draws the same scene as a PDF document, or on a page of an existing one, as
+vector shapes and text: `ToPdf` lays the source out with the fonts that draw it. See [PDF rendering](../VectorGraphics/06-PdfRendering.md).

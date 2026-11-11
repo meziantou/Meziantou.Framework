@@ -37,6 +37,25 @@ public readonly record struct SceneTransform(double A, double B, double C, doubl
         return new(cos, sin, -sin, cos, centerX - (cos * centerX) + (sin * centerY), centerY - (sin * centerX) - (cos * centerY));
     }
 
+    /// <summary>Creates a scale around a point.</summary>
+    /// <param name="scaleX">The scale along x.</param>
+    /// <param name="scaleY">The scale along y.</param>
+    /// <param name="centerX">The x coordinate of the point that does not move.</param>
+    /// <param name="centerY">The y coordinate of the point that does not move.</param>
+    /// <returns>The transform.</returns>
+    public static SceneTransform Scale(double scaleX, double scaleY, double centerX = 0, double centerY = 0) => new(scaleX, 0, 0, scaleY, centerX - (scaleX * centerX), centerY - (scaleY * centerY));
+
+    /// <summary>Combines this transform with another one that applies after it.</summary>
+    /// <param name="next">The transform that applies to the result of this one.</param>
+    /// <returns>The transform that applies this transform, then <paramref name="next"/>.</returns>
+    public SceneTransform Then(SceneTransform next) => new(
+        (next.A * A) + (next.C * B),
+        (next.B * A) + (next.D * B),
+        (next.A * C) + (next.C * D),
+        (next.B * C) + (next.D * D),
+        (next.A * E) + (next.C * F) + next.E,
+        (next.B * E) + (next.D * F) + next.F);
+
     /// <summary>Applies the transform to a point.</summary>
     /// <param name="x">The x coordinate of the point.</param>
     /// <param name="y">The y coordinate of the point.</param>

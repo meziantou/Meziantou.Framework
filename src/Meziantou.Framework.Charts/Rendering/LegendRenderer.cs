@@ -39,7 +39,7 @@ internal sealed class LegendRenderer : ILegendBlock
     public void Measure(double maxWidth, bool vertical)
     {
         _items.Clear();
-        var titleMetrics = _title is null ? default : _measurer.Measure(_title, Font with { Bold = true });
+        var titleMetrics = _title is null ? default : _measurer.Measure(_title, Font with { Weight = SceneFont.BoldWeight });
         _titleHeight = _title is null ? 0 : titleMetrics.Height + 4;
         var width = titleMetrics.Width;
         var lineHeight = Math.Max(SwatchSize, _measurer.Measure("Xg", Font).Height) + 4;
@@ -79,8 +79,8 @@ internal sealed class LegendRenderer : ILegendBlock
         var group = target.Add(new SceneGroup { CssClass = "legend" });
         if (_title is not null)
         {
-            var metrics = _measurer.Measure(_title, Font with { Bold = true });
-            group.Add(new SceneText(left, top + metrics.Ascent, _title, Font with { Bold = true }, _theme.Foreground) { MeasuredWidth = metrics.Width });
+            var metrics = _measurer.Measure(_title, Font with { Weight = SceneFont.BoldWeight });
+            group.Add(new SceneText(left, top + metrics.Ascent, _title, Font with { Weight = SceneFont.BoldWeight }, _theme.Foreground) { MeasuredWidth = metrics.Width });
         }
 
         if (_scale is ResolvedContinuousColorScale continuous)

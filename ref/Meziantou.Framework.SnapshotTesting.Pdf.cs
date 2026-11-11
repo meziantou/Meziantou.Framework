@@ -33,11 +33,17 @@ namespace Meziantou.Framework.SnapshotTesting.Pdf
 
     public static class SnapshotSerializerCollectionPdfExtensions
     {
-        public static void AddPdfSerializer(this Meziantou.Framework.SnapshotTesting.SnapshotSerializerCollection serializers, Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotSettings? settings = null) { }
+        extension(Meziantou.Framework.SnapshotTesting.SnapshotSerializerCollection serializers)
+        {
+            public void AddPdfSerializer(Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotSettings? settings = null) { }
+        }
     }
 
     public static class SnapshotSettingsPdfExtensions
     {
-        public static void AddPdf(this Meziantou.Framework.SnapshotTesting.SnapshotSettings snapshotSettings, Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotSettings? settings = null, Meziantou.Framework.SnapshotTesting.Imaging.ImageComparisonSettings? imageComparisonSettings = null) { }
+        extension(Meziantou.Framework.SnapshotTesting.SnapshotSettings snapshotSettings)
+        {
+            public void AddPdf(Meziantou.Framework.SnapshotTesting.Pdf.PdfSnapshotSettings? settings = null, Meziantou.Framework.SnapshotTesting.Imaging.ImageComparisonSettings? imageComparisonSettings = null) { }
+        }
     }
 }

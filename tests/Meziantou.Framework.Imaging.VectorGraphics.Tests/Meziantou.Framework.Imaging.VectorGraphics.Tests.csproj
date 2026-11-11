@@ -8,6 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- OFL fonts for the tests of the fonts of the scenes -->
+    <None Include="../../src/Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationSans-Regular.woff2" Link="TestData/LiberationSans-Regular.woff2" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../src/Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationSans-Bold.woff2" Link="TestData/LiberationSans-Bold.woff2" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../src/Meziantou.Framework.Pdf/Rendering/Fonts/Substitution/LiberationMono-Regular.woff2" Link="TestData/LiberationMono-Regular.woff2" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../Meziantou.Framework.Imaging.Fixtures/fonts/noto-sans-thai/NotoSansThai-Regular.ttf" Link="TestData/NotoSansThai-Regular.ttf" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.Imaging.VectorGraphics/Meziantou.Framework.Imaging.VectorGraphics.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.Charts/Meziantou.Framework.Charts.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />

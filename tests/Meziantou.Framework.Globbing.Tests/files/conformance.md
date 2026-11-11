@@ -10,6 +10,7 @@ represented.
 | `fnmatch-conformance.txt` | `Posix`, `PosixPath` | `fnmatch(3)` with the flags `0` and `FNM_PATHNAME`, from glibc 2.39 (`C.UTF-8`) and the macOS libc |
 | `gitignore-conformance.json` | `Git`, through `GlobCollection.ParseGitIgnore` | `git check-ignore --no-index` (git 2.55, `core.ignorecase=false`) over a real directory tree |
 | `msbuild-conformance.json` | `MSBuild` | the items of a real MSBuild evaluation (`dotnet msbuild -getItem`, MSBuild 18.11) over a real directory tree |
+| `gitlab-codeowners-conformance.json` | `GitLabCodeOwners` | the `normalize_pattern` method of GitLab (`ee/lib/gitlab/code_owners/file.rb`), then `File.fnmatch?` with `FNM_DOTMATCH \| FNM_PATHNAME`, as `ee/lib/gitlab/code_owners/pattern_index.rb` calls it (Ruby 2.6) |
 
 ## `fnmatch-conformance.txt`
 
@@ -43,3 +44,17 @@ evaluates to. MSBuild ignores the case on this file system, so the tests use `Gl
 MSBuild is inconsistent with itself are not part of the corpus: a file spec that MSBuild cannot expand (`a**`, or a
 `..` after a wildcard) becomes a literal item, a file name ending with `.` depends on the code path, and `**/**/**`
 skips the files at the root while `**/**` does not.
+
+## `gitlab-codeowners-conformance.json`
+
+`paths` lists the paths, and each case gives a pattern with the indexes of the paths it matches. GitLab matches the path
+with a leading `/`, which the library does not need. The patterns were generated at random from pieces that cover
+anchors, trailing `/`, `**` with and without a following `/`, escapes (including a trailing `\`, which fnmatch
+ignores), and bracket expressions (negations with `!` and `^`, reversed ranges, which match their two bounds, `]` and
+`-` as items, `[]` and `[!]`, as Ruby closes an expression on its first `]`, unterminated brackets, `[/]`, and
+character classes, which Ruby does not support). A pattern that starts with `!` is not part of the corpus: GitLab reads it as an exclusion of the CODEOWNERS
+file before normalizing the rest. No path holds a `\`, which is a path separator on Windows.
+
+GitHub does not publish its matcher, so `GitHubCodeOwners` has no corpus: its tests follow the examples of the GitHub
+documentation.
+

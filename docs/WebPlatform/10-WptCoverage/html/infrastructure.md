@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of html/infrastructure, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 64 | 69 | 0 | 93% |
+| [Stable](#stable-tests) | 66 | 69 | 0 | 96% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 0 | 1 | 1 | – |
-| **All** | **64** | **70** | **1** | **93%** |
+| **All** | **66** | **70** | **1** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 4
+- **NOT IMPLEMENTED**: 2
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -36,7 +36,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`conformance-requirements/extensibility/foreign.html`](https://wpt.fyi/results/html/infrastructure/conformance-requirements/extensibility/foreign.html) | Pass | 1 / 1 |  |  |
 | [`fetching-resources/crossorigin-enumerated-ascii-case-insensitive.html`](https://wpt.fyi/results/html/infrastructure/fetching-resources/crossorigin-enumerated-ascii-case-insensitive.html) | Pass | 2 / 2 |  |  |
 | [`safe-passing-of-structured-data/cross-origin-transfer-resizable-arraybuffer.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/cross-origin-transfer-resizable-arraybuffer.html) | Pass | 1 / 1 |  |  |
-| [`safe-passing-of-structured-data/messagechannel.any.js`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/messagechannel.any.js) | Fail | 423 / 426 | NOT IMPLEMENTED | transferring the streams (the `ReadableStream` subclass subtest is a precondition failure) |
+| [`safe-passing-of-structured-data/messagechannel.any.js`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/messagechannel.any.js) | Pass | 426 / 426 |  |  |
 | [`safe-passing-of-structured-data/shared-array-buffers/blob-data.https.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/blob-data.https.html) | Error | 15 / 18 | TEST BUG | the `data:` frame is expected to be cross-origin isolated, but its declared origin is opaque so the Permissions Policy disables the `cross-origin-isolated` feature (as in Chrome); the `data:` worker is not cross-origin isolated, so its blob sub-worker cannot post a `SharedArrayBuffer` (the subtests time out in Chrome and Safari) |
 | [`safe-passing-of-structured-data/shared-array-buffers/broadcastchannel-success-and-failure.https.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/broadcastchannel-success-and-failure.https.html) | Pass | 1 / 1 |  |  |
 | [`safe-passing-of-structured-data/shared-array-buffers/broadcastchannel-success.https.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/broadcastchannel-success.https.html) | Pass | 1 / 1 |  |  |
@@ -66,7 +66,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`safe-passing-of-structured-data/transfer-errors.window.js`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/transfer-errors.window.js) | Pass | 17 / 17 |  |  |
 | [`safe-passing-of-structured-data/transfer-mediasourcehandle.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/transfer-mediasourcehandle.html) | Pass | 1 / 1 |  |  |
 | [`safe-passing-of-structured-data/transfer-videoframe.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/transfer-videoframe.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebCodecs (`VideoFrame`) |
-| [`safe-passing-of-structured-data/window-postmessage.window.js`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/window-postmessage.window.js) | Fail | 151 / 152 | NOT IMPLEMENTED | transferring the streams (the `ReadableStream` subclass subtest is a precondition failure) |
+| [`safe-passing-of-structured-data/window-postmessage.window.js`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/window-postmessage.window.js) | Pass | 152 / 152 |  |  |
 | [`terminology/plugins/text-plain.html`](https://wpt.fyi/results/html/infrastructure/terminology/plugins/text-plain.html) | Pass | 1 / 1 |  |  |
 | [`urls/base-url/base-url-detached-document-blank.https.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/base-url-detached-document-blank.https.window.js) | Pass | 1 / 1 |  |  |
 | [`urls/base-url/base-url-detached-document-srcdoc.https.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/base-url-detached-document-srcdoc.https.window.js) | Pass | 1 / 1 |  |  |

@@ -24,9 +24,10 @@ const string StepSnippets = "snippets";
 const string StepPublicSuffix = "public-suffix";
 const string StepValidateTestProjects = "validate-testprojects";
 const string StepDocs = "docs";
+const string StepRef = "ref";
 const string AnalyzerRulesSectionMarker = "<!-- analyzer-rules -->";
-string[] defaultSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepDocs, StepPublicSuffix, StepBom];
-string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepDocs, StepPublicSuffix, StepBom, StepValidateTestProjects];
+string[] defaultSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepDocs, StepPublicSuffix, StepRef, StepBom];
+string[] knownSteps = [StepReadme, StepTrimmable, StepSlnx, StepTemplates, StepSnippets, StepDocs, StepPublicSuffix, StepRef, StepBom, StepValidateTestProjects];
 var updatedFiles = new ConcurrentQueue<string>();
 var outputPath = "slnx";
 var selectedSteps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -135,6 +136,12 @@ if (ShouldRunStep(StepPublicSuffix))
 {
     Console.WriteLine("[update-all] Running public-suffix");
     tasks.Add(Task.Run(() => RunValidatePublicSuffixListStep(rootPath)));
+}
+
+if (ShouldRunStep(StepRef))
+{
+    Console.WriteLine("[update-all] Running ref");
+    tasks.Add(Task.Run(() => RunDeleteStaleRefFilesStep(rootPath)));
 }
 
 await Task.WhenAll(tasks);
@@ -275,6 +282,40 @@ void RunUpdateSnippetsStep(FullPath rootPath)
     {
         Console.WriteLine("ERROR: Some file references are invalid, see the errors above");
         updatedFiles.Enqueue("(invalid file references)");
+    }
+}
+
+// The build writes the public API of each library to ref/<AssemblyName>.cs, but never deletes a file, because all the
+// projects share the folder. Deletes the files whose assembly is not built by a project of src/ anymore (renamed or removed project).
+void RunDeleteStaleRefFilesStep(FullPath rootPath)
+{
+    var refPath = rootPath / "ref";
+    if (!Directory.Exists(refPath))
+        return;
+
+    var assemblyNames = new HashSet<string>(StringComparer.Ordinal);
+    foreach (var csproj in Directory.EnumerateFiles(rootPath / "src", "*.csproj", SearchOption.AllDirectories))
+    {
+        var assemblyName = XDocument.Load(csproj).Root?.Descendants("AssemblyName").LastOrDefault()?.Value.Trim();
+        if (assemblyName is not null && assemblyName.Contains("$(", StringComparison.Ordinal))
+        {
+            // The name depends on MSBuild properties: the files of the projects cannot be known without evaluating them
+            Console.WriteLine($"[update-ref] Skipped: the assembly name of '{FullPath.FromPath(csproj).MakePathRelativeTo(rootPath)}' uses MSBuild properties");
+            return;
+        }
+
+        assemblyNames.Add(string.IsNullOrEmpty(assemblyName) ? Path.GetFileNameWithoutExtension(csproj) : assemblyName);
+    }
+
+    foreach (var file in Directory.EnumerateFiles(refPath, "*.cs", SearchOption.TopDirectoryOnly))
+    {
+        if (!assemblyNames.Contains(Path.GetFileNameWithoutExtension(file)))
+        {
+            var relativePath = FullPath.FromPath(file).MakePathRelativeTo(rootPath);
+            File.Delete(file);
+            Console.WriteLine($"[update-ref] Deleted {relativePath}: no project of src/ builds this assembly");
+            updatedFiles.Enqueue(relativePath);
+        }
     }
 }
 
@@ -2251,7 +2292,8 @@ static void BuildProjects(FullPath rootPath, IReadOnlyCollection<FullPath> proje
 
     // Use the same properties as a regular build: otherwise each build recompiles the dependencies shared with the other
     // builds, including Meziantou.Framework.FullPath that this script references, which recompiles this script at its next start.
-    string[] buildArgs = ["build", solutionPath, "--framework", targetFramework];
+    // -mt (MSBuild multithreaded mode) builds the projects on threads of one process; it does not change the outputs.
+    string[] buildArgs = ["build", solutionPath, "--framework", targetFramework, "-mt"];
     TimeSpan[] retryDelays = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15)];
     _ = RunProcessAndCaptureOutput("dotnet", buildArgs, timeout: TimeSpan.FromMinutes(15), retryDelays: retryDelays);
 }

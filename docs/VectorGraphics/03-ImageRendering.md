@@ -62,3 +62,9 @@ For other scripts, pass a font that has them in [Font](cref:Meziantou.Framework.
 [BoldItalicFont](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.BoldItalicFont) set the fonts of the
 other styles; when only [Font](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.Font) is set, it draws
 every style.
+
+To use several families, or fonts for other scripts after a Latin font, set
+[Fonts](cref:Meziantou.Framework.Imaging.VectorGraphics.SceneImageOptions.Fonts) to a font collection: the layout
+measures each text with the face of its family, and the image draws it with the same face. The fonts of a scene
+([Scene.Fonts](cref:Meziantou.Framework.VectorGraphics.Scene.Fonts)) take precedence over the fonts of the options. See
+[fonts of a scene](05-Fonts.md).

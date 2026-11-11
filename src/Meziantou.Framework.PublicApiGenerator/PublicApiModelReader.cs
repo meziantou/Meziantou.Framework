@@ -30,18 +30,20 @@ internal static class PublicApiModelReader
         return PublicApiMetadataReader.Read(peReader, options);
     }
 
-    public static PublicApiModel ReadFromMetadata(string assemblyPath)
+    public static PublicApiModel ReadFromMetadata(string assemblyPath, bool includeAllAttributes)
     {
         var assembly = ReadAssembly(assemblyPath, options: null);
-        return CreateModel(assembly) with { ExternalAssemblyNames = DependencyFileReader.ReadExternalAssemblyNames(assemblyPath) };
+        return CreateModel(assembly, includeAllAttributes) with { ExternalAssemblyNames = DependencyFileReader.ReadExternalAssemblyNames(assemblyPath) };
     }
 
-    public static PublicApiModel CreateModel(PublicApiAssembly assembly)
+    public static PublicApiModel CreateModel(PublicApiAssembly assembly, bool includeAllAttributes)
     {
         var formatter = new CSharpCompilableFormatter(new PublicApiFormattingOptions
         {
             Style = PublicApiDeclarationStyle.Compilable,
             NewLine = Environment.NewLine,
+            AttributeFilter = includeAllAttributes ? CreateAllAttributesFilter(assembly) : null,
+            WriteParameterlessConstructorsWithAttributes = includeAllAttributes,
         });
 
         var types = assembly.Types.Select(type =>
@@ -54,12 +56,96 @@ internal static class PublicApiModelReader
 
         return new PublicApiModel(
             assembly.IsModuleOnly ? string.Empty : assembly.Name,
-            formatter.FormatAssemblyAttributes(assembly),
+            formatter.FormatAssemblyAttributes(assembly, includeAllAttributes),
             [.. types],
             assembly.AssemblyReferences);
     }
 
-    public static PublicApiModel ReadFromReflection(Assembly assembly)
+    private static Func<PublicApiAttribute, bool> CreateAllAttributesFilter(PublicApiAssembly assembly)
+    {
+        // Nested types are included, as the base type of an attribute can be nested
+        var visibleTypes = GetTypesAndNestedTypes(assembly.Types).ToDictionary(static type => type.FullName, StringComparer.Ordinal);
+        return attribute =>
+        {
+            if (CSharpSyntaxFacts.IsDisplayedAttribute(attribute, PublicApiDeclarationStyle.Compilable))
+                return true;
+
+            var attributeType = attribute.AttributeType;
+            return CSharpSyntaxFacts.IsAdditionalAttribute(
+                attributeType.FullName,
+                isNestedOrGeneric: attributeType.ContainingType is not null || !attributeType.TypeArguments.IsEmpty,
+                isDeclaredInAssembly: attributeType.AssemblyName is null || string.Equals(attributeType.AssemblyName, assembly.Name, StringComparison.Ordinal),
+                isUsableOutsideAssembly: () => visibleTypes.TryGetValue(attributeType.FullName, out var type) && IsUsableOutsideAssembly(attribute, type, visibleTypes));
+        };
+    }
+
+    private static IEnumerable<PublicApiType> GetTypesAndNestedTypes(IEnumerable<PublicApiType> types)
+    {
+        foreach (var type in types)
+        {
+            yield return type;
+            foreach (var nestedType in GetTypesAndNestedTypes(type.NestedTypes))
+            {
+                yield return nestedType;
+            }
+        }
+    }
+
+    // An argument of an object parameter has the type of its boxed value (e.g. int for [Marker(42)])
+    private static bool IsMatchingParameterType(PublicApiTypeReference parameterType, PublicApiTypeReference argumentType)
+    {
+        return parameterType is PublicApiNamedTypeReference namedType && namedType.IsSystemType("Object") ||
+               PublicApiTypeReferenceComparer.IgnoreNullability.Equals(parameterType, argumentType);
+    }
+
+    // The model only contains the members visible outside the assembly. Members of base types declared in other assemblies are considered visible.
+    private static bool IsUsableOutsideAssembly(PublicApiAttribute attribute, PublicApiType type, Dictionary<string, PublicApiType> visibleTypes)
+    {
+        if (!attribute.AreArgumentsDecoded)
+            return false;
+
+        var hasConstructor = type.Members.Any(member =>
+            member is PublicApiMethod { MethodKind: PublicApiMethodKind.Constructor, IsStatic: false, Accessibility: PublicApiAccessibility.Public } constructor &&
+            constructor.Parameters.Length == attribute.ConstructorArguments.Length &&
+            constructor.Parameters.Zip(attribute.ConstructorArguments).All(pair => IsMatchingParameterType(pair.First.Type, pair.Second.Type)));
+        if (!hasConstructor)
+            return false;
+
+        foreach (var namedArgument in attribute.NamedArguments)
+        {
+            if (!HasSettableMember(type, namedArgument.Name, visibleTypes))
+                return false;
+        }
+
+        return true;
+
+        static bool HasSettableMember(PublicApiType type, string name, Dictionary<string, PublicApiType> visibleTypes)
+        {
+            for (PublicApiType? current = type; current is not null;)
+            {
+                foreach (var member in current.Members)
+                {
+                    if (!string.Equals(member.Name, name, StringComparison.Ordinal))
+                        continue;
+
+                    if (member is PublicApiProperty { SetMethod.Accessibility: PublicApiAccessibility.Public } or PublicApiField { Accessibility: PublicApiAccessibility.Public, IsReadOnly: false, IsConst: false })
+                        return true;
+                }
+
+                if (current.BaseType is not PublicApiNamedTypeReference baseType)
+                    return false;
+
+                if (baseType.AssemblyName is not null && !string.Equals(baseType.AssemblyName, type.Assembly.Name, StringComparison.Ordinal))
+                    return true;
+
+                current = visibleTypes.GetValueOrDefault(baseType.FullName);
+            }
+
+            return false;
+        }
+    }
+
+    public static PublicApiModel ReadFromReflection(Assembly assembly, bool includeAllAttributes)
     {
         ArgumentNullException.ThrowIfNull(assembly);
 
@@ -72,7 +158,7 @@ internal static class PublicApiModelReader
             .Distinct(StringComparer.Ordinal)
             .Order(AssemblyReferenceNameComparer.Instance)
             .ToImmutableArray();
-        var model = PublicApiModelBuilder.Build(assemblyName, assembly.CustomAttributes, types, assemblyReferences);
+        var model = PublicApiModelBuilder.Build(assemblyName, assembly.CustomAttributes, types, assemblyReferences, includeAllAttributes);
         if (string.IsNullOrEmpty(assembly.Location))
             return model;
 

@@ -13,7 +13,8 @@ public sealed class ResxGeneratorAnalyzer : DiagnosticAnalyzer
         messageFormat: "Couldn't parse Resx file '{0}'",
         category: "ResxGenerator",
         DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: [WellKnownDiagnosticTags.CompilationEnd]);
 
     private static readonly DiagnosticDescriptor InvalidPropertiesForResourceName = new(
         id: "MFRG0003",
@@ -21,7 +22,8 @@ public sealed class ResxGeneratorAnalyzer : DiagnosticAnalyzer
         messageFormat: "Couldn't compute resource name for file '{0}'",
         category: "ResxGenerator",
         DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: [WellKnownDiagnosticTags.CompilationEnd]);
 
     private static readonly DiagnosticDescriptor InconsistentProperties = new(
         id: "MFRG0004",
@@ -29,7 +31,8 @@ public sealed class ResxGeneratorAnalyzer : DiagnosticAnalyzer
         messageFormat: "Property '{0}' values for '{1}' are inconsistent",
         category: "ResxGenerator",
         DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: [WellKnownDiagnosticTags.CompilationEnd]);
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(InvalidResx, InvalidPropertiesForResourceName, InconsistentProperties);
 

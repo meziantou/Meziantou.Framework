@@ -28,6 +28,8 @@ public static partial class JavaScriptEngineFuzzTargets
         "(", ")", "[", "]", "{", "}", ";", ",", ".", ":", "?", "=", "+", "-", "*", "/", "%", "&", "|", "^", "~", "!", "<", ">", "\"", "'", "\\", "\n", "\r\n", "\u2028", "\u2029", " ", "\t",
         "Symbol.iterator", "Symbol.asyncIterator", "Promise.resolve()", "new Proxy({}, {})", "Reflect.ownKeys(", "JSON.stringify(", "JSON.parse(", "Object.defineProperty(", "Array.from(", "new Map()", "new Set()", "new WeakRef({})", "new Date(", "Temporal.Now.instant()", "new Intl.DateTimeFormat(", "new ArrayBuffer(", "new Uint8Array(", "new DataView(", "Atomics.", "BigInt(", "eval(", "new Function(", "globalThis", "arguments", "async function* ",
         "'use strict';", "import './a.js';", "import x from './a.js';", "import * as ns from './a.js';", "export * from './a.js';", "export { x } from './a.js';", "export default ", "export const x = 1;",
+        "defer ", "import defer * as ns from './barrel.js';", "export defer { x } from './a.js';", "export defer * as ns from './b.js';", "import { x, y } as ns from './barrel.js';", "export { y } as ns from './b.js';",
+        "import { x } from './barrel.js';", "import * as ns from './proxy.js';", "{ exports: ['x'] }",
     ];
 
     private static readonly string[] RegExpTokens =
@@ -55,6 +57,8 @@ public static partial class JavaScriptEngineFuzzTargets
     {
         ["a.js"] = "export const x = 1; export default function f() { return x; } export * from './b.js';",
         ["b.js"] = "export let y = 2; export function g() { return y; }",
+        ["barrel.js"] = "export defer { x } from './a.js'; export defer { y as z } from './b.js'; export defer * as all from './b.js'; export defer { g } as some from './b.js'; export { x as eager } from './a.js'; export { y } as filtered from './b.js';",
+        ["proxy.js"] = "export * from './barrel.js'; export defer { x as again } from './barrel.js';",
         ["json.json"] = "{\"a\":[1,2,3]}",
     };
 
@@ -240,9 +244,23 @@ public static partial class JavaScriptEngineFuzzTargets
             module.Link();
             module.Evaluate();
             engine.RunJobs();
-            _ = module.GetNamespace();
+            CheckNamespaceKeys(engine, module.GetNamespace());
         });
         Run(engine.RunJobs);
+    }
+
+    // The string keys of a namespace object are its export names, in code unit order and without duplicates. A new realm
+    // reads them: the fuzzed module can replace the built-ins of its own realm
+    private static void CheckNamespaceKeys(JsEngine engine, JsValue ns)
+    {
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("ns", ns);
+        }
+
+        var sorted = realm.Execute("const keys = Reflect.ownKeys(ns).filter(k => typeof k === 'string'); keys.every((k, i) => i === 0 || keys[i - 1] < k)", "check.js");
+        FuzzAssert.True(sorted.IsBoolean && sorted.AsBoolean(), "The keys of the namespace object are not sorted or contain duplicates");
     }
 
     // The input is a pattern, the flags (an index into RegExpFlags), and the subject, separated by NUL

@@ -90,38 +90,11 @@ internal static class MicroQRVersion
     // Terminator bits: M1=3, M2=5, M3=7, M4=9
     public static int GetTerminatorBits(int version) => (version * 2) + 1;
 
-    // Character capacity per version-EC-mode combination
-    public static int GetCharacterCapacity(int version, ErrorCorrectionLevel ecLevel, EncodingMode mode)
+    // The number of data bits: in M1 and M3 the last data codeword has 4 bits (ISO/IEC 18004, 7.4.10)
+    public static int GetDataBitCapacity(int version, ErrorCorrectionLevel ecLevel)
     {
-        return (version, ecLevel, mode) switch
-        {
-            (1, _, EncodingMode.Numeric) => 5,
-            (2, ErrorCorrectionLevel.L, EncodingMode.Numeric) => 10,
-            (2, ErrorCorrectionLevel.L, EncodingMode.Alphanumeric) => 6,
-            (2, ErrorCorrectionLevel.M, EncodingMode.Numeric) => 8,
-            (2, ErrorCorrectionLevel.M, EncodingMode.Alphanumeric) => 5,
-            (3, ErrorCorrectionLevel.L, EncodingMode.Numeric) => 23,
-            (3, ErrorCorrectionLevel.L, EncodingMode.Alphanumeric) => 14,
-            (3, ErrorCorrectionLevel.L, EncodingMode.Byte) => 9,
-            (3, ErrorCorrectionLevel.L, EncodingMode.Kanji) => 6,
-            (3, ErrorCorrectionLevel.M, EncodingMode.Numeric) => 18,
-            (3, ErrorCorrectionLevel.M, EncodingMode.Alphanumeric) => 11,
-            (3, ErrorCorrectionLevel.M, EncodingMode.Byte) => 7,
-            (3, ErrorCorrectionLevel.M, EncodingMode.Kanji) => 4,
-            (4, ErrorCorrectionLevel.L, EncodingMode.Numeric) => 35,
-            (4, ErrorCorrectionLevel.L, EncodingMode.Alphanumeric) => 21,
-            (4, ErrorCorrectionLevel.L, EncodingMode.Byte) => 15,
-            (4, ErrorCorrectionLevel.L, EncodingMode.Kanji) => 9,
-            (4, ErrorCorrectionLevel.M, EncodingMode.Numeric) => 30,
-            (4, ErrorCorrectionLevel.M, EncodingMode.Alphanumeric) => 18,
-            (4, ErrorCorrectionLevel.M, EncodingMode.Byte) => 13,
-            (4, ErrorCorrectionLevel.M, EncodingMode.Kanji) => 8,
-            (4, ErrorCorrectionLevel.Q, EncodingMode.Numeric) => 21,
-            (4, ErrorCorrectionLevel.Q, EncodingMode.Alphanumeric) => 13,
-            (4, ErrorCorrectionLevel.Q, EncodingMode.Byte) => 9,
-            (4, ErrorCorrectionLevel.Q, EncodingMode.Kanji) => 5,
-            _ => 0, // Unsupported combination
-        };
+        var bits = GetDataCodewords(version, ecLevel) * 8;
+        return version % 2 == 1 ? bits - 4 : bits;
     }
 
     // Symbol number for format information encoding
@@ -179,47 +152,6 @@ internal static class MicroQRVersion
         }
 
         return false;
-    }
-
-    // Determine the best version for the given data, EC level, and mode.
-    // Returns the smallest version of the range that can hold the data.
-    public static int DetermineVersion(string data, ErrorCorrectionLevel ecLevel, EncodingMode mode, int minVersion, int maxVersion)
-    {
-        var charCount = mode switch
-        {
-            EncodingMode.Byte => Encoding.UTF8.GetByteCount(data),
-            EncodingMode.Kanji => data.Length,
-            _ => data.Length,
-        };
-
-        var isModeSupported = false;
-        for (var version = minVersion; version <= maxVersion; version++)
-        {
-            if (!IsModeSupported(version, mode) || !IsECLevelSupported(version, ecLevel))
-            {
-                continue;
-            }
-
-            isModeSupported = true;
-            var capacity = GetCharacterCapacity(version, ecLevel, mode);
-            if (capacity >= charCount)
-            {
-                return version;
-            }
-        }
-
-        var range = minVersion == maxVersion ? $"M{maxVersion}" : $"M{minVersion} to M{maxVersion}";
-        if (!isModeSupported)
-        {
-            throw new InvalidOperationException($"The data has characters that a Micro QR code of version {range} cannot encode with the error correction level {ecLevel}: M1 encodes digits, M2 digits and uppercase alphanumeric characters.");
-        }
-
-        if (minVersion == 1 && maxVersion == 4)
-        {
-            throw new InvalidOperationException("The data is too long to be encoded in a Micro QR code.");
-        }
-
-        throw new InvalidOperationException($"The data is too long to be encoded in a Micro QR code of version {range}.");
     }
 
     // Resolve the effective EC level for M1 (which only supports error detection)

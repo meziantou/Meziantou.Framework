@@ -227,27 +227,36 @@ namespace Meziantou.Framework.SnapshotTesting
 
     public static class SnapshotSettingsCloneExtensions
     {
-        public static Meziantou.Framework.SnapshotTesting.SnapshotSettings Clone(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings) => throw null;
+        extension(Meziantou.Framework.SnapshotTesting.SnapshotSettings settings)
+        {
+            public Meziantou.Framework.SnapshotTesting.SnapshotSettings Clone() => throw null;
+        }
     }
 
     public static class SnapshotSettingsHumanReadableSerializerExtensions
     {
-        public static void AddConverter(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, Meziantou.Framework.HumanReadable.HumanReadableConverter converter) { }
-        public static void ConfigureHumanReadableSerializer(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.Action<Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions>? options) { }
+        extension(Meziantou.Framework.SnapshotTesting.SnapshotSettings settings)
+        {
+            public void AddConverter(Meziantou.Framework.HumanReadable.HumanReadableConverter converter) { }
+            public void ConfigureHumanReadableSerializer(System.Action<Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions>? options) { }
+        }
     }
 
     public static class SnapshotSettingsScrubberExtensions
     {
-        public static void ScrubLines(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.Func<string, bool> predicate) { }
-        public static void ScrubLinesContaining(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, params string[] searchText) { }
-        public static void ScrubLinesContaining(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.StringComparison stringComparison, params string[] searchText) { }
-        public static void ScrubLinesMatching(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.Text.RegularExpressions.Regex regex) { }
-        public static void ScrubLinesMatching(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, [System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern) { }
-        public static void ScrubLinesMatching(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, [System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern, System.Text.RegularExpressions.RegexOptions options) { }
-        public static void ScrubLinesMatching(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, [System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { }
-        public static void ScrubLinesWithReplace(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings, System.Func<string, string?> replaceLine) { }
-        public static void ScrubMachineName(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings) { }
-        public static void ScrubUserName(this Meziantou.Framework.SnapshotTesting.SnapshotSettings settings) { }
+        extension(Meziantou.Framework.SnapshotTesting.SnapshotSettings settings)
+        {
+            public void ScrubLines(System.Func<string, bool> predicate) { }
+            public void ScrubLinesContaining(params string[] searchText) { }
+            public void ScrubLinesContaining(System.StringComparison stringComparison, params string[] searchText) { }
+            public void ScrubLinesMatching(System.Text.RegularExpressions.Regex regex) { }
+            public void ScrubLinesMatching([System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern) { }
+            public void ScrubLinesMatching([System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern, System.Text.RegularExpressions.RegexOptions options) { }
+            public void ScrubLinesMatching([System.Diagnostics.CodeAnalysis.StringSyntax("Regex")] string pattern, System.Text.RegularExpressions.RegexOptions options, System.TimeSpan matchTimeout) { }
+            public void ScrubLinesWithReplace(System.Func<string, string?> replaceLine) { }
+            public void ScrubMachineName() { }
+            public void ScrubUserName() { }
+        }
     }
 
     public sealed class SnapshotTestContext : System.IEquatable<Meziantou.Framework.SnapshotTesting.SnapshotTestContext>

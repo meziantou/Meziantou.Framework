@@ -90,6 +90,7 @@ public static class BarcodesFuzzTargets
         new("barcodes-2d", Barcode2DTarget) { Seeds = () => Enumerable.Range(0, 3).SelectMany(type => Barcode2DSeedTexts.SelectMany((text, index) => new[] { 0, 0x5A, 0xA5 }.Select(options => FuzzSeed.FromText($"2d-{type}-{index}-{options}", [(byte)type, (byte)options, (byte)index], text)))), Dictionary = [.. Tokens, .. Barcode2DTokens] },
         new("barcodes-draw", DrawTarget) { Seeds = () => Enumerable.Range(0, 12).Select(kind => new FuzzSeed($"draw-{kind}", (byte[])[(byte)kind, (byte)(kind % 8), (byte)(kind * 37), (byte)(kind * 11), (byte)(kind % 3), .. FuzzText.Encode(kind < 3 ? "HELLO" : "12345678")])), Dictionary = Tokens },
         .. Gs1FuzzTargets.All,
+        .. QRSegmentFuzzTargets.All,
     ];
 
     private static void QRCodeTarget(ReadOnlySpan<byte> data)
@@ -108,6 +109,25 @@ public static class BarcodesFuzzTargets
         // The encoding is deterministic
         TryCreateQRCode(type, text, level, out var other);
         FuzzAssert.True(other is not null && SameModules(qr, other), "Encoding the same data twice gives different symbols");
+
+        // The segments of different modes never take more room than the whole text in one byte segment
+        QRCode? byteSegment = null;
+        try
+        {
+            QRCodeSegment[] segments = [QRCodeSegment.CreateByte(text)];
+            byteSegment = type switch
+            {
+                QRCodeType.MicroQR => QRCode.CreateMicroQR(segments, level),
+                QRCodeType.RMQR => QRCode.CreateRMQR(segments, level),
+                _ => QRCode.Create(segments, level),
+            };
+        }
+        catch (InvalidOperationException)
+        {
+            // The byte segment does not fit
+        }
+
+        FuzzAssert.True(byteSegment is null || qr.Width * qr.Height <= byteSegment.Width * byteSegment.Height, $"The symbol of the text ({qr.Width}x{qr.Height}) is larger than the one of a single byte segment ({byteSegment?.Width}x{byteSegment?.Height})");
 
         // The renderers agree with the module matrix
         using var image = Image.Load<Rgba32>(qr.ToPng(new QRCodePngOptions { ModuleSize = 1, QuietZoneModules = 0 }));
@@ -1112,7 +1132,7 @@ public static class BarcodesFuzzTargets
         }
     }
 
-    private static void CheckSize(QRCode qr)
+    internal static void CheckSize(QRCode qr)
     {
         switch (qr.Type)
         {
@@ -1130,7 +1150,7 @@ public static class BarcodesFuzzTargets
         }
     }
 
-    private static void CheckFinderPattern(QRCode qr)
+    internal static void CheckFinderPattern(QRCode qr)
     {
         for (var row = 0; row < 7; row++)
         {
@@ -1143,7 +1163,7 @@ public static class BarcodesFuzzTargets
     }
 
     // The format information is checked by decoding it here, with the BCH(15,5) code of ISO/IEC 18004 (generator 0x537)
-    private static void CheckFormatInformation(QRCode qr, ErrorCorrectionLevel requested)
+    internal static void CheckFormatInformation(QRCode qr, ErrorCorrectionLevel requested)
     {
         if (qr.Type is QRCodeType.RMQR)
             return;
@@ -1343,7 +1363,7 @@ public static class BarcodesFuzzTargets
     }
 
     // Percent-encoding goes through UTF-8, where a lone surrogate becomes U+FFFD, as it does in the byte mode of a QR code
-    private static string ReplaceLoneSurrogates(string value)
+    internal static string ReplaceLoneSurrogates(string value)
     {
         var builder = new System.Text.StringBuilder(value.Length);
         for (var i = 0; i < value.Length; i++)
@@ -1362,7 +1382,7 @@ public static class BarcodesFuzzTargets
         return builder.ToString();
     }
 
-    private static bool SameModules(QRCode a, QRCode b)
+    internal static bool SameModules(QRCode a, QRCode b)
     {
         if (a.Width != b.Width || a.Height != b.Height)
             return false;

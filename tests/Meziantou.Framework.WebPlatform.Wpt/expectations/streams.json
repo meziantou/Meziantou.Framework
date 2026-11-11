@@ -450,96 +450,25 @@
     "total": 91
   },
   "streams/transferable/audioworklet.https.html": {
-    "total": 3,
-    "failures": {
-      "A ReadableStream can be transferred to an AudioWorkletProcessor": "FAIL",
-      "A TransformStream can be transferred to an AudioWorkletProcessor": "FAIL",
-      "A WritableStream can be transferred to an AudioWorkletProcessor": "FAIL"
-    }
+    "total": 3
   },
   "streams/transferable/deserialize-error.window.js": {
-    "harness": "ERROR",
-    "total": 2,
-    "failures": {
-      "a ReadableStream deserialization failure should result in a DataCloneError": "TIMEOUT",
-      "a WritableStream deserialization failure should result in a DataCloneError": "TIMEOUT"
-    }
+    "total": 2
   },
   "streams/transferable/readable-stream.html": {
-    "total": 16,
-    "failures": {
-      "cancel should abort a pending read()": "FAIL",
-      "cancel should be propagated to the original": "FAIL",
-      "errors should be passed through": "FAIL",
-      "race between cancel() and close() should be benign": "FAIL",
-      "race between cancel() and enqueue() should be benign": "FAIL",
-      "race between cancel() and error() should leave sides in different states": "FAIL",
-      "sending one chunk through a transferred stream should work": "FAIL",
-      "sending ten chunks on demand should work": "FAIL",
-      "sending ten chunks one at a time should work": "FAIL",
-      "sending ten chunks through a transferred stream should work": "FAIL",
-      "serialization should not happen until the value is read": "FAIL",
-      "stream cancel should not wait for underlying source cancel": "FAIL",
-      "the extra queue from transferring is counted in chunks": "FAIL",
-      "transferring a non-serializable chunk should error both sides": "FAIL",
-      "transferring a stream should add one chunk to the queue size": "FAIL",
-      "transferring a stream should relieve backpressure": "FAIL"
-    }
+    "total": 16
   },
   "streams/transferable/reason.html": {
-    "total": 26,
-    "failures": {
-      "DOMException errors should be preserved": "FAIL",
-      "EvalError should be preserved": "FAIL",
-      "RangeError should be preserved": "FAIL",
-      "ReferenceError should be preserved": "FAIL",
-      "SyntaxError should be preserved": "FAIL",
-      "TypeError should be preserved": "FAIL",
-      "URIError should be preserved": "FAIL",
-      "a TypeError message should be converted to a string": "FAIL",
-      "a TypeError message should not be preserved if it is a getter": "FAIL",
-      "a TypeError message should not be preserved if it is inherited": "FAIL",
-      "objects that can be completely expressed in JSON should be preserved": "FAIL",
-      "objects that cannot be expressed in JSON should also be preserved": "FAIL",
-      "other attributes of a TypeError should not be preserved": "FAIL",
-      "reason with a simple value of '\t\r\n' should be preserved": "FAIL",
-      "reason with a simple value of '3' should be preserved": "FAIL",
-      "reason with a simple value of '7' should be preserved": "FAIL",
-      "reason with a simple value of 'Infinity' should be preserved": "FAIL",
-      "reason with a simple value of 'NaN' should be preserved": "FAIL",
-      "reason with a simple value of 'false' should be preserved": "FAIL",
-      "reason with a simple value of 'hi' should be preserved": "FAIL",
-      "reason with a simple value of 'null' should be preserved": "FAIL",
-      "reason with a simple value of 'true' should be preserved": "FAIL",
-      "reason with a simple value of 'undefined' should be preserved": "FAIL",
-      "the type and message of a TypeError should be preserved": "FAIL"
-    }
+    "total": 26
   },
   "streams/transferable/service-worker.https.html": {
-    "total": 3,
-    "failures": {
-      "postMessage in a service worker should be able to transfer ReadableStream": "FAIL",
-      "serviceWorker.controller.postMessage should be able to transfer a ReadableStream": "FAIL"
-    }
+    "total": 3
   },
   "streams/transferable/shared-worker.html": {
-    "total": 2,
-    "failures": {
-      "postMessage in a worker should be able to transfer a ReadableStream": "FAIL",
-      "worker.postMessage should be able to transfer a ReadableStream": "FAIL"
-    }
+    "total": 2
   },
   "streams/transferable/transfer-with-messageport.window.js": {
-    "total": 10,
-    "failures": {
-      "Transferring a MessagePort with a ReadableStream should set `.ports`": "FAIL",
-      "Transferring a MessagePort with a ReadableStream should set `.ports`, advanced": "FAIL",
-      "Transferring a MessagePort with a TransformStream should set `.ports`": "FAIL",
-      "Transferring a MessagePort with a TransformStream should set `.ports`, advanced": "FAIL",
-      "Transferring a MessagePort with a WritableStream should set `.ports`": "FAIL",
-      "Transferring a MessagePort with a WritableStream should set `.ports`, advanced": "FAIL",
-      "Transferring a MessagePort with multiple streams should set `.ports`": "FAIL"
-    }
+    "total": 10
   },
   "streams/transferable/transform-stream-members.any.js": {
     "total": 4
@@ -548,40 +477,16 @@
     "total": 4
   },
   "streams/transferable/transform-stream.html": {
-    "total": 5,
-    "failures": {
-      "piping through transferred transforms should work": "FAIL",
-      "window.postMessage should be able to transfer a TransformStream": "FAIL"
-    }
+    "total": 5
   },
   "streams/transferable/window.html": {
-    "total": 4,
-    "failures": {
-      "port.postMessage should be able to transfer a ReadableStream": "FAIL",
-      "the same ReadableStream posted multiple times should arrive together": "FAIL",
-      "transfer to and from an iframe should work": "FAIL",
-      "window.postMessage should be able to transfer a ReadableStream": "FAIL"
-    }
+    "total": 4
   },
   "streams/transferable/worker.html": {
-    "total": 3,
-    "failures": {
-      "postMessage in a worker should be able to transfer a ReadableStream": "FAIL",
-      "terminating a worker should not error the stream": "FAIL",
-      "worker.postMessage should be able to transfer a ReadableStream": "FAIL"
-    }
+    "total": 3
   },
   "streams/transferable/writable-stream.html": {
-    "total": 8,
-    "failures": {
-      "abort() should work": "FAIL",
-      "desiredSize for a newly-transferred stream should be 1": "FAIL",
-      "effective queue size of a transferred writable should be 2": "FAIL",
-      "second write should wait for first underlying write to complete": "FAIL",
-      "window.postMessage should be able to transfer a WritableStream": "FAIL",
-      "window.postMessage should be able to transfer a {readable, writable} pair": "FAIL",
-      "writing a unclonable object should error the stream": "FAIL"
-    }
+    "total": 8
   },
   "streams/transform-streams/backpressure.any.js": {
     "total": 14

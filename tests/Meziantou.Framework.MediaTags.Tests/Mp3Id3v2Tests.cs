@@ -690,13 +690,16 @@ public sealed class Mp3Id3v2Tests
         var bytes = BuildId3Tag(4, 0,
             ("TIT2", 0x0009, storedData),
             ("PRIV", 0x0009, storedData),
+            ("TPUB", 0x4009, storedData),
+            ("COMM", 0x0009, storedData),
             ("TPE1", 0, TextBody("Artist")));
 
         var tags = ReadMp3(bytes);
         Assert.Null(tags.Title);
         Assert.Equal("Artist", tags.Artist);
 
-        // A frame that no property represents is kept as stored
+        // A frame that no property represents is kept as stored, unless it is a comment or has the tag alter preservation flag
+        Assert.Null(tags.Comment);
         var field = Assert.Single(tags.NativeFields!);
         Assert.Equal("PRIV", field.Id);
         Assert.Equal(0x0009, field.Flags);

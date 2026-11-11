@@ -197,6 +197,14 @@ namespace Meziantou.Framework.VectorGraphics
         Luminosity = 15,
     }
 
+    public sealed class SceneBlendPrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Input2 { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneBlendMode Mode { get => throw null; }
+        public SceneBlendPrimitive(Meziantou.Framework.VectorGraphics.SceneBlendMode mode, Meziantou.Framework.VectorGraphics.SceneFilterInput input2) { }
+    }
+
     public sealed class SceneBlurFilter : Meziantou.Framework.VectorGraphics.SceneFilter
     {
         public double StandardDeviation { get => throw null; }
@@ -264,6 +272,14 @@ namespace Meziantou.Framework.VectorGraphics
         public static implicit operator Meziantou.Framework.VectorGraphics.SceneColor(string value) => throw null;
     }
 
+    public enum SceneColorChannel
+    {
+        Red = 0,
+        Green = 1,
+        Blue = 2,
+        Alpha = 3,
+    }
+
     public sealed class SceneColorMatrixFilter : Meziantou.Framework.VectorGraphics.SceneFilter
     {
         public System.Collections.Generic.IReadOnlyList<double> Values { get => throw null; }
@@ -277,6 +293,89 @@ namespace Meziantou.Framework.VectorGraphics
         public static Meziantou.Framework.VectorGraphics.SceneColorMatrixFilter Sepia(double amount = 1d) => throw null;
     }
 
+    public sealed class SceneColorMatrixPrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Input { get => throw null; init { } }
+        public static Meziantou.Framework.VectorGraphics.SceneColorMatrixPrimitive LuminanceToAlpha { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<double> Values { get => throw null; }
+        public SceneColorMatrixPrimitive(Meziantou.Framework.VectorGraphics.SceneColorMatrixFilter matrix) { }
+        public SceneColorMatrixPrimitive(params System.ReadOnlySpan<double> values) { }
+    }
+
+    public sealed class SceneComponentTransferPrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public Meziantou.Framework.VectorGraphics.SceneTransferFunction Alpha { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneTransferFunction Blue { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneTransferFunction Green { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneTransferFunction Red { get => throw null; init { } }
+    }
+
+    public enum SceneCompositeOperator
+    {
+        Over = 0,
+        In = 1,
+        Out = 2,
+        Atop = 3,
+        Xor = 4,
+        Lighter = 5,
+        Arithmetic = 6,
+    }
+
+    public sealed class SceneCompositePrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Input2 { get => throw null; }
+        public double K1 { get => throw null; init { } }
+        public double K2 { get => throw null; init { } }
+        public double K3 { get => throw null; init { } }
+        public double K4 { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneCompositeOperator Operator { get => throw null; }
+        public SceneCompositePrimitive(Meziantou.Framework.VectorGraphics.SceneCompositeOperator @operator, Meziantou.Framework.VectorGraphics.SceneFilterInput input2) { }
+    }
+
+    public sealed class SceneConvolveMatrixPrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public double Bias { get => throw null; init { } }
+        public double? Divisor { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneFilterEdgeMode EdgeMode { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Input { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<double> Kernel { get => throw null; }
+        public int OrderX { get => throw null; }
+        public int OrderY { get => throw null; }
+        public bool PreserveAlpha { get => throw null; init { } }
+        public int? TargetX { get => throw null; init { } }
+        public int? TargetY { get => throw null; init { } }
+        public SceneConvolveMatrixPrimitive(int orderX, int orderY, params System.ReadOnlySpan<double> kernel) { }
+    }
+
+    public sealed class SceneDiffuseLightingPrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public Meziantou.Framework.VectorGraphics.SceneColor Color { get => throw null; }
+        public double DiffuseConstant { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneLightSource Light { get => throw null; }
+        public double SurfaceScale { get => throw null; init { } }
+        public SceneDiffuseLightingPrimitive(Meziantou.Framework.VectorGraphics.SceneLightSource light, Meziantou.Framework.VectorGraphics.SceneColor color) { }
+    }
+
+    public sealed class SceneDisplacementMapPrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Map { get => throw null; }
+        public double Scale { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneColorChannel XChannel { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneColorChannel YChannel { get => throw null; init { } }
+        public SceneDisplacementMapPrimitive(double scale, Meziantou.Framework.VectorGraphics.SceneFilterInput map) { }
+    }
+
+    public sealed class SceneDistantLight : Meziantou.Framework.VectorGraphics.SceneLightSource
+    {
+        public double Azimuth { get => throw null; }
+        public double Elevation { get => throw null; }
+        public SceneDistantLight(double azimuth, double elevation) { }
+    }
+
     public sealed class SceneDropShadowFilter : Meziantou.Framework.VectorGraphics.SceneFilter
     {
         public Meziantou.Framework.VectorGraphics.SceneColor Color { get => throw null; }
@@ -284,6 +383,17 @@ namespace Meziantou.Framework.VectorGraphics
         public double OffsetY { get => throw null; }
         public double StandardDeviation { get => throw null; }
         public SceneDropShadowFilter(double offsetX, double offsetY, double standardDeviation, Meziantou.Framework.VectorGraphics.SceneColor color) { }
+    }
+
+    public sealed class SceneDropShadowPrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public Meziantou.Framework.VectorGraphics.SceneColor Color { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Input { get => throw null; init { } }
+        public double OffsetX { get => throw null; }
+        public double OffsetY { get => throw null; }
+        public double StandardDeviationX { get => throw null; }
+        public double StandardDeviationY { get => throw null; }
+        public SceneDropShadowPrimitive(double offsetX, double offsetY, double standardDeviationX, double standardDeviationY, Meziantou.Framework.VectorGraphics.SceneColor color) { }
     }
 
     public abstract class SceneElement
@@ -313,6 +423,68 @@ namespace Meziantou.Framework.VectorGraphics
 
     public abstract class SceneFilter
     {
+    }
+
+    public enum SceneFilterColorSpace
+    {
+        LinearRgb = 0,
+        Srgb = 1,
+    }
+
+    public enum SceneFilterEdgeMode
+    {
+        None = 0,
+        Duplicate = 1,
+        Wrap = 2,
+        Mirror = 3,
+    }
+
+    public sealed class SceneFilterGraph : Meziantou.Framework.VectorGraphics.SceneFilter
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneFilterPrimitive> Primitives { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneBounds? Region { get => throw null; init { } }
+        public SceneFilterGraph(System.Collections.Generic.IEnumerable<Meziantou.Framework.VectorGraphics.SceneFilterPrimitive> primitives) { }
+        public Meziantou.Framework.VectorGraphics.SceneBounds GetRegion(Meziantou.Framework.VectorGraphics.SceneBounds bounds) => throw null;
+    }
+
+    public readonly struct SceneFilterInput : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneFilterInput>
+    {
+        public Meziantou.Framework.VectorGraphics.SceneFilterInputKind Kind { get => throw null; }
+        public static Meziantou.Framework.VectorGraphics.SceneFilterInput Previous { get => throw null; }
+        public int ResultIndex { get => throw null; }
+        public static Meziantou.Framework.VectorGraphics.SceneFilterInput SourceAlpha { get => throw null; }
+        public static Meziantou.Framework.VectorGraphics.SceneFilterInput SourceGraphic { get => throw null; }
+        public bool Equals(Meziantou.Framework.VectorGraphics.SceneFilterInput other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        public static Meziantou.Framework.VectorGraphics.SceneFilterInput Result(int index) => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.VectorGraphics.SceneFilterInput left, Meziantou.Framework.VectorGraphics.SceneFilterInput right) => throw null;
+        public static bool operator !=(Meziantou.Framework.VectorGraphics.SceneFilterInput left, Meziantou.Framework.VectorGraphics.SceneFilterInput right) => throw null;
+    }
+
+    public enum SceneFilterInputKind
+    {
+        Previous = 0,
+        SourceGraphic = 1,
+        SourceAlpha = 2,
+        Result = 3,
+    }
+
+    public abstract class SceneFilterPrimitive
+    {
+        public Meziantou.Framework.VectorGraphics.SceneFilterColorSpace ColorSpace { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneBounds? Subregion { get => throw null; init { } }
+    }
+
+    public sealed class SceneFloodPrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public Meziantou.Framework.VectorGraphics.SceneColor Color { get => throw null; }
+        public SceneFloodPrimitive(Meziantou.Framework.VectorGraphics.SceneColor color) { }
     }
 
     public readonly struct SceneFont : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneFont>
@@ -389,6 +561,16 @@ namespace Meziantou.Framework.VectorGraphics
         public static bool operator !=(Meziantou.Framework.VectorGraphics.SceneFontRun left, Meziantou.Framework.VectorGraphics.SceneFontRun right) => throw null;
     }
 
+    public sealed class SceneGaussianBlurPrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public Meziantou.Framework.VectorGraphics.SceneFilterEdgeMode EdgeMode { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Input { get => throw null; init { } }
+        public double StandardDeviationX { get => throw null; }
+        public double StandardDeviationY { get => throw null; }
+        public SceneGaussianBlurPrimitive(double standardDeviation) { }
+        public SceneGaussianBlurPrimitive(double standardDeviationX, double standardDeviationY) { }
+    }
+
     public abstract class SceneGradientPaint : Meziantou.Framework.VectorGraphics.ScenePaint
     {
         public Meziantou.Framework.VectorGraphics.SceneGradientSpread Spread { get => throw null; init { } }
@@ -441,6 +623,16 @@ namespace Meziantou.Framework.VectorGraphics
         public double Y { get => throw null; }
         public SceneImage(double x, double y, double width, double height, System.ReadOnlyMemory<byte> data) { }
         public static string? GetMediaType(System.ReadOnlySpan<byte> data) => throw null;
+    }
+
+    public sealed class SceneImagePrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public Meziantou.Framework.VectorGraphics.SceneElement Content { get => throw null; }
+        public SceneImagePrimitive(Meziantou.Framework.VectorGraphics.SceneElement content) { }
+    }
+
+    public abstract class SceneLightSource
+    {
     }
 
     public sealed class SceneLine : Meziantou.Framework.VectorGraphics.SceneShape
@@ -504,6 +696,35 @@ namespace Meziantou.Framework.VectorGraphics
         Alpha = 1,
     }
 
+    public sealed class SceneMergePrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneFilterInput> Inputs { get => throw null; }
+        public SceneMergePrimitive(params System.ReadOnlySpan<Meziantou.Framework.VectorGraphics.SceneFilterInput> inputs) { }
+    }
+
+    public enum SceneMorphologyOperator
+    {
+        Erode = 0,
+        Dilate = 1,
+    }
+
+    public sealed class SceneMorphologyPrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneMorphologyOperator Operator { get => throw null; }
+        public double RadiusX { get => throw null; }
+        public double RadiusY { get => throw null; }
+        public SceneMorphologyPrimitive(Meziantou.Framework.VectorGraphics.SceneMorphologyOperator @operator, double radiusX, double radiusY) { }
+    }
+
+    public sealed class SceneOffsetPrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Input { get => throw null; init { } }
+        public double OffsetX { get => throw null; }
+        public double OffsetY { get => throw null; }
+        public SceneOffsetPrimitive(double offsetX, double offsetY) { }
+    }
+
     public abstract class ScenePaint
     {
         public static implicit operator Meziantou.Framework.VectorGraphics.ScenePaint(Meziantou.Framework.VectorGraphics.SceneColor color) => throw null;
@@ -529,6 +750,14 @@ namespace Meziantou.Framework.VectorGraphics
         public ScenePath(Meziantou.Framework.VectorGraphics.PathData data) { }
     }
 
+    public sealed class ScenePointLight : Meziantou.Framework.VectorGraphics.SceneLightSource
+    {
+        public double X { get => throw null; }
+        public double Y { get => throw null; }
+        public double Z { get => throw null; }
+        public ScenePointLight(double x, double y, double z) { }
+    }
+
     public sealed class SceneRectangle : Meziantou.Framework.VectorGraphics.SceneShape
     {
         public double CornerRadius { get => throw null; set { } }
@@ -550,6 +779,30 @@ namespace Meziantou.Framework.VectorGraphics
         public System.Collections.Generic.IReadOnlyList<double>? StrokeDashArray { get => throw null; set { } }
         public double StrokeDashOffset { get => throw null; set { } }
         public double StrokeWidth { get => throw null; set { } }
+    }
+
+    public sealed class SceneSpecularLightingPrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public Meziantou.Framework.VectorGraphics.SceneColor Color { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Input { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneLightSource Light { get => throw null; }
+        public double SpecularConstant { get => throw null; init { } }
+        public double SpecularExponent { get => throw null; init { } }
+        public double SurfaceScale { get => throw null; init { } }
+        public SceneSpecularLightingPrimitive(Meziantou.Framework.VectorGraphics.SceneLightSource light, Meziantou.Framework.VectorGraphics.SceneColor color) { }
+    }
+
+    public sealed class SceneSpotLight : Meziantou.Framework.VectorGraphics.SceneLightSource
+    {
+        public double? LimitingConeAngle { get => throw null; init { } }
+        public double PointsAtX { get => throw null; }
+        public double PointsAtY { get => throw null; }
+        public double PointsAtZ { get => throw null; }
+        public double SpecularExponent { get => throw null; init { } }
+        public double X { get => throw null; }
+        public double Y { get => throw null; }
+        public double Z { get => throw null; }
+        public SceneSpotLight(double x, double y, double z, double pointsAtX, double pointsAtY, double pointsAtZ) { }
     }
 
     public sealed class SceneText : Meziantou.Framework.VectorGraphics.SceneElement
@@ -599,6 +852,36 @@ namespace Meziantou.Framework.VectorGraphics
         public SceneTextSpan(string text) { }
     }
 
+    public sealed class SceneTilePrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public Meziantou.Framework.VectorGraphics.SceneFilterInput Input { get => throw null; init { } }
+    }
+
+    public sealed class SceneTransferFunction
+    {
+        public double Amplitude { get => throw null; }
+        public double Exponent { get => throw null; }
+        public static Meziantou.Framework.VectorGraphics.SceneTransferFunction Identity { get => throw null; }
+        public double Intercept { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneTransferFunctionKind Kind { get => throw null; }
+        public double Offset { get => throw null; }
+        public double Slope { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<double> Values { get => throw null; }
+        public static Meziantou.Framework.VectorGraphics.SceneTransferFunction CreateDiscrete(params System.ReadOnlySpan<double> values) => throw null;
+        public static Meziantou.Framework.VectorGraphics.SceneTransferFunction CreateGamma(double amplitude, double exponent, double offset) => throw null;
+        public static Meziantou.Framework.VectorGraphics.SceneTransferFunction CreateLinear(double slope, double intercept) => throw null;
+        public static Meziantou.Framework.VectorGraphics.SceneTransferFunction CreateTable(params System.ReadOnlySpan<double> values) => throw null;
+    }
+
+    public enum SceneTransferFunctionKind
+    {
+        Identity = 0,
+        Table = 1,
+        Discrete = 2,
+        Linear = 3,
+        Gamma = 4,
+    }
+
     public readonly struct SceneTransform : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneTransform>
     {
         public double A { get => throw null; init { } }
@@ -626,6 +909,23 @@ namespace Meziantou.Framework.VectorGraphics
         public static Meziantou.Framework.VectorGraphics.SceneTransform Translate(double x, double y) => throw null;
         public static bool operator ==(Meziantou.Framework.VectorGraphics.SceneTransform left, Meziantou.Framework.VectorGraphics.SceneTransform right) => throw null;
         public static bool operator !=(Meziantou.Framework.VectorGraphics.SceneTransform left, Meziantou.Framework.VectorGraphics.SceneTransform right) => throw null;
+    }
+
+    public sealed class SceneTurbulencePrimitive : Meziantou.Framework.VectorGraphics.SceneFilterPrimitive
+    {
+        public double BaseFrequencyX { get => throw null; }
+        public double BaseFrequencyY { get => throw null; }
+        public int Octaves { get => throw null; }
+        public int Seed { get => throw null; }
+        public bool StitchTiles { get => throw null; init { } }
+        public Meziantou.Framework.VectorGraphics.SceneTurbulenceType Type { get => throw null; }
+        public SceneTurbulencePrimitive(Meziantou.Framework.VectorGraphics.SceneTurbulenceType type, double baseFrequencyX, double baseFrequencyY, int octaves, int seed) { }
+    }
+
+    public enum SceneTurbulenceType
+    {
+        Turbulence = 0,
+        FractalNoise = 1,
     }
 
     public sealed class SceneUse : Meziantou.Framework.VectorGraphics.SceneElement

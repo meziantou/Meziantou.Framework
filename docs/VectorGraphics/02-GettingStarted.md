@@ -321,6 +321,60 @@ var svg = SvgSceneRenderer.Render(scene);
 
 ![A white card with a soft shadow, a blurred blue circle, diagonal stripes, and a word that fades to the right](images/Effects.svg)
 
+### Filter graphs
+
+A [SceneFilterGraph](cref:Meziantou.Framework.VectorGraphics.SceneFilterGraph) is a filter of SVG made of primitives:
+blurs, offsets, floods, composites, blends, merges, morphologies, turbulences, displacement maps, convolution matrices,
+diffuse and specular lightings, component transfers, tiles, images and color matrices. Each primitive reads the drawing
+of the element, its alpha, or the result of an earlier primitive
+([SceneFilterInput](cref:Meziantou.Framework.VectorGraphics.SceneFilterInput)), by default the result of the primitive
+before it. As in SVG, the primitives compute in linear light unless their
+[ColorSpace](cref:Meziantou.Framework.VectorGraphics.SceneFilterPrimitive.ColorSpace) is sRGB. The region of the graph,
+the subregions of the primitives and the positions of the lights are in the coordinates of the parent of the element;
+without a [Region](cref:Meziantou.Framework.VectorGraphics.SceneFilterGraph.Region), the graph draws in the bounds of the
+element enlarged by how far its primitives move them:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_FilterGraph;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+// A glow: the alpha of the shape, thickened, blurred and colored, under the shape
+var glow = new SceneFilterGraph(
+[
+    new SceneMorphologyPrimitive(SceneMorphologyOperator.Dilate, radiusX: 2, radiusY: 2) { Input = SceneFilterInput.SourceAlpha },
+    new SceneGaussianBlurPrimitive(standardDeviation: 4),
+    new SceneFloodPrimitive((SceneColor)"#38bdf8"),
+    new SceneCompositePrimitive(SceneCompositeOperator.In, SceneFilterInput.Result(1)),
+    new SceneMergePrimitive(SceneFilterInput.Previous, SceneFilterInput.SourceGraphic),
+]);
+scene.Root.Add(new SceneRectangle(30, 30, 60, 40) { Fill = (SceneColor)"#0369a1", CornerRadius = 6, Filter = glow });
+
+// A rough edge: the shape moved by noise, in a region of its own
+var rough = new SceneFilterGraph(
+[
+    new SceneTurbulencePrimitive(SceneTurbulenceType.FractalNoise, baseFrequencyX: 0.05, baseFrequencyY: 0.05, octaves: 2, seed: 3),
+    new SceneDisplacementMapPrimitive(scale: 10, map: SceneFilterInput.Previous)
+    {
+        Input = SceneFilterInput.SourceGraphic,
+        XChannel = SceneColorChannel.Red,
+        YChannel = SceneColorChannel.Green,
+    },
+])
+{
+    Region = new SceneBounds(110, 10, 80, 80),
+};
+scene.Root.Add(new SceneCircle(150, 50, 30) { Fill = (SceneColor)"#b91c1c", Filter = rough });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+![A blue rounded rectangle with a light blue glow, and a red disk with a rough edge](images/FilterGraph.svg)
+
+An [image primitive](cref:Meziantou.Framework.VectorGraphics.SceneImagePrimitive) draws an element, which does not need
+to be in the scene otherwise: an image without effects is written in the SVG filter itself, another element in the
+definitions of the SVG, by its identifier.
+
 PDF has no filters, not even the color matrices: the PDF renderer throws for a scene that has one. See the
 [limitations](07-Limitations.md).
 

@@ -471,6 +471,177 @@ public sealed class SvgSceneRendererTests
         Assert.Equal(new SceneBounds(40, 10, 20, 20), group.GetBounds(_ => null, applyClips: false));
     }
 
+    [Fact]
+    public void FilterGraph()
+    {
+        #region VectorGraphics_FilterGraph
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // A glow: the alpha of the shape, thickened, blurred and colored, under the shape
+        var glow = new SceneFilterGraph(
+        [
+            new SceneMorphologyPrimitive(SceneMorphologyOperator.Dilate, radiusX: 2, radiusY: 2) { Input = SceneFilterInput.SourceAlpha },
+            new SceneGaussianBlurPrimitive(standardDeviation: 4),
+            new SceneFloodPrimitive((SceneColor)"#38bdf8"),
+            new SceneCompositePrimitive(SceneCompositeOperator.In, SceneFilterInput.Result(1)),
+            new SceneMergePrimitive(SceneFilterInput.Previous, SceneFilterInput.SourceGraphic),
+        ]);
+        scene.Root.Add(new SceneRectangle(30, 30, 60, 40) { Fill = (SceneColor)"#0369a1", CornerRadius = 6, Filter = glow });
+
+        // A rough edge: the shape moved by noise, in a region of its own
+        var rough = new SceneFilterGraph(
+        [
+            new SceneTurbulencePrimitive(SceneTurbulenceType.FractalNoise, baseFrequencyX: 0.05, baseFrequencyY: 0.05, octaves: 2, seed: 3),
+            new SceneDisplacementMapPrimitive(scale: 10, map: SceneFilterInput.Previous)
+            {
+                Input = SceneFilterInput.SourceGraphic,
+                XChannel = SceneColorChannel.Red,
+                YChannel = SceneColorChannel.Green,
+            },
+        ])
+        {
+            Region = new SceneBounds(110, 10, 80, 80),
+        };
+        scene.Root.Add(new SceneCircle(150, 50, 30) { Fill = (SceneColor)"#b91c1c", Filter = rough });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("FilterGraph", svg);
+
+        // The default region is the bounds of the shape enlarged by the reach of the primitives (2 + 3 times 4) and a pixel
+        Assert.Contains("<filter id=\"scene-filter0\" filterUnits=\"userSpaceOnUse\" x=\"15\" y=\"15\" width=\"90\" height=\"70\" primitiveUnits=\"userSpaceOnUse\">", svg, StringComparison.Ordinal);
+        Assert.Contains("<feMorphology in=\"SourceAlpha\" operator=\"dilate\" radius=\"2\"/><feGaussianBlur result=\"r1\" stdDeviation=\"4\"/><feFlood flood-color=\"#38bdf8\"/><feComposite in2=\"r1\" operator=\"in\"/><feMerge><feMergeNode/><feMergeNode in=\"SourceGraphic\"/></feMerge></filter>", svg, StringComparison.Ordinal);
+        Assert.Contains("<filter id=\"scene-filter1\" filterUnits=\"userSpaceOnUse\" x=\"110\" y=\"10\" width=\"80\" height=\"80\" primitiveUnits=\"userSpaceOnUse\">", svg, StringComparison.Ordinal);
+        Assert.Contains("<feTurbulence type=\"fractalNoise\" baseFrequency=\"0.05\" numOctaves=\"2\" seed=\"3\"/><feDisplacementMap in=\"SourceGraphic\" scale=\"10\" xChannelSelector=\"R\" yChannelSelector=\"G\"/>", svg, StringComparison.Ordinal);
+
+        // A graph draws in its region: the bounds of the circle are its region, the ones of the rectangle enlarged by the reach
+        Assert.Equal(new SceneBounds(16, 10, 174, 80), scene.Root.GetBounds(_ => null));
+    }
+
+    [Fact]
+    public void FilterGraphPrimitives()
+    {
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC");
+        var light = new SceneSpotLight(1, 2, 3, 4, 5, 6) { SpecularExponent = 2, LimitingConeAngle = 30 };
+        var graph = new SceneFilterGraph(
+        [
+            new SceneGaussianBlurPrimitive(1, 2) { EdgeMode = SceneFilterEdgeMode.Wrap, ColorSpace = SceneFilterColorSpace.Srgb, Subregion = new SceneBounds(0, 0, 5, 5) },
+            new SceneOffsetPrimitive(1.5, -2),
+            new SceneFloodPrimitive((SceneColor)"#ff000080"),
+            new SceneCompositePrimitive(SceneCompositeOperator.Arithmetic, SceneFilterInput.Result(0)) { K1 = 0.5, K2 = 1, K3 = -1, K4 = 0.25 },
+            new SceneBlendPrimitive(SceneBlendMode.Multiply, SceneFilterInput.SourceGraphic),
+            new SceneMorphologyPrimitive(SceneMorphologyOperator.Erode, 1, 2),
+            new SceneTurbulencePrimitive(SceneTurbulenceType.Turbulence, 0.1, 0.2, 1, 7) { StitchTiles = true },
+            new SceneConvolveMatrixPrimitive(3, 1, 1, 2, 1) { Divisor = 4, Bias = 0.5, TargetX = 0, TargetY = 0, EdgeMode = SceneFilterEdgeMode.None, PreserveAlpha = true },
+            new SceneDiffuseLightingPrimitive(new SceneDistantLight(45, 30), (SceneColor)"#ffffff") { SurfaceScale = 2, DiffuseConstant = 0.5 },
+            new SceneSpecularLightingPrimitive(light, (SceneColor)"#00ff00") { SpecularExponent = 20 },
+            new SceneDiffuseLightingPrimitive(new ScenePointLight(1, 2, 3), SceneColor.White),
+            new SceneComponentTransferPrimitive
+            {
+                Red = SceneTransferFunction.CreateTable(0, 1),
+                Green = SceneTransferFunction.CreateDiscrete(0, 0.5),
+                Blue = SceneTransferFunction.CreateLinear(2, 0.1),
+                Alpha = SceneTransferFunction.CreateGamma(1, 2, 0),
+            },
+            new SceneTilePrimitive { Input = SceneFilterInput.Result(0) },
+            new SceneColorMatrixPrimitive(SceneColorMatrixFilter.Invert()),
+            SceneColorMatrixPrimitive.LuminanceToAlpha,
+            new SceneDropShadowPrimitive(1, 2, 3, 3, (SceneColor)"#000000"),
+            new SceneImagePrimitive(new SceneImage(0, 0, 4, 4, png)),
+        ]);
+        var svg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black, Filter = graph }));
+
+        Assert.Contains("<feGaussianBlur x=\"0\" y=\"0\" width=\"5\" height=\"5\" color-interpolation-filters=\"sRGB\" result=\"r0\" stdDeviation=\"1 2\" edgeMode=\"wrap\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feOffset dx=\"1.5\" dy=\"-2\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feFlood flood-color=\"#ff0000\" flood-opacity=\"0.502\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feComposite in2=\"r0\" operator=\"arithmetic\" k1=\"0.5\" k2=\"1\" k3=\"-1\" k4=\"0.25\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feBlend in2=\"SourceGraphic\" mode=\"multiply\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feMorphology radius=\"1 2\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feTurbulence baseFrequency=\"0.1 0.2\" numOctaves=\"1\" seed=\"7\" stitchTiles=\"stitch\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feConvolveMatrix order=\"3 1\" kernelMatrix=\"1 2 1\" divisor=\"4\" bias=\"0.5\" targetX=\"0\" targetY=\"0\" edgeMode=\"none\" preserveAlpha=\"true\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feDiffuseLighting surfaceScale=\"2\" diffuseConstant=\"0.5\" lighting-color=\"#ffffff\"><feDistantLight azimuth=\"45\" elevation=\"30\"/></feDiffuseLighting>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feSpecularLighting surfaceScale=\"1\" specularConstant=\"1\" specularExponent=\"20\" lighting-color=\"#00ff00\"><feSpotLight x=\"1\" y=\"2\" z=\"3\" pointsAtX=\"4\" pointsAtY=\"5\" pointsAtZ=\"6\" specularExponent=\"2\" limitingConeAngle=\"30\"/></feSpecularLighting>", svg, StringComparison.Ordinal);
+        Assert.Contains("<fePointLight x=\"1\" y=\"2\" z=\"3\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feComponentTransfer><feFuncR type=\"table\" tableValues=\"0 1\"/><feFuncG type=\"discrete\" tableValues=\"0 0.5\"/><feFuncB type=\"linear\" slope=\"2\" intercept=\"0.1\"/><feFuncA type=\"gamma\" amplitude=\"1\" exponent=\"2\" offset=\"0\"/></feComponentTransfer>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feTile in=\"r0\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feColorMatrix type=\"matrix\" values=\"-1 0 0 0 1", svg, StringComparison.Ordinal);
+        Assert.Contains("<feColorMatrix type=\"matrix\" values=\"0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.2125 0.7154 0.0721 0 0\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feDropShadow dx=\"1\" dy=\"2\" stdDeviation=\"3\" flood-color=\"#000000\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feImage x=\"0\" y=\"0\" width=\"4\" height=\"4\" preserveAspectRatio=\"none\" href=\"data:image/png;base64,", svg, StringComparison.Ordinal);
+        Assert.Equal(1, CountOccurrences(svg, "<filter "));
+    }
+
+    [Fact]
+    public void FilterGraphImagesReferToTheirElements()
+    {
+        // An element that is drawn only by an image primitive is written in the definitions, with an identifier
+        var scene = new Scene(100, 100, "sans-serif");
+        var star = new ScenePath(new PathBuilder().AddPolygon((50, 0), (60, 40), (100, 50), (60, 60), (50, 100), (40, 60), (0, 50), (40, 40)).Build()) { Fill = (SceneColor)"#facc15" };
+        var graph = new SceneFilterGraph([new SceneImagePrimitive(star), new SceneMergePrimitive(SceneFilterInput.SourceGraphic, SceneFilterInput.Previous)]);
+        scene.Root.Add(new SceneRectangle(10, 10, 80, 80) { Fill = SceneColor.Black, Filter = graph });
+
+        // An image with a transform is an element too, and an element of the scene keeps its own identifier
+        var named = scene.Root.Add(new SceneCircle(5, 5, 5) { Id = "dot", Fill = SceneColor.White });
+        var transformed = new SceneImage(0, 0, 10, 10, Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC")) { Transform = SceneTransform.Translate(1, 1) };
+        scene.Root.Add(new SceneRectangle(0, 0, 10, 10) { Filter = new SceneFilterGraph([new SceneImagePrimitive(named), new SceneImagePrimitive(transformed)]) });
+        var svg = SvgSceneRenderer.Render(scene);
+
+        Assert.Contains("<feImage href=\"#scene-element0\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<defs>\n<path id=\"scene-element0\" d=\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<feImage href=\"#dot\"/><feImage href=\"#scene-element1\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<image id=\"scene-element1\" x=\"0\" y=\"0\"", svg, StringComparison.Ordinal);
+        Assert.Equal(1, CountOccurrences(svg, "id=\"dot\""));
+
+        // An element whose filter draws it again is written once
+        var loop = new SceneGroup();
+        var inner = loop.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black });
+        inner.Filter = new SceneFilterGraph([new SceneImagePrimitive(loop)]);
+        var loopSvg = SvgSceneRenderer.Render(Single(loop));
+        Assert.Equal(1, CountOccurrences(loopSvg, "<rect "));
+    }
+
+    [Fact]
+    public void FilterGraphsValidateTheirPrimitives()
+    {
+        Assert.Throws<ArgumentException>("primitives", () => new SceneFilterGraph([]));
+        Assert.Throws<ArgumentException>("primitives", () => new SceneFilterGraph([null!]));
+        Assert.Throws<ArgumentException>("primitives", () => new SceneFilterGraph([new SceneOffsetPrimitive(0, 0) { Input = SceneFilterInput.Result(0) }]));
+        Assert.Throws<ArgumentException>("primitives", () => new SceneFilterGraph([new SceneFloodPrimitive(SceneColor.Black), new SceneCompositePrimitive(SceneCompositeOperator.Over, SceneFilterInput.Result(1))]));
+        Assert.Throws<ArgumentNullException>("primitives", () => new SceneFilterGraph(null!));
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => SceneFilterInput.Result(-1));
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new SceneFilterGraph([new SceneFloodPrimitive(SceneColor.Black)]) { Region = new SceneBounds(0, 0, -1, 1) });
+        Assert.Throws<ArgumentException>("value", () => new SceneFloodPrimitive(SceneColor.Black) { Subregion = new SceneBounds(double.NaN, 0, 1, 1) });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new SceneFloodPrimitive(SceneColor.Black) { ColorSpace = (SceneFilterColorSpace)2 });
+        Assert.Throws<ArgumentOutOfRangeException>("standardDeviationX", () => new SceneGaussianBlurPrimitive(-1));
+        Assert.Throws<ArgumentException>("offsetY", () => new SceneOffsetPrimitive(0, double.PositiveInfinity));
+        Assert.Throws<ArgumentOutOfRangeException>("operator", () => new SceneCompositePrimitive((SceneCompositeOperator)(-1), default));
+        Assert.Throws<ArgumentException>("value", () => new SceneCompositePrimitive(SceneCompositeOperator.Arithmetic, default) { K1 = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>("mode", () => new SceneBlendPrimitive((SceneBlendMode)99, default));
+        Assert.Throws<ArgumentOutOfRangeException>("radiusY", () => new SceneMorphologyPrimitive(SceneMorphologyOperator.Erode, 1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("octaves", () => new SceneTurbulencePrimitive(SceneTurbulenceType.Turbulence, 0.1, 0.1, -1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new SceneDisplacementMapPrimitive(1, default) { XChannel = (SceneColorChannel)4 });
+        Assert.Throws<ArgumentOutOfRangeException>("orderX", () => new SceneConvolveMatrixPrimitive(0, 1, []));
+        Assert.Throws<ArgumentException>("kernel", () => new SceneConvolveMatrixPrimitive(2, 2, 1, 2, 3));
+        Assert.Throws<ArgumentException>("value", () => new SceneConvolveMatrixPrimitive(1, 1, 1) { Divisor = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new SceneConvolveMatrixPrimitive(2, 1, 1, 1) { TargetX = 2 });
+        Assert.Throws<ArgumentNullException>("light", () => new SceneDiffuseLightingPrimitive(null!, SceneColor.White));
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new SceneSpecularLightingPrimitive(new SceneDistantLight(0, 0), SceneColor.White) { SpecularExponent = 0.5 });
+        Assert.Throws<ArgumentException>("z", () => new ScenePointLight(0, 0, double.NaN));
+        Assert.Throws<ArgumentNullException>("value", () => new SceneComponentTransferPrimitive { Red = null! });
+        Assert.Throws<ArgumentException>("values", () => SceneTransferFunction.CreateTable(double.NaN));
+        Assert.Throws<ArgumentException>("values", () => new SceneColorMatrixPrimitive(1, 2));
+        Assert.Throws<ArgumentNullException>("content", () => new SceneImagePrimitive(null!));
+
+        // The default region is the bounds enlarged by the sum of the reaches of the primitives
+        var graph = new SceneFilterGraph([new SceneGaussianBlurPrimitive(1), new SceneOffsetPrimitive(3, -4), new SceneDropShadowPrimitive(1, 0, 0, 0, SceneColor.Black)]);
+        Assert.Equal(new SceneBounds(-8, -8, 26, 26), graph.GetRegion(new SceneBounds(0, 0, 10, 10)));
+        Assert.Equal(new SceneBounds(-8, -8, 26, 26), Single(new SceneRectangle(0, 0, 10, 10) { Filter = graph }).Root.GetBounds(_ => null));
+        Assert.Equal(SceneColorChannel.Alpha, new SceneDisplacementMapPrimitive(1, default).XChannel);
+        Assert.Equal(SceneFilterEdgeMode.Duplicate, new SceneConvolveMatrixPrimitive(1, 1, 1).EdgeMode);
+        Assert.Equal(SceneFilterColorSpace.LinearRgb, new SceneTilePrimitive().ColorSpace);
+    }
+
     private static int CountOccurrences(string text, string value) => (text.Length - text.Replace(value, "", StringComparison.Ordinal).Length) / value.Length;
 
     private static Scene Single(SceneElement element)

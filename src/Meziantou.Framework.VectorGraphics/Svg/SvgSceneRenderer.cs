@@ -216,6 +216,16 @@ public static class SvgSceneRenderer
                 {
                     _contentIds[content] = NextId("element", ref elementCount);
                 }
+
+                // The elements of the image primitives of a filter are referenced by their identifiers too
+                foreach (var reference in SceneTree.GetFilterImageReferences(element))
+                {
+                    _useTargets.Add(reference);
+                    if (reference.Id is null && !_contentIds.ContainsKey(reference))
+                    {
+                        _contentIds[reference] = NextId("element", ref elementCount);
+                    }
+                }
             }
         }
 
@@ -357,6 +367,12 @@ public static class SvgSceneRenderer
             // when it has a text, whose size is not known without measuring it
             void AddFilter(string id, SceneElement element, SceneFilter filter)
             {
+                if (filter is SceneFilterGraph graph)
+                {
+                    AddFilterGraph(id, element, graph);
+                    return;
+                }
+
                 var (deviation, offsetX, offsetY) = filter switch
                 {
                     SceneBlurFilter blur => (Sanitize(blur.StandardDeviation), 0.0, 0.0),
@@ -411,6 +427,415 @@ public static class SvgSceneRenderer
 
                 definitions.Append("</filter>\n");
             }
+
+            // The region of a graph is its own, or the bounds of the element enlarged by the reach of the primitives
+            // (with a margin of a pixel, as the other filters); the percentages of the bounding box for a text
+            void AddFilterGraph(string id, SceneElement element, SceneFilterGraph graph)
+            {
+                definitions.Append("<filter id=\"").Append(Escape(id)).Append('"');
+                var hasText = false;
+                var bounds = element.GetBounds(
+                    _ =>
+                    {
+                        hasText = true;
+                        return null;
+                    },
+                    applyClips: false);
+                if (graph.Region is { } region)
+                {
+                    AppendRegion(" filterUnits=\"userSpaceOnUse\"", region);
+                }
+                else if (!hasText)
+                {
+                    AppendRegion(" filterUnits=\"userSpaceOnUse\"", SceneGeometry.Inflate(graph.GetRegion(bounds ?? default), 1));
+                }
+                else
+                {
+                    definitions.Append(" x=\"-50%\" y=\"-50%\" width=\"200%\" height=\"200%\"");
+                }
+
+                definitions.Append(" primitiveUnits=\"userSpaceOnUse\">");
+
+                // The results the other primitives read are named after the index of their primitive
+                var referenced = new HashSet<int>();
+                foreach (var primitive in graph.Primitives)
+                {
+                    foreach (var input in primitive.GetInputs())
+                    {
+                        if (input.Kind is SceneFilterInputKind.Result)
+                        {
+                            referenced.Add(input.ResultIndex);
+                        }
+                    }
+                }
+
+                for (var i = 0; i < graph.Primitives.Count; i++)
+                {
+                    AppendPrimitive(graph.Primitives[i], referenced.Contains(i) ? "r" + i.ToString(System.Globalization.CultureInfo.InvariantCulture) : null);
+                }
+
+                definitions.Append("</filter>\n");
+            }
+
+            void AppendRegion(string prefix, SceneBounds region)
+            {
+                definitions.Append(prefix).Append(" x=\"").Append(Number(region.X)).Append("\" y=\"").Append(Number(region.Y))
+                    .Append("\" width=\"").Append(Number(region.Width)).Append("\" height=\"").Append(Number(region.Height)).Append('"');
+            }
+
+            void AppendPrimitive(SceneFilterPrimitive primitive, string? result)
+            {
+                var (name, input) = primitive switch
+                {
+                    SceneGaussianBlurPrimitive blur => ("feGaussianBlur", blur.Input),
+                    SceneOffsetPrimitive offset => ("feOffset", offset.Input),
+                    SceneFloodPrimitive => ("feFlood", SceneFilterInput.Previous),
+                    SceneCompositePrimitive composite => ("feComposite", composite.Input),
+                    SceneBlendPrimitive blend => ("feBlend", blend.Input),
+                    SceneMergePrimitive => ("feMerge", SceneFilterInput.Previous),
+                    SceneMorphologyPrimitive morphology => ("feMorphology", morphology.Input),
+                    SceneTurbulencePrimitive => ("feTurbulence", SceneFilterInput.Previous),
+                    SceneDisplacementMapPrimitive displacement => ("feDisplacementMap", displacement.Input),
+                    SceneConvolveMatrixPrimitive convolve => ("feConvolveMatrix", convolve.Input),
+                    SceneDiffuseLightingPrimitive diffuse => ("feDiffuseLighting", diffuse.Input),
+                    SceneSpecularLightingPrimitive specular => ("feSpecularLighting", specular.Input),
+                    SceneComponentTransferPrimitive transfer => ("feComponentTransfer", transfer.Input),
+                    SceneTilePrimitive tile => ("feTile", tile.Input),
+                    SceneImagePrimitive => ("feImage", SceneFilterInput.Previous),
+                    SceneColorMatrixPrimitive matrix => ("feColorMatrix", matrix.Input),
+                    SceneDropShadowPrimitive shadow => ("feDropShadow", shadow.Input),
+                    _ => throw new NotSupportedException($"The filter primitive '{primitive.GetType()}' is not supported."),
+                };
+
+                definitions.Append('<').Append(name);
+                AppendInput("in", input);
+                if (primitive.Subregion is { } subregion)
+                {
+                    AppendRegion("", subregion);
+                }
+                else if (primitive is SceneImagePrimitive { IsInlineImage: true, Content: SceneImage inlineImage })
+                {
+                    AppendRegion("", new SceneBounds(inlineImage.X, inlineImage.Y, inlineImage.Width, inlineImage.Height));
+                }
+
+                if (primitive.ColorSpace is SceneFilterColorSpace.Srgb)
+                {
+                    definitions.Append(" color-interpolation-filters=\"sRGB\"");
+                }
+
+                if (result is not null)
+                {
+                    definitions.Append(" result=\"").Append(result).Append('"');
+                }
+
+                var children = new StringBuilder();
+                switch (primitive)
+                {
+                    case SceneGaussianBlurPrimitive blur:
+                        AppendPair("stdDeviation", blur.StandardDeviationX, blur.StandardDeviationY);
+                        AppendEdgeMode(blur.EdgeMode, SceneFilterEdgeMode.None);
+                        break;
+
+                    case SceneOffsetPrimitive offset:
+                        AppendNumber("dx", offset.OffsetX);
+                        AppendNumber("dy", offset.OffsetY);
+                        break;
+
+                    case SceneFloodPrimitive flood:
+                        AppendColor("flood", flood.Color);
+                        break;
+
+                    case SceneCompositePrimitive composite:
+                        AppendInput("in2", composite.Input2);
+                        definitions.Append(" operator=\"").Append(composite.Operator switch
+                        {
+                            SceneCompositeOperator.In => "in",
+                            SceneCompositeOperator.Out => "out",
+                            SceneCompositeOperator.Atop => "atop",
+                            SceneCompositeOperator.Xor => "xor",
+                            SceneCompositeOperator.Lighter => "lighter",
+                            SceneCompositeOperator.Arithmetic => "arithmetic",
+                            _ => "over",
+                        }).Append('"');
+                        if (composite.Operator is SceneCompositeOperator.Arithmetic)
+                        {
+                            AppendFactor("k1", composite.K1);
+                            AppendFactor("k2", composite.K2);
+                            AppendFactor("k3", composite.K3);
+                            AppendFactor("k4", composite.K4);
+                        }
+
+                        break;
+
+                    case SceneBlendPrimitive blend:
+                        AppendInput("in2", blend.Input2);
+                        definitions.Append(" mode=\"").Append(BlendModeName(blend.Mode) ?? "normal").Append('"');
+                        break;
+
+                    case SceneMergePrimitive merge:
+                        foreach (var mergeInput in merge.Inputs)
+                        {
+                            children.Append("<feMergeNode");
+                            AppendInputTo(children, "in", mergeInput);
+                            children.Append("/>");
+                        }
+
+                        break;
+
+                    case SceneMorphologyPrimitive morphology:
+                        if (morphology.Operator is SceneMorphologyOperator.Dilate)
+                        {
+                            definitions.Append(" operator=\"dilate\"");
+                        }
+
+                        AppendPair("radius", morphology.RadiusX, morphology.RadiusY);
+                        break;
+
+                    case SceneTurbulencePrimitive turbulence:
+                        if (turbulence.Type is SceneTurbulenceType.FractalNoise)
+                        {
+                            definitions.Append(" type=\"fractalNoise\"");
+                        }
+
+                        definitions.Append(" baseFrequency=\"").Append(Factor(turbulence.BaseFrequencyX));
+                        if (turbulence.BaseFrequencyY != turbulence.BaseFrequencyX)
+                        {
+                            definitions.Append(' ').Append(Factor(turbulence.BaseFrequencyY));
+                        }
+
+                        definitions.Append("\" numOctaves=\"").Append(turbulence.Octaves.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append('"');
+                        definitions.Append(" seed=\"").Append(turbulence.Seed.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append('"');
+                        if (turbulence.StitchTiles)
+                        {
+                            definitions.Append(" stitchTiles=\"stitch\"");
+                        }
+
+                        break;
+
+                    case SceneDisplacementMapPrimitive displacement:
+                        AppendInput("in2", displacement.Map);
+                        AppendNumber("scale", displacement.Scale);
+                        if (displacement.XChannel is not SceneColorChannel.Alpha)
+                        {
+                            definitions.Append(" xChannelSelector=\"").Append(ChannelName(displacement.XChannel)).Append('"');
+                        }
+
+                        if (displacement.YChannel is not SceneColorChannel.Alpha)
+                        {
+                            definitions.Append(" yChannelSelector=\"").Append(ChannelName(displacement.YChannel)).Append('"');
+                        }
+
+                        break;
+
+                    case SceneConvolveMatrixPrimitive convolve:
+                        definitions.Append(" order=\"").Append(convolve.OrderX.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                        if (convolve.OrderY != convolve.OrderX)
+                        {
+                            definitions.Append(' ').Append(convolve.OrderY.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                        }
+
+                        definitions.Append("\" kernelMatrix=\"").Append(string.Join(' ', convolve.Kernel.Select(Factor))).Append('"');
+                        if (convolve.Divisor is { } divisor)
+                        {
+                            AppendFactor("divisor", divisor);
+                        }
+
+                        if (convolve.Bias != 0)
+                        {
+                            AppendFactor("bias", convolve.Bias);
+                        }
+
+                        if (convolve.TargetX is { } targetX)
+                        {
+                            definitions.Append(" targetX=\"").Append(targetX.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append('"');
+                        }
+
+                        if (convolve.TargetY is { } targetY)
+                        {
+                            definitions.Append(" targetY=\"").Append(targetY.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append('"');
+                        }
+
+                        AppendEdgeMode(convolve.EdgeMode, SceneFilterEdgeMode.Duplicate);
+                        if (convolve.PreserveAlpha)
+                        {
+                            definitions.Append(" preserveAlpha=\"true\"");
+                        }
+
+                        break;
+
+                    case SceneDiffuseLightingPrimitive diffuse:
+                        AppendFactor("surfaceScale", diffuse.SurfaceScale);
+                        AppendFactor("diffuseConstant", diffuse.DiffuseConstant);
+                        definitions.Append(" lighting-color=\"").Append(diffuse.Color.ToHexRgb()).Append('"');
+                        AppendLight(children, diffuse.Light);
+                        break;
+
+                    case SceneSpecularLightingPrimitive specular:
+                        AppendFactor("surfaceScale", specular.SurfaceScale);
+                        AppendFactor("specularConstant", specular.SpecularConstant);
+                        AppendFactor("specularExponent", specular.SpecularExponent);
+                        definitions.Append(" lighting-color=\"").Append(specular.Color.ToHexRgb()).Append('"');
+                        AppendLight(children, specular.Light);
+                        break;
+
+                    case SceneComponentTransferPrimitive transfer:
+                        AppendTransferFunction(children, "feFuncR", transfer.Red);
+                        AppendTransferFunction(children, "feFuncG", transfer.Green);
+                        AppendTransferFunction(children, "feFuncB", transfer.Blue);
+                        AppendTransferFunction(children, "feFuncA", transfer.Alpha);
+                        break;
+
+                    case SceneImagePrimitive { IsInlineImage: true, Content: SceneImage image }:
+                        definitions.Append(" preserveAspectRatio=\"none\" href=\"").Append(Escape("data:" + image.MediaType + ";base64," + Convert.ToBase64String(image.Data.Span))).Append('"');
+                        break;
+
+                    case SceneImagePrimitive reference:
+                        definitions.Append(" href=\"#").Append(Escape(reference.Content.Id ?? _contentIds[reference.Content])).Append('"');
+                        break;
+
+                    case SceneColorMatrixPrimitive matrix:
+                        definitions.Append(" type=\"matrix\" values=\"").Append(string.Join(' ', matrix.Values.Select(Factor))).Append('"');
+                        break;
+
+                    case SceneDropShadowPrimitive shadow:
+                        AppendNumber("dx", shadow.OffsetX);
+                        AppendNumber("dy", shadow.OffsetY);
+                        AppendPair("stdDeviation", shadow.StandardDeviationX, shadow.StandardDeviationY);
+                        AppendColor("flood", shadow.Color);
+                        break;
+                }
+
+                if (children.Length is 0)
+                {
+                    definitions.Append("/>");
+                }
+                else
+                {
+                    definitions.Append('>').Append(children).Append("</").Append(name).Append('>');
+                }
+            }
+
+            void AppendInput(string attribute, SceneFilterInput input) => AppendInputTo(definitions, attribute, input);
+
+            static void AppendInputTo(StringBuilder builder, string attribute, SceneFilterInput input)
+            {
+                var value = input.Kind switch
+                {
+                    SceneFilterInputKind.SourceGraphic => "SourceGraphic",
+                    SceneFilterInputKind.SourceAlpha => "SourceAlpha",
+                    SceneFilterInputKind.Result => "r" + input.ResultIndex.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    _ => null,
+                };
+
+                if (value is not null)
+                {
+                    builder.Append(' ').Append(attribute).Append("=\"").Append(value).Append('"');
+                }
+            }
+
+            void AppendNumber(string attribute, double value) => definitions.Append(' ').Append(attribute).Append("=\"").Append(Number(value)).Append('"');
+
+            void AppendFactor(string attribute, double value) => definitions.Append(' ').Append(attribute).Append("=\"").Append(Factor(value)).Append('"');
+
+            // One value when both are equal, as SVG reads it
+            void AppendPair(string attribute, double x, double y)
+            {
+                definitions.Append(' ').Append(attribute).Append("=\"").Append(Number(x));
+                if (y != x)
+                {
+                    definitions.Append(' ').Append(Number(y));
+                }
+
+                definitions.Append('"');
+            }
+
+            void AppendColor(string prefix, SceneColor color)
+            {
+                definitions.Append(' ').Append(prefix).Append("-color=\"").Append(color.ToHexRgb()).Append('"');
+                if (!color.IsOpaque)
+                {
+                    definitions.Append(' ').Append(prefix).Append("-opacity=\"").Append(SvgNumber.Format(color.Opacity, 3)).Append('"');
+                }
+            }
+
+            void AppendEdgeMode(SceneFilterEdgeMode mode, SceneFilterEdgeMode defaultMode)
+            {
+                if (mode == defaultMode)
+                    return;
+
+                definitions.Append(" edgeMode=\"").Append(mode switch
+                {
+                    SceneFilterEdgeMode.Duplicate => "duplicate",
+                    SceneFilterEdgeMode.Wrap => "wrap",
+                    SceneFilterEdgeMode.Mirror => "mirror",
+                    _ => "none",
+                }).Append('"');
+            }
+
+            void AppendLight(StringBuilder builder, SceneLightSource light)
+            {
+                switch (light)
+                {
+                    case SceneDistantLight distant:
+                        builder.Append("<feDistantLight azimuth=\"").Append(Factor(distant.Azimuth)).Append("\" elevation=\"").Append(Factor(distant.Elevation)).Append("\"/>");
+                        break;
+
+                    case ScenePointLight point:
+                        builder.Append("<fePointLight x=\"").Append(Number(point.X)).Append("\" y=\"").Append(Number(point.Y)).Append("\" z=\"").Append(Number(point.Z)).Append("\"/>");
+                        break;
+
+                    case SceneSpotLight spot:
+                        builder.Append("<feSpotLight x=\"").Append(Number(spot.X)).Append("\" y=\"").Append(Number(spot.Y)).Append("\" z=\"").Append(Number(spot.Z))
+                            .Append("\" pointsAtX=\"").Append(Number(spot.PointsAtX)).Append("\" pointsAtY=\"").Append(Number(spot.PointsAtY)).Append("\" pointsAtZ=\"").Append(Number(spot.PointsAtZ)).Append('"');
+                        if (spot.SpecularExponent != 1)
+                        {
+                            builder.Append(" specularExponent=\"").Append(Factor(spot.SpecularExponent)).Append('"');
+                        }
+
+                        if (spot.LimitingConeAngle is { } cone)
+                        {
+                            builder.Append(" limitingConeAngle=\"").Append(Factor(cone)).Append('"');
+                        }
+
+                        builder.Append("/>");
+                        break;
+                }
+            }
+
+            static void AppendTransferFunction(StringBuilder builder, string name, SceneTransferFunction function)
+            {
+                if (function.Kind is SceneTransferFunctionKind.Identity)
+                    return;
+
+                builder.Append('<').Append(name).Append(" type=\"");
+                switch (function.Kind)
+                {
+                    case SceneTransferFunctionKind.Table or SceneTransferFunctionKind.Discrete:
+                        builder.Append(function.Kind is SceneTransferFunctionKind.Table ? "table" : "discrete").Append("\" tableValues=\"").Append(string.Join(' ', function.Values.Select(Factor)));
+                        break;
+
+                    case SceneTransferFunctionKind.Linear:
+                        builder.Append("linear\" slope=\"").Append(Factor(function.Slope)).Append("\" intercept=\"").Append(Factor(function.Intercept));
+                        break;
+
+                    case SceneTransferFunctionKind.Gamma:
+                        builder.Append("gamma\" amplitude=\"").Append(Factor(function.Amplitude)).Append("\" exponent=\"").Append(Factor(function.Exponent)).Append("\" offset=\"").Append(Factor(function.Offset));
+                        break;
+                }
+
+                builder.Append("\"/>");
+            }
+
+            static string ChannelName(SceneColorChannel channel) => channel switch
+            {
+                SceneColorChannel.Red => "R",
+                SceneColorChannel.Green => "G",
+                SceneColorChannel.Blue => "B",
+                _ => "A",
+            };
+
+            // The factors of the primitives (weights, constants, frequencies, angles) have six decimals, as the color matrices
+            static string Factor(double value) => SvgNumber.Format(value, 6);
 
             static double Sanitize(double deviation) => deviation > 0 && double.IsFinite(deviation) ? deviation : 0;
 

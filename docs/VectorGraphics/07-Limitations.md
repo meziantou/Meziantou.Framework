@@ -7,7 +7,7 @@ The SVG, image and PDF renderers draw the same scene the same way, except in the
 
 ## PDF
 
-- **Filters are not supported.** PDF has no blur, no drop shadow and no color matrix that it draws as vectors:
+- **Filters are not supported.** PDF has no blur, no drop shadow, no color matrix and no filter graph that it draws as vectors:
   [ToPdf](cref:Meziantou.Framework.Pdf.VectorGraphics.ScenePdfRenderer.ToPdf) and
   [DrawScene](cref:Meziantou.Framework.Pdf.VectorGraphics.ScenePdfRenderer.DrawScene) throw
   `NotSupportedException` for a scene that has a [Filter](cref:Meziantou.Framework.VectorGraphics.SceneElement.Filter),
@@ -31,6 +31,9 @@ The SVG, image and PDF renderers draw the same scene the same way, except in the
 
 - The hyperlinks, the tooltips, the CSS classes, the identifiers and the data attributes are not drawn.
 - A text longer than a closed path goes around it again, where SVG does not draw the characters beyond its end.
+- The values of the primitives of a filter graph beyond the limits of the canvas are brought within them: the
+  coordinates within 16777216, the standard deviations within 10000, the specular exponents of the spot lights within
+  128. The weights of a convolution matrix are one pixel of the image apart, whatever its scale.
 - Without the fonts of the scene, the texts are drawn with the embedded Liberation Sans, subset to the Latin characters.
 
 ## SVG
@@ -48,6 +51,12 @@ The SVG, image and PDF renderers draw the same scene the same way, except in the
   an underline is drawn in pieces, one per span.
 - The markers turned back at the start of a path (`orient="auto-start-reverse"`) are a feature of SVG 2: some older
   viewers draw them turned as the other markers.
+- **Filter graphs.** An [image primitive](cref:Meziantou.Framework.VectorGraphics.SceneImagePrimitive) whose element is
+  not an image without effects is an `feImage` that refers to the element: Firefox does not draw it. The edge modes of
+  the blurs (`edgeMode` of `feGaussianBlur`), the `lighter` composite and the `mirror` edge mode are features of
+  "Filter Effects Module Level 1" that some viewers do not draw. The region of a graph without
+  [Region](cref:Meziantou.Framework.VectorGraphics.SceneFilterGraph.Region) on a text, or on a group that has a text, is
+  the bounding box of the element enlarged by half its size on each side, as for the other filters.
 
 ## All renderers
 

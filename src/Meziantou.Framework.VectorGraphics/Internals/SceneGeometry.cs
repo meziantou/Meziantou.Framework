@@ -212,6 +212,10 @@ internal static class SceneGeometry
                 var offsetY = double.IsFinite(shadow.OffsetY) ? shadow.OffsetY : 0;
                 return Union(bounds, new SceneBounds(shadowBounds.X + offsetX, shadowBounds.Y + offsetY, shadowBounds.Width, shadowBounds.Height))!.Value;
 
+            // A graph draws in its region only: its primitives can fill it (a flood), or move the drawing within it
+            case SceneFilterGraph graph:
+                return graph.GetRegion(bounds);
+
             default:
                 return bounds;
         }

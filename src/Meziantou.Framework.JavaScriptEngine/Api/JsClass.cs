@@ -100,6 +100,21 @@ public abstract class JsClass
         return Convert<T>(realm, arguments, index);
     }
 
+    /// <summary>
+    /// Converts an optional argument whose type is a non-nullable reference type: <paramref name="defaultValue"/> when it is
+    /// missing or undefined, and a TypeError for null.
+    /// </summary>
+    /// <exception cref="JsException">The argument is null, or it cannot be converted (a TypeError).</exception>
+    protected static T GetRequiredArgument<T>(JsRealm realm, ReadOnlySpan<JsValue> arguments, int index, T defaultValue)
+        where T : class
+    {
+        ArgumentNullException.ThrowIfNull(realm);
+        if (index >= arguments.Length || arguments[index].IsUndefined)
+            return defaultValue;
+
+        return GetRequiredArgument<T>(realm, arguments, index);
+    }
+
     // The conversion to object converts the objects to dictionaries and lists: a function, a symbol or a cycle is a TypeError
     // of the script, as the other conversions that fail, instead of an exception of the host
     private static T Convert<T>(JsRealm realm, ReadOnlySpan<JsValue> arguments, int index)

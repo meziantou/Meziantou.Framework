@@ -48,8 +48,18 @@ public sealed partial class JsRealm
 
             // A class of the scripts that extends the class creates its instances with its own prototype
             var instancePrototype = newTarget.GetProperty("prototype").TryGetObject() ?? prototype;
+
+            // The constructor may have converted the object already (e.g. to store it in a global): new returns that object
+            if (ExportedObjects.TryGetValue(target, out var existing))
+            {
+                if (!existing.SetPrototype(instancePrototype))
+                    throw CreateException(JsErrorType.TypeError, "Cannot set the prototype of the object created by the constructor of " + jsClass.Name);
+
+                return existing;
+            }
+
             var instance = new ExportedObject(instancePrototype, target);
-            ExportedObjects.AddOrUpdate(target, instance);
+            ExportedObjects.Add(target, instance);
             return instance;
         });
 

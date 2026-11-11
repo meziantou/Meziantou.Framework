@@ -278,7 +278,15 @@ public sealed class JsExportGenerator : IIncrementalGenerator
                     continue;
 
                 if (knownTypes.HasIgnoreAttribute(member))
+                {
+                    // An ignored member still hides the members of the base classes that have its name
+                    if (!member.IsOverride)
+                    {
+                        declaredNames.Add(member.Name);
+                    }
+
                     continue;
+                }
 
                 var hasNameAttribute = knownTypes.TryGetJsName(member, out var jsName);
                 if (member.IsOverride)
@@ -440,7 +448,8 @@ public sealed class JsExportGenerator : IIncrementalGenerator
                 }
             }
 
-            result.Add(new ParameterModel(FormatType(parameter.Type), argumentIndex, defaultValue, defaultValue is null && IsRequiredReference(parameter.Type)));
+            // A non-nullable reference parameter rejects null, even when it has a default value for a missing argument
+            result.Add(new ParameterModel(FormatType(parameter.Type), argumentIndex, defaultValue, defaultValue is not "default!" && IsRequiredReference(parameter.Type)));
             argumentIndex++;
         }
 
@@ -613,7 +622,7 @@ public sealed class JsExportGenerator : IIncrementalGenerator
 
         if (!type.ContainingNamespace.IsGlobalNamespace)
         {
-            writer.WriteLine("namespace " + type.ContainingNamespace.ToDisplayString());
+            writer.WriteLine("namespace " + type.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted)));
             writer.OpenBlock();
         }
 
@@ -625,22 +634,22 @@ public sealed class JsExportGenerator : IIncrementalGenerator
 
         foreach (var containingType in containingTypes)
         {
-            writer.WriteLine("partial " + GetTypeKeyword(containingType) + " " + containingType.Name);
+            writer.WriteLine("partial " + GetTypeKeyword(containingType) + " @" + containingType.Name);
             writer.OpenBlock();
         }
 
         var exportedBaseName = model.ExportedBase is null ? null : FormatType(model.ExportedBase);
         if (type.IsStatic)
         {
-            writer.WriteLine("static partial class " + type.Name);
+            writer.WriteLine("static partial class @" + type.Name);
         }
         else
         {
-            writer.WriteLine("partial " + GetTypeKeyword(type) + " " + type.Name + " : " + Runtime + "IJsExportable");
+            writer.WriteLine("partial " + GetTypeKeyword(type) + " @" + type.Name + " : " + Runtime + "IJsExportable");
         }
 
         writer.OpenBlock();
-        writer.WriteLine("/// <summary>Gets the JavaScript class of <see cref=\"" + type.Name + "\"/>: use it with <see cref=\"" + Runtime + "JsRealm.GetClass(" + Runtime + "JsClass)\"/>.</summary>");
+        writer.WriteLine("/// <summary>Gets the JavaScript class of <see cref=\"" + typeName + "\"/>: use it with <see cref=\"" + Runtime + "JsRealm.GetClass(" + Runtime + "JsClass)\"/>.</summary>");
         writer.WriteLine("public static " + (exportedBaseName is null ? string.Empty : "new ") + Runtime + "JsClass JsClass => " + NestedClassName + ".Instance;");
         if (!type.IsStatic)
         {
@@ -698,7 +707,13 @@ public sealed class JsExportGenerator : IIncrementalGenerator
     {
         var symbol = member.Symbol;
         var target = symbol.IsStatic ? "constructor" : "prototype!";
-        var receiver = symbol.IsStatic ? FormatType(symbol.ContainingType) : "GetThis<" + FormatType(model.Type) + ">(thisValue)";
+        // A member of a base class is accessed through the base class: a member of the class that has the same name
+        // (hidden, ignored or not public) must not be called instead
+        var receiver = symbol.IsStatic
+            ? FormatType(symbol.ContainingType)
+            : SymbolEqualityComparer.Default.Equals(symbol.ContainingType, model.Type)
+                ? "GetThis<" + FormatType(model.Type) + ">(thisValue)"
+                : "((" + FormatType(symbol.ContainingType) + ")GetThis<" + FormatType(model.Type) + ">(thisValue))";
         var access = receiver + ".@" + symbol.Name;
         var jsName = SymbolDisplay.FormatLiteral(member.JsName, quote: true);
 
@@ -766,7 +781,7 @@ public sealed class JsExportGenerator : IIncrementalGenerator
             }
             else if (parameter.DefaultValue is not null)
             {
-                builder.Append("GetArgument<").Append(parameter.Type).Append(">(realm, arguments, ").Append(parameter.ArgumentIndex.ToString(CultureInfo.InvariantCulture)).Append(", ").Append(parameter.DefaultValue).Append(')');
+                builder.Append(parameter.IsRequired ? "GetRequiredArgument<" : "GetArgument<").Append(parameter.Type).Append(">(realm, arguments, ").Append(parameter.ArgumentIndex.ToString(CultureInfo.InvariantCulture)).Append(", ").Append(parameter.DefaultValue).Append(')');
             }
             else
             {

@@ -87,6 +87,24 @@ public sealed class JsExportGeneratorTests
                 protected void Protected(Guid id) => Changed?.Invoke(this, EventArgs.Empty);
             }
 
+            namespace Sample.@event
+            {
+                public partial class @struct
+                {
+                    [JsExport]
+                    public partial class @class
+                    {
+                        public int @int() => 1;
+                    }
+                }
+
+                [JsExport]
+                public static partial class @static
+                {
+                    public static int Value => 1;
+                }
+            }
+
             namespace Sample.Bindings
             {
                 public partial struct Container
@@ -174,16 +192,19 @@ public sealed class JsExportGeneratorTests
 
         Assert.Empty(result.GeneratorDiagnostics);
         Assert.Empty(result.OutputDiagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
-        Assert.HasCount(6, result.GeneratedSources);
-        var tools = Assert.Single(result.GeneratedSources, source => source.Contains("class Tools", StringComparison.Ordinal));
-        Assert.Contains("static partial class Tools", tools, StringComparison.Ordinal);
+        Assert.HasCount(8, result.GeneratedSources);
+        var tools = Assert.Single(result.GeneratedSources, source => source.Contains("class @Tools", StringComparison.Ordinal));
+        Assert.Contains("static partial class @Tools", tools, StringComparison.Ordinal);
         Assert.DoesNotContain("IJsExportable", tools, StringComparison.Ordinal);
-        var derived = Assert.Single(result.GeneratedSources, source => source.Contains("partial class Derived", StringComparison.Ordinal));
+        var derived = Assert.Single(result.GeneratedSources, source => source.Contains("partial class @Derived", StringComparison.Ordinal));
         Assert.Contains("public static new global::Meziantou.Framework.JavaScriptEngine.JsClass JsClass", derived, StringComparison.Ordinal);
         Assert.DoesNotContain("\"value\"", derived, StringComparison.Ordinal);
         Assert.DoesNotContain("\"name\"", derived, StringComparison.Ordinal);
-        var global = Assert.Single(result.GeneratedSources, source => source.Contains("partial class InGlobalNamespace", StringComparison.Ordinal));
+        var global = Assert.Single(result.GeneratedSources, source => source.Contains("partial class @InGlobalNamespace", StringComparison.Ordinal));
         Assert.DoesNotContain("namespace", global, StringComparison.Ordinal);
+        var keywords = Assert.Single(result.GeneratedSources, source => source.Contains("partial class @class", StringComparison.Ordinal));
+        Assert.Contains("namespace Sample.@event", keywords, StringComparison.Ordinal);
+        Assert.Contains("partial class @struct", keywords, StringComparison.Ordinal);
         Assert.Contains("\"class\"", global, StringComparison.Ordinal);
         Assert.Contains("\"old\"", global, StringComparison.Ordinal);
         Assert.Contains("\"privateSetter\", (thisValue, arguments) => realm.FromDotNet(GetThis<global::InGlobalNamespace>(thisValue).@PrivateSetter), null)", global, StringComparison.Ordinal);

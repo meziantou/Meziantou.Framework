@@ -89,6 +89,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         protected static T GetArgument<T>(Meziantou.Framework.JavaScriptEngine.JsRealm realm, System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments, int index) => throw null;
         protected static T GetArgument<T>(Meziantou.Framework.JavaScriptEngine.JsRealm realm, System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments, int index, T defaultValue) => throw null;
         protected static T GetRequiredArgument<T>(Meziantou.Framework.JavaScriptEngine.JsRealm realm, System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments, int index) where T : class => throw null;
+        protected static T GetRequiredArgument<T>(Meziantou.Framework.JavaScriptEngine.JsRealm realm, System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments, int index, T defaultValue) where T : class => throw null;
         protected static T GetThis<T>(Meziantou.Framework.JavaScriptEngine.JsValue thisValue) where T : class => throw null;
     }
 

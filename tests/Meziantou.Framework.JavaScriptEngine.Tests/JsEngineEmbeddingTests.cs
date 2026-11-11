@@ -1032,6 +1032,25 @@ public sealed class JsEngineEmbeddingTests
         }
 
         Assert.True(realm.Execute("shape instanceof ExportedSquare && shape.area() === 4").AsBoolean());
+
+        // A member of a base class is called through the base class: an ignored or non-public member of the derived
+        // class with the same name hides it from the scripts, or is not called instead of it
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("ExportedHiding", realm.GetClass(ExportedHiding.JsClass));
+            realm.GlobalObject.SetProperty("ExportedSelfPublishing", realm.GetClass(ExportedSelfPublishing.JsClass));
+        }
+
+        Assert.Equal("undefined|base", realm.Execute("const hiding = new ExportedHiding(); [typeof hiding.hidden, hiding.shadowed()].join('|')").AsString());
+
+        // new returns the object that the .NET constructor created for itself, with the prototype of new.target
+        Assert.Equal("true,true,true,true", realm.Execute("""
+            const published = new ExportedSelfPublishing();
+            const first = published === during && published.mark === 1;
+            class SubPublishing extends ExportedSelfPublishing { }
+            const sub = new SubPublishing();
+            [first, sub === during, Object.getPrototypeOf(sub) === SubPublishing.prototype, sub instanceof ExportedSelfPublishing].join()
+            """).AsString());
     }
 
     [Fact]
@@ -1071,6 +1090,9 @@ public sealed class JsEngineEmbeddingTests
         Assert.Equal("TypeError", realm.Execute("try { c.required('a', {}); } catch (e) { e.name }").AsString());
         Assert.Equal("TypeError", realm.Execute("try { c.required(undefined, new Counter()); } catch (e) { e.name }").AsString());
         Assert.True(realm.Execute("const k = new Counter(); c.optionalCounter(null) === null && c.optionalCounter(k) === k").AsBoolean());
+
+        // A non-nullable parameter with a default value gets it for a missing or undefined argument, and rejects null
+        Assert.Equal("x|x|y|TypeError", realm.Execute("[c.withDefault(), c.withDefault(undefined), c.withDefault('y'), (() => { try { c.withDefault(null); } catch (e) { return e.name; } })()].join('|')").AsString());
         Assert.Equal("true|1,2,3|a,b|1|x", realm.Execute("[Array.isArray(c.array()), c.array().join(), c.list().join(), c.dictionary().a, c.char()].join('|')").AsString());
         Assert.Equal("v|TypeError", realm.Execute("""
             c.set('v');
@@ -1295,6 +1317,8 @@ internal sealed partial class ExportedConversions
 
     public void Set(string value) => LastValue = value;
 
+    public string WithDefault(string text = "x") => text + Name;
+
     public Task CompleteAsync() => Task.CompletedTask;
 
     public ValueTask<string> ValueAsync() => ValueTask.FromResult("value");
@@ -1303,6 +1327,33 @@ internal sealed partial class ExportedConversions
 
     [JsName("class")]
     public string @Class() => "class";
+}
+
+public class ExportedHidingBase
+{
+    public string Hidden() => "base";
+
+    public string Shadowed() => "base";
+}
+
+[JsExport]
+public sealed partial class ExportedHiding : ExportedHidingBase
+{
+    [JsIgnore]
+    public new string Hidden() => "derived";
+
+    internal new string Shadowed() => "derived";
+}
+
+[JsExport]
+public partial class ExportedSelfPublishing
+{
+    public ExportedSelfPublishing(JsRealm realm)
+    {
+        var obj = realm.FromDotNet(this).AsObject();
+        obj.SetProperty("mark", 1);
+        realm.GlobalObject.SetProperty("during", obj);
+    }
 }
 
 [JsExport]

@@ -15,6 +15,8 @@ namespace Meziantou.Framework.Pdf.VectorGraphics;
 /// <para>
 /// The hyperlinks of the groups become link annotations of the page. The tooltips, the CSS classes and the data
 /// attributes are not drawn. A gradient whose stops have different opacities is drawn with their average opacity.
+/// PDF has no filters: a scene with a blur or a drop shadow (<see cref="SceneElement.Filter"/>) throws
+/// <see cref="NotSupportedException"/>.
 /// </para>
 /// </remarks>
 public static class ScenePdfRenderer
@@ -24,6 +26,7 @@ public static class ScenePdfRenderer
     /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
     /// <returns>The document. Save it with <see cref="PdfDocument.Save(string, PdfSaveOptions?)"/>.</returns>
     /// <exception cref="ArgumentOutOfRangeException">The size of the scene is not a positive finite number.</exception>
+    /// <exception cref="NotSupportedException">An element has a filter (<see cref="SceneElement.Filter"/>): PDF has no filters.</exception>
     public static PdfDocument ToPdf(this ISceneSource source, ScenePdfOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -36,6 +39,7 @@ public static class ScenePdfRenderer
     /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
     /// <returns>The document. Save it with <see cref="PdfDocument.Save(string, PdfSaveOptions?)"/>.</returns>
     /// <exception cref="ArgumentOutOfRangeException">The size of the scene is not a positive finite number.</exception>
+    /// <exception cref="NotSupportedException">An element has a filter (<see cref="SceneElement.Filter"/>): PDF has no filters. Nothing is drawn.</exception>
     public static PdfDocument ToPdf(this Scene scene, ScenePdfOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(scene);
@@ -45,6 +49,7 @@ public static class ScenePdfRenderer
         if (!(width > 0) || !(height > 0) || !double.IsFinite(width) || !double.IsFinite(height))
             throw new ArgumentOutOfRangeException(nameof(scene), "The size of the scene must be a positive finite number.");
 
+        ScenePdfWriter.ThrowIfUnsupported(scene);
         var document = new PdfDocument();
         if (!string.IsNullOrEmpty(scene.Title))
         {
@@ -67,6 +72,7 @@ public static class ScenePdfRenderer
     /// <param name="position">The top-left corner of the drawing, in the coordinates of the page (the y axis points up).</param>
     /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
     /// <returns>The rectangle the drawing covers.</returns>
+    /// <exception cref="NotSupportedException">An element has a filter (<see cref="SceneElement.Filter"/>): PDF has no filters. Nothing is drawn.</exception>
     public static PdfRectangle DrawScene(this PdfPage page, ISceneSource source, PdfPoint position, ScenePdfOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -81,6 +87,7 @@ public static class ScenePdfRenderer
     /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
     /// <returns>The rectangle the drawing covers.</returns>
     /// <exception cref="ArgumentException">The position is not finite.</exception>
+    /// <exception cref="NotSupportedException">An element has a filter (<see cref="SceneElement.Filter"/>): PDF has no filters. Nothing is drawn.</exception>
     public static PdfRectangle DrawScene(this PdfPage page, Scene scene, PdfPoint position, ScenePdfOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(page);
@@ -89,6 +96,7 @@ public static class ScenePdfRenderer
             throw new ArgumentException("The position must be finite.", nameof(position));
 
         options ??= new ScenePdfOptions();
+        ScenePdfWriter.ThrowIfUnsupported(scene);
         var content = page.CreateContentBuilder();
         new ScenePdfWriter(page, content, scene, scene.Fonts ?? options.Fonts).Draw(position, options.Scale);
         content.Complete();

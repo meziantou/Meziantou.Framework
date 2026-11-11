@@ -47,7 +47,7 @@ public sealed class SceneImageOptions
 
     internal Font GetFont(SceneFont font)
     {
-        return (font.Bold, font.Italic) switch
+        return (font.IsBold, font.Italic) switch
         {
             (false, false) => Font ?? SceneFonts.Sans,
             (true, false) => BoldFont ?? (Font is null ? SceneFonts.SansBold : Font),

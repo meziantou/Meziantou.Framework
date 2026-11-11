@@ -32,7 +32,7 @@ public sealed class TextMeasurerTests
         Assert.True(metrics.Ascent > 8);
         Assert.True(metrics.Descent > 1);
         Assert.Equal(0, measurer.Measure(string.Empty, new SceneFont(10)).Width);
-        Assert.Equal(measurer.Measure("abc", new SceneFont(10)).Width, measurer.Measure("abc", new SceneFont(10, Bold: true)).Width);
+        Assert.Equal(measurer.Measure("abc", new SceneFont(10)).Width, measurer.Measure("abc", new SceneFont(10, Weight: SceneFont.BoldWeight)).Width);
 
         // Mixed scripts and right-to-left text are shaped run by run
         Assert.True(measurer.Measure("abc שלום 123", new SceneFont(10)).Width > 0);

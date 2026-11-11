@@ -58,7 +58,10 @@ other scripts.
 
 The shapes, the paths (arcs and quadratic curves are converted to cubic curves), the images, the linear and radial
 gradients, the opacity (a group is drawn as a transparency group), the clipping rectangles and paths and the transforms
-are drawn as in the SVG. A JPEG image is embedded as it is; the other formats are decoded and compressed again. The hyperlinks of
+are drawn as in the SVG, with the repeated and reflected gradients, the gradient transforms, the masks (soft masks),
+the blend modes and the underlines and strikethroughs. A JPEG image is embedded as it is; the other formats are
+decoded and compressed again. PDF has no filters: a scene with a blur or a drop shadow throws
+`NotSupportedException`. See the [limitations](07-Limitations.md). The hyperlinks of
 the groups become link annotations of the page; only absolute addresses are linked. The tooltips, the CSS classes and
 the data attributes are not drawn. A gradient whose stops have different opacities is drawn with their average
 opacity.

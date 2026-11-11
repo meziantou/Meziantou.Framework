@@ -106,7 +106,7 @@ internal sealed class TextBlock
         }
     }
 
-    private SceneFont Font(TextRun run) => new(FontSize, run.Bold, run.Italic);
+    private SceneFont Font(TextRun run) => new(FontSize, run.Bold ? SceneFont.BoldWeight : SceneFont.NormalWeight, run.Italic);
 
     private double MeasureLine(List<TextRun> line)
     {
@@ -241,7 +241,7 @@ internal sealed class TextBlock
             var width = 0.0;
             foreach (var run in Slice(lineStart, lineEnd))
             {
-                width += measurer.Measure(run.Text, new SceneFont(fontSize, run.Bold, run.Italic)).Width;
+                width += measurer.Measure(run.Text, new SceneFont(fontSize, run.Bold ? SceneFont.BoldWeight : SceneFont.NormalWeight, run.Italic)).Width;
             }
 
             return width <= maxWidth;

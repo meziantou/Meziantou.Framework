@@ -108,7 +108,7 @@ public static partial class VectorGraphicsFuzzTargets
     {
         var width = FuzzInput.Pick(Widths, FuzzInput.ReadByte(ref data));
         var flags = FuzzInput.ReadByte(ref data);
-        var font = new SceneFont(1 + (flags & 0x1F), Bold: (flags & 0x20) != 0, Italic: (flags & 0x40) != 0);
+        var font = new SceneFont(1 + (flags & 0x1F), Weight: (flags & 0x20) != 0 ? SceneFont.BoldWeight : SceneFont.NormalWeight, Italic: (flags & 0x40) != 0);
         var text = FuzzText.Decode(data);
         var measurer = AfmTextMeasurer.Default;
 
@@ -236,8 +236,8 @@ public static partial class VectorGraphicsFuzzTargets
             {
                 case 0:
                     ScenePaint gradient = (kind & 8) != 0
-                        ? new RadialGradientPaint(value, 1, kind % 9, 2, value, [new(0, SceneColor.White), new(1, new SceneColor(1, 2, 3, kind))])
-                        : new LinearGradientPaint(0, 0, 1, 1, [new(0, SceneColor.White), new(1, new SceneColor(1, 2, 3, kind))]);
+                        ? new RadialGradientPaint(value, 1, kind % 9, 2, value, [new(0, SceneColor.White), new(1, new SceneColor(1, 2, 3, kind))]) { Spread = (SceneGradientSpread)(kind % 3), Transform = (kind & 16) != 0 ? SceneTransform.Rotate(value) : null }
+                        : new LinearGradientPaint(0, 0, 1, 1, [new(0, SceneColor.White), new(1, new SceneColor(1, 2, 3, kind))]) { Spread = (SceneGradientSpread)(kind % 3), Transform = (kind & 16) != 0 ? SceneTransform.Scale(value, 2) : null };
                     element = parent.Add(new SceneRectangle(value, value, kind % 13, kind % 7) { Fill = gradient, CornerRadius = kind % 3 });
                     break;
                 case 1:
@@ -250,7 +250,7 @@ public static partial class VectorGraphicsFuzzTargets
                     element = parent.Add(new ScenePath(new PathBuilder().MoveTo(0, 0).LineTo(value, 1).ArcTo(value, 2, 3, largeArc: (kind & 8) != 0, sweep: (kind & 16) != 0, 4, 5).Close().Build()) { FillRule = (SceneFillRule)(kind % 2) });
                     break;
                 case 4:
-                    element = parent.Add(new SceneText(value, value, text, new SceneFont(kind % 20, Bold: (kind & 8) != 0, Italic: (kind & 16) != 0), SceneColor.Black) { Anchor = (SceneTextAnchor)(kind % 3), Rotation = value });
+                    element = parent.Add(new SceneText(value, value, text, new SceneFont(kind % 20, Weight: (kind & 8) != 0 ? 100 * (1 + (kind % 9)) : SceneFont.NormalWeight, Italic: (kind & 16) != 0), SceneColor.Black) { Anchor = (SceneTextAnchor)(kind % 3), Rotation = value, Decorations = (SceneTextDecorations)(kind % 4) });
                     break;
                 case 5:
                     var group = parent.Add(new SceneGroup
@@ -277,6 +277,20 @@ public static partial class VectorGraphicsFuzzTargets
                     break;
             }
 
+            // The effects: a filter, a mask whose content is a rectangle, and a blend mode
+            element.Filter = (kind % 5) switch
+            {
+                1 => new SceneBlurFilter(value),
+                2 => new SceneDropShadowFilter(value, 1, value, new SceneColor(0, 0, 0, kind)),
+                _ => element.Filter,
+            };
+            if (kind % 7 == 3)
+            {
+                element.Mask = new SceneMask { Mode = (SceneMaskMode)(kind % 2) };
+                element.Mask.Content.Add(new SceneRectangle(0, 0, value, 10) { Fill = SceneColor.White, Filter = (kind & 32) != 0 ? new SceneBlurFilter(1) : null });
+            }
+
+            element.BlendMode = (kind & 16) != 0 ? (SceneBlendMode)(kind % 16) : element.BlendMode;
             element.Tooltip = (kind & 64) != 0 ? text : element.Tooltip;
             element.CssClass = (kind & 128) != 0 ? text : element.CssClass;
             element.Opacity = (kind % 11) / 10.0;

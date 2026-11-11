@@ -62,7 +62,7 @@ public static partial class VectorGraphicsFuzzTargets
         var family = FuzzText.Decode(FuzzInput.ReadUntil(ref data, 0));
         var text = FuzzText.Decode(data);
         var fonts = Fonts.Value;
-        var font = new SceneFont(1 + (options >> 3), Bold: (options & 1) != 0, Italic: (options & 2) != 0, Family: family);
+        var font = new SceneFont(1 + (options >> 3), Weight: (options & 1) != 0 ? 100 * (1 + ((options >> 3) % 9)) : SceneFont.NormalWeight, Italic: (options & 2) != 0, Family: family);
 
         var faces = fonts.GetFaces(font);
         FuzzAssert.True(ReferenceEquals(fonts.GetFace(font), faces[0]), "GetFace is not the first face of GetFaces");

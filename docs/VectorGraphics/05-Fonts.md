@@ -32,7 +32,7 @@ var scene = new Scene(width: 300, height: 60, fontFamily: measurer.FontFamily) {
 
 // Each text has its own family, or the family of the scene
 var code = new SceneFont(12, Family: "Liberation Mono");
-scene.Root.Add(new SceneText(10, 20, "Title", new SceneFont(16, Bold: true), SceneColor.Black));
+scene.Root.Add(new SceneText(10, 20, "Title", new SceneFont(16, Weight: SceneFont.BoldWeight), SceneColor.Black));
 scene.Root.Add(new SceneText(10, 45, "var x = 1;", code, SceneColor.Black) { MeasuredWidth = measurer.Measure("var x = 1;", code).Width });
 
 // The SVG can embed the fonts, so every viewer draws the texts with them
@@ -53,7 +53,7 @@ The first family of the list the collection has draws the text, and the default 
 case of ASCII letters.
 
 Within the family, the face closest to the style of the text draws it: the same slant first, then the nearest weight
-(400 for regular text, 700 for bold text). A collection without a bold face draws the bold texts with its regular face.
+([SceneFont.Weight](cref:Meziantou.Framework.VectorGraphics.SceneFont.Weight)). A collection without a bold face draws the bold texts with its regular face.
 
 [WithFontFamily](cref:Meziantou.Framework.VectorGraphics.TextMeasurerExtensions.WithFontFamily) gives a measurer
 another family for the texts that name none. The family of a chart or diagram theme works this way: the texts are

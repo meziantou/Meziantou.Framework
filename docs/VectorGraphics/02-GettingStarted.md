@@ -22,7 +22,7 @@ var scene = new Scene(width: 200, height: 80, fontFamily: AfmTextMeasurer.Defaul
 
 // Shapes are filled and stroked; texts are positioned by their baseline
 scene.Root.Add(new SceneRectangle(10, 10, 180, 60) { Fill = (SceneColor)"#e0f2fe", Stroke = (SceneColor)"#0369a1", StrokeWidth = 2, CornerRadius = 8 });
-scene.Root.Add(new SceneText(100, 45, "Hello", new SceneFont(16, Bold: true), (SceneColor)"#0c4a6e") { Anchor = SceneTextAnchor.Middle });
+scene.Root.Add(new SceneText(100, 45, "Hello", new SceneFont(16, Weight: SceneFont.BoldWeight), (SceneColor)"#0c4a6e") { Anchor = SceneTextAnchor.Middle });
 
 // Paths use the commands of SVG
 var arrow = new PathBuilder().MoveTo(20, 60).LineTo(60, 60).LineTo(55, 55).MoveTo(60, 60).LineTo(55, 65).Build();
@@ -36,6 +36,28 @@ The coordinates are in pixels, with the origin at the top-left corner and the y 
 [SceneText](cref:Meziantou.Framework.VectorGraphics.SceneText) is one line of text, positioned by its baseline and
 anchored at its start, its middle or its end; its [SceneFont](cref:Meziantou.Framework.VectorGraphics.SceneFont) sets
 the size, the weight and the style. The family is the one of the scene.
+
+## Text styles
+
+[SceneFont.Weight](cref:Meziantou.Framework.VectorGraphics.SceneFont.Weight) is a weight from 1 to 1000, as in CSS:
+[NormalWeight](cref:Meziantou.Framework.VectorGraphics.SceneFont.NormalWeight) (400) and
+[BoldWeight](cref:Meziantou.Framework.VectorGraphics.SceneFont.BoldWeight) (700) are the usual ones. With the
+[fonts of a scene](05-Fonts.md), the face of the nearest weight draws the text; without them, the weights from 600 are
+drawn as bold. [SceneText.Decorations](cref:Meziantou.Framework.VectorGraphics.SceneText.Decorations) draws an
+underline, a strikethrough or both, in the color of the text, at the position and of the thickness the font gives:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_TextStyles;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 300, height: 100, fontFamily: "sans-serif");
+
+// A weight from 1 to 1000, as in CSS, and lines drawn with the text
+scene.Root.Add(new SceneText(10, 20, "Light", new SceneFont(16, Weight: 300), SceneColor.Black));
+scene.Root.Add(new SceneText(10, 45, "Bold and underlined", new SceneFont(16, Weight: SceneFont.BoldWeight), SceneColor.Black) { Decorations = SceneTextDecorations.Underline });
+scene.Root.Add(new SceneText(10, 70, "Removed", new SceneFont(16), SceneColor.Black) { Decorations = SceneTextDecorations.Strikethrough });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
 
 ## Strokes
 
@@ -102,6 +124,48 @@ var svg = SvgSceneRenderer.Render(scene);
 <!-- endref -->
 
 The image and PDF renderers decode the images: an image they cannot decode is not drawn.
+
+A gradient ([SceneGradientPaint](cref:Meziantou.Framework.VectorGraphics.SceneGradientPaint)) pads its end colors
+beyond its ends by default; [Spread](cref:Meziantou.Framework.VectorGraphics.SceneGradientPaint.Spread) repeats it or
+reflects it instead, and [Transform](cref:Meziantou.Framework.VectorGraphics.SceneGradientPaint.Transform) rotates,
+skews or stretches it, as the `gradientTransform` of SVG.
+
+## Effects
+
+Every element has a [Filter](cref:Meziantou.Framework.VectorGraphics.SceneElement.Filter), a
+[SceneBlurFilter](cref:Meziantou.Framework.VectorGraphics.SceneBlurFilter) or a
+[SceneDropShadowFilter](cref:Meziantou.Framework.VectorGraphics.SceneDropShadowFilter), an opacity
+[Mask](cref:Meziantou.Framework.VectorGraphics.SceneElement.Mask), whose content shows the element by its luminance or
+its alpha, and a [BlendMode](cref:Meziantou.Framework.VectorGraphics.SceneElement.BlendMode), the blend modes of CSS
+and PDF. As in SVG, the filter applies first, then the clips, the mask, the opacity and the blend mode. The masks and
+the filters are in the coordinates of the parent of the element:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_Effects;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+// A card with a drop shadow, and a blurred circle
+scene.Root.Add(new SceneRectangle(10, 10, 80, 50) { Fill = SceneColor.White, CornerRadius = 4, Filter = new SceneDropShadowFilter(offsetX: 0, offsetY: 2, standardDeviation: 3, (SceneColor)"#00000040") });
+scene.Root.Add(new SceneCircle(150, 50, 20) { Fill = (SceneColor)"#0369a1", Filter = new SceneBlurFilter(standardDeviation: 2) });
+
+// Stripes: a gradient of 10 pixels, reflected, and rotated by its transform
+var stripes = new LinearGradientPaint(0, 0, 10, 0, [new(0, SceneColor.White), new(1, (SceneColor)"#0369a1")])
+{
+    Spread = SceneGradientSpread.Reflect,
+    Transform = SceneTransform.Rotate(45),
+};
+scene.Root.Add(new SceneRectangle(10, 70, 180, 20) { Fill = stripes, BlendMode = SceneBlendMode.Multiply });
+
+// A group faded from left to right by a luminance mask
+var faded = scene.Root.Add(new SceneGroup { Mask = new SceneMask() });
+faded.Mask!.Content.Add(new SceneRectangle(100, 0, 100, 100) { Fill = new LinearGradientPaint(100, 0, 200, 0, [new(0, SceneColor.White), new(1, SceneColor.Black)]) });
+faded.Add(new SceneText(150, 95, "Fading", new SceneFont(12), SceneColor.Black) { Anchor = SceneTextAnchor.Middle });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+PDF has no filters: the PDF renderer throws for a scene that has one. See the [limitations](07-Limitations.md).
 
 ## Groups
 

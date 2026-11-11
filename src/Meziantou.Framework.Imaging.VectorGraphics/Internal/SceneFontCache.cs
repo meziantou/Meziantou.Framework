@@ -9,15 +9,15 @@ namespace Meziantou.Framework.Imaging.VectorGraphics.Internal;
 internal static class SceneFontCache
 {
     private static readonly ConditionalWeakTable<SceneFontFace, Font> Fonts = [];
-    private static readonly ConditionalWeakTable<SceneFontCollection, ConcurrentDictionary<(string? Family, bool Bold, bool Italic), FontStack>> Stacks = [];
+    private static readonly ConditionalWeakTable<SceneFontCollection, ConcurrentDictionary<(string? Family, int Weight, bool Italic), FontStack>> Stacks = [];
 
     /// <summary>Gets the fonts that draw a text: the font of its family and style, then the fonts for the characters it does not have.</summary>
     public static FontStack GetStack(SceneFontCollection fonts, SceneFont font, string? defaultFamily)
     {
         var stacks = Stacks.GetValue(fonts, static _ => new());
-        return stacks.GetOrAdd((font.Family ?? defaultFamily, font.Bold, font.Italic), static (key, fonts) =>
+        return stacks.GetOrAdd((font.Family ?? defaultFamily, font.Weight, font.Italic), static (key, fonts) =>
         {
-            var faces = fonts.GetFaces(new SceneFont(1, key.Bold, key.Italic, key.Family));
+            var faces = fonts.GetFaces(new SceneFont(1, key.Weight, key.Italic, key.Family));
             var loaded = new Font[faces.Count];
             for (var i = 0; i < loaded.Length; i++)
             {

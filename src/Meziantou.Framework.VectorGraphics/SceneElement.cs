@@ -50,6 +50,16 @@ public abstract class SceneElement
     /// <summary>Gets or sets the opacity of the element, from 0 to 1.</summary>
     public double Opacity { get; set; } = 1;
 
+    /// <summary>Gets or sets the effect applied to what the element draws, such as a blur or a drop shadow, or <see langword="null"/> for none.</summary>
+    /// <remarks>PDF has no filters: the PDF renderer throws <see cref="NotSupportedException"/> for a scene that has one.</remarks>
+    public SceneFilter? Filter { get; set; }
+
+    /// <summary>Gets or sets the opacity mask of the element, or <see langword="null"/> for none.</summary>
+    public SceneMask? Mask { get; set; }
+
+    /// <summary>Gets or sets how the element is blended with what is drawn under it. The default is <see cref="SceneBlendMode.Normal"/>.</summary>
+    public SceneBlendMode BlendMode { get; set; }
+
     /// <summary>Indicates whether a name is a valid name of a <c>data-*</c> attribute: lowercase ASCII letters, digits, hyphens, underscores and dots, without the <c>data-</c> prefix.</summary>
     /// <param name="name">The name.</param>
     /// <returns><see langword="true"/> when the name is valid.</returns>

@@ -38,10 +38,24 @@ public static class PdfVectorGraphicsFuzzTargets
     {
         var options = FuzzInput.ReadByte(ref data);
         var pdfOptions = new ScenePdfOptions { Fonts = (options & 1) != 0 ? Fonts.Value : null, Scale = 0.25 + ((options >> 1) & 7) / 4.0 };
-        var scene = CreateScene(data, out var absoluteLinks);
+        var scene = CreateScene(data, out var absoluteLinks, out var hasFilter);
+        if (hasFilter)
+        {
+            try
+            {
+                scene.ToPdf(pdfOptions);
+            }
+            catch (NotSupportedException)
+            {
+                return;
+            }
+
+            FuzzAssert.Fail("A scene with a filter was drawn as PDF");
+        }
+
         var document = scene.ToPdf(pdfOptions);
         var bytes = document.ToByteArray();
-        FuzzAssert.True(bytes.AsSpan().SequenceEqual(CreateScene(data, out _).ToPdf(pdfOptions).ToByteArray()), "Drawing the scene twice gives different files");
+        FuzzAssert.True(bytes.AsSpan().SequenceEqual(CreateScene(data, out _, out _).ToPdf(pdfOptions).ToByteArray()), "Drawing the scene twice gives different files");
 
         var reopened = PdfDocument.Open(bytes);
         FuzzAssert.Equal(1, reopened.Pages.Count, "The document does not have one page");
@@ -52,9 +66,10 @@ public static class PdfVectorGraphicsFuzzTargets
         using var image = page.Render(new PdfRenderOptions { Dpi = 18 });
     }
 
-    private static Scene CreateScene(ReadOnlySpan<byte> data, out int absoluteLinks)
+    private static Scene CreateScene(ReadOnlySpan<byte> data, out int absoluteLinks, out bool hasFilter)
     {
         absoluteLinks = 0;
+        hasFilter = false;
         var scene = new Scene(100, 80, "Liberation Sans") { Title = "Fuzz", Background = new SceneColor(250, 250, 250) };
         var groups = new Stack<SceneGroup>();
         groups.Push(scene.Root);
@@ -68,8 +83,8 @@ public static class PdfVectorGraphicsFuzzTargets
             var color = new SceneColor((byte)(kind * 37), (byte)(kind * 11), (byte)(kind * 5), (byte)(255 - (kind & 0xC0)));
             ScenePaint paint = (kind & 0x30) switch
             {
-                0x20 => new LinearGradientPaint(0, 0, value, 10, [new(value, color), new(0.5, SceneColor.Black), new((kind & 7) / 7.0, SceneColor.White)]),
-                0x30 => new RadialGradientPaint(40, 30, value, 45, value, [new(0, color), new((kind & 7) / 7.0, SceneColor.White)]),
+                0x20 => new LinearGradientPaint(0, 0, value, 10, [new(value, color), new(0.5, SceneColor.Black), new((kind & 7) / 7.0, SceneColor.White)]) { Spread = (SceneGradientSpread)(kind % 3), Transform = (kind & 8) != 0 ? SceneTransform.Scale(value, 0.5) : null },
+                0x30 => new RadialGradientPaint(40, 30, value, 45, value, [new(0, color), new((kind & 7) / 7.0, SceneColor.White)]) { Spread = (SceneGradientSpread)(kind % 3), Transform = (kind & 8) != 0 ? SceneTransform.Rotate(value, 40, 30) : null },
                 _ => color,
             };
             SceneElement element;
@@ -99,10 +114,11 @@ public static class PdfVectorGraphicsFuzzTargets
                     break;
                 case 4:
                 case 5:
-                    element = parent.Add(new SceneText(value, 40, text, new SceneFont(1 + (kind % 30), Bold: (kind & 8) != 0, Italic: (kind & 16) != 0, Family: (kind & 64) != 0 ? "Liberation Mono" : null), color)
+                    element = parent.Add(new SceneText(value, 40, text, new SceneFont(1 + (kind % 30), Weight: (kind & 8) != 0 ? 100 * (1 + (kind % 9)) : SceneFont.NormalWeight, Italic: (kind & 16) != 0, Family: (kind & 64) != 0 ? "Liberation Mono" : null), color)
                     {
                         Anchor = (SceneTextAnchor)(kind % 3),
                         Rotation = (kind & 32) != 0 ? value : 0,
+                        Decorations = (SceneTextDecorations)(kind % 4),
                     });
                     break;
                 case 6:
@@ -132,6 +148,20 @@ public static class PdfVectorGraphicsFuzzTargets
             }
 
             element.Opacity = (kind & 0x80) != 0 ? (kind % 11) / 10.0 : 1;
+
+            // The effects: a mask whose content is a rectangle, a blend mode, and sometimes a filter, which PDF cannot draw
+            if (kind % 7 == 3)
+            {
+                element.Mask = new SceneMask { Mode = (SceneMaskMode)(kind % 2) };
+                element.Mask.Content.Add(new SceneRectangle(value, 0, 60, 60) { Fill = new LinearGradientPaint(0, 0, 100, 0, [new(0, SceneColor.White), new(1, SceneColor.Black)]) });
+            }
+
+            element.BlendMode = (kind & 0x10) != 0 ? (SceneBlendMode)(kind % 16) : SceneBlendMode.Normal;
+            if (kind % 31 == 7)
+            {
+                element.Filter = new SceneBlurFilter(value);
+                hasFilter = true;
+            }
         }
 
         return scene;

@@ -5,7 +5,7 @@ description: What the vector graphics libraries do, and how the charts and diagr
 
 `Meziantou.Framework.VectorGraphics` describes a drawing as a [Scene](cref:Meziantou.Framework.VectorGraphics.Scene):
 rectangles, circles, lines, paths, texts, images and groups, in pixels, with fills, strokes, linear and radial
-gradients, opacity, clipping and transforms. It writes a scene as SVG, and measures texts so a layout fits the font that draws it.
+gradients, opacity, clipping, masks, blend modes, blurs, drop shadows and transforms. It writes a scene as SVG, and measures texts so a layout fits the font that draws it.
 `Meziantou.Framework.Imaging.VectorGraphics` draws the same scene as an image (PNG, WebP, JPEG...) or on the canvas of
 [Meziantou.Framework.Imaging](../Imaging/01-Introduction.md). `Meziantou.Framework.Pdf.VectorGraphics` draws it as a
 PDF document or on a page of [Meziantou.Framework.Pdf](../Pdf/01-Introduction.md).
@@ -26,6 +26,7 @@ directly to draw your own graphics, or to read the layout of a chart.
   [PDF rendering](06-PdfRendering.md).
 - **Give the scene its fonts**, so each text is measured and drawn with the same font, with a family per text. See
   [fonts of a scene](05-Fonts.md).
+- **Know what each renderer draws differently.** See the [limitations](07-Limitations.md).
 - **Measure, wrap and truncate texts** with the metrics of Helvetica, which need no font file, or with any OpenType
   font. See [text measurement](04-TextMeasurement.md).
 

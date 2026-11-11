@@ -114,8 +114,8 @@ public static class SceneImageRenderer
 
         return new ImageTextMeasurer(
             options.GetFont(new SceneFont(1)),
-            options.GetFont(new SceneFont(1, Bold: true)),
+            options.GetFont(new SceneFont(1, Weight: SceneFont.BoldWeight)),
             options.GetFont(new SceneFont(1, Italic: true)),
-            options.GetFont(new SceneFont(1, Bold: true, Italic: true)));
+            options.GetFont(new SceneFont(1, Weight: SceneFont.BoldWeight, Italic: true)));
     }
 }

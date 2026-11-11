@@ -74,7 +74,7 @@ public sealed class ImageTextMeasurer : ITextMeasurer
 
     internal Font GetFont(SceneFont font)
     {
-        return (font.Bold, font.Italic) switch
+        return (font.IsBold, font.Italic) switch
         {
             (true, true) => _boldItalic,
             (true, false) => _bold,

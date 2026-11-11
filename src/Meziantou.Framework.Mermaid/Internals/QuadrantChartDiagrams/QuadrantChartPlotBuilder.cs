@@ -24,7 +24,7 @@ internal static class QuadrantChartPlotBuilder
         // As in Mermaid, the title is drawn with the primary text color (quadrantTitleFill)
         plot.Theme = plot.Theme with { Foreground = theme.PrimaryTextColor };
 
-        var titleSpace = string.IsNullOrEmpty(plot.Title) ? 0 : TitlePadding + measurer.Measure(plot.Title, new SceneFont(plot.Theme.TitleFontSize, Bold: true)).Height + TitleGap;
+        var titleSpace = string.IsNullOrEmpty(plot.Title) ? 0 : TitlePadding + measurer.Measure(plot.Title, new SceneFont(plot.Theme.TitleFontSize, Weight: SceneFont.BoldWeight)).Height + TitleGap;
 
         var xAxisLeft = ToPlainText(chart.XAxisLeftLabel);
         var xAxisRight = ToPlainText(chart.XAxisRightLabel);

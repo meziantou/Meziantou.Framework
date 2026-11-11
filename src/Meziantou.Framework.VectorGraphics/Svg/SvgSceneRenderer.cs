@@ -37,6 +37,9 @@ public static class SvgSceneRenderer
     {
         private readonly Dictionary<object, string> _ids = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<SceneGroup, string> _clipPathIds = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<SceneElement, string> _filterIds = new(ReferenceEqualityComparer.Instance);
+        private readonly Dictionary<SceneElement, string> _maskIds = new(ReferenceEqualityComparer.Instance);
+        private readonly List<(string Id, SceneMask Mask)> _masks = [];
         private readonly int _precision = options.Precision;
         private Scene _scene = null!;
 
@@ -70,6 +73,28 @@ public static class SvgSceneRenderer
             }
 
             WriteDefinitions(scene.Root, options.EmbedFonts && scene.Fonts is { } fonts ? GetFontFaceRules(scene, fonts) : null);
+            if (_masks.Count > 0)
+            {
+                // The content of a mask is in the coordinates of the parent of the masked element, on the whole plane
+                output.Write("<defs>\n");
+                foreach (var (id, mask) in _masks)
+                {
+                    output.Write("<mask");
+                    Attribute("id", id);
+                    output.Write(" maskUnits=\"userSpaceOnUse\" x=\"-100000\" y=\"-100000\" width=\"200000\" height=\"200000\"");
+                    if (mask.Mode is SceneMaskMode.Alpha)
+                    {
+                        output.Write(" mask-type=\"alpha\"");
+                    }
+
+                    output.Write(">\n");
+                    WriteElement(mask.Content);
+                    output.Write("</mask>\n");
+                }
+
+                output.Write("</defs>\n");
+            }
+
             if (scene.Background is { } background)
             {
                 output.Write("<rect");
@@ -97,6 +122,8 @@ public static class SvgSceneRenderer
 
             var gradientCount = 0;
             var clipCount = 0;
+            var filterCount = 0;
+            var maskCount = 0;
             Visit(root);
             if (definitions.Length > 0)
             {
@@ -111,6 +138,23 @@ public static class SvgSceneRenderer
                 {
                     AddGradient(shape.Fill);
                     AddGradient(shape.Stroke);
+                }
+
+                if (element.Filter is { } filter)
+                {
+                    var id = options.IdPrefix + "-filter" + filterCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    filterCount++;
+                    _filterIds[element] = id;
+                    AddFilter(id, element, filter);
+                }
+
+                if (element.Mask is { } mask)
+                {
+                    var id = options.IdPrefix + "-mask" + maskCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    maskCount++;
+                    _maskIds[element] = id;
+                    _masks.Add((id, mask));
+                    Visit(mask.Content);
                 }
 
                 if (element is SceneGroup group)
@@ -146,9 +190,60 @@ public static class SvgSceneRenderer
                 }
             }
 
+            // The region of a filter contains the element with its blur and its offset: with the bounds of the
+            // shapes, so a horizontal line, which has no height, is still drawn; with the bounding box of the element
+            // when it has a text, whose size is not known without measuring it
+            void AddFilter(string id, SceneElement element, SceneFilter filter)
+            {
+                var (deviation, offsetX, offsetY) = filter switch
+                {
+                    SceneBlurFilter blur => (Sanitize(blur.StandardDeviation), 0.0, 0.0),
+                    SceneDropShadowFilter shadow => (Sanitize(shadow.StandardDeviation), Finite(shadow.OffsetX), Finite(shadow.OffsetY)),
+                    _ => (0.0, 0.0, 0.0),
+                };
+
+                definitions.Append("<filter id=\"").Append(Escape(id)).Append('"');
+                if (SceneGeometry.TryGetBounds(element, out var bounds))
+                {
+                    var region = SceneGeometry.Inflate(bounds ?? default, (3 * deviation) + Math.Max(Math.Abs(offsetX), Math.Abs(offsetY)) + 1);
+                    definitions.Append(" filterUnits=\"userSpaceOnUse\" x=\"").Append(Number(region.X)).Append("\" y=\"").Append(Number(region.Y))
+                        .Append("\" width=\"").Append(Number(region.Width)).Append("\" height=\"").Append(Number(region.Height)).Append('"');
+                }
+                else
+                {
+                    definitions.Append(" x=\"-50%\" y=\"-50%\" width=\"200%\" height=\"200%\"");
+                }
+
+                definitions.Append(" color-interpolation-filters=\"sRGB\">");
+                switch (filter)
+                {
+                    case SceneBlurFilter:
+                        definitions.Append("<feGaussianBlur stdDeviation=\"").Append(Number(deviation)).Append("\"/>");
+                        break;
+
+                    case SceneDropShadowFilter shadow:
+                        definitions.Append("<feGaussianBlur in=\"SourceAlpha\" stdDeviation=\"").Append(Number(deviation)).Append("\"/>")
+                            .Append("<feOffset dx=\"").Append(Number(offsetX)).Append("\" dy=\"").Append(Number(offsetY)).Append("\" result=\"shadow\"/>")
+                            .Append("<feFlood flood-color=\"").Append(shadow.Color.ToHexRgb()).Append('"');
+                        if (!shadow.Color.IsOpaque)
+                        {
+                            definitions.Append(" flood-opacity=\"").Append(SvgNumber.Format(shadow.Color.Opacity, 3)).Append('"');
+                        }
+
+                        definitions.Append("/><feComposite in2=\"shadow\" operator=\"in\"/><feMerge><feMergeNode/><feMergeNode in=\"SourceGraphic\"/></feMerge>");
+                        break;
+                }
+
+                definitions.Append("</filter>\n");
+            }
+
+            static double Sanitize(double deviation) => deviation > 0 && double.IsFinite(deviation) ? deviation : 0;
+
+            static double Finite(double value) => double.IsFinite(value) ? value : 0;
+
             void AddGradient(ScenePaint? paint)
             {
-                if (paint is not (LinearGradientPaint or RadialGradientPaint) || _ids.ContainsKey(paint))
+                if (paint is not SceneGradientPaint || _ids.ContainsKey(paint))
                     return;
 
                 var id = options.IdPrefix + "-gradient" + gradientCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -162,7 +257,7 @@ public static class SvgSceneRenderer
                     stops = gradient.Stops;
                     definitions.Append("<linearGradient id=\"").Append(Escape(id)).Append("\" gradientUnits=\"userSpaceOnUse\" x1=\"").Append(Number(gradient.X1))
                         .Append("\" y1=\"").Append(Number(gradient.Y1)).Append("\" x2=\"").Append(Number(gradient.X2))
-                        .Append("\" y2=\"").Append(Number(gradient.Y2)).Append("\">\n");
+                        .Append("\" y2=\"").Append(Number(gradient.Y2)).Append('"');
                 }
                 else
                 {
@@ -175,9 +270,25 @@ public static class SvgSceneRenderer
                     {
                         definitions.Append(" fx=\"").Append(Number(radial.FocalX)).Append("\" fy=\"").Append(Number(radial.FocalY)).Append('"');
                     }
-
-                    definitions.Append(">\n");
                 }
+
+                var gradientPaint = (SceneGradientPaint)paint;
+                switch (gradientPaint.Spread)
+                {
+                    case SceneGradientSpread.Repeat:
+                        definitions.Append(" spreadMethod=\"repeat\"");
+                        break;
+                    case SceneGradientSpread.Reflect:
+                        definitions.Append(" spreadMethod=\"reflect\"");
+                        break;
+                }
+
+                if (gradientPaint.Transform is { } gradientTransform)
+                {
+                    definitions.Append(" gradientTransform=\"").Append(Escape(Transform(gradientTransform))).Append('"');
+                }
+
+                definitions.Append(">\n");
 
                 foreach (var stop in stops)
                 {
@@ -285,22 +396,38 @@ public static class SvgSceneRenderer
         {
             // The clips are in the coordinates of the parent: an outer group clips, an inner one transforms. The last
             // clip is on the group itself when it has no transform.
-            List<string> clipIds = [];
+            // The blend mode, the mask, the clips and the filter apply in this order, from the outside
+            List<(string Name, string Value)> layers = [];
+            if (BlendModeName(group.BlendMode) is { } blendMode)
+            {
+                layers.Add(("style", "mix-blend-mode:" + blendMode));
+            }
+
+            if (_maskIds.TryGetValue(group, out var maskId))
+            {
+                layers.Add(("mask", "url(#" + maskId + ")"));
+            }
+
             if (_ids.TryGetValue(group, out var clipId))
             {
-                clipIds.Add(clipId);
+                layers.Add(("clip-path", "url(#" + clipId + ")"));
             }
 
             if (_clipPathIds.TryGetValue(group, out var clipPathId))
             {
-                clipIds.Add(clipPathId);
+                layers.Add(("clip-path", "url(#" + clipPathId + ")"));
             }
 
-            var outerClips = group.Transform is null && clipIds.Count > 0 ? clipIds.Count - 1 : clipIds.Count;
+            if (_filterIds.TryGetValue(group, out var filterId))
+            {
+                layers.Add(("filter", "url(#" + filterId + ")"));
+            }
+
+            var outerClips = group.Transform is null && layers.Count > 0 ? layers.Count - 1 : layers.Count;
             for (var i = 0; i < outerClips; i++)
             {
                 output.Write("<g");
-                Attribute("clip-path", "url(#" + clipIds[i] + ")");
+                Attribute(layers[i].Name, layers[i].Value);
                 output.Write(">\n");
             }
 
@@ -310,9 +437,9 @@ public static class SvgSceneRenderer
             {
                 Attribute("transform", Transform(transform));
             }
-            else if (clipIds.Count > 0)
+            else if (layers.Count > 0)
             {
-                Attribute("clip-path", "url(#" + clipIds[^1] + ")");
+                Attribute(layers[^1].Name, layers[^1].Value);
             }
 
             output.Write(">\n");
@@ -350,9 +477,30 @@ public static class SvgSceneRenderer
             }
 
             Attribute("font-size", text.Font.Size);
-            if (text.Font.Bold)
+            // 700 is written "bold", as before the weights; the other weights are numbers
+            switch (text.Font.ClampedWeight)
             {
-                Attribute("font-weight", "bold");
+                case SceneFont.NormalWeight:
+                    break;
+                case SceneFont.BoldWeight:
+                    Attribute("font-weight", "bold");
+                    break;
+                case var weight:
+                    Attribute("font-weight", weight.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    break;
+            }
+
+            switch (text.Decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough))
+            {
+                case SceneTextDecorations.Underline:
+                    Attribute("text-decoration", "underline");
+                    break;
+                case SceneTextDecorations.Strikethrough:
+                    Attribute("text-decoration", "line-through");
+                    break;
+                case SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough:
+                    Attribute("text-decoration", "underline line-through");
+                    break;
             }
 
             if (text.Font.Italic)
@@ -437,6 +585,25 @@ public static class SvgSceneRenderer
                 Attribute("opacity", SvgNumber.Format(Math.Max(0, element.Opacity), 3));
             }
 
+            // The layers of a group are written by WriteGroupContent
+            if (element is not SceneGroup)
+            {
+                if (_filterIds.TryGetValue(element, out var filterId))
+                {
+                    Attribute("filter", "url(#" + filterId + ")");
+                }
+
+                if (_maskIds.TryGetValue(element, out var maskId))
+                {
+                    Attribute("mask", "url(#" + maskId + ")");
+                }
+
+                if (BlendModeName(element.BlendMode) is { } blendMode)
+                {
+                    Attribute("style", "mix-blend-mode:" + blendMode);
+                }
+            }
+
             if (!string.IsNullOrEmpty(element.CssClass))
             {
                 Attribute("class", element.CssClass);
@@ -490,7 +657,7 @@ public static class SvgSceneRenderer
                 case SolidPaint solid:
                     Paint(name, solid.Color);
                     break;
-                case LinearGradientPaint or RadialGradientPaint:
+                case SceneGradientPaint:
                     Attribute(name, "url(#" + _ids[paint] + ")");
                     break;
             }
@@ -504,6 +671,26 @@ public static class SvgSceneRenderer
                 Attribute(name + "-opacity", SvgNumber.Format(color.Opacity, 3));
             }
         }
+
+        private static string? BlendModeName(SceneBlendMode mode) => mode switch
+        {
+            SceneBlendMode.Multiply => "multiply",
+            SceneBlendMode.Screen => "screen",
+            SceneBlendMode.Overlay => "overlay",
+            SceneBlendMode.Darken => "darken",
+            SceneBlendMode.Lighten => "lighten",
+            SceneBlendMode.ColorDodge => "color-dodge",
+            SceneBlendMode.ColorBurn => "color-burn",
+            SceneBlendMode.HardLight => "hard-light",
+            SceneBlendMode.SoftLight => "soft-light",
+            SceneBlendMode.Difference => "difference",
+            SceneBlendMode.Exclusion => "exclusion",
+            SceneBlendMode.Hue => "hue",
+            SceneBlendMode.Saturation => "saturation",
+            SceneBlendMode.Color => "color",
+            SceneBlendMode.Luminosity => "luminosity",
+            _ => null,
+        };
 
         private string Transform(SceneTransform transform)
         {

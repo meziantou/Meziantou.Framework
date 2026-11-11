@@ -36,9 +36,8 @@ namespace Meziantou.Framework.VectorGraphics
         Meziantou.Framework.VectorGraphics.TextMetrics Measure(string text, Meziantou.Framework.VectorGraphics.SceneFont font);
     }
 
-    public sealed class LinearGradientPaint : Meziantou.Framework.VectorGraphics.ScenePaint
+    public sealed class LinearGradientPaint : Meziantou.Framework.VectorGraphics.SceneGradientPaint
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneGradientStop> Stops { get => throw null; }
         public double X1 { get => throw null; }
         public double X2 { get => throw null; }
         public double Y1 { get => throw null; }
@@ -108,14 +107,13 @@ namespace Meziantou.Framework.VectorGraphics
         public Meziantou.Framework.VectorGraphics.PathData Translate(double offsetX, double offsetY) => throw null;
     }
 
-    public sealed class RadialGradientPaint : Meziantou.Framework.VectorGraphics.ScenePaint
+    public sealed class RadialGradientPaint : Meziantou.Framework.VectorGraphics.SceneGradientPaint
     {
         public double CenterX { get => throw null; }
         public double CenterY { get => throw null; }
         public double FocalX { get => throw null; }
         public double FocalY { get => throw null; }
         public double Radius { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneGradientStop> Stops { get => throw null; }
         public RadialGradientPaint(double centerX, double centerY, double radius, System.Collections.Generic.IEnumerable<Meziantou.Framework.VectorGraphics.SceneGradientStop> stops) { }
         public RadialGradientPaint(double centerX, double centerY, double radius, double focalX, double focalY, System.Collections.Generic.IEnumerable<Meziantou.Framework.VectorGraphics.SceneGradientStop> stops) { }
     }
@@ -131,6 +129,32 @@ namespace Meziantou.Framework.VectorGraphics
         public string? Title { get => throw null; set { } }
         public double Width { get => throw null; }
         public Scene(double width, double height, string fontFamily) { }
+    }
+
+    public enum SceneBlendMode
+    {
+        Normal = 0,
+        Multiply = 1,
+        Screen = 2,
+        Overlay = 3,
+        Darken = 4,
+        Lighten = 5,
+        ColorDodge = 6,
+        ColorBurn = 7,
+        HardLight = 8,
+        SoftLight = 9,
+        Difference = 10,
+        Exclusion = 11,
+        Hue = 12,
+        Saturation = 13,
+        Color = 14,
+        Luminosity = 15,
+    }
+
+    public sealed class SceneBlurFilter : Meziantou.Framework.VectorGraphics.SceneFilter
+    {
+        public double StandardDeviation { get => throw null; }
+        public SceneBlurFilter(double standardDeviation) { }
     }
 
     public readonly struct SceneBounds : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneBounds>
@@ -194,10 +218,22 @@ namespace Meziantou.Framework.VectorGraphics
         public static implicit operator Meziantou.Framework.VectorGraphics.SceneColor(string value) => throw null;
     }
 
+    public sealed class SceneDropShadowFilter : Meziantou.Framework.VectorGraphics.SceneFilter
+    {
+        public Meziantou.Framework.VectorGraphics.SceneColor Color { get => throw null; }
+        public double OffsetX { get => throw null; }
+        public double OffsetY { get => throw null; }
+        public double StandardDeviation { get => throw null; }
+        public SceneDropShadowFilter(double offsetX, double offsetY, double standardDeviation, Meziantou.Framework.VectorGraphics.SceneColor color) { }
+    }
+
     public abstract class SceneElement
     {
+        public Meziantou.Framework.VectorGraphics.SceneBlendMode BlendMode { get => throw null; set { } }
         public string? CssClass { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyDictionary<string, string> DataAttributes { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneFilter? Filter { get => throw null; set { } }
+        public Meziantou.Framework.VectorGraphics.SceneMask? Mask { get => throw null; set { } }
         public double Opacity { get => throw null; set { } }
         public string? Tooltip { get => throw null; set { } }
         public static bool IsValidDataAttributeName([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? name) => throw null;
@@ -211,14 +247,21 @@ namespace Meziantou.Framework.VectorGraphics
         EvenOdd = 1,
     }
 
+    public abstract class SceneFilter
+    {
+    }
+
     public readonly struct SceneFont : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneFont>
     {
-        public bool Bold { get => throw null; init { } }
+        public const int BoldWeight = 700;
+        public const int NormalWeight = 400;
         public string? Family { get => throw null; init { } }
+        public bool IsBold { get => throw null; }
         public bool Italic { get => throw null; init { } }
         public double Size { get => throw null; init { } }
-        public SceneFont(double Size, bool Bold = false, bool Italic = false, string? Family = null) { }
-        public void Deconstruct(out double Size, out bool Bold, out bool Italic, out string? Family) => throw null;
+        public int Weight { get => throw null; init { } }
+        public SceneFont(double Size, int Weight = 400, bool Italic = false, string? Family = null) { }
+        public void Deconstruct(out double Size, out int Weight, out bool Italic, out string? Family) => throw null;
         public bool Equals(Meziantou.Framework.VectorGraphics.SceneFont other) => throw null;
         #nullable disable
         public override bool Equals(object obj) => throw null;
@@ -252,6 +295,10 @@ namespace Meziantou.Framework.VectorGraphics
         public string FamilyName { get => throw null; }
         public int Index { get => throw null; }
         public bool IsItalic { get => throw null; }
+        public double StrikeoutPosition { get => throw null; }
+        public double StrikeoutThickness { get => throw null; }
+        public double UnderlinePosition { get => throw null; }
+        public double UnderlineThickness { get => throw null; }
         public int Weight { get => throw null; }
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneFontFace> Load(System.IO.Stream stream) => throw null;
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneFontFace> Load(System.ReadOnlySpan<byte> data) => throw null;
@@ -276,6 +323,20 @@ namespace Meziantou.Framework.VectorGraphics
         #nullable restore
         public static bool operator ==(Meziantou.Framework.VectorGraphics.SceneFontRun left, Meziantou.Framework.VectorGraphics.SceneFontRun right) => throw null;
         public static bool operator !=(Meziantou.Framework.VectorGraphics.SceneFontRun left, Meziantou.Framework.VectorGraphics.SceneFontRun right) => throw null;
+    }
+
+    public abstract class SceneGradientPaint : Meziantou.Framework.VectorGraphics.ScenePaint
+    {
+        public Meziantou.Framework.VectorGraphics.SceneGradientSpread Spread { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.VectorGraphics.SceneGradientStop> Stops { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneTransform? Transform { get => throw null; init { } }
+    }
+
+    public enum SceneGradientSpread
+    {
+        Pad = 0,
+        Repeat = 1,
+        Reflect = 2,
     }
 
     public readonly struct SceneGradientStop : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneGradientStop>
@@ -342,6 +403,18 @@ namespace Meziantou.Framework.VectorGraphics
         Bevel = 2,
     }
 
+    public sealed class SceneMask
+    {
+        public Meziantou.Framework.VectorGraphics.SceneGroup Content { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneMaskMode Mode { get => throw null; set { } }
+    }
+
+    public enum SceneMaskMode
+    {
+        Luminance = 0,
+        Alpha = 1,
+    }
+
     public abstract class ScenePaint
     {
         public static implicit operator Meziantou.Framework.VectorGraphics.ScenePaint(Meziantou.Framework.VectorGraphics.SceneColor color) => throw null;
@@ -380,6 +453,7 @@ namespace Meziantou.Framework.VectorGraphics
     {
         public Meziantou.Framework.VectorGraphics.SceneTextAnchor Anchor { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneColor Color { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneTextDecorations Decorations { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneFont Font { get => throw null; }
         public double MeasuredWidth { get => throw null; set { } }
         public double Rotation { get => throw null; set { } }
@@ -394,6 +468,14 @@ namespace Meziantou.Framework.VectorGraphics
         Start = 0,
         Middle = 1,
         End = 2,
+    }
+
+    [System.Flags]
+    public enum SceneTextDecorations
+    {
+        None = 0,
+        Underline = 1,
+        Strikethrough = 2,
     }
 
     public readonly struct SceneTransform : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneTransform>

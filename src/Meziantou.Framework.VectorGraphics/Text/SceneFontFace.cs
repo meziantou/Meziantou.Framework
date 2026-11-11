@@ -38,6 +38,24 @@ public sealed class SceneFontFace
     /// <summary>Gets a value indicating whether the face is italic or oblique.</summary>
     public bool IsItalic => Face.IsItalic;
 
+    /// <summary>Gets the top of the underline, in em, above the baseline: negative below it. The value of the font, or -0.075 when it has none.</summary>
+    public double UnderlinePosition => Face.UnderlineThickness > 0 ? (double)Face.UnderlinePosition / Face.UnitsPerEm : DefaultUnderlinePosition;
+
+    /// <summary>Gets the thickness of the underline, in em. The value of the font, or 0.05 when it has none.</summary>
+    public double UnderlineThickness => Face.UnderlineThickness > 0 ? (double)Face.UnderlineThickness / Face.UnitsPerEm : DefaultLineThickness;
+
+    /// <summary>Gets the top of the strikethrough, in em, above the baseline. The value of the font, or 0.3 when it has none.</summary>
+    public double StrikeoutPosition => Face.StrikeoutSize > 0 ? (double)Face.StrikeoutPosition / Face.UnitsPerEm : DefaultStrikeoutPosition;
+
+    /// <summary>Gets the thickness of the strikethrough, in em. The value of the font, or 0.05 when it has none.</summary>
+    public double StrikeoutThickness => Face.StrikeoutSize > 0 ? (double)Face.StrikeoutSize / Face.UnitsPerEm : DefaultLineThickness;
+
+    // The decorations of Helvetica: its underline (Helvetica.afm: centered 100 units below the baseline, 50 units thick),
+    // and the strikeout of Arial, which has its widths
+    internal const double DefaultUnderlinePosition = -0.075;
+    internal const double DefaultStrikeoutPosition = 0.3;
+    internal const double DefaultLineThickness = 0.05;
+
     /// <summary>Gets the number of faces of the file.</summary>
     internal int FaceCount { get; }
 

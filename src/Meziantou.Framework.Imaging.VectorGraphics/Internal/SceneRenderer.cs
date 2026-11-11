@@ -70,27 +70,96 @@ internal static class SceneRenderer
         }
     }
 
+    // The effects apply in the order of SVG: the filter, the clips, the mask, then the opacity and the blend mode
     private static void DrawElement(DrawingCanvas canvas, SceneElement element, DrawContext context)
     {
         if (element.Opacity <= 0)
             return;
 
-        if (element.Opacity < 1)
+        var blendMode = ToBlendMode(element.BlendMode);
+        if (element.Opacity < 1 || blendMode is not BlendMode.Normal)
         {
-            canvas.Layer(element.Opacity, (element, context), static (canvas, state) => DrawContent(canvas, state.element, state.context));
+            canvas.Layer(Math.Min(element.Opacity, 1), (element, context), static (canvas, state) => DrawMasked(canvas, state.element, state.context), CompositeMode.SourceOver, blendMode);
             return;
         }
 
-        DrawContent(canvas, element, context);
+        DrawMasked(canvas, element, context);
     }
+
+    private static void DrawMasked(DrawingCanvas canvas, SceneElement element, DrawContext context)
+    {
+        if (element.Mask is { } mask)
+        {
+            canvas.Mask(
+                (element, mask, context),
+                static (canvas, state) => DrawElement(canvas, state.mask.Content, state.context),
+                static (canvas, state) => DrawUnmasked(canvas, state.element, state.context),
+                mask.Mode is SceneMaskMode.Alpha ? MaskMode.Alpha : MaskMode.Luminance);
+            return;
+        }
+
+        DrawUnmasked(canvas, element, context);
+    }
+
+    // A group applies its clips before its filter, and its transform after it
+    private static void DrawUnmasked(DrawingCanvas canvas, SceneElement element, DrawContext context)
+    {
+        if (element is SceneGroup group)
+        {
+            DrawGroup(canvas, group, context);
+            return;
+        }
+
+        DrawFiltered(canvas, element, context, static (canvas, state) => DrawContent(canvas, state.element, state.context));
+    }
+
+    private static void DrawFiltered(DrawingCanvas canvas, SceneElement element, DrawContext context, DrawingAction<(SceneElement element, DrawContext context)> action)
+    {
+        switch (element.Filter)
+        {
+            case SceneBlurFilter blur when blur.StandardDeviation > 0 && double.IsFinite(blur.StandardDeviation):
+                canvas.Blur(Math.Min(blur.StandardDeviation, MaxBlur), (element, context), action);
+                break;
+
+            case SceneDropShadowFilter shadow:
+                var deviation = shadow.StandardDeviation > 0 && double.IsFinite(shadow.StandardDeviation) ? Math.Min(shadow.StandardDeviation, MaxBlur) : 0;
+                var offset = new PointD(double.IsFinite(shadow.OffsetX) ? shadow.OffsetX : 0, double.IsFinite(shadow.OffsetY) ? shadow.OffsetY : 0);
+                canvas.Shadow(Rgba64.FromRgba32(new Rgba32(shadow.Color.R, shadow.Color.G, shadow.Color.B, shadow.Color.A)), offset, deviation, (element, context), action);
+                break;
+
+            default:
+                action(canvas, (element, context));
+                break;
+        }
+    }
+
+    // The largest standard deviation of the blurs of the canvas
+    private const double MaxBlur = 10000;
+
+    private static BlendMode ToBlendMode(SceneBlendMode mode) => mode switch
+    {
+        SceneBlendMode.Multiply => BlendMode.Multiply,
+        SceneBlendMode.Screen => BlendMode.Screen,
+        SceneBlendMode.Overlay => BlendMode.Overlay,
+        SceneBlendMode.Darken => BlendMode.Darken,
+        SceneBlendMode.Lighten => BlendMode.Lighten,
+        SceneBlendMode.ColorDodge => BlendMode.ColorDodge,
+        SceneBlendMode.ColorBurn => BlendMode.ColorBurn,
+        SceneBlendMode.HardLight => BlendMode.HardLight,
+        SceneBlendMode.SoftLight => BlendMode.SoftLight,
+        SceneBlendMode.Difference => BlendMode.Difference,
+        SceneBlendMode.Exclusion => BlendMode.Exclusion,
+        SceneBlendMode.Hue => BlendMode.Hue,
+        SceneBlendMode.Saturation => BlendMode.Saturation,
+        SceneBlendMode.Color => BlendMode.Color,
+        SceneBlendMode.Luminosity => BlendMode.Luminosity,
+        _ => BlendMode.Normal,
+    };
 
     private static void DrawContent(DrawingCanvas canvas, SceneElement element, DrawContext context)
     {
         switch (element)
         {
-            case SceneGroup group:
-                DrawGroup(canvas, group, context);
-                break;
 
             case SceneRectangle rectangle:
                 {
@@ -206,11 +275,16 @@ internal static class SceneRenderer
             if (ToVectorPath(clipPath) is not { } vector)
                 return;
 
-            canvas.Clip(vector, (group, context), static (canvas, state) => DrawTransformed(canvas, state.group, state.context), group.ClipRule is SceneFillRule.EvenOdd ? FillRule.EvenOdd : FillRule.NonZero);
+            canvas.Clip(vector, (group, context), static (canvas, state) => DrawGroupFiltered(canvas, state.group, state.context), group.ClipRule is SceneFillRule.EvenOdd ? FillRule.EvenOdd : FillRule.NonZero);
             return;
         }
 
-        DrawTransformed(canvas, group, context);
+        DrawGroupFiltered(canvas, group, context);
+    }
+
+    private static void DrawGroupFiltered(DrawingCanvas canvas, SceneGroup group, DrawContext context)
+    {
+        DrawFiltered(canvas, group, context, static (canvas, state) => DrawTransformed(canvas, (SceneGroup)state.element, state.context));
     }
 
     private static void DrawImage(DrawingCanvas canvas, SceneImage image)
@@ -255,9 +329,12 @@ internal static class SceneRenderer
         if (text.Text.Length is 0)
             return;
 
-        var layout = context.Fonts is { } fonts
-            ? TextLayout.Create(text.Text, new TextStyle(SceneFontCache.GetStack(fonts, text.Font, context.FontFamily), text.Font.Size))
-            : TextLayout.Create(text.Text, context.Options.GetFont(text.Font), text.Font.Size);
+        var decorations = (text.Decorations.HasFlag(SceneTextDecorations.Underline) ? TextDecorations.Underline : TextDecorations.None)
+            | (text.Decorations.HasFlag(SceneTextDecorations.Strikethrough) ? TextDecorations.Strikethrough : TextDecorations.None);
+        FontStack? stack = context.Fonts is { } fonts ? SceneFontCache.GetStack(fonts, text.Font, context.FontFamily) : null;
+        var layout = stack is null && decorations is TextDecorations.None
+            ? TextLayout.Create(text.Text, context.Options.GetFont(text.Font), text.Font.Size)
+            : TextLayout.Create(text.Text, new TextStyle(stack ?? context.Options.GetFont(text.Font), text.Font.Size) { Decorations = decorations });
         var x = text.Anchor switch
         {
             SceneTextAnchor.Middle => text.X - (layout.Width / 2),
@@ -314,8 +391,19 @@ internal static class SceneRenderer
             [.. gradient.Stops.Select(stop => new GradientStop(stop.Offset, Rgba64.FromRgba32(new Rgba32(stop.Color.R, stop.Color.G, stop.Color.B, stop.Color.A))))])
         {
             FocalPoint = new PointD(gradient.FocalX, gradient.FocalY),
+            SpreadMode = ToSpreadMode(gradient.Spread),
+            Transform = ToTransform(gradient.Transform),
         };
     }
+
+    private static GradientSpreadMode ToSpreadMode(SceneGradientSpread spread) => spread switch
+    {
+        SceneGradientSpread.Repeat => GradientSpreadMode.Repeat,
+        SceneGradientSpread.Reflect => GradientSpreadMode.Reflect,
+        _ => GradientSpreadMode.Pad,
+    };
+
+    private static AffineTransform ToTransform(SceneTransform? transform) => transform is { } value ? new AffineTransform(value.A, value.B, value.C, value.D, value.E, value.F) : AffineTransform.Identity;
 
     internal sealed class DrawContext(SceneImageOptions options, Dictionary<ScenePaint, Brush> brushes)
     {
@@ -339,7 +427,11 @@ internal static class SceneRenderer
                 LinearGradientPaint gradient => new LinearGradientBrush(
                     new PointD(gradient.X1, gradient.Y1),
                     new PointD(gradient.X2, gradient.Y2),
-                    [.. gradient.Stops.Select(stop => new GradientStop(stop.Offset, Rgba64.FromRgba32(new Rgba32(stop.Color.R, stop.Color.G, stop.Color.B, stop.Color.A))))]),
+                    [.. gradient.Stops.Select(stop => new GradientStop(stop.Offset, Rgba64.FromRgba32(new Rgba32(stop.Color.R, stop.Color.G, stop.Color.B, stop.Color.A))))])
+                {
+                    SpreadMode = ToSpreadMode(gradient.Spread),
+                    Transform = ToTransform(gradient.Transform),
+                },
                 _ => throw new NotSupportedException($"The paint '{paint.GetType()}' is not supported."),
             };
             brushes.Add(paint, brush);

@@ -29,6 +29,9 @@ public sealed class SceneText(double x, double y, string text, SceneFont font, S
     /// <summary>Gets or sets the rotation of the text around its anchor, in degrees, clockwise.</summary>
     public double Rotation { get; set; }
 
+    /// <summary>Gets or sets the lines drawn with the text: an underline, a strikethrough, or both. They have the color of the text, and the position and the thickness the font gives them.</summary>
+    public SceneTextDecorations Decorations { get; set; }
+
     /// <summary>Gets or sets the advance width of the text, as the layout measured it.</summary>
     public double MeasuredWidth { get; set; }
 }

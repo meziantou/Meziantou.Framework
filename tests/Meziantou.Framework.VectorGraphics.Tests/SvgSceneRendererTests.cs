@@ -10,7 +10,7 @@ public sealed class SvgSceneRendererTests
 
         // Shapes are filled and stroked; texts are positioned by their baseline
         scene.Root.Add(new SceneRectangle(10, 10, 180, 60) { Fill = (SceneColor)"#e0f2fe", Stroke = (SceneColor)"#0369a1", StrokeWidth = 2, CornerRadius = 8 });
-        scene.Root.Add(new SceneText(100, 45, "Hello", new SceneFont(16, Bold: true), (SceneColor)"#0c4a6e") { Anchor = SceneTextAnchor.Middle });
+        scene.Root.Add(new SceneText(100, 45, "Hello", new SceneFont(16, Weight: SceneFont.BoldWeight), (SceneColor)"#0c4a6e") { Anchor = SceneTextAnchor.Middle });
 
         // Paths use the commands of SVG
         var arrow = new PathBuilder().MoveTo(20, 60).LineTo(60, 60).LineTo(55, 55).MoveTo(60, 60).LineTo(55, 65).Build();
@@ -167,6 +167,96 @@ public sealed class SvgSceneRendererTests
     }
 
     [Fact]
+    public void TextWeightsAndDecorations()
+    {
+        #region VectorGraphics_TextStyles
+        var scene = new Scene(width: 300, height: 100, fontFamily: "sans-serif");
+
+        // A weight from 1 to 1000, as in CSS, and lines drawn with the text
+        scene.Root.Add(new SceneText(10, 20, "Light", new SceneFont(16, Weight: 300), SceneColor.Black));
+        scene.Root.Add(new SceneText(10, 45, "Bold and underlined", new SceneFont(16, Weight: SceneFont.BoldWeight), SceneColor.Black) { Decorations = SceneTextDecorations.Underline });
+        scene.Root.Add(new SceneText(10, 70, "Removed", new SceneFont(16), SceneColor.Black) { Decorations = SceneTextDecorations.Strikethrough });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        Assert.Contains("font-size=\"16\" font-weight=\"300\"", svg, StringComparison.Ordinal);
+        Assert.Contains("font-weight=\"bold\" text-decoration=\"underline\"", svg, StringComparison.Ordinal);
+        Assert.Contains("text-decoration=\"line-through\"", svg, StringComparison.Ordinal);
+        Assert.Contains("font-weight=\"1000\"", SvgSceneRenderer.Render(Single(new SceneText(0, 0, "a", new SceneFont(10, Weight: 5000), SceneColor.Black) { Decorations = SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough })), StringComparison.Ordinal);
+        Assert.Contains("text-decoration=\"underline line-through\"", SvgSceneRenderer.Render(Single(new SceneText(0, 0, "a", new SceneFont(10), SceneColor.Black) { Decorations = SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough })), StringComparison.Ordinal);
+        Assert.True(new SceneFont(10, Weight: 600).IsBold);
+        Assert.False(new SceneFont(10, Weight: 599).IsBold);
+    }
+
+    [Fact]
+    public void EffectsAndGradientSpread()
+    {
+        #region VectorGraphics_Effects
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // A card with a drop shadow, and a blurred circle
+        scene.Root.Add(new SceneRectangle(10, 10, 80, 50) { Fill = SceneColor.White, CornerRadius = 4, Filter = new SceneDropShadowFilter(offsetX: 0, offsetY: 2, standardDeviation: 3, (SceneColor)"#00000040") });
+        scene.Root.Add(new SceneCircle(150, 50, 20) { Fill = (SceneColor)"#0369a1", Filter = new SceneBlurFilter(standardDeviation: 2) });
+
+        // Stripes: a gradient of 10 pixels, reflected, and rotated by its transform
+        var stripes = new LinearGradientPaint(0, 0, 10, 0, [new(0, SceneColor.White), new(1, (SceneColor)"#0369a1")])
+        {
+            Spread = SceneGradientSpread.Reflect,
+            Transform = SceneTransform.Rotate(45),
+        };
+        scene.Root.Add(new SceneRectangle(10, 70, 180, 20) { Fill = stripes, BlendMode = SceneBlendMode.Multiply });
+
+        // A group faded from left to right by a luminance mask
+        var faded = scene.Root.Add(new SceneGroup { Mask = new SceneMask() });
+        faded.Mask!.Content.Add(new SceneRectangle(100, 0, 100, 100) { Fill = new LinearGradientPaint(100, 0, 200, 0, [new(0, SceneColor.White), new(1, SceneColor.Black)]) });
+        faded.Add(new SceneText(150, 95, "Fading", new SceneFont(12), SceneColor.Black) { Anchor = SceneTextAnchor.Middle });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        Assert.Contains("<filter id=\"scene-filter0\" filterUnits=\"userSpaceOnUse\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<feGaussianBlur in=\"SourceAlpha\" stdDeviation=\"3\"/><feOffset dx=\"0\" dy=\"2\" result=\"shadow\"/><feFlood flood-color=\"#000000\" flood-opacity=\"0.251\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feGaussianBlur stdDeviation=\"2\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("filter=\"url(#scene-filter0)\"", svg, StringComparison.Ordinal);
+        Assert.Contains("filter=\"url(#scene-filter1)\"", svg, StringComparison.Ordinal);
+        Assert.Contains("spreadMethod=\"reflect\" gradientTransform=\"matrix(", svg, StringComparison.Ordinal);
+        Assert.Contains("style=\"mix-blend-mode:multiply\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<mask id=\"scene-mask0\" maskUnits=\"userSpaceOnUse\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<g mask=\"url(#scene-mask0)\">", svg, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EffectsOfTransformedGroupsAreInTheCoordinatesOfTheParent()
+    {
+        var scene = new Scene(100, 100, "sans-serif");
+        var mask = new SceneMask { Mode = SceneMaskMode.Alpha };
+        mask.Content.Add(new SceneCircle(50, 50, 40) { Fill = SceneColor.Black });
+        var group = scene.Root.Add(new SceneGroup { Mask = mask, BlendMode = SceneBlendMode.ColorDodge, Filter = new SceneBlurFilter(1), Transform = SceneTransform.Translate(5, 5) });
+        group.Add(new SceneLine(0, 10, 90, 10) { Stroke = SceneColor.Black });
+
+        // A text has no known size: its filter region is relative to its bounding box
+        scene.Root.Add(new SceneText(0, 50, "a", new SceneFont(10), SceneColor.Black) { Filter = new SceneBlurFilter(double.NaN) });
+        var svg = SvgSceneRenderer.Render(scene);
+
+        Assert.Contains("<g style=\"mix-blend-mode:color-dodge\">\n<g mask=\"url(#scene-mask0)\">\n<g filter=\"url(#scene-filter0)\">\n<g transform=\"translate(5 5)\">", svg, StringComparison.Ordinal);
+        Assert.Contains("mask-type=\"alpha\"", svg, StringComparison.Ordinal);
+        Assert.Contains("x=\"-50%\" y=\"-50%\" width=\"200%\" height=\"200%\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<feGaussianBlur stdDeviation=\"0\"/>", svg, StringComparison.Ordinal);
+
+        // The line, translated, is 1 pixel thick: its region has a height
+        Assert.Contains("<filter id=\"scene-filter0\" filterUnits=\"userSpaceOnUse\" x=\"", svg, StringComparison.Ordinal);
+        Assert.DoesNotContain("height=\"0\"", svg, StringComparison.Ordinal);
+    }
+
+    private static Scene Single(SceneElement element)
+    {
+        var scene = new Scene(10, 10, "sans-serif");
+        scene.Root.Add(element);
+        return scene;
+    }
+
+    [Fact]
     public void ToCubicCurves()
     {
         // A quadratic curve becomes the cubic curve of the same shape; the other commands are kept
@@ -222,7 +312,7 @@ public sealed class SvgSceneRendererTests
         var scene = new Scene(100, 50, "sans-serif");
         var group = scene.Root.Add(new SceneGroup { Hyperlink = "https://example.com/?a=1&b=2" });
         group.Add(new SceneText(10, 20, "Italic", new SceneFont(12, Italic: true), SceneColor.Black));
-        group.Add(new SceneText(10, 40, "Both", new SceneFont(12, Bold: true, Italic: true), SceneColor.Black));
+        group.Add(new SceneText(10, 40, "Both", new SceneFont(12, Weight: SceneFont.BoldWeight, Italic: true), SceneColor.Black));
         var svg = SvgSceneRenderer.Render(scene);
         Assert.Equal(
             """
@@ -314,7 +404,7 @@ public sealed class SvgSceneRendererTests
 
         // Each text has its own family, or the family of the scene
         var code = new SceneFont(12, Family: "Liberation Mono");
-        scene.Root.Add(new SceneText(10, 20, "Title", new SceneFont(16, Bold: true), SceneColor.Black));
+        scene.Root.Add(new SceneText(10, 20, "Title", new SceneFont(16, Weight: SceneFont.BoldWeight), SceneColor.Black));
         scene.Root.Add(new SceneText(10, 45, "var x = 1;", code, SceneColor.Black) { MeasuredWidth = measurer.Measure("var x = 1;", code).Width });
 
         // The SVG can embed the fonts, so every viewer draws the texts with them

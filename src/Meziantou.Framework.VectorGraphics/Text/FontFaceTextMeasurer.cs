@@ -69,7 +69,7 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
         if (Fonts is not null)
             return MeasureWithFallback(text, font, Fonts.GetFaces(font));
 
-        var face = (font.Bold, font.Italic) switch
+        var face = (font.IsBold, font.Italic) switch
         {
             (true, true) => _boldItalic,
             (true, false) => _bold,

@@ -72,7 +72,7 @@ internal static class ArchitectureIcons
                 break;
             default:
                 // An icon of an icon pack of Mermaid, which is not available here
-                group.Add(new SceneText(40, 40 + (measurer.Measure("?", new SceneFont(48, Bold: true)).Ascent / 2) - 4, "?", new SceneFont(48, Bold: true), SceneColor.White) { Anchor = SceneTextAnchor.Middle });
+                group.Add(new SceneText(40, 40 + (measurer.Measure("?", new SceneFont(48, Weight: SceneFont.BoldWeight)).Ascent / 2) - 4, "?", new SceneFont(48, Weight: SceneFont.BoldWeight), SceneColor.White) { Anchor = SceneTextAnchor.Middle });
                 break;
         }
     }

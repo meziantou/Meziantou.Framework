@@ -46,7 +46,7 @@ public sealed class AfmTextMeasurer : ITextMeasurer
     public TextMetrics Measure(string text, SceneFont font)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var metrics = (font.Bold, font.Italic) switch
+        var metrics = (font.IsBold, font.Italic) switch
         {
             (true, true) => _boldItalic,
             (true, false) => _bold,

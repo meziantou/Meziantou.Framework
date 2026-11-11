@@ -12,7 +12,7 @@ public sealed class TextMeasurerTests
         // A and V are 667 units wide, and the pair AV is kerned by -70 units (Helvetica.afm)
         Assert.Equal(6.67, Afm.Measure("A", new SceneFont(10)).Width, 1e-9);
         Assert.Equal(12.64, Afm.Measure("AV", new SceneFont(10)).Width, 1e-9);
-        Assert.Equal(7.22, Afm.Measure("A", new SceneFont(10, Bold: true)).Width, 1e-9);
+        Assert.Equal(7.22, Afm.Measure("A", new SceneFont(10, Weight: SceneFont.BoldWeight)).Width, 1e-9);
         Assert.Equal(0, Afm.Measure(string.Empty, new SceneFont(10)).Width);
 
         var metrics = Afm.Measure("x", new SceneFont(10));
@@ -47,8 +47,8 @@ public sealed class TextMeasurerTests
     {
         // Helvetica-Oblique has the widths of Helvetica, Helvetica-BoldOblique the ones of Helvetica-Bold
         Assert.Equal(Afm.Measure("Diagram", new SceneFont(10)).Width, Afm.Measure("Diagram", new SceneFont(10, Italic: true)).Width, 1e-9);
-        Assert.Equal(Afm.Measure("Diagram", new SceneFont(10, Bold: true)).Width, Afm.Measure("Diagram", new SceneFont(10, Bold: true, Italic: true)).Width, 1e-9);
-        Assert.NotEqual(Afm.Measure("Diagram", new SceneFont(10)).Width, Afm.Measure("Diagram", new SceneFont(10, Bold: true)).Width);
+        Assert.Equal(Afm.Measure("Diagram", new SceneFont(10, Weight: SceneFont.BoldWeight)).Width, Afm.Measure("Diagram", new SceneFont(10, Weight: SceneFont.BoldWeight, Italic: true)).Width, 1e-9);
+        Assert.NotEqual(Afm.Measure("Diagram", new SceneFont(10)).Width, Afm.Measure("Diagram", new SceneFont(10, Weight: SceneFont.BoldWeight)).Width);
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public sealed class TextMeasurerTests
 
         // Liberation Sans has the widths of Helvetica, in every style
         Assert.Equal(Afm.Measure("Diagram", new SceneFont(12, Italic: true)).Width, measurer.Measure("Diagram", new SceneFont(12, Italic: true)).Width, 0.5);
-        Assert.Equal(measurer.Measure("abc", new SceneFont(10, Italic: true)).Width, measurer.Measure("abc", new SceneFont(10, Bold: true, Italic: true)).Width);
+        Assert.Equal(measurer.Measure("abc", new SceneFont(10, Italic: true)).Width, measurer.Measure("abc", new SceneFont(10, Weight: SceneFont.BoldWeight, Italic: true)).Width);
         Assert.Equal("Liberation Sans", measurer.FontFamily);
     }
 
@@ -201,14 +201,32 @@ public sealed class TextMeasurerTests
         Assert.Same(sans, fonts.GetFace(new SceneFont(10, Family: "Liberation Sans"), defaultFamily: "Liberation Mono"));
 
         // The closest style: the slant first, then the weight
-        Assert.Same(sansBold, fonts.GetFace(new SceneFont(10, Bold: true)));
+        Assert.Same(sansBold, fonts.GetFace(new SceneFont(10, Weight: SceneFont.BoldWeight)));
         Assert.Same(sansItalic, fonts.GetFace(new SceneFont(10, Italic: true)));
-        Assert.Same(sansItalic, fonts.GetFace(new SceneFont(10, Bold: true, Italic: true)));
-        Assert.Same(mono, fonts.GetFace(new SceneFont(10, Bold: true, Family: "Liberation Mono")));
+        Assert.Same(sansItalic, fonts.GetFace(new SceneFont(10, Weight: SceneFont.BoldWeight, Italic: true)));
+        Assert.Same(mono, fonts.GetFace(new SceneFont(10, Weight: SceneFont.BoldWeight, Family: "Liberation Mono")));
 
         // The other families follow, for the characters the family does not have
-        Assert.Equal([mono, sansBold], fonts.GetFaces(new SceneFont(10, Bold: true, Family: "Liberation Mono")));
+        Assert.Equal([mono, sansBold], fonts.GetFaces(new SceneFont(10, Weight: SceneFont.BoldWeight, Family: "Liberation Mono")));
         Assert.Same(mono, new SceneFontCollection([sans, mono], defaultFamily: "LIBERATION MONO").GetFace(new SceneFont(10)));
+    }
+
+    [Fact]
+    public void SceneFontCollection_WeightsSelectTheNearestFace()
+    {
+        var regular = LoadFace("LiberationSans-Regular.woff2");
+        var bold = LoadFace("LiberationSans-Bold.woff2");
+        var fonts = new SceneFontCollection(regular, bold);
+        Assert.Same(regular, fonts.GetFace(new SceneFont(10, Weight: 100)));
+        Assert.Same(regular, fonts.GetFace(new SceneFont(10, Weight: 549)));
+        Assert.Same(bold, fonts.GetFace(new SceneFont(10, Weight: 551)));
+        Assert.Same(bold, fonts.GetFace(new SceneFont(10, Weight: 2000)));
+
+        // The lines of the text: the values of the font, in em
+        Assert.InRange(regular.UnderlinePosition, -0.2, 0);
+        Assert.InRange(regular.UnderlineThickness, 0.01, 0.2);
+        Assert.InRange(regular.StrikeoutPosition, 0.1, 0.5);
+        Assert.InRange(regular.StrikeoutThickness, 0.01, 0.2);
     }
 
     [Fact]

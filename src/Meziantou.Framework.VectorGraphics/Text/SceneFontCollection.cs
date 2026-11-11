@@ -12,7 +12,7 @@ namespace Meziantou.Framework.VectorGraphics;
 /// The family of a text is <see cref="SceneFont.Family"/>, or the family of the scene when it is <see langword="null"/>. It is
 /// a CSS <c>font-family</c> value: the first family of the list the collection has is used, and
 /// <see cref="DefaultFamily"/> when it has none of them. Within the family, the face closest to the style of the text is
-/// used: the same slant first, then the nearest weight (400 for regular text, 700 for bold text).
+/// used: the same slant first, then the nearest weight (<see cref="SceneFont.Weight"/>).
 /// </para>
 /// <para>
 /// The characters the face of the text does not have are drawn with the other families of the collection, in the order
@@ -22,7 +22,7 @@ namespace Meziantou.Framework.VectorGraphics;
 /// </remarks>
 public sealed class SceneFontCollection
 {
-    private readonly ConcurrentDictionary<(string? Family, bool Bold, bool Italic), SceneFontFace[]> _stacks = new();
+    private readonly ConcurrentDictionary<(string? Family, int Weight, bool Italic), SceneFontFace[]> _stacks = new();
 
     /// <summary>Initializes a new instance of the <see cref="SceneFontCollection"/> class. The default family is the family of the first face.</summary>
     /// <param name="faces">The faces, in order of preference for the characters a family does not have.</param>
@@ -150,10 +150,10 @@ public sealed class SceneFontCollection
 
     private SceneFontFace[] GetStack(SceneFont font, string? defaultFamily)
     {
-        return _stacks.GetOrAdd((font.Family ?? defaultFamily, font.Bold, font.Italic), static (key, collection) => collection.CreateStack(key.Family, key.Bold, key.Italic), this);
+        return _stacks.GetOrAdd((font.Family ?? defaultFamily, font.ClampedWeight, font.Italic), static (key, collection) => collection.CreateStack(key.Family, key.Weight, key.Italic), this);
     }
 
-    private SceneFontFace[] CreateStack(string? familyList, bool bold, bool italic)
+    private SceneFontFace[] CreateStack(string? familyList, int weight, bool italic)
     {
         var family = DefaultFamily;
         if (familyList is not null)
@@ -168,7 +168,6 @@ public sealed class SceneFontCollection
             }
         }
 
-        var weight = bold ? 700 : 400;
         var stack = new List<SceneFontFace> { GetClosestFace(family, weight, italic) };
         foreach (var other in Families)
         {

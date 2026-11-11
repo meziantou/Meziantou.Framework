@@ -196,8 +196,8 @@ public sealed class ChartImageTests
             var actual = image.Measure(text, new SceneFont(12)).Width;
             Assert.True(Math.Abs(expected - actual) <= expected * 0.02, $"{text}: {expected} vs {actual}");
 
-            var expectedBold = afm.Measure(text, new SceneFont(16, Bold: true)).Width;
-            var actualBold = image.Measure(text, new SceneFont(16, Bold: true)).Width;
+            var expectedBold = afm.Measure(text, new SceneFont(16, Weight: SceneFont.BoldWeight)).Width;
+            var actualBold = image.Measure(text, new SceneFont(16, Weight: SceneFont.BoldWeight)).Width;
             Assert.True(Math.Abs(expectedBold - actualBold) <= expectedBold * 0.02, $"{text}: {expectedBold} vs {actualBold}");
         }
 

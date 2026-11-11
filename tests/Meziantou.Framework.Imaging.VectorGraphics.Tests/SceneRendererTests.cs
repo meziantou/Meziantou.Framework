@@ -117,7 +117,7 @@ public sealed class SceneRendererTests
     public void TextIsDrawnFromItsBaselineAndAnchor()
     {
         var scene = new Scene(200, 100, "sans-serif");
-        scene.Root.Add(new SceneText(100, 30, "MMMM", new SceneFont(20, Bold: true), SceneColor.Black) { Anchor = SceneTextAnchor.Middle });
+        scene.Root.Add(new SceneText(100, 30, "MMMM", new SceneFont(20, Weight: SceneFont.BoldWeight), SceneColor.Black) { Anchor = SceneTextAnchor.Middle });
         scene.Root.Add(new SceneText(200, 60, "MMMM", new SceneFont(20), SceneColor.Black) { Anchor = SceneTextAnchor.End });
         scene.Root.Add(new SceneText(20, 95, "MM", new SceneFont(20), SceneColor.Black) { Rotation = -90 });
         scene.Root.Add(new SceneText(0, 0, string.Empty, new SceneFont(20), SceneColor.Black));
@@ -168,8 +168,8 @@ public sealed class SceneRendererTests
         var measurer = SceneImageRenderer.CreateMeasurer();
         Assert.Equal("Liberation Sans", measurer.FontFamily);
         Assert.Same(SceneFonts.SansItalic, measurer.GetFont(new SceneFont(10, Italic: true)));
-        Assert.Same(SceneFonts.SansBoldItalic, measurer.GetFont(new SceneFont(10, Bold: true, Italic: true)));
-        Assert.Same(SceneFonts.SansBold, measurer.GetFont(new SceneFont(10, Bold: true)));
+        Assert.Same(SceneFonts.SansBoldItalic, measurer.GetFont(new SceneFont(10, Weight: SceneFont.BoldWeight, Italic: true)));
+        Assert.Same(SceneFonts.SansBold, measurer.GetFont(new SceneFont(10, Weight: SceneFont.BoldWeight)));
 
         // An italic glyph leans to the right: the ink of the top of an I is right of the ink of its bottom
         var scene = new Scene(60, 60, "sans-serif");
@@ -182,7 +182,7 @@ public sealed class SceneRendererTests
         // A custom regular font is used for every style that has no font of its own
         var options = new SceneImageOptions { Font = SceneFonts.SansBold };
         Assert.Same(SceneFonts.SansBold, SceneImageRenderer.CreateMeasurer(options).GetFont(new SceneFont(10, Italic: true)));
-        Assert.Same(SceneFonts.SansBold, SceneImageRenderer.CreateMeasurer(options).GetFont(new SceneFont(10, Bold: true, Italic: true)));
+        Assert.Same(SceneFonts.SansBold, SceneImageRenderer.CreateMeasurer(options).GetFont(new SceneFont(10, Weight: SceneFont.BoldWeight, Italic: true)));
     }
 
     private static SceneFontFace LoadFace(string fileName) => SceneFontFace.Load(Path.Combine(AppContext.BaseDirectory, "TestData", fileName))[0];
@@ -288,6 +288,85 @@ public sealed class SceneRendererTests
         Assert.True(image.Frames[0][15, 15].R < 100);
         Assert.True(image.Frames[0][25, 30].R > 200);
         Assert.True(image.Frames[0][75, 30].R < 160);
+    }
+
+    [Fact]
+    public void GradientsBlendModesMasksAndDecorations()
+    {
+        var red = (SceneColor)"#ff0000";
+        var blue = (SceneColor)"#0000ff";
+        var green = (SceneColor)"#00ff00";
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+
+        // A gradient of 10 pixels from red to blue, repeated, reflected, and stretched over 100 pixels by its transform
+        scene.Root.Add(new SceneRectangle(0, 0, 100, 10) { Fill = new LinearGradientPaint(0, 0, 10, 0, [new(0, red), new(1, blue)]) { Spread = SceneGradientSpread.Repeat } });
+        scene.Root.Add(new SceneRectangle(0, 10, 100, 10) { Fill = new LinearGradientPaint(0, 0, 10, 0, [new(0, red), new(1, blue)]) { Spread = SceneGradientSpread.Reflect } });
+        scene.Root.Add(new SceneRectangle(0, 20, 100, 10) { Fill = new LinearGradientPaint(0, 0, 1, 0, [new(0, red), new(1, blue)]) { Transform = SceneTransform.Scale(100, 1) } });
+
+        // Red multiplied with blue is black, with white it is red
+        scene.Root.Add(new SceneRectangle(0, 30, 50, 10) { Fill = blue });
+        scene.Root.Add(new SceneRectangle(0, 30, 100, 10) { Fill = red, BlendMode = SceneBlendMode.Multiply });
+
+        // A luminance mask shows the right half (white), an alpha mask the left half
+        var luminance = scene.Root.Add(new SceneGroup { Mask = new SceneMask() });
+        luminance.Mask!.Content.Add(new SceneRectangle(50, 40, 50, 10) { Fill = SceneColor.White });
+        luminance.Add(new SceneRectangle(0, 40, 100, 10) { Fill = green });
+        var alpha = new SceneMask { Mode = SceneMaskMode.Alpha };
+        alpha.Content.Add(new SceneRectangle(0, 50, 50, 10) { Fill = SceneColor.Black });
+        scene.Root.Add(new SceneRectangle(0, 50, 100, 10) { Fill = green, Mask = alpha });
+
+        // An underline
+        scene.Root.Add(new SceneText(10, 80, "ii", new SceneFont(20), SceneColor.Black) { Decorations = SceneTextDecorations.Underline });
+        using var image = scene.ToImage();
+
+        static bool IsRed(Rgba32 color) => color.R > 150 && color.B < 100;
+        static bool IsBlue(Rgba32 color) => color.B > 150 && color.R < 100;
+        var pixels = image.Frames[0];
+        Assert.True(IsRed(pixels[1, 5]) && IsRed(pixels[11, 5]) && IsBlue(pixels[9, 5]), "repeat");
+        Assert.True(IsRed(pixels[1, 15]) && IsBlue(pixels[11, 15]) && IsRed(pixels[19, 15]), "reflect");
+        Assert.True(IsRed(pixels[5, 25]) && IsBlue(pixels[95, 25]), "transform");
+        Assert.True(pixels[25, 35].R < 30 && pixels[25, 35].B < 30, "multiply with blue");
+        Assert.True(IsRed(pixels[75, 35]), "multiply with white");
+        Assert.True(pixels[25, 45].G > 200 && pixels[25, 45].R > 200, "luminance mask hides");
+        Assert.True(pixels[75, 45].G > 200 && pixels[75, 45].R < 50, "luminance mask shows");
+        Assert.True(pixels[25, 55].G > 200 && pixels[25, 55].R < 50, "alpha mask shows");
+        Assert.True(pixels[75, 55].G > 200 && pixels[75, 55].R > 200, "alpha mask hides");
+        Assert.Contains(Enumerable.Range(81, 3), y => pixels[13, y].R < 200);
+        Assert.True(pixels[13, 87].R > 200, "nothing below the underline");
+    }
+
+    [Fact]
+    public void BlurAndDropShadow()
+    {
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneRectangle(20, 20, 20, 20) { Fill = SceneColor.Black, Filter = new SceneBlurFilter(3) });
+        scene.Root.Add(new SceneRectangle(60, 10, 20, 20) { Fill = SceneColor.Black, Filter = new SceneDropShadowFilter(10, 10, 0, (SceneColor)"#ff0000") });
+        using var image = scene.ToImage();
+
+        // The blur spreads the edge of the rectangle; the shadow is red, 10 pixels right and down
+        var edge = image.Frames[0][19, 30];
+        Assert.InRange(edge.R, 40, 220);
+        Assert.Equal(Colors.Black, image.Frames[0][30, 30]);
+        Assert.Equal(new Rgba32(255, 0, 0), image.Frames[0][85, 35]);
+        Assert.Equal(Colors.Black, image.Frames[0][70, 20]);
+    }
+
+    [Fact]
+    public void WeightsSelectTheNearestFace()
+    {
+        var fonts = new SceneFontCollection(LoadFace("LiberationSans-Regular.woff2"), LoadFace("LiberationSans-Bold.woff2"));
+        var measurer = new ImageTextMeasurer(fonts);
+        var regular = measurer.Measure("Weights", new SceneFont(20)).Width;
+        var bold = measurer.Measure("Weights", new SceneFont(20, Weight: SceneFont.BoldWeight)).Width;
+        Assert.NotEqual(regular, bold);
+        Assert.Equal(regular, measurer.Measure("Weights", new SceneFont(20, Weight: 500)).Width);
+        Assert.Equal(bold, measurer.Measure("Weights", new SceneFont(20, Weight: 600)).Width);
+        Assert.Equal(bold, measurer.Measure("Weights", new SceneFont(20, Weight: 900)).Width);
+
+        // Without fonts, the weights from 600 are drawn with the bold font
+        var defaults = SceneImageRenderer.CreateMeasurer();
+        Assert.Same(SceneFonts.SansBold, defaults.GetFont(new SceneFont(10, Weight: 600)));
+        Assert.Same(SceneFonts.Sans, defaults.GetFont(new SceneFont(10, Weight: 599)));
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Fonts;
@@ -15,6 +16,12 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 {
     // The miter limit of SVG (the default of PDF is 10)
     private const double DefaultMiterLimit = 4;
+
+    // The decorations of Helvetica, in em: its underline (Helvetica.afm: centered 100 units below the baseline, 50 units
+    // thick), and the strikeout of Arial, which has its widths
+    private const double HelveticaUnderlinePosition = -0.075;
+    private const double HelveticaStrikeoutPosition = 0.3;
+    private const double HelveticaLineThickness = 0.05;
 
     private static readonly ConditionalWeakTable<SceneFontFace, EmbeddedFont> EmbeddedFonts = [];
     private static readonly ConditionalWeakTable<SceneImage, LoadedImage> Images = [];
@@ -46,6 +53,32 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         Restore();
     }
 
+    /// <summary>Throws when a scene has what PDF cannot draw: a filter.</summary>
+    /// <exception cref="NotSupportedException">An element has a filter.</exception>
+    public static void ThrowIfUnsupported(Scene scene)
+    {
+        Visit(scene.Root);
+
+        static void Visit(SceneElement element)
+        {
+            if (element.Filter is not null)
+                throw new NotSupportedException($"PDF has no filters: the {element.GetType().Name} has a {element.Filter.GetType().Name}, which cannot be drawn as vectors. Remove the filters of the scene, or draw it as an image.");
+
+            if (element.Mask is { } mask)
+            {
+                Visit(mask.Content);
+            }
+
+            if (element is SceneGroup group)
+            {
+                foreach (var child in group.Children)
+                {
+                    Visit(child);
+                }
+            }
+        }
+    }
+
     private void DrawElement(SceneElement element)
     {
         var opacity = element.Opacity;
@@ -53,10 +86,37 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             return;
 
         opacity = Math.Min(opacity, 1);
+
+        // A mask and a blend mode are set in the graphics state of the element (11.6.4.3, 11.3.5)
+        var hasState = element.Mask is not null || element.BlendMode is not SceneBlendMode.Normal;
+        if (hasState)
+        {
+            Save();
+            if (element.Mask is { } mask && !SetMask(mask))
+            {
+                Restore();
+                return;
+            }
+
+            if (element.BlendMode is not SceneBlendMode.Normal)
+            {
+                _content.SetGraphicsState(new PdfExtGState { BlendMode = ToBlendMode(element.BlendMode) });
+            }
+        }
+
+        DrawElementContent(element, opacity, isolated: hasState);
+        if (hasState)
+        {
+            Restore();
+        }
+    }
+
+    private void DrawElementContent(SceneElement element, double opacity, bool isolated)
+    {
         switch (element)
         {
             case SceneGroup group:
-                DrawGroup(group, opacity);
+                DrawGroup(group, opacity, isolated);
                 break;
 
             case SceneRectangle rectangle when rectangle.Width > 0 && rectangle.Height > 0:
@@ -113,7 +173,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         }
     }
 
-    private void DrawGroup(SceneGroup group, double opacity)
+    private void DrawGroup(SceneGroup group, double opacity, bool isolated)
     {
         if (group.Children.Count is 0)
             return;
@@ -155,7 +215,8 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             Transform(new PdfMatrix(groupTransform.A, groupTransform.B, groupTransform.C, groupTransform.D, groupTransform.E, groupTransform.F));
         }
 
-        if (opacity < 1)
+        // The opacity, the mask and the blend mode apply to the group as a whole: it is drawn in a transparency group
+        if (opacity < 1 || isolated)
         {
             DrawTransparencyGroup(group.Children, opacity);
         }
@@ -182,21 +243,60 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         if (bounds is not { IsFinite: true, Width: > 0, Height: > 0 } box)
             return;
 
-        var form = page.Document.CreateForm(new PdfRectangle(box.Left, box.Top, box.Right, box.Bottom), matrix: null, new PdfTransparencyGroup());
+        var form = CreateForm(children, box, new PdfTransparencyGroup());
+        SetAlpha(opacity, opacity);
+        _content.DrawForm(form);
+    }
+
+    // Draws elements in a form whose space is the current user space
+    private PdfForm CreateForm(IEnumerable<SceneElement> elements, Bounds box, PdfTransparencyGroup group)
+    {
+        var form = page.Document.CreateForm(new PdfRectangle(box.Left, box.Top, box.Right, box.Bottom), matrix: null, group);
         var (outerContent, outerMatrix, outerStreamToPage) = (_content, _matrix, _streamToPage);
         _streamToPage = PdfMatrix.Multiply(_matrix, _streamToPage);
         _matrix = PdfMatrix.Identity;
         _content = form.CreateContentBuilder();
-        foreach (var child in children)
+        foreach (var element in elements)
         {
-            DrawElement(child);
+            DrawElement(element);
         }
 
         _content.Complete();
         (_content, _matrix, _streamToPage) = (outerContent, outerMatrix, outerStreamToPage);
-        SetAlpha(opacity, opacity);
-        _content.DrawForm(form);
+        return form;
     }
+
+    // The content of a mask is drawn in a group whose luminosity or alpha is the soft mask: outside of it, the
+    // luminosity of the black backdrop and the alpha are 0, so nothing is drawn. Returns false when the mask shows nothing.
+    private bool SetMask(SceneMask mask)
+    {
+        if (Bounds.Of(mask.Content, this) is not { IsFinite: true, Width: > 0, Height: > 0 } box)
+            return false;
+
+        var form = CreateForm([mask.Content], box, new PdfTransparencyGroup { ColorSpace = PdfDeviceColorSpace.Rgb });
+        _content.SetGraphicsState(new PdfExtGState { SoftMask = mask.Mode is SceneMaskMode.Alpha ? PdfSoftMask.FromAlpha(form) : PdfSoftMask.FromLuminosity(form) });
+        return true;
+    }
+
+    private static PdfBlendMode ToBlendMode(SceneBlendMode mode) => mode switch
+    {
+        SceneBlendMode.Multiply => PdfBlendMode.Multiply,
+        SceneBlendMode.Screen => PdfBlendMode.Screen,
+        SceneBlendMode.Overlay => PdfBlendMode.Overlay,
+        SceneBlendMode.Darken => PdfBlendMode.Darken,
+        SceneBlendMode.Lighten => PdfBlendMode.Lighten,
+        SceneBlendMode.ColorDodge => PdfBlendMode.ColorDodge,
+        SceneBlendMode.ColorBurn => PdfBlendMode.ColorBurn,
+        SceneBlendMode.HardLight => PdfBlendMode.HardLight,
+        SceneBlendMode.SoftLight => PdfBlendMode.SoftLight,
+        SceneBlendMode.Difference => PdfBlendMode.Difference,
+        SceneBlendMode.Exclusion => PdfBlendMode.Exclusion,
+        SceneBlendMode.Hue => PdfBlendMode.Hue,
+        SceneBlendMode.Saturation => PdfBlendMode.Saturation,
+        SceneBlendMode.Color => PdfBlendMode.Color,
+        SceneBlendMode.Luminosity => PdfBlendMode.Luminosity,
+        _ => PdfBlendMode.Normal,
+    };
 
     private void DrawShape(SceneShape shape, PathData path, double opacity, PdfFillRule fillRule, bool canFill)
     {
@@ -206,8 +306,8 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             return;
 
         Save();
-        var fillAlpha = fill is null ? null : SetPaint(fill, stroke: false);
-        var strokeAlpha = stroke is null ? null : SetPaint(stroke, stroke: true);
+        var fillAlpha = fill is null ? null : SetPaint(fill, stroke: false, shape);
+        var strokeAlpha = stroke is null ? null : SetPaint(stroke, stroke: true, shape);
         if (fillAlpha is null && strokeAlpha is null)
         {
             Restore();
@@ -300,7 +400,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     }
 
     // Sets a paint and returns its opacity, or null when it paints nothing
-    private double? SetPaint(ScenePaint paint, bool stroke)
+    private double? SetPaint(ScenePaint paint, bool stroke, SceneShape shape)
     {
         switch (paint)
         {
@@ -308,52 +408,141 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                 SetColor(solid.Color, stroke);
                 return solid.Color.A / 255.0;
 
-            case RadialGradientPaint radial:
-                {
-                    var radialStops = GetStops(radial.Stops);
-                    if (radialStops.Count is 0 || !IsFinite(radial.CenterX, radial.CenterY, radial.Radius, radial.FocalX, radial.FocalY) || radial.Radius < 0)
-                        return null;
-
-                    var radialOpacity = radialStops.Average(stop => stop.Color.A / 255.0);
-                    if (radialStops.Count is 1 || radial.Radius == 0)
-                    {
-                        // SVG paints a gradient of one stop, or of no radius, with the color of its last stop
-                        SetColor(radialStops[^1].Color, stroke);
-                        return radialOpacity;
-                    }
-
-                    // The circles go from the focal point, of radius 0, to the circle of the gradient (8.7.4.5.4, type 3)
-                    var radialFunction = PdfFunction.Gradient([.. radialStops.Select(stop => (stop.Offset, ToColor(stop.Color)))]);
-                    var radialShading = PdfShading.Radial(PdfDeviceColorSpace.Rgb, radial.FocalX, radial.FocalY, 0, radial.CenterX, radial.CenterY, radial.Radius, radialFunction, extendStart: true, extendEnd: true);
-                    SetPattern(new PdfShadingPattern(radialShading, _matrix), stroke);
-                    return radialOpacity;
-                }
-
-            case LinearGradientPaint gradient:
-                var stops = GetStops(gradient.Stops);
-                if (stops.Count is 0)
-                    return null;
-
-                var opacity = stops.Average(stop => stop.Color.A / 255.0);
-                if (stops.Count is 1 || (gradient.X1 == gradient.X2 && gradient.Y1 == gradient.Y2) || !IsFinite(gradient.X1, gradient.Y1, gradient.X2, gradient.Y2))
-                {
-                    // SVG paints a gradient of one stop, or of no length, with the color of its last stop
-                    SetColor(stops[^1].Color, stroke);
-                    return opacity;
-                }
-
-                var function = PdfFunction.Gradient([.. stops.Select(stop => (stop.Offset, ToColor(stop.Color)))]);
-                var shading = PdfShading.Axial(PdfDeviceColorSpace.Rgb, gradient.X1, gradient.Y1, gradient.X2, gradient.Y2, function, extendStart: true, extendEnd: true);
-                SetPattern(new PdfShadingPattern(shading, _matrix), stroke);
-                return opacity;
+            case SceneGradientPaint gradient:
+                return SetGradient(gradient, stroke, shape);
 
             default:
                 return null;
         }
     }
 
-    // The stops as SVG reads them: the offsets clamped to [0, 1] and never less than the one before. PDF needs
-    // increasing bounds from 0 to 1: the stops of a hard edge are moved apart a little, and the ends are added.
+    private double? SetGradient(SceneGradientPaint gradient, bool stroke, SceneShape shape)
+    {
+        var stops = GetStops(gradient.Stops);
+        if (stops.Count is 0)
+            return null;
+
+        var opacity = stops.Average(stop => stop.Color.A / 255.0);
+        var transform = gradient.Transform is { } value ? new PdfMatrix(value.A, value.B, value.C, value.D, value.E, value.F) : PdfMatrix.Identity;
+        if (!IsFinite(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F) || !transform.TryInvert(out var inverse))
+            return null;
+
+        var degenerate = stops.Count is 1 || gradient switch
+        {
+            LinearGradientPaint linear => (linear.X1 == linear.X2 && linear.Y1 == linear.Y2) || !IsFinite(linear.X1, linear.Y1, linear.X2, linear.Y2),
+            RadialGradientPaint radial => !(radial.Radius > 0) || !IsFinite(radial.CenterX, radial.CenterY, radial.Radius, radial.FocalX, radial.FocalY),
+            _ => true,
+        };
+
+        if (degenerate)
+        {
+            // SVG paints a gradient of one stop, or of no length or radius, with the color of its last stop
+            SetColor(stops[^1].Color, stroke);
+            return opacity;
+        }
+
+        // Repeat and reflect: the stops are repeated over the periods the shape covers, in the space of the gradient
+        var (first, last) = (0, 1);
+        if (gradient.Spread is not SceneGradientSpread.Pad && Bounds.Of(shape, this)?.Transform(inverse) is { IsFinite: true } box)
+        {
+            var range = GetRange(gradient, box);
+            if (range is { } periods)
+            {
+                (first, last) = periods;
+                stops = Repeat(stops, first, last, gradient.Spread is SceneGradientSpread.Reflect);
+            }
+        }
+
+        var function = PdfFunction.Gradient([.. stops.Select(stop => (stop.Offset, ToColor(stop.Color)))]);
+        var shading = gradient switch
+        {
+            LinearGradientPaint linear => PdfShading.Axial(
+                PdfDeviceColorSpace.Rgb,
+                linear.X1 + (first * (linear.X2 - linear.X1)), linear.Y1 + (first * (linear.Y2 - linear.Y1)),
+                linear.X1 + (last * (linear.X2 - linear.X1)), linear.Y1 + (last * (linear.Y2 - linear.Y1)),
+                function, extendStart: true, extendEnd: true),
+
+            // The circles go from the focal point, of radius 0, to the circle of the gradient (8.7.4.5.4, type 3)
+            RadialGradientPaint radial => PdfShading.Radial(
+                PdfDeviceColorSpace.Rgb,
+                radial.FocalX, radial.FocalY, 0,
+                radial.FocalX + (last * (radial.CenterX - radial.FocalX)), radial.FocalY + (last * (radial.CenterY - radial.FocalY)), last * radial.Radius,
+                function, extendStart: true, extendEnd: true),
+            _ => throw new UnreachableException(),
+        };
+
+        SetPattern(new PdfShadingPattern(shading, PdfMatrix.Multiply(transform, _matrix)), stroke);
+        return opacity;
+    }
+
+    // The most periods a repeated gradient is drawn with; beyond them, it is padded
+    private const int MaxPeriods = 256;
+
+    // The periods of the gradient the corners of a rectangle reach: a linear gradient is 0 at its start and 1 at its
+    // end, a radial gradient 0 at its focal point and 1 on its circle. A radial gradient whose focal point is not
+    // inside its circle is padded.
+    private static (int First, int Last)? GetRange(SceneGradientPaint gradient, Bounds box)
+    {
+        ReadOnlySpan<(double X, double Y)> corners = [(box.Left, box.Top), (box.Right, box.Top), (box.Left, box.Bottom), (box.Right, box.Bottom)];
+        var (min, max) = (double.PositiveInfinity, double.NegativeInfinity);
+        foreach (var (x, y) in corners)
+        {
+            double t;
+            if (gradient is LinearGradientPaint linear)
+            {
+                var (dx, dy) = (linear.X2 - linear.X1, linear.Y2 - linear.Y1);
+                t = (((x - linear.X1) * dx) + ((y - linear.Y1) * dy)) / ((dx * dx) + (dy * dy));
+            }
+            else
+            {
+                // The circle of a parameter t is centered t of the way from the focal point to the center, of radius t r:
+                // the parameter of a point is the positive root of |q - t d|^2 = (t r)^2
+                var radial = (RadialGradientPaint)gradient;
+                var (dx, dy) = (radial.CenterX - radial.FocalX, radial.CenterY - radial.FocalY);
+                var (qx, qy) = (x - radial.FocalX, y - radial.FocalY);
+                var a = (dx * dx) + (dy * dy) - (radial.Radius * radial.Radius);
+                if (a >= 0)
+                    return null;
+
+                var b = -2 * ((qx * dx) + (qy * dy));
+                var c = (qx * qx) + (qy * qy);
+                t = (-b - Math.Sqrt((b * b) - (4 * a * c))) / (2 * a);
+            }
+
+            (min, max) = (Math.Min(min, t), Math.Max(max, t));
+        }
+
+        if (!double.IsFinite(min) || !double.IsFinite(max))
+            return null;
+
+        var first = gradient is RadialGradientPaint ? 0 : (int)Math.Clamp(Math.Floor(min), -MaxPeriods, MaxPeriods);
+        var last = (int)Math.Clamp(Math.Ceiling(max), first + 1, first + MaxPeriods);
+        return (first, last);
+    }
+
+    // The stops of the periods from first to last, their offsets brought back to [0, 1]
+    private static List<(double Offset, SceneColor Color)> Repeat(List<(double Offset, SceneColor Color)> stops, int first, int last, bool reflect)
+    {
+        var repeated = new List<(double Offset, SceneColor Color)>((last - first) * stops.Count);
+        for (var period = first; period < last; period++)
+        {
+            var reversed = reflect && (period & 1) != 0;
+            for (var i = 0; i < stops.Count; i++)
+            {
+                var stop = reversed ? stops[^(i + 1)] : stops[i];
+                var offset = (period + (reversed ? 1 - stop.Offset : stop.Offset) - first) / (double)(last - first);
+                if (repeated.Count > 0 && offset <= repeated[^1].Offset)
+                {
+                    offset = repeated[^1].Offset + 1e-9;
+                }
+
+                repeated.Add((offset, stop.Color));
+            }
+        }
+
+        return repeated;
+    }
+
     private void SetPattern(PdfPattern pattern, bool stroke)
     {
         if (stroke)
@@ -428,6 +617,34 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         }
 
         _content.EndText();
+        DrawDecorations(text, startX, width, rotation);
+        Restore();
+    }
+
+    // The lines of a text are rectangles of the color of the text, at the position and of the thickness its face gives
+    private void DrawDecorations(SceneText text, double startX, double width, SceneTransform rotation)
+    {
+        if ((text.Decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough)) is SceneTextDecorations.None || !(width > 0))
+            return;
+
+        var face = fonts?.GetFace(text.Font, scene.FontFamily);
+        var size = text.Font.Size;
+        Save();
+        Transform(new PdfMatrix(rotation.A, rotation.B, rotation.C, rotation.D, rotation.E, rotation.F));
+        if (text.Decorations.HasFlag(SceneTextDecorations.Underline))
+        {
+            var top = face?.UnderlinePosition ?? HelveticaUnderlinePosition;
+            var thickness = face?.UnderlineThickness ?? HelveticaLineThickness;
+            _content.Rectangle(startX, text.Y - (top * size), width, thickness * size).Fill();
+        }
+
+        if (text.Decorations.HasFlag(SceneTextDecorations.Strikethrough))
+        {
+            var top = face?.StrikeoutPosition ?? HelveticaStrikeoutPosition;
+            var thickness = face?.StrikeoutThickness ?? HelveticaLineThickness;
+            _content.Rectangle(startX, text.Y - (top * size), width, thickness * size).Fill();
+        }
+
         Restore();
     }
 
@@ -478,7 +695,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
     private static PdfFont GetStandardFont(SceneFont font)
     {
-        return PdfFont.GetStandardFont((font.Bold, font.Italic) switch
+        return PdfFont.GetStandardFont((font.IsBold, font.Italic) switch
         {
             (true, true) => PdfStandardFont.HelveticaBoldOblique,
             (true, false) => PdfStandardFont.HelveticaBold,

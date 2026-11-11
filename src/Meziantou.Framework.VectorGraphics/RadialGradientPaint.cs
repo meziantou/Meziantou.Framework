@@ -3,9 +3,9 @@ namespace Meziantou.Framework.VectorGraphics;
 /// <summary>
 /// A radial gradient, in the coordinates of the shape it paints: the color of offset 0 is at the focal point, and the
 /// color of offset 1 on the circle of <see cref="CenterX"/>, <see cref="CenterY"/> and <see cref="Radius"/>. Outside
-/// the circle, the color of the last stop is used.
+/// the circle, the gradient spreads as <see cref="SceneGradientPaint.Spread"/> says.
 /// </summary>
-public sealed class RadialGradientPaint : ScenePaint
+public sealed class RadialGradientPaint : SceneGradientPaint
 {
     /// <summary>Initializes a new instance of the <see cref="RadialGradientPaint"/> class whose focal point is the center of the circle.</summary>
     /// <param name="centerX">The x coordinate of the center of the circle.</param>
@@ -25,14 +25,13 @@ public sealed class RadialGradientPaint : ScenePaint
     /// <param name="focalY">The y coordinate of the focal point, the position of offset 0.</param>
     /// <param name="stops">The color stops, by increasing offset.</param>
     public RadialGradientPaint(double centerX, double centerY, double radius, double focalX, double focalY, IEnumerable<SceneGradientStop> stops)
+        : base(stops)
     {
-        ArgumentNullException.ThrowIfNull(stops);
         CenterX = centerX;
         CenterY = centerY;
         Radius = radius;
         FocalX = focalX;
         FocalY = focalY;
-        Stops = [.. stops];
     }
 
     /// <summary>Gets the x coordinate of the center of the circle of offset 1.</summary>
@@ -49,7 +48,4 @@ public sealed class RadialGradientPaint : ScenePaint
 
     /// <summary>Gets the y coordinate of the focal point, the position of offset 0.</summary>
     public double FocalY { get; }
-
-    /// <summary>Gets the color stops.</summary>
-    public IReadOnlyList<SceneGradientStop> Stops { get; }
 }

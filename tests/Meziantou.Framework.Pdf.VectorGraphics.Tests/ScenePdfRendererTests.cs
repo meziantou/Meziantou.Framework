@@ -130,12 +130,96 @@ public sealed class ScenePdfRendererTests
     }
 
     [Fact]
+    public void GradientsBlendModesMasksAndDecorations()
+    {
+        var red = (SceneColor)"#ff0000";
+        var blue = (SceneColor)"#0000ff";
+        var green = (SceneColor)"#00ff00";
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+
+        // A gradient of 10 pixels from red to blue, repeated, reflected, and stretched over 100 pixels by its transform
+        scene.Root.Add(new SceneRectangle(0, 0, 100, 10) { Fill = new LinearGradientPaint(0, 0, 10, 0, [new(0, red), new(1, blue)]) { Spread = SceneGradientSpread.Repeat } });
+        scene.Root.Add(new SceneRectangle(0, 10, 100, 10) { Fill = new LinearGradientPaint(0, 0, 10, 0, [new(0, red), new(1, blue)]) { Spread = SceneGradientSpread.Reflect } });
+        scene.Root.Add(new SceneRectangle(0, 20, 100, 10) { Fill = new LinearGradientPaint(0, 0, 1, 0, [new(0, red), new(1, blue)]) { Transform = SceneTransform.Scale(100, 1) } });
+
+        // Red multiplied with blue is black, with white it is red
+        scene.Root.Add(new SceneRectangle(0, 30, 50, 10) { Fill = blue });
+        scene.Root.Add(new SceneRectangle(0, 30, 100, 10) { Fill = red, BlendMode = SceneBlendMode.Multiply });
+
+        // A luminance mask shows the right half (white), an alpha mask the left half
+        var luminance = scene.Root.Add(new SceneGroup { Mask = new SceneMask() });
+        luminance.Mask!.Content.Add(new SceneRectangle(50, 40, 50, 10) { Fill = SceneColor.White });
+        luminance.Add(new SceneRectangle(0, 40, 100, 10) { Fill = green });
+        var alpha = new SceneMask { Mode = SceneMaskMode.Alpha };
+        alpha.Content.Add(new SceneRectangle(0, 50, 50, 10) { Fill = SceneColor.Black });
+        scene.Root.Add(new SceneRectangle(0, 50, 100, 10) { Fill = green, Mask = alpha });
+
+        // An underline
+        scene.Root.Add(new SceneText(10, 80, "ii", new SceneFont(20), SceneColor.Black) { Decorations = SceneTextDecorations.Underline });
+        using var image = Render(scene);
+
+        static bool IsRed(Rgba32 color) => color.R > 150 && color.B < 100;
+        static bool IsBlue(Rgba32 color) => color.B > 150 && color.R < 100;
+        var pixels = image.Frames[0];
+        Assert.True(IsRed(pixels[1, 5]) && IsRed(pixels[11, 5]) && IsBlue(pixels[9, 5]), "repeat");
+        Assert.True(IsRed(pixels[1, 15]) && IsBlue(pixels[11, 15]) && IsRed(pixels[19, 15]), "reflect");
+        Assert.True(IsRed(pixels[5, 25]) && IsBlue(pixels[95, 25]), "transform");
+        Assert.True(pixels[25, 35].R < 30 && pixels[25, 35].B < 30, "multiply with blue");
+        Assert.True(IsRed(pixels[75, 35]), "multiply with white");
+        Assert.True(pixels[25, 45].G > 200 && pixels[25, 45].R > 200, "luminance mask hides");
+        Assert.True(pixels[75, 45].G > 200 && pixels[75, 45].R < 50, "luminance mask shows");
+        Assert.True(pixels[25, 55].G > 200 && pixels[25, 55].R < 50, "alpha mask shows");
+        Assert.True(pixels[75, 55].G > 200 && pixels[75, 55].R > 200, "alpha mask hides");
+        Assert.Contains(Enumerable.Range(81, 3), y => pixels[13, y].R < 200);
+        Assert.True(pixels[13, 87].R > 200, "nothing below the underline");
+    }
+
+    [Fact]
+    public void FiltersAreNotSupported()
+    {
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneRectangle(20, 20, 20, 20) { Fill = SceneColor.Black, Filter = new SceneBlurFilter(3) });
+        scene.Root.Add(new SceneRectangle(60, 10, 20, 20) { Fill = SceneColor.Black, Filter = new SceneDropShadowFilter(10, 10, 0, (SceneColor)"#ff0000") });
+        var exception = Assert.Throws<NotSupportedException>(() => scene.ToPdf());
+        Assert.Contains("SceneBlurFilter", exception.Message, StringComparison.Ordinal);
+
+        // Nothing is drawn on the page
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(100, 100));
+        Assert.Throws<NotSupportedException>(() => page.DrawScene(scene, new PdfPoint(0, 100)));
+        Assert.Empty(page.GetContentData());
+
+        // A filter in the content of a mask is found too
+        var masked = new Scene(10, 10, "sans-serif");
+        var mask = new SceneMask();
+        mask.Content.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.White, Filter = new SceneBlurFilter(1) });
+        masked.Root.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black, Mask = mask });
+        Assert.Throws<NotSupportedException>(() => masked.ToPdf());
+    }
+
+    [Fact]
+    public void WeightsSelectTheNearestFace()
+    {
+        var fonts = SceneFontCollection.Load(Path.Combine(TestData, "LiberationSans-Regular.woff2"), Path.Combine(TestData, "LiberationSans-Bold.woff2"));
+        var scene = new Scene(200, 60, fonts.FontFamily) { Fonts = fonts };
+        scene.Root.Add(new SceneText(0, 20, "Light", new SceneFont(20, Weight: 300), SceneColor.Black));
+        scene.Root.Add(new SceneText(0, 50, "Heavy", new SceneFont(20, Weight: 800), SceneColor.Black));
+        var pdf = Uncompressed(scene.ToPdf());
+        Assert.Contains("LiberationSans-Bold", pdf, StringComparison.Ordinal);
+
+        // Without fonts, the weights from 600 are Helvetica-Bold
+        var standard = new Scene(200, 60, "Helvetica");
+        standard.Root.Add(new SceneText(0, 20, "SemiBold", new SceneFont(20, Weight: 600), SceneColor.Black));
+        Assert.Contains("/Helvetica-Bold", Uncompressed(standard.ToPdf()), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void TextsWithoutFontsUseHelvetica()
     {
         var measurer = ScenePdfRenderer.CreateMeasurer();
         Assert.Same(AfmTextMeasurer.Default, measurer);
         var scene = new Scene(200, 50, measurer.FontFamily);
-        scene.Root.Add(new SceneText(100, 30, "Hello 中", new SceneFont(20, Bold: true), SceneColor.Black) { Anchor = SceneTextAnchor.Middle });
+        scene.Root.Add(new SceneText(100, 30, "Hello 中", new SceneFont(20, Weight: SceneFont.BoldWeight), SceneColor.Black) { Anchor = SceneTextAnchor.Middle });
         var document = scene.ToPdf();
         var pdf = Uncompressed(document);
         Assert.Contains("/Helvetica-Bold", pdf, StringComparison.Ordinal);

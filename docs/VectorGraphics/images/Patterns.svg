@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100" role="img" font-family="sans-serif">
+<defs>
+<pattern id="scene-pattern0" patternUnits="userSpaceOnUse" x="0" y="0" width="10" height="10">
+<g>
+<circle cx="5" cy="5" r="2" fill="#0369a1"/>
+</g>
+</pattern>
+<pattern id="scene-pattern1" patternUnits="userSpaceOnUse" x="0" y="0" width="8" height="8" patternTransform="matrix(0.707107 0.707107 -0.707107 0.707107 0 0)">
+<g>
+<line x1="0" y1="4" x2="8" y2="4" stroke="#b91c1c" stroke-width="2"/>
+</g>
+</pattern>
+</defs>
+<rect x="10" y="10" width="80" height="80" fill="url(#scene-pattern0)" stroke="#000000"/>
+<circle cx="150" cy="50" r="40" fill="url(#scene-pattern1)" stroke="#000000"/>
+</svg>

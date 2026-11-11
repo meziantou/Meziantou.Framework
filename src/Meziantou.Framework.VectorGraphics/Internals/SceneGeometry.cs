@@ -14,6 +14,15 @@ internal static class SceneGeometry
         if (!(element.Opacity > 0))
             return null;
 
+        if (element is SceneGroup || element.Transform is not { } elementTransform)
+            return GetUntransformedBounds(element, measureText, applyClips);
+
+        return GetUntransformedBounds(element, measureText, applyClips) is { } untransformed ? Transform(untransformed, elementTransform) : null;
+    }
+
+    // The bounds of an element before its transform; a group applies its transform before its clips
+    private static SceneBounds? GetUntransformedBounds(SceneElement element, Func<SceneText, SceneBounds?> measureText, bool applyClips)
+    {
         var stroke = element is SceneShape { Stroke: not null } shape && shape.StrokeWidth > 0 && double.IsFinite(shape.StrokeWidth) ? StrokeExtent(shape) : 0;
         switch (element)
         {
@@ -29,6 +38,19 @@ internal static class SceneGeometry
 
                 if (bounds is not { } box)
                     return null;
+
+                // A view box maps the children to its viewport, which cuts them, inside the transform of the group
+                if (group.ViewBox is { } viewBox)
+                {
+                    if (viewBox.GetTransform() is not { } viewBoxTransform)
+                        return null;
+
+                    box = Transform(box, viewBoxTransform);
+                    if (applyClips)
+                    {
+                        box = Intersect(box, viewBox.Viewport);
+                    }
+                }
 
                 if (group.Transform is { } transform)
                 {
@@ -57,13 +79,39 @@ internal static class SceneGeometry
                 return Inflate(new SceneBounds(circle.CenterX - circle.Radius, circle.CenterY - circle.Radius, 2 * circle.Radius, 2 * circle.Radius), stroke);
 
             case SceneLine line:
-                return Inflate(new SceneBounds(Math.Min(line.X1, line.X2), Math.Min(line.Y1, line.Y2), Math.Abs(line.X2 - line.X1), Math.Abs(line.Y2 - line.Y1)), stroke);
+                return WithMarkers(Inflate(new SceneBounds(Math.Min(line.X1, line.X2), Math.Min(line.Y1, line.Y2), Math.Abs(line.X2 - line.X1), Math.Abs(line.Y2 - line.Y1)), stroke), line, measureText);
 
             case ScenePath path:
-                return GetPathBounds(path.Data) is { } pathBounds ? Inflate(pathBounds, stroke) : null;
+                return WithMarkers(GetPathBounds(path.Data) is { } pathBounds ? Inflate(pathBounds, stroke) : null, path, measureText);
 
             case SceneImage image:
                 return new SceneBounds(image.X, image.Y, image.Width, image.Height);
+
+            // A use draws its content with its filter; a use in its own content draws nothing
+            case SceneUse use:
+                if (use.IsCircular())
+                    return null;
+
+                s_uses ??= new(ReferenceEqualityComparer.Instance);
+                if (!s_uses.Add(use))
+                    return null;
+
+                try
+                {
+                    return GetBounds(use.Content, measureText) is { } contentBounds ? WithFilter(contentBounds, use.Content.Filter) : null;
+                }
+                finally
+                {
+                    s_uses.Remove(use);
+                }
+
+            // A text on a path is within its size of the path: its glyphs are above the path, and its descenders below
+            case SceneText { Path: { } textPath } text:
+                if (text.Text.Length is 0 || GetPathBounds(textPath) is not { } textPathBounds)
+                    return null;
+
+                var size = text.Spans.Count is 0 ? text.Font.Size : text.Spans.Max(span => (span.Font ?? text.Font).Size);
+                return Inflate(textPathBounds, double.IsFinite(size) ? Math.Abs(size) : 0);
 
             case SceneText text:
                 if (measureText(text) is not { } textBounds)
@@ -73,6 +121,80 @@ internal static class SceneGeometry
 
             default:
                 return null;
+        }
+    }
+
+    // The markers of a shape are drawn on its vertices. A marker drawn on a shape of its own content is not drawn again.
+    [ThreadStatic]
+    private static HashSet<SceneMarker>? s_markers;
+
+    [ThreadStatic]
+    private static HashSet<SceneUse>? s_uses;
+
+    private static SceneBounds? WithMarkers(SceneBounds? bounds, SceneShape shape, Func<SceneText, SceneBounds?> measureText)
+    {
+        foreach (var (marker, vertex, isStart) in GetMarkers(shape))
+        {
+            s_markers ??= new(ReferenceEqualityComparer.Instance);
+            if (!s_markers.Add(marker))
+                continue;
+
+            try
+            {
+                if (GetBounds(marker.Content, measureText) is { } content)
+                {
+                    bounds = Union(bounds, Transform(content, marker.GetTransform(vertex, shape.StrokeWidth, isStart)));
+                }
+            }
+            finally
+            {
+                s_markers.Remove(marker);
+            }
+        }
+
+        return bounds;
+    }
+
+    /// <summary>Gets the markers of a path or a line, with the vertex each one is drawn on.</summary>
+    public static IEnumerable<(SceneMarker Marker, PathPoint Vertex, bool IsStart)> GetMarkers(SceneShape shape)
+    {
+        var (start, middle, end) = shape switch
+        {
+            ScenePath path => (path.MarkerStart, path.MarkerMid, path.MarkerEnd),
+            SceneLine line => (line.MarkerStart, null, line.MarkerEnd),
+            _ => (null, null, null),
+        };
+
+        if (start is null && middle is null && end is null)
+            yield break;
+
+        var vertices = shape switch
+        {
+            ScenePath path => path.Data.GetVertices(),
+            SceneLine line => new PathBuilder().MoveTo(line.X1, line.Y1).LineTo(line.X2, line.Y2).Build().GetVertices(),
+            _ => [],
+        };
+
+        for (var i = 0; i < vertices.Count; i++)
+        {
+            var vertex = vertices[i];
+            if (!double.IsFinite(vertex.X) || !double.IsFinite(vertex.Y))
+                continue;
+
+            if (i == 0 && start is not null)
+            {
+                yield return (start, vertex, true);
+            }
+
+            if (i > 0 && i < vertices.Count - 1 && middle is not null)
+            {
+                yield return (middle, vertex, false);
+            }
+
+            if (i == vertices.Count - 1 && end is not null)
+            {
+                yield return (end, vertex, false);
+            }
         }
     }
 

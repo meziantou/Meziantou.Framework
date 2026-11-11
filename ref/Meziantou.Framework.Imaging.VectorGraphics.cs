@@ -15,6 +15,7 @@ namespace Meziantou.Framework.Imaging.VectorGraphics
         public ImageTextMeasurer(Meziantou.Framework.Imaging.Typography.Font regular, Meziantou.Framework.Imaging.Typography.Font? bold = null) { }
         public ImageTextMeasurer(Meziantou.Framework.Imaging.Typography.Font regular, Meziantou.Framework.Imaging.Typography.Font? bold, Meziantou.Framework.Imaging.Typography.Font? italic, Meziantou.Framework.Imaging.Typography.Font? boldItalic) { }
         public Meziantou.Framework.VectorGraphics.TextMetrics Measure(string text, Meziantou.Framework.VectorGraphics.SceneFont font) => throw null;
+        public Meziantou.Framework.VectorGraphics.TextMetrics Measure(string text, Meziantou.Framework.VectorGraphics.SceneFont font, double letterSpacing, double wordSpacing) => throw null;
     }
 
     public static class SceneFonts

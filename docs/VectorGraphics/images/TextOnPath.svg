@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="110" viewBox="0 0 200 110" role="img" font-family="sans-serif">
+<defs>
+<path id="scene-textpath0" d="M20,105 A80,80 0 0,1 180,105"/>
+</defs>
+<path d="M20,105 A80,80 0 0,1 180,105" fill="none" stroke="#cbd5e1"/>
+<text text-anchor="middle" font-size="16" fill="#000000"><textPath href="#scene-textpath0" startOffset="125.68">Text along a path</textPath></text>
+</svg>

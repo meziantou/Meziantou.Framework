@@ -114,6 +114,21 @@ public sealed class SceneRendererTests
     }
 
     [Fact]
+    public void ElementsHaveTransforms()
+    {
+        // A rectangle moved by its transform, masked in the coordinates of its parent: only its left half is drawn
+        var scene = new Scene(40, 20, "sans-serif") { Background = SceneColor.White };
+        var mask = new SceneMask();
+        mask.Content.Add(new SceneRectangle(0, 0, 25, 20) { Fill = SceneColor.White });
+        scene.Root.Add(new SceneRectangle(0, 0, 10, 10) { Fill = (SceneColor)"#ff0000", Transform = SceneTransform.Translate(20, 5), Mask = mask });
+        scene.Root.Add(new SceneRectangle(0, 0, 10, 10) { Fill = (SceneColor)"#0000ff", Transform = new SceneTransform(double.NaN, 0, 0, 1, 0, 0) });
+        using var image = scene.ToImage();
+        Assert.Equal(Red, image.Frames[0][22, 10]);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][27, 10]);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][5, 5]);
+    }
+
+    [Fact]
     public void TextIsDrawnFromItsBaselineAndAnchor()
     {
         var scene = new Scene(200, 100, "sans-serif");
@@ -140,6 +155,163 @@ public sealed class SceneRendererTests
         Assert.InRange(bottom, 90, 95); // The side bearing of the first glyph
         Assert.True(left < right);
         Assert.True(top < 80);
+    }
+
+    [Fact]
+    public void LetterSpacingAndOverline()
+    {
+        // 3 spaces of 10 pixels between the 4 letters
+        var font = new SceneFont(20);
+        var scene = new Scene(200, 100, "sans-serif");
+        scene.Root.Add(new SceneText(10, 30, "MMMM", font, SceneColor.Black));
+        scene.Root.Add(new SceneText(10, 70, "MMMM", font, SceneColor.Black) { LetterSpacing = 10 });
+        scene.Root.Add(new SceneText(150, 90, "xx", font, SceneColor.Black) { Decorations = SceneTextDecorations.Overline });
+        using var image = scene.ToImage();
+        var (left, _, right, _) = GetInkBounds(image, 0, 0, 140, 40);
+        var (spacedLeft, _, spacedRight, _) = GetInkBounds(image, 0, 40, 140, 80);
+        Assert.Equal(left, spacedLeft);
+        Assert.InRange(spacedRight - right, 29, 31);
+
+        // The overline is above the x-height, at the ascent of the font
+        var (_, top, _, bottom) = GetInkBounds(image, 140, 60, 200, 100);
+        Assert.InRange(bottom, 88, 90);
+        Assert.InRange(top, 70, 76);
+    }
+
+    [Fact]
+    public void TextOnAPath()
+    {
+        // A text along a horizontal path from 10 to 60: the characters beyond its end are not drawn
+        var scene = new Scene(200, 100, "sans-serif");
+        scene.Root.Add(new SceneText(0, 0, "MMMMMMMMMM", new SceneFont(20), SceneColor.Black) { Path = new PathBuilder().MoveTo(10, 50).LineTo(60, 50).Build() });
+
+        // Vertical, going down, centered on the middle of the path: the tops of the glyphs are on its right, as in SVG
+        scene.Root.Add(new SceneText(0, 0, "MM", new SceneFont(20), SceneColor.Black) { Path = new PathBuilder().MoveTo(150, 10).LineTo(150, 90).Build(), PathStartOffset = 40, Anchor = SceneTextAnchor.Middle });
+        using var image = scene.ToImage();
+        var (left, top, right, bottom) = GetInkBounds(image, 0, 0, 100, 100);
+        Assert.InRange(left, 10, 13);
+        Assert.InRange(right, 50, 62);
+        Assert.InRange(bottom, 48, 50);
+        Assert.InRange(top, 33, 38);
+
+        (left, top, right, bottom) = GetInkBounds(image, 100, 0, 200, 100);
+        Assert.InRange(left, 150, 152);
+        Assert.InRange(right, 163, 170);
+        Assert.InRange((top + bottom) / 2.0, 48, 52);
+    }
+
+    [Fact]
+    public void Patterns()
+    {
+        // A tile of 10 by 10 pixels with a red square in its top-left quarter, repeated, and scaled by 2
+        var pattern = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        pattern.Content.Add(new SceneRectangle(0, 0, 5, 5) { Fill = (SceneColor)"#ff0000" });
+        var scaled = new PatternPaint(new SceneBounds(0, 0, 10, 10)) { Transform = SceneTransform.Scale(2, 2) };
+        scaled.Content.Add(new SceneRectangle(0, 0, 5, 5) { Fill = (SceneColor)"#0000ff" });
+
+        // A pattern that paints with itself does not draw its content again
+        var recursive = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        recursive.Content.Add(new SceneRectangle(0, 0, 10, 10) { Fill = recursive });
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneRectangle(0, 0, 40, 40) { Fill = pattern });
+        scene.Root.Add(new SceneGroup { Transform = SceneTransform.Translate(50, 0) }).Add(new SceneRectangle(0, 0, 40, 40) { Fill = scaled });
+        scene.Root.Add(new SceneRectangle(0, 45, 10, 10) { Fill = recursive });
+        scene.Root.Add(new SceneRectangle(20, 45, 10, 10) { Fill = new PatternPaint(new SceneBounds(0, 0, 0, 10)) });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(Red, pixels[2, 2]);
+        Assert.Equal(Red, pixels[12, 22]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[7, 7]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[17, 2]);
+        Assert.Equal(Blue, pixels[58, 8]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[62, 2]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[5, 50]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[25, 50]);
+    }
+
+    [Fact]
+    public void Markers()
+    {
+        // A square of 4 by 4 at the end of a line, centered on it and scaled by the stroke width of 2; a dot on the middle vertex of a path
+        var square = new SceneMarker { RefX = 2, RefY = 2 };
+        square.Content.Add(new SceneRectangle(0, 0, 4, 4) { Fill = (SceneColor)"#ff0000" });
+        var dot = new SceneMarker { Units = SceneMarkerUnits.UserSpace };
+        dot.Content.Add(new SceneCircle(0, 0, 3) { Fill = (SceneColor)"#0000ff" });
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneLine(10, 20, 60, 20) { StrokeWidth = 2, MarkerEnd = square });
+        scene.Root.Add(new ScenePath(new PathBuilder().MoveTo(10, 50).LineTo(50, 50).LineTo(90, 50).Build()) { Stroke = SceneColor.Black, MarkerMid = dot });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(Red, pixels[63, 22]);
+        Assert.Equal(Red, pixels[56, 16]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[66, 20]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[30, 20]);
+        Assert.Equal(Blue, pixels[50, 48]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[90, 48]);
+    }
+
+    [Fact]
+    public void ReusedElementsAndViewBoxes()
+    {
+        // A square drawn twice by uses, moved by them; a use in its own content is not drawn
+        var square = new SceneRectangle(0, 0, 10, 10) { Fill = (SceneColor)"#ff0000" };
+        var cycle = new SceneGroup();
+        cycle.Add(new SceneUse(cycle));
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneUse(square) { Transform = SceneTransform.Translate(10, 10) });
+        scene.Root.Add(new SceneUse(square) { Transform = SceneTransform.Translate(30, 10), Opacity = 0.5 });
+        scene.Root.Add(new SceneUse(cycle));
+
+        // A drawing of 10 by 10 units in a viewport of 40 by 20 pixels: scaled by 2 and centered; the viewport cuts it
+        var viewBox = scene.Root.Add(new SceneGroup { ViewBox = new SceneViewBox(new SceneBounds(0, 0, 10, 10), new SceneBounds(50, 30, 40, 20)) });
+        viewBox.Add(new SceneRectangle(0, 0, 10, 10) { Fill = (SceneColor)"#0000ff" });
+        viewBox.Add(new SceneRectangle(-20, 0, 20, 10) { Fill = (SceneColor)"#0000ff" });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(new Rgba32(255, 0, 0), pixels[15, 15]);
+        Assert.InRange(pixels[35, 15].G, 120, 135);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[25, 15]);
+        Assert.Equal(new Rgba32(0, 0, 255), pixels[70, 40]);
+        Assert.Equal(new Rgba32(0, 0, 255), pixels[55, 40]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[45, 40]);
+    }
+
+    [Fact]
+    public void SpacedTextsAreDrawnAsTheyAreMeasured()
+    {
+        // A spaced text that ends where its measured width says starts where the same text anchored at its start starts
+        var fonts = SceneFontCollection.Load(Path.Combine(AppContext.BaseDirectory, "TestData", "LiberationSans-Regular.woff2"));
+        var measurer = new ImageTextMeasurer(fonts);
+        var font = new SceneFont(20);
+        var width = measurer.Measure("ffi office", font, letterSpacing: 3, wordSpacing: 5).Width;
+        Assert.Equal(new FontFaceTextMeasurer(fonts).Measure("ffi office", font, letterSpacing: 3, wordSpacing: 5).Width, width, 0.5);
+        var scene = new Scene(260, 80, fonts.FontFamily) { Fonts = fonts };
+        scene.Root.Add(new SceneText(10, 30, "ffi office", font, SceneColor.Black) { LetterSpacing = 3, WordSpacing = 5 });
+        scene.Root.Add(new SceneText(10 + width, 70, "ffi office", font, SceneColor.Black) { LetterSpacing = 3, WordSpacing = 5, Anchor = SceneTextAnchor.End });
+        using var image = scene.ToImage();
+        var (left, _, right, _) = GetInkBounds(image, 0, 0, 260, 40);
+        var (endLeft, _, endRight, _) = GetInkBounds(image, 0, 40, 260, 80);
+        Assert.InRange(endLeft, left - 1, left + 1);
+        Assert.InRange(endRight, right - 1, right + 1);
+    }
+
+    [Fact]
+    public void TheContentGroupsOfPatternsAndMarkersApplyTheirSettings()
+    {
+        // A pattern whose content is invisible paints nothing; a marker whose content is moved by its transform
+        var invisible = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        invisible.Content.Opacity = 0;
+        invisible.Content.Add(new SceneRectangle(0, 0, 10, 10) { Fill = (SceneColor)"#ff0000" });
+        var moved = new SceneMarker { Units = SceneMarkerUnits.UserSpace };
+        moved.Content.Transform = SceneTransform.Translate(10, 0);
+        moved.Content.Add(new SceneRectangle(-2, -2, 4, 4) { Fill = (SceneColor)"#0000ff" });
+        var scene = new Scene(60, 30, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneRectangle(0, 0, 20, 20) { Fill = invisible });
+        scene.Root.Add(new SceneLine(30, 10, 40, 10) { MarkerEnd = moved });
+        using var image = scene.ToImage();
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][5, 5]);
+        Assert.Equal(Blue, image.Frames[0][50, 10]);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][40, 10]);
     }
 
     private static (int Left, int Top, int Right, int Bottom) GetInkBounds(Image<Rgba32> image, int x0, int y0, int x1, int y1)

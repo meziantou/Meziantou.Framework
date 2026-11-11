@@ -13,6 +13,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The scenes of patterns, markers, uses and view boxes, shared with the SVG targets -->
+    <Compile Include="..\Meziantou.Framework.VectorGraphics.Fuzz\FeatureSceneBuilder.cs" Link="FeatureSceneBuilder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Pdf.VectorGraphics\Meziantou.Framework.Pdf.VectorGraphics.csproj" />
   </ItemGroup>

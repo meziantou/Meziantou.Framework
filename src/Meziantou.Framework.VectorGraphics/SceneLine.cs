@@ -18,4 +18,10 @@ public sealed class SceneLine(double x1, double y1, double x2, double y2) : Scen
 
     /// <summary>Gets the y coordinate of the end.</summary>
     public double Y2 { get; } = y2;
+
+    /// <summary>Gets or sets the marker drawn on the first vertex of the line, or <see langword="null"/> for none.</summary>
+    public SceneMarker? MarkerStart { get; set; }
+
+    /// <summary>Gets or sets the marker drawn on the last vertex of the line, or <see langword="null"/> for none.</summary>
+    public SceneMarker? MarkerEnd { get; set; }
 }

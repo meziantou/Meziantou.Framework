@@ -62,12 +62,23 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
     /// <summary>Gets the fonts the text is measured with, or <see langword="null"/> when the measurer was created from faces of <c>Meziantou.Framework.Fonts</c>.</summary>
     public SceneFontCollection? Fonts { get; }
 
+    // A letter spacing turns the optional ligatures off, as in CSS and in the renderers
+    private static readonly ShapingFeature[] NoLigatures = [new("liga", 0), new("clig", 0), new("dlig", 0)];
+
     /// <inheritdoc/>
-    public TextMetrics Measure(string text, SceneFont font)
+    public TextMetrics Measure(string text, SceneFont font) => Measure(text, font, 0, 0);
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// With a letter spacing, the text is shaped without its optional ligatures, and the spacing is added after each
+    /// cluster of glyphs (a character with its marks, a ligature the script requires), as the renderers draw it.
+    /// </remarks>
+    public TextMetrics Measure(string text, SceneFont font, double letterSpacing, double wordSpacing)
     {
         ArgumentNullException.ThrowIfNull(text);
+        var spacing = (Letter: TextSpacing.Normalize(letterSpacing), Word: TextSpacing.Normalize(wordSpacing));
         if (Fonts is not null)
-            return MeasureWithFallback(text, font, Fonts.GetFaces(font));
+            return MeasureWithFallback(text, font, Fonts.GetFaces(font), spacing);
 
         var face = (font.IsBold, font.Italic) switch
         {
@@ -78,11 +89,11 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
         };
         var scale = font.Size / face.UnitsPerEm;
         var (ascender, descender) = GetVerticalMetrics(face);
-        var units = text.Length is 0 ? 0 : Shape(face, text);
-        return new TextMetrics(units * scale, ascender * scale, -descender * scale);
+        var width = text.Length is 0 ? 0 : Shape(face, text, scale, spacing);
+        return new TextMetrics(width, ascender * scale, -descender * scale);
     }
 
-    private TextMetrics MeasureWithFallback(string text, SceneFont font, IReadOnlyList<SceneFontFace> stack)
+    private TextMetrics MeasureWithFallback(string text, SceneFont font, IReadOnlyList<SceneFontFace> stack, (double Letter, double Word) spacing)
     {
         var primary = stack[0].Face;
         var (ascender, descender) = GetVerticalMetrics(primary);
@@ -90,7 +101,7 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
         var width = 0.0;
         foreach (var run in SceneFontCollection.SplitRuns(text, stack))
         {
-            width += Shape(run.Face.Face, text.Substring(run.Start, run.Length)) * (font.Size / run.Face.Face.UnitsPerEm);
+            width += Shape(run.Face.Face, text.Substring(run.Start, run.Length), font.Size / run.Face.Face.UnitsPerEm, spacing);
         }
 
         return new TextMetrics(width, ascender * primaryScale, -descender * primaryScale);
@@ -101,10 +112,12 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
         return face.UseTypoMetrics ? (face.TypoAscender, face.TypoDescender) : (face.HorizontalAscender, face.HorizontalDescender);
     }
 
-    // The sum of the advances of the shaped text, in font units
-    private long Shape(FontFace face, string text)
+    // The width of the shaped text: the sum of the advances, scaled to pixels, and the spacing after each cluster of
+    // glyphs: the letter spacing, and the word spacing for a space
+    private double Shape(FontFace face, string text, double scale, (double Letter, double Word) spacing)
     {
         var units = 0L;
+        var spacingWidth = 0.0;
         lock (_lock)
         {
             var buffer = new GlyphBuffer(face.Data.Limits);
@@ -113,15 +126,20 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
                 var span = text.AsSpan(run.Index, run.Length);
                 buffer.Clear();
                 TextShaper.AddText(buffer, span);
-                TextShaper.Shape(buffer, face, run.Script, languages: [], IsRightToLeft(span), features: []);
+                TextShaper.Shape(buffer, face, run.Script, languages: [], IsRightToLeft(span), features: spacing.Letter is 0 ? [] : NoLigatures);
+                var info = buffer.Info;
                 for (var i = 0; i < buffer.Length; i++)
                 {
                     units += buffer.Positions[i].XAdvance;
+                    if ((spacing.Letter != 0 || spacing.Word != 0) && (i is 0 || info[i].Cluster != info[i - 1].Cluster))
+                    {
+                        spacingWidth += spacing.Letter + (TextSpacing.IsWordSeparator(span[info[i].Cluster]) ? spacing.Word : 0);
+                    }
                 }
             }
         }
 
-        return units;
+        return (units * scale) + spacingWidth;
     }
 
     private static bool IsRightToLeft(ReadOnlySpan<char> text)

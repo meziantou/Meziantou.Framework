@@ -174,12 +174,15 @@ public sealed class SvgSceneRendererTests
     public void TextWeightsAndDecorations()
     {
         #region VectorGraphics_TextStyles
-        var scene = new Scene(width: 300, height: 100, fontFamily: "sans-serif");
+        var scene = new Scene(width: 300, height: 125, fontFamily: "sans-serif");
 
         // A weight from 1 to 1000, as in CSS, and lines drawn with the text
         scene.Root.Add(new SceneText(10, 20, "Light", new SceneFont(16, Weight: 300), SceneColor.Black));
         scene.Root.Add(new SceneText(10, 45, "Bold and underlined", new SceneFont(16, Weight: SceneFont.BoldWeight), SceneColor.Black) { Decorations = SceneTextDecorations.Underline });
         scene.Root.Add(new SceneText(10, 70, "Removed", new SceneFont(16), SceneColor.Black) { Decorations = SceneTextDecorations.Strikethrough });
+
+        // Space between the letters and the words, in pixels, and a line over the text
+        scene.Root.Add(new SceneText(10, 105, "Spaced and overlined", new SceneFont(16), SceneColor.Black) { LetterSpacing = 2, WordSpacing = 6, Decorations = SceneTextDecorations.Overline });
 
         var svg = SvgSceneRenderer.Render(scene);
         #endregion
@@ -193,6 +196,18 @@ public sealed class SvgSceneRendererTests
         Assert.Contains("text-decoration=\"underline line-through\"", SvgSceneRenderer.Render(Single(new SceneText(0, 0, "a", new SceneFont(10), SceneColor.Black) { Decorations = SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough })), StringComparison.Ordinal);
         Assert.True(new SceneFont(10, Weight: 600).IsBold);
         Assert.False(new SceneFont(10, Weight: 599).IsBold);
+        Assert.Contains("letter-spacing=\"2\" word-spacing=\"6\" fill=\"#000000\"", svg, StringComparison.Ordinal);
+        Assert.Contains("text-decoration=\"overline\"", svg, StringComparison.Ordinal);
+        Assert.Contains("text-decoration=\"underline overline line-through\"", SvgSceneRenderer.Render(Single(new SceneText(0, 0, "a", new SceneFont(10), SceneColor.Black) { Decorations = SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough | SceneTextDecorations.Overline })), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SpacingOfSpans()
+    {
+        // A span writes the spacing that differs from the text; a spacing that is not finite is 0
+        var text = new SceneText(0, 10, [new SceneTextSpan("a"), new SceneTextSpan("b") { LetterSpacing = 3 }, new SceneTextSpan("c") { LetterSpacing = 1, WordSpacing = double.NaN }], new SceneFont(10), SceneColor.Black) { LetterSpacing = 1, WordSpacing = double.PositiveInfinity };
+        var svg = SvgSceneRenderer.Render(Single(text));
+        Assert.Contains("<text x=\"0\" y=\"10\" font-size=\"10\" letter-spacing=\"1\" fill=\"#000000\">a<tspan letter-spacing=\"3\">b</tspan>c</text>", svg, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -232,6 +247,39 @@ public sealed class SvgSceneRendererTests
         Assert.Contains("style=\"mix-blend-mode:multiply\"", svg, StringComparison.Ordinal);
         Assert.Contains("<mask id=\"scene-mask0\" maskUnits=\"userSpaceOnUse\"", svg, StringComparison.Ordinal);
         Assert.Contains("<g mask=\"url(#scene-mask0)\">", svg, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Patterns()
+    {
+        #region VectorGraphics_Patterns
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // A tile of 10 by 10 pixels with a dot, repeated over the shapes it paints
+        var dots = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        dots.Content.Add(new SceneCircle(5, 5, 2) { Fill = (SceneColor)"#0369a1" });
+        scene.Root.Add(new SceneRectangle(10, 10, 80, 80) { Fill = dots, Stroke = SceneColor.Black });
+
+        // Hatches: a line in a tile, turned by the transform of the pattern
+        var hatches = new PatternPaint(new SceneBounds(0, 0, 8, 8)) { Transform = SceneTransform.Rotate(45) };
+        hatches.Content.Add(new SceneLine(0, 4, 8, 4) { Stroke = (SceneColor)"#b91c1c", StrokeWidth = 2 });
+        scene.Root.Add(new SceneCircle(150, 50, 40) { Fill = hatches, Stroke = SceneColor.Black });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("Patterns", svg);
+        Assert.Contains("<pattern id=\"scene-pattern0\" patternUnits=\"userSpaceOnUse\" x=\"0\" y=\"0\" width=\"10\" height=\"10\">\n<g>\n<circle cx=\"5\" cy=\"5\" r=\"2\" fill=\"#0369a1\"/>\n</g>\n</pattern>", svg, StringComparison.Ordinal);
+        Assert.Contains("<pattern id=\"scene-pattern1\" patternUnits=\"userSpaceOnUse\" x=\"0\" y=\"0\" width=\"8\" height=\"8\" patternTransform=\"matrix(", svg, StringComparison.Ordinal);
+        Assert.Contains("<rect x=\"10\" y=\"10\" width=\"80\" height=\"80\" fill=\"url(#scene-pattern0)\" stroke=\"#000000\"/>", svg, StringComparison.Ordinal);
+
+        // A tile that does not start at the origin keeps the coordinates of its content; a pattern that paints with itself is written once
+        var offset = new PatternPaint(new SceneBounds(5, 5, 10, 10));
+        offset.Content.Add(new SceneRectangle(5, 5, 5, 5) { Fill = offset, Id = "inner" });
+        var offsetSvg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 10, 10) { Stroke = offset }));
+        Assert.Contains("<pattern id=\"scene-pattern0\" patternUnits=\"userSpaceOnUse\" x=\"5\" y=\"5\" width=\"10\" height=\"10\" viewBox=\"5 5 10 10\">\n<g>\n<rect id=\"inner\" x=\"5\" y=\"5\" width=\"5\" height=\"5\" fill=\"url(#scene-pattern0)\"/>", offsetSvg, StringComparison.Ordinal);
+        Assert.Equal(1, CountOccurrences(offsetSvg, "<pattern "));
+        Assert.Contains("stroke=\"url(#scene-pattern0)\"", offsetSvg, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -423,11 +471,233 @@ public sealed class SvgSceneRendererTests
         Assert.Equal(new SceneBounds(40, 10, 20, 20), group.GetBounds(_ => null, applyClips: false));
     }
 
+    private static int CountOccurrences(string text, string value) => (text.Length - text.Replace(value, "", StringComparison.Ordinal).Length) / value.Length;
+
     private static Scene Single(SceneElement element)
     {
         var scene = new Scene(10, 10, "sans-serif");
         scene.Root.Add(element);
         return scene;
+    }
+
+    [Fact]
+    public void PathLengthAndPoints()
+    {
+        #region VectorGraphics_PathMeasure
+        var path = new PathBuilder().MoveTo(0, 0).LineTo(30, 40).LineTo(30, 100).Build();
+
+        // The length of the path, and a point at a distance along it with the direction of the path there
+        Assert.Equal(110, path.GetLength(), 1e-9);
+        var point = path.GetPointAtLength(80);
+        Assert.Equal(30, point.X, 1e-9);
+        Assert.Equal(70, point.Y, 1e-9);
+        Assert.Equal(90, point.Angle, 1e-9); // Down: the y axis points down
+        #endregion
+
+        // At the end of a segment, the direction of the next one; beyond the ends, the ends
+        Assert.Equal(90, path.GetPointAtLength(50).Angle, 1e-9);
+        Assert.Equal(new PathPoint(0, 0, path.GetPointAtLength(0).Angle), path.GetPointAtLength(-10));
+        Assert.Equal(30, path.GetPointAtLength(1000).X, 1e-9);
+        Assert.Equal(100, path.GetPointAtLength(1000).Y, 1e-9);
+        Assert.Equal(0, path.GetPointAtLength(double.NaN).X, 1e-9);
+
+        // A closed rectangle goes back to its start; the moves between subpaths have no length
+        Assert.Equal(40, new PathBuilder().AddRectangle(0, 0, 10, 10).Build().GetLength(), 1e-9);
+        Assert.Equal(20, new PathBuilder().MoveTo(0, 0).LineTo(10, 0).MoveTo(100, 100).LineTo(100, 110).Build().GetLength(), 1e-9);
+        Assert.Equal(new PathPoint(100, 105, 90), new PathBuilder().MoveTo(0, 0).LineTo(10, 0).MoveTo(100, 100).LineTo(100, 110).Build().GetPointAtLength(15));
+
+        // The curves are measured by their chords
+        Assert.Equal(2 * Math.PI * 10, new PathBuilder().AddCircle(0, 0, 10).Build().GetLength(), 0.05);
+        var top = new PathBuilder().MoveTo(0, 0).ArcTo(10, 10, 0, largeArc: false, sweep: true, 20, 0).Build();
+        var middle = top.GetPointAtLength(top.GetLength() / 2);
+        Assert.Equal(10, middle.X, 0.01);
+        Assert.Equal(-10, middle.Y, 0.01);
+        Assert.Equal(0, middle.Angle, 0.5);
+
+        // A path without length gives its first point; an empty path has none
+        Assert.Equal(new PathPoint(5, 6, 0), new PathBuilder().MoveTo(5, 6).Build().GetPointAtLength(1));
+        Assert.Equal(0, new PathBuilder().Build().GetLength());
+        Assert.Throws<InvalidOperationException>(() => new PathBuilder().Build().GetPointAtLength(0));
+        Assert.Equal(10, new PathBuilder().MoveTo(0, 0).LineTo(double.NaN, 0).LineTo(10, 0).LineTo(20, 0).Build().GetLength(), 1e-9);
+    }
+
+    [Fact]
+    public void Markers()
+    {
+        #region VectorGraphics_Markers
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // An arrowhead whose tip, at (10, 5), is on the vertex: it follows the direction of the path, scaled by the stroke width
+        var arrow = new SceneMarker { RefX = 10, RefY = 5 };
+        arrow.Content.Add(new ScenePath(new PathBuilder().AddPolygon((0, 0), (10, 5), (0, 10)).Build()) { Fill = (SceneColor)"#0369a1" });
+
+        // A dot on every vertex between the ends, in the coordinates of the path
+        var dot = new SceneMarker { Units = SceneMarkerUnits.UserSpace };
+        dot.Content.Add(new SceneCircle(0, 0, 3) { Fill = (SceneColor)"#0369a1" });
+
+        var path = new PathBuilder().MoveTo(10, 80).LineTo(60, 20).LineTo(110, 80).LineTo(170, 30).Build();
+        scene.Root.Add(new ScenePath(path) { Stroke = (SceneColor)"#0369a1", StrokeWidth = 2, MarkerMid = dot, MarkerEnd = arrow });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("Markers", svg);
+        Assert.Contains("<marker id=\"scene-marker0\" markerUnits=\"userSpaceOnUse\" orient=\"auto\" overflow=\"visible\">\n<g>\n<circle cx=\"0\" cy=\"0\" r=\"3\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<marker id=\"scene-marker1\" refX=\"10\" refY=\"5\" orient=\"auto\" overflow=\"visible\">", svg, StringComparison.Ordinal);
+        Assert.Contains("stroke-width=\"2\" marker-mid=\"url(#scene-marker0)\" marker-end=\"url(#scene-marker1)\"/>", svg, StringComparison.Ordinal);
+
+        // A line has a start and an end; the other orientations
+        var reversed = new SceneMarker { Orientation = SceneMarkerOrientation.AutoStartReverse };
+        var fixedAngle = new SceneMarker { Orientation = SceneMarkerOrientation.Angle, Angle = 30 };
+        var lineSvg = SvgSceneRenderer.Render(Single(new SceneLine(0, 0, 10, 0) { Stroke = SceneColor.Black, MarkerStart = reversed, MarkerEnd = fixedAngle }));
+        Assert.Contains("orient=\"auto-start-reverse\"", lineSvg, StringComparison.Ordinal);
+        Assert.Contains("orient=\"30\"", lineSvg, StringComparison.Ordinal);
+        Assert.Contains("marker-start=\"url(#scene-marker0)\" marker-end=\"url(#scene-marker1)\"", lineSvg, StringComparison.Ordinal);
+
+        // The bounds of a shape contain its markers: the arrowhead is 20 by 20 pixels with a stroke of 2, before the vertex
+        Assert.Equal(new SceneBounds(-4, 40, 108, 20), new SceneLine(0, 50, 100, 50) { Stroke = SceneColor.Black, MarkerEnd = arrow, StrokeWidth = 2 }.GetBounds(_ => null));
+
+        // A marker drawn on a shape of its own content is not drawn again
+        var recursive = new SceneMarker();
+        recursive.Content.Add(new SceneLine(0, 0, 1, 0) { Stroke = SceneColor.Black, MarkerEnd = recursive });
+        Assert.Equal(1, CountOccurrences(SvgSceneRenderer.Render(Single(new SceneLine(0, 0, 1, 0) { MarkerEnd = recursive })), "<marker "));
+        Assert.NotNull(new SceneLine(0, 0, 1, 0) { MarkerEnd = recursive }.GetBounds(_ => null));
+    }
+
+    [Fact]
+    public void PathVertices()
+    {
+        // The end points of the commands; between two segments, the direction halfway between them
+        var polyline = new PathBuilder().MoveTo(0, 0).LineTo(10, 0).LineTo(10, 10).Build();
+        Assert.Equal([new PathPoint(0, 0, 0), new PathPoint(10, 0, 45), new PathPoint(10, 10, 90)], polyline.GetVertices());
+
+        // A closed subpath joins its last segment and its first one, at its start and where it closes
+        var square = new PathBuilder().MoveTo(0, 0).LineTo(10, 0).LineTo(10, 10).LineTo(0, 10).Close().Build();
+        Assert.Equal([new PathPoint(0, 0, -45), new PathPoint(10, 0, 45), new PathPoint(10, 10, 135), new PathPoint(0, 10, -135), new PathPoint(0, 0, -45)], square.GetVertices());
+
+        // The tangents of an arc: a half circle through the top goes up, then down
+        var arc = new PathBuilder().MoveTo(0, 0).ArcTo(5, 5, 0, largeArc: false, sweep: true, 10, 0).Build().GetVertices();
+        Assert.Equal(2, arc.Count);
+        Assert.Equal(-90, arc[0].Angle, 1e-6);
+        Assert.Equal(90, arc[1].Angle, 1e-6);
+
+        // The tangents of curves, and a segment without length that keeps the previous direction
+        var curve = new PathBuilder().MoveTo(0, 0).CubicTo(0, 10, 10, 10, 10, 0).LineTo(10, 0).QuadraticTo(20, 0, 20, 10).Build().GetVertices();
+        Assert.Equal([90, -45, -45, 90], curve.Select(vertex => Math.Round(vertex.Angle, 6, MidpointRounding.AwayFromZero)));
+
+        // The segments without length at the start of a subpath take the direction of the first segment that has one
+        Assert.Equal([90, 90, 90], new PathBuilder().MoveTo(0, 0).LineTo(0, 0).LineTo(0, 10).Build().GetVertices().Select(vertex => vertex.Angle));
+
+        // Without a move, the path starts at the origin; an empty path has no vertex
+        Assert.Equal([new PathPoint(0, 0, 0), new PathPoint(5, 0, 0)], new PathBuilder().LineTo(5, 0).Build().GetVertices());
+        Assert.Empty(new PathBuilder().Build().GetVertices());
+
+        // The transform of a marker: its reference point on the vertex, scaled by the stroke, turned to the direction
+        var marker = new SceneMarker { RefX = 1, RefY = 2 };
+        var transform = marker.GetTransform(new PathPoint(10, 20, 90), strokeWidth: 3);
+        var (x, y) = transform.Apply(1, 2);
+        Assert.Equal(10, x, 1e-9);
+        Assert.Equal(20, y, 1e-9);
+        (x, y) = transform.Apply(2, 2);
+        Assert.Equal(10, x, 1e-9);
+        Assert.Equal(23, y, 1e-9);
+        Assert.Equal(new SceneTransform(1, 0, 0, 1, 10, 20), new SceneMarker { Orientation = SceneMarkerOrientation.Angle, Angle = double.NaN, Units = SceneMarkerUnits.UserSpace }.GetTransform(new PathPoint(10, 20, 45), 3));
+        (x, y) = new SceneMarker { Orientation = SceneMarkerOrientation.AutoStartReverse }.GetTransform(new PathPoint(0, 0, 0), 1, isStart: true).Apply(1, 0);
+        Assert.Equal(-1, x, 1e-9);
+    }
+
+    [Fact]
+    public void CurvesThatDoubleBackAreMeasuredAlongTheCurve()
+    {
+        // The control points are on the chord, beyond its ends: the curve goes to x = 29, back to x = -24, then to x = 10
+        var path = new PathBuilder().MoveTo(0, 0).CubicTo(100, 0, -100, 0, 10, 0).Build();
+        Assert.InRange(path.GetLength(), 116, 116.3);
+        Assert.InRange(path.GetPointAtLength(25).X, 24, 26);
+    }
+
+    [Fact]
+    public void ReusedElementsInsideOtherReusedElementsAreWrittenOnce()
+    {
+        // A group that is not in the scene, and its rectangle used before it: the rectangle is written with the group
+        var group = new SceneGroup();
+        var rectangle = group.Add(new SceneRectangle(0, 0, 5, 5) { Id = "square", Fill = SceneColor.Black });
+        var scene = new Scene(10, 10, "sans-serif");
+        scene.Root.Add(new SceneUse(rectangle));
+        scene.Root.Add(new SceneUse(group));
+        var svg = SvgSceneRenderer.Render(scene);
+        Assert.Equal(1, CountOccurrences(svg, "id=\"square\""));
+        Assert.Equal(1, CountOccurrences(svg, "id=\"scene-element0\""));
+        Assert.Contains("<defs>\n<g id=\"scene-element0\">\n<rect id=\"square\"", svg, StringComparison.Ordinal);
+
+        // A view box that draws nothing keeps, in definitions, the children a use draws
+        var hidden = new SceneGroup { ViewBox = new SceneViewBox(new SceneBounds(0, 0, 0, 0), new SceneBounds(0, 0, 10, 10)) };
+        var circle = hidden.Add(new SceneCircle(5, 5, 5) { Fill = SceneColor.Black });
+        var withHidden = new Scene(10, 10, "sans-serif");
+        withHidden.Root.Add(hidden);
+        withHidden.Root.Add(new SceneUse(circle));
+        Assert.Contains("<g>\n<defs>\n<circle id=\"scene-element0\"", SvgSceneRenderer.Render(withHidden), StringComparison.Ordinal);
+
+        // The contents of two patterns that paint with each other are written once each, and both uses refer to them
+        var first = new PatternPaint(new SceneBounds(0, 0, 4, 4));
+        var second = new PatternPaint(new SceneBounds(0, 0, 4, 4));
+        first.Content.Add(new SceneRectangle(0, 0, 2, 2) { Fill = second, Id = "first-square" });
+        second.Content.Add(new SceneRectangle(0, 0, 2, 2) { Fill = first, Id = "second-square" });
+        var mutual = new Scene(10, 10, "sans-serif");
+        mutual.Root.Add(new SceneUse(first.Content));
+        mutual.Root.Add(new SceneUse(second.Content));
+        var mutualSvg = SvgSceneRenderer.Render(mutual);
+        Assert.Contains("<use href=\"#scene-element0\"/>", mutualSvg, StringComparison.Ordinal);
+        Assert.Contains("<use href=\"#scene-element1\"/>", mutualSvg, StringComparison.Ordinal);
+        Assert.Equal(1, CountOccurrences(mutualSvg, "id=\"scene-element0\""));
+        Assert.Equal(1, CountOccurrences(mutualSvg, "id=\"scene-element1\""));
+        Assert.Equal(1, CountOccurrences(mutualSvg, "id=\"first-square\""));
+        Assert.Equal(1, CountOccurrences(mutualSvg, "id=\"second-square\""));
+
+        // The same element twice in such a content is written twice: its identifier is a duplicate
+        var square = new SceneRectangle(0, 0, 1, 1) { Id = "twice", Fill = SceneColor.Black };
+        first.Content.Add(square);
+        first.Content.Add(square);
+        Assert.Throws<InvalidOperationException>(() => SvgSceneRenderer.Render(mutual));
+
+        // A use that refers to a use in its own content refers to an empty group
+        var cycle = new SceneGroup();
+        var circular = cycle.Add(new SceneUse(cycle));
+        var withCircular = new Scene(10, 10, "sans-serif");
+        withCircular.Root.Add(cycle);
+        withCircular.Root.Add(new SceneUse(circular));
+        var circularSvg = SvgSceneRenderer.Render(withCircular);
+        Assert.Contains("<g id=\"scene-element0\"/>", circularSvg, StringComparison.Ordinal);
+        Assert.Contains("<use href=\"#scene-element0\"/>", circularSvg, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TextOnAPath()
+    {
+        #region VectorGraphics_TextOnPath
+        var scene = new Scene(width: 200, height: 110, fontFamily: "sans-serif");
+
+        // The text follows the arc, centered on its middle
+        var arc = new PathBuilder().MoveTo(20, 105).ArcTo(80, 80, 0, largeArc: false, sweep: true, 180, 105).Build();
+        scene.Root.Add(new ScenePath(arc) { Stroke = (SceneColor)"#cbd5e1" });
+        scene.Root.Add(new SceneText(0, 0, "Text along a path", new SceneFont(16), SceneColor.Black)
+        {
+            Path = arc,
+            PathStartOffset = arc.GetLength() / 2,
+            Anchor = SceneTextAnchor.Middle,
+        });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("TextOnPath", svg);
+        Assert.Contains("<path id=\"scene-textpath0\" d=\"M20,105 A80,80 0 0,1 180,105\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<text text-anchor=\"middle\" font-size=\"16\"", svg, StringComparison.Ordinal);
+        Assert.Contains("><textPath href=\"#scene-textpath0\" startOffset=\"", svg, StringComparison.Ordinal);
+        Assert.Contains("\">Text along a path</textPath></text>", svg, StringComparison.Ordinal);
+
+        // The bounds of a text on a path are the bounds of the path, enlarged by the size of its font
+        var text = new SceneText(0, 0, "a", new SceneFont(10), SceneColor.Black) { Path = new PathBuilder().MoveTo(0, 50).LineTo(100, 50).Build() };
+        Assert.Equal(new SceneBounds(-10, 40, 120, 20), text.GetBounds(_ => throw new InvalidOperationException()));
     }
 
     [Fact]
@@ -501,6 +771,186 @@ public sealed class SvgSceneRendererTests
 
             """.ReplaceLineEndings("\n"),
             svg);
+    }
+
+    [Fact]
+    public void TransformsAndHyperlinksOfElements()
+    {
+        #region VectorGraphics_ElementTransformAndLink
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // Any element has a transform and a hyperlink, without a group around it
+        scene.Root.Add(new SceneRectangle(0, 0, 40, 20)
+        {
+            Fill = (SceneColor)"#0369a1",
+            Transform = SceneTransform.Rotate(30).Then(SceneTransform.Translate(20, 10)),
+            Hyperlink = "https://example.com/",
+        });
+
+        // The rotation of a text applies before its transform
+        scene.Root.Add(new SceneText(0, 0, "Moved", new SceneFont(12), SceneColor.Black) { Rotation = -90, Transform = SceneTransform.Translate(150, 90) });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        Assert.Equal(
+            """
+            <svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100" role="img" font-family="sans-serif">
+            <a href="https://example.com/">
+            <rect x="0" y="0" width="40" height="20" fill="#0369a1" transform="matrix(0.866025 0.5 -0.5 0.866025 20 10)"/>
+            </a>
+            <text x="0" y="0" font-size="12" fill="#000000" transform="translate(150 90) rotate(-90 0 0)">Moved</text>
+            </svg>
+
+            """.ReplaceLineEndings("\n"),
+            svg);
+
+        // The mask and the filter of a transformed element are in the coordinates of its parent: a group around it has them
+        var effects = new Scene(100, 100, "sans-serif");
+        var mask = new SceneMask();
+        mask.Content.Add(new SceneRectangle(0, 0, 50, 100) { Fill = SceneColor.White });
+        effects.Root.Add(new SceneCircle(0, 0, 10) { Fill = SceneColor.Black, Opacity = 0.5, Mask = mask, Filter = new SceneBlurFilter(2), Transform = SceneTransform.Translate(50, 50) });
+        Assert.Contains("<g opacity=\"0.5\" filter=\"url(#scene-filter0)\" mask=\"url(#scene-mask0)\">\n<circle cx=\"0\" cy=\"0\" r=\"10\" fill=\"#000000\" transform=\"translate(50 50)\"/>\n</g>", SvgSceneRenderer.Render(effects), StringComparison.Ordinal);
+
+        // The bounds of an element are in the coordinates of its parent
+        Assert.Equal(new SceneBounds(10, 20, 4, 2), new SceneRectangle(0, 0, 2, 1) { Transform = SceneTransform.Scale(2, 2).Then(SceneTransform.Translate(10, 20)) }.GetBounds(_ => null));
+        Assert.Equal(new SceneBounds(150, 80, 10, 10), new SceneText(0, 0, "a", new SceneFont(10), SceneColor.Black) { Transform = SceneTransform.Translate(150, 90) }.GetBounds(_ => new SceneBounds(0, -10, 10, 10)));
+    }
+
+    [Fact]
+    public void IdentifiersOfElements()
+    {
+        #region VectorGraphics_Ids
+        var scene = new Scene(width: 100, height: 50, fontFamily: "sans-serif");
+
+        // The identifier of an element is its id attribute: a script or a style sheet finds the element with it
+        scene.Root.Add(new SceneRectangle(10, 10, 30, 30) { Id = "north", Fill = SceneColor.Black });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        Assert.Contains("<rect id=\"north\" x=\"10\"", svg, StringComparison.Ordinal);
+
+        // The identifier is on the outermost element written for it: the link, the groups of the effects
+        var linked = new Scene(100, 50, "sans-serif");
+        linked.Root.Add(new SceneCircle(5, 5, 5) { Id = "linked", Hyperlink = "https://example.com/", Fill = SceneColor.Black });
+        var masked = linked.Root.Add(new SceneGroup { Id = "masked", Mask = new SceneMask(), Transform = SceneTransform.Translate(1, 1) });
+        masked.Mask!.Content.Add(new SceneRectangle(0, 0, 10, 10) { Id = "mask-content", Fill = SceneColor.White });
+        masked.Add(new SceneRectangle(0, 0, 10, 10) { Id = "child", Fill = SceneColor.Black });
+        var linkedSvg = SvgSceneRenderer.Render(linked);
+        Assert.Contains("<a id=\"linked\" href=\"https://example.com/\">\n<circle cx=", linkedSvg, StringComparison.Ordinal);
+        Assert.Contains("<g id=\"masked\" mask=\"url(#scene-mask0)\">\n<g transform=\"translate(1 1)\">\n<rect id=\"child\"", linkedSvg, StringComparison.Ordinal);
+        Assert.Contains("<rect id=\"mask-content\"", linkedSvg, StringComparison.Ordinal);
+
+        // The generated identifiers skip the identifiers of the elements
+        var clipped = new Scene(10, 10, "sans-serif");
+        clipped.Root.Add(new SceneGroup { Id = "scene-clip0", Clip = new SceneBounds(0, 0, 5, 5) });
+        Assert.Contains("<clipPath id=\"scene-clip1\">", SvgSceneRenderer.Render(clipped), StringComparison.Ordinal);
+
+        // Two elements cannot have the same identifier, even in the content of a mask
+        var duplicate = new Scene(10, 10, "sans-serif");
+        duplicate.Root.Add(new SceneRectangle(0, 0, 1, 1) { Id = "a" });
+        var duplicateMask = new SceneMask();
+        duplicateMask.Content.Add(new SceneRectangle(0, 0, 1, 1) { Id = "a" });
+        duplicate.Root.Add(new SceneRectangle(0, 0, 1, 1) { Mask = duplicateMask });
+        Assert.Throws<InvalidOperationException>(() => SvgSceneRenderer.Render(duplicate));
+
+        Assert.True(SceneElement.IsValidId("a-b_c.1"));
+        Assert.False(SceneElement.IsValidId("1a"));
+        Assert.False(SceneElement.IsValidId("a b"));
+        Assert.False(SceneElement.IsValidId("é"));
+        Assert.False(SceneElement.IsValidId(""));
+        Assert.False(SceneElement.IsValidId(null));
+        Assert.Throws<ArgumentException>("value", () => new SceneRectangle(0, 0, 1, 1) { Id = "a\"b" });
+    }
+
+    [Fact]
+    public void ReusedElements()
+    {
+        #region VectorGraphics_Reuse
+        var scene = new Scene(width: 200, height: 60, fontFamily: "sans-serif");
+
+        // A star that is not in the scene: the SVG writes it once in its definitions, and each use refers to it
+        var star = new ScenePath(new PathBuilder().AddPolygon((0, -20), (6, -6), (20, -6), (9, 3), (13, 18), (0, 9), (-13, 18), (-9, 3), (-20, -6), (-6, -6)).Build()) { Fill = (SceneColor)"#eab308" };
+        for (var i = 0; i < 3; i++)
+        {
+            scene.Root.Add(new SceneUse(star) { Transform = SceneTransform.Translate(30 + (i * 50), 30) });
+        }
+
+        // An element of the scene drawn again, smaller
+        var circle = scene.Root.Add(new SceneCircle(0, 0, 10) { Id = "dot", Fill = (SceneColor)"#0369a1", Transform = SceneTransform.Translate(180, 15) });
+        scene.Root.Add(new SceneUse(circle) { Transform = SceneTransform.Scale(0.5, 0.5, 180, 45) });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("Reuse", svg);
+        Assert.Contains("<defs>\n<path id=\"scene-element0\" d=\"M0,-20", svg, StringComparison.Ordinal);
+        Assert.Contains("<use href=\"#scene-element0\" transform=\"translate(80 30)\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<circle id=\"dot\" cx=\"0\" cy=\"0\" r=\"10\" fill=\"#0369a1\" transform=\"translate(180 15)\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<use href=\"#dot\" transform=\"matrix(0.5 0 0 0.5 90 22.5)\"/>", svg, StringComparison.Ordinal);
+        Assert.Equal(1, CountOccurrences(svg, "<path "));
+
+        // The bounds of a use are the bounds of its content, transformed by the use
+        Assert.Equal(new SceneBounds(175, 25, 10, 10), new SceneUse(circle) { Transform = SceneTransform.Scale(0.5, 0.5, 180, 45) }.GetBounds(_ => null));
+
+        // A use in its own content draws nothing, as in SVG; the identifier of a linked content is on its link
+        var group = new SceneGroup { Hyperlink = "https://example.com/" };
+        group.Add(new SceneRectangle(0, 0, 5, 5) { Fill = SceneColor.Black });
+        var inner = group.Add(new SceneUse(group));
+        var cycle = new Scene(10, 10, "sans-serif");
+        var outer = cycle.Root.Add(new SceneUse(group));
+        var root = cycle.Root.Add(new SceneUse(cycle.Root));
+        Assert.True(inner.IsCircular());
+        Assert.True(root.IsCircular());
+        Assert.False(outer.IsCircular());
+        var cycleSvg = SvgSceneRenderer.Render(cycle);
+        Assert.Contains("<defs>\n<a id=\"scene-element0\" href=\"https://example.com/\">", cycleSvg, StringComparison.Ordinal);
+        Assert.Equal(1, CountOccurrences(cycleSvg, "<use "));
+        Assert.Equal(new SceneBounds(0, 0, 5, 5), new SceneUse(group).GetBounds(_ => null));
+        Assert.Throws<ArgumentNullException>("content", () => new SceneUse(null!));
+    }
+
+    [Fact]
+    public void ViewBoxes()
+    {
+        #region VectorGraphics_ViewBox
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // A drawing of 100 by 100 units, fitted in a viewport of 200 by 80 pixels: scaled by 0.8 and centered
+        var chart = scene.Root.Add(new SceneGroup { ViewBox = new SceneViewBox(new SceneBounds(0, 0, 100, 100), new SceneBounds(0, 10, 200, 80)) });
+        chart.Add(new SceneRectangle(0, 0, 100, 100) { Fill = (SceneColor)"#e0f2fe", Stroke = (SceneColor)"#0369a1" });
+        chart.Add(new SceneCircle(50, 50, 40) { Fill = (SceneColor)"#0369a1" });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("ViewBox", svg);
+        Assert.Contains("<g>\n<svg x=\"0\" y=\"10\" width=\"200\" height=\"80\" viewBox=\"0 0 100 100\">\n<rect", svg, StringComparison.Ordinal);
+        Assert.Equal(new SceneTransform(0.8, 0, 0, 0.8, 60, 10), chart.ViewBox!.GetTransform());
+        // The stroke, with its miter joins, is cut by the viewport
+        var bounds = chart.GetBounds(_ => null)!.Value;
+        Assert.Equal(58.4, bounds.X, 1e-9);
+        Assert.Equal(10, bounds.Y, 1e-9);
+        Assert.Equal(141.6, bounds.Right, 1e-9);
+        Assert.Equal(90, bounds.Bottom, 1e-9);
+
+        var box = new SceneBounds(0, 0, 100, 50);
+        var viewport = new SceneBounds(0, 0, 200, 200);
+        Assert.Equal(new SceneTransform(2, 0, 0, 2, 0, 50), new SceneViewBox(box, viewport).GetTransform());
+        Assert.Equal(new SceneTransform(2, 0, 0, 2, 0, 100), new SceneViewBox(box, viewport) { Alignment = SceneAspectRatio.XMaxYMax }.GetTransform());
+        Assert.Equal(new SceneTransform(4, 0, 0, 4, -100, 0), new SceneViewBox(box, viewport) { Slice = true }.GetTransform());
+        Assert.Equal(new SceneTransform(2, 0, 0, 4, 0, 0), new SceneViewBox(box, viewport) { Alignment = SceneAspectRatio.None, Slice = true }.GetTransform());
+        Assert.Null(new SceneViewBox(new SceneBounds(0, 0, 0, 50), viewport).GetTransform());
+        Assert.Null(new SceneViewBox(box, new SceneBounds(0, 0, double.NaN, 50)).GetTransform());
+
+        // The alignment and the slice are written as preserveAspectRatio; a view box that draws nothing has no children
+        Assert.Contains("preserveAspectRatio=\"none\"", SvgSceneRenderer.Render(Single(new SceneGroup { ViewBox = new SceneViewBox(box, viewport) { Alignment = SceneAspectRatio.None } })), StringComparison.Ordinal);
+        Assert.Contains("preserveAspectRatio=\"xMinYMax slice\"", SvgSceneRenderer.Render(Single(new SceneGroup { ViewBox = new SceneViewBox(box, viewport) { Alignment = SceneAspectRatio.XMinYMax, Slice = true } })), StringComparison.Ordinal);
+        var empty = new SceneGroup { ViewBox = new SceneViewBox(new SceneBounds(0, 0, 0, 0), viewport) };
+        empty.Add(new SceneRectangle(0, 0, 1, 1));
+        Assert.DoesNotContain("<rect", SvgSceneRenderer.Render(Single(empty)), StringComparison.Ordinal);
+        Assert.Null(empty.GetBounds(_ => null));
     }
 
     [Fact]

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60" role="img" font-family="sans-serif">
+<defs>
+<path id="scene-element0" d="M0,-20 L6,-6 L20,-6 L9,3 L13,18 L0,9 L-13,18 L-9,3 L-20,-6 L-6,-6 Z" fill="#eab308"/>
+</defs>
+<use href="#scene-element0" transform="translate(30 30)"/>
+<use href="#scene-element0" transform="translate(80 30)"/>
+<use href="#scene-element0" transform="translate(130 30)"/>
+<circle id="dot" cx="0" cy="0" r="10" fill="#0369a1" transform="translate(180 15)"/>
+<use href="#dot" transform="matrix(0.5 0 0 0.5 90 22.5)"/>
+</svg>

@@ -4,9 +4,10 @@ namespace Meziantou.Framework.JavaScriptEngine.Modules;
 
 /// <summary>
 /// A ModuleRequest Record (https://tc39.es/ecma262/#sec-modulerequest-record): a specifier, its import attributes (sorted
-/// by key) and its phase (https://tc39.es/proposal-defer-import-eval/).
+/// by key), its phase (https://tc39.es/proposal-defer-import-eval/) and the names imported through it
+/// (https://tc39.es/proposal-deferred-reexports/).
 /// </summary>
-internal sealed class ModuleRequest(string specifier, KeyValuePair<string, string>[] attributes, ModulePhase phase = ModulePhase.Evaluation) : IEquatable<ModuleRequest>
+internal sealed class ModuleRequest(string specifier, KeyValuePair<string, string>[] attributes, ModulePhase phase = ModulePhase.Evaluation, ImportedNames? importedNames = null) : IEquatable<ModuleRequest>
 {
     public string Specifier { get; } = specifier;
 
@@ -15,12 +16,21 @@ internal sealed class ModuleRequest(string specifier, KeyValuePair<string, strin
     /// <summary>[[Phase]]: whether the module is evaluated with its importer, or deferred (<c>import defer</c>).</summary>
     public ModulePhase Phase { get; } = phase;
 
+    /// <summary>[[ImportedNames]]: the names imported from the requested module, to load its <c>export defer</c> declarations.</summary>
+    public ImportedNames ImportedNames { get; } = importedNames ?? ImportedNames.Empty();
+
+    /// <summary>
+    /// [[IsStarExport]] of an OptionalModuleRequest Record: the request of an <c>export * from</c> declaration that may
+    /// re-export the <c>export defer</c> bindings of the requested module.
+    /// </summary>
+    public bool IsStarExport { get; init; }
+
     /// <summary>Creates a request; the attributes are sorted by key.</summary>
-    public static ModuleRequest Create(string specifier, IEnumerable<KeyValuePair<string, string>> attributes, ModulePhase phase = ModulePhase.Evaluation)
+    public static ModuleRequest Create(string specifier, IEnumerable<KeyValuePair<string, string>> attributes, ModulePhase phase = ModulePhase.Evaluation, ImportedNames? importedNames = null)
     {
         var sorted = attributes.ToArray();
         Array.Sort(sorted, static (a, b) => string.CompareOrdinal(a.Key, b.Key));
-        return new ModuleRequest(specifier, sorted, phase);
+        return new ModuleRequest(specifier, sorted, phase, importedNames);
     }
 
     /// <summary>ModuleRequestsEqual(left, right): the phase is not compared (the same module is loaded for each phase).</summary>

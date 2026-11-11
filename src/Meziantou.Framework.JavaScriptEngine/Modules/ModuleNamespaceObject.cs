@@ -5,7 +5,8 @@ namespace Meziantou.Framework.JavaScriptEngine.Modules;
 /// <summary>
 /// A module namespace exotic object (https://tc39.es/ecma262/#sec-module-namespace-exotic-objects): the exports of a
 /// module, as live bindings. A deferred namespace (<c>import defer</c>, https://tc39.es/proposal-defer-import-eval/)
-/// evaluates its module on the first access to an export.
+/// evaluates its module on the first access to an export. The access to an export provided by an <c>export defer</c>
+/// declaration evaluates the module of the declaration (https://tc39.es/proposal-deferred-reexports/).
 /// </summary>
 internal sealed class ModuleNamespaceObject : JsObject
 {
@@ -35,7 +36,7 @@ internal sealed class ModuleNamespaceObject : JsObject
     {
         if (_deferred)
         {
-            ModuleOperations.EnsureDeferredNamespaceEvaluation(_module);
+            ModuleOperations.EvaluateModuleSync(_module);
         }
     }
 
@@ -118,8 +119,16 @@ internal sealed class ModuleNamespaceObject : JsObject
 
     private JsValue GetExportValue(string name)
     {
+        if (_module is JsSourceTextModule cyclic)
+        {
+            ModuleOperations.EnsureDeferredExportEvaluated(cyclic, name);
+        }
+
         var binding = _module.ResolveExport(name, [])!;
         var target = binding.Module;
+        if (binding.FilteredNamespaceExport is { } filteredNamespaceExport)
+            return ((JsSourceTextModule)target).GetFilteredNamespaceExport(filteredNamespaceExport);
+
         if (binding.IsNamespace)
             return ModuleOperations.GetModuleNamespaceOrSource(target, binding.NamespacePhase, ErrorType.ReferenceError);
 

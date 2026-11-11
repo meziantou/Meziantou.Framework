@@ -43,7 +43,7 @@ jobs:
         run: |
           Get-ChildItem ./eng/*.cs | ForEach-Object {
             Write-Host "Building $_"
-            dotnet build $_
+            dotnet build $_ -mt
             if ($LASTEXITCODE -ne 0) { throw "Failed to build $_" }
           }
 
@@ -91,7 +91,7 @@ jobs:
 
       # Generating the public API of a project runs this tool, and a delta build does not
       # necessarily contain it
-      - run: dotnet build src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj --configuration Release /p:IsOfficialBuild=true /bl:build.publicapi.binlog
+      - run: dotnet build src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj -mt --configuration Release /p:IsOfficialBuild=true /bl:build.publicapi.binlog
         if: steps.build-project.outputs.has-project == 'true'
 
       # Analyzers are disabled when building the tests (RunAnalyzers=false) and the IDExxxx
@@ -99,9 +99,11 @@ jobs:
       # -graph schedules each project once its references are built. Without it, a project that
       # waits for a reference stays on its node, so the long compilations queue on a few nodes
       # while the others are idle.
+      # -mt (MSBuild multithreaded mode) runs the projects as threads of one process. The tasks that do not support it
+      # run in a task host, which only makes them slower. The other dotnet build/test/pack/publish commands use it too.
       - name: Build all projects
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet build ${{ steps.build-project.outputs.project }} -graph --configuration Release /p:IsOfficialBuild=true /p:SkipUnsupportedPlatforms=false /bl:build.binlog
+        run: dotnet build ${{ steps.build-project.outputs.project }} -graph -mt --configuration Release /p:IsOfficialBuild=true /p:SkipUnsupportedPlatforms=false /bl:build.binlog
 
       - name: Skip build
         if: steps.build-project.outputs.has-project != 'true'
@@ -682,12 +684,12 @@ jobs:
       # -graph: see the "Build all projects" step of the run_analyzers job
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet build ${{ steps.build-project.outputs.project }} -graph --configuration ${{ matrix.configuration }} /bl ${{ env.FRAMEWORK_ARGUMENTS }} ${{ env.ADDITIONAL_ARGUMENTS }}
+        run: dotnet build ${{ steps.build-project.outputs.project }} -graph -mt --configuration ${{ matrix.configuration }} /bl ${{ env.FRAMEWORK_ARGUMENTS }} ${{ env.ADDITIONAL_ARGUMENTS }}
 
       - name: Run tests
         if: steps.build-project.outputs.has-project == 'true'
         run: |
-          dotnet test ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ env.FRAMEWORK_ARGUMENTS }} ${{ env.ADDITIONAL_ARGUMENTS }}
+          dotnet test ${{ steps.build-project.outputs.project }} -mt --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" /p:EnableCodeCoverage=${{ env.EnableCodeCoverage }} ${{ env.FRAMEWORK_ARGUMENTS }} ${{ env.ADDITIONAL_ARGUMENTS }}
 
           # Exit code 8 is 'zero tests ran'. A delta build can legitimately select only projects that
           # skip every test on this leg, such as the TDS tests, which need ICU and are therefore all
@@ -765,7 +767,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
-      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable/Trimmable.csproj
+      - run: dotnet publish -mt --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
     if: github.event_name != 'schedule'
@@ -779,7 +781,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
-      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable.Wpf/Trimmable.Wpf.csproj
+      - run: dotnet publish -mt --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable.Wpf/Trimmable.Wpf.csproj
 
   # Building a project that sets PublishAot does not compile it ahead of time. Only a published
   # application is native, and Native AOT cannot target another OS, so each platform publishes
@@ -816,7 +818,7 @@ jobs:
             $output = Join-Path $env:RUNNER_TEMP "aot" $framework
 
             Write-Host "::group::Publish $framework"
-            dotnet publish $project.FullName --configuration Release --framework $framework --output $output
+            dotnet publish $project.FullName -mt --configuration Release --framework $framework --output $output
             $published = $LASTEXITCODE -eq 0
             Write-Host "::endgroup::"
             if (-not $published) {

@@ -50,7 +50,7 @@ jobs:
           $before = Get-Content $env:PinsPath -Raw | ConvertFrom-Json
 
           # Built first and run with --no-build, so that a build failure is not mistaken for a failure of the tool
-          dotnet build $env:ToolProject --configuration Release
+          dotnet build $env:ToolProject -mt --configuration Release
           if ($LASTEXITCODE -ne 0) { throw "Meziantou.Framework.Geo.Maps.Tool failed to build (exit code $LASTEXITCODE)" }
 
           # update-pins exits 0 whether or not the pins changed: git tells whether they did
@@ -86,10 +86,10 @@ jobs:
           $projects = Get-ChildItem $env:MapsDirectory -Filter *.csproj -Recurse -Depth 1 | Sort-Object FullName
           $solution = Join-Path $env:RUNNER_TEMP "maps.slnx"
           (@("<Solution>") + ($projects | ForEach-Object { "  <Project Path=`"$($_.FullName)`" />" }) + @("</Solution>")) -join "`n" | Set-Content $solution
-          dotnet build $solution --configuration Release /p:PublicApiGeneratorGenerateOnBuild=true
+          dotnet build $solution -mt --configuration Release /p:PublicApiGeneratorGenerateOnBuild=true
           $buildPassed = $LASTEXITCODE -eq 0
           if ($buildPassed) {
-            dotnet pack $solution --configuration Release --no-build --output (Join-Path $env:RUNNER_TEMP "map-packages")
+            dotnet pack $solution -mt --configuration Release --no-build --output (Join-Path $env:RUNNER_TEMP "map-packages")
             $buildPassed = $LASTEXITCODE -eq 0
           }
 
@@ -97,7 +97,7 @@ jobs:
           dotnet run ./eng/update-all.cs -- --step trimmable --step slnx --step bom
           if ($LASTEXITCODE -ne 0) { throw "update-all failed with exit code $LASTEXITCODE" }
 
-          dotnet test --project "$PWD/tests/Meziantou.Framework.Geo.Maps.Tool.Tests/Meziantou.Framework.Geo.Maps.Tool.Tests.csproj" --configuration Release
+          dotnet test --project "$PWD/tests/Meziantou.Framework.Geo.Maps.Tool.Tests/Meziantou.Framework.Geo.Maps.Tool.Tests.csproj" -mt --configuration Release
           $testsPassed = $LASTEXITCODE -eq 0
           $passed = $buildPassed -and $testsPassed
 

@@ -1,4 +1,5 @@
 using Meziantou.Framework.InlineSnapshotTesting;
+using Meziantou.Framework.SnapshotTesting;
 
 namespace Meziantou.Framework.Barcodes.Tests;
 
@@ -122,12 +123,63 @@ public class RMQRCodeTests
         Assert.True(qr.Width > qr.Height);
     }
 
+    // ───── Mixed modes and segments ─────
+
+    [Theory]
+    [InlineData("12345")]
+    [InlineData("HELLO WORLD")]
+    [InlineData("https://www.meziantou.net")]
+    [InlineData("漢字のテスト")]
+    public void CreateRMQR_SingleMode_WhenSegmentsAreNotSmaller(string data)
+    {
+        QRCodeSegment segment = data switch
+        {
+            "12345" => QRCodeSegment.CreateNumeric(data),
+            "HELLO WORLD" => QRCodeSegment.CreateAlphanumeric(data),
+            "漢字のテスト" => QRCodeSegment.CreateKanji(data),
+            _ => QRCodeSegment.CreateByte(data),
+        };
+
+        Assert.Equal(RenderAsText(QRCode.CreateRMQR(data)), RenderAsText(QRCode.CreateRMQR([segment])));
+    }
+
+    [Fact]
+    public void CreateRMQR_MixedModes_Snapshot()
+    {
+        // The lowercase letters in byte mode, the digits in numeric mode; large modules and a quiet zone, so that the snapshot can be scanned
+        var qr = QRCode.CreateRMQR("Order 12345678901234567890");
+
+        Snapshot.Validate(qr.ToPng(new QRCodePngOptions { ModuleSize = 8, QuietZoneModules = 2 }), SnapshotType.Png);
+    }
+
+    [Fact]
+    public void CreateRMQR_MixedModes_GiveASmallerSymbol()
+    {
+        var mixed = QRCode.CreateRMQR("item 12345678901234567890 OK");
+        var segments = QRCode.CreateRMQR([QRCodeSegment.CreateByte("item "), QRCodeSegment.CreateNumeric("12345678901234567890"), QRCodeSegment.CreateAlphanumeric(" OK")]);
+        var single = QRCode.CreateRMQR([QRCodeSegment.CreateByte("item 12345678901234567890 OK")]);
+
+        Assert.Equal(RenderAsText(mixed), RenderAsText(segments));
+        Assert.True(mixed.Width * mixed.Height < single.Width * single.Height);
+    }
+
+    [Fact]
+    public void CreateRMQR_Segments_InvalidArguments_Throw()
+    {
+        Assert.Throws<ArgumentNullException>("segments", () => QRCode.CreateRMQR((IEnumerable<QRCodeSegment>)null!));
+        Assert.Throws<ArgumentException>("segments", () => QRCode.CreateRMQR([QRCodeSegment.CreateNumeric("1"), null!]));
+        Assert.Throws<ArgumentException>("segments", () => QRCode.CreateRMQR([QRCodeSegment.CreateEci(26), QRCodeSegment.CreateNumeric("1")]));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.CreateRMQR([QRCodeSegment.CreateNumeric("1")], ErrorCorrectionLevel.L));
+        Assert.Throws<ArgumentException>("options", () => QRCode.CreateRMQR([QRCodeSegment.CreateNumeric("1")], ErrorCorrectionLevel.M, new RMQRCodeOptions { Height = 7, Width = 27 }));
+        Assert.Throws<InvalidOperationException>(() => QRCode.CreateRMQR([QRCodeSegment.CreateByte(new byte[200])], ErrorCorrectionLevel.H));
+    }
+
     // ───── Error cases ─────
 
     [Fact]
     public void CreateRMQR_NullData_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => QRCode.CreateRMQR(null!));
+        Assert.Throws<ArgumentNullException>(() => QRCode.CreateRMQR((string)null!));
     }
 
     [Fact]

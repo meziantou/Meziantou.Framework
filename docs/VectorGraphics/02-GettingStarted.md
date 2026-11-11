@@ -32,6 +32,8 @@ var svg = SvgSceneRenderer.Render(scene);
 ```
 <!-- endref -->
 
+![A light blue rounded box with the word Hello and an arrow](images/CreateScene.svg)
+
 The coordinates are in pixels, with the origin at the top-left corner and the y axis pointing down. A
 [SceneText](cref:Meziantou.Framework.VectorGraphics.SceneText) is one line of text, positioned by its baseline and
 anchored at its start, its middle or its end; its [SceneFont](cref:Meziantou.Framework.VectorGraphics.SceneFont) sets
@@ -59,6 +61,8 @@ var svg = SvgSceneRenderer.Render(scene);
 ```
 <!-- endref -->
 
+![Three lines of text: light, bold and underlined, and struck through](images/TextStyles.svg)
+
 ### Several styles in one text
 
 A text made of [SceneTextSpan](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan) has parts with their own font,
@@ -85,6 +89,8 @@ scene.Root.Add(new SceneText(10, 25, spans, font, SceneColor.Black) { MeasuredWi
 var svg = SvgSceneRenderer.Render(scene);
 ```
 <!-- endref -->
+
+![The text Total: 42 items, 3 removed, with 42 in bold blue and 3 removed struck through](images/TextSpans.svg)
 
 ## Strokes
 
@@ -150,6 +156,8 @@ var svg = SvgSceneRenderer.Render(scene);
 ```
 <!-- endref -->
 
+![A square image of four colors cropped to a circle, over a radial gradient from white to blue](images/ImagesAndClipping.svg)
+
 The image and PDF renderers decode the images: an image they cannot decode is not drawn.
 
 A gradient ([SceneGradientPaint](cref:Meziantou.Framework.VectorGraphics.SceneGradientPaint)) pads its end colors
@@ -194,6 +202,8 @@ faded.Add(new SceneText(150, 95, "Fading", new SceneFont(12), SceneColor.Black) 
 var svg = SvgSceneRenderer.Render(scene);
 ```
 <!-- endref -->
+
+![A white card with a soft shadow, a blurred blue circle, diagonal stripes, and a word that fades to the right](images/Effects.svg)
 
 PDF has no filters, not even the color matrices: the PDF renderer throws for a scene that has one. See the
 [limitations](07-Limitations.md).

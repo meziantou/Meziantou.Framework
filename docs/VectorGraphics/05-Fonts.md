@@ -20,6 +20,8 @@ collection. The family of the first face is the default family of the collection
 
 <!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_SceneFonts;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var testData = Path.Combine(AppContext.BaseDirectory, "TestData");
+
 // The fonts of the texts: the family of the first face is the default one
 var fonts = SceneFontCollection.Load(
     Path.Combine(testData, "LiberationSans-Regular.woff2"),
@@ -39,6 +41,8 @@ scene.Root.Add(new SceneText(10, 45, "var x = 1;", code, SceneColor.Black) { Mea
 var svg = SvgSceneRenderer.Render(scene, new SvgRenderOptions { EmbedFonts = true });
 ```
 <!-- endref -->
+
+![A bold title in Liberation Sans above a line of code in Liberation Mono](images/SceneFonts.svg)
 
 Charts and diagrams set the fonts of their scene from their measurer
 ([ITextMeasurer.Fonts](cref:Meziantou.Framework.VectorGraphics.ITextMeasurer.Fonts)): pass the measurer to `CreateScene`

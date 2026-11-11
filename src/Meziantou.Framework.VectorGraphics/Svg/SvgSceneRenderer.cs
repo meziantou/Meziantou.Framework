@@ -400,11 +400,18 @@ public static class SvgSceneRenderer
         {
             // The clips are in the coordinates of the parent: an outer group clips, an inner one transforms. The last
             // clip is on the group itself when it has no transform.
-            // The blend mode, the mask, the clips and the filter apply in this order, from the outside
+            // The blend mode, the opacity, the mask, the clips and the filter apply in this order, from the outside. The
+            // opacity is on the group itself, unless the group has a filter: it applies after the filter, which can
+            // change the alpha (a color matrix)
             List<(string Name, string Value)> layers = [];
             if (BlendModeName(group.BlendMode) is { } blendMode)
             {
                 layers.Add(("style", "mix-blend-mode:" + blendMode));
+            }
+
+            if (HasOuterOpacity(group))
+            {
+                layers.Add(("opacity", SvgNumber.Format(Math.Max(0, group.Opacity), 3)));
             }
 
             if (_maskIds.TryGetValue(group, out var maskId))
@@ -577,6 +584,12 @@ public static class SvgSceneRenderer
             if (color != text.Color)
             {
                 Paint("fill", color);
+
+                // A span inherits the opacity of the text: an opaque span of a translucent text resets it
+                if (color.IsOpaque && !text.Color.IsOpaque)
+                {
+                    Attribute("fill-opacity", "1");
+                }
             }
 
             if (decoration is not null)
@@ -648,9 +661,11 @@ public static class SvgSceneRenderer
             CommonAttributes(shape);
         }
 
+        private bool HasOuterOpacity(SceneElement element) => element is SceneGroup && element.Opacity < 1 && _filterIds.ContainsKey(element);
+
         private void CommonAttributes(SceneElement element)
         {
-            if (element.Opacity < 1)
+            if (element.Opacity < 1 && !HasOuterOpacity(element))
             {
                 Attribute("opacity", SvgNumber.Format(Math.Max(0, element.Opacity), 3));
             }
@@ -803,8 +818,14 @@ public static class SvgSceneRenderer
 
             return rules.ToString();
 
+            // The faces of the texts, of their spans, and of the contents of the masks
             void Visit(SceneElement element)
             {
+                if (element.Mask is { } mask)
+                {
+                    Visit(mask.Content);
+                }
+
                 switch (element)
                 {
                     case SceneGroup group:
@@ -815,13 +836,25 @@ public static class SvgSceneRenderer
 
                         break;
 
-                    case SceneText text:
-                        foreach (var run in fonts.GetRuns(text.Text, text.Font, scene.FontFamily))
+                    case SceneText { Spans.Count: > 0 } text:
+                        foreach (var span in text.Spans)
                         {
-                            used.Add(run.Face);
+                            AddRuns(span.Text, span.Font ?? text.Font);
                         }
 
                         break;
+
+                    case SceneText text:
+                        AddRuns(text.Text, text.Font);
+                        break;
+                }
+            }
+
+            void AddRuns(string text, SceneFont font)
+            {
+                foreach (var run in fonts.GetRuns(text, font, scene.FontFamily))
+                {
+                    used.Add(run.Face);
                 }
             }
         }

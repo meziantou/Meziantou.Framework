@@ -19,6 +19,8 @@ public sealed class SvgSceneRendererTests
         var svg = SvgSceneRenderer.Render(scene);
         #endregion
 
+        DocumentationImages.AssertSvg("CreateScene", svg);
+
         Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"200\" height=\"80\"", svg, StringComparison.Ordinal);
         Assert.Contains("<title>A box</title>", svg, StringComparison.Ordinal);
         Assert.Contains(">Hello</text>", svg, StringComparison.Ordinal);
@@ -103,6 +105,8 @@ public sealed class SvgSceneRendererTests
         var svg = SvgSceneRenderer.Render(scene);
         #endregion
 
+        DocumentationImages.AssertSvg("ImagesAndClipping", svg);
+
         Assert.Contains("<radialGradient id=\"scene-gradient0\" gradientUnits=\"userSpaceOnUse\" cx=\"50\" cy=\"50\" r=\"50\">", svg, StringComparison.Ordinal);
         Assert.Contains("fill=\"url(#scene-gradient0)\"", svg, StringComparison.Ordinal);
         Assert.Contains("<clipPath id=\"scene-clip0\"><path d=\"M50,20 A30,30 0 0,1 50,80 A30,30 0 0,1 50,20 Z\"/></clipPath>", svg, StringComparison.Ordinal);
@@ -180,6 +184,8 @@ public sealed class SvgSceneRendererTests
         var svg = SvgSceneRenderer.Render(scene);
         #endregion
 
+        DocumentationImages.AssertSvg("TextStyles", svg);
+
         Assert.Contains("font-size=\"16\" font-weight=\"300\"", svg, StringComparison.Ordinal);
         Assert.Contains("font-weight=\"bold\" text-decoration=\"underline\"", svg, StringComparison.Ordinal);
         Assert.Contains("text-decoration=\"line-through\"", svg, StringComparison.Ordinal);
@@ -214,6 +220,8 @@ public sealed class SvgSceneRendererTests
 
         var svg = SvgSceneRenderer.Render(scene);
         #endregion
+
+        DocumentationImages.AssertSvg("Effects", svg);
 
         Assert.Contains("<filter id=\"scene-filter0\" filterUnits=\"userSpaceOnUse\"", svg, StringComparison.Ordinal);
         Assert.Contains("<feGaussianBlur in=\"SourceAlpha\" stdDeviation=\"3\"/><feOffset dx=\"0\" dy=\"2\" result=\"shadow\"/><feFlood flood-color=\"#000000\" flood-opacity=\"0.251\"/>", svg, StringComparison.Ordinal);
@@ -270,6 +278,8 @@ public sealed class SvgSceneRendererTests
         var svg = SvgSceneRenderer.Render(scene);
         #endregion
 
+        DocumentationImages.AssertSvg("TextSpans", svg);
+
         Assert.Contains(">Total: <tspan font-weight=\"bold\" fill=\"#0369a1\">42</tspan> items, <tspan text-decoration=\"line-through\">3 removed</tspan></text>", svg, StringComparison.Ordinal);
         Assert.Equal("Total: 42 items, 3 removed", ((SceneText)scene.Root.Children[0]).Text);
         Assert.Equal(measurer.Measure("Total: ", font).Width + measurer.Measure("42", font with { Weight = SceneFont.BoldWeight }).Width + measurer.Measure(" items, 3 removed", font).Width, measurer.Measure(spans, font).Width, 0.5);
@@ -298,6 +308,62 @@ public sealed class SvgSceneRendererTests
         Assert.Equal([-1, 0, 0, 0, 1], SceneColorMatrixFilter.Invert().Values.Take(5));
         Assert.Throws<ArgumentException>("values", () => new SceneColorMatrixFilter(1, 2, 3));
         Assert.Throws<ArgumentException>("values", () => new SceneColorMatrixFilter([double.NaN, .. identity[1..]]));
+    }
+
+    [Fact]
+    public void EmbeddedFontsIncludeTheSpansAndTheMasks()
+    {
+        var testData = Path.Combine(AppContext.BaseDirectory, "TestData");
+        var fonts = SceneFontCollection.Load(Path.Combine(testData, "LiberationSans-Regular.woff2"), Path.Combine(testData, "LiberationSans-Bold.woff2"), Path.Combine(testData, "LiberationMono-Regular.woff2"));
+        var scene = new Scene(100, 40, fonts.FontFamily) { Fonts = fonts };
+
+        // Liberation Mono only draws a span, Liberation Sans Bold only a text of a mask
+        scene.Root.Add(new SceneText(0, 20, [new SceneTextSpan("a"), new SceneTextSpan("b") { Font = new SceneFont(10, Family: "Liberation Mono") }], new SceneFont(10), SceneColor.Black));
+        var mask = new SceneMask();
+        mask.Content.Add(new SceneText(0, 30, "m", new SceneFont(10, Weight: SceneFont.BoldWeight), SceneColor.White));
+        scene.Root.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black, Mask = mask });
+        var svg = SvgSceneRenderer.Render(scene, new SvgRenderOptions { EmbedFonts = true });
+
+        Assert.Contains("font-family:&quot;Liberation Mono&quot;", svg, StringComparison.Ordinal);
+        Assert.Contains("font-family:&quot;Liberation Sans&quot;;font-weight:700", svg, StringComparison.Ordinal);
+        Assert.Contains("font-family:&quot;Liberation Sans&quot;;font-weight:400", svg, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OpaqueSpansOfTranslucentTextsAreOpaque()
+    {
+        var text = new SceneText(0, 10, [new SceneTextSpan("a"), new SceneTextSpan("b") { Color = (SceneColor)"#0000ff" }, new SceneTextSpan("c") { Color = (SceneColor)"#00ff0080" }], new SceneFont(10), (SceneColor)"#ff000080");
+        var svg = SvgSceneRenderer.Render(Single(text));
+        Assert.Contains("fill=\"#ff0000\" fill-opacity=\"0.502\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<tspan fill=\"#0000ff\" fill-opacity=\"1\">b</tspan>", svg, StringComparison.Ordinal);
+        Assert.Contains("<tspan fill=\"#00ff00\" fill-opacity=\"0.502\">c</tspan>", svg, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OpacityOfAGroupAppliesAfterItsFilter()
+    {
+        var scene = new Scene(100, 100, "sans-serif");
+        var group = scene.Root.Add(new SceneGroup { Opacity = 0.5, Filter = SceneColorMatrixFilter.Invert(), Transform = SceneTransform.Translate(5, 5) });
+        group.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black });
+        var plain = scene.Root.Add(new SceneGroup { Opacity = 0.5, Transform = SceneTransform.Translate(5, 5) });
+        plain.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black });
+        var svg = SvgSceneRenderer.Render(scene);
+
+        Assert.Contains("<g opacity=\"0.5\">\n<g filter=\"url(#scene-filter0)\">\n<g transform=\"translate(5 5)\">", svg, StringComparison.Ordinal);
+
+        // Without a filter, the opacity stays on the group, as before
+        Assert.Contains("<g opacity=\"0.5\" transform=\"translate(5 5)\">", svg, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FilterRegionsIncludeTheFiltersOfTheChildren()
+    {
+        // The shadow of the child is 30 units right of it: the region of the filter of the group contains it
+        var scene = new Scene(100, 100, "sans-serif");
+        var group = scene.Root.Add(new SceneGroup { Filter = new SceneBlurFilter(0) });
+        group.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black, Filter = new SceneDropShadowFilter(30, 0, 0, SceneColor.Black) });
+        var svg = SvgSceneRenderer.Render(scene);
+        Assert.Contains("<filter id=\"scene-filter0\" filterUnits=\"userSpaceOnUse\" x=\"-1\" y=\"-1\" width=\"42\" height=\"12\"", svg, StringComparison.Ordinal);
     }
 
     private static Scene Single(SceneElement element)
@@ -440,9 +506,9 @@ public sealed class SvgSceneRendererTests
     [Fact]
     public void SceneFonts()
     {
+        #region VectorGraphics_SceneFonts
         var testData = Path.Combine(AppContext.BaseDirectory, "TestData");
 
-        #region VectorGraphics_SceneFonts
         // The fonts of the texts: the family of the first face is the default one
         var fonts = SceneFontCollection.Load(
             Path.Combine(testData, "LiberationSans-Regular.woff2"),
@@ -461,6 +527,8 @@ public sealed class SvgSceneRendererTests
         // The SVG can embed the fonts, so every viewer draws the texts with them
         var svg = SvgSceneRenderer.Render(scene, new SvgRenderOptions { EmbedFonts = true });
         #endregion
+
+        DocumentationImages.AssertSvg("SceneFonts", svg);
 
         Assert.Contains("font-family=\"Liberation Sans, Liberation Mono\"", svg, StringComparison.Ordinal);
         Assert.Contains("<text x=\"10\" y=\"45\" font-family=\"Liberation Mono, Liberation Sans\" font-size=\"12\"", svg, StringComparison.Ordinal);

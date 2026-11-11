@@ -10,9 +10,9 @@ public sealed class ScenePdfRendererTests
     [Fact]
     public void DrawAChartAsPdf()
     {
-        var testData = TestData;
-
         #region PdfVectorGraphics_ToPdf
+        var testData = Path.Combine(AppContext.BaseDirectory, "TestData");
+
         // The fonts of the texts: the layout measures the texts with them, and the PDF embeds the subsets it uses
         var fonts = SceneFontCollection.Load(Path.Combine(testData, "LiberationSans-Regular.woff2"), Path.Combine(testData, "LiberationSans-Bold.woff2"));
 
@@ -22,6 +22,11 @@ public sealed class ScenePdfRendererTests
         var document = plot.ToPdf(new ScenePdfOptions { Fonts = fonts });
         var pdf = document.ToByteArray();
         #endregion
+
+        using (var preview = PdfDocument.Open(pdf).Pages[0].Render(new PdfRenderOptions { Dpi = 96 }))
+        {
+            DocumentationImages.AssertPng("PdfChart", preview);
+        }
 
         var reopened = PdfDocument.Open(pdf);
         var page = reopened.Pages[0];
@@ -264,6 +269,19 @@ public sealed class ScenePdfRendererTests
         report.Pages.Add(new PdfSize(200, 200)).DrawScene(new Scene(10, 10, "sans-serif") { Title = "Chart:" , Description = "Details" }, new PdfPoint(0, 200), new ScenePdfOptions { StructureParent = section });
         Assert.Equal("Chart: Details", Assert.Single(section.Children).AlternateDescription);
         Assert.Null(new Scene(10, 10, "sans-serif").ToPdf().StructureTree.Elements[0].Children[0].AlternateDescription);
+    }
+
+    [Fact]
+    public void TransparencyGroupsContainTheMiters()
+    {
+        // The miter of this corner reaches 16.8 units above it, to y = 23.2: the transparency group of the faded group
+        // must contain it (twice the width of the stroke above the path would stop at y = 28)
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+        var faded = scene.Root.Add(new SceneGroup { Opacity = 0.5 });
+        faded.Add(new ScenePath(new PathBuilder().MoveTo(65, 95).LineTo(75, 40).LineTo(85, 95).Build()) { Stroke = SceneColor.Black, StrokeWidth = 6, MiterLimit = 10 });
+        using var image = Render(scene);
+        Assert.InRange(image.Frames[0][75, 26].R, 100, 240);
+        Assert.InRange(image.Frames[0][75, 35].R, 100, 160);
     }
 
     [Fact]

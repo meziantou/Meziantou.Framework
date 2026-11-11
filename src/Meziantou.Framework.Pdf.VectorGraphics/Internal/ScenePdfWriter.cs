@@ -837,6 +837,15 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
         private Bounds Inflate(double amount) => amount > 0 ? new Bounds(Left - amount, Top - amount, Right + amount, Bottom + amount) : this;
 
+        // A stroke extends half its width beyond the path; a miter join up to half the miter limit times the width, a
+        // square cap half the width times the square root of 2 (a corner of its square)
+        private static double StrokeExtent(SceneShape shape)
+        {
+            var miterLimit = shape.MiterLimit >= 1 && double.IsFinite(shape.MiterLimit) ? shape.MiterLimit : DefaultMiterLimit;
+            var factor = Math.Max(shape.LineJoin is SceneLineJoin.Miter ? miterLimit : 1, shape.LineCap is SceneLineCap.Square ? Math.Sqrt(2) : 1);
+            return shape.StrokeWidth / 2 * factor;
+        }
+
         // A cubic curve stays in the convex hull of its control points
         private static Bounds? OfPath(PathData data)
         {
@@ -862,8 +871,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             if (!(element.Opacity > 0))
                 return null;
 
-            // The strokes extend by half their width, and the miters by twice it at most (the miter limit is 4)
-            var stroke = element is SceneShape { Stroke: not null } shape && shape.StrokeWidth > 0 ? shape.StrokeWidth * 2 : 0;
+            var stroke = element is SceneShape { Stroke: not null } shape && shape.StrokeWidth > 0 && double.IsFinite(shape.StrokeWidth) ? StrokeExtent(shape) : 0;
             switch (element)
             {
                 case SceneGroup group:

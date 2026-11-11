@@ -12,12 +12,13 @@ internal static class SceneGeometry
         switch (element)
         {
             case SceneGroup group:
+                // A child draws its filter too: its blur and its shadow extend it
                 foreach (var child in group.Children)
                 {
                     if (!TryGetBounds(child, out var childBounds))
                         return false;
 
-                    bounds = Union(bounds, childBounds);
+                    bounds = Union(bounds, childBounds is { } childBox ? WithFilter(childBox, child.Filter) : null);
                 }
 
                 if (bounds is { } box && group.Transform is { } transform)
@@ -64,6 +65,27 @@ internal static class SceneGeometry
             default:
                 return false;
         }
+    }
+
+    /// <summary>Gets a rectangle that contains what an element draws with its filter, from what it draws without it.</summary>
+    public static SceneBounds WithFilter(SceneBounds bounds, SceneFilter? filter)
+    {
+        switch (filter)
+        {
+            case SceneBlurFilter blur:
+                return Inflate(bounds, 3 * Deviation(blur.StandardDeviation));
+
+            case SceneDropShadowFilter shadow:
+                var shadowBounds = Inflate(bounds, 3 * Deviation(shadow.StandardDeviation));
+                var offsetX = double.IsFinite(shadow.OffsetX) ? shadow.OffsetX : 0;
+                var offsetY = double.IsFinite(shadow.OffsetY) ? shadow.OffsetY : 0;
+                return Union(bounds, new SceneBounds(shadowBounds.X + offsetX, shadowBounds.Y + offsetY, shadowBounds.Width, shadowBounds.Height))!.Value;
+
+            default:
+                return bounds;
+        }
+
+        static double Deviation(double deviation) => deviation > 0 && double.IsFinite(deviation) ? deviation : 0;
     }
 
     public static SceneBounds Inflate(SceneBounds bounds, double amount) => amount > 0 ? new SceneBounds(bounds.X - amount, bounds.Y - amount, bounds.Width + (2 * amount), bounds.Height + (2 * amount)) : bounds;

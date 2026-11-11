@@ -20,6 +20,8 @@ fonts that draw them; a chart or a diagram passed to `ToPdf` is laid out with it
 
 <!-- ref:../../tests/Meziantou.Framework.Pdf.VectorGraphics.Tests/ScenePdfRendererTests.cs;region=PdfVectorGraphics_ToPdf;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var testData = Path.Combine(AppContext.BaseDirectory, "TestData");
+
 // The fonts of the texts: the layout measures the texts with them, and the PDF embeds the subsets it uses
 var fonts = SceneFontCollection.Load(Path.Combine(testData, "LiberationSans-Regular.woff2"), Path.Combine(testData, "LiberationSans-Bold.woff2"));
 
@@ -30,6 +32,8 @@ var document = plot.ToPdf(new ScenePdfOptions { Fonts = fonts });
 var pdf = document.ToByteArray();
 ```
 <!-- endref -->
+
+![The PDF page of a bar chart titled Sales by region, with the bars of North and South](images/PdfChart.png)
 
 [DrawScene](cref:Meziantou.Framework.Pdf.VectorGraphics.ScenePdfRenderer.DrawScene) draws a scene on a page of an
 existing document, over its content, with its top-left corner at a position of the page (whose y axis points up), and

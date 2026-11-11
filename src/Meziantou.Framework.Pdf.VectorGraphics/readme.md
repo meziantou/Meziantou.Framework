@@ -12,6 +12,8 @@ whose widths the default text measurer uses.
 
 <!-- ref:../../tests/Meziantou.Framework.Pdf.VectorGraphics.Tests/ScenePdfRendererTests.cs;region=PdfVectorGraphics_ToPdf;format=md-fenced-code-block;dedent=true -->
 ```csharp
+var testData = Path.Combine(AppContext.BaseDirectory, "TestData");
+
 // The fonts of the texts: the layout measures the texts with them, and the PDF embeds the subsets it uses
 var fonts = SceneFontCollection.Load(Path.Combine(testData, "LiberationSans-Regular.woff2"), Path.Combine(testData, "LiberationSans-Bold.woff2"));
 

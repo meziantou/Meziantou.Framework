@@ -19,22 +19,47 @@ internal static class PublicApiEmitter
             _ => throw new ArgumentOutOfRangeException(nameof(options)),
         };
 
-        EnsureFileNamesAreUnique(files);
-        return files;
+        return MakeFileNamesUnique(files);
     }
 
-    private static void EnsureFileNamesAreUnique(IReadOnlyList<PublicApiFile> files)
+    /// <summary>
+    /// Renames the files whose name is already used, ignoring case, so that the generated file set does not depend on the file system.
+    /// The first file keeps its name, and the next ones get a <c>~2</c>, <c>~3</c>... suffix. A C# name cannot contain <c>~</c>,
+    /// so the new name cannot be the name of another file.
+    /// </summary>
+    internal static IReadOnlyList<PublicApiFile> MakeFileNamesUnique(IReadOnlyList<PublicApiFile> files)
     {
         if (files.Count < 2)
-            return;
+            return files;
 
-        // Compared without case so that the generated file set does not depend on the file system
-        var seenRelativePaths = new HashSet<string>(files.Count, StringComparer.OrdinalIgnoreCase);
+        var originalRelativePaths = new HashSet<string>(files.Select(file => file.RelativePath), StringComparer.OrdinalIgnoreCase);
+        if (originalRelativePaths.Count == files.Count)
+            return files;
+
+        var usedRelativePaths = new HashSet<string>(files.Count, StringComparer.OrdinalIgnoreCase);
+        var result = new List<PublicApiFile>(files.Count);
         foreach (var file in files)
         {
-            if (!seenRelativePaths.Add(file.RelativePath))
-                throw new InvalidOperationException($"Multiple generated files are named '{file.RelativePath}'. Writing them would silently drop part of the public API. Use a different file layout, or rename the conflicting namespaces or types.");
+            if (usedRelativePaths.Add(file.RelativePath))
+            {
+                result.Add(file);
+                continue;
+            }
+
+            var extension = file.RelativePath.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase) ? ".g.cs" : Path.GetExtension(file.RelativePath);
+            var baseName = file.RelativePath[..^extension.Length];
+            for (var index = 2; ; index++)
+            {
+                var relativePath = baseName + "~" + index.ToString(CultureInfo.InvariantCulture) + extension;
+                if (!originalRelativePaths.Contains(relativePath) && usedRelativePaths.Add(relativePath))
+                {
+                    result.Add(file with { RelativePath = relativePath });
+                    break;
+                }
+            }
         }
+
+        return result;
     }
 
     private static List<PublicApiFile> BuildNamespaceFiles(PublicApiModel model, string header, string assemblyHeader)

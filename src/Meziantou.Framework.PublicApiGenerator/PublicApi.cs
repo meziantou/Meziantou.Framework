@@ -67,19 +67,19 @@ public static class PublicApi
     public static void GenerateToDirectory(string assemblyPath, string outputDirectory, PublicApiOptions? options = null)
     {
         var files = Generate(assemblyPath, options);
-        WriteToDirectory(files, outputDirectory);
+        WriteToDirectory(files, outputDirectory, options?.DeleteUnexpectedFiles ?? false);
     }
 
     public static void GenerateToDirectory(Assembly assembly, string outputDirectory, PublicApiOptions? options = null)
     {
         var files = Generate(assembly, options);
-        WriteToDirectory(files, outputDirectory);
+        WriteToDirectory(files, outputDirectory, options?.DeleteUnexpectedFiles ?? false);
     }
 
     public static void GenerateToDirectory(IReadOnlyList<AssemblySource> assemblySources, string outputDirectory, PublicApiOptions? options = null)
     {
         var files = Generate(assemblySources, options);
-        WriteToDirectory(files, outputDirectory);
+        WriteToDirectory(files, outputDirectory, options?.DeleteUnexpectedFiles ?? false);
     }
 
     private static PublicApiModel ReadModel(string assemblyPath, PublicApiOptions options)
@@ -232,11 +232,18 @@ public static class PublicApi
         throw new InvalidOperationException("AssemblySource must provide either an Assembly instance or an assembly path.");
     }
 
-    private static void WriteToDirectory(IReadOnlyList<PublicApiFile> files, string outputDirectory)
+    private static void WriteToDirectory(IReadOnlyList<PublicApiFile> files, string outputDirectory, bool deleteUnexpectedFiles)
     {
         ArgumentException.ThrowIfNullOrEmpty(outputDirectory);
 
         Directory.CreateDirectory(outputDirectory);
+
+        // Delete before writing: on a case-insensitive file system, a file whose name only changes by case is then written with its new name
+        if (deleteUnexpectedFiles)
+        {
+            DeleteUnexpectedFiles(files, outputDirectory);
+        }
+
         foreach (var file in files)
         {
             var path = Path.Combine(outputDirectory, file.RelativePath);
@@ -247,6 +254,28 @@ public static class PublicApi
             }
 
             File.WriteAllText(path, file.Content);
+        }
+    }
+
+    private static void DeleteUnexpectedFiles(IReadOnlyList<PublicApiFile> files, string outputDirectory)
+    {
+        var fullOutputDirectory = Path.GetFullPath(outputDirectory);
+        var expectedPaths = new HashSet<string>(files.Select(file => Path.GetFullPath(Path.Combine(fullOutputDirectory, file.RelativePath))), StringComparer.Ordinal);
+        foreach (var path in Directory.EnumerateFiles(fullOutputDirectory, "*", SearchOption.AllDirectories))
+        {
+            if (!expectedPaths.Contains(path))
+            {
+                File.Delete(path);
+            }
+        }
+
+        // Deepest directories first, so that a directory that only contains empty directories is deleted too
+        foreach (var directory in Directory.EnumerateDirectories(fullOutputDirectory, "*", SearchOption.AllDirectories).OrderByDescending(path => path.Length))
+        {
+            if (!Directory.EnumerateFileSystemEntries(directory).Any())
+            {
+                Directory.Delete(directory);
+            }
         }
     }
 }

@@ -201,6 +201,44 @@ public sealed class PublicApiGeneratorMsBuildTests(PublicApiGeneratorMsBuildPack
     }
 
     [Fact]
+    public async Task GenerateOnBuild_DeleteUnexpectedFiles()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var projectDirectory = temporaryDirectory.CreateDirectory("delete-unexpected-files");
+        CreateGlobalJson(projectDirectory, fixture.DotnetSdkVersion);
+        CreateNuGetConfig(projectDirectory, fixture.PackagesDirectory);
+
+        temporaryDirectory.CreateTextFile("delete-unexpected-files/Sample.csproj", $$"""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net10.0</TargetFramework>
+                <PublicApiGeneratorOutputPath>PublicApi</PublicApiGeneratorOutputPath>
+                <PublicApiGeneratorFileLayout>OneFilePerType</PublicApiGeneratorFileLayout>
+                <PublicApiGeneratorDeleteUnexpectedFiles>true</PublicApiGeneratorDeleteUnexpectedFiles>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <Compile Remove="PublicApi/**" />
+                <PackageReference Include="Meziantou.Framework.PublicApiGenerator.MSBuild" Version="{{fixture.PackageVersion}}" PrivateAssets="all" />
+              </ItemGroup>
+            </Project>
+            """);
+        temporaryDirectory.CreateTextFile("delete-unexpected-files/Sample.cs", """
+            namespace Demo;
+
+            public class Sample
+            {
+            }
+            """);
+        temporaryDirectory.CreateTextFile("delete-unexpected-files/PublicApi/Demo.Removed.g.cs", "");
+
+        await RunDotNetCommand(projectDirectory, ["restore", "--disable-build-servers"], expectedExitCode: 0);
+        await RunDotNetCommand(projectDirectory, ["build", "--no-restore", "--disable-build-servers", "-nologo"], expectedExitCode: 0);
+
+        Assert.Equal(["Demo.Sample.g.cs"], Directory.EnumerateFiles(projectDirectory / "PublicApi").Select(path => Path.GetFileName(path)));
+    }
+
+    [Fact]
     public async Task GenerateOnBuild_MultiTarget_MergesTargetOutputs()
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();

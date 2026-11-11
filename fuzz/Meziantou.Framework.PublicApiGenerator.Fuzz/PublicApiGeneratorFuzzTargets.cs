@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Meziantou.Framework.Fuzzing;
 
@@ -6,6 +7,7 @@ namespace Meziantou.Framework.PublicApiGenerator.Fuzz;
 /// <summary>
 /// The <c>.deps.json</c> reader only throws <see cref="InvalidDataException"/>, and only for content that is not valid JSON.
 /// The names it returns are assembly names, and writing them back to a <c>.deps.json</c> file gives the same names.
+/// Renaming the generated files that have the same name ignoring case gives distinct names, and keeps the first name of each group.
 /// </summary>
 public static class PublicApiGeneratorFuzzTargets
 {
@@ -23,10 +25,64 @@ public static class PublicApiGeneratorFuzzTargets
         "lib/netstandard2.0/", "lib/net10.0/", ".NETCoreApp,Version=v10.0", ".NETStandard,Version=v2.0/",
     ];
 
+    private static readonly string[] FileNameTokens =
+    [
+        "\n", " ", ".", "~", "~2", ".g.cs", ".G.CS", ".cs", ".txt",
+        "AssemblyInfo.g.cs", "GlobalNamespace.g.cs", "Demo", "demo", "DEMO", "Foo", "foo",
+    ];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("publicapi-deps-json", DependencyFile) { Seeds = GetSeeds, Dictionary = Tokens },
+        new("publicapi-file-names", FileNames) { Seeds = GetFileNameSeeds, Dictionary = FileNameTokens },
     ];
+
+    private static void FileNames(ReadOnlySpan<byte> data)
+    {
+        var names = Encoding.UTF8.GetString(data).Split('\n');
+        var files = names.Select((name, index) => new PublicApiFile(name, index.ToString(CultureInfo.InvariantCulture))).ToList();
+        var result = PublicApiEmitter.MakeFileNamesUnique(files);
+
+        FuzzAssert.Equal(files.Count, result.Count, "Files are added or removed");
+        var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < files.Count; i++)
+        {
+            var original = files[i].RelativePath;
+            var renamed = result[i].RelativePath;
+            FuzzAssert.Equal(files[i].Content, result[i].Content, "The files are reordered");
+            FuzzAssert.True(usedNames.Add(renamed), $"The name {FuzzAssert.Format(renamed)} is used by several files");
+            if (string.Equals(original, renamed, StringComparison.Ordinal))
+                continue;
+
+            FuzzAssert.True(files.Take(i).Any(file => string.Equals(file.RelativePath, original, StringComparison.OrdinalIgnoreCase)), $"The file {FuzzAssert.Format(original)} is renamed to {FuzzAssert.Format(renamed)} although no previous file has its name");
+            FuzzAssert.True(IsSuffixed(original, renamed), $"The file {FuzzAssert.Format(original)} is renamed to {FuzzAssert.Format(renamed)}, which is not its name with a ~N suffix");
+        }
+    }
+
+    /// <summary>Gets whether <paramref name="renamed"/> is <paramref name="original"/> with <c>~</c> and a number inserted somewhere.</summary>
+    private static bool IsSuffixed(string original, string renamed)
+    {
+        for (var index = renamed.IndexOf('~', StringComparison.Ordinal); index >= 0; index = renamed.IndexOf('~', index + 1, StringComparison.Ordinal))
+        {
+            var digitCount = renamed.AsSpan(index + 1).IndexOfAnyExceptInRange('0', '9');
+            if (digitCount < 0)
+            {
+                digitCount = renamed.Length - index - 1;
+            }
+
+            if (digitCount > 0 && string.Equals(original, renamed[..index] + renamed[(index + 1 + digitCount)..], StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static IEnumerable<FuzzSeed> GetFileNameSeeds()
+    {
+        yield return FuzzSeed.FromText("distinct", "AssemblyInfo.g.cs\nDemo.g.cs\nGlobalNamespace.g.cs");
+        yield return FuzzSeed.FromText("case-conflicts", "Demo.FOO.g.cs\nDemo.Foo.g.cs\nDemo.foo.g.cs");
+        yield return FuzzSeed.FromText("suffix-conflict", "Demo.g.cs\ndemo.g.cs\nDemo~2.g.cs\nSample.cs\nsample.cs\n\n");
+    }
 
     private static void DependencyFile(ReadOnlySpan<byte> data)
     {

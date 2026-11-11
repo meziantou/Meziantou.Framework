@@ -399,6 +399,7 @@ namespace Meziantou.Framework.PublicApiGenerator
 
     public sealed class PublicApiOptions
     {
+        public bool DeleteUnexpectedFiles { get => throw null; set { } }
         public System.Collections.Generic.IList<string> ExcludedAssemblyReferences { get => throw null; }
         public Meziantou.Framework.PublicApiGenerator.PublicApiFileLayout FileLayout { get => throw null; set { } }
         public bool IncludeAllAttributes { get => throw null; set { } }

@@ -33,7 +33,8 @@ public static void DrawEmbeddedText(string fontPath, string outputPath)
   argument chooses a font of a collection (`.ttc`). [PdfFont.FromFace](cref:Meziantou.Framework.Pdf.PdfFont.FromFace) takes a [FontFace](cref:Meziantou.Framework.Fonts.FontFace) of `Meziantou.Framework.Fonts`
   that is already loaded.
 - Each document embeds the subset of the glyphs it shows, as a composite font. The subset is written when the document
-  is saved, so it grows with the content until then.
+  is saved, so it grows with the content until then. Rendering a page or extracting its text before the document is
+  saved writes the subset as it is at that moment, so the page is drawn and read as it will be saved.
 - The document also gets a `ToUnicode` map from the glyphs to their characters: the text can be extracted, searched and
   copied in readers. A text whose glyphs cannot give it back (a ligature, a right-to-left run) is marked with its
   replacement text.

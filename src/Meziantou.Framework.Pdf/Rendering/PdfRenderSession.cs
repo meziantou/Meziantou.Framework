@@ -120,6 +120,9 @@ public sealed class PdfRenderSession : IDisposable
     /// <summary>Renders a page on an image: the background is painted behind the page on a new image, which is transparent, and before it on an image of the application, which may have no alpha.</summary>
     private void Render(PdfPage page, Image target, bool backgroundBehind, CancellationToken cancellationToken)
     {
+        // The fonts a document that is being built embeds are written when it is saved: they are written now, so that
+        // their glyphs are drawn with the embedded program
+        Document.WriteEmbeddedFonts();
         var options = Options;
         var (pageWidth, pageHeight, matrix) = PageGeometry.Compute(page, options);
         var width = Math.Min(pageWidth, target.Width);

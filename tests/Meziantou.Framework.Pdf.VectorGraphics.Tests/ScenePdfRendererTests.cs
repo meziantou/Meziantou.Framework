@@ -240,18 +240,25 @@ public sealed class ScenePdfRendererTests
         Assert.Throws<NotSupportedException>(() => scene.ToPdf());
     }
 
-    [Fact]
-    public void LetterSpacingAndOverline()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LetterSpacingAndOverline(bool embedFonts)
     {
         var font = new SceneFont(20);
         var scene = new Scene(200, 130, "sans-serif") { Background = SceneColor.White };
+        if (embedFonts)
+        {
+            scene.Fonts = SceneFontCollection.Load(Path.Combine(TestData, "LiberationSans-Regular.woff2"));
+        }
+
         scene.Root.Add(new SceneText(10, 30, "MMMM", font, SceneColor.Black));
         scene.Root.Add(new SceneText(10, 70, "MM MM", font, SceneColor.Black) { LetterSpacing = 10, WordSpacing = 5 });
         scene.Root.Add(new SceneText(190, 120, "xx", font, SceneColor.Black) { Anchor = SceneTextAnchor.End, Decorations = SceneTextDecorations.Overline });
         var document = scene.ToPdf();
         using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
 
-        // 4 spaces of 10 pixels between the 5 characters, and 5 more after the space, which is 0.278 em in Helvetica
+        // 4 spaces of 10 pixels between the 5 characters, and 5 more after the space, which is 0.278 em in Helvetica and Liberation Sans
         var (left, right) = GetInkColumns(image, 0, 40);
         var (spacedLeft, spacedRight) = GetInkColumns(image, 40, 80);
         Assert.InRange(spacedLeft, left - 1, left + 1);

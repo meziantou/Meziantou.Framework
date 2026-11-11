@@ -3,6 +3,7 @@ using System.Globalization;
 using Meziantou.Framework.Fonts;
 using Meziantou.Framework.Pdf.Fonts;
 using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Rendering;
 using Meziantou.Framework.Pdf.TestHarness;
 
 namespace Meziantou.Framework.Pdf.Tests;
@@ -172,6 +173,40 @@ public sealed class PdfFontTests
         var reopened = PdfDocument.Open(document.ToByteArray());
 
         Assert.Equal(text, reopened.Pages[0].ExtractText());
+    }
+
+    [Theory]
+    [InlineData("noto-sans/NotoSans-Regular.subset.ttf")]
+    [InlineData("noto-sans-cff/NotoSans-Regular.subset.otf")]
+    public void DocumentsBeingBuiltAreRenderedAndReadWithTheirEmbeddedFonts(string fontPath)
+    {
+        // The fonts are written when the document is saved; a page of a document that is being built is drawn and read as it will be saved
+        var font = PdfFont.Load(RepositoryPaths.Fonts / fontPath);
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 60));
+        page.CreateContentBuilder().DrawText("MMMM xx", font, 20, 10, 30);
+        AssertSameAsSaved();
+
+        // Text added after a first rendering adds its glyphs to the font
+        page.CreateContentBuilder().DrawText("Office", font, 20, 10, 55);
+        AssertSameAsSaved();
+
+        // The page is read and drawn before the document is saved, which writes the fonts
+        void AssertSameAsSaved()
+        {
+            var text = page.ExtractText();
+            using var built = page.Render(new PdfRenderOptions { Dpi = 72 });
+            var reopened = PdfDocument.Open(document.ToByteArray());
+            Assert.Equal(reopened.Pages[0].ExtractText(), text);
+            using var saved = reopened.Pages[0].Render(new PdfRenderOptions { Dpi = 72 });
+            for (var y = 0; y < saved.Height; y++)
+            {
+                for (var x = 0; x < saved.Width; x++)
+                {
+                    Assert.Equal(saved.Frames[0][x, y], built.Frames[0][x, y]);
+                }
+            }
+        }
     }
 
     [Theory]

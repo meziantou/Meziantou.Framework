@@ -701,6 +701,20 @@ public class QRCodeTests
     }
 
     [Fact]
+    public void CreateStructuredAppend_ShortSegments_SmallerVersionsCanNeedFewerSymbols()
+    {
+        // The byte count indicator grows from 8 to 16 bits at version 10: a version 9-L symbol holds 91 segments of one byte,
+        // a version 10-L symbol 77
+        var options = new QRCodeOptions { MaximumVersion = 10 };
+
+        var symbols = QRCode.CreateStructuredAppend(Enumerable.Repeat(QRCodeSegment.CreateByte("a"), 1300), ErrorCorrectionLevel.L, options);
+        Assert.Equal((15, 9), (symbols.Count, symbols[0].Version));
+
+        var single = Assert.Single(QRCode.CreateStructuredAppend(Enumerable.Repeat(QRCodeSegment.CreateByte("a"), 90), ErrorCorrectionLevel.L, options));
+        Assert.Equal(9, single.Version);
+    }
+
+    [Fact]
     public void CreateStructuredAppend_MinimumVersion()
     {
         var symbols = QRCode.CreateStructuredAppend("HELLO", ErrorCorrectionLevel.M, new QRCodeOptions { MinimumVersion = 5 });

@@ -4,13 +4,16 @@ namespace Meziantou.Framework.Barcodes.Internal;
 /// Splits data across a structured append sequence of standard QR codes (ISO/IEC 18004, 8.3).
 /// </summary>
 /// <remarks>
-/// The sequence has the fewest symbols that the largest allowed version gives, then the smallest version that gives as
-/// few symbols: every symbol of the sequence has the same version. Each symbol is filled with as much data as it holds,
+/// The sequence has the fewest symbols that an allowed version gives, then the smallest version that gives as few
+/// symbols: every symbol of the sequence has the same version. Each symbol is filled with as much data as it holds,
 /// in order, so the last one can hold less.
 /// </remarks>
 internal static class QRStructuredAppendEncoder
 {
     public const int MaxSymbolCount = 16;
+
+    // The ranges of versions whose character count indicators have the same sizes
+    private static readonly (int Min, int Max)[] VersionRanges = [(1, 9), (10, 26), (27, 40)];
 
     /// <summary>Splits a text across the symbols of a sequence.</summary>
     public static QRStructuredAppendPlan Plan(string data, ErrorCorrectionLevel ecLevel, int minVersion, int maxVersion, int? eciAssignmentNumber)
@@ -118,27 +121,48 @@ internal static class QRStructuredAppendEncoder
 
     private static QRStructuredAppendPlan Plan(int unitCount, Func<int, int, int, QRCodeSegment[]?> build, Func<int, bool> isBoundary, int minVersion, int maxVersion)
     {
-        var parts = Split(unitCount, build, isBoundary, maxVersion) ?? throw CreateDataTooLongException(minVersion, maxVersion);
-
-        // The smallest version that needs no more symbols than the largest one
-        var version = maxVersion;
-        var low = minVersion;
-        var high = maxVersion - 1;
-        while (low <= high)
+        // The character count indicators grow at versions 10 and 27, so a larger version can need more symbols than a smaller
+        // one of another range (a version 9 symbol holds more short byte segments than a version 10 one). Within a range, the
+        // headers have the same size and the capacity grows with the version, so a larger version never needs more symbols:
+        // the fewest symbols of a range are the ones of its largest version, and a binary search finds its smallest version
+        // that needs as few.
+        List<QRCodeSegment[]>? parts = null;
+        var version = 0;
+        foreach (var (rangeMin, rangeMax) in VersionRanges)
         {
-            var middle = low + ((high - low) / 2);
-            var candidate = Split(unitCount, build, isBoundary, middle);
-            if (candidate is not null && candidate.Count <= parts.Count)
+            var low = Math.Max(minVersion, rangeMin);
+            var high = Math.Min(maxVersion, rangeMax);
+            if (low > high)
+                continue;
+
+            var rangeParts = Split(unitCount, build, isBoundary, high);
+            if (rangeParts is null || (parts is not null && rangeParts.Count >= parts.Count))
+                continue;
+
+            var rangeVersion = high;
+            high--;
+            while (low <= high)
             {
-                parts = candidate;
-                version = middle;
-                high = middle - 1;
+                var middle = low + ((high - low) / 2);
+                var candidate = Split(unitCount, build, isBoundary, middle);
+                if (candidate is not null && candidate.Count <= rangeParts.Count)
+                {
+                    rangeParts = candidate;
+                    rangeVersion = middle;
+                    high = middle - 1;
+                }
+                else
+                {
+                    low = middle + 1;
+                }
             }
-            else
-            {
-                low = middle + 1;
-            }
+
+            parts = rangeParts;
+            version = rangeVersion;
         }
+
+        if (parts is null)
+            throw CreateDataTooLongException(minVersion, maxVersion);
 
         var parity = 0;
         foreach (var part in parts)

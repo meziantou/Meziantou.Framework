@@ -225,8 +225,9 @@ public sealed class QRCode
     /// <returns>The symbols of the sequence, in order.</returns>
     /// <remarks>
     /// <para>
-    /// The sequence has the fewest symbols of <see cref="QRCodeOptions.MaximumVersion"/> that hold the data, up to 16, then
-    /// every symbol has the smallest version that gives as few symbols. Each symbol is split into segments of different
+    /// The sequence has the fewest symbols that a version from <see cref="QRCodeOptions.MinimumVersion"/> to
+    /// <see cref="QRCodeOptions.MaximumVersion"/> gives, up to 16, then every symbol has the smallest version that gives as
+    /// few symbols. Each symbol is split into segments of different
     /// modes like a symbol of <see cref="Create(string, ErrorCorrectionLevel, QRCodeOptions)"/>, never in the middle of a
     /// surrogate pair, and repeats the ECI designator of <see cref="QRCodeOptions.EciAssignmentNumber"/>.
     /// </para>

@@ -288,8 +288,10 @@ var images = symbols.Select(symbol => symbol.ToPng(new QRCodePngOptions { Module
 ```
 <!-- endref -->
 
-- [QRCodeOptions.MaximumVersion](cref:Meziantou.Framework.Barcodes.QRCodeOptions.MaximumVersion) sets the largest code. The sequence has the fewest codes of that version that hold the data, then
-  every code has the smallest version that needs no more codes. Data that does not fit in 16 codes throws an
+- [QRCodeOptions.MaximumVersion](cref:Meziantou.Framework.Barcodes.QRCodeOptions.MaximumVersion) sets the largest code. The sequence has the fewest codes that an allowed version gives, then
+  every code has the smallest version that needs no more codes. The fewest codes usually come from the largest version,
+  but not always: the segment headers grow at versions 10 and 27, so many short segments can fit in fewer version 9 codes
+  than version 10 ones. Data that does not fit in 16 codes throws an
   `InvalidOperationException`; data that fits in one code gives a sequence of one code.
 - Each code holds the next part of the data, split into segments like a text given to [Create](cref:Meziantou.Framework.Barcodes.QRCode.Create). A text is never
   split in the middle of a character, and each code repeats the ECI designator, so each code also reads alone. Bytes and

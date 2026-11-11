@@ -166,6 +166,7 @@ internal static class QRSegmentFuzzTargets
         QRStructuredAppendPlan plan;
         Func<IReadOnlyList<QRCode>> create;
         string? text = null;
+        IReadOnlyList<QRCodeSegment>? planSegments = null;
         try
         {
             switch (kind)
@@ -189,7 +190,8 @@ internal static class QRSegmentFuzzTargets
                     options.EciAssignmentNumber = useEci ? 3 : null;
                     var eci = useEci ? 3 : -1;
                     expected = [.. data.ToArray().Select(b => (b, eci))];
-                    plan = QRStructuredAppendEncoder.Plan(useEci ? [QRCodeSegment.CreateEci(3), QRCodeSegment.CreateByte(data)] : [QRCodeSegment.CreateByte(data)], level, minVersion, maxVersion);
+                    planSegments = useEci ? [QRCodeSegment.CreateEci(3), QRCodeSegment.CreateByte(data)] : [QRCodeSegment.CreateByte(data)];
+                    plan = QRStructuredAppendEncoder.Plan(planSegments, level, minVersion, maxVersion);
                     var bytes = data.ToArray();
                     create = () => QRCode.CreateStructuredAppend(bytes, level, options);
                     break;
@@ -199,6 +201,7 @@ internal static class QRSegmentFuzzTargets
                         return;
 
                     expected = Flatten(expectedSegments);
+                    planSegments = segments;
                     plan = QRStructuredAppendEncoder.Plan(segments, level, minVersion, maxVersion);
                     create = () => QRCode.CreateStructuredAppend(segments, level, options);
                     break;
@@ -212,6 +215,28 @@ internal static class QRSegmentFuzzTargets
 
         FuzzAssert.True(plan.Parts.Length is >= 1 and <= 16, $"A sequence of {plan.Parts.Length} symbols");
         FuzzAssert.True(plan.Version >= minVersion && plan.Version <= maxVersion, $"Version {plan.Version} is not in {minVersion}-{maxVersion}");
+
+        // The last version of a range of character count indicator sizes holds the most segments of its range: none needs
+        // fewer symbols than the plan, nor as few with a smaller version
+        foreach (var lastVersionOfRange in new[] { 9, 26 })
+        {
+            if (lastVersionOfRange < minVersion || lastVersionOfRange > maxVersion)
+                continue;
+
+            QRStructuredAppendPlan? other;
+            try
+            {
+                other = text is not null
+                    ? QRStructuredAppendEncoder.Plan(text, level, lastVersionOfRange, lastVersionOfRange, options.EciAssignmentNumber)
+                    : QRStructuredAppendEncoder.Plan(planSegments!, level, lastVersionOfRange, lastVersionOfRange);
+            }
+            catch (InvalidOperationException)
+            {
+                other = null;
+            }
+
+            FuzzAssert.True(other is null || other.Parts.Length > plan.Parts.Length || (other.Parts.Length == plan.Parts.Length && plan.Version <= lastVersionOfRange), $"Version {lastVersionOfRange} needs {other?.Parts.Length} symbols, the plan {plan.Parts.Length} symbols of version {plan.Version}");
+        }
 
         // Read back every symbol: its header, then its data
         var decodedText = new StringBuilder();

@@ -335,13 +335,14 @@ public sealed class Geolocation
             catch (Exception)
 #pragma warning restore CA1031
             {
-                CallBackWithError(errorCallback, GeolocationPositionError.PositionUnavailable);
+                // The timer starts before the provider is called: a provider that fails because the timeout elapsed timed out
+                CallBackWithError(errorCallback, cancellation.IsCancellationRequested ? GeolocationPositionError.Timeout : GeolocationPositionError.PositionUnavailable);
                 return;
             }
 
             if (reading.IsCompleted)
             {
-                Complete(reading.AsTask(), timedOut: false);
+                Complete(reading.AsTask(), timedOut: !reading.IsCompletedSuccessfully && cancellation.IsCancellationRequested);
                 return;
             }
 
@@ -375,6 +376,8 @@ public sealed class Geolocation
                 catch (Exception)
 #pragma warning restore CA1031
                 {
+                    // A provider that fails because the timeout elapsed timed out, whichever of the two completions is observed first
+                    timedOut = timeout.IsCancellationRequested;
                 }
 
                 _window.QueueGlobalTask(() => Complete(readingTask, timedOut));

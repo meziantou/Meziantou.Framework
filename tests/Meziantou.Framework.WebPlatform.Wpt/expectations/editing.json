@@ -2326,10 +2326,7 @@
     "total": 21
   },
   "editing/other/typing-space-in-editable-button.tentative.html": {
-    "total": 4,
-    "failures": {
-      "Type space key in <button contenteditable> should be handled by the <button>": "FAIL"
-    }
+    "total": 4
   },
   "editing/other/typing-space-in-editable-summary.tentative.html": {
     "total": 4

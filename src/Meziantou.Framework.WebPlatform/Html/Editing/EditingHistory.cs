@@ -112,7 +112,7 @@ internal sealed class EditingHistory
         if (!document.IsInclusiveAncestorOf(points.AnchorNode) || !document.IsInclusiveAncestorOf(points.FocusNode))
             return;
 
-        selection.SetBaseAndExtent(points.AnchorNode, Math.Min(points.AnchorOffset, Dom.Range.GetNodeLength(points.AnchorNode)), points.FocusNode, Math.Min(points.FocusOffset, Dom.Range.GetNodeLength(points.FocusNode)));
+        selection.SetBaseAndExtentCore(points.AnchorNode, Math.Min(points.AnchorOffset, Dom.Range.GetNodeLength(points.AnchorNode)), points.FocusNode, Math.Min(points.FocusOffset, Dom.Range.GetNodeLength(points.FocusNode)));
     }
 }
 

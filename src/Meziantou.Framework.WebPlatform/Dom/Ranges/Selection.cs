@@ -133,6 +133,13 @@ public sealed partial class Selection
     [IdlMember("addRange", "https://w3c.github.io/selection-api/#dom-selection-addrange")]
     public void AddRange(Range range)
     {
+        AddRangeCore(range);
+        FocusEditingHost();
+    }
+
+    /// <summary><see cref="AddRange"/>, without moving the focus (a change of the selection by the user agent).</summary>
+    internal void AddRangeCore(Range range)
+    {
         ArgumentNullException.ThrowIfNull(range);
         if (!IsInDocumentTree(range.StartContainer) || RangeCount != 0)
             return;
@@ -219,6 +226,13 @@ public sealed partial class Selection
     [IdlMember("collapse", "https://w3c.github.io/selection-api/#dom-selection-collapse")]
     public void Collapse(Node? node, uint offset = 0)
     {
+        CollapseCore(node, offset);
+        FocusEditingHost();
+    }
+
+    /// <summary><see cref="Collapse"/>, without moving the focus (a change of the selection by the user agent).</summary>
+    internal void CollapseCore(Node? node, uint offset = 0)
+    {
         if (node is null)
         {
             RemoveAllRanges();
@@ -251,6 +265,7 @@ public sealed partial class Selection
             throw DomException.InvalidState("The selection is empty");
 
         SetRange(new Range(_range.StartContainer, _range.StartOffset, _range.StartContainer, _range.StartOffset), SelectionDirection.Directionless);
+        FocusEditingHost();
     }
 
     /// <summary>Collapses the selection to the end of its range.</summary>
@@ -262,6 +277,7 @@ public sealed partial class Selection
             throw DomException.InvalidState("The selection is empty");
 
         SetRange(new Range(_range.EndContainer, _range.EndOffset, _range.EndContainer, _range.EndOffset), SelectionDirection.Directionless);
+        FocusEditingHost();
     }
 
     /// <summary>Moves the focus of the selection to the boundary point, keeping the anchor.</summary>
@@ -297,12 +313,20 @@ public sealed partial class Selection
 
         var backwards = sameRoot && AbstractRange.ComparePoints(node, offset, anchorNode, anchorOffset) == AbstractRange.BoundaryPointPosition.Before;
         SetRange(newRange, backwards ? SelectionDirection.Backwards : SelectionDirection.Forwards);
+        FocusEditingHost();
     }
 
     /// <summary>Sets the anchor and the focus of the selection to the given nodes and offsets.</summary>
     /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-setbaseandextent"/>
     [IdlMember("setBaseAndExtent", "https://w3c.github.io/selection-api/#dom-selection-setbaseandextent")]
     public void SetBaseAndExtent(Node anchorNode, uint anchorOffset, Node focusNode, uint focusOffset)
+    {
+        SetBaseAndExtentCore(anchorNode, anchorOffset, focusNode, focusOffset);
+        FocusEditingHost();
+    }
+
+    /// <summary><see cref="SetBaseAndExtent"/>, without moving the focus (a change of the selection by the user agent).</summary>
+    internal void SetBaseAndExtentCore(Node anchorNode, uint anchorOffset, Node focusNode, uint focusOffset)
     {
         ArgumentNullException.ThrowIfNull(anchorNode);
         ArgumentNullException.ThrowIfNull(focusNode);
@@ -366,6 +390,13 @@ public sealed partial class Selection
     /// <seealso href="https://w3c.github.io/selection-api/#dom-selection-selectallchildren"/>
     [IdlMember("selectAllChildren", "https://w3c.github.io/selection-api/#dom-selection-selectallchildren")]
     public void SelectAllChildren(Node node)
+    {
+        SelectAllChildrenCore(node);
+        FocusEditingHost();
+    }
+
+    /// <summary><see cref="SelectAllChildren"/>, without moving the focus (a change of the selection by the user agent).</summary>
+    internal void SelectAllChildrenCore(Node node)
     {
         ArgumentNullException.ThrowIfNull(node);
         if (node is DocumentType)
@@ -487,12 +518,28 @@ public sealed partial class Selection
     }
 
     /// <summary>
+    /// As in Firefox (Chrome for some cases; the Selection API does not specify it), the selection set by a script (or by the
+    /// public API of the library) whose boundary points have the same editing host moves the focus to it, when it is not the
+    /// focused element and the document has the focus (WPT selection/contenteditable/collapse.html). The changes of the
+    /// selection by the user agent (e.g. the editing commands, the caret movement keys) do not move the focus.
+    /// </summary>
+    private void FocusEditingHost()
+    {
+        if (_range is null || Html.Editing.GetEditingHost(_range.StartContainer) is not { } editingHost || !ReferenceEquals(editingHost, Html.Editing.GetEditingHost(_range.EndContainer)))
+            return;
+
+        if (!editingHost.IsConnected || !FocusModel.HasFocus(_document) || ReferenceEquals(FocusModel.GetCurrentlyFocusedAreaOf(_document), editingHost))
+            return;
+
+        FocusModel.RunFocusingSteps(editingHost);
+    }
+
+    /// <summary>
     /// Whether the selection has the focus, for the display of its caret in editable content (see
-    /// <see cref="Css.Layout.PaintedCaret"/>). Chrome and Firefox move the focus to the editing host of a selection set by a
-    /// script (WPT selection/contenteditable/collapse.html), and display its caret while the focused element is in the editable
-    /// content of the selection. The library does not move the focus (the Selection API does not specify it), but displays the
-    /// caret as they do: the selection has the focus from the time it is set, or its editing host (or an editable ancestor of
-    /// its focus in the host) is focused, until the focused area of the document changes to something else.
+    /// <see cref="Css.Layout.PaintedCaret"/>). The browsers display the caret of a selection set by a script while the focused
+    /// element is in the editable content of the selection: the selection has the focus from the time it is set, or its
+    /// editing host (or an editable ancestor of its focus in the host) is focused, until the focused area of the document
+    /// changes to something else (see <see cref="FocusEditingHost"/>).
     /// </summary>
     internal bool HasEditingFocus { get; private set; }
 

@@ -1691,7 +1691,7 @@ public partial class SvgTextContentElement
         var first = characters[(int)charnum];
         var range = new Range(first.TextNode, (uint)first.TextOffset, last.TextNode, (uint)(last.TextOffset + (nchars == 0 ? 0 : 1)));
         selection.RemoveAllRanges();
-        selection.AddRange(range);
+        selection.AddRangeCore(range);
     }
 
     /// <summary>Returns the characters of the element in the layout of its text element (empty when it is not rendered).</summary>

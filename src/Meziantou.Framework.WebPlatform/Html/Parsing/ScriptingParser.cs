@@ -50,7 +50,7 @@ internal abstract class ScriptingParser
     /// <returns>True when the input is consumed (the parser stopped).</returns>
     protected abstract bool RunTreeConstruction();
 
-    /// <summary>Called when the parser starts waiting for the pending parsing-blocking script to be fetched.</summary>
+    /// <summary>Called when the parser starts waiting for the pending parsing-blocking script to be fetched, or for the style sheets that block it.</summary>
     protected virtual void OnWaitingForParsingBlockingScript()
     {
     }
@@ -165,6 +165,10 @@ internal abstract class ScriptingParser
                         {
                             HasPaused = true;
                             Document.NoStyleSheetBlockingScriptsCallback = Continue;
+
+                            // As in the browsers (preload scanner), the rest of the input is parsed speculatively while the
+                            // script waits for the style sheets that block it
+                            OnWaitingForParsingBlockingScript();
                             return;
                         }
 

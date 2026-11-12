@@ -138,34 +138,19 @@
     "total": 1
   },
   "loading/preloader-css-import-no-quote.html": {
-    "total": 1,
-    "failures": {
-      "Imported inline CSS with no quote is not blocked on pending CSS": "FAIL"
-    }
+    "total": 1
   },
   "loading/preloader-css-import-no-semicolon.html": {
-    "total": 1,
-    "failures": {
-      "Imported inline CSS with no semicolon is not blocked on pending CSS": "FAIL"
-    }
+    "total": 1
   },
   "loading/preloader-css-import-no-space.html": {
-    "total": 1,
-    "failures": {
-      "Imported inline CSS with no quote is not blocked on pending CSS": "FAIL"
-    }
+    "total": 1
   },
   "loading/preloader-css-import-single-quote.html": {
-    "total": 1,
-    "failures": {
-      "Imported inline CSS is not blocked on pending CSS": "FAIL"
-    }
+    "total": 1
   },
   "loading/preloader-css-import.html": {
-    "total": 1,
-    "failures": {
-      "Imported inline CSS is not blocked on pending CSS": "FAIL"
-    }
+    "total": 1
   },
   "loading/preloader-link-media.html": {
     "total": 1,

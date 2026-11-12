@@ -1105,7 +1105,14 @@ When the document is parsed as its bytes arrive (see [the document loader](#the-
 also parses the chunks that arrive while the parser waits for the script, and the bytes received while the encoding
 sniffing algorithm waits for the bytes that determine the encoding (the parser has not started yet).
 
-The responses of the speculative requests are ignored: the parser requests the resources again when it reaches the
+The rest of the input is also parsed speculatively while a script waits for the style sheets that block it. The `@import` rules at
+the start of a `style` element found speculatively (whose `type` is `text/css` and whose `media` matches) are
+preloaded, as by the preload scanners of the browsers: the request is sent at once, without `DocumentRequest.IsSpeculative`,
+with a resource timing entry (`initiatorType` is `css`), and the `@import` rule consumes its response when the parser
+reaches the element (see [Preloads](#preloads)), so the imported style sheet does not wait for the style sheet that
+blocks the script.
+
+The responses of the other speculative requests are ignored: the parser requests the resources again when it reaches the
 elements, so the loader should cache the responses to benefit from them (a `<link rel=preload>` found speculatively is
 requested speculatively, then by its element; the element that uses the resource consumes the preload). A service worker
 that controls the document gets a single `fetch` event for a speculative request and the request of the parser that

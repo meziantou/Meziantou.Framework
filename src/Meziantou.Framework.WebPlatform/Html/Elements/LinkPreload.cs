@@ -107,10 +107,10 @@ internal static class LinkPreload
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/links.html#preload: fetches a request and adds its entry to the map of preloaded
     /// resources of the document. <paramref name="processResponse"/> is called with the response from a task of the event
-    /// loop, after the fetch that consumed the entry (if any). Returns false when nothing is fetched (see
-    /// <see cref="SubresourceFetching.FetchResponse"/>).
+    /// loop, after the fetch that consumed the entry (if any). <paramref name="initiatorType"/> is the initiator type of its
+    /// resource timing entry. Returns false when nothing is fetched (see <see cref="SubresourceFetching.FetchResponse"/>).
     /// </summary>
-    public static bool Preload(Document document, FetchRequest request, Action<FetchResponse>? processResponse)
+    public static bool Preload(Document document, FetchRequest request, Action<FetchResponse>? processResponse, string initiatorType = "link")
     {
         var entry = new PreloadEntry(request.Integrity);
         var key = Document.GetPreloadKey(request);
@@ -122,7 +122,7 @@ internal static class LinkPreload
                 entry.SetResponse(response);
                 processResponse?.Invoke(response);
             },
-            initiatorType: "link");
+            initiatorType);
         if (!fetched)
             return false;
 

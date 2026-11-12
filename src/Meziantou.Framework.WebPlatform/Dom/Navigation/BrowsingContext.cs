@@ -2068,6 +2068,14 @@ public sealed partial class BrowsingContext : IDisposable
                 CacheMode = traversalEntry is not null && ReferenceEquals(traversalEntry, ActiveEntry) ? "no-cache" : "default",
             };
             PrepareRequestOfPrerenderingNavigable(request);
+
+            // https://html.spec.whatwg.org/multipage/browsing-the-web.html#create-navigation-params-by-fetching: the early hints
+            // of the response (only the navigations of the top-level browsing contexts process them, as in the browsers)
+            if (Parent is null)
+            {
+                request.ProcessEarlyHintsResponse = headers => ProcessEarlyHints(navigationId, request, parameters, headers);
+            }
+
             parameters.ReservedClient = request.ReservedClient;
             parameters.Timing.FetchStart = EventLoop.TimeProvider.GetTimestamp();
             if (_containerResourceTiming is { } containerResourceTiming && containerResourceTiming.NavigationId == navigationId)
@@ -2124,6 +2132,19 @@ public sealed partial class BrowsingContext : IDisposable
     }
 
     /// <summary>
+    /// The processEarlyHintsResponse steps of the fetch of a navigation (https://html.spec.whatwg.org/multipage/browsing-the-web.html#create-navigation-params-by-fetching):
+    /// the first early hints response starts its preloads (see <see cref="EarlyHintPreloads"/>), which the document commits;
+    /// the next ones are ignored, unless the navigation was redirected to another origin since.
+    /// </summary>
+    private void ProcessEarlyHints(int navigationId, FetchRequest request, DocumentParameters parameters, IReadOnlyList<KeyValuePair<string, string>> headers)
+    {
+        if (_ongoingNavigation != navigationId || IsDestroyed || parameters.EarlyHints is not null)
+            return;
+
+        parameters.EarlyHints = EarlyHintPreloads.Process(this, request.CurrentUrl, headers, request.CookieContext?.CookieJar);
+    }
+
+    /// <summary>
     /// Processes a response of the fetch of a navigation (https://html.spec.whatwg.org/multipage/browsing-the-web.html#create-navigation-params-by-fetching),
     /// unless the navigation was aborted: each response, including the redirects, is checked by the opener policy (of a
     /// top-level navigable) and by the cross-origin resource policy (of a child navigable). The redirects to an HTTP(S) URL
@@ -2134,6 +2155,9 @@ public sealed partial class BrowsingContext : IDisposable
     {
         if (_ongoingNavigation != navigationId || IsDestroyed)
             return;
+
+        // The early hints received before the response are processed first
+        request.ProcessPendingEarlyHints();
 
         // The client hints of the response; the navigation is restarted when its request did not have the critical ones
         if (ProcessNavigationResponseClientHints(navigationId, url, request, parameters, response, cancellationToken))
@@ -2181,6 +2205,14 @@ public sealed partial class BrowsingContext : IDisposable
                     if (AreTextDirectivesEnabled && internalResponse.GetLocationUrl(requestFragment: null, out _) is { Fragment: not null } locationWithFragment)
                     {
                         parameters.FragmentDirective = TextDirectives.RemoveFragmentDirective(locationWithFragment);
+                    }
+
+                    // The preloads of the early hints are kept after a same-origin redirect, and discarded after a cross-origin
+                    // redirect (the early hints of the next response are then processed)
+                    if (parameters.EarlyHints is { } earlyHints && locationUrl.SerializeOrigin() != request.CurrentUrl.SerializeOrigin())
+                    {
+                        earlyHints.Discard();
+                        parameters.EarlyHints = null;
                     }
 
                     // The reserved environment of another origin is discarded: a new one is created for the location URL
@@ -2250,6 +2282,7 @@ public sealed partial class BrowsingContext : IDisposable
             timing.IsAnsweredByServiceWorker = request.IsAnsweredByServiceWorker;
 
             timing.ResponseStart = timing.PrefetchResponseStart != 0 ? timing.PrefetchResponseStart : EventLoop.TimeProvider.GetTimestamp();
+            timing.FirstInterimResponseStart = timing.PrefetchResponseStart != 0 ? 0 : request.Timing.FirstInterimNetworkResponseStart;
             timing.HasCrossOriginRedirects = Fetching.HasRedirectTaintedOrigin(request);
             timing.HasNoReferrer = request.Client is not null && request.Referrer == "no-referrer";
         }
@@ -2271,7 +2304,18 @@ public sealed partial class BrowsingContext : IDisposable
             && resource is not null && !request.TimingAllowFailed && !HasNoDocument(resource))
         {
             _containerResourceTiming = null;
-            ResourceTiming.Start(containerResourceTiming.Window, request, containerResourceTiming.InitiatorType)?.Report(response);
+            var containerTiming = ResourceTiming.Start(containerResourceTiming.Window, request, containerResourceTiming.InitiatorType);
+
+            // The timing of an HTML document whose body arrives over time is reported at the end of its body
+            // (https://fetch.spec.whatwg.org/#fetch-finale)
+            if (containerTiming is not null && resource is { ContentBytes: not null, RemainingContentBytes: not null } && (GetComputedMimeType(resource)?.Essence ?? "text/html") == "text/html")
+            {
+                parameters.ProcessResponseEndOfBody = bodySize => containerTiming.ReportEndOfBody(response, (long)bodySize);
+            }
+            else
+            {
+                containerTiming?.Report(response);
+            }
         }
 
         ProcessResponse(navigationId, url, parameters, resource, checkedByNavigationFetch: true);
@@ -2801,6 +2845,7 @@ public sealed partial class BrowsingContext : IDisposable
         document.OriginDocument = parameters.OriginDocument;
         document.OpaqueOrigin = parameters.OpaqueOrigin;
         document.IsNetworkErrorDocument = parameters.IsNetworkError;
+        document.ProcessNavigationResponseEndOfBody = parameters.ProcessResponseEndOfBody;
 
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#determining-the-origin: a sandboxed document has a new
         // opaque origin. The sandboxing flags are the ones of the iframe container and of the CSP of the response.
@@ -2950,7 +2995,10 @@ public sealed partial class BrowsingContext : IDisposable
             document.RunSharedDeclarativeRefreshSteps(refresh);
         }
 
-        // https://html.spec.whatwg.org/multipage/document-lifecycle.html#loading-a-document: the Link headers of the response
+        // https://html.spec.whatwg.org/multipage/document-lifecycle.html#initialise-the-document-object: the preloads of the
+        // early hints of the navigation, then the Link headers of the response
+        // (https://html.spec.whatwg.org/multipage/document-lifecycle.html#loading-a-document)
+        parameters.EarlyHints?.Commit(document);
         LinkPreload.ProcessLinkHeaders(document, parameters.Headers);
 
         // https://html.spec.whatwg.org/multipage/document-lifecycle.html#initialise-the-document-object: the Speculation-Rules header
@@ -2985,6 +3033,7 @@ public sealed partial class BrowsingContext : IDisposable
             RedirectEndTime = exposesRedirects ? ToRelativeTime(timing.RedirectEnd) : 0,
             PostRedirectStartTime = fetchStart,
             FinalNetworkRequestStartTime = fetchStart,
+            FirstInterimNetworkResponseStartTime = timing.FirstInterimResponseStart == 0 ? 0 : Math.Min(ToRelativeTime(timing.ResponseStart), Math.Max(fetchStart, ToRelativeTime(timing.FirstInterimResponseStart))),
             FinalNetworkResponseStartTime = ToRelativeTime(timing.ResponseStart),
             FinalServiceWorkerStartTime = Math.Min(fetchStart, ToRelativeTime(timing.WorkerStart)),
             WorkerRouterEvaluationStartTime = ToRelativeTime(timing.WorkerRouterEvaluationStart),
@@ -4067,6 +4116,12 @@ public sealed partial class BrowsingContext : IDisposable
 
         /// <summary>The timing of the navigation (https://w3c.github.io/navigation-timing/), or null for a document that is loaded at once.</summary>
         public DocumentLoadTimingInfo? Timing { get; set; }
+
+        /// <summary>The steps run with the size of the body at the end of the body of a response that arrives over time (the timing of the container of the navigable), or null.</summary>
+        public Action<ulong>? ProcessResponseEndOfBody { get; set; }
+
+        /// <summary>The preloads of the early hints of the navigation, committed by its document, or null.</summary>
+        public EarlyHintPreloads? EarlyHints { get; set; }
 
         /// <summary>The size of the body of the response, or null when it arrives after the document is created.</summary>
         public ulong? BodySize { get; set; }

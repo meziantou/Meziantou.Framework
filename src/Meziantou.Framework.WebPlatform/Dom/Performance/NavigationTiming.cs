@@ -64,6 +64,9 @@ internal sealed class DocumentLoadTimingInfo
     /// <summary>The source that gave the response of the document when the request matched a router rule, or the empty string.</summary>
     public string WorkerFinalRouterSource { get; set; } = "";
 
+    /// <summary>The time the first interim response (<c>1xx</c>) of the document was received, or 0 (see <see cref="FetchTimestamps.FirstInterimNetworkResponseStart"/>).</summary>
+    public long FirstInterimResponseStart { get; set; }
+
     /// <summary>The time the response of the document was received.</summary>
     public long ResponseStart { get; set; }
 

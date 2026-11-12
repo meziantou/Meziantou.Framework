@@ -3617,20 +3617,10 @@
     "total": 4
   },
   "fetch/security/1xx-response.any.js": {
-    "total": 4,
-    "failures": {
-      "Status(100) should be ignored.": "FAIL",
-      "Status(103) should be ignored.": "FAIL",
-      "Status(199) should be ignored.": "FAIL"
-    }
+    "total": 4
   },
   "fetch/security/1xx-response.any.js#dedicatedworker": {
-    "total": 4,
-    "failures": {
-      "Status(100) should be ignored.": "FAIL",
-      "Status(103) should be ignored.": "FAIL",
-      "Status(199) should be ignored.": "FAIL"
-    }
+    "total": 4
   },
   "fetch/security/canvas-tainted-serviceworker-passthrough-redirect.https.html": {
     "total": 1

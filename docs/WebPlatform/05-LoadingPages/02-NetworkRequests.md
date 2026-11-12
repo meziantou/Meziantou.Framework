@@ -157,7 +157,17 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
 - The `Content-DPR` header of an image gives its density: its natural size is divided by it (`Content-DPR: 2` displays a
   100x100 image at 50x50 CSS pixels), in the `img` elements (where it replaces the density of the `srcset` candidate), the
   CSS images, the SVG `image` elements, the video posters and the image buttons.
-- [RemainingContentBytes](cref:Meziantou.Framework.WebPlatform.Dom.DocumentResource.RemainingContentBytes) streams a body that arrives over time: the HTML of a navigation is parsed as its chunks arrive.
+- [RemainingContentBytes](cref:Meziantou.Framework.WebPlatform.Dom.DocumentResource.RemainingContentBytes) streams a body that arrives over time: the HTML of a navigation is parsed as its chunks arrive,
+  and the body of `fetch()` is a stream. Return the response once its headers are received: the time the loader returns it is the
+  `responseStart` of the resource timing entry, and the end of the body its `responseEnd`.
+- [ReportInterimResponse](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.ReportInterimResponse) reports an
+  interim response (`100 Continue`, `103 Early Hints`...) before the final response: its time is the
+  `firstInterimResponseStart` of the resource timing entry, and the `Link` headers of the first `103` response of the
+  navigation of a page (not a frame) preload their resources, which the page uses (their timing entries have the
+  `early-hints` initiator type), as in Chromium. `HttpClient` does not expose the interim responses: the loader of
+  `DocumentLoader.Create()` does not report them. A loader that sends a request to another loader with a new
+  `DocumentRequest` forwards them with
+  [InterimResponseHandler](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.InterimResponseHandler).
 
 The requests are canceled when the navigation is aborted (another navigation, the removal of the `iframe`) and when the
 browsing context is disposed: pass the `CancellationToken` to your I/O.

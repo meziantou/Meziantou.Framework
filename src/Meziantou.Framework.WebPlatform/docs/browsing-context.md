@@ -929,11 +929,13 @@ each connection of an `EventSource`, reported when its response ends). A fetch t
 entry (see [Preloads](#preloads)).
 
 - The fetch algorithm records the fetch timing info (`FetchRequest.Timing`): the start, the redirects (`redirectStart`,
-  `redirectEnd`, `fetchStart`), the time the request is sent to the loader (`requestStart`) and the time the loader completes
-  (`responseStart`); `responseEnd` is the time the response is processed. The loader does not report the timing of the
-  connection, of the first byte nor of the interim responses: the connection times are `fetchStart` (a reused connection),
-  `nextHopProtocol` is `http/1.1` (the empty string for a response given by a service worker) and
-  `firstInterimResponseStart` is 0.
+  `redirectEnd`, `fetchStart`), the time the request is sent to the loader (`requestStart`), the time of the first interim
+  response that the loader reports (`firstInterimResponseStart`, see `DocumentRequest.ReportInterimResponse`, 0 without
+  interim response) and the time the loader returns the response, its headers (`finalResponseHeadersStart`; `responseStart`
+  is the first of the two); `responseEnd` is the time the response is processed, after the end of a body that arrives over
+  time (`DocumentResource.RemainingContentBytes`). The loader does not report the timing of the connection: the connection
+  times are `fetchStart` (a reused connection), and `nextHopProtocol` is `http/1.1` (the empty string for a response given
+  by a service worker).
 - The timing allow check (https://fetch.spec.whatwg.org/#concept-tao-check) runs for every response of the fetch, the
   redirects included: when one of them is cross-origin (or the request was redirected through another origin) without a
   `Timing-Allow-Origin` header that allows the origin of the request, or for a network error, the entry only has
@@ -1141,8 +1143,17 @@ response blocked by a check included; a `404` response is not a network error, a
   (`as`, `crossorigin`, `integrity`, `referrerpolicy`, `nonce`, `type`, `media`, `imagesrcset`, `imagesizes`; the
   target is resolved against the URL of the document). As in the browsers, the `modulepreload` links are fetched too
   (the specification makes them do nothing). The links that have a `media` attribute are evaluated at once (the
-  specification waits for the viewport `meta` element), the `Link` headers of the responses of the subresources are not
-  processed (Chromium and WebKit do it; it is not specified), and there are no early hints (`103` responses).
+  specification waits for the viewport `meta` element), and the `Link` headers of the responses of the subresources are not
+  processed (Chromium and WebKit do it; it is not specified).
+- **Early hints** (https://html.spec.whatwg.org/multipage/semantics.html#early-hints): the `preload` and `modulepreload`
+  links of the first `103` response that the loader reports (`DocumentRequest.ReportInterimResponse`) for the navigation
+  of a top-level browsing context are fetched at once (`EarlyHintPreloads`), with the content security policies and the
+  referrer policy of the `103` response; the next `103` responses are ignored. The new document adds them to its map of
+  preloaded resources, and their resource timing entries have the `early-hints` initiator type. As in Chromium, the child
+  navigables ignore the early hints, a cross-origin redirect discards the preloads (the `103` response of the next
+  response is then processed), and so does a document of another origin (e.g. an error document) or of another embedder
+  policy than the `103` response. The links with a `media` attribute are ignored (there is no document to evaluate it),
+  and a module preload of a worker must be same-origin.
 - **`<link rel=modulepreload>`** fetches a module script into the module map of the window
   (`ScriptEngine.PreloadModuleScript`, see [scripting.md](scripting.md#module-scripts)), without fetching its
   dependencies (the specification makes it optional) nor running it: the module scripts and the imports of the URL do

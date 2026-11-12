@@ -1149,8 +1149,10 @@ internal static class Fetching
         }
         var origin = GetLoaderOrigin(request);
         var cookieContext = request.CookieContext;
+        var interimResponses = new InterimResponses(request, eventLoop);
         var documentRequest = new DocumentRequest(request.CurrentUrl.Serialize())
         {
+            InterimResponseHandler = interimResponses.Process,
             CookieJar = cookieContext is null ? request.Client?.CookieJar : cookieContext.CookieJar,
             SiteForCookies = cookieContext is null ? request.Client?.SiteForCookies : cookieContext.SiteForCookies,
             TopLevelOrigin = cookieContext is null ? request.Client?.TopLevelOriginForCookies : cookieContext.TopLevelOrigin,
@@ -1186,6 +1188,14 @@ internal static class Fetching
         var isWebSocket = request.Mode == RequestMode.WebSocket;
         var resource = await LoadAsync(eventLoop, isWebSocket ? loader.ConnectWebSocketAsync : loader.LoadAsync, documentRequest, request.Synchronous, cancellationToken).ConfigureAwait(false);
 
+        // https://fetch.spec.whatwg.org/#fetch-timing-info-final-network-response-start-time: the headers of the final response
+        // are received (the rest of a body that arrives over time is received later)
+        interimResponses.Complete();
+        if (request.Timing.IsRecorded)
+        {
+            request.Timing.FinalNetworkResponseStart = eventLoop.TimeProvider.GetTimestamp();
+        }
+
         // A body that arrives over time is interpreted as its bytes arrive by the HTML document of a navigation, by an event
         // source, by the media and track elements and by fetch() (a ReadableStream); the other requests, the redirects and
         // the responses without body wait for the complete body
@@ -1195,15 +1205,20 @@ internal static class Fetching
         {
             resource = await LoadAsync(eventLoop, (_, token) => new ValueTask<DocumentResource?>(ReadCompleteBodyAsync(streamedResource, token)), documentRequest, request.Synchronous, cancellationToken).ConfigureAwait(false);
         }
-        if (request.Timing.IsRecorded)
-        {
-            request.Timing.FinalNetworkResponseStart = eventLoop.TimeProvider.GetTimestamp();
-        }
 
         if (cancellationToken.IsCancellationRequested)
         {
             DisposeConnection(resource);
             return FetchResponse.NetworkError(aborted: true);
+        }
+
+        // An interim response whose headers are not valid is a network error (the HTTP parser fails), and so is a final
+        // response whose status is the one of an interim response: the loader reported it as the final response, and the
+        // connection ended before the final response (https://fetch.spec.whatwg.org/#http-network-fetch)
+        if (resource is not null && (interimResponses.Failed || resource.StatusCode is >= 100 and <= 199 and not 101))
+        {
+            DisposeConnection(resource);
+            resource = null;
         }
 
         request.LoaderFailed = resource is null;
@@ -1247,6 +1262,70 @@ internal static class Fetching
 
         response.UrlList = [.. request.UrlList];
         return response;
+    }
+
+    /// <summary>
+    /// The interim responses of a request sent to the loader (https://fetch.spec.whatwg.org/#http-network-fetch, step 17):
+    /// the time of the first one is the first interim network-response start time of the timing info, and the first
+    /// <c>103</c> response is given to the process early hints response steps of the request (a navigation), from a task of
+    /// the event loop. The loader reports them from any thread, before the final response.
+    /// </summary>
+    private sealed class InterimResponses(FetchRequest request, DomEventLoop eventLoop)
+    {
+        private readonly Lock _lock = new();
+        private bool _completed;
+
+        /// <summary>Whether an interim response had an invalid header: the request is a network error.</summary>
+        public bool Failed { get; private set; }
+
+        public void Process(int status, IReadOnlyList<KeyValuePair<string, string>> headers)
+        {
+            var normalizedHeaders = new List<KeyValuePair<string, string>>(headers.Count);
+            var valid = true;
+            foreach (var (name, value) in headers)
+            {
+                var normalizedValue = FetchHeaders.Normalize(value);
+                if (!FetchHeaders.IsHeaderName(name) || !FetchHeaders.IsHeaderValue(normalizedValue))
+                {
+                    valid = false;
+                    break;
+                }
+
+                normalizedHeaders.Add(new(name, normalizedValue));
+            }
+
+            lock (_lock)
+            {
+                if (_completed || Failed)
+                    return;
+
+                if (!valid)
+                {
+                    Failed = true;
+                    return;
+                }
+
+                if (request.Timing.IsRecorded && request.Timing.FirstInterimNetworkResponseStart == 0)
+                {
+                    request.Timing.FirstInterimNetworkResponseStart = eventLoop.TimeProvider.GetTimestamp();
+                }
+            }
+
+            if (status == 103 && request.ProcessEarlyHintsResponse is not null)
+            {
+                request.AddPendingEarlyHints(normalizedHeaders);
+                eventLoop.QueueTask(request.ProcessPendingEarlyHints);
+            }
+        }
+
+        /// <summary>The final response is received: the interim responses reported later are ignored.</summary>
+        public void Complete()
+        {
+            lock (_lock)
+            {
+                _completed = true;
+            }
+        }
     }
 
     /// <summary>

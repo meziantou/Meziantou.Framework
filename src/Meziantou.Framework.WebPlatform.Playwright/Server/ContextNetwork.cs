@@ -378,6 +378,7 @@ internal sealed class ContextNetwork(BrowserContextDispatcher context, DocumentL
         FollowRedirects = request.FollowRedirects,
         IsSynchronous = request.IsSynchronous,
         Integrity = request.Integrity,
+        InterimResponseHandler = request.ReportInterimResponse,
     };
 
     private static void AddHeaders(List<KeyValuePair<string, string>> headers, List<KeyValuePair<string, string>> extraHeaders)

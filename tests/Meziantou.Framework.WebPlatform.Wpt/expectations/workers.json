@@ -990,10 +990,7 @@
     "total": 3
   },
   "workers/worker-performance.worker.js": {
-    "total": 14,
-    "failures": {
-      "Resource timing seems to work in workers": "FAIL"
-    }
+    "total": 14
   },
   "workers/worker-request-animation-frame.html": {
     "total": 1

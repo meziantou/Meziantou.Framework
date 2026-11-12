@@ -156,7 +156,8 @@ internal static class LinkPreload
         }
     }
 
-    private static void ProcessLinkHeader(Document document, LinkHeaderValue link)
+    /// <summary>Whether the relation types of a link (its <c>rel</c> parameter) contain <c>preload</c> and <c>modulepreload</c>.</summary>
+    public static (bool IsPreload, bool IsModulePreload) GetPreloadRelations(LinkHeaderValue link)
     {
         var isPreload = false;
         var isModulePreload = false;
@@ -166,6 +167,12 @@ internal static class LinkPreload
             isModulePreload |= InfraAscii.EqualsIgnoreAsciiCase(token, "modulepreload");
         }
 
+        return (isPreload, isModulePreload);
+    }
+
+    private static void ProcessLinkHeader(Document document, LinkHeaderValue link)
+    {
+        var (isPreload, isModulePreload) = GetPreloadRelations(link);
         if (!isPreload && !isModulePreload)
             return;
 

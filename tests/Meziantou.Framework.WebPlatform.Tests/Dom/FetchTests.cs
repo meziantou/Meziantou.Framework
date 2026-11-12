@@ -590,6 +590,107 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public void Fetch_InterimResponses_AreTheFirstInterimResponseStart()
+    {
+        _loader.Handler = request =>
+        {
+            if (request.Url != "https://example.com/interim")
+                return null;
+
+            request.ReportInterimResponse(100, []);
+            request.ReportInterimResponse(103, [new("Link", "</style.css>; rel=preload; as=style")]);
+            return new DocumentResource("body"u8.ToArray());
+        };
+        var document = Load("""
+            <script>
+              fetch('interim').then(response => response.text()).then(() => {
+                const [entry] = performance.getEntriesByName('https://example.com/interim');
+                document.title = (entry.firstInterimResponseStart > 0) + '|' + (entry.firstInterimResponseStart <= entry.finalResponseHeadersStart) + '|' + (entry.responseStart === entry.firstInterimResponseStart);
+              });
+            </script>
+            """);
+        Assert.Equal("true|true|true", document.Title);
+
+        // The early hints of a subresource are not processed
+        Assert.DoesNotContain(_loader.Requests, request => request.Url == "https://example.com/style.css");
+    }
+
+    [Theory]
+    [InlineData(100)]
+    [InlineData(103)]
+    [InlineData(199)]
+    public void Fetch_FinalResponseWithAnInterimStatus_IsANetworkError(int status)
+    {
+        _loader.Responses["https://example.com/interim"] = new DocumentResource("body"u8.ToArray()) { StatusCode = status };
+        var document = Load("""
+            <script>
+              fetch('interim').then(response => { document.title = response.status; }, e => { document.title = e.name; });
+            </script>
+            """);
+        Assert.Equal("TypeError", document.Title);
+    }
+
+    [Fact]
+    public void Fetch_InterimResponseWithAnInvalidHeader_IsANetworkError()
+    {
+        _loader.Handler = request =>
+        {
+            request.ReportInterimResponse(103, [new("X-Test", "a\0b")]);
+            return new DocumentResource("body"u8.ToArray());
+        };
+        var document = Load("""
+            <script>
+              fetch('interim').then(response => { document.title = response.status; }, e => { document.title = e.name; });
+            </script>
+            """);
+        Assert.Equal("TypeError", document.Title);
+    }
+
+    [Fact]
+    public void DocumentRequest_ReportInterimResponse_RejectsTheFinalStatuses()
+    {
+        var request = new DocumentRequest("https://example.com/");
+        Assert.Throws<ArgumentOutOfRangeException>("statusCode", () => request.ReportInterimResponse(101, []));
+        Assert.Throws<ArgumentOutOfRangeException>("statusCode", () => request.ReportInterimResponse(200, []));
+
+        var forwarded = new List<int>();
+        var copy = new DocumentRequest("https://example.com/") { InterimResponseHandler = (status, _) => forwarded.Add(status) };
+        copy.ReportInterimResponse(103, []);
+        Assert.Equal([103], forwarded);
+    }
+
+    [Fact]
+    public void EarlyHints_PreloadTheResourcesOfTheNavigation()
+    {
+        var loader = new StubLoader();
+        loader.Responses["https://example.com/script.js"] = new DocumentResource("document.title += '|script';"u8.ToArray()) { Headers = [new("Content-Type", "text/javascript")] };
+        loader.Responses["https://other.example/blocked.js"] = new DocumentResource(""u8.ToArray()) { Headers = [new("Content-Type", "text/javascript")] };
+        loader.Handler = request =>
+        {
+            if (request.Url != "https://example.com/page")
+                return null;
+
+            // Only the first 103 response is processed, with its content security policy
+            request.ReportInterimResponse(103, [new("Link", "</script.js>; rel=preload; as=script, <https://other.example/blocked.js>; rel=preload; as=script"), new("Content-Security-Policy", "script-src 'self'")]);
+            request.ReportInterimResponse(103, [new("Link", "</other.js>; rel=preload; as=script")]);
+            return new DocumentResource("""
+                <script>document.title = 'page';</script>
+                <script src="script.js"></script>
+                <script>document.title += '|' + performance.getEntriesByName('https://example.com/script.js').map(entry => entry.initiatorType).join(',');</script>
+                """u8.ToArray()) { Headers = [new("Content-Type", "text/html")] };
+        };
+        var context = _contexts.Create(new BrowsingContextOptions { DocumentLoader = loader, ScriptEngine = _engine, UnhandledScriptError = (_, error) => _errors.Add(error) });
+
+        context.Navigate("https://example.com/page");
+        _contexts.EventLoop.RunUntilIdle();
+
+        Assert.Empty(_errors);
+        Assert.Equal("page|script|early-hints", context.Document.Title);
+        Assert.Single(loader.Requests, request => request.Url == "https://example.com/script.js");
+        Assert.DoesNotContain(loader.Requests, request => request.Url is "https://other.example/blocked.js" or "https://example.com/other.js");
+    }
+
+    [Fact]
     public async Task HttpDocumentLoader_StreamsTheBodyOfFetch()
     {
         using var handler = new StubHandler(_ => new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new System.Net.Http.StringContent("body") });

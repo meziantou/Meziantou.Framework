@@ -62,8 +62,9 @@ internal sealed record FetchEventNavigationContext(FetchCookieContext? CookieCon
 /// <summary>
 /// The times of a fetch (https://fetch.spec.whatwg.org/#fetch-timing-info), as timestamps of the time provider of the event
 /// loop of the request (see <see cref="DomEventLoop.TimeProvider"/>), or 0 when the step did not happen. The loader does not
-/// expose the timing of the connection nor the time of the first byte: the request is sent when the loader is called, and
-/// the response is received when the loader completes.
+/// expose the timing of the connection: the request is sent when the loader is called, the headers of the response are
+/// received when the loader returns the response, and its body when the rest of its body is received
+/// (<see cref="DocumentResource.RemainingContentBytes"/>).
 /// </summary>
 internal sealed class FetchTimestamps
 {
@@ -80,6 +81,13 @@ internal sealed class FetchTimestamps
 
     public long FinalNetworkRequestStart { get; set; }
 
+    /// <summary>
+    /// The time the first interim response (<c>1xx</c>) of the final network request was received
+    /// (https://fetch.spec.whatwg.org/#fetch-timing-info-first-interim-network-response-start-time), or 0 (see <see cref="DocumentRequest.ReportInterimResponse"/>).
+    /// </summary>
+    public long FirstInterimNetworkResponseStart { get; set; }
+
+    /// <summary>The time the headers of the final response were received (the loader returned the response).</summary>
     public long FinalNetworkResponseStart { get; set; }
 
     /// <summary>
@@ -147,6 +155,50 @@ internal sealed partial class FetchRequest
     public RequestDestination? NavigationDestination { get; set; }
 
     public List<KeyValuePair<string, string>> HeaderList { get; set; } = [];
+
+    /// <summary>
+    /// https://fetch.spec.whatwg.org/#fetch-params-process-early-hints-response: the steps called with the headers of the first
+    /// <c>103</c> (Early Hints) response of the request, from a task of the event loop, or null (only the navigations of the
+    /// top-level browsing contexts process them).
+    /// </summary>
+    public Action<IReadOnlyList<KeyValuePair<string, string>>>? ProcessEarlyHintsResponse { get; set; }
+
+    private readonly Lock _earlyHintsLock = new();
+    private List<IReadOnlyList<KeyValuePair<string, string>>>? _pendingEarlyHints;
+
+    /// <summary>
+    /// Adds the headers of an early hints response received by the loader (from any thread): <see cref="ProcessEarlyHintsResponse"/>
+    /// processes them from the next call of <see cref="ProcessPendingEarlyHints"/>, which a task of the event loop runs.
+    /// </summary>
+    public void AddPendingEarlyHints(IReadOnlyList<KeyValuePair<string, string>> headers)
+    {
+        lock (_earlyHintsLock)
+        {
+            (_pendingEarlyHints ??= []).Add(headers);
+        }
+    }
+
+    /// <summary>
+    /// Processes the early hints responses received so far (from a task of the event loop): the queued task of the fetch, or
+    /// the processing of the next response of a navigation, which may run first when a redirect is followed without a task.
+    /// </summary>
+    public void ProcessPendingEarlyHints()
+    {
+        List<IReadOnlyList<KeyValuePair<string, string>>>? pending;
+        lock (_earlyHintsLock)
+        {
+            pending = _pendingEarlyHints;
+            _pendingEarlyHints = null;
+        }
+
+        if (pending is null || ProcessEarlyHintsResponse is not { } processEarlyHintsResponse)
+            return;
+
+        foreach (var headers in pending)
+        {
+            processEarlyHintsResponse(headers);
+        }
+    }
 
     /// <summary>Whether the headers were set by the author (https://fetch.spec.whatwg.org/#unsafe-request-flag).</summary>
     public bool UnsafeRequest { get; set; }

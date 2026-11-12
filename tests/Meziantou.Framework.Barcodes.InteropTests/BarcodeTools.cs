@@ -1,7 +1,6 @@
-using System.Diagnostics;
 using System.Globalization;
-using System.Text;
 using System.Text.Json;
+using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 using Meziantou.Prebuilt;
 
 namespace Meziantou.Framework.Barcodes.InteropTests;
@@ -139,24 +138,7 @@ internal sealed class BarcodeTools
 
     private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunAsync(string fileName, IEnumerable<string> arguments, CancellationToken cancellationToken)
     {
-        var startInfo = new ProcessStartInfo(fileName)
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
-        };
-
-        foreach (var argument in arguments)
-        {
-            startInfo.ArgumentList.Add(argument);
-        }
-
-        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException($"Cannot start '{fileName}'.");
-        var standardOutput = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var standardError = process.StandardError.ReadToEndAsync(cancellationToken);
-        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-        return (process.ExitCode, await standardOutput.ConfigureAwait(false), await standardError.ConfigureAwait(false));
+        var result = await ProcessRunner.RunAsync(fileName, arguments, cancellationToken).ConfigureAwait(false);
+        return (result.ExitCode, result.StandardOutputText, result.StandardError);
     }
 }

@@ -1,8 +1,7 @@
-using System.Diagnostics;
 using System.Globalization;
-using System.Text;
 using System.Text.Json;
 using Meziantou.Framework.Imaging.Barcodes;
+using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 using Meziantou.Prebuilt;
 
 namespace Meziantou.Framework.Barcodes.InteropTests;
@@ -66,17 +65,8 @@ public sealed class FontInteropTests
 
     private static async Task<string> RunAsync(string fileName, IEnumerable<string> arguments)
     {
-        var startInfo = new ProcessStartInfo(fileName) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, StandardOutputEncoding = Encoding.UTF8 };
-        foreach (var argument in arguments)
-        {
-            startInfo.ArgumentList.Add(argument);
-        }
-
-        using var process = Process.Start(startInfo)!;
-        var standardOutput = process.StandardOutput.ReadToEndAsync(XunitCancellationToken);
-        var standardError = process.StandardError.ReadToEndAsync(XunitCancellationToken);
-        await process.WaitForExitAsync(XunitCancellationToken);
-        Assert.Equal(0, process.ExitCode, message: await standardError);
-        return await standardOutput;
+        var result = await ProcessRunner.RunAsync(fileName, arguments, XunitCancellationToken);
+        Assert.Equal(0, result.ExitCode, message: result.StandardError);
+        return result.StandardOutputText;
     }
 }

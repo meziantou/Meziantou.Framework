@@ -1024,7 +1024,8 @@ internal static class Fetching
     /// <summary>
     /// The background revalidation of a stored response used within its <c>stale-while-revalidate</c> window
     /// (https://httpwg.org/specs/rfc5861.html#n-the-stale-while-revalidate-cache-control-extension): a copy of the request is
-    /// sent to the network with the validators of the stored response, and its response updates the HTTP cache. As in the
+    /// sent to the network with the validators of the stored response, and its response updates the HTTP cache once its
+    /// <c>Clear-Site-Data</c> header is processed, as the response of the network of a fetch. As in the
     /// browsers, the revalidation is not handled by the service workers, is not checked by the content security policies and
     /// has no resource timing; a single revalidation of a request is in progress at a time.
     /// </summary>
@@ -1060,7 +1061,16 @@ internal static class Fetching
                 var response = await NetworkFetchAsync(request, headers, includeCredentials, CancellationToken.None).ConfigureAwait(false);
                 if (!response.IsNetworkError)
                 {
-                    UpdateHttpCache(request, response, cache, key, requestHeaders, includeCredentials, etag is not null || lastModified is not null ? storedResponse : null, requestTime, GetHttpCacheTime(request));
+                    // As the response of the network of HttpNetworkOrCacheFetchAsync (the loader stored its cookies, and the
+                    // continuation runs on the event loop of the request): the Clear-Site-Data header is processed before
+                    // the HTTP cache is updated, and a response that clears the cache is not stored
+                    var clearedCache = ClearSiteData.ProcessResponse(request, response, includeCredentials, HttpCache.GetPartition(key));
+                    if (!clearedCache || response.Status == 304)
+                    {
+                        UpdateHttpCache(request, response, cache, key, requestHeaders, includeCredentials, etag is not null || lastModified is not null ? storedResponse : null, requestTime, GetHttpCacheTime(request));
+                    }
+
+                    ClientHints.ProcessResponse(request, response);
                 }
             }
 #pragma warning disable CA1031 // A failure of the revalidation keeps the stored response

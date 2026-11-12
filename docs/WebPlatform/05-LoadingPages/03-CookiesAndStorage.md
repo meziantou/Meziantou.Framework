@@ -112,6 +112,9 @@ honored on the responses of the secure URLs (`https`, and `http://localhost`), w
 | `"clientHints"` | The client hints it opted into (also cleared by `"cache"` and `"cookies"`) |
 | `"*"` | All of the above |
 
+The header is also honored on the responses of the background revalidations of the HTTP cache (the responses used
+within their `stale-while-revalidate` window), and a response that clears the cache is not stored in it.
+
 The cookies that the response sets are cleared too. As in the browsers, a response loaded by a page of another site
 (a third-party resource or frame) only clears the data of that page's partition: the partitioned cookies, the caches,
 and the stores of the origin [partitioned](#storage-partitioning) by the site of that page. The stores of the origin as a

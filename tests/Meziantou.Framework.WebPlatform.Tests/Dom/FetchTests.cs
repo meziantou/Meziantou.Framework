@@ -20,11 +20,12 @@ public sealed class FetchTests : IDisposable
         TestScriptEngines.Dispose(_engine);
     }
 
-    private Document Load(string html)
+    private Document Load(string html, CookieJar? cookieJar = null)
     {
         var context = _contexts.Create(new BrowsingContextOptions
         {
             DocumentLoader = _loader,
+            CookieJar = cookieJar,
             ScriptEngine = _engine,
             UnhandledScriptError = (_, error) => _errors.Add(error),
         });
@@ -584,6 +585,45 @@ public sealed class FetchTests : IDisposable
         TestScriptEngines.Evaluate(_engine, document.DefaultView!, "(async () => { document.title = await (await fetch('swr')).text() + '|' + await (await fetch('swr', { cache: 'no-cache' })).text(); })()");
         await WaitUntilAsync(() => document.Title.Split('|').Length == 2 && Volatile.Read(ref count) >= 4, () => document.Title + " " + count);
         Assert.Equal("2|4", document.Title);
+    }
+
+    [Fact]
+    public async Task HttpCache_StaleWhileRevalidate_ProcessesTheClearSiteDataHeaderOfTheBackgroundRevalidation()
+    {
+        var count = 0;
+        _loader.Handler = request =>
+        {
+            if (request.Url != "https://example.com/swr")
+                return null;
+
+            var value = Interlocked.Increment(ref count);
+            List<KeyValuePair<string, string>> headers = [new("Cache-Control", "max-age=0, stale-while-revalidate=60")];
+            if (value > 1)
+            {
+                headers.Add(new("Clear-Site-Data", "\"cookies\", \"cache\""));
+            }
+
+            return new DocumentResource(value.ToString(System.Globalization.CultureInfo.InvariantCulture)) { Headers = headers };
+        };
+        var document = Load("""
+            <script>
+              document.cookie = 'a=1';
+              (async () => {
+                const results = [document.cookie];
+                for (let i = 0; i < 2; i++) {
+                  results.push(await (await fetch('swr')).text());
+                }
+
+                document.title = results.join('|') + '|' + document.cookie;
+              })();
+            </script>
+            """, new CookieJar());
+
+        // The response of the background revalidation clears the cookies, and the HTTP cache: it is not stored either
+        await WaitUntilAsync(() => document.Title.Length > 0 && Volatile.Read(ref count) == 2, () => document.Title + " " + count);
+        Assert.Equal("a=1|1|1|", document.Title);
+        TestScriptEngines.Evaluate(_engine, document.DefaultView!, "(async () => { document.title = await (await fetch('swr')).text(); })()");
+        await WaitUntilAsync(() => document.Title == "3", () => document.Title + " " + count);
     }
 
     [Fact]

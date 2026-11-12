@@ -243,16 +243,10 @@
     "total": 6
   },
   "dom/events/EventListener-incumbent-global-1.sub.html": {
-    "total": 1,
-    "failures": {
-      "Check the incumbent global EventListeners  are called with": "FAIL"
-    }
+    "total": 1
   },
   "dom/events/EventListener-incumbent-global-2.sub.html": {
-    "total": 1,
-    "failures": {
-      "Check the incumbent global EventListeners  are called with": "FAIL"
-    }
+    "total": 1
   },
   "dom/events/EventListener-invoke-legacy.html": {
     "total": 6

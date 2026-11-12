@@ -356,21 +356,41 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
     /// </summary>
     protected internal override GlobalScope? GetCurrentGlobal() => IsScriptRunning ? GetIncumbentGlobal() : null;
 
-    /// <summary>The incumbent global objects of the job callbacks being called (the backup incumbent settings object stack).</summary>
-    internal Stack<GlobalScope?> BackupIncumbentGlobals { get; } = new();
+    /// <summary>
+    /// The incumbent global objects of the callbacks being called (the backup incumbent settings object stack), with the
+    /// depth of the execution context stack when they were pushed: the execution contexts below it are skipped when
+    /// determining the incumbent (their skip-when-determining-incumbent counter is incremented).
+    /// </summary>
+    private Stack<(GlobalScope? Global, int Depth)> BackupIncumbentGlobals { get; } = new();
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/webappapis.html#prepare-to-run-a-callback: pushes <paramref name="incumbent"/>
+    /// onto the backup incumbent settings object stack. The script-having execution contexts that run below are skipped when
+    /// determining the incumbent, until <see cref="CleanUpAfterRunningCallback"/>.
+    /// </summary>
+    internal void PrepareToRunCallback(GlobalScope? incumbent) => BackupIncumbentGlobals.Push((incumbent, Engine.ExecutionContextDepth));
+
+    /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#clean-up-after-running-a-callback</summary>
+    internal void CleanUpAfterRunningCallback() => BackupIncumbentGlobals.Pop();
 
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/webappapis.html#incumbent: the global object of the realm of the topmost
-    /// script-having execution context (the active script), else of the backup incumbent settings object stack, else of
-    /// the current realm.
+    /// script-having execution context (the active script) whose skip-when-determining-incumbent counter is zero, else of
+    /// the backup incumbent settings object stack, else of the current realm.
     /// </summary>
     internal GlobalScope? GetIncumbentGlobal()
     {
+        // The execution contexts that were on the stack when the topmost callback was prepared are skipped: no code has
+        // run since, so the incumbent is the one of the callback (e.g. a built-in function such as a bound postMessage
+        // used as an event listener)
+        if (BackupIncumbentGlobals.TryPeek(out var backup) && backup.Global is not null && Engine.ExecutionContextDepth <= backup.Depth)
+            return backup.Global;
+
         if (Engine.GetActiveScriptOrModule() is { } script && Agent.GetRealm(script.Realm) is { } realm)
             return realm.GlobalScope;
 
-        if (BackupIncumbentGlobals.TryPeek(out var incumbent) && incumbent is not null)
-            return incumbent;
+        if (backup.Global is not null)
+            return backup.Global;
 
         return Agent.CurrentRealm?.GlobalScope;
     }

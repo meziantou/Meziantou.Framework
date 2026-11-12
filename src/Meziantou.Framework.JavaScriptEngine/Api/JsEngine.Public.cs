@@ -162,6 +162,13 @@ public sealed partial class JsEngine
     /// <summary>GetActiveScriptOrModule(): the script or the module of the innermost running code that has one, or null.</summary>
     public JsScriptOrModule? GetActiveScriptOrModule() => JsInterpreter.GetActiveScriptOrModule(CurrentFrame) as JsScriptOrModule;
 
+    /// <summary>
+    /// Gets the number of execution contexts on the stack: the frames of the running code and the script execution contexts
+    /// pushed by the host (<see cref="EnterActiveScriptOrModule"/>). A host compares it with a value captured earlier to know
+    /// whether code started running since then (e.g. the skip-when-determining-incumbent counter of the HTML Standard).
+    /// </summary>
+    public int ExecutionContextDepth => _frames.Count + _scriptContexts.Count;
+
     /// <summary>Captures the stack trace of the running code, in the format of the <c>stack</c> property of the errors (without the first line).</summary>
     public string CaptureStackTrace()
     {

@@ -347,7 +347,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue> : IJsBufferOwner
         if (!Adapter.IsObject(value))
             throw CreateTypeError($"The value is not of type '{interfaceName}'");
 
-        return Agent.CallbackInterfaces.GetValue(value, v => new JsCallbackInterface<TAdapter, TValue>(this, v));
+        // The callback context is the incumbent settings object (https://webidl.spec.whatwg.org/#js-callback-interface)
+        return new JsCallbackInterface<TAdapter, TValue>(this, value, GetIncumbentGlobal());
     }
 
     /// <summary>

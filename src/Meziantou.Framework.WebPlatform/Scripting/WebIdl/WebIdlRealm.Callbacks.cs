@@ -47,7 +47,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// identifier of the IDL callback function (e.g. <c>FrameRequestCallback</c>), the invoker of the script in the long
     /// animation frames, or null when the invocation is not reported.
     /// </summary>
-    internal TValue InvokeCallback(TValue function, TValue thisValue, ReadOnlySpan<TValue> arguments, CallbackBehavior behavior, string? callbackName = null)
+    internal TValue InvokeCallback(TValue function, TValue thisValue, ReadOnlySpan<TValue> arguments, CallbackBehavior behavior, string? callbackName = null, GlobalScope? callbackContext = null)
     {
         if (!Adapter.IsCallable(function))
             return Adapter.Undefined;
@@ -78,9 +78,11 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         Agent.Host.OnCallbackInvoking();
 
-        // https://webidl.spec.whatwg.org/#prepare-to-run-a-callback: the realm of the callback is the entry realm
+        // https://webidl.spec.whatwg.org/#prepare-to-run-a-callback: the realm of the callback is the entry realm, and the
+        // callback context is the incumbent settings object
         var previousEntryDocument = Document.EntryGlobalDocument;
         Document.EntryGlobalDocument = callbackRealm.GlobalScope.EnvironmentDocument;
+        using var incumbentScope = PrepareToRunCallback(callbackContext);
         try
         {
             return Adapter.Call(function, thisValue, arguments);
@@ -98,8 +100,21 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         }
     }
 
+    /// <summary>
+    /// The incumbent global object (https://html.spec.whatwg.org/multipage/webappapis.html#incumbent): the callback context
+    /// of the callbacks converted now (https://webidl.spec.whatwg.org/#dfn-callback-context), or null when the host does not
+    /// track it or no script is running.
+    /// </summary>
+    internal GlobalScope? GetIncumbentGlobal() => Agent.Host is IWebIdlIncumbentHost host ? host.GetIncumbentGlobal() : null;
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/webappapis.html#prepare-to-run-a-callback: pushes the callback context onto the
+    /// backup incumbent settings object stack, until the result is disposed (clean up after running a callback).
+    /// </summary>
+    private IDisposable? PrepareToRunCallback(GlobalScope? callbackContext) => callbackContext is not null && Agent.Host is IWebIdlIncumbentHost host ? host.EnterBackupIncumbent(callbackContext) : null;
+
     /// <summary>https://webidl.spec.whatwg.org/#call-a-user-objects-operation</summary>
-    internal TValue CallUserObjectOperation(TValue obj, string operationName, ReadOnlySpan<TValue> arguments, TValue thisValue)
+    internal TValue CallUserObjectOperation(TValue obj, string operationName, ReadOnlySpan<TValue> arguments, TValue thisValue, GlobalScope? callbackContext = null)
     {
         // https://webidl.spec.whatwg.org/#call-a-user-objects-operation: the steps run in the associated realm of the callback
         // object ("prepare to run script"), which is the entry realm: the TypeErrors are created in this realm
@@ -109,6 +124,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         Agent.Host.OnCallbackInvoking();
         var previousEntryDocument = Document.EntryGlobalDocument;
         Document.EntryGlobalDocument = callbackRealm.GlobalScope.EnvironmentDocument;
+        using var incumbentScope = PrepareToRunCallback(callbackContext);
         try
         {
             // Fast path: a function (e.g. an event listener) called from its realm
@@ -152,7 +168,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// <summary>The setter of an event handler IDL attribute ([LegacyTreatNonObjectAsNull]).</summary>
     internal void SetEventHandler(EventTarget target, string type, TValue value, bool isOnBeforeUnloadEventHandler)
     {
-        var callback = Adapter.IsObject(value) ? new JsEventHandlerCallback<TAdapter, TValue>(this, value, isOnBeforeUnloadEventHandler) : null;
+        var callback = Adapter.IsObject(value) ? new JsEventHandlerCallback<TAdapter, TValue>(this, value, isOnBeforeUnloadEventHandler, GetIncumbentGlobal()) : null;
         target.SetEventHandlerCallback(type, callback);
     }
 
@@ -249,12 +265,21 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     }
 }
 
-/// <summary>A JavaScript object passed where the IDL expects a callback interface (EventListener, NodeFilter, XPathNSResolver).</summary>
-internal sealed class JsCallbackInterface<TAdapter, TValue>(WebIdlRealm<TAdapter, TValue> realm, TValue obj) : IEventListener, INodeFilter, IXPathNSResolver, IScriptCallback
+/// <summary>
+/// A JavaScript object passed where the IDL expects a callback interface (EventListener, NodeFilter, XPathNSResolver), and
+/// its callback context (https://webidl.spec.whatwg.org/#dfn-callback-context): the incumbent global object when the value
+/// was converted, which is the incumbent when the callback is called. Two values are equal when their objects are the same
+/// (e.g. <c>removeEventListener()</c> removes the listener added with the same object).
+/// </summary>
+internal sealed class JsCallbackInterface<TAdapter, TValue>(WebIdlRealm<TAdapter, TValue> realm, TValue obj, GlobalScope? callbackContext) : IEventListener, INodeFilter, IXPathNSResolver, IScriptCallback
     where TAdapter : struct, IJsAdapter<TValue>
     where TValue : class
 {
     public TValue Object { get; } = obj;
+
+    public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => obj is JsCallbackInterface<TAdapter, TValue> other && ReferenceEquals(Object, other.Object);
+
+    public override int GetHashCode() => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(Object);
 
     public GlobalScope CallbackGlobal => (realm.Agent.GetAssociatedRealm(Object) ?? realm).GlobalScope;
 
@@ -268,7 +293,7 @@ internal sealed class JsCallbackInterface<TAdapter, TValue>(WebIdlRealm<TAdapter
         using var authorCode = Html.AuthorCodeScope.Enter();
         try
         {
-            realm.CallUserObjectOperation(Object, "handleEvent", [realm.ToJs(@event)], thisValue: realm.ToJs(@event.CurrentTarget));
+            realm.CallUserObjectOperation(Object, "handleEvent", [realm.ToJs(@event)], thisValue: realm.ToJs(@event.CurrentTarget), callbackContext);
         }
         catch (Exception ex) when (realm.Adapter.TryGetThrownValue(ex, out TValue? _))
         {
@@ -283,7 +308,7 @@ internal sealed class JsCallbackInterface<TAdapter, TValue>(WebIdlRealm<TAdapter
         TValue result;
         try
         {
-            result = realm.CallUserObjectOperation(Object, "lookupNamespaceURI", [prefix is null ? realm.Adapter.Null : realm.Adapter.FromString(prefix)], thisValue: realm.Adapter.Undefined);
+            result = realm.CallUserObjectOperation(Object, "lookupNamespaceURI", [prefix is null ? realm.Adapter.Null : realm.Adapter.FromString(prefix)], thisValue: realm.Adapter.Undefined, callbackContext);
         }
         catch (Exception ex) when (realm.Adapter.TryGetThrownValue(ex, out TValue? _))
         {
@@ -299,7 +324,7 @@ internal sealed class JsCallbackInterface<TAdapter, TValue>(WebIdlRealm<TAdapter
     {
         ThrowIfInactive();
         using var authorCode = Html.AuthorCodeScope.Enter();
-        var result = realm.CallUserObjectOperation(Object, "acceptNode", [realm.ToJs(node)], thisValue: realm.Adapter.Undefined);
+        var result = realm.CallUserObjectOperation(Object, "acceptNode", [realm.ToJs(node)], thisValue: realm.Adapter.Undefined, callbackContext);
         return realm.ToUnsignedShort(result);
     }
 
@@ -311,8 +336,12 @@ internal sealed class JsCallbackInterface<TAdapter, TValue>(WebIdlRealm<TAdapter
     }
 }
 
-/// <summary>An event handler whose value is a JavaScript function (https://html.spec.whatwg.org/multipage/webappapis.html#event-handlers).</summary>
-internal sealed class JsEventHandlerCallback<TAdapter, TValue>(WebIdlRealm<TAdapter, TValue> realm, TValue function, bool isOnBeforeUnloadEventHandler) : EventHandlerCallback, IScriptCallback
+/// <summary>
+/// An event handler whose value is a JavaScript function (https://html.spec.whatwg.org/multipage/webappapis.html#event-handlers),
+/// and its callback context (the incumbent global object when the event handler IDL attribute was set, null for the
+/// functions compiled from the event handler content attributes, whose code is the active script).
+/// </summary>
+internal sealed class JsEventHandlerCallback<TAdapter, TValue>(WebIdlRealm<TAdapter, TValue> realm, TValue function, bool isOnBeforeUnloadEventHandler, GlobalScope? callbackContext = null) : EventHandlerCallback, IScriptCallback
     where TAdapter : struct, IJsAdapter<TValue>
     where TValue : class
 {
@@ -338,7 +367,7 @@ internal sealed class JsEventHandlerCallback<TAdapter, TValue>(WebIdlRealm<TAdap
             jsArguments[i] = realm.ToJs(arguments[i]);
         }
 
-        var result = realm.InvokeCallback(Function, realm.ToJs(thisValue), jsArguments, CallbackBehavior.ReportExceptions);
+        var result = realm.InvokeCallback(Function, realm.ToJs(thisValue), jsArguments, CallbackBehavior.ReportExceptions, callbackContext: callbackContext);
         if (realm.IsNullOrUndefined(result))
             return null;
 

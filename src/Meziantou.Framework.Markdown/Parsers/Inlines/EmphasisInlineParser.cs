@@ -3,7 +3,6 @@
 // See the license.txt file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Markdown.Helpers;
@@ -111,7 +110,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
             return true;
         }
 
-        ContainerInline container = unsafe(Unsafe.As<ContainerInline>(root));
+        ContainerInline container = (ContainerInline)root;
 
         List<EmphasisDelimiterInline>? delimiters = null;
         if (container is EmphasisDelimiterInline emphasisDelimiter)
@@ -274,7 +273,7 @@ public class EmphasisInlineParser : InlineParser, IPostInlineProcessor
         // on these and on the count of the delimiter, so they stay rejected until one of them is matched, which is the only
         // way the count of a delimiter changes: a match lowers the bottoms to the opener. Scanning a few delimiters is cheaper.
         var bottomCount = delimiters.Count > OpenersBottomThreshold ? OpeningCharacters!.Length * 6 : 0;
-        Span<int> openersBottom = bottomCount <= 64 ? unsafe(stackalloc int[bottomCount]) : new int[bottomCount];
+        Span<int> openersBottom = bottomCount <= 64 ? stackalloc int[bottomCount] : new int[bottomCount];
         openersBottom.Clear();
         var maximumBottom = 0;
 

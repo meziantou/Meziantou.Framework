@@ -20,6 +20,7 @@ internal sealed class GeoJsonStreamReader : IDisposable
     private int _end;
     private bool _isFinalBlock;
     private bool _isFirstBlock = true;
+    private bool _isReading;
     private JsonReaderState _state;
 
     // The start of the document while it may have to be read whole: until the 'features' array of a FeatureCollection starts
@@ -84,7 +85,13 @@ internal sealed class GeoJsonStreamReader : IDisposable
 
     public void Dispose()
     {
-        ArrayPool<byte>.Shared.Return(_buffer);
+        // When a read failed or was canceled, the stream may still write into the buffer: it is then left to the GC
+        // instead of being returned to the pool.
+        if (!_isReading)
+        {
+            ArrayPool<byte>.Shared.Return(_buffer);
+        }
+
         _buffer = [];
     }
 
@@ -112,7 +119,9 @@ internal sealed class GeoJsonStreamReader : IDisposable
         // The buffer is filled: a stream that returns a few bytes at a time would make the reader parse an incomplete feature
         // again after each read, which is quadratic in the size of the feature
         var minimum = _buffer.Length - _end;
+        _isReading = true;
         var read = await stream.ReadAtLeastAsync(_buffer.AsMemory(_end), minimum, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+        _isReading = false;
         _end += read;
         if (read < minimum)
         {

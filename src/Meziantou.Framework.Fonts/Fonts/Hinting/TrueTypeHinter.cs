@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Fonts;
@@ -234,7 +235,11 @@ internal sealed class TrueTypeHinter : IDisposable
 
     private static Span<T> AsSpan<T>(FontBuffer buffer)
         where T : unmanaged
-        => unsafe(MemoryMarshal.Cast<byte, T>(buffer.Span));
+    {
+        // Only the types of the saved state, whose every bit pattern is valid, are read back from the bytes.
+        Debug.Assert(typeof(T) == typeof(int) || typeof(T) == typeof(HintPoint));
+        return unsafe(MemoryMarshal.Cast<byte, T>(buffer.Span));
+    }
 
     private Span<HintPoint> PointStorage => _points is null ? default : unsafe(MemoryMarshal.Cast<byte, HintPoint>(_points.Span));
 
@@ -251,6 +256,7 @@ internal sealed class TrueTypeHinter : IDisposable
             if (_points is not null)
             {
                 _points.Span.CopyTo(buffer.Span);
+                FontBufferDebug.PoisonMovedStorage(_points);
                 _points.Dispose();
             }
 
@@ -271,6 +277,7 @@ internal sealed class TrueTypeHinter : IDisposable
             if (_contours is not null)
             {
                 _contours.Span.CopyTo(buffer.Span);
+                FontBufferDebug.PoisonMovedStorage(_contours);
                 _contours.Dispose();
             }
 

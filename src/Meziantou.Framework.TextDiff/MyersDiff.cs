@@ -4,7 +4,7 @@ namespace Meziantou.Framework;
 
 internal static class MyersDiff
 {
-    private const int StackAllocationThreshold = 128;
+    private const int StackAllocationThreshold = 64; // The four buffers stay under 1 KB on the stack
 
     internal static DiffComputationResult Compute(string[] left, string[] right, IEqualityComparer<string> comparer, DiffBudget budget)
     {

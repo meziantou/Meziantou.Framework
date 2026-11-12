@@ -26,7 +26,7 @@ public static class UnicodeBidi
     // The workspace holds, for each code unit: its current class, a link (see FindMatchingIsolates and
     // FindBracketPairs), and a slot of the list of the positions of the isolating run sequence being resolved.
     private const int WorkspaceFactor = 3;
-    private const int StackallocLimit = 256;
+    private const int StackallocLimit = 64; // The workspace stays under 1 KB on the stack
 
     private const int MaxBracketDepth = 63;
     private const int NoLink = -1;

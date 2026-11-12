@@ -3,8 +3,6 @@
 // See the license.txt file in the project root for more information.
 
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Markdown.Helpers;
 
@@ -51,7 +49,7 @@ public struct LineReader
         }
         else
         {
-            ReadOnlySpan<char> span = unsafe(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.AsRef(in text.GetPinnableReference()), sourcePosition), end - sourcePosition));
+            ReadOnlySpan<char> span = text.AsSpan(sourcePosition);
 
             int crlf = span.IndexOfAny('\r', '\n');
             if (crlf >= 0)
@@ -59,7 +57,7 @@ public struct LineReader
                 end = sourcePosition + crlf;
                 newSourcePosition = end + 1;
 
-                if (unsafe(Unsafe.Add(ref Unsafe.AsRef(in text.GetPinnableReference()), end)) == '\r')
+                if (text[end] == '\r')
                 {
                     if ((uint)(newSourcePosition) < (uint)text.Length && text[newSourcePosition] == '\n')
                     {

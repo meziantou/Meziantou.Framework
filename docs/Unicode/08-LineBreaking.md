@@ -134,8 +134,8 @@ The `Meziantou.Framework.Unicode.Dictionaries` package includes the word lists o
   instance).
 - A word is kept as written, without normalization or case mapping: pass the text in the normalization form of the
   list.
-- A dictionary is immutable and thread-safe. [FindBreaks](cref:Meziantou.Framework.LineBreakDictionary.FindBreaks) and the enumeration do not allocate, and their cost is
-  proportional to the length of the text.
+- A dictionary is immutable and thread-safe. [FindBreaks](cref:Meziantou.Framework.LineBreakDictionary.FindBreaks) and the enumeration do not allocate (the working buffers of a text longer than 128
+  UTF-16 code units are rented from the shared array pool), and their cost is proportional to the length of the text.
 - A list from an untrusted source cannot exhaust memory: a list that exceeds a limit of [LineBreakDictionaryOptions](cref:Meziantou.Framework.LineBreakDictionaryOptions) is
   rejected with a `FormatException`.
 

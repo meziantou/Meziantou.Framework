@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Collections.Frozen;
 
 namespace Meziantou.Framework;
@@ -32,6 +33,9 @@ public sealed class Hyphenator
 
     // The greatest length of the table of the children of the root.
     private const int MaxRootTableLength = 4096;
+
+    // The longest word whose working buffers are on the stack: 13 bytes per UTF-16 code unit
+    private const int StackallocWordLength = 64;
 
     // The trie of the patterns: the node 0 is the root, and the edges of a node are sorted by letter.
     private readonly int[] _edgeStarts;
@@ -268,7 +272,8 @@ public sealed class Hyphenator
     /// <returns>The number of positions written; 0 when the word cannot be hyphenated, or is longer than <see cref="HyphenatorOptions.MaxWordLength"/>.</returns>
     /// <remarks>
     /// A break is never inside a grapheme cluster, and it leaves at least <see cref="LeftHyphenMin"/> characters before it and
-    /// <see cref="RightHyphenMin"/> after it. The method does not allocate.
+    /// <see cref="RightHyphenMin"/> after it. The method does not allocate: the working buffers of a word longer than 64 UTF-16 code
+    /// units are rented from <see cref="System.Buffers.ArrayPool{T}.Shared"/>.
     /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="breakPositions"/> is too small.</exception>
     public int Hyphenate(ReadOnlySpan<char> word, Span<int> breakPositions)
@@ -276,12 +281,40 @@ public sealed class Hyphenator
         if (word.Length < 2 || word.Length > _maxWordLength)
             return 0;
 
+        // The buffers take 13 bytes per UTF-16 code unit: a longer word than StackallocWordLength rents them, so that
+        // the stack stays under 1 KB whatever MaxWordLength is.
+        var hasExceptions = _exceptions.Count != 0;
+        int[]? rentedNumbers = null;
+        char[]? rentedLowercase = null;
+        byte[]? rentedScores = null;
+        try
+        {
+            var isShortWord = word.Length <= StackallocWordLength;
+            Span<int> numbers = isShortWord ? stackalloc int[(2 * StackallocWordLength) + 3] : (rentedNumbers = ArrayPool<int>.Shared.Rent((2 * word.Length) + 3));
+            var letters = numbers[..(word.Length + 2)];
+            var offsets = numbers.Slice(word.Length + 2, word.Length + 1);
+            Span<char> lowercase = !hasExceptions ? default : isShortWord ? stackalloc char[2 * StackallocWordLength] : (rentedLowercase = ArrayPool<char>.Shared.Rent(2 * word.Length));
+            Span<byte> scoreBuffer = isShortWord ? stackalloc byte[StackallocWordLength + 1] : (rentedScores = ArrayPool<byte>.Shared.Rent(word.Length + 1));
+            return Hyphenate(word, breakPositions, letters, offsets, lowercase, scoreBuffer);
+        }
+        finally
+        {
+            if (rentedNumbers is not null)
+                ArrayPool<int>.Shared.Return(rentedNumbers);
+
+            if (rentedLowercase is not null)
+                ArrayPool<char>.Shared.Return(rentedLowercase);
+
+            if (rentedScores is not null)
+                ArrayPool<byte>.Shared.Return(rentedScores);
+        }
+    }
+
+    private int Hyphenate(ReadOnlySpan<char> word, Span<int> breakPositions, Span<int> letters, Span<int> offsets, Span<char> lowercase, Span<byte> scoreBuffer)
+    {
         // The lowercase letters of the word between two word boundaries, and the UTF-16 index of each letter. The
         // lowercase word is only needed to look up the exceptions.
-        var hasExceptions = _exceptions.Count != 0;
-        Span<int> letters = stackalloc int[word.Length + 2];
-        Span<int> offsets = stackalloc int[word.Length + 1];
-        Span<char> lowercase = hasExceptions ? stackalloc char[word.Length * 2] : default;
+        var hasExceptions = !lowercase.IsEmpty;
         var letterCount = 0;
         var lowercaseLength = 0;
         letters[0] = WordBoundary;
@@ -302,7 +335,7 @@ public sealed class Hyphenator
         letters[letterCount + 1] = WordBoundary;
 
         // scores[i] is the value of a break before the letter i of the word; odd values allow the break.
-        Span<byte> scores = stackalloc byte[letterCount + 1];
+        var scores = scoreBuffer[..(letterCount + 1)];
         scores.Clear();
         if (hasExceptions && _exceptionLookup.TryGetValue(lowercase[..lowercaseLength], out var exception))
         {

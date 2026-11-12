@@ -58,32 +58,30 @@ internal static class PdfStreamReader
                 return result;
 
             var chunks = new ChunkList();
-            try
+            chunks.Write(result.AsSpan(0, read));
+            if (read == length)
             {
-                chunks.Write(result.AsSpan(0, read));
-                if (read == length)
-                {
-                    chunks.Write(probe);
-                }
+                chunks.Write(probe);
+            }
 
-                await chunks.ReadFromAsync(stream, cancellationToken).ConfigureAwait(false);
-                return chunks.ToArray();
-            }
-            finally
-            {
-                chunks.Dispose();
-            }
+            return await ReadToEndAsync(chunks, stream, cancellationToken).ConfigureAwait(false);
         }
 
-        var list = new ChunkList();
+        return await ReadToEndAsync(new ChunkList(), stream, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<byte[]> ReadToEndAsync(ChunkList chunks, Stream stream, CancellationToken cancellationToken)
+    {
+        // When the read fails or is canceled, the stream may still write into the last chunk: the chunks are then left
+        // to the GC instead of being returned to the pool.
+        await chunks.ReadFromAsync(stream, cancellationToken).ConfigureAwait(false);
         try
         {
-            await list.ReadFromAsync(stream, cancellationToken).ConfigureAwait(false);
-            return list.ToArray();
+            return chunks.ToArray();
         }
         finally
         {
-            list.Dispose();
+            chunks.Dispose();
         }
     }
 

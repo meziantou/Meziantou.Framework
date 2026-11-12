@@ -595,6 +595,7 @@ public class BlockProcessor
 
                 if (block.IsLeafBlock)
                 {
+                    Debug.Assert(block is LeafBlock);
                     LeafBlock leafBlock = unsafe(Unsafe.As<LeafBlock>(block));
                     leafBlock.Lines.Release();
                 }
@@ -697,6 +698,7 @@ public class BlockProcessor
 
             if (block.IsContainerBlock)
             {
+                Debug.Assert(block is ContainerBlock);
                 var currentContainer = unsafe(Unsafe.As<ContainerBlock>(block));
                 CurrentContainer = currentContainer;
                 LastBlock = currentContainer.LastChild;
@@ -792,6 +794,7 @@ public class BlockProcessor
                         }
                     }
 
+                    Debug.Assert(block is LeafBlock);
                     LeafBlock leafBlock = unsafe(Unsafe.As<LeafBlock>(block));
                     leafBlock.AppendLine(ref Line, Column, LineIndex, CurrentLineStartPosition, TrackTrivia, IsInPartiallyConsumedTab());
                 }
@@ -1050,6 +1053,7 @@ public class BlockProcessor
                         UnwindAllIndents();
                     }
 
+                    Debug.Assert(currentBlock is ParagraphBlock);
                     ParagraphBlock paragraphBlock = unsafe(Unsafe.As<ParagraphBlock>(currentBlock));
                     paragraphBlock.AppendLine(ref Line, Column, LineIndex, CurrentLineStartPosition, TrackTrivia, IsInPartiallyConsumedTab());
                 }
@@ -1153,6 +1157,7 @@ public class BlockProcessor
                         }
                     }
 
+                    Debug.Assert(block is LeafBlock);
                     LeafBlock leafBlock = unsafe(Unsafe.As<LeafBlock>(block));
                     leafBlock.AppendLine(ref Line, Column, LineIndex, CurrentLineStartPosition, TrackTrivia, IsInPartiallyConsumedTab());
                 }

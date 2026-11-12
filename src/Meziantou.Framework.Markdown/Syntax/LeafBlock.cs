@@ -94,7 +94,7 @@ public abstract class LeafBlock : Block
         if (isInPartiallyConsumedTab && !trackTrivia)
         {
             // We need to expand tabs to spaces
-            var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+            var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
             builder.Append(' ', CharHelper.AddTab(column) - column);
             builder.Append(slice.AsSpan().Slice(1));
             stringLine.Slice = new StringSlice(builder.ToString());

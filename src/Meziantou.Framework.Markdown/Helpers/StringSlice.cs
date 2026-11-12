@@ -5,7 +5,6 @@
 #nullable disable
 
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Meziantou.Framework.Markdown.Helpers;
@@ -613,7 +612,7 @@ public struct StringSlice : ICharIterator
             return default;
         }
 
-        return unsafe(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.AsRef(in text.GetPinnableReference()), start), length));
+        return text.AsSpan(start, length);
     }
 
     /// <summary>

@@ -67,7 +67,7 @@ public class HtmlBlockParser : BlockParser
 
     private BlockState TryParseTagType7(BlockProcessor state, StringSlice line, int startColumn, int startPosition)
     {
-        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
         var c = line.CurrentChar;
         var result = BlockState.None;
         if ((c == '/' && HtmlHelper.TryParseHtmlCloseTag(ref line, ref builder)) || HtmlHelper.TryParseHtmlTagOpenTag(ref line, ref builder))
@@ -133,7 +133,7 @@ public class HtmlBlockParser : BlockParser
             c = line.NextChar();
         }
 
-        Span<char> tag = unsafe(stackalloc char[10]);
+        Span<char> tag = stackalloc char[10];
         var count = 0;
         for (; count < tag.Length; count++)
         {

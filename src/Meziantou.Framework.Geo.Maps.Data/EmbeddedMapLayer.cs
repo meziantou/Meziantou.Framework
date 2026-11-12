@@ -19,7 +19,12 @@ internal static class EmbeddedMapLayer
                 data = new ReadOnlySpan<byte>(unmanagedStream.PositionPointer, checked((int)unmanagedStream.Length));
             }
 
-            return FlatGeobuf.Read(data, options);
+            var result = FlatGeobuf.Read(data, options);
+
+            // The span does not keep the stream nor the assembly alive: they own the memory it reads
+            GC.KeepAlive(unmanagedStream);
+            GC.KeepAlive(assembly);
+            return result;
         }
 
         return FlatGeobuf.Read(stream, options);

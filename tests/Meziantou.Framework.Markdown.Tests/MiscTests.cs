@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
+using Meziantou.Framework.Markdown.Extensions.Alerts;
 using Meziantou.Framework.Markdown.Extensions.AutoLinks;
 using Meziantou.Framework.Markdown.Extensions.Tables;
 using Meziantou.Framework.Markdown.Helpers;
@@ -1515,6 +1516,32 @@ A tip inside a note</p>
 </div>
 ";
         TestParser.TestSpec(input, expected, new MarkdownPipelineBuilder().UseAlertBlocks(allowNestedAlerts: true).Build());
+    }
+
+    [Theory]
+    [InlineData(5, 0)]
+    [InlineData(0, -100)]
+    [InlineData(-3, 0)]
+    [InlineData(0, 100)]
+    public void AlertDefaultRenderKindIgnoresInvalidSlice(int start, int end)
+    {
+        var writer = new StringWriter();
+        var renderer = new HtmlRenderer(writer);
+
+        AlertBlockRenderer.DefaultRenderKind(renderer, new StringSlice("x", start, end));
+
+        Assert.Equal("", writer.ToString());
+    }
+
+    [Fact]
+    public void AlertDefaultRenderKindRendersValidSlice()
+    {
+        var writer = new StringWriter();
+        var renderer = new HtmlRenderer(writer);
+
+        AlertBlockRenderer.DefaultRenderKind(renderer, new StringSlice("[!note]", 2, 5));
+
+        Assert.Contains("Note</p>", writer.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

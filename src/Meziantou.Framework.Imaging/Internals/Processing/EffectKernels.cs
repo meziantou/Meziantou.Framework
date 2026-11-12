@@ -736,11 +736,15 @@ internal static class EffectKernels
                     b = (b * a) + (bgB * (1 - a));
                     if (typeof(TPixel) == typeof(RgbaFloat))
                     {
-                        unsafe { Unsafe.As<TPixel, RgbaFloat>(ref pixel) = new RgbaFloat((float)r, (float)g, (float)b, 1); }
+                        pixel = unsafe(Unsafe.BitCast<RgbaFloat, TPixel>(new RgbaFloat((float)r, (float)g, (float)b, 1)));
+                    }
+                    else if (typeof(TPixel) == typeof(RgbaHalf))
+                    {
+                        pixel = unsafe(Unsafe.BitCast<RgbaHalf, TPixel>(new RgbaHalf((Half)r, (Half)g, (Half)b, Half.One)));
                     }
                     else
                     {
-                        unsafe { Unsafe.As<TPixel, RgbaHalf>(ref pixel) = new RgbaHalf((Half)r, (Half)g, (Half)b, Half.One); }
+                        throw UnsupportedType.Create<TPixel>();
                     }
                 }
             }

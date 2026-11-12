@@ -678,7 +678,7 @@ internal static class ProcessingKernels
             var alpha = GetByteRange(color.A, tolerance);
             var minimum = Vector128.Create((uint)(first.Minimum | (green.Minimum << 8) | (third.Minimum << 16) | (alpha.Minimum << 24))).AsByte();
             var maximum = Vector128.Create((uint)(first.Maximum | (green.Maximum << 8) | (third.Maximum << 16) | (alpha.Maximum << 24))).AsByte();
-            var value = Vector128.Create(unsafe(Unsafe.As<TPixel, uint>(ref replacement))).AsByte();
+            var value = Vector128.Create(unsafe(Unsafe.BitCast<TPixel, uint>(replacement))).AsByte();
             var bytes = unsafe(MemoryMarshal.AsBytes(row));
             for (; i + 4 <= row.Length; i += 4)
             {
@@ -695,7 +695,7 @@ internal static class ProcessingKernels
             var (red, green, blue, alpha) = (GetRange(color.R, tolerance), GetRange(color.G, tolerance), GetRange(color.B, tolerance), GetRange(color.A, tolerance));
             var minimum = Vector128.Create(red.Minimum, green.Minimum, blue.Minimum, alpha.Minimum, red.Minimum, green.Minimum, blue.Minimum, alpha.Minimum);
             var maximum = Vector128.Create(red.Maximum, green.Maximum, blue.Maximum, alpha.Maximum, red.Maximum, green.Maximum, blue.Maximum, alpha.Maximum);
-            var value = Vector128.Create(unsafe(Unsafe.As<TPixel, ulong>(ref replacement))).AsUInt16();
+            var value = Vector128.Create(unsafe(Unsafe.BitCast<TPixel, ulong>(replacement))).AsUInt16();
             var samples = unsafe(MemoryMarshal.Cast<TPixel, ushort>(row));
             for (; i + 2 <= row.Length; i += 2)
             {

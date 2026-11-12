@@ -388,7 +388,9 @@ internal static class WorkingSamples
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static double ToDouble<TSample>(TSample value)
         where TSample : unmanaged
-        => typeof(TSample) == typeof(float) ? unsafe(Unsafe.As<TSample, float>(ref value)) : (double)unsafe(Unsafe.As<TSample, Half>(ref value));
+        => typeof(TSample) == typeof(float) ? unsafe(Unsafe.BitCast<TSample, float>(value))
+            : typeof(TSample) == typeof(Half) ? (double)unsafe(Unsafe.BitCast<TSample, Half>(value))
+            : UnsupportedType.Throw<TSample, double>();
 
     /// <summary>Rounds a value to the nearest floating-point sample (<see cref="float"/> or <see cref="Half"/>), ties to even.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -398,11 +400,16 @@ internal static class WorkingSamples
         if (typeof(TSample) == typeof(float))
         {
             var f = (float)value;
-            return unsafe(Unsafe.As<float, TSample>(ref f));
+            return unsafe(Unsafe.BitCast<float, TSample>(f));
         }
 
-        var h = (Half)value;
-        return unsafe(Unsafe.As<Half, TSample>(ref h));
+        if (typeof(TSample) == typeof(Half))
+        {
+            var h = (Half)value;
+            return unsafe(Unsafe.BitCast<Half, TSample>(h));
+        }
+
+        throw UnsupportedType.Create<TSample>();
     }
 
     /// <summary>Converts the leading encoded samples 4 at a time (whole pixels when there is alpha).</summary>
@@ -697,7 +704,9 @@ internal static class WorkingSamples
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int ToInt<TSample>(TSample value)
         where TSample : unmanaged
-        => typeof(TSample) == typeof(byte) ? unsafe(Unsafe.As<TSample, byte>(ref value)) : unsafe(Unsafe.As<TSample, ushort>(ref value));
+        => typeof(TSample) == typeof(byte) ? unsafe(Unsafe.BitCast<TSample, byte>(value))
+            : typeof(TSample) == typeof(ushort) ? unsafe(Unsafe.BitCast<TSample, ushort>(value))
+            : UnsupportedType.Throw<TSample, int>();
 
     private static int EncodeColor(double value, int max, byte transfer, QuantizationThresholds? thresholds)
     {
@@ -730,10 +739,15 @@ internal static class WorkingSamples
         if (typeof(TSample) == typeof(byte))
         {
             var b = (byte)value;
-            return unsafe(Unsafe.As<byte, TSample>(ref b));
+            return unsafe(Unsafe.BitCast<byte, TSample>(b));
         }
 
-        var s = (ushort)value;
-        return unsafe(Unsafe.As<ushort, TSample>(ref s));
+        if (typeof(TSample) == typeof(ushort))
+        {
+            var s = (ushort)value;
+            return unsafe(Unsafe.BitCast<ushort, TSample>(s));
+        }
+
+        throw UnsupportedType.Create<TSample>();
     }
 }

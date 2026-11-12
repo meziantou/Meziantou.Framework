@@ -17,7 +17,7 @@ public static partial class WebPlatformFuzzTargets
     /// </summary>
     private static string[] IntegrityTokens =>
     [
-        "sha256-", "sha384-", "sha512-", "sha-256=", "sha-512=", "?", "=", ":", "(", ")", ",", ";", "\"", "*", "\n", "\t", "<",
+        "sha256-", "sha384-", "sha512-", "ed25519-", "sha-256=", "sha-512=", "?", "=", ":", "(", ")", ",", ";", "\"", "*", "\n", "\t", "<",
         "blocked-destinations", "sources", "endpoints", "script", "style", "inline",
     ];
 
@@ -32,7 +32,7 @@ public static partial class WebPlatformFuzzTargets
         var parsed = SubresourceIntegrity.Parse(input);
         foreach (var item in parsed)
         {
-            FuzzAssert.True(item.StartsWith("sha256-", StringComparison.Ordinal) || item.StartsWith("sha384-", StringComparison.Ordinal) || item.StartsWith("sha512-", StringComparison.Ordinal), $"The integrity metadata {FuzzAssert.Format(input)} has the hash expression {FuzzAssert.Format(item)}");
+            FuzzAssert.True(item.StartsWith("sha256-", StringComparison.Ordinal) || item.StartsWith("sha384-", StringComparison.Ordinal) || item.StartsWith("sha512-", StringComparison.Ordinal) || item.StartsWith("ed25519-", StringComparison.Ordinal), $"The integrity metadata {FuzzAssert.Format(input)} has the hash expression {FuzzAssert.Format(item)}");
         }
 
         var matches = SubresourceIntegrity.Matches(IntegrityBody, opaque: false, input);
@@ -46,9 +46,12 @@ public static partial class WebPlatformFuzzTargets
             FuzzAssert.False(SubresourceIntegrity.Matches(IntegrityBody, opaque: true, input), $"The integrity metadata {FuzzAssert.Format(input)} matches an opaque response");
         }
 
-        // The metadata of the digest of the body (the strongest algorithm) matches it, whatever the other expressions
+        // The metadata of the digest of the body (the strongest algorithm) matches it, whatever the other expressions, unless
+        // they have public keys (https://wicg.github.io/signature-based-sri/): the response then needs a valid signature
         var digest = "sha512-" + Convert.ToBase64String(SHA512.HashData(IntegrityBody));
-        FuzzAssert.True(SubresourceIntegrity.Matches(IntegrityBody, opaque: false, input + " " + digest), $"The integrity metadata {FuzzAssert.Format(input)} followed by the digest of the body does not match it");
+        var publicKeys = SubresourceIntegrity.ParsePublicKeys(input);
+        FuzzAssert.Equal(publicKeys.Count == 0, SubresourceIntegrity.Matches(IntegrityBody, opaque: false, input + " " + digest), $"The integrity metadata {FuzzAssert.Format(input)} followed by the digest of the body");
+        FuzzAssert.Equal(publicKeys.Count, IntegritySignatures.GetAcceptSignature(input)?.Split(", ").Length ?? 0, $"The number of signatures of the Accept-Signature header of the integrity metadata {FuzzAssert.Format(input)}");
 
         _ = SubresourceIntegrity.MatchesUnencodedDigest([new("Unencoded-Digest", input)], IntegrityBody);
         var unencodedDigest = "sha-256=:" + Convert.ToBase64String(SHA256.HashData(IntegrityBody)) + ":";

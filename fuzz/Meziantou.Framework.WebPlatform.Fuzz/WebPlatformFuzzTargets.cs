@@ -93,6 +93,9 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-http-cache", data => CacheFreshness(FuzzText.Decode(data))) { Seeds = () => GetSeeds("http-cache"), Dictionary = HttpCacheTokens },
         new("webplatform-image-metadata", ImageMetadataTarget) { Seeds = GetImageMetadataSeeds, Dictionary = ImageMetadataTokens },
         new("webplatform-webauthn", WebAuthentication) { Seeds = GetWebAuthnSeeds, Dictionary = WebAuthnTokens },
+        new("webplatform-use-as-dictionary", data => UseAsDictionary(FuzzText.Decode(data))) { Seeds = GetUseAsDictionarySeeds, Dictionary = StructuredFieldTokens },
+        new("webplatform-dictionary-decompression", DictionaryDecompression) { Seeds = GetDictionaryDecompressionSeeds },
+        new("webplatform-integrity-signatures", data => IntegritySignatureVerification(FuzzText.Decode(data))) { Seeds = GetIntegritySignatureSeeds, Dictionary = StructuredFieldTokens },
     ];
 
     /// <summary>

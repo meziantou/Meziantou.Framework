@@ -1368,8 +1368,9 @@ internal static class Fetching
 
         // https://www.rfc-editor.org/rfc/rfc9842#section-4: the body of a response compressed with a dictionary is decoded with
         // the dictionary announced by the request, as the loader decodes the other content codings (the headers are kept: the
-        // Content-Length is the length of the encoded body). A body that cannot be decoded is an error of the body.
-        if (resource is not null && !isWebSocket && CanHaveBody(request, resource.StatusCode) && GetDictionaryContentCoding(resource.Headers) is { } dictionaryCoding)
+        // Content-Length is the length of the encoded body). A body that cannot be decoded is an error of the body. As in the
+        // browsers, the body of a request without dictionary is not decoded, as the bodies of the unknown content codings.
+        if (resource is not null && dictionary is not null && !isWebSocket && CanHaveBody(request, resource.StatusCode) && GetDictionaryContentCoding(resource.Headers) is { } dictionaryCoding)
         {
             resource = DecodeDictionaryCompressedResource(resource, dictionaryCoding, dictionary);
         }

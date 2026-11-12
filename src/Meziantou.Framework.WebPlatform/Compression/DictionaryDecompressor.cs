@@ -193,7 +193,7 @@ internal static class DictionaryDecompressor
             input = writer.WrittenSpan;
         }
 
-        var limit = (long)dictionary.Length + Math.Min(maxLength, streamMaxDistance);
+        var limit = (long)dictionary.Length + (dictionary.IsEmpty ? maxLength : Math.Min(maxLength, streamMaxDistance));
         var output = new ArrayBufferWriter<byte>(Math.Max(dictionary.Length + (stream.Length * 4), 4096));
         using var decoder = new BrotliDecoder();
         while (true)

@@ -61,8 +61,11 @@ fails.
 - **Reporting API.** Content Security Policy reports its violations, but the Reporting API generates only the CSP, COEP,
   COOP, Permissions Policy, Document Policy, integrity policy and test reports: there are no deprecation or intervention
   reports.
-- **Signature-based Subresource Integrity** (the `ed25519-` integrity metadata, checked with the `Signature` and
-  `Signature-Input` headers) is not supported.
+- **Signature-based Subresource Integrity** does not support the `signature` attribute of the inline scripts of
+  earlier drafts, nor the `'ed25519-…'` sources of Content Security Policy.
+- **Compression dictionaries**: the `dcb` streams whose dictionary and data exceed the window of the stream are not
+  decoded, and the requests of `<link rel="compression-dictionary">` have the empty destination (not
+  `compression-dictionary`).
 
 ## Scripting
 

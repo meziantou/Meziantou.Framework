@@ -1613,52 +1613,25 @@
     }
   },
   "fetch/content-encoding/zstd/big-zstd-body.https.any.js": {
-    "total": 2,
-    "failures": {
-      "large zstd data should be decompressed successfully": "FAIL",
-      "large zstd data should be decompressed successfully with byte stream": "FAIL"
-    }
+    "total": 2
   },
   "fetch/content-encoding/zstd/big-zstd-body.https.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "large zstd data should be decompressed successfully": "FAIL",
-      "large zstd data should be decompressed successfully with byte stream": "FAIL"
-    }
+    "total": 2
   },
   "fetch/content-encoding/zstd/big-zstd-body.https.any.js#sharedworker": {
-    "total": 2,
-    "failures": {
-      "large zstd data should be decompressed successfully": "FAIL",
-      "large zstd data should be decompressed successfully with byte stream": "FAIL"
-    }
+    "total": 2
   },
   "fetch/content-encoding/zstd/zstd-body.https.any.js": {
-    "total": 2,
-    "failures": {
-      "fetched zstd data with content type octetstream should be decompressed.": "FAIL",
-      "fetched zstd data with content type text should be decompressed.": "FAIL"
-    }
+    "total": 2
   },
   "fetch/content-encoding/zstd/zstd-body.https.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "fetched zstd data with content type octetstream should be decompressed.": "FAIL",
-      "fetched zstd data with content type text should be decompressed.": "FAIL"
-    }
+    "total": 2
   },
   "fetch/content-encoding/zstd/zstd-body.https.any.js#sharedworker": {
-    "total": 2,
-    "failures": {
-      "fetched zstd data with content type octetstream should be decompressed.": "FAIL",
-      "fetched zstd data with content type text should be decompressed.": "FAIL"
-    }
+    "total": 2
   },
   "fetch/content-encoding/zstd/zstd-navigation.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Naigation to zstd encoded page": "FAIL"
-    }
+    "total": 1
   },
   "fetch/content-length/api-and-duplicate-headers.any.js": {
     "total": 2

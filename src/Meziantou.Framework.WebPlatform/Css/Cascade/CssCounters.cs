@@ -281,6 +281,11 @@ internal sealed class CssCounters
     /// </summary>
     private bool HasGeneratedContent(Element element, string pseudoElement)
     {
+        // A ::before or ::after pseudo-element that no rule may give a content has none: its style is not computed, as the box
+        // tree does not compute it either (see BoxTreeBuilder.BuildPseudoElement)
+        if (pseudoElement is "before" or "after" && !_engine.MayHaveGeneratedContent(element, pseudoElement))
+            return false;
+
         var style = _engine.GetStyle(element, pseudoElement);
         return style.GetComputedValue("content") is not ("none" or "normal" or "") && style.GetComputedValue("display") != "none";
     }

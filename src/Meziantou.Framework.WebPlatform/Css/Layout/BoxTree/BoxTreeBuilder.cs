@@ -1413,7 +1413,7 @@ internal sealed partial class BoxTreeBuilder
     /// <summary>Appends the box of a ::before or ::after pseudo-element, generated when its content is not none (https://drafts.csswg.org/css-pseudo-4/#generated-content).</summary>
     private void BuildPseudoElement(Element element, string pseudoElement, ContainerBox parent)
     {
-        if (_engine.MayHavePseudoElementRules(element, pseudoElement))
+        if (_engine.MayHaveGeneratedContent(element, pseudoElement))
         {
             BuildPseudoElementBox(element, pseudoElement, parent);
         }

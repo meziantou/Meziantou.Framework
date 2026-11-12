@@ -223,6 +223,13 @@ internal sealed class CascadeRuleSet
     private readonly Dictionary<string, List<CascadeRule>> _byId = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<CascadeRule>> _byClass = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<CascadeRule>> _byTag = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The rules whose subject has no id, class or type selector, but an attribute selector, by the name of the attribute
+    /// (e.g. <c>[hidden]</c>): an element without the attribute cannot match them. The names are compared ASCII
+    /// case-insensitively, as on the HTML elements, so the candidates of the other elements include the rules they may match.
+    /// </summary>
+    private readonly Dictionary<string, List<CascadeRule>> _byAttribute = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<CascadeRule> _universal = [];
 
     /// <summary>The rules added to the lists of several tags (e.g. <c>:is(h1, h2)</c>), enumerated once by <see cref="EnumerateRules"/>.</summary>
@@ -238,6 +245,9 @@ internal sealed class CascadeRuleSet
 
     /// <summary>The rules of a pseudo-element that declare an animation or a transition property.</summary>
     private readonly HashSet<CascadeRule> _animatedPseudoElementRules = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>The rules of the ::before and ::after pseudo-elements that declare <c>content</c> (see <see cref="DeclaresContent"/>).</summary>
+    private readonly HashSet<CascadeRule> _contentPseudoElementRules = new(ReferenceEqualityComparer.Instance);
 
     private StyleInvalidationFeatures? _invalidationFeatures;
 
@@ -359,9 +369,13 @@ internal sealed class CascadeRuleSet
         if (rule.PseudoElement is { } pseudoElement)
         {
             _pseudoElements.Add(pseudoElement);
+            if (pseudoElement is "before" or "after" && rule.Declarations.Exists(static declaration => declaration.Name == "content"))
+            {
+                _contentPseudoElementRules.Add(rule);
+            }
         }
 
-        string? id = null, className = null, tag = null;
+        string? id = null, className = null, tag = null, attribute = null;
         foreach (var simple in rule.Selector.Compounds[^1].Selectors)
         {
             switch (simple)
@@ -374,6 +388,9 @@ internal sealed class CascadeRuleSet
                     break;
                 case TypeSelector { LowercaseLocalName: { } localName }:
                     tag ??= localName;
+                    break;
+                case AttributeSelector attributeSelector:
+                    attribute ??= attributeSelector.LowercaseName;
                     break;
             }
         }
@@ -402,6 +419,10 @@ internal sealed class CascadeRuleSet
             }
 
             (_multipleTagRules ??= []).Add(rule);
+        }
+        else if (attribute is not null)
+        {
+            AddTo(_byAttribute, attribute, rule);
         }
         else
         {
@@ -517,6 +538,12 @@ internal sealed class CascadeRuleSet
                 yield return rule;
         }
 
+        foreach (var rules in _byAttribute.Values)
+        {
+            foreach (var rule in rules)
+                yield return rule;
+        }
+
         foreach (var rule in _universal)
             yield return rule;
 
@@ -584,6 +611,17 @@ internal sealed class CascadeRuleSet
         return false;
     }
 
+    /// <summary>Whether a rule of the ::before or ::after pseudo-element declares <c>content</c> (see <see cref="DeclaresContent"/>).</summary>
+    public bool HasContentPseudoElementRules => _contentPseudoElementRules.Count > 0;
+
+    /// <summary>
+    /// Returns whether a rule of the ::before or ::after pseudo-element declares <c>content</c> (<c>all</c> is stored as its
+    /// longhands). The pseudo-element of the other rules has the initial content, so it does not exist (e.g. the
+    /// <c>box-sizing</c> of <c>*::before</c>): it generates no box, and its animations, which cannot give it a content, do not run
+    /// (see <see cref="ComputedStyle.IsDisplayNoneForAnimations"/>).
+    /// </summary>
+    public bool DeclaresContent(CascadeRule rule) => _contentPseudoElementRules.Contains(rule);
+
     /// <summary>Returns whether a rule of the set (a host, slotted or part rule included) declares an animation or a transition property for the pseudo-element.</summary>
     public bool DeclaresAnimationsFor(string pseudoElement) => _animatedPseudoElements.Contains(pseudoElement);
 
@@ -622,11 +660,12 @@ internal sealed class CascadeRuleSet
     /// </summary>
     public CandidateLists GetCandidates(Element element) => new(this, element);
 
-    /// <summary>Enumerates the rules of the id, of the classes and of the tag of an element, then the universal rules.</summary>
+    /// <summary>Enumerates the rules of the id, of the classes, of the tag and of the attributes of an element, then the universal rules.</summary>
     public struct CandidateLists(CascadeRuleSet ruleSet, Element element)
     {
         private int _state;
         private int _classIndex;
+        private int _attributeIndex;
         private ClassNames? _classNames;
 
         public List<CascadeRule> Current { get; private set; } = null!;
@@ -677,7 +716,25 @@ internal sealed class CascadeRuleSet
                         break;
 
                     case 3:
+                        if (ruleSet._byAttribute.Count > 0)
+                        {
+                            while (_attributeIndex < element.AttributeCount)
+                            {
+                                var index = _attributeIndex++;
+                                var name = element.GetAttributeLocalName(index);
+                                if (ruleSet._byAttribute.TryGetValue(name, out var attributeRules) && !HasPreviousAttribute(element, index, name))
+                                {
+                                    Current = attributeRules;
+                                    return true;
+                                }
+                            }
+                        }
+
                         _state = 4;
+                        break;
+
+                    case 4:
+                        _state = 5;
                         Current = ruleSet._universal;
                         return true;
 
@@ -685,6 +742,18 @@ internal sealed class CascadeRuleSet
                         return false;
                 }
             }
+        }
+
+        /// <summary>Returns whether an attribute that precedes the attribute at the index has the same name, ignoring the case and the namespace (its rules were enumerated).</summary>
+        private static bool HasPreviousAttribute(Element element, int index, string name)
+        {
+            for (var i = 0; i < index; i++)
+            {
+                if (string.Equals(element.GetAttributeLocalName(i), name, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
         }
     }
 }

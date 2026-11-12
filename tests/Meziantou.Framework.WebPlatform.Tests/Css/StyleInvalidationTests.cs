@@ -382,6 +382,24 @@ public sealed class StyleInvalidationTests : IDisposable
     }
 
     [Fact]
+    public void Transition_OfAPseudoElementWithAUniversalTransitionRule_OnlyThePseudoElementsWithContent()
+    {
+        // (the rendering steps compute the styles of the pseudo-elements that have a content only: the others do not exist)
+        var document = Parse("<style>*, ::before, ::after { transition: color 1s linear } #a::before { content: 'x'; color: red } #a.on::before, #b.on::before { color: green }</style><div id=a></div><div id=b></div>");
+        Advance(1000d / 60);
+        var a = Find(document, "#a");
+        var b = Find(document, "#b");
+
+        a.ClassList.Add("on");
+        b.ClassList.Add("on");
+        Advance(1000d / 60);
+
+        Assert.NotNull(document.AnimationsOrNull?.GetElementAnimations(a)?.Get("before"));
+        Assert.Null(document.AnimationsOrNull?.GetElementAnimations(b)?.Get("before"));
+        Assert.Equal("none", document.DefaultView!.GetComputedStyle(b, "::before").GetPropertyValue("content"));
+    }
+
+    [Fact]
     public void Transition_OfAnInsertedElement_StartsFromItsStartingStyle()
     {
         var document = Parse("<style>.item { opacity: 1; transition: opacity 1s linear } @starting-style { .item { opacity: 0 } }</style><div id=list><div class=item></div></div><div id=b></div>");

@@ -69,6 +69,11 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     // still writing to it. It is kept out of the pool like the GetBuffer array.
     private byte[]? _writerBuffer;
 
+    // The array an in-flight CopyToAsync is writing to its destination. The destination may read it until the write
+    // completes, so nothing gives it back to the shared pool meanwhile: SetLength and GetBuffer detach it like the
+    // GetBuffer array, and Dispose leaves it to CopyToAsync (it claims it by exchanging this field with null).
+    private byte[]? _copyBuffer;
+
     /// <summary>Initializes a new instance using <see cref="PooledMemoryStreamOptions.Default"/>.</summary>
     public PooledMemoryStream()
         : this(PooledMemoryStreamOptions.Default, initialCapacity: 0)
@@ -396,17 +401,28 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
 
     private async Task CopyToAsyncCore(Stream destination, CancellationToken cancellationToken)
     {
-        Locate(_position, out var segmentIndex, out var offset);
-        var remaining = _length - _position;
-        while (remaining > 0)
+        // Locate the next chunk after each write: SetLength may have changed the segments while the write was pending
+        while (_position < _length)
         {
+            Locate(_position, out var segmentIndex, out var offset);
             var segment = _segments[segmentIndex];
-            var chunk = (int)Math.Min(segment.Used - offset, remaining);
-            await destination.WriteAsync(segment.Array.AsMemory(offset, chunk), cancellationToken).ConfigureAwait(false);
+            var chunk = (int)Math.Min(segment.Used - offset, _length - _position);
+            Volatile.Write(ref _copyBuffer, segment.Array);
+            try
+            {
+                await destination.WriteAsync(segment.Array.AsMemory(offset, chunk), cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                // Dispose ran while the destination could still read the array, and left it to this method
+                if (Interlocked.Exchange(ref _copyBuffer, value: null) is null)
+                {
+                    ReturnToPool(segment.Array);
+                }
+            }
+
+            EnsureOpen();
             _position += chunk;
-            remaining -= chunk;
-            segmentIndex++;
-            offset = 0;
         }
     }
 
@@ -509,12 +525,23 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         if (_isOpen)
         {
             _isOpen = false;
-            ReturnSegmentsToPool();
+
+            // A CopyToAsync write may still be reading this array: the copy returns it to the pool once it completes
+            var inFlightCopyBuffer = Interlocked.Exchange(ref _copyBuffer, value: null);
+            foreach (var segment in _segments)
+            {
+                if (!ReferenceEquals(segment.Array, inFlightCopyBuffer))
+                    ReturnToPool(segment.Array);
+            }
+
             _segments.Clear();
             if (_detachedBuffers is not null)
             {
                 foreach (var array in _detachedBuffers)
-                    PooledBufferPool.Shared.Return(array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
+                {
+                    if (!ReferenceEquals(array, inFlightCopyBuffer))
+                        ReturnToPool(array);
+                }
 
                 _detachedBuffers = null;
             }
@@ -720,7 +747,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
 
             _capacity -= last.Array.Length;
             _segments.RemoveAt(_segments.Count - 1);
-            PooledBufferPool.Shared.Return(last.Array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
+            ReturnToPool(last.Array);
         }
 
         // Only empty trailing blocks are dropped, so whatever is left last still holds data and can host appends.
@@ -745,7 +772,14 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
                 {
                     var array = _segments[j].Array;
                     _segments.RemoveAt(j);
-                    if (ReferenceEquals(array, _exposedBuffer))
+                    if (ReferenceEquals(array, _copyBuffer))
+                    {
+                        // Unlike the arrays below, it must not be reused as storage: the next writes would change
+                        // the bytes the destination of the copy has not read yet
+                        _capacity -= array.Length;
+                        (_detachedBuffers ??= []).Add(array);
+                    }
+                    else if (ReferenceEquals(array, _exposedBuffer))
                     {
                         exposed = array;
                     }
@@ -756,7 +790,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
                     else
                     {
                         _capacity -= array.Length;
-                        PooledBufferPool.Shared.Return(array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
+                        ReturnToPool(array);
                     }
                 }
 
@@ -840,11 +874,11 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         }
         else
         {
-            PooledBufferPool.Shared.Return(array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
+            ReturnToPool(array);
         }
     }
 
-    private bool IsHandedOut(byte[] array) => ReferenceEquals(array, _exposedBuffer) || ReferenceEquals(array, _writerBuffer);
+    private bool IsHandedOut(byte[] array) => ReferenceEquals(array, _exposedBuffer) || ReferenceEquals(array, _writerBuffer) || ReferenceEquals(array, _copyBuffer);
 
     private void CopyAllTo(Span<byte> destination)
     {
@@ -859,10 +893,9 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         }
     }
 
-    private void ReturnSegmentsToPool()
+    private void ReturnToPool(byte[] array)
     {
-        foreach (var segment in _segments)
-            PooledBufferPool.Shared.Return(segment.Array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
+        PooledBufferPool.Shared.Return(array, _options.MaxRetainedBytesPerBucket, _options.ClearOnReturn);
     }
 
     private void Locate(long position, out int segmentIndex, out int offset)

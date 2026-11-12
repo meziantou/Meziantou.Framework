@@ -19,10 +19,15 @@ internal sealed class Test262Agents : IDisposable
     private readonly ConcurrentQueue<string> _errors = new();
     private readonly Stopwatch _clock = Stopwatch.StartNew();
 
-    public Test262Agents(CancellationToken cancellationToken)
+    /// <param name="cancellationToken">Stops the agents.</param>
+    /// <param name="isCompiled">Whether the engines of the agents compile every function on its first call (the compiled run of the test).</param>
+    public Test262Agents(CancellationToken cancellationToken, bool isCompiled)
     {
         _cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        IsCompiled = isCompiled;
     }
+
+    private bool IsCompiled { get; }
 
     private int _pendingTimeouts;
 
@@ -200,12 +205,7 @@ internal sealed class Test262Agents : IDisposable
             var token = _owner._cancellation.Token;
             try
             {
-                using var engine = new JsEngine(new JsEngineOptions
-                {
-                    CancellationToken = token,
-                    RecursionLimit = 1_000,
-                    TimeZone = "UTC",
-                });
+                using var engine = new JsEngine(Test262Executor.CreateEngineOptions(token, _owner.IsCompiled));
 
                 var realm = engine.CreateRealm();
                 var host = Test262Host.Install(realm, new StringBuilder());

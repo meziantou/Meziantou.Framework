@@ -15,23 +15,18 @@ internal static class Test262Executor
         var source = File.ReadAllText(test.FullPath);
         foreach (var mode in test.Modes)
         {
-            string? error;
-            try
+            // The test runs interpreted, then with every function compiled to .NET code on its first call
+            // (JsEngineOptions.CompilationThreshold = 1): both must give the result of the expectations
+            var interpreted = RunModeSafe(test, source, mode, isCompiled: false);
+            var compiled = RunModeSafe(test, source, mode, isCompiled: true);
+            var error = (interpreted, compiled) switch
             {
-                error = RunMode(test, source, mode);
-            }
-            catch (JsTerminationException ex)
-            {
-                error = "Terminated: " + ex.Message;
-            }
-            catch (InvalidOperationException ex)
-            {
-                error = "Engine failure: " + ex;
-            }
-            catch (NotSupportedException ex)
-            {
-                error = "Not supported: " + ex.Message;
-            }
+                (null, null) => null,
+                (not null, null) => "Interpreted: " + interpreted,
+                (null, not null) => "Compiled: " + compiled,
+                _ when interpreted == compiled => interpreted,
+                _ => "Interpreted: " + interpreted + " | Compiled: " + compiled,
+            };
 
             results.Add(new Test262Result(mode, error is null, error));
         }
@@ -39,20 +34,37 @@ internal static class Test262Executor
         return results;
     }
 
-    /// <summary>
-    /// Whether the test runs with the functions compiled to .NET code as soon as they run twice (the compiled code of the
-    /// hot functions), or interpreted: half of the tests each, chosen by a stable hash of their id, so that test262 checks
-    /// both without running twice.
-    /// </summary>
-    private static bool IsCompiledTest(Test262Test test)
+    /// <summary>The options of the engines of a test (the main engine and the engines of the agents).</summary>
+    internal static JsEngineOptions CreateEngineOptions(CancellationToken cancellationToken, bool isCompiled)
     {
-        var hash = 2166136261u;
-        foreach (var c in test.Id)
+        return new JsEngineOptions
         {
-            hash = (hash ^ c) * 16777619u;
-        }
+            CancellationToken = cancellationToken,
+            RecursionLimit = 1_000,
+            EnableCompilation = isCompiled,
+            CompilationThreshold = 1,
+            TimeZone = "UTC",
+        };
+    }
 
-        return ((hash >> 16) & 1) == 0;
+    private static string? RunModeSafe(Test262Test test, string source, Test262Mode mode, bool isCompiled)
+    {
+        try
+        {
+            return RunMode(test, source, mode, isCompiled);
+        }
+        catch (JsTerminationException ex)
+        {
+            return "Terminated: " + ex.Message;
+        }
+        catch (InvalidOperationException ex)
+        {
+            return "Engine failure: " + ex;
+        }
+        catch (NotSupportedException ex)
+        {
+            return "Not supported: " + ex.Message;
+        }
     }
 
     /// <summary>Runs the test in a mode; returns null when it passes, or the reason of the failure.</summary>
@@ -61,28 +73,22 @@ internal static class Test262Executor
     /// Compiler::fgCreateGCPoll) when it recompiles it at tier 1 with the profile data.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private static string? RunMode(Test262Test test, string source, Test262Mode mode)
+    private static string? RunMode(Test262Test test, string source, Test262Mode mode, bool isCompiled)
     {
         var metadata = test.Metadata;
-        // The slowest tests take a few seconds alone; the limit leaves room for the slower CI machines and the parallel runs
-        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(120));
-        var loader = new Test262ModuleLoader(Path.GetDirectoryName(test.FullPath)!);
-        using var engine = new JsEngine(new JsEngineOptions
-        {
-            CancellationToken = cancellation.Token,
-            RecursionLimit = 1_000,
-            EnableCompilation = IsCompiledTest(test),
 
-            // The functions are compiled on their second call or loop iteration: the code that runs once (the thousands
-            // of eval scripts of some tests) is not compiled, and the frames switch from the interpreter to the compiled code
-            CompilationThreshold = 2,
-            TimeZone = "UTC",
-            ModuleLoader = loader,
-        });
+        // The slowest tests take a few seconds alone; the limit leaves room for the slower CI machines and the parallel
+        // runs. The compiled run compiles the code that runs once too: the tests that eval tens of thousands of scripts
+        // (language/comments/S7.4_A5.js...) take minutes on CI
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(isCompiled ? 600 : 120));
+        var loader = new Test262ModuleLoader(Path.GetDirectoryName(test.FullPath)!);
+        var options = CreateEngineOptions(cancellation.Token, isCompiled);
+        options.ModuleLoader = loader;
+        using var engine = new JsEngine(options);
 
         // [[CanBlock]]: the tests flagged CanBlockIsFalse expect Atomics.wait to throw in the main agent
         engine.CanBlock = !metadata.HasFlag("CanBlockIsFalse");
-        using var agents = new Test262Agents(cancellation.Token);
+        using var agents = new Test262Agents(cancellation.Token, isCompiled);
         var output = new StringBuilder();
         var realm = engine.CreateRealm();
         Test262Host.Install(realm, output, agents);

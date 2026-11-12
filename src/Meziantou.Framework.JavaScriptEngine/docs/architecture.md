@@ -277,8 +277,8 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   interpreter, with no .NET recursion. The interpreter enters the compiled code again at an entry point (the start, the
   handlers, after a call, a yield or an await, the targets of the backward jumps: on-stack replacement), which checks
   `frame.Sp` and returns at once when it is not the expected depth. Any change to the semantics of an instruction of
-  the dispatch loop must be made in its `Jit*` helper too: `InterpreterTests.Run` and the `javascript-compiled-code`
-  fuzz target compare both. The bytecode compiled for a debugger (with `DebugStatement` instructions) stays interpreted.
+  the dispatch loop must be made in its `Jit*` helper too: `InterpreterTests.Run`, test262 (each test runs
+  interpreted, then with `CompilationThreshold = 1`) and the `javascript-compiled-code` fuzz target compare both. The bytecode compiled for a debugger (with `DebugStatement` instructions) stays interpreted.
 - Frames: the ordinary calls rent their `Frame` from `engine.FramePool` (the arguments are copied after the registers in
   `Frame.Values`); generators, async functions, scripts, modules and eval code have frames of their own. Nothing may keep
   a reference to a pooled frame after its call.

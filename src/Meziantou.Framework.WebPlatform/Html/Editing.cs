@@ -398,7 +398,7 @@ internal static class Editing
     /// <param name="fireBeforeInput">False for the cut and paste actions that a script triggers (<c>document.execCommand()</c>): as the commands, they fire no beforeinput event.</param>
     public static void UserEdit(Element target, string inputType, string? data, string? html = null, bool fireBeforeInput = true)
     {
-        if (GetEditingHost(target) is not { } targetHost || GetActiveRangeEditingHost(target.NodeDocument) is not { } editingHost || !targetHost.IsShadowIncludingInclusiveAncestorOf(editingHost))
+        if (GetEditingHost(target) is not { } targetHost || GetActiveRangeEditingHost(target.NodeDocument, composed: true) is not { } editingHost || !targetHost.IsShadowIncludingInclusiveAncestorOf(editingHost))
             return;
 
         // Plain text content has no paragraphs: the Enter key inserts a line break (contenteditable=plaintext-only)
@@ -450,7 +450,7 @@ internal static class Editing
                 return;
 
             // The listeners may have changed the selection
-            if (GetActiveRangeEditingHost(document) is not { } host || !ReferenceEquals(host, editingHost))
+            if (GetActiveRangeEditingHost(document, composed: true) is not { } host || !ReferenceEquals(host, editingHost))
                 return;
         }
 
@@ -476,7 +476,7 @@ internal static class Editing
     /// <summary>Edits the active range for an edit of the user (see <see cref="UserEdit"/>).</summary>
     private static void RunUserEdit(Document document, string inputType, string? data, string? html, bool plaintextOnly)
     {
-        var algorithms = new EditingAlgorithms(document);
+        var algorithms = new EditingAlgorithms(document, composed: true);
         switch (inputType)
         {
             case "deleteContentBackward":
@@ -490,10 +490,10 @@ internal static class Editing
             case "deleteWordBackward" or "deleteWordForward":
                 // The word before or after the caret is selected, then deleted (the algorithms edit the new active range)
                 document.GetSelection()?.Modify("extend", inputType == "deleteWordBackward" ? "backward" : "forward", "word");
-                if (GetActiveRangeEditingHost(document) is null)
+                if (GetActiveRangeEditingHost(document, composed: true) is null)
                     return;
 
-                new EditingAlgorithms(document).RunAction(inputType == "deleteWordBackward" ? "delete" : "forwarddelete", "");
+                new EditingAlgorithms(document, composed: true).RunAction(inputType == "deleteWordBackward" ? "delete" : "forwarddelete", "");
                 break;
 
             case "deleteByCut":
@@ -607,7 +607,7 @@ internal static class Editing
         var deletion = inputType is "deleteContentBackward" or "deleteContentForward" or "deleteWordBackward" or "deleteWordForward";
         var backward = inputType is "deleteContentBackward" or "deleteWordBackward";
         var character = inputType is "deleteContentBackward" or "deleteContentForward";
-        var algorithms = new EditingAlgorithms(document);
+        var algorithms = new EditingAlgorithms(document, composed: true);
         if (range.Collapsed && deletion)
         {
             selection.Modify("extend", backward ? "backward" : "forward", character ? "character" : "word");
@@ -676,14 +676,21 @@ internal static class Editing
         selection.SetBaseAndExtentCore(anchor, selection.AnchorOffset, inertParent, offset);
     }
 
-    private static Element? GetActiveRangeEditingHost(Document document)
+    /// <summary>The editing host of the active range, or null.</summary>
+    /// <param name="document">The document.</param>
+    /// <param name="composed">
+    /// Whether the range of the selection may be in a shadow tree. The commands only use the range that the selection exposes
+    /// (https://w3c.github.io/editing/docs/execCommand/#active-range); the edits of the user (typing) edit the content of
+    /// the selection wherever it is, as in the browsers.
+    /// </param>
+    private static Element? GetActiveRangeEditingHost(Document document, bool composed = false)
     {
         if (document.GetSelection()?.RangeOrNull is not { } range)
             return null;
 
         var start = range.StartContainer;
         var end = range.EndContainer;
-        if (start is not (Text or Element) || end is not (Text or Element) || !document.IsInclusiveAncestorOf(start) || !document.IsInclusiveAncestorOf(end))
+        if (start is not (Text or Element) || end is not (Text or Element) || !EditingAlgorithms.IsInDocument(document, start, composed) || !EditingAlgorithms.IsInDocument(document, end, composed))
             return null;
 
         if ((!IsEditable(start) && !IsEditingHost(start)) || (!IsEditable(end) && !IsEditingHost(end)))

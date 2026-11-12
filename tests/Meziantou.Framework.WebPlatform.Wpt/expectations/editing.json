@@ -444,9 +444,7 @@
       "SelectAll in the <div contenteditable> in the closed shadow DOM": "FAIL",
       "SelectAll in the <div contenteditable> in the open shadow DOM": "FAIL",
       "SelectAll in the closed shadow DOM": "FAIL",
-      "SelectAll in the open shadow DOM": "FAIL",
-      "Typing \"A\" after Collapse selection into text in <div contenteditable> in the closed shadow DOM": "FAIL",
-      "Typing \"A\" after Collapse selection into text in <div contenteditable> in the open shadow DOM": "FAIL"
+      "SelectAll in the open shadow DOM": "FAIL"
     }
   },
   "editing/other/editing-around-select-element.tentative.html?delete": {
@@ -3000,9 +2998,6 @@
       "[[\"inserttext\",\"a\"]] \"foo<a href=http://www.google.com><u>[bar</u></a>baz]\" compare innerHTML": "FAIL",
       "[[\"inserttext\",\"b\"]] \"<div>a<br>{}<span></span><p>c</p></div>\" compare innerHTML": "FAIL",
       "[[\"inserttext\",\"b\"]] \"<p>a<br>{}<span></span></p>\" compare innerHTML": "FAIL",
-      "[[\"inserttext\",\"d\"],[\"inserttext\",\"e\"],[\"inserttext\",\"f\"]] \"<div>abc[<b><i><img src=\\\"/img/lion.svg\\\">def</i></b>]ghi</div>\" compare innerHTML": "FAIL",
-      "[[\"inserttext\",\"d\"],[\"inserttext\",\"e\"],[\"inserttext\",\"f\"]] \"<div>abc[<b><i><img src=\\\"/img/lion.svg\\\">def]</i></b>ghi</div>\" compare innerHTML": "FAIL",
-      "[[\"inserttext\",\"d\"],[\"inserttext\",\"e\"],[\"inserttext\",\"f\"]] \"<div>abc{<b><i><img src=\\\"/img/lion.svg\\\">def</i></b>]ghi</div>\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"inserttext\",\"a\"]] \"[foo<font color=blue><a href=http://www.google.com>bar]</a></font>baz\" queryCommandState(\"stylewithcss\") before": "FAIL"
     }
   },
@@ -3521,7 +3516,6 @@
       "[[\"styleWithCSS\",\"false\"],[\"forwarddelete\",\"\"],[\"insertText\",\"A\"]] \"<span style=\\\"color:rgb(0, 0, 255)\\\">foo[]</span><br><p><span style=\\\"color:rgb(255, 0, 0)\\\">bar</span></p>\" compare innerHTML": "FAIL",
       "[[\"styleWithCSS\",\"false\"],[\"forwarddelete\",\"\"],[\"insertText\",\"A\"]] \"<span style=\\\"color:rgb(0, 0, 255)\\\">foo[]<br></span><p><span style=\\\"color:rgb(255, 0, 0)\\\">bar</span></p>\" compare innerHTML": "FAIL",
       "[[\"styleWithCSS\",\"false\"],[\"insertparagraph\",\"\"],[\"inserttext\",\"a\"]] \"<div><b>[abc]</b></div>\" compare innerHTML": "FAIL",
-      "[[\"styleWithCSS\",\"false\"],[\"italic\",\"\"],[\"bold\",\"\"],[\"insertText\",\"b\"]] \"a[]c\" compare innerHTML": "FAIL",
       "[[\"stylewithcss\",\"true\"],[\"italic\",\"\"],[\"insertText\",\"a\"]] \"<span style=font-weight:bold>{}<br></span></b>\" compare innerHTML": "FAIL"
     }
   },

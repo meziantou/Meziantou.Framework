@@ -657,7 +657,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
             }
             """;
 
-        var diagnostic = Assert.Single(RunAnalyzer(Source), static diagnostic => diagnostic.Id == "MFY001");
+        var diagnostic = Assert.Single(RunAnalyzer(Source), diagnostic => diagnostic.Id == "MFY001");
         Assert.Contains("Outer.TestContext", diagnostic.GetMessage());
 
         var result = RunGenerator(Source);
@@ -714,7 +714,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         var result = RunGenerator(Source);
 
         // Two contexts with the same hint name would be reported as a generator warning
-        Assert.DoesNotContain(result.Diagnostics, static diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning);
+        Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning);
         Assert.Contains("partial class Outer", result.GeneratedSource, StringComparison.Ordinal);
         Assert.Contains("partial struct Inner", result.GeneratedSource, StringComparison.Ordinal);
         Assert.Contains("partial class GenericOuter<T>", result.GeneratedSource, StringComparison.Ordinal);

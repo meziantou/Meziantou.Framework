@@ -26,8 +26,6 @@ public partial struct CustomerId { }
 [System.Text.Json.Serialization.JsonConverterAttribute(typeof(ProjectIdJsonConverter))]
 [Newtonsoft.Json.JsonConverterAttribute(typeof(ProjectIdNewtonsoftJsonConverter))]
 [MongoDB.Bson.Serialization.Attributes.BsonSerializerAttribute(typeof(ProjectIdBsonConverter))]
-[Meziantou.Framework.Yaml.Serialization.YamlConverterAttribute(typeof(ProjectIdYamlConverter))]
-[Meziantou.Framework.Toml.Serialization.TomlConverterAttribute(typeof(ProjectIdTomlConverter))]
 public partial struct ProjectId :
     System.IEquatable<ProjectId>,
     System.IParsable<ProjectId>,         // .NET 7+
@@ -88,24 +86,35 @@ public partial struct ProjectId :
         public override ProjectId Deserialize(MongoDB.Bson.Serialization.BsonDeserializationContext context, MongoDB.Bson.Serialization.BsonDeserializationArgs args);
         public override void Serialize(MongoDB.Bson.Serialization.BsonSerializationContext context, MongoDB.Bson.Serialization.BsonSerializationArgs args, ProjectId value);
     }
-
-    // Generated only when Meziantou.Framework.Yaml is accessible
-    public partial class ProjectIdYamlConverter : Meziantou.Framework.Yaml.Serialization.YamlConverter<ProjectId>
-    {
-        public override ProjectId Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader);
-        public override void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, ProjectId value);
-    }
-
-    // Generated only when Meziantou.Framework.Toml is accessible
-    public partial class ProjectIdTomlConverter : Meziantou.Framework.Toml.Serialization.TomlConverter<ProjectId>
-    {
-        public override ProjectId Read(Meziantou.Framework.Toml.Serialization.TomlReader reader);
-        public override void Write(Meziantou.Framework.Toml.Serialization.TomlWriter writer, ProjectId value);
-    }
 }
 ````
 
 <!-- generated code -->
+
+When the project references Meziantou.Framework.Yaml or Meziantou.Framework.Toml, the ID also gets a `ProjectIdYamlConverter` or a `ProjectIdTomlConverter`, registered with `[YamlConverter]` or `[TomlConverter]`. They write the value of the ID:
+
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_JsonModel;format=md-fenced-code-block;dedent=true -->
+```csharp
+public sealed record OrderLine(ProductId ProductId, ProjectId ProjectId, int Quantity);
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_Yaml;format=md-fenced-code-block;dedent=true -->
+```csharp
+var line = new OrderLine(ProductId.FromGuid(new Guid("0f8fad5b-d9cb-469f-a165-70867728950e")), ProjectId.FromInt32(42), Quantity: 3);
+
+var yaml = Meziantou.Framework.Yaml.YamlSerializer.Serialize(line);
+Assert.Equal("""
+    ProductId: 0f8fad5b-d9cb-469f-a165-70867728950e
+    ProjectId: 42
+    Quantity: 3
+
+    """, yaml);
+
+var deserialized = Meziantou.Framework.Yaml.YamlSerializer.Deserialize<OrderLine>(yaml);
+Assert.Equal(line, deserialized);
+```
+<!-- endref -->
 
 The converters are public, so you can use them where the attributes are not read, such as `JsonSerializerOptions.Converters` for a source-generated `JsonSerializerContext`. To choose another accessibility, declare the converter in the ID (for instance `internal sealed partial class ProjectIdJsonConverter;`): the generator keeps your modifiers.
 

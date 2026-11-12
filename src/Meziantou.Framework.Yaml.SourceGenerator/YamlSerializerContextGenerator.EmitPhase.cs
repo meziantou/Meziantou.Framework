@@ -69,7 +69,7 @@ public sealed partial class YamlSerializerContextGenerator
             builder.Append("partial ").Append(GetTypeDeclarationKeyword(containingType)).Append(' ').Append(EscapeIdentifier(containingType.Name));
             if (containingType.TypeParameters.Length > 0)
             {
-                builder.Append('<').Append(string.Join(", ", containingType.TypeParameters.Select(static parameter => EscapeIdentifier(parameter.Name)))).Append('>');
+                builder.Append('<').Append(string.Join(", ", containingType.TypeParameters.Select(parameter => EscapeIdentifier(parameter.Name)))).Append('>');
             }
 
             builder.AppendLine();

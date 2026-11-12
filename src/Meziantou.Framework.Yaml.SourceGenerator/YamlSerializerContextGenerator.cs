@@ -376,8 +376,8 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     // The generated code repeats the declarations of the containing types, so they must be partial too
     private static bool IsPartialWithPartialContainingTypes(ClassDeclarationSyntax classDeclaration)
     {
-        return classDeclaration.Modifiers.Any(static modifier => modifier.IsKind(SyntaxKind.PartialKeyword)) &&
-               classDeclaration.Ancestors().OfType<TypeDeclarationSyntax>().All(static declaration => declaration.Modifiers.Any(static modifier => modifier.IsKind(SyntaxKind.PartialKeyword)));
+        return classDeclaration.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.PartialKeyword)) &&
+               classDeclaration.Ancestors().OfType<TypeDeclarationSyntax>().All(declaration => declaration.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.PartialKeyword)));
     }
 
     internal static ContextValidationResult ValidateContext(Compilation compilation, object? contextModel)

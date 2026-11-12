@@ -59,15 +59,54 @@ public static class TextMeasurerExtensions
     /// <summary>Measures a text as the renderers draw it: its spans one after the other, with their fonts and their spacing.</summary>
     /// <param name="measurer">The measurer.</param>
     /// <param name="text">The text.</param>
-    /// <returns>The sum of the widths of the spans, with their spacing, and the largest ascent and descent.</returns>
+    /// <returns>
+    /// The sum of the widths of the spans, with their spacing, and the largest ascent and descent. A text fitted to a
+    /// length (<see cref="SceneText.TextLength"/>), or whose spans are moved horizontally (<see cref="SceneTextSpan.X"/>,
+    /// <see cref="SceneTextSpan.Dx"/>), has the width from the left of its leftmost span to the right of its rightmost one.
+    /// </returns>
     public static TextMetrics Measure(this ITextMeasurer measurer, SceneText text)
     {
         ArgumentNullException.ThrowIfNull(measurer);
         ArgumentNullException.ThrowIfNull(text);
-        if (text.Spans.Count is 0)
+        var isPlaced = text.TextLength is not null || text.Spans.Any(span => span.X is not null || span.Dx != 0);
+        if (text.Spans.Count is 0 && !isPlaced)
             return measurer.Measure(text.Text, text.Font, text.LetterSpacing, text.WordSpacing);
 
-        return MeasureSpans(measurer, text.Spans, text.Font, text.LetterSpacing, text.WordSpacing);
+        if (!isPlaced)
+            return MeasureSpans(measurer, text.Spans, text.Font, text.LetterSpacing, text.WordSpacing);
+
+        // The spans are placed as the renderers place them: the extent of their parts
+        var (ascent, descent) = (0.0, 0.0);
+        var items = new List<TextPlacement.Item>();
+        if (text.Spans.Count is 0)
+        {
+            var metrics = measurer.Measure(text.Text, text.Font, text.LetterSpacing, text.WordSpacing);
+            (ascent, descent) = (metrics.Ascent, metrics.Descent);
+            items.Add(new TextPlacement.Item(-1, metrics.Width, TextPlacement.CountClusters(text.Text), 0));
+        }
+        else
+        {
+            for (var i = 0; i < text.Spans.Count; i++)
+            {
+                var span = text.Spans[i];
+                if (span.Text.Length is 0)
+                    continue;
+
+                var metrics = measurer.Measure(span.Text, span.Font ?? text.Font, span.LetterSpacing ?? text.LetterSpacing, span.WordSpacing ?? text.WordSpacing);
+                (ascent, descent) = (Math.Max(ascent, metrics.Ascent), Math.Max(descent, metrics.Descent));
+                items.Add(new TextPlacement.Item(i, metrics.Width, TextPlacement.CountClusters(span.Text), 0));
+            }
+        }
+
+        var placement = TextPlacement.Place(text, items);
+        var (left, right) = (double.PositiveInfinity, double.NegativeInfinity);
+        for (var i = 0; i < items.Count; i++)
+        {
+            left = Math.Min(left, Math.Min(placement.X[i], placement.X[i] + placement.Width[i]));
+            right = Math.Max(right, Math.Max(placement.X[i], placement.X[i] + placement.Width[i]));
+        }
+
+        return new TextMetrics(items.Count is 0 || !double.IsFinite(right - left) ? 0 : right - left, ascent, descent);
     }
 
     private static TextMetrics MeasureSpans(ITextMeasurer measurer, IEnumerable<SceneTextSpan> spans, SceneFont font, double letterSpacing, double wordSpacing)

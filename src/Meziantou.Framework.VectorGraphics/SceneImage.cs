@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.VectorGraphics;
 
-/// <summary>A raster image (PNG, JPEG, GIF or WebP), stretched to fill a rectangle.</summary>
+/// <summary>A raster image (PNG, JPEG, GIF or WebP), stretched to fill a rectangle, or fitted in it (<see cref="Alignment"/>).</summary>
 /// <remarks>
 /// The SVG embeds the bytes of the image as they are. The image and PDF renderers decode them: an image they cannot
 /// decode is not drawn.
@@ -41,6 +41,24 @@ public sealed class SceneImage : SceneElement
 
     /// <summary>Gets the media type of the image file: <c>image/png</c>, <c>image/jpeg</c>, <c>image/gif</c> or <c>image/webp</c>.</summary>
     public string MediaType { get; }
+
+    /// <summary>
+    /// Gets or sets how the image keeps its proportions in its rectangle, as the SVG <c>preserveAspectRatio</c>
+    /// attribute. The default is <see cref="SceneAspectRatio.None"/>: the image is stretched to fill the rectangle.
+    /// </summary>
+    /// <remarks>
+    /// With another value, the image is scaled by the same factor in both directions, to fit in the rectangle (or to
+    /// cover it, with <see cref="Slice"/>), and aligned in it as the value says. The default of SVG is
+    /// <see cref="SceneAspectRatio.XMidYMid"/>.
+    /// </remarks>
+    public SceneAspectRatio Alignment { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value that indicates whether the image covers the whole rectangle and is cut to it (<c>slice</c>),
+    /// rather than fitting in it (<c>meet</c>, the default). It does not apply when <see cref="Alignment"/> is
+    /// <see cref="SceneAspectRatio.None"/>.
+    /// </summary>
+    public bool Slice { get; set; }
 
     /// <summary>Gets the media type of an image file from its signature, or <see langword="null"/> when it is not a PNG, JPEG, GIF or WebP file.</summary>
     /// <param name="data">The first bytes of the file, at least 12.</param>

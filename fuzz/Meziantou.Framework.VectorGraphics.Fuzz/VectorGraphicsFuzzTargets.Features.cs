@@ -8,10 +8,11 @@ namespace Meziantou.Framework.VectorGraphics.Fuzz;
 public static partial class VectorGraphicsFuzzTargets
 {
     /// <summary>
-    /// The SVG of a scene of patterns, markers, uses, view boxes, texts with a spacing or on a path, and elements with a
-    /// transform, a hyperlink or an identifier (<see cref="FeatureSceneBuilder"/>) is a well-formed XML document whose root
+    /// The SVG of a scene of patterns, markers, uses, clipping paths, view boxes, texts with a spacing, on a path, painted,
+    /// outlined or with moved spans, filter graphs whose image primitives draw elements, the paint options, and elements
+    /// with a transform, a hyperlink or an identifier (<see cref="FeatureSceneBuilder"/>) is a well-formed XML document whose root
     /// is <c>svg</c>, and the output is deterministic. Its identifiers are different, and every reference
-    /// (<c>href="#id"</c>, <c>url(#id)</c>) is to one of them. A scene where two elements have the same identifier
+    /// (<c>href="#id"</c>, <c>url(#id)</c>) is to one of them, and a <c>clipPath</c> has only shapes and texts. A scene where two elements have the same identifier
     /// throws <see cref="InvalidOperationException"/>. The bounds of the scene are computed without looping.
     /// </summary>
     private static void SvgFeaturesTarget(ReadOnlySpan<byte> data)
@@ -60,8 +61,8 @@ public static partial class VectorGraphicsFuzzTargets
         {
             foreach (XmlAttribute attribute in element.Attributes)
             {
-                // The links of the scene (the a elements) are addresses, not references
-                if (attribute.Name is "href" && element.LocalName is not "a")
+                // The links of the scene (the a elements) are addresses, and the images embed their bytes: not references
+                if (attribute.Name is "href" && element.LocalName is not "a" && !(element.LocalName is "image" && attribute.Value.StartsWith("data:image/", StringComparison.Ordinal)))
                 {
                     FuzzAssert.True(attribute.Value.StartsWith('#', StringComparison.Ordinal) && ids.Contains(attribute.Value[1..]), $"The {element.LocalName} refers to '{attribute.Value}', which is not an identifier of the SVG");
                 }
@@ -73,7 +74,17 @@ public static partial class VectorGraphicsFuzzTargets
             }
         }
 
+        // A clipping path has only shapes and texts: SVG ignores the groups, the uses and the links in it
+        foreach (XmlElement clipPath in document.GetElementsByTagName("clipPath"))
+        {
+            foreach (var child in clipPath.ChildNodes.OfType<XmlElement>())
+            {
+                FuzzAssert.True(child.LocalName is "rect" or "circle" or "path" or "text", $"A clipPath contains a {child.LocalName} element");
+            }
+        }
+
         _ = scene.Root.GetBounds(_ => null);
+        _ = scene.Root.GetBounds(_ => null, applyClips: false);
     }
 
     [GeneratedRegex(@"url\(#(?<id>[^)]*)\)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
@@ -85,7 +96,7 @@ public static partial class VectorGraphicsFuzzTargets
     /// coordinates are finite, their directions are angles of -180 to 180 degrees, and along a single subpath they are no
     /// farther apart than the distances. The path has one vertex per command (and one at the origin when it starts without a move), at the end of
     /// each command. A marker places its reference point on a vertex. A view box maps its box into its viewport (meet),
-    /// over it (slice), or onto it (none).
+    /// over it (slice), or onto it (none). The reversed path has the same length, and reversing it twice gives it back.
     /// </summary>
     private static void PathMeasureTarget(ReadOnlySpan<byte> data)
     {
@@ -120,6 +131,15 @@ public static partial class VectorGraphicsFuzzTargets
         var path = builder.Build();
         var length = path.GetLength();
         FuzzAssert.True(length >= 0, $"The length of the path is {length}");
+
+        // The reversed path covers the same points: it has the same length, and reversing it twice gives it back
+        var reversed = path.Reverse();
+        FuzzAssert.True(reversed.Commands.SequenceEqual(reversed.Reverse().Reverse().Commands), "Reversing a reversed path twice changes it");
+        if (double.IsFinite(length) && length < 1e7)
+        {
+            var reversedLength = reversed.GetLength();
+            FuzzAssert.True(Math.Abs(reversedLength - length) <= (1e-6 * length) + 1e-6, $"The reversed path is {reversedLength} long, not {length}");
+        }
 
         var (first, second) = (ReadPathValue(ref data), ReadPathValue(ref data));
         if (path.IsEmpty)
@@ -206,7 +226,8 @@ public static partial class VectorGraphicsFuzzTargets
 
     private static IEnumerable<FuzzSeed> GetSvgFeaturesSeeds()
     {
-        // The scenes of the unit tests: patterns, markers, uses, view boxes, spaced and decorated texts, texts along a path, identifiers
+        // The scenes of the unit tests: patterns, markers, uses, view boxes, spaced and decorated texts, texts along a path,
+        // identifiers, clipping paths, paint options
         byte[][] seeds =
         [
             [0, 3, 0, 0 | 4 | 16, 4, 0, 1, 4 | 8 | 16, 0, 2, 4 | 8, 0],
@@ -215,6 +236,18 @@ public static partial class VectorGraphicsFuzzTargets
             [0x40 | 8, 1, .. "north"u8, 0, 0x40 | 10, 2, .. "north"u8, 0],
             [0x40 | 9, 7, .. "https://example.com/"u8, 0, 0x80 | 11, 1, .. "link"u8, 0, 0x40 | 7 | 32, 0, .. "scene-element0"u8, 0],
             [0 | 4, 3, 0, 0 | 32 | 2, 1, 0, 1 | 4, 4 | 8 | 16, 0, 1 | 32, 4 | 8 | 16, 0],
+
+            // Clipping paths: shapes, a text, a group with a use of itself and a shape cut by another clipping path, a
+            // clipping path cut by itself, transformed and masked elements; the paint options
+            [12, 4 | 16, .. "Clip"u8, 0, 12 | 16, 1 | 2 | 16 | 32, .. "text"u8, 0, 12 | 32, 2 | 64, 0, 12 | 64, 3, 0],
+            [13, 0, 0, 13 | 16, 1 | 2, 0, 13, 4 | 8 | 16 | 32 | 64, 0, 13 | 32, 4 | 32, 0, 13 | 64, 8, 0],
+
+            // Filter graphs whose image primitive draws a new element, an element of the scene, or an ancestor
+            [0, 3, 0, 9, 2 | 32, 0, 9, 2 | 32 | 64, 0, 5, 4, 0, 9, 2 | 16 | 32 | 128, 0],
+
+            // Texts with paints, outlines, moved and turned spans, baselines, lengths and directions, and texts along reversed paths
+            [3, 8 | 16 | 32 | 64 | 128 | 5, .. "Moved and outlined"u8, 0, 3 | 32, 8 | 4 | 2, .. "Shifted"u8, 0, 3 | 16, 128 | 1, .. "Stretched"u8, 0],
+            [4 | 32, 32 | 64 | 2, .. "Reversed path"u8, 0, 4, 64 | 128 | 1, .. "Fitted to the path"u8, 0, 3 | 64, 16, .. "Pattern"u8, 0],
         ];
         for (var i = 0; i < seeds.Length; i++)
         {

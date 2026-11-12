@@ -5,19 +5,30 @@ internal static class SceneTree
 {
     /// <summary>
     /// Enumerates an element and every element it draws: the children of the groups, the contents of the masks, of the
-    /// patterns and of the markers, then the contents of the uses that are not drawn otherwise. An element that is
+    /// patterns, of the markers and of the clipping paths, then the contents of the uses that are not drawn otherwise. An element that is
     /// reached several times is enumerated each time; a pattern, a marker and the content of a use once.
     /// </summary>
-    public static IEnumerable<SceneElement> EnumerateElements(SceneElement root) => Walk(root).Elements;
+    public static IEnumerable<SceneElement> EnumerateElements(SceneElement root)
+    {
+        var walk = Walk(root);
+        return walk.Elements.Concat(walk.ClipElements);
+    }
 
     /// <summary>The result of <see cref="Walk"/>.</summary>
-    /// <param name="Elements">The elements, as <see cref="EnumerateElements"/> gives them.</param>
+    /// <param name="Elements">
+    /// The elements that are drawn as elements, as <see cref="EnumerateElements"/> gives them, without the geometry of the
+    /// clipping paths.
+    /// </param>
     /// <param name="Detached">The contents of the uses that are written on their own: the scene does not draw them otherwise.</param>
     /// <param name="Roots">
     /// The contents of the uses the scene does not draw, without those inside another one: <see cref="Detached"/>, and
     /// the contents that are written inside a pattern, a marker or a mask of their own content.
     /// </param>
-    public sealed record WalkResult(List<SceneElement> Elements, List<SceneElement> Detached, List<SceneElement> Roots);
+    /// <param name="ClipElements">
+    /// The elements of the contents of the clipping paths, of their groups and of their uses: they give their geometry,
+    /// but are not drawn as elements. A use that draws one of them refers to a definition of its own (<see cref="Detached"/>).
+    /// </param>
+    public sealed record WalkResult(List<SceneElement> Elements, List<SceneElement> Detached, List<SceneElement> Roots, List<SceneElement> ClipElements);
 
     /// <summary>
     /// Walks a scene: <c>Elements</c> as <see cref="EnumerateElements"/> gives them, and <c>Detached</c>, the contents of
@@ -27,6 +38,8 @@ internal static class SceneTree
     public static WalkResult Walk(SceneElement root)
     {
         var elements = new List<SceneElement>();
+        var clipElements = new List<SceneElement>();
+        var clipUses = new HashSet<SceneUse>(ReferenceEqualityComparer.Instance);
         var seen = new HashSet<SceneElement>(ReferenceEqualityComparer.Instance);
         var uses = new List<SceneElement>();
         var shared = new HashSet<object>(ReferenceEqualityComparer.Instance);
@@ -48,6 +61,8 @@ internal static class SceneTree
                 {
                     uses.Add(use.Content);
                 }
+
+                uses.AddRange(GetFilterImageReferences(descendant));
             }
         }
 
@@ -90,35 +105,96 @@ internal static class SceneTree
             }
         }
 
-        return new WalkResult(elements, detached, roots);
+        return new WalkResult(elements, detached, roots, clipElements);
 
-        // An element reached several times is enumerated each time; with rootOnce, the start is not entered again
+        // An element reached several times is enumerated each time; with rootOnce, the start is not entered again. The
+        // contents of the clipping paths, the children of their groups and the contents of their uses, are their geometry:
+        // they are not drawn as elements, and their uses are written inline. Of their other contents, only what the
+        // clipping paths write is followed: the clipping paths of their shapes and texts, and the patterns of their texts;
+        // not their masks, markers and the patterns of their shapes, which the clipping paths ignore.
         void Visit(SceneElement start, bool rootOnce = false)
         {
-            var stack = new Stack<SceneElement>();
-            stack.Push(start);
+            var stack = new Stack<(SceneElement Element, bool IsClip)>();
+            stack.Push((start, false));
             var isStart = true;
-            while (stack.TryPop(out var element))
+            while (stack.TryPop(out var item))
             {
+                var (element, isClip) = item;
                 if (rootOnce && !isStart && ReferenceEquals(element, start))
                     continue;
 
                 isStart = false;
 
-                elements.Add(element);
-                seen.Add(element);
-                if (element is SceneUse use)
+                if (isClip)
                 {
-                    uses.Add(use.Content);
+                    clipElements.Add(element);
+                }
+                else
+                {
+                    elements.Add(element);
+                    seen.Add(element);
+                    if (element is SceneUse use)
+                    {
+                        uses.Add(use.Content);
+                    }
+
+                    // The elements of the image primitives of a filter are referenced as the contents of the uses
+                    uses.AddRange(GetFilterImageReferences(element));
                 }
 
-                var contents = GetContents(element, shared);
+                var contents = new List<(SceneElement Element, bool IsClip)>();
+                if (!isClip || element is SceneRectangle or SceneCircle or ScenePath or SceneText)
+                {
+                    foreach (var clipContent in GetClipContents(element, shared))
+                    {
+                        contents.Add((clipContent, true));
+                    }
+                }
+
+                if (!isClip || element is SceneText)
+                {
+                    foreach (var content in GetContents(element, shared, includeClipPaths: false, includeChildren: false))
+                    {
+                        if (!isClip || !ReferenceEquals(content, element.Mask?.Content))
+                        {
+                            contents.Add((content, false));
+                        }
+                    }
+                }
+
+                if (element is SceneGroup group)
+                {
+                    foreach (var child in group.Children)
+                    {
+                        contents.Add((child, isClip));
+                    }
+                }
+
+                // A use of a clipping path is written inline: its content is geometry too (its texts need their fonts).
+                // Each one is followed once, so a use in its own content stops.
+                if (isClip && element is SceneUse clipUse && !clipUse.IsCircular() && clipUses.Add(clipUse))
+                {
+                    contents.Add((clipUse.Content, true));
+                }
+
                 for (var i = contents.Count - 1; i >= 0; i--)
                 {
                     stack.Push(contents[i]);
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Gets the elements the image primitives of the filter of an element draw by reference, as the contents of the uses:
+    /// the images that SVG writes inline (<see cref="SceneImagePrimitive.IsInlineImage"/>) are not referenced.
+    /// </summary>
+    public static IEnumerable<SceneElement> GetFilterImageReferences(SceneElement element)
+    {
+        if (element.Filter is not SceneFilterGraph graph)
+            return [];
+
+        return graph.Primitives.OfType<SceneImagePrimitive>().Where(primitive => !primitive.IsInlineImage).Select(primitive => primitive.Content);
     }
 
     private static bool IsInItsOwnContents(SceneElement element)
@@ -155,16 +231,35 @@ internal static class SceneTree
         }
     }
 
-    /// <summary>Gets the elements an element draws, in order: its mask, the patterns of its paints, its markers, its children; not the content of a use.</summary>
+    /// <summary>Gets the elements an element draws, in order: its mask, its clipping paths, the patterns of its paints, its markers, its children; not the content of a use.</summary>
     public static List<SceneElement> GetContents(SceneElement element) => GetContents(element, new HashSet<object>(ReferenceEqualityComparer.Instance));
 
-    // The elements an element draws, in order: its mask, the patterns of its paints, its markers, its children
-    private static List<SceneElement> GetContents(SceneElement element, HashSet<object> patterns)
+    private static List<SceneElement> GetContents(SceneElement element, HashSet<object> patterns) => GetContents(element, patterns, includeClipPaths: true, includeChildren: true);
+
+    // The contents of the clipping path of an element, and of the clipping paths that cut it
+    private static List<SceneElement> GetClipContents(SceneElement element, HashSet<object> patterns)
+    {
+        var contents = new List<SceneElement>();
+        for (var clipPath = element.ClippingPath; clipPath is not null && patterns.Add(clipPath); clipPath = clipPath.ClippingPath)
+        {
+            contents.Add(clipPath.Content);
+        }
+
+        return contents;
+    }
+
+    // The elements an element draws, in order: its mask, its clipping paths, the patterns of its paints, its markers, its children
+    private static List<SceneElement> GetContents(SceneElement element, HashSet<object> patterns, bool includeClipPaths, bool includeChildren)
     {
         var contents = new List<SceneElement>();
         if (element.Mask is { } mask)
         {
             contents.Add(mask.Content);
+        }
+
+        if (includeClipPaths)
+        {
+            contents.AddRange(GetClipContents(element, patterns));
         }
 
         if (element is SceneShape shape)
@@ -185,9 +280,23 @@ internal static class SceneTree
                 AddMarker(line.MarkerStart);
                 AddMarker(line.MarkerEnd);
                 break;
+
+            // The paints of a text and of its spans
+            case SceneText text:
+                AddPattern(text.Fill);
+                AddPattern(text.Stroke);
+                AddPattern(text.DecorationFill);
+                foreach (var span in text.Spans)
+                {
+                    AddPattern(span.Fill);
+                    AddPattern(span.Stroke);
+                    AddPattern(span.DecorationFill);
+                }
+
+                break;
         }
 
-        if (element is SceneGroup group)
+        if (includeChildren && element is SceneGroup group)
         {
             contents.AddRange(group.Children);
         }

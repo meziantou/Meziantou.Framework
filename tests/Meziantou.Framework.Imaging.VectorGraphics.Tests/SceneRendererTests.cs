@@ -201,6 +201,109 @@ public sealed class SceneRendererTests
     }
 
     [Fact]
+    public void TextPaintsAndOutlines()
+    {
+        var font = new SceneFont(30, Weight: SceneFont.BoldWeight);
+        var scene = new Scene(300, 160, "sans-serif") { Background = SceneColor.White };
+
+        // A gradient from blue to red along the text; an outline without fill
+        scene.Root.Add(new SceneText(10, 30, "MMMMMM", font, SceneColor.Black) { Fill = new LinearGradientPaint(10, 0, 140, 0, [new(0, (SceneColor)"#0000ff"), new(1, (SceneColor)"#ff0000")]) });
+        scene.Root.Add(new SceneText(160, 30, "MMMMMM", font, SceneColor.Transparent) { Stroke = (SceneColor)"#ff0000" });
+
+        // A wide outline under the fill leaves more of the glyphs black than the same outline over them
+        scene.Root.Add(new SceneText(10, 80, "MMMMMM", font, SceneColor.Black) { Stroke = (SceneColor)"#ffff00", StrokeWidth = 6, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+        scene.Root.Add(new SceneText(160, 80, "MMMMMM", font, SceneColor.Black) { Stroke = (SceneColor)"#ffff00", StrokeWidth = 6 });
+
+        // The line of the text is red under a blue span
+        scene.Root.Add(new SceneText(10, 130, [new SceneTextSpan("MMM"), new SceneTextSpan("MMM") { Color = (SceneColor)"#0000ff" }], font, (SceneColor)"#ff0000") { Decorations = SceneTextDecorations.Underline, DecorationFill = (SceneColor)"#ff0000" });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+
+        Assert.Contains(Enumerable.Range(10, 30), x => Enumerable.Range(10, 20).Any(y => pixels[x, y].B > 200 && pixels[x, y].R < 100));
+        Assert.Contains(Enumerable.Range(110, 30), x => Enumerable.Range(10, 20).Any(y => pixels[x, y].R > 200 && pixels[x, y].B < 100));
+        Assert.Equal(0, Count(160, 0, 300, 40, pixel => pixel.R < 100 && pixel.G < 100));
+        Assert.True(Count(160, 0, 300, 40, pixel => pixel.R > 200 && pixel.G < 100) > 50);
+
+        var blackUnder = Count(0, 45, 150, 95, pixel => pixel.R < 60 && pixel.G < 60);
+        var blackOver = Count(150, 45, 300, 95, pixel => pixel.R < 60 && pixel.G < 60);
+        Assert.True(blackUnder > blackOver + 100, $"{blackUnder} black pixels with the outline under the fill, {blackOver} with the outline over it");
+        Assert.True(Count(0, 45, 150, 95, pixel => pixel.R > 200 && pixel.G > 200 && pixel.B < 100) > 50);
+
+        // The underline is red under both spans; the glyphs of the second span are blue
+        Assert.Contains(Enumerable.Range(130, 8), y => pixels[110, y].R > 200 && pixels[110, y].B < 100);
+        Assert.True(Count(90, 100, 160, 125, pixel => pixel.B > 200 && pixel.R < 100) > 50);
+        Assert.Equal(0, Count(90, 100, 160, 125, pixel => pixel.R > 200 && pixel.B < 100));
+
+        int Count(int x0, int y0, int x1, int y1, Func<Rgba32, bool> predicate) => Enumerable.Range(y0, y1 - y0).Sum(y => Enumerable.Range(x0, x1 - x0).Count(x => predicate(pixels[x, y])));
+    }
+
+    [Fact]
+    public void TextPositionsAndBaselines()
+    {
+        var font = new SceneFont(20);
+        var scene = new Scene(300, 200, "sans-serif");
+
+        // The top of the em box on y, and a span raised by 10 pixels
+        scene.Root.Add(new SceneText(10, 20, "MM", font, SceneColor.Black) { Baseline = SceneTextBaseline.TextTop });
+        scene.Root.Add(new SceneText(100, 40, [new SceneTextSpan("MM"), new SceneTextSpan("MM") { BaselineShift = 10 }], font, SceneColor.Black));
+
+        // A span at x = 250, 20 pixels lower: a chunk of its own, anchored at its end
+        scene.Root.Add(new SceneText(80, 80, [new SceneTextSpan("MM"), new SceneTextSpan("MM") { X = 250, Dy = 20 }], font, SceneColor.Black) { Anchor = SceneTextAnchor.End });
+
+        // From right to left, the text starts at its right end
+        scene.Root.Add(new SceneText(290, 140, "MM", font, SceneColor.Black) { Direction = SceneTextDirection.RightToLeft });
+
+        // Characters turned by a quarter of a turn go down from the baseline
+        scene.Root.Add(new SceneText(10, 150, [new SceneTextSpan("MM") { GlyphRotation = 90 }], font, SceneColor.Black));
+        using var image = scene.ToImage();
+
+        var (_, top, _, bottom) = GetInkBounds(image, 0, 0, 90, 60);
+        Assert.InRange(top, 20, 26);
+        Assert.InRange(bottom, 34, 40);
+
+        var (_, _, _, firstBottom) = GetInkBounds(image, 100, 0, 128, 60);
+        var (_, _, _, shiftedBottom) = GetInkBounds(image, 136, 0, 200, 60);
+        Assert.InRange(firstBottom, 38, 40);
+        Assert.InRange(shiftedBottom, 28, 30);
+
+        var (_, _, right, _) = GetInkBounds(image, 0, 62, 100, 82);
+        Assert.InRange(right, 76, 80);
+        var (_, chunkTop, chunkRight, chunkBottom) = GetInkBounds(image, 100, 82, 300, 110);
+        Assert.InRange(chunkRight, 246, 250);
+        Assert.InRange(chunkBottom, 98, 100);
+        Assert.InRange(chunkTop, 84, 90);
+
+        (_, _, right, _) = GetInkBounds(image, 200, 120, 300, 145);
+        Assert.InRange(right, 286, 290);
+
+        (_, top, _, bottom) = GetInkBounds(image, 0, 130, 100, 200);
+        Assert.InRange(top, 148, 152);
+        Assert.InRange(bottom, 160, 172);
+    }
+
+    [Fact]
+    public void TextLength()
+    {
+        var font = new SceneFont(20);
+        var measurer = SceneImageRenderer.CreateMeasurer();
+        var width = measurer.Measure("MMMM", font).Width;
+        var scene = new Scene(300, 120, "sans-serif");
+        scene.Root.Add(new SceneText(10, 30, "MMMM", font, SceneColor.Black));
+
+        // 30 pixels more, in the 3 gaps between the 4 letters; twice as wide, the glyphs scaled
+        scene.Root.Add(new SceneText(10, 70, "MMMM", font, SceneColor.Black) { TextLength = width + 30 });
+        scene.Root.Add(new SceneText(10, 110, "MMMM", font, SceneColor.Black) { TextLength = 2 * width, LengthAdjust = SceneTextLengthAdjust.SpacingAndGlyphs });
+        using var image = scene.ToImage();
+        var (left, _, right, _) = GetInkBounds(image, 0, 0, 300, 40);
+        var (spacedLeft, _, spacedRight, _) = GetInkBounds(image, 0, 40, 300, 80);
+        var (scaledLeft, _, scaledRight, _) = GetInkBounds(image, 0, 80, 300, 120);
+        Assert.Equal(left, spacedLeft);
+        Assert.InRange(spacedRight - right, 29, 31);
+        Assert.InRange(scaledLeft - 10, (left - 10) * 2 - 1, ((left - 10) * 2) + 1);
+        Assert.InRange(scaledRight - 10, ((right - 10) * 2) - 2, ((right - 10) * 2) + 2);
+    }
+
+    [Fact]
     public void Patterns()
     {
         // A tile of 10 by 10 pixels with a red square in its top-left quarter, repeated, and scaled by 2
@@ -524,6 +627,110 @@ public sealed class SceneRendererTests
     }
 
     [Fact]
+    public void FilterGraphsDrawInTheirRegion()
+    {
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+
+        // A flood fills the region of its graph, beyond the shape
+        scene.Root.Add(new SceneRectangle(10, 10, 10, 10) { Fill = SceneColor.Black, Filter = new SceneFilterGraph([new SceneFloodPrimitive((SceneColor)"#ff0000")]) { Region = new SceneBounds(0, 0, 30, 30) } });
+
+        // The drawing, moved 20 pixels right, merged under itself: the default region contains the move
+        var copy = new SceneFilterGraph([new SceneOffsetPrimitive(20, 0) { Input = SceneFilterInput.SourceGraphic }, new SceneMergePrimitive(SceneFilterInput.Previous, SceneFilterInput.SourceGraphic)]);
+        scene.Root.Add(new SceneRectangle(40, 10, 10, 10) { Fill = (SceneColor)"#0000ff", Filter = copy });
+
+        // The region is in the coordinates of the parent of the element, outside its transform
+        var group = scene.Root.Add(new SceneGroup { Transform = SceneTransform.Translate(50, 0), Filter = new SceneFilterGraph([new SceneFloodPrimitive((SceneColor)"#00ff00")]) { Region = new SceneBounds(80, 40, 10, 10) } });
+        group.Add(new SceneRectangle(0, 40, 10, 10) { Fill = SceneColor.Black });
+
+        // A graph without region on an element that draws nothing draws nothing; with a region, it draws
+        scene.Root.Add(new SceneGroup { Filter = new SceneFilterGraph([new SceneFloodPrimitive(SceneColor.Black)]) });
+        scene.Root.Add(new SceneGroup { Filter = new SceneFilterGraph([new SceneFloodPrimitive(SceneColor.Black)]) { Region = new SceneBounds(0, 50, 5, 5) } });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+
+        Assert.Equal(Red, pixels[2, 2]);
+        Assert.Equal(Red, pixels[15, 15]);
+        Assert.Equal(Colors.White, pixels[35, 5]);
+        Assert.Equal(Blue, pixels[45, 15]);
+        Assert.Equal(Blue, pixels[65, 15]);
+        Assert.Equal(Colors.White, pixels[55, 15]);
+        Assert.Equal(new Rgba32(0, 255, 0), pixels[85, 45]);
+        Assert.Equal(Colors.White, pixels[55, 45]);
+        Assert.Equal(Colors.Black, pixels[2, 52]);
+        Assert.Equal(Colors.White, pixels[2, 45]);
+    }
+
+    [Fact]
+    public void FilterGraphPrimitivesAndImages()
+    {
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+
+        // A glow: the alpha, blurred and colored, under the shape
+        var glow = new SceneFilterGraph(
+        [
+            new SceneGaussianBlurPrimitive(3) { Input = SceneFilterInput.SourceAlpha },
+            new SceneFloodPrimitive((SceneColor)"#0000ff"),
+            new SceneCompositePrimitive(SceneCompositeOperator.In, SceneFilterInput.Result(0)),
+            new SceneMergePrimitive(SceneFilterInput.Previous, SceneFilterInput.SourceGraphic),
+        ]);
+        scene.Root.Add(new SceneRectangle(10, 10, 20, 20) { Fill = SceneColor.Black, Filter = glow });
+
+        // An image primitive draws an element that is not in the scene; an element that draws itself through its own filter stops there
+        var dot = new SceneCircle(70, 20, 8) { Fill = (SceneColor)"#ff0000" };
+        scene.Root.Add(new SceneRectangle(50, 0, 40, 40) { Filter = new SceneFilterGraph([new SceneImagePrimitive(dot)]) { Region = new SceneBounds(50, 0, 40, 40) } });
+        var loop = scene.Root.Add(new SceneGroup());
+        var inner = loop.Add(new SceneRectangle(40, 45, 10, 10) { Fill = SceneColor.Black });
+        inner.Filter = new SceneFilterGraph([new SceneImagePrimitive(loop), new SceneMergePrimitive(SceneFilterInput.Previous, SceneFilterInput.SourceGraphic)]);
+
+        // Every primitive is drawn
+        var light = new SceneSpotLight(5, 5, 20, 5, 5, 0) { SpecularExponent = 300, LimitingConeAngle = 45 };
+        var everything = new SceneFilterGraph(
+        [
+            new SceneMorphologyPrimitive(SceneMorphologyOperator.Erode, 1, 1),
+            new SceneTurbulencePrimitive(SceneTurbulenceType.Turbulence, 0.1, 0.1, 1, 1) { StitchTiles = true, ColorSpace = SceneFilterColorSpace.Srgb },
+            new SceneDisplacementMapPrimitive(2, SceneFilterInput.Previous) { Input = SceneFilterInput.Result(0) },
+            new SceneConvolveMatrixPrimitive(3, 3, 0, 0, 0, 0, 1, 0, 0, 0, 0) { Bias = 0, PreserveAlpha = true, TargetX = 1 },
+            new SceneDiffuseLightingPrimitive(new SceneDistantLight(0, 90), SceneColor.White),
+            new SceneSpecularLightingPrimitive(light, SceneColor.White) { Input = SceneFilterInput.SourceAlpha },
+            new SceneDiffuseLightingPrimitive(new ScenePointLight(5, 5, 10), SceneColor.White) { Input = SceneFilterInput.SourceAlpha },
+            new SceneComponentTransferPrimitive { Red = SceneTransferFunction.CreateTable(1, 0), Green = SceneTransferFunction.CreateDiscrete(0, 1), Blue = SceneTransferFunction.CreateLinear(1, 0), Alpha = SceneTransferFunction.CreateGamma(1, 1, 0) },
+            new SceneBlendPrimitive(SceneBlendMode.Multiply, SceneFilterInput.SourceGraphic),
+            new SceneTilePrimitive { Input = SceneFilterInput.Result(0), Subregion = new SceneBounds(0, 40, 10, 10) },
+            new SceneColorMatrixPrimitive(SceneColorMatrixFilter.Grayscale()),
+            new SceneDropShadowPrimitive(1, 1, 1, 1, SceneColor.Black) { Input = SceneFilterInput.SourceGraphic },
+        ]);
+        scene.Root.Add(new SceneRectangle(0, 40, 10, 10) { Fill = SceneColor.Black, Filter = everything });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+
+        Assert.Equal(Colors.Black, pixels[20, 20]);
+        Assert.True(pixels[8, 20].B > 200 && pixels[8, 20].R < 230, "the glow is blue outside the shape");
+        Assert.Equal(Colors.White, pixels[45, 20]);
+        Assert.Equal(Red, pixels[70, 20]);
+        Assert.Equal(Colors.White, pixels[55, 5]);
+        Assert.Equal(Colors.Black, pixels[45, 50]);
+
+        // The values beyond the limits of the canvas are brought within them
+        var extreme = new Scene(20, 20, "sans-serif") { Background = SceneColor.White };
+        var far = new SceneFilterGraph(
+        [
+            new SceneGaussianBlurPrimitive(1e6) { Subregion = new SceneBounds(-1e9, -1e9, 2e9, 2e9) },
+            new SceneOffsetPrimitive(1e9, -1e9),
+            new SceneMorphologyPrimitive(SceneMorphologyOperator.Dilate, 1e9, 0),
+            new SceneDisplacementMapPrimitive(1e9, SceneFilterInput.SourceGraphic),
+            new SceneDiffuseLightingPrimitive(new ScenePointLight(1e9, -1e9, 1e9), SceneColor.White) { SurfaceScale = 1e9, DiffuseConstant = 1e9 },
+            new SceneFloodPrimitive(SceneColor.Black) { Subregion = new SceneBounds(0, 0, 0, 0) },
+        ])
+        {
+            Region = new SceneBounds(-1e9, -1e9, 2e9, 2e9),
+        };
+        extreme.Root.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black, Filter = far });
+        extreme.Root.Add(new SceneRectangle(0, 0, 10, 10) { Filter = new SceneFilterGraph([new SceneFloodPrimitive(SceneColor.Black)]) { Region = new SceneBounds(5, 5, 0, 10) } });
+        using var extremeImage = extreme.ToImage();
+        Assert.Equal(Colors.White, extremeImage.Frames[0][15, 15]);
+    }
+
+    [Fact]
     public void WeightsSelectTheNearestFace()
     {
         var fonts = new SceneFontCollection(LoadFace("LiberationSans-Regular.woff2"), LoadFace("LiberationSans-Bold.woff2"));
@@ -667,5 +874,237 @@ public sealed class SceneRendererTests
     {
         Assert.Null(SceneRenderer.ToVectorPath(new PathBuilder().Build()));
         Assert.NotNull(SceneRenderer.ToVectorPath(new PathBuilder().AddRectangle(0, 0, 1, 1).Build()));
+    }
+
+    [Fact]
+    public void ContextPaintsOfMarkers()
+    {
+        var scene = new Scene(60, 60, "sans-serif") { Background = SceneColor.White };
+        var square = new SceneMarker { Units = SceneMarkerUnits.UserSpace };
+        square.Content.Add(new SceneRectangle(-4, -4, 8, 8) { Fill = ContextPaint.Stroke, Stroke = ContextPaint.Fill, StrokeWidth = 2 });
+        scene.Root.Add(new SceneLine(5, 10.5, 40, 10.5) { Stroke = (SceneColor)"#ff0000", Fill = (SceneColor)"#0000ff", MarkerEnd = square });
+        scene.Root.Add(new SceneLine(5, 30.5, 40, 30.5) { Stroke = (SceneColor)"#0000ff", MarkerEnd = square });
+
+        // Outside of the markers, a context paint paints nothing
+        scene.Root.Add(new SceneRectangle(0, 45, 10, 10) { Fill = ContextPaint.Fill });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(Red, pixels[40, 10]);
+        Assert.Equal(Blue, pixels[44, 10]);
+        Assert.Equal(Blue, pixels[40, 30]);
+        Assert.Equal(Blue, pixels[34, 30]);
+        Assert.Equal(Colors.White, pixels[44, 30]);
+        Assert.Equal(Colors.White, pixels[5, 50]);
+    }
+
+    [Fact]
+    public void PaintOrderAndNonScalingStrokes()
+    {
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneRectangle(10, 10, 20, 20) { Fill = (SceneColor)"#ff0000", Stroke = (SceneColor)"#0000ff", StrokeWidth = 6 });
+        scene.Root.Add(new SceneRectangle(50, 10, 20, 20) { Fill = (SceneColor)"#ff0000", Stroke = (SceneColor)"#0000ff", StrokeWidth = 6, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+
+        // A stroke of 1 pixel in a group scaled 10 times stays 1 pixel wide; dashes of 4 pixels
+        var zoomed = scene.Root.Add(new SceneGroup { Transform = SceneTransform.Scale(10, 10) });
+        zoomed.Add(new SceneLine(1, 4.55, 9, 4.55) { Stroke = (SceneColor)"#0000ff", NonScalingStroke = true });
+        zoomed.Add(new SceneLine(1, 5.5, 9, 5.5) { Stroke = (SceneColor)"#0000ff", StrokeWidth = 2, StrokeDashArray = [4, 4], NonScalingStroke = true });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(Blue, pixels[11, 20]);
+        Assert.Equal(Red, pixels[51, 20]);
+        Assert.Equal(Blue, pixels[48, 20]);
+        Assert.Equal(Blue, pixels[50, 45]);
+        Assert.Equal(Colors.White, pixels[50, 43]);
+        Assert.Equal(Colors.White, pixels[50, 47]);
+        Assert.Equal(Blue, pixels[11, 54]);
+        Assert.Equal(Colors.White, pixels[15, 54]);
+
+        // The width and the dashes are scaled with the image
+        using var large = scene.ToImage(new SceneImageOptions { Scale = 2 });
+        Assert.Equal(Blue, large.Frames[0][100, 90]);
+        Assert.Equal(Blue, large.Frames[0][100, 91]);
+        Assert.Equal(Colors.White, large.Frames[0][100, 89]);
+        Assert.Equal(Colors.White, large.Frames[0][100, 92]);
+        Assert.Equal(Blue, large.Frames[0][22, 109]);
+        Assert.Equal(Colors.White, large.Frames[0][30, 109]);
+    }
+
+    [Fact]
+    public void FocalRadiusOfRadialGradients()
+    {
+        var scene = new Scene(40, 40, "sans-serif");
+        scene.Root.Add(new SceneRectangle(0, 0, 40, 40) { Fill = new RadialGradientPaint(20, 20, 20, [new(0, (SceneColor)"#ff0000"), new(1, (SceneColor)"#0000ff")]) { FocalRadius = 10 } });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(Red, pixels[20, 20]);
+        Assert.Equal(Red, pixels[28, 20]);
+        Assert.True(pixels[38, 20].B > 150 && pixels[38, 20].R < 100, pixels[38, 20].ToString());
+    }
+
+    [Fact]
+    public void AspectRatiosOfImages()
+    {
+        var scene = new Scene(80, 80, "sans-serif") { Background = SceneColor.White };
+
+        // The square image fits in the middle of a wide rectangle, or covers it and is cut
+        scene.Root.Add(new SceneImage(0, 0, 80, 40, Png) { Alignment = SceneAspectRatio.XMidYMid });
+        scene.Root.Add(new SceneImage(0, 40, 80, 40, Png) { Alignment = SceneAspectRatio.XMinYMin, Slice = true });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(Colors.White, pixels[10, 20]);
+        Assert.Equal(Colors.White, pixels[70, 20]);
+        Assert.True(pixels[25, 5].R > 200 && pixels[25, 5].B < 80, pixels[25, 5].ToString());
+        Assert.True(pixels[55, 5].B > 200 && pixels[55, 5].R < 80, pixels[55, 5].ToString());
+
+        // Sliced: the top half of the image, 80 pixels wide, fills the rectangle
+        Assert.True(pixels[10, 50].R > 200 && pixels[10, 50].B < 80, pixels[10, 50].ToString());
+        Assert.True(pixels[70, 50].B > 200 && pixels[70, 50].R < 80, pixels[70, 50].ToString());
+    }
+
+    [Fact]
+    public void ClippingPaths()
+    {
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+
+        // The union of a square and of a ring whose hole is empty (even-odd)
+        var shapes = new SceneClipPath();
+        shapes.Content.Add(new SceneRectangle(0, 0, 10, 10));
+        shapes.Content.Add(new ScenePath(new PathBuilder().AddRectangle(20, 0, 30, 30).AddRectangle(30, 10, 10, 10).Build()) { FillRule = SceneFillRule.EvenOdd });
+        scene.Root.Add(new SceneRectangle(0, 0, 60, 40) { Fill = (SceneColor)"#0000ff", ClippingPath = shapes });
+
+        // In the coordinates of the parent, outside of the transform of the element; cut by another clipping path
+        var outer = new SceneClipPath();
+        outer.Content.Add(new SceneRectangle(60, 50, 40, 10));
+        var cut = new SceneClipPath { ClippingPath = outer };
+        cut.Content.Add(new SceneRectangle(70, 50, 30, 30));
+        scene.Root.Add(new SceneRectangle(0, 0, 50, 50) { Fill = (SceneColor)"#ff0000", Transform = SceneTransform.Translate(50, 50), ClippingPath = cut });
+
+        // A text shows its glyphs, even translucent; a clipping path that cuts itself leaves nothing visible
+        var letters = new SceneClipPath();
+        letters.Content.Add(new SceneText(0, 90, "II", new SceneFont(40), SceneColor.Black.WithOpacity(0.2)));
+        scene.Root.Add(new SceneRectangle(0, 50, 50, 50) { Fill = (SceneColor)"#ff0000", ClippingPath = letters });
+        var circular = new SceneClipPath();
+        circular.Content.Add(new SceneRectangle(0, 0, 100, 100));
+        circular.ClippingPath = circular;
+        scene.Root.Add(new SceneRectangle(55, 0, 45, 45) { Fill = (SceneColor)"#ff0000", ClippingPath = circular });
+        using var image = scene.ToImage();
+        var pixels = image.Frames[0];
+        Assert.Equal(Blue, pixels[5, 5]);
+        Assert.Equal(Colors.White, pixels[15, 5]);
+        Assert.Equal(Blue, pixels[25, 5]);
+        Assert.Equal(Colors.White, pixels[35, 15]);
+        Assert.Equal(Colors.White, pixels[55, 35]);
+        Assert.Equal(Red, pixels[75, 55]);
+        Assert.Equal(Colors.White, pixels[65, 55]);
+        Assert.Equal(Colors.White, pixels[75, 65]);
+        Assert.Equal(Colors.White, pixels[80, 20]);
+
+        // The glyphs are red, opaque; the rest of the rectangle is not drawn
+        var red = 0;
+        for (var y = 50; y < 100; y++)
+        {
+            for (var x = 0; x < 50; x++)
+            {
+                if (pixels[x, y] == Red)
+                {
+                    red++;
+                }
+            }
+        }
+
+        Assert.InRange(red, 50, 1000);
+        Assert.Equal(Colors.White, pixels[45, 95]);
+    }
+
+    [Fact]
+    public void TextsFittedByTheirSpacingAreShapedWhole()
+    {
+        // A text fitted to its own width is drawn as the text alone: its last letters are shaped with the others
+        var measurer = SceneImageRenderer.CreateMeasurer();
+        var font = new SceneFont(30);
+        var width = measurer.Measure("AVAV", font).Width;
+        var plain = new Scene(120, 40, measurer.FontFamily) { Background = SceneColor.White };
+        plain.Root.Add(new SceneText(5, 30, "AVAV", font, SceneColor.Black));
+        var fitted = new Scene(120, 40, measurer.FontFamily) { Background = SceneColor.White };
+        fitted.Root.Add(new SceneText(5, 30, "AVAV", font, SceneColor.Black) { TextLength = width });
+        using var plainImage = plain.ToImage();
+        using var fittedImage = fitted.ToImage();
+        for (var y = 0; y < 40; y++)
+        {
+            for (var x = 0; x < 120; x++)
+            {
+                Assert.Equal(plainImage.Frames[0][x, y], fittedImage.Frames[0][x, y]);
+            }
+        }
+    }
+
+    [Fact]
+    public void FittedTextsThatEndInAnotherDirectionStayInTheirLength()
+    {
+        // Latin letters followed by Arabic ones, spread over 120 pixels: the Latin letters stay at the anchor, and the ink
+        // ends where the length does
+        var fonts = new SceneFontCollection(LoadFace("LiberationSans-Regular.woff2"), LoadFace("NotoNaskhArabic-Regular.subset.ttf"));
+        var measurer = new FontFaceTextMeasurer(fonts);
+        var font = new SceneFont(20);
+        const string Value = "AB\u0645\u0631\u062D\u0628\u0627";
+        var natural = measurer.Measure(Value, font).Width;
+        Assert.InRange(natural, 30, 100);
+        var scene = new Scene(160, 40, measurer.FontFamily) { Fonts = fonts };
+        scene.Root.Add(new SceneText(20, 30, Value, font, SceneColor.Black) { TextLength = 120 });
+        var plain = new Scene(160, 40, measurer.FontFamily) { Fonts = fonts };
+        plain.Root.Add(new SceneText(20, 30, Value, font, SceneColor.Black));
+        using var image = scene.ToImage();
+        using var plainImage = plain.ToImage();
+        var (plainLeft, _, plainRight, _) = GetInkBounds(plainImage, 0, 0, 160, 40);
+        var (left, _, right, _) = GetInkBounds(image, 0, 0, 160, 40);
+        Assert.Equal(plainLeft, left);
+        Assert.InRange(right, plainRight + 120 - natural - 2, plainRight + 120 - natural + 2);
+    }
+
+    [Fact]
+    public void FittedTextsKeepTheOrderOfTheirRuns()
+    {
+        // An Arabic word followed by Latin letters is a right-to-left paragraph: the Latin letters are at its left. Fitted to
+        // its own width, it is drawn as it is; fitted to a longer one, its ink stays in that length.
+        var fonts = new SceneFontCollection(LoadFace("LiberationSans-Regular.woff2"), LoadFace("NotoNaskhArabic-Regular.subset.ttf"));
+        var measurer = SceneImageRenderer.CreateMeasurer(new SceneImageOptions { Fonts = fonts });
+        var font = new SceneFont(20);
+        const string Value = "\u0645\u0631\u062D\u0628\u0627abc";
+        var natural = measurer.Measure(Value, font).Width;
+        Assert.InRange(natural, 30, 100);
+        using var plain = Draw(null);
+        using var fitted = Draw(natural);
+        for (var y = 0; y < 40; y++)
+        {
+            for (var x = 0; x < 160; x++)
+            {
+                Assert.Equal(plain.Frames[0][x, y], fitted.Frames[0][x, y]);
+            }
+        }
+
+        using var longer = Draw(120);
+        var (left, _, right, _) = GetInkBounds(longer, 0, 0, 160, 40);
+        Assert.InRange(left, 19, 25);
+        Assert.InRange(right, 120, 141);
+
+        Image<Rgba32> Draw(double? length)
+        {
+            var scene = new Scene(160, 40, measurer.FontFamily) { Fonts = fonts };
+            scene.Root.Add(new SceneText(20, 30, Value, font, SceneColor.Black) { TextLength = length });
+            return scene.ToImage();
+        }
+    }
+
+    [Fact]
+    public void TextsOfClippingPathsHaveNoLines()
+    {
+        // The underline of a text of a clipping path does not show the clipped element
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        var letters = new SceneClipPath();
+        letters.Content.Add(new SceneText(5, 30, "__", new SceneFont(30), SceneColor.Black) { Decorations = SceneTextDecorations.Underline | SceneTextDecorations.Overline | SceneTextDecorations.Strikethrough, Stroke = SceneColor.Black, StrokeWidth = 10 });
+        scene.Root.Add(new SceneRectangle(0, 0, 100, 60) { Fill = (SceneColor)"#ff0000", ClippingPath = letters });
+        using var image = scene.ToImage();
+        Assert.Equal(Colors.White, image.Frames[0][20, 21]);
+        Assert.Equal(Colors.White, image.Frames[0][20, 10]);
     }
 }

@@ -200,6 +200,11 @@ public sealed class ScenePdfRendererTests
         mask.Content.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.White, Filter = new SceneBlurFilter(1) });
         masked.Root.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black, Mask = mask });
         Assert.Throws<NotSupportedException>(() => masked.ToPdf());
+
+        // A filter graph neither
+        var graph = new Scene(10, 10, "sans-serif");
+        graph.Root.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black, Filter = new SceneFilterGraph([new SceneFloodPrimitive(SceneColor.White)]) });
+        Assert.Contains("SceneFilterGraph", Assert.Throws<NotSupportedException>(() => graph.ToPdf()).Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -309,6 +314,123 @@ public sealed class ScenePdfRendererTests
         Assert.InRange(columns.Max(), 163, 170);
         var text = document.Pages[0].ExtractText();
         Assert.Contains("MMM", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TextPaintsAndOutlines()
+    {
+        var font = new SceneFont(30, Weight: SceneFont.BoldWeight);
+        var scene = new Scene(300, 160, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneText(10, 30, "MMMMMM", font, SceneColor.Black) { Fill = new LinearGradientPaint(10, 0, 140, 0, [new(0, (SceneColor)"#0000ff"), new(1, (SceneColor)"#ff0000")]) });
+        scene.Root.Add(new SceneText(160, 30, "WWWWWW", font, SceneColor.Transparent) { Stroke = (SceneColor)"#ff0000" });
+        scene.Root.Add(new SceneText(10, 80, "Under", font, SceneColor.Black) { Stroke = (SceneColor)"#ffff00", StrokeWidth = 6, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+        scene.Root.Add(new SceneText(160, 80, "Over", font, SceneColor.Black) { Stroke = (SceneColor)"#ffff00", StrokeWidth = 6 });
+        scene.Root.Add(new SceneText(10, 130, [new SceneTextSpan("MMM"), new SceneTextSpan("MMM") { Color = (SceneColor)"#0000ff" }], font, (SceneColor)"#ff0000") { Decorations = SceneTextDecorations.Underline, DecorationFill = (SceneColor)"#ff0000" });
+        var document = scene.ToPdf();
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+        var pixels = image.Frames[0];
+
+        // The gradient goes from blue to red; the outline is red, without fill
+        Assert.True(Count(10, 0, 40, 40, pixel => pixel.B > 200 && pixel.R < 100) > 20);
+        Assert.True(Count(110, 0, 150, 40, pixel => pixel.R > 200 && pixel.B < 100) > 20);
+        Assert.Equal(0, Count(160, 0, 300, 40, pixel => pixel.R < 100 && pixel.G < 100));
+        Assert.True(Count(160, 0, 300, 40, pixel => pixel.R > 200 && pixel.G < 100) > 50);
+
+        // A wide outline under the fill leaves more of the glyphs black than the same outline over them
+        var blackUnder = Count(0, 45, 150, 95, pixel => pixel.R < 60 && pixel.G < 60);
+        var blackOver = Count(150, 45, 300, 95, pixel => pixel.R < 60 && pixel.G < 60);
+        Assert.True(blackUnder > blackOver, $"{blackUnder} black pixels with the outline under the fill, {blackOver} with the outline over it");
+
+        // The underline is red under both spans; the glyphs of the second span are blue
+        Assert.Contains(Enumerable.Range(130, 8), y => pixels[110, y].R > 200 && pixels[110, y].B < 100);
+        Assert.True(Count(90, 100, 160, 125, pixel => pixel.B > 200 && pixel.R < 100) > 50);
+
+        // The outline is the stroke rendering mode; an outline under the fill is drawn first, and the text is extracted once
+        var content = Uncompressed(document);
+        Assert.Contains("1 Tr", content, StringComparison.Ordinal);
+        Assert.Contains("2 Tr", content, StringComparison.Ordinal);
+        Assert.Contains("0 Tr", content, StringComparison.Ordinal);
+        var text = document.Pages[0].ExtractText();
+        Assert.Equal(text.IndexOf("Under", StringComparison.Ordinal), text.LastIndexOf("Under", StringComparison.Ordinal));
+        Assert.Contains("Under", text, StringComparison.Ordinal);
+        Assert.Contains("Over", text, StringComparison.Ordinal);
+        Assert.Contains("WWWWWW", text, StringComparison.Ordinal);
+
+        int Count(int x0, int y0, int x1, int y1, Func<Rgba32, bool> predicate) => Enumerable.Range(y0, y1 - y0).Sum(y => Enumerable.Range(x0, x1 - x0).Count(x => predicate(pixels[x, y])));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TextPositionsAndBaselines(bool embedFonts)
+    {
+        var font = new SceneFont(20);
+        var scene = new Scene(300, 200, "sans-serif") { Background = SceneColor.White };
+        if (embedFonts)
+        {
+            scene.Fonts = SceneFontCollection.Load(Path.Combine(TestData, "LiberationSans-Regular.woff2"));
+        }
+
+        scene.Root.Add(new SceneText(10, 20, "MM", font, SceneColor.Black) { Baseline = SceneTextBaseline.TextTop });
+        scene.Root.Add(new SceneText(100, 40, [new SceneTextSpan("MM"), new SceneTextSpan("MM") { BaselineShift = 10 }], font, SceneColor.Black));
+        scene.Root.Add(new SceneText(80, 80, [new SceneTextSpan("MM"), new SceneTextSpan("MM") { X = 250, Dy = 20 }], font, SceneColor.Black) { Anchor = SceneTextAnchor.End });
+        scene.Root.Add(new SceneText(290, 140, "MM", font, SceneColor.Black) { Direction = SceneTextDirection.RightToLeft });
+        scene.Root.Add(new SceneText(10, 150, [new SceneTextSpan("MM") { GlyphRotation = 90 }], font, SceneColor.Black));
+        var document = scene.ToPdf();
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+
+        // The ascent of Helvetica (0.718 em) is smaller than the one of Liberation Sans (0.905 em)
+        var (_, top, _, bottom) = GetInkBounds(image, 0, 0, 90, 60);
+        Assert.InRange(top, 20, 26);
+        Assert.InRange(bottom, embedFonts ? 37 : 33, embedFonts ? 39 : 35);
+
+        var (_, _, _, firstBottom) = GetInkBounds(image, 100, 0, 128, 60);
+        var (_, _, _, shiftedBottom) = GetInkBounds(image, 136, 0, 200, 60);
+        Assert.InRange(firstBottom, 38, 40);
+        Assert.InRange(shiftedBottom, 28, 30);
+
+        var (_, _, right, _) = GetInkBounds(image, 0, 62, 100, 82);
+        Assert.InRange(right, 76, 80);
+        var (_, _, chunkRight, chunkBottom) = GetInkBounds(image, 100, 82, 300, 110);
+        Assert.InRange(chunkRight, 246, 250);
+        Assert.InRange(chunkBottom, 98, 100);
+
+        (_, _, right, _) = GetInkBounds(image, 200, 120, 300, 145);
+        Assert.InRange(right, 286, 290);
+
+        (_, top, _, bottom) = GetInkBounds(image, 0, 130, 100, 200);
+        Assert.InRange(top, 148, 152);
+        Assert.InRange(bottom, 160, 172);
+        Assert.Contains("MMMM", document.Pages[0].ExtractText(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TextLength(bool embedFonts)
+    {
+        var font = new SceneFont(20);
+        var scene = new Scene(300, 120, "sans-serif") { Background = SceneColor.White };
+        if (embedFonts)
+        {
+            scene.Fonts = SceneFontCollection.Load(Path.Combine(TestData, "LiberationSans-Regular.woff2"));
+        }
+
+        // 30 pixels more, in the 3 gaps between the 4 letters; twice as wide, the glyphs scaled
+        var width = PdfFont.GetStandardFont(PdfStandardFont.Helvetica).GetTextWidth("MMMM", 20);
+        scene.Root.Add(new SceneText(10, 30, "MMMM", font, SceneColor.Black));
+        scene.Root.Add(new SceneText(10, 70, "MMMM", font, SceneColor.Black) { TextLength = width + 30 });
+        scene.Root.Add(new SceneText(10, 110, "MMMM", font, SceneColor.Black) { TextLength = 2 * width, LengthAdjust = SceneTextLengthAdjust.SpacingAndGlyphs });
+        var document = scene.ToPdf();
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+        var (left, right) = GetInkColumns(image, 0, 40);
+        var (spacedLeft, spacedRight) = GetInkColumns(image, 40, 80);
+        var (scaledLeft, scaledRight) = GetInkColumns(image, 80, 120);
+        Assert.InRange(spacedLeft, left - 1, left + 1);
+        Assert.InRange(spacedRight - right, 29, 31);
+        Assert.InRange(scaledLeft - 10, ((left - 10) * 2) - 2, ((left - 10) * 2) + 2);
+        Assert.InRange(scaledRight - 10, ((right - 10) * 2) - 2, ((right - 10) * 2) + 2);
+        Assert.Contains("MMMM", document.Pages[0].ExtractText(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -624,9 +746,185 @@ public sealed class ScenePdfRendererTests
         Assert.Throws<ArgumentException>("position", () => new PdfDocument().Pages.Add(new PdfSize(10, 10)).DrawScene(scene, new PdfPoint(double.NaN, 0)));
     }
 
+    [Fact]
+    public void ContextPaintsPaintOrderAndNonScalingStrokes()
+    {
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+
+        // A marker painted with the stroke of its line; a context paint paints nothing outside of the markers
+        var square = new SceneMarker { Units = SceneMarkerUnits.UserSpace };
+        square.Content.Add(new SceneRectangle(-4, -4, 8, 8) { Fill = ContextPaint.Stroke });
+        scene.Root.Add(new SceneLine(5, 10.5, 40, 10.5) { Stroke = (SceneColor)"#ff0000", MarkerEnd = square });
+        scene.Root.Add(new SceneLine(5, 30.5, 40, 30.5) { Stroke = (SceneColor)"#0000ff", MarkerEnd = square });
+        scene.Root.Add(new SceneRectangle(0, 45, 10, 10) { Fill = ContextPaint.Fill });
+
+        // The stroke under the fill
+        scene.Root.Add(new SceneRectangle(60, 10, 20, 20) { Fill = (SceneColor)"#ff0000", Stroke = (SceneColor)"#0000ff", StrokeWidth = 6, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+
+        // A stroke of 2 pixels in a group scaled 10 times stays 2 pixels wide
+        var zoomed = scene.Root.Add(new SceneGroup { Transform = SceneTransform.Scale(10, 10) });
+        zoomed.Add(new SceneLine(2, 7, 9, 7) { Stroke = (SceneColor)"#0000ff", StrokeWidth = 2, NonScalingStroke = true });
+        using var image = Render(scene);
+        var pixels = image.Frames[0];
+
+        static bool IsRed(Rgba32 color) => color.R > 200 && color.B < 80;
+        static bool IsBlue(Rgba32 color) => color.B > 200 && color.R < 80;
+        static bool IsWhite(Rgba32 color) => color.R > 230 && color.G > 230 && color.B > 230;
+        Assert.True(IsRed(pixels[42, 10]), pixels[42, 10].ToString());
+        Assert.True(IsBlue(pixels[42, 30]), pixels[42, 30].ToString());
+        Assert.True(IsWhite(pixels[5, 50]), pixels[5, 50].ToString());
+        Assert.True(IsRed(pixels[61, 20]), pixels[61, 20].ToString());
+        Assert.True(IsBlue(pixels[58, 20]), pixels[58, 20].ToString());
+        Assert.True(IsBlue(pixels[50, 70]), pixels[50, 70].ToString());
+        Assert.True(IsWhite(pixels[50, 66]), pixels[50, 66].ToString());
+        Assert.True(IsWhite(pixels[50, 74]), pixels[50, 74].ToString());
+    }
+
+    [Fact]
+    public void FocalRadiusAndAspectRatiosOfImages()
+    {
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC");
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneImage(0, 0, 80, 40, png) { Alignment = SceneAspectRatio.XMidYMid });
+        scene.Root.Add(new SceneImage(0, 40, 80, 20, png) { Alignment = SceneAspectRatio.XMinYMin, Slice = true });
+        scene.Root.Add(new SceneRectangle(60, 60, 40, 40) { Fill = new RadialGradientPaint(80, 80, 20, [new(0, (SceneColor)"#ff0000"), new(1, (SceneColor)"#0000ff")]) { FocalRadius = 10 } });
+        using var image = Render(scene);
+        var pixels = image.Frames[0];
+        Assert.True(pixels[10, 20].R > 230 && pixels[10, 20].B > 230, "meet leaves the sides empty");
+        Assert.True(pixels[25, 5].R > 200 && pixels[25, 5].B < 80, pixels[25, 5].ToString());
+        Assert.True(pixels[55, 5].B > 200 && pixels[55, 5].R < 80, pixels[55, 5].ToString());
+        Assert.True(pixels[10, 45].R > 200 && pixels[10, 45].B < 80, "slice: the top left of the image");
+        Assert.True(pixels[70, 45].B > 200 && pixels[70, 45].R < 80, "slice: the top right of the image");
+        Assert.True(pixels[10, 62].R > 230 && pixels[10, 62].G > 230, "slice is cut to the rectangle");
+        Assert.True(pixels[80, 80].R > 230 && pixels[80, 80].B < 30, "the focal circle has the first color");
+        Assert.True(pixels[87, 80].R > 230 && pixels[87, 80].B < 30, "the focal circle has the first color");
+        Assert.True(pixels[98, 80].B > 150 && pixels[98, 80].R < 100, pixels[98, 80].ToString());
+    }
+
+    [Fact]
+    public void ClippingPaths()
+    {
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+
+        // One shape is a clipping path of PDF; in the coordinates of the parent, outside of the transform of the element
+        var single = new SceneClipPath();
+        single.Content.Add(new SceneCircle(10, 10, 8));
+        scene.Root.Add(new SceneRectangle(0, 0, 30, 30) { Fill = (SceneColor)"#0000ff", Transform = SceneTransform.Translate(-5, 0), ClippingPath = single });
+
+        // The union of a square and of a ring whose hole is empty (even-odd) is a soft mask
+        var shapes = new SceneClipPath();
+        shapes.Content.Add(new SceneRectangle(30, 0, 10, 10));
+        shapes.Content.Add(new ScenePath(new PathBuilder().AddRectangle(50, 0, 30, 30).AddRectangle(60, 10, 10, 10).Build()) { FillRule = SceneFillRule.EvenOdd });
+        scene.Root.Add(new SceneRectangle(30, 0, 70, 40) { Fill = (SceneColor)"#0000ff", ClippingPath = shapes });
+
+        // Cut by another clipping path, with a mask of its own
+        var outer = new SceneClipPath();
+        outer.Content.Add(new SceneRectangle(60, 50, 40, 10));
+        var cut = new SceneClipPath { ClippingPath = outer };
+        cut.Content.Add(new SceneRectangle(70, 50, 30, 30));
+        var mask = new SceneMask();
+        mask.Content.Add(new SceneRectangle(0, 0, 100, 100) { Fill = SceneColor.White });
+        scene.Root.Add(new SceneRectangle(50, 50, 50, 50) { Fill = (SceneColor)"#ff0000", ClippingPath = cut, Mask = mask });
+
+        // A translucent text shows its glyphs; a clipping path that cuts itself leaves nothing visible
+        var letters = new SceneClipPath();
+        letters.Content.Add(new SceneText(0, 90, "II", new SceneFont(40), SceneColor.Black.WithOpacity(0.2)));
+        scene.Root.Add(new SceneRectangle(0, 50, 50, 50) { Fill = (SceneColor)"#ff0000", ClippingPath = letters });
+        var circular = new SceneClipPath();
+        circular.Content.Add(new SceneRectangle(0, 0, 100, 100));
+        circular.ClippingPath = circular;
+        scene.Root.Add(new SceneRectangle(0, 40, 100, 5) { Fill = (SceneColor)"#ff0000", ClippingPath = circular });
+        using var image = Render(scene);
+        var pixels = image.Frames[0];
+
+        static bool IsRed(Rgba32 color) => color.R > 200 && color.G < 80 && color.B < 80;
+        static bool IsBlue(Rgba32 color) => color.B > 200 && color.R < 80;
+        static bool IsWhite(Rgba32 color) => color.R > 230 && color.G > 230 && color.B > 230;
+        Assert.True(IsBlue(pixels[10, 10]), "single shape");
+        Assert.True(IsWhite(pixels[1, 1]), "outside of the circle");
+        Assert.True(IsBlue(pixels[35, 5]), "square");
+        Assert.True(IsWhite(pixels[45, 5]), "between the shapes");
+        Assert.True(IsBlue(pixels[55, 5]), "ring");
+        Assert.True(IsWhite(pixels[65, 15]), "hole of the ring");
+        Assert.True(IsWhite(pixels[90, 35]), "outside of the shapes");
+        Assert.True(IsRed(pixels[75, 55]), "inside both");
+        Assert.True(IsWhite(pixels[65, 55]), "outside of the inner clipping path");
+        Assert.True(IsWhite(pixels[75, 65]), "outside of the outer clipping path");
+        Assert.True(IsWhite(pixels[50, 42]), "circular");
+        Assert.True(IsWhite(pixels[45, 95]), "outside of the glyphs");
+        var red = 0;
+        for (var y = 50; y < 100; y++)
+        {
+            for (var x = 0; x < 50; x++)
+            {
+                if (IsRed(pixels[x, y]))
+                {
+                    red++;
+                }
+            }
+        }
+
+        Assert.InRange(red, 50, 1000);
+    }
+
+    [Fact]
+    public void ClippingPathsOfTransparentShapesAndOfChildren()
+    {
+        static bool IsRed(Rgba32 color) => color.R > 200 && color.G < 80 && color.B < 80;
+        static bool IsWhite(Rgba32 color) => color.R > 230 && color.G > 230 && color.B > 230;
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+
+        // The opacity of the content of a clipping path does not change its geometry
+        var transparent = new SceneClipPath();
+        transparent.Content.Add(new SceneRectangle(0, 0, 10, 10) { Opacity = 0 });
+        transparent.Content.Add(new SceneRectangle(20, 0, 10, 10) { Opacity = 0 });
+        scene.Root.Add(new SceneRectangle(0, 0, 40, 10) { Fill = (SceneColor)"#ff0000", ClippingPath = transparent });
+
+        // A child with a mask and a clipping path of its own stays inside the clipping path of its group
+        var outer = new SceneClipPath();
+        outer.Content.Add(new SceneRectangle(0, 50, 20, 50));
+        outer.Content.Add(new SceneRectangle(30, 50, 20, 50));
+        var group = scene.Root.Add(new SceneGroup { ClippingPath = outer });
+        var inner = new SceneClipPath();
+        inner.Content.Add(new SceneRectangle(0, 50, 100, 20));
+        inner.Content.Add(new SceneRectangle(0, 80, 100, 20));
+        var mask = new SceneMask();
+        mask.Content.Add(new SceneRectangle(0, 0, 100, 100) { Fill = SceneColor.White });
+        group.Add(new SceneRectangle(0, 50, 100, 50) { Fill = (SceneColor)"#ff0000", ClippingPath = inner, Mask = mask });
+        using var image = Render(scene);
+        var pixels = image.Frames[0];
+        Assert.True(IsRed(pixels[5, 5]), "first transparent shape");
+        Assert.True(IsWhite(pixels[15, 5]), "between the shapes");
+        Assert.True(IsRed(pixels[25, 5]), "second transparent shape");
+        Assert.True(IsRed(pixels[10, 60]), "inside both clipping paths");
+        Assert.True(IsWhite(pixels[25, 60]), "between the shapes of the outer clipping path");
+        Assert.True(IsWhite(pixels[70, 60]), "outside of the outer clipping path");
+        Assert.True(IsWhite(pixels[10, 75]), "between the shapes of the inner clipping path");
+    }
+
     private static string Uncompressed(PdfDocument document) => System.Text.Encoding.Latin1.GetString(document.ToByteArray(new PdfSaveOptions { CompressStreams = false, UseObjectStreams = false }));
 
     private static Image<Rgba32> Render(Scene scene) => scene.ToPdf().Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+
+    private static (int Left, int Top, int Right, int Bottom) GetInkBounds(Image<Rgba32> image, int x0, int y0, int x1, int y1)
+    {
+        var (left, top, right, bottom) = (int.MaxValue, int.MaxValue, -1, -1);
+        for (var y = y0; y < y1; y++)
+        {
+            for (var x = x0; x < x1; x++)
+            {
+                if (image.Frames[0][x, y].R < 128)
+                {
+                    left = Math.Min(left, x);
+                    top = Math.Min(top, y);
+                    right = Math.Max(right, x);
+                    bottom = Math.Max(bottom, y);
+                }
+            }
+        }
+
+        return (left, top, right, bottom);
+    }
 
     private static (int Left, int Right) GetInkColumns(Image<Rgba32> image, int top = 0, int bottom = -1)
     {

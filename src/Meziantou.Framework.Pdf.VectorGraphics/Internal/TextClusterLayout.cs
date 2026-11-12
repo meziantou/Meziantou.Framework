@@ -23,10 +23,11 @@ internal static class TextClusterLayout
     /// <param name="size">The size of the font.</param>
     /// <param name="letterSpacing">The space added after each cluster.</param>
     /// <param name="wordSpacing">The space added after each space.</param>
+    /// <param name="rightToLeft">Whether the paragraph is right to left; else its direction is the one of its first strong character.</param>
     /// <returns>The clusters from left to right, and the width of the text.</returns>
-    public static (List<TextCluster> Clusters, double Width) Layout(PdfFont font, FontFace? face, string text, double size, double letterSpacing, double wordSpacing)
+    public static (List<TextCluster> Clusters, double Width) Layout(PdfFont font, FontFace? face, string text, double size, double letterSpacing, double wordSpacing, bool rightToLeft = false)
     {
-        return face is null ? LayoutStandard(font, text, size, letterSpacing, wordSpacing) : LayoutEmbedded(face, text, size, letterSpacing, wordSpacing);
+        return face is null ? LayoutStandard(font, text, size, letterSpacing, wordSpacing) : LayoutEmbedded(face, text, size, letterSpacing, wordSpacing, rightToLeft);
     }
 
     private static (List<TextCluster> Clusters, double Width) LayoutStandard(PdfFont font, string text, double size, double letterSpacing, double wordSpacing)
@@ -38,21 +39,21 @@ internal static class TextClusterLayout
             var cluster = text[range];
             var spacing = GetSpacing(cluster[0], letterSpacing, wordSpacing);
             var advance = font.GetTextWidth(cluster, size) + spacing;
-            clusters.Add(new TextCluster(cluster, x, advance, spacing, Glyphs: null));
+            clusters.Add(new TextCluster(cluster, x, advance, spacing, Glyphs: null) { Start = range.Start.GetOffset(text.Length) });
             x += advance;
         }
 
         return (clusters, x);
     }
 
-    private static (List<TextCluster> Clusters, double Width) LayoutEmbedded(FontFace face, string text, double size, double letterSpacing, double wordSpacing)
+    private static (List<TextCluster> Clusters, double Width) LayoutEmbedded(FontFace face, string text, double size, double letterSpacing, double wordSpacing, bool rightToLeft)
     {
         var clusters = new List<TextCluster>();
         if (text.Length is 0)
             return (clusters, 0);
 
         var levels = new byte[text.Length];
-        UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.Auto, levels);
+        UnicodeBidi.ResolveLevels(text, rightToLeft ? UnicodeBidiDirection.RightToLeft : UnicodeBidiDirection.Auto, levels);
         var runs = new List<(int Start, int Length, UnicodeScript Script)>();
         var runLevels = new List<byte>();
         foreach (var scriptRun in Unicode.EnumerateScriptRuns(text))
@@ -131,7 +132,7 @@ internal static class TextClusterLayout
                     }
 
                     var advance = pen + spacing;
-                    clusters.Add(new TextCluster(text[cluster..clusterEnd], x, advance, spacing, [.. glyphs]));
+                    clusters.Add(new TextCluster(text[cluster..clusterEnd], x, advance, spacing, [.. glyphs]) { Start = cluster, IsRightToLeft = isRightToLeft });
                     x += advance;
                     i = end;
                 }
@@ -139,6 +140,44 @@ internal static class TextClusterLayout
         }
 
         return (clusters, x);
+    }
+
+    /// <summary>
+    /// Removes a space from the cluster that is last in logical order: its advance loses it, the glyphs of a right-to-left
+    /// cluster (which have it before them) move back, and the clusters at its right move left.
+    /// </summary>
+    /// <param name="clusters">The clusters, from left to right.</param>
+    /// <param name="space">The space to remove.</param>
+    /// <returns>The clusters without the space.</returns>
+    public static List<TextCluster> RemoveLastGap(List<TextCluster> clusters, double space)
+    {
+        var last = 0;
+        for (var i = 1; i < clusters.Count; i++)
+        {
+            if (clusters[i].Start > clusters[last].Start)
+            {
+                last = i;
+            }
+        }
+
+        var result = new List<TextCluster>(clusters.Count);
+        for (var i = 0; i < clusters.Count; i++)
+        {
+            var cluster = clusters[i];
+            if (i == last)
+            {
+                var glyphs = cluster.IsRightToLeft && cluster.Glyphs is { } shifted ? [.. shifted.Select(glyph => glyph with { X = glyph.X - space })] : cluster.Glyphs;
+                cluster = cluster with { Advance = cluster.Advance - space, Spacing = cluster.Spacing - space, Glyphs = glyphs };
+            }
+            else if (i > last)
+            {
+                cluster = cluster with { X = cluster.X - space };
+            }
+
+            result.Add(cluster);
+        }
+
+        return result;
     }
 
     // The first start greater than a cluster, by binary search

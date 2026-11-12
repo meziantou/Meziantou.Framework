@@ -17,6 +17,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Places the spans of the texts as the SVG renderer and the other renderers do -->
+    <Compile Include="../Meziantou.Framework.VectorGraphics/Internals/TextPlacement.cs" Link="Internal/TextPlacement.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.Pdf.VectorGraphics.Tests" />
   </ItemGroup>
 

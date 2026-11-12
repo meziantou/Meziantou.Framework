@@ -211,6 +211,225 @@ public sealed class SvgSceneRendererTests
     }
 
     [Fact]
+    public void TextPaints()
+    {
+        #region VectorGraphics_TextPaints
+        var scene = new Scene(width: 300, height: 100, fontFamily: "sans-serif");
+        var font = new SceneFont(28, Weight: SceneFont.BoldWeight);
+
+        // A text filled with a gradient, and an outlined text: a stroke and a transparent fill
+        var gradient = new LinearGradientPaint(10, 0, 140, 0, [new(0, (SceneColor)"#0369a1"), new(1, (SceneColor)"#be123c")]);
+        scene.Root.Add(new SceneText(10, 35, "Gradient", font, SceneColor.Black) { Fill = gradient });
+        scene.Root.Add(new SceneText(160, 35, "Outline", font, SceneColor.Transparent) { Stroke = (SceneColor)"#0369a1", StrokeWidth = 1.5 });
+
+        // A thick outline painted under the fill, as a halo
+        scene.Root.Add(new SceneText(10, 80, "Halo", font, SceneColor.Black) { Stroke = (SceneColor)"#fde047", StrokeWidth = 6, LineJoin = SceneLineJoin.Round, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+
+        // Lines painted with the color of the text under spans of other colors, as SVG paints the lines of a parent element
+        SceneTextSpan[] spans = [new("Red and "), new("blue") { Color = (SceneColor)"#0000ff" }];
+        scene.Root.Add(new SceneText(110, 80, spans, new SceneFont(20), (SceneColor)"#ff0000") { Decorations = SceneTextDecorations.Underline, DecorationFill = (SceneColor)"#ff0000" });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("TextPaints", svg);
+        Assert.Contains("<linearGradient id=\"scene-gradient0\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<text x=\"10\" y=\"35\" font-size=\"28\" font-weight=\"bold\" fill=\"url(#scene-gradient0)\">Gradient</text>", svg, StringComparison.Ordinal);
+        Assert.Contains("<text x=\"160\" y=\"35\" font-size=\"28\" font-weight=\"bold\" fill=\"#000000\" fill-opacity=\"0\" stroke=\"#0369a1\" stroke-width=\"1.5\">Outline</text>", svg, StringComparison.Ordinal);
+        Assert.Contains("fill=\"#000000\" stroke=\"#fde047\" stroke-width=\"6\" stroke-linejoin=\"round\" paint-order=\"stroke\">Halo</text>", svg, StringComparison.Ordinal);
+        Assert.Contains("fill=\"#ff0000\"><tspan text-decoration=\"underline\">Red and </tspan><tspan fill=\"#ff0000\" text-decoration=\"underline\"><tspan fill=\"#0000ff\">blue</tspan></tspan></text>", svg, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TextPaintsOfSpans()
+    {
+        // A span overrides the paints of the text; an opaque paint resets the opacity the span inherits
+        var pattern = new PatternPaint(new SceneBounds(0, 0, 4, 4));
+        pattern.Content.Add(new SceneRectangle(0, 0, 2, 2) { Fill = SceneColor.Black });
+        SceneTextSpan[] spans =
+        [
+            new("a"),
+            new("b") { Fill = pattern },
+            new("c") { Stroke = (SceneColor)"#00ff00" },
+            new("d") { Color = (SceneColor)"#ff0000", Fill = (SceneColor)"#0000ff" },
+            new("e") { Color = (SceneColor)"#ff0000" },
+        ];
+        var text = new SceneText(0, 10, spans, new SceneFont(10), (SceneColor)"#00000080") { Stroke = (SceneColor)"#ff000080", StrokeWidth = 2, StrokeDashArray = [1, 2], StrokeDashOffset = 1, LineCap = SceneLineCap.Round, MiterLimit = 8 };
+        var svg = SvgSceneRenderer.Render(Single(text));
+        Assert.Contains("<pattern id=\"scene-pattern0\"", svg, StringComparison.Ordinal);
+        Assert.Contains("fill=\"#000000\" fill-opacity=\"0.502\" stroke=\"#ff0000\" stroke-opacity=\"0.502\" stroke-width=\"2\" stroke-dasharray=\"1 2\" stroke-dashoffset=\"1\" stroke-linecap=\"round\" stroke-miterlimit=\"8\">a", svg, StringComparison.Ordinal);
+        Assert.Contains("<tspan fill=\"url(#scene-pattern0)\" fill-opacity=\"1\">b</tspan>", svg, StringComparison.Ordinal);
+        Assert.Contains("<tspan stroke=\"#00ff00\" stroke-opacity=\"1\">c</tspan>", svg, StringComparison.Ordinal);
+        Assert.Contains("<tspan fill=\"#0000ff\" fill-opacity=\"1\">d</tspan>", svg, StringComparison.Ordinal);
+        Assert.Contains("<tspan fill=\"#ff0000\" fill-opacity=\"1\">e</tspan>", svg, StringComparison.Ordinal);
+
+        // A text without spans whose lines have their own paint: the glyphs are in a tspan of their own fill
+        var lined = new SceneText(0, 10, "x", new SceneFont(10), SceneColor.Black) { Decorations = SceneTextDecorations.Underline, DecorationFill = (SceneColor)"#ff000080" };
+        Assert.Contains("text-decoration=\"underline\" fill=\"#ff0000\" fill-opacity=\"0.502\"><tspan fill=\"#000000\" fill-opacity=\"1\">x</tspan></text>", SvgSceneRenderer.Render(Single(lined)), StringComparison.Ordinal);
+
+        // Lines of the paint of the glyphs, an outline without width, and a stroke without paint are not written
+        Assert.Contains(">x</text>", SvgSceneRenderer.Render(Single(new SceneText(0, 10, "x", new SceneFont(10), SceneColor.Black) { Decorations = SceneTextDecorations.Underline, DecorationFill = SceneColor.Black })), StringComparison.Ordinal);
+        Assert.DoesNotContain("stroke", SvgSceneRenderer.Render(Single(new SceneText(0, 10, "x", new SceneFont(10), SceneColor.Black) { Stroke = SceneColor.Black, StrokeWidth = 0 })), StringComparison.Ordinal);
+        Assert.DoesNotContain("stroke", SvgSceneRenderer.Render(Single(new SceneText(0, 10, "x", new SceneFont(10), SceneColor.Black) { StrokeWidth = 3, PaintOrder = ScenePaintOrder.StrokeFillMarkers })), StringComparison.Ordinal);
+
+        // The outline of a text extends its bounds
+        var outlined = new SceneText(0, 10, "x", new SceneFont(10), SceneColor.Black) { Stroke = SceneColor.Black, StrokeWidth = 4, LineJoin = SceneLineJoin.Round };
+        Assert.Equal(new SceneBounds(-2, -2, 24, 24), outlined.GetBounds(_ => new SceneBounds(0, 0, 20, 20)));
+    }
+
+    [Fact]
+    public void TextPositions()
+    {
+        #region VectorGraphics_TextPositions
+        var scene = new Scene(width: 300, height: 150, fontFamily: "sans-serif");
+        var font = new SceneFont(16);
+        var small = font with { Size = 10 };
+
+        // A formula with a subscript and a superscript: the shift applies to its span only
+        scene.Root.Add(new SceneText(10, 30, [new("H"), new("2") { Font = small, BaselineShift = -4 }, new("O and x"), new("2") { Font = small, BaselineShift = 7 }], font, SceneColor.Black));
+
+        // Spans at their own positions: each line is a text chunk, centered on its x
+        scene.Root.Add(new SceneText(220, 30, [new("First line"), new("Second line") { X = 220, Dy = 20 }, new("Third") { X = 220, Dy = 20 }], font, SceneColor.Black) { Anchor = SceneTextAnchor.Middle });
+
+        // Turned letters, and a span moved to the right
+        scene.Root.Add(new SceneText(10, 75, [new("Wavy") { GlyphRotation = 15 }, new("text") { Dx = 8 }], font, SceneColor.Black));
+
+        // A text centered vertically on its y, and a text stretched to 120 pixels
+        scene.Root.Add(new SceneLine(10, 110, 140, 110) { Stroke = (SceneColor)"#cbd5e1" });
+        scene.Root.Add(new SceneText(10, 110, "Middle", font, SceneColor.Black) { Baseline = SceneTextBaseline.Middle });
+        scene.Root.Add(new SceneText(10, 140, "Stretched", font, SceneColor.Black) { TextLength = 120, LengthAdjust = SceneTextLengthAdjust.SpacingAndGlyphs });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("TextPositions", svg);
+        Assert.Contains("fill=\"#000000\">H<tspan baseline-shift=\"-4\" font-size=\"10\">2</tspan>O and x<tspan baseline-shift=\"7\" font-size=\"10\">2</tspan></text>", svg, StringComparison.Ordinal);
+        Assert.Contains(">First line<tspan x=\"220\" dy=\"20\">Second line</tspan><tspan x=\"220\" dy=\"20\">Third</tspan></text>", svg, StringComparison.Ordinal);
+        Assert.Contains("><tspan rotate=\"15\">Wavy</tspan><tspan dx=\"8\">text</tspan></text>", svg, StringComparison.Ordinal);
+        Assert.Contains("<text x=\"10\" y=\"110\" dominant-baseline=\"middle\" font-size=\"16\"", svg, StringComparison.Ordinal);
+        Assert.Contains("textLength=\"120\" lengthAdjust=\"spacingAndGlyphs\"", svg, StringComparison.Ordinal);
+
+        // A right-to-left text; values that are not finite are not written; on a path, the absolute positions and the rotations are not written
+        var rightToLeft = SvgSceneRenderer.Render(Single(new SceneText(100, 10, "\u05E9\u05DC\u05D5\u05DD", font, SceneColor.Black) { Direction = SceneTextDirection.RightToLeft, TextLength = double.NaN }));
+        Assert.Contains("<text x=\"100\" y=\"10\" direction=\"rtl\" font-size=\"16\" fill=\"#000000\">", rightToLeft, StringComparison.Ordinal);
+        Assert.Contains(">a<tspan dy=\"3\">b</tspan></text>", SvgSceneRenderer.Render(Single(new SceneText(0, 10, [new("a"), new("b") { X = double.NaN, Dx = double.PositiveInfinity, Dy = 3, GlyphRotation = double.NaN, BaselineShift = double.NaN }], font, SceneColor.Black) { TextLength = -1 })), StringComparison.Ordinal);
+        var onPath = new SceneText(0, 0, [new("a"), new("b") { X = 5, Y = 5, Dx = 2, GlyphRotation = 30 }], font, SceneColor.Black) { Path = new PathBuilder().MoveTo(0, 0).LineTo(100, 0).Build() };
+        Assert.Contains("<textPath href=\"#scene-textpath0\">a<tspan dx=\"2\">b</tspan></textPath>", SvgSceneRenderer.Render(Single(onPath)), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TextPlacementOfChunksAndShifts()
+    {
+        // Three spans of 10 pixels: the second one starts a chunk at x = 100, moved 5 down; the third one follows it
+        var text = new SceneText(0, 50, [new("a"), new("b") { X = 100, Dy = 5 }, new("c") { Dx = 2, BaselineShift = 3 }], new SceneFont(10), SceneColor.Black) { Anchor = SceneTextAnchor.Middle };
+        var placement = TextPlacement.Place(text, [new(0, 10, 1, 0), new(1, 10, 1, 0), new(2, 10, 1, 0)]);
+        Assert.Equal([-5.0, 89, 101], placement.X);
+        Assert.Equal([50.0, 55, 52], placement.Y);
+
+        // The anchor of a chunk is the position of its first character, after its shift
+        text = new SceneText(0, 0, [new("a") { Dx = 20 }, new("b")], new SceneFont(10), SceneColor.Black) { Anchor = SceneTextAnchor.End };
+        placement = TextPlacement.Place(text, [new(0, 10, 1, 0), new(1, 10, 1, 0)]);
+        Assert.Equal([0.0, 10], placement.X);
+
+        // From right to left, the spans follow each other to the left of the start
+        text = new SceneText(100, 0, [new("a"), new("b")], new SceneFont(10), SceneColor.Black) { Direction = SceneTextDirection.RightToLeft };
+        placement = TextPlacement.Place(text, [new(0, 10, 1, 0), new(1, 30, 1, 0)]);
+        Assert.Equal([90.0, 60], placement.X);
+        text.Anchor = SceneTextAnchor.End;
+        placement = TextPlacement.Place(text, [new(0, 10, 1, 0), new(1, 30, 1, 0)]);
+        Assert.Equal([130.0, 100], placement.X);
+
+        // The baseline offset moves the alphabetic baseline down from the y of the text
+        placement = TextPlacement.Place(new SceneText(0, 10, "a", new SceneFont(10), SceneColor.Black), [new(-1, 10, 1, 4)]);
+        Assert.Equal([14.0], placement.Y);
+    }
+
+    [Fact]
+    public void TextPlacementOfTheLength()
+    {
+        // 5 clusters of 10 pixels stretched to 70: 5 pixels in each of the 4 gaps, none after the last cluster
+        var text = new SceneText(0, 0, [new("ab"), new("cde")], new SceneFont(10), SceneColor.Black) { TextLength = 70 };
+        var placement = TextPlacement.Place(text, [new(0, 20, 2, 0), new(1, 30, 3, 0)]);
+        Assert.Equal(5, placement.GapSpacing);
+        Assert.Equal(1, placement.LastItem);
+        Assert.Equal([30.0, 40], placement.Width);
+        Assert.Equal([0.0, 30], placement.X);
+        Assert.Equal(1, placement.Scale);
+
+        // Scaled with the glyphs, from the start; centered with the new length
+        text = new SceneText(100, 0, "abcde", new SceneFont(10), SceneColor.Black) { TextLength = 100, LengthAdjust = SceneTextLengthAdjust.SpacingAndGlyphs, Anchor = SceneTextAnchor.Middle };
+        placement = TextPlacement.Place(text, [new(-1, 50, 5, 0)]);
+        Assert.Equal(2, placement.Scale);
+        Assert.Equal([50.0], placement.X);
+        Assert.Equal([100.0], placement.Width);
+
+        // On a path, the glyphs are not scaled: the spacing changes
+        text = new SceneText(0, 0, "ab", new SceneFont(10), SceneColor.Black) { TextLength = 30, LengthAdjust = SceneTextLengthAdjust.SpacingAndGlyphs, Path = new PathBuilder().MoveTo(0, 0).LineTo(100, 0).Build() };
+        placement = TextPlacement.Place(text, [new(-1, 20, 2, 0)]);
+        Assert.Equal(1, placement.Scale);
+        Assert.Equal(10, placement.GapSpacing);
+
+        // A length that is negative or not finite is ignored, as one cluster has no gap
+        foreach (var length in new[] { -1, double.NaN, double.PositiveInfinity })
+        {
+            placement = TextPlacement.Place(new SceneText(0, 0, "ab", new SceneFont(10), SceneColor.Black) { TextLength = length }, [new(-1, 20, 2, 0)]);
+            Assert.Equal([20.0], placement.Width);
+        }
+
+        Assert.Equal([10.0], TextPlacement.Place(new SceneText(0, 0, "a", new SceneFont(10), SceneColor.Black) { TextLength = 50 }, [new(-1, 10, 1, 0)]).Width);
+
+        // The measurers give the length of the text, and the extent of its moved spans
+        var measurer = AfmTextMeasurer.Default;
+        Assert.Equal(70, measurer.Measure(new SceneText(0, 0, "abc", new SceneFont(10), SceneColor.Black) { TextLength = 70 }).Width, 6);
+        var width = measurer.Measure("a", new SceneFont(10)).Width + measurer.Measure("b", new SceneFont(10)).Width;
+        Assert.Equal(width + 20, measurer.Measure(new SceneText(0, 0, [new("a"), new("b") { Dx = 20 }], new SceneFont(10), SceneColor.Black)).Width, 6);
+    }
+
+    [Theory]
+    [InlineData(SceneTextBaseline.Alphabetic, 0)]
+    [InlineData(SceneTextBaseline.Middle, 2.5)]
+    [InlineData(SceneTextBaseline.Central, 3)]
+    [InlineData(SceneTextBaseline.Hanging, 6.4)]
+    [InlineData(SceneTextBaseline.Mathematical, 4)]
+    [InlineData(SceneTextBaseline.Ideographic, -2)]
+    [InlineData(SceneTextBaseline.TextTop, 8)]
+    [InlineData(SceneTextBaseline.TextBottom, -2)]
+    public void BaselineOffsets(SceneTextBaseline baseline, double expected)
+    {
+        // An ascent of 8, a descent of 2 and an x-height of 5
+        Assert.Equal(expected, TextPlacement.GetBaselineOffset(baseline, 8, 2, 5), 9);
+    }
+
+    [Fact]
+    public void BaselineOffsetWithoutXHeight()
+    {
+        // The x-height is half the ascent when the font does not give it
+        Assert.Equal(2, TextPlacement.GetBaselineOffset(SceneTextBaseline.Middle, 8, 2, 0), 9);
+    }
+
+    [Fact]
+    public void ReversedPaths()
+    {
+        // The segments are followed back: the control points of a curve are swapped, an arc turns the other way
+        var path = new PathBuilder().MoveTo(0, 0).LineTo(10, 0).CubicTo(12, 1, 14, 2, 20, 5).QuadraticTo(25, 10, 30, 5).ArcTo(5, 5, 0, largeArc: false, sweep: true, 40, 5).Build();
+        Assert.Equal("M40,5 A5,5 0 0,0 30,5 Q25,10 20,5 C14,2 12,1 10,0 L0,0", path.Reverse().ToString());
+        Assert.Equal(path.ToString(), path.Reverse().Reverse().ToString());
+        Assert.Equal(path.GetLength(), path.Reverse().GetLength(), 6);
+
+        // The subpaths are in the reverse order; a closed subpath starts and closes at the end of its last segment
+        var square = new PathBuilder().MoveTo(0, 0).LineTo(10, 0).LineTo(10, 10).Close().MoveTo(20, 20).LineTo(30, 20).Build();
+        Assert.Equal("M30,20 L20,20 M10,10 L10,0 L0,0 Z", square.Reverse().ToString());
+        Assert.Equal(square.ToString(), square.Reverse().Reverse().ToString());
+        Assert.Equal(square.GetLength(), square.Reverse().GetLength(), 6);
+
+        // A path without a move starts at the origin, and a segment after a close starts at the start of the closed subpath
+        Assert.Equal("M10,10 L0,0", new PathBuilder().LineTo(10, 10).Build().Reverse().ToString());
+        Assert.Equal("M5,5 L0,0 M10,0 L0,0 Z", new PathBuilder().MoveTo(0, 0).LineTo(10, 0).Close().LineTo(5, 5).Build().Reverse().ToString());
+        Assert.Equal("M1,1 M0,0", new PathBuilder().MoveTo(0, 0).MoveTo(1, 1).Build().Reverse().ToString());
+        Assert.True(new PathBuilder().Build().Reverse().IsEmpty);
+    }
+
+    [Fact]
     public void EffectsAndGradientSpread()
     {
         #region VectorGraphics_Effects
@@ -469,6 +688,177 @@ public sealed class SvgSceneRendererTests
         Assert.Contains("<filter id=\"scene-filter0\" filterUnits=\"userSpaceOnUse\" x=\"-21\" y=\"-51\" width=\"142\" height=\"142\"", svg, StringComparison.Ordinal);
         Assert.Null(group.GetBounds(_ => null));
         Assert.Equal(new SceneBounds(40, 10, 20, 20), group.GetBounds(_ => null, applyClips: false));
+    }
+
+    [Fact]
+    public void FilterGraph()
+    {
+        #region VectorGraphics_FilterGraph
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // A glow: the alpha of the shape, thickened, blurred and colored, under the shape
+        var glow = new SceneFilterGraph(
+        [
+            new SceneMorphologyPrimitive(SceneMorphologyOperator.Dilate, radiusX: 2, radiusY: 2) { Input = SceneFilterInput.SourceAlpha },
+            new SceneGaussianBlurPrimitive(standardDeviation: 4),
+            new SceneFloodPrimitive((SceneColor)"#38bdf8"),
+            new SceneCompositePrimitive(SceneCompositeOperator.In, SceneFilterInput.Result(1)),
+            new SceneMergePrimitive(SceneFilterInput.Previous, SceneFilterInput.SourceGraphic),
+        ]);
+        scene.Root.Add(new SceneRectangle(30, 30, 60, 40) { Fill = (SceneColor)"#0369a1", CornerRadius = 6, Filter = glow });
+
+        // A rough edge: the shape moved by noise, in a region of its own
+        var rough = new SceneFilterGraph(
+        [
+            new SceneTurbulencePrimitive(SceneTurbulenceType.FractalNoise, baseFrequencyX: 0.05, baseFrequencyY: 0.05, octaves: 2, seed: 3),
+            new SceneDisplacementMapPrimitive(scale: 10, map: SceneFilterInput.Previous)
+            {
+                Input = SceneFilterInput.SourceGraphic,
+                XChannel = SceneColorChannel.Red,
+                YChannel = SceneColorChannel.Green,
+            },
+        ])
+        {
+            Region = new SceneBounds(110, 10, 80, 80),
+        };
+        scene.Root.Add(new SceneCircle(150, 50, 30) { Fill = (SceneColor)"#b91c1c", Filter = rough });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("FilterGraph", svg);
+
+        // The default region is the bounds of the shape enlarged by the reach of the primitives (2 + 3 times 4) and a pixel
+        Assert.Contains("<filter id=\"scene-filter0\" filterUnits=\"userSpaceOnUse\" x=\"15\" y=\"15\" width=\"90\" height=\"70\" primitiveUnits=\"userSpaceOnUse\">", svg, StringComparison.Ordinal);
+        Assert.Contains("<feMorphology in=\"SourceAlpha\" operator=\"dilate\" radius=\"2\"/><feGaussianBlur result=\"r1\" stdDeviation=\"4\"/><feFlood flood-color=\"#38bdf8\"/><feComposite in2=\"r1\" operator=\"in\"/><feMerge><feMergeNode/><feMergeNode in=\"SourceGraphic\"/></feMerge></filter>", svg, StringComparison.Ordinal);
+        Assert.Contains("<filter id=\"scene-filter1\" filterUnits=\"userSpaceOnUse\" x=\"110\" y=\"10\" width=\"80\" height=\"80\" primitiveUnits=\"userSpaceOnUse\">", svg, StringComparison.Ordinal);
+        Assert.Contains("<feTurbulence type=\"fractalNoise\" baseFrequency=\"0.05\" numOctaves=\"2\" seed=\"3\"/><feDisplacementMap in=\"SourceGraphic\" scale=\"10\" xChannelSelector=\"R\" yChannelSelector=\"G\"/>", svg, StringComparison.Ordinal);
+
+        // A graph draws in its region: the bounds of the circle are its region, the ones of the rectangle enlarged by the reach
+        Assert.Equal(new SceneBounds(16, 10, 174, 80), scene.Root.GetBounds(_ => null));
+    }
+
+    [Fact]
+    public void FilterGraphPrimitives()
+    {
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC");
+        var light = new SceneSpotLight(1, 2, 3, 4, 5, 6) { SpecularExponent = 2, LimitingConeAngle = 30 };
+        var graph = new SceneFilterGraph(
+        [
+            new SceneGaussianBlurPrimitive(1, 2) { EdgeMode = SceneFilterEdgeMode.Wrap, ColorSpace = SceneFilterColorSpace.Srgb, Subregion = new SceneBounds(0, 0, 5, 5) },
+            new SceneOffsetPrimitive(1.5, -2),
+            new SceneFloodPrimitive((SceneColor)"#ff000080"),
+            new SceneCompositePrimitive(SceneCompositeOperator.Arithmetic, SceneFilterInput.Result(0)) { K1 = 0.5, K2 = 1, K3 = -1, K4 = 0.25 },
+            new SceneBlendPrimitive(SceneBlendMode.Multiply, SceneFilterInput.SourceGraphic),
+            new SceneMorphologyPrimitive(SceneMorphologyOperator.Erode, 1, 2),
+            new SceneTurbulencePrimitive(SceneTurbulenceType.Turbulence, 0.1, 0.2, 1, 7) { StitchTiles = true },
+            new SceneConvolveMatrixPrimitive(3, 1, 1, 2, 1) { Divisor = 4, Bias = 0.5, TargetX = 0, TargetY = 0, EdgeMode = SceneFilterEdgeMode.None, PreserveAlpha = true },
+            new SceneDiffuseLightingPrimitive(new SceneDistantLight(45, 30), (SceneColor)"#ffffff") { SurfaceScale = 2, DiffuseConstant = 0.5 },
+            new SceneSpecularLightingPrimitive(light, (SceneColor)"#00ff00") { SpecularExponent = 20 },
+            new SceneDiffuseLightingPrimitive(new ScenePointLight(1, 2, 3), SceneColor.White),
+            new SceneComponentTransferPrimitive
+            {
+                Red = SceneTransferFunction.CreateTable(0, 1),
+                Green = SceneTransferFunction.CreateDiscrete(0, 0.5),
+                Blue = SceneTransferFunction.CreateLinear(2, 0.1),
+                Alpha = SceneTransferFunction.CreateGamma(1, 2, 0),
+            },
+            new SceneTilePrimitive { Input = SceneFilterInput.Result(0) },
+            new SceneColorMatrixPrimitive(SceneColorMatrixFilter.Invert()),
+            SceneColorMatrixPrimitive.LuminanceToAlpha,
+            new SceneDropShadowPrimitive(1, 2, 3, 3, (SceneColor)"#000000"),
+            new SceneImagePrimitive(new SceneImage(0, 0, 4, 4, png)) { Subregion = new SceneBounds(0, 0, 4, 4) },
+        ]);
+        var svg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black, Filter = graph }));
+
+        Assert.Contains("<feGaussianBlur x=\"0\" y=\"0\" width=\"5\" height=\"5\" color-interpolation-filters=\"sRGB\" result=\"r0\" stdDeviation=\"1 2\" edgeMode=\"wrap\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feOffset dx=\"1.5\" dy=\"-2\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feFlood flood-color=\"#ff0000\" flood-opacity=\"0.502\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feComposite in2=\"r0\" operator=\"arithmetic\" k1=\"0.5\" k2=\"1\" k3=\"-1\" k4=\"0.25\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feBlend in2=\"SourceGraphic\" mode=\"multiply\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feMorphology radius=\"1 2\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feTurbulence baseFrequency=\"0.1 0.2\" numOctaves=\"1\" seed=\"7\" stitchTiles=\"stitch\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feConvolveMatrix order=\"3 1\" kernelMatrix=\"1 2 1\" divisor=\"4\" bias=\"0.5\" targetX=\"0\" targetY=\"0\" edgeMode=\"none\" preserveAlpha=\"true\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feDiffuseLighting surfaceScale=\"2\" diffuseConstant=\"0.5\" lighting-color=\"#ffffff\"><feDistantLight azimuth=\"45\" elevation=\"30\"/></feDiffuseLighting>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feSpecularLighting surfaceScale=\"1\" specularConstant=\"1\" specularExponent=\"20\" lighting-color=\"#00ff00\"><feSpotLight x=\"1\" y=\"2\" z=\"3\" pointsAtX=\"4\" pointsAtY=\"5\" pointsAtZ=\"6\" specularExponent=\"2\" limitingConeAngle=\"30\"/></feSpecularLighting>", svg, StringComparison.Ordinal);
+        Assert.Contains("<fePointLight x=\"1\" y=\"2\" z=\"3\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feComponentTransfer><feFuncR type=\"table\" tableValues=\"0 1\"/><feFuncG type=\"discrete\" tableValues=\"0 0.5\"/><feFuncB type=\"linear\" slope=\"2\" intercept=\"0.1\"/><feFuncA type=\"gamma\" amplitude=\"1\" exponent=\"2\" offset=\"0\"/></feComponentTransfer>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feTile in=\"r0\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feColorMatrix type=\"matrix\" values=\"-1 0 0 0 1", svg, StringComparison.Ordinal);
+        Assert.Contains("<feColorMatrix type=\"matrix\" values=\"0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.2125 0.7154 0.0721 0 0\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feDropShadow dx=\"1\" dy=\"2\" stdDeviation=\"3\" flood-color=\"#000000\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<feImage x=\"0\" y=\"0\" width=\"4\" height=\"4\" preserveAspectRatio=\"none\" href=\"data:image/png;base64,", svg, StringComparison.Ordinal);
+        Assert.Equal(1, CountOccurrences(svg, "<filter "));
+    }
+
+    [Fact]
+    public void FilterGraphImagesReferToTheirElements()
+    {
+        // An element that is drawn only by an image primitive is written in the definitions, with an identifier
+        var scene = new Scene(100, 100, "sans-serif");
+        var star = new ScenePath(new PathBuilder().AddPolygon((50, 0), (60, 40), (100, 50), (60, 60), (50, 100), (40, 60), (0, 50), (40, 40)).Build()) { Fill = (SceneColor)"#facc15" };
+        var graph = new SceneFilterGraph([new SceneImagePrimitive(star), new SceneMergePrimitive(SceneFilterInput.SourceGraphic, SceneFilterInput.Previous)]);
+        scene.Root.Add(new SceneRectangle(10, 10, 80, 80) { Fill = SceneColor.Black, Filter = graph });
+
+        // An image with a transform is an element too, and an element of the scene keeps its own identifier
+        var named = scene.Root.Add(new SceneCircle(5, 5, 5) { Id = "dot", Fill = SceneColor.White });
+        var transformed = new SceneImage(0, 0, 10, 10, Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC")) { Transform = SceneTransform.Translate(1, 1) };
+        scene.Root.Add(new SceneRectangle(0, 0, 10, 10) { Filter = new SceneFilterGraph([new SceneImagePrimitive(named), new SceneImagePrimitive(transformed)]) });
+        var svg = SvgSceneRenderer.Render(scene);
+
+        Assert.Contains("<feImage href=\"#scene-element0\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<defs>\n<path id=\"scene-element0\" d=\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<feImage href=\"#dot\"/><feImage href=\"#scene-element1\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<image id=\"scene-element1\" x=\"0\" y=\"0\"", svg, StringComparison.Ordinal);
+        Assert.Equal(1, CountOccurrences(svg, "id=\"dot\""));
+
+        // An element whose filter draws it again is written once
+        var loop = new SceneGroup();
+        var inner = loop.Add(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black });
+        inner.Filter = new SceneFilterGraph([new SceneImagePrimitive(loop)]);
+        var loopSvg = SvgSceneRenderer.Render(Single(loop));
+        Assert.Equal(1, CountOccurrences(loopSvg, "<rect "));
+    }
+
+    [Fact]
+    public void FilterGraphsValidateTheirPrimitives()
+    {
+        Assert.Throws<ArgumentException>("primitives", () => new SceneFilterGraph([]));
+        Assert.Throws<ArgumentException>("primitives", () => new SceneFilterGraph([null!]));
+        Assert.Throws<ArgumentException>("primitives", () => new SceneFilterGraph([new SceneOffsetPrimitive(0, 0) { Input = SceneFilterInput.Result(0) }]));
+        Assert.Throws<ArgumentException>("primitives", () => new SceneFilterGraph([new SceneFloodPrimitive(SceneColor.Black), new SceneCompositePrimitive(SceneCompositeOperator.Over, SceneFilterInput.Result(1))]));
+        Assert.Throws<ArgumentNullException>("primitives", () => new SceneFilterGraph(null!));
+        Assert.Throws<ArgumentOutOfRangeException>("index", () => SceneFilterInput.Result(-1));
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new SceneFilterGraph([new SceneFloodPrimitive(SceneColor.Black)]) { Region = new SceneBounds(0, 0, -1, 1) });
+        Assert.Throws<ArgumentException>("value", () => new SceneFloodPrimitive(SceneColor.Black) { Subregion = new SceneBounds(double.NaN, 0, 1, 1) });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new SceneFloodPrimitive(SceneColor.Black) { ColorSpace = (SceneFilterColorSpace)2 });
+        Assert.Throws<ArgumentOutOfRangeException>("standardDeviationX", () => new SceneGaussianBlurPrimitive(-1));
+        Assert.Throws<ArgumentException>("offsetY", () => new SceneOffsetPrimitive(0, double.PositiveInfinity));
+        Assert.Throws<ArgumentOutOfRangeException>("operator", () => new SceneCompositePrimitive((SceneCompositeOperator)(-1), default));
+        Assert.Throws<ArgumentException>("value", () => new SceneCompositePrimitive(SceneCompositeOperator.Arithmetic, default) { K1 = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>("mode", () => new SceneBlendPrimitive((SceneBlendMode)99, default));
+        Assert.Throws<ArgumentOutOfRangeException>("radiusY", () => new SceneMorphologyPrimitive(SceneMorphologyOperator.Erode, 1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>("octaves", () => new SceneTurbulencePrimitive(SceneTurbulenceType.Turbulence, 0.1, 0.1, -1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new SceneDisplacementMapPrimitive(1, default) { XChannel = (SceneColorChannel)4 });
+        Assert.Throws<ArgumentOutOfRangeException>("orderX", () => new SceneConvolveMatrixPrimitive(0, 1, []));
+        Assert.Throws<ArgumentException>("kernel", () => new SceneConvolveMatrixPrimitive(2, 2, 1, 2, 3));
+        Assert.Throws<ArgumentException>("value", () => new SceneConvolveMatrixPrimitive(1, 1, 1) { Divisor = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new SceneConvolveMatrixPrimitive(2, 1, 1, 1) { TargetX = 2 });
+        Assert.Throws<ArgumentNullException>("light", () => new SceneDiffuseLightingPrimitive(null!, SceneColor.White));
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new SceneSpecularLightingPrimitive(new SceneDistantLight(0, 0), SceneColor.White) { SpecularExponent = 0.5 });
+        Assert.Throws<ArgumentException>("z", () => new ScenePointLight(0, 0, double.NaN));
+        Assert.Throws<ArgumentNullException>("value", () => new SceneComponentTransferPrimitive { Red = null! });
+        Assert.Throws<ArgumentException>("values", () => SceneTransferFunction.CreateTable(double.NaN));
+        Assert.Throws<ArgumentException>("values", () => new SceneColorMatrixPrimitive(1, 2));
+        Assert.Throws<ArgumentNullException>("content", () => new SceneImagePrimitive(null!));
+
+        // The default region is the bounds enlarged by the sum of the reaches of the primitives
+        var graph = new SceneFilterGraph([new SceneGaussianBlurPrimitive(1), new SceneOffsetPrimitive(3, -4), new SceneDropShadowPrimitive(1, 0, 0, 0, SceneColor.Black)]);
+        Assert.Equal(new SceneBounds(-8, -8, 26, 26), graph.GetRegion(new SceneBounds(0, 0, 10, 10)));
+        Assert.Equal(new SceneBounds(-8, -8, 26, 26), Single(new SceneRectangle(0, 0, 10, 10) { Filter = graph }).Root.GetBounds(_ => null));
+        Assert.Equal(SceneColorChannel.Alpha, new SceneDisplacementMapPrimitive(1, default).XChannel);
+        Assert.Equal(SceneFilterEdgeMode.Duplicate, new SceneConvolveMatrixPrimitive(1, 1, 1).EdgeMode);
+        Assert.Equal(SceneFilterColorSpace.LinearRgb, new SceneTilePrimitive().ColorSpace);
     }
 
     private static int CountOccurrences(string text, string value) => (text.Length - text.Replace(value, "", StringComparison.Ordinal).Length) / value.Length;
@@ -1064,5 +1454,220 @@ public sealed class SvgSceneRendererTests
         var svg = SvgSceneRenderer.Render(scene);
         Assert.Contains("<text x=\"0\" y=\"10\" font-size=\"10\"", svg, StringComparison.Ordinal);
         Assert.Contains("font-family=\"Courier &quot;New&quot; &amp; &lt;Co&gt;\"", svg, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ClippingPaths()
+    {
+        #region VectorGraphics_ClippingPaths
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // The union of two circles, in the coordinates of the parent of the clipped element
+        var circles = new SceneClipPath();
+        circles.Content.Add(new SceneCircle(40, 50, 30));
+        circles.Content.Add(new SceneCircle(80, 50, 30));
+        scene.Root.Add(new SceneRectangle(0, 0, 120, 100) { Fill = (SceneColor)"#0369a1", ClippingPath = circles });
+
+        // The glyphs of a text show a gradient
+        var letters = new SceneClipPath();
+        letters.Content.Add(new SceneText(130, 70, "Clip", new SceneFont(40, Weight: SceneFont.BoldWeight), SceneColor.Black));
+        var gradient = new LinearGradientPaint(130, 0, 200, 0, [new(0, (SceneColor)"#0369a1"), new(1, (SceneColor)"#e11d48")]);
+        scene.Root.Add(new SceneRectangle(120, 0, 80, 100) { Fill = gradient, ClippingPath = letters });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("ClippingPaths", svg);
+        Assert.Contains("<clipPath id=\"scene-clip0\">\n<circle cx=\"40\" cy=\"50\" r=\"30\"/>\n<circle cx=\"80\" cy=\"50\" r=\"30\"/>\n</clipPath>", svg, StringComparison.Ordinal);
+        Assert.Contains("<rect x=\"0\" y=\"0\" width=\"120\" height=\"100\" fill=\"#0369a1\" clip-path=\"url(#scene-clip0)\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<clipPath id=\"scene-clip1\">\n<text x=\"130\" y=\"70\" font-size=\"40\" font-weight=\"bold\" fill=\"#000000\">Clip</text>", svg, StringComparison.Ordinal);
+
+        // The bounds of a clipped element are cut by its clipping path
+        Assert.Equal(new SceneBounds(10, 20, 100, 60), scene.Root.Children[0].GetBounds(_ => null));
+        Assert.Equal(new SceneBounds(0, 0, 120, 100), scene.Root.Children[0].GetBounds(_ => null, applyClips: false));
+    }
+
+    [Fact]
+    public void ClippingPathsOfTransformedElementsAndGroups()
+    {
+        // The groups of the content are flattened, with their transforms on the shapes; the fill rule is the clip rule
+        var clipPath = new SceneClipPath();
+        var group = clipPath.Content.Add(new SceneGroup { Transform = SceneTransform.Translate(10, 0) });
+        group.Add(new ScenePath(new PathBuilder().AddRectangle(0, 0, 10, 10).Build()) { FillRule = SceneFillRule.EvenOdd, Transform = SceneTransform.Translate(0, 5) });
+        group.Add(new SceneLine(0, 0, 10, 10));
+        var svg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 50, 50) { Fill = SceneColor.Black, ClippingPath = clipPath, Transform = SceneTransform.Scale(2, 2) }));
+        Assert.Contains("<clipPath id=\"scene-clip0\">\n<path d=\"M0,0 L10,0 L10,10 L0,10 Z\" clip-rule=\"evenodd\" transform=\"translate(10 5)\"/>\n</clipPath>", svg, StringComparison.Ordinal);
+
+        // The clipping path of a transformed element is in the coordinates of its parent: a group has it
+        Assert.Contains("<g clip-path=\"url(#scene-clip0)\">\n<rect x=\"0\" y=\"0\" width=\"50\" height=\"50\" fill=\"#000000\" transform=\"matrix(2 0 0 2 0 0)\"/>\n</g>", svg, StringComparison.Ordinal);
+
+        // A group writes it on a group outside of its transform
+        var clippedGroup = new SceneGroup { ClippingPath = clipPath, Transform = SceneTransform.Translate(1, 2) };
+        clippedGroup.Add(new SceneRectangle(0, 0, 1, 1));
+        Assert.Contains("<g clip-path=\"url(#scene-clip0)\">\n<g transform=\"translate(1 2)\">", SvgSceneRenderer.Render(Single(clippedGroup)), StringComparison.Ordinal);
+
+        // A clipping path that cuts another one is its clip-path, in the same coordinates; the clipping path of a shape
+        // of the content is in the coordinates of its parent: it is written for the space of the shape
+        var outer = new SceneClipPath();
+        outer.Content.Add(new SceneRectangle(0, 0, 5, 5));
+        var inner = new SceneClipPath();
+        inner.Content.Add(new SceneRectangle(0, 0, 20, 20));
+        var nested = new SceneClipPath { ClippingPath = outer };
+        nested.Content.Add(new SceneCircle(0, 0, 10) { ClippingPath = inner, Transform = SceneTransform.Translate(5, 5) });
+        var nestedSvg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 50, 50) { ClippingPath = nested }));
+        Assert.Contains("<clipPath id=\"scene-clip0\" clip-path=\"url(#scene-clip1)\">\n<circle cx=\"0\" cy=\"0\" r=\"10\" transform=\"translate(5 5)\" clip-path=\"url(#scene-clip2)\"/>\n</clipPath>", nestedSvg, StringComparison.Ordinal);
+        Assert.Contains("<clipPath id=\"scene-clip1\">\n<rect x=\"0\" y=\"0\" width=\"5\" height=\"5\"/>\n</clipPath>", nestedSvg, StringComparison.Ordinal);
+        Assert.Contains("<clipPath id=\"scene-clip2\">\n<rect x=\"0\" y=\"0\" width=\"20\" height=\"20\" transform=\"translate(-5 -5)\"/>\n</clipPath>", nestedSvg, StringComparison.Ordinal);
+        Assert.Equal(new SceneBounds(0, 0, 5, 5), new SceneRectangle(0, 0, 50, 50) { ClippingPath = nested }.GetBounds(_ => null));
+
+        // A clipping path that cuts itself leaves nothing visible
+        var circular = new SceneClipPath();
+        circular.Content.Add(new SceneRectangle(0, 0, 5, 5));
+        circular.ClippingPath = circular;
+        Assert.Contains("<clipPath id=\"scene-clip0\"/>", SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 50, 50) { ClippingPath = circular })), StringComparison.Ordinal);
+        Assert.Null(new SceneRectangle(0, 0, 50, 50) { ClippingPath = circular }.GetBounds(_ => null));
+
+        // The paints of a text of a clipping path are defined, though they do not change its geometry
+        var painted = new SceneClipPath();
+        painted.Content.Add(new SceneText(0, 10, "a", new SceneFont(10), SceneColor.Black) { Fill = new LinearGradientPaint(0, 0, 10, 0, [new(0, SceneColor.Black)]), Stroke = SceneColor.White });
+        var paintedSvg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 50, 50) { ClippingPath = painted }));
+        Assert.Contains("<linearGradient id=\"scene-gradient0\"", paintedSvg, StringComparison.Ordinal);
+        Assert.Contains("fill=\"url(#scene-gradient0)\"", paintedSvg, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PaintOptions()
+    {
+        #region VectorGraphics_PaintOptions
+        var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+        // One arrowhead for lines of every color: it is painted with the stroke of the line it ends
+        var arrow = new SceneMarker { RefX = 10, RefY = 5 };
+        arrow.Content.Add(new ScenePath(new PathBuilder().AddPolygon((0, 0), (10, 5), (0, 10)).Build()) { Fill = ContextPaint.Stroke });
+        scene.Root.Add(new SceneLine(10, 20, 90, 20) { Stroke = (SceneColor)"#0369a1", StrokeWidth = 2, MarkerEnd = arrow });
+        scene.Root.Add(new SceneLine(10, 50, 90, 50) { Stroke = (SceneColor)"#e11d48", StrokeWidth = 2, MarkerEnd = arrow });
+
+        // The stroke under the fill, and a stroke of 1 pixel in a group scaled 20 times
+        scene.Root.Add(new SceneRectangle(110, 10, 80, 30) { Fill = (SceneColor)"#e0f2fe", Stroke = (SceneColor)"#0369a1", StrokeWidth = 8, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+        var zoomed = scene.Root.Add(new SceneGroup { Transform = SceneTransform.Scale(20, 20) });
+        zoomed.Add(new SceneCircle(7.5, 3.5, 1) { Fill = (SceneColor)"#e0f2fe", Stroke = (SceneColor)"#0369a1", NonScalingStroke = true });
+
+        // A radial gradient whose first color fills a circle of 10 pixels around the focal point
+        scene.Root.Add(new SceneCircle(30, 80, 15) { Fill = new RadialGradientPaint(30, 80, 15, [new(0, (SceneColor)"#e11d48"), new(1, (SceneColor)"#0369a1")]) { FocalRadius = 10 } });
+
+        var svg = SvgSceneRenderer.Render(scene);
+        #endregion
+
+        DocumentationImages.AssertSvg("PaintOptions", svg);
+        Assert.Contains("fill=\"context-stroke\"", svg, StringComparison.Ordinal);
+        Assert.Contains("<line x1=\"10\" y1=\"20\" x2=\"90\" y2=\"20\" fill=\"none\" stroke=\"#0369a1\" stroke-width=\"2\" marker-end=\"url(#scene-marker0)\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("stroke-width=\"8\" paint-order=\"stroke\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("stroke=\"#0369a1\" vector-effect=\"non-scaling-stroke\"/>", svg, StringComparison.Ordinal);
+        Assert.Contains("<radialGradient id=\"scene-gradient0\" gradientUnits=\"userSpaceOnUse\" cx=\"30\" cy=\"80\" r=\"15\" fr=\"10\">", svg, StringComparison.Ordinal);
+
+        // The other paint orders, and the context fill
+        Assert.Contains("paint-order=\"markers stroke\"", SvgSceneRenderer.Render(Single(new SceneCircle(0, 0, 1) { PaintOrder = ScenePaintOrder.MarkersStrokeFill })), StringComparison.Ordinal);
+        Assert.Contains("paint-order=\"fill markers\"", SvgSceneRenderer.Render(Single(new SceneCircle(0, 0, 1) { PaintOrder = ScenePaintOrder.FillMarkersStroke })), StringComparison.Ordinal);
+        Assert.Contains("fill=\"context-fill\"", SvgSceneRenderer.Render(Single(new SceneCircle(0, 0, 1) { Fill = ContextPaint.Fill })), StringComparison.Ordinal);
+        Assert.DoesNotContain("fr=", SvgSceneRenderer.Render(Single(new SceneCircle(0, 0, 1) { Fill = new RadialGradientPaint(0, 0, 1, [new(0, SceneColor.Black)]) { FocalRadius = double.NaN } })), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(SceneAspectRatio.None, false, "none")]
+    [InlineData(SceneAspectRatio.XMidYMid, false, "xMidYMid")]
+    [InlineData(SceneAspectRatio.XMinYMax, false, "xMinYMax")]
+    [InlineData(SceneAspectRatio.XMidYMid, true, "xMidYMid slice")]
+    [InlineData(SceneAspectRatio.None, true, "none")]
+    public void AspectRatiosOfImages(SceneAspectRatio alignment, bool slice, string expected)
+    {
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC");
+        var svg = SvgSceneRenderer.Render(Single(new SceneImage(0, 0, 40, 20, png) { Alignment = alignment, Slice = slice }));
+        Assert.Contains("preserveAspectRatio=\"" + expected + "\"", svg, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ClippingPathChainsThatLoopAndReusedClipContents()
+    {
+        // A chain that loops after its first clipping path leaves nothing visible, and is written
+        var first = new SceneClipPath();
+        first.Content.Add(new SceneRectangle(0, 0, 5, 5));
+        var looping = new SceneClipPath();
+        looping.Content.Add(new SceneRectangle(0, 0, 5, 5));
+        looping.ClippingPath = looping;
+        first.ClippingPath = looping;
+        var svg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 50, 50) { ClippingPath = first }));
+        Assert.Contains("<clipPath id=\"scene-clip0\"/>", svg, StringComparison.Ordinal);
+        Assert.Null(new SceneRectangle(0, 0, 50, 50) { ClippingPath = first }.GetBounds(_ => null));
+
+        // A use of the content of a clipping path refers to a definition of its own: the clipping path writes its geometry
+        var reused = new SceneClipPath();
+        reused.Content.Add(new SceneCircle(5, 5, 5) { Fill = SceneColor.Black });
+        var scene = new Scene(20, 20, "sans-serif");
+        scene.Root.Add(new SceneRectangle(0, 0, 20, 20) { Fill = SceneColor.Black, ClippingPath = reused });
+        scene.Root.Add(new SceneUse(reused.Content) { Transform = SceneTransform.Translate(10, 10) });
+        var reusedSvg = SvgSceneRenderer.Render(scene);
+        Assert.Contains("<g id=\"scene-element0\">\n<circle cx=\"5\" cy=\"5\" r=\"5\" fill=\"#000000\"/>\n</g>", reusedSvg, StringComparison.Ordinal);
+        Assert.Contains("<clipPath id=\"scene-clip0\">\n<circle cx=\"5\" cy=\"5\" r=\"5\"/>\n</clipPath>", reusedSvg, StringComparison.Ordinal);
+        Assert.Contains("<use href=\"#scene-element0\" transform=\"translate(10 10)\"/>", reusedSvg, StringComparison.Ordinal);
+
+        // The text a use of a clipping path draws has its font embedded, as the other texts
+        var testData = Path.Combine(AppContext.BaseDirectory, "TestData");
+        var fonts = SceneFontCollection.Load(Path.Combine(testData, "LiberationSans-Regular.woff2"), Path.Combine(testData, "LiberationMono-Regular.woff2"));
+        var withFonts = new Scene(20, 20, "Liberation Sans") { Fonts = fonts };
+        var lettering = new SceneClipPath();
+        lettering.Content.Add(new SceneUse(new SceneText(0, 15, "x", new SceneFont(12, Family: "Liberation Mono"), SceneColor.Black)));
+        withFonts.Root.Add(new SceneRectangle(0, 0, 20, 20) { Fill = SceneColor.Black, ClippingPath = lettering });
+        var embedded = SvgSceneRenderer.Render(withFonts, new SvgRenderOptions { EmbedFonts = true });
+        Assert.Contains("@font-face{font-family:&quot;Liberation Mono&quot;", embedded, StringComparison.Ordinal);
+        Assert.Contains("<clipPath id=\"scene-clip0\">\n<text x=\"0\" y=\"15\"", embedded, StringComparison.Ordinal);
+
+        // A masked shape drawn by the scene and reused in a clipping path: the clipping path ignores its mask, which is
+        // written once, with the identifiers of its content
+        var mask = new SceneMask();
+        mask.Content.Add(new SceneRectangle(0, 0, 20, 20) { Id = "mask-content", Fill = SceneColor.White });
+        var masked = new SceneCircle(10, 10, 5) { Fill = SceneColor.Black, Mask = mask };
+        var maskedScene = new Scene(20, 20, "sans-serif");
+        maskedScene.Root.Add(masked);
+        var reuse = new SceneClipPath();
+        reuse.Content.Add(new SceneUse(masked));
+        maskedScene.Root.Add(new SceneRectangle(0, 0, 20, 20) { Fill = SceneColor.Black, ClippingPath = reuse });
+        var maskedSvg = SvgSceneRenderer.Render(maskedScene);
+        Assert.Equal(1, CountOccurrences(maskedSvg, "id=\"mask-content\""));
+        Assert.Contains("<clipPath id=\"scene-clip0\">\n<circle cx=\"10\" cy=\"10\" r=\"5\"/>\n</clipPath>", maskedSvg, StringComparison.Ordinal);
+
+        // The clipping path of a group of a clipping path does not apply: its content, and the patterns of its texts, are not written
+        var ignored = new SceneClipPath();
+        var tile = new PatternPaint(new SceneBounds(0, 0, 4, 4));
+        tile.Content.Add(new SceneUse(new SceneCircle(2, 2, 2) { Fill = SceneColor.Black }));
+        ignored.Content.Add(new SceneText(0, 10, "a", new SceneFont(10), SceneColor.Black) { Fill = tile });
+        var outerWithGroup = new SceneClipPath();
+        outerWithGroup.Content.Add(new SceneGroup { ClippingPath = ignored }).Add(new SceneRectangle(0, 0, 10, 10));
+        var ignoredSvg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 20, 20) { Fill = SceneColor.Black, ClippingPath = outerWithGroup }));
+        Assert.Equal(1, CountOccurrences(ignoredSvg, "<clipPath "));
+        Assert.DoesNotContain("<pattern", ignoredSvg, StringComparison.Ordinal);
+
+        // The bounds of a clipping path are the ones of its geometry, whatever the opacity of its content
+        var transparent = new SceneClipPath();
+        transparent.Content.Add(new SceneRectangle(0, 0, 10, 10) { Opacity = 0 });
+        transparent.Content.Add(new SceneRectangle(20, 0, 10, 10) { Opacity = 0 });
+        Assert.Equal(new SceneBounds(0, 0, 30, 10), transparent.GetBounds(_ => null));
+    }
+
+    [Fact]
+    public void ImagePrimitivesAreInlineOnlyInTheRectangleOfTheirImage()
+    {
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC");
+
+        // Without a subregion, the image is cut to the region of the filter: the tile that follows repeats the region
+        var image = new SceneImage(0, 0, 2, 2, png);
+        var svg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 20, 20) { Filter = new SceneFilterGraph([new SceneImagePrimitive(image), new SceneTilePrimitive()]) { Region = new SceneBounds(0, 0, 20, 20) } }));
+        Assert.Contains("<feImage href=\"#scene-element0\"/><feTile/>", svg, StringComparison.Ordinal);
+        Assert.DoesNotContain("data:image/png", svg.Split("<filter", StringSplitOptions.None)[1].Split("</filter>", StringSplitOptions.None)[0], StringComparison.Ordinal);
+        Assert.Contains("<image id=\"scene-element0\"", svg, StringComparison.Ordinal);
+
+        // With the rectangle of the image as its subregion, the image is written in the filter, with its aspect ratio
+        var fitted = new SceneImage(0, 0, 2, 2, png) { Alignment = SceneAspectRatio.XMinYMin };
+        var inline = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 20, 20) { Filter = new SceneFilterGraph([new SceneImagePrimitive(fitted) { Subregion = new SceneBounds(0, 0, 2, 2) }]) }));
+        Assert.Contains("<feImage x=\"0\" y=\"0\" width=\"2\" height=\"2\" preserveAspectRatio=\"xMinYMin\" href=\"data:image/png;base64,", inline, StringComparison.Ordinal);
     }
 }

@@ -86,6 +86,93 @@ public sealed class SceneText(double x, double y, string text, SceneFont font, S
     /// <summary>Gets or sets the advance width of the text, as the layout measured it.</summary>
     public double MeasuredWidth { get; set; }
 
+    /// <summary>
+    /// Gets or sets how the glyphs are painted, or <see langword="null"/> (the default) to paint them with
+    /// <see cref="Color"/>. A gradient or a pattern is in the coordinates of the text, as for a shape.
+    /// </summary>
+    /// <remarks>To draw the outline of the glyphs only, set a <see cref="Stroke"/> and a transparent fill.</remarks>
+    public ScenePaint? Fill { get; set; }
+
+    /// <summary>Gets or sets how the outline of the glyphs is painted, or <see langword="null"/> (the default) for no outline.</summary>
+    /// <remarks>The outline is centered on the edges of the glyphs: it covers half its width of the fill, unless <see cref="PaintOrder"/> paints it first.</remarks>
+    public ScenePaint? Stroke { get; set; }
+
+    /// <summary>Gets or sets the width of the outline of the glyphs. The default is 1.</summary>
+    public double StrokeWidth { get; set; } = 1;
+
+    /// <summary>Gets or sets the lengths of the dashes and gaps of the outline of the glyphs, or <see langword="null"/> for a solid outline.</summary>
+    public IReadOnlyList<double>? StrokeDashArray { get; set; }
+
+    /// <summary>
+    /// Gets or sets the distance into <see cref="StrokeDashArray"/> at which the dashes of the outline start. A negative
+    /// distance starts before the pattern, and a value that is not finite is 0.
+    /// </summary>
+    public double StrokeDashOffset { get; set; }
+
+    /// <summary>
+    /// Gets or sets the limit of <see cref="SceneLineJoin.Miter"/> joins of the outline of the glyphs. The default is 4,
+    /// as in SVG; a value less than 1 or not finite is 4.
+    /// </summary>
+    public double MiterLimit { get; set; } = 4;
+
+    /// <summary>Gets or sets the shape of the ends of the open outlines of the glyphs.</summary>
+    public SceneLineCap LineCap { get; set; }
+
+    /// <summary>Gets or sets the shape of the corners of the outline of the glyphs.</summary>
+    public SceneLineJoin LineJoin { get; set; }
+
+    /// <summary>
+    /// Gets or sets the order in which the fill and the outline of the glyphs are painted, as the SVG <c>paint-order</c>
+    /// property. A text has no markers: only whether the stroke comes before the fill matters. The default paints the
+    /// fill first.
+    /// </summary>
+    public ScenePaintOrder PaintOrder { get; set; }
+
+    /// <summary>
+    /// Gets or sets how the lines of the text (<see cref="Decorations"/>) are painted, or <see langword="null"/> (the
+    /// default) to paint them as the glyphs of each span.
+    /// </summary>
+    /// <remarks>
+    /// SVG paints the lines with the fill of the element that declares them: a text whose spans have their own colors has
+    /// lines of the color of the text. Set this paint to draw the lines that way.
+    /// </remarks>
+    public ScenePaint? DecorationFill { get; set; }
+
+    /// <summary>
+    /// Gets or sets the baseline that is on <see cref="Y"/>, as the SVG <c>dominant-baseline</c> property. The default is
+    /// the alphabetic baseline. Each span is aligned by the baseline of its own font.
+    /// </summary>
+    public SceneTextBaseline Baseline { get; set; }
+
+    /// <summary>
+    /// Gets or sets the advance the text is stretched or compressed to, in pixels, as the SVG <c>textLength</c>
+    /// attribute, or <see langword="null"/> (the default) for the natural advance of its glyphs.
+    /// </summary>
+    /// <remarks>
+    /// The length is the sum of the advances of all the spans, without their shifts (<see cref="SceneTextSpan.Dx"/>):
+    /// with <see cref="SceneTextLengthAdjust.Spacing"/>, the difference is spread over the gaps between the grapheme
+    /// clusters (none after the last one); with <see cref="SceneTextLengthAdjust.SpacingAndGlyphs"/>, every span is scaled
+    /// horizontally from its start. Each text chunk (see <see cref="SceneTextSpan.X"/>) is then anchored with its new
+    /// advance. On a path, the glyphs are not scaled: the spacing changes. A value that is negative or not finite is
+    /// ignored, as SVG ignores it.
+    /// </remarks>
+    public double? TextLength { get; set; }
+
+    /// <summary>Gets or sets how the text is fitted to <see cref="TextLength"/>. The default changes the spacing only.</summary>
+    public SceneTextLengthAdjust LengthAdjust { get; set; }
+
+    /// <summary>
+    /// Gets or sets the direction the text is written in, as the SVG <c>direction</c> property. The default is from left
+    /// to right.
+    /// </summary>
+    /// <remarks>
+    /// From right to left, <see cref="SceneTextAnchor.Start"/> is the right end of the text, the spans follow each other
+    /// to the left, and the characters of each span are ordered by the Unicode Bidirectional Algorithm with a
+    /// right-to-left paragraph. From left to right, the paragraph of each span has the direction of its first strong
+    /// character. The algorithm does not reorder the spans themselves.
+    /// </remarks>
+    public SceneTextDirection Direction { get; set; }
+
     private static string Concat(IEnumerable<SceneTextSpan> spans, out SceneTextSpan[] list)
     {
         ArgumentNullException.ThrowIfNull(spans);

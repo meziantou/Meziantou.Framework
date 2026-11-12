@@ -77,7 +77,8 @@ renderers draw.
 
 A text made of [SceneTextSpan](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan) has parts with their own font,
 color or lines; what a span does not set is the style of the text. The spans are drawn one after the other on the
-baseline of the text, and the anchor applies to the whole text. Measure them with
+baseline of the text, unless they are moved (see below), and the anchor applies to the whole
+text. Measure them with
 [Measure](cref:Meziantou.Framework.VectorGraphics.TextMeasurerExtensions.Measure):
 
 <!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_TextSpans;format=md-fenced-code-block;dedent=true -->
@@ -129,6 +130,97 @@ var svg = SvgSceneRenderer.Render(scene);
 
 ![The words Text along a path, curved along a gray arc](images/TextOnPath.svg)
 
+The text stands on the left of the path, in the direction it goes. To draw it on the other side, as the SVG
+`textPath` does with `side="right"`, follow the path backwards:
+[PathData.Reverse](cref:Meziantou.Framework.VectorGraphics.PathData.Reverse) gives the same path, drawn from its end to
+its start.
+
+### Paints and outlines
+
+A text is painted with its [Color](cref:Meziantou.Framework.VectorGraphics.SceneText.Color), or with a
+[Fill](cref:Meziantou.Framework.VectorGraphics.SceneText.Fill) of any paint: a gradient or a pattern, in the
+coordinates of the text. A [Stroke](cref:Meziantou.Framework.VectorGraphics.SceneText.Stroke) draws the outline of
+the glyphs, with the width, the dashes, the caps and the joins of a shape;
+[PaintOrder](cref:Meziantou.Framework.VectorGraphics.SceneText.PaintOrder) paints it under the fill, as the SVG
+`paint-order` property, for a halo that leaves the glyphs whole. A span has its own
+[Fill](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.Fill) and
+[Stroke](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.Stroke). The lines of a text have the paint of its
+glyphs, or their own [DecorationFill](cref:Meziantou.Framework.VectorGraphics.SceneText.DecorationFill): SVG paints the
+lines of an element with its own fill, under children of other colors:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_TextPaints;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 300, height: 100, fontFamily: "sans-serif");
+var font = new SceneFont(28, Weight: SceneFont.BoldWeight);
+
+// A text filled with a gradient, and an outlined text: a stroke and a transparent fill
+var gradient = new LinearGradientPaint(10, 0, 140, 0, [new(0, (SceneColor)"#0369a1"), new(1, (SceneColor)"#be123c")]);
+scene.Root.Add(new SceneText(10, 35, "Gradient", font, SceneColor.Black) { Fill = gradient });
+scene.Root.Add(new SceneText(160, 35, "Outline", font, SceneColor.Transparent) { Stroke = (SceneColor)"#0369a1", StrokeWidth = 1.5 });
+
+// A thick outline painted under the fill, as a halo
+scene.Root.Add(new SceneText(10, 80, "Halo", font, SceneColor.Black) { Stroke = (SceneColor)"#fde047", StrokeWidth = 6, LineJoin = SceneLineJoin.Round, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+
+// Lines painted with the color of the text under spans of other colors, as SVG paints the lines of a parent element
+SceneTextSpan[] spans = [new("Red and "), new("blue") { Color = (SceneColor)"#0000ff" }];
+scene.Root.Add(new SceneText(110, 80, spans, new SceneFont(20), (SceneColor)"#ff0000") { Decorations = SceneTextDecorations.Underline, DecorationFill = (SceneColor)"#ff0000" });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+![A word filled with a blue to red gradient, an outlined word, a black word with a yellow halo, and a red underline under red and blue words](images/TextPaints.svg)
+
+### Positions, baselines and length
+
+A span can be placed as an SVG `tspan`: [X](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.X) and
+[Y](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.Y) move it to a position, and start a new chunk of text,
+which the anchor of the text applies to; [Dx](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.Dx) and
+[Dy](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.Dy) shift it and the spans that follow it.
+[BaselineShift](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.BaselineShift) raises or lowers the span alone,
+for a superscript or a subscript, and
+[GlyphRotation](cref:Meziantou.Framework.VectorGraphics.SceneTextSpan.GlyphRotation) turns each of its characters.
+
+The [Baseline](cref:Meziantou.Framework.VectorGraphics.SceneText.Baseline) of a text is the line on its y coordinate,
+as the SVG `dominant-baseline` property: the alphabetic baseline, the middle of the lowercase letters, the middle or
+the edges of the em box. [TextLength](cref:Meziantou.Framework.VectorGraphics.SceneText.TextLength) stretches or
+compresses the text to a length, by its spacing or by scaling its glyphs
+([LengthAdjust](cref:Meziantou.Framework.VectorGraphics.SceneText.LengthAdjust)), and
+[Direction](cref:Meziantou.Framework.VectorGraphics.SceneText.Direction) writes it from right to left: it starts at its
+right end, and its spans follow each other to the left:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_TextPositions;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 300, height: 150, fontFamily: "sans-serif");
+var font = new SceneFont(16);
+var small = font with { Size = 10 };
+
+// A formula with a subscript and a superscript: the shift applies to its span only
+scene.Root.Add(new SceneText(10, 30, [new("H"), new("2") { Font = small, BaselineShift = -4 }, new("O and x"), new("2") { Font = small, BaselineShift = 7 }], font, SceneColor.Black));
+
+// Spans at their own positions: each line is a text chunk, centered on its x
+scene.Root.Add(new SceneText(220, 30, [new("First line"), new("Second line") { X = 220, Dy = 20 }, new("Third") { X = 220, Dy = 20 }], font, SceneColor.Black) { Anchor = SceneTextAnchor.Middle });
+
+// Turned letters, and a span moved to the right
+scene.Root.Add(new SceneText(10, 75, [new("Wavy") { GlyphRotation = 15 }, new("text") { Dx = 8 }], font, SceneColor.Black));
+
+// A text centered vertically on its y, and a text stretched to 120 pixels
+scene.Root.Add(new SceneLine(10, 110, 140, 110) { Stroke = (SceneColor)"#cbd5e1" });
+scene.Root.Add(new SceneText(10, 110, "Middle", font, SceneColor.Black) { Baseline = SceneTextBaseline.Middle });
+scene.Root.Add(new SceneText(10, 140, "Stretched", font, SceneColor.Black) { TextLength = 120, LengthAdjust = SceneTextLengthAdjust.SpacingAndGlyphs });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+![A formula with a subscript and a superscript, three centered lines, turned letters, a text centered on a line, and a stretched text](images/TextPositions.svg)
+
+The renderers compute the baselines from the ascent, the descent and the x-height of the font of each span: the
+middle baseline is half the x-height above the alphabetic baseline, the central one halfway between the ascent and the
+descent, the hanging one at eight tenths of the ascent and the mathematical one at half of it, as browsers do.
+[Measure(SceneText)](cref:Meziantou.Framework.VectorGraphics.TextMeasurerExtensions.Measure) gives the length of a
+fitted text, and the extent of a text whose spans are moved.
+
 ## Strokes
 
 The outline of a shape ([SceneShape](cref:Meziantou.Framework.VectorGraphics.SceneShape)) has a
@@ -140,6 +232,43 @@ the corner is so sharp that its point would be longer than
 [StrokeDashArray](cref:Meziantou.Framework.VectorGraphics.SceneShape.StrokeDashArray) draws the outline as dashes and
 gaps, and [StrokeDashOffset](cref:Meziantou.Framework.VectorGraphics.SceneShape.StrokeDashOffset) shifts where the
 pattern starts.
+
+### Paint order, context paints and non-scaling strokes
+
+A shape paints its fill, then its stroke, then its markers;
+[PaintOrder](cref:Meziantou.Framework.VectorGraphics.SceneShape.PaintOrder) changes that order, as the `paint-order` of
+SVG: with the stroke first, the fill covers the inner half of the stroke.
+[NonScalingStroke](cref:Meziantou.Framework.VectorGraphics.SceneShape.NonScalingStroke) keeps the width and the dashes
+of the stroke in the coordinates of the scene, whatever the transforms of the shape and of its groups
+(`vector-effect="non-scaling-stroke"`). In the content of a marker,
+[ContextPaint](cref:Meziantou.Framework.VectorGraphics.ContextPaint) paints with the fill or the stroke of the shape
+the marker is drawn on (`context-fill` and `context-stroke`), so one arrowhead serves lines of every color.
+[FocalRadius](cref:Meziantou.Framework.VectorGraphics.RadialGradientPaint.FocalRadius) starts a radial gradient on a
+circle around its focal point (`fr`):
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_PaintOptions;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+// One arrowhead for lines of every color: it is painted with the stroke of the line it ends
+var arrow = new SceneMarker { RefX = 10, RefY = 5 };
+arrow.Content.Add(new ScenePath(new PathBuilder().AddPolygon((0, 0), (10, 5), (0, 10)).Build()) { Fill = ContextPaint.Stroke });
+scene.Root.Add(new SceneLine(10, 20, 90, 20) { Stroke = (SceneColor)"#0369a1", StrokeWidth = 2, MarkerEnd = arrow });
+scene.Root.Add(new SceneLine(10, 50, 90, 50) { Stroke = (SceneColor)"#e11d48", StrokeWidth = 2, MarkerEnd = arrow });
+
+// The stroke under the fill, and a stroke of 1 pixel in a group scaled 20 times
+scene.Root.Add(new SceneRectangle(110, 10, 80, 30) { Fill = (SceneColor)"#e0f2fe", Stroke = (SceneColor)"#0369a1", StrokeWidth = 8, PaintOrder = ScenePaintOrder.StrokeFillMarkers });
+var zoomed = scene.Root.Add(new SceneGroup { Transform = SceneTransform.Scale(20, 20) });
+zoomed.Add(new SceneCircle(7.5, 3.5, 1) { Fill = (SceneColor)"#e0f2fe", Stroke = (SceneColor)"#0369a1", NonScalingStroke = true });
+
+// A radial gradient whose first color fills a circle of 10 pixels around the focal point
+scene.Root.Add(new SceneCircle(30, 80, 15) { Fill = new RadialGradientPaint(30, 80, 15, [new(0, (SceneColor)"#e11d48"), new(1, (SceneColor)"#0369a1")]) { FocalRadius = 10 } });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+![Two arrows, blue and red, whose heads have the color of their line, a rectangle whose fill covers half of its thick border, a small circle with a thin border, and a disc red in its middle and blue at its edge](images/PaintOptions.svg)
 
 ## Paths
 
@@ -224,7 +353,9 @@ path back (an arrowhead that points out of both ends), or by a fixed angle.
 ## Images, clipping and radial gradients
 
 A [SceneImage](cref:Meziantou.Framework.VectorGraphics.SceneImage) draws a PNG, JPEG, GIF or WebP image, stretched to
-its rectangle: the SVG embeds its bytes. [SceneGroup.ClipPath](cref:Meziantou.Framework.VectorGraphics.SceneGroup.ClipPath)
+its rectangle: the SVG embeds its bytes. Its [Alignment](cref:Meziantou.Framework.VectorGraphics.SceneImage.Alignment)
+keeps its proportions instead, as the `preserveAspectRatio` of SVG: the image fits in the rectangle, aligned as the value
+says, or covers it and is cut to it with [Slice](cref:Meziantou.Framework.VectorGraphics.SceneImage.Slice). [SceneGroup.ClipPath](cref:Meziantou.Framework.VectorGraphics.SceneGroup.ClipPath)
 clips a group to any path, in the coordinates of its parent, and
 [RadialGradientPaint](cref:Meziantou.Framework.VectorGraphics.RadialGradientPaint) paints a gradient from a focal
 point to a circle:
@@ -248,6 +379,37 @@ var svg = SvgSceneRenderer.Render(scene);
 ![A square image of four colors cropped to a circle, over a radial gradient from white to blue](images/ImagesAndClipping.svg)
 
 The image and PDF renderers decode the images: an image they cannot decode is not drawn.
+
+### Clipping paths
+
+Every element has a [ClippingPath](cref:Meziantou.Framework.VectorGraphics.SceneElement.ClippingPath), as the
+`clip-path` of SVG: a [SceneClipPath](cref:Meziantou.Framework.VectorGraphics.SceneClipPath) whose content is shapes and
+texts. The element is drawn inside the union of their geometry: the interior of each shape by its fill rule, whatever
+its paints, and the glyphs of each text. The content is in the coordinates of the parent of the element, as a mask, and
+a clipping path can be cut by another one
+([SceneClipPath.ClippingPath](cref:Meziantou.Framework.VectorGraphics.SceneClipPath.ClippingPath)):
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_ClippingPaths;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+// The union of two circles, in the coordinates of the parent of the clipped element
+var circles = new SceneClipPath();
+circles.Content.Add(new SceneCircle(40, 50, 30));
+circles.Content.Add(new SceneCircle(80, 50, 30));
+scene.Root.Add(new SceneRectangle(0, 0, 120, 100) { Fill = (SceneColor)"#0369a1", ClippingPath = circles });
+
+// The glyphs of a text show a gradient
+var letters = new SceneClipPath();
+letters.Content.Add(new SceneText(130, 70, "Clip", new SceneFont(40, Weight: SceneFont.BoldWeight), SceneColor.Black));
+var gradient = new LinearGradientPaint(130, 0, 200, 0, [new(0, (SceneColor)"#0369a1"), new(1, (SceneColor)"#e11d48")]);
+scene.Root.Add(new SceneRectangle(120, 0, 80, 100) { Fill = gradient, ClippingPath = letters });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+![A blue shape made of two overlapping circles, and the word Clip filled with a gradient from blue to red](images/ClippingPaths.svg)
 
 A gradient ([SceneGradientPaint](cref:Meziantou.Framework.VectorGraphics.SceneGradientPaint)) pads its end colors
 beyond its ends by default; [Spread](cref:Meziantou.Framework.VectorGraphics.SceneGradientPaint.Spread) repeats it or
@@ -320,6 +482,60 @@ var svg = SvgSceneRenderer.Render(scene);
 <!-- endref -->
 
 ![A white card with a soft shadow, a blurred blue circle, diagonal stripes, and a word that fades to the right](images/Effects.svg)
+
+### Filter graphs
+
+A [SceneFilterGraph](cref:Meziantou.Framework.VectorGraphics.SceneFilterGraph) is a filter of SVG made of primitives:
+blurs, offsets, floods, composites, blends, merges, morphologies, turbulences, displacement maps, convolution matrices,
+diffuse and specular lightings, component transfers, tiles, images and color matrices. Each primitive reads the drawing
+of the element, its alpha, or the result of an earlier primitive
+([SceneFilterInput](cref:Meziantou.Framework.VectorGraphics.SceneFilterInput)), by default the result of the primitive
+before it. As in SVG, the primitives compute in linear light unless their
+[ColorSpace](cref:Meziantou.Framework.VectorGraphics.SceneFilterPrimitive.ColorSpace) is sRGB. The region of the graph,
+the subregions of the primitives and the positions of the lights are in the coordinates of the parent of the element;
+without a [Region](cref:Meziantou.Framework.VectorGraphics.SceneFilterGraph.Region), the graph draws in the bounds of the
+element enlarged by how far its primitives move them:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_FilterGraph;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+// A glow: the alpha of the shape, thickened, blurred and colored, under the shape
+var glow = new SceneFilterGraph(
+[
+    new SceneMorphologyPrimitive(SceneMorphologyOperator.Dilate, radiusX: 2, radiusY: 2) { Input = SceneFilterInput.SourceAlpha },
+    new SceneGaussianBlurPrimitive(standardDeviation: 4),
+    new SceneFloodPrimitive((SceneColor)"#38bdf8"),
+    new SceneCompositePrimitive(SceneCompositeOperator.In, SceneFilterInput.Result(1)),
+    new SceneMergePrimitive(SceneFilterInput.Previous, SceneFilterInput.SourceGraphic),
+]);
+scene.Root.Add(new SceneRectangle(30, 30, 60, 40) { Fill = (SceneColor)"#0369a1", CornerRadius = 6, Filter = glow });
+
+// A rough edge: the shape moved by noise, in a region of its own
+var rough = new SceneFilterGraph(
+[
+    new SceneTurbulencePrimitive(SceneTurbulenceType.FractalNoise, baseFrequencyX: 0.05, baseFrequencyY: 0.05, octaves: 2, seed: 3),
+    new SceneDisplacementMapPrimitive(scale: 10, map: SceneFilterInput.Previous)
+    {
+        Input = SceneFilterInput.SourceGraphic,
+        XChannel = SceneColorChannel.Red,
+        YChannel = SceneColorChannel.Green,
+    },
+])
+{
+    Region = new SceneBounds(110, 10, 80, 80),
+};
+scene.Root.Add(new SceneCircle(150, 50, 30) { Fill = (SceneColor)"#b91c1c", Filter = rough });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+![A blue rounded rectangle with a light blue glow, and a red disk with a rough edge](images/FilterGraph.svg)
+
+An [image primitive](cref:Meziantou.Framework.VectorGraphics.SceneImagePrimitive) draws an element, which does not need
+to be in the scene otherwise: an image without effects whose primitive has the rectangle of the image as its
+subregion is written in the SVG filter itself, another element in the definitions of the SVG, by its identifier.
 
 PDF has no filters, not even the color matrices: the PDF renderer throws for a scene that has one. See the
 [limitations](07-Limitations.md).

@@ -39,6 +39,20 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     private readonly HashSet<SceneUse> _drawingUses = new(ReferenceEqualityComparer.Instance);
     private PdfContentBuilder _content = content;
 
+    // The clipping paths whose silhouettes are being drawn, and the elements drawn inside their clipping path
+    private readonly HashSet<SceneClipPath> _drawingClipPaths = new(ReferenceEqualityComparer.Instance);
+    private readonly HashSet<SceneElement> _clippedElements = new(ReferenceEqualityComparer.Instance);
+
+    // While the silhouettes of a clipping path are drawn: every paint is opaque black, and the texts are not stroked
+    private int _silhouetteDepth;
+
+    // The fill and the stroke of the shape whose marker is being drawn, which the context paints paint with
+    private ScenePaint? _contextFill;
+    private ScenePaint? _contextStroke;
+
+    // The transform from the coordinates of the scene to the page: the strokes that do not scale are in these coordinates
+    private PdfMatrix _sceneToPage = PdfMatrix.Identity;
+
     // The transform from the current user space to the space of the current content stream, and from that space to the page
     private PdfMatrix _matrix = PdfMatrix.Identity;
     private PdfMatrix _streamToPage = PdfMatrix.Identity;
@@ -47,6 +61,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     {
         Save();
         Transform(new PdfMatrix(scale, 0, 0, -scale, position.X, position.Y));
+        _sceneToPage = PdfMatrix.Multiply(_matrix, _streamToPage);
         if (scene.Background is { A: > 0 } background && IsFinite(scene.Width, scene.Height))
         {
             Save();
@@ -84,6 +99,19 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             {
                 VisitPattern(shape.Fill);
                 VisitPattern(shape.Stroke);
+            }
+
+            if (element is SceneText text)
+            {
+                VisitPattern(text.Fill);
+                VisitPattern(text.Stroke);
+                VisitPattern(text.DecorationFill);
+                foreach (var span in text.Spans)
+                {
+                    VisitPattern(span.Fill);
+                    VisitPattern(span.Stroke);
+                    VisitPattern(span.DecorationFill);
+                }
             }
 
             if (element is SceneUse use && patterns.Add(use.Content))
@@ -136,6 +164,34 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         var opacity = element.Opacity;
         if (!(opacity > 0))
             return;
+
+        // The clipping path is set in the graphics state, outside of the element. A clipping path that needs a soft mask
+        // draws the element in a transparency group: the soft masks set inside (the masks and the clipping paths of the
+        // element and of its children) start from none in the group, rather than replacing the one of the clip (11.6.4.3)
+        if (element.ClippingPath is { } clippingPath && _clippedElements.Add(element))
+        {
+            try
+            {
+                Save();
+                var clip = SetClipPath(clippingPath);
+                if (clip is ClipKind.SoftMask)
+                {
+                    DrawTransparencyGroup([element], 1);
+                }
+                else if (clip is not ClipKind.Empty)
+                {
+                    DrawElement(element);
+                }
+
+                Restore();
+            }
+            finally
+            {
+                _clippedElements.Remove(element);
+            }
+
+            return;
+        }
 
         AddLink(element);
 
@@ -209,21 +265,19 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                 break;
 
             case SceneRectangle rectangle when rectangle.Width > 0 && rectangle.Height > 0:
-                DrawShape(rectangle, new PathBuilder().AddRoundedRectangle(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, rectangle.CornerRadius).Build(), opacity, PdfFillRule.NonZero, canFill: true);
+                DrawShapeParts(rectangle, GetShapePath(rectangle)!, opacity, PdfFillRule.NonZero, canFill: true);
                 break;
 
             case SceneCircle circle when circle.Radius > 0:
-                DrawShape(circle, new PathBuilder().AddEllipse(circle.CenterX, circle.CenterY, circle.Radius, circle.Radius).Build(), opacity, PdfFillRule.NonZero, canFill: true);
+                DrawShapeParts(circle, GetShapePath(circle)!, opacity, PdfFillRule.NonZero, canFill: true);
                 break;
 
             case SceneLine line:
-                DrawShape(line, new PathBuilder().MoveTo(line.X1, line.Y1).LineTo(line.X2, line.Y2).Build(), opacity, PdfFillRule.NonZero, canFill: false);
-                DrawMarkers(line, opacity);
+                DrawShapeParts(line, new PathBuilder().MoveTo(line.X1, line.Y1).LineTo(line.X2, line.Y2).Build(), opacity, PdfFillRule.NonZero, canFill: false);
                 break;
 
             case ScenePath path:
-                DrawShape(path, path.Data.ToCubicCurves(), opacity, path.FillRule is SceneFillRule.EvenOdd ? PdfFillRule.EvenOdd : PdfFillRule.NonZero, canFill: true);
-                DrawMarkers(path, opacity);
+                DrawShapeParts(path, path.Data.ToCubicCurves(), opacity, path.FillRule is SceneFillRule.EvenOdd ? PdfFillRule.EvenOdd : PdfFillRule.NonZero, canFill: true);
                 break;
 
             case SceneText text:
@@ -256,8 +310,60 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         }
     }
 
-    // The content of each marker is drawn on its vertex, after the shape, with the opacity of the shape. A marker drawn on
-    // a shape of its own content is not drawn again; its hyperlinks are not links of the page.
+    // The geometry of a rectangle (with its corners) or a circle, in cubic curves, or null when it has no area
+    private static PathData? GetShapePath(SceneShape shape) => shape switch
+    {
+        SceneRectangle rectangle when rectangle.Width > 0 && rectangle.Height > 0 => new PathBuilder().AddRoundedRectangle(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, rectangle.CornerRadius).Build(),
+        SceneCircle circle when circle.Radius > 0 => new PathBuilder().AddEllipse(circle.CenterX, circle.CenterY, circle.Radius, circle.Radius).Build(),
+        ScenePath path => path.Data.ToCubicCurves(),
+        _ => null,
+    };
+
+    // The fill, the stroke and the markers of a shape, in its paint order: the fill and the stroke are one operation when
+    // the fill comes first and no marker is between them
+    private void DrawShapeParts(SceneShape shape, PathData path, double opacity, PdfFillRule fillRule, bool canFill)
+    {
+        switch (shape.PaintOrder)
+        {
+            case ScenePaintOrder.FillMarkersStroke:
+                DrawShape(shape, path, opacity, fillRule, canFill, drawStroke: false);
+                DrawMarkers(shape, opacity);
+                DrawShape(shape, path, opacity, fillRule, canFill: false, drawStroke: true);
+                break;
+
+            case ScenePaintOrder.StrokeFillMarkers:
+                DrawShape(shape, path, opacity, fillRule, canFill: false, drawStroke: true);
+                DrawShape(shape, path, opacity, fillRule, canFill, drawStroke: false);
+                DrawMarkers(shape, opacity);
+                break;
+
+            case ScenePaintOrder.StrokeMarkersFill:
+                DrawShape(shape, path, opacity, fillRule, canFill: false, drawStroke: true);
+                DrawMarkers(shape, opacity);
+                DrawShape(shape, path, opacity, fillRule, canFill, drawStroke: false);
+                break;
+
+            case ScenePaintOrder.MarkersFillStroke:
+                DrawMarkers(shape, opacity);
+                DrawShape(shape, path, opacity, fillRule, canFill, drawStroke: true);
+                break;
+
+            case ScenePaintOrder.MarkersStrokeFill:
+                DrawMarkers(shape, opacity);
+                DrawShape(shape, path, opacity, fillRule, canFill: false, drawStroke: true);
+                DrawShape(shape, path, opacity, fillRule, canFill, drawStroke: false);
+                break;
+
+            default:
+                DrawShape(shape, path, opacity, fillRule, canFill, drawStroke: true);
+                DrawMarkers(shape, opacity);
+                break;
+        }
+    }
+
+    // The content of each marker is drawn on its vertex, with the opacity of the shape, and the fill and the stroke of the
+    // shape as context paints. A marker drawn on a shape of its own content is not drawn again; its hyperlinks are not
+    // links of the page.
     private void DrawMarkers(SceneShape shape, double opacity)
     {
         foreach (var (marker, vertex, isStart) in GetMarkers(shape))
@@ -269,6 +375,8 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             Save();
             Transform(new PdfMatrix(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F));
             _hiddenDepth++;
+            var (outerFill, outerStroke) = (_contextFill, _contextStroke);
+            (_contextFill, _contextStroke) = (ResolvePaint(shape.Fill), ResolvePaint(shape.Stroke));
             try
             {
                 // The content is a group: its transform, its opacity and its effects apply
@@ -283,6 +391,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             }
             finally
             {
+                (_contextFill, _contextStroke) = (outerFill, outerStroke);
                 _hiddenDepth--;
                 _drawingMarkers.Remove(marker);
                 Restore();
@@ -341,10 +450,26 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         if (Images.GetValue(image, static image => LoadImage(image)).Image is not { } pdfImage)
             return;
 
+        // The image is placed as the view box of its pixels in its rectangle, which cuts it when it covers it
+        var destination = new SceneBounds(image.X, image.Y, image.Width, image.Height);
+        if (image.Alignment is not SceneAspectRatio.None)
+        {
+            var viewBox = new SceneViewBox(new SceneBounds(0, 0, pdfImage.Width, pdfImage.Height), destination) { Alignment = image.Alignment, Slice = image.Slice };
+            if (viewBox.GetTransform() is not { } transform)
+                return;
+
+            destination = new SceneBounds(transform.E, transform.F, pdfImage.Width * transform.A, pdfImage.Height * transform.D);
+        }
+
         // The image space has its first row at the top: in the flipped space, the image is placed from its bottom edge upward
         Save();
+        if (image.Slice && image.Alignment is not SceneAspectRatio.None)
+        {
+            _content.Rectangle(image.X, image.Y, image.Width, image.Height).Clip().EndPath();
+        }
+
         SetAlpha(opacity, opacity);
-        _content.DrawImage(pdfImage, image.X, image.Y + image.Height, image.Width, -image.Height);
+        _content.DrawImage(pdfImage, destination.X, destination.Bottom, destination.Width, -destination.Height);
         Restore();
     }
 
@@ -443,19 +568,208 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     // Draws elements in a form whose space is the current user space
     private PdfForm CreateForm(IEnumerable<SceneElement> elements, Bounds box, PdfTransparencyGroup group)
     {
+        return CreateForm(box, group, elements, static (writer, elements) =>
+        {
+            foreach (var element in elements)
+            {
+                writer.DrawElement(element);
+            }
+        });
+    }
+
+    private PdfForm CreateForm<TState>(Bounds box, PdfTransparencyGroup group, TState state, Action<ScenePdfWriter, TState> draw)
+    {
         var form = page.Document.CreateForm(new PdfRectangle(box.Left, box.Top, box.Right, box.Bottom), matrix: null, group);
         var (outerContent, outerMatrix, outerStreamToPage) = (_content, _matrix, _streamToPage);
         _streamToPage = PdfMatrix.Multiply(_matrix, _streamToPage);
         _matrix = PdfMatrix.Identity;
         _content = form.CreateContentBuilder();
-        foreach (var element in elements)
-        {
-            DrawElement(element);
-        }
-
+        draw(this, state);
         _content.Complete();
         (_content, _matrix, _streamToPage) = (outerContent, outerMatrix, outerStreamToPage);
         return form;
+    }
+
+    private enum ClipKind
+    {
+        // The clipping path leaves nothing visible
+        Empty,
+
+        // A clipping path of the graphics state
+        Path,
+
+        // A soft mask of the graphics state: the alpha of the silhouettes of the content
+        SoftMask,
+    }
+
+    // Sets a clipping path in the current graphics state, in the current user space. A clipping path of one shape is a
+    // clipping path of PDF; the others (several shapes, whose union PDF cannot clip to, texts, clipping paths that cut
+    // them) are a soft mask whose form draws the silhouettes of the content, opaque.
+    private ClipKind SetClipPath(SceneClipPath clipPath)
+    {
+        if (!_drawingClipPaths.Add(clipPath))
+            return ClipKind.Empty;
+
+        try
+        {
+            if (clipPath.ClippingPath is null)
+            {
+                var leaves = new List<(SceneElement Leaf, PdfMatrix Matrix)>();
+                if (!CollectClipLeaves(clipPath.Content, PdfMatrix.Identity, leaves, new HashSet<SceneUse>(ReferenceEqualityComparer.Instance)))
+                {
+                    // Only shapes: none leaves nothing visible, one is a clipping path of PDF
+                    if (leaves.Count is 0)
+                        return ClipKind.Empty;
+
+                    if (leaves.Count is 1 && leaves[0].Leaf is SceneShape shape && GetShapePath(shape) is { } shapePath && IsFinite(shapePath))
+                    {
+                        AppendPath(TransformPath(shapePath, leaves[0].Matrix));
+                        _content.Clip(shape is ScenePath { FillRule: SceneFillRule.EvenOdd } ? PdfFillRule.EvenOdd : PdfFillRule.NonZero).EndPath();
+                        return ClipKind.Path;
+                    }
+                }
+            }
+
+            // The box of the geometry of the clipping path, whatever the opacities, the clips and the view boxes of its content
+            if (clipPath.GetBounds(text => GetTextBounds(text)) is not { } bounds)
+                return ClipKind.Empty;
+
+            var box = new Bounds(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
+            if (!box.IsFinite || !(box.Width > 0) || !(box.Height > 0))
+                return ClipKind.Empty;
+
+            _hiddenDepth++;
+            _silhouetteDepth++;
+            PdfForm form;
+            try
+            {
+                form = CreateForm(box, new PdfTransparencyGroup(), clipPath, static (writer, clipPath) =>
+                {
+                    writer.Save();
+                    if (clipPath.ClippingPath is not { } outer || writer.SetClipPath(outer) is not ClipKind.Empty)
+                    {
+                        writer.DrawSilhouette(clipPath.Content);
+                    }
+
+                    writer.Restore();
+                });
+            }
+            finally
+            {
+                _silhouetteDepth--;
+                _hiddenDepth--;
+            }
+
+            _content.SetGraphicsState(new PdfExtGState { SoftMask = PdfSoftMask.FromAlpha(form) });
+            return ClipKind.SoftMask;
+        }
+        finally
+        {
+            _drawingClipPaths.Remove(clipPath);
+        }
+    }
+
+    // The shapes of the content of a clipping path that has only shapes and groups, with the transform from their
+    // coordinates to the ones of the content. Returns true when the content has something else: a text, a clipping path.
+    private static bool CollectClipLeaves(SceneElement element, PdfMatrix parent, List<(SceneElement Leaf, PdfMatrix Matrix)> leaves, HashSet<SceneUse> uses)
+    {
+        var matrix = element.Transform is { } transform ? PdfMatrix.Multiply(new PdfMatrix(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F), parent) : parent;
+        switch (element)
+        {
+            case SceneGroup group:
+                foreach (var child in group.Children)
+                {
+                    if (CollectClipLeaves(child, matrix, leaves, uses))
+                        return true;
+                }
+
+                return false;
+
+            case SceneUse use when !use.IsCircular() && uses.Add(use):
+                var result = CollectClipLeaves(use.Content, matrix, leaves, uses);
+                uses.Remove(use);
+                return result;
+
+            case SceneText:
+                return true;
+
+            case SceneRectangle or SceneCircle or ScenePath when element.ClippingPath is not null:
+                return true;
+
+            case SceneRectangle or SceneCircle or ScenePath when GetShapePath((SceneShape)element) is not null:
+                leaves.Add((element, matrix));
+                return false;
+
+            default:
+                return false;
+        }
+    }
+
+    // The geometry an element adds to a clipping path, opaque: the interiors of the shapes, the glyphs of the texts. The
+    // clipping path of a shape or a text cuts it, in the coordinates of its parent.
+    private void DrawSilhouette(SceneElement element)
+    {
+        if (element is SceneRectangle or SceneCircle or ScenePath or SceneText && element.ClippingPath is { } clippingPath)
+        {
+            Save();
+            if (SetClipPath(clippingPath) is not ClipKind.Empty)
+            {
+                DrawTransformedSilhouette(element);
+            }
+
+            Restore();
+            return;
+        }
+
+        DrawTransformedSilhouette(element);
+    }
+
+    private void DrawTransformedSilhouette(SceneElement element)
+    {
+        var transform = element.Transform;
+        if (transform is { } value && !IsFinite(value.A, value.B, value.C, value.D, value.E, value.F))
+            return;
+
+        Save();
+        if (transform is { } elementTransform)
+        {
+            Transform(new PdfMatrix(elementTransform.A, elementTransform.B, elementTransform.C, elementTransform.D, elementTransform.E, elementTransform.F));
+        }
+
+        switch (element)
+        {
+            case SceneGroup group:
+                foreach (var child in group.Children)
+                {
+                    DrawSilhouette(child);
+                }
+
+                break;
+
+            case SceneUse use when !use.IsCircular() && _drawingUses.Add(use):
+                try
+                {
+                    DrawSilhouette(use.Content);
+                }
+                finally
+                {
+                    _drawingUses.Remove(use);
+                }
+
+                break;
+
+            case SceneShape shape when shape is not SceneLine && GetShapePath(shape) is { } path && IsFinite(path):
+                _content.SetFillColor(ToColor(SceneColor.Black));
+                AppendPath(path);
+                _content.Fill(shape is ScenePath { FillRule: SceneFillRule.EvenOdd } ? PdfFillRule.EvenOdd : PdfFillRule.NonZero);
+                break;
+
+            case SceneText text:
+                DrawText(text, opacity: 1);
+                break;
+        }
+
+        Restore();
     }
 
     // The content of a mask is drawn in a group whose luminosity or alpha is the soft mask: outside of it, the
@@ -500,10 +814,10 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         _ => PdfBlendMode.Normal,
     };
 
-    private void DrawShape(SceneShape shape, PathData path, double opacity, PdfFillRule fillRule, bool canFill)
+    private void DrawShape(SceneShape shape, PathData path, double opacity, PdfFillRule fillRule, bool canFill, bool drawStroke)
     {
         var fill = canFill ? shape.Fill : null;
-        var stroke = shape.StrokeWidth > 0 && double.IsFinite(shape.StrokeWidth) ? shape.Stroke : null;
+        var stroke = drawStroke && shape.StrokeWidth > 0 && double.IsFinite(shape.StrokeWidth) ? shape.Stroke : null;
         if ((fill is null && stroke is null) || path.IsEmpty || !IsFinite(path))
             return;
 
@@ -519,32 +833,22 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         SetAlpha((fillAlpha ?? 1) * opacity, (strokeAlpha ?? 1) * opacity);
         if (strokeAlpha is not null)
         {
-            _content.SetLineWidth(shape.StrokeWidth)
-                .SetLineCap(shape.LineCap switch
-                {
-                    SceneLineCap.Round => PdfLineCap.Round,
-                    SceneLineCap.Square => PdfLineCap.ProjectingSquare,
-                    _ => PdfLineCap.Butt,
-                })
-                .SetLineJoin(shape.LineJoin switch
-                {
-                    SceneLineJoin.Round => PdfLineJoin.Round,
-                    SceneLineJoin.Bevel => PdfLineJoin.Bevel,
-                    _ => PdfLineJoin.Miter,
-                })
-                .SetMiterLimit(shape.MiterLimit >= 1 && double.IsFinite(shape.MiterLimit) ? shape.MiterLimit : DefaultMiterLimit);
+            SetStrokeStyle(shape.StrokeWidth, shape.LineCap, shape.LineJoin, shape.MiterLimit, shape.StrokeDashArray, shape.StrokeDashOffset);
+        }
 
-            // SVG draws a solid line when a length of the pattern is negative or when they are all 0
-            if (shape.StrokeDashArray is { Count: > 0 } dashes && dashes.All(dash => dash >= 0 && double.IsFinite(dash)) && dashes.Sum() > 0)
+        // A stroke that does not scale is drawn in the coordinates of the scene, with the path mapped to them; the paints
+        // are already placed in the space of the stream
+        if (strokeAlpha is not null && shape.NonScalingStroke)
+        {
+            var toScene = GetTransformToScene();
+            if (!toScene.TryInvert(out var fromScene) || !IsFinite(fromScene.A, fromScene.B, fromScene.C, fromScene.D, fromScene.E, fromScene.F))
             {
-                // An odd number of lengths is repeated, as in SVG
-                double[] pattern = dashes.Count % 2 == 0 ? [.. dashes] : [.. dashes, .. dashes];
-
-                // The phase is brought into the pattern: a negative offset starts before it
-                var offset = double.IsFinite(shape.StrokeDashOffset) ? shape.StrokeDashOffset : 0;
-                var phase = offset % pattern.Sum();
-                _content.SetDashPattern(pattern, phase < 0 ? phase + pattern.Sum() : phase);
+                Restore();
+                return;
             }
+
+            Transform(fromScene);
+            path = TransformPath(path, toScene);
         }
 
         AppendPath(path);
@@ -562,6 +866,77 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         }
 
         Restore();
+    }
+
+    // The transform from the current user space to the coordinates of the scene
+    private PdfMatrix GetTransformToScene()
+    {
+        var toPage = PdfMatrix.Multiply(_matrix, _streamToPage);
+        return _sceneToPage.TryInvert(out var pageToScene) ? PdfMatrix.Multiply(toPage, pageToScene) : PdfMatrix.Identity;
+    }
+
+    // A path in cubic curves, mapped by a transform: an affine transform maps the control points of a curve to the ones of
+    // the mapped curve
+    private static PathData TransformPath(PathData path, PdfMatrix matrix)
+    {
+        var builder = new PathBuilder();
+        foreach (var command in path.ToCubicCurves().Commands)
+        {
+            var (x, y) = matrix.Transform(command.X, command.Y);
+            switch (command.Kind)
+            {
+                case PathCommandKind.MoveTo:
+                    builder.MoveTo(x, y);
+                    break;
+
+                case PathCommandKind.LineTo:
+                    builder.LineTo(x, y);
+                    break;
+
+                case PathCommandKind.CubicTo:
+                    var (x1, y1) = matrix.Transform(command.X1, command.Y1);
+                    var (x2, y2) = matrix.Transform(command.X2, command.Y2);
+                    builder.CubicTo(x1, y1, x2, y2, x, y);
+                    break;
+
+                case PathCommandKind.Close:
+                    builder.Close();
+                    break;
+            }
+        }
+
+        return builder.Build();
+    }
+
+    // The width, the caps, the joins and the dashes of a stroke
+    private void SetStrokeStyle(double width, SceneLineCap lineCap, SceneLineJoin lineJoin, double miterLimit, IReadOnlyList<double>? dashArray, double dashOffset)
+    {
+        _content.SetLineWidth(width)
+            .SetLineCap(lineCap switch
+            {
+                SceneLineCap.Round => PdfLineCap.Round,
+                SceneLineCap.Square => PdfLineCap.ProjectingSquare,
+                _ => PdfLineCap.Butt,
+            })
+            .SetLineJoin(lineJoin switch
+            {
+                SceneLineJoin.Round => PdfLineJoin.Round,
+                SceneLineJoin.Bevel => PdfLineJoin.Bevel,
+                _ => PdfLineJoin.Miter,
+            })
+            .SetMiterLimit(miterLimit >= 1 && double.IsFinite(miterLimit) ? miterLimit : DefaultMiterLimit);
+
+        // SVG draws a solid line when a length of the pattern is negative or when they are all 0
+        if (dashArray is { Count: > 0 } dashes && dashes.All(dash => dash >= 0 && double.IsFinite(dash)) && dashes.Sum() > 0)
+        {
+            // An odd number of lengths is repeated, as in SVG
+            double[] pattern = dashes.Count % 2 == 0 ? [.. dashes] : [.. dashes, .. dashes];
+
+            // The phase is brought into the pattern: a negative offset starts before it
+            var offset = double.IsFinite(dashOffset) ? dashOffset : 0;
+            var phase = offset % pattern.Sum();
+            _content.SetDashPattern(pattern, phase < 0 ? phase + pattern.Sum() : phase);
+        }
     }
 
     private void AppendPath(PathData path)
@@ -602,16 +977,22 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     }
 
     // Sets a paint and returns its opacity, or null when it paints nothing
-    private double? SetPaint(ScenePaint paint, bool stroke, SceneShape shape)
+    private double? SetPaint(ScenePaint paint, bool stroke, SceneElement element)
     {
-        switch (paint)
+        if (_silhouetteDepth > 0)
+        {
+            SetColor(SceneColor.Black, stroke);
+            return 1;
+        }
+
+        switch (ResolvePaint(paint))
         {
             case SolidPaint solid:
                 SetColor(solid.Color, stroke);
                 return solid.Color.A / 255.0;
 
             case SceneGradientPaint gradient:
-                return SetGradient(gradient, stroke, shape);
+                return SetGradient(gradient, stroke, element);
 
             case PatternPaint pattern:
                 return SetTilingPattern(pattern, stroke);
@@ -621,7 +1002,10 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         }
     }
 
-    private double? SetGradient(SceneGradientPaint gradient, bool stroke, SceneShape shape)
+    // A context paint is the paint of the shape whose marker is being drawn; nothing elsewhere
+    private ScenePaint? ResolvePaint(ScenePaint? paint) => paint is ContextPaint context ? (context.IsStroke ? _contextStroke : _contextFill) : paint;
+
+    private double? SetGradient(SceneGradientPaint gradient, bool stroke, SceneElement element)
     {
         var stops = GetStops(gradient.Stops);
         if (stops.Count is 0)
@@ -635,7 +1019,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         var degenerate = stops.Count is 1 || gradient switch
         {
             LinearGradientPaint linear => (linear.X1 == linear.X2 && linear.Y1 == linear.Y2) || !IsFinite(linear.X1, linear.Y1, linear.X2, linear.Y2),
-            RadialGradientPaint radial => !(radial.Radius > 0) || !IsFinite(radial.CenterX, radial.CenterY, radial.Radius, radial.FocalX, radial.FocalY),
+            RadialGradientPaint radial => !(radial.Radius > 0) || !IsFinite(radial.CenterX, radial.CenterY, radial.Radius, radial.FocalX, radial.FocalY) || FocalRadius(radial) >= radial.Radius && radial.FocalX == radial.CenterX && radial.FocalY == radial.CenterY,
             _ => true,
         };
 
@@ -648,7 +1032,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
         // Repeat and reflect: the stops are repeated over the periods the shape covers, in the space of the gradient
         var (first, last) = (0, 1);
-        if (gradient.Spread is not SceneGradientSpread.Pad && GetLocalBounds(shape)?.Transform(inverse) is { IsFinite: true } box)
+        if (gradient.Spread is not SceneGradientSpread.Pad && GetLocalBounds(element)?.Transform(inverse) is { IsFinite: true } box)
         {
             var range = GetRange(gradient, box);
             if (range is { } periods)
@@ -667,11 +1051,11 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                 linear.X1 + (last * (linear.X2 - linear.X1)), linear.Y1 + (last * (linear.Y2 - linear.Y1)),
                 function, extendStart: true, extendEnd: true),
 
-            // The circles go from the focal point, of radius 0, to the circle of the gradient (8.7.4.5.4, type 3)
+            // The circles go from the circle of the focal point to the circle of the gradient (8.7.4.5.4, type 3)
             RadialGradientPaint radial => PdfShading.Radial(
                 PdfDeviceColorSpace.Rgb,
-                radial.FocalX, radial.FocalY, 0,
-                radial.FocalX + (last * (radial.CenterX - radial.FocalX)), radial.FocalY + (last * (radial.CenterY - radial.FocalY)), last * radial.Radius,
+                radial.FocalX, radial.FocalY, FocalRadius(radial),
+                radial.FocalX + (last * (radial.CenterX - radial.FocalX)), radial.FocalY + (last * (radial.CenterY - radial.FocalY)), FocalRadius(radial) + (last * (radial.Radius - FocalRadius(radial))),
                 function, extendStart: true, extendEnd: true),
             _ => throw new UnreachableException(),
         };
@@ -680,13 +1064,13 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         return opacity;
     }
 
-    // The bounds of a shape in its own coordinates, inside its transform
-    private Bounds? GetLocalBounds(SceneShape shape)
+    // The bounds of a shape or a text in its own coordinates, inside its transform
+    private Bounds? GetLocalBounds(SceneElement element)
     {
-        if (Bounds.Of(shape, this) is not { } bounds)
+        if (Bounds.Of(element, this) is not { } bounds)
             return null;
 
-        if (shape.Transform is not { } transform)
+        if (element.Transform is not { } transform)
             return bounds;
 
         return new PdfMatrix(transform.A, transform.B, transform.C, transform.D, transform.E, transform.F).TryInvert(out var inverse) ? bounds.Transform(inverse) : null;
@@ -715,6 +1099,10 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             _content = pattern.CreateContentBuilder();
             _drawingPatterns.Add(paint);
             _hiddenDepth++;
+
+            // The content of a pattern has no context paint: the pattern is shared by the shapes it paints
+            var (outerFill, outerStroke, outerSilhouette) = (_contextFill, _contextStroke, _silhouetteDepth);
+            (_contextFill, _contextStroke, _silhouetteDepth) = (null, null, 0);
             try
             {
                 // The content is a group: its transform, its opacity and its effects apply
@@ -723,6 +1111,7 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             }
             finally
             {
+                (_contextFill, _contextStroke, _silhouetteDepth) = (outerFill, outerStroke, outerSilhouette);
                 _hiddenDepth--;
                 _drawingPatterns.Remove(paint);
                 (_content, _matrix, _streamToPage) = (outerContent, outerMatrix, outerStreamToPage);
@@ -755,17 +1144,19 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             }
             else
             {
-                // The circle of a parameter t is centered t of the way from the focal point to the center, of radius t r:
-                // the parameter of a point is the positive root of |q - t d|^2 = (t r)^2
+                // The circle of a parameter t is centered t of the way from the focal point to the center, of radius
+                // fr + t (r - fr): the parameter of a point is the largest root of |q - t d|^2 = (fr + t (r - fr))^2
                 var radial = (RadialGradientPaint)gradient;
+                var focalRadius = FocalRadius(radial);
+                var growth = radial.Radius - focalRadius;
                 var (dx, dy) = (radial.CenterX - radial.FocalX, radial.CenterY - radial.FocalY);
                 var (qx, qy) = (x - radial.FocalX, y - radial.FocalY);
-                var a = (dx * dx) + (dy * dy) - (radial.Radius * radial.Radius);
+                var a = (dx * dx) + (dy * dy) - (growth * growth);
                 if (a >= 0)
                     return null;
 
-                var b = -2 * ((qx * dx) + (qy * dy));
-                var c = (qx * qx) + (qy * qy);
+                var b = -2 * ((qx * dx) + (qy * dy) + (focalRadius * growth));
+                var c = (qx * qx) + (qy * qy) - (focalRadius * focalRadius);
                 t = (-b - Math.Sqrt((b * b) - (4 * a * c))) / (2 * a);
             }
 
@@ -779,6 +1170,9 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         var last = (int)Math.Clamp(Math.Ceiling(max), first + 1, first + MaxPeriods);
         return (first, last);
     }
+
+    // The radius of the circle of offset 0: 0 when it is not valid, as in SVG
+    private static double FocalRadius(RadialGradientPaint radial) => radial.FocalRadius > 0 && double.IsFinite(radial.FocalRadius) ? radial.FocalRadius : 0;
 
     // The stops of the periods from first to last, their offsets brought back to [0, 1]
     private static List<(double Offset, SceneColor Color)> Repeat(List<(double Offset, SceneColor Color)> stops, int first, int last, bool reflect)
@@ -856,67 +1250,60 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         if (text.Text.Length is 0 || !(opacity > 0) || !IsFinite(text.X, text.Y, text.Rotation))
             return;
 
-        var textParts = GetTextParts(text);
-        if (textParts.Count is 0)
+        var (parts, placement) = GetTextLayout(text);
+        if (parts.Count is 0)
             return;
 
-        var width = textParts.Sum(part => part.Width);
-        var startX = text.Anchor switch
-        {
-            SceneTextAnchor.Middle => text.X - (width / 2),
-            SceneTextAnchor.End => text.X - width,
-            _ => text.X,
-        };
-
-        // The glyphs are drawn upright in the flipped space, and rotated clockwise around the anchor. Each part (a span,
-        // or the characters of a span that a face draws) is a text object of its own, with its color and its opacity.
+        // The glyphs are drawn upright in the flipped space, scaled to the length of the text, turned around their origin
+        // by the rotation of their span, and the text is rotated clockwise around its anchor. Each part (a span, or the
+        // characters of a span that a face draws) is a text object of its own, with its paints and its opacity.
         var rotation = SceneTransform.Rotate(text.Rotation, text.X, text.Y);
         var rotationMatrix = new PdfMatrix(rotation.A, rotation.B, rotation.C, rotation.D, rotation.E, rotation.F);
-        var offset = 0.0;
-        foreach (var part in textParts)
+        for (var i = 0; i < parts.Count; i++)
         {
-            var alpha = part.Color.A / 255.0 * opacity;
-            if (alpha > 0)
+            var part = parts[i];
+            var (x, baseline) = (placement.X[i], placement.Y[i]);
+            if (!IsFinite(x, baseline))
+                continue;
+
+            var origin = new PdfMatrix(1, 0, 0, 1, x, baseline);
+            if (part.Rotation != 0)
             {
-                Save();
-                SetColor(part.Color, stroke: false);
-                SetAlpha(alpha, strokeAlpha: 1);
-                _content.BeginText().SetTextMatrix(PdfMatrix.Multiply(new PdfMatrix(1, 0, 0, -1, startX + offset, text.Y), rotationMatrix));
-                _content.SetFont(part.Font, part.Size);
-                ShowPart(part);
-                _content.EndText();
-                DrawDecorations(part, startX + offset, text.Y, part.Width, rotationMatrix);
-                Restore();
+                var glyphRotation = SceneTransform.Rotate(part.Rotation);
+                origin = PdfMatrix.Multiply(new PdfMatrix(glyphRotation.A, glyphRotation.B, glyphRotation.C, glyphRotation.D, 0, 0), origin);
             }
 
-            offset += part.Width;
+            var matrix = PdfMatrix.Multiply(origin, rotationMatrix);
+            PaintText(text, part, opacity, () =>
+            {
+                _content.SetTextMatrix(PdfMatrix.Multiply(new PdfMatrix(placement.Scale, 0, 0, -1, 0, 0), matrix));
+                _content.SetFont(part.Font, part.Size);
+                ShowPart(part);
+            });
+            DrawDecorations(text, part, 0, 0, placement.Width[i], matrix, opacity);
         }
     }
 
     // Each cluster is a text of its own, turned to the direction of the path at the middle of its advance, with the
-    // middle of its advance on the path; the clusters whose middle is beyond the ends of the path are not drawn, as in
-    // SVG. Its lines are pieces of the same length, turned with it.
+    // middle of its advance on the path, moved across the path by the shifts of its span; the clusters whose middle is
+    // beyond the ends of the path are not drawn, as in SVG. Its lines are pieces of the same length, turned with it.
     private void DrawTextOnPath(SceneText text, PathData path, double opacity)
     {
         if (text.Text.Length is 0 || !(opacity > 0) || path.IsEmpty)
             return;
 
-        var parts = GetTextParts(text, layoutClusters: true);
+        var (parts, placement) = GetTextLayout(text, layoutClusters: true);
         var length = path.GetLength();
         if (parts.Count is 0 || !(length > 0) || !double.IsFinite(length))
             return;
 
-        var width = parts.Sum(part => part.Width);
-        var start = (double.IsFinite(text.PathStartOffset) ? text.PathStartOffset : 0) - text.Anchor switch
+        for (var i = 0; i < parts.Count; i++)
         {
-            SceneTextAnchor.Middle => width / 2,
-            SceneTextAnchor.End => width,
-            _ => 0,
-        };
+            var part = parts[i];
+            var (start, offset) = (placement.X[i], placement.Y[i]);
+            if (!IsFinite(start, offset))
+                continue;
 
-        foreach (var part in parts)
-        {
-            var alpha = part.Color.A / 255.0 * opacity;
             var clusters = new List<(TextCluster Cluster, PdfMatrix Matrix)>();
             foreach (var cluster in part.Clusters!)
             {
@@ -926,46 +1313,94 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
                 var point = path.GetPointAtLength(middle);
                 var rotation = SceneTransform.Rotate(point.Angle);
-                var matrix = PdfMatrix.Multiply(new PdfMatrix(1, 0, 0, 1, -cluster.Advance / 2, 0), new PdfMatrix(rotation.A, rotation.B, rotation.C, rotation.D, point.X, point.Y));
+                var matrix = PdfMatrix.Multiply(new PdfMatrix(1, 0, 0, 1, -cluster.Advance / 2, offset), new PdfMatrix(rotation.A, rotation.B, rotation.C, rotation.D, point.X, point.Y));
                 if (IsFinite(matrix.A, matrix.B, matrix.C, matrix.D, matrix.E, matrix.F))
                 {
                     clusters.Add((cluster, matrix));
                 }
             }
 
-            start += part.Width;
-            if (!(alpha > 0) || clusters.Count is 0)
+            if (clusters.Count is 0)
                 continue;
 
-            Save();
-            SetColor(part.Color, stroke: false);
-            SetAlpha(alpha, strokeAlpha: 1);
-            _content.BeginText().SetFont(part.Font, part.Size);
-            _content.BeginMarkedContent("Span", new PdfDictionary { ["ActualText"] = PdfString.FromText(part.Text) });
-            foreach (var (cluster, matrix) in clusters)
+            PaintText(text, part, opacity, () =>
             {
-                _content.SetTextMatrix(PdfMatrix.Multiply(new PdfMatrix(1, 0, 0, -1, 0, 0), matrix));
-                if (cluster.Glyphs is { } glyphs)
+                _content.SetFont(part.Font, part.Size);
+                _content.BeginMarkedContent("Span", new PdfDictionary { ["ActualText"] = PdfString.FromText(part.Text) });
+                foreach (var (cluster, matrix) in clusters)
                 {
-                    if (glyphs.Length > 0)
+                    _content.SetTextMatrix(PdfMatrix.Multiply(new PdfMatrix(1, 0, 0, -1, 0, 0), matrix));
+                    if (cluster.Glyphs is { } glyphs)
                     {
-                        _content.ShowGlyphs(glyphs);
+                        if (glyphs.Length > 0)
+                        {
+                            _content.ShowGlyphs(glyphs);
+                        }
+                    }
+                    else
+                    {
+                        _content.ShowText(cluster.Text);
                     }
                 }
-                else
-                {
-                    _content.ShowText(cluster.Text);
-                }
-            }
 
-            _content.EndMarkedContent();
-            _content.EndText();
+                _content.EndMarkedContent();
+            });
+
             foreach (var (cluster, matrix) in clusters)
             {
-                DrawDecorations(part, 0, 0, cluster.Advance, matrix);
+                DrawDecorations(text, part, 0, 0, cluster.Advance, matrix, opacity);
+            }
+        }
+    }
+
+    // Paints the glyphs of a part with its fill and its outline, in a text object whose content show draws, with the
+    // rendering mode that fills, strokes, or does both (9.3.6). An outline painted before the fill is a text object of its
+    // own, whose replacement text is empty, so that the text is extracted once.
+    private void PaintText(SceneText text, TextPart part, double opacity, Action show)
+    {
+        Save();
+        var fillAlpha = part.FillPaint is { } fillPaint ? SetPaint(fillPaint, stroke: false, text) : SetColorPaint(part.FillColor, stroke: false);
+        // The silhouette of a text in a clipping path is its glyphs, without their outline
+        var strokeAlpha = part.Stroke is { } strokePaint && _silhouetteDepth is 0 ? SetPaint(strokePaint, stroke: true, text) : null;
+        fillAlpha = fillAlpha > 0 ? fillAlpha : null;
+        strokeAlpha = strokeAlpha > 0 ? strokeAlpha : null;
+        if (fillAlpha is null && strokeAlpha is null)
+        {
+            Restore();
+            return;
+        }
+
+        SetAlpha((fillAlpha ?? 1) * opacity, (strokeAlpha ?? 1) * opacity);
+        if (strokeAlpha is not null)
+        {
+            SetStrokeStyle(text.StrokeWidth, text.LineCap, text.LineJoin, text.MiterLimit, text.StrokeDashArray, text.StrokeDashOffset);
+        }
+
+        if (fillAlpha is not null && strokeAlpha is not null && TextPlacement.IsStrokeFirst(text.PaintOrder))
+        {
+            _content.BeginMarkedContent("Span", new PdfDictionary { ["ActualText"] = PdfString.FromText("") });
+            ShowPass(PdfTextRenderingMode.Stroke);
+            _content.EndMarkedContent();
+            ShowPass(PdfTextRenderingMode.Fill, reset: true);
+        }
+        else
+        {
+            ShowPass(fillAlpha is null ? PdfTextRenderingMode.Stroke : strokeAlpha is null ? PdfTextRenderingMode.Fill : PdfTextRenderingMode.FillStroke);
+        }
+
+        Restore();
+
+        // The fill is the default rendering mode: it is set after another one only
+        void ShowPass(PdfTextRenderingMode mode, bool reset = false)
+        {
+            _content.BeginText();
+            if (mode is not PdfTextRenderingMode.Fill || reset)
+            {
+                _content.SetTextRenderingMode(mode);
             }
 
-            Restore();
+            show();
+            _content.EndText();
         }
     }
 
@@ -1015,13 +1450,22 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         _content.EndMarkedContent();
     }
 
-    // The lines of a part are rectangles of its color, at the position and of the thickness the face of its span gives
-    private void DrawDecorations(TextPart part, double x, double baseline, double width, PdfMatrix rotation)
+    // The lines of a part are rectangles of its paint, at the position and of the thickness the face of its span gives
+    private void DrawDecorations(SceneText text, TextPart part, double x, double baseline, double width, PdfMatrix rotation, double opacity)
     {
-        if ((part.Decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough | SceneTextDecorations.Overline)) is SceneTextDecorations.None || !(width > 0))
+        // The silhouette of a text in a clipping path is its glyphs, without their lines
+        if ((part.Decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough | SceneTextDecorations.Overline)) is SceneTextDecorations.None || !(width > 0) || _silhouetteDepth > 0)
             return;
 
         Save();
+        var alpha = part.DecorationPaint is { } paint ? SetPaint(paint, stroke: false, text) : SetColorPaint(part.DecorationColor, stroke: false);
+        if (!(alpha > 0))
+        {
+            Restore();
+            return;
+        }
+
+        SetAlpha(alpha.Value * opacity, strokeAlpha: 1);
         Transform(rotation);
         if (part.Decorations.HasFlag(SceneTextDecorations.Underline))
         {
@@ -1047,94 +1491,199 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         Restore();
     }
 
-    // The glyphs fit in an em above the baseline and half an em below it, from the start to the end of the text
+    // The glyphs fit in an em above the baseline and half an em below it, from the start to the end of each part; a
+    // character turned around its origin stays within its advance and an em and a half of it
     private SceneBounds? GetTextBounds(SceneText text)
     {
-        var parts = GetTextParts(text);
-        if (parts.Count is 0)
-            return null;
-
-        var width = parts.Sum(part => part.Width);
-        var size = parts.Max(part => part.Size);
-        var start = text.Anchor switch
+        var (parts, placement) = GetTextLayout(text);
+        SceneBounds? bounds = null;
+        for (var i = 0; i < parts.Count; i++)
         {
-            SceneTextAnchor.Middle => text.X - (width / 2),
-            SceneTextAnchor.End => text.X - width,
-            _ => text.X,
-        };
+            var (x, baseline, width, size) = (placement.X[i], placement.Y[i], placement.Width[i], parts[i].Size);
+            if (!IsFinite(x, baseline, width))
+                continue;
 
-        return new SceneBounds(start, text.Y - size, width, size * 1.5);
+            SceneBounds box;
+            if (parts[i].Rotation != 0)
+            {
+                var reach = Math.Abs(width) + (size * 1.5);
+                box = new SceneBounds(x - reach, baseline - reach, 2 * reach, 2 * reach);
+            }
+            else
+            {
+                box = new SceneBounds(Math.Min(x, x + width), baseline - size, Math.Abs(width), size * 1.5);
+            }
+
+            bounds = bounds is { } union ? new SceneBounds(Math.Min(union.X, box.X), Math.Min(union.Y, box.Y), Math.Max(union.Right, box.Right) - Math.Min(union.X, box.X), Math.Max(union.Bottom, box.Bottom) - Math.Min(union.Y, box.Y)) : box;
+        }
+
+        return bounds;
     }
 
-    /// <summary>A part of a text that one font draws, with its style and its width.</summary>
+    /// <summary>A part of a text that one font draws, with its paints, its style and its width.</summary>
     /// <remarks>
     /// <see cref="Clusters"/> places the characters of a part that the PDF font cannot place by itself, such as a spaced
-    /// text: its width includes the spacing. It is <see langword="null"/> otherwise.
+    /// text: its width includes the spacing. It is <see langword="null"/> otherwise. <see cref="FillPaint"/> and
+    /// <see cref="DecorationPaint"/> are <see langword="null"/> when the glyphs and the lines are painted with a color.
     /// </remarks>
-    internal sealed record TextPart(PdfFont Font, string Text, double Width, double Size, SceneColor Color, SceneTextDecorations Decorations, SceneFontFace? Face, List<TextCluster>? Clusters);
+    internal sealed record TextPart(
+        PdfFont Font, string Text, double Width, double Size,
+        ScenePaint? FillPaint, SceneColor FillColor, ScenePaint? Stroke, ScenePaint? DecorationPaint, SceneColor DecorationColor,
+        SceneTextDecorations Decorations, SceneFontFace? Face, List<TextCluster>? Clusters, double Rotation);
 
-    /// <summary>Splits a text into the parts that one font draws: its spans, and the characters of a span that each face draws.</summary>
-    internal List<TextPart> GetTextParts(SceneText text, bool layoutClusters = false)
+    /// <summary>The characters of a part, before they are laid out, with the metrics of the font of their span.</summary>
+    private sealed record TextPiece(TextPart Part, int Span, FontFace? Shaper, double LetterSpacing, double WordSpacing, double BaselineOffset);
+
+    /// <summary>
+    /// Splits a text into the parts that one font draws (its spans, and the characters of a span that each face draws;
+    /// each grapheme cluster of a span whose characters are turned) and places them. A text fitted to its length by its
+    /// spacing gets no spacing after its last character (<see cref="TextPlacement"/>).
+    /// </summary>
+    internal (List<TextPart> Parts, TextPlacement.Result Placement) GetTextLayout(SceneText text, bool layoutClusters = false)
     {
-        var parts = new List<TextPart>();
+        var rightToLeft = text.Direction is SceneTextDirection.RightToLeft;
+        layoutClusters |= rightToLeft;
+        var pieces = new List<TextPiece>();
         if (text.Spans.Count is 0)
         {
-            AddSpan(text.Text, text.Font, text.Color, text.Decorations, text.LetterSpacing, text.WordSpacing);
+            AddSpan(-1, null, text.Text, text.Font, text.Decorations, text.LetterSpacing, text.WordSpacing);
         }
         else
         {
-            foreach (var span in text.Spans)
+            for (var i = 0; i < text.Spans.Count; i++)
             {
-                AddSpan(span.Text, span.Font ?? text.Font, span.Color ?? text.Color, span.Decorations ?? text.Decorations, span.LetterSpacing ?? text.LetterSpacing, span.WordSpacing ?? text.WordSpacing);
+                var span = text.Spans[i];
+                AddSpan(i, span, span.Text, span.Font ?? text.Font, span.Decorations ?? text.Decorations, span.LetterSpacing ?? text.LetterSpacing, span.WordSpacing ?? text.WordSpacing);
             }
         }
 
-        return parts;
+        var parts = new List<TextPart>(pieces.Count);
+        var items = new TextPlacement.Item[pieces.Count];
+        for (var i = 0; i < pieces.Count; i++)
+        {
+            var piece = pieces[i];
+            parts.Add(Layout(piece, gapSpacing: 0));
+            items[i] = new TextPlacement.Item(piece.Span, parts[i].Width, TextPlacement.CountClusters(piece.Part.Text), piece.BaselineOffset);
+        }
 
-        void AddSpan(string value, SceneFont font, SceneColor color, SceneTextDecorations decorations, double letterSpacing, double wordSpacing)
+        var placement = TextPlacement.Place(text, items);
+        if (placement.GapSpacing != 0)
+        {
+            for (var i = 0; i < pieces.Count; i++)
+            {
+                parts[i] = Layout(pieces[i], placement.GapSpacing);
+            }
+
+            // The last part is shaped whole, so its letters keep their joins; the gap after its last character is removed
+            if (placement.LastItem >= 0 && parts[placement.LastItem].Clusters is { Count: > 0 } clusters)
+            {
+                parts[placement.LastItem] = parts[placement.LastItem] with { Clusters = TextClusterLayout.RemoveLastGap(clusters, placement.GapSpacing), Width = parts[placement.LastItem].Width - placement.GapSpacing };
+            }
+        }
+
+        return (parts, placement);
+
+        TextPart Layout(TextPiece piece, double gapSpacing)
+        {
+            var part = piece.Part;
+            var letterSpacing = NormalizeSpacing(piece.LetterSpacing + gapSpacing);
+            if (layoutClusters || letterSpacing != 0 || piece.WordSpacing != 0)
+            {
+                var (clusters, width) = TextClusterLayout.Layout(part.Font, piece.Shaper, part.Text, part.Size, letterSpacing, piece.WordSpacing, rightToLeft);
+                return part with { Width = width, Clusters = clusters };
+            }
+
+            return part with { Width = part.Font.GetTextWidth(part.Text, part.Size), Clusters = null };
+        }
+
+        void AddSpan(int index, SceneTextSpan? span, string value, SceneFont font, SceneTextDecorations decorations, double letterSpacing, double wordSpacing)
         {
             if (value.Length is 0 || !(font.Size > 0) || !double.IsFinite(font.Size))
                 return;
 
             letterSpacing = NormalizeSpacing(letterSpacing);
             wordSpacing = NormalizeSpacing(wordSpacing);
+            var (fillPaint, fillColor) = TextPlacement.GetFill(text, span);
+            var (decorationPaint, decorationColor) = TextPlacement.GetDecorationFill(text, span);
+            var stroke = TextPlacement.GetStroke(text, span);
+            var rotation = text.Path is null ? TextPlacement.GetGlyphRotation(span) : 0;
             var standard = GetStandardFont(font);
+
+            // The baseline of the text is placed with the metrics of the face of the span, as the image renderer does
+            var spanFace = fonts?.GetFace(font, scene.FontFamily);
+            var metricsFace = spanFace is null ? null : GetEmbeddedFont(spanFace).Face;
+            var baselineOffset = metricsFace is null
+                ? TextPlacement.GetBaselineOffset(text.Baseline, standard.Ascent / 1000 * font.Size, -standard.Descent / 1000 * font.Size, HelveticaXHeight * font.Size)
+                : GetBaselineOffset(text.Baseline, metricsFace, font.Size);
+
             if (fonts is null)
             {
                 Add(standard, null, value, null);
                 return;
             }
 
-            var face = fonts.GetFace(font, scene.FontFamily);
             foreach (var run in fonts.GetRuns(value, font, scene.FontFamily))
             {
                 var embedded = GetEmbeddedFont(run.Face);
                 if (embedded.Font is not null)
                 {
-                    Add(embedded.Font, embedded.Face, value.Substring(run.Start, run.Length), face);
+                    Add(embedded.Font, embedded.Face, value.Substring(run.Start, run.Length), spanFace);
                 }
                 else
                 {
-                    Add(standard, null, value.Substring(run.Start, run.Length), face);
+                    Add(standard, null, value.Substring(run.Start, run.Length), spanFace);
                 }
             }
 
-            void Add(PdfFont pdfFont, FontFace? fontFace, string runText, SceneFontFace? spanFace)
+            void Add(PdfFont pdfFont, FontFace? fontFace, string runText, SceneFontFace? face)
             {
                 runText = Sanitize(pdfFont, runText);
                 if (runText.Length is 0)
                     return;
 
-                if (layoutClusters || letterSpacing != 0 || wordSpacing != 0)
+                var part = new TextPart(pdfFont, runText, 0, font.Size, fillPaint, fillColor, stroke, decorationPaint, decorationColor, decorations, face, null, rotation);
+                if (rotation == 0)
                 {
-                    var (clusters, width) = TextClusterLayout.Layout(pdfFont, fontFace, runText, font.Size, letterSpacing, wordSpacing);
-                    parts.Add(new TextPart(pdfFont, runText, width, font.Size, color, decorations, spanFace, clusters));
+                    pieces.Add(new TextPiece(part, index, fontFace, letterSpacing, wordSpacing, baselineOffset));
                     return;
                 }
 
-                parts.Add(new TextPart(pdfFont, runText, pdfFont.GetTextWidth(runText, font.Size), font.Size, color, decorations, spanFace, Clusters: null));
+                foreach (var cluster in TextPlacement.GetClusters(runText))
+                {
+                    pieces.Add(new TextPiece(part with { Text = cluster }, index, fontFace, letterSpacing, wordSpacing, baselineOffset));
+                }
             }
         }
+    }
+
+    // The x-height of Helvetica (Helvetica.afm), in em
+    private const double HelveticaXHeight = 0.523;
+
+    // The ascent and the descent of a face, as the image renderer reads them: the typographic metrics when the face asks
+    // for them, else the metrics of the horizontal header, else the typographic metrics, else the Windows metrics
+    private static double GetBaselineOffset(SceneTextBaseline baseline, FontFace face, double size)
+    {
+        int ascender;
+        int descender;
+        if (face.HasOs2 && face.UseTypoMetrics)
+        {
+            (ascender, descender) = (face.TypoAscender, face.TypoDescender);
+        }
+        else if (face.HorizontalAscender != 0 || face.HorizontalDescender != 0)
+        {
+            (ascender, descender) = (face.HorizontalAscender, face.HorizontalDescender);
+        }
+        else if (face.HasOs2 && (face.TypoAscender != 0 || face.TypoDescender != 0))
+        {
+            (ascender, descender) = (face.TypoAscender, face.TypoDescender);
+        }
+        else
+        {
+            (ascender, descender) = (face.WinAscent, -face.WinDescent);
+        }
+
+        var scale = size / face.UnitsPerEm;
+        return TextPlacement.GetBaselineOffset(baseline, ascender * scale, -descender * scale, face.XHeight * scale);
     }
 
     // The largest magnitude of a spacing, as in the other renderers
@@ -1191,8 +1740,22 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         });
     }
 
+    // Sets a color as a paint and returns its opacity
+    private double SetColorPaint(SceneColor color, bool stroke)
+    {
+        SetColor(color, stroke);
+
+        // A text in the silhouette of a clipping path is opaque
+        return _silhouetteDepth > 0 ? 1 : color.A / 255.0;
+    }
+
     private void SetColor(SceneColor color, bool stroke)
     {
+        if (_silhouetteDepth > 0)
+        {
+            color = SceneColor.Black;
+        }
+
         if (stroke)
         {
             _content.SetStrokeColor(ToColor(color));

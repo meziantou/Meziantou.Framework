@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100" role="img" font-family="sans-serif">
+<defs>
+<linearGradient id="scene-gradient0" gradientUnits="userSpaceOnUse" x1="130" y1="0" x2="200" y2="0">
+<stop offset="0" stop-color="#0369a1"/>
+<stop offset="1" stop-color="#e11d48"/>
+</linearGradient>
+</defs>
+<defs>
+<clipPath id="scene-clip0">
+<circle cx="40" cy="50" r="30"/>
+<circle cx="80" cy="50" r="30"/>
+</clipPath>
+<clipPath id="scene-clip1">
+<text x="130" y="70" font-size="40" font-weight="bold" fill="#000000">Clip</text>
+</clipPath>
+</defs>
+<rect x="0" y="0" width="120" height="100" fill="#0369a1" clip-path="url(#scene-clip0)"/>
+<rect x="120" y="0" width="80" height="100" fill="url(#scene-gradient0)" clip-path="url(#scene-clip1)"/>
+</svg>

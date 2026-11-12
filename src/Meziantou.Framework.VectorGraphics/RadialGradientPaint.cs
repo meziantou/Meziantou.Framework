@@ -48,4 +48,15 @@ public sealed class RadialGradientPaint : SceneGradientPaint
 
     /// <summary>Gets the y coordinate of the focal point, the position of offset 0.</summary>
     public double FocalY { get; }
+
+    /// <summary>
+    /// Gets the radius of the circle of offset 0 around the focal point, as the SVG 2 <c>fr</c> attribute. The default
+    /// is 0: offset 0 is the focal point itself.
+    /// </summary>
+    /// <remarks>
+    /// The circle of an offset <c>t</c> is centered <c>t</c> of the way from the focal point to the center, and its radius
+    /// goes from <see cref="FocalRadius"/> to <see cref="Radius"/>. Inside the circle of the focal point, the gradient
+    /// has the color of its first stop when it is padded. A value that is negative or not finite is 0.
+    /// </remarks>
+    public double FocalRadius { get; init; }
 }

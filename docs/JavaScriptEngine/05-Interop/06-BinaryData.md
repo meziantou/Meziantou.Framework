@@ -43,6 +43,10 @@ Assert.Equal([1, 2, 3], bytes.ToArray());
   (`buffer.transfer()` throws). `JsBinaryData.DetachArrayBuffer(buffer, key)` detaches it with the key: do it before
   the memory is returned to a pool or reused, so that the scripts can no longer reach it.
 - `realm.CreateArrayBuffer(ReadOnlySpan<byte>)` creates a buffer with a copy of the bytes.
+- [CreateResizableArrayBuffer](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateResizableArrayBuffer) creates a resizable buffer on your memory: `buffer.resize()` calls your callback
+  with the new byte length. The callback checks the length (throw a `RangeError` with
+  [CreateException](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateException) to refuse it) and gives the new memory to
+  [JsBinaryData.SetArrayBufferMemory](cref:Meziantou.Framework.JavaScriptEngine.JsBinaryData.SetArrayBufferMemory), which you can also call when the memory changes on the .NET side.
 - [CreateBufferView](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateBufferView) takes a [JsBufferKind](cref:Meziantou.Framework.JavaScriptEngine.JsBufferKind): [Uint8Array](cref:Meziantou.Framework.JavaScriptEngine.JsBufferKind.Uint8Array), [Int32Array](cref:Meziantou.Framework.JavaScriptEngine.JsBufferKind.Int32Array), [Float64Array](cref:Meziantou.Framework.JavaScriptEngine.JsBufferKind.Float64Array), `DataView`... The length is a
   number of elements (of bytes for a `DataView`). The offset of a typed array must be a multiple of the size of its
   elements, and the view must fit in the buffer: otherwise it throws an `ArgumentException` or an
@@ -67,3 +71,8 @@ A `SharedArrayBuffer` is the memory that several engines, each on its own thread
 [JsSharedDataBlock](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock), and `realm.CreateSharedArrayBuffer(block)` creates a `SharedArrayBuffer` on the same memory in
 another engine. [JsSharedDataBlock.TryCreate](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.TryCreate) creates a block from .NET, and [GetSpan](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.GetSpan) and [GetMemory](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.GetMemory) read and write
 it from .NET.
+
+`realm.CreateSharedArrayBuffer(block, byteLength)` creates a fixed-length `SharedArrayBuffer` on the first bytes of a
+growable block: it keeps its length when the block grows. [CreateGrowableSharedArrayBuffer](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateGrowableSharedArrayBuffer) creates a growable
+`SharedArrayBuffer` whose `grow()` calls your callback, which grows the block with
+[TryGrow](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.TryGrow) or throws.

@@ -229,6 +229,45 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
+    public async Task Memory_ResizableBuffer_GrowsWithTheMemory()
+    {
+        var bytes = Wasm("""
+            (module
+              (memory (export "memory") 1 4)
+              (func (export "load") (param i32) (result i32) (i32.load8_u (local.get 0)))
+              (func (export "grow") (param i32) (result i32) (memory.grow (local.get 0))))
+            """);
+        var result = await RunAsync($$"""
+            async () => {
+              const { instance } = await WebAssembly.instantiate({{bytes}});
+              const { memory, load, grow } = instance.exports;
+              const fixed = memory.buffer;
+              const buffer = memory.toResizableBuffer();
+              const view = new Uint8Array(buffer);
+              const created = [fixed.detached, buffer.resizable, buffer.maxByteLength, memory.buffer === buffer, memory.toResizableBuffer() === buffer].join();
+              buffer.resize(2 * 65536);
+              new Uint8Array(buffer)[65536] = 5;
+              grow(1);
+              const grown = [buffer.byteLength, view.length, load(65536), memory.buffer === buffer].join();
+              const errors = [];
+              for (const length of [3 * 65536 + 1, 65536]) {
+                try { buffer.resize(length); } catch (e) { errors.push(e.name); }
+              }
+
+              const shared = new WebAssembly.Memory({ initial: 1, maximum: 2, shared: true });
+              const sharedBuffer = shared.buffer;
+              shared.grow(1);
+              const growable = shared.toResizableBuffer();
+              const sharedResult = [sharedBuffer.byteLength, shared.buffer === sharedBuffer, sharedBuffer.growable, Object.isFrozen(sharedBuffer), growable.growable, growable.byteLength].join();
+              const fixedAgain = memory.toFixedLengthBuffer();
+              return [created, grown, errors.join(), sharedResult, buffer.detached, fixedAgain.resizable, fixedAgain.byteLength].join('|');
+            }
+            """);
+
+        Assert.Equal("true,true,262144,true,true|196608,196608,5,true|RangeError,RangeError|65536,false,false,true,true,131072|true|false|196608", result);
+    }
+
+    [Fact]
     public async Task Memory_CanBeImported()
     {
         var bytes = Wasm("""(module (import "env" "memory" (memory 1)) (func (export "load") (param i32) (result i32) (i32.load (local.get 0))))""");

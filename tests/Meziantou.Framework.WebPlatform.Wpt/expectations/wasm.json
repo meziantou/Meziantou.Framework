@@ -1403,16 +1403,10 @@
     "total": 4
   },
   "wasm/jsapi/memory/constructor-shared.tentative.any.js": {
-    "total": 3,
-    "failures": {
-      "Shared memory": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/memory/constructor-shared.tentative.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Shared memory": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/memory/constructor-types.tentative.any.js": {
     "total": 3,
@@ -1437,74 +1431,34 @@
     "total": 24
   },
   "wasm/jsapi/memory/grow.any.js": {
-    "total": 19,
-    "failures": {
-      "Growing shared memory does not detach old buffer": "FAIL"
-    }
+    "total": 19
   },
   "wasm/jsapi/memory/grow.any.js#dedicatedworker": {
-    "total": 19,
-    "failures": {
-      "Growing shared memory does not detach old buffer": "FAIL"
-    }
+    "total": 19
   },
   "wasm/jsapi/memory/to-fixed-length-buffer-shared.any.js": {
-    "total": 1,
-    "failures": {
-      "toFixedLengthBuffer caching behavior": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/memory/to-fixed-length-buffer-shared.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "toFixedLengthBuffer caching behavior": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/memory/to-fixed-length-buffer.any.js": {
-    "total": 2,
-    "failures": {
-      "toFixedLengthBuffer caching behavior": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/memory/to-fixed-length-buffer.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "toFixedLengthBuffer caching behavior": "FAIL"
-    }
+    "total": 2
   },
   "wasm/jsapi/memory/to-resizable-buffer-shared.any.js": {
-    "total": 3,
-    "failures": {
-      "Resizing a Memory's resizable buffer": "FAIL",
-      "toResizableBuffer caching behavior": "FAIL",
-      "toResizableBuffer max size": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/memory/to-resizable-buffer-shared.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Resizing a Memory's resizable buffer": "FAIL",
-      "toResizableBuffer caching behavior": "FAIL",
-      "toResizableBuffer max size": "FAIL"
-    }
+    "total": 3
   },
   "wasm/jsapi/memory/to-resizable-buffer.any.js": {
-    "total": 5,
-    "failures": {
-      "Resizable buffers from Memory cannot be detached by JS": "FAIL",
-      "Resizing a Memory's resizable buffer": "FAIL",
-      "toResizableBuffer caching behavior": "FAIL",
-      "toResizableBuffer max size": "FAIL"
-    }
+    "total": 5
   },
   "wasm/jsapi/memory/to-resizable-buffer.any.js#dedicatedworker": {
-    "total": 5,
-    "failures": {
-      "Resizable buffers from Memory cannot be detached by JS": "FAIL",
-      "Resizing a Memory's resizable buffer": "FAIL",
-      "toResizableBuffer caching behavior": "FAIL",
-      "toResizableBuffer max size": "FAIL"
-    }
+    "total": 5
   },
   "wasm/jsapi/memory/toString.any.js": {
     "total": 2

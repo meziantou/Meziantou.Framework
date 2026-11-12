@@ -486,6 +486,48 @@ public interface IJsAdapter<TValue>
     }
 
     /// <summary>
+    /// Creates a resizable <c>ArrayBuffer</c> in the current realm whose data block is <paramref name="data"/> (as
+    /// <see cref="CreateArrayBufferWithData"/>), whose maximum byte length is <paramref name="maxByteLength"/>, and whose
+    /// <c>resize()</c> calls <paramref name="resize"/> with the buffer and the new byte length (HostResizeArrayBuffer,
+    /// https://tc39.es/ecma262/#sec-hostresizearraybuffer): it resizes the buffer with <see cref="SetArrayBufferData"/>, or
+    /// throws. Returns null when the engine does not support it. The default implementation returns null.
+    /// </summary>
+    TValue? CreateResizableArrayBufferWithData(byte[] data, int maxByteLength, string detachKey, Action<TValue, int> resize) => null;
+
+    /// <summary>
+    /// Replaces the data block of a buffer created by <see cref="CreateResizableArrayBufferWithData"/>: its byte length
+    /// becomes the length of <paramref name="data"/>. The default implementation does nothing.
+    /// </summary>
+    void SetArrayBufferData(TValue arrayBuffer, byte[] data)
+    {
+    }
+
+    /// <summary>
+    /// Creates a fixed-length <c>SharedArrayBuffer</c> in the current realm whose data is the first
+    /// <paramref name="byteLength"/> bytes of a data block returned by <see cref="GetSharedDataBlock"/>: it keeps its byte
+    /// length when the block grows. Returns null when it is not supported. The default implementation returns null.
+    /// </summary>
+    TValue? CreateFixedLengthSharedArrayBuffer(object dataBlock, int byteLength) => null;
+
+    /// <summary>
+    /// Creates a growable <c>SharedArrayBuffer</c> in the current realm whose data is a growable data block returned by
+    /// <see cref="GetSharedDataBlock"/>, and whose <c>grow()</c> calls <paramref name="grow"/> with the buffer and the new
+    /// byte length (HostGrowSharedArrayBuffer, https://tc39.es/ecma262/#sec-hostgrowsharedarraybuffer): it grows the block
+    /// with <see cref="GrowSharedDataBlock"/>, or throws. Returns null when it is not supported. The default implementation
+    /// returns null.
+    /// </summary>
+    TValue? CreateGrowableSharedArrayBuffer(object dataBlock, Action<TValue, int> grow) => null;
+
+    /// <summary>The byte length of a data block returned by <see cref="GetSharedDataBlock"/>. The default implementation returns 0.</summary>
+    int GetSharedDataBlockByteLength(object dataBlock) => 0;
+
+    /// <summary>
+    /// Grows a growable data block returned by <see cref="GetSharedDataBlock"/> to <paramref name="byteLength"/> bytes.
+    /// Returns false when the block cannot grow. The default implementation returns false.
+    /// </summary>
+    bool GrowSharedDataBlock(object dataBlock, int byteLength) => false;
+
+    /// <summary>
     /// Creates a typed array or a <c>DataView</c> (<paramref name="kind"/>) of <paramref name="length"/> elements viewing
     /// <paramref name="buffer"/> from <paramref name="byteOffset"/>, in the current realm. The default implementation calls
     /// the constructor of the global object.

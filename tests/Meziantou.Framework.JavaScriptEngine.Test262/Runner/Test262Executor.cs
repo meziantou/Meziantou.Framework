@@ -40,8 +40,8 @@ internal static class Test262Executor
     }
 
     /// <summary>
-    /// Whether the test runs with every function compiled to .NET code on its first call (the compiled code of the hot
-    /// functions), or interpreted: half of the tests each, chosen by a stable hash of their id, so that test262 checks
+    /// Whether the test runs with the functions compiled to .NET code as soon as they run twice (the compiled code of the
+    /// hot functions), or interpreted: half of the tests each, chosen by a stable hash of their id, so that test262 checks
     /// both without running twice.
     /// </summary>
     private static bool IsCompiledTest(Test262Test test)
@@ -72,7 +72,10 @@ internal static class Test262Executor
             CancellationToken = cancellation.Token,
             RecursionLimit = 1_000,
             EnableCompilation = IsCompiledTest(test),
-            CompilationThreshold = 1,
+
+            // The functions are compiled on their second call or loop iteration: the code that runs once (the thousands
+            // of eval scripts of some tests) is not compiled, and the frames switch from the interpreter to the compiled code
+            CompilationThreshold = 2,
             TimeZone = "UTC",
             ModuleLoader = loader,
         });

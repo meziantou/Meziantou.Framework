@@ -89,6 +89,9 @@ internal sealed class TgaPixelLayout
         _palette = storage;
     }
 
+    /// <summary>Forgets the storage lent with <see cref="SetColorMapStorage"/>, before the caller returns it to its pool.</summary>
+    public void ReleaseColorMapStorage() => _palette = default;
+
     /// <summary>Stores one color-map entry; a no-op when no storage was lent.</summary>
     /// <param name="index">The index the entry defines (<see cref="TgaHeader.ColorMapFirstEntry"/> and up).</param>
     /// <param name="entry">The stored entry (<see cref="TgaHeader.BytesPerColorMapEntry"/> bytes).</param>

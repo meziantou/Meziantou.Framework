@@ -10,6 +10,7 @@ internal sealed class PooledPayloadWriter : IDisposable
 
     private readonly AllocationScope _scope;
     private PooledBuffer? _buffer;
+    private bool _disposed;
 
     public PooledPayloadWriter(AllocationScope scope)
     {
@@ -20,10 +21,29 @@ internal sealed class PooledPayloadWriter : IDisposable
     /// <summary>Gets the number of bytes written.</summary>
     public int Length { get; private set; }
 
-    /// <summary>Gets the written bytes; valid until the writer is disposed or written to.</summary>
-    public ReadOnlyMemory<byte> WrittenMemory => _buffer is null ? default : _buffer.RawBuffer.AsMemory(0, Length);
+    /// <summary>Gets the written bytes.</summary>
+    /// <remarks>
+    /// The memory is a view of a pooled buffer: it is valid until the writer is disposed or written to (a write can move the
+    /// bytes to a larger buffer and return the previous one). Copy the bytes to keep them longer.
+    /// </remarks>
+    public ReadOnlyMemory<byte> WrittenMemory
+    {
+        get
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return _buffer is null ? default : _buffer.RawBuffer.AsMemory(0, Length);
+        }
+    }
 
-    public Span<byte> WrittenSpan => _buffer is null ? default : _buffer.RawBuffer.AsSpan(0, Length);
+    /// <summary>Gets the written bytes; valid until the writer is disposed or written to.</summary>
+    public Span<byte> WrittenSpan
+    {
+        get
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return _buffer is null ? default : _buffer.RawBuffer.AsSpan(0, Length);
+        }
+    }
 
     public void Write(byte value)
     {
@@ -75,6 +95,7 @@ internal sealed class PooledPayloadWriter : IDisposable
 
     public void Dispose()
     {
+        _disposed = true;
         _buffer?.Dispose();
         _buffer = null;
     }
@@ -83,6 +104,9 @@ internal sealed class PooledPayloadWriter : IDisposable
     {
         if (_buffer is not null && _buffer.Capacity - Length >= count)
             return;
+
+        // A write after Dispose would rent a buffer that nothing returns
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         var required = (long)Length + count;
         if (required > CheckedSizes.MaxBufferLength)

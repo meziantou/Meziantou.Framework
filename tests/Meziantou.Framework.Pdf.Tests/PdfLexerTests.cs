@@ -186,11 +186,17 @@ public sealed class PdfLexerTests
         var content = new string('a', 1024 * 1024);
         var lexer = new PdfLexer(Encoding.ASCII.GetBytes("(" + content + ")"));
         var token = lexer.Next();
-        lexer.DecodeLiteralString(token);
-
-        var before = GC.GetAllocatedBytesForCurrentThread();
         var bytes = lexer.DecodeLiteralString(token);
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        // The smallest of several measurements: the measurement of a large allocation sometimes also counts
+        // the unused part of the thread's allocation context (up to about 8 KB)
+        var allocated = long.MaxValue;
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            bytes = lexer.DecodeLiteralString(token);
+            allocated = Math.Min(allocated, GC.GetAllocatedBytesForCurrentThread() - before);
+        }
 
         Assert.Equal(content, Encoding.ASCII.GetString(bytes));
         Assert.InRange(allocated, content.Length, content.Length + 1024);

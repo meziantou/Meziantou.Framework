@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Formats;
@@ -192,6 +193,8 @@ internal sealed class QoiEncoderCodec : ImageEncoderCodec
             if (destination.Length < (pixels.Length * QoiFormat.MaxChunkLength) + 1)
                 throw new ArgumentException("The destination cannot hold the chunks of the pixels.", nameof(destination));
 
+            // Each pixel writes at most MaxChunkLength bytes (checked above), and a hash is below IndexLength
+            Debug.Assert(_index.Length == QoiFormat.IndexLength);
             ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
             ref var entries = ref unsafe(MemoryMarshal.GetArrayDataReference(_index));
             var previous = _previous;

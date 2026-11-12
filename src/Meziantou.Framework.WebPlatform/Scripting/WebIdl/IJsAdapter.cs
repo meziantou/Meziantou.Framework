@@ -534,6 +534,15 @@ public interface IJsAdapter<TValue>
     }
 
     /// <summary>
+    /// Grows a growable data block returned by <see cref="GetSharedDataBlock"/> to <paramref name="newByteLength"/> bytes,
+    /// atomically (HostGrowSharedArrayBuffer, https://tc39.es/ecma262/#sec-hostgrowsharedarraybuffer): the agents that grow
+    /// the block concurrently to the same length grow it once. Returns true when the block has grown or already has this
+    /// length, and false when the new length is less than the byte length or greater than the maximum byte length of the
+    /// block. The default implementation returns false.
+    /// </summary>
+    bool GrowSharedDataBlockTo(object dataBlock, int newByteLength) => false;
+
+    /// <summary>
     /// Creates a typed array or a <c>DataView</c> (<paramref name="kind"/>) of <paramref name="length"/> elements viewing
     /// <paramref name="buffer"/> from <paramref name="byteOffset"/>, in the current realm. The default implementation calls
     /// the constructor of the global object.

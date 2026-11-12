@@ -14633,6 +14633,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting
         public int GetSharedDataBlockByteLength(object dataBlock) => throw null;
         TValue GetWellKnownSymbol(Meziantou.Framework.WebPlatform.Scripting.JsWellKnownSymbol symbol);
         public bool GrowSharedDataBlock(object dataBlock, int deltaByteLength, out int previousByteLength) => throw null;
+        public bool GrowSharedDataBlockTo(object dataBlock, int newByteLength) => throw null;
         public bool? HasInternalSlot(TValue value, Meziantou.Framework.WebPlatform.Scripting.JsInternalSlot slot) => throw null;
         bool HasProperty(TValue obj, TValue key);
         bool IsArray(TValue value);

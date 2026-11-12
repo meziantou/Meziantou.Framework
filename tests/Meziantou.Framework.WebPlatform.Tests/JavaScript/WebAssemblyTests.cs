@@ -322,6 +322,29 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
+    public async Task SharedMemory_ResizableBuffer_GrowsToTheRequestedLength()
+    {
+        var result = await RunAsync("""
+            async () => {
+              const memory = new WebAssembly.Memory({ initial: 1, maximum: 2, shared: true });
+              const copy = structuredClone(memory);
+              const buffer = memory.toResizableBuffer();
+              const copyBuffer = copy.toResizableBuffer();
+              buffer.grow(2 * 65536);
+              copyBuffer.grow(2 * 65536);
+              const errors = [];
+              for (const length of [65536, 2 * 65536 + 1, 3 * 65536]) {
+                try { copyBuffer.grow(length); } catch (e) { errors.push(e.name); }
+              }
+
+              return [buffer.byteLength, copyBuffer.byteLength, memory.grow(0), copy.buffer.byteLength, errors.join()].join('|');
+            }
+            """, crossOriginIsolated: true);
+
+        Assert.Equal("131072|131072|2|131072|RangeError,RangeError,RangeError", result);
+    }
+
+    [Fact]
     public async Task Memory_CanBeImported()
     {
         var bytes = Wasm("""(module (import "env" "memory" (memory 1)) (func (export "load") (param i32) (result i32) (i32.load (local.get 0))))""");

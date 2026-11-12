@@ -724,8 +724,24 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// </summary>
     private void ResizeWasmMemoryBuffer(WebAssemblyMemoryObject memoryObject, int newByteLength)
     {
-        var byteLength = memoryObject.Memory is { } memory ? (ulong)memory.Data.Length : (ulong)Adapter.GetSharedDataBlockByteLength(memoryObject.SharedDataBlock!);
-        if ((ulong)newByteLength % WasmPageSize != 0 || (ulong)newByteLength < byteLength)
+        if ((ulong)newByteLength % WasmPageSize != 0)
+            throw CreateRangeError("The buffer of a memory can only grow by a multiple of the page size");
+
+        if (memoryObject.SharedDataBlock is { } dataBlock)
+        {
+            // https://webassembly.github.io/threads/js-api/#sec-hostgrowsharedarraybuffer: the agents that share the memory can
+            // grow it concurrently, so the block grows to the new length atomically (a delta computed from a length read
+            // before would grow it twice). As for SharedArrayBuffer.prototype.grow, a racing grow to the same length succeeds,
+            // and a grow to a smaller length throws (https://tc39.es/ecma262/#sec-hostgrowsharedarraybuffer).
+            if (!Adapter.GrowSharedDataBlockTo(dataBlock, newByteLength))
+                throw CreateRangeError("The memory cannot grow");
+
+            RefreshWasmMemoryBuffer(memoryObject);
+            return;
+        }
+
+        var byteLength = (ulong)memoryObject.Memory!.Data.Length;
+        if ((ulong)newByteLength < byteLength)
             throw CreateRangeError("The buffer of a memory can only grow by a multiple of the page size");
 
         try

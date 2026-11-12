@@ -482,6 +482,8 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
         return block.TryGrowBy(deltaByteLength, out previousByteLength);
     }
 
+    public bool GrowSharedDataBlockTo(object dataBlock, int newByteLength) => dataBlock is JsSharedDataBlock block && block.TryGrow(newByteLength);
+
     public object CreateArrayBufferView(WebIdlBufferKind kind, object buffer, int byteOffset, int length) => Realm.CreateBufferView((EngineBufferKind)kind, (JsObject)buffer, byteOffset, length);
 
     // The factories of the lazy properties are their state: no closure is allocated per property

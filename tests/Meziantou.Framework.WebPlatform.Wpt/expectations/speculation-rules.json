@@ -707,28 +707,16 @@
     "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-out&sw=fetch-handler": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-out&sw=fetch-handler-synthetic": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-synthetic)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-out&sw=fetch-handler-to-fallback": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (fetch-handler-to-fallback)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=in-out&sw=no-fetch-handler": {
-    "total": 1,
-    "failures": {
-      "Prefetch with ServiceWorker (no-fetch-handler)": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html?origin=same-site&sc=out-in&sw=fetch-handler": {
     "total": 1

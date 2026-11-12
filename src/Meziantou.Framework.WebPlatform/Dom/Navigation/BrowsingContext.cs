@@ -2228,6 +2228,13 @@ public sealed partial class BrowsingContext : IDisposable
                         request.ReservedClient = new ReservedClient(locationUrl.SerializeOrigin());
                         parameters.ReservedClient = request.ReservedClient;
                     }
+                    else if (request.ReservedClient is { } sameOriginReservedClient)
+                    {
+                        // As in the browsers, the service worker that handled a request does not control the document of a
+                        // location out of its scope: the fetch of the location sets the active service worker again when a
+                        // registration matches it (https://w3c.github.io/ServiceWorker/#handle-fetch only sets it)
+                        sameOriginReservedClient.ActiveServiceWorker = null;
+                    }
 
                     // https://fetch.spec.whatwg.org/#http-redirect-fetch: the timing of the redirects, which is not exposed
                     // when a redirect is cross-origin

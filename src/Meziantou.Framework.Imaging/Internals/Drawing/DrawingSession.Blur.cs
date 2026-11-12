@@ -221,6 +221,9 @@ internal sealed partial class DrawingSession
             decodeRed = decodeGreen = decodeBlue = CicpTransfer.GetDecode16(transfer);
         }
 
+        // The rows of the ring a row of the result adds, and their weights: added a group at a time
+        Span<int> offsets = stackalloc int[BlurKernels.MaxSummedRows];
+        Span<double> rowWeights = stackalloc double[BlurKernels.MaxSummedRows];
         for (var y = area.Top; y < area.Bottom; y++)
         {
             if ((y & 15) == 0)
@@ -228,8 +231,8 @@ internal sealed partial class DrawingSession
                 _cancellationToken.ThrowIfCancellationRequested();
             }
 
-            sums.Clear();
             var any = false;
+            var count = 0;
             for (var tap = 0; tap < taps; tap++)
             {
                 var row = y - radius + tap;
@@ -249,8 +252,22 @@ internal sealed partial class DrawingSession
                 if (ringIndexes[slot] != row)
                     continue;
 
+                // The taps of a row of the result read different rows, each in its own slot of the ring (or the same
+                // row twice at the edges): reading the rows of the next taps leaves those of the group as they are
+                offsets[count] = slot * width * 4;
+                rowWeights[count] = weights[tap];
+                if (++count == offsets.Length)
+                {
+                    BlurKernels.SumRows(sums, ring, offsets, rowWeights, isFirst: !any);
+                    any = true;
+                    count = 0;
+                }
+            }
+
+            if (count != 0)
+            {
+                BlurKernels.SumRows(sums, ring, offsets[..count], rowWeights[..count], isFirst: !any);
                 any = true;
-                BlurKernels.Accumulate(sums, weights[tap], blurred);
             }
 
             if (!any)

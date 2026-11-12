@@ -150,6 +150,10 @@ internal sealed partial class DrawingSession
         }
 
         var coverage = unsafe(MemoryMarshal.Cast<byte, uint>(_shadowCoverage!.Span))[..width];
+
+        // The rows a row of the shadow adds, and their weights: added a group at a time
+        Span<int> offsets = stackalloc int[BlurKernels.MaxSummedRows];
+        Span<double> rowWeights = stackalloc double[BlurKernels.MaxSummedRows];
         if (!isInner)
         {
             MarkDrawn(left, top, right, bottom);
@@ -162,8 +166,8 @@ internal sealed partial class DrawingSession
                 _cancellationToken.ThrowIfCancellationRequested();
             }
 
-            sums.Clear();
             var any = false;
+            var count = 0;
             for (var tap = 0; tap < taps; tap++)
             {
                 var row = originY + y + tap;
@@ -171,8 +175,20 @@ internal sealed partial class DrawingSession
                 if (hasOpacity[row] == 0)
                     continue;
 
+                offsets[count] = row * width;
+                rowWeights[count] = vertical[tap];
+                if (++count == offsets.Length)
+                {
+                    BlurKernels.SumRows(sums, rows, offsets, rowWeights, isFirst: !any);
+                    any = true;
+                    count = 0;
+                }
+            }
+
+            if (count != 0)
+            {
+                BlurKernels.SumRows(sums, rows, offsets[..count], rowWeights[..count], isFirst: !any);
                 any = true;
-                BlurKernels.Accumulate(sums, vertical[tap], rows.Slice(row * width, width));
             }
 
             if (!any)

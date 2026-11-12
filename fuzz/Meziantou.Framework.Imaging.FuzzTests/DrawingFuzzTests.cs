@@ -370,11 +370,30 @@ public sealed class DrawingFuzzTests
                     Measure(canvas, random, context);
                     break;
                 case 22:
-                    // A filtered drawing, a layer that holds the pixels of a rectangle, a scope of 16-bit samples, or a
-                    // layer that starts with the filtered backdrop of a rectangle
+                    // A filtered drawing, a blurred drawing, its shadow or a blurred backdrop, a layer that holds the
+                    // pixels of a rectangle, a scope of 16-bit samples, or a layer that starts with the filtered backdrop
+                    // of a rectangle
                     if (depth >= 3)
                     {
                         canvas.Fill(CreateBrush(random, canvas, context));
+                    }
+                    else if (random.Chance(20))
+                    {
+                        // Sometimes wide enough that more than 32 rows add up to each row of the result. Blurring the
+                        // backdrop replaces the pixels: only the cases that erase may lower an alpha
+                        var blur = random.Chance(20) ? 5 + (NextDouble(random) * 4) : NextDouble(random) * 3;
+                        switch (random.Next(context.Erases ? 3 : 2))
+                        {
+                            case 0:
+                                canvas.Blur(blur, inner => Paint(inner, random, context, depth + 1));
+                                break;
+                            case 1:
+                                canvas.Shadow(CreateColor(random), new PointD((NextDouble(random) - 0.5) * 8, (NextDouble(random) - 0.5) * 8), blur, inner => Paint(inner, random, context, depth + 1));
+                                break;
+                            default:
+                                canvas.BlurBackdrop(blur);
+                                break;
+                        }
                     }
                     else if (random.Chance(40))
                     {

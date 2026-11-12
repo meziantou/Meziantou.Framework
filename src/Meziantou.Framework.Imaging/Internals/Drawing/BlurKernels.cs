@@ -9,35 +9,129 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 internal static class BlurKernels
 {
-    /// <summary>Adds a row of values multiplied by a weight to a row of sums: <c>sums[i] += weight * values[i]</c>.</summary>
-    public static void Accumulate(Span<double> sums, double weight, ReadOnlySpan<float> values)
+    /// <summary>The largest number of rows <see cref="SumRows"/> adds in one call.</summary>
+    public const int MaxSummedRows = 32;
+
+    /// <summary>
+    /// Adds rows of values multiplied by their weights to a row of sums, in the order of the rows:
+    /// <c>sums[i] = (((s + weights[0] rows[offsets[0] + i]) + weights[1] rows[offsets[1] + i]) + ...)</c>, where
+    /// <c>s</c> is 0 for the first rows of a sum and the sum so far otherwise. Each sum stays in a register while
+    /// the rows are added to it, and the products are added one by one, without fused multiply-add.
+    /// </summary>
+    /// <param name="sums">The sums.</param>
+    /// <param name="rows">The values of the rows.</param>
+    /// <param name="offsets">Where each row starts in <paramref name="rows"/>.</param>
+    /// <param name="weights">The weight of each row.</param>
+    /// <param name="isFirst"><see langword="true"/> when the sums start from 0, <see langword="false"/> when the rows are added to what they hold.</param>
+    public static void SumRows(Span<double> sums, ReadOnlySpan<float> rows, ReadOnlySpan<int> offsets, ReadOnlySpan<double> weights, bool isFirst)
     {
+        var count = offsets.Length;
+        var length = sums.Length;
         var i = 0;
-        if (Vector128.IsHardwareAccelerated)
+
+        // Four independent sums per iteration hide the latency of the additions, whatever the width of the vectors
+        if (Vector512.IsHardwareAccelerated)
         {
-            var factor = Vector128.Create(weight);
-            for (; i + 4 <= values.Length; i += 4)
+            for (; i + 32 <= length; i += 32)
             {
-                var value = Vector128.Create(values.Slice(i, 4));
-                var low = sums.Slice(i, 2);
-                var high = sums.Slice(i + 2, 2);
-                (Vector128.Create(low) + (factor * Vector128.WidenLower(value))).CopyTo(low);
-                (Vector128.Create(high) + (factor * Vector128.WidenUpper(value))).CopyTo(high);
+                var sum = sums.Slice(i, 32);
+                var sum0 = isFirst ? Vector512<double>.Zero : Vector512.Create(sum[..8]);
+                var sum1 = isFirst ? Vector512<double>.Zero : Vector512.Create(sum.Slice(8, 8));
+                var sum2 = isFirst ? Vector512<double>.Zero : Vector512.Create(sum.Slice(16, 8));
+                var sum3 = isFirst ? Vector512<double>.Zero : Vector512.Create(sum[24..]);
+                for (var k = 0; k < count; k++)
+                {
+                    var factor = Vector512.Create(weights[k]);
+                    var values = rows.Slice(offsets[k] + i, 32);
+                    var low = Vector512.Create(values[..16]);
+                    var high = Vector512.Create(values[16..]);
+                    sum0 += factor * Vector512.WidenLower(low);
+                    sum1 += factor * Vector512.WidenUpper(low);
+                    sum2 += factor * Vector512.WidenLower(high);
+                    sum3 += factor * Vector512.WidenUpper(high);
+                }
+
+                sum0.CopyTo(sum[..8]);
+                sum1.CopyTo(sum.Slice(8, 8));
+                sum2.CopyTo(sum.Slice(16, 8));
+                sum3.CopyTo(sum[24..]);
             }
         }
 
-        for (; i < values.Length; i++)
+        if (Vector256.IsHardwareAccelerated)
         {
-            sums[i] += weight * values[i];
+            for (; i + 16 <= length; i += 16)
+            {
+                var sum = sums.Slice(i, 16);
+                var sum0 = isFirst ? Vector256<double>.Zero : Vector256.Create(sum[..4]);
+                var sum1 = isFirst ? Vector256<double>.Zero : Vector256.Create(sum.Slice(4, 4));
+                var sum2 = isFirst ? Vector256<double>.Zero : Vector256.Create(sum.Slice(8, 4));
+                var sum3 = isFirst ? Vector256<double>.Zero : Vector256.Create(sum[12..]);
+                for (var k = 0; k < count; k++)
+                {
+                    var factor = Vector256.Create(weights[k]);
+                    var values = rows.Slice(offsets[k] + i, 16);
+                    var low = Vector256.Create(values[..8]);
+                    var high = Vector256.Create(values[8..]);
+                    sum0 += factor * Vector256.WidenLower(low);
+                    sum1 += factor * Vector256.WidenUpper(low);
+                    sum2 += factor * Vector256.WidenLower(high);
+                    sum3 += factor * Vector256.WidenUpper(high);
+                }
+
+                sum0.CopyTo(sum[..4]);
+                sum1.CopyTo(sum.Slice(4, 4));
+                sum2.CopyTo(sum.Slice(8, 4));
+                sum3.CopyTo(sum[12..]);
+            }
         }
+
+        if (Vector128.IsHardwareAccelerated)
+        {
+            for (; i + 8 <= length; i += 8)
+            {
+                var sum = sums.Slice(i, 8);
+                var sum0 = isFirst ? Vector128<double>.Zero : Vector128.Create(sum[..2]);
+                var sum1 = isFirst ? Vector128<double>.Zero : Vector128.Create(sum.Slice(2, 2));
+                var sum2 = isFirst ? Vector128<double>.Zero : Vector128.Create(sum.Slice(4, 2));
+                var sum3 = isFirst ? Vector128<double>.Zero : Vector128.Create(sum[6..]);
+                for (var k = 0; k < count; k++)
+                {
+                    var factor = Vector128.Create(weights[k]);
+                    var values = rows.Slice(offsets[k] + i, 8);
+                    var low = Vector128.Create(values[..4]);
+                    var high = Vector128.Create(values[4..]);
+                    sum0 += factor * Vector128.WidenLower(low);
+                    sum1 += factor * Vector128.WidenUpper(low);
+                    sum2 += factor * Vector128.WidenLower(high);
+                    sum3 += factor * Vector128.WidenUpper(high);
+                }
+
+                sum0.CopyTo(sum[..2]);
+                sum1.CopyTo(sum.Slice(2, 2));
+                sum2.CopyTo(sum.Slice(4, 2));
+                sum3.CopyTo(sum[6..]);
+            }
+        }
+
+        SumRowsScalar(sums, rows, offsets, weights, isFirst, i);
     }
 
-    /// <summary>The scalar reference of <see cref="Accumulate"/>.</summary>
-    public static void AccumulateScalar(Span<double> sums, double weight, ReadOnlySpan<float> values)
+    /// <summary>The scalar reference of <see cref="SumRows"/>.</summary>
+    public static void SumRowsScalar(Span<double> sums, ReadOnlySpan<float> rows, ReadOnlySpan<int> offsets, ReadOnlySpan<double> weights, bool isFirst)
+        => SumRowsScalar(sums, rows, offsets, weights, isFirst, 0);
+
+    private static void SumRowsScalar(Span<double> sums, ReadOnlySpan<float> rows, ReadOnlySpan<int> offsets, ReadOnlySpan<double> weights, bool isFirst, int start)
     {
-        for (var i = 0; i < values.Length; i++)
+        for (var i = start; i < sums.Length; i++)
         {
-            sums[i] += weight * values[i];
+            var sum = isFirst ? 0 : sums[i];
+            for (var k = 0; k < offsets.Length; k++)
+            {
+                sum += weights[k] * rows[offsets[k] + i];
+            }
+
+            sums[i] = sum;
         }
     }
 
@@ -62,6 +156,56 @@ internal static class BlurKernels
         var end = Math.Clamp(last - taps + 2 - firstColumn, start, count);
         BlurRowScalar(premultiplied, weights, firstColumn, blurred, 0, start);
         var x = start;
+        if (Vector512.IsHardwareAccelerated)
+        {
+            // Two pixels per vector, eight per iteration
+            for (; x + 8 <= end; x += 8)
+            {
+                var sum0 = Vector512<double>.Zero;
+                var sum1 = Vector512<double>.Zero;
+                var sum2 = Vector512<double>.Zero;
+                var sum3 = Vector512<double>.Zero;
+                var entries = premultiplied[((firstColumn + x) * 4)..];
+                for (var tap = 0; tap < taps; tap++)
+                {
+                    var weight = Vector512.Create(weights[tap]);
+                    var entry = entries.Slice(tap * 4, 32);
+                    sum0 += weight * Vector512.Create(entry[..8]);
+                    sum1 += weight * Vector512.Create(entry.Slice(8, 8));
+                    sum2 += weight * Vector512.Create(entry.Slice(16, 8));
+                    sum3 += weight * Vector512.Create(entry[24..]);
+                }
+
+                Vector512.Narrow(sum0, sum1).CopyTo(blurred.Slice(x * 4, 16));
+                Vector512.Narrow(sum2, sum3).CopyTo(blurred.Slice((x + 4) * 4, 16));
+            }
+        }
+
+        if (Vector256.IsHardwareAccelerated)
+        {
+            // A pixel per vector, four per iteration
+            for (; x + 4 <= end; x += 4)
+            {
+                var sum0 = Vector256<double>.Zero;
+                var sum1 = Vector256<double>.Zero;
+                var sum2 = Vector256<double>.Zero;
+                var sum3 = Vector256<double>.Zero;
+                var entries = premultiplied[((firstColumn + x) * 4)..];
+                for (var tap = 0; tap < taps; tap++)
+                {
+                    var weight = Vector256.Create(weights[tap]);
+                    var entry = entries.Slice(tap * 4, 16);
+                    sum0 += weight * Vector256.Create(entry[..4]);
+                    sum1 += weight * Vector256.Create(entry.Slice(4, 4));
+                    sum2 += weight * Vector256.Create(entry.Slice(8, 4));
+                    sum3 += weight * Vector256.Create(entry[12..]);
+                }
+
+                Vector256.Narrow(sum0, sum1).CopyTo(blurred.Slice(x * 4, 8));
+                Vector256.Narrow(sum2, sum3).CopyTo(blurred.Slice((x + 2) * 4, 8));
+            }
+        }
+
         for (; x + 2 <= end; x += 2)
         {
             var red0 = Vector128<double>.Zero;
@@ -106,11 +250,49 @@ internal static class BlurKernels
             return;
         }
 
-        // The values whose taps all read values of the row; two of them per vector
+        // The values whose taps all read values of the row
         var start = Math.Clamp(-firstColumn, 0, count);
         var end = Math.Clamp(last - taps + 2 - firstColumn, start, count);
         BlurValuesScalar(values, weights, firstColumn, blurred, 0, start);
         var x = start;
+        if (Vector512.IsHardwareAccelerated)
+        {
+            for (; x + 16 <= end; x += 16)
+            {
+                var sum0 = Vector512<double>.Zero;
+                var sum1 = Vector512<double>.Zero;
+                var entries = values[(firstColumn + x)..];
+                for (var tap = 0; tap < taps; tap++)
+                {
+                    var weight = Vector512.Create(weights[tap]);
+                    var entry = entries.Slice(tap, 16);
+                    sum0 += weight * Vector512.Create(entry[..8]);
+                    sum1 += weight * Vector512.Create(entry[8..]);
+                }
+
+                Vector512.Narrow(sum0, sum1).CopyTo(blurred.Slice(x, 16));
+            }
+        }
+
+        if (Vector256.IsHardwareAccelerated)
+        {
+            for (; x + 8 <= end; x += 8)
+            {
+                var sum0 = Vector256<double>.Zero;
+                var sum1 = Vector256<double>.Zero;
+                var entries = values[(firstColumn + x)..];
+                for (var tap = 0; tap < taps; tap++)
+                {
+                    var weight = Vector256.Create(weights[tap]);
+                    var entry = entries.Slice(tap, 8);
+                    sum0 += weight * Vector256.Create(entry[..4]);
+                    sum1 += weight * Vector256.Create(entry[4..]);
+                }
+
+                Vector256.Narrow(sum0, sum1).CopyTo(blurred.Slice(x, 8));
+            }
+        }
+
         for (; x + 4 <= end; x += 4)
         {
             var sum0 = Vector128<double>.Zero;

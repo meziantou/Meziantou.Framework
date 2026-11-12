@@ -1535,6 +1535,14 @@ internal static class DrawingKernels
         // Where red is among the color samples of a pixel, and where blue is
         var red = isBlueFirst ? 2 : 0;
         var blue = 2 - red;
+
+        // The color of a single paint, computed once
+        var isSingle = colors.IsEmpty;
+        if (isSingle)
+        {
+            SetSourceColor(s, paint, colorChannels, red, blue, max);
+        }
+
         for (var start = 0; start < coverage.Length; start += ChunkSize)
         {
             var count = Math.Min(ChunkSize, coverage.Length - start);
@@ -1544,7 +1552,7 @@ internal static class DrawingKernels
                 if (coverage[i] == 0)
                     continue;
 
-                if (!colors.IsEmpty)
+                if (!isSingle)
                 {
                     colors.Slice(i * 4, 4).CopyTo(paint);
                 }
@@ -1555,16 +1563,17 @@ internal static class DrawingKernels
                 var backdrop = channels == 4 ? double.CreateTruncating(pixel[3]) / max : 1;
                 if (paint[3] != 0 && backdrop != 0)
                 {
+                    if (!isSingle)
+                    {
+                        SetSourceColor(s, paint, colorChannels, red, blue, max);
+                    }
+
                     if (colorChannels == 1)
                     {
-                        s[0] = s[1] = s[2] = paint[0] / max;
                         d[0] = d[1] = d[2] = double.CreateTruncating(pixel[0]) / max;
                     }
                     else
                     {
-                        s[0] = paint[red] / max;
-                        s[1] = paint[1] / max;
-                        s[2] = paint[blue] / max;
                         d[0] = double.CreateTruncating(pixel[red]) / max;
                         d[1] = double.CreateTruncating(pixel[1]) / max;
                         d[2] = double.CreateTruncating(pixel[blue]) / max;
@@ -1593,6 +1602,21 @@ internal static class DrawingKernels
         {
             var rounded = Math.Floor((value * max) + 0.5 + (1.0 / 1048576));
             return rounded >= max ? (ushort)max : rounded > 0 ? (ushort)rounded : (ushort)0;
+        }
+
+        // The color of a paint, from 0 to 1: gray in the three components
+        static void SetSourceColor(Span<double> s, ReadOnlySpan<ushort> paint, int colorChannels, int red, int blue, double max)
+        {
+            if (colorChannels == 1)
+            {
+                s[0] = s[1] = s[2] = paint[0] / max;
+            }
+            else
+            {
+                s[0] = paint[red] / max;
+                s[1] = paint[1] / max;
+                s[2] = paint[blue] / max;
+            }
         }
     }
 

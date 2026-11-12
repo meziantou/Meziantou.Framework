@@ -21,4 +21,11 @@
   <ItemGroup>
     <PackageReference Include="Meziantou.Prebuilt" Version="3.13.1" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- The process runner of the Imaging harness: no shell, retries a start that fails with "Text file busy", posix_spawn on macOS before .NET 11 -->
+    <Compile Include="..\Meziantou.Framework.Imaging.TestHarness\ExternalTools\ProcessRunner.cs" Link="ExternalTools\Shared\ProcessRunner.cs" />
+    <Compile Include="..\Meziantou.Framework.Imaging.TestHarness\ExternalTools\ProcessResult.cs" Link="ExternalTools\Shared\ProcessResult.cs" />
+    <Compile Include="..\Meziantou.Framework.Imaging.TestHarness\ExternalTools\PosixSpawnProcess.cs" Link="ExternalTools\Shared\PosixSpawnProcess.cs" />
+  </ItemGroup>
 </Project>

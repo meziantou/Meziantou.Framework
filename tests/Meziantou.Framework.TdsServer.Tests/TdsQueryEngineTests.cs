@@ -4605,27 +4605,51 @@ public sealed class TdsQueryEngineTests
     public async Task QueryEngine_Like_LargePattern_MatchesPattern()
     {
         var handler = TdsQueryEngine.CreateQueryHandler(CreateQueryEngineOptions());
-        foreach (var (pattern, expectedIds) in new (string Pattern, int[] ExpectedIds)[]
+        Assert.Equal([1], await ExecuteLikeAsync(handler, "Name", "'" + new string('%', 1_990) + "_li" + new string('%', 1_990) + "'"));
+        Assert.Equal([], await ExecuteLikeAsync(handler, "Name", "'" + string.Concat(Enumerable.Repeat("%[^x]", 800)) + "'"));
+        Assert.Equal([1, 4], await ExecuteLikeAsync(handler, "Name", "'%" + string.Concat(Enumerable.Repeat("_%", 4)) + "'"));
+
+        // A long prefix that matches everywhere, followed by a mismatch: each position of the value must not rescan it
+        var value = new string('a', 1_000_000);
+        Assert.Equal([], await ExecuteLikeAsync(handler, "@value + Name", "@pattern", ("@value", value), ("@pattern", "%" + new string('a', 2_000) + "_b")));
+        Assert.Equal([1], await ExecuteLikeAsync(handler, "@value + Name", "@pattern", ("@value", value), ("@pattern", "%" + new string('a', 2_000) + "_l%")));
+    }
+
+    [Fact]
+    public async Task QueryEngine_Like_PatternLongerThan8000Bytes_ReturnsError()
+    {
+        var handler = TdsQueryEngine.CreateQueryHandler(CreateQueryEngineOptions());
+        Assert.Equal([1, 2, 4], await ExecuteLikeAsync(handler, "Name", "@pattern", ("@pattern", new string('%', 4_000))));
+        foreach (var (pattern, parameters) in new (string Pattern, (string Name, string Value)[] Parameters)[]
         {
-            (new string('%', 20_000) + "_li" + new string('%', 20_000), [1]),
-            (string.Concat(Enumerable.Repeat("%[^x]", 5_000)), []),
-            ("%" + string.Concat(Enumerable.Repeat("_%", 4)), [1, 4]),
+            ("'" + new string('%', 4_001) + "'", []),
+            ("'" + new string('%', 4_000) + "_'", []),
+            ("@pattern", [("@pattern", new string('%', 4_001))]),
         })
         {
-            var result = await handler(
-                new TdsQueryContext
-                {
-                    RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, 1433),
-                    RequestType = TdsQueryRequestType.SqlBatch,
-                    CommandText = "SELECT Id FROM customers WHERE Name LIKE '" + pattern + "'",
-                    HasCompleteParameters = true,
-                },
-                CancellationToken.None);
-
-            Assert.Null(result.Error?.Message);
-            var resultSet = Assert.Single(result.ResultSets);
-            Assert.Equal(expectedIds, [.. resultSet.Rows.Select(row => Assert.IsType<int>(row[0]))]);
+            var result = await handler(CreateLikeContext("Name", pattern, parameters), CancellationToken.None);
+            Assert.Equal("The pattern of LIKE can be a maximum of 8,000 bytes.", result.Error?.Message);
         }
+    }
+
+    private static async Task<int[]> ExecuteLikeAsync(TdsQueryDelegate handler, string value, string pattern, params (string Name, string Value)[] parameters)
+    {
+        var result = await handler(CreateLikeContext(value, pattern, parameters), CancellationToken.None);
+        Assert.Null(result.Error?.Message);
+        var resultSet = Assert.Single(result.ResultSets);
+        return [.. resultSet.Rows.Select(row => Assert.IsType<int>(row[0]))];
+    }
+
+    private static TdsQueryContext CreateLikeContext(string value, string pattern, (string Name, string Value)[] parameters)
+    {
+        return new TdsQueryContext
+        {
+            RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, 1433),
+            RequestType = TdsQueryRequestType.SqlBatch,
+            CommandText = "SELECT Id FROM customers WHERE " + value + " LIKE " + pattern,
+            Parameters = [.. parameters.Select(parameter => new TdsQueryParameter { Name = parameter.Name, Value = parameter.Value, Type = TdsColumnType.NVarChar })],
+            HasCompleteParameters = true,
+        };
     }
 
     [Fact]

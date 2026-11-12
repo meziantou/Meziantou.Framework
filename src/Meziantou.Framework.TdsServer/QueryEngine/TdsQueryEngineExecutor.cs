@@ -1514,6 +1514,7 @@ internal sealed partial class TdsQueryEngineExecutor
         if (pattern is ConstantExpression { Value: string patternText } && escape is null or ConstantExpression)
         {
             var escapeCharacter = SqlLikePattern.GetEscapeCharacter((string?)((ConstantExpression?)escape)?.Value);
+            SqlLikePattern.ValidatePattern(patternText);
             if (SqlLikePattern.TryGetSimplePattern(patternText, escapeCharacter, out var kind, out var text))
             {
                 var textExpression = Expression.Constant(text, typeof(string));

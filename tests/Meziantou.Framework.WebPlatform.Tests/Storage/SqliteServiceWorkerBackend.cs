@@ -100,10 +100,10 @@ internal sealed class SqliteServiceWorkerBackend : ServiceWorkerBackend, IDispos
     private List<StoredServiceWorkerScript> GetScripts(long registrationId, string workerId)
         => SqliteIndexedDBBackend.Query(_connection, null, "SELECT response, body FROM scripts WHERE registration_id = @id AND worker = @worker ORDER BY rowid", reader => JsonSerializer.Deserialize<ScriptRow>(reader.GetString(0))!.ToScript((byte[])reader.GetValue(1)), ("@id", registrationId), ("@worker", workerId));
 
-    private sealed record RegistrationRow(string ScopeUrl, string UpdateViaCache, DateTimeOffset? LastUpdateCheckTime, bool NavigationPreloadEnabled, string NavigationPreloadHeaderValue, WorkerRow? Waiting, WorkerRow? Active)
+    private sealed record RegistrationRow(string ScopeUrl, string UpdateViaCache, DateTimeOffset? LastUpdateCheckTime, bool NavigationPreloadEnabled, string NavigationPreloadHeaderValue, WorkerRow? Waiting, WorkerRow? Active, List<StoredCookieChangeSubscription>? CookieChangeSubscriptions)
     {
         public static RegistrationRow From(StoredServiceWorkerRegistration registration)
-            => new(registration.ScopeUrl, registration.UpdateViaCache, registration.LastUpdateCheckTime, registration.NavigationPreloadEnabled, registration.NavigationPreloadHeaderValue, WorkerRow.From(registration.Waiting), WorkerRow.From(registration.Active));
+            => new(registration.ScopeUrl, registration.UpdateViaCache, registration.LastUpdateCheckTime, registration.NavigationPreloadEnabled, registration.NavigationPreloadHeaderValue, WorkerRow.From(registration.Waiting), WorkerRow.From(registration.Active), [.. registration.CookieChangeSubscriptions]);
 
         public StoredServiceWorkerRegistration ToRegistration(Func<string, List<StoredServiceWorkerScript>> getScripts) => new()
         {
@@ -114,6 +114,7 @@ internal sealed class SqliteServiceWorkerBackend : ServiceWorkerBackend, IDispos
             NavigationPreloadHeaderValue = NavigationPreloadHeaderValue,
             Waiting = Waiting?.ToWorker(getScripts),
             Active = Active?.ToWorker(getScripts),
+            CookieChangeSubscriptions = CookieChangeSubscriptions ?? [],
         };
     }
 

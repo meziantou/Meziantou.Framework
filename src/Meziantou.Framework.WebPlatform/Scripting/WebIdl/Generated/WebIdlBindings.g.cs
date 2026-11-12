@@ -175,6 +175,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["ConvolverNode"] = Binding_ConvolverNode<TAdapter, TValue>.Binding,
             ["CookieChangeEvent"] = Binding_CookieChangeEvent<TAdapter, TValue>.Binding,
             ["CookieStore"] = Binding_CookieStore<TAdapter, TValue>.Binding,
+            ["CookieStoreManager"] = Binding_CookieStoreManager<TAdapter, TValue>.Binding,
             ["CustomElementRegistry"] = Binding_CustomElementRegistry<TAdapter, TValue>.Binding,
             ["CustomEvent"] = Binding_CustomEvent<TAdapter, TValue>.Binding,
             ["CustomStateSet"] = Binding_CustomStateSet<TAdapter, TValue>.Binding,
@@ -216,6 +217,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["EventCounts"] = Binding_EventCounts<TAdapter, TValue>.Binding,
             ["EventSource"] = Binding_EventSource<TAdapter, TValue>.Binding,
             ["EventTarget"] = Binding_EventTarget<TAdapter, TValue>.Binding,
+            ["ExtendableCookieChangeEvent"] = Binding_ExtendableCookieChangeEvent<TAdapter, TValue>.Binding,
             ["ExtendableEvent"] = Binding_ExtendableEvent<TAdapter, TValue>.Binding,
             ["ExtendableMessageEvent"] = Binding_ExtendableMessageEvent<TAdapter, TValue>.Binding,
             ["External"] = Binding_External<TAdapter, TValue>.Binding,
@@ -409,6 +411,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["NodeIterator"] = Binding_NodeIterator<TAdapter, TValue>.Binding,
             ["NodeList"] = Binding_NodeList<TAdapter, TValue>.Binding,
             ["Notification"] = Binding_Notification<TAdapter, TValue>.Binding,
+            ["NotificationEvent"] = Binding_NotificationEvent<TAdapter, TValue>.Binding,
             ["OfflineAudioCompletionEvent"] = Binding_OfflineAudioCompletionEvent<TAdapter, TValue>.Binding,
             ["OfflineAudioContext"] = Binding_OfflineAudioContext<TAdapter, TValue>.Binding,
             ["OffscreenCanvas"] = Binding_OffscreenCanvas<TAdapter, TValue>.Binding,
@@ -715,6 +718,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.EventModifierInit dictionaryDom_EventModifierInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_EventModifierInit(r, dictionaryDom_EventModifierInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ExtendableCookieChangeEventInit dictionaryDom_ExtendableCookieChangeEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ExtendableCookieChangeEventInit(r, dictionaryDom_ExtendableCookieChangeEventInit);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ExtendableMessageEventInit dictionaryDom_ExtendableMessageEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ExtendableMessageEventInit(r, dictionaryDom_ExtendableMessageEventInit);
                 return true;
@@ -729,6 +735,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.KeyframeAnimationOptions dictionaryDom_KeyframeAnimationOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_KeyframeAnimationOptions(r, dictionaryDom_KeyframeAnimationOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.NotificationEventInit dictionaryDom_NotificationEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NotificationEventInit(r, dictionaryDom_NotificationEventInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Animations.AnimationEventInit dictionaryAnimations_AnimationEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Animations_AnimationEventInit(r, dictionaryAnimations_AnimationEventInit);
@@ -1140,6 +1149,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.GetHtmlOptions dictionaryDom_GetHtmlOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_GetHtmlOptions(r, dictionaryDom_GetHtmlOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.GetNotificationOptions dictionaryDom_GetNotificationOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_GetNotificationOptions(r, dictionaryDom_GetNotificationOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.GetRootNodeOptions dictionaryDom_GetRootNodeOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_GetRootNodeOptions(r, dictionaryDom_GetRootNodeOptions);
@@ -1930,8 +1942,14 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.CookieListItem>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_CookieListItem__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_CookieListItem__, static (r, v) => r.FromSequence(v, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CookieListItem(r, dictionaryValue) : r.Adapter.Null)));
                 return true;
+            case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.CookieStoreGetOptions>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_CookieStoreGetOptions__:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_CookieStoreGetOptions__, static (r, v) => r.FromSequence(v, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CookieStoreGetOptions(r, dictionaryValue) : r.Adapter.Null)));
+                return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.IdbDatabaseInfo>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_IdbDatabaseInfo__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_IdbDatabaseInfo__, static (r, v) => r.FromSequence(v, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdbDatabaseInfo(r, dictionaryValue) : r.Adapter.Null)));
+                return true;
+            case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.Notification>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_Notification__:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_Notification__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_ServiceWorkerRegistration__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_ServiceWorkerRegistration__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));

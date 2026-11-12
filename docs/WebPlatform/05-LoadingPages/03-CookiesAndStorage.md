@@ -45,6 +45,18 @@ Assert.Equal(["lang", "session", "theme"], names);
   [ClearAll](cref:Meziantou.Framework.WebPlatform.Dom.CookiePersistence.ClearAll)) and give it to the jar: `new CookieJar(persistence, timeProvider)`. The jar keeps the cookies in memory and
   reports each change.
 
+### Cookies in the service workers
+
+A service worker reads and writes the cookies of its script URL with `self.cookieStore` (any URL of its origin with the
+`url` option). It does not get the `change` events of `window.cookieStore`: it subscribes to the changes with
+`registration.cookies.subscribe([{ name, url }])`, and receives a `cookiechange` event (`ExtendableCookieChangeEvent`)
+when a cookie that matches a subscription changes (the service worker is started if needed). A subscription matches the cookies of
+its name (any name when it has none) that are sent to its URL (the scope of the registration when it has none), which
+must be in the scope of the registration. The subscriptions belong to the registration: an update of the service worker
+keeps them, the [ServiceWorkerBackend](cref:Meziantou.Framework.WebPlatform.Dom.ServiceWorkerBackend) saves them with
+the registration ([StoredServiceWorkerRegistration.CookieChangeSubscriptions](cref:Meziantou.Framework.WebPlatform.Dom.StoredServiceWorkerRegistration.CookieChangeSubscriptions)),
+and unregistering drops them.
+
 ## Local storage and session storage
 
 `window.localStorage` keeps its items in a [StorageShed](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed). By default, each browsing context created by your application

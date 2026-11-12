@@ -765,10 +765,7 @@
     "total": 1
   },
   "service-workers/service-worker/partitioned-cookies.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Service Worker: Partitioned Cookies": "FAIL"
-    }
+    "total": 4
   },
   "service-workers/service-worker/partitioned-getRegistrations.tentative.https.html": {
     "total": 1

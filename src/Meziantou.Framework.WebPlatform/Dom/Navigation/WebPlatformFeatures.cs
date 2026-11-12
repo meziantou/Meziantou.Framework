@@ -164,7 +164,9 @@ public sealed record WebPlatformFeatures
 
     /// <summary>
     /// Gets or sets whether the Cookie Store API is exposed (https://cookiestore.spec.whatwg.org/): <c>cookieStore</c>,
-    /// <c>CookieStore</c> and <c>CookieChangeEvent</c>. <c>document.cookie</c> is not affected. The default is true.
+    /// <c>CookieStore</c> and <c>CookieChangeEvent</c>, and in the service workers <c>registration.cookies</c>
+    /// (<c>CookieStoreManager</c>) and the <c>cookiechange</c> event (<c>ExtendableCookieChangeEvent</c>).
+    /// <c>document.cookie</c> is not affected. The default is true.
     /// </summary>
     public bool CookieStoreEnabled { get; init; } = true;
 
@@ -189,7 +191,9 @@ public sealed record WebPlatformFeatures
 
     /// <summary>
     /// Gets or sets whether the Notifications API is exposed (https://notifications.spec.whatwg.org/): the <c>Notification</c>
-    /// interface (see <see cref="BrowsingContextOptions.ShowNotification"/>). The default is true.
+    /// interface (see <see cref="BrowsingContextOptions.ShowNotification"/>), and the persistent notifications of the service
+    /// workers (<c>registration.showNotification()</c>, <c>registration.getNotifications()</c> and <c>NotificationEvent</c>).
+    /// The default is true.
     /// </summary>
     public bool NotificationsEnabled { get; init; } = true;
 

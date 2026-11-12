@@ -545,19 +545,23 @@ public sealed partial class BrowsingContextOptions
 
     /// <summary>
     /// Gets or sets the callback that shows a notification to the user (https://notifications.spec.whatwg.org/,
-    /// <c>new Notification()</c>), once the <c>notifications</c> permission is granted (see <see cref="Permissions"/> and
-    /// <see cref="RequestPermission"/>): its properties are the title, the body, the icon... The host calls
-    /// <see cref="Notification.Click"/> when the user activates it and <see cref="Notification.Dismiss"/> when the user
-    /// closes it. The callback is invoked on the thread of the event loop, before the <c>show</c> event is fired. The
-    /// default is null: the notifications are not displayed, but they behave as if they were (the <c>show</c> event is fired).
+    /// <c>new Notification()</c>, or the persistent notifications of <c>registration.showNotification()</c>), once the
+    /// <c>notifications</c> permission is granted (see <see cref="Permissions"/> and <see cref="RequestPermission"/>): its
+    /// properties are the title, the body, the icon, the actions... The host calls <see cref="Notification.Click()"/> (or
+    /// <see cref="Notification.Click(string)"/> for an action) when the user activates it and <see cref="Notification.Dismiss"/>
+    /// when the user closes it. The callback is invoked on the thread of the event loop of the global object that shows the
+    /// notification, before the <c>show</c> event is fired. The default is null: the notifications are not displayed, but they
+    /// behave as if they were (the <c>show</c> event is fired).
     /// The first argument is the context of the global object that created the notification (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.Global"/> is the window or the worker, and its <see cref="CallbackContext.BrowsingContext"/> is null for a worker.
     /// </summary>
     public Action<CallbackContext, Notification>? ShowNotification { get; init; }
 
     /// <summary>
     /// Gets or sets the callback that removes a notification shown by <see cref="ShowNotification"/>: the script called
-    /// <c>close()</c>, or a new notification with the same tag replaces it. It is not called when the host closes the
-    /// notification itself (<see cref="Notification.Dismiss"/>). The callback is invoked on the thread of the event loop.
+    /// <c>close()</c>, a new notification with the same tag replaces it, or the service worker registration of a persistent
+    /// notification is unregistered. It is not called when the host closes the notification itself (<see cref="Notification.Dismiss"/>).
+    /// The callback is invoked on the thread of the event loop of the global object that closes the notification (the event
+    /// loop of the browsing context group for an unregistration).
     /// The default is null.
     /// The first argument is the context of the global object that created the notification (see <see cref="CallbackContext"/>): its <see cref="CallbackContext.Global"/> is the window or the worker, and its <see cref="CallbackContext.BrowsingContext"/> is null for a worker.
     /// </summary>
@@ -671,7 +675,7 @@ public sealed partial class BrowsingContextOptions
     public PendingInputOptions? PendingInput { get; init; }
 
     /// <summary>The list of notifications (https://notifications.spec.whatwg.org/#list-of-notifications) of the browsing contexts. Lock it to use it.</summary>
-    internal List<Notification> ShownNotifications { get; } = [];
+    internal List<NotificationRecord> ShownNotifications { get; } = [];
 }
 
 /// <summary>

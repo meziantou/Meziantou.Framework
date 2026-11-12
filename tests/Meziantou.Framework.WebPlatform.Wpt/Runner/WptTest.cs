@@ -163,7 +163,7 @@ internal static partial class WptTestDiscovery
             else if (fileName.EndsWith(".any.js", StringComparison.Ordinal))
             {
                 var meta = ParseMeta(File.ReadAllText(file));
-                foreach (var kind in GetAnyJsKinds(meta, includeServiceWorkers: relativePath.StartsWith("service-workers/", StringComparison.Ordinal)))
+                foreach (var kind in GetAnyJsKinds(meta, includeServiceWorkers: ServiceWorkerDirectories.Any(directory => relativePath.StartsWith(directory, StringComparison.Ordinal))))
                 {
                     foreach (var variant in GetVariants(meta.Where(m => m.Key == "variant").Select(m => m.Value)))
                     {
@@ -203,9 +203,15 @@ internal static partial class WptTestDiscovery
     }
 
     /// <summary>
+    /// The directories whose <c>.any.js</c> tests also run in the service worker globals: the tests of the service workers, and
+    /// of the APIs whose service worker part is implemented (the cookie change subscriptions, the persistent notifications).
+    /// </summary>
+    private static readonly string[] ServiceWorkerDirectories = ["service-workers/", "cookiestore/", "notifications/"];
+
+    /// <summary>
     /// The globals in which a <c>.any.js</c> test runs (https://web-platform-tests.org/writing-tests/testharness.html#specifying-a-test-scope):
-    /// the window and the dedicated worker by default. The service worker globals are only run for the tests of the service
-    /// workers (<paramref name="includeServiceWorkers"/>); the ShadowRealms are not supported.
+    /// the window and the dedicated worker by default. The service worker globals are only run for the tests of
+    /// <see cref="ServiceWorkerDirectories"/> (<paramref name="includeServiceWorkers"/>); the ShadowRealms are not supported.
     /// </summary>
     private static IEnumerable<WptTestKind> GetAnyJsKinds(List<KeyValuePair<string, string>> meta, bool includeServiceWorkers)
     {

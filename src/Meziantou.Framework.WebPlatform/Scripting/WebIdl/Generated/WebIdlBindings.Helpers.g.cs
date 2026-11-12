@@ -65,6 +65,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ErrorEventInit Defaults_Dom_ErrorEventInit = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.ExtendableCookieChangeEventInit Defaults_Dom_ExtendableCookieChangeEventInit = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.FetchEventInit Defaults_Dom_FetchEventInit = new() { Request = default! };
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.FileApi.FilePropertyBag Defaults_Dom_FileApi_FilePropertyBag = new();
@@ -1220,6 +1222,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_ExtendableCookieChangeEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ExtendableCookieChangeEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        if (value.Changed is not null) r.SetMember(result, "changed", r.FromSequence(value.Changed, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CookieListItem(r, dictionaryValue) : r.Adapter.Null)));
+        if (value.Deleted is not null) r.SetMember(result, "deleted", r.FromSequence(value.Deleted, static (r, e) => (e is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CookieListItem(r, dictionaryValue2) : r.Adapter.Null)));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_ExtendableEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit value)
     {
         var result = r.CreateObject();
@@ -1382,6 +1395,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var result = r.CreateObject();
         r.SetMember(result, "serializableShadowRoots", r.FromBoolean(value.SerializableShadowRoots));
         r.SetMember(result, "shadowRoots", r.FromSequence(value.ShadowRoots, static (r, e) => r.Wrap(e)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_GetNotificationOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.GetNotificationOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "tag", r.FromString(value.Tag));
         return result;
     }
 
@@ -1949,6 +1969,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         if (value.Icon is not null) r.SetMember(result, "icon", r.FromString(value.Icon));
         if (value.Navigate is not null) r.SetMember(result, "navigate", r.FromString(value.Navigate));
         r.SetMember(result, "title", r.FromString(value.Title));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_NotificationEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.NotificationEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "action", r.FromString(value.Action));
+        r.SetMember(result, "notification", r.Wrap(value.Notification));
         return result;
     }
 
@@ -5688,6 +5719,31 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ExtendableCookieChangeEventInit ToDictionary_Dom_ExtendableCookieChangeEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ExtendableCookieChangeEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "changed");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.CookieListItem>?)r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.CookieListItem>(m3_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_CookieListItem(r, e)) : default;
+        var m4_value = r.GetDictionaryMember(value, "deleted");
+        var m4_present = !r.Adapter.IsUndefined(m4_value);
+        var m4 = m4_present ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.CookieListItem>?)r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.CookieListItem>(m4_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_CookieListItem(r, e)) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.ExtendableCookieChangeEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Changed = m3_present ? m3 : Defaults_Dom_ExtendableCookieChangeEventInit.Changed,
+            Deleted = m4_present ? m4 : Defaults_Dom_ExtendableCookieChangeEventInit.Deleted,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.ExtendableEventInit ToDictionary_Dom_ExtendableEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "ExtendableEventInit");
@@ -5986,6 +6042,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         {
             SerializableShadowRoots = m0,
             ShadowRoots = m1,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.GetNotificationOptions ToDictionary_Dom_GetNotificationOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "GetNotificationOptions");
+        var m0_value = r.GetDictionaryMember(value, "tag");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (string)"" : r.ToDomString(m0_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.GetNotificationOptions
+        {
+            Tag = m0,
         };
     }
 
@@ -7125,6 +7192,30 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             Icon = m1_present ? m1 : Defaults_Dom_NotificationAction.Icon,
             Navigate = m2_present ? m2 : Defaults_Dom_NotificationAction.Navigate,
             Title = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.NotificationEventInit ToDictionary_Dom_NotificationEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "NotificationEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "action");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (string)"" : r.ToDomString(m3_value);
+        var m4_value = r.GetDictionaryMember(value, "notification");
+        if (r.Adapter.IsUndefined(m4_value)) throw r.MissingRequiredDictionaryMember("NotificationEventInit", "notification");
+        var m4 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.Notification>(m4_value, "Notification");
+        return new global::Meziantou.Framework.WebPlatform.Dom.NotificationEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Action = m3,
+            Notification = m4,
         };
     }
 

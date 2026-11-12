@@ -16,7 +16,7 @@ the device in a test, or to connect the API to your application.
 | [Share](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Share) | `navigator.share()` | There is no share target: the promise is rejected with an `AbortError` |
 | [Vibrate](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Vibrate) | `navigator.vibrate()` | Nothing vibrates |
 | [Geolocation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Geolocation) | `navigator.geolocation` | The position is unavailable |
-| [ShowNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ShowNotification), [CloseNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.CloseNotification) | `new Notification()` | The notifications are displayed nowhere |
+| [ShowNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ShowNotification), [CloseNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.CloseNotification) | `new Notification()`, `registration.showNotification()` | The notifications are displayed nowhere |
 | [Badging](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Badging) | `navigator.setAppBadge()`, `navigator.clearAppBadge()` | The badge is shown nowhere |
 | [BatteryStatus](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.BatteryStatus) | `navigator.getBattery()` | A fully charged battery that is plugged in |
 | [WakeLock](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.WakeLock) | `navigator.wakeLock.request()` | Nothing is kept on, but the page gets its locks once the permission is granted |
@@ -161,8 +161,51 @@ var options = new BrowsingContextOptions
 <!-- endref -->
 
 Without `ShowNotification`, the notifications are displayed nowhere, but the page sees them as shown. The frames that
-are not same origin with the page cannot show notifications, as in the browsers. The persistent notifications of the
-service workers (`showNotification()`) are not supported.
+are not same origin with the page cannot show notifications, as in the browsers.
+
+### Persistent notifications
+
+A service worker registration shows persistent notifications with `registration.showNotification()`, from a page or from
+the service worker, and lists them with `registration.getNotifications()`. They belong to the registration, not to the
+page: they stay when the page is reloaded or closed, and they are closed when the registration is unregistered.
+`ShowNotification` and `CloseNotification` display and remove them as the other notifications;
+[IsPersistent](cref:Meziantou.Framework.WebPlatform.Dom.Notification.IsPersistent) tells them apart. Only a persistent
+notification has [Actions](cref:Meziantou.Framework.WebPlatform.Dom.Notification.Actions), the buttons of the
+notification (at most two, `Notification.maxActions`).
+
+What the user does goes to the active service worker of the registration, which is started if needed:
+[Click()](cref:Meziantou.Framework.WebPlatform.Dom.Notification.Click) fires the `notificationclick` event,
+[Click(action)](cref:Meziantou.Framework.WebPlatform.Dom.Notification.Click(System.String)) fires it with the name of the
+action button, and [Dismiss](cref:Meziantou.Framework.WebPlatform.Dom.Notification.Dismiss) fires the
+`notificationclose` event:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/ServiceWorkerTests.cs;region=WebPlatform_PersistentNotifications;format=md-fenced-code-block;dedent=true -->
+```csharp
+var permissions = new PermissionStore();
+permissions.SetState("notifications", PermissionState.Granted);
+var shown = new List<Notification>();
+var options = new BrowsingContextOptions
+{
+    Permissions = permissions,
+
+    // A persistent notification (registration.showNotification()) has actions: clicking the notification or one
+    // of its actions fires the notificationclick event in the service worker, dismissing it the notificationclose event
+    ShowNotification = (callbackContext, notification) =>
+    {
+        lock (shown)
+        {
+            shown.Add(notification);
+        }
+    },
+};
+```
+<!-- endref -->
+
+The callbacks of a persistent notification run on the thread of the page or of the service worker that shows or closes
+it: synchronize the list of the notifications that you display. As in the browsers, closing a notification from a script
+(`notification.close()`) fires no `notificationclose` event, and a service worker registered by a third-party frame
+cannot show notifications. The library does not fetch the icon, the image and the badge of the notifications: fetch
+them if you display them.
 
 ## Badging
 

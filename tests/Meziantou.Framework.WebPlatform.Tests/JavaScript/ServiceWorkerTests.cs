@@ -412,6 +412,134 @@ public sealed class ServiceWorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task PersistentNotification_ActionFiresTheNotificationClickEvent()
+    {
+        AddScript("https://example.com/dir/sw.js", """
+            self.addEventListener('notificationclick', async e => {
+              const all = await clients.matchAll({ includeUncontrolled: true });
+              for (const client of all) client.postMessage([e.type, e.action, e.notification.title, e.notification.actions.map(a => a.action).join('+')].join());
+            });
+            """);
+
+        #region WebPlatform_PersistentNotifications
+        var permissions = new PermissionStore();
+        permissions.SetState("notifications", PermissionState.Granted);
+        var shown = new List<Notification>();
+        var options = new BrowsingContextOptions
+        {
+            Permissions = permissions,
+
+            // A persistent notification (registration.showNotification()) has actions: clicking the notification or one
+            // of its actions fires the notificationclick event in the service worker, dismissing it the notificationclose event
+            ShowNotification = (callbackContext, notification) =>
+            {
+                lock (shown)
+                {
+                    shown.Add(notification);
+                }
+            },
+        };
+        #endregion
+
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            DocumentLoader = _loader,
+            Permissions = options.Permissions,
+            ShowNotification = options.ShowNotification,
+        });
+        var document = Load(context, """
+            <script>
+              navigator.serviceWorker.onmessage = e => document.title = e.data;
+              navigator.serviceWorker.register('sw.js')
+                .then(() => navigator.serviceWorker.ready)
+                .then(r => r.showNotification('title', { tag: 't', actions: [{ action: 'a', title: 'A' }, { action: 'b', title: 'B' }, { action: 'c', title: 'C' }] }).then(() => r.getNotifications({ tag: 't' })))
+                .then(n => document.title = n.length + ' ' + n[0].actions.length + ' ' + Notification.maxActions, e => document.title = e.name);
+            </script>
+            """);
+
+        Assert.Equal("1 2 2", await WaitForTitleAsync(document));
+        var notification = Assert.Single(shown);
+        Assert.True(notification.IsPersistent);
+        Assert.True(notification.IsShown);
+        Assert.Equal(["a", "b"], notification.Actions.Select(action => action.Action));
+
+        document.Title = "";
+        notification.Click("b");
+        Assert.Equal("notificationclick,b,title,a+b", await WaitForTitleAsync(document));
+        Assert.Throws<ArgumentException>("action", () => notification.Click("c"));
+    }
+
+    [Fact]
+    public async Task PersistentNotification_IsClosedWhenTheRegistrationIsUnregistered()
+    {
+        AddScript("https://example.com/dir/sw.js", "");
+        var permissions = new PermissionStore();
+        permissions.SetState("notifications", PermissionState.Granted);
+        var closed = 0;
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            DocumentLoader = _loader,
+            Permissions = permissions,
+            CloseNotification = (_, _) => Interlocked.Increment(ref closed),
+        });
+        var document = Load(context, """
+            <script>
+              navigator.serviceWorker.register('sw.js')
+                .then(() => navigator.serviceWorker.ready)
+                .then(async r => {
+                  await r.showNotification('first');
+                  await r.showNotification('second');
+                  const before = (await r.getNotifications()).length;
+                  await r.unregister();
+                  document.title = before + ' ' + (await r.getNotifications()).length;
+                }, e => document.title = e.name);
+            </script>
+            """);
+
+        Assert.Equal("2 0", await WaitForTitleAsync(document));
+        Assert.Equal(2, Volatile.Read(ref closed));
+    }
+
+    [Fact]
+    public async Task CookieChangeSubscriptions_FireTheCookieChangeEvent()
+    {
+        AddScript("https://example.com/dir/sw.js", """
+            self.addEventListener('cookiechange', async e => {
+              const all = await clients.matchAll({ includeUncontrolled: true });
+              const cookies = await cookieStore.getAll();
+              for (const client of all) client.postMessage(JSON.stringify({ changed: e.changed.map(c => c.name + '=' + c.value), deleted: e.deleted.map(c => c.name), all: cookies.map(c => c.name) }));
+            });
+            """);
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            DocumentLoader = _loader,
+            CookieJar = new CookieJar(),
+        });
+        var document = Load(context, """
+            <script>
+              navigator.serviceWorker.onmessage = e => document.title = e.data;
+              navigator.serviceWorker.register('sw.js')
+                .then(() => navigator.serviceWorker.ready)
+                .then(async r => {
+                  await r.cookies.subscribe([{ name: 'a' }, { name: 'a' }, { url: 'https://example.com/dir/sub/' }]);
+                  const subscriptions = await r.cookies.getSubscriptions();
+                  if (subscriptions.length !== 2 || subscriptions[0].url !== 'https://example.com/dir/' || 'name' in subscriptions[1]) throw new Error('unexpected subscriptions');
+                  await r.cookies.unsubscribe([{ url: 'https://example.com/dir/sub/' }]);
+                  await r.cookies.subscribe([{ url: '/outside/' }]).catch(e => window.error = e.name);
+                  await cookieStore.set('b', '1');
+                  await cookieStore.set('a', '2');
+                }, e => document.title = e.name);
+            </script>
+            """);
+
+        Assert.Equal("""{"changed":["a=2"],"deleted":[],"all":["b","a"]}""", await WaitForTitleAsync(document));
+        Assert.Equal("TypeError", TestScriptEngines.Evaluate(_engine, document.DefaultView!, "window.error"));
+    }
+
+    [Fact]
     public async Task Registrations_ArePersistedInTheBackend()
     {
         AddScript("https://example.com/dir/sw.js", """

@@ -651,7 +651,7 @@ public sealed class HostDeviceApisTests : IDisposable
             </script>
             """, options);
 
-        Assert.Equal("show,title,body,tag,https://example.com/icon.png,,fr,rtl,42,true,1000,,false,0,0", Run(document));
+        Assert.Equal("show,title,body,tag,https://example.com/icon.png,,fr,rtl,42,true,1000,,false,0,2", Run(document));
         var notification = Assert.Single(notifications);
         Assert.Equal("title", notification.Title);
         Assert.Equal("body", notification.Body);

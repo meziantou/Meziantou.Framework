@@ -112,28 +112,35 @@ public sealed class CookieListItem
 }
 
 /// <summary>
-/// The Cookie Store API of a window (https://cookiestore.spec.whatwg.org/#cookiestore): reads and writes the script-visible
-/// cookies of <see cref="BrowsingContextOptions.CookieJar"/> for the creation URL of the document (which
-/// <c>history.pushState()</c> does not change), and fires <c>change</c> events when they change.
+/// The Cookie Store API of a window or of a service worker (https://cookiestore.spec.whatwg.org/#cookiestore): reads and
+/// writes the script-visible cookies of <see cref="BrowsingContextOptions.CookieJar"/> for the creation URL of the document
+/// (which <c>history.pushState()</c> does not change) or for the script URL of the service worker. The cookie store of a
+/// window fires <c>change</c> events when they change; a service worker subscribes to the changes with
+/// <see cref="CookieStoreManager"/>.
 /// </summary>
 /// <remarks>
 /// The cookies set by this API are Secure. A document without cookie jar has no cookies: the cookies it sets are ignored.
 /// The change events are fired for the changes of the jar observable from the document (the cookies of other documents,
-/// of the responses, and of <c>document.cookie</c>).
+/// of the responses, and of <c>document.cookie</c>). The <c>url</c> option of a service worker can be any URL of its
+/// origin; the one of a window must be the creation URL of its document.
 /// </remarks>
 /// <seealso href="https://cookiestore.spec.whatwg.org/#cookiestore"/>
 [IdlInterface("CookieStore", "https://cookiestore.spec.whatwg.org/#cookiestore")]
 public sealed class CookieStore : EventTarget, ICookieChangeListener
 {
-    internal CookieStore(Window window)
+    internal CookieStore(GlobalScope global)
     {
-        Window = window;
-        window.Options.CookieJar?.AddListener(this);
+        Global = global;
+        if (global is Window window)
+        {
+            window.Options.CookieJar?.AddListener(this);
+        }
     }
 
-    internal Window Window { get; }
+    /// <summary>The window or the service worker of the cookie store.</summary>
+    internal GlobalScope Global { get; }
 
-    internal override Window? RelevantGlobal => Window;
+    internal override GlobalScope? RelevantGlobal => Global;
 
     /// <summary>The event handler of the change events (https://cookiestore.spec.whatwg.org/#dom-cookiestore-onchange).</summary>
     /// <seealso href="https://cookiestore.spec.whatwg.org/#dom-cookiestore-onchange"/>
@@ -255,21 +262,22 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
     /// <summary>The creation URL of the relevant settings object, or null when its origin is opaque.</summary>
     private UrlRecord? GetCreationUrl()
     {
-        var document = Window.Document;
+        var document = Global.EnvironmentDocument;
         return document.Origin.IsOpaque ? null : document.GetCookieUrl(creationUrl: true);
     }
 
     /// <summary>
     /// The URL of the options of get() and getAll(): the URL parsed with the API base URL, which must be the creation URL
-    /// (excluding the fragments). Returns the creation URL when the options have no URL, and null on failure.
+    /// (excluding the fragments) for a window, and a URL of the same origin for a service worker. Returns the creation URL
+    /// when the options have no URL, and null on failure.
     /// </summary>
     private UrlRecord? GetOptionsUrl(UrlRecord url, CookieStoreGetOptions options)
     {
         if (options.Url is not { } optionsUrl)
             return url;
 
-        var parsed = UrlParser.Parse(optionsUrl, Window.Document.DocumentBaseUrl);
-        if (parsed is null || parsed.Serialize(excludeFragment: true) != url.Serialize(excludeFragment: true))
+        var parsed = UrlParser.Parse(optionsUrl, Global.ApiBaseUrl);
+        if (parsed is null || (Global is Window && parsed.Serialize(excludeFragment: true) != url.Serialize(excludeFragment: true)))
             return null;
 
         if (parsed.SerializeOrigin() != url.SerializeOrigin())
@@ -283,14 +291,14 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
     {
         var value = result();
         var completion = new TaskCompletionSource<T>();
-        Window.Document.QueueGlobalTask(() => completion.TrySetResult(value));
+        Global.QueueGlobalTask(() => completion.TrySetResult(value));
         return completion.Task;
     }
 
     private Task Complete(bool success)
     {
         var completion = new TaskCompletionSource();
-        Window.Document.QueueGlobalTask(() =>
+        Global.QueueGlobalTask(() =>
         {
             if (success)
             {
@@ -304,13 +312,13 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
         return completion.Task;
     }
 
-    private CookieRequestContext GetContext(UrlRecord url) => CookieContexts.ForScript(Window.Document, url);
+    private CookieRequestContext GetContext(UrlRecord url) => CookieContexts.ForScript(Global.EnvironmentDocument, url);
 
     /// <summary>https://cookiestore.spec.whatwg.org/#query-cookies</summary>
     private List<CookieListItem> QueryCookies(UrlRecord url, string? name)
     {
         var list = new List<CookieListItem>();
-        if (Window.Document.GetCookieJar() is not { } cookieJar)
+        if (Global.EnvironmentDocument.GetCookieJar() is not { } cookieJar)
             return list;
 
         var normalizedName = name is null ? null : Normalize(name);
@@ -387,7 +395,7 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
             attributes.Domain = encodedDomain;
         }
 
-        if (Window.Document.GetCookieJar() is not { } cookieJar)
+        if (Global.EnvironmentDocument.GetCookieJar() is not { } cookieJar)
             return true;
 
         // Steps 12-13: the expiry time is serialized as a cookie-date (with a resolution of one second)
@@ -473,10 +481,12 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
     /// </summary>
     void ICookieChangeListener.OnCookiesChanged(CookieJar cookieJar, IReadOnlyList<CookieChange> changes)
     {
-        var document = Window.Document;
-        document.QueueGlobalTask(() =>
+        if (Global is not Window window)
+            return;
+
+        window.Document.QueueGlobalTask(() =>
         {
-            if (!ReferenceEquals(Window.Document.GetCookieJar(), cookieJar) || GetCreationUrl() is not { } url || url.Host is not { } host)
+            if (!ReferenceEquals(window.Document.GetCookieJar(), cookieJar) || GetCreationUrl() is not { } url || url.Host is not { } host)
                 return;
 
             // https://cookiestore.spec.whatwg.org/#observable-changes

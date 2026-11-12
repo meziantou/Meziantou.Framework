@@ -709,7 +709,7 @@
     "total": 1
   },
   "scroll-animations/responsive/repaint-after-finished.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "scroll-animations/scroll-timelines/animation-with-animatable-interface.html": {
     "reftest": "PASS"

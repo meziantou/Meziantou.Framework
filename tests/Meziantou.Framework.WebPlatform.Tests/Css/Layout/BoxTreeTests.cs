@@ -543,6 +543,20 @@ public sealed class BoxTreeTests : IDisposable
         """);
 
     [Fact]
+    public void Grid_GeneratedEmptyOrWhiteSpaceTextIsAnItem() => AssertBody("<style>#a::after { content: ''; display: grid } #b::before { content: ' '; display: contents }</style><div id=a></div><div id=b style='display: flex'><i>x</i></div>", """
+        block <body> block-children
+          block <div#a> block-children
+            grid <div#a>::after
+              block anonymous inline-children
+                generated-text "" ::after
+          flex <div#b>
+            block anonymous inline-children
+              generated-text " " ::before
+            block <i> inline-children
+              text "x"
+        """);
+
+    [Fact]
     public void Grid_ContentsChildrenAreItems() => AssertBody("<div style='display: grid'><div style='display: contents'><span>a</span>b</div></div>", """
         block <body> block-children
           grid <div>

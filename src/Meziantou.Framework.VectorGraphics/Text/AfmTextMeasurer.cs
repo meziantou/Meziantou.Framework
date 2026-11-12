@@ -84,8 +84,17 @@ public sealed class AfmTextMeasurer : ITextMeasurer
 
     private sealed class FontMetrics
     {
+        // The printable ASCII characters, from U+0020 to U+007E, which most texts are made of
+        private const int FirstAscii = 0x20;
+        private const int AsciiCount = 0x7F - FirstAscii;
+
         private readonly AfmFontMetrics _font;
         private readonly Dictionary<int, (string Name, double Width)> _characters = [];
+
+        // The widths of the printable ASCII characters (NaN for the ones the font lacks), and the kerning of their pairs,
+        // or null when a kerning is not a float: the measurement of an ASCII text needs no lookup by name
+        private readonly double[] _asciiWidths = new double[AsciiCount];
+        private readonly float[]? _asciiKerning;
 
         public FontMetrics(AfmFontMetrics font, Dictionary<string, int> glyphList)
         {
@@ -113,6 +122,26 @@ public sealed class AfmTextMeasurer : ITextMeasurer
             }
 
             AverageWidth = count is 0 ? 500 : total / count;
+
+            float[]? kerning = new float[AsciiCount * AsciiCount];
+            for (var first = 0; first < AsciiCount; first++)
+            {
+                _asciiWidths[first] = _characters.TryGetValue(FirstAscii + first, out var firstCharacter) ? firstCharacter.Width : double.NaN;
+                for (var second = 0; second < AsciiCount && kerning is not null; second++)
+                {
+                    if (firstCharacter.Name is null || !_characters.TryGetValue(FirstAscii + second, out var secondCharacter))
+                        continue;
+
+                    var value = font.GetKerning(firstCharacter.Name, secondCharacter.Name).X;
+                    kerning[(first * AsciiCount) + second] = (float)value;
+                    if ((float)value != value)
+                    {
+                        kerning = null;
+                    }
+                }
+            }
+
+            _asciiKerning = kerning;
             Ascender = font.Ascender ?? 718;
             Descender = -(font.Descender ?? -207);
         }
@@ -125,8 +154,12 @@ public sealed class AfmTextMeasurer : ITextMeasurer
 
         public double MeasureUnits(string text)
         {
+            if (_asciiKerning is not null && Ascii.IsValid(text))
+                return MeasureAsciiUnits(text, _asciiKerning);
+
             var width = 0.0;
             string? previousName = null;
+            var previousCodePoint = 0;
             foreach (var range in Unicode.EnumerateGraphemeClusters(text))
             {
                 var cluster = text.AsSpan(range);
@@ -136,16 +169,48 @@ public sealed class AfmTextMeasurer : ITextMeasurer
                 {
                     if (previousName is not null)
                     {
-                        width += _font.GetKerning(previousName, character.Name).X;
+                        // The pairs of ASCII characters are in the table
+                        var (first, second) = (previousCodePoint - FirstAscii, codePoint - FirstAscii);
+                        width += _asciiKerning is not null && (uint)first < AsciiCount && (uint)second < AsciiCount
+                            ? _asciiKerning[(first * AsciiCount) + second]
+                            : _font.GetKerning(previousName, character.Name).X;
                     }
 
                     width += character.Width;
                     previousName = character.Name;
+                    previousCodePoint = codePoint;
                     continue;
                 }
 
                 previousName = null;
                 width += GetFallbackWidth(codePoint);
+            }
+
+            return width;
+        }
+
+        // MeasureUnits for an ASCII text: each character is a grapheme cluster, except CR LF, whose characters have no width
+        private double MeasureAsciiUnits(string text, float[] kerning)
+        {
+            var width = 0.0;
+            var previous = -1;
+            foreach (var c in text)
+            {
+                var index = c - FirstAscii;
+                if ((uint)index < AsciiCount && _asciiWidths[index] is var characterWidth && !double.IsNaN(characterWidth))
+                {
+                    if (previous >= 0)
+                    {
+                        width += kerning[(previous * AsciiCount) + index];
+                    }
+
+                    width += characterWidth;
+                    previous = index;
+                    continue;
+                }
+
+                previous = -1;
+                width += GetFallbackWidth(c);
             }
 
             return width;

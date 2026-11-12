@@ -15,6 +15,12 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
     private readonly FontFace _boldItalic;
     private readonly Lock _lock = new();
 
+    // The buffer of the shaping, reused under the lock for the texts of MaxReusedBufferLength characters at most, so it
+    // stays small; and the limits it was created with
+    private const int MaxReusedBufferLength = 1024;
+    private GlyphBuffer? _buffer;
+    private FontResourceLimits? _bufferLimits;
+
     /// <summary>Initializes a new instance of the <see cref="FontFaceTextMeasurer"/> class.</summary>
     /// <param name="regular">The face of the regular text, loaded with <see cref="FontLoader"/>.</param>
     /// <param name="bold">The face of the bold text, or <see langword="null"/> to measure bold text with <paramref name="regular"/>.</param>
@@ -115,7 +121,23 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
         var spacingWidth = 0.0;
         lock (_lock)
         {
-            var buffer = new GlyphBuffer(face.Data.Limits);
+            GlyphBuffer buffer;
+            if (text.Length > MaxReusedBufferLength)
+            {
+                // A long text gets a buffer of its own: the measurer does not keep its arrays
+                buffer = new GlyphBuffer(face.Data.Limits);
+            }
+            else
+            {
+                if (_buffer is null || !ReferenceEquals(_bufferLimits, face.Data.Limits))
+                {
+                    _buffer = new GlyphBuffer(face.Data.Limits);
+                    _bufferLimits = face.Data.Limits;
+                }
+
+                buffer = _buffer;
+            }
+
             foreach (var run in TextShaper.SplitRuns(text))
             {
                 var span = text.AsSpan(run.Index, run.Length);

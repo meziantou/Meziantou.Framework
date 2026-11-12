@@ -42,8 +42,8 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
                 throw r.CreateWasmError("CompileError", WebIdlRealm<TAdapter, TValue>.WasmCompilationBlockedMessage);
 
             var module = r.WasmCall(() => r.WebAssemblyRuntime!.Compile(bytes));
-            if (!WebIdlRealm<TAdapter, TValue>.AreValidBuiltinSetNames(options.BuiltinSets))
-                throw r.CreateWasmError("CompileError", "The builtin set names are not valid");
+            if (!WebIdlRealm<TAdapter, TValue>.ValidateWasmBuiltinsAndImportedStrings(module, options.BuiltinSets, options.ImportedStringModule))
+                throw r.CreateWasmError("CompileError", "The builtins or the imported string constants of the module are not valid");
 
             return new WebAssemblyModuleObject(module, options.BuiltinSets, options.ImportedStringModule);
         },
@@ -69,8 +69,9 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
                 if (a.Length < 1)
                     throw r.NotEnoughArguments("imports", 1, a.Length);
 
-                var module = r.ToInterface<WebAssemblyModuleObject>(a[0], "Module").Module;
-                return r.CreateArray([.. module.Imports.Select(import =>
+                // The imports of the builtin sets and the imported string constants are not reflected
+                var moduleObject = r.ToInterface<WebAssemblyModuleObject>(a[0], "Module");
+                return r.CreateArray([.. moduleObject.Module.Imports.Where(import => !WebIdlRealm<TAdapter, TValue>.IsReflectedAsWasmBuiltinOrStringImport(import, moduleObject.BuiltinSets, moduleObject.ImportedStringModule)).Select(import =>
                 {
                     var descriptor = r.CreateObject();
                     r.SetMember(descriptor, "kind", r.Adapter.FromString(import.Type.KindName));

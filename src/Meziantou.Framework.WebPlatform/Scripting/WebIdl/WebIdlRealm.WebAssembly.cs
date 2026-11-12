@@ -196,9 +196,6 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         return (builtinSets, importedStringModule);
     }
 
-    /// <summary>https://webassembly.github.io/spec/js-api/#validate-builtin-set-names: the builtin sets of the JS String Builtins are not implemented.</summary>
-    internal static bool AreValidBuiltinSetNames(string[] builtinSets) => builtinSets.Distinct(StringComparer.Ordinal).Count() == builtinSets.Length;
-
     /// <summary>https://webassembly.github.io/spec/js-api/#dom-webassembly-validate</summary>
     private TValue WasmValidate(ReadOnlySpan<TValue> arguments)
     {
@@ -206,8 +203,25 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             throw NotEnoughArguments("validate", 1, arguments.Length);
 
         var bytes = ToWasmBytes(arguments[0]);
-        var (builtinSets, _) = ToWasmCompileOptions(arguments, 1);
-        return Adapter.FromBoolean(WebAssemblyRuntime!.Validate(bytes) && AreValidBuiltinSetNames(builtinSets));
+        var (builtinSets, importedStringModule) = ToWasmCompileOptions(arguments, 1);
+        if (!WebAssemblyRuntime!.Validate(bytes))
+            return Adapter.FromBoolean(false);
+
+        // The imports of the module are validated against the builtin sets and the imported string constants
+        if (builtinSets.Length == 0 && importedStringModule is null)
+            return Adapter.FromBoolean(true);
+
+        WasmModule module;
+        try
+        {
+            module = WebAssemblyRuntime.Compile(bytes);
+        }
+        catch (WasmCompileException)
+        {
+            return Adapter.FromBoolean(false);
+        }
+
+        return Adapter.FromBoolean(ValidateWasmBuiltinsAndImportedStrings(module, builtinSets, importedStringModule));
     }
 
     /// <summary>https://webassembly.github.io/spec/js-api/#dom-webassembly-compile</summary>
@@ -257,9 +271,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             {
                 onError(ToJsError(CreateWasmError("CompileError", exception.Message)));
             }
-            else if (!AreValidBuiltinSetNames(options.BuiltinSets))
+            else if (!ValidateWasmBuiltinsAndImportedStrings(module!, options.BuiltinSets, options.ImportedStringModule))
             {
-                onError(ToJsError(CreateWasmError("CompileError", "The builtin set names are not valid")));
+                onError(ToJsError(CreateWasmError("CompileError", "The builtins or the imported string constants of the module are not valid")));
             }
             else
             {
@@ -372,6 +386,18 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         var functionIndex = 0;
         foreach (var import in moduleImports)
         {
+            // The builtins and the imported string constants are provided by the host
+            if (IsWasmBuiltinOrStringImport(import, moduleObject.BuiltinSets, moduleObject.ImportedStringModule))
+            {
+                imports.Add(ReadWasmBuiltinOrStringImport(moduleObject, import));
+                if (import.Type is WasmFunctionType)
+                {
+                    functionIndex++;
+                }
+
+                continue;
+            }
+
             var o = Adapter.Get(importObject!, Key(import.Module));
             if (!Adapter.IsObject(o))
                 throw CreateTypeError($"The import object has no object for the module '{import.Module}'");

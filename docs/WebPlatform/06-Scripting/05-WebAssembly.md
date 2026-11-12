@@ -42,6 +42,9 @@ Assert.Equal("5", document.QuerySelector("output")!.TextContent);
   supported.
 - The features of WebAssembly 3.0 are enabled (reference types, garbage collection types, exceptions, tail calls, memory64,
   multiple memories, SIMD), except the threads.
+- The JS String Builtins are supported: the `builtins: ["js-string"]` compile option provides the functions of the
+  `wasm:js-string` module (`length`, `concat`, `charCodeAt`, `fromCharCodeArray`...), and `importedStringConstants`
+  turns the globals imported from a module into string constants (the name of the import is the string).
 - The running code is interrupted by the limits of the script engine, such as [Timeout](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.Timeout).
 
 [WasmtimeRuntimeOptions](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions) sets the size of the stack of the WebAssembly code ([MaxStackSize](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.MaxStackSize), 512 KiB by default: a

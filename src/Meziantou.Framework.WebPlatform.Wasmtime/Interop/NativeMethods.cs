@@ -469,6 +469,22 @@ internal static unsafe partial class NativeMethods
     public static partial bool wasmtime_anyref_is_array(nint context, WasmtimeRef* reference);
 
     [LibraryImport(LibraryName)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    public static partial bool wasmtime_anyref_as_array(nint context, WasmtimeRef* reference, WasmtimeRef* result);
+
+    [LibraryImport(LibraryName)]
+    public static partial void wasmtime_arrayref_unroot(WasmtimeRef* reference);
+
+    [LibraryImport(LibraryName)]
+    public static partial nint wasmtime_arrayref_len(nint context, WasmtimeRef* reference, uint* result);
+
+    [LibraryImport(LibraryName)]
+    public static partial nint wasmtime_arrayref_get(nint context, WasmtimeRef* reference, uint index, WasmtimeVal* result);
+
+    [LibraryImport(LibraryName)]
+    public static partial nint wasmtime_arrayref_set(nint context, WasmtimeRef* reference, uint index, WasmtimeVal* value);
+
+    [LibraryImport(LibraryName)]
     public static partial nint wasmtime_exnref_new(nint context, WasmtimeIndexedExtern* tag, WasmtimeVal* fields, nuint fieldCount, WasmtimeRef* result);
 
     [LibraryImport(LibraryName)]

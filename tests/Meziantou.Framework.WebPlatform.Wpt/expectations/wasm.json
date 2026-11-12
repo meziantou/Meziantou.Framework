@@ -1309,114 +1309,22 @@
     "total": 72
   },
   "wasm/jsapi/js-string/basic.any.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 5
   },
   "wasm/jsapi/js-string/basic.any.js#dedicatedworker": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 5
   },
   "wasm/jsapi/js-string/constants.any.js": {
-    "total": 40,
-    "failures": {
-      "constants": "FAIL",
-      "constants 1": "FAIL",
-      "constants 10": "FAIL",
-      "constants 11": "FAIL",
-      "constants 12": "FAIL",
-      "constants 13": "FAIL",
-      "constants 14": "FAIL",
-      "constants 15": "FAIL",
-      "constants 16": "FAIL",
-      "constants 17": "FAIL",
-      "constants 18": "FAIL",
-      "constants 19": "FAIL",
-      "constants 2": "FAIL",
-      "constants 20": "FAIL",
-      "constants 21": "FAIL",
-      "constants 22": "FAIL",
-      "constants 23": "FAIL",
-      "constants 24": "FAIL",
-      "constants 25": "FAIL",
-      "constants 26": "FAIL",
-      "constants 27": "FAIL",
-      "constants 28": "FAIL",
-      "constants 29": "FAIL",
-      "constants 3": "FAIL",
-      "constants 30": "FAIL",
-      "constants 31": "FAIL",
-      "constants 32": "FAIL",
-      "constants 33": "FAIL",
-      "constants 34": "FAIL",
-      "constants 35": "FAIL",
-      "constants 36": "FAIL",
-      "constants 37": "FAIL",
-      "constants 38": "FAIL",
-      "constants 39": "FAIL",
-      "constants 4": "FAIL",
-      "constants 5": "FAIL",
-      "constants 6": "FAIL",
-      "constants 7": "FAIL",
-      "constants 8": "FAIL",
-      "constants 9": "FAIL"
-    }
+    "total": 40
   },
   "wasm/jsapi/js-string/constants.any.js#dedicatedworker": {
-    "total": 40,
-    "failures": {
-      "constants": "FAIL",
-      "constants 1": "FAIL",
-      "constants 10": "FAIL",
-      "constants 11": "FAIL",
-      "constants 12": "FAIL",
-      "constants 13": "FAIL",
-      "constants 14": "FAIL",
-      "constants 15": "FAIL",
-      "constants 16": "FAIL",
-      "constants 17": "FAIL",
-      "constants 18": "FAIL",
-      "constants 19": "FAIL",
-      "constants 2": "FAIL",
-      "constants 20": "FAIL",
-      "constants 21": "FAIL",
-      "constants 22": "FAIL",
-      "constants 23": "FAIL",
-      "constants 24": "FAIL",
-      "constants 25": "FAIL",
-      "constants 26": "FAIL",
-      "constants 27": "FAIL",
-      "constants 28": "FAIL",
-      "constants 29": "FAIL",
-      "constants 3": "FAIL",
-      "constants 30": "FAIL",
-      "constants 31": "FAIL",
-      "constants 32": "FAIL",
-      "constants 33": "FAIL",
-      "constants 34": "FAIL",
-      "constants 35": "FAIL",
-      "constants 36": "FAIL",
-      "constants 37": "FAIL",
-      "constants 38": "FAIL",
-      "constants 39": "FAIL",
-      "constants 4": "FAIL",
-      "constants 5": "FAIL",
-      "constants 6": "FAIL",
-      "constants 7": "FAIL",
-      "constants 8": "FAIL",
-      "constants 9": "FAIL"
-    }
+    "total": 40
   },
   "wasm/jsapi/js-string/imports.any.js": {
-    "total": 1,
-    "failures": {
-      "imports": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/js-string/imports.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "imports": "FAIL"
-    }
+    "total": 1
   },
   "wasm/jsapi/jspi/js-promise-integration.any.js": {
     "total": 13,

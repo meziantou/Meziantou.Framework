@@ -162,6 +162,41 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
+    public async Task JsStringBuiltins_AreProvidedByTheHost()
+    {
+        var bytes = Wasm("""
+            (module
+              (type $chars (array (mut i16)))
+              (import "wasm:js-string" "length" (func $length (param externref) (result i32)))
+              (import "wasm:js-string" "concat" (func $concat (param externref externref) (result (ref extern))))
+              (import "wasm:js-string" "fromCharCodeArray" (func $fromCharCodeArray (param (ref null $chars) i32 i32) (result (ref extern))))
+              (import "wasm:js-string" "intoCharCodeArray" (func $intoCharCodeArray (param externref (ref null $chars) i32) (result i32)))
+              (import "strings" "Hello, " (global $hello (ref extern)))
+              (func (export "greet") (param $name externref) (result externref)
+                (call $concat (global.get $hello) (local.get $name)))
+              (func (export "length") (param externref) (result i32) (call $length (local.get 0)))
+              (func (export "copy") (param $s externref) (result externref)
+                (local $array (ref null $chars))
+                (local.set $array (array.new_default $chars (call $length (local.get $s))))
+                (drop (call $intoCharCodeArray (local.get $s) (local.get $array) (i32.const 0)))
+                (call $fromCharCodeArray (local.get $array) (i32.const 1) (array.len (local.get $array)))))
+            """);
+        var result = await RunAsync($$"""
+            async () => {
+              const options = { builtins: ['js-string'], importedStringConstants: 'strings' };
+              const module = new WebAssembly.Module({{bytes}}, options);
+              const { exports } = new WebAssembly.Instance(module, {});
+              let error;
+              try { exports.length(42); } catch (e) { error = e; }
+              return [WebAssembly.Module.imports(module).length, exports.greet('World'), exports.length('abc'), exports.copy('☺bc'),
+                error instanceof WebAssembly.RuntimeError, WebAssembly.validate({{bytes}}, options), WebAssembly.validate({{bytes}}, { builtins: [] })].join('|');
+            }
+            """);
+
+        Assert.Equal("0|Hello, World|3|bc|true|true|true", result);
+    }
+
+    [Fact]
     public async Task Memory_SharesItsBytesWithTheArrayBuffer()
     {
         var bytes = Wasm("""

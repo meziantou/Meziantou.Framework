@@ -3292,6 +3292,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool IsOffline { get => throw null; set { } }
         public bool IsPopup { get => throw null; }
         public bool IsVisible { get => throw null; set { } }
+        public bool ModelContextToolsReady { get => throw null; }
         public string Name { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.BrowsingContext? Opener { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions Options { get => throw null; }
@@ -3302,7 +3303,9 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public BrowsingContext(Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions? options = null) { }
         public void Discard() { }
         public void Dispose() { }
+        public System.Threading.Tasks.Task<string> ExecuteModelContextToolAsync(Meziantou.Framework.WebPlatform.Dom.Tool tool, string? inputArguments = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void ExitPointerLock() { }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.Tool> GetModelContextTools() => throw null;
         public Meziantou.Framework.WebPlatform.Dom.Document Navigate(System.Func<Meziantou.Framework.WebPlatform.Dom.Url, Meziantou.Framework.WebPlatform.Dom.DocumentResource?> resource) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.Document Navigate(System.Func<Meziantou.Framework.WebPlatform.Dom.Url, string> html) => throw null;
         public void Navigate(string url) { }
@@ -4490,6 +4493,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string LinkColor { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.HtmlCollection Links { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Location? Location { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ModelContext ModelContext { get => throw null; }
         public override string NodeName { get => throw null; }
         public override ushort NodeType { get => throw null; }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnAbort { get => throw null; set { } }
@@ -8769,6 +8773,47 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void Start() { }
     }
 
+    public sealed class ModelContext : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnToolActivated { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnToolCancel { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnToolChange { get => throw null; set { } }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0018", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public bool ToolsReady { get => throw null; }
+        public System.Threading.Tasks.Task<string> ExecuteTool(Meziantou.Framework.WebPlatform.Dom.Tool tool, object? inputObject = null, Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions? options = null) => throw null;
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.Tool>> GetTools(Meziantou.Framework.WebPlatform.Dom.ModelContextGetToolOptions? options = null) => throw null;
+        public System.Threading.Tasks.Task RegisterTool(Meziantou.Framework.WebPlatform.Dom.ModelContextTool tool, Meziantou.Framework.WebPlatform.Dom.ModelContextRegisterToolOptions? options = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0018", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public void WaitForToolsUntil(System.Threading.Tasks.Task promise) { }
+    }
+
+    public sealed class ModelContextExecuteToolOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
+    }
+
+    public sealed class ModelContextGetToolOptions
+    {
+        public System.Collections.Generic.IReadOnlyList<string>? FromOrigins { get => throw null; init { } }
+    }
+
+    public sealed class ModelContextRegisterToolOptions
+    {
+        public System.Collections.Generic.IReadOnlyList<string>? ExposedTo { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
+    }
+
+    public sealed class ModelContextTool
+    {
+        public Meziantou.Framework.WebPlatform.Dom.ToolAnnotations? Annotations { get => throw null; init { } }
+        public required string Description { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.ToolExecuteCallback Execute { get => throw null; init { } }
+        public object? InputSchema { get => throw null; init { } }
+        public required string Name { get => throw null; init { } }
+        public object? OutputSchema { get => throw null; init { } }
+        public string? Title { get => throw null; init { } }
+    }
+
     public class MouseEvent : Meziantou.Framework.WebPlatform.Dom.UIEvent
     {
         public bool AltKey { get => throw null; }
@@ -12636,6 +12681,60 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool? Force { get => throw null; init { } }
     }
 
+    public sealed class Tool
+    {
+        public object? Annotations { get => throw null; }
+        public string Description { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Document Document { get => throw null; }
+        public object? InputSchema { get => throw null; }
+        public string? InputSchemaJson { get => throw null; }
+        public string Name { get => throw null; }
+        public string Origin { get => throw null; }
+        public object? OutputSchema { get => throw null; }
+        public string? OutputSchemaJson { get => throw null; }
+        public string Title { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ToolAnnotations? ToolAnnotations { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Window? Window { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class ToolActivatedEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public string ToolName { get => throw null; }
+        public ToolActivatedEvent(string type, Meziantou.Framework.WebPlatform.Dom.ToolActivatedEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class ToolActivatedEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public string ToolName { get => throw null; init { } }
+    }
+
+    public sealed class ToolAnnotations
+    {
+        public bool ConsequentialHint { get => throw null; init { } }
+        public bool Debugging { get => throw null; init { } }
+        public bool ReadOnlyHint { get => throw null; init { } }
+        public bool UntrustedContentHint { get => throw null; init { } }
+    }
+
+    public sealed class ToolCancelEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public string ToolName { get => throw null; }
+        public ToolCancelEvent(string type, Meziantou.Framework.WebPlatform.Dom.ToolCancelEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class ToolCancelEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public string ToolName { get => throw null; init { } }
+    }
+
+    public delegate System.Threading.Tasks.Task<object?> ToolExecuteCallback(object inputObject, Meziantou.Framework.WebPlatform.Dom.ToolExecuteCallbackOptions options);
+
+    public sealed class ToolExecuteCallbackOptions
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.AbortSignal Signal { get => throw null; init { } }
+    }
+
     public sealed class Touch
     {
         public float AltitudeAngle { get => throw null; }
@@ -13414,6 +13513,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool WebAssemblyEnabled { get => throw null; init { } }
         public bool WebCryptoEnabled { get => throw null; init { } }
         public bool WebLocksEnabled { get => throw null; init { } }
+        public bool WebMcpEnabled { get => throw null; init { } }
         public bool WebShareEnabled { get => throw null; init { } }
         public bool WebSocketEnabled { get => throw null; init { } }
         public bool WebStorageEnabled { get => throw null; init { } }

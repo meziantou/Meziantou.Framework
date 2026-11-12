@@ -315,6 +315,7 @@
       "notifications",
       "vibration",
       "web-share",
+      "webmcp",
       "badging",
       "battery-status",
       "screen-wake-lock",

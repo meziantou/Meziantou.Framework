@@ -62,4 +62,7 @@ internal static class ExperimentalApis
 
     /// <summary>The canvas layers (https://github.com/whatwg/html/pull/9537): <c>beginLayer()</c> and <c>endLayer()</c> of the 2D contexts.</summary>
     public const string CanvasLayers = "WEBPLATEXP0017";
+
+    /// <summary>The readiness of the WebMCP tools (https://github.com/webmachinelearning/webmcp/pull/373): <c>ModelContext.waitForToolsUntil()</c> and <c>ModelContext.toolsReady</c>.</summary>
+    public const string WebMcpToolReadiness = "WEBPLATEXP0018";
 }

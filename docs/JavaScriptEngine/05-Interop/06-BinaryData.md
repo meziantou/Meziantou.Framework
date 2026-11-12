@@ -79,3 +79,6 @@ index that is a multiple of its size is aligned.
 growable block: it keeps its length when the block grows. [CreateGrowableSharedArrayBuffer](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateGrowableSharedArrayBuffer) creates a growable
 `SharedArrayBuffer` whose `grow()` calls your callback, which grows the block with
 [TryGrow](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.TryGrow) or throws.
+[TryGrowBy](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.TryGrowBy) adds a number of bytes to the block
+and returns its previous length in one atomic step: when several engines grow the same block at the same time, each one
+adds its own bytes, as the `grow(delta)` of a shared `WebAssembly.Memory` does.

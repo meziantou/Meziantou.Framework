@@ -676,6 +676,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public System.Span<byte> GetSpan() => throw null;
         public static Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock? TryCreate(int byteLength, int? maxByteLength) => throw null;
         public bool TryGrow(int newByteLength) => throw null;
+        public bool TryGrowBy(int deltaByteLength, out int previousByteLength) => throw null;
     }
 
     public readonly struct JsSourceLocation : System.IEquatable<Meziantou.Framework.JavaScriptEngine.JsSourceLocation>

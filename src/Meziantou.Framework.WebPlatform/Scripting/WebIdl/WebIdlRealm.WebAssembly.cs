@@ -686,14 +686,15 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             return previousSize;
         }
 
+        // The agents that share the memory can grow it concurrently: the block grows by the delta and returns its previous
+        // size atomically (mem_grow on a shared memory is atomic), so that no requested page is lost
         var dataBlock = memoryObject.SharedDataBlock!;
-        var byteLength = (ulong)Adapter.GetSharedDataBlockByteLength(dataBlock);
         var maxByteLength = memoryObject.Maximum!.Value * WasmPageSize;
-        if (delta > (maxByteLength - byteLength) / WasmPageSize || !Adapter.GrowSharedDataBlock(dataBlock, (int)(byteLength + (delta * WasmPageSize))))
+        if (delta > maxByteLength / WasmPageSize || !Adapter.GrowSharedDataBlock(dataBlock, (int)(delta * WasmPageSize), out var previousByteLength))
             throw CreateRangeError("The memory cannot grow");
 
         RefreshWasmMemoryBuffer(memoryObject);
-        return byteLength / WasmPageSize;
+        return (ulong)previousByteLength / WasmPageSize;
     }
 
     /// <summary>

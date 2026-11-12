@@ -471,7 +471,16 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
 
     public int GetSharedDataBlockByteLength(object dataBlock) => dataBlock is JsSharedDataBlock block ? block.ByteLength : 0;
 
-    public bool GrowSharedDataBlock(object dataBlock, int byteLength) => dataBlock is JsSharedDataBlock block && block.TryGrow(byteLength);
+    public bool GrowSharedDataBlock(object dataBlock, int deltaByteLength, out int previousByteLength)
+    {
+        if (dataBlock is not JsSharedDataBlock block)
+        {
+            previousByteLength = 0;
+            return false;
+        }
+
+        return block.TryGrowBy(deltaByteLength, out previousByteLength);
+    }
 
     public object CreateArrayBufferView(WebIdlBufferKind kind, object buffer, int byteOffset, int length) => Realm.CreateBufferView((EngineBufferKind)kind, (JsObject)buffer, byteOffset, length);
 

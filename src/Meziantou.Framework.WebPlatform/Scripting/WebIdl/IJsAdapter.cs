@@ -522,10 +522,16 @@ public interface IJsAdapter<TValue>
     int GetSharedDataBlockByteLength(object dataBlock) => 0;
 
     /// <summary>
-    /// Grows a growable data block returned by <see cref="GetSharedDataBlock"/> to <paramref name="byteLength"/> bytes.
-    /// Returns false when the block cannot grow. The default implementation returns false.
+    /// Grows a growable data block returned by <see cref="GetSharedDataBlock"/> by <paramref name="deltaByteLength"/> bytes
+    /// and returns its previous byte length in <paramref name="previousByteLength"/>, atomically: the agents that grow the
+    /// block concurrently each add their delta. Returns false when the block cannot grow. The default implementation
+    /// returns false.
     /// </summary>
-    bool GrowSharedDataBlock(object dataBlock, int byteLength) => false;
+    bool GrowSharedDataBlock(object dataBlock, int deltaByteLength, out int previousByteLength)
+    {
+        previousByteLength = 0;
+        return false;
+    }
 
     /// <summary>
     /// Creates a typed array or a <c>DataView</c> (<paramref name="kind"/>) of <paramref name="length"/> elements viewing

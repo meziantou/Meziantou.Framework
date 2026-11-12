@@ -69,10 +69,14 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
     // still writing to it. It is kept out of the pool like the GetBuffer array.
     private byte[]? _writerBuffer;
 
-    // The array an in-flight CopyToAsync is writing to its destination. The destination may read it until the write
-    // completes, so nothing gives it back to the shared pool meanwhile: SetLength and GetBuffer detach it like the
-    // GetBuffer array, and Dispose leaves it to CopyToAsync (it claims it by exchanging this field with null).
-    private byte[]? _copyBuffer;
+    // The arrays pending CopyToAsync writes are reading, one entry per write (overlapping copies can write the same
+    // array). The destination may read an array until its write completes, so nothing gives it back to the shared pool
+    // meanwhile: SetLength and GetBuffer detach it like the GetBuffer array, and Dispose moves it to
+    // _copyBuffersToReturn, from which the last pending write reading it returns it to the pool. A write can complete
+    // on another thread than the one disposing the stream, so both lists are only accessed under _copyBuffersLock.
+    private readonly Lock _copyBuffersLock = new();
+    private List<byte[]>? _copyBuffers;
+    private List<byte[]>? _copyBuffersToReturn;
 
     /// <summary>Initializes a new instance using <see cref="PooledMemoryStreamOptions.Default"/>.</summary>
     public PooledMemoryStream()
@@ -407,18 +411,18 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
             Locate(_position, out var segmentIndex, out var offset);
             var segment = _segments[segmentIndex];
             var chunk = (int)Math.Min(segment.Used - offset, _length - _position);
-            Volatile.Write(ref _copyBuffer, segment.Array);
+            lock (_copyBuffersLock)
+            {
+                (_copyBuffers ??= []).Add(segment.Array);
+            }
+
             try
             {
                 await destination.WriteAsync(segment.Array.AsMemory(offset, chunk), cancellationToken).ConfigureAwait(false);
             }
             finally
             {
-                // Dispose ran while the destination could still read the array, and left it to this method
-                if (Interlocked.Exchange(ref _copyBuffer, value: null) is null)
-                {
-                    ReturnToPool(segment.Array);
-                }
+                CompleteCopyWrite(segment.Array);
             }
 
             EnsureOpen();
@@ -526,25 +530,20 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         {
             _isOpen = false;
 
-            // A CopyToAsync write may still be reading this array: the copy returns it to the pool once it completes
-            var inFlightCopyBuffer = Interlocked.Exchange(ref _copyBuffer, value: null);
-            foreach (var segment in _segments)
+            lock (_copyBuffersLock)
             {
-                if (!ReferenceEquals(segment.Array, inFlightCopyBuffer))
-                    ReturnToPool(segment.Array);
+                foreach (var segment in _segments)
+                    ReturnToPoolUnlessCopyIsPending(segment.Array);
+
+                if (_detachedBuffers is not null)
+                {
+                    foreach (var array in _detachedBuffers)
+                        ReturnToPoolUnlessCopyIsPending(array);
+                }
             }
 
             _segments.Clear();
-            if (_detachedBuffers is not null)
-            {
-                foreach (var array in _detachedBuffers)
-                {
-                    if (!ReferenceEquals(array, inFlightCopyBuffer))
-                        ReturnToPool(array);
-                }
-
-                _detachedBuffers = null;
-            }
+            _detachedBuffers = null;
 
             _exposedBuffer = null;
             _writerBuffer = null;
@@ -772,7 +771,7 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
                 {
                     var array = _segments[j].Array;
                     _segments.RemoveAt(j);
-                    if (ReferenceEquals(array, _copyBuffer))
+                    if (IsCopyPending(array))
                     {
                         // Unlike the arrays below, it must not be reused as storage: the next writes would change
                         // the bytes the destination of the copy has not read yet
@@ -878,7 +877,76 @@ public sealed class PooledMemoryStream : MemoryStream, IBufferWriter<byte>
         }
     }
 
-    private bool IsHandedOut(byte[] array) => ReferenceEquals(array, _exposedBuffer) || ReferenceEquals(array, _writerBuffer) || ReferenceEquals(array, _copyBuffer);
+    private bool IsHandedOut(byte[] array) => ReferenceEquals(array, _exposedBuffer) || ReferenceEquals(array, _writerBuffer) || IsCopyPending(array);
+
+    private bool IsCopyPending(byte[] array)
+    {
+        lock (_copyBuffersLock)
+        {
+            return _copyBuffers is not null && ContainsReference(_copyBuffers, array);
+        }
+    }
+
+    // Called by Dispose, under _copyBuffersLock: a pending CopyToAsync write may still be reading the array, so the last
+    // one to complete returns it to the pool instead
+    private void ReturnToPoolUnlessCopyIsPending(byte[] array)
+    {
+        if (_copyBuffers is not null && ContainsReference(_copyBuffers, array))
+        {
+            (_copyBuffersToReturn ??= []).Add(array);
+        }
+        else
+        {
+            ReturnToPool(array);
+        }
+    }
+
+    private void CompleteCopyWrite(byte[] array)
+    {
+        var returnToPool = false;
+        lock (_copyBuffersLock)
+        {
+            RemoveReference(_copyBuffers!, array);
+
+            // Dispose ran while the destination could still read the array, and left it to the last pending write
+            if (_copyBuffersToReturn is not null && !ContainsReference(_copyBuffers!, array))
+            {
+                returnToPool = RemoveReference(_copyBuffersToReturn, array);
+            }
+        }
+
+        if (returnToPool)
+        {
+            ReturnToPool(array);
+        }
+    }
+
+    // List<T>.Contains and Remove compare arrays with EqualityComparer<byte[]>.Default, which is reference equality,
+    // but spell it out: the ownership of pooled arrays must never depend on a value comparison
+    private static bool ContainsReference(List<byte[]> arrays, byte[] array)
+    {
+        foreach (var item in arrays)
+        {
+            if (ReferenceEquals(item, array))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool RemoveReference(List<byte[]> arrays, byte[] array)
+    {
+        for (var i = 0; i < arrays.Count; i++)
+        {
+            if (ReferenceEquals(arrays[i], array))
+            {
+                arrays.RemoveAt(i);
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private void CopyAllTo(Span<byte> destination)
     {

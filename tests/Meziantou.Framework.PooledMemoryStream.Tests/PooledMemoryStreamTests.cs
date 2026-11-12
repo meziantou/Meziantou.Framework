@@ -739,6 +739,39 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Fact]
+    public async Task CopyToAsync_OverlappingCopies_ArrayIsNotReturnedWhileTheStreamOwnsIt()
+    {
+        // Both copies start with a pending write of the same array. Before the fix, the second write to complete
+        // returned that array to the pool although the stream still owned it.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4229] };
+        var data = CreateData(4229 * 2, seed: 25);
+        await using var stream = new PooledMemoryStream(options);
+        stream.Write(data);
+        stream.Position = 0;
+
+        using var firstDestination = new BlockingWriteStream();
+        using var secondDestination = new BlockingWriteStream();
+#pragma warning disable CA2025 // False positive: the copies are awaited before the destinations are disposed
+        var firstCopy = stream.CopyToAsync(firstDestination);
+        var secondCopy = stream.CopyToAsync(secondDestination);
+#pragma warning restore CA2025
+        await firstDestination.WriteStarted;
+        await secondDestination.WriteStarted;
+
+        firstDestination.CompleteWrite();
+        await firstCopy;
+        secondDestination.CompleteWrite();
+        await secondCopy;
+
+        using (var other = new PooledMemoryStream(options))
+        {
+            other.Write(CreateData(4229 * 2, seed: 26));
+        }
+
+        Assert.Equal(data, stream.ToArray());
+    }
+
+    [Fact]
     public async Task CopyToAsync_TruncatedDuringWrite_ArrayIsNotRentedByAnotherStream()
     {
         var options = new PooledMemoryStreamOptions { BufferSizes = [4219] };

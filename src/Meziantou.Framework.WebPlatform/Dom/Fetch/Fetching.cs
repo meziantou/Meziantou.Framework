@@ -384,13 +384,16 @@ internal static class Fetching
             }
         }
 
+        // https://wicg.github.io/signature-based-sri/#verify-signature-assertions: the signatures of the response
+        var signatures = response.IsNetworkError ? null : (IntegritySignatureResult?)IntegritySignatures.Verify(new IntegritySignatureContext(request.CurrentUrl, request.Method, request.HeaderList, internalResponse.Status, internalResponse.HeaderList), GetHttpCacheTime(request));
+
         // Step 19: a response blocked by the content security policies (https://w3c.github.io/webappsec-csp/#should-block-response),
         // due to its MIME type or due to nosniff (https://fetch.spec.whatwg.org/#should-response-to-request-be-blocked-due-to-mime-type?)
         if (!response.IsNetworkError && !request.IsSpeculative)
         {
             // The post-request check of the script directives reports the hash of the scripts (https://w3c.github.io/webappsec-csp/#script-post-request)
             // (not for a response that fails its integrity metadata: browsers do not report it)
-            if (request.Integrity.Length == 0 || SubresourceIntegrity.Matches(response.Body ?? [], response.Type is FetchResponseType.Opaque or FetchResponseType.OpaqueRedirect, request.Integrity))
+            if (request.Integrity.Length == 0 || SubresourceIntegrity.Matches(response.Body ?? [], response.Type is FetchResponseType.Opaque or FetchResponseType.OpaqueRedirect, request.Integrity, signatures))
             {
                 ContentSecurityPolicyReportHash.PotentiallyReportHash(request, response);
             }
@@ -402,8 +405,14 @@ internal static class Fetching
         if (!response.IsNetworkError && DocumentResource.IsBlocked(internalResponse.HeaderList, request.Destination))
             return FetchResponse.NetworkError();
 
-        // Step 22: the integrity metadata (https://w3c.github.io/webappsec-subresource-integrity/#does-response-match-metadatalist)
-        if (!response.IsNetworkError && request.Integrity.Length > 0 && !SubresourceIntegrity.Matches(response.Body ?? [], response.Type is FetchResponseType.Opaque or FetchResponseType.OpaqueRedirect, request.Integrity))
+        // https://wicg.github.io/signature-based-sri/#server-initiated-integrity-checks: a response whose signature is not valid
+        // is a network error
+        if (signatures is { Failed: true })
+            return FetchResponse.NetworkError();
+
+        // Step 22: the integrity metadata (https://w3c.github.io/webappsec-subresource-integrity/#does-response-match-metadatalist),
+        // and the public keys of the signatures (https://wicg.github.io/signature-based-sri/#client-initiated-integrity-checks)
+        if (!response.IsNetworkError && request.Integrity.Length > 0 && !SubresourceIntegrity.Matches(response.Body ?? [], response.Type is FetchResponseType.Opaque or FetchResponseType.OpaqueRedirect, request.Integrity, signatures))
             return FetchResponse.NetworkError();
 
         // The digests of the Unencoded-Digest header of the response (https://wicg.github.io/signature-based-sri/#verify-unencoded-digest-assertions):
@@ -941,6 +950,13 @@ internal static class Fetching
 
         // The end of step 8: the client hints (https://wicg.github.io/client-hints-infrastructure/#fetch)
         ClientHints.AppendToRequest(request, headers);
+
+        // https://wicg.github.io/signature-based-sri/#abstract-opdef-append-the-accept-signature-header: the public keys of the
+        // integrity metadata
+        if (request.Integrity.Length > 0 && !FetchHeaders.Contains(headers, "Accept-Signature") && IntegritySignatures.GetAcceptSignature(request.Integrity) is { } acceptSignature)
+        {
+            headers.Add(new("Accept-Signature", acceptSignature));
+        }
 
         // https://w3c.github.io/gpc/#the-sec-gpc-header-field-for-http-requests
         GlobalPrivacyControlOptions.AppendToRequest(request, headers);

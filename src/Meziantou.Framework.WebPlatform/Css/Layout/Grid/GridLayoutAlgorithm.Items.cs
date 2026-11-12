@@ -172,6 +172,13 @@ internal sealed partial class GridLayoutAlgorithm
                 // limited by the max track sizing function (which could be the argument to a fit-content() track sizing function)
                 // if that is fixed and ultimately floored by its minimum contribution"; for a spanning item, "the sum of the fixed
                 // max track sizing functions of any tracks it spans, and is applied if it only spans such tracks"
+                // As in Blink, under a min-content constraint, an item whose used minimum size is not content-based (a minimum size
+                // that is not auto, or the automatic minimum size 0 of a scroll container) contributes its minimum contribution: it
+                // does not contribute its contents nor the size transferred through its aspect ratio (WPT
+                // css/css-sizing/aspect-ratio/grid-aspect-ratio-027.html)
+                if (kind == GridContributionKind.LimitedMinContent && contributions.DependsOnContainingBlock && (!contributions.MinSizeIsAuto || contributions.IsScrollable))
+                    return GetMinimumContribution(item, contributions) + extra;
+
                 var value = (kind == GridContributionKind.LimitedMinContent ? contributions.MinContent : contributions.MaxContent) + extra;
                 var tracks = GetTracks(item.Axis);
                 var limit = GetGuttersWithin(item.Axis, item.Start, item.End);

@@ -192,6 +192,10 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
                     var offset = CurrentUSNLength; // Skip currentUSN field
                     while (offset < entryData.Length)
                     {
+                        // The remaining bytes must hold a header before it can be read
+                        if (entryData.Length - offset < headerLength)
+                            throw new InvalidDataException($"The change journal returned {entryData.Length - offset} trailing bytes at offset {offset}, which cannot hold a record header");
+
                         var entryPointer = bufferPointer + offset;
                         var header = Unsafe.ReadUnaligned<USN_RECORD_COMMON_HEADER>((void*)entryPointer);
 

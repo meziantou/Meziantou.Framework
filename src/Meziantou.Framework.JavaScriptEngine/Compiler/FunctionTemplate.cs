@@ -29,6 +29,7 @@ internal sealed class FunctionTemplate
     private int[] _callSites = [];
     private string[]? _parameterNames;
     private int _completionRegister = -1;
+    private Interpreter.JitCode? _jitCode;
 
     public required string Name { get; init; }
 
@@ -62,6 +63,33 @@ internal sealed class FunctionTemplate
 
     /// <summary>Gets the triples (pc, callee start, callee end) of the calls, sorted by pc (the callee of the error messages).</summary>
     public int[] CallSites { get => _callSites; init => _callSites = value; }
+
+    /// <summary>Gets the .NET code compiled from the bytecode once the function is hot (<see cref="Interpreter.JitCompiler"/>), or null.</summary>
+    public Interpreter.JitCode? JitCode => Volatile.Read(ref _jitCode);
+
+    /// <summary>Gets or sets the number of calls and loop iterations counted to decide when to compile the function (not synchronized: an estimate).</summary>
+    public int HotCount { get; set; }
+
+    /// <summary>Gets whether the compilation to .NET code was attempted (the function is not counted anymore).</summary>
+    public bool IsJitCompilationAttempted { get; private set; }
+
+    /// <summary>
+    /// Compiles the bytecode to .NET code; returns null when the code cannot be compiled. Two threads can compile the
+    /// same function at the same time: the code is the same, the first one is kept.
+    /// </summary>
+    internal Interpreter.JitCode? CompileJitCode()
+    {
+        if (!IsJitCompilationAttempted)
+        {
+            IsJitCompilationAttempted = true;
+            if (Interpreter.JitCompiler.Compile(this) is { } jitCode)
+            {
+                Interlocked.CompareExchange(ref _jitCode, jitCode, comparand: null);
+            }
+        }
+
+        return JitCode;
+    }
 
     public required SourceText Source { get; init; }
 

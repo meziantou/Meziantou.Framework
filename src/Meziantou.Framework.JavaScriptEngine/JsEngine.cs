@@ -24,6 +24,8 @@ public sealed partial class JsEngine : IDisposable
         Options = (options ?? new JsEngineOptions()).CreateEngineCopy();
         HostHooks = Options.Host ?? JsHost.Default;
         ShapeRoots = new ShapeRoots(this);
+        IsCompilationEnabled = Options.EnableCompilation && Interpreter.JitCompiler.IsSupported;
+        CompilationThreshold = Options.CompilationThreshold;
     }
 
     /// <summary>
@@ -46,6 +48,12 @@ public sealed partial class JsEngine : IDisposable
 
     /// <summary>Gets the free frames of the ordinary calls.</summary>
     internal Interpreter.FramePool FramePool { get; } = new();
+
+    /// <summary>Gets whether the hot functions run compiled to .NET code (<see cref="JsEngineOptions.EnableCompilation"/>, and the runtime can generate code).</summary>
+    internal bool IsCompilationEnabled { get; }
+
+    /// <summary>Gets the number of calls and loop iterations after which a function is compiled (<see cref="JsEngineOptions.CompilationThreshold"/>).</summary>
+    internal int CompilationThreshold { get; }
 
     /// <summary>Gets the roots of the shapes of the objects of the engine.</summary>
     internal ShapeRoots ShapeRoots { get; }

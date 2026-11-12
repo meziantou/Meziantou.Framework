@@ -21,6 +21,8 @@ public sealed class JsEngineOptions
     private bool _isEngineCopy;
     private bool _enableV8StackTraceApi;
     private bool _allowStringCompilation = true;
+    private bool _enableCompilation = true;
+    private int _compilationThreshold = DefaultCompilationThreshold;
     private JsHost? _host;
     private JsModuleLoader? _moduleLoader;
     private string _defaultLocale = "en-US";
@@ -88,6 +90,51 @@ public sealed class JsEngineOptions
         {
             EnsureNotEngineCopy();
             _allowStringCompilation = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether the functions that run often are compiled to .NET code, which the .NET JIT compiles to machine
+    /// code. The other functions are interpreted. The compilation is skipped where the runtime cannot generate code (Native
+    /// AOT, see <see cref="System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported"/>), and for the code
+    /// compiled for a <see cref="Debugger"/>. The default is true.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The options are the ones of an engine (<see cref="JsEngine.Options"/>).</exception>
+    public bool EnableCompilation
+    {
+        get => _enableCompilation;
+        set
+        {
+            EnsureNotEngineCopy();
+            _enableCompilation = value;
+        }
+    }
+
+    /// <summary>The default value of <see cref="CompilationThreshold"/>.</summary>
+    internal const int DefaultCompilationThreshold = 1000;
+
+    /// <summary>
+    /// Gets or sets how many times a function runs before it is compiled to .NET code (<see cref="EnableCompilation"/>): the
+    /// calls of the function and the iterations of its loops are counted, and the function is compiled when the count
+    /// reaches the threshold. A lower threshold compiles more functions, sooner: the code is faster once compiled, but the
+    /// compilation takes time and memory, which the functions that run a few times do not recover. 1 compiles every
+    /// function on its first call. The default is 1000.
+    /// </summary>
+    /// <remarks>
+    /// The count is kept with the code of the function: the engines that run the same <see cref="JsPreparedScript"/> count
+    /// together, and a function compiled by one of them runs compiled in the others (unless their
+    /// <see cref="EnableCompilation"/> is false).
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is less than 1.</exception>
+    /// <exception cref="InvalidOperationException">The options are the ones of an engine (<see cref="JsEngine.Options"/>).</exception>
+    public int CompilationThreshold
+    {
+        get => _compilationThreshold;
+        set
+        {
+            EnsureNotEngineCopy();
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+            _compilationThreshold = value;
         }
     }
 
@@ -192,6 +239,8 @@ public sealed class JsEngineOptions
             Host = Host,
             EnableV8StackTraceApi = EnableV8StackTraceApi,
             AllowStringCompilation = AllowStringCompilation,
+            EnableCompilation = EnableCompilation,
+            CompilationThreshold = CompilationThreshold,
             Debugger = Debugger,
             _isEngineCopy = true,
         };

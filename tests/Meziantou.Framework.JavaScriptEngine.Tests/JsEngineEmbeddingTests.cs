@@ -279,6 +279,8 @@ public sealed class JsEngineEmbeddingTests
             Host = new JsHost(),
             EnableV8StackTraceApi = true,
             AllowStringCompilation = false,
+            EnableCompilation = false,
+            CompilationThreshold = 7,
             Debugger = new NoDebugger(),
         };
 

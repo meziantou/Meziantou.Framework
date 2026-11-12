@@ -138,3 +138,48 @@ Assert.Equal(7, error.Column);
 - [JsPreparedScript.Parse](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript.Parse) throws the same error as a [JsSyntaxErrorException](cref:Meziantou.Framework.JavaScriptEngine.JsSyntaxErrorException).
 - `realm.Execute(string)` does not throw a [JsSyntaxErrorException](cref:Meziantou.Framework.JavaScriptEngine.JsSyntaxErrorException): a script that is not valid throws a [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException)
   whose value is a `SyntaxError`, as in JavaScript.
+
+## How the code runs
+
+The engine compiles the source to bytecode, which an interpreter runs. A function that runs often, 1,000 calls or loop
+iterations by default, is then compiled to .NET code, which the .NET JIT compiles to machine code. The compiled
+code runs the same instructions without the dispatch of the interpreter: a loop on numbers runs about three times
+faster, and code that mostly calls the built-ins runs at their speed either way.
+
+- The compilation changes nothing a script can observe: the results, the errors and their locations, the stack traces
+  and the [limits](../07-LimitsAndSandboxing.md) are the same as with the interpreter.
+- The compiled code belongs to the compiled script, like the bytecode: a function of a
+  [JsPreparedScript](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript) is compiled once for all the engines
+  and the threads that run it.
+- The compilation is skipped with Native AOT, where no code can be generated at run time, for the code compiled for a
+  [debugger](05-Debugging.md), and for the very large functions: their code is interpreted.
+
+[CompilationThreshold](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.CompilationThreshold) sets how many
+calls and loop iterations make a function hot. Lower it when your scripts run the same functions many times from the
+start, such as a computation run once per request: they reach their compiled speed sooner. Raise it when the scripts
+run many functions a few times each: fewer functions pay for a compilation they do not recover. The engines that run the
+same [JsPreparedScript](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript) count together.
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_CompilationThreshold;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The functions of this engine are compiled after 100 calls or loop iterations, instead of 1000
+using var engine = new JsEngine(new JsEngineOptions { CompilationThreshold = 100 });
+var realm = engine.CreateRealm();
+var result = realm.Execute("function square(x) { return x * x; } let sum = 0; for (let i = 0; i < 1_000; i++) { sum += square(i); } sum");
+Assert.Equal(332_833_500, result.AsNumber());
+```
+<!-- endref -->
+
+Set [EnableCompilation](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.EnableCompilation) to false to only
+interpret the code, for instance when the scripts are short and run once, so that the compilation is not worth its
+time:
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_DisableCompilation;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The code of this engine is only interpreted: the hot functions are not compiled to .NET code
+using var engine = new JsEngine(new JsEngineOptions { EnableCompilation = false });
+var realm = engine.CreateRealm();
+var result = realm.Execute("let sum = 0; for (let i = 0; i < 100_000; i++) { sum += i; } sum");
+Assert.Equal(4_999_950_000, result.AsNumber());
+```
+<!-- endref -->

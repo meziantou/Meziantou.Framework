@@ -7,6 +7,8 @@ by test262 (`tests/Meziantou.Framework.JavaScriptEngine.Test262`).
 
 ```
 source text ──Parsing/JsParser──▶ Ast (Program, nodes) ──Compiler──▶ bytecode (FunctionTemplate) ──Interpreter──▶ values
+                                                                              │                            ▲
+                                                                              └─JitCompiler (hot)─▶ .NET code (DynamicMethod)
 ```
 
 | Folder | Content |
@@ -262,6 +264,21 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   instruction, they return the new stack pointer). Keep the loop small: a big method makes the JIT spill `pc`/`sp`,
   zero a large frame and stop inlining. The slow paths are calls that take values (no `ref` to the locals of the loop).
   `JsValue.Store`/`StoreNumber` skip the write barrier when a number overwrites a number.
+- Compiled code (`Interpreter/JitCompiler.cs`, helpers in `JsInterpreter.Jit.cs`): a function whose calls and loop
+  iterations reach `JsEngineOptions.CompilationThreshold` (`FunctionTemplate.HotCount`, counted when the interpreter
+  enters the frame and at the backward jumps) is compiled once to a `DynamicMethod` (`FunctionTemplate.JitCode`, shared
+  by the engines), when `RuntimeFeature.IsDynamicCodeSupported`. It is an accelerator of the interpreter, not a separate
+  model: the state stays in the `Frame`, the depth of the operand stack is known at each instruction (so the slots are
+  constant offsets of `ref values[stackBase]`), and each instruction is a call of a small `Jit*` helper that the .NET JIT
+  inlines, with the same semantics as the dispatch loop, or of `ExecuteCold`. The compiled code returns to the
+  interpreter (`frame.Pc` is the instruction, `frame.Sp` its stack) at the instructions that change the running frame
+  (calls that push a frame, return, throw, yield, await) and on the paths the interpreter handles without a .NET
+  exception (the TypeError of a property of null...): the calls of closures still push their frames in the loop of the
+  interpreter, with no .NET recursion. The interpreter enters the compiled code again at an entry point (the start, the
+  handlers, after a call, a yield or an await, the targets of the backward jumps: on-stack replacement), which checks
+  `frame.Sp` and returns at once when it is not the expected depth. Any change to the semantics of an instruction of
+  the dispatch loop must be made in its `Jit*` helper too: `InterpreterTests.Run` and the `javascript-compiled-code`
+  fuzz target compare both. The bytecode compiled for a debugger (with `DebugStatement` instructions) stays interpreted.
 - Frames: the ordinary calls rent their `Frame` from `engine.FramePool` (the arguments are copied after the registers in
   `Frame.Values`); generators, async functions, scripts, modules and eval code have frames of their own. Nothing may keep
   a reference to a pooled frame after its call.

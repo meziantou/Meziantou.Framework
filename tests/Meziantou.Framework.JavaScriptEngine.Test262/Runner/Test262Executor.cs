@@ -39,6 +39,22 @@ internal static class Test262Executor
         return results;
     }
 
+    /// <summary>
+    /// Whether the test runs with every function compiled to .NET code on its first call (the compiled code of the hot
+    /// functions), or interpreted: half of the tests each, chosen by a stable hash of their id, so that test262 checks
+    /// both without running twice.
+    /// </summary>
+    private static bool IsCompiledTest(Test262Test test)
+    {
+        var hash = 2166136261u;
+        foreach (var c in test.Id)
+        {
+            hash = (hash ^ c) * 16777619u;
+        }
+
+        return ((hash >> 16) & 1) == 0;
+    }
+
     /// <summary>Runs the test in a mode; returns null when it passes, or the reason of the failure.</summary>
     /// <remarks>
     /// The method is compiled optimized up front, without dynamic PGO: the .NET 11 RC2 JIT crashes the process (in
@@ -55,6 +71,8 @@ internal static class Test262Executor
         {
             CancellationToken = cancellation.Token,
             RecursionLimit = 1_000,
+            EnableCompilation = IsCompiledTest(test),
+            CompilationThreshold = 1,
             TimeZone = "UTC",
             ModuleLoader = loader,
         });

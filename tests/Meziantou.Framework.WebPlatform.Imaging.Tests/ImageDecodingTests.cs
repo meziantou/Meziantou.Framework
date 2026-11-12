@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Dom.FileApi;
 using Meziantou.Framework.WebPlatform.Rendering;
+using Meziantou.Framework.WebPlatform.Tests.Scripting;
 using Meziantou.Framework.Imaging;
 using ImagingFormats = Meziantou.Framework.Imaging.Formats;
 using ImagingMetadata = Meziantou.Framework.Imaging.Metadata;
@@ -103,6 +104,55 @@ public sealed class ImageDecodingTests : IDisposable
 
         Assert.Equal(16, pixels.Length);
         Assert.Equal(0u, frame.DisplayWidth);
+    }
+
+    [Fact]
+    public async Task ImageDecoder_KnowsThatAStreamedAnimationIsAnimated()
+    {
+        // The GIF of 3 frames arrives 8 bytes at a time: its first frame is complete long before the second one arrives
+        var engine = TestScriptEngines.Create();
+        try
+        {
+            var context = _pages.Load("""
+                <script>
+                  const bytes = Uint8Array.from(atob('R0lGODlhAgACAPEAAAAAAP8AAAD/AAAA/yH5BAkUAAAALAAAAAACAAIAAAIDjKMAACH5BAkUAAIALAAAAAACAAIAAAIDlKUAACwAAAAAAgACAAACA5SlAAA7'), c => c.charCodeAt(0));
+                  let offset = 0;
+                  const data = new ReadableStream({
+                    pull(controller) {
+                      if (offset >= bytes.length) {
+                        controller.close();
+                        return;
+                      }
+
+                      controller.enqueue(bytes.slice(offset, offset + 8));
+                      offset += 8;
+                    },
+                  }, { highWaterMark: 0 });
+                  const decoder = new ImageDecoder({ type: 'image/gif', data });
+                  decoder.tracks.ready.then(() => {
+                    const track = decoder.tracks.selectedTrack;
+                    document.title = track.animated + ' ' + track.repetitionCount;
+                  }, e => document.title = e.name);
+                </script>
+                """, scriptEngine: engine);
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            while (context.Document.Title.Length == 0)
+            {
+                Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30), "The tracks were not established");
+                using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                await context.EventLoop.RunUntilIdleAsync(cancellation.Token);
+                if (context.Document.Title.Length == 0)
+                {
+                    await Task.Delay(1);
+                }
+            }
+
+            Assert.Equal("true 0", context.Document.Title);
+        }
+        finally
+        {
+            TestScriptEngines.Dispose(engine);
+        }
     }
 
     [Fact]

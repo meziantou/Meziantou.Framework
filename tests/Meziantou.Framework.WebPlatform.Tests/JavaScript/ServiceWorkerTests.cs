@@ -539,6 +539,32 @@ public sealed class ServiceWorkerTests : IDisposable
         Assert.Equal("TypeError", TestScriptEngines.Evaluate(_engine, document.DefaultView!, "window.error"));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CookieChangeSubscriptions_OfAThirdPartyRegistrationDoNotObserveBlockedCookies(bool blockThirdPartyCookies)
+    {
+        var cookieJar = new CookieJar { BlockThirdPartyCookies = blockThirdPartyCookies };
+        var recorder = new CookieChangeRecorder();
+        cookieJar.AddListener(recorder);
+        Assert.True(cookieJar.SetCookie("https://example.com/dir/page.html", "a=1; SameSite=None; Secure; Path=/dir"));
+        var change = Assert.Single(recorder.Changes);
+        var subscription = new CookieChangeSubscription(Name: null, "https://example.com/dir/");
+
+        // A registration of example.com in a page of example.com, then in a frame of example.com in a page of top.example
+        var firstParty = new StorageKey("https://example.com", PartitionNonce: null);
+        var thirdParty = new StorageKey("https://example.com", PartitionNonce: null, TopLevelSite: "https://top.example");
+        Assert.True(ServiceWorkerCookieChangeListener.IsObserved(cookieJar, firstParty, change.Cookie, subscription));
+        Assert.Equal(!blockThirdPartyCookies, ServiceWorkerCookieChangeListener.IsObserved(cookieJar, thirdParty, change.Cookie, subscription));
+    }
+
+    private sealed class CookieChangeRecorder : ICookieChangeListener
+    {
+        public List<CookieChange> Changes { get; } = [];
+
+        public void OnCookiesChanged(CookieJar cookieJar, IReadOnlyList<CookieChange> changes) => Changes.AddRange(changes);
+    }
+
     [Fact]
     public async Task Registrations_ArePersistedInTheBackend()
     {

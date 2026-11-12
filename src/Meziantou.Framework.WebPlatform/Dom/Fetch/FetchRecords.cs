@@ -157,6 +157,14 @@ internal sealed partial class FetchRequest
     public List<KeyValuePair<string, string>> HeaderList { get; set; } = [];
 
     /// <summary>
+    /// The headers of the request as the last HTTP-network-or-cache fetch gave them (<see cref="HeaderList"/> with the
+    /// headers the fetch adds to its copy of the request: <c>Origin</c>, <c>Accept-Signature</c>, the client hints...),
+    /// or null before it: the request components (<c>;req</c>) of the signatures of the response are those the server
+    /// received (https://wicg.github.io/signature-based-sri/).
+    /// </summary>
+    public IReadOnlyList<KeyValuePair<string, string>>? SentHeaderList { get; set; }
+
+    /// <summary>
     /// https://fetch.spec.whatwg.org/#fetch-params-process-early-hints-response: the steps called with the headers of the first
     /// <c>103</c> (Early Hints) response of the request, from a task of the event loop, or null (only the navigations of the
     /// top-level browsing contexts process them).

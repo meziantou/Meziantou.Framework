@@ -202,7 +202,7 @@ public sealed class ImageDecoder
 
         if (bytes is null)
         {
-            var readableStream = (JsReadableStream)init.Data!;
+            var readableStream = (JsReadableStream)init.Data;
             // 18. The chunks of the stream are appended to the data as they arrive (the first chunks may already be queued
             // in the stream: they are read synchronously)
             Configure();
@@ -447,9 +447,16 @@ public sealed class ImageDecoder
             return;
         }
 
-        // 4-5. The track of the image: an animation, or a still image (the repetition count of a still image is 0)
+        // 4-5. The track of the image: an animation, or a still image (the repetition count of a still image is 0). The
+        // container can declare an animation before its second frame arrives (the acTL chunk of an APNG image, the brand
+        // of an AVIF image sequence...). While the data of a format that can be animated is incomplete and shows no
+        // animation yet, it is not enough to know the track: an animation streamed one chunk at a time would otherwise
+        // be established as a still image, and its track does not change afterwards.
         var frameCount = (uint)codec.FrameCount;
-        var animated = frameCount > 1;
+        var animated = frameCount > 1 || ImageMetadata.IsAnimated(_data.AsSpan(0, _length));
+        if (!animated && !_complete && CanBeAnimated(_essence))
+            return;
+
         var repetitionCount = !animated ? 0f : codec.RepetitionCount < 0 ? float.PositiveInfinity : codec.RepetitionCount;
         var tracks = new List<ImageTrack> { new(this, Tracks, animated, frameCount, repetitionCount) };
         _frameCounts = [frameCount];
@@ -469,6 +476,10 @@ public sealed class ImageDecoder
             }
         });
     }
+
+    /// <summary>Whether images of a MIME type can be animations: their track is only known once they show an animation, or once their data is complete.</summary>
+    private static bool CanBeAnimated(string essence)
+        => essence is "image/gif" or "image/png" or "image/apng" or "image/webp" or "image/avif" or "image/jxl";
 
     /// <summary>https://w3c.github.io/webcodecs/#imagedecoder-get-default-selected-track-index: the image has no other track than its primary track.</summary>
     private int GetDefaultSelectedTrackIndex(List<ImageTrack> tracks)

@@ -24,6 +24,14 @@ internal sealed class CompressionDictionaries
     /// <summary>The content codings of the dictionaries, sent in the <c>Accept-Encoding</c> header with a dictionary.</summary>
     internal const string AcceptEncoding = "dcb, dcz";
 
+    /// <summary>
+    /// The most bytes the dictionaries of a loader keep, all partitions together: registering a dictionary removes the
+    /// dictionaries registered the longest ago until the others fit (https://www.rfc-editor.org/rfc/rfc9842#section-2.1:
+    /// a client can limit the dictionaries it keeps). Each dictionary is at most <see cref="HttpCache.MaxBodyLength"/>
+    /// bytes, as the bodies the HTTP cache stores.
+    /// </summary>
+    internal const long MaxTotalLength = 4L * HttpCache.MaxBodyLength;
+
     private static readonly ConditionalWeakTable<DocumentLoader, CompressionDictionaries> Stores = [];
 
     private readonly Lock _lock = new();
@@ -149,11 +157,12 @@ internal sealed class CompressionDictionaries
     /// Registers the dictionary of a response whose <c>Use-As-Dictionary</c> header is valid
     /// (https://www.rfc-editor.org/rfc/rfc9842#section-2.1): it replaces the dictionary of the same origin, the same
     /// <c>match</c> and the same <c>match-dest</c> in the partition. A response that cannot be stored (<c>no-store</c>) or
-    /// that is not fresh is not registered.
+    /// that is not fresh, or whose body is longer than <see cref="HttpCache.MaxBodyLength"/>, is not registered. The oldest
+    /// dictionaries are removed while the dictionaries take more than <see cref="MaxTotalLength"/> bytes.
     /// </summary>
     public void Register(string partition, UrlRecord url, CompressionDictionaryOptions options, byte[] content, int status, IReadOnlyList<KeyValuePair<string, string>> headers, DateTimeOffset requestTime, DateTimeOffset responseTime)
     {
-        if (HttpCache.ParseCacheControl(headers).ContainsKey("no-store"))
+        if (content.Length > HttpCache.MaxBodyLength || HttpCache.ParseCacheControl(headers).ContainsKey("no-store"))
             return;
 
         var origin = url.SerializeOrigin();
@@ -166,6 +175,22 @@ internal sealed class CompressionDictionaries
 
             _dictionaries.RemoveAll(existing => existing.Partition == partition && existing.Origin == origin && existing.Options.Match == options.Match && existing.Options.Destinations.SequenceEqual(options.Destinations, StringComparer.Ordinal));
             _dictionaries.Add(dictionary);
+
+            // The dictionaries are in the order they were registered
+            var totalLength = 0L;
+            foreach (var existing in _dictionaries)
+            {
+                totalLength += existing.Content.Length;
+            }
+
+            var removed = 0;
+            while (totalLength > MaxTotalLength)
+            {
+                totalLength -= _dictionaries[removed].Content.Length;
+                removed++;
+            }
+
+            _dictionaries.RemoveRange(0, removed);
         }
     }
 

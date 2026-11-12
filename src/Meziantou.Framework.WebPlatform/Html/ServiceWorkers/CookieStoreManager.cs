@@ -175,14 +175,7 @@ internal sealed class ServiceWorkerCookieChangeListener : ICookieChangeListener
             var item = CookieListItem.Create(change.Cookie);
             foreach (var subscription in subscriptions)
             {
-                if (subscription.Name is { } name && name != item.Name)
-                    continue;
-
-                if (UrlParser.Parse(subscription.Url, baseUrl: null) is not { Host: { } host } url)
-                    continue;
-
-                var context = GetContext(storageKey, url);
-                if (!CookieJar.IsInScope(change.Cookie, context, host, CookieJar.GetPartitionKey(context), cookieJar.OriginBound))
+                if (!IsObserved(cookieJar, storageKey, change.Cookie, subscription))
                     continue;
 
                 // https://cookiestore.spec.whatwg.org/#prepare-lists: the value of a deleted cookie is undefined
@@ -203,6 +196,29 @@ internal sealed class ServiceWorkerCookieChangeListener : ICookieChangeListener
             return;
 
         registry.FireFunctionalEvent(_registration, "cookiechange", _ => new ExtendableCookieChangeEvent("cookiechange", new ExtendableCookieChangeEventInit { Changed = changed, Deleted = deleted }));
+    }
+
+    /// <summary>
+    /// Whether a subscription of a registration observes a change of a cookie (https://cookiestore.spec.whatwg.org/#observable-changes):
+    /// a cookie of its name, if any, that the service workers of the registration can read at its URL.
+    /// </summary>
+    /// <remarks>
+    /// The unpartitioned cookies of a third-party registration are not observed when the jar blocks them, as they are not
+    /// read: the same check as the cookie store of a window.
+    /// </remarks>
+    internal static bool IsObserved(CookieJar cookieJar, StorageKey storageKey, CookieEntry cookie, CookieChangeSubscription subscription)
+    {
+        if (subscription.Name is { } name && name != cookie.Name)
+            return false;
+
+        if (UrlParser.Parse(subscription.Url, baseUrl: null) is not { Host: { } host } url)
+            return false;
+
+        var context = GetContext(storageKey, url);
+        if (cookie.PartitionKey is null && cookieJar.IsUnpartitionedCookieAccessBlocked(context))
+            return false;
+
+        return CookieJar.IsInScope(cookie, context, host, CookieJar.GetPartitionKey(context), cookieJar.OriginBound);
     }
 
     /// <summary>

@@ -153,7 +153,9 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   dictionary in their `Available-Dictionary` and `Dictionary-ID` headers (and `Accept-Encoding: dcb, dcz`), and the
   library decodes the responses compressed with it (`Content-Encoding: dcb`, Brotli, or `dcz`, Zstandard); the loader
   decodes the other content codings. A response that cannot be decoded has a body that fails. The dictionaries are
-  partitioned like the HTTP cache, and the `cache` and `cookies` types of `Clear-Site-Data` clear them. A
+  partitioned like the HTTP cache, and the `cache` and `cookies` types of `Clear-Site-Data` clear them. A dictionary is
+  at most 16 MiB (as a body of the HTTP cache), and the dictionaries of a document loader take at most 64 MiB: the ones
+  registered the longest ago are removed first. A
   `<link rel="compression-dictionary">` element and a `Link` header with this relation fetch a dictionary once the page
   is loaded. The Brotli decoder of .NET has no dictionary support: the library decodes most `dcb` streams, but a stream
   whose dictionary and data do not fit in its window, or whose first literals would depend on the bytes before the

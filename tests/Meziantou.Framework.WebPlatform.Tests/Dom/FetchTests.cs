@@ -990,6 +990,35 @@ public sealed class FetchTests : IDisposable
         Assert.Null(dictionaries.FindBestMatch("partition", global::Meziantou.Framework.WebPlatform.Urls.UrlParser.Parse("https://example.com/app/a.js", baseUrl: null)!, "", now.AddMinutes(2)));
     }
 
+    [Fact]
+    public void CompressionDictionary_StoreIsBounded()
+    {
+        var dictionaries = new CompressionDictionaries();
+        var now = DateTimeOffset.UnixEpoch;
+        KeyValuePair<string, string>[] headers = [new("Cache-Control", "max-age=60")];
+        global::Meziantou.Framework.WebPlatform.Urls.UrlRecord Url(string path) => global::Meziantou.Framework.WebPlatform.Urls.UrlParser.Parse("https://example.com" + path, baseUrl: null)!;
+        void Register(string path, byte[] content) => dictionaries.Register("partition", Url(path), CompressionDictionaries.ParseUseAsDictionary("match=\"" + path + "*\"", Url(path))!, content, 200, headers, now, now);
+
+        // A body longer than the HTTP cache stores is not registered
+        Register("/too-long/", new byte[HttpCache.MaxBodyLength + 1]);
+        Assert.Null(dictionaries.FindBestMatch("partition", Url("/too-long/a.js"), "", now));
+
+        // The dictionaries registered the longest ago are removed when the others take too many bytes (the same array is
+        // registered for each one: the store counts the bytes of each dictionary)
+        var content = new byte[HttpCache.MaxBodyLength];
+        var count = (int)(CompressionDictionaries.MaxTotalLength / content.Length);
+        for (var i = 0; i <= count; i++)
+        {
+            Register("/d" + i.ToString(CultureInfo.InvariantCulture) + "/", content);
+        }
+
+        Assert.Null(dictionaries.FindBestMatch("partition", Url("/d0/a.js"), "", now));
+        for (var i = 1; i <= count; i++)
+        {
+            Assert.NotNull(dictionaries.FindBestMatch("partition", Url("/d" + i.ToString(CultureInfo.InvariantCulture) + "/a.js"), "", now));
+        }
+    }
+
     // The test key of RFC 9421 (https://www.rfc-editor.org/rfc/rfc9421.html#name-example-ed25519-test-key)
     private static readonly byte[] SignatureTestPrivateKey = Convert.FromBase64String("n4Ni+HpISpVObnQMW0wOhCKROaIKqKtW/2ZYb2p9KcU=");
 
@@ -1018,6 +1047,35 @@ public sealed class FetchTests : IDisposable
         Assert.Equal(isOfProfile && !valid, result.Failed);
         Assert.Equal(valid, SubresourceIntegrity.Matches("body"u8, opaque: false, "ed25519-" + keyId, result));
         Assert.Equal("sig0=(\"unencoded-digest\";sf);keyid=\"" + keyId + "\";tag=\"ed25519-integrity\"", IntegritySignatures.GetAcceptSignature("ed25519-" + keyId + " sha256-abc"));
+    }
+
+    [Fact]
+    public void IntegritySignatures_RequestComponentsAreTheHeadersThatWereSent()
+    {
+        // The server signs the Accept-Signature header it received, which the fetch adds to its copy of the request
+        var keyId = Convert.ToBase64String(global::Meziantou.Framework.WebPlatform.Cryptography.Ed25519.GetPublicKey(SignatureTestPrivateKey));
+        string? received = null;
+        _loader.Handler = request =>
+        {
+            if (request.Url != "https://example.com/signed.js")
+                return null;
+
+            received = HeaderList.Get(request.Headers, "Accept-Signature");
+            var body = "document.title = 'ran';";
+            var digest = "sha-256=:" + Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(body))) + ":";
+            var input = "(\"unencoded-digest\";sf \"accept-signature\";req);keyid=\"" + keyId + "\";tag=\"ed25519-integrity\"";
+            var signatureBase = "\"unencoded-digest\";sf: " + digest + "\n\"accept-signature\";req: " + received + "\n\"@signature-params\": " + input;
+            var signature = global::Meziantou.Framework.WebPlatform.Cryptography.Ed25519.Sign(SignatureTestPrivateKey, Encoding.UTF8.GetBytes(signatureBase));
+            return new DocumentResource(body)
+            {
+                Headers = [new("Content-Type", "text/javascript"), new("Unencoded-Digest", digest), new("Signature-Input", "sig=" + input), new("Signature", "sig=:" + Convert.ToBase64String(signature) + ":")],
+            };
+        };
+
+        var document = Load("<script src='signed.js' integrity='ed25519-" + keyId + "'></script>");
+
+        Assert.Equal(IntegritySignatures.GetAcceptSignature("ed25519-" + keyId), received);
+        Assert.Equal("ran", document.Title);
     }
 
     private sealed class StubLoader : DocumentLoader

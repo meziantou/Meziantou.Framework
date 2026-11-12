@@ -385,7 +385,7 @@ internal static class Fetching
         }
 
         // https://wicg.github.io/signature-based-sri/#verify-signature-assertions: the signatures of the response
-        var signatures = response.IsNetworkError ? null : (IntegritySignatureResult?)IntegritySignatures.Verify(new IntegritySignatureContext(request.CurrentUrl, request.Method, request.HeaderList, internalResponse.Status, internalResponse.HeaderList), GetHttpCacheTime(request));
+        var signatures = response.IsNetworkError ? null : (IntegritySignatureResult?)IntegritySignatures.Verify(new IntegritySignatureContext(request.CurrentUrl, request.Method, request.SentHeaderList ?? request.HeaderList, internalResponse.Status, internalResponse.HeaderList), GetHttpCacheTime(request));
 
         // Step 19: a response blocked by the content security policies (https://w3c.github.io/webappsec-csp/#should-block-response),
         // due to its MIME type or due to nosniff (https://fetch.spec.whatwg.org/#should-response-to-request-be-blocked-due-to-mime-type?)
@@ -961,6 +961,10 @@ internal static class Fetching
         // https://w3c.github.io/gpc/#the-sec-gpc-header-field-for-http-requests
         GlobalPrivacyControlOptions.AppendToRequest(request, headers);
 
+        // The headers the response is signed for (a stored response answers these headers; the network fetch below
+        // replaces them with the ones it sends)
+        request.SentHeaderList = headers;
+
         // Steps 9 and 10: the stored response of the HTTP cache, used as is when it is fresh (or with the "force-cache" and
         // "only-if-cached" modes), else validated with the validators of the stored response
         string? cacheKey = null;
@@ -1315,6 +1319,8 @@ internal static class Fetching
 
             headers = combinedHeaders;
         }
+
+        request.SentHeaderList = headers;
         var origin = GetLoaderOrigin(request);
         var cookieContext = request.CookieContext;
         var interimResponses = new InterimResponses(request, eventLoop);

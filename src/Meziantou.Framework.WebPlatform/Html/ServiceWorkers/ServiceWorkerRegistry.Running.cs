@@ -233,7 +233,7 @@ internal sealed partial class ServiceWorkerRegistry
     private void UpdateCookieChangeListener(ServiceWorkerRegistrationRecord registration)
     {
         var cookieJar = GetCookieJar(registration.StorageKey);
-        ServiceWorkerCookieChangeListener? listener = null;
+        ServiceWorkerCookieChangeListener listener;
         lock (_lock)
         {
             if (registration.CookieChangeSubscriptions.Count == 0 || registration.IsUnregistered || cookieJar is null)

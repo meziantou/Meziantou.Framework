@@ -121,6 +121,6 @@ public static partial class WebPlatformFuzzTargets
         yield return new FuzzSeed("webauthn-eddsa", Cryptography.OkpKeys.EncodePrivateKeyInfo("Ed25519", new byte[32]));
 
         // The ES256 private key of webauthn/getcredential-timeout.https.html
-        yield return new FuzzSeed("webauthn-es256",WebAuthenticationEncoding.Base64UrlDecode("MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg8_zMDQDYAxlU-Qhk1Dwkf0v18GZca1DMF3SaJ9HPdmShRANCAASNYX5lyVCOZLzFZzrIKmeZ2jwURmgsJYxGP__fWN_S-j5sN4tT15XEpN_7QZnt14YvI6uvAgO0uJEboFaZlOEB")!);
+        yield return new FuzzSeed("webauthn-es256",WebAuthenticationEncoding.Base64UrlDecode("MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg8_zMDQDYAxlU-Qhk1Dwkf0v18GZca1DMF3SaJ9HPdmShRANCAASNYX5lyVCOZLzFZzrIKmeZ2jwURmgsJYxGP__fWN_S-j5sN4tT15XEpN_7QZnt14YvI6uvAgO0uJEboFaZlOEB"));
     }
 }

@@ -1,8 +1,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
+using System.Text;
 
 namespace Meziantou.Framework;
 
@@ -212,39 +211,7 @@ public static partial class StringSearchUtilities
         return LevenshteinPooled(word1, word2);
     }
 
-    internal static int GetCommonPrefixLength(ReadOnlySpan<char> word1, ReadOnlySpan<char> word2)
-    {
-        var minLength = Math.Min(word1.Length, word2.Length);
-        if (minLength is 0)
-        {
-            return 0;
-        }
-
-        var index = 0;
-        if (Vector.IsHardwareAccelerated && minLength >= Vector<ushort>.Count)
-        {
-            var vectorLength = Vector<ushort>.Count;
-            var values1 = MemoryMarshal.Cast<char, ushort>(word1);
-            var values2 = MemoryMarshal.Cast<char, ushort>(word2);
-
-            for (; index <= minLength - vectorLength; index += vectorLength)
-            {
-                var vector1 = new Vector<ushort>(values1.Slice(index, vectorLength));
-                var vector2 = new Vector<ushort>(values2.Slice(index, vectorLength));
-                if (!Vector.EqualsAll(vector1, vector2))
-                {
-                    break;
-                }
-            }
-        }
-
-        while (index < minLength && word1[index] == word2[index])
-        {
-            index++;
-        }
-
-        return index;
-    }
+    internal static int GetCommonPrefixLength(ReadOnlySpan<char> word1, ReadOnlySpan<char> word2) => word1.CommonPrefixLength(word2);
 
     private static int CommonSuffixLength(ReadOnlySpan<char> word1, ReadOnlySpan<char> word2)
     {
@@ -270,7 +237,7 @@ public static partial class StringSearchUtilities
 
         Debug.Assert(word2.Length <= 64, "This method is only valid for word2 with length less than or equal to 64.");
 
-        return IsAscii(word2)
+        return Ascii.IsValid(word2)
             ? LevenshteinMyers64Ascii(word1, word2)
             : LevenshteinMyers64Unicode(word1, word2);
     }
@@ -501,70 +468,6 @@ public static partial class StringSearchUtilities
             var distance = row[right.Length];
             return distance <= boundedDistance ? distance : boundedDistance + 1;
         }
-    }
-
-    private static bool IsAscii(ReadOnlySpan<char> value)
-    {
-        const ushort NonAsciiMaskValue = 0xFF80;
-
-        var values = MemoryMarshal.Cast<char, ushort>(value);
-        var index = 0;
-        ref var valuesReference = ref MemoryMarshal.GetReference(values);
-
-        if (Vector512.IsHardwareAccelerated && values.Length >= Vector512<ushort>.Count)
-        {
-            var nonAsciiMask = Vector512.Create(NonAsciiMaskValue);
-            var vectorLength = Vector512<ushort>.Count;
-
-            for (; index <= values.Length - vectorLength; index += vectorLength)
-            {
-                var current = Vector512.LoadUnsafe(ref valuesReference, (nuint)index);
-                if (!Vector512.EqualsAll(Vector512.BitwiseAnd(current, nonAsciiMask), Vector512<ushort>.Zero))
-                {
-                    return false;
-                }
-            }
-        }
-
-        if (Vector256.IsHardwareAccelerated && values.Length - index >= Vector256<ushort>.Count)
-        {
-            var nonAsciiMask = Vector256.Create(NonAsciiMaskValue);
-            var vectorLength = Vector256<ushort>.Count;
-
-            for (; index <= values.Length - vectorLength; index += vectorLength)
-            {
-                var current = Vector256.LoadUnsafe(ref valuesReference, (nuint)index);
-                if (!Vector256.EqualsAll(Vector256.BitwiseAnd(current, nonAsciiMask), Vector256<ushort>.Zero))
-                {
-                    return false;
-                }
-            }
-        }
-
-        if (Vector128.IsHardwareAccelerated && values.Length - index >= Vector128<ushort>.Count)
-        {
-            var nonAsciiMask = Vector128.Create(NonAsciiMaskValue);
-            var vectorLength = Vector128<ushort>.Count;
-
-            for (; index <= values.Length - vectorLength; index += vectorLength)
-            {
-                var current = Vector128.LoadUnsafe(ref valuesReference, (nuint)index);
-                if (!Vector128.EqualsAll(Vector128.BitwiseAnd(current, nonAsciiMask), Vector128<ushort>.Zero))
-                {
-                    return false;
-                }
-            }
-        }
-
-        for (; index < values.Length; index++)
-        {
-            if ((values[index] & NonAsciiMaskValue) != 0)
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private static int CapDistance(int distance, int? maxDistance)

@@ -99,8 +99,9 @@ internal sealed class JpegXlPatchDictionary : IDisposable
         }
 
         using var scratch = Av1PooledArray<float>.Rent(_scope, (long)frame.ChannelCount * frame.Width, clear: false);
-        // A codestream may declare up to 4096 extra channels: only small counts take the stack
-        Span<JpegXlChannelBlending> blendings = _blendingsPerPatch <= JpegXlFormat.MaxStackChannels ? stackalloc JpegXlChannelBlending[_blendingsPerPatch] : new JpegXlChannelBlending[_blendingsPerPatch];
+        // A codestream may declare up to 4096 extra channels: only small counts take the stack, larger ones are charged to the scope
+        using var blendingsRental = _blendingsPerPatch <= JpegXlFormat.MaxStackChannels ? null : Av1PooledArray<JpegXlChannelBlending>.Rent(_scope, _blendingsPerPatch);
+        Span<JpegXlChannelBlending> blendings = blendingsRental is null ? stackalloc JpegXlChannelBlending[_blendingsPerPatch] : blendingsRental.Span;
         var rowCount = 0;
         for (var i = 0; i < _patchCount; i++)
         {
@@ -160,7 +161,8 @@ internal sealed class JpegXlPatchDictionary : IDisposable
 
         var patchLength = PatchFieldCount + _blendingsPerPatch;
         Span<int> source = stackalloc int[SourceFieldCount];
-        Span<int> patch = patchLength <= JpegXlFormat.MaxStackChannels + PatchFieldCount ? stackalloc int[patchLength] : new int[patchLength];
+        using var patchRental = patchLength <= JpegXlFormat.MaxStackChannels + PatchFieldCount ? null : Av1PooledArray<int>.Rent(_scope, patchLength, clear: false);
+        Span<int> patch = patchRental is null ? stackalloc int[patchLength] : patchRental.Span;
         for (var i = 0; i < sourceCount; i++)
         {
             var reference = decoder.Read(reader, ContextReferenceFrame);

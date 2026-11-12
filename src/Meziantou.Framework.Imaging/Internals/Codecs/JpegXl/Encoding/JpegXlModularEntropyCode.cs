@@ -674,7 +674,8 @@ internal sealed class JpegXlModularEntropyCode : IDisposable
         var limit = _useLz77 ? Lz77MinSymbol : ans ? BucketCount : MaxPrefixAlphabetSize;
         var result = new int[fineClusters.Length];
         // The largest token of a fine token is below 1024 for every configuration: 8 KB, once per entropy code
-        Span<long> tokens = new long[1024];
+        using var tokensRental = Av1PooledArray<long>.Rent(_scope, 1024, clear: false, AllocationKind.Temporary);
+        var tokens = tokensRental.Span;
         for (var cluster = 0; cluster < fineClusters.Length; cluster++)
         {
             var fine = fineClusters[cluster];

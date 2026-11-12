@@ -51,7 +51,7 @@ internal static class JpegXlFormat
     /// <summary>
     /// The largest number of channels whose per-channel scratch (blending modes, sources) is allocated on the stack. A
     /// codestream may declare up to 4096 extra channels, which libjxl decodes (only its encoder keeps to the 256 of level
-    /// 10): larger counts use the heap.
+    /// 10): larger counts are rented from the allocation scope.
     /// </summary>
     public const int MaxStackChannels = 64;
 

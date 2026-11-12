@@ -496,8 +496,9 @@ internal sealed class JpegXlFrameRenderer : IDisposable
         try
         {
             var canvas = owned = new JpegXlImageBuffer(imageWidth, imageHeight, colorCount, _extraChannelCount);
-            // A codestream may declare up to 4096 extra channels: only small counts take the stack
-            Span<int> sources = channelCount <= JpegXlFormat.MaxStackChannels ? stackalloc int[channelCount] : new int[channelCount];
+            // A codestream may declare up to 4096 extra channels: only small counts take the stack, larger ones are charged to the scope
+            using var sourcesRental = channelCount <= JpegXlFormat.MaxStackChannels ? null : Av1PooledArray<int>.Rent(_scope, channelCount, clear: false);
+            Span<int> sources = sourcesRental is null ? stackalloc int[channelCount] : sourcesRental.Span;
             for (var c = 0; c < channelCount; c++)
             {
                 // Each extra channel is blended with its own reference frame
@@ -541,7 +542,8 @@ internal sealed class JpegXlFrameRenderer : IDisposable
 
             var width = right - left;
             using var scratch = Av1PooledArray<float>.Rent(_scope, (long)channelCount * width, clear: false);
-            Span<JpegXlChannelBlending> blendings = 1 + _extraChannelCount <= JpegXlFormat.MaxStackChannels ? stackalloc JpegXlChannelBlending[1 + _extraChannelCount] : new JpegXlChannelBlending[1 + _extraChannelCount];
+            using var blendingsRental = 1 + _extraChannelCount <= JpegXlFormat.MaxStackChannels ? null : Av1PooledArray<JpegXlChannelBlending>.Rent(_scope, 1 + _extraChannelCount);
+            Span<JpegXlChannelBlending> blendings = blendingsRental is null ? stackalloc JpegXlChannelBlending[1 + _extraChannelCount] : blendingsRental.Span;
             blendings[0] = JpegXlChannelBlending.FromFrame(frame.Blending);
             for (var i = 0; i < _extraChannelCount; i++)
             {

@@ -114,7 +114,10 @@ internal static unsafe class WasmtimeTypes
     public static nint CreateFunctionType(nint engine, WasmFunctionType type)
     {
         if (type.Native is NativeTypeHandle native)
-            return NativeMethods.wasm_functype_copy(native.DangerousGetHandle());
+        {
+            using var lease = new SafeHandleLease(native);
+            return NativeMethods.wasm_functype_copy(lease.Value);
+        }
 
         WasmPointerVec parameters;
         WasmPointerVec results;
@@ -159,7 +162,10 @@ internal static unsafe class WasmtimeTypes
     public static nint CreateGlobalType(nint engine, WasmGlobalType type)
     {
         if (type.Native is NativeTypeHandle native)
-            return NativeMethods.wasm_globaltype_copy(native.DangerousGetHandle());
+        {
+            using var lease = new SafeHandleLease(native);
+            return NativeMethods.wasm_globaltype_copy(lease.Value);
+        }
 
         return NativeMethods.wasm_globaltype_new(CreateValueType(engine, type.ValueType), type.Mutable ? (byte)1 : (byte)0);
     }
@@ -195,9 +201,17 @@ internal static unsafe class WasmtimeTypes
     /// <summary>Creates a tag type (owned).</summary>
     public static nint CreateTagType(nint engine, WasmTagType type)
     {
-        var functionType = type.Native is NativeTypeHandle native
-            ? NativeMethods.wasm_functype_copy(native.DangerousGetHandle())
-            : CreateFunctionType(engine, new WasmFunctionType(type.Parameters, []));
+        nint functionType;
+        if (type.Native is NativeTypeHandle native)
+        {
+            using var lease = new SafeHandleLease(native);
+            functionType = NativeMethods.wasm_functype_copy(lease.Value);
+        }
+        else
+        {
+            functionType = CreateFunctionType(engine, new WasmFunctionType(type.Parameters, []));
+        }
+
         return NativeMethods.wasm_tagtype_new(functionType);
     }
 

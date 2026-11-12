@@ -604,79 +604,28 @@
     }
   },
   "trusted-types/trusted-types-navigation.html?01-05": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Navigate a frame via anchor with javascript:-urls in enforcing mode.": "NOTRUN",
-      "Navigate a window via anchor with javascript:-urls in report-only mode.": "TIMEOUT",
-      "Navigate a window via anchor with javascript:-urls w/ default policy in report-only mode.": "NOTRUN"
-    }
+    "total": 5
   },
   "trusted-types/trusted-types-navigation.html?06-10": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Navigate a frame via anchor with javascript:-urls in report-only mode.": "TIMEOUT",
-      "Navigate a frame via anchor with javascript:-urls w/ default policy in report-only mode.": "NOTRUN",
-      "Navigate a window via anchor with javascript:-urls w/ a default policy throwing an exception in enforcing mode.": "NOTRUN",
-      "Navigate a window via anchor with javascript:-urls w/ a default policy throwing an exception in report-only mode.": "NOTRUN"
-    }
+    "total": 5
   },
   "trusted-types/trusted-types-navigation.html?11-15": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Navigate a window via anchor with javascript:-urls w/ a default policy making the URL invalid in report-only mode.": "TIMEOUT",
-      "Navigate a window via area with javascript:-urls in enforcing mode.": "NOTRUN",
-      "Navigate a window via area with javascript:-urls in report-only mode.": "NOTRUN",
-      "Navigate a window via area with javascript:-urls w/ default policy in enforcing mode.": "NOTRUN"
-    }
+    "total": 5
   },
   "trusted-types/trusted-types-navigation.html?16-20": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Navigate a frame via area with javascript:-urls in report-only mode.": "TIMEOUT",
-      "Navigate a frame via area with javascript:-urls w/ default policy in report-only mode.": "NOTRUN"
-    }
+    "total": 5
   },
   "trusted-types/trusted-types-navigation.html?21-25": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Navigate a window via area with javascript:-urls w/ a default policy making the URL invalid in enforcing mode.": "NOTRUN",
-      "Navigate a window via area with javascript:-urls w/ a default policy making the URL invalid in report-only mode.": "NOTRUN",
-      "Navigate a window via area with javascript:-urls w/ a default policy throwing an exception in report-only mode.": "TIMEOUT",
-      "Navigate a window via form-submission with javascript:-urls in enforcing mode.": "NOTRUN"
-    }
+    "total": 5
   },
   "trusted-types/trusted-types-navigation.html?26-30": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Navigate a frame via form-submission with javascript:-urls in enforcing mode.": "NOTRUN",
-      "Navigate a frame via form-submission with javascript:-urls w/ default policy in enforcing mode.": "NOTRUN",
-      "Navigate a window via form-submission with javascript:-urls in report-only mode.": "TIMEOUT",
-      "Navigate a window via form-submission with javascript:-urls w/ default policy in report-only mode.": "NOTRUN"
-    }
+    "total": 5
   },
   "trusted-types/trusted-types-navigation.html?31-35": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Navigate a frame via form-submission with javascript:-urls in report-only mode.": "TIMEOUT",
-      "Navigate a frame via form-submission with javascript:-urls w/ default policy in report-only mode.": "NOTRUN",
-      "Navigate a window via form-submission with javascript:-urls w/ a default policy making the URL invalid in enforcing mode.": "NOTRUN",
-      "Navigate a window via form-submission with javascript:-urls w/ a default policy throwing an exception in enforcing mode.": "NOTRUN",
-      "Navigate a window via form-submission with javascript:-urls w/ a default policy throwing an exception in report-only mode.": "NOTRUN"
-    }
+    "total": 5
   },
   "trusted-types/trusted-types-navigation.html?36-last": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Navigate a window via form-submission with javascript:-urls w/ a default policy making the URL invalid in report-only mode.": "TIMEOUT"
-    }
+    "total": 1
   },
   "trusted-types/trusted-types-report-only.html": {
     "total": 5

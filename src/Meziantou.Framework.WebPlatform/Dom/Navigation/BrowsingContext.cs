@@ -1753,6 +1753,7 @@ public sealed partial class BrowsingContext : IDisposable
         var window = document.RelevantWindow!;
         var script = new Scripting.ClassicScript(window, scriptSource, document.BaseUri) { Url = document.Url };
         var generation = _javaScriptUrlNavigationGeneration;
+        var ongoingNavigationBeforeScript = _ongoingNavigation;
         var result = Scripting.ScriptExecution.RunClassicScript(engine, script) as string;
 
         // As in the browsers, a form submission planned by the script (e.g. form.submit() in the iframe) takes precedence over the result
@@ -1778,6 +1779,12 @@ public sealed partial class BrowsingContext : IDisposable
         }
 
         if (IsDestroyed || !ReferenceEquals(Document, document))
+            return;
+
+        // As in the browsers, the result does not replace the document when the script started a navigation of the navigable
+        // (e.g. javascript:location.href='...', whose result is the URL): the navigation continues. The specification creates
+        // the document of the result, which the navigation replaces once its response arrives (https://github.com/whatwg/html/issues/3730).
+        if (_ongoingNavigation != ongoingNavigationBeforeScript && IsCrossDocumentNavigationOngoing)
             return;
 
         // The result is the body of an HTML response, whose URL is the URL of the active document and whose origin is the origin of the initiator

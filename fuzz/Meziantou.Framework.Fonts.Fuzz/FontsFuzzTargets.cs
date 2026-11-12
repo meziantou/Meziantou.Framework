@@ -272,8 +272,10 @@ public static class FontsFuzzTargets
         var text = FuzzText.Decode(data);
         var runs = TextShaper.SplitRuns(text, direction);
 
+        // The levels of the line: its trailing white space has the level of the paragraph (rule L1)
         var levels = new byte[text.Length];
-        UnicodeBidi.ResolveLevels(text, direction, levels);
+        var paragraphLevel = UnicodeBidi.ResolveLevels(text, direction, levels);
+        UnicodeBidi.ResetLineLevels(text, paragraphLevel, levels);
         var logical = runs.OrderBy(run => run.Index).ToArray();
         var position = 0;
         foreach (var run in logical)
@@ -1036,6 +1038,8 @@ public static class FontsFuzzTargets
             "ab \u0627\u0644 \U0001F600",
             "\u0627\u0644\u0639\u0631\u0628\u064A\u0629 (\u0661\u0662\u0663) abc \u202Edef\u202C \u2067\u05D0 1\u2069.",
             "\u0915\u093F\u0924\u093E\u092C \u4E2D\u6587 \u0420\u0443\u0441",
+            "a\u202B\u05D0 ",
+            "\u05D0\u202Aab \t",
         ];
 
         for (var i = 0; i < texts.Length; i++)

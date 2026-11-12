@@ -82,6 +82,10 @@ public sealed class TextShaperTests
     [InlineData("abc", UnicodeBidiDirection.RightToLeft, "0+3 Latin 2")]
     [InlineData("\u05D0\u05D1 cd \u05D2", UnicodeBidiDirection.Auto, "6+1 Hebrew 1|5+1 Latin 1|3+2 Latin 2|0+3 Hebrew 1")]
     [InlineData("ab \u0627\u0644 \U0001F600", UnicodeBidiDirection.LeftToRight, "0+3 Latin 0|3+2 Arabic 1|5+3 Arabic 0")]
+
+    // The white space at the end of the line has the level of the paragraph: it is displayed at the end of the line
+    [InlineData("a\u202B\u05D0 ", UnicodeBidiDirection.Auto, "0+2 Latin 0|2+1 Hebrew 1|3+1 Hebrew 0")]
+    [InlineData("\u05D0\u202Aab ", UnicodeBidiDirection.Auto, "4+1 Latin 1|2+2 Latin 2|0+2 Hebrew 1")]
     public void SplitRunsGivesRunsOfOneScriptAndOneLevelFromLeftToRight(string text, UnicodeBidiDirection direction, string expected)
     {
         var runs = TextShaper.SplitRuns(text, direction);

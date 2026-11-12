@@ -123,6 +123,10 @@ public static class TextShaper
     /// <param name="text">The text of the line: one paragraph, without its line terminator.</param>
     /// <param name="direction">The direction of the paragraph; <see cref="UnicodeBidiDirection.Auto"/> takes the one of its first strong character.</param>
     /// <returns>The runs, from left to right; none for an empty text. The characters of a right-to-left run are in the order of the text: shape it with <c>isRightToLeft</c> set to <see cref="ShapingRun.IsRightToLeft"/>.</returns>
+    /// <remarks>
+    /// The text is one line: its trailing white space, and the white space before its segment separators, have the
+    /// level of the paragraph (rule L1), so that they are displayed at the end of the line in its direction.
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="direction"/> is not a defined value.</exception>
     /// <example>
     /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Imaging.Tests/TextShaperTests.cs" ref:region="Fonts_SplitRuns" ref:dedent="true">
@@ -144,7 +148,10 @@ public static class TextShaper
     public static ShapingRun[] SplitRuns(ReadOnlySpan<char> text, UnicodeBidiDirection direction = UnicodeBidiDirection.Auto)
     {
         var levels = new byte[text.Length];
-        UnicodeBidi.ResolveLevels(text, direction, levels);
+        var paragraphLevel = UnicodeBidi.ResolveLevels(text, direction, levels);
+
+        // The white space at the end of the line follows the direction of the paragraph (rule L1)
+        UnicodeBidi.ResetLineLevels(text, paragraphLevel, levels);
         if (text.IsEmpty)
             return [];
 

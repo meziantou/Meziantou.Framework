@@ -35,7 +35,7 @@ internal static class Test262Executor
     }
 
     /// <summary>The options of the engines of a test (the main engine and the engines of the agents).</summary>
-    internal static JsEngineOptions CreateEngineOptions(CancellationToken cancellationToken, bool isCompiled)
+    internal static JsEngineOptions CreateEngineOptions(bool isCompiled, CancellationToken cancellationToken)
     {
         return new JsEngineOptions
         {
@@ -82,13 +82,13 @@ internal static class Test262Executor
         // (language/comments/S7.4_A5.js...) take minutes on CI
         using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(isCompiled ? 600 : 120));
         var loader = new Test262ModuleLoader(Path.GetDirectoryName(test.FullPath)!);
-        var options = CreateEngineOptions(cancellation.Token, isCompiled);
+        var options = CreateEngineOptions(isCompiled, cancellation.Token);
         options.ModuleLoader = loader;
         using var engine = new JsEngine(options);
 
         // [[CanBlock]]: the tests flagged CanBlockIsFalse expect Atomics.wait to throw in the main agent
         engine.CanBlock = !metadata.HasFlag("CanBlockIsFalse");
-        using var agents = new Test262Agents(cancellation.Token, isCompiled);
+        using var agents = new Test262Agents(isCompiled, cancellation.Token);
         var output = new StringBuilder();
         var realm = engine.CreateRealm();
         Test262Host.Install(realm, output, agents);

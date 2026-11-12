@@ -645,6 +645,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public int? MaxByteLength { get => throw null; }
         public System.Memory<byte> GetMemory() => throw null;
         public ref byte GetReference(int byteIndex) => throw null;
+        public ref byte GetReference(int byteIndex, int byteCount) => throw null;
         public System.Span<byte> GetSpan() => throw null;
         public static Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock? TryCreate(int byteLength, int? maxByteLength) => throw null;
         public bool TryGrow(int newByteLength) => throw null;

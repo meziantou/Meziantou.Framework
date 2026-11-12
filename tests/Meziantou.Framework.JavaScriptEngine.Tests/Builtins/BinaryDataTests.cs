@@ -293,6 +293,24 @@ public sealed class BinaryDataTests
     }
 
     [Fact]
+    public void SharedDataBlock_GetReferenceChecksTheWholeRange()
+    {
+        var block = JsSharedDataBlock.TryCreate(16, maxByteLength: 32)!;
+        block.GetReference(8, 8) = 1;
+        Assert.Equal(1, block.GetSpan()[8]);
+        Assert.Equal(1, ++block.GetReference(15));
+
+        Assert.Throws<ArgumentOutOfRangeException>("byteIndex", () => block.GetReference(9, 8));
+        Assert.Throws<ArgumentOutOfRangeException>("byteIndex", () => block.GetReference(16, 1));
+        Assert.Throws<ArgumentOutOfRangeException>("byteIndex", () => block.GetReference(-1, 1));
+        Assert.Throws<ArgumentOutOfRangeException>("byteCount", () => block.GetReference(0, 0));
+
+        Assert.True(block.TryGrow(24));
+        block.GetReference(16, 8) = 3;
+        Assert.Equal(3, block.GetSpan()[16]);
+    }
+
+    [Fact]
     public void SharedArrayBuffer_SpanKeepsTheBlockMemoryAlive()
     {
         var span = CreateSharedArrayBufferSpan(1024, out var bufferReference);

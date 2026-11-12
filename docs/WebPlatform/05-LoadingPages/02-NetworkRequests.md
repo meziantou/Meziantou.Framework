@@ -158,7 +158,8 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   100x100 image at 50x50 CSS pixels), in the `img` elements (where it replaces the density of the `srcset` candidate), the
   CSS images, the SVG `image` elements, the video posters and the image buttons.
 - [RemainingContentBytes](cref:Meziantou.Framework.WebPlatform.Dom.DocumentResource.RemainingContentBytes) streams a body that arrives over time: the HTML of a navigation is parsed as its chunks arrive,
-  and the body of `fetch()` is a stream. Return the response once its headers are received: the time the loader returns it is the
+  the body of `fetch()` is a stream, and an asynchronous `XMLHttpRequest` fires its `readystatechange` and `progress`
+  events as the chunks arrive. Return the response once its headers are received: the time the loader returns it is the
   `responseStart` of the resource timing entry, and the end of the body its `responseEnd`.
 - [ReportInterimResponse](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.ReportInterimResponse) reports an
   interim response (`100 Continue`, `103 Early Hints`...) before the final response: its time is the

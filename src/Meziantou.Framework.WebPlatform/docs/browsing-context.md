@@ -1338,11 +1338,12 @@ WebIDL bindings, because their bodies are streams (see [scripting.md](scripting.
 the headers are received, and its body is a `ReadableStream` that pulls the chunks of the response as it is read
 (`DocumentRequest.StreamsResponseBody` asks the loader for `DocumentResource.RemainingContentBytes`; one chunk is read
 ahead, so the end or the failure of the body errors or closes the stream without a pending read): a body that fails
-after the response errors the stream, and aborting the fetch or canceling the stream stops reading the body. The other
-responses are processed once their body is fully received (so an `XMLHttpRequest` fires a single `progress` event; the
-fetch algorithm waits for the end of `DocumentResource.RemainingContentBytes`), except the document of a navigation,
-the event stream of an `EventSource` and the media resources, and the body of a request created from a `ReadableStream`
-is read before the request is sent. A synchronous
+after the response errors the stream, and aborting the fetch or canceling the stream stops reading the body. The body of
+an asynchronous `XMLHttpRequest` is read as it arrives too: each chunk fires the `readystatechange` and `progress` events
+(at most every 50 ms, https://xhr.spec.whatwg.org/#dom-xmlhttprequest-send), and the timeout applies until the end of the
+body. The other responses are processed once their body is fully received (the fetch algorithm waits for the end of
+`DocumentResource.RemainingContentBytes`), except the document of a navigation, the event stream of an `EventSource` and
+the media resources, and the body of a request created from a `ReadableStream` is read before the request is sent. A synchronous
 `XMLHttpRequest` blocks the event loop until the loader completes (`DocumentRequest.IsSynchronous` is true): the loader
 must not wait for a task of the event loop.
 

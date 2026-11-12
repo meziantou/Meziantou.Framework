@@ -590,6 +590,54 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public async Task XmlHttpRequest_StreamsTheResponseBody()
+    {
+        var chunks = Channel.CreateUnbounded<ReadOnlyMemory<byte>>();
+        _loader.Responses["https://example.com/stream"] = new DocumentResource("a"u8.ToArray()) { Headers = [new("Content-Type", "text/plain")], RemainingContentBytes = chunks.Reader.ReadAllAsync() };
+        var document = Load("""
+            <script>
+              const xhr = new XMLHttpRequest();
+              const log = [];
+              xhr.onreadystatechange = () => { log.push(xhr.readyState + ':' + xhr.responseText); document.title = log.join('|'); };
+              xhr.onprogress = e => { log.push('progress:' + e.loaded); document.title = log.join('|'); };
+              xhr.open('GET', 'stream');
+              xhr.send();
+            </script>
+            """);
+
+        // The events of each chunk are fired as it arrives (at most every 50 ms)
+        await WaitUntilAsync(() => document.Title.EndsWith("progress:1", StringComparison.Ordinal), () => document.Title);
+        Assert.True(Assert.Single(_loader.Requests, request => request.Url == "https://example.com/stream").StreamsResponseBody);
+        await Task.Delay(100, TestContext.Current.CancellationToken);
+        chunks.Writer.TryWrite("b"u8.ToArray());
+        await WaitUntilAsync(() => document.Title.EndsWith("progress:2", StringComparison.Ordinal), () => document.Title);
+        chunks.Writer.TryComplete();
+        await WaitUntilAsync(() => document.Title.Contains("4:ab", StringComparison.Ordinal), () => document.Title);
+        Assert.Equal("1:|2:|3:a|progress:1|3:ab|progress:2|4:ab", document.Title);
+    }
+
+    [Fact]
+    public async Task XmlHttpRequest_BodyFailingAfterTheResponse_IsANetworkError()
+    {
+        var chunks = Channel.CreateUnbounded<ReadOnlyMemory<byte>>();
+        _loader.Responses["https://example.com/stream"] = new DocumentResource("a"u8.ToArray()) { RemainingContentBytes = chunks.Reader.ReadAllAsync() };
+        var document = Load("""
+            <script>
+              const xhr = new XMLHttpRequest();
+              const log = [];
+              for (const type of ['progress', 'load', 'error']) xhr.addEventListener(type, () => { log.push(type); document.title = log.join('|'); });
+              xhr.open('GET', 'stream');
+              xhr.send();
+            </script>
+            """);
+
+        await WaitUntilAsync(() => document.Title == "progress", () => document.Title);
+        chunks.Writer.TryComplete(new IOException("The connection was closed"));
+        await WaitUntilAsync(() => document.Title != "progress", () => document.Title);
+        Assert.Equal("progress|error", document.Title);
+    }
+
+    [Fact]
     public void Fetch_InterimResponses_AreTheFirstInterimResponseStart()
     {
         _loader.Handler = request =>

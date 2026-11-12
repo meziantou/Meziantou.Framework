@@ -407,10 +407,16 @@ internal static partial class WptPythonHandlers
             response.Set("Content-Length", (count * chunk.Length).ToString(CultureInfo.InvariantCulture));
         }
 
+        // The headers are sent after the delay, then each chunk after the delay, and the body ends after the last delay
         response.Set("Content-type", "text/plain");
-        response.Content = string.Concat(Enumerable.Repeat(chunk, count));
         response.Streamed = true;
-        response.Delay = delay * (count + 2);
+        response.Delay = delay;
+        for (var i = 0; i < count; i++)
+        {
+            response.Chunks.Add((delay, Encoding.Latin1.GetBytes(chunk)));
+        }
+
+        response.Chunks.Add((delay, []));
     }
 
     // fetch/api/resources/trickle.py

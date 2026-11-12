@@ -57,6 +57,44 @@ public sealed class TextShaperTests
     }
 
     [Fact]
+    public void Documentation_SplitRuns()
+    {
+        #region Fonts_SplitRuns
+        // English, then Hebrew with a number: the runs are given from left to right
+        var text = "Hi \u05E9\u05DC\u05D5\u05DD 42";
+        var runs = TextShaper.SplitRuns(text);
+
+        Assert.Equal(
+        [
+            new ShapingRun(Index: 0, Length: 3, UnicodeScript.Latin, BidiLevel: 0),
+            new ShapingRun(Index: 8, Length: 2, UnicodeScript.Hebrew, BidiLevel: 2),
+            new ShapingRun(Index: 3, Length: 5, UnicodeScript.Hebrew, BidiLevel: 1),
+        ], runs);
+
+        // Each run is shaped on its own, with its script and its direction
+        Assert.True(runs[2].IsRightToLeft);
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("", UnicodeBidiDirection.Auto, "")]
+    [InlineData("abc", UnicodeBidiDirection.Auto, "0+3 Latin 0")]
+    [InlineData("abc", UnicodeBidiDirection.RightToLeft, "0+3 Latin 2")]
+    [InlineData("\u05D0\u05D1 cd \u05D2", UnicodeBidiDirection.Auto, "6+1 Hebrew 1|5+1 Latin 1|3+2 Latin 2|0+3 Hebrew 1")]
+    [InlineData("ab \u0627\u0644 \U0001F600", UnicodeBidiDirection.LeftToRight, "0+3 Latin 0|3+2 Arabic 1|5+3 Arabic 0")]
+
+    // The white space at the end of the line has the level of the paragraph: it is displayed at the end of the line
+    [InlineData("a\u202B\u05D0 ", UnicodeBidiDirection.Auto, "0+2 Latin 0|2+1 Hebrew 1|3+1 Hebrew 0")]
+    [InlineData("\u05D0\u202Aab ", UnicodeBidiDirection.Auto, "4+1 Latin 1|2+2 Latin 2|0+2 Hebrew 1")]
+    public void SplitRunsGivesRunsOfOneScriptAndOneLevelFromLeftToRight(string text, UnicodeBidiDirection direction, string expected)
+    {
+        var runs = TextShaper.SplitRuns(text, direction);
+
+        Assert.Equal(expected, string.Join('|', runs.Select(run => string.Create(CultureInfo.InvariantCulture, $"{run.Index}+{run.Length} {run.Script} {run.BidiLevel}"))));
+        Assert.Equal(text.Length, runs.Sum(run => run.Length));
+    }
+
+    [Fact]
     public void ACharacterAndItsMarkUseTheComposedGlyphWhenTheFontHasIt()
     {
         // The font has U+00C1, a composite glyph (10), and the combining acute accent (9).

@@ -1080,8 +1080,8 @@ internal static partial class TextShaper
 
     /// <summary>
     /// The glyphs, the font runs and the ligature carets written by the shaping, in arrays rented from the shared pool. A ref
-    /// struct: it stays on the stack of the shaping (passed by reference), so no copy of it can use or return the arrays after
-    /// it returned them.
+    /// struct, so it cannot be boxed, stored on the heap or captured, and cannot outlive the shaping. It can still be copied:
+    /// a copy shares the rented arrays, so the shaping passes it by reference and disposes only the writer it created.
     /// </summary>
     private ref struct GlyphWriter : IDisposable
     {

@@ -18,9 +18,11 @@ The options are arguments of `[StronglyTypedId]`. Set them on one type, or for e
 | `StringComparison` | `Ordinal` | How `string` values are compared. |
 | `GenerateToStringAsRecord` | `true` | Formats `ToString()` as `ProjectId { Value = 42 }`; `false` returns the value only. |
 | `GuidGenerationStrategy` | `Version4` | How `New()` creates `Guid` values, or `None` to not generate it. |
+| `GenerateYamlConverter` | `true` | Generates the [YAML converter](09-Integrations/08-Yaml.md). |
+| `GenerateTomlConverter` | `true` | Generates the [TOML converter](09-Integrations/09-Toml.md). |
 
 The first five options are optional constructor parameters, written with a colon (`generateNewtonsoftJsonConverter: false`).
-The last three are properties, written with an equals sign (`StringComparison = StringComparison.OrdinalIgnoreCase`):
+The other options are properties, written with an equals sign (`StringComparison = StringComparison.OrdinalIgnoreCase`):
 
 <!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_Configuration;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -29,7 +31,9 @@ The last three are properties, written with an equals sign (`StringComparison = 
                  generateNewtonsoftJsonConverter: true,
                  generateSystemComponentModelTypeConverter: true,
                  generateMongoDBBsonSerialization: true,
-                 addCodeGeneratedAttribute: true
+                 addCodeGeneratedAttribute: true,
+                 GenerateYamlConverter = true,
+                 GenerateTomlConverter = true
                  )]
 public partial struct ShipmentId { }
 ```
@@ -38,18 +42,20 @@ public partial struct ShipmentId { }
 ## Choose the converters
 
 A converter is generated when its option is `true` and the project can use it: the Newtonsoft.Json converter needs a
-reference to Newtonsoft.Json, and the MongoDB serializer one to MongoDB.Bson. A project that references neither gets
-neither, whatever the options say. Set an option to `false` to skip a converter that the project could use but that this
+reference to Newtonsoft.Json, the MongoDB serializer one to MongoDB.Bson, the YAML converter one to
+Meziantou.Framework.Yaml, and the TOML converter one to Meziantou.Framework.Toml. A project that references none of
+them gets none of these converters, whatever the options say. Set an option to `false` to skip a converter that the project could use but that this
 ID should not have:
 
 <!-- ref:../../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/StronglyTypedIdTests.cs;region=StronglyTypedId_DisableConverters;format=md-fenced-code-block;dedent=true -->
 ```csharp
-[StronglyTypedId<int>(generateNewtonsoftJsonConverter: false, generateMongoDBBsonSerialization: false)]
+[StronglyTypedId<int>(generateNewtonsoftJsonConverter: false, generateMongoDBBsonSerialization: false, GenerateTomlConverter = false)]
 public partial struct TagId { }
 ```
 <!-- endref -->
 
-`TagId` keeps its System.Text.Json converter and its `TypeConverter`.
+`TagId` keeps its System.Text.Json converter, its `TypeConverter`, and its YAML converter when the project references
+Meziantou.Framework.Yaml.
 
 ## Create Guid values
 

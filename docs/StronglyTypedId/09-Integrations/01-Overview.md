@@ -1,6 +1,6 @@
 ---
 title: Integrations
-description: Serialize, store and bind IDs with System.Text.Json, Newtonsoft.Json, MongoDB, TypeConverter, ASP.NET Core and Entity Framework Core.
+description: Serialize, store and bind IDs with System.Text.Json, Newtonsoft.Json, MongoDB, YAML, TOML, TypeConverter, ASP.NET Core and Entity Framework Core.
 ---
 
 An ID is read and written as its underlying value everywhere: a number or a string in JSON, a value in a BSON document
@@ -15,13 +15,16 @@ registered by an attribute on it, so most libraries use them without configurati
 | [TypeConverter and configuration](05-TypeConverterAndConfiguration.md) | A `TypeConverter`, used by `Microsoft.Extensions.Configuration` and UI frameworks | None |
 | [ASP.NET Core](06-AspNetCore.md) | `TryParse` and `IParsable<T>` for route and query values, and the JSON converter for bodies | None |
 | [Entity Framework Core](07-EntityFrameworkCore.md) | Nothing specific | A value converter that you write once per ID type |
+| [YAML](08-Yaml.md) | A `YamlConverter<T>`, when the project references Meziantou.Framework.Yaml | None, except with a source-generated `YamlSerializerContext`: register the converters in its options |
+| [TOML](09-Toml.md) | A `TomlConverter<T>`, when the project references Meziantou.Framework.Toml | None, except with a source-generated `TomlSerializerContext`: register the converters in options that use it |
 
 Each converter can be turned off with an [option](../07-Options.md#choose-the-converters).
 
 ## Use a converter directly
 
 The converters are public classes nested in the ID, named after it: `ProjectId.ProjectIdJsonConverter`,
-`ProjectId.ProjectIdNewtonsoftJsonConverter`, `ProjectId.ProjectIdBsonConverter` and `ProjectId.ProjectIdTypeConverter`.
+`ProjectId.ProjectIdNewtonsoftJsonConverter`, `ProjectId.ProjectIdBsonConverter`, `ProjectId.ProjectIdYamlConverter`,
+`ProjectId.ProjectIdTomlConverter` and `ProjectId.ProjectIdTypeConverter`.
 Create one when a library does not read the attributes, for instance to add it to `JsonSerializerOptions.Converters`
 for a [source-generated context](02-SystemTextJson.md#source-generation-and-native-aot), to wrap it in your own
 converter, or to register it in another type.

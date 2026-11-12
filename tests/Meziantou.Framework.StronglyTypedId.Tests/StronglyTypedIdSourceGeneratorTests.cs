@@ -755,6 +755,142 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public async Task Converters_YamlAndToml_NotGeneratedWithoutReference()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test {}
+            """;
+
+        var generatedCode = await GenerateSingleFile(sourceCode);
+        Assert.DoesNotContain("YamlConverter", generatedCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("TomlConverter", generatedCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Converters_YamlAndToml_GeneratedWhenReferenced()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test {}
+            """ + YamlAndTomlStubsSourceCode;
+
+        var generatedCode = await GenerateSingleFileWithoutCompiling(sourceCode);
+        Assert.Contains("[global::Meziantou.Framework.Yaml.Serialization.YamlConverterAttribute(typeof(TestYamlConverter))]", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("[global::Meziantou.Framework.Toml.Serialization.TomlConverterAttribute(typeof(TestTomlConverter))]", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("public partial class TestYamlConverter :", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("public partial class TestTomlConverter :", generatedCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Converters_YamlAndToml_Disabled()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int), GenerateYamlConverter = false, GenerateTomlConverter = false)]
+            public partial struct Test {}
+            """ + YamlAndTomlStubsSourceCode;
+
+        var generatedCode = await GenerateSingleFileWithoutCompiling(sourceCode);
+        Assert.DoesNotContain("TestYamlConverter", generatedCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("TestTomlConverter", generatedCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Converters_YamlAndToml_GenericAttribute_Disabled()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute<int>(GenerateTomlConverter = false)]
+            public partial struct Test {}
+            """ + YamlAndTomlStubsSourceCode;
+
+        var generatedCode = await GenerateSingleFileWithoutCompiling(sourceCode);
+        Assert.Contains("TestYamlConverter", generatedCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("TestTomlConverter", generatedCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AssemblyDefaults_YamlAndToml_OverriddenByType()
+    {
+        var sourceCode = """
+            [assembly: Meziantou.Framework.Annotations.StronglyTypedIdDefaults(GenerateYamlConverter = false, GenerateTomlConverter = false)]
+
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int), GenerateTomlConverter = true)]
+            public partial struct Test {}
+            """ + YamlAndTomlStubsSourceCode;
+
+        var generatedCode = await GenerateSingleFileWithoutCompiling(sourceCode);
+        Assert.DoesNotContain("TestYamlConverter", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("TestTomlConverter", generatedCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Converters_YamlAndToml_UserDeclaredConverterKeepsItsAccessibility()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test
+            {
+                internal partial class TestYamlConverter { }
+                internal partial class TestTomlConverter { }
+            }
+            """ + YamlAndTomlStubsSourceCode;
+
+        var generatedCode = await GenerateSingleFileWithoutCompiling(sourceCode);
+        Assert.Contains("\tpartial class TestYamlConverter :", generatedCode, StringComparison.Ordinal);
+        Assert.Contains("\tpartial class TestTomlConverter :", generatedCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("public partial class TestYamlConverter", generatedCode, StringComparison.Ordinal);
+        Assert.DoesNotContain("public partial class TestTomlConverter", generatedCode, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(true, "writer.WriteDecimalValue(value.Value);")]
+    [InlineData(false, "writer.WriteFloatValue((double)value.Value);")]
+    public async Task Converters_Toml_Decimal_DependsOnWriteDecimalValue(bool hasWriteDecimalValue, string expectedCode)
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(decimal))]
+            public partial struct Test {}
+
+            namespace Meziantou.Framework.Toml.Serialization
+            {
+                public abstract class TomlConverter<T> { }
+                public sealed class TomlWriter
+                {
+            """ + (hasWriteDecimalValue ? "public void WriteDecimalValue(decimal value) { }" : "internal void WriteDecimalValue(decimal value) { }") + """
+                }
+            }
+            """;
+
+        var generatedCode = await GenerateSingleFileWithoutCompiling(sourceCode);
+        Assert.Contains(expectedCode, generatedCode, StringComparison.Ordinal);
+    }
+
+    private static async Task<string> GenerateSingleFileWithoutCompiling([StringSyntax("c#-test")] string sourceCode)
+    {
+        var result = await GenerateFiles(sourceCode, mustCompile: false);
+        Assert.Empty(result.GeneratorResult.Diagnostics);
+        return (await Assert.Single(result.GeneratorResult.GeneratedTrees).GetRootAsync(XunitCancellationToken)).ToFullString();
+    }
+
+    /// <summary>
+    /// Minimal declarations of the Meziantou.Framework.Yaml and Meziantou.Framework.Toml types the generator looks for.
+    /// The generated converters do not compile against them.
+    /// </summary>
+    private const string YamlAndTomlStubsSourceCode = """
+
+        namespace Meziantou.Framework.Yaml.Serialization
+        {
+            public abstract class YamlConverter<T> { }
+        }
+
+        namespace Meziantou.Framework.Toml.Serialization
+        {
+            public abstract class TomlConverter<T> { }
+            public sealed class TomlWriter { }
+        }
+        """;
+
+    [Fact]
     public async Task AssemblyDefaults_GuidGenerationStrategy_NotSupportedByTargetFramework()
     {
         var sourceCode = """

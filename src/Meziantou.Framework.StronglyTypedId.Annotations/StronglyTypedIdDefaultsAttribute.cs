@@ -34,6 +34,12 @@ public sealed class StronglyTypedIdDefaultsAttribute : Attribute
     /// <summary>Gets or sets the default value indicating whether a MongoDB.Bson.Serialization.Serializers.SerializerBase{T} is generated. When the property is not set, the serializer is generated.</summary>
     public bool GenerateMongoDBBsonSerialization { get; set; }
 
+    /// <summary>Gets or sets the default value indicating whether a Meziantou.Framework.Yaml.Serialization.YamlConverter{T} is generated. When the property is not set, the converter is generated.</summary>
+    public bool GenerateYamlConverter { get; set; }
+
+    /// <summary>Gets or sets the default value indicating whether a Meziantou.Framework.Toml.Serialization.TomlConverter{T} is generated. When the property is not set, the converter is generated.</summary>
+    public bool GenerateTomlConverter { get; set; }
+
     /// <summary>Gets or sets the default value indicating whether generated members are marked with <see cref="System.CodeDom.Compiler.GeneratedCodeAttribute"/>. When the property is not set, the attribute is added.</summary>
     public bool AddCodeGeneratedAttribute { get; set; }
 

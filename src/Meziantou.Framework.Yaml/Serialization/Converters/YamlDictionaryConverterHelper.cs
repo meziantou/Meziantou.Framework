@@ -105,6 +105,14 @@ internal static class YamlDictionaryConverterHelper
             throw new YamlException(Mark.Empty, Mark.Empty, "Dictionary key cannot be null.");
         }
 
+        // A key of a type the serializer does not know is read by the custom converter of its type (see ReadDictionary),
+        // so it is written by that converter too: its text representation is not, in general, what the converter reads.
+        if (!IsSupportedKeyType(typeof(TKey)))
+        {
+            WriteKeyWithConverter(writer, writer.GetConverter(typeof(TKey)), typeof(TKey), key);
+            return;
+        }
+
         if (key is string textKey)
         {
             var name = writer.ConvertDictionaryKey(textKey);
@@ -141,6 +149,39 @@ internal static class YamlDictionaryConverterHelper
         }
 
         writer.WritePropertyName(text, writer.ReadsAsBooleanOrNumber(text) ? ScalarStyle.Plain : ScalarStyle.Any);
+    }
+
+    /// <summary>Writes a key with the converter of its type.</summary>
+    /// <remarks>
+    /// A converter writes a value, which the writer does not accept where a key is expected. The converter writes the key
+    /// in a document of its own instead, and the scalar it contains, with its style and tag, is written as the key, so
+    /// that it is read back the same way.
+    /// </remarks>
+    private static void WriteKeyWithConverter(YamlWriter writer, YamlConverter converter, Type keyType, object key)
+    {
+        var keyDocument = new StringBuilder();
+        converter.Write(new YamlWriter(keyDocument, writer.Options), key);
+
+        var reader = YamlReader.Create(keyDocument.ToString(), writer.Options);
+        while (reader.Read())
+        {
+            switch (reader.TokenType)
+            {
+                case YamlTokenType.Scalar:
+                    if (reader.Tag is { } tag)
+                    {
+                        writer.WriteResolvedTag(tag);
+                    }
+
+                    writer.WritePropertyName(reader.ScalarValue ?? string.Empty, reader.ScalarStyle);
+                    return;
+
+                case YamlTokenType.StartMapping or YamlTokenType.StartSequence or YamlTokenType.Alias:
+                    throw new YamlException(Mark.Empty, Mark.Empty, $"The converter of the dictionary key type '{keyType}' must write a scalar.");
+            }
+        }
+
+        throw new YamlException(Mark.Empty, Mark.Empty, $"The converter of the dictionary key type '{keyType}' did not write a value.");
     }
 
     internal static string FormatNonStringKey<T>(T key)

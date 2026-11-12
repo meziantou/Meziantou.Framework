@@ -41,6 +41,8 @@ types you pass to the serializer. The generator adds a static `Default` instance
 type, named after the type. When two names collide, set [TypeInfoPropertyName](cref:Meziantou.Framework.Yaml.Serialization.YamlSerializableAttribute.TypeInfoPropertyName) on [\[YamlSerializable\]](cref:Meziantou.Framework.Yaml.Serialization.YamlSerializableAttribute) to rename the
 property.
 
+The context can be nested in another type, including a generic type, when every containing type is `partial` too.
+
 ## Serialize with the context
 
 Pass the property of the type to the serializer:
@@ -126,7 +128,7 @@ returns the value at run time. When reflection is disabled, serializing a type w
 
 | Id | Severity | Description |
 | --- | --- | --- |
-| `MFY001` | Error | The context type must be declared `partial`. |
+| `MFY001` | Error | The context type, or one of its containing types, is not declared `partial`. |
 | `MFY002` | Error | A member uses a type the generator cannot serialize. |
 | `MFY003` | Error | An extension data member uses an unsupported type. |
 | `MFY004` | Error | A type declares several [\[YamlExtensionData\]](cref:Meziantou.Framework.Yaml.Serialization.YamlExtensionDataAttribute) members. |

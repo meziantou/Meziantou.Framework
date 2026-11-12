@@ -120,6 +120,9 @@ public sealed class ImageDecoder
 
     private bool _complete;
     private bool _tracksEstablished;
+
+    /// <summary>Whether the track list holds the established tracks (they are set in a task): the decodes resolve after it, so <c>tracks.selectedTrack</c> is set when they do.</summary>
+    private bool _tracksPublished;
     private int _internalSelectedTrackIndex = -1;
     private uint[] _frameCounts = [];
     private bool _processQueued;
@@ -449,12 +452,14 @@ public sealed class ImageDecoder
 
         // 4-5. The track of the image: an animation, or a still image (the repetition count of a still image is 0). The
         // container can declare an animation before its second frame arrives (the acTL chunk of an APNG image, the brand
-        // of an AVIF image sequence...). While the data of a format that can be animated is incomplete and shows no
-        // animation yet, it is not enough to know the track: an animation streamed one chunk at a time would otherwise
-        // be established as a still image, and its track does not change afterwards.
+        // of an AVIF image sequence...). While the data of a format that can be animated is incomplete and shows neither
+        // an animation nor that the image is still (the trailer of a GIF image after its only image, the image data of a
+        // PNG image without acTL chunk...), it is not enough to know the track: an animation streamed one chunk at a time
+        // would otherwise be established as a still image, and its track does not change afterwards.
+        var data = _data.AsSpan(0, _length);
         var frameCount = (uint)codec.FrameCount;
-        var animated = frameCount > 1 || ImageMetadata.IsAnimated(_data.AsSpan(0, _length));
-        if (!animated && !_complete && CanBeAnimated(_essence))
+        var animated = frameCount > 1 || ImageMetadata.IsAnimated(data);
+        if (!animated && !_complete && CanBeAnimated(_essence) && !ImageMetadata.IsStill(data))
             return;
 
         var repetitionCount = !animated ? 0f : codec.RepetitionCount < 0 ? float.PositiveInfinity : codec.RepetitionCount;
@@ -467,19 +472,26 @@ public sealed class ImageDecoder
         _internalSelectedTrackIndex = selectedIndex;
         _tracksEstablished = true;
 
-        // 11. The track list
+        // 11. The track list, then the decodes that waited for the tracks
         QueueTask(() =>
         {
             if (!IsClosed)
             {
                 Tracks.SetTracks(tracks, selectedIndex);
+                _tracksPublished = true;
+                QueueProcessDecodes();
             }
         });
     }
 
-    /// <summary>Whether images of a MIME type can be animations: their track is only known once they show an animation, or once their data is complete.</summary>
+    /// <summary>
+    /// Whether the start of images of a MIME type tells whether they are animations (<see cref="ImageMetadata.IsAnimated"/>,
+    /// <see cref="ImageMetadata.IsStill"/>): their track is only known once it does, or once their data is complete. A JPEG XL
+    /// image declares its animation in the bit-packed metadata of its codestream, which is not read: its track is known as
+    /// soon as the decoder can open it.
+    /// </summary>
     private static bool CanBeAnimated(string essence)
-        => essence is "image/gif" or "image/png" or "image/apng" or "image/webp" or "image/avif" or "image/jxl";
+        => essence is "image/gif" or "image/png" or "image/apng" or "image/webp" or "image/avif";
 
     /// <summary>https://w3c.github.io/webcodecs/#imagedecoder-get-default-selected-track-index: the image has no other track than its primary track.</summary>
     private int GetDefaultSelectedTrackIndex(List<ImageTrack> tracks)
@@ -531,7 +543,7 @@ public sealed class ImageDecoder
     private void ProcessDecodes()
     {
         _processQueued = false;
-        while (!IsClosed && _tracksEstablished && _pendingDecodes.Count > 0)
+        while (!IsClosed && _tracksPublished && _pendingDecodes.Count > 0)
         {
             var request = _pendingDecodes[0];
             var outcome = DecodeFrame(request.FrameIndex, out var frame);

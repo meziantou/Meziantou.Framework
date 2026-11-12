@@ -256,11 +256,18 @@ public static partial class WebPlatformFuzzTargets
         var isAnimated = ImageMetadata.IsAnimated(data);
         _ = ImageMetadata.GetAnimationRepetitionCount(data);
         _ = ImageMetadata.GetExifOrientation(data);
+        FuzzAssert.True(!isAnimated || !ImageMetadata.IsStill(data), "The input is both an animated image and a still image");
         foreach (var length in new[] { 1, 8, 16, 32, data.Length / 2, data.Length - 1 })
         {
             if (length > 0 && length < data.Length && ImageMetadata.IsAnimated(data[..length]))
             {
                 FuzzAssert.True(isAnimated, $"The first {length} bytes are an animated image, but not the whole input");
+            }
+
+            // What the start of an image shows as still cannot become an animation
+            if (length > 0 && length < data.Length && ImageMetadata.IsStill(data[..length]))
+            {
+                FuzzAssert.True(!isAnimated, $"The first {length} bytes are a still image, but the whole input is an animated image");
             }
         }
     }

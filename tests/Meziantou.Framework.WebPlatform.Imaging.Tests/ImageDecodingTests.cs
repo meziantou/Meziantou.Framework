@@ -156,6 +156,53 @@ public sealed class ImageDecodingTests : IDisposable
     }
 
     [Fact]
+    public async Task ImageDecoder_DecodesAStillImageOfAStreamThatIsNotClosed()
+    {
+        // The whole GIF of one frame (its trailer included) is in the stream, which stays open: the data shows the image
+        // is still, so the track is established and the frame decoded without waiting for the end of the stream
+        var engine = TestScriptEngines.Create();
+        try
+        {
+            var context = _pages.Load("""
+                <script>
+                  const bytes = Uint8Array.from(atob('R0lGODlhAQABAIAAAP8AAAAAACwAAAAAAQABAAACAkQBADs='), c => c.charCodeAt(0));
+                  let sent = false;
+                  const data = new ReadableStream({
+                    pull(controller) {
+                      if (!sent) {
+                        sent = true;
+                        controller.enqueue(bytes);
+                      }
+                    },
+                  }, { highWaterMark: 0 });
+                  const decoder = new ImageDecoder({ type: 'image/gif', data });
+                  decoder.decode().then(result => {
+                    const track = decoder.tracks.selectedTrack;
+                    document.title = track.animated + ' ' + result.image.codedWidth + ' ' + decoder.complete;
+                  }, e => document.title = e.name);
+                </script>
+                """, scriptEngine: engine);
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            while (context.Document.Title.Length == 0)
+            {
+                Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30), "The frame was not decoded");
+                using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                await context.EventLoop.RunUntilIdleAsync(cancellation.Token);
+                if (context.Document.Title.Length == 0)
+                {
+                    await Task.Delay(1);
+                }
+            }
+
+            Assert.Equal("false 1 false", context.Document.Title);
+        }
+        finally
+        {
+            TestScriptEngines.Dispose(engine);
+        }
+    }
+
+    [Fact]
     public async Task ImageDecoder_RejectsTheFramesTheImageDoesNotHave()
     {
         using var context = new BrowsingContext(new BrowsingContextOptions { RenderingBackend = new ImagingRenderingBackend() });
@@ -214,7 +261,9 @@ public sealed class ImageDecodingTests : IDisposable
     [InlineData("jxl", false)]
     public void ImageMetadata_IsAnimated(string format, bool expected)
     {
-        Assert.Equal(expected, ImageMetadata.IsAnimated(CreateAnimation(format, totalPlays: null)));
+        var animation = CreateAnimation(format, totalPlays: null);
+        Assert.Equal(expected, ImageMetadata.IsAnimated(animation));
+        Assert.False(ImageMetadata.IsStill(animation));
     }
 
     [Theory]
@@ -225,7 +274,13 @@ public sealed class ImageDecodingTests : IDisposable
     [InlineData("jpeg")]
     public void ImageMetadata_IsAnimated_StillImage(string format)
     {
-        Assert.False(ImageMetadata.IsAnimated(CreateTestImage(format)));
+        var image = CreateTestImage(format);
+        Assert.False(ImageMetadata.IsAnimated(image));
+
+        // The whole image shows it is still (a JPEG image is never animated: it is not one of the formats IsStill reads),
+        // but not its first bytes (its header only, before the data that tells it)
+        Assert.Equal(format != "jpeg", ImageMetadata.IsStill(image));
+        Assert.False(ImageMetadata.IsStill(image.AsSpan(0, 8)));
     }
 
     [Fact]

@@ -294,6 +294,106 @@ internal static class ImageMetadata
         return IsAvifSequence(bytes);
     }
 
+    /// <summary>
+    /// Returns whether the start of an encoded image shows that the image is not an animation, whatever follows (see
+    /// <see cref="IsAnimated"/>): a GIF image whose trailer follows its only image, a PNG image whose image data starts
+    /// without an <c>acTL</c> chunk declaring several frames, a WebP image without the animation flag (a simple file, or a
+    /// <c>VP8X</c> chunk without it), or an AVIF image whose <c>ftyp</c> box has no <c>avis</c> brand. False when the
+    /// bytes do not tell yet, and for the other formats.
+    /// </summary>
+    public static bool IsStill(ReadOnlySpan<byte> bytes)
+    {
+        if (bytes.StartsWith("GIF87a"u8) || bytes.StartsWith("GIF89a"u8))
+            return GifEndsAfterOneImage(bytes);
+
+        if (bytes.StartsWith(PngSignature))
+            return PngImageDataStartsWithoutAnimation(bytes);
+
+        if (bytes.Length >= 21 && bytes.StartsWith("RIFF"u8) && bytes[8..].StartsWith("WEBP"u8))
+        {
+            var type = bytes.Slice(12, 4);
+            return type.SequenceEqual("VP8 "u8) || type.SequenceEqual("VP8L"u8) || (type.SequenceEqual("VP8X"u8) && (bytes[20] & 0x02) == 0);
+        }
+
+        if (bytes.Length < 16 || !bytes[4..].StartsWith("ftyp"u8))
+            return false;
+
+        var size = BinaryPrimitives.ReadUInt32BigEndian(bytes);
+        return size >= 16 && size <= bytes.Length && !IsAvifSequence(bytes);
+    }
+
+    /// <summary>Returns whether the trailer of a GIF image follows its first image (and it has no other image).</summary>
+    private static bool GifEndsAfterOneImage(ReadOnlySpan<byte> bytes)
+    {
+        if (bytes.Length < 13)
+            return false;
+
+        var offset = 13;
+        if ((bytes[10] & 0x80) != 0)
+        {
+            offset += 3 * (1 << ((bytes[10] & 0x07) + 1));
+        }
+
+        var count = 0;
+        while (offset < bytes.Length)
+        {
+            switch (bytes[offset])
+            {
+                case 0x3B:
+                    return count == 1;
+
+                case 0x21 when offset + 2 < bytes.Length:
+                    offset = SkipGifSubBlocks(bytes, offset + 2);
+                    break;
+
+                case 0x2C when offset + 10 <= bytes.Length && count == 0:
+                {
+                    var packed = bytes[offset + 9];
+                    offset += 10;
+                    if ((packed & 0x80) != 0)
+                    {
+                        offset += 3 * (1 << ((packed & 0x07) + 1));
+                    }
+
+                    if (offset >= bytes.Length)
+                        return false;
+
+                    offset = SkipGifSubBlocks(bytes, offset + 1);
+                    count++;
+                    break;
+                }
+
+                default:
+                    return false;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Returns whether the image data of a PNG image starts (its first <c>IDAT</c> chunk) without an <c>acTL</c> chunk that declares several frames.</summary>
+    private static bool PngImageDataStartsWithoutAnimation(ReadOnlySpan<byte> bytes)
+    {
+        var offset = PngSignature.Length;
+        while (offset + 8 <= bytes.Length)
+        {
+            var length = BinaryPrimitives.ReadUInt32BigEndian(bytes[offset..]);
+            var type = bytes.Slice(offset + 4, 4);
+            if (type.SequenceEqual("IDAT"u8))
+                return true;
+
+            if (length > int.MaxValue - 12 || offset + 8 + (long)length > bytes.Length)
+                return false;
+
+            if (type.SequenceEqual("acTL"u8))
+                return length >= 8 && BinaryPrimitives.ReadUInt32BigEndian(bytes[(offset + 8)..]) <= 1;
+
+            offset += 12 + (int)length;
+        }
+
+        return false;
+    }
+
     /// <summary>Returns the number of image descriptors of a GIF image, counted up to a limit (the frames of its animation).</summary>
     private static int CountGifFrames(ReadOnlySpan<byte> bytes, int limit)
     {

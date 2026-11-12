@@ -184,11 +184,16 @@ internal static class Convolver
         var accumulator = scratch.Accumulator[..length];
 
         // The taps of a row are summed a block of samples at a time (Resampler.SetWeightedSum) when the kernel is small enough
-        // for their list to be on the stack; otherwise, and for the scalar reference of the tests, a row is added per tap
+        // for their list to be kept by the worker; otherwise, and for the scalar reference of the tests, a row is added per tap
         var blocked = !Resampler.TestForceScalar && Resampler.IsFmaAccelerated && (Vector128.IsHardwareAccelerated || Vector256.IsHardwareAccelerated) && kernelWidth * kernelHeight <= MaxBlockedTaps;
-        Span<int> tapOffsets = stackalloc int[blocked ? kernelWidth * kernelHeight : 0];
-        Span<double> tapWeights = stackalloc double[blocked ? kernelWidth * kernelHeight : 0];
-        Span<int> tapRows = stackalloc int[blocked ? kernelWidth * kernelHeight : 0];
+        Span<int> tapOffsets = default;
+        Span<double> tapWeights = default;
+        Span<int> tapRows = default;
+        if (blocked)
+        {
+            scratch.GetKernelTaps(kernelWidth * kernelHeight, out tapOffsets, out tapWeights, out tapRows);
+        }
+
         var next = start; // the next row of the band to load into the ring
         for (var y = start; y < end; y++)
         {
@@ -423,7 +428,7 @@ internal static class Convolver
     /// Sets the row at <paramref name="offset"/> in the scratch to the input row filtered by the row weights of a separable
     /// plan: <c>0 + w0 x0 + w1 x1 + ...</c> per sample, zero weights skipped as in the kernel (a sample that is not a
     /// number spreads to the same pixels whatever the path), with the row additions of the kernel (all the taps read one
-    /// row, so they are summed a block of samples at a time in one pass when their list fits on the stack).
+    /// row, so they are summed a block of samples at a time in one pass when their list is short enough).
     /// </summary>
     private static void FilterRow(ConvolutionPlan plan, int channels, ConvolutionScratch scratch, int offset)
     {
@@ -435,8 +440,7 @@ internal static class Convolver
         if (!Resampler.TestForceScalar && Resampler.IsFmaAccelerated && (Vector128.IsHardwareAccelerated || Vector256.IsHardwareAccelerated) && weights.Length <= MaxBlockedTaps)
         {
             // fma(w, x, +0) is the 0 + w x of a first term
-            Span<int> offsets = stackalloc int[weights.Length];
-            Span<double> nonZeroWeights = stackalloc double[weights.Length];
+            scratch.GetRowTaps(weights.Length, out var offsets, out var nonZeroWeights);
             var count = 0;
             for (var i = 0; i < weights.Length; i++)
             {

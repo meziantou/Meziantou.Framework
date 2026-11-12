@@ -21,6 +21,11 @@ internal sealed class ConvolutionScratch : IDisposable
     private readonly int _inputLength;
     private readonly int _accumulatorCount;
     private PooledBuffer? _buffer;
+    private int[]? _tapOffsets;
+    private double[]? _tapWeights;
+    private int[]? _tapRows;
+    private int[]? _rowTapOffsets;
+    private double[]? _rowTapWeights;
 
     private ConvolutionScratch(int paddedLength, int rowLength, int ringSize, ConvolutionHalo halo, int inputLength, int accumulatorCount)
     {
@@ -109,6 +114,41 @@ internal sealed class ConvolutionScratch : IDisposable
     /// last row of the band), or -1 when it contributes nothing.
     /// </summary>
     public int GetBottomHaloOffset(int index) => _halo.GetBottomRow(index) is var row and >= 0 ? GetHaloRowOffset(row) : -1;
+
+    /// <summary>
+    /// Gets the lists of the taps of a kernel that the worker sums a block of samples at a time: arrays of the worker
+    /// instead of stack memory, as a kernel can have up to 1,024 taps (16 KB of lists).
+    /// </summary>
+    /// <param name="count">The number of taps of the kernel.</param>
+    /// <param name="offsets">The offsets of the taps, <paramref name="count"/> values.</param>
+    /// <param name="weights">The weights of the taps, <paramref name="count"/> values.</param>
+    /// <param name="rows">The rows of the taps, <paramref name="count"/> values.</param>
+    public void GetKernelTaps(int count, out Span<int> offsets, out Span<double> weights, out Span<int> rows)
+    {
+        offsets = GetArray(ref _tapOffsets, count);
+        weights = GetArray(ref _tapWeights, count);
+        rows = GetArray(ref _tapRows, count);
+    }
+
+    /// <summary>Gets the lists of the non-zero taps of a row kernel (separate from those of <see cref="GetKernelTaps"/>).</summary>
+    /// <param name="count">The number of taps of the kernel.</param>
+    /// <param name="offsets">The offsets of the taps, <paramref name="count"/> values.</param>
+    /// <param name="weights">The weights of the taps, <paramref name="count"/> values.</param>
+    public void GetRowTaps(int count, out Span<int> offsets, out Span<double> weights)
+    {
+        offsets = GetArray(ref _rowTapOffsets, count);
+        weights = GetArray(ref _rowTapWeights, count);
+    }
+
+    private static Span<T> GetArray<T>(ref T[]? array, int count)
+    {
+        if (array is null || array.Length < count)
+        {
+            array = new T[count];
+        }
+
+        return array.AsSpan(0, count);
+    }
 
     public void Dispose()
     {

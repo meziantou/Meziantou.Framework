@@ -45,6 +45,7 @@ internal sealed class ToneCurveMapper : IDisposable
     private PooledBuffer? _tables;
     private PooledBuffer? _columnTiles;
     private PooledBuffer? _columnWeights;
+    private PooledBuffer? _partialCounts;
 
     /// <summary>Rents the working memory of the operation.</summary>
     /// <param name="scope">The scope charged for the working memory.</param>
@@ -79,6 +80,11 @@ internal sealed class ToneCurveMapper : IDisposable
             _row = ToneSamples.RentRow(scope, _width);
             _histogram = scope.Rent(_planes * _levels * sizeof(long), AllocationKind.Temporary, clear: false);
             _tables = scope.Rent((int)tableBytes, AllocationKind.Temporary, clear: false);
+            if (_levels == 256)
+            {
+                _partialCounts = ToneSamples.RentPartialCounts(scope, _planes);
+            }
+
             if (_adaptive)
             {
                 _columnTiles = scope.Rent(_width * sizeof(int), AllocationKind.Temporary, clear: false);
@@ -180,6 +186,8 @@ internal sealed class ToneCurveMapper : IDisposable
         _columnTiles = null;
         _columnWeights?.Dispose();
         _columnWeights = null;
+        _partialCounts?.Dispose();
+        _partialCounts = null;
     }
 
     /// <summary>
@@ -469,7 +477,7 @@ internal sealed class ToneCurveMapper : IDisposable
         // 8-bit levels are counted in partial counters (one set per plane), added up at the end of the region or before
         // they can overflow
         var partialCounts = _levels == 256;
-        Span<uint> partial = partialCounts ? stackalloc uint[_planes * ToneSamples.PartialCountLength] : default;
+        var partial = partialCounts ? ToneSamples.GetPartialCounts(GetBuffer(_partialCounts), _planes) : default;
         partial.Clear();
         var pending = 0L;
         for (var y = top; y < bottom; y++)

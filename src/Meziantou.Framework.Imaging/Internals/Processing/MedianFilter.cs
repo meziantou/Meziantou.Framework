@@ -201,7 +201,8 @@ internal static class MedianFilter
         var channels = plan.Channels;
         var output = keys.Slice((diameter + (2 * radius)) * plan.PaddedLength, width * channels);
         var rank = plan.Rank;
-        Span<int> rows = diameter <= 1024 ? stackalloc int[diameter] : new int[diameter];
+        // On the stack up to 1 KB: a band runs on a worker thread, whose stack can be small
+        Span<int> rows = diameter <= 256 ? stackalloc int[diameter] : new int[diameter];
 
         // The group of keys each low-bits tree counts (32-bit keys), none yet
         Span<int> active = stackalloc int[channels];

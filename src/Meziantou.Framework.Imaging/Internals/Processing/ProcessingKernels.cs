@@ -61,8 +61,10 @@ internal static class ProcessingKernels
         }
 
         // Destination column dx comes from source row sy(dx) and destination row dy from source column sx(dy). Go through
-        // square tiles so that each source and destination row is fetched once per tile instead of once per pixel.
-        Span<TPixel> tile = stackalloc TPixel[TileSize * TileSize];
+        // square tiles so that each source and destination row is fetched once per tile instead of once per pixel. The tile
+        // (up to 16 KB) is rented: every pixel of it that is read was written for the same tile.
+        using var tileBuffer = destination.Storage.Owner.Scope.Rent(TileSize * TileSize * Unsafe.SizeOf<TPixel>(), AllocationKind.Temporary, clear: false);
+        var tile = unsafe(MemoryMarshal.Cast<byte, TPixel>(tileBuffer.Span))[..(TileSize * TileSize)];
         var transposeBlocks = !Resampler.TestForceScalar && CanTransposeBlocks<TPixel>();
         for (var tileY = 0; tileY < outputHeight; tileY += TileSize)
         {

@@ -24,6 +24,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public static void DetachArrayBuffer(Meziantou.Framework.JavaScriptEngine.JsValue arrayBuffer, Meziantou.Framework.JavaScriptEngine.JsValue key = default) { }
         public static Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock? GetSharedDataBlock(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
         public static bool IsResizable(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
+        public static void SetArrayBufferMemory(Meziantou.Framework.JavaScriptEngine.JsValue arrayBuffer, System.Memory<byte> memory) { }
         public static bool TryGetBufferSource(Meziantou.Framework.JavaScriptEngine.JsValue value, out Meziantou.Framework.JavaScriptEngine.JsBufferKind kind, out bool isShared, out System.Memory<byte> bytes) => throw null;
     }
 
@@ -294,6 +295,28 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsRealm Realm { get => throw null; }
     }
 
+    public readonly struct JsFunctionSourceLocation : System.IEquatable<Meziantou.Framework.JavaScriptEngine.JsFunctionSourceLocation>
+    {
+        public int Column { get => throw null; init { } }
+        public int Line { get => throw null; init { } }
+        public string Name { get => throw null; init { } }
+        public int Position { get => throw null; init { } }
+        public Meziantou.Framework.JavaScriptEngine.JsScriptOrModule? ScriptOrModule { get => throw null; init { } }
+        public string? Url { get => throw null; init { } }
+        public JsFunctionSourceLocation(string Name, Meziantou.Framework.JavaScriptEngine.JsScriptOrModule? ScriptOrModule, string? Url, int Position, int Line, int Column) { }
+        public void Deconstruct(out string Name, out Meziantou.Framework.JavaScriptEngine.JsScriptOrModule? ScriptOrModule, out string? Url, out int Position, out int Line, out int Column) => throw null;
+        public bool Equals(Meziantou.Framework.JavaScriptEngine.JsFunctionSourceLocation other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.JavaScriptEngine.JsFunctionSourceLocation left, Meziantou.Framework.JavaScriptEngine.JsFunctionSourceLocation right) => throw null;
+        public static bool operator !=(Meziantou.Framework.JavaScriptEngine.JsFunctionSourceLocation left, Meziantou.Framework.JavaScriptEngine.JsFunctionSourceLocation right) => throw null;
+    }
+
     public class JsHost
     {
         public virtual void CallContinuation(Meziantou.Framework.JavaScriptEngine.JsEngine engine, object hostDefined, Meziantou.Framework.JavaScriptEngine.JsContinuation continuation) { }
@@ -455,6 +478,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public bool DefineProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key, in Meziantou.Framework.JavaScriptEngine.JsPropertyDescriptor descriptor) => throw null;
         public bool DeleteProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;
         public string? GetErrorStack() => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsFunctionSourceLocation? GetFunctionSourceLocation() => throw null;
         public bool GetIsExtensible() => throw null;
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsPropertyKey> GetOwnPropertyKeys() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue GetProperty(Meziantou.Framework.JavaScriptEngine.JsPropertyKey key) => throw null;
@@ -596,13 +620,16 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction<T1, TResult>(string name, System.Func<T1, TResult> function) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction<T1, T2, TResult>(string name, System.Func<T1, T2, TResult> function) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction<T1, T2, T3, TResult>(string name, System.Func<T1, T2, T3, TResult> function) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsObject CreateGrowableSharedArrayBuffer(Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock block, System.Action<Meziantou.Framework.JavaScriptEngine.JsObject, int> grow) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSyntheticModule CreateJsonModule(string json, string? url = null, object? hostDefined = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateObject() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreatePromise(System.Threading.Tasks.Task task) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreatePromise(System.Threading.Tasks.Task<Meziantou.Framework.JavaScriptEngine.JsValue> task) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreatePromise<T>(System.Threading.Tasks.Task<T> task, System.Func<T, Meziantou.Framework.JavaScriptEngine.JsValue> convertResult) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsObject CreateResizableArrayBuffer(System.Memory<byte> memory, int maxByteLength, Meziantou.Framework.JavaScriptEngine.JsValue detachKey, System.Action<Meziantou.Framework.JavaScriptEngine.JsObject, int> resize) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateSharedArrayBuffer(Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock block) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsObject CreateSharedArrayBuffer(Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock block, int byteLength) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSyntheticModule CreateSyntheticModule(System.Collections.Generic.IEnumerable<string> exportNames, System.Action<Meziantou.Framework.JavaScriptEngine.JsSyntheticModule> evaluate, string? url = null, object? hostDefined = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSyntheticModule CreateTextModule(string text, string? url = null, object? hostDefined = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate(string code) => throw null;
@@ -649,6 +676,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public System.Span<byte> GetSpan() => throw null;
         public static Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock? TryCreate(int byteLength, int? maxByteLength) => throw null;
         public bool TryGrow(int newByteLength) => throw null;
+        public bool TryGrowBy(int deltaByteLength, out int previousByteLength) => throw null;
     }
 
     public readonly struct JsSourceLocation : System.IEquatable<Meziantou.Framework.JavaScriptEngine.JsSourceLocation>

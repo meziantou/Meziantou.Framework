@@ -117,6 +117,33 @@ public sealed class JsSharedDataBlock
         }
     }
 
+    /// <summary>
+    /// Grows the block by <paramref name="deltaByteLength"/> bytes, and returns its previous byte length, atomically (e.g.
+    /// the <c>grow(delta)</c> of a shared <c>WebAssembly.Memory</c>: the concurrent calls of several agents each grow the
+    /// block by their delta). False when the delta is negative or the new length is greater than the maximum byte length.
+    /// The new bytes are zeroed before the new length is published.
+    /// </summary>
+    /// <param name="deltaByteLength">The number of bytes to add to the block.</param>
+    /// <param name="previousByteLength">The byte length of the block before it grew; the current byte length when the block cannot grow.</param>
+    public bool TryGrowBy(int deltaByteLength, out int previousByteLength)
+    {
+        lock (_growLock)
+        {
+            var current = _byteLength;
+            previousByteLength = current;
+            if (deltaByteLength == 0)
+                return true;
+
+            if (deltaByteLength < 0 || MaxByteLength is not { } max || deltaByteLength > max - current)
+                return false;
+
+            var newByteLength = current + deltaByteLength;
+            _data.AsSpan(_offset + current, deltaByteLength).Clear();
+            Volatile.Write(ref _byteLength, newByteLength);
+            return true;
+        }
+    }
+
     /// <summary>Gets the bytes of the block (its current byte length) as a <see cref="Memory{T}"/>, which keeps the memory alive.</summary>
     public Memory<byte> GetMemory() => _data.AsMemory(_offset, ByteLength);
 }

@@ -133,6 +133,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 SetMember(result, "href", Adapter.FromString(url.Serialize()));
                 SetMember(result, "origin", Adapter.FromString(url.SerializeOrigin()));
                 SetMember(result, "includesCredentials", Adapter.FromBoolean(url.IncludesCredentials));
+                SetMember(result, "danglingMarkup", Adapter.FromBoolean(url.PotentiallyDanglingMarkup));
                 return result;
             });
             // https://url.spec.whatwg.org/#concept-url-blob-entry: the blob of a blob: URL, resolved when the URL is parsed
@@ -141,7 +142,13 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             Define("queueTask", 1, (_, args) =>
             {
                 var callback = args[0];
-                GlobalScope.QueueGlobalTask(() => adapter.Call(callback, adapter.Undefined, []));
+                GlobalScope.QueueGlobalTask(() =>
+                {
+                    // https://w3c.github.io/long-animation-frames/#record-timing-info-for-promise-resolver: the tasks of Fetch.js
+                    // settle the promises of the bodies (text(), json()...)
+                    GlobalScope.EventLoop.RecordPromiseResolverScript(GlobalScope, rejected: false);
+                    adapter.Call(callback, adapter.Undefined, []);
+                });
                 return adapter.Undefined;
             });
 
@@ -228,6 +235,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         foreach (var item in ToList(Adapter.Get(serialized, Key("urlList"))))
         {
             urlList.Add(UrlParser.Parse(Adapter.ToString(item), baseUrl: null)!);
+        }
+
+        // The flag of the URL record that the serialization of the URL does not keep (https://github.com/whatwg/fetch/pull/519)
+        if (Adapter.ToBoolean(Adapter.Get(serialized, Key("danglingMarkup"))))
+        {
+            urlList[0].PotentiallyDanglingMarkup = true;
         }
 
         var body = Adapter.Get(serialized, Key("body"));
@@ -350,6 +363,11 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             }
 
             var reader = bodyReader is null ? null : CreateBodyReader(bodyReader, document, () => controller.IsCancellationRequested, Finish, controller.Cancel);
+
+            // https://w3c.github.io/long-animation-frames/#record-timing-info-for-promise-resolver: the promise of fetch() is settled.
+            // Its invoker is "Promise" (the promise has no creation-time attribution): the reactions of the promises of the body
+            // read from the response (text(), json()...) may run in the same microtask checkpoint
+            GlobalScope.EventLoop.RecordPromiseResolverScript(GlobalScope, rejected: response.IsNetworkError);
             adapter.Call(callback, adapter.Undefined, [isOpaque ? FromFetchResponse(response, internalBodyReader: reader) : FromFetchResponse(response, reader)]);
         }
 
@@ -455,6 +473,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 {
                     document.QueueGlobalTask(() =>
                     {
+                        // https://w3c.github.io/long-animation-frames/#record-timing-info-for-promise-resolver: the promises of the
+                        // body (the reads of its stream, text(), json()...) are settled by Fetch.js when the chunk is given
+                        GlobalScope.EventLoop.RecordPromiseResolverScript(GlobalScope, rejected: !completed.IsCompletedSuccessfully);
                         if (completed.IsCompletedSuccessfully && completed.Result is { } chunk)
                         {
                             adapter.Call(callback, adapter.Undefined, [FromBuffer(JsBufferKind.Uint8Array, chunk.ToArray())]);

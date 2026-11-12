@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of IndexedDB, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 225 | 229 | 1 | 99% |
+| [Stable](#stable-tests) | 226 | 229 | 1 | 99% |
 | [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **225** | **230** | **1** | **98%** |
+| **All** | **226** | **230** | **1** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 3
+- **NOT IMPLEMENTED**: 2
 - **TEST RUNNER**: 2
 
 ## Stable tests
@@ -56,7 +56,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`idb-binary-key-roundtrip.any.js`](https://wpt.fyi/results/IndexedDB/idb-binary-key-roundtrip.any.js) | Pass | 48 / 48 |  |  |
 | [`idb-explicit-commit-throw.any.js`](https://wpt.fyi/results/IndexedDB/idb-explicit-commit-throw.any.js) | Pass | 2 / 2 |  |  |
 | [`idb-explicit-commit.any.js`](https://wpt.fyi/results/IndexedDB/idb-explicit-commit.any.js) | Pass | 24 / 24 |  |  |
-| [`idb-partitioned-basic.sub.html`](https://wpt.fyi/results/IndexedDB/idb-partitioned-basic.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | storage partitioning: the storage key of a cross-site iframe is its origin (it is not keyed by the top-level site) |
+| [`idb-partitioned-basic.sub.html`](https://wpt.fyi/results/IndexedDB/idb-partitioned-basic.sub.html) | Pass | 1 / 1 |  |  |
 | [`idb-partitioned-coverage.sub.html`](https://wpt.fyi/results/IndexedDB/idb-partitioned-coverage.sub.html) | Pass | 31 / 31 |  |  |
 | [`idb-partitioned-persistence.sub.html`](https://wpt.fyi/results/IndexedDB/idb-partitioned-persistence.sub.html) | Pass | 1 / 1 |  |  |
 | [`idb_binary_key_conversion.any.js`](https://wpt.fyi/results/IndexedDB/idb_binary_key_conversion.any.js) | Pass | 15 / 15 |  |  |

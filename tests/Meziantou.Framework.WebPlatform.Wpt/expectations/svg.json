@@ -1583,40 +1583,25 @@
     "total": 5
   },
   "svg/interact/scripted/async-01.svg": {
-    "total": 1,
-    "failures": {
-      "An async script does not block the parser while downloading": "FAIL"
-    }
+    "total": 1
   },
   "svg/interact/scripted/async-02.html": {
-    "total": 1,
-    "failures": {
-      "Inline async module script vs. onload": "FAIL"
-    }
+    "total": 1
   },
   "svg/interact/scripted/async-03.html": {
     "total": 1
   },
   "svg/interact/scripted/async-04.html": {
-    "total": 1,
-    "failures": {
-      "async script state": "FAIL"
-    }
+    "total": 1
   },
   "svg/interact/scripted/composed.window.svg": {
     "total": 1
   },
   "svg/interact/scripted/defer-01.svg": {
-    "total": 1,
-    "failures": {
-      "defer script runs later": "FAIL"
-    }
+    "total": 1
   },
   "svg/interact/scripted/defer-02.html": {
-    "total": 1,
-    "failures": {
-      "Inline defer module script vs. onload": "FAIL"
-    }
+    "total": 1
   },
   "svg/interact/scripted/ellipse-hittest.html": {
     "total": 24
@@ -1631,16 +1616,10 @@
     "total": 48
   },
   "svg/interact/scripted/module-01.svg": {
-    "total": 1,
-    "failures": {
-      "module script in SVG documents should be evaluated.": "FAIL"
-    }
+    "total": 1
   },
   "svg/interact/scripted/module-02.html": {
-    "total": 1,
-    "failures": {
-      "Inline module script vs. onload": "FAIL"
-    }
+    "total": 1
   },
   "svg/interact/scripted/non-scaling-stroke-transform-change-hittest.html": {
     "total": 2

@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of cookies, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 71 | 76 | 0 | 93% |
+| [Stable](#stable-tests) | 72 | 76 | 0 | 95% |
 | [Tentative](#tentative-tests) | 11 | 13 | 0 | 85% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **82** | **89** | **0** | **92%** |
+| **All** | **83** | **89** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 3
-- **NOT IMPLEMENTED**: 4
+- **TEST BUG**: 4
+- **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
@@ -47,8 +47,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`name/name.html`](https://wpt.fyi/results/cookies/name/name.html) | Pass | 45 / 45 |  |  |
 | [`navigated-away.html`](https://wpt.fyi/results/cookies/navigated-away.html) | Pass | 1 / 1 |  |  |
 | [`ordering/ordering.sub.html`](https://wpt.fyi/results/cookies/ordering/ordering.sub.html) | Pass | 5 / 5 |  |  |
-| [`origin-bound-cookies/port-bound-cookies.html`](https://wpt.fyi/results/cookies/origin-bound-cookies/port-bound-cookies.html) | Fail | 0 / 1 | NOT IMPLEMENTED | origin-bound cookies (the cookies are not bound to the scheme and the port of the origin that set them) |
-| [`origin-bound-cookies/scheme-bound-cookies.https.html`](https://wpt.fyi/results/cookies/origin-bound-cookies/scheme-bound-cookies.https.html) | Fail | 1 / 2 | NOT IMPLEMENTED | origin-bound cookies (the cookies are not bound to the scheme and the port of the origin that set them) |
+| [`origin-bound-cookies/port-bound-cookies.html`](https://wpt.fyi/results/cookies/origin-bound-cookies/port-bound-cookies.html) | Pass | 1 / 1 |  |  |
+| [`origin-bound-cookies/scheme-bound-cookies.https.html`](https://wpt.fyi/results/cookies/origin-bound-cookies/scheme-bound-cookies.https.html) | Fail | 1 / 2 | TEST BUG | the last check of the http: popup reads the cookie of the https: origin of the same host with a `fetch()`: the request is cross-site (schemeful same-site), and the cookie, set without `SameSite` attribute, is `Lax` by default, so it is not sent; the other checks of scheme-bound cookies pass |
 | [`partitioned-cookies/partitioned-cookies-samesite-attribute.https.html`](https://wpt.fyi/results/cookies/partitioned-cookies/partitioned-cookies-samesite-attribute.https.html) | Pass | 2 / 2 |  |  |
 | [`path/default.html`](https://wpt.fyi/results/cookies/path/default.html) | Pass | 1 / 1 |  |  |
 | [`path/match-percent-encoded.https.window.js`](https://wpt.fyi/results/cookies/path/match-percent-encoded.https.window.js) | Pass | 10 / 10 |  |  |

@@ -150,6 +150,48 @@ public sealed class WasmtimeRuntime : WebAssemblyRuntime, IDisposable
 
     internal override WasmStore CreateStore(IWasmHost host) => new WasmtimeStore(this, host);
 
+    /// <summary>
+    /// Whether a parameter of a native function type of the engine is <c>(ref null (array (mut i16)))</c>: the type is compared
+    /// with the reference to an array type created by the engine, which is final, has no supertype and is in a recursion
+    /// group of its own. The engine canonicalizes the types, so the array type of a module is the same type only when its
+    /// definition is the same.
+    /// </summary>
+    internal unsafe bool IsCharCodeArrayParameter(NativeTypeHandle functionType, int parameterIndex)
+    {
+        using var engine = EnterEngine();
+        using var type = new SafeHandleLease(functionType);
+        var parameters = NativeMethods.wasm_functype_params(type.Value);
+        if ((uint)parameterIndex >= (uint)parameters->Size)
+            return false;
+
+        var field = new WasmtimeFieldType { Mutable = 1, StorageKind = WasmtimeStorageTypeKind.I16 };
+        var arrayType = NativeMethods.wasmtime_array_type_new(engine.Value, &field);
+        try
+        {
+            var reference = new WasmtimeValType
+            {
+                Kind = WasmtimeValTypeKind.Ref,
+                Nullable = 1,
+                HeapType = new WasmtimeHeapType { Kind = (byte)WasmHeapKind.ConcreteArray, Concrete = arrayType },
+            };
+
+            // wasmtime_valtype_to_wasm copies the array type
+            var expected = NativeMethods.wasmtime_valtype_to_wasm(engine.Value, &reference);
+            try
+            {
+                return NativeMethods.wasmtime_wasm_valtype_equal(parameters->Data[parameterIndex], expected);
+            }
+            finally
+            {
+                NativeMethods.wasm_valtype_delete(expected);
+            }
+        }
+        finally
+        {
+            NativeMethods.wasmtime_array_type_delete(arrayType);
+        }
+    }
+
     /// <summary>Converts the text format of a module to its binary format (https://webassembly.github.io/spec/core/text/index.html).</summary>
     /// <exception cref="FormatException">The text is not valid.</exception>
     internal static unsafe byte[] WatToWasm(string text)

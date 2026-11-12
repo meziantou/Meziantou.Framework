@@ -1,0 +1,4 @@
+Date: Thu, 01 Jan 2026 00:00:00 GMT
+Last-Modified: Mon, 01 Dec 2025 00:00:00 GMT
+
+Cache-Control: max-stale=100, min-fresh=5

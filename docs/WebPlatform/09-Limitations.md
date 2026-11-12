@@ -55,12 +55,19 @@ fails.
   effect. A document parsed with [HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser) has no browsing context: no window, no computed style and no
   event loop, so the mutation observer callbacks are not invoked.
 - **No downloads**, and the third-party cookies are not blocked.
-- **Reporting API.** Content Security Policy reports its violations, but the Reporting API generates only the CSP, COEP
-  and test reports: there are no deprecation, intervention, COOP or Document Policy reports.
+- **Reporting API.** Content Security Policy reports its violations, but the Reporting API generates only the CSP, COEP,
+  COOP, Permissions Policy, Document Policy, integrity policy and test reports: there are no deprecation or intervention
+  reports.
+- **Signature-based Subresource Integrity** (the `ed25519-` integrity metadata, checked with the `Signature` and
+  `Signature-Input` headers) is not supported.
 
 ## Scripting
 
-- WebAssembly threads are not supported.
+- WebAssembly threads are not supported: a shared `WebAssembly.Memory` can be created, grown and posted to the workers of
+  the agent cluster, but a module cannot import it nor declare a shared memory, and there are no atomic instructions.
+- JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising()`) is not supported.
+- The time spent on the styles and the layout is not measured: the long animation frames report a `styleDuration`, a
+  `layoutDuration` and forced style and layout durations of 0, and no `presentationTime`.
 - The scripts run in your process: read [Running untrusted pages](06-Scripting/04-RunningUntrustedPages.md) before you
   load pages you do not control.
 

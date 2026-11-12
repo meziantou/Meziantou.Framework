@@ -9,18 +9,17 @@ description: "The results of the web-platform-tests of custom-elements, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 185 | 191 | 0 | 97% |
+| [Stable](#stable-tests) | 189 | 191 | 0 | 99% |
 | [Tentative](#tentative-tests) | 2 | 7 | 0 | 29% |
 | [Reftests](#reftests) | 1 | 3 | 0 | 33% |
-| **All** | **188** | **201** | **0** | **94%** |
+| **All** | **192** | **201** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
 - **TEST BUG**: 2
-- **NOT IMPLEMENTED**: 9
+- **NOT IMPLEMENTED**: 7
 
 ## Stable tests
 
@@ -170,7 +169,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`registries/Document-importNode.html`](https://wpt.fyi/results/custom-elements/registries/Document-importNode.html) | Pass | 20 / 20 |  |  |
 | [`registries/Element-customElementRegistry-exceptions.html`](https://wpt.fyi/results/custom-elements/registries/Element-customElementRegistry-exceptions.html) | Pass | 3 / 3 |  |  |
 | [`registries/Element-customElementRegistry.html`](https://wpt.fyi/results/custom-elements/registries/Element-customElementRegistry.html) | Pass | 11 / 11 |  |  |
-| [`registries/Element-innerHTML.html`](https://wpt.fyi/results/custom-elements/registries/Element-innerHTML.html) | Fail | 11 / 12 | BUG | `createContextualFragment()` on a range inside a `<template>` whose registry is scoped gives the parsed elements the registry of the template (the root of the fragment parser gets the registry of the context, as the HTML Standard says); the test expects the null registry |
+| [`registries/Element-innerHTML.html`](https://wpt.fyi/results/custom-elements/registries/Element-innerHTML.html) | Pass | 12 / 12 |  |  |
 | [`registries/ShadowRoot-init-customElementRegistry.html`](https://wpt.fyi/results/custom-elements/registries/ShadowRoot-init-customElementRegistry.html) | Pass | 12 / 12 |  |  |
 | [`registries/ShadowRoot-init-declarative.html`](https://wpt.fyi/results/custom-elements/registries/ShadowRoot-init-declarative.html) | Pass | 3 / 3 |  |  |
 | [`registries/ShadowRoot-innerHTML.html`](https://wpt.fyi/results/custom-elements/registries/ShadowRoot-innerHTML.html) | Pass | 4 / 4 |  |  |
@@ -186,9 +185,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`registries/initial-about-blank.window.js`](https://wpt.fyi/results/custom-elements/registries/initial-about-blank.window.js) | Pass | 1 / 1 |  |  |
 | [`registries/per-document.html`](https://wpt.fyi/results/custom-elements/registries/per-document.html) | Pass | 4 / 4 |  |  |
 | [`registries/pseudo-class-defined.window.js`](https://wpt.fyi/results/custom-elements/registries/pseudo-class-defined.window.js) | Pass | 3 / 3 |  |  |
-| [`registries/scoped-custom-element-registry-customelementregistry-attribute-in-xhtml.xhtml`](https://wpt.fyi/results/custom-elements/registries/scoped-custom-element-registry-customelementregistry-attribute-in-xhtml.xhtml) | Fail | 0 / 4 | NOT IMPLEMENTED | the `customelementregistry` content attribute (the parsed element and its descendants keep a null registry) |
-| [`registries/scoped-custom-element-registry-customelementregistry-attribute.html`](https://wpt.fyi/results/custom-elements/registries/scoped-custom-element-registry-customelementregistry-attribute.html) | Fail | 7 / 23 | NOT IMPLEMENTED | the `customelementregistry` content attribute (the parsed element and its descendants keep a null registry) |
-| [`registries/scoped-registry-append.html`](https://wpt.fyi/results/custom-elements/registries/scoped-registry-append.html) | Fail | 15 / 16 | BUG | an element of the global registry adopted into a tree whose parent uses a scoped registry does not get the effective global registry |
+| [`registries/scoped-custom-element-registry-customelementregistry-attribute-in-xhtml.xhtml`](https://wpt.fyi/results/custom-elements/registries/scoped-custom-element-registry-customelementregistry-attribute-in-xhtml.xhtml) | Pass | 4 / 4 |  |  |
+| [`registries/scoped-custom-element-registry-customelementregistry-attribute.html`](https://wpt.fyi/results/custom-elements/registries/scoped-custom-element-registry-customelementregistry-attribute.html) | Pass | 23 / 23 |  |  |
+| [`registries/scoped-registry-append.html`](https://wpt.fyi/results/custom-elements/registries/scoped-registry-append.html) | Pass | 16 / 16 |  |  |
 | [`registries/scoped-registry-define-upgrade-criteria.html`](https://wpt.fyi/results/custom-elements/registries/scoped-registry-define-upgrade-criteria.html) | Pass | 14 / 14 |  |  |
 | [`registries/scoped-registry-define-upgrade-order.html`](https://wpt.fyi/results/custom-elements/registries/scoped-registry-define-upgrade-order.html) | Pass | 7 / 7 |  |  |
 | [`registries/scoped-registry-effective-global-registry.html`](https://wpt.fyi/results/custom-elements/registries/scoped-registry-effective-global-registry.html) | Pass | 66 / 66 |  |  |

@@ -7,8 +7,10 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A cookie is identified by its name, domain, host-only flag, path and partition key: <see cref="SetCookie"/> replaces
-/// the cookie with the same identity, and <see cref="RemoveCookie"/> removes it. The session cookies (without expiry time)
+/// A cookie is identified by its name, domain, host-only flag, path and partition key, and with origin-bound cookies
+/// (<see cref="CookieJar.OriginBound"/>), its source scheme and the source port of a host-only cookie:
+/// <see cref="SetCookie"/> replaces the cookie with the same identity, and <see cref="RemoveCookie"/> removes it. Store the
+/// source scheme and port with the cookie: a cookie loaded without them is sent to every scheme and port. The session cookies (without expiry time)
 /// are never stored, and a persisted cookie replaced by a session cookie is removed.
 /// </para>
 /// <para>

@@ -429,6 +429,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["PerformanceElementTiming"] = Binding_PerformanceElementTiming<TAdapter, TValue>.Binding,
             ["PerformanceEntry"] = Binding_PerformanceEntry<TAdapter, TValue>.Binding,
             ["PerformanceEventTiming"] = Binding_PerformanceEventTiming<TAdapter, TValue>.Binding,
+            ["PerformanceLongAnimationFrameTiming"] = Binding_PerformanceLongAnimationFrameTiming<TAdapter, TValue>.Binding,
             ["PerformanceLongTaskTiming"] = Binding_PerformanceLongTaskTiming<TAdapter, TValue>.Binding,
             ["PerformanceMark"] = Binding_PerformanceMark<TAdapter, TValue>.Binding,
             ["PerformanceMeasure"] = Binding_PerformanceMeasure<TAdapter, TValue>.Binding,
@@ -438,6 +439,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["PerformanceObserverEntryList"] = Binding_PerformanceObserverEntryList<TAdapter, TValue>.Binding,
             ["PerformancePaintTiming"] = Binding_PerformancePaintTiming<TAdapter, TValue>.Binding,
             ["PerformanceResourceTiming"] = Binding_PerformanceResourceTiming<TAdapter, TValue>.Binding,
+            ["PerformanceScriptTiming"] = Binding_PerformanceScriptTiming<TAdapter, TValue>.Binding,
             ["PerformanceServerTiming"] = Binding_PerformanceServerTiming<TAdapter, TValue>.Binding,
             ["PerformanceSoftNavigation"] = Binding_PerformanceSoftNavigation<TAdapter, TValue>.Binding,
             ["PerformanceTiming"] = Binding_PerformanceTiming<TAdapter, TValue>.Binding,
@@ -1717,6 +1719,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ScreenIdleState enumDom_ScreenIdleState:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ScreenIdleState(enumDom_ScreenIdleState));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ScriptInvokerType enumDom_ScriptInvokerType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ScriptInvokerType(enumDom_ScriptInvokerType));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ScriptWindowAttribution enumDom_ScriptWindowAttribution:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ScriptWindowAttribution(enumDom_ScriptWindowAttribution));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ScrollBehavior enumDom_ScrollBehavior:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ScrollBehavior(enumDom_ScrollBehavior));

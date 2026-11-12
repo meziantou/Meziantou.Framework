@@ -1272,213 +1272,73 @@ public partial class SvgScriptElement
         set => Html.Reflection.SetString(this, "referrerpolicy", value);
     }
 
-    private bool _alreadyProcessed;
+    /// <summary>
+    /// The state and the processing model of the script element: as in the browsers, the SVG script elements are prepared and
+    /// executed as the HTML ones (https://w3c.github.io/svgwg/svg2-draft/interact.html#ScriptElement, see <see cref="ScriptElementCore"/>).
+    /// </summary>
+    internal ScriptElementCore Core => field ??= new ScriptElementCore(this);
 
     /// <summary>
-    /// Whether the element was inserted by a parser, which processes it when it reaches its end tag (set by the HTML and XML
-    /// parsers, as the parser document of the HTML script elements).
+    /// Whether the script is executed as soon as possible (https://html.spec.whatwg.org/multipage/scripting.html#dom-script-async):
+    /// the <c>async</c> attribute of the HTML script elements, which the browsers also apply to the SVG ones.
     /// </summary>
-    internal bool IsParserInserted { get; set; }
+    /// <seealso href="https://html.spec.whatwg.org/multipage/scripting.html#dom-script-async"/>
+    [IdlMember("async", "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-async")]
+    [Experimental(ExperimentalApis.SvgScriptAsync, UrlFormat = ExperimentalApis.UrlFormat)]
+    public bool Async
+    {
+        get => Core.Async;
+        set => Core.Async = value;
+    }
+
+    /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#parser-inserted: set by the HTML and XML parsers on the script elements they insert.</summary>
+    internal bool IsParserInserted => Core.IsParserInserted;
 
     /// <summary>
     /// The script text (https://w3c.github.io/trusted-types/dist/spec/#svgscriptelement-script-text): the child text content
     /// set by the parser. When it differs from the child text content, the default policy is applied to the child text
-    /// content when the element is processed.
+    /// content when the element is prepared.
     /// </summary>
-    internal string ScriptText { get; set; } = "";
-
-    /// <summary>Marks the element as already processed: it never runs (e.g. the scripts parsed by <c>innerHTML</c>).</summary>
-    internal void MarkAsAlreadyProcessed() => _alreadyProcessed = true;
+    internal string ScriptText
+    {
+        get => Core.ScriptText;
+        set => Core.ScriptText = value;
+    }
 
     internal override void AttributeChangeSteps(string localName, string? oldValue, string? value, string? @namespace)
     {
         base.AttributeChangeSteps(localName, oldValue, value, @namespace);
-
-        // As for the src attribute of the HTML script elements, setting href processes a connected script
-        if (localName == "href" && @namespace is null or Namespaces.XLink && value is not null && IsConnected && !IsParserInserted)
-        {
-            Process();
-        }
+        Core.AttributeChangeSteps(localName, value, @namespace);
     }
 
+    /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#script-processing-model: the cloning steps copy already started.</summary>
     internal override void CloningSteps(Node copy, bool subtree)
     {
         base.CloningSteps(copy, subtree);
-        ((SvgScriptElement)copy)._alreadyProcessed = _alreadyProcessed;
+        ((SvgScriptElement)copy).Core.AlreadyStarted = Core.AlreadyStarted;
     }
 
     internal override void PostConnectionSteps()
     {
         base.PostConnectionSteps();
-        if (!IsParserInserted)
-        {
-            Process();
-        }
+        Core.PostConnectionSteps();
     }
 
+    /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#script-processing-model: the script children changed steps.</summary>
     internal override void ChildrenChangedSteps(bool childrenInserted)
     {
         base.ChildrenChangedSteps(childrenInserted);
-        if (childrenInserted && IsConnected && !IsParserInserted)
+        if (childrenInserted && IsConnected)
         {
-            Process();
+            Core.PostConnectionSteps();
         }
     }
 
-    /// <summary>
-    /// Processes the SVG script element (https://svgwg.org/svg2-draft/interact.html#ScriptElement), when the parser reaches
-    /// its end tag (https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inforeign) or, as in browsers, as the
-    /// HTML script elements are prepared (https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element)
-    /// when a script that is not parser-inserted becomes connected, a child is inserted or <c>href</c> is set: the inline
-    /// script, or the script referenced by <c>href</c>, runs when the browsing context of the document has a script engine.
-    /// The <c>type</c> attribute must be a JavaScript MIME type (the <c>language</c> attribute is ignored, as in browsers).
-    /// </summary>
-    /// <param name="pendingScripts">
-    /// The list of the scripts that wait for the script that wrote this element (with <c>document.write()</c>) to return, or
-    /// null: an external script whose fetch completed synchronously is added to it instead of running.
-    /// </param>
-    internal void Process(List<Action>? pendingScripts = null)
+    /// <summary>A render-blocking element that becomes disconnected no longer blocks the rendering (https://html.spec.whatwg.org/multipage/dom.html#render-blocking-mechanism).</summary>
+    internal override void RemovingSteps(bool isSubtreeRoot, Node oldAncestor)
     {
-        if (_alreadyProcessed)
-            return;
-
-        var parserInserted = IsParserInserted;
-        IsParserInserted = false;
-
-        // https://w3c.github.io/trusted-types/dist/spec/#slot-value-verification
-        if (!PrepareScriptText())
-            return;
-
-        var href = GetAttributeValue("href") ?? GetAttributeValue(Namespaces.XLink, "href");
-        var sourceText = ScriptText;
-        if ((href is null && sourceText.Length == 0) || !IsConnected)
-            return;
-
-        var type = GetAttributeValue("type");
-        if (type is { Length: > 0 } && !HtmlScriptElement.IsJavaScriptMimeTypeEssenceMatch(Infra.InfraAscii.StripLeadingAndTrailingAsciiWhitespace(type).ToString()))
-            return;
-
-        _alreadyProcessed = true;
-        var document = NodeDocument;
-        if (document.BrowsingContext is not { Options: { ScriptEngine: not null, ScriptingEnabled: true } } browsingContext || !document.ScriptingEnabled || document.RelevantWindow is not { } window || !ReferenceEquals(window.Document, document))
-            return;
-
-        if (href is null)
-        {
-            // https://w3c.github.io/webappsec-csp/#should-block-inline
-            if (ContentSecurityPolicy.ShouldBlockInline(this, ContentSecurityPolicyInlineType.Script, sourceText, parserInserted))
-                return;
-
-            var position = (RareDataOrNull as ElementRareData)?.InlineSourcePosition ?? (1, 0);
-            Run(new Scripting.ClassicScript(window, sourceText, document.BaseUri) { Url = document.Url, Element = this, SourceTextLine = position.Line, SourceTextColumn = position.Column });
-            return;
-        }
-
-        // As for the src attribute of the HTML script elements, an empty or invalid href fires an error event from a task (an
-        // empty href does not fetch the document itself)
-        var url = href.Length == 0 ? null : Html.Reflection.EncodingParseAndSerializeUrl(document, href);
-        if (url is null)
-        {
-            document.QueueElementTask(() => FireEvent(new Event("error")));
-            return;
-        }
-
-        // The external script delays the load event of the document until it runs
-        document.ScriptsDelayingTheLoadEvent++;
-
-        // The request of a parser-inserted script is parser-inserted ('strict-dynamic' blocks it,
-        // https://w3c.github.io/webappsec-csp/#strict-dynamic-usage)
-        bool fetched;
-        Scripting.ClassicScript? result;
-        IsParserInserted = parserInserted;
-        try
-        {
-            fetched = Scripting.ScriptFetching.FetchClassicScript(this, browsingContext, window, url, OnFetched, out result);
-        }
-        finally
-        {
-            IsParserInserted = false;
-        }
-
-        if (fetched)
-        {
-            // As the HTML script elements that are not parser-inserted, a script inserted by a script runs from a task
-            if (parserInserted && pendingScripts is not null)
-            {
-                pendingScripts.Add(() => OnFetched(result));
-            }
-            else if (parserInserted)
-            {
-                OnFetched(result);
-            }
-            else
-            {
-                browsingContext.EventLoop.QueueTask(() => OnFetched(result));
-            }
-        }
-
-        void OnFetched(Scripting.ClassicScript? script)
-        {
-            try
-            {
-                if (script is null)
-                {
-                    FireEvent(new Event("error"));
-                    return;
-                }
-
-                Run(script);
-                FireEvent(new Event("load"));
-            }
-            finally
-            {
-                document.ScriptsDelayingTheLoadEvent--;
-                document.TryQueueLoadEvent();
-            }
-        }
-    }
-
-    /// <summary>https://w3c.github.io/trusted-types/dist/spec/#prepare-the-script-text</summary>
-    private bool PrepareScriptText()
-    {
-        var childTextContent = GetChildTextContent();
-        if (ScriptText == childTextContent)
-            return true;
-
-        try
-        {
-            ScriptText = TrustedTypesAlgorithms.GetCompliantString(TrustedTypeName.TrustedScript, NodeDocument, childTextContent, "SVGScriptElement text");
-            return true;
-        }
-#pragma warning disable CA1031 // The exceptions of the default policy are reported and the script does not run
-        catch (Exception ex)
-#pragma warning restore CA1031
-        {
-            if (ex is not TypeErrorException)
-            {
-                Scripting.ScriptErrors.Report(ex);
-            }
-
-            return false;
-        }
-    }
-
-    private void Run(Scripting.ClassicScript script)
-    {
-        var document = NodeDocument;
-        if (document.BrowsingContext?.Options.ScriptEngine is not { } engine)
-            return;
-
-        var oldCurrentScript = document.CurrentScript;
-        document.CurrentScript = GetRoot() is ShadowRoot ? null : this;
-        try
-        {
-            Scripting.ScriptExecution.RunClassicScript(engine, script);
-        }
-        finally
-        {
-            document.CurrentScript = oldCurrentScript;
-        }
+        base.RemovingSteps(isSubtreeRoot, oldAncestor);
+        Core.StopBlockingRendering();
     }
 }
 
@@ -1691,7 +1551,7 @@ public partial class SvgTextContentElement
         var first = characters[(int)charnum];
         var range = new Range(first.TextNode, (uint)first.TextOffset, last.TextNode, (uint)(last.TextOffset + (nchars == 0 ? 0 : 1)));
         selection.RemoveAllRanges();
-        selection.AddRange(range);
+        selection.AddRangeCore(range);
     }
 
     /// <summary>Returns the characters of the element in the layout of its text element (empty when it is not rendered).</summary>

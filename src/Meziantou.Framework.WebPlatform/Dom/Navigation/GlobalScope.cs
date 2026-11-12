@@ -124,6 +124,13 @@ public abstract partial class GlobalScope : EventTarget
     /// </summary>
     internal abstract void QueueGlobalTask(Action task);
 
+    /// <summary>
+    /// Runs a global task of the global object from a task of its event loop, with the checks of <see cref="QueueGlobalTask"/>:
+    /// the task runs only if the scripts can run in the realm of the global object (the task of a window whose document is
+    /// in the back/forward cache or frozen is deferred until it is reactivated).
+    /// </summary>
+    internal abstract void RunGlobalTask(Action task);
+
     /// <summary>https://w3c.github.io/hr-time/#the-performance-attribute</summary>
     /// <seealso href="https://w3c.github.io/hr-time/#dom-windoworworkerglobalscope-performance"/>
     [IdlMember("performance", "https://w3c.github.io/hr-time/#dom-windoworworkerglobalscope-performance")]

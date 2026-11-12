@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of workers, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 289 | 290 | 0 | 99.6% |
+| [Stable](#stable-tests) | 290 | 290 | 0 | 100% |
 | [Tentative](#tentative-tests) | 1 | 8 | 0 | 13% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **290** | **298** | **0** | **97%** |
+| **All** | **291** | **298** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 8
+- **NOT IMPLEMENTED**: 7
 - **TEST RUNNER**: 7
 
 ## Stable tests
@@ -312,7 +312,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`shared-worker-options-mismatch.html`](https://wpt.fyi/results/workers/shared-worker-options-mismatch.html) | Pass | 32 / 32 |  |  |
 | [`shared-worker-parse-error-failure.html`](https://wpt.fyi/results/workers/shared-worker-parse-error-failure.html) | Pass | 2 / 2 |  |  |
 | [`shared-worker-runtime-error-is-not-parse-error.html`](https://wpt.fyi/results/workers/shared-worker-runtime-error-is-not-parse-error.html) | Pass | 3 / 3 |  |  |
-| [`worker-performance.worker.js`](https://wpt.fyi/results/workers/worker-performance.worker.js) | Fail | 13 / 14 | NOT IMPLEMENTED | the time the response headers are received (`responseStart`): the loader does not report it, so it is the time the response is complete (the test delays the body by 250 ms); the other subtests pass |
+| [`worker-performance.worker.js`](https://wpt.fyi/results/workers/worker-performance.worker.js) | Pass | 14 / 14 |  |  |
 | [`worker-request-animation-frame.html`](https://wpt.fyi/results/workers/worker-request-animation-frame.html) | Pass | 1 / 1 |  |  |
 | [`worker-url-encoding.html`](https://wpt.fyi/results/workers/worker-url-encoding.html) | Pass | 1 / 1 |  |  |
 

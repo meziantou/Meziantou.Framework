@@ -151,9 +151,10 @@ internal static class CssColorMix
 
     /// <summary>
     /// Interpolates two colors in the same color space (https://drafts.csswg.org/css-color-4/#interpolation): a missing component
-    /// takes the value of the other color, and the components are premultiplied by the alpha (except the hue).
+    /// takes the value of the other color, and the components are premultiplied by the alpha (except the hue) unless
+    /// <paramref name="premultiplied"/> is false (the gradients of a canvas).
     /// </summary>
-    internal static CssColorComponents Interpolate(CssColorComponents a, CssColorComponents b, double progress, HueMethod hueMethod)
+    internal static CssColorComponents Interpolate(CssColorComponents a, CssColorComponents b, double progress, HueMethod hueMethod, bool premultiplied = true)
     {
         var hueIndex = CssColorConversion.GetHueIndex(a.Space);
         var alpha1 = a.Alpha ?? b.Alpha;
@@ -175,7 +176,7 @@ internal static class CssColorMix
             }
 
             // https://drafts.csswg.org/css-color-4/#interpolation-alpha: premultiplied interpolation (a missing alpha is not premultiplied)
-            if (alpha1 is { } p1 && alpha2 is { } p2)
+            if (premultiplied && alpha1 is { } p1 && alpha2 is { } p2)
             {
                 var value = Interpolate(v1 * p1, v2 * p2, progress);
                 channels[i] = alpha is 0 or null ? value : value / alpha.Value;

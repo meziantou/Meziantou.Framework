@@ -4,6 +4,9 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 
 public partial class Window
 {
+    /// <summary>The long animation frame of the window, while its tasks run (https://w3c.github.io/long-animation-frames/#current-frame-timing-info).</summary>
+    internal FrameTimingInfo? CurrentFrameTimingInfo { get; set; }
+
     private readonly SortedDictionary<uint, FrameRequestCallback> _animationFrameCallbacks = [];
     private uint _animationFrameCallbackIdentifier;
 
@@ -60,23 +63,35 @@ public partial class Window
             return;
 
         var now = ToRelativeHighResolutionTime(frameTimestamp);
-        foreach (var handle in _animationFrameCallbacks.Keys.ToArray())
-        {
-            if (!_animationFrameCallbacks.Remove(handle, out var callback))
-                continue;
+        var eventLoop = EventLoop;
 
-            try
+        // The callbacks run in the long animation frame of the window, whatever the realm of their functions
+        var callbackOwner = eventLoop.CallbackOwnerWindow;
+        eventLoop.CallbackOwnerWindow = this;
+        try
+        {
+            foreach (var handle in _animationFrameCallbacks.Keys.ToArray())
             {
-                callback(now);
-            }
+                if (!_animationFrameCallbacks.Remove(handle, out var callback))
+                    continue;
+
+                try
+                {
+                    callback(now);
+                }
 #pragma warning disable CA1031 // The exceptions of the callbacks are reported
-            catch (Exception ex)
+                catch (Exception ex)
 #pragma warning restore CA1031
-            {
-                ScriptErrors.Report(ex, this);
+                {
+                    ScriptErrors.Report(ex, this);
+                }
             }
         }
+        finally
+        {
+            eventLoop.CallbackOwnerWindow = callbackOwner;
+        }
 
-        EventLoop.PerformMicrotaskCheckpoint();
+        eventLoop.PerformMicrotaskCheckpoint();
     }
 }

@@ -503,6 +503,14 @@ public sealed record WebPlatformFeatures
     public bool LongTasksEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets whether the Long Animation Frames API is exposed (https://w3c.github.io/long-animation-frames/): the
+    /// <c>PerformanceLongAnimationFrameTiming</c> and <c>PerformanceScriptTiming</c> interfaces and the
+    /// <c>long-animation-frame</c> entry type. The tasks of a window that run scripts until the rendering is updated, for 50
+    /// milliseconds or more, are reported to the window with the scripts that ran 5 milliseconds or more. The default is true.
+    /// </summary>
+    public bool LongAnimationFramesEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets or sets whether <c>navigator.scheduling.isInputPending()</c> is exposed (https://wicg.github.io/is-input-pending/):
     /// the <c>Scheduling</c> interface and <c>navigator.scheduling</c> (see <see cref="BrowsingContextOptions.PendingInput"/>).
     /// The default is true.

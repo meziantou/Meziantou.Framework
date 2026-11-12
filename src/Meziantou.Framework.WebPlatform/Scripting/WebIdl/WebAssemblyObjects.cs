@@ -32,34 +32,50 @@ internal sealed class WebAssemblyInstanceObject(WasmInstance instance, object ex
 }
 
 /// <summary>
-/// A <c>WebAssembly.Memory</c> object. A shared memory is only a <c>SharedArrayBuffer</c> (the runtimes do not support the
-/// threads): it cannot be imported by a module.
+/// A <c>WebAssembly.Memory</c> object. A shared memory is only the growable shared data block of its
+/// <c>SharedArrayBuffer</c> objects (the runtimes do not support the threads): it cannot be imported by a module.
 /// </summary>
 internal sealed class WebAssemblyMemoryObject
 {
     private readonly bool _is64;
+    private readonly ulong? _sharedMaximum;
 
     public WebAssemblyMemoryObject(WasmMemory memory)
     {
         Memory = memory;
     }
 
-    public WebAssemblyMemoryObject(object sharedBuffer, bool is64)
+    public WebAssemblyMemoryObject(object sharedDataBlock, ulong maximum, bool is64)
     {
-        BufferObject = sharedBuffer;
-        IsShared = true;
+        SharedDataBlock = sharedDataBlock;
+        _sharedMaximum = maximum;
         _is64 = is64;
     }
 
     /// <summary>[[Memory]], or null for a shared memory.</summary>
     public WasmMemory? Memory { get; }
 
-    public bool IsShared { get; }
+    /// <summary>The growable shared data block of a shared memory (see <c>IJsAdapter.GetSharedDataBlock</c>), or null.</summary>
+    public object? SharedDataBlock { get; }
+
+    public bool IsShared => SharedDataBlock is not null;
 
     public bool Is64 => Memory?.Type.Is64 ?? _is64;
 
+    /// <summary>The maximum size of the memory in pages, or null when it has none.</summary>
+    public ulong? Maximum => Memory is { } memory ? memory.Type.Maximum : _sharedMaximum;
+
     /// <summary>[[BufferObject]]: the <c>ArrayBuffer</c> (or the <c>SharedArrayBuffer</c>) of the memory (a JavaScript value).</summary>
     public object? BufferObject { get; set; }
+
+    /// <summary>Whether <see cref="BufferObject"/> is a resizable <c>ArrayBuffer</c> (or a growable <c>SharedArrayBuffer</c>), created by <c>toResizableBuffer()</c>.</summary>
+    public bool IsBufferResizable { get; set; }
+
+    /// <summary>
+    /// The byte length of the fixed-length <c>SharedArrayBuffer</c> of a shared memory: the buffer is replaced when the
+    /// memory grows, possibly by another <c>WebAssembly.Memory</c> object of its data block (of another agent).
+    /// </summary>
+    public int SharedBufferByteLength { get; set; }
 
     /// <summary>The realm in which the buffers are created (the realm of the object).</summary>
     public object? Realm { get; set; }
@@ -97,6 +113,21 @@ internal sealed class WebAssemblyExceptionObject(WasmExceptionReference exceptio
 
     /// <summary>[[Stack]]: a string, or null for undefined.</summary>
     public string? Stack { get; set; }
+}
+
+/// <summary>
+/// The serialized form of a shared <c>WebAssembly.Memory</c> (https://webassembly.github.io/threads/web-api/#serialization):
+/// the shared data block of its buffer, which can only be deserialized in the realms of the agent cluster.
+/// </summary>
+internal sealed class SerializedWasmSharedMemory(object dataBlock, ulong maximum, bool is64, object? agentCluster)
+{
+    public object DataBlock { get; } = dataBlock;
+
+    public ulong Maximum { get; } = maximum;
+
+    public bool Is64 { get; } = is64;
+
+    public object? AgentCluster { get; } = agentCluster;
 }
 
 /// <summary>The serialized form of a <c>WebAssembly.Module</c> (https://webassembly.github.io/spec/web-api/#serialization).</summary>

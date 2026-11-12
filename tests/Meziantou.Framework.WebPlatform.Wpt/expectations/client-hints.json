@@ -120,10 +120,7 @@
     "total": 2
   },
   "client-hints/accept-ch/cache-revalidation.https.html": {
-    "total": 1,
-    "failures": {
-      "Same headers sent for revalidation request": "FAIL"
-    }
+    "total": 1
   },
   "client-hints/accept-ch/meta/resource-in-markup-accept-ch.https.html": {
     "total": 1,

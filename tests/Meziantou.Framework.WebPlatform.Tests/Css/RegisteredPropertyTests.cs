@@ -202,4 +202,19 @@ public sealed class RegisteredPropertyTests : IDisposable
         Assert.Equal("32px", Get(document, "--r"));
         Assert.Equal("32px", Get(document, "font-size"));
     }
+
+    [Fact]
+    public void FontRelativeUnits_InFontProperties_UseTheFontOfTheParent()
+    {
+        // A registered custom property that a font property (other than font-size) references computes its font-relative
+        // lengths with the font of the parent, as the font property does (https://github.com/w3c/csswg-drafts/issues/8169)
+        var document = Parse("<div style='font-size: 30px'><div id=target style='font-size: 10px; --n: calc(1 * tan(atan2(1em, 1px))); font-weight: var(--n); --l: 2em'></div></div>");
+        Register(document, "--n", "<number>", "0");
+        Register(document, "--l", "<length>", "0px");
+        Assert.Equal("30", Get(document, "--n"));
+        Assert.Equal("30", Get(document, "font-weight"));
+
+        // The other custom properties use the font of the element
+        Assert.Equal("20px", Get(document, "--l"));
+    }
 }

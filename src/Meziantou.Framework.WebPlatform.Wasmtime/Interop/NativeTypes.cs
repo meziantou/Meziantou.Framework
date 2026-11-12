@@ -208,6 +208,29 @@ internal struct WasmtimeValType
     public WasmtimeHeapType HeapType;
 }
 
+/// <summary><c>wasmtime_storage_type_kind_t</c></summary>
+internal enum WasmtimeStorageTypeKind : byte
+{
+    I8 = 0,
+    I16 = 1,
+    ValType = 2,
+}
+
+/// <summary><c>wasmtime_field_type_t</c>: <c>{ mutable_, { kind, valtype } }</c>, the type of an element of an array or of a field of a struct.</summary>
+[StructLayout(LayoutKind.Explicit, Size = 24)]
+internal struct WasmtimeFieldType
+{
+    [FieldOffset(0)]
+    public byte Mutable;
+
+    [FieldOffset(8)]
+    public WasmtimeStorageTypeKind StorageKind;
+
+    /// <summary>The <c>wasm_valtype_t</c> of a <see cref="WasmtimeStorageTypeKind.ValType"/> storage type.</summary>
+    [FieldOffset(16)]
+    public nint StorageValType;
+}
+
 /// <summary><c>wasmtime_linear_memory_t</c></summary>
 [StructLayout(LayoutKind.Sequential)]
 internal unsafe struct WasmtimeLinearMemory

@@ -95,6 +95,38 @@ using (engine.Enter())
   it, as to a script. See [Limits and sandboxing](../07-LimitsAndSandboxing.md).
 - [Construct](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.Construct) accepts a `newTarget`, as `Reflect.construct` does.
 
+## Find where a function was defined
+
+[GetFunctionSourceLocation](cref:Meziantou.Framework.JavaScriptEngine.JsObject.GetFunctionSourceLocation) returns the name of a function, its script or module, and the position of its source
+text, for instance to report which callback of a script is slow. A bound function gives the location of its target
+function; a built-in function or an object that is not a function gives null:
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_FunctionSourceLocation;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var engine = new JsEngine();
+var realm = engine.CreateRealm();
+realm.Execute("""
+    // Handlers
+    function onSave() {}
+    globalThis.handler = onSave.bind(null);
+    """, url: "https://example.com/app.js");
+
+using (engine.Enter())
+{
+    // The target function of a bound function, its script, and the position of its source text
+    var location = realm.GlobalObject.GetProperty("handler").AsObject().GetFunctionSourceLocation()!.Value;
+    Assert.Equal("onSave", location.Name);
+    Assert.Equal("https://example.com/app.js", location.Url);
+    Assert.Equal(12, location.Position);
+    Assert.Equal(2, location.Line);
+    Assert.Equal(1, location.Column);
+
+    // A built-in function has no source location
+    Assert.Null(realm.GlobalObject.GetProperty("parseInt").AsObject().GetFunctionSourceLocation());
+}
+```
+<!-- endref -->
+
 ## Functions and realms
 
 A function created by `realm.CreateFunction` runs in its realm, even when a script of another realm calls it: the

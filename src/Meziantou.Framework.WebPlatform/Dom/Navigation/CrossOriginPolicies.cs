@@ -62,6 +62,7 @@ internal sealed record OpenerPolicy(
                     ? OpenerPolicyValue.SameOriginPlusCoep
                     : OpenerPolicyValue.SameOrigin,
                 "same-origin-allow-popups" => OpenerPolicyValue.SameOriginAllowPopups,
+                "noopener-allow-popups" => OpenerPolicyValue.NoopenerAllowPopups,
                 _ => null,
             };
 
@@ -78,6 +79,16 @@ internal sealed record OpenerPolicy(
 
         return policy;
     }
+
+    /// <summary>The serialization of an opener policy value in the reports (the <c>effectivePolicy</c> member).</summary>
+    public static string Serialize(OpenerPolicyValue value) => value switch
+    {
+        OpenerPolicyValue.SameOriginAllowPopups => "same-origin-allow-popups",
+        OpenerPolicyValue.SameOrigin => "same-origin",
+        OpenerPolicyValue.SameOriginPlusCoep => "same-origin-plus-coep",
+        OpenerPolicyValue.NoopenerAllowPopups => "noopener-allow-popups",
+        _ => "unsafe-none",
+    };
 
     /// <summary>https://html.spec.whatwg.org/multipage/browsers.html#matching-coop</summary>
     public static bool Match(OpenerPolicyValue documentCoop, OriginRecord documentOrigin, OpenerPolicyValue responseCoop, OriginRecord responseOrigin)
@@ -118,30 +129,85 @@ internal sealed record OpenerPolicy(
     }
 }
 
-/// <summary>https://html.spec.whatwg.org/multipage/browsers.html#coop-enforcement-result</summary>
+/// <summary>
+/// https://html.spec.whatwg.org/multipage/browsers.html#coop-enforcement-result: the result of the enforcement of the opener
+/// policies of the responses of a navigation. <see cref="Url"/> and <see cref="ReportingEndpoints"/> are the URL and the
+/// endpoints of the reports of <see cref="OpenerPolicy"/>: the ones of the active document (of the document whose opener
+/// policy an initial about:blank document inherits, as in Chromium), then the ones of each response.
+/// </summary>
 internal sealed record OpenerPolicyEnforcementResult(
     UrlRecord Url,
     OriginRecord Origin,
     OpenerPolicy OpenerPolicy,
     bool NeedsBrowsingContextGroupSwitch = false,
     bool WouldNeedBrowsingContextGroupSwitchDueToReportOnly = false,
-    bool CurrentContextIsNavigationSource = false)
+    bool CurrentContextIsNavigationSource = false,
+    List<ReportingEndpoint>? ReportingEndpoints = null)
 {
-    /// <summary>https://html.spec.whatwg.org/multipage/browsers.html#coop-enforce (without the violation reports)</summary>
-    public OpenerPolicyEnforcementResult Enforce(bool isInitialAboutBlank, UrlRecord responseUrl, OriginRecord responseOrigin, OpenerPolicy responseCoop)
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/browsers.html#coop-enforce: the browsing context group switches that the opener
+    /// policy of a response requires, or would require if the report-only values were enforced, are reported to the endpoints
+    /// of the response (<c>navigation-to-response</c>) and of the current result (<c>navigation-from-response</c>) when other
+    /// browsing contexts are in the group of the navigable.
+    /// </summary>
+    public OpenerPolicyEnforcementResult Enforce(BrowsingContext browsingContext, bool isInitialAboutBlank, UrlRecord responseUrl, OriginRecord responseOrigin, OpenerPolicy responseCoop, List<ReportingEndpoint>? responseEndpoints, string referrer)
     {
-        var result = this with { Url = responseUrl, Origin = responseOrigin, OpenerPolicy = responseCoop, CurrentContextIsNavigationSource = true };
-        if (OpenerPolicy.RequiresBrowsingContextGroupSwitch(isInitialAboutBlank, responseOrigin, Origin, responseCoop.Value, OpenerPolicy.Value))
+        var result = this with { Url = responseUrl, Origin = responseOrigin, OpenerPolicy = responseCoop, CurrentContextIsNavigationSource = true, ReportingEndpoints = responseEndpoints };
+        if (isInitialAboutBlank)
+        {
+            browsingContext.ActiveBrowsingContext.InitialUrl ??= responseUrl;
+        }
+
+        var enforce = OpenerPolicy.RequiresBrowsingContextGroupSwitch(isInitialAboutBlank, responseOrigin, Origin, responseCoop.Value, OpenerPolicy.Value);
+        var reportOnly = OpenerPolicy.ReportOnlyRequiresBrowsingContextGroupSwitch(isInitialAboutBlank, responseOrigin, Origin, responseCoop, OpenerPolicy);
+        if (enforce)
         {
             result = result with { NeedsBrowsingContextGroupSwitch = true };
         }
 
-        if (OpenerPolicy.ReportOnlyRequiresBrowsingContextGroupSwitch(isInitialAboutBlank, responseOrigin, Origin, responseCoop, OpenerPolicy))
+        if (reportOnly)
         {
             result = result with { WouldNeedBrowsingContextGroupSwitchDueToReportOnly = true };
         }
 
+        if ((enforce || reportOnly) && browsingContext.HasOtherBrowsingContextsInGroup())
+        {
+            if (enforce)
+            {
+                QueueReports("enforce", responseCoop.ReportingEndpoint, responseCoop.Value, OpenerPolicy.ReportingEndpoint, OpenerPolicy.Value);
+            }
+
+            if (reportOnly)
+            {
+                QueueReports("reporting", responseCoop.ReportOnlyReportingEndpoint, responseCoop.ReportOnlyValue, OpenerPolicy.ReportOnlyReportingEndpoint, OpenerPolicy.ReportOnlyValue);
+            }
+        }
+
         return result;
+
+        void QueueReports(string disposition, string? responseEndpoint, OpenerPolicyValue responseValue, string? currentEndpoint, OpenerPolicyValue currentValue)
+        {
+            var isSameOrigin = OriginRecord.IsSameOrigin(responseOrigin, Origin);
+
+            // https://html.spec.whatwg.org/multipage/browsers.html#coop-violation-navigation-to
+            browsingContext.QueueOpenerPolicyNavigationReport(responseUrl, responseEndpoints, responseEndpoint, new OpenerPolicyReportBody
+            {
+                Type = "navigation-to-response",
+                Disposition = disposition,
+                EffectivePolicy = OpenerPolicy.Serialize(responseValue),
+                PreviousResponseUrl = isSameOrigin ? OpenerPolicyReportBody.Sanitize(Url) : "",
+                Referrer = referrer,
+            });
+
+            // https://html.spec.whatwg.org/multipage/browsers.html#coop-violation-navigation-from
+            browsingContext.QueueOpenerPolicyNavigationReport(Url, ReportingEndpoints, currentEndpoint, new OpenerPolicyReportBody
+            {
+                Type = "navigation-from-response",
+                Disposition = disposition,
+                EffectivePolicy = OpenerPolicy.Serialize(currentValue),
+                NextResponseUrl = isSameOrigin || CurrentContextIsNavigationSource ? OpenerPolicyReportBody.Sanitize(responseUrl) : "",
+            });
+        }
     }
 }
 

@@ -111,14 +111,7 @@
     "total": 1
   },
   "webmessaging/broadcastchannel/cross-partition.https.tentative.html": {
-    "total": 5,
-    "failures": {
-      "BroadcastChannel messages aren't received from a cross-partition dedicated worker": "FAIL",
-      "BroadcastChannel messages aren't received from a cross-partition iframe": "FAIL",
-      "BroadcastChannel messages aren't received from a cross-partition service worker": "FAIL",
-      "BroadcastChannel messages aren't received from a cross-partition shared worker": "FAIL",
-      "BroadcastChannel messages aren't received from a nested iframe with a cross-site ancestor": "FAIL"
-    }
+    "total": 5
   },
   "webmessaging/broadcastchannel/detached-iframe.html": {
     "total": 6

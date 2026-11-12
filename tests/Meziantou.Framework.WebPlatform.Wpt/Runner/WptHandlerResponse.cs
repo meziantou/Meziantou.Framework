@@ -15,8 +15,21 @@ internal sealed class WptHandlerResponse
 
     public byte[] Body { get; set; } = [];
 
-    /// <summary>The delay of the response (<c>time.sleep()</c>), measured by the virtual clock.</summary>
+    /// <summary>The delay of the response (<c>time.sleep()</c>), measured by the virtual clock: the headers are sent after it (and after <see cref="InterimResponses"/>).</summary>
     public TimeSpan Delay { get; set; }
+
+    /// <summary>
+    /// The interim responses (<c>1xx</c>, e.g. the <c>103</c> response that <c>response.writer.write_raw_header_frame()</c>
+    /// sends from the <c>handle_headers</c> function of a <c>.h2.py</c> handler) sent before the headers of the response, each
+    /// one after its delay: the loader reports them (<see cref="Dom.DocumentRequest.ReportInterimResponse"/>).
+    /// </summary>
+    public List<(TimeSpan Delay, int Status, List<KeyValuePair<string, string>> Headers)> InterimResponses { get; } = [];
+
+    /// <summary>
+    /// The condition the headers of the response wait for after the interim responses, before <see cref="Delay"/> (e.g. a
+    /// value put in the stash by another request), checked every 100 ms of the virtual clock, or null.
+    /// </summary>
+    public Func<bool>? HeadersCondition { get; set; }
 
     /// <summary>
     /// The delay after which the handler runs again (measured by the virtual clock), or null: a handler that waits for a value
@@ -35,7 +48,9 @@ internal sealed class WptHandlerResponse
     /// The chunks of the body sent after <see cref="Body"/> (<c>response.writer.write()</c> after a delay), with their delays
     /// measured by the virtual clock: a document is parsed and a media resource is processed as its chunks arrive, an event
     /// stream (<c>text/event-stream</c>) is interpreted as its chunks arrive, and the body of <c>fetch()</c> is read as its
-    /// chunks arrive (<see cref="Dom.DocumentRequest.StreamsResponseBody"/>). The other resources get the whole body after the delays.
+    /// chunks arrive (<see cref="Dom.DocumentRequest.StreamsResponseBody"/>). The bodies of the other resources arrive over time
+    /// too (the library reads them before it processes the response), except when the chunks wait for <see cref="ChunksCondition"/>
+    /// or are sent again (<see cref="ChunksRepeatAfter"/>), and for a synchronous request of a window: they get the whole body after the delays.
     /// </summary>
     public List<(TimeSpan Delay, byte[] Data)> Chunks { get; } = [];
 

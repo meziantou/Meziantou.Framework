@@ -942,7 +942,7 @@
     "reftest": "PASS"
   },
   "css/css-pseudo/selection-contenteditable-011.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-pseudo/selection-input-011.html": {
     "reftest": "FAIL"

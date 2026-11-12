@@ -205,4 +205,103 @@ public sealed class PerformanceTimelineScriptTests : IDisposable
         Assert.StartsWith("self: ", longTask, StringComparison.Ordinal);
         Assert.Empty(_errors);
     }
+
+    [Fact]
+    public void LongAnimationFrame_Timer_ReportsTheScript()
+    {
+        var document = Load($$"""
+            <script>
+              new PerformanceObserver(list => {
+                const entry = list.getEntries()[0];
+                const script = entry.scripts[0];
+                document.title = JSON.stringify([
+                  entry.entryType, entry.name, entry.duration >= 60, entry.renderStart === 0 || entry.renderStart >= entry.startTime + 60, entry.blockingDuration > 0, entry.scripts.length,
+                  script.entryType, script.invokerType, script.invoker, script.sourceFunctionName, script.sourceURL, script.sourceLine > 0, script.windowAttribution, script.window === window,
+                ]);
+              }).observe({ type: 'long-animation-frame' });
+              window.onload = () => setTimeout(function busy() { {{LongTaskScript}} });
+            </script>
+            """);
+
+        Assert.Equal("""["long-animation-frame","long-animation-frame",true,true,true,1,"script","user-callback","TimerHandler:setTimeout","busy","https://example.com/dir/page.html",true,"self",true]""", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void LongAnimationFrame_EventListener_IsNamedAfterItsTarget()
+    {
+        var document = Load($$"""
+            <img id="image">
+            <script>
+              new PerformanceObserver(list => {
+                document.title = list.getEntries().flatMap(entry => entry.scripts.map(script => script.invokerType + ' ' + script.invoker)).join();
+              }).observe({ type: 'long-animation-frame' });
+              const image = document.getElementById('image');
+              image.addEventListener('custom', () => { {{LongTaskScript}} });
+              window.onload = () => setTimeout(() => image.dispatchEvent(new Event('custom')));
+            </script>
+            """);
+
+        Assert.Equal("user-callback TimerHandler:setTimeout", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void LongAnimationFrame_ShortTask_IsNotReported()
+    {
+        var document = Load("""
+            <script>
+              window.onload = () => setTimeout(() => {
+                const begin = performance.now();
+                while (performance.now() < begin + 10);
+                setTimeout(() => document.title = performance.getEntriesByType('long-animation-frame').length);
+              });
+            </script>
+            """);
+
+        Assert.Equal("0", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void LongAnimationFrame_BeforeTheObserver_IsBuffered()
+    {
+        var document = Load($$"""
+            <script>
+              {{LongTaskScript}}
+              setTimeout(() => new PerformanceObserver(list => document.title = list.getEntries().map(entry => entry.scripts.map(script => script.invokerType))).observe({ type: 'long-animation-frame', buffered: true }));
+            </script>
+            """);
+
+        Assert.Equal("classic-script", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void LongAnimationFrame_CanBeObservedByTheHost()
+    {
+        var document = Load("<p>");
+
+        #region WebPlatform_LongAnimationFrames
+        var window = document.DefaultView!;
+        var frames = new List<string>();
+        var observer = new PerformanceObserver(window, (entries, _, _) =>
+        {
+            foreach (var entry in entries.GetEntriesByType("long-animation-frame").Cast<PerformanceLongAnimationFrameTiming>())
+            {
+                // e.g. "60 ms: TimerHandler:setTimeout (busy)", "busy" being the name of the function
+                var scripts = entry.Scripts.Select(script => $"{script.Invoker} ({script.SourceFunctionName})");
+                frames.Add($"{entry.Duration} ms: {string.Join(", ", scripts)}");
+            }
+        });
+        observer.Observe(new PerformanceObserverInit { Type = "long-animation-frame", Buffered = true });
+        #endregion
+
+        TestScriptEngines.Evaluate(_engine, window, "setTimeout(function busy() { " + LongTaskScript + " })");
+        _contexts.EventLoop.RunUntilIdle();
+
+        var frame = Assert.Single(frames);
+        Assert.EndsWith(" ms: TimerHandler:setTimeout (busy)", frame, StringComparison.Ordinal);
+        Assert.Empty(_errors);
+    }
 }

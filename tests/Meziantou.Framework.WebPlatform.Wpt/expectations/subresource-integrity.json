@@ -1,0 +1,270 @@
+{
+  "subresource-integrity/integrity-policy/parsing.html?type=enforce": {
+    "total": 11
+  },
+  "subresource-integrity/integrity-policy/parsing.html?type=report": {
+    "total": 11
+  },
+  "subresource-integrity/integrity-policy/preload-script-with-integrity.https.html": {
+    "total": 1
+  },
+  "subresource-integrity/integrity-policy/script.https.html?reporting=false": {
+    "total": 12
+  },
+  "subresource-integrity/integrity-policy/script.https.html?reporting=true": {
+    "total": 12
+  },
+  "subresource-integrity/integrity-policy/style.https.html?reporting=false": {
+    "total": 12
+  },
+  "subresource-integrity/integrity-policy/style.https.html?reporting=true": {
+    "total": 12
+  },
+  "subresource-integrity/integrity-policy/tentative/signature.https.html": {
+    "total": 1,
+    "failures": {
+      "Ensure that a script with signature integrity runs": "FAIL"
+    }
+  },
+  "subresource-integrity/signatures/tentative/accept-signature.parser-inserted.html": {
+    "total": 4,
+    "failures": {
+      "One matching + malformed integrity assertion.": "FAIL",
+      "One matching + one mismatching + malformed integrity assertion.": "FAIL",
+      "One matching + one mismatching integrity assertion.": "FAIL",
+      "Single, valid integrity assertion.": "FAIL"
+    }
+  },
+  "subresource-integrity/signatures/tentative/accept-signature.window.js": {
+    "total": 7,
+    "failures": {
+      "ed25519-JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=": "FAIL",
+      "ed25519-JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs= ed25519-JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=": "FAIL",
+      "ed25519-JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs= ed25519-xDnP380zcL4rJ76rXYjeHlfMyPZEOqpJYjsjEppbuXE=": "FAIL",
+      "ed25519-JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs= malformed-thing": "FAIL",
+      "ed25519-JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs= malformed-thing ed25519-xDnP380zcL4rJ76rXYjeHlfMyPZEOqpJYjsjEppbuXE=": "FAIL",
+      "ed25519-xDnP380zcL4rJ76rXYjeHlfMyPZEOqpJYjsjEppbuXE= ed25519-JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=": "FAIL",
+      "ed25519-xDnP380zcL4rJ76rXYjeHlfMyPZEOqpJYjsjEppbuXE= malformed-thing ed25519-JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=": "FAIL"
+    }
+  },
+  "subresource-integrity/signatures/tentative/authority.https.window.js": {
+    "total": 12,
+    "failures": {
+      "`<script>`: Valid signature (signature=:xTjMOwv0bw725R9iIfCrgF8GNc+MgdXthfzNMhW0ItGIyElzaYTyuHcCLVCsYPdm5I5F7VFtie7VptNDnZaoBA==:), matching integrity check: loads with live signature.": "FAIL",
+      "`<script>`: Valid signature (signature=:xTjMOwv0bw725R9iIfCrgF8GNc+MgdXthfzNMhW0ItGIyElzaYTyuHcCLVCsYPdm5I5F7VFtie7VptNDnZaoBA==:), no integrity check: loads with live signature.": "FAIL",
+      "`<script>`: Valid signature (signature=:yoRxfOJLwkKR7RgV2McmtoCbTYY0eHuqnz1QrlPR8EtxI4VX1dlW43cvFg2e6xbLK6cMYwHHdiDIjZY6qcROBA==:), matching integrity check: loads with live signature.": "FAIL",
+      "`<script>`: Valid signature (signature=:yoRxfOJLwkKR7RgV2McmtoCbTYY0eHuqnz1QrlPR8EtxI4VX1dlW43cvFg2e6xbLK6cMYwHHdiDIjZY6qcROBA==:), no integrity check: loads with live signature.": "FAIL",
+      "`fetch()`: Valid signature (signature=:xTjMOwv0bw725R9iIfCrgF8GNc+MgdXthfzNMhW0ItGIyElzaYTyuHcCLVCsYPdm5I5F7VFtie7VptNDnZaoBA==:), matching integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:xTjMOwv0bw725R9iIfCrgF8GNc+MgdXthfzNMhW0ItGIyElzaYTyuHcCLVCsYPdm5I5F7VFtie7VptNDnZaoBA==:), mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Valid signature (signature=:xTjMOwv0bw725R9iIfCrgF8GNc+MgdXthfzNMhW0ItGIyElzaYTyuHcCLVCsYPdm5I5F7VFtie7VptNDnZaoBA==:), no integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:yoRxfOJLwkKR7RgV2McmtoCbTYY0eHuqnz1QrlPR8EtxI4VX1dlW43cvFg2e6xbLK6cMYwHHdiDIjZY6qcROBA==:), matching integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:yoRxfOJLwkKR7RgV2McmtoCbTYY0eHuqnz1QrlPR8EtxI4VX1dlW43cvFg2e6xbLK6cMYwHHdiDIjZY6qcROBA==:), mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Valid signature (signature=:yoRxfOJLwkKR7RgV2McmtoCbTYY0eHuqnz1QrlPR8EtxI4VX1dlW43cvFg2e6xbLK6cMYwHHdiDIjZY6qcROBA==:), no integrity check: loads.": "FAIL"
+    }
+  },
+  "subresource-integrity/signatures/tentative/client-initiated.cross-origin.window.js": {
+    "total": 14,
+    "failures": {
+      "`fetch()`: Valid signature, matching integrity check, cors: loads.": "FAIL",
+      "`fetch()`: Valid signature, one valid integrity check, cors: loads.": "FAIL"
+    }
+  },
+  "subresource-integrity/signatures/tentative/client-initiated.same-origin.window.js": {
+    "total": 10,
+    "failures": {
+      "`fetch()`: Invalid signature, malformed integrity check: blocked.": "FAIL",
+      "`fetch()`: Invalid signature, matching integrity check: blocked.": "FAIL",
+      "`fetch()`: Invalid signature, mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Invalid signature, one valid integrity check: blocked.": "FAIL",
+      "`fetch()`: No signature, malformed integrity check: loads.": "FAIL",
+      "`fetch()`: No signature, valid integrity check: blocked.": "FAIL",
+      "`fetch()`: Valid signature, malformed integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature, matching integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature, mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Valid signature, one valid integrity check: loads.": "FAIL"
+    }
+  },
+  "subresource-integrity/signatures/tentative/csp.window.js": {
+    "total": 14,
+    "failures": {
+      "`<script>`: Valid signature, valid integrity check: loads.": "FAIL",
+      "`<script>`: Valid signatures, integrity check matches one: loads.": "FAIL"
+    }
+  },
+  "subresource-integrity/signatures/tentative/header-component.window.js": {
+    "total": 20,
+    "failures": {
+      "`<script>`: Valid signature (signature=(\"content-type\" \"unencoded-digest\";sf);keyid=\"JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=\";tag=\"sri\"), matching integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature (signature=(\"content-type\" \"unencoded-digest\";sf);keyid=\"JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=\";tag=\"sri\"), no integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature (signature=(\"unencoded-digest\";sf \"content-type\");keyid=\"JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=\";tag=\"sri\"), matching integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature (signature=(\"unencoded-digest\";sf \"content-type\");keyid=\"JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=\";tag=\"sri\"), no integrity check: loads.": "FAIL",
+      "`fetch()`: Mismatched header value with matching integrity: blocked.": "FAIL",
+      "`fetch()`: Mismatched header value: blocked.": "FAIL",
+      "`fetch()`: Missing signed header with matching integrity: blocked.": "FAIL",
+      "`fetch()`: Missing signed header: blocked.": "FAIL",
+      "`fetch()`: Valid signature (signature=(\"content-type\" \"unencoded-digest\";sf);keyid=\"JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=\";tag=\"sri\"), matching integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=(\"content-type\" \"unencoded-digest\";sf);keyid=\"JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=\";tag=\"sri\"), mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Valid signature (signature=(\"content-type\" \"unencoded-digest\";sf);keyid=\"JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=\";tag=\"sri\"), no integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=(\"unencoded-digest\";sf \"content-type\");keyid=\"JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=\";tag=\"sri\"), matching integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=(\"unencoded-digest\";sf \"content-type\");keyid=\"JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=\";tag=\"sri\"), mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Valid signature (signature=(\"unencoded-digest\";sf \"content-type\");keyid=\"JrQLj5P/89iXES9+vFgrIy29clF9CC/oPPsw3c5D0bs=\";tag=\"sri\"), no integrity check: loads.": "FAIL"
+    }
+  },
+  "subresource-integrity/signatures/tentative/inline.html": {
+    "total": 21,
+    "failures": {
+      "SVG valid `signature`, invalid `integrity` => blocked": "FAIL",
+      "SVG valid `signature`, no `integrity` => blocked": "FAIL",
+      "multiple `signature`, invalid `integrity` => blocked": "FAIL",
+      "multiple `signature`, no `integrity` => blocked": "FAIL",
+      "valid `signature`, invalid `integrity` => blocked": "FAIL",
+      "valid `signature`, no `integrity` => blocked": "FAIL"
+    }
+  },
+  "subresource-integrity/signatures/tentative/path.window.js": {
+    "total": 12,
+    "failures": {
+      "`<script>`: Valid signature (signature=:+sRkplliS3TanqASHirBTokxhOn6fRTodc7i6Q6PUMsSPP0RJ2Xdb/woWz0+JXaBXAfa55qj+N9paXP5j7DFCw==:), matching integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature (signature=:+sRkplliS3TanqASHirBTokxhOn6fRTodc7i6Q6PUMsSPP0RJ2Xdb/woWz0+JXaBXAfa55qj+N9paXP5j7DFCw==:), no integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature (signature=:YPH2/cRdbR+DPhb1hVG1BgwCpzPLECsAyBavmb7QaXtCF1Hx2QyYp0ki1mi7UftMOnLVpBJdfdLb99Nzf0XqDg==:), matching integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature (signature=:YPH2/cRdbR+DPhb1hVG1BgwCpzPLECsAyBavmb7QaXtCF1Hx2QyYp0ki1mi7UftMOnLVpBJdfdLb99Nzf0XqDg==:), no integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:+sRkplliS3TanqASHirBTokxhOn6fRTodc7i6Q6PUMsSPP0RJ2Xdb/woWz0+JXaBXAfa55qj+N9paXP5j7DFCw==:), matching integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:+sRkplliS3TanqASHirBTokxhOn6fRTodc7i6Q6PUMsSPP0RJ2Xdb/woWz0+JXaBXAfa55qj+N9paXP5j7DFCw==:), mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Valid signature (signature=:+sRkplliS3TanqASHirBTokxhOn6fRTodc7i6Q6PUMsSPP0RJ2Xdb/woWz0+JXaBXAfa55qj+N9paXP5j7DFCw==:), no integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:YPH2/cRdbR+DPhb1hVG1BgwCpzPLECsAyBavmb7QaXtCF1Hx2QyYp0ki1mi7UftMOnLVpBJdfdLb99Nzf0XqDg==:), matching integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:YPH2/cRdbR+DPhb1hVG1BgwCpzPLECsAyBavmb7QaXtCF1Hx2QyYp0ki1mi7UftMOnLVpBJdfdLb99Nzf0XqDg==:), mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Valid signature (signature=:YPH2/cRdbR+DPhb1hVG1BgwCpzPLECsAyBavmb7QaXtCF1Hx2QyYp0ki1mi7UftMOnLVpBJdfdLb99Nzf0XqDg==:), no integrity check: loads.": "FAIL"
+    }
+  },
+  "subresource-integrity/signatures/tentative/query.window.js": {
+    "total": 15,
+    "failures": {
+      "`fetch()`: Query = \"\": matching integrity check: loads.": "FAIL",
+      "`fetch()`: Query = \"\": mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Query = \"\": no integrity check: loads.": "FAIL",
+      "`fetch()`: Query = \"test\": matching integrity check: loads.": "FAIL",
+      "`fetch()`: Query = \"test\": mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Query = \"test\": no integrity check: loads.": "FAIL",
+      "`fetch()`: Query = \"test=%2F\": matching integrity check: loads.": "FAIL",
+      "`fetch()`: Query = \"test=%2F\": mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Query = \"test=%2F\": no integrity check: loads.": "FAIL",
+      "`fetch()`: Query = \"test=a\": matching integrity check: loads.": "FAIL",
+      "`fetch()`: Query = \"test=a\": mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Query = \"test=a\": no integrity check: loads.": "FAIL",
+      "`fetch()`: Query = \"test=ü\": matching integrity check: loads.": "FAIL",
+      "`fetch()`: Query = \"test=ü\": mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Query = \"test=ü\": no integrity check: loads.": "FAIL"
+    }
+  },
+  "subresource-integrity/signatures/tentative/scheme.window.js": {
+    "total": 6,
+    "failures": {
+      "`fetch()`: Valid signature (signature=:WZp87p7X3ELfgIKL/qxsY/CT6XArMvZRaxcJ3uy1QklEcLf0c8tol2+W2pvaXX4jnd7hGevFVkzWE77rCOIzAA==:), matching integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:WZp87p7X3ELfgIKL/qxsY/CT6XArMvZRaxcJ3uy1QklEcLf0c8tol2+W2pvaXX4jnd7hGevFVkzWE77rCOIzAA==:), no integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:lMzR8lIXYG0Iz0MmTXcRTcBfNw6TgBAPfaNLAU1LzsxWC5dlez8SNe7aCW7avHTWKgaqTGBCMW1LgxkHlijgDA==:), matching integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:lMzR8lIXYG0Iz0MmTXcRTcBfNw6TgBAPfaNLAU1LzsxWC5dlez8SNe7aCW7avHTWKgaqTGBCMW1LgxkHlijgDA==:), no integrity check: loads.": "FAIL"
+    }
+  },
+  "subresource-integrity/signatures/tentative/script.window.js": {
+    "total": 14,
+    "failures": {
+      "`<script>`: No signature, malformed integrity check: loads.": "FAIL",
+      "`<script>`: No signature, no integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature, malformed integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature, no integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature, one matching integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature, valid integrity check: loads.": "FAIL",
+      "`<script>`: Valid signatures, integrity check matches both: loads.": "FAIL",
+      "`<script>`: Valid signatures, integrity check matches one: loads.": "FAIL",
+      "`<script>`: Valid signatures, integrity check matches the other: loads.": "FAIL",
+      "`<script>`: Valid signatures, malformed integrity check: loads.": "FAIL",
+      "`<script>`: Valid signatures, no integrity check: loads.": "FAIL"
+    }
+  },
+  "subresource-integrity/signatures/tentative/server-initiated.window.js": {
+    "total": 10,
+    "failures": {
+      "`fetch()`: Invalid signature, cross-origin w/ cors, mode: no-cors: blocked.": "FAIL",
+      "`fetch()`: Invalid signature, cross-origin w/o cors, mode: no-cors: blocked.": "FAIL",
+      "`fetch()`: Invalid signature, same-origin w/ cors: blocked.": "FAIL",
+      "`fetch()`: Invalid signature, same-origin: blocked.": "FAIL",
+      "`fetch()`: Valid signature, cross-origin w/cors, mode: cors: loads.": "FAIL",
+      "`fetch()`: Valid signature, same-origin w/ cors: loads.": "FAIL",
+      "`fetch()`: Valid signature, same-origin: loads.": "FAIL"
+    }
+  },
+  "subresource-integrity/signatures/tentative/status.window.js": {
+    "total": 18,
+    "failures": {
+      "`<script>`: Valid signature (signature=:BRhRykdW61eK1iEf+ZU+Skf1ErVh8DhogWlPISe3iR7ITX4eryLZwaTAzjsoijRo79gGWnvC8ZIPJoZkByNeBw==:), matching integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature (signature=:BRhRykdW61eK1iEf+ZU+Skf1ErVh8DhogWlPISe3iR7ITX4eryLZwaTAzjsoijRo79gGWnvC8ZIPJoZkByNeBw==:), no integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature (signature=:kc+2CFqbwZ2SP47sGCfiP1u/Q0E+1nZlVlSM3VALQz0JNCVcmUKpt4T0t+bXOYdJuTyK89FjJx/rxzDmgCO8BQ==:), matching integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature (signature=:kc+2CFqbwZ2SP47sGCfiP1u/Q0E+1nZlVlSM3VALQz0JNCVcmUKpt4T0t+bXOYdJuTyK89FjJx/rxzDmgCO8BQ==:), no integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature (signature=:lHSkRZowLG6kbE9rG4dbe4VW59VGZaJtB/xFErBZKATtWRBTcF4T+Ye0A9yFiI65vgYL+ifVo6U3aZUu7pIUAw==:), matching integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature (signature=:lHSkRZowLG6kbE9rG4dbe4VW59VGZaJtB/xFErBZKATtWRBTcF4T+Ye0A9yFiI65vgYL+ifVo6U3aZUu7pIUAw==:), no integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:BRhRykdW61eK1iEf+ZU+Skf1ErVh8DhogWlPISe3iR7ITX4eryLZwaTAzjsoijRo79gGWnvC8ZIPJoZkByNeBw==:), matching integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:BRhRykdW61eK1iEf+ZU+Skf1ErVh8DhogWlPISe3iR7ITX4eryLZwaTAzjsoijRo79gGWnvC8ZIPJoZkByNeBw==:), mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Valid signature (signature=:BRhRykdW61eK1iEf+ZU+Skf1ErVh8DhogWlPISe3iR7ITX4eryLZwaTAzjsoijRo79gGWnvC8ZIPJoZkByNeBw==:), no integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:kc+2CFqbwZ2SP47sGCfiP1u/Q0E+1nZlVlSM3VALQz0JNCVcmUKpt4T0t+bXOYdJuTyK89FjJx/rxzDmgCO8BQ==:), matching integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:kc+2CFqbwZ2SP47sGCfiP1u/Q0E+1nZlVlSM3VALQz0JNCVcmUKpt4T0t+bXOYdJuTyK89FjJx/rxzDmgCO8BQ==:), mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Valid signature (signature=:kc+2CFqbwZ2SP47sGCfiP1u/Q0E+1nZlVlSM3VALQz0JNCVcmUKpt4T0t+bXOYdJuTyK89FjJx/rxzDmgCO8BQ==:), no integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:lHSkRZowLG6kbE9rG4dbe4VW59VGZaJtB/xFErBZKATtWRBTcF4T+Ye0A9yFiI65vgYL+ifVo6U3aZUu7pIUAw==:), matching integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:lHSkRZowLG6kbE9rG4dbe4VW59VGZaJtB/xFErBZKATtWRBTcF4T+Ye0A9yFiI65vgYL+ifVo6U3aZUu7pIUAw==:), mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Valid signature (signature=:lHSkRZowLG6kbE9rG4dbe4VW59VGZaJtB/xFErBZKATtWRBTcF4T+Ye0A9yFiI65vgYL+ifVo6U3aZUu7pIUAw==:), no integrity check: loads.": "FAIL"
+    }
+  },
+  "subresource-integrity/signatures/tentative/unknown-parameter.window.js": {
+    "total": 12,
+    "failures": {
+      "`<script>`: Valid signature (signature=:YXQH8lkKBcGOMNSFbS56j3d5nK3j15HbFPIdsljzQVGFFd93T6FmXb2cLsoINYQbnMUOQBSROIzFZpgUQTBTBA==:), matching integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature (signature=:YXQH8lkKBcGOMNSFbS56j3d5nK3j15HbFPIdsljzQVGFFd93T6FmXb2cLsoINYQbnMUOQBSROIzFZpgUQTBTBA==:), no integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature (signature=:eZ2DGIHUsTNMxFReOMkbOrTmn+CqDckCZ5/635x1Apl2ws0nA+qZcHqZFMdjBvcGw0WElh3zYD0ynkQ+cHiWCA==:), matching integrity check: loads.": "FAIL",
+      "`<script>`: Valid signature (signature=:eZ2DGIHUsTNMxFReOMkbOrTmn+CqDckCZ5/635x1Apl2ws0nA+qZcHqZFMdjBvcGw0WElh3zYD0ynkQ+cHiWCA==:), no integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:YXQH8lkKBcGOMNSFbS56j3d5nK3j15HbFPIdsljzQVGFFd93T6FmXb2cLsoINYQbnMUOQBSROIzFZpgUQTBTBA==:), matching integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:YXQH8lkKBcGOMNSFbS56j3d5nK3j15HbFPIdsljzQVGFFd93T6FmXb2cLsoINYQbnMUOQBSROIzFZpgUQTBTBA==:), mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Valid signature (signature=:YXQH8lkKBcGOMNSFbS56j3d5nK3j15HbFPIdsljzQVGFFd93T6FmXb2cLsoINYQbnMUOQBSROIzFZpgUQTBTBA==:), no integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:eZ2DGIHUsTNMxFReOMkbOrTmn+CqDckCZ5/635x1Apl2ws0nA+qZcHqZFMdjBvcGw0WElh3zYD0ynkQ+cHiWCA==:), matching integrity check: loads.": "FAIL",
+      "`fetch()`: Valid signature (signature=:eZ2DGIHUsTNMxFReOMkbOrTmn+CqDckCZ5/635x1Apl2ws0nA+qZcHqZFMdjBvcGw0WElh3zYD0ynkQ+cHiWCA==:), mismatched integrity check: blocked.": "FAIL",
+      "`fetch()`: Valid signature (signature=:eZ2DGIHUsTNMxFReOMkbOrTmn+CqDckCZ5/635x1Apl2ws0nA+qZcHqZFMdjBvcGw0WElh3zYD0ynkQ+cHiWCA==:), no integrity check: loads.": "FAIL"
+    }
+  },
+  "subresource-integrity/subresource-integrity.html": {
+    "total": 60
+  },
+  "subresource-integrity/unencoded-digest/tentative/fetch.any.js#dedicatedworker?include=integrity-fail": {
+    "total": 14
+  },
+  "subresource-integrity/unencoded-digest/tentative/fetch.any.js#dedicatedworker?include=integrity-none": {
+    "total": 14
+  },
+  "subresource-integrity/unencoded-digest/tentative/fetch.any.js#dedicatedworker?include=integrity-pass": {
+    "total": 14
+  },
+  "subresource-integrity/unencoded-digest/tentative/fetch.any.js#sharedworker?include=integrity-fail": {
+    "total": 14
+  },
+  "subresource-integrity/unencoded-digest/tentative/fetch.any.js#sharedworker?include=integrity-none": {
+    "total": 14
+  },
+  "subresource-integrity/unencoded-digest/tentative/fetch.any.js#sharedworker?include=integrity-pass": {
+    "total": 14
+  },
+  "subresource-integrity/unencoded-digest/tentative/fetch.any.js?include=integrity-fail": {
+    "total": 14
+  },
+  "subresource-integrity/unencoded-digest/tentative/fetch.any.js?include=integrity-none": {
+    "total": 14
+  },
+  "subresource-integrity/unencoded-digest/tentative/fetch.any.js?include=integrity-pass": {
+    "total": 14
+  },
+  "subresource-integrity/unencoded-digest/tentative/script.window.js?include=integrity-fail": {
+    "total": 14
+  },
+  "subresource-integrity/unencoded-digest/tentative/script.window.js?include=integrity-none": {
+    "total": 14
+  },
+  "subresource-integrity/unencoded-digest/tentative/script.window.js?include=integrity-pass": {
+    "total": 14
+  }
+}

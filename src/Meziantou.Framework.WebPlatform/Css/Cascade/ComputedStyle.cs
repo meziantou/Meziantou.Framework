@@ -1623,7 +1623,9 @@ internal sealed partial class ComputedStyle
             }
         }
 
-        if (substituted is null || registration.Syntax.Compute(this, substituted, cascaded.BaseUrl) is not { } computed)
+        // A registered custom property referenced by a font property computes its font-relative lengths with the font of the
+        // parent, as the font properties do (https://github.com/w3c/csswg-drafts/issues/8169): the font of the element depends on it
+        if (substituted is null || registration.Syntax.Compute(this, substituted, cascaded.BaseUrl, fontSizeContext: GetFontPropertyReferences().Contains(name)) is not { } computed)
             return nullWhenInvalid ? null : GetUnsetValue(name, registration);
 
         if (taintedRanges is not null)
@@ -1763,21 +1765,7 @@ internal sealed partial class ComputedStyle
 
         // The custom properties declared on the element that the property depends on, with their references (the fallbacks
         // are dependencies too)
-        var references = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
-        var pending = new Stack<string>(GetReferences(cascaded.Value.ShorthandValue ?? cascaded.Value.Value));
-        while (pending.TryPop(out var name))
-        {
-            if (references.ContainsKey(name) || !_cascaded.TryGetValue(name, out var declared))
-                continue;
-
-            var names = GetReferences(declared.Value.Value);
-            references[name] = names;
-            foreach (var reference in names)
-            {
-                pending.Push(reference);
-            }
-        }
-
+        var references = GetDeclaredReferences(GetReferences(cascaded.Value.ShorthandValue ?? cascaded.Value.Value));
         foreach (var name in references.Keys)
         {
             if (RegisteredProperties.TryGetValue(name, out var registration) && !registration.Syntax.IsUniversal
@@ -1806,6 +1794,62 @@ internal sealed partial class ComputedStyle
         }
 
         return cycle;
+    }
+
+    /// <summary>
+    /// Returns the custom properties declared on the element that the font properties (font-weight, font-style...) depend on,
+    /// directly or through other custom properties declared on the element.
+    /// </summary>
+    private HashSet<string> GetFontPropertyReferences()
+    {
+        if (RegisteredProperties.Count == 0)
+            return NoUnitCycle;
+
+        if (Rare.FontPropertyReferences is { } result)
+            return result;
+
+        // A reentrant call (while a referenced custom property is computed) finds no reference
+        result = new(StringComparer.Ordinal);
+        Rare.FontPropertyReferences = result;
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var (property, cascaded) in _cascaded)
+        {
+            if (property.StartsWith("font-", StringComparison.Ordinal))
+            {
+                names.UnionWith(GetReferences(cascaded.Value.ShorthandValue ?? cascaded.Value.Value));
+            }
+        }
+
+        if (names.Count > 0)
+        {
+            result.UnionWith(GetDeclaredReferences(names).Keys);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Returns the custom properties declared on the element that are referenced by a set of custom properties, directly or
+    /// through other custom properties declared on the element, with the names that each one references.
+    /// </summary>
+    private Dictionary<string, HashSet<string>> GetDeclaredReferences(IEnumerable<string> names)
+    {
+        var references = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        var pending = new Stack<string>(names);
+        while (pending.TryPop(out var name))
+        {
+            if (references.ContainsKey(name) || !_cascaded.TryGetValue(name, out var declared))
+                continue;
+
+            var referenced = GetReferences(declared.Value.Value);
+            references[name] = referenced;
+            foreach (var reference in referenced)
+            {
+                pending.Push(reference);
+            }
+        }
+
+        return references;
     }
 
     /// <summary>
@@ -2035,6 +2079,7 @@ internal sealed partial class ComputedStyle
         public List<string>? CustomPropertyStack;
         public HashSet<string>? CustomPropertyCycles;
         public Dictionary<string, HashSet<string>>? UnitCycles;
+        public HashSet<string>? FontPropertyReferences;
 
         /// <summary>The longhands of the shorthand declarations whose substitution functions were substituted (null when the result is invalid).</summary>
         public Dictionary<(string Shorthand, string Text, Node? TreeScope, Element? AttrElement), List<CssLonghandValue>?>? SubstitutedShorthands;

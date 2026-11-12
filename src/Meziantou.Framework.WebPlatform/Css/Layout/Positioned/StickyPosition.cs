@@ -144,6 +144,21 @@ internal static class StickyPosition
     /// <param name="viewportScrollPosition">The scroll position of the viewport.</param>
     public static void Apply(List<BoxFragment> fragments, PhysicalSize initialContainingBlock, PhysicalOffset viewportScrollPosition)
     {
+        // The blocks split out of a sticky positioned inline box (see GetSplitInlineGroup) move with it: their sticky offset
+        // includes the one of the inline box, as their relative offset includes the one of a relatively positioned inline box
+        HashSet<BoxFragment>? grouped = null;
+        foreach (var fragment in fragments)
+        {
+            if (GetSplitInlineGroup(fragment) is { } group)
+            {
+                foreach (var block in group.Blocks)
+                {
+                    block.Offset -= block.StickyOffset;
+                    block.StickyOffset = PhysicalOffset.Zero;
+                }
+            }
+        }
+
         foreach (var fragment in fragments)
         {
             MoveInlineContainingBlockDescendants(fragment, PhysicalOffset.Zero - fragment.StickyOffset);
@@ -153,6 +168,11 @@ internal static class StickyPosition
 
         foreach (var fragment in fragments)
         {
+            // (the other fragments of an inline box split around blocks are shifted with its first fragment)
+            if (grouped is not null && grouped.Contains(fragment))
+                continue;
+
+            var splitGroup = GetSplitInlineGroup(fragment);
             // The containing block of an in-flow box: the nearest block container ancestor; the one of a table part is its table
             // (https://github.com/w3c/csswg-drafts/issues/5020, as in the browsers). The anonymous block boxes around the
             // inline content of a block container that also has block-level children are skipped, as in the browsers
@@ -181,6 +201,16 @@ internal static class StickyPosition
                 Resolve(inset.Left, scrollport.Width));
 
             var stickyBox = new PhysicalRect(fragment.GetOffsetInRootWithoutScrolling(), fragment.Size);
+            if (splitGroup is { } groupToUnite)
+            {
+                // As in Blink, where the fragments of the inline box contain the blocks split out of it, the sticky box is the
+                // bounding box of the fragments of the inline box and of the blocks
+                foreach (var other in groupToUnite.Fragments.Concat(groupToUnite.Blocks))
+                {
+                    stickyBox = BoxFragment.UnionWithEmpty(stickyBox, new PhysicalRect(other.GetOffsetInRootWithoutScrolling(), other.Size));
+                }
+            }
+
             var containingBlockDirection = containingBlock?.WritingDirection ?? fragment.WritingDirection;
 
             // The margins of the box are its computed margins, as in the browsers: the space that an auto margin takes (the
@@ -211,9 +241,26 @@ internal static class StickyPosition
                 horizontal is null ? (horizontalIsFixed ? 0 : viewportScrollPosition.X) : horizontal.ScrollState?.Offset.X ?? 0,
                 vertical is null ? (verticalIsFixed ? 0 : viewportScrollPosition.Y) : vertical.ScrollState?.Offset.Y ?? 0));
             fragment.StickyConstraints = constraints;
-            fragment.StickyOffset = offset;
+            fragment.StickyOffset += offset;
             fragment.Offset += offset;
             MoveInlineContainingBlockDescendants(fragment, offset);
+            if (splitGroup is { } shiftedGroup)
+            {
+                foreach (var other in shiftedGroup.Fragments)
+                {
+                    (grouped ??= new(ReferenceEqualityComparer.Instance)).Add(other);
+                    other.StickyConstraints = constraints;
+                    other.StickyOffset += offset;
+                    other.Offset += offset;
+                    other.ResolvedInsets = insets;
+                }
+
+                foreach (var block in shiftedGroup.Blocks)
+                {
+                    block.StickyOffset += offset;
+                    block.Offset += offset;
+                }
+            }
 
             // https://drafts.csswg.org/cssom/#resolved-values: the used values (the auto insets stay auto, as in the browsers)
             fragment.ResolvedInsets = insets;
@@ -285,5 +332,74 @@ internal static class StickyPosition
 
         // The margins may be negative: the rectangle is not clamped like PhysicalRect.Contract
         static PhysicalRect ContractBy(PhysicalRect rect, Sides<double> margin) => new(rect.X + margin.Left, rect.Y + margin.Top, rect.Width - margin.Left - margin.Right, rect.Height - margin.Top - margin.Bottom);
+    }
+
+    /// <summary>The other fragments of an inline box split around blocks, and the fragments of these blocks (see <see cref="GetSplitInlineGroup"/>).</summary>
+    private sealed record SplitInlineGroup(List<BoxFragment> Fragments, List<BoxFragment> Blocks);
+
+    /// <summary>
+    /// Returns, for the first fragment of a sticky positioned inline box split around blocks (https://drafts.csswg.org/css2/#anonymous-block-level),
+    /// its other fragments (of all its parts) and the fragments of the in-flow blocks split out of it, or null: as in Blink, where the
+    /// fragments of the inline box contain these blocks, the inline box sticks as one box with its blocks (WPT
+    /// scroll-animations/view-timelines/view-timeline-sticky-inline-ancestor.html).
+    /// </summary>
+    private static SplitInlineGroup? GetSplitInlineGroup(BoxFragment fragment)
+    {
+        var inline = fragment.Box;
+        if (!inline.IsInlineBox || inline.Continuation is null || inline.PreviousContinuation is not null || !ReferenceEquals(inline.FirstFragment, fragment))
+            return null;
+
+        var fragments = new List<BoxFragment>();
+        for (var part = inline; part is not null; part = part.Continuation)
+        {
+            for (var other = part.FirstFragment; other is not null; other = other.NextFragmentOfBox)
+            {
+                if (other is BoxFragment otherFragment && !ReferenceEquals(otherFragment, fragment))
+                {
+                    fragments.Add(otherFragment);
+                }
+            }
+        }
+
+        // The blocks are the siblings of the anonymous block box of the first part of the inline box
+        var outermost = inline;
+        while (outermost.Parent is { IsInlineBox: true } parent)
+        {
+            outermost = parent;
+        }
+
+        var blocks = new List<BoxFragment>();
+        for (var sibling = outermost.Parent?.NextSibling; sibling is not null; sibling = sibling.NextSibling)
+        {
+            if (sibling is not ContainerBox { SplitInlineParent: not null, IsBlockLevel: true, IsInFlow: true } block || !IsSplitOutOf(block, inline))
+                continue;
+
+            for (var blockFragment = block.FirstFragment; blockFragment is not null; blockFragment = blockFragment.NextFragmentOfBox)
+            {
+                if (blockFragment is BoxFragment box)
+                {
+                    blocks.Add(box);
+                }
+            }
+        }
+
+        return blocks.Count == 0 ? null : new SplitInlineGroup(fragments, blocks);
+
+        static bool IsSplitOutOf(ContainerBox block, ContainerBox inline)
+        {
+            for (var ancestor = block.SplitInlineParent; ancestor is { IsInlineBox: true }; ancestor = ancestor.Parent)
+            {
+                var first = ancestor;
+                while (first.PreviousContinuation is { } previous)
+                {
+                    first = previous;
+                }
+
+                if (ReferenceEquals(first, inline))
+                    return true;
+            }
+
+            return false;
+        }
     }
 }

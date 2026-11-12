@@ -811,6 +811,14 @@ internal static class EventDispatcher
         _ => @event.CurrentTarget?.RelevantGlobal,
     };
 
+    /// <summary>The script callback of a listener: the callback of a script listener, or the value of an event handler whose value is a script function.</summary>
+    private static IScriptCallback? GetScriptCallback(object? callback) => callback switch
+    {
+        IScriptCallback scriptCallback => scriptCallback,
+        Action<Event> { Target: EventHandlerAttribute eventHandler } when eventHandler.GetCurrentValue() is IScriptCallback scriptCallback => scriptCallback,
+        _ => null,
+    };
+
     /// <summary>https://dom.spec.whatwg.org/#concept-event-listener-inner-invoke</summary>
     private static bool InnerInvoke(Event @event, EventListenerEntry[] listeners, bool capturing, bool invocationTargetInShadowTree)
     {
@@ -852,6 +860,13 @@ internal static class EventDispatcher
             if (listenerGlobal is not null && !invocationTargetInShadowTree)
             {
                 listenerGlobal.CurrentEvent = @event;
+            }
+
+            // https://w3c.github.io/long-animation-frames/#record-timing-info-for-event-listener: a script listener runs in the
+            // long animation frame of the window of the target
+            if (@event.CurrentTarget?.RelevantGlobal is Window { EventLoop: { HasPendingScriptEntryPoint: false } targetEventLoop } targetWindow && GetScriptCallback(listener.Callback) is { } scriptCallback)
+            {
+                targetEventLoop.RecordEventListenerScript(targetWindow, scriptCallback.CallbackGlobal, @event, scriptCallback);
             }
 
             var reportedExceptions = ReportedExceptionCount;

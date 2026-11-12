@@ -1203,13 +1203,10 @@
     "total": 1
   },
   "html/canvas/element/fill-and-stroke-styles/2d.gradient.colorInterpolationMethod.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/fill-and-stroke-styles/2d.gradient.colormix.html": {
-    "total": 1,
-    "failures": {
-      "color-mix works as CanvasGradient color input": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/fill-and-stroke-styles/2d.gradient.conic.invalid.inputs.html": {
     "total": 1
@@ -1224,7 +1221,7 @@
     "total": 1
   },
   "html/canvas/element/fill-and-stroke-styles/2d.gradient.hueInterpolationMethod.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/element/fill-and-stroke-styles/2d.gradient.interpolate.alpha.html": {
     "total": 1
@@ -1380,10 +1377,7 @@
     "reftest": "PASS"
   },
   "html/canvas/element/fill-and-stroke-styles/2d.gradient.relativecolor.html": {
-    "total": 1,
-    "failures": {
-      "Relative color works as CanvasGradient color input": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/fill-and-stroke-styles/2d.pattern.animated.gif.html": {
     "total": 1
@@ -8360,10 +8354,10 @@
     "total": 1
   },
   "html/canvas/offscreen/fill-and-stroke-styles/2d.gradient.colorInterpolationMethod.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/fill-and-stroke-styles/2d.gradient.colorInterpolationMethod.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/fill-and-stroke-styles/2d.gradient.conic.invalid.inputs.html": {
     "total": 1
@@ -8390,10 +8384,10 @@
     "total": 1
   },
   "html/canvas/offscreen/fill-and-stroke-styles/2d.gradient.hueInterpolationMethod.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/fill-and-stroke-styles/2d.gradient.hueInterpolationMethod.w.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/canvas/offscreen/fill-and-stroke-styles/2d.gradient.interpolate.alpha.html": {
     "total": 1
@@ -8696,16 +8690,10 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/fill-and-stroke-styles/2d.gradient.relativecolor.html": {
-    "total": 1,
-    "failures": {
-      "Relative color works as CanvasGradient color input": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/fill-and-stroke-styles/2d.gradient.relativecolor.worker.js": {
-    "total": 1,
-    "failures": {
-      "Relative color works as CanvasGradient color input": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/fill-and-stroke-styles/2d.pattern.basic.canvas.html": {
     "total": 1

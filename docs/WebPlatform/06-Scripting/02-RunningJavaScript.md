@@ -76,6 +76,11 @@ not stop the page: the next scripts run, as in a browser.
 worklets are supported. Each worker runs its own event loop on its own thread; the event loop of the page waits for its
 workers in [RunUntilIdleAsync()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.RunUntilIdleAsync).
 
+The SVG `script` elements (in an SVG document or inline in HTML) run as the HTML ones: the classic scripts, the module
+scripts and the import maps, with the `async` and `defer` attributes. An external classic script without `async` or
+`defer` pauses the parser until it runs, and a module script runs when the document has finished parsing. Their source is
+their `href` attribute.
+
 The messages posted between the windows, the workers and the worklets (`postMessage()`) are cloned as in a browser. The
 transfer list moves the `ArrayBuffer` objects, the message ports and the streams: a `ReadableStream`, a `WritableStream`
 or a `TransformStream` posted with `[stream]` is received as a stream of the other side, whose chunks, backpressure,

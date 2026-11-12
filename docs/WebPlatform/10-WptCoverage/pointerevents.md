@@ -18,8 +18,7 @@ description: "The results of the web-platform-tests of pointerevents, and why th
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
-- **TEST BUG**: 5
+- **TEST BUG**: 7
 - **NOT IMPLEMENTED**: 6
 - **TEST RUNNER**: 1
 
@@ -61,9 +60,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`pointer_boundary_events_after_removing_last_over_element_through_innerhtml.html`](https://wpt.fyi/results/pointerevents/pointer_boundary_events_after_removing_last_over_element_through_innerhtml.html) | Pass | 2 / 2 |  |  |
 | [`pointerevent-boundary-event-target-when-hover-generates-content-under-pointer.html`](https://wpt.fyi/results/pointerevents/pointerevent-boundary-event-target-when-hover-generates-content-under-pointer.html) | Pass | 1 / 1 |  |  |
 | [`pointerevent-drag-interaction.html`](https://wpt.fyi/results/pointerevents/pointerevent-drag-interaction.html) | Pass | 4 / 4 |  |  |
-| [`pointerevent_after_target_appended.html`](https://wpt.fyi/results/pointerevents/pointerevent_after_target_appended.html) | Fail | 20 / 24 | BUG | the touch subtests: when a listener of `pointerdown` or `pointerup` appends a child under the touch (or moves the target), the expected sequences fire `pointerup` at the new child and no `pointerleave`/`pointerenter` at the ancestors that stay under the touch; the library keeps the implicit pointer capture of the `pointerdown` target for `pointerup`, and fires the boundary events of the whole ancestor chain when the touch leaves (Chrome, Firefox and Safari each fail some of these subtests) |
+| [`pointerevent_after_target_appended.html`](https://wpt.fyi/results/pointerevents/pointerevent_after_target_appended.html) | Fail | 20 / 24 | TEST BUG | the touch subtests contradict the Pointer Events specification and the touch sequences of the test itself: the implicit pointer capture of a touch pointer (https://w3c.github.io/pointerevents/#implicit-pointer-capture) fires `pointerup` at the `pointerdown` target, not at the child appended under the touch; the expected `pointerenter` events of the second touch are fired from the child to the parent (they are fired from the outermost ancestor); and the subtests at `pointerup` and of the moved child expect the sequences of a pointer that hovers (no `pointerout`/`pointerleave` after `pointerup`, no `pointerenter` at the parent for the next touch). Chrome, Firefox and Safari each fail some of these subtests |
 | [`pointerevent_after_target_removed.html`](https://wpt.fyi/results/pointerevents/pointerevent_after_target_removed.html) | Pass | 12 / 12 |  |  |
-| [`pointerevent_after_target_removed_from_slot.html`](https://wpt.fyi/results/pointerevents/pointerevent_after_target_removed_from_slot.html) | Fail | 0 / 6 | BUG | the events that follow the removal of the `<slot>` of the target (or of the slotted element, or the change of its slot name): the next target is the parent of the slot, with an extra `pointerenter` at it, where the test expects the slot (and its fallback content) to keep the pointer; Chrome and Firefox fail these subtests too |
+| [`pointerevent_after_target_removed_from_slot.html`](https://wpt.fyi/results/pointerevents/pointerevent_after_target_removed_from_slot.html) | Fail | 4 / 6 | TEST BUG | the `remove-filler` subtests expect the events after the removal of the slotted element at the `<slot>` (`pointerover@slot`, `pointerup@slot`, ...) without the same events at the shadow host: an event dispatched at a node of the shadow tree is at the target phase at the host too (DOM retargeting), so the listener of the host logs it as for the other subtests (`pointerover@parent`, `pointerover@host`). Chrome and Firefox fail these subtests too |
 | [`pointerevent_attributes.html`](https://wpt.fyi/results/pointerevents/pointerevent_attributes.html) | Pass | 468 / 468 |  |  |
 | [`pointerevent_attributes.optional.html`](https://wpt.fyi/results/pointerevents/pointerevent_attributes.optional.html) | Fail | 10 / 150 | NOT IMPLEMENTED | the legacy `fromElement` and `toElement` attributes of `MouseEvent` (the precondition of the optional subtests) |
 | [`pointerevent_auxclick_is_a_pointerevent.html`](https://wpt.fyi/results/pointerevents/pointerevent_auxclick_is_a_pointerevent.html) | Pass | 4 / 4 |  |  |

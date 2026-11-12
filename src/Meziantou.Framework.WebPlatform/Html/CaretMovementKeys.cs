@@ -44,10 +44,10 @@ internal static class CaretMovementKeys
             // https://w3c.github.io/selection-api/#selectstart-event: the key extends the selection from a caret: selectstart is
             // fired before the selection changes, and the selection does not change when the event is canceled
             var (anchorOffset, focusOffset) = (selection.AnchorOffset, selection.FocusOffset);
-            selection.Collapse(start.Node, start.Offset);
+            selection.CollapseCore(start.Node, start.Offset);
             if (Selection.FireSelectStart(start.Node))
             {
-                selection.SetBaseAndExtent(newAnchor, anchorOffset, newFocus, focusOffset);
+                selection.SetBaseAndExtentCore(newAnchor, anchorOffset, newFocus, focusOffset);
             }
         }
 

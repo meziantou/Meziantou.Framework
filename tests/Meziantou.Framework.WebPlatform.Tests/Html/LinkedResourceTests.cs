@@ -44,6 +44,7 @@ public sealed class LinkedResourceTests : IDisposable
                 _ when request.Url.Contains("missing", StringComparison.Ordinal) => null,
                 _ when request.Url.Contains("redirect-to-same-origin", StringComparison.Ordinal) => new DocumentResource("p { color: rgb(0, 128, 0) }") { Headers = [new("Content-Type", "text/plain"), new("Access-Control-Allow-Origin", "*")], Url = "https://example.com/a.txt" },
                 _ when request.Url.EndsWith("import.css", StringComparison.Ordinal) => DocumentResource.Create("@import 'b.css'; p { color: red }", "text/css"),
+                _ when request.Url.EndsWith("expired.css", StringComparison.Ordinal) => new DocumentResource("p { color: rgb(0, 128, 0) }") { Headers = [new("Content-Type", "text/css"), new("Cache-Control", "max-age=0")] },
                 _ when request.Url.EndsWith(".css", StringComparison.Ordinal) => DocumentResource.Create("p { color: rgb(0, 128, 0) }", "text/css"),
                 _ when request.Url.EndsWith(".png", StringComparison.Ordinal) => DocumentResource.Create(Png, "image/png"),
                 _ => DocumentResource.Create("p { color: red }", "text/plain"),
@@ -290,6 +291,23 @@ public sealed class LinkedResourceTests : IDisposable
 
         _contexts.EventLoop.RunUntilIdle();
         Assert.Equal("load", document.Title);
+    }
+
+    [Fact]
+    public void StyleSheet_ThatExpired_IsFetchedAgainOnceTheDocumentIsLoaded()
+    {
+        var document = Load("<!doctype html><link rel=stylesheet href=expired.css><p>text</p>");
+        Assert.Equal(["Style https://example.com/expired.css"], Requests);
+
+        var link = document.CreateElement("link");
+        link.SetAttribute("rel", "stylesheet");
+        link.SetAttribute("href", "expired.css");
+        document.Head!.AppendChild(link);
+        _contexts.EventLoop.RunUntilIdle();
+
+        // As in the browsers, a response whose freshness expired is not reused by the memory cache once the document is loaded
+        Assert.NotNull(((HtmlLinkElement)link).Sheet);
+        Assert.Equal(["Style https://example.com/expired.css", "Style https://example.com/expired.css"], Requests);
     }
 
     [Fact]

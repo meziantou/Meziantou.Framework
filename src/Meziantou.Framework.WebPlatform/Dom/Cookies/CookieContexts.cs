@@ -12,10 +12,16 @@ internal static class CookieContexts
     /// The "site for cookies" of a document (https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html#name-document-based-requests):
     /// the top-level origin when it is same-site with the origins of the document and of its ancestors, an opaque origin
     /// otherwise. Unlike the specification, the origin of a sandboxed document is its opaque origin (not the origin of its
-    /// URL), as in the browsers: the requests of a sandboxed iframe are cross-site.
+    /// URL), as in the browsers: the requests of a sandboxed iframe are cross-site. The site for cookies of a service worker
+    /// is its origin when its storage key is first-party, an opaque origin otherwise.
     /// </summary>
     public static OriginRecord GetSiteForCookies(Document document)
     {
+        // A service worker of a partitioned storage key (registered by a third-party context) is cross-site: its requests
+        // do not send the SameSite cookies (https://privacycg.github.io/storage-partitioning/)
+        if (GetServiceWorkerStorageKey(document) is { } storageKey)
+            return storageKey.IsFirstParty ? document.Origin : OriginRecord.CreateOpaque();
+
         var topOrigin = GetTopLevelOrigin(document);
         for (var current = document; current is not null; current = GetParentDocument(current))
         {
@@ -26,9 +32,16 @@ internal static class CookieContexts
         return topOrigin;
     }
 
-    /// <summary>The top-level origin of a document: the origin of the active document of its top-level traversable.</summary>
+    /// <summary>
+    /// The top-level origin of a document: the origin of the active document of its top-level traversable, or for a service
+    /// worker registered by a third-party context, the top-level site of its storage key.
+    /// </summary>
     public static OriginRecord GetTopLevelOrigin(Document document)
     {
+        // The top-level site of the storage key of a service worker (its partitioned cookies are the ones of that site)
+        if (GetServiceWorkerStorageKey(document) is { TopLevelSite: { } topLevelSite })
+            return ParseOrigin(topLevelSite);
+
         var top = document;
         while (GetParentDocument(top) is { } parent)
         {
@@ -39,6 +52,10 @@ internal static class CookieContexts
     }
 
     private static Document? GetParentDocument(Document document) => document.BrowsingContext?.Parent?.Document;
+
+    /// <summary>The storage key of the registration of the service worker of a document, or null when the document is not the one of a service worker.</summary>
+    private static StorageKey? GetServiceWorkerStorageKey(Document document)
+        => document.WorkerGlobal is ServiceWorkerGlobalScope { Agent.ServiceWorker: { } serviceWorker } ? serviceWorker.Registration.StorageKey : null;
 
     /// <summary>
     /// The context of a "non-HTTP" API of a document (https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html#name-non-http-apis),

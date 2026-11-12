@@ -23,6 +23,13 @@ internal static class ScriptExecution
             return null;
 
         object? result;
+
+        // https://w3c.github.io/long-animation-frames/#record-classic-script-creation-time: the script is compiled and run in the same task
+        if (window is Window scriptWindow && !eventLoop.HasPendingScriptEntryPoint)
+        {
+            eventLoop.RecordScriptBlock(scriptWindow, ScriptInvokerType.ClassicScript, script.OriginalSourceUrl ?? script.BaseUrl, script.MutedErrors);
+        }
+
         eventLoop.RecordScriptEvaluation(window);
         var previousDocument = Document.CurrentGlobalDocumentOrNull;
         Document.CurrentGlobalDocument = window.EnvironmentDocument;
@@ -70,6 +77,12 @@ internal static class ScriptExecution
         var window = script.Global;
         if (!window.CanRunScript)
             return;
+
+        // https://w3c.github.io/long-animation-frames/#record-module-script-execution-start-time
+        if (window is Window scriptWindow && !scriptWindow.EventLoop.HasPendingScriptEntryPoint)
+        {
+            scriptWindow.EventLoop.RecordScriptBlock(scriptWindow, ScriptInvokerType.ModuleScript, script.BaseUrl, mutedErrors: false);
+        }
 
         window.EventLoop.RecordScriptEvaluation(window);
         var previousDocument = Document.CurrentGlobalDocumentOrNull;

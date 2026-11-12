@@ -1005,6 +1005,35 @@ public sealed class DocumentRequest
     /// the complete body is still supported.
     /// </summary>
     public bool StreamsResponseBody { get; init; }
+
+    /// <summary>
+    /// Gets the callback that <see cref="ReportInterimResponse"/> calls with the status and the headers of each interim
+    /// response, or null. The library sets it on the requests it sends. A loader that sends a request to another loader with
+    /// a new <see cref="DocumentRequest"/> forwards the interim responses with <c>InterimResponseHandler = request.ReportInterimResponse</c>.
+    /// </summary>
+    public Action<int, IReadOnlyList<KeyValuePair<string, string>>>? InterimResponseHandler { get; init; }
+
+    /// <summary>
+    /// Reports an interim response (https://fetch.spec.whatwg.org/#concept-response-status, an informational <c>1xx</c> status
+    /// other than <c>101</c>) received before the final response, e.g. a <c>100 Continue</c> or a <c>103 Early Hints</c>
+    /// response. The loader calls it, from any thread, before it returns the final response of the request. The time of the
+    /// first interim response is the <c>firstInterimResponseStart</c> of the resource timing entry, and the <c>Link</c>
+    /// headers of the first <c>103</c> response of the navigation of a top-level browsing context preload their resources
+    /// (https://html.spec.whatwg.org/multipage/semantics.html#early-hints), which the new document uses. An interim response
+    /// whose header is not valid makes the request a network error. A loader that does not report the interim responses is
+    /// still supported (<see cref="HttpClient"/> does not expose them).
+    /// </summary>
+    /// <param name="statusCode">The status of the interim response, between 100 and 199 (except 101).</param>
+    /// <param name="headers">The headers of the interim response, as byte strings.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="statusCode"/> is not the status of an interim response.</exception>
+    public void ReportInterimResponse(int statusCode, IReadOnlyList<KeyValuePair<string, string>> headers)
+    {
+        if (statusCode is < 100 or > 199 or 101)
+            throw new ArgumentOutOfRangeException(nameof(statusCode), statusCode, "The status of an interim response is between 100 and 199, except 101.");
+
+        ArgumentNullException.ThrowIfNull(headers);
+        InterimResponseHandler?.Invoke(statusCode, headers);
+    }
 }
 
 /// <summary>The destination of a <see cref="DocumentRequest"/> (https://fetch.spec.whatwg.org/#concept-request-destination).</summary>

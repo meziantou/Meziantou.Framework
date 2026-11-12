@@ -28,7 +28,8 @@ internal static class ModuleFetching
     {
         var document = window.EnvironmentDocument;
         var eventLoop = window.EventLoop;
-        var parsedUrl = UrlParser.Parse(url, baseUrl: null);
+        // The URL record of the root of a graph keeps the flags of the URL that its serialization does not keep
+        var parsedUrl = options.RootUrl is { } rootUrl && rootUrl.Serialize() == url ? rootUrl.Clone() : UrlParser.Parse(url, baseUrl: null);
         if (parsedUrl is null || !window.CanRunScript)
         {
             eventLoop.QueueTask(() => onComplete(null));

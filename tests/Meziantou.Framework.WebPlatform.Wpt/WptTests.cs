@@ -264,6 +264,8 @@ public sealed class WptTests
 
     public static TheoryData<string> ClearSiteDataTests => GetTests("clear-site-data");
 
+    public static TheoryData<string> SubresourceIntegrityTests => GetTests("subresource-integrity");
+
     public static TheoryData<string> KeyboardMapTests => GetTests("keyboard-map");
 
     public static TheoryData<string> MediaSessionTests => GetTests("mediasession");
@@ -351,6 +353,8 @@ public sealed class WptTests
     public static TheoryData<string> UserTimingTests => GetTests("user-timing");
 
     public static TheoryData<string> LongTaskTimingTests => GetTests("longtask-timing");
+
+    public static TheoryData<string> LongAnimationFrameTests => GetTests("long-animation-frame");
 
     public static TheoryData<string> IsInputPendingTests => GetTests("is-input-pending");
 
@@ -1248,6 +1252,10 @@ public sealed class WptTests
     public void ClearSiteData(string test) => Run("clear-site-data", test);
 
     [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(SubresourceIntegrityTests))]
+    public void SubresourceIntegrity(string test) => Run("subresource-integrity", test);
+
+    [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(KeyboardMapTests))]
     public void KeyboardMap(string test) => Run("keyboard-map", test);
 
@@ -1422,6 +1430,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(LongTaskTimingTests))]
     public void LongTaskTiming(string test) => Run("longtask-timing", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(LongAnimationFrameTests))]
+    public void LongAnimationFrame(string test) => Run("long-animation-frame", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(IsInputPendingTests))]

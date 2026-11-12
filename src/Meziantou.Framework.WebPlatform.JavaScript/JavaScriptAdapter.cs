@@ -449,6 +449,41 @@ internal readonly struct JavaScriptAdapter(JavaScriptAdapterState state) : IJsAd
 
     public object? CreateSharedArrayBuffer(object dataBlock) => dataBlock is JsSharedDataBlock block ? Realm.CreateSharedArrayBuffer(block) : null;
 
+    public object? CreateResizableArrayBufferWithData(byte[] data, int maxByteLength, string detachKey, Action<object, int> resize)
+    {
+        var buffer = Realm.CreateResizableArrayBuffer(data.AsMemory(), maxByteLength, detachKey, (target, newByteLength) => resize(target, newByteLength));
+        state.DetachKeys.AddOrUpdate(buffer, detachKey);
+        return buffer;
+    }
+
+    public void SetArrayBufferData(object arrayBuffer, byte[] data)
+    {
+        if (arrayBuffer is not JsObject buffer)
+            return;
+
+        using var scope = Engine.Enter();
+        JsBinaryData.SetArrayBufferMemory(buffer, data.AsMemory());
+    }
+
+    public object? CreateFixedLengthSharedArrayBuffer(object dataBlock, int byteLength) => dataBlock is JsSharedDataBlock block ? Realm.CreateSharedArrayBuffer(block, byteLength) : null;
+
+    public object? CreateGrowableSharedArrayBuffer(object dataBlock, Action<object, int> grow) => dataBlock is JsSharedDataBlock { IsGrowable: true } block ? Realm.CreateGrowableSharedArrayBuffer(block, (buffer, newByteLength) => grow(buffer, newByteLength)) : null;
+
+    public int GetSharedDataBlockByteLength(object dataBlock) => dataBlock is JsSharedDataBlock block ? block.ByteLength : 0;
+
+    public bool GrowSharedDataBlock(object dataBlock, int deltaByteLength, out int previousByteLength)
+    {
+        if (dataBlock is not JsSharedDataBlock block)
+        {
+            previousByteLength = 0;
+            return false;
+        }
+
+        return block.TryGrowBy(deltaByteLength, out previousByteLength);
+    }
+
+    public bool GrowSharedDataBlockTo(object dataBlock, int newByteLength) => dataBlock is JsSharedDataBlock block && block.TryGrow(newByteLength);
+
     public object CreateArrayBufferView(WebIdlBufferKind kind, object buffer, int byteOffset, int length) => Realm.CreateBufferView((EngineBufferKind)kind, (JsObject)buffer, byteOffset, length);
 
     // The factories of the lazy properties are their state: no closure is allocated per property

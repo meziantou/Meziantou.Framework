@@ -255,7 +255,7 @@ public partial class Document
                 // host). As in the browsers, an existing selection is kept.
                 if (GetSelection() is { RangeCount: 0 } selection)
                 {
-                    selection.Collapse((Node?)DocumentElement ?? this, 0);
+                    selection.CollapseCore((Node?)DocumentElement ?? this, 0);
                 }
 
                 if (DocumentElement is { } documentElement)

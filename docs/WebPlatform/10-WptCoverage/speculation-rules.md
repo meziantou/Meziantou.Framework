@@ -9,16 +9,16 @@ description: "The results of the web-platform-tests of speculation-rules, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 132 | 185 | 1 | 72% |
-| [Tentative](#tentative-tests) | 6 | 26 | 0 | 23% |
+| [Stable](#stable-tests) | 136 | 185 | 1 | 74% |
+| [Tentative](#tentative-tests) | 7 | 26 | 0 | 27% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **138** | **211** | **1** | **66%** |
+| **All** | **143** | **211** | **1** | **68%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 8
+- **BUG**: 3
 - **TEST BUG**: 7
 - **NOT IMPLEMENTED**: 55
 - **TEST RUNNER**: 28
@@ -113,10 +113,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`prerender/main-frame-navigation.https.html`](https://wpt.fyi/results/speculation-rules/prerender/main-frame-navigation.https.html) | Pass | 1 / 1 |  |  |
 | [`prerender/media-autoplay.https.html`](https://wpt.fyi/results/speculation-rules/prerender/media-autoplay.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the loading and the playback of the media elements are not delayed while the document is prerendering |
 | [`prerender/navigation-api-intercept-during-activation.https.html`](https://wpt.fyi/results/speculation-rules/prerender/navigation-api-intercept-during-activation.https.html) | Pass | 1 / 1 |  |  |
-| [`prerender/navigation-api-location-replace.https.html`](https://wpt.fyi/results/speculation-rules/prerender/navigation-api-location-replace.https.html) | Fail | 0 / 1 | BUG | the navigation API of a prerendered document: `navigation.activation.from` is not the entry of the initiator before the activation, and the activation creates new `NavigationHistoryEntry` objects instead of adding the entries of the initiator before the current entry (`navigation.currentEntry` changes) |
-| [`prerender/navigation-api-multiple-entries.https.html`](https://wpt.fyi/results/speculation-rules/prerender/navigation-api-multiple-entries.https.html) | Fail | 0 / 1 | BUG | the navigation API of a prerendered document: `navigation.activation.from` is not the entry of the initiator before the activation, and the activation creates new `NavigationHistoryEntry` objects instead of adding the entries of the initiator before the current entry (`navigation.currentEntry` changes) |
-| [`prerender/navigation-api-redirect.https.html`](https://wpt.fyi/results/speculation-rules/prerender/navigation-api-redirect.https.html) | Fail | 0 / 1 | BUG | the navigation API of a prerendered document: `navigation.activation.from` is not the entry of the initiator before the activation, and the activation creates new `NavigationHistoryEntry` objects instead of adding the entries of the initiator before the current entry (`navigation.currentEntry` changes) |
-| [`prerender/navigation-api.https.html`](https://wpt.fyi/results/speculation-rules/prerender/navigation-api.https.html) | Fail | 0 / 1 | BUG | the navigation API of a prerendered document: `navigation.activation.from` is not the entry of the initiator before the activation, and the activation creates new `NavigationHistoryEntry` objects instead of adding the entries of the initiator before the current entry (`navigation.currentEntry` changes) |
+| [`prerender/navigation-api-location-replace.https.html`](https://wpt.fyi/results/speculation-rules/prerender/navigation-api-location-replace.https.html) | Pass | 1 / 1 |  |  |
+| [`prerender/navigation-api-multiple-entries.https.html`](https://wpt.fyi/results/speculation-rules/prerender/navigation-api-multiple-entries.https.html) | Pass | 1 / 1 |  |  |
+| [`prerender/navigation-api-redirect.https.html`](https://wpt.fyi/results/speculation-rules/prerender/navigation-api-redirect.https.html) | Pass | 1 / 1 |  |  |
+| [`prerender/navigation-api.https.html`](https://wpt.fyi/results/speculation-rules/prerender/navigation-api.https.html) | Pass | 1 / 1 |  |  |
 | [`prerender/navigation-intercepted-by-service-worker.https.html`](https://wpt.fyi/results/speculation-rules/prerender/navigation-intercepted-by-service-worker.https.html) | Pass | 1 / 1 |  |  |
 | [`prerender/navigator-plugins.https.html`](https://wpt.fyi/results/speculation-rules/prerender/navigator-plugins.https.html) | Pass | 1 / 1 |  |  |
 | [`prerender/no-vary-search-hint-target-blank.https.html`](https://wpt.fyi/results/speculation-rules/prerender/no-vary-search-hint-target-blank.https.html) | Fail | 27 / 28 | TEST BUG | variant 17: the test calls its helper without the `noVarySearchHint` argument (the test says so: crbug.com/499027745), so `shouldUse` is undefined and the test expects the prerender to be discarded although the URLs are equivalent; it also fails in Chromium |
@@ -226,7 +226,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`prefetch/list-rule-eagerness-eager-hover.tentative.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/list-rule-eagerness-eager-hover.tentative.https.html) | Pass | 1 / 1 |  |  |
 | [`prefetch/tentative/cookie-indices.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/tentative/cookie-indices.https.html) | Timeout | 0 / 6 | TEST BUG, NOT IMPLEMENTED | the redirect variants request `prefetch/tentative/resources/random_redirect.py`, which does not exist (the handler is in `prefetch/resources`); the `Cookie-Indices` response header (a prefetch is not discarded when the cookies it names changed since); the test also fails in Chromium |
 | [`prefetch/tentative/service-worker/basic.sub.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/tentative/service-worker/basic.sub.https.html) | Pass | 24 / 24 |  |  |
-| [`prefetch/tentative/service-worker/redirect.sub.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html) | Fail | 7 / 11 | BUG | the redirects of the navigations handled by a service worker (as `service-workers/service-worker/navigation-redirect.https.html`): the document of a navigation redirected out of the scope of the worker that handled its first request is still controlled by that worker (`sc=in-out`), and the navigations whose redirect is fetched or synthesized by the fetch handler never complete (`sc=in-in` and `sc=out-in` with `fetch-handler`, `sc=in-in` with `fetch-handler-synthetic`). The prefetch itself fails at the redirect, as the tests expect |
+| [`prefetch/tentative/service-worker/redirect.sub.https.html`](https://wpt.fyi/results/speculation-rules/prefetch/tentative/service-worker/redirect.sub.https.html) | Pass | 11 / 11 |  |  |
 | [`prerender/restriction-audio-setSinkId-with-invalid-sinkId.https.tentative.https.html`](https://wpt.fyi/results/speculation-rules/prerender/restriction-audio-setSinkId-with-invalid-sinkId.https.tentative.https.html) | Timeout | 0 / 2 | NOT IMPLEMENTED, TEST RUNNER | the API that the test expects to be restricted or delayed while prerendering: Audio Output Devices (`setSinkId()`), Background Fetch, Background Sync, Web Bluetooth, Encrypted Media, Idle Detection, File System Access, Media Capture (`getUserMedia()`, `enumerateDevices()`, `getDisplayMedia()`), Media Capabilities, Web MIDI, Notifications, Presentation, Push, Picture-in-Picture, Web Speech, WebHID, Web NFC, Web Serial, Web Share, WebUSB or WebXR; `test_driver.set_permission()` only supports the clipboard permissions |
 | [`prerender/restriction-audio-setSinkId.https.tentative.https.html`](https://wpt.fyi/results/speculation-rules/prerender/restriction-audio-setSinkId.https.tentative.https.html) | Timeout | 0 / 2 | NOT IMPLEMENTED, TEST RUNNER | the API that the test expects to be restricted or delayed while prerendering: Audio Output Devices (`setSinkId()`), Background Fetch, Background Sync, Web Bluetooth, Encrypted Media, Idle Detection, File System Access, Media Capture (`getUserMedia()`, `enumerateDevices()`, `getDisplayMedia()`), Media Capabilities, Web MIDI, Notifications, Presentation, Push, Picture-in-Picture, Web Speech, WebHID, Web NFC, Web Serial, Web Share, WebUSB or WebXR; `test_driver.set_permission()` only supports the clipboard permissions |
 | [`prerender/restriction-bluetooth.tentative.https.html`](https://wpt.fyi/results/speculation-rules/prerender/restriction-bluetooth.tentative.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the API that the test expects to be restricted or delayed while prerendering: Audio Output Devices (`setSinkId()`), Background Fetch, Background Sync, Web Bluetooth, Encrypted Media, Idle Detection, File System Access, Media Capture (`getUserMedia()`, `enumerateDevices()`, `getDisplayMedia()`), Media Capabilities, Web MIDI, Notifications, Presentation, Push, Picture-in-Picture, Web Speech, WebHID, Web NFC, Web Serial, Web Share, WebUSB or WebXR; `test_driver.set_permission()` only supports the clipboard permissions |

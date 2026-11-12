@@ -9,17 +9,16 @@ description: "The results of the web-platform-tests of xhr, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 320 | 331 | 0 | 97% |
+| [Stable](#stable-tests) | 322 | 331 | 0 | 97% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **322** | **333** | **0** | **97%** |
+| **All** | **324** | **333** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 3
-- **NOT IMPLEMENTED**: 2
 - **TEST RUNNER**: 6
 
 ## Stable tests
@@ -116,7 +115,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`event-loadstart.any.js`](https://wpt.fyi/results/xhr/event-loadstart.any.js) | Pass | 2 / 2 |  |  |
 | [`event-progress.any.js`](https://wpt.fyi/results/xhr/event-progress.any.js) | Pass | 2 / 2 |  |  |
 | [`event-readystate-sync-open.any.js`](https://wpt.fyi/results/xhr/event-readystate-sync-open.any.js) | Pass | 4 / 4 |  |  |
-| [`event-readystatechange-loaded.any.js`](https://wpt.fyi/results/xhr/event-readystatechange-loaded.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | streamed response bodies (the `LOADING` readystatechange is fired once, with the whole body) |
+| [`event-readystatechange-loaded.any.js`](https://wpt.fyi/results/xhr/event-readystatechange-loaded.any.js) | Pass | 2 / 2 |  |  |
 | [`event-timeout-order.any.js`](https://wpt.fyi/results/xhr/event-timeout-order.any.js) | Pass | 2 / 2 |  |  |
 | [`event-timeout.any.js`](https://wpt.fyi/results/xhr/event-timeout.any.js) | Pass | 2 / 2 |  |  |
 | [`event-upload-progress-crossorigin.any.js`](https://wpt.fyi/results/xhr/event-upload-progress-crossorigin.any.js) | Pass | 8 / 8 |  |  |
@@ -220,7 +219,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`response-data-blob.htm`](https://wpt.fyi/results/xhr/response-data-blob.htm) | Pass | 1 / 1 |  |  |
 | [`response-data-deflate.htm`](https://wpt.fyi/results/xhr/response-data-deflate.htm) | Pass | 1 / 1 |  |  |
 | [`response-data-gzip.htm`](https://wpt.fyi/results/xhr/response-data-gzip.htm) | Pass | 1 / 1 |  |  |
-| [`response-data-progress.htm`](https://wpt.fyi/results/xhr/response-data-progress.htm) | Fail | 0 / 2 | NOT IMPLEMENTED | streamed response bodies (a single `progress` event with the whole body) |
+| [`response-data-progress.htm`](https://wpt.fyi/results/xhr/response-data-progress.htm) | Pass | 2 / 2 |  |  |
 | [`response-invalid-responsetype.htm`](https://wpt.fyi/results/xhr/response-invalid-responsetype.htm) | Pass | 5 / 5 |  |  |
 | [`response-invalid-utf8.html`](https://wpt.fyi/results/xhr/response-invalid-utf8.html) | Pass | 1 / 1 |  |  |
 | [`response-json-bom.html`](https://wpt.fyi/results/xhr/response-json-bom.html) | Pass | 1 / 1 |  |  |

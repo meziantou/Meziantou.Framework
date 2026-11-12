@@ -3051,91 +3051,15 @@
   "fetch/metadata/generated/header-link.https.sub.html": {
     "total": 37,
     "failures": {
-      "sec-fetch-dest rel=icon": "FAIL",
-      "sec-fetch-mode rel=icon": "FAIL",
-      "sec-fetch-mode rel=stylesheet": "FAIL",
-      "sec-fetch-site rel=icon - Cross-Site -> Cross-Site": "FAIL",
-      "sec-fetch-site rel=icon - Cross-Site -> Same Origin": "FAIL",
-      "sec-fetch-site rel=icon - Cross-Site -> Same-Site": "FAIL",
-      "sec-fetch-site rel=icon - Cross-site": "FAIL",
-      "sec-fetch-site rel=icon - Same origin": "FAIL",
-      "sec-fetch-site rel=icon - Same site": "FAIL",
-      "sec-fetch-site rel=icon - Same-Origin -> Cross-Site": "FAIL",
-      "sec-fetch-site rel=icon - Same-Origin -> Cross-Site -> Same-Origin redirect": "FAIL",
-      "sec-fetch-site rel=icon - Same-Origin -> Same Origin": "FAIL",
-      "sec-fetch-site rel=icon - Same-Origin -> Same-Site": "FAIL",
-      "sec-fetch-site rel=icon - Same-Origin -> Same-Site -> Same-Origin redirect": "FAIL",
-      "sec-fetch-site rel=icon - Same-Site -> Cross-Site": "FAIL",
-      "sec-fetch-site rel=icon - Same-Site -> Same Origin": "FAIL",
-      "sec-fetch-site rel=icon - Same-Site -> Same-Site": "FAIL",
-      "sec-fetch-site rel=stylesheet - Cross-Site -> Cross-Site": "FAIL",
-      "sec-fetch-site rel=stylesheet - Cross-Site -> Same Origin": "FAIL",
-      "sec-fetch-site rel=stylesheet - Cross-Site -> Same-Site": "FAIL",
-      "sec-fetch-site rel=stylesheet - Cross-site": "FAIL",
-      "sec-fetch-site rel=stylesheet - Same origin": "FAIL",
-      "sec-fetch-site rel=stylesheet - Same site": "FAIL",
-      "sec-fetch-site rel=stylesheet - Same-Origin -> Cross-Site": "FAIL",
-      "sec-fetch-site rel=stylesheet - Same-Origin -> Cross-Site -> Same-Origin redirect": "FAIL",
-      "sec-fetch-site rel=stylesheet - Same-Origin -> Same Origin": "FAIL",
-      "sec-fetch-site rel=stylesheet - Same-Origin -> Same-Site": "FAIL",
-      "sec-fetch-site rel=stylesheet - Same-Origin -> Same-Site -> Same-Origin redirect": "FAIL",
-      "sec-fetch-site rel=stylesheet - Same-Site -> Cross-Site": "FAIL",
-      "sec-fetch-site rel=stylesheet - Same-Site -> Same Origin": "FAIL",
-      "sec-fetch-site rel=stylesheet - Same-Site -> Same-Site": "FAIL",
       "sec-fetch-storage-access rel=icon - Cross-site": "FAIL",
-      "sec-fetch-storage-access rel=icon - Same site": "FAIL",
-      "sec-fetch-storage-access rel=stylesheet - Cross-site": "FAIL",
-      "sec-fetch-storage-access rel=stylesheet - Same site": "FAIL",
-      "sec-fetch-user rel=icon": "FAIL",
-      "sec-fetch-user rel=stylesheet": "FAIL"
+      "sec-fetch-storage-access rel=stylesheet - Cross-site": "FAIL"
     }
   },
   "fetch/metadata/generated/header-link.https.sub.tentative.html": {
-    "total": 1,
-    "failures": {
-      "sec-fetch-dest rel=stylesheet": "FAIL"
-    }
+    "total": 1
   },
   "fetch/metadata/generated/header-link.sub.html": {
-    "total": 36,
-    "failures": {
-      "sec-fetch-dest rel=icon - Not sent to non-trustworthy cross-site destination": "FAIL",
-      "sec-fetch-dest rel=icon - Not sent to non-trustworthy same-origin destination": "FAIL",
-      "sec-fetch-dest rel=icon - Not sent to non-trustworthy same-site destination": "FAIL",
-      "sec-fetch-dest rel=stylesheet - Not sent to non-trustworthy cross-site destination": "FAIL",
-      "sec-fetch-dest rel=stylesheet - Not sent to non-trustworthy same-origin destination": "FAIL",
-      "sec-fetch-dest rel=stylesheet - Not sent to non-trustworthy same-site destination": "FAIL",
-      "sec-fetch-mode rel=icon - Not sent to non-trustworthy cross-site destination": "FAIL",
-      "sec-fetch-mode rel=icon - Not sent to non-trustworthy same-origin destination": "FAIL",
-      "sec-fetch-mode rel=icon - Not sent to non-trustworthy same-site destination": "FAIL",
-      "sec-fetch-mode rel=stylesheet - Not sent to non-trustworthy cross-site destination": "FAIL",
-      "sec-fetch-mode rel=stylesheet - Not sent to non-trustworthy same-origin destination": "FAIL",
-      "sec-fetch-mode rel=stylesheet - Not sent to non-trustworthy same-site destination": "FAIL",
-      "sec-fetch-site rel=icon - HTTPS downgrade (header not sent)": "FAIL",
-      "sec-fetch-site rel=icon - HTTPS downgrade-upgrade": "FAIL",
-      "sec-fetch-site rel=icon - HTTPS upgrade": "FAIL",
-      "sec-fetch-site rel=icon - Not sent to non-trustworthy cross-site destination": "FAIL",
-      "sec-fetch-site rel=icon - Not sent to non-trustworthy same-origin destination": "FAIL",
-      "sec-fetch-site rel=icon - Not sent to non-trustworthy same-site destination": "FAIL",
-      "sec-fetch-site rel=stylesheet - HTTPS downgrade (header not sent)": "FAIL",
-      "sec-fetch-site rel=stylesheet - HTTPS downgrade-upgrade": "FAIL",
-      "sec-fetch-site rel=stylesheet - HTTPS upgrade": "FAIL",
-      "sec-fetch-site rel=stylesheet - Not sent to non-trustworthy cross-site destination": "FAIL",
-      "sec-fetch-site rel=stylesheet - Not sent to non-trustworthy same-origin destination": "FAIL",
-      "sec-fetch-site rel=stylesheet - Not sent to non-trustworthy same-site destination": "FAIL",
-      "sec-fetch-storage-access rel=icon - Not sent to non-trustworthy cross-site destination": "FAIL",
-      "sec-fetch-storage-access rel=icon - Not sent to non-trustworthy same-origin destination": "FAIL",
-      "sec-fetch-storage-access rel=icon - Not sent to non-trustworthy same-site destination": "FAIL",
-      "sec-fetch-storage-access rel=stylesheet - Not sent to non-trustworthy cross-site destination": "FAIL",
-      "sec-fetch-storage-access rel=stylesheet - Not sent to non-trustworthy same-origin destination": "FAIL",
-      "sec-fetch-storage-access rel=stylesheet - Not sent to non-trustworthy same-site destination": "FAIL",
-      "sec-fetch-user rel=icon - Not sent to non-trustworthy cross-site destination": "FAIL",
-      "sec-fetch-user rel=icon - Not sent to non-trustworthy same-origin destination": "FAIL",
-      "sec-fetch-user rel=icon - Not sent to non-trustworthy same-site destination": "FAIL",
-      "sec-fetch-user rel=stylesheet - Not sent to non-trustworthy cross-site destination": "FAIL",
-      "sec-fetch-user rel=stylesheet - Not sent to non-trustworthy same-origin destination": "FAIL",
-      "sec-fetch-user rel=stylesheet - Not sent to non-trustworthy same-site destination": "FAIL"
-    }
+    "total": 36
   },
   "fetch/metadata/generated/header-refresh.https.optional.sub.html": {
     "total": 20
@@ -3617,20 +3541,10 @@
     "total": 4
   },
   "fetch/security/1xx-response.any.js": {
-    "total": 4,
-    "failures": {
-      "Status(100) should be ignored.": "FAIL",
-      "Status(103) should be ignored.": "FAIL",
-      "Status(199) should be ignored.": "FAIL"
-    }
+    "total": 4
   },
   "fetch/security/1xx-response.any.js#dedicatedworker": {
-    "total": 4,
-    "failures": {
-      "Status(100) should be ignored.": "FAIL",
-      "Status(103) should be ignored.": "FAIL",
-      "Status(199) should be ignored.": "FAIL"
-    }
+    "total": 4
   },
   "fetch/security/canvas-tainted-serviceworker-passthrough-redirect.https.html": {
     "total": 1
@@ -3651,25 +3565,10 @@
     }
   },
   "fetch/security/dangling-markup/dangling-markup-mitigation.tentative.html": {
-    "total": 31,
-    "failures": {
-      "<img id=\"dangling\" src=\"/images/green-1x1.png?img=&#10;&lt;b\">": "FAIL",
-      "<img id=\"dangling\" src=\"/images/green-1x1.png?img=&lt;&#10;b\">": "FAIL",
-      "Fetch: /images/gre\\nen-1x1.png?img=<": "FAIL",
-      "Fetch: /images/gre\\ren-1x1.png?img=<": "FAIL",
-      "Fetch: /images/gre\\ten-1x1.png?img=<": "FAIL",
-      "Fetch: /images/green-1x1.png?<\\n=block": "FAIL",
-      "Fetch: /images/green-1x1.png?<\\r=block": "FAIL",
-      "Fetch: /images/green-1x1.png?<\\t=block": "FAIL",
-      "\\n      <img id=\"dangling\" src=\"/images/green-1x1.png?img=\\n        &lt;\\n        &#10;b\\n      \">\\n    ": "FAIL"
-    }
+    "total": 31
   },
   "fetch/security/dangling-markup/media.html": {
-    "total": 4,
-    "failures": {
-      "Should not load audio with dangling markup in URL": "FAIL",
-      "Should not load video with dangling markup in URL": "FAIL"
-    }
+    "total": 4
   },
   "fetch/security/dangling-markup/option.html": {
     "total": 6,
@@ -3706,59 +3605,27 @@
     "total": 1
   },
   "fetch/stale-while-revalidate/fetch-sw.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Second fetch returns same response": "TIMEOUT"
-    }
+    "total": 1
   },
   "fetch/stale-while-revalidate/fetch.any.js": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Second fetch returns same response": "TIMEOUT"
-    }
+    "total": 1
   },
   "fetch/stale-while-revalidate/fetch.any.js#dedicatedworker": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Second fetch returns same response": "TIMEOUT"
-    }
+    "total": 1
   },
   "fetch/stale-while-revalidate/fetch.any.js#sharedworker": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Second fetch returns same response": "TIMEOUT"
-    }
+    "total": 1
   },
   "fetch/stale-while-revalidate/revalidate-not-blocked-by-csp.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Request revalidation aren't blocked by CSP": "TIMEOUT"
-    }
+    "total": 1
   },
   "fetch/stale-while-revalidate/stale-css.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Cache returns stale resource": "TIMEOUT"
-    }
+    "total": 1
   },
   "fetch/stale-while-revalidate/stale-image.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Cache returns stale resource": "TIMEOUT"
-    }
+    "total": 1
   },
   "fetch/stale-while-revalidate/stale-script.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Cache returns stale resource": "TIMEOUT"
-    }
+    "total": 1
   }
 }

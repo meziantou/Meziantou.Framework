@@ -42,6 +42,13 @@ Assert.Equal("5", document.QuerySelector("output")!.TextContent);
   supported.
 - The features of WebAssembly 3.0 are enabled (reference types, garbage collection types, exceptions, tail calls, memory64,
   multiple memories, SIMD), except the threads.
+- The JS String Builtins are supported: the `builtins: ["js-string"]` compile option provides the functions of the
+  `wasm:js-string` module (`length`, `concat`, `charCodeAt`, `fromCharCodeArray`...), and `importedStringConstants`
+  turns the globals imported from a module into string constants (the name of the import is the string).
+- `memory.toResizableBuffer()` gives a resizable `ArrayBuffer` of the bytes of a memory: `resize()` grows the memory by
+  whole pages, and the buffer follows the size of the memory. A shared `WebAssembly.Memory` has `SharedArrayBuffer`
+  buffers, and can be posted to the workers of the agent cluster: the copies share the bytes, and when one of them
+  grows the memory, the `buffer` of each copy gets the new size.
 - The running code is interrupted by the limits of the script engine, such as [Timeout](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.Timeout).
 
 [WasmtimeRuntimeOptions](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions) sets the size of the stack of the WebAssembly code ([MaxStackSize](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.MaxStackSize), 512 KiB by default: a

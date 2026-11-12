@@ -589,6 +589,21 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 return moduleHandle;
             }
 
+            // https://webassembly.github.io/threads/web-api/#serialization: a shared memory is serialized as its shared data
+            // block, as a SharedArrayBuffer (it cannot be stored, and needs the cross-origin isolation)
+            if (target is WebAssemblyMemoryObject { SharedDataBlock: { } dataBlock, Maximum: { } maximum } sharedMemory)
+            {
+                if (adapter.ToBoolean(args[1]))
+                    throw adapter.CreateException(ToJsError(new DomException("A shared WebAssembly.Memory could not be stored", "DataCloneError")));
+
+                if (!GlobalScope.CrossOriginIsolated)
+                    throw adapter.CreateException(ToJsError(new DomException("A shared WebAssembly.Memory can only be cloned by a cross-origin isolated global", "DataCloneError")));
+
+                var memoryHandle = CreateObject();
+                Agent.SerializedPlatformObjects.AddOrUpdate(memoryHandle, new SerializedWasmSharedMemory(dataBlock, maximum, sharedMemory.Is64, GlobalScope.AgentClusterKey));
+                return memoryHandle;
+            }
+
             if (target is not IStructuredSerializable serializable)
                 throw adapter.CreateException(ToJsError(new DomException($"The {WebIdlBindings<TAdapter, TValue>.GetInterface(target.GetType())?.Name ?? target.GetType().Name} object could not be cloned", "DataCloneError")));
 
@@ -607,6 +622,17 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                     throw adapter.CreateException(ToJsError(new DomException("A WebAssembly.Module cannot be deserialized in another agent cluster", "DataCloneError")));
 
                 return GetWrapper(new WebAssemblyModuleObject(module.Module, module.BuiltinSets, module.ImportedStringModule));
+            }
+
+            // A new WebAssembly.Memory object of the shared data block, whose buffer is a new SharedArrayBuffer
+            if (serializedObject is SerializedWasmSharedMemory serializedMemory)
+            {
+                if (serializedMemory.AgentCluster is null || !ReferenceEquals(serializedMemory.AgentCluster, GlobalScope.AgentClusterKey))
+                    throw adapter.CreateException(ToJsError(new DomException("A shared WebAssembly.Memory cannot be deserialized in another agent cluster", "DataCloneError")));
+
+                var memoryObject = new WebAssemblyMemoryObject(serializedMemory.DataBlock, serializedMemory.Maximum, serializedMemory.Is64);
+                memoryObject.BufferObject = CreateWasmSharedMemoryBuffer(memoryObject, resizable: false);
+                return GetWrapper(memoryObject);
             }
 
             // https://fs.spec.whatwg.org/#filesystemhandle-deserialization-steps: the handle is created in this realm
@@ -673,6 +699,11 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
             if (serialized.AgentCluster is null || !ReferenceEquals(serialized.AgentCluster, GlobalScope.AgentClusterKey))
                 throw adapter.CreateException(ToJsError(new DomException("A SharedArrayBuffer cannot be deserialized in another agent cluster", "DataCloneError")));
+
+            // A fixed-length buffer keeps its byte length (e.g. the buffer of a shared WebAssembly.Memory, a fixed-length
+            // view of a growable data block): [[ArrayBufferByteLength]] is the one of the serialized buffer
+            if (serialized.DataBlock is { } fixedLengthDataBlock && adapter.IsUndefined(args[2]) && adapter.CreateFixedLengthSharedArrayBuffer(fixedLengthDataBlock, (int)adapter.ToNumber(args[1])) is { } fixedLengthBuffer)
+                return fixedLengthBuffer;
 
             if (serialized.DataBlock is { } sharedDataBlock && adapter.CreateSharedArrayBuffer(sharedDataBlock) is { } sharedBuffer)
                 return sharedBuffer;

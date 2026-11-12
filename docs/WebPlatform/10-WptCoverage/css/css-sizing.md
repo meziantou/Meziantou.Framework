@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 208 | 210 | 0 | 99% |
 | [Tentative](#tentative-tests) | 7 | 7 | 0 | 100% |
-| [Reftests](#reftests) | 565 | 569 | 0 | 99% |
-| **All** | **780** | **786** | **0** | **99%** |
+| [Reftests](#reftests) | 567 | 569 | 0 | 99.6% |
+| **All** | **782** | **786** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 3
+- **BUG**: 1
 - **TEST BUG**: 1
 - **NOT IMPLEMENTED**: 1
 - **REQUIRES**: 1
@@ -431,7 +431,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`aspect-ratio/grid-aspect-ratio-024.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/grid-aspect-ratio-024.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/grid-aspect-ratio-025.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/grid-aspect-ratio-025.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/grid-aspect-ratio-026.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/grid-aspect-ratio-026.html) | Pass | 1 / 1 |  |  |
-| [`aspect-ratio/grid-aspect-ratio-027.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/grid-aspect-ratio-027.html) | Fail | 0 / 1 | BUG | the min-content contribution of a grid item that is a scroll container (`overflow: auto`) with `aspect-ratio: 2/1` and `height: 100px` is the size transferred through the ratio (200px) instead of 0 (it has no content and its automatic minimum size is 0): the `width: min-content` grid is 300px wide instead of 100px |
+| [`aspect-ratio/grid-aspect-ratio-027.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/grid-aspect-ratio-027.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/grid-aspect-ratio-028.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/grid-aspect-ratio-028.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/grid-aspect-ratio-029.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/grid-aspect-ratio-029.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/grid-aspect-ratio-030.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/grid-aspect-ratio-030.html) | Pass | 1 / 1 |  |  |
@@ -746,7 +746,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`ortho-writing-mode-001.html`](https://wpt.fyi/results/css/css-sizing/ortho-writing-mode-001.html) | Pass | 1 / 1 |  |  |
 | [`orthogonal-writing-mode-float-in-inline.html`](https://wpt.fyi/results/css/css-sizing/orthogonal-writing-mode-float-in-inline.html) | Pass | 1 / 1 |  |  |
 | [`percentage-width-subpixels.tentative.html`](https://wpt.fyi/results/css/css-sizing/percentage-width-subpixels.tentative.html) | Pass | 1 / 1 |  |  |
-| [`range-percent-intrinsic-size-1.html`](https://wpt.fyi/results/css/css-sizing/range-percent-intrinsic-size-1.html) | Fail | 0 / 1 | BUG | the min-content size of a flex container whose `<input type=range>` item has `width: 50%; flex: 1` is the margins of the item (its cyclic percentage width zeroes its min-content contribution, as for the automatic minimum size of the compressible flex items) where the browsers keep the default width of the range: the container, a shrinkable flex item itself, is 71px wide instead of 135px (the other cases of the test, `min-width: min-content` with a percentage `width` or `max-width`, match) |
+| [`range-percent-intrinsic-size-1.html`](https://wpt.fyi/results/css/css-sizing/range-percent-intrinsic-size-1.html) | Pass | 1 / 1 |  |  |
 | [`range-percent-intrinsic-size-2.html`](https://wpt.fyi/results/css/css-sizing/range-percent-intrinsic-size-2.html) | Pass | 1 / 1 |  |  |
 | [`range-percent-intrinsic-size-2a.html`](https://wpt.fyi/results/css/css-sizing/range-percent-intrinsic-size-2a.html) | Pass | 1 / 1 |  |  |
 | [`replaced-aspect-ratio-intrinsic-size-001.html`](https://wpt.fyi/results/css/css-sizing/replaced-aspect-ratio-intrinsic-size-001.html) | Pass | 1 / 1 |  |  |

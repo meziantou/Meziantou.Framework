@@ -65,4 +65,10 @@ internal static class ExperimentalApis
 
     /// <summary>The readiness of the WebMCP tools (https://github.com/webmachinelearning/webmcp/pull/373): <c>ModelContext.waitForToolsUntil()</c> and <c>ModelContext.toolsReady</c>.</summary>
     public const string WebMcpToolReadiness = "WEBPLATEXP0018";
+
+    /// <summary>The interpolation methods of the canvas gradients (https://github.com/whatwg/html/pull/10986): <c>colorInterpolationMethod</c> and <c>hueInterpolationMethod</c>.</summary>
+    public const string CanvasGradientInterpolation = "WEBPLATEXP0019";
+
+    /// <summary>The <c>async</c> IDL attribute of the SVG <c>script</c> elements, which SVG 2 does not define (the web-platform-tests of <c>svg/interact/scripted</c> test it).</summary>
+    public const string SvgScriptAsync = "WEBPLATEXP0020";
 }

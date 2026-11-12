@@ -1,4 +1,5 @@
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Urls;
 
 namespace Meziantou.Framework.WebPlatform.Scripting;
 
@@ -138,7 +139,32 @@ public sealed class ModuleFetchOptions
         IsUnknownReferrer = IsUnknownReferrer,
         CredentialsMode = CredentialsMode,
         RenderBlocking = RenderBlocking,
+        RootUrl = RootUrl,
     };
+
+    /// <summary>
+    /// Returns the options of the fetch of the root of a module script graph whose URL is the URL record parsed from the
+    /// <c>src</c> attribute of the script element (see <see cref="RootUrl"/>).
+    /// </summary>
+    internal ModuleFetchOptions WithRootUrl(UrlRecord rootUrl) => new()
+    {
+        IncludeCredentials = IncludeCredentials,
+        ReferrerPolicy = ReferrerPolicy,
+        Nonce = Nonce,
+        ParserInserted = ParserInserted,
+        IsUnknownReferrer = IsUnknownReferrer,
+        CredentialsMode = CredentialsMode,
+        RenderBlocking = RenderBlocking,
+        RootUrl = rootUrl,
+    };
+
+    /// <summary>
+    /// The URL record of the root of the module script graph, as parsed from the <c>src</c> attribute of the script element,
+    /// or null: the fetch of its URL uses the record, whose flags its serialization does not keep (the potentially dangling
+    /// markup flag, which blocks the fetch of a URL whose input had a newline and a "&lt;"). The fetches of the other URLs
+    /// (the descendants of the graph) parse their URL.
+    /// </summary>
+    internal UrlRecord? RootUrl { get; init; }
 
     /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#concept-script-fetch-options-render-blocking: the script element of the module script was render-blocking when it was prepared.</summary>
     internal bool RenderBlocking { get; init; }

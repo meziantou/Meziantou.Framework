@@ -2365,10 +2365,7 @@
     "total": 5
   },
   "css/css-overflow/scrollable-overflow-padding.html": {
-    "total": 30,
-    "failures": {
-      "scrollable-container 30": "FAIL"
-    }
+    "total": 30
   },
   "css/css-overflow/scrollable-overflow-relative-positioned-block-in-inline-002.html": {
     "total": 1

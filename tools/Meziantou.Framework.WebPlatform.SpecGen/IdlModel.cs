@@ -399,8 +399,10 @@ internal sealed partial class IdlModel
         FixCssParserApiTypes(model);
         SetMediaMetadataArtworkType(model);
         AddIFrameElementPolicy(model);
+        AddSvgScriptElementAsync(model);
         AddDocumentPolicyViolationReportBody(model);
         AddCanvasLayers(model);
+        AddCanvasGradientInterpolation(model);
         AddWebMcpPullRequests(model);
         return model;
     }
@@ -1256,6 +1258,34 @@ internal sealed partial class IdlModel
     }
 
     /// <summary>
+    /// The <c>async</c> attribute of the SVG <c>script</c> elements, as the one of HTMLScriptElement
+    /// (https://html.spec.whatwg.org/multipage/scripting.html#dom-script-async), which SVG 2 does not define but the
+    /// web-platform-tests of <c>svg/interact/scripted</c> test:
+    /// <code>
+    /// partial interface SVGScriptElement {
+    ///   [CEReactions] attribute boolean async;
+    /// };
+    /// </code>
+    /// </summary>
+    private static void AddSvgScriptElementAsync(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("SVGScriptElement", out var definition) || definition.Members.Exists(m => m.Name == "async"))
+            return;
+
+        definition.Members.Add(new IdlMember
+        {
+            Kind = IdlMemberKind.Attribute,
+            Name = "async",
+            Type = new IdlType { Name = "boolean" },
+            ExtAttrs = [new IdlExtendedAttribute { Name = "CEReactions" }],
+            Href = "https://html.spec.whatwg.org/multipage/scripting.html#dom-script-async",
+            Source = "svg",
+            DeclaringDefinition = definition.Name,
+            ExperimentalApi = "SvgScriptAsync",
+        });
+    }
+
+    /// <summary>
     /// CSSOM View redefines the coordinates of MouseEvent and MouseEventInit as double
     /// (https://drafts.csswg.org/cssom-view/#extensions-to-the-mouseevent-interface: "partial dictionary MouseEventInit { double
     /// screenX = 0.0; ... }"), in partial definitions that webref does not include, as they redefine members of UI Events. The
@@ -1425,6 +1455,63 @@ internal sealed partial class IdlModel
                 DeclaringDefinition = "CanvasState",
                 ExperimentalApi = "CanvasLayers",
                 Href = Href,
+            });
+        }
+    }
+
+    /// <summary>
+    /// The interpolation methods of the canvas gradients (https://github.com/whatwg/html/pull/10986), which the
+    /// web-platform-tests of html/canvas/element/fill-and-stroke-styles test (2d.gradient.colorInterpolationMethod.html,
+    /// 2d.gradient.hueInterpolationMethod.html). The enumeration of the color spaces has display-p3-linear, which the tests
+    /// use:
+    /// <code>
+    /// enum ColorInterpolationMethod { "srgb", "hsl", "hwb", "srgb-linear", "display-p3", "display-p3-linear", "a98-rgb",
+    ///   "prophoto-rgb", "rec2020", "lab", "oklab", "lch", "oklch", "xyz", "xyz-d50", "xyz-d65" };
+    /// enum HueInterpolationMethod { "shorter", "longer", "increasing", "decreasing" };
+    /// partial interface CanvasGradient {
+    ///   attribute ColorInterpolationMethod colorInterpolationMethod;
+    ///   attribute HueInterpolationMethod hueInterpolationMethod;
+    /// };
+    /// </code>
+    /// The .NET properties are strings (no .NET type maps the enumerations).
+    /// </summary>
+    private static void AddCanvasGradientInterpolation(IdlModel model)
+    {
+        const string Href = "https://github.com/whatwg/html/pull/10986";
+        if (!model.Definitions.TryGetValue("CanvasGradient", out var definition) || model.Definitions.ContainsKey("ColorInterpolationMethod"))
+            return;
+
+        model.Definitions["ColorInterpolationMethod"] = new IdlDefinition
+        {
+            Name = "ColorInterpolationMethod",
+            Kind = IdlDefinitionKind.Enum,
+            EnumValues = ["srgb", "hsl", "hwb", "srgb-linear", "display-p3", "display-p3-linear", "a98-rgb", "prophoto-rgb", "rec2020", "lab", "oklab", "lch", "oklch", "xyz", "xyz-d50", "xyz-d65"],
+            Source = definition.Source,
+            Href = Href,
+            SpecUrl = Href,
+        };
+        model.Definitions["HueInterpolationMethod"] = new IdlDefinition
+        {
+            Name = "HueInterpolationMethod",
+            Kind = IdlDefinitionKind.Enum,
+            EnumValues = ["shorter", "longer", "increasing", "decreasing"],
+            Source = definition.Source,
+            Href = Href,
+            SpecUrl = Href,
+        };
+
+        foreach (var (name, type) in (ReadOnlySpan<(string, string)>)[("colorInterpolationMethod", "ColorInterpolationMethod"), ("hueInterpolationMethod", "HueInterpolationMethod")])
+        {
+            var memberHref = Href + "#dom-canvasgradient-" + name.ToLowerInvariant();
+            definition.Members.Add(new IdlMember
+            {
+                Kind = IdlMemberKind.Attribute,
+                Name = name,
+                Type = new IdlType { Name = type },
+                Source = definition.Source,
+                DeclaringDefinition = definition.Name,
+                ExperimentalApi = "CanvasGradientInterpolation",
+                Href = memberHref,
             });
         }
     }

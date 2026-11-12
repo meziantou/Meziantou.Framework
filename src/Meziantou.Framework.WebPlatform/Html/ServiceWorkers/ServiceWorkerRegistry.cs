@@ -71,15 +71,20 @@ internal sealed partial class ServiceWorkerRegistry
     public static ServiceWorkerRegistry? GetIfCreated(BrowsingContext? browsingContext) => browsingContext is not null && Registries.TryGetValue(browsingContext.GroupOwner, out var registry) ? registry : null;
 
     /// <summary>
-    /// https://storage.spec.whatwg.org/#obtain-a-storage-key: the serialized origin of the environment, or null for an opaque
-    /// origin. The environments of the credentialless iframes are partitioned by the page credentialless nonce of their
-    /// top-level window (https://wicg.github.io/anonymous-iframe/#spec-storage-key).
+    /// https://storage.spec.whatwg.org/#obtain-a-storage-key: the storage key of the environment (see <see cref="StorageKey.Obtain"/>),
+    /// or null for an opaque origin. The environments of the credentialless iframes are partitioned by the page
+    /// credentialless nonce of their top-level window (https://wicg.github.io/anonymous-iframe/#spec-storage-key), and the
+    /// environments of a third-party context by the site of their top-level document.
     /// </summary>
-    public static StorageKey? GetStorageKey(Document environment) => environment.Origin is { IsOpaque: false } origin ? GetStorageKey(origin.Serialize(), environment.IsCredentialless, environment.EnvironmentBrowsingContext) : null;
+    public static StorageKey? GetStorageKey(Document environment) => StorageKey.Obtain(environment);
 
-    /// <summary>The storage key of an environment of a browsing context, whose origin is <paramref name="origin"/>.</summary>
-    public static StorageKey GetStorageKey(string origin, bool credentialless, BrowsingContext? browsingContext)
-        => new(origin, credentialless && browsingContext?.Top.Window is { } topLevelWindow ? topLevelWindow.PageCredentiallessNonce : null);
+    /// <summary>
+    /// The storage key of an environment whose origin is the origin of <paramref name="url"/>: the reserved client of a
+    /// navigation of <paramref name="browsingContext"/> when <paramref name="isNavigable"/> is true, else a worker created by
+    /// the document of <paramref name="browsingContext"/>.
+    /// </summary>
+    public static StorageKey GetStorageKey(Urls.UrlRecord url, bool credentialless, BrowsingContext? browsingContext, bool isNavigable)
+        => StorageKey.Create(OriginRecord.FromUrl(url), credentialless && browsingContext?.Top.Window is { } topLevelWindow ? topLevelWindow.PageCredentiallessNonce : null, browsingContext, isNavigable);
 
     // ----------------------------------------------------------------------------------------------------------------
     // The registration map
@@ -224,8 +229,8 @@ internal sealed partial class ServiceWorkerRegistry
         }
     }
 
-    /// <summary>Whether the registrations of a storage key are stored by the backend (not partitioned by a credentialless nonce).</summary>
-    private static bool IsPersisted(StorageKey storageKey) => storageKey.PartitionNonce is null;
+    /// <summary>Whether the registrations of a storage key are stored by the backend (not partitioned by a credentialless nonce or by a top-level site).</summary>
+    private static bool IsPersisted(StorageKey storageKey) => storageKey.PartitionNonce is null && storageKey.IsFirstParty;
 
     /// <summary>https://w3c.github.io/ServiceWorker/#scope-match-algorithm</summary>
     public ServiceWorkerRegistrationRecord? Match(StorageKey storageKey, UrlRecord clientUrl)

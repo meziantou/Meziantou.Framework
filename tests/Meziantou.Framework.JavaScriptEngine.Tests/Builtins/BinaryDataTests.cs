@@ -311,6 +311,64 @@ public sealed class BinaryDataTests
     }
 
     [Fact]
+    public void SharedDataBlock_TryGrowByReturnsThePreviousLength()
+    {
+        var block = JsSharedDataBlock.TryCreate(8, maxByteLength: 32)!;
+        block.GetSpan().Fill(0xFF);
+
+        Assert.True(block.TryGrowBy(8, out var previous));
+        Assert.Equal(8, previous);
+        Assert.Equal(16, block.ByteLength);
+        Assert.Equal(0, block.GetSpan()[8]);
+
+        Assert.True(block.TryGrowBy(0, out previous));
+        Assert.Equal(16, previous);
+        Assert.False(block.TryGrowBy(17, out previous));
+        Assert.Equal(16, previous);
+        Assert.False(block.TryGrowBy(-1, out _));
+        Assert.Equal(16, block.ByteLength);
+
+        var fixedLength = JsSharedDataBlock.TryCreate(8, maxByteLength: null)!;
+        Assert.False(fixedLength.TryGrowBy(1, out previous));
+        Assert.Equal(8, previous);
+        Assert.True(fixedLength.TryGrowBy(0, out _));
+    }
+
+    [Fact]
+    public void SharedDataBlock_ConcurrentTryGrowByAddsEveryDelta()
+    {
+        const int ThreadCount = 8;
+        const int GrowsPerThread = 64;
+        var block = JsSharedDataBlock.TryCreate(0, maxByteLength: ThreadCount * GrowsPerThread)!;
+        var previousLengths = new int[ThreadCount * GrowsPerThread];
+        using var start = new Barrier(ThreadCount);
+        var threads = new Thread[ThreadCount];
+        for (var t = 0; t < ThreadCount; t++)
+        {
+            var threadIndex = t;
+            threads[t] = new Thread(() =>
+            {
+                start.SignalAndWait();
+                for (var i = 0; i < GrowsPerThread; i++)
+                {
+                    previousLengths[(threadIndex * GrowsPerThread) + i] = block.TryGrowBy(1, out var previous) ? previous : -1;
+                }
+            });
+            threads[t].Start();
+        }
+
+        foreach (var thread in threads)
+        {
+            thread.Join();
+        }
+
+        // Each call grows the block by its own delta: no growth is lost, and each call returns a distinct previous length
+        Assert.Equal(ThreadCount * GrowsPerThread, block.ByteLength);
+        Assert.Equal(Enumerable.Range(0, ThreadCount * GrowsPerThread).ToArray(), previousLengths.Order().ToArray());
+        Assert.False(block.TryGrowBy(1, out _));
+    }
+
+    [Fact]
     public void SharedArrayBuffer_SpanKeepsTheBlockMemoryAlive()
     {
         var span = CreateSharedArrayBufferSpan(1024, out var bufferReference);

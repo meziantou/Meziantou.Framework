@@ -196,6 +196,7 @@ public sealed partial class BrowsingContext : IDisposable
         if (parent is null && creator is not null && OriginRecord.IsSameOrigin(creator.Origin, creator.TopLevelOrigin) && creator.BrowsingContext is { } creatorBrowsingContext)
         {
             document.OpenerPolicy = creatorBrowsingContext.Top.Document.OpenerPolicy;
+            document.OpenerPolicyReportingDocument = creatorBrowsingContext.Top.Document.OpenerPolicyReportingDocument ?? creatorBrowsingContext.Top.Document;
         }
 
         document.Referrer = creator?.Url ?? "";
@@ -605,6 +606,14 @@ public sealed partial class BrowsingContext : IDisposable
         if (opener is not null)
         {
             context._group = Group;
+        }
+
+        // https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-auxiliary-browsing-context: the virtual
+        // browsing context group ID of the top-level browsing context of the opener, and the opener origin at creation
+        if (opener?.BrowsingContext is { } openerBrowsingContext)
+        {
+            context.ActiveBrowsingContext.VirtualGroupId = openerBrowsingContext.Top.ActiveBrowsingContext.VirtualGroupId;
+            context.ActiveBrowsingContext.OpenerOriginAtCreation = opener.Origin;
         }
 
         (owner._auxiliaryBrowsingContexts ??= []).Add(context);
@@ -1744,6 +1753,7 @@ public sealed partial class BrowsingContext : IDisposable
         var window = document.RelevantWindow!;
         var script = new Scripting.ClassicScript(window, scriptSource, document.BaseUri) { Url = document.Url };
         var generation = _javaScriptUrlNavigationGeneration;
+        var ongoingNavigationBeforeScript = _ongoingNavigation;
         var result = Scripting.ScriptExecution.RunClassicScript(engine, script) as string;
 
         // As in the browsers, a form submission planned by the script (e.g. form.submit() in the iframe) takes precedence over the result
@@ -1771,6 +1781,12 @@ public sealed partial class BrowsingContext : IDisposable
         if (IsDestroyed || !ReferenceEquals(Document, document))
             return;
 
+        // As in the browsers, the result does not replace the document when the script started a navigation of the navigable
+        // (e.g. javascript:location.href='...', whose result is the URL): the navigation continues. The specification creates
+        // the document of the result, which the navigation replaces once its response arrives (https://github.com/whatwg/html/issues/3730).
+        if (_ongoingNavigation != ongoingNavigationBeforeScript && IsCrossDocumentNavigationOngoing)
+            return;
+
         // The result is the body of an HTML response, whose URL is the URL of the active document and whose origin is the origin of the initiator
         var parameters = new DocumentParameters
         {
@@ -1783,6 +1799,7 @@ public sealed partial class BrowsingContext : IDisposable
             OriginDocument = initiatorOrigin ?? Document.GetOriginDocument(document),
             AboutBaseUrl = document.AboutBaseUrl,
             OpenerPolicy = document.OpenerPolicy,
+            OpenerPolicyReportingDocument = document.OpenerPolicyReportingDocument,
             EmbedderPolicy = document.EmbedderPolicy,
             DocumentIsolationPolicy = document.DocumentIsolationPolicy,
 
@@ -1892,6 +1909,7 @@ public sealed partial class BrowsingContext : IDisposable
             UserInvolvement = userInvolvement,
             InitiatorOrigin = storedInitiatorOrigin ?? sourceDocument?.Origin,
             InitiatorTopLevelOrigin = sourceDocument?.TopLevelOrigin,
+            SourceDocument = sourceDocument,
             TextDirectiveUserActivation = textDirectiveUserActivation,
             IsPostNavigation = postResource is not null,
             PostResource = postResource,
@@ -2057,6 +2075,14 @@ public sealed partial class BrowsingContext : IDisposable
                 CacheMode = traversalEntry is not null && ReferenceEquals(traversalEntry, ActiveEntry) ? "no-cache" : "default",
             };
             PrepareRequestOfPrerenderingNavigable(request);
+
+            // https://html.spec.whatwg.org/multipage/browsing-the-web.html#create-navigation-params-by-fetching: the early hints
+            // of the response (only the navigations of the top-level browsing contexts process them, as in the browsers)
+            if (Parent is null)
+            {
+                request.ProcessEarlyHintsResponse = headers => ProcessEarlyHints(navigationId, request, parameters, headers);
+            }
+
             parameters.ReservedClient = request.ReservedClient;
             parameters.Timing.FetchStart = EventLoop.TimeProvider.GetTimestamp();
             if (_containerResourceTiming is { } containerResourceTiming && containerResourceTiming.NavigationId == navigationId)
@@ -2113,6 +2139,19 @@ public sealed partial class BrowsingContext : IDisposable
     }
 
     /// <summary>
+    /// The processEarlyHintsResponse steps of the fetch of a navigation (https://html.spec.whatwg.org/multipage/browsing-the-web.html#create-navigation-params-by-fetching):
+    /// the first early hints response starts its preloads (see <see cref="EarlyHintPreloads"/>), which the document commits;
+    /// the next ones are ignored, unless the navigation was redirected to another origin since.
+    /// </summary>
+    private void ProcessEarlyHints(int navigationId, FetchRequest request, DocumentParameters parameters, IReadOnlyList<KeyValuePair<string, string>> headers)
+    {
+        if (_ongoingNavigation != navigationId || IsDestroyed || parameters.EarlyHints is not null)
+            return;
+
+        parameters.EarlyHints = EarlyHintPreloads.Process(this, request.CurrentUrl, headers, request.CookieContext?.CookieJar);
+    }
+
+    /// <summary>
     /// Processes a response of the fetch of a navigation (https://html.spec.whatwg.org/multipage/browsing-the-web.html#create-navigation-params-by-fetching),
     /// unless the navigation was aborted: each response, including the redirects, is checked by the opener policy (of a
     /// top-level navigable) and by the cross-origin resource policy (of a child navigable). The redirects to an HTTP(S) URL
@@ -2123,6 +2162,9 @@ public sealed partial class BrowsingContext : IDisposable
     {
         if (_ongoingNavigation != navigationId || IsDestroyed)
             return;
+
+        // The early hints received before the response are processed first
+        request.ProcessPendingEarlyHints();
 
         // The client hints of the response; the navigation is restarted when its request did not have the critical ones
         if (ProcessNavigationResponseClientHints(navigationId, url, request, parameters, response, cancellationToken))
@@ -2135,7 +2177,8 @@ public sealed partial class BrowsingContext : IDisposable
             var responseUrl = internalResponse.Url ?? request.CurrentUrl;
             Html.NavigationalPrefetch.ProcessClearSiteData(this, responseUrl, internalResponse.HeaderList);
             parameters.OpenerPolicy = null;
-            if (!ApplyOpenerPolicy(responseUrl, parameters, internalResponse.HeaderList))
+            parameters.OpenerPolicyReportingDocument = null;
+            if (!ApplyOpenerPolicy(responseUrl, parameters, internalResponse.HeaderList, referrer: request.Referrer is "no-referrer" or "client" ? "" : request.Referrer))
             {
                 // The opener policy of the response cannot be combined with the sandboxing flags: the error document keeps
                 // the policy, so that a popup is still cut from its opener
@@ -2171,11 +2214,26 @@ public sealed partial class BrowsingContext : IDisposable
                         parameters.FragmentDirective = TextDirectives.RemoveFragmentDirective(locationWithFragment);
                     }
 
+                    // The preloads of the early hints are kept after a same-origin redirect, and discarded after a cross-origin
+                    // redirect (the early hints of the next response are then processed)
+                    if (parameters.EarlyHints is { } earlyHints && locationUrl.SerializeOrigin() != request.CurrentUrl.SerializeOrigin())
+                    {
+                        earlyHints.Discard();
+                        parameters.EarlyHints = null;
+                    }
+
                     // The reserved environment of another origin is discarded: a new one is created for the location URL
                     if (request.ReservedClient is { } reservedClient && reservedClient.Origin != locationUrl.SerializeOrigin())
                     {
                         request.ReservedClient = new ReservedClient(locationUrl.SerializeOrigin());
                         parameters.ReservedClient = request.ReservedClient;
+                    }
+                    else if (request.ReservedClient is { } sameOriginReservedClient)
+                    {
+                        // As in the browsers, the service worker that handled a request does not control the document of a
+                        // location out of its scope: the fetch of the location sets the active service worker again when a
+                        // registration matches it (https://w3c.github.io/ServiceWorker/#handle-fetch only sets it)
+                        sameOriginReservedClient.ActiveServiceWorker = null;
                     }
 
                     // https://fetch.spec.whatwg.org/#http-redirect-fetch: the timing of the redirects, which is not exposed
@@ -2238,6 +2296,7 @@ public sealed partial class BrowsingContext : IDisposable
             timing.IsAnsweredByServiceWorker = request.IsAnsweredByServiceWorker;
 
             timing.ResponseStart = timing.PrefetchResponseStart != 0 ? timing.PrefetchResponseStart : EventLoop.TimeProvider.GetTimestamp();
+            timing.FirstInterimResponseStart = timing.PrefetchResponseStart != 0 ? 0 : request.Timing.FirstInterimNetworkResponseStart;
             timing.HasCrossOriginRedirects = Fetching.HasRedirectTaintedOrigin(request);
             timing.HasNoReferrer = request.Client is not null && request.Referrer == "no-referrer";
         }
@@ -2259,7 +2318,18 @@ public sealed partial class BrowsingContext : IDisposable
             && resource is not null && !request.TimingAllowFailed && !HasNoDocument(resource))
         {
             _containerResourceTiming = null;
-            ResourceTiming.Start(containerResourceTiming.Window, request, containerResourceTiming.InitiatorType)?.Report(response);
+            var containerTiming = ResourceTiming.Start(containerResourceTiming.Window, request, containerResourceTiming.InitiatorType);
+
+            // The timing of an HTML document whose body arrives over time is reported at the end of its body
+            // (https://fetch.spec.whatwg.org/#fetch-finale)
+            if (containerTiming is not null && resource is { ContentBytes: not null, RemainingContentBytes: not null } && (GetComputedMimeType(resource)?.Essence ?? "text/html") == "text/html")
+            {
+                parameters.ProcessResponseEndOfBody = bodySize => containerTiming.ReportEndOfBody(response, (long)bodySize);
+            }
+            else
+            {
+                containerTiming?.Report(response);
+            }
         }
 
         ProcessResponse(navigationId, url, parameters, resource, checkedByNavigationFetch: true);
@@ -2789,6 +2859,7 @@ public sealed partial class BrowsingContext : IDisposable
         document.OriginDocument = parameters.OriginDocument;
         document.OpaqueOrigin = parameters.OpaqueOrigin;
         document.IsNetworkErrorDocument = parameters.IsNetworkError;
+        document.ProcessNavigationResponseEndOfBody = parameters.ProcessResponseEndOfBody;
 
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#determining-the-origin: a sandboxed document has a new
         // opaque origin. The sandboxing flags are the ones of the iframe container and of the CSP of the response.
@@ -2838,6 +2909,7 @@ public sealed partial class BrowsingContext : IDisposable
         }
         document.InternalAncestorOriginObjects = CreateInternalAncestorOriginObjectsList(document, parameters.IframeElementReferrerPolicy ?? GetIframeElementReferrerPolicy());
         document.OpenerPolicy = Parent is null ? parameters.OpenerPolicy ?? OpenerPolicy.Default : OpenerPolicy.Default;
+        document.OpenerPolicyReportingDocument = Parent is null ? parameters.OpenerPolicyReportingDocument : null;
         document.EmbedderPolicy = parameters.EmbedderPolicy ?? EmbedderPolicy.Obtain(parameters.Headers, IsSecureContext(document));
         document.DocumentIsolationPolicy = parameters.EmbedderPolicy is not null ? parameters.DocumentIsolationPolicy : GetDocumentIsolationPolicy(parameters.Headers, IsSecureContext(document));
         document.IsCredentialless = IsCredentiallessNavigable;
@@ -2855,6 +2927,10 @@ public sealed partial class BrowsingContext : IDisposable
         if (switchesGroup)
         {
             SwitchBrowsingContextGroup(document.OpenerPolicy);
+        }
+        else if (Parent is null && parameters.OpenerPolicyEnforcementResult is { WouldNeedBrowsingContextGroupSwitchDueToReportOnly: true })
+        {
+            ActiveBrowsingContext.VirtualGroupId = BrowsingContextInstance.CreateVirtualGroupId();
         }
         document.LastModifiedTime = parameters.LastModified;
         document.ProtocolLanguage = parameters.ContentLanguage;
@@ -2879,6 +2955,14 @@ public sealed partial class BrowsingContext : IDisposable
         if (parameters.RequiredContentSecurityPolicy is { } requiredPolicy && !parameters.IsNetworkError)
         {
             document.RequiredContentSecurityPolicy = requiredPolicy;
+        }
+
+        // https://w3c.github.io/webappsec-subresource-integrity/#parse-integrity-policy-headers: the integrity policies of the
+        // policy container of the document (the ones of an inherited policy container are set above)
+        if (parameters.PolicyContainer is null && !parameters.IsNetworkError)
+        {
+            document.IntegrityPolicy = IntegrityPolicy.FromHeaders(parameters.Headers, "Integrity-Policy");
+            document.ReportOnlyIntegrityPolicy = IntegrityPolicy.FromHeaders(parameters.Headers, "Integrity-Policy-Report-Only");
         }
 
         // https://wicg.github.io/document-policy/#integration-with-html: the policies of the document, and the required
@@ -2933,7 +3017,10 @@ public sealed partial class BrowsingContext : IDisposable
             document.RunSharedDeclarativeRefreshSteps(refresh);
         }
 
-        // https://html.spec.whatwg.org/multipage/document-lifecycle.html#loading-a-document: the Link headers of the response
+        // https://html.spec.whatwg.org/multipage/document-lifecycle.html#initialise-the-document-object: the preloads of the
+        // early hints of the navigation, then the Link headers of the response
+        // (https://html.spec.whatwg.org/multipage/document-lifecycle.html#loading-a-document)
+        parameters.EarlyHints?.Commit(document);
         LinkPreload.ProcessLinkHeaders(document, parameters.Headers);
 
         // https://html.spec.whatwg.org/multipage/document-lifecycle.html#initialise-the-document-object: the Speculation-Rules header
@@ -2968,6 +3055,7 @@ public sealed partial class BrowsingContext : IDisposable
             RedirectEndTime = exposesRedirects ? ToRelativeTime(timing.RedirectEnd) : 0,
             PostRedirectStartTime = fetchStart,
             FinalNetworkRequestStartTime = fetchStart,
+            FirstInterimNetworkResponseStartTime = timing.FirstInterimResponseStart == 0 ? 0 : Math.Min(ToRelativeTime(timing.ResponseStart), Math.Max(fetchStart, ToRelativeTime(timing.FirstInterimResponseStart))),
             FinalNetworkResponseStartTime = ToRelativeTime(timing.ResponseStart),
             FinalServiceWorkerStartTime = Math.Min(fetchStart, ToRelativeTime(timing.WorkerStart)),
             WorkerRouterEvaluationStartTime = ToRelativeTime(timing.WorkerRouterEvaluationStart),
@@ -3013,8 +3101,9 @@ public sealed partial class BrowsingContext : IDisposable
     /// its entry is added to the session history (<see cref="AddSessionHistoryEntry"/>), or it becomes the document of the
     /// entry that a traversal or a reload loads again.
     /// </summary>
-    private void Activate(Document document, Window window, NavigationHistoryBehavior historyHandling, string? srcdoc, SessionHistoryEntry? traversalEntry = null, string requestReferrerPolicy = "", DocumentParameters? parameters = null, bool prerenderActivation = false)
+    private void Activate(Document document, Window window, NavigationHistoryBehavior historyHandling, string? srcdoc, SessionHistoryEntry? traversalEntry = null, string requestReferrerPolicy = "", DocumentParameters? parameters = null, SessionHistoryEntry? prerenderedEntry = null)
     {
+        var prerenderActivation = prerenderedEntry is not null;
         var oldDocument = Document;
 
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#finalize-a-cross-document-navigation, step 4 (and the
@@ -3089,7 +3178,15 @@ public sealed partial class BrowsingContext : IDisposable
         }
         else
         {
+            // The entry of a prerendered document that is activated keeps the navigation API id and key of its entry in the
+            // prerendering traversable, as it is moved to this session history (https://wicg.github.io/nav-speculation/prerendering.html#activate-a-prerendering-traversable)
             entry = new SessionHistoryEntry(document.UrlRecord, new DocumentState(document) { SrcdocResource = srcdoc, PostResource = parameters?.PostResource });
+            if (prerenderedEntry is not null)
+            {
+                entry.NavigationApiId = prerenderedEntry.NavigationApiId;
+                entry.NavigationApiKey = prerenderedEntry.NavigationApiKey;
+            }
+
             AddSessionHistoryEntry(entry, historyHandling);
         }
 
@@ -3184,11 +3281,19 @@ public sealed partial class BrowsingContext : IDisposable
         if (!document.IsInitialAboutBlank)
         {
             var navigation = window.Navigation;
-            navigation.InitializeEntriesForNewDocument(GetSessionHistoryEntriesForNavigationApi(entry), entry);
+            if (prerenderedEntry is not null)
+            {
+                navigation.UpdateEntriesForPrerenderActivation(GetSessionHistoryEntriesForNavigationApi(entry), entry, prerenderedEntry);
+            }
+            else
+            {
+                navigation.InitializeEntriesForNewDocument(GetSessionHistoryEntriesForNavigationApi(entry), entry);
+            }
+
             var navigationType = traversalEntry is null
                 ? (historyHandling == NavigationHistoryBehavior.Push ? NavigationType.Push : NavigationType.Replace)
                 : (ReferenceEquals(traversalEntry, previousEntry) ? NavigationType.Reload : NavigationType.Traverse);
-            navigation.UpdateActivation(previousEntry, navigationType, document);
+            navigation.UpdateActivation(previousEntry, navigationType, document, prerenderActivation);
         }
 
         if (oldDocument is not null)
@@ -4038,6 +4143,12 @@ public sealed partial class BrowsingContext : IDisposable
         /// <summary>The timing of the navigation (https://w3c.github.io/navigation-timing/), or null for a document that is loaded at once.</summary>
         public DocumentLoadTimingInfo? Timing { get; set; }
 
+        /// <summary>The steps run with the size of the body at the end of the body of a response that arrives over time (the timing of the container of the navigable), or null.</summary>
+        public Action<ulong>? ProcessResponseEndOfBody { get; set; }
+
+        /// <summary>The preloads of the early hints of the navigation, committed by its document, or null.</summary>
+        public EarlyHintPreloads? EarlyHints { get; set; }
+
         /// <summary>The size of the body of the response, or null when it arrives after the document is created.</summary>
         public ulong? BodySize { get; set; }
 
@@ -4113,6 +4224,12 @@ public sealed partial class BrowsingContext : IDisposable
 
         /// <summary>The opener policy of the response of a top-level navigation, or null for the default policy.</summary>
         public OpenerPolicy? OpenerPolicy { get; set; }
+
+        /// <summary>The document whose opener policy <see cref="OpenerPolicy"/> is inherited from, or null (see <see cref="Document.OpenerPolicyReportingDocument"/>).</summary>
+        public Document? OpenerPolicyReportingDocument { get; set; }
+
+        /// <summary>The document that initiated the navigation, or null (the navigation source of the opener policy enforcement).</summary>
+        public Document? SourceDocument { get; init; }
 
         /// <summary>The result of the enforcement of the opener policy of the response, which tells whether the navigation switches browsing context group.</summary>
         public OpenerPolicyEnforcementResult? OpenerPolicyEnforcementResult { get; set; }

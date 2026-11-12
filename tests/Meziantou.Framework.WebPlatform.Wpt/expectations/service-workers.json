@@ -172,13 +172,7 @@
     "total": 1
   },
   "service-workers/cache-storage/cross-partition.https.tentative.html": {
-    "total": 4,
-    "failures": {
-      "CacheStorage caches shouldn't be shared with a cross-partition dedicated worker": "FAIL",
-      "CacheStorage caches shouldn't be shared with a cross-partition iframe": "FAIL",
-      "CacheStorage caches shouldn't be shared with a cross-partition service worker": "FAIL",
-      "CacheStorage caches shouldn't be shared with a cross-partition shared worker": "FAIL"
-    }
+    "total": 4
   },
   "service-workers/cache-storage/sandboxed-iframes.https.html": {
     "total": 2
@@ -768,10 +762,7 @@
     "total": 4
   },
   "service-workers/service-worker/partitioned-claim.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "ServiceWorker's clients.claim() is partitioned": "FAIL"
-    }
+    "total": 1
   },
   "service-workers/service-worker/partitioned-cookies.tentative.https.html": {
     "total": 1,
@@ -780,23 +771,13 @@
     }
   },
   "service-workers/service-worker/partitioned-getRegistrations.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "ServiceWorker's getRegistrations() is partitioned": "FAIL"
-    }
+    "total": 1
   },
   "service-workers/service-worker/partitioned-matchAll.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "ServiceWorker's matchAll() is partitioned": "FAIL"
-    }
+    "total": 1
   },
   "service-workers/service-worker/partitioned.tentative.https.html": {
-    "total": 2,
-    "failures": {
-      "Services workers under different top-level sites are partitioned.": "FAIL",
-      "Services workers with cross-site ancestors are partitioned.": "FAIL"
-    }
+    "total": 2
   },
   "service-workers/service-worker/performance-timeline.https.html": {
     "total": 4
@@ -923,10 +904,7 @@
     "total": 20
   },
   "service-workers/service-worker/same-site-cookies.https.html": {
-    "total": 66,
-    "failures": {
-      "same-origin, nested set location with cross-site middle frame and change-request service worker": "FAIL"
-    }
+    "total": 66
   },
   "service-workers/service-worker/sandboxed-iframe-fetch-event.https.html": {
     "total": 29

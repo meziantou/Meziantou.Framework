@@ -74,9 +74,11 @@ public sealed class BroadcastChannel : EventTarget
             return;
 
         var sourceOrigin = global.OriginRecord;
+        var sourceStorageKey = StorageKey.Obtain(global.EnvironmentDocument);
 
         // The destinations, in creation order: the other open channels of the same name whose global object can run
-        // scripts (a fully active window, a worker that is not closing) and is same origin
+        // scripts (a fully active window, a worker that is not closing) and has the same storage key (the same origin, in
+        // the same partition, https://privacycg.github.io/storage-partitioning/)
         BroadcastChannel[] destinations;
         lock (channels)
         {
@@ -88,7 +90,7 @@ public sealed class BroadcastChannel : EventTarget
             if (ReferenceEquals(destination, this) || destination._closed || destination.Name != Name)
                 continue;
 
-            if (destination.RelevantGlobal is not { } destinationGlobal || !OriginRecord.IsSameOrigin(destinationGlobal.OriginRecord, sourceOrigin))
+            if (destination.RelevantGlobal is not { } destinationGlobal || !OriginRecord.IsSameOrigin(destinationGlobal.OriginRecord, sourceOrigin) || StorageKey.Obtain(destinationGlobal.EnvironmentDocument) != sourceStorageKey)
                 continue;
 
             if (!destinationGlobal.CanRunScript)

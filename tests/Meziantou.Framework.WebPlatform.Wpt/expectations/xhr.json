@@ -423,16 +423,10 @@
     "total": 2
   },
   "xhr/event-readystatechange-loaded.any.js": {
-    "total": 1,
-    "failures": {
-      "XMLHttpRequest: the LOADING state change may be emitted multiple times": "FAIL"
-    }
+    "total": 1
   },
   "xhr/event-readystatechange-loaded.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "XMLHttpRequest: the LOADING state change may be emitted multiple times": "FAIL"
-    }
+    "total": 1
   },
   "xhr/event-timeout-order.any.js": {
     "total": 1
@@ -832,11 +826,7 @@
     "total": 1
   },
   "xhr/response-data-progress.htm": {
-    "total": 2,
-    "failures": {
-      "XMLHttpRequest: progress events grow response body size, known content-length": "FAIL",
-      "XMLHttpRequest: progress events grow response body size, unknown content-length": "FAIL"
-    }
+    "total": 2
   },
   "xhr/response-invalid-responsetype.htm": {
     "total": 5

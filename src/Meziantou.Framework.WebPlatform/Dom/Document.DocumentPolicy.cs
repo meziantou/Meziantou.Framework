@@ -16,4 +16,13 @@ public partial class Document
     /// document combined with the <c>Require-Document-Policy</c> header of its response.
     /// </summary>
     internal DocumentPolicyRecord NestedRequiredDocumentPolicy { get; set; } = DocumentPolicyRecord.Empty;
+
+    /// <summary>
+    /// The integrity policy of the policy container of the document (https://w3c.github.io/webappsec-subresource-integrity/#integrity-policy-section):
+    /// the <c>Integrity-Policy</c> header of its response.
+    /// </summary>
+    internal IntegrityPolicy IntegrityPolicy { get; set; } = IntegrityPolicy.Empty;
+
+    /// <summary>The report-only integrity policy of the policy container of the document: the <c>Integrity-Policy-Report-Only</c> header of its response.</summary>
+    internal IntegrityPolicy ReportOnlyIntegrityPolicy { get; set; } = IntegrityPolicy.Empty;
 }

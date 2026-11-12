@@ -69,16 +69,10 @@
     "total": 2
   },
   "webstorage/localstorage-about-blank-3P-iframe-opens-3P-window.partitioned.html": {
-    "total": 1,
-    "failures": {
-      "StorageKey: test 3P about:blank window opened from a 3P iframe": "FAIL"
-    }
+    "total": 1
   },
   "webstorage/localstorage-basic-partitioned.sub.html": {
-    "total": 1,
-    "failures": {
-      "Simple test for partitioned localStorage": "FAIL"
-    }
+    "total": 1
   },
   "webstorage/localstorage-cross-origin-iframe.https.window.js": {
     "total": 1
@@ -90,10 +84,7 @@
     "total": 10
   },
   "webstorage/sessionStorage-basic-partitioned.sub.html": {
-    "total": 1,
-    "failures": {
-      "Simple test for partitioned sessionStorage": "FAIL"
-    }
+    "total": 1
   },
   "webstorage/set.window.js": {
     "total": 20

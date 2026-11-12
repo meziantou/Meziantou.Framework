@@ -73,10 +73,10 @@ public partial class HtmlScriptElement
     /// <c>speculationrules</c> script: its result is a speculation rules parse result, which is registered when the element
     /// is executed.
     /// </summary>
-    private static SpeculationRulesParseResult CreateSpeculationRulesResult(string sourceText, Document document) => SpeculationRulesParseResult.Create(sourceText, document);
+    internal static SpeculationRulesParseResult CreateSpeculationRulesResult(string sourceText, Document document) => SpeculationRulesParseResult.Create(sourceText, document);
 
     /// <summary>https://html.spec.whatwg.org/multipage/scripting.html#execute-the-script-element, for a speculation rules parse result.</summary>
-    private void RegisterSpeculationRules(SpeculationRulesParseResult result, Window window)
+    internal void RegisterSpeculationRules(SpeculationRulesParseResult result, Window window)
     {
         _speculationRulesWindow = window;
         window.Document.AddSpeculationRulesScript(this);
@@ -107,7 +107,7 @@ public partial class HtmlScriptElement
 
         // https://html.spec.whatwg.org/multipage/dom.html#render-blocking-mechanism: a render-blocking element that becomes
         // browsing-context disconnected no longer blocks the rendering
-        StopBlockingRendering();
+        Core.StopBlockingRendering();
         if (Result is SpeculationRulesParseResult result && _speculationRulesWindow is { } window)
         {
             _speculationRulesWindow = null;

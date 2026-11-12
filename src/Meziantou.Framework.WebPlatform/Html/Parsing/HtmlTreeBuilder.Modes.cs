@@ -830,50 +830,7 @@ internal sealed partial class HtmlTreeBuilder
                 {
                     // https://w3c.github.io/trusted-types/dist/spec/#setting-slot-values-from-parser
                     script.ScriptText = TakeParsedScriptText(script);
-
-                    // The scripts streamed with runScripts run when their end tag is parsed, as the scripts inserted by a script
-                    // (approximating https://whatpr.org/html/12758/parsing.html#scriptEndTag, which pauses the parser)
-                    if (IsStreaming && ScriptingMode == ParserScriptingMode.Fragment)
-                    {
-                        // A script moved to another document while it was parsed, or created in the new node document of an
-                        // adopted target, does not run: its node document is not the document of the stream (the parser
-                        // document of the other parsed scripts)
-                        if (script.IsConnected && !IsInScriptDocument(script))
-                        {
-                            script.AlreadyStarted = true;
-                            return ProcessResult.Done;
-                        }
-
-                        script.ParserDocument = null;
-                        (_streamedScripts ??= []).Add(script);
-                    }
-
-                    // The characters written by the script are inserted just before the next input character
-                    var oldInsertionPoint = InsertionPoint;
-                    InsertionPoint = _tokenizer.PositionFromEnd;
-                    ScriptNestingLevel++;
-                    script.Prepare();
-                    ScriptNestingLevel--;
-                    if (ScriptNestingLevel == 0)
-                    {
-                        ParserPauseFlag = false;
-                    }
-
-                    InsertionPoint = oldInsertionPoint;
-                    RunPendingSvgScripts();
-
-                    // The parser pauses until the pending parsing-blocking script is executed (see ScriptingParser)
-                    if (_document.PendingParsingBlockingScript is not null)
-                    {
-                        if (ScriptNestingLevel != 0)
-                        {
-                            ParserPauseFlag = true;
-                        }
-                        else
-                        {
-                            _pausedForScript = true;
-                        }
-                    }
+                    PrepareParsedScript(script.Core);
                 }
 
                 return ProcessResult.Done;

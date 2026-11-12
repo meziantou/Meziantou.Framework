@@ -454,6 +454,13 @@ internal sealed partial class WebIdlBindingsGenerator
 
         var behaviorExpression = behavior.Count == 0 ? "global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None" : string.Join(" | ", behavior.Select(b => "global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior." + b));
 
+        // The identifier of the IDL callback function: the invoker of the script in the long animation frames
+        // (https://w3c.github.io/long-animation-frames/#record-timing-info-for-user-callback). The event handlers are reported as event listeners.
+        if (!(parameters.Length > 0 && typeof(Event).IsAssignableFrom(parameters[0].ParameterType)) && delegateType.GetCustomAttribute<IdlInterfaceAttribute>() is { } callbackInterface && _idl.Get(callbackInterface.Name) is { Kind: IdlDefinitionKind.Callback })
+        {
+            behaviorExpression += ", \"" + callbackInterface.Name + "\"";
+        }
+
         // The arguments
         var arguments = new StringBuilder();
         var fixedCount = isVariadic ? parameters.Length - 1 : parameters.Length;

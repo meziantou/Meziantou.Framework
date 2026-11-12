@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 720 | 746 | 2 | 97% |
+| [Stable](#stable-tests) | 727 | 746 | 2 | 98% |
 | [Tentative](#tentative-tests) | 46 | 47 | 0 | 98% |
 | [Reftests](#reftests) | 577 | 644 | 2 | 90% |
-| **All** | **1,343** | **1,437** | **4** | **94%** |
+| **All** | **1,350** | **1,437** | **4** | **94%** |
 
 ## Failure reasons
 
@@ -20,7 +20,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 5
 - **TEST BUG**: 10
-- **NOT IMPLEMENTED**: 70
+- **NOT IMPLEMENTED**: 63
 - **TEST RUNNER**: 7
 - **FLAKY**: 2
 
@@ -389,19 +389,19 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`interact/script-common.html`](https://wpt.fyi/results/svg/interact/script-common.html) | Pass | 1 / 1 |  |  |
 | [`interact/script-content.svg`](https://wpt.fyi/results/svg/interact/script-content.svg) | Pass | 1 / 1 |  |  |
 | [`interact/script-load-error-events.html`](https://wpt.fyi/results/svg/interact/script-load-error-events.html) | Pass | 5 / 5 |  |  |
-| [`interact/scripted/async-01.svg`](https://wpt.fyi/results/svg/interact/scripted/async-01.svg) | Fail | 0 / 1 | NOT IMPLEMENTED | the `async` and module scripts of SVG (`<script async>`, `<script type=module>` in an SVG document) |
-| [`interact/scripted/async-02.html`](https://wpt.fyi/results/svg/interact/scripted/async-02.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `async` and module scripts of SVG (`<script async>`, `<script type=module>` in an SVG document) |
+| [`interact/scripted/async-01.svg`](https://wpt.fyi/results/svg/interact/scripted/async-01.svg) | Pass | 1 / 1 |  |  |
+| [`interact/scripted/async-02.html`](https://wpt.fyi/results/svg/interact/scripted/async-02.html) | Pass | 1 / 1 |  |  |
 | [`interact/scripted/async-03.html`](https://wpt.fyi/results/svg/interact/scripted/async-03.html) | Pass | 1 / 1 |  |  |
-| [`interact/scripted/async-04.html`](https://wpt.fyi/results/svg/interact/scripted/async-04.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `async` and module scripts of SVG (`<script async>`, `<script type=module>` in an SVG document) |
+| [`interact/scripted/async-04.html`](https://wpt.fyi/results/svg/interact/scripted/async-04.html) | Pass | 1 / 1 |  |  |
 | [`interact/scripted/composed.window.svg`](https://wpt.fyi/results/svg/interact/scripted/composed.window.svg) | Pass | 1 / 1 |  |  |
-| [`interact/scripted/defer-01.svg`](https://wpt.fyi/results/svg/interact/scripted/defer-01.svg) | Fail | 0 / 1 | NOT IMPLEMENTED | the `defer` and module scripts of SVG (`<script defer>`, `<script type=module>` in an SVG document) |
-| [`interact/scripted/defer-02.html`](https://wpt.fyi/results/svg/interact/scripted/defer-02.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `defer` and module scripts of SVG (`<script defer>`, `<script type=module>` in an SVG document) |
+| [`interact/scripted/defer-01.svg`](https://wpt.fyi/results/svg/interact/scripted/defer-01.svg) | Pass | 1 / 1 |  |  |
+| [`interact/scripted/defer-02.html`](https://wpt.fyi/results/svg/interact/scripted/defer-02.html) | Pass | 1 / 1 |  |  |
 | [`interact/scripted/ellipse-hittest.html`](https://wpt.fyi/results/svg/interact/scripted/ellipse-hittest.html) | Pass | 24 / 24 |  |  |
 | [`interact/scripted/focus-events.svg`](https://wpt.fyi/results/svg/interact/scripted/focus-events.svg) | Pass | 2 / 2 |  |  |
 | [`interact/scripted/focus-tabindex-default-value.svg`](https://wpt.fyi/results/svg/interact/scripted/focus-tabindex-default-value.svg) | Pass | 2 / 2 |  |  |
 | [`interact/scripted/focus-tabindex-invalid-value.svg`](https://wpt.fyi/results/svg/interact/scripted/focus-tabindex-invalid-value.svg) | Pass | 48 / 48 |  |  |
-| [`interact/scripted/module-01.svg`](https://wpt.fyi/results/svg/interact/scripted/module-01.svg) | Fail | 0 / 1 | NOT IMPLEMENTED | the module scripts of SVG (`<script type=module>`) |
-| [`interact/scripted/module-02.html`](https://wpt.fyi/results/svg/interact/scripted/module-02.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the module scripts of SVG (`<script type=module>`) |
+| [`interact/scripted/module-01.svg`](https://wpt.fyi/results/svg/interact/scripted/module-01.svg) | Pass | 1 / 1 |  |  |
+| [`interact/scripted/module-02.html`](https://wpt.fyi/results/svg/interact/scripted/module-02.html) | Pass | 1 / 1 |  |  |
 | [`interact/scripted/non-scaling-stroke-transform-change-hittest.html`](https://wpt.fyi/results/svg/interact/scripted/non-scaling-stroke-transform-change-hittest.html) | Pass | 2 / 2 |  |  |
 | [`interact/scripted/pointer-events-fill-stroke-hittest.html`](https://wpt.fyi/results/svg/interact/scripted/pointer-events-fill-stroke-hittest.html) | Pass | 8,910 / 8,910 |  |  |
 | [`interact/scripted/pointer-events-getBoundingClientRect.html`](https://wpt.fyi/results/svg/interact/scripted/pointer-events-getBoundingClientRect.html) | Pass | 72 / 72 |  |  |

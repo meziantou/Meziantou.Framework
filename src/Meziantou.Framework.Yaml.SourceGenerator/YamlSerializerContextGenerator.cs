@@ -30,7 +30,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     private static readonly DiagnosticDescriptor ContextMustBePartial = new(
         id: "MFY001",
         title: "Yaml serializer context must be partial",
-        messageFormat: "Type '{0}' derives from Meziantou.Framework.Yaml.Serialization.YamlSerializerContext and must be declared partial to support source generation",
+        messageFormat: "Type '{0}' derives from Meziantou.Framework.Yaml.Serialization.YamlSerializerContext and must be declared partial, as must its containing types, to support source generation",
         category: "Meziantou.Framework.Yaml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -300,7 +300,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         var sourceGenerationOptions = new SourceGenerationOptionsModel();
         sourceGenerationOptions.ApplyFrom(yamlSourceGenerationOptions);
 
-        var isPartial = classDeclaration.Modifiers.Any(static modifier => modifier.IsKind(SyntaxKind.PartialKeyword));
+        var isPartial = IsPartialWithPartialContainingTypes(classDeclaration);
         var containingNamespace = classSymbol.ContainingNamespace;
         var namespaceName = containingNamespace is { IsGlobalNamespace: false } ? containingNamespace.ToDisplayString() : string.Empty;
         var typeName = classSymbol.Name;
@@ -358,7 +358,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         var sourceGenerationOptions = new SourceGenerationOptionsModel();
         sourceGenerationOptions.ApplyFrom(yamlSourceGenerationOptions);
 
-        var isPartial = classDeclaration.Modifiers.Any(static modifier => modifier.IsKind(SyntaxKind.PartialKeyword));
+        var isPartial = IsPartialWithPartialContainingTypes(classDeclaration);
         var containingNamespace = classSymbol.ContainingNamespace;
         var namespaceName = containingNamespace is { IsGlobalNamespace: false } ? containingNamespace.ToDisplayString() : string.Empty;
         var typeName = classSymbol.Name;
@@ -371,6 +371,13 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
             derivedTypeMappings.ToImmutable(),
             sourceGenerationOptions,
             isValid: isPartial);
+    }
+
+    // The generated code repeats the declarations of the containing types, so they must be partial too
+    private static bool IsPartialWithPartialContainingTypes(ClassDeclarationSyntax classDeclaration)
+    {
+        return classDeclaration.Modifiers.Any(static modifier => modifier.IsKind(SyntaxKind.PartialKeyword)) &&
+               classDeclaration.Ancestors().OfType<TypeDeclarationSyntax>().All(static declaration => declaration.Modifiers.Any(static modifier => modifier.IsKind(SyntaxKind.PartialKeyword)));
     }
 
     internal static ContextValidationResult ValidateContext(Compilation compilation, object? contextModel)

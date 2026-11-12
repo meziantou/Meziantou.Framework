@@ -26,6 +26,8 @@ public partial struct CustomerId { }
 [System.Text.Json.Serialization.JsonConverterAttribute(typeof(ProjectIdJsonConverter))]
 [Newtonsoft.Json.JsonConverterAttribute(typeof(ProjectIdNewtonsoftJsonConverter))]
 [MongoDB.Bson.Serialization.Attributes.BsonSerializerAttribute(typeof(ProjectIdBsonConverter))]
+[Meziantou.Framework.Yaml.Serialization.YamlConverterAttribute(typeof(ProjectIdYamlConverter))]
+[Meziantou.Framework.Toml.Serialization.TomlConverterAttribute(typeof(ProjectIdTomlConverter))]
 public partial struct ProjectId :
     System.IEquatable<ProjectId>,
     System.IParsable<ProjectId>,         // .NET 7+
@@ -85,6 +87,20 @@ public partial struct ProjectId :
     {
         public override ProjectId Deserialize(MongoDB.Bson.Serialization.BsonDeserializationContext context, MongoDB.Bson.Serialization.BsonDeserializationArgs args);
         public override void Serialize(MongoDB.Bson.Serialization.BsonSerializationContext context, MongoDB.Bson.Serialization.BsonSerializationArgs args, ProjectId value);
+    }
+
+    // Generated only when Meziantou.Framework.Yaml is accessible
+    public partial class ProjectIdYamlConverter : Meziantou.Framework.Yaml.Serialization.YamlConverter<ProjectId>
+    {
+        public override ProjectId Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader);
+        public override void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, ProjectId value);
+    }
+
+    // Generated only when Meziantou.Framework.Toml is accessible
+    public partial class ProjectIdTomlConverter : Meziantou.Framework.Toml.Serialization.TomlConverter<ProjectId>
+    {
+        public override ProjectId Read(Meziantou.Framework.Toml.Serialization.TomlReader reader);
+        public override void Write(Meziantou.Framework.Toml.Serialization.TomlWriter writer, ProjectId value);
     }
 }
 ````
@@ -153,7 +169,9 @@ You can configure the code generation using the `[StronglyTypedIdAttribute]` att
                  generateNewtonsoftJsonConverter: true,
                  generateSystemComponentModelTypeConverter: true,
                  generateMongoDBBsonSerialization: true,
-                 addCodeGeneratedAttribute: true
+                 addCodeGeneratedAttribute: true,
+                 GenerateYamlConverter = true,
+                 GenerateTomlConverter = true
                  )]
 public partial struct ShipmentId { }
 ```

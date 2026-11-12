@@ -165,6 +165,8 @@ public sealed partial class StronglyTypedIdTests
     {
         Assert.Null(typeof(TagId).GetCustomAttribute<Newtonsoft.Json.JsonConverterAttribute>());
         Assert.Null(typeof(TagId).GetCustomAttribute<MongoDB.Bson.Serialization.Attributes.BsonSerializerAttribute>());
+        Assert.Null(typeof(TagId).GetCustomAttribute<Meziantou.Framework.Toml.Serialization.TomlConverterAttribute>());
+        Assert.NotNull(typeof(TagId).GetCustomAttribute<Meziantou.Framework.Yaml.Serialization.YamlConverterAttribute>());
         Assert.NotNull(typeof(TagId).GetCustomAttribute<System.Text.Json.Serialization.JsonConverterAttribute>());
         Assert.NotNull(typeof(TagId).GetCustomAttribute<TypeConverterAttribute>());
     }
@@ -226,6 +228,8 @@ public sealed partial class StronglyTypedIdTests
         Assert.True(typeof(ShipmentId.ShipmentIdNewtonsoftJsonConverter).IsNestedPublic);
         Assert.True(typeof(ShipmentId.ShipmentIdTypeConverter).IsNestedPublic);
         Assert.True(typeof(ShipmentId.ShipmentIdBsonConverter).IsNestedPublic);
+        Assert.True(typeof(ShipmentId.ShipmentIdYamlConverter).IsNestedPublic);
+        Assert.True(typeof(ShipmentId.ShipmentIdTomlConverter).IsNestedPublic);
     }
 
     [Fact]
@@ -244,6 +248,232 @@ public sealed partial class StronglyTypedIdTests
         var id = System.Text.Json.JsonSerializer.Deserialize<ProjectId>("""{"Value":42,"Name":"Documentation"}""");
         Assert.Equal(ProjectId.FromInt32(42), id);
         #endregion
+    }
+
+    [Fact]
+    public void Docs_Yaml()
+    {
+        #region StronglyTypedId_Yaml
+        var line = new OrderLine(ProductId.FromGuid(new Guid("0f8fad5b-d9cb-469f-a165-70867728950e")), ProjectId.FromInt32(42), Quantity: 3);
+
+        var yaml = Meziantou.Framework.Yaml.YamlSerializer.Serialize(line);
+        Assert.Equal("""
+            ProductId: 0f8fad5b-d9cb-469f-a165-70867728950e
+            ProjectId: 42
+            Quantity: 3
+
+            """, yaml);
+
+        var deserialized = Meziantou.Framework.Yaml.YamlSerializer.Deserialize<OrderLine>(yaml);
+        Assert.Equal(line, deserialized);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_YamlDictionaryKey()
+    {
+        #region StronglyTypedId_YamlDictionaryKey
+        var budgets = new Dictionary<ProjectId, decimal> { [ProjectId.FromInt32(42)] = 1500m };
+
+        var yaml = Meziantou.Framework.Yaml.YamlSerializer.Serialize(budgets);
+        Assert.Equal("""
+            42: 1500
+
+            """, yaml);
+
+        var deserialized = Meziantou.Framework.Yaml.YamlSerializer.Deserialize<Dictionary<ProjectId, decimal>>(yaml);
+        Assert.Equal(1500m, deserialized![ProjectId.FromInt32(42)]);
+        #endregion
+    }
+
+    [Fact]
+    public void Yaml_StringIdDictionaryKeyThatLooksLikeANumber()
+    {
+        var value = new Dictionary<IdString, int> { [IdString.FromString("42")] = 1 };
+        var yaml = Meziantou.Framework.Yaml.YamlSerializer.Serialize(value);
+        Assert.Equal(1, Meziantou.Framework.Yaml.YamlSerializer.Deserialize<Dictionary<IdString, int>>(yaml)![IdString.FromString("42")]);
+    }
+
+    [Fact]
+    public void Docs_YamlSourceGeneration()
+    {
+        #region StronglyTypedId_YamlSourceGeneration
+        // The generated converters are public: register them in the options of the context
+        var options = new Meziantou.Framework.Yaml.YamlSerializerOptions
+        {
+            Converters = [new ProductId.ProductIdYamlConverter(), new ProjectId.ProjectIdYamlConverter()],
+        };
+        var context = new OrderYamlContext(options);
+
+        var line = new OrderLine(ProductId.FromGuid(new Guid("0f8fad5b-d9cb-469f-a165-70867728950e")), ProjectId.FromInt32(42), Quantity: 3);
+        var yaml = Meziantou.Framework.Yaml.YamlSerializer.Serialize(line, context.StronglyTypedIdTestsOrderLine);
+        Assert.Equal("""
+            ProductId: 0f8fad5b-d9cb-469f-a165-70867728950e
+            ProjectId: 42
+            Quantity: 3
+
+            """, yaml);
+
+        var deserialized = Meziantou.Framework.Yaml.YamlSerializer.Deserialize(yaml, context.StronglyTypedIdTestsOrderLine);
+        Assert.Equal(line, deserialized);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_Toml()
+    {
+        #region StronglyTypedId_Toml
+        var line = new OrderLine(ProductId.FromGuid(new Guid("0f8fad5b-d9cb-469f-a165-70867728950e")), ProjectId.FromInt32(42), Quantity: 3);
+
+        var toml = Meziantou.Framework.Toml.TomlSerializer.Serialize(line);
+        Assert.Equal("""
+            ProductId = "0f8fad5b-d9cb-469f-a165-70867728950e"
+            ProjectId = 42
+            Quantity = 3
+
+            """, toml);
+
+        var deserialized = Meziantou.Framework.Toml.TomlSerializer.Deserialize<OrderLine>(toml);
+        Assert.Equal(line, deserialized);
+        #endregion
+    }
+
+    [Fact]
+    public void Docs_TomlSourceGeneration()
+    {
+        #region StronglyTypedId_TomlSourceGeneration
+        // The generated converters are public: register them in options that use the context
+        var options = new Meziantou.Framework.Toml.TomlSerializerOptions
+        {
+            TypeInfoResolver = OrderTomlContext.Default,
+            Converters = [new ProductId.ProductIdTomlConverter(), new ProjectId.ProjectIdTomlConverter()],
+        };
+        var typeInfo = (Meziantou.Framework.Toml.TomlTypeInfo<OrderLine>)options.TypeInfoResolver.GetTypeInfo(typeof(OrderLine), options)!;
+
+        var line = new OrderLine(ProductId.FromGuid(new Guid("0f8fad5b-d9cb-469f-a165-70867728950e")), ProjectId.FromInt32(42), Quantity: 3);
+        var toml = Meziantou.Framework.Toml.TomlSerializer.Serialize(line, typeInfo);
+        Assert.Equal("""
+            ProductId = "0f8fad5b-d9cb-469f-a165-70867728950e"
+            ProjectId = 42
+            Quantity = 3
+
+            """, toml);
+
+        var deserialized = Meziantou.Framework.Toml.TomlSerializer.Deserialize(toml, typeInfo);
+        Assert.Equal(line, deserialized);
+        #endregion
+    }
+
+    [Fact]
+    public void Yaml_NullClassId()
+    {
+        Assert.Equal("null\n", Meziantou.Framework.Yaml.YamlSerializer.Serialize<IdClassInt32?>(null));
+        Assert.Null(Meziantou.Framework.Yaml.YamlSerializer.Deserialize<IdClassInt32>("null"));
+        Assert.Null(Meziantou.Framework.Yaml.YamlSerializer.Deserialize<IdClassString>("~"));
+    }
+
+    [Fact]
+    public void Yaml_NullableStructId()
+    {
+        Assert.Equal("null\n", Meziantou.Framework.Yaml.YamlSerializer.Serialize<IdInt32?>(null));
+        Assert.Null(Meziantou.Framework.Yaml.YamlSerializer.Deserialize<IdInt32?>("null"));
+        Assert.Equal(IdInt32.FromInt32(42), Meziantou.Framework.Yaml.YamlSerializer.Deserialize<IdInt32?>("42"));
+    }
+
+    [Fact]
+    public void Yaml_StringIdThatLooksLikeANumber()
+    {
+        var yaml = Meziantou.Framework.Yaml.YamlSerializer.Serialize(IdString.FromString("42"));
+        Assert.Equal(IdString.FromString("42"), Meziantou.Framework.Yaml.YamlSerializer.Deserialize<IdString>(yaml));
+    }
+
+    [Fact]
+    public void Yaml_InvalidValue()
+    {
+        Assert.Throws<Meziantou.Framework.Yaml.YamlException>(() => Meziantou.Framework.Yaml.YamlSerializer.Deserialize<IdInt32>("abc"));
+    }
+
+    [Fact]
+    public void Yaml_UsesTheConverterOfTheUnderlyingTypeFromTheOptions()
+    {
+        var options = new Meziantou.Framework.Yaml.YamlSerializerOptions { Converters = [new HexInt32YamlConverter()] };
+
+        var yaml = Meziantou.Framework.Yaml.YamlSerializer.Serialize(IdInt32.FromInt32(255), options);
+        Assert.Equal("0xFF\n", yaml);
+        Assert.Equal(IdInt32.FromInt32(255), Meziantou.Framework.Yaml.YamlSerializer.Deserialize<IdInt32>(yaml, options));
+    }
+
+    [Fact]
+    public void Toml_NullClassId()
+    {
+        // TOML has no null value: the serializer omits the property
+        var toml = Meziantou.Framework.Toml.TomlSerializer.Serialize(new TomlIdContainer { ClassId = null });
+        Assert.DoesNotContain("ClassId =", toml, StringComparison.Ordinal);
+
+        Assert.Throws<Meziantou.Framework.Toml.TomlException>(() => new IdClassInt32.IdClassInt32TomlConverter().Write(new Meziantou.Framework.Toml.Serialization.TomlWriter(TextWriter.Null), null!));
+    }
+
+    [Fact]
+    public void Toml_NullStringValue()
+    {
+        Assert.Throws<Meziantou.Framework.Toml.TomlException>(() => Meziantou.Framework.Toml.TomlSerializer.Serialize(new TomlIdContainer { StringId = IdString.FromString(null!) }));
+    }
+
+    [Fact]
+    public void Toml_LargeIntegersAreWrittenAsStrings()
+    {
+        var value = new TomlIdContainer { UInt64 = IdUInt64.FromUInt64(ulong.MaxValue), Int128 = IdInt128.FromInt128(Int128.MinValue) };
+        var toml = Meziantou.Framework.Toml.TomlSerializer.Serialize(value);
+        Assert.Contains("UInt64 = \"18446744073709551615\"", toml, StringComparison.Ordinal);
+        Assert.Contains("Int128 = \"-170141183460469231731687303715884105728\"", toml, StringComparison.Ordinal);
+
+        var deserialized = Meziantou.Framework.Toml.TomlSerializer.Deserialize<TomlIdContainer>(toml)!;
+        Assert.Equal(value.UInt64, deserialized.UInt64);
+        Assert.Equal(value.Int128, deserialized.Int128);
+
+        // Values that fit in a TOML integer are written as integers
+        toml = Meziantou.Framework.Toml.TomlSerializer.Serialize(new TomlIdContainer { UInt64 = IdUInt64.FromUInt64(42), Int128 = IdInt128.FromInt128(-42) });
+        Assert.Contains("UInt64 = 42", toml, StringComparison.Ordinal);
+        Assert.Contains("Int128 = -42", toml, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("Int16 = 32768")]
+    [InlineData("UInt64 = -1")]
+    [InlineData("UInt64 = \"abc\"")]
+    [InlineData("Guid = \"abc\"")]
+    [InlineData("Guid = 42")]
+    [InlineData("DateTimeOffset = 2024-01-02T03:04:05")]
+    [InlineData("DateTime = 03:04:05")]
+    public void Toml_InvalidValue(string toml)
+    {
+        Assert.Throws<Meziantou.Framework.Toml.TomlException>(() => Meziantou.Framework.Toml.TomlSerializer.Deserialize<TomlIdContainer>(toml));
+    }
+
+    [Fact]
+    public void Toml_DateTimeKinds()
+    {
+        var utc = new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Utc).AddTicks(1234500);
+        var unspecified = new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Unspecified);
+        var toml = Meziantou.Framework.Toml.TomlSerializer.Serialize(new TomlIdContainer { DateTime = IdDateTime.FromDateTime(utc), LocalDateTime = IdDateTime.FromDateTime(unspecified), DateTimeOffset = IdDateTimeOffset.FromDateTimeOffset(new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.FromHours(2))) });
+        Assert.Contains("DateTime = 2024-01-02T03:04:05.12345Z", toml, StringComparison.Ordinal);
+        Assert.Contains("LocalDateTime = 2024-01-02T03:04:05\n", toml, StringComparison.Ordinal);
+        Assert.Contains("DateTimeOffset = 2024-01-02T03:04:05+02:00", toml, StringComparison.Ordinal);
+
+        var deserialized = Meziantou.Framework.Toml.TomlSerializer.Deserialize<TomlIdContainer>(toml)!;
+        Assert.Equal(DateTimeKind.Utc, deserialized.DateTime.Value.Kind);
+        Assert.Equal(utc, deserialized.DateTime.Value);
+        Assert.Equal(DateTimeKind.Unspecified, deserialized.LocalDateTime.Value.Kind);
+        Assert.Equal(unspecified, deserialized.LocalDateTime.Value);
+        Assert.Equal(new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.FromHours(2)), deserialized.DateTimeOffset.Value);
+    }
+
+    [Fact]
+    public void Toml_DecimalKeepsItsDigits()
+    {
+        var value = new TomlIdContainer { Decimal = IdDecimal.FromDecimal(0.1234567890123456789012345678m) };
+        var toml = Meziantou.Framework.Toml.TomlSerializer.Serialize(value);
+        Assert.Equal(value.Decimal, Meziantou.Framework.Toml.TomlSerializer.Deserialize<TomlIdContainer>(toml)!.Decimal);
     }
 
     [Fact]
@@ -450,6 +680,23 @@ public sealed partial class StronglyTypedIdTests
         {
             var json = BsonExtensionMethods.ToJson(instance, type);
             var deserialized = BsonSerializer.Deserialize(json, type);
+
+            Assert.Equal(instance, deserialized);
+        }
+
+        // Meziantou.Framework.Yaml
+        {
+            var yaml = Meziantou.Framework.Yaml.YamlSerializer.Serialize(instance, type);
+            var deserialized = Meziantou.Framework.Yaml.YamlSerializer.Deserialize(yaml, type);
+
+            Assert.Equal(instance, deserialized);
+        }
+
+        // Meziantou.Framework.Toml
+        {
+            var options = new Meziantou.Framework.Toml.TomlSerializerOptions { RootValueHandling = Meziantou.Framework.Toml.TomlRootValueHandling.WrapInRootKey };
+            var toml = Meziantou.Framework.Toml.TomlSerializer.Serialize(instance, type, options);
+            var deserialized = Meziantou.Framework.Toml.TomlSerializer.Deserialize(toml, type, options);
 
             Assert.Equal(instance, deserialized);
         }
@@ -1471,7 +1718,9 @@ public sealed partial class StronglyTypedIdTests
                      generateNewtonsoftJsonConverter: true,
                      generateSystemComponentModelTypeConverter: true,
                      generateMongoDBBsonSerialization: true,
-                     addCodeGeneratedAttribute: true
+                     addCodeGeneratedAttribute: true,
+                     GenerateYamlConverter = true,
+                     GenerateTomlConverter = true
                      )]
     public partial struct ShipmentId { }
     #endregion
@@ -1523,7 +1772,7 @@ public sealed partial class StronglyTypedIdTests
     #endregion
 
     #region StronglyTypedId_DisableConverters
-    [StronglyTypedId<int>(generateNewtonsoftJsonConverter: false, generateMongoDBBsonSerialization: false)]
+    [StronglyTypedId<int>(generateNewtonsoftJsonConverter: false, generateMongoDBBsonSerialization: false, GenerateTomlConverter = false)]
     public partial struct TagId { }
     #endregion
 
@@ -1536,6 +1785,48 @@ public sealed partial class StronglyTypedIdTests
     [System.Text.Json.Serialization.JsonSerializable(typeof(OrderLine))]
     internal sealed partial class OrderJsonContext : System.Text.Json.Serialization.JsonSerializerContext;
     #endregion
+
+    #region StronglyTypedId_YamlSourceGenerationModel
+    [Meziantou.Framework.Yaml.Serialization.YamlSerializable(typeof(OrderLine))]
+    internal sealed partial class OrderYamlContext : Meziantou.Framework.Yaml.Serialization.YamlSerializerContext
+    {
+        public OrderYamlContext(Meziantou.Framework.Yaml.YamlSerializerOptions options)
+            : base(options)
+        {
+        }
+    }
+    #endregion
+
+    #region StronglyTypedId_TomlSourceGenerationModel
+    [Meziantou.Framework.Toml.Serialization.TomlSerializable(typeof(OrderLine))]
+    internal sealed partial class OrderTomlContext : Meziantou.Framework.Toml.Serialization.TomlSerializerContext;
+    #endregion
+
+    private sealed class TomlIdContainer
+    {
+        public IdClassInt32? ClassId { get; set; } = IdClassInt32.FromInt32(1);
+        public IdString StringId { get; set; } = IdString.FromString("a");
+        public IdInt16 Int16 { get; set; }
+        public IdUInt64 UInt64 { get; set; }
+        public IdInt128 Int128 { get; set; }
+        public IdGuid Guid { get; set; }
+        public IdDecimal Decimal { get; set; }
+        public IdDateTime DateTime { get; set; }
+        public IdDateTime LocalDateTime { get; set; }
+        public IdDateTimeOffset DateTimeOffset { get; set; }
+    }
+
+    private sealed class HexInt32YamlConverter : Meziantou.Framework.Yaml.Serialization.YamlConverter<int>
+    {
+        public override int Read(Meziantou.Framework.Yaml.Serialization.YamlReader reader)
+        {
+            var value = int.Parse(reader.GetScalarValue().AsSpan(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            reader.Read();
+            return value;
+        }
+
+        public override void Write(Meziantou.Framework.Yaml.Serialization.YamlWriter writer, int value) => writer.WriteScalar("0x" + value.ToString("X", CultureInfo.InvariantCulture));
+    }
 
     #region StronglyTypedId_ConverterAccessibility
     [StronglyTypedId<int>]

@@ -62,6 +62,12 @@ public sealed class StronglyTypedIdAttribute : Attribute
     /// <summary>Gets a value indicating whether generated members are marked with GeneratedCodeAttribute.</summary>
     public bool AddCodeGeneratedAttribute { get; }
 
+    /// <summary>Gets or sets a value indicating whether a Meziantou.Framework.Yaml.Serialization.YamlConverter{T} is generated. When the property is not set, the converter is generated.</summary>
+    public bool GenerateYamlConverter { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether a Meziantou.Framework.Toml.Serialization.TomlConverter{T} is generated. When the property is not set, the converter is generated.</summary>
+    public bool GenerateTomlConverter { get; set; }
+
     /// <summary>Gets or sets the string comparison method to use when the underlying type is <see cref="string"/>.</summary>
     public StringComparison StringComparison { get; set; }
 
@@ -133,6 +139,12 @@ public sealed class StronglyTypedIdAttribute<T> : Attribute
 
     /// <summary>Gets a value indicating whether generated members are marked with GeneratedCodeAttribute.</summary>
     public bool AddCodeGeneratedAttribute { get; }
+
+    /// <summary>Gets or sets a value indicating whether a Meziantou.Framework.Yaml.Serialization.YamlConverter{T} is generated. When the property is not set, the converter is generated.</summary>
+    public bool GenerateYamlConverter { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether a Meziantou.Framework.Toml.Serialization.TomlConverter{T} is generated. When the property is not set, the converter is generated.</summary>
+    public bool GenerateTomlConverter { get; set; }
 
     /// <summary>Gets or sets the string comparison method to use when the underlying type is <see cref="string"/>.</summary>
     public StringComparison StringComparison { get; set; }

@@ -20,7 +20,8 @@ internal static class LoadedAssemblyMetadata
     {
         nullableFlags = null;
         tupleElementNames = null;
-        var reader = GetMetadataReader(genericParameter.Assembly);
+        var assembly = genericParameter.Assembly;
+        var reader = GetMetadataReader(assembly);
         if (reader is null)
             return false;
 
@@ -41,6 +42,11 @@ internal static class LoadedAssemblyMetadata
         {
             return false;
         }
+        finally
+        {
+            // The reader points to the raw metadata of the assembly, which is only valid while the assembly is alive
+            GC.KeepAlive(assembly);
+        }
     }
 
     // Reads the interfaces a type declares, which reflection cannot tell from the ones its base type implements, with the attributes
@@ -49,7 +55,8 @@ internal static class LoadedAssemblyMetadata
     public static bool TryGetDeclaredInterfaces(Type type, out List<(Type Interface, byte[]? NullableFlags, string?[]? TupleElementNames)> interfaces)
     {
         interfaces = [];
-        var reader = GetMetadataReader(type.Assembly);
+        var assembly = type.Assembly;
+        var reader = GetMetadataReader(assembly);
         if (reader is null)
             return false;
 
@@ -74,6 +81,11 @@ internal static class LoadedAssemblyMetadata
         catch (BadImageFormatException)
         {
             return false;
+        }
+        finally
+        {
+            // The reader points to the raw metadata of the assembly, which is only valid while the assembly is alive
+            GC.KeepAlive(assembly);
         }
     }
 

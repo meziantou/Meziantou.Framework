@@ -167,6 +167,12 @@ internal sealed class MiddlewarePipelineCaptureApplicationBuilder : IApplication
     /// Walks a middleware registration delegate's captured state looking for the middleware type, with hard bounds so
     /// that a hostile or merely unusual object graph cannot make application startup fail, hang or allocate without end.
     /// </summary>
+    /// <remarks>
+    /// ASP.NET Core has no public API exposing the middleware type a registration delegate wraps, so this reads private
+    /// fields of framework types (such as <c>_middleware</c>), which can change in any release. It only ever reads them,
+    /// and it is best-effort: when the layout changes, the name falls back to the declaring type and method of the
+    /// delegate instead of failing.
+    /// </remarks>
     private sealed class MiddlewareTypeProbe
     {
         private const int MaxDepth = 6;

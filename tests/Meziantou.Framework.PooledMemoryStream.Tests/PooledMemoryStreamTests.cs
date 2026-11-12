@@ -712,6 +712,95 @@ public sealed class PooledMemoryStreamTests
     }
 
     [Fact]
+    public async Task CopyToAsync_DisposedDuringWrite_ArrayIsNotRentedByAnotherStream()
+    {
+        // Unique tier size so this test owns its pool bucket: before the fix, the other stream rented the array the
+        // destination was still reading.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4211] };
+        var data = CreateData(4211 * 2, seed: 20);
+        var stream = new PooledMemoryStream(options);
+        stream.Write(data);
+        stream.Position = 0;
+
+        using var destination = new BlockingWriteStream();
+        var copy = stream.CopyToAsync(destination);
+        var pending = await destination.WriteStarted;
+        stream.Dispose();
+
+        using (var other = new PooledMemoryStream(options))
+        {
+            other.Write(CreateData(4211 * 2, seed: 21));
+        }
+
+        Assert.Equal(data.AsSpan(0, 4211).ToArray(), pending.ToArray());
+
+        destination.CompleteWrite();
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => copy);
+    }
+
+    [Fact]
+    public async Task CopyToAsync_OverlappingCopies_ArrayIsNotReturnedWhileTheStreamOwnsIt()
+    {
+        // Both copies start with a pending write of the same array. Before the fix, the second write to complete
+        // returned that array to the pool although the stream still owned it.
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4229] };
+        var data = CreateData(4229 * 2, seed: 25);
+        await using var stream = new PooledMemoryStream(options);
+        stream.Write(data);
+        stream.Position = 0;
+
+        using var firstDestination = new BlockingWriteStream();
+        using var secondDestination = new BlockingWriteStream();
+#pragma warning disable CA2025 // False positive: the copies are awaited before the destinations are disposed
+        var firstCopy = stream.CopyToAsync(firstDestination);
+        var secondCopy = stream.CopyToAsync(secondDestination);
+#pragma warning restore CA2025
+        await firstDestination.WriteStarted;
+        await secondDestination.WriteStarted;
+
+        firstDestination.CompleteWrite();
+        await firstCopy;
+        secondDestination.CompleteWrite();
+        await secondCopy;
+
+        using (var other = new PooledMemoryStream(options))
+        {
+            other.Write(CreateData(4229 * 2, seed: 26));
+        }
+
+        Assert.Equal(data, stream.ToArray());
+    }
+
+    [Fact]
+    public async Task CopyToAsync_TruncatedDuringWrite_ArrayIsNotRentedByAnotherStream()
+    {
+        var options = new PooledMemoryStreamOptions { BufferSizes = [4219] };
+        var data = CreateData(4219 * 2, seed: 22);
+        await using var stream = new PooledMemoryStream(options);
+        stream.Write(data);
+        stream.Position = 0;
+
+        using var destination = new BlockingWriteStream();
+#pragma warning disable CA2025 // False positive: the copy is awaited before the destination is disposed
+        var copy = stream.CopyToAsync(destination);
+#pragma warning restore CA2025
+        var pending = await destination.WriteStarted;
+        stream.SetLength(0);
+        stream.Write(CreateData(4219 * 2, seed: 23));
+
+        using (var other = new PooledMemoryStream(options))
+        {
+            other.Write(CreateData(4219 * 2, seed: 24));
+        }
+
+        Assert.Equal(data.AsSpan(0, 4219).ToArray(), pending.ToArray());
+
+        destination.CompleteWrite();
+        await copy;
+        Assert.Equal(data.AsSpan(0, 4219).ToArray(), destination.Written.ToArray());
+    }
+
+    [Fact]
     public async Task AsyncReadWrite_RoundTrip()
     {
         var data = CreateData(5000, seed: 8);
@@ -1086,5 +1175,57 @@ public sealed class PooledMemoryStreamTests
         }
 
         Assert.Equal(reference.ToArray(), pooled.ToArray());
+    }
+
+    private sealed class BlockingWriteStream : Stream
+    {
+        private readonly TaskCompletionSource<ReadOnlyMemory<byte>> _writeStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _writeCompleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task<ReadOnlyMemory<byte>> WriteStarted => _writeStarted.Task;
+
+        public override bool CanRead => false;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => true;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public MemoryStream Written { get; } = new();
+
+        public void CompleteWrite() => _writeCompleted.TrySetResult();
+
+        // Only the first write is pending until CompleteWrite: until then, the source memory may still be read
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            _writeStarted.TrySetResult(buffer);
+            await _writeCompleted.Task.ConfigureAwait(false);
+            Written.Write(buffer.Span);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Written.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }

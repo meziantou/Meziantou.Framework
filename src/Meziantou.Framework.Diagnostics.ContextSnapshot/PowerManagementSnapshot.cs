@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
@@ -43,11 +43,15 @@ public sealed class PowerManagementSnapshot
             if (result != Windows.Win32.Foundation.WIN32_ERROR.ERROR_SUCCESS)
                 return null;
 
-            fixed (byte* ptr = data)
+            // The name is NUL-terminated when the buffer has room for it: never read past the bytes that were written
+            var name = Encoding.Unicode.GetString(data, 0, (int)Math.Min(buffSize, (uint)data.Length));
+            var terminatorIndex = name.IndexOf('\0', StringComparison.Ordinal);
+            if (terminatorIndex >= 0)
             {
-                var name = Marshal.PtrToStringUni((nint)ptr);
-                return new PowerManagementSnapshot(currentPlan, name);
+                name = name[..terminatorIndex];
             }
+
+            return new PowerManagementSnapshot(currentPlan, name);
         }
 
         return new PowerManagementSnapshot(currentPlan, friendlyName: null);

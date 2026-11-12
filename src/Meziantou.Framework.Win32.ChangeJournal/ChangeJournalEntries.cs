@@ -91,7 +91,7 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
             throw new InvalidDataException($"The change journal returned a record of length {header.RecordLength} holding a file name of {fileNameLength} bytes at offset {fileNameOffset}");
 
         // Names in a USN record are always UTF-16, which is what the length in bytes is converted with.
-        var name = Marshal.PtrToStringUni(bufferPointer + fileNameOffset, fileNameLength / sizeof(char));
+        var name = unsafe(Marshal.PtrToStringUni(bufferPointer + fileNameOffset, fileNameLength / sizeof(char)));
         Debug.Assert(name is not null);
         return name;
     }
@@ -192,6 +192,10 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
                     var offset = CurrentUSNLength; // Skip currentUSN field
                     while (offset < entryData.Length)
                     {
+                        // The remaining bytes must hold a header before it can be read
+                        if (entryData.Length - offset < headerLength)
+                            throw new InvalidDataException($"The change journal returned {entryData.Length - offset} trailing bytes at offset {offset}, which cannot hold a record header");
+
                         var entryPointer = bufferPointer + offset;
                         var header = Unsafe.ReadUnaligned<USN_RECORD_COMMON_HEADER>((void*)entryPointer);
 

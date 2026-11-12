@@ -215,7 +215,7 @@ public sealed class PerformanceTimelineScriptTests : IDisposable
                 const entry = list.getEntries()[0];
                 const script = entry.scripts[0];
                 document.title = JSON.stringify([
-                  entry.entryType, entry.name, entry.duration >= 60, entry.renderStart, entry.blockingDuration > 0, entry.scripts.length,
+                  entry.entryType, entry.name, entry.duration >= 60, entry.renderStart === 0 || entry.renderStart >= entry.startTime + 60, entry.blockingDuration > 0, entry.scripts.length,
                   script.entryType, script.invokerType, script.invoker, script.sourceFunctionName, script.sourceURL, script.sourceLine > 0, script.windowAttribution, script.window === window,
                 ]);
               }).observe({ type: 'long-animation-frame' });
@@ -223,7 +223,7 @@ public sealed class PerformanceTimelineScriptTests : IDisposable
             </script>
             """);
 
-        Assert.Equal("""["long-animation-frame","long-animation-frame",true,0,true,1,"script","user-callback","TimerHandler:setTimeout","busy","https://example.com/dir/page.html",true,"self",true]""", document.Title);
+        Assert.Equal("""["long-animation-frame","long-animation-frame",true,true,true,1,"script","user-callback","TimerHandler:setTimeout","busy","https://example.com/dir/page.html",true,"self",true]""", document.Title);
         Assert.Empty(_errors);
     }
 

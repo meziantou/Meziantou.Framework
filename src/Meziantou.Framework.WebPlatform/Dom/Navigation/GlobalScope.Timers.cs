@@ -276,7 +276,10 @@ public abstract partial class GlobalScope
                 }
             }
 
-            QueueGlobalTask(task);
+            // The task of the timer is queued when the timer elapses (the event loop moves the due timers to the task queue
+            // after each task): the handler runs in this task, so a 0 ms timer runs before the tasks queued by the tasks
+            // that precede it
+            RunGlobalTask(task);
         }
 
         eventLoop.QueueTimer(timeout, OnTimeout);

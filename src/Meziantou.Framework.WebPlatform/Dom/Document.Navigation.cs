@@ -476,21 +476,28 @@ public partial class Document
         if (BrowsingContext is not { } browsingContext)
             return;
 
-        browsingContext.EventLoop.QueueTask(() =>
+        browsingContext.EventLoop.QueueTask(() => RunGlobalTask(task));
+    }
+
+    /// <summary>
+    /// Runs a global task of the document, from a task of its event loop (see <see cref="QueueGlobalTask"/>): the task runs
+    /// at once if the document is fully active, once the document is reactivated if it is in the back/forward cache, and once
+    /// it is resumed if it is frozen.
+    /// </summary>
+    internal void RunGlobalTask(Action task)
+    {
+        if (IsFrozen)
         {
-            if (IsFrozen)
-            {
-                DeferTaskUntilReactivated(task);
-            }
-            else if (IsFullyActive)
-            {
-                task();
-            }
-            else if (IsInBackForwardCache)
-            {
-                DeferTaskUntilReactivated(task);
-            }
-        });
+            DeferTaskUntilReactivated(task);
+        }
+        else if (IsFullyActive)
+        {
+            task();
+        }
+        else if (IsInBackForwardCache)
+        {
+            DeferTaskUntilReactivated(task);
+        }
     }
 
     /// <summary>
@@ -786,7 +793,12 @@ public partial class Document
     }
 
     /// <summary>Queues the load task once the parsing is finished and nothing delays the load event (https://html.spec.whatwg.org/multipage/parsing.html#the-end).</summary>
-    internal void TryQueueLoadEvent()
+    /// <param name="runNow">
+    /// Whether the load task runs at once, from the current task of the event loop of the document: as in the browsers, the
+    /// load event of a document whose last child navigable finished loading is fired in the task that completes the loading
+    /// of the child (the tasks queued meanwhile, e.g. a timer started by the load event listener of the container, run after it).
+    /// </param>
+    internal void TryQueueLoadEvent(bool runNow = false)
     {
         if (!_parsingFinished || _loadEventQueued || IsLoadEventDelayed())
             return;
@@ -803,7 +815,7 @@ public partial class Document
 
         _loadEventQueued = true;
         var childNavigables = ChildNavigables is { Count: > 0 } children ? new HashSet<BrowsingContext>(children) : null;
-        QueueGlobalTask(() =>
+        void LoadTask()
         {
             // https://html.spec.whatwg.org/multipage/parsing.html#the-end (steps 8–9): the end spins the event loop until nothing
             // delays the load event, so the tasks queued before the load task run first: the load event is delayed by the
@@ -889,7 +901,16 @@ public partial class Document
             // https://html.spec.whatwg.org/multipage/nav-history-apis.html#fire-a-page-transition-event
             window.FireLegacyTargetOverrideEvent(new PageTransitionEvent("pageshow", new PageTransitionEventInit { Persisted = false, Bubbles = true, Cancelable = true }));
             CompletelyFinishLoading(isContainerLoadEventFired, isNavigatingAway);
-        });
+        }
+
+        if (runNow)
+        {
+            RunGlobalTask(LoadTask);
+        }
+        else
+        {
+            QueueGlobalTask(LoadTask);
+        }
     }
 
     /// <summary>Whether an svg element was inserted in the document (see <see cref="FireSvgLoadEvents"/>).</summary>
@@ -965,7 +986,7 @@ public partial class Document
             }
 
             ReadyForPostLoadTasks = true;
-            container.NodeDocument.TryQueueLoadEvent();
+            container.NodeDocument.TryQueueLoadEvent(runNow: true);
         });
     }
 

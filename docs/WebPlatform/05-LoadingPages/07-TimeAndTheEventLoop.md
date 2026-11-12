@@ -86,6 +86,9 @@ Assert.Equal("3", document.GetElementById("ticks")!.TextContent);
 Advancing the clock queues the timers that are due; run the event loop to run their callbacks. Advance the clock step by
 step when a callback starts another timer.
 
+The event loop queues the task of a timer once the timer is due, after each task it runs: as in a browser, the callback of
+`setTimeout(f, 0)` runs after the tasks that were already queued, and before the tasks that they queue.
+
 ## Rendering updates
 
 The animation frames are timers of the event loop, at a fixed rate. Each one runs the steps of a rendering update: the

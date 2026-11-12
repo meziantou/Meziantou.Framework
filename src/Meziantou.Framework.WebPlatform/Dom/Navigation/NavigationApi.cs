@@ -779,9 +779,35 @@ public sealed class Navigation : EventTarget
 
         var apiMethodTracker = AddUpcomingTraverseApiMethodTracker(key, options?.Info);
         var hasTransientActivation = Window.HasTransientActivation;
+        var addedDuringNavigateEvent = OngoingNavigateEvent is { DispatchFlag: true };
         navigable.Traversable.QueueSessionHistoryTraversal(() =>
         {
             var targetEntry = navigable.GetSessionHistoryEntries()?.Find(entry => entry.NavigationApiKey == key);
+            if (targetEntry is not null && ReferenceEquals(targetEntry, navigable.ActiveEntry) && !addedDuringNavigateEvent)
+            {
+                // A traversal queued earlier took the navigable to the entry. The traversal deals with the tracker when its
+                // navigate event fires after the tracker was added (it promotes the upcoming tracker of its destination);
+                // when its navigate event fired before, the tracker is still upcoming: it is settled with the entry, which
+                // is current once the earlier traversal is applied to the document. As in the browsers, a traversal started
+                // by a navigate event listener is rejected instead
+                document.QueueGlobalTask(() =>
+                {
+                    if (!_upcomingTraverseApiMethodTrackers.TryGetValue(key, out var pending) || !ReferenceEquals(pending, apiMethodTracker))
+                        return;
+
+                    if (CurrentEntryInternal is { } current && current.SessionHistoryEntry.NavigationApiKey == key)
+                    {
+                        NotifyAboutCommittedToEntry(apiMethodTracker, current);
+                        ResolveFinishedPromise(apiMethodTracker);
+                    }
+                    else
+                    {
+                        RejectFinishedPromise(apiMethodTracker, CreateException("The entry cannot be traversed to", "InvalidStateError"));
+                    }
+                });
+                return;
+            }
+
             if (targetEntry is null || ReferenceEquals(targetEntry, navigable.ActiveEntry))
             {
                 document.QueueGlobalTask(() => RejectFinishedPromise(apiMethodTracker, CreateException("The entry cannot be traversed to", "InvalidStateError")));

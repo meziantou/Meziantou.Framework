@@ -24,6 +24,17 @@ internal abstract class WasmModule
 
     /// <summary>The sections of the module that the runtime does not expose (the custom sections, the function indices of the exports).</summary>
     internal WasmModuleSections Sections => _sections ??= WasmModuleSections.Read(Bytes);
+
+    /// <summary>
+    /// Whether a parameter of a function type of the imports of the module is <c>(ref null (array (mut i16)))</c>: a nullable
+    /// reference to the array type of the char codes of the JS String Builtins
+    /// (https://webassembly.github.io/spec/js-api/#js-string-builtin-functions), a final mutable i16 array type
+    /// without supertype in a recursion group of its own. A concrete heap type is not described by <see cref="WasmValueType"/>:
+    /// the runtime checks the type. The default implementation returns false.
+    /// </summary>
+    /// <param name="functionType">A function type of an import of the module.</param>
+    /// <param name="parameterIndex">The index of the parameter.</param>
+    public virtual bool IsCharCodeArrayParameter(WasmFunctionType functionType, int parameterIndex) => false;
 }
 
 /// <summary>An instance of a module (a module instance).</summary>

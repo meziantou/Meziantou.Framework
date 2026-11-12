@@ -94,7 +94,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 continue;
             }
 
-            if (FindWasmBuiltin(import, builtinSets) is { } builtin && !MatchesWasmBuiltinType(import.Type, builtin))
+            if (FindWasmBuiltin(import, builtinSets) is { } builtin && !MatchesWasmBuiltinType(module, import.Type, builtin))
                 return false;
         }
 
@@ -103,10 +103,11 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
     /// <summary>
     /// match_externtype(builtinExternType, importExternType): the function types are matched by equality. The array of
-    /// <c>fromCharCodeArray</c> and <c>intoCharCodeArray</c> must be a nullable reference to a concrete array type: its
-    /// element type, <c>(mut i16)</c>, is checked by the runtime when the array is read or written.
+    /// <c>fromCharCodeArray</c> and <c>intoCharCodeArray</c> is <c>(ref null (array (mut i16)))</c>: <see cref="WasmValueType"/>
+    /// does not describe the element type of a concrete array type, so the runtime that compiled the module checks it (an
+    /// array of i8, of i32 or of immutable i16 does not match).
     /// </summary>
-    private static bool MatchesWasmBuiltinType(WasmExternType type, JsStringBuiltin builtin)
+    private static bool MatchesWasmBuiltinType(WasmModule module, WasmExternType type, JsStringBuiltin builtin)
     {
         if (type is not WasmFunctionType function)
             return false;
@@ -131,7 +132,15 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             _ => ([externRef, externRef], [i32]),
         };
 
-        return function.Parameters.AsSpan().SequenceEqual(parameters) && function.Results.AsSpan().SequenceEqual(results);
+        if (!function.Parameters.AsSpan().SequenceEqual(parameters) || !function.Results.AsSpan().SequenceEqual(results))
+            return false;
+
+        return builtin switch
+        {
+            JsStringBuiltin.FromCharCodeArray => module.IsCharCodeArrayParameter(function, 0),
+            JsStringBuiltin.IntoCharCodeArray => module.IsCharCodeArrayParameter(function, 1),
+            _ => true,
+        };
     }
 
     /// <summary>

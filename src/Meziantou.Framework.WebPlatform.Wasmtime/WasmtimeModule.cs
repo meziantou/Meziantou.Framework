@@ -30,6 +30,9 @@ internal sealed unsafe class WasmtimeModule : WasmModule
 
     public override IReadOnlyList<WasmExport> Exports => _exports ??= ReadExports();
 
+    public override bool IsCharCodeArrayParameter(WasmFunctionType functionType, int parameterIndex)
+        => functionType.Native is NativeTypeHandle native && (uint)parameterIndex < (uint)functionType.Parameters.Length && _runtime.IsCharCodeArrayParameter(native, parameterIndex);
+
     private List<WasmImport> ReadImports()
     {
         WasmPointerVec imports;

@@ -207,6 +207,49 @@ public sealed class WebAssemblyTests : IDisposable
         Assert.Equal("0|Hello, World|3|bc|true|true|true", result);
     }
 
+    [Theory]
+    [InlineData("(array (mut i8))", "fromCharCodeArray", "(param (ref null $chars) i32 i32) (result (ref extern))")]
+    [InlineData("(array (mut i32))", "fromCharCodeArray", "(param (ref null $chars) i32 i32) (result (ref extern))")]
+    [InlineData("(array i16)", "fromCharCodeArray", "(param (ref null $chars) i32 i32) (result (ref extern))")]
+    [InlineData("(sub (array (mut i16)))", "fromCharCodeArray", "(param (ref null $chars) i32 i32) (result (ref extern))")]
+    [InlineData("(array (mut i8))", "intoCharCodeArray", "(param externref (ref null $chars) i32) (result i32)")]
+    [InlineData("(array i16)", "intoCharCodeArray", "(param externref (ref null $chars) i32) (result i32)")]
+    public async Task JsStringBuiltins_RejectAnArrayThatIsNotAMutableI16Array(string arrayType, string name, string signature)
+    {
+        var bytes = Wasm($$"""
+            (module
+              (type $chars {{arrayType}})
+              (import "wasm:js-string" "{{name}}" (func {{signature}})))
+            """);
+        var result = await RunAsync($$"""
+            async () => {
+              const options = { builtins: ['js-string'] };
+              let error;
+              try { new WebAssembly.Module({{bytes}}, options); } catch (e) { error = e.name; }
+              let asyncError;
+              try { await WebAssembly.compile({{bytes}}, options); } catch (e) { asyncError = e.name; }
+              return [error, asyncError, WebAssembly.validate({{bytes}}, options), WebAssembly.validate({{bytes}}), new WebAssembly.Module({{bytes}}) instanceof WebAssembly.Module].join();
+            }
+            """);
+
+        Assert.Equal("CompileError,CompileError,false,true,true", result);
+    }
+
+    [Fact]
+    public async Task JsStringBuiltins_RejectAnArrayOfAnotherRecursionGroup()
+    {
+        var bytes = Wasm("""
+            (module
+              (rec (type $chars (array (mut i16))) (type (struct)))
+              (import "wasm:js-string" "fromCharCodeArray" (func (param (ref null $chars) i32 i32) (result (ref extern)))))
+            """);
+        var result = await RunAsync($$"""
+            async () => WebAssembly.validate({{bytes}}, { builtins: ['js-string'] })
+            """);
+
+        Assert.Equal("false", result);
+    }
+
     [Fact]
     public async Task Memory_SharesItsBytesWithTheArrayBuffer()
     {

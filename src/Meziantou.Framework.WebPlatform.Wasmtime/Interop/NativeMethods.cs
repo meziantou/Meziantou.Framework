@@ -170,6 +170,16 @@ internal static unsafe partial class NativeMethods
     public static partial void wasm_valtype_delete(nint type);
 
     [LibraryImport(LibraryName)]
+    [return: MarshalAs(UnmanagedType.U1)]
+    public static partial bool wasmtime_wasm_valtype_equal(nint a, nint b);
+
+    [LibraryImport(LibraryName)]
+    public static partial nint wasmtime_array_type_new(nint engine, WasmtimeFieldType* field);
+
+    [LibraryImport(LibraryName)]
+    public static partial void wasmtime_array_type_delete(nint type);
+
+    [LibraryImport(LibraryName)]
     public static partial void wasm_valtype_vec_new(WasmPointerVec* result, nuint size, nint* data);
 
     [LibraryImport(LibraryName)]

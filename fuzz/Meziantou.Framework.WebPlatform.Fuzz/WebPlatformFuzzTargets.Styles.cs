@@ -56,13 +56,11 @@ public static partial class WebPlatformFuzzTargets
         var rules = ruleSet.EnumerateRules().Where(rule => rule.Kind == CascadeRuleKind.Element && rule.Scope is null).ToArray();
         foreach (var element in elements)
         {
+            // (a list can be enumerated twice: the classes are looked up ignoring the case, e.g. class="a A")
             var candidates = new HashSet<CascadeRule>(ReferenceEqualityComparer.Instance);
             foreach (var list in ruleSet.GetCandidates(element))
             {
-                foreach (var rule in list)
-                {
-                    FuzzAssert.True(candidates.Add(rule), $"A rule is a candidate of <{element.LocalName}> twice");
-                }
+                candidates.UnionWith(list);
             }
 
             foreach (var rule in rules)
@@ -90,27 +88,47 @@ public static partial class WebPlatformFuzzTargets
             }
         }
 
-        // The values of a second document are read in the reverse order (the values are stored by property index)
-        using var otherContext = new BrowsingContext(new BrowsingContextOptions { TimeProvider = FrozenTimeProvider.Instance });
-        var other = otherContext.Navigate("https://example.com/", _ => input);
-        var otherElements = other.QuerySelectorAll("*").Cast<Element>().Take(StyleMaxComputedElements).ToArray();
+        // The values of a second document are read in the reverse order (the values are stored by property index), and the
+        // values of a third one in the same order: the values that differ between two documents (e.g. random() draws a value
+        // for each document) are not compared
+        var reversed = ReadComputedValues(input, reverse: true);
+        var repeated = ReadComputedValues(input, reverse: false);
         var names = StylePropertyNames.Value;
-        for (var i = 0; i < Math.Min(otherElements.Length, elements.Length); i++)
+        for (var i = 0; i < Math.Min(Math.Min(reversed.Length, repeated.Length), elements.Length); i++)
         {
             var style = window.GetComputedStyle(elements[i]);
-            var forward = names.Select(style.GetPropertyValue).ToArray();
-            var otherStyle = other.DefaultView!.GetComputedStyle(otherElements[i]);
-            var backward = new string[names.Length];
-            for (var j = names.Length - 1; j >= 0; j--)
-            {
-                backward[j] = otherStyle.GetPropertyValue(names[j]);
-            }
-
             for (var j = 0; j < names.Length; j++)
             {
-                FuzzAssert.Equal(forward[j], backward[j], $"The computed value of {names[j]} of <{elements[i].LocalName}> depends on the order in which the properties are read");
+                var value = style.GetPropertyValue(names[j]);
+                if (value == repeated[i][j])
+                {
+                    FuzzAssert.Equal(value, reversed[i][j], $"The computed value of {names[j]} of <{elements[i].LocalName}> depends on the order in which the properties are read");
+                }
             }
         }
+    }
+
+    /// <summary>Loads the document in a new browsing context and reads the computed values of all the properties of its first elements, in the order of <see cref="StylePropertyNames"/> or in the reverse order.</summary>
+    private static string[][] ReadComputedValues(string input, bool reverse)
+    {
+        using var context = new BrowsingContext(new BrowsingContextOptions { TimeProvider = FrozenTimeProvider.Instance });
+        var document = context.Navigate("https://example.com/", _ => input);
+        var names = StylePropertyNames.Value;
+        var result = new List<string[]>();
+        foreach (var element in document.QuerySelectorAll("*").Cast<Element>().Take(StyleMaxComputedElements))
+        {
+            var style = document.DefaultView!.GetComputedStyle(element);
+            var values = new string[names.Length];
+            for (var k = 0; k < names.Length; k++)
+            {
+                var j = reverse ? names.Length - 1 - k : k;
+                values[j] = style.GetPropertyValue(names[j]);
+            }
+
+            result.Add(values);
+        }
+
+        return [.. result];
     }
 
     /// <summary>A clock that does not move: the two documents of the style target compute the same animated values.</summary>

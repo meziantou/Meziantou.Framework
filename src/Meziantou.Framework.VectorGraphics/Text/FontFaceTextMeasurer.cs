@@ -15,7 +15,9 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
     private readonly FontFace _boldItalic;
     private readonly Lock _lock = new();
 
-    // The buffer of the shaping, reused under the lock, and the limits it was created with
+    // The buffer of the shaping, reused under the lock for the texts of MaxReusedBufferLength characters at most, so it
+    // stays small; and the limits it was created with
+    private const int MaxReusedBufferLength = 1024;
     private GlyphBuffer? _buffer;
     private FontResourceLimits? _bufferLimits;
 
@@ -124,13 +126,23 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
         var spacingWidth = 0.0;
         lock (_lock)
         {
-            if (_buffer is null || !ReferenceEquals(_bufferLimits, face.Data.Limits))
+            GlyphBuffer buffer;
+            if (text.Length > MaxReusedBufferLength)
             {
-                _buffer = new GlyphBuffer(face.Data.Limits);
-                _bufferLimits = face.Data.Limits;
+                // A long text gets a buffer of its own: the measurer does not keep its arrays
+                buffer = new GlyphBuffer(face.Data.Limits);
+            }
+            else
+            {
+                if (_buffer is null || !ReferenceEquals(_bufferLimits, face.Data.Limits))
+                {
+                    _buffer = new GlyphBuffer(face.Data.Limits);
+                    _bufferLimits = face.Data.Limits;
+                }
+
+                buffer = _buffer;
             }
 
-            var buffer = _buffer;
             foreach (var run in Unicode.EnumerateScriptRuns(text))
             {
                 var span = text.AsSpan(run.Index, run.Length);

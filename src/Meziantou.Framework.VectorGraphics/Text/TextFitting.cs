@@ -139,11 +139,10 @@ public static class TextFitting
 
     internal static List<int> GetGraphemeClusterEnds(string text)
     {
-        var boundaries = new List<int>(text.Length);
-
         // In ASCII, each character is a grapheme cluster, except CR LF
         if (Ascii.IsValid(text))
         {
+            var asciiBoundaries = new List<int>(text.Length);
             for (var i = 0; i < text.Length; i++)
             {
                 if (text[i] is '\r' && i + 1 < text.Length && text[i + 1] is '\n')
@@ -151,12 +150,13 @@ public static class TextFitting
                     i++;
                 }
 
-                boundaries.Add(i + 1);
+                asciiBoundaries.Add(i + 1);
             }
 
-            return boundaries;
+            return asciiBoundaries;
         }
 
+        var boundaries = new List<int>();
         foreach (var range in Unicode.EnumerateGraphemeClusters(text))
         {
             boundaries.Add(range.End.GetOffset(text.Length));

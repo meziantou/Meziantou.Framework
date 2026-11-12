@@ -93,6 +93,23 @@ public sealed class TextMeasurerTests
     }
 
     [Fact]
+    public void FontFace_LongAndShortTextsMeasureAsWithANewMeasurer()
+    {
+        // The measurer reuses its shaping buffer for the short texts only: a long text gets a buffer of its own
+        var environment = new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024);
+        var regular = FontLoader.Load(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "LiberationSans-Regular.woff2")), environment)[0];
+        var measurer = new FontFaceTextMeasurer(regular);
+        var longText = string.Concat(Enumerable.Repeat("AV To ffi ", 150));
+        var font = new SceneFont(12);
+
+        var shortWidth = measurer.Measure("Wave", font).Width;
+        var longWidth = measurer.Measure(longText, font).Width;
+        Assert.Equal(new FontFaceTextMeasurer(regular).Measure(longText, font).Width, longWidth);
+        Assert.Equal(shortWidth, measurer.Measure("Wave", font).Width);
+        Assert.Equal(longWidth, measurer.Measure(longText, font).Width);
+    }
+
+    [Fact]
     public void FontFace_UsesTheFaceOfTheStyle()
     {
         var environment = new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024);

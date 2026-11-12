@@ -113,7 +113,9 @@ internal sealed partial class BrowserContextHost
         var header = new StringBuilder();
         header.Append(name).Append('=').Append(value);
         header.Append("; Path=").Append(path ?? GetDefaultPath(uri));
-        if (domain is not null && (domain.StartsWith('.', StringComparison.Ordinal) || url is null))
+        // A domain without a leading dot is the host of a host-only cookie (as the protocol and Playwright serialize them): the
+        // cookie is set for that host, without Domain attribute (e.g. the __Host- cookies must be host-only)
+        if (domain is not null && domain.StartsWith('.', StringComparison.Ordinal))
         {
             header.Append("; Domain=").Append(domain);
         }

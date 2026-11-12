@@ -305,7 +305,7 @@ internal sealed partial class PageSession
                 throw new ProtocolException("Cannot read the file " + fullPath + ": " + ex.Message, ex);
             }
 
-            files.Add(new Dom.FileApi.File([new Blob([content])], Path.GetFileName(fullPath), new FilePropertyBag { LastModified = new DateTimeOffset(System.IO.File.GetLastWriteTimeUtc(fullPath)).ToUnixTimeMilliseconds() }));
+            files.Add(new Dom.FileApi.File([new Blob([content])], Path.GetFileName(fullPath), new FilePropertyBag { Type = FileMediaTypes.GetMediaType(fullPath), LastModified = new DateTimeOffset(System.IO.File.GetLastWriteTimeUtc(fullPath)).ToUnixTimeMilliseconds() }));
         }
 
         input.Files = new FileList(files);

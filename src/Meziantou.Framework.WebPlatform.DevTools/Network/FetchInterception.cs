@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
 using Meziantou.Framework.WebPlatform.DevTools.Protocol;
@@ -14,9 +13,10 @@ internal sealed class FetchInterception : IDisposable
 {
     private static long s_nextId;
 
-    private readonly ConcurrentDictionary<string, TaskCompletionSource<FetchDecision>> _pending = new(StringComparer.Ordinal);
+    private readonly Lock _lock = new();
+    private readonly Dictionary<string, TaskCompletionSource<FetchDecision>> _pending = new(StringComparer.Ordinal);
     private readonly List<(string UrlPattern, string? ResourceType)> _patterns;
-    private int _disposed;
+    private bool _disposed;
 
     public FetchInterception(JsonElement parameters)
     {
@@ -62,22 +62,33 @@ internal sealed class FetchInterception : IDisposable
     {
         var id = "interception-job-" + Interlocked.Increment(ref s_nextId).ToString(CultureInfo.InvariantCulture) + ".0";
         var completion = new TaskCompletionSource<FetchDecision>(TaskCreationOptions.RunContinuationsAsynchronously);
-        if (Volatile.Read(ref _disposed) != 0)
+
+        // The interception can be disabled on another thread: a request paused once it is disabled continues at once
+        lock (_lock)
         {
-            completion.TrySetResult(new FetchDecision.Continue(Url: null, Method: null, PostData: null, Headers: null));
-            return (id, completion.Task);
+            if (!_disposed)
+            {
+                _pending.Add(id, completion);
+                return (id, completion.Task);
+            }
         }
 
-        _pending[id] = completion;
+        completion.TrySetResult(CreateContinue());
         return (id, completion.Task);
     }
+
+    private static FetchDecision.Continue CreateContinue() => new(Url: null, Method: null, PostData: null, Headers: null);
 
     /// <summary>Gives the decision of the client for a paused request (<c>Fetch.continueRequest</c>, <c>Fetch.fulfillRequest</c>...).</summary>
     public void Resolve(string method, JsonElement parameters)
     {
         var requestId = parameters.GetRequiredString("requestId");
-        if (!_pending.TryRemove(requestId, out var completion))
-            throw new ProtocolException("Invalid InterceptionId.");
+        TaskCompletionSource<FetchDecision>? completion;
+        lock (_lock)
+        {
+            if (!_pending.Remove(requestId, out completion))
+                throw new ProtocolException("Invalid InterceptionId.");
+        }
 
         FetchDecision decision;
         try
@@ -104,7 +115,17 @@ internal sealed class FetchInterception : IDisposable
         }
         catch (FormatException)
         {
-            _pending[requestId] = completion;
+            // The request stays paused (or continues when the interception was disabled meanwhile)
+            lock (_lock)
+            {
+                if (!_disposed)
+                {
+                    _pending[requestId] = completion;
+                    completion = null;
+                }
+            }
+
+            completion?.TrySetResult(CreateContinue());
             throw ProtocolException.InvalidParameters("Invalid base64 string");
         }
 
@@ -133,15 +154,20 @@ internal sealed class FetchInterception : IDisposable
     /// <summary>The interception is disabled: the paused requests continue.</summary>
     public void Dispose()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0)
-            return;
-
-        foreach (var id in _pending.Keys)
+        TaskCompletionSource<FetchDecision>[] pending;
+        lock (_lock)
         {
-            if (_pending.TryRemove(id, out var completion))
-            {
-                completion.TrySetResult(new FetchDecision.Continue(Url: null, Method: null, PostData: null, Headers: null));
-            }
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            pending = [.. _pending.Values];
+            _pending.Clear();
+        }
+
+        foreach (var completion in pending)
+        {
+            completion.TrySetResult(CreateContinue());
         }
     }
 }

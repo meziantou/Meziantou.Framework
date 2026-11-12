@@ -781,6 +781,67 @@ public sealed class DevToolsServerTests(DevToolsServerFixture fixture) : IClassF
     }
 
     [Fact]
+    public async Task Cookies_HostOnlyCookiesKeepTheirScope()
+    {
+        var (context, _) = await fixture.NewPageAsync();
+        await using var __ = context;
+
+        // Playwright restores the saved cookies with a domain and a path: a domain without leading dot is a host-only cookie
+        await context.AddCookiesAsync(
+        [
+            new Cookie { Name = "__Host-id", Value = "1", Domain = "test.local", Path = "/", Secure = true },
+            new Cookie { Name = "host", Value = "2", Domain = "test.local", Path = "/" },
+            new Cookie { Name = "domain", Value = "3", Domain = ".test.local", Path = "/" },
+        ]);
+        var cookies = await context.CookiesAsync();
+
+        Assert.Equal("test.local", cookies.Single(c => c.Name == "__Host-id").Domain);
+        Assert.Equal("test.local", cookies.Single(c => c.Name == "host").Domain);
+        Assert.Equal(".test.local", cookies.Single(c => c.Name == "domain").Domain);
+    }
+
+    [Fact]
+    public async Task Protocol_FetchInterception_DisabledInterceptionContinuesTheRequests()
+    {
+        using var parameters = System.Text.Json.JsonDocument.Parse("{}");
+        var interception = new Network.FetchInterception(parameters.RootElement);
+        var (_, pausedBefore) = interception.Pause();
+
+        interception.Dispose();
+        var (_, pausedAfter) = interception.Pause();
+
+        Assert.IsType<Network.FetchDecision.Continue>(await pausedBefore.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken));
+        Assert.IsType<Network.FetchDecision.Continue>(await pausedAfter.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task Protocol_SetFileInputFiles_InfersTheTypeOfTheFiles()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, "image.PNG");
+        await File.WriteAllBytesAsync(path, [1, 2, 3], TestContext.Current.CancellationToken);
+        try
+        {
+            using var client = await CdpClient.ConnectAsync(fixture.Server.WebSocketEndpoint);
+            var created = await client.SendAsync("""{"id":1,"method":"Target.createTarget","params":{"url":"about:blank"}}""");
+            var targetId = created.GetProperty("result").GetProperty("targetId").GetString();
+            var sessionId = (await client.SendAsync("{\"id\":2,\"method\":\"Target.attachToTarget\",\"params\":{\"targetId\":\"" + targetId + "\",\"flatten\":true}}")).GetProperty("result").GetProperty("sessionId").GetString();
+            var input = await client.SendAsync("{\"id\":3,\"method\":\"Runtime.evaluate\",\"params\":{\"expression\":\"document.body.appendChild(Object.assign(document.createElement('input'), { type: 'file' }))\"},\"sessionId\":\"" + sessionId + "\"}");
+            var objectId = input.GetProperty("result").GetProperty("result").GetProperty("objectId").GetString();
+
+            await client.SendAsync("{\"id\":4,\"method\":\"DOM.setFileInputFiles\",\"params\":{\"files\":[" + System.Text.Json.JsonSerializer.Serialize(path) + "],\"objectId\":\"" + objectId + "\"},\"sessionId\":\"" + sessionId + "\"}");
+            var file = await client.SendAsync("{\"id\":5,\"method\":\"Runtime.evaluate\",\"params\":{\"expression\":\"(f => [f.name, f.type, f.size])(document.querySelector('input').files[0])\",\"returnByValue\":true},\"sessionId\":\"" + sessionId + "\"}");
+
+            Assert.Equal("""["image.PNG","image/png",3]""", file.GetProperty("result").GetProperty("result").GetProperty("value").GetRawText());
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ConnectOverCDP_WebSocketEndpoint()
     {
         using var playwright = await Microsoft.Playwright.Playwright.CreateAsync();

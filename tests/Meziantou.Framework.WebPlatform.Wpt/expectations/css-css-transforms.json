@@ -361,9 +361,6 @@
   "css/css-transforms/crashtests/large-scale3d-001.html": {
     "crashtest": "PASS"
   },
-  "css/css-transforms/crashtests/large-scaley-001.html": {
-    "crashtest": "PASS"
-  },
   "css/css-transforms/crashtests/locked-display-transform-crash.html": {
     "crashtest": "PASS"
   },

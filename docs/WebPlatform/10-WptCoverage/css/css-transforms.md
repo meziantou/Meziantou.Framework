@@ -12,8 +12,8 @@ description: "The results of the web-platform-tests of css/css-transforms, and w
 | [Stable](#stable-tests) | 101 | 105 | 0 | 96% |
 | [Tentative](#tentative-tests) | 1 | 3 | 0 | 33% |
 | [Reftests](#reftests) | 794 | 797 | 0 | 99.6% |
-| [Crash tests](#crash-tests) | 28 | 28 | 0 | 100% |
-| **All** | **924** | **933** | **0** | **99%** |
+| [Crash tests](#crash-tests) | 27 | 28 | 1 | 100% |
+| **All** | **923** | **933** | **1** | **99%** |
 
 ## Failure reasons
 
@@ -21,6 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **TEST BUG**: 5
 - **NOT IMPLEMENTED**: 4
+- **PERFORMANCE**: 1
 
 ## Stable tests
 
@@ -948,7 +949,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`crashtests/fragmented-block-in-inline-with-perspective.html`](https://wpt.fyi/results/css/css-transforms/crashtests/fragmented-block-in-inline-with-perspective.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/large-scale3d-001.html`](https://wpt.fyi/results/css/css-transforms/crashtests/large-scale3d-001.html) | Pass | 1 / 1 |  |  |
-| [`crashtests/large-scaley-001.html`](https://wpt.fyi/results/css/css-transforms/crashtests/large-scaley-001.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/large-scaley-001.html`](https://wpt.fyi/results/css/css-transforms/crashtests/large-scaley-001.html) | Disabled | – | PERFORMANCE | crash test with a `scaley(99e99)` transform followed by a `mix-blend-mode` element: its screenshot takes about 90 seconds (the transformed and blended layers are not limited to the visible area), and while it runs the other tests of the parallel run slow down enough for `IndexedDB/interleaved-cursors-large.any.js` to exceed its timeout |
 | [`crashtests/locked-display-transform-crash.html`](https://wpt.fyi/results/css/css-transforms/crashtests/locked-display-transform-crash.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/preserve3d-containing-block-inline-001.html`](https://wpt.fyi/results/css/css-transforms/crashtests/preserve3d-containing-block-inline-001.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/preserve3d-containing-block-inline-002.html`](https://wpt.fyi/results/css/css-transforms/crashtests/preserve3d-containing-block-inline-002.html) | Pass | 1 / 1 |  |  |

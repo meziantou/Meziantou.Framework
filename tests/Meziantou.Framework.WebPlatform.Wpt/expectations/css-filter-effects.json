@@ -302,9 +302,6 @@
   "css/filter-effects/backdrop-filter-svg.html": {
     "reftest": "PASS"
   },
-  "css/filter-effects/backdrop-filter-transform-popover-crash.html": {
-    "crashtest": "PASS"
-  },
   "css/filter-effects/backdrop-filter-transform.html": {
     "reftest": "PASS"
   },

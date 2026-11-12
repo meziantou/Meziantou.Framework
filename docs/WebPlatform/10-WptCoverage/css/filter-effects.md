@@ -12,8 +12,8 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 | [Stable](#stable-tests) | 37 | 37 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 385 | 395 | 0 | 97% |
-| [Crash tests](#crash-tests) | 22 | 23 | 1 | 100% |
-| **All** | **444** | **455** | **1** | **98%** |
+| [Crash tests](#crash-tests) | 21 | 23 | 2 | 100% |
+| **All** | **443** | **455** | **2** | **98%** |
 
 ## Failure reasons
 
@@ -22,7 +22,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **BUG**: 2
 - **TEST BUG**: 7
 - **NOT IMPLEMENTED**: 1
-- **PERFORMANCE**: 1
+- **PERFORMANCE**: 2
 
 ## Stable tests
 
@@ -472,7 +472,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`backdrop-filter-feimage-crash.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-feimage-crash.html) | Pass | 1 / 1 |  |  |
 | [`backdrop-filter-root-toggle-crash.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-root-toggle-crash.html) | Pass | 1 / 1 |  |  |
-| [`backdrop-filter-transform-popover-crash.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-transform-popover-crash.html) | Pass | 1 / 1 |  |  |
+| [`backdrop-filter-transform-popover-crash.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-transform-popover-crash.html) | Disabled | – | PERFORMANCE | crash test whose elements all have a `scale(1.58e38)` transform and a `backdrop-filter` with a `drop-shadow()`: its screenshot takes about 30 seconds (the filtered backdrops are not limited to the visible area), which slows down the other tests of the parallel run |
 | [`crashtests/broken-reference-crash-001.html`](https://wpt.fyi/results/css/filter-effects/crashtests/broken-reference-crash-001.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/external-reference-in-interleaved-oof-crash.html`](https://wpt.fyi/results/css/filter-effects/crashtests/external-reference-in-interleaved-oof-crash.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/fecomponenttransfer-tablevalues-crash.html`](https://wpt.fyi/results/css/filter-effects/crashtests/fecomponenttransfer-tablevalues-crash.html) | Pass | 1 / 1 |  |  |

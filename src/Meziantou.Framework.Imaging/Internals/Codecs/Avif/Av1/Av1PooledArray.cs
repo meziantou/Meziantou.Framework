@@ -8,6 +8,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// the typed view of a <see cref="PooledBuffer"/>. Every buffer of the AV1 decoder is rented through this type, so that it is
 /// charged to the scope before it is rented.
 /// </summary>
+/// <remarks>
+/// The elements are a view of the pooled bytes, so <typeparamref name="T"/> is a number (an integer, <see cref="float"/>,
+/// <see cref="double"/>, <see cref="Half"/>) or a struct of numbers. A struct field that not every bit pattern is a value of
+/// (<see langword="bool"/>) reads garbage from an array rented without clearing until its element is assigned: the owner
+/// of such an array assigns every element as a whole before reading it. The array starts on a boundary of 8 bytes.
+/// </remarks>
 internal sealed class Av1PooledArray<T> : IDisposable
     where T : unmanaged
 {

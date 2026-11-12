@@ -16,4 +16,13 @@ public sealed class ScenePath : SceneShape
 
     /// <summary>Gets or sets the fill rule.</summary>
     public SceneFillRule FillRule { get; set; }
+
+    /// <summary>Gets or sets the marker drawn on the first vertex of the path, or <see langword="null"/> for none.</summary>
+    public SceneMarker? MarkerStart { get; set; }
+
+    /// <summary>Gets or sets the marker drawn on the vertices of the path between its first and its last, or <see langword="null"/> for none.</summary>
+    public SceneMarker? MarkerMid { get; set; }
+
+    /// <summary>Gets or sets the marker drawn on the last vertex of the path, or <see langword="null"/> for none.</summary>
+    public SceneMarker? MarkerEnd { get; set; }
 }

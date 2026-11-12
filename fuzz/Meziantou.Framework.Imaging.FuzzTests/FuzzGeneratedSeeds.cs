@@ -415,6 +415,25 @@ internal static class FuzzGeneratedSeeds
         return rows;
     }
 
+    /// <summary>
+    /// Recompressed JPEG files that let decoders smooth their LF image, which libjxl 0.13 writes and the corpus has no
+    /// fixture of: without subsampled chroma, the three channels are smoothed together; with it, each one alone.
+    /// </summary>
+    public static List<FuzzSeed> GetSmoothedRecompressedJpegSeeds()
+    {
+        var seeds = new List<FuzzSeed>();
+        var context = new ImageCodecContext(ImageConfiguration.Default, nameof(GetSmoothedRecompressedJpegSeeds), CancellationToken.None);
+        using var rgb = Create(40, 33, (x, y) => new Rgb24((byte)((x * x / 20) + y), (byte)(128 + x - y), (byte)(x * y / 12)));
+        foreach (var (name, subsampling) in new[] { ("444", JpegChromaSubsampling.Ratio444), ("422", JpegChromaSubsampling.Ratio422), ("420", JpegChromaSubsampling.Ratio420) })
+        {
+            using var jpeg = new MemoryStream();
+            rgb.Save(jpeg, new JpegEncoder { Quality = 20, ChromaSubsampling = subsampling });
+            seeds.Add(new FuzzSeed($"jxl/generated-recompressed-jpeg-{name}-smoothed-lf", JpegXlJpegRecompressor.Recompress(jpeg.ToArray(), effort: 7, context, smoothLf: true)));
+        }
+
+        return seeds;
+    }
+
     private static Image<Rgb24> CreateRgb24(int width, int height, int salt)
         => Create(width, height, (x, y) => new Rgb24((byte)((x * 37) + salt), (byte)((y * 59) ^ salt), (byte)((x * y) + (salt * 13))));
 

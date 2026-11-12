@@ -55,20 +55,25 @@ public sealed class ImageTextMeasurer : ITextMeasurer
     public SceneFontCollection? Fonts { get; }
 
     /// <inheritdoc/>
-    public TextMetrics Measure(string text, SceneFont font)
+    public TextMetrics Measure(string text, SceneFont font) => Measure(text, font, 0, 0);
+
+    /// <inheritdoc/>
+    /// <remarks>The width is the one of the <see cref="TextLayout"/> the image renderer draws: without the optional ligatures with a letter spacing, and with the spacing after each cluster of glyphs.</remarks>
+    public TextMetrics Measure(string text, SceneFont font, double letterSpacing, double wordSpacing)
     {
         ArgumentNullException.ThrowIfNull(text);
+        var spacing = new SceneRenderer.Spacing(letterSpacing, wordSpacing);
         if (Fonts is not null)
         {
             var stack = SceneFontCache.GetStack(Fonts, font, defaultFamily: null);
             var primaryMetrics = stack.Primary.GetMetrics(font.Size);
-            var layoutWidth = text.Length is 0 ? 0 : TextLayout.Create(text, new TextStyle(stack, font.Size)).Width;
+            var layoutWidth = text.Length is 0 ? 0 : TextLayout.Create(text, SceneRenderer.CreateStyle(stack, font.Size, TextDecorations.None, spacing)).Width;
             return new TextMetrics(layoutWidth, primaryMetrics.Ascent, primaryMetrics.Descent);
         }
 
         var face = GetFont(font);
         var metrics = face.GetMetrics(font.Size);
-        var width = text.Length is 0 ? 0 : TextLayout.Create(text, face, font.Size).Width;
+        var width = text.Length is 0 ? 0 : spacing.IsNone ? TextLayout.Create(text, face, font.Size).Width : TextLayout.Create(text, SceneRenderer.CreateStyle(face, font.Size, TextDecorations.None, spacing)).Width;
         return new TextMetrics(width, metrics.Ascent, metrics.Descent);
     }
 

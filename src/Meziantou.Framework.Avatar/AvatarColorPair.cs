@@ -5,7 +5,8 @@ namespace Meziantou.Framework;
 /// </summary>
 /// <remarks>
 /// This is a struct, so <see langword="default"/> bypasses the constructor and leaves both colors null.
-/// <see cref="AvatarGenerator.CreateSvg(string, AvatarOptions)"/> rejects such an entry in the palette.
+/// <see cref="AvatarGenerator.CreateSvg(string, AvatarOptions)"/> and <see cref="AvatarGenerator.CreateScene(string, AvatarOptions)"/>
+/// reject such an entry in the palette.
 /// </remarks>
 public readonly record struct AvatarColorPair
 {

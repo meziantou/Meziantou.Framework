@@ -14,6 +14,39 @@ public sealed class PathData
     /// <summary>Gets a value that indicates whether the path has no commands.</summary>
     public bool IsEmpty => Commands.Count is 0;
 
+    private PathMeasure Measure => field ??= new PathMeasure(this);
+
+    /// <summary>Gets the length of the path: the lengths of its subpaths, without the moves between them.</summary>
+    /// <returns>The length.</returns>
+    /// <remarks>The curves and the arcs are measured by their chords, within 1/100 of a pixel. A segment with a coordinate that is not finite has no length.</remarks>
+    public double GetLength() => Measure.Length;
+
+    /// <summary>Gets the point at a distance along the path, and the direction of the path there, as SVG <c>getPointAtLength</c>.</summary>
+    /// <param name="distance">The distance from the start of the path. It is clamped to the path; a value that is not a number is 0.</param>
+    /// <returns>
+    /// The point. At the end of a segment, the direction is the one of the next segment; at the end of the path, the one
+    /// of its last segment. A path without length gives its first point, with a direction of 0.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">The path is empty.</exception>
+    public PathPoint GetPointAtLength(double distance) => Measure.GetPoint(distance) ?? throw new InvalidOperationException("The path is empty: it has no point.");
+
+    /// <summary>
+    /// Gets the vertices of the path, where its markers are drawn (<see cref="ScenePath.MarkerStart"/>,
+    /// <see cref="ScenePath.MarkerMid"/>, <see cref="ScenePath.MarkerEnd"/>), with the direction of the path there, as SVG
+    /// computes them for <c>orient="auto"</c>.
+    /// </summary>
+    /// <returns>
+    /// One vertex per command: the end point of each command, and the start of its subpath for a
+    /// <see cref="PathCommandKind.Close"/> command. A path whose first command is not a move starts with a vertex at the
+    /// origin. The start marker is on the first vertex, the end marker on the last one, the middle marker on the others.
+    /// </returns>
+    /// <remarks>
+    /// The direction at a vertex is halfway between the directions of the segment that ends there and of the one that
+    /// starts there, or the direction of the only one; the tangents of the curves and the arcs. A closed subpath joins
+    /// its last segment and its first one at its start. A segment without length keeps the direction of the previous one.
+    /// </remarks>
+    public IReadOnlyList<PathPoint> GetVertices() => PathVertices.Get(this);
+
     /// <summary>Returns the path moved by an offset. The radii and the rotations of the arcs do not change.</summary>
     /// <param name="offsetX">The offset along x.</param>
     /// <param name="offsetY">The offset along y.</param>

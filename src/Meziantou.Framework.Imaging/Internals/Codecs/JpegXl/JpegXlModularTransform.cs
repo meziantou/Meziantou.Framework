@@ -768,13 +768,15 @@ internal sealed class JpegXlModularTransform
         if (average.Width != (average.Width + residual.Width + 1) / 2 || average.Height != residual.Height)
             throw Invalid();
 
+        // A negative shift (a meta channel) was not changed by the squeeze
+        var horizontalShift = average.HorizontalShift > 0 ? average.HorizontalShift - 1 : average.HorizontalShift;
         if (residual.Width == 0)
         {
-            average.HorizontalShift--;
+            average.HorizontalShift = horizontalShift;
             return;
         }
 
-        using var output = new JpegXlModularChannel(average.Width + residual.Width, average.Height, average.HorizontalShift - 1, average.VerticalShift);
+        using var output = new JpegXlModularChannel(average.Width + residual.Width, average.Height, horizontalShift, average.VerticalShift);
         output.Allocate(scope);
         for (var y = 0; y < average.Height; y++)
         {
@@ -806,13 +808,15 @@ internal sealed class JpegXlModularTransform
         if (average.Height != (average.Height + residual.Height + 1) / 2 || average.Width != residual.Width)
             throw Invalid();
 
+        // A negative shift (a meta channel) was not changed by the squeeze
+        var verticalShift = average.VerticalShift > 0 ? average.VerticalShift - 1 : average.VerticalShift;
         if (residual.Height == 0)
         {
-            average.VerticalShift--;
+            average.VerticalShift = verticalShift;
             return;
         }
 
-        using var output = new JpegXlModularChannel(average.Width, average.Height + residual.Height, average.HorizontalShift, average.VerticalShift - 1);
+        using var output = new JpegXlModularChannel(average.Width, average.Height + residual.Height, average.HorizontalShift, verticalShift);
         output.Allocate(scope);
         for (var y = 0; y < residual.Height; y++)
         {

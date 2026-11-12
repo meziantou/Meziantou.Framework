@@ -72,36 +72,29 @@ internal sealed class TextBlock
             var line = Lines[i];
             var baseline = top + (i * LineHeight) + ((LineHeight - Ascent - Descent) / 2) + Ascent;
             var lineWidth = LineWidths[i];
+            var x = anchor switch
+            {
+                SceneTextAnchor.Start => centerX - (Width / 2),
+                SceneTextAnchor.End => centerX + (Width / 2),
+                _ => centerX,
+            };
+
             if (line.Count == 1)
             {
                 if (line[0].Text.Length > 0)
                 {
-                    var x = anchor switch
-                    {
-                        SceneTextAnchor.Start => centerX - (Width / 2),
-                        SceneTextAnchor.End => centerX + (Width / 2),
-                        _ => centerX,
-                    };
                     group.Add(new SceneText(x, baseline, line[0].Text, Font(line[0]), color) { Anchor = anchor, MeasuredWidth = lineWidth });
                 }
 
                 continue;
             }
 
-            var start = anchor switch
+            // A line of several styles is one text whose spans have the styles: the renderers draw the spans one after
+            // the other, as MeasureLine measures them
+            var spans = line.Where(run => run.Text.Length > 0).Select(run => new SceneTextSpan(run.Text) { Font = run.Bold || run.Italic ? Font(run) : null }).ToList();
+            if (spans.Count > 0)
             {
-                SceneTextAnchor.Start => centerX - (Width / 2),
-                SceneTextAnchor.End => centerX + (Width / 2) - lineWidth,
-                _ => centerX - (lineWidth / 2),
-            };
-            foreach (var run in line)
-            {
-                if (run.Text.Length is 0)
-                    continue;
-
-                var width = Measurer.Measure(run.Text, Font(run)).Width;
-                group.Add(new SceneText(start, baseline, run.Text, Font(run), color) { MeasuredWidth = width });
-                start += width;
+                group.Add(new SceneText(x, baseline, spans, new SceneFont(FontSize), color) { Anchor = anchor, MeasuredWidth = lineWidth });
             }
         }
     }

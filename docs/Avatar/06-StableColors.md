@@ -40,3 +40,7 @@ names yourself before calling [CreateSvg](cref:Meziantou.Framework.AvatarGenerat
 Because the output is deterministic, you can cache avatars, or store the generated files. When you change the palette
 or update the package, regenerate them, or users will see different colors in different places. Keying a cache on the
 name and a version number of your palette makes this explicit.
+
+## Next steps
+
+- [Image rendering](07-ImageRendering.md): draw an avatar as a PNG image.

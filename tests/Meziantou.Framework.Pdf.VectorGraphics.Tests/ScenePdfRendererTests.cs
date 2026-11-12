@@ -240,6 +240,200 @@ public sealed class ScenePdfRendererTests
         Assert.Throws<NotSupportedException>(() => scene.ToPdf());
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LetterSpacingAndOverline(bool embedFonts)
+    {
+        var font = new SceneFont(20);
+        var scene = new Scene(200, 130, "sans-serif") { Background = SceneColor.White };
+        if (embedFonts)
+        {
+            scene.Fonts = SceneFontCollection.Load(Path.Combine(TestData, "LiberationSans-Regular.woff2"));
+        }
+
+        scene.Root.Add(new SceneText(10, 30, "MMMM", font, SceneColor.Black));
+        scene.Root.Add(new SceneText(10, 70, "MM MM", font, SceneColor.Black) { LetterSpacing = 10, WordSpacing = 5 });
+        scene.Root.Add(new SceneText(190, 120, "xx", font, SceneColor.Black) { Anchor = SceneTextAnchor.End, Decorations = SceneTextDecorations.Overline });
+        var document = scene.ToPdf();
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+
+        // 4 spaces of 10 pixels between the 5 characters, and 5 more after the space, which is 0.278 em in Helvetica and Liberation Sans
+        var (left, right) = GetInkColumns(image, 0, 40);
+        var (spacedLeft, spacedRight) = GetInkColumns(image, 40, 80);
+        Assert.InRange(spacedLeft, left - 1, left + 1);
+        Assert.InRange(spacedRight - right - (0.278 * font.Size), 44, 46);
+
+        // The spaces are not read as spaces between the letters
+        Assert.Contains("MM MM", document.Pages[0].ExtractText(), StringComparison.Ordinal);
+
+        // The overline is above the x-height, at the ascent of the font
+        var top = Enumerable.Range(90, 30).First(y => Enumerable.Range(150, 50).Any(x => image.Frames[0][x, y].R < 128));
+        Assert.InRange(top, 100, 106);
+    }
+
+    [Fact]
+    public void LetterSpacingOfEmbeddedFonts()
+    {
+        // The glyphs are placed with the spacing after each cluster: 10 pixels are 500 thousandths of the size
+        var fonts = SceneFontCollection.Load(Path.Combine(TestData, "LiberationSans-Regular.woff2"));
+        var scene = new Scene(200, 100, fonts.FontFamily) { Fonts = fonts };
+        scene.Root.Add(new SceneText(10, 70, "MM MM", new SceneFont(20), SceneColor.Black) { LetterSpacing = 10, WordSpacing = 5 });
+        var document = scene.ToPdf();
+        var content = Uncompressed(document);
+        Assert.Matches(@"\[<[0-9A-F]{4}>-500<[0-9A-F]{4}>-500<[0-9A-F]{4}>-750<[0-9A-F]{4}>-500<[0-9A-F]{4}>\] TJ", content);
+        Assert.Contains("/ActualText", content, StringComparison.Ordinal);
+        Assert.Contains("MM MM", document.Pages[0].ExtractText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TextOnAPath()
+    {
+        // A text along a horizontal path from 10 to 60: the characters beyond its end are not drawn
+        var scene = new Scene(200, 100, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneText(0, 0, "MMMMMMMMMM", new SceneFont(20), SceneColor.Black) { Path = new PathBuilder().MoveTo(10, 50).LineTo(60, 50).Build(), Decorations = SceneTextDecorations.Underline });
+
+        // Vertical, going down, centered on the middle of the path: the tops of the glyphs are on its right, as in SVG
+        scene.Root.Add(new SceneText(0, 0, "MM", new SceneFont(20), SceneColor.Black) { Path = new PathBuilder().MoveTo(150, 10).LineTo(150, 90).Build(), PathStartOffset = 40, Anchor = SceneTextAnchor.Middle });
+        var document = scene.ToPdf();
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+        var inked = Enumerable.Range(0, 100).Where(x => Enumerable.Range(30, 19).Any(y => image.Frames[0][x, y].R < 128)).ToList();
+        Assert.InRange(inked.Min(), 10, 13);
+        Assert.InRange(inked.Max(), 50, 62);
+
+        // The underline is below the path
+        Assert.Contains(Enumerable.Range(50, 5), y => image.Frames[0][30, y].R < 200);
+
+        var columns = Enumerable.Range(100, 100).Where(x => Enumerable.Range(0, 100).Any(y => image.Frames[0][x, y].R < 128)).ToList();
+        Assert.InRange(columns.Min(), 150, 152);
+        Assert.InRange(columns.Max(), 163, 170);
+        var text = document.Pages[0].ExtractText();
+        Assert.Contains("MMM", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Patterns()
+    {
+        // A tile of 10 by 10 pixels with a red square in its top-left quarter, repeated, and scaled by 2
+        var pattern = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        pattern.Content.Add(new SceneRectangle(0, 0, 5, 5) { Fill = (SceneColor)"#ff0000" });
+        var scaled = new PatternPaint(new SceneBounds(0, 0, 10, 10)) { Transform = SceneTransform.Scale(2, 2) };
+        scaled.Content.Add(new SceneRectangle(0, 0, 5, 5) { Fill = (SceneColor)"#0000ff" });
+        scaled.Content.Add(new SceneGroup { Hyperlink = "https://example.com/" }).Add(new SceneRectangle(0, 0, 5, 5) { Fill = (SceneColor)"#0000ff" });
+
+        // A pattern that paints with itself does not draw its content again
+        var recursive = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        recursive.Content.Add(new SceneRectangle(0, 0, 10, 10) { Fill = recursive });
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneRectangle(0, 0, 40, 40) { Fill = pattern });
+        scene.Root.Add(new SceneGroup { Transform = SceneTransform.Translate(50, 0) }).Add(new SceneRectangle(0, 0, 40, 40) { Fill = scaled });
+        scene.Root.Add(new SceneRectangle(0, 45, 10, 10) { Fill = recursive });
+        var document = scene.ToPdf();
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+        var pixels = image.Frames[0];
+        Assert.Equal(new Rgba32(255, 0, 0), pixels[2, 2]);
+        Assert.Equal(new Rgba32(255, 0, 0), pixels[12, 22]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[7, 7]);
+        Assert.Equal(new Rgba32(0, 0, 255), pixels[58, 8]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[62, 2]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[5, 50]);
+        Assert.Contains("/PatternType 1", Uncompressed(document), StringComparison.Ordinal);
+        Assert.Empty(document.Pages[0].Annotations);
+
+        // A filter in the content of a pattern cannot be drawn
+        var filtered = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        filtered.Content.Add(new SceneRectangle(0, 0, 5, 5) { Fill = SceneColor.Black, Filter = new SceneBlurFilter(1) });
+        var withFilter = new Scene(10, 10, "sans-serif");
+        withFilter.Root.Add(new SceneRectangle(0, 0, 10, 10) { Stroke = filtered });
+        Assert.Throws<NotSupportedException>(() => withFilter.ToPdf());
+    }
+
+    [Fact]
+    public void Markers()
+    {
+        // A square of 4 by 4 at the end of a line, centered on it and scaled by the stroke width of 2; a dot on the middle vertex of a path
+        var square = new SceneMarker { RefX = 2, RefY = 2 };
+        square.Content.Add(new SceneRectangle(0, 0, 4, 4) { Fill = (SceneColor)"#ff0000" });
+        square.Content.Add(new SceneGroup { Hyperlink = "https://example.com/" }).Add(new SceneRectangle(0, 0, 1, 1) { Fill = (SceneColor)"#ff0000" });
+        var dot = new SceneMarker { Units = SceneMarkerUnits.UserSpace };
+        dot.Content.Add(new SceneCircle(0, 0, 3) { Fill = (SceneColor)"#0000ff" });
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneLine(10, 20, 60, 20) { StrokeWidth = 2, MarkerEnd = square });
+        scene.Root.Add(new ScenePath(new PathBuilder().MoveTo(10, 50).LineTo(50, 50).LineTo(90, 50).Build()) { Stroke = SceneColor.Black, MarkerMid = dot });
+        var document = scene.ToPdf();
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+        var pixels = image.Frames[0];
+        Assert.Equal(new Rgba32(255, 0, 0), pixels[63, 22]);
+        Assert.Equal(new Rgba32(255, 0, 0), pixels[56, 16]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[66, 20]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[30, 20]);
+        Assert.Equal(new Rgba32(0, 0, 255), pixels[50, 48]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[90, 48]);
+        Assert.Empty(document.Pages[0].Annotations);
+    }
+
+    [Fact]
+    public void ReusedElementsAndViewBoxes()
+    {
+        // A square drawn twice by uses, moved by them; a use in its own content is not drawn
+        var square = new SceneRectangle(0, 0, 10, 10) { Fill = (SceneColor)"#ff0000" };
+        var cycle = new SceneGroup();
+        cycle.Add(new SceneUse(cycle));
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneUse(square) { Transform = SceneTransform.Translate(10, 10) });
+        scene.Root.Add(new SceneUse(square) { Transform = SceneTransform.Translate(30, 10), Opacity = 0.5 });
+        scene.Root.Add(new SceneUse(cycle));
+
+        // A drawing of 10 by 10 units in a viewport of 40 by 20 pixels: scaled by 2 and centered; the viewport cuts it
+        var viewBox = scene.Root.Add(new SceneGroup { ViewBox = new SceneViewBox(new SceneBounds(0, 0, 10, 10), new SceneBounds(50, 30, 40, 20)) });
+        viewBox.Add(new SceneRectangle(0, 0, 10, 10) { Fill = (SceneColor)"#0000ff" });
+        viewBox.Add(new SceneRectangle(-20, 0, 20, 10) { Fill = (SceneColor)"#0000ff" });
+        using var image = scene.ToPdf().Pages[0].Render(new PdfRenderOptions { Dpi = 96 });
+        var pixels = image.Frames[0];
+        Assert.Equal(new Rgba32(255, 0, 0), pixels[15, 15]);
+        Assert.InRange(pixels[35, 15].G, 120, 135);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[25, 15]);
+        Assert.Equal(new Rgba32(0, 0, 255), pixels[70, 40]);
+        Assert.Equal(new Rgba32(0, 0, 255), pixels[55, 40]);
+        Assert.Equal(new Rgba32(255, 255, 255), pixels[45, 40]);
+    }
+
+    [Fact]
+    public void SpacedTextsAreDrawnAsTheyAreMeasured()
+    {
+        // A spaced text of an embedded font that ends where its measured width says starts where the same text anchored at its start starts
+        var fonts = SceneFontCollection.Load(Path.Combine(TestData, "LiberationSans-Regular.woff2"));
+        var font = new SceneFont(20);
+        var width = new FontFaceTextMeasurer(fonts).Measure("ffi office", font, letterSpacing: 3, wordSpacing: 5).Width;
+        var scene = new Scene(260, 80, fonts.FontFamily) { Fonts = fonts, Background = SceneColor.White };
+        scene.Root.Add(new SceneText(10, 30, "ffi office", font, SceneColor.Black) { LetterSpacing = 3, WordSpacing = 5 });
+        scene.Root.Add(new SceneText(10 + width, 70, "ffi office", font, SceneColor.Black) { LetterSpacing = 3, WordSpacing = 5, Anchor = SceneTextAnchor.End });
+        using var image = Render(scene);
+        var (left, right) = GetInkColumns(image, 0, 40);
+        var (endLeft, endRight) = GetInkColumns(image, 40, 80);
+        Assert.InRange(endLeft, left - 1, left + 1);
+        Assert.InRange(endRight, right - 1, right + 1);
+    }
+
+    [Fact]
+    public void TheContentGroupsOfPatternsAndMarkersApplyTheirSettings()
+    {
+        // A pattern whose content is invisible paints nothing; a marker whose content is moved by its transform
+        var invisible = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+        invisible.Content.Opacity = 0;
+        invisible.Content.Add(new SceneRectangle(0, 0, 10, 10) { Fill = (SceneColor)"#ff0000" });
+        var moved = new SceneMarker { Units = SceneMarkerUnits.UserSpace };
+        moved.Content.Transform = SceneTransform.Translate(10, 0);
+        moved.Content.Add(new SceneRectangle(-2, -2, 4, 4) { Fill = (SceneColor)"#0000ff" });
+        var scene = new Scene(60, 30, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneRectangle(0, 0, 20, 20) { Fill = invisible });
+        scene.Root.Add(new SceneLine(30, 10, 40, 10) { MarkerEnd = moved });
+        using var image = Render(scene);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][5, 5]);
+        Assert.Equal(new Rgba32(0, 0, 255), image.Frames[0][50, 10]);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][40, 10]);
+    }
+
     [Fact]
     public void DocumentsAreTagged()
     {
@@ -269,6 +463,26 @@ public sealed class ScenePdfRendererTests
         report.Pages.Add(new PdfSize(200, 200)).DrawScene(new Scene(10, 10, "sans-serif") { Title = "Chart:" , Description = "Details" }, new PdfPoint(0, 200), new ScenePdfOptions { StructureParent = section });
         Assert.Equal("Chart: Details", Assert.Single(section.Children).AlternateDescription);
         Assert.Null(new Scene(10, 10, "sans-serif").ToPdf().StructureTree.Elements[0].Children[0].AlternateDescription);
+    }
+
+    [Fact]
+    public void ChartsAndDiagramsHaveAlternateDescriptions()
+    {
+        // The title and the description of a chart describe its figure, and are the title and the subject of the document
+        var plot = new Plot { Title = "Sales by region", Description = "North sold 12 units, South 7.", Width = 200, Height = 100 };
+        plot.Add(new BarMark<(string Region, double Amount)>([("North", 12), ("South", 7)], x: sale => sale.Region, y: sale => sale.Amount));
+        var chart = plot.ToPdf();
+        Assert.Equal("Sales by region. North sold 12 units, South 7.", Assert.Single(Assert.Single(chart.StructureTree.Elements).Children).AlternateDescription);
+        Assert.Equal("Sales by region", chart.Information.Title);
+        Assert.Equal("North sold 12 units, South 7.", chart.Information.Subject);
+
+        // The accessible title of a diagram replaces its title, which is drawn
+        var flowchart = new Meziantou.Framework.Diagrams.FlowchartDiagram { Title = "Checkout", AccessibleTitle = "Checkout flow", Description = "From the cart to the payment." };
+        flowchart.AddEdge(flowchart.AddNode("cart", "Cart"), flowchart.AddNode("pay", "Payment"));
+        var diagram = flowchart.ToPdf();
+        Assert.Equal("Checkout flow. From the cart to the payment.", Assert.Single(Assert.Single(diagram.StructureTree.Elements).Children).AlternateDescription);
+        Assert.Equal("Checkout flow", diagram.Information.Title);
+        Assert.Contains("Checkout", diagram.Pages[0].ExtractText(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -345,6 +559,29 @@ public sealed class ScenePdfRendererTests
         Assert.Equal(50, annotation.Rectangle.Right, 1e-9);
         Assert.Equal(60, annotation.Rectangle.Bottom, 1e-9);
         Assert.Equal(80, annotation.Rectangle.Top, 1e-9);
+    }
+
+    [Fact]
+    public void ElementsHaveTransformsAndHyperlinks()
+    {
+        // A rectangle moved by its transform links to an address, over the rectangle it draws
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+        scene.Root.Add(new SceneRectangle(0, 0, 20, 10) { Fill = (SceneColor)"#ff0000", Transform = SceneTransform.Translate(30, 40), Hyperlink = "https://example.com/" });
+        scene.Root.Add(new SceneText(0, 0, "a", new SceneFont(10), SceneColor.Black) { Transform = SceneTransform.Translate(80, 90), Hyperlink = "https://example.com/text" });
+        var document = scene.ToPdf(new ScenePdfOptions { Scale = 1 });
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Dpi = 72 });
+        Assert.Equal(new Rgba32(255, 0, 0), image.Frames[0][40, 45]);
+        Assert.Equal(new Rgba32(255, 255, 255), image.Frames[0][10, 5]);
+
+        var annotations = document.Pages[0].Annotations.OfType<PdfLinkAnnotation>().ToList();
+        Assert.HasCount(2, annotations);
+        Assert.Equal(new Uri("https://example.com/"), annotations[0].Uri);
+        Assert.Equal(30, annotations[0].Rectangle.Left, 1e-9);
+        Assert.Equal(50, annotations[0].Rectangle.Right, 1e-9);
+        Assert.Equal(60, annotations[0].Rectangle.Top, 1e-9);
+        Assert.Equal(50, annotations[0].Rectangle.Bottom, 1e-9);
+        Assert.InRange(annotations[1].Rectangle.Left, 79, 81);
+        Assert.Equal(2, Assert.Single(Assert.Single(document.StructureTree.Elements).Children).Children.Count);
     }
 
     [Fact]

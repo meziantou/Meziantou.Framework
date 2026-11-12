@@ -46,22 +46,32 @@ the size, the weight and the style. The family is the one of the scene.
 [BoldWeight](cref:Meziantou.Framework.VectorGraphics.SceneFont.BoldWeight) (700) are the usual ones. With the
 [fonts of a scene](05-Fonts.md), the face of the nearest weight draws the text; without them, the weights from 600 are
 drawn as bold. [SceneText.Decorations](cref:Meziantou.Framework.VectorGraphics.SceneText.Decorations) draws an
-underline, a strikethrough or both, in the color of the text, at the position and of the thickness the font gives:
+underline, a strikethrough, an overline or several of them, in the color of the text, at the position and of the
+thickness the font gives. [LetterSpacing](cref:Meziantou.Framework.VectorGraphics.SceneText.LetterSpacing) adds space
+after each character, and [WordSpacing](cref:Meziantou.Framework.VectorGraphics.SceneText.WordSpacing) after each
+space, as the CSS properties of the same names; a span can set its own:
 
 <!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_TextStyles;format=md-fenced-code-block;dedent=true -->
 ```csharp
-var scene = new Scene(width: 300, height: 100, fontFamily: "sans-serif");
+var scene = new Scene(width: 300, height: 125, fontFamily: "sans-serif");
 
 // A weight from 1 to 1000, as in CSS, and lines drawn with the text
 scene.Root.Add(new SceneText(10, 20, "Light", new SceneFont(16, Weight: 300), SceneColor.Black));
 scene.Root.Add(new SceneText(10, 45, "Bold and underlined", new SceneFont(16, Weight: SceneFont.BoldWeight), SceneColor.Black) { Decorations = SceneTextDecorations.Underline });
 scene.Root.Add(new SceneText(10, 70, "Removed", new SceneFont(16), SceneColor.Black) { Decorations = SceneTextDecorations.Strikethrough });
 
+// Space between the letters and the words, in pixels, and a line over the text
+scene.Root.Add(new SceneText(10, 105, "Spaced and overlined", new SceneFont(16), SceneColor.Black) { LetterSpacing = 2, WordSpacing = 6, Decorations = SceneTextDecorations.Overline });
+
 var svg = SvgSceneRenderer.Render(scene);
 ```
 <!-- endref -->
 
-![Three lines of text: light, bold and underlined, and struck through](images/TextStyles.svg)
+![Four lines of text: light, bold and underlined, struck through, and spaced with a line over it](images/TextStyles.svg)
+
+The measurers measure a text with its spacing:
+[Measure(SceneText)](cref:Meziantou.Framework.VectorGraphics.TextMeasurerExtensions.Measure) gives the width the
+renderers draw.
 
 ### Several styles in one text
 
@@ -91,6 +101,33 @@ var svg = SvgSceneRenderer.Render(scene);
 <!-- endref -->
 
 ![The text Total: 42 items, 3 removed, with 42 in bold blue and 3 removed struck through](images/TextSpans.svg)
+
+### Text along a path
+
+A text with a [Path](cref:Meziantou.Framework.VectorGraphics.SceneText.Path) follows it, as an SVG `textPath`: each
+character is turned to the direction of the path at the middle of its advance. The text is anchored at
+[PathStartOffset](cref:Meziantou.Framework.VectorGraphics.SceneText.PathStartOffset) along the path, and the
+characters beyond its ends are not drawn:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_TextOnPath;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 200, height: 110, fontFamily: "sans-serif");
+
+// The text follows the arc, centered on its middle
+var arc = new PathBuilder().MoveTo(20, 105).ArcTo(80, 80, 0, largeArc: false, sweep: true, 180, 105).Build();
+scene.Root.Add(new ScenePath(arc) { Stroke = (SceneColor)"#cbd5e1" });
+scene.Root.Add(new SceneText(0, 0, "Text along a path", new SceneFont(16), SceneColor.Black)
+{
+    Path = arc,
+    PathStartOffset = arc.GetLength() / 2,
+    Anchor = SceneTextAnchor.Middle,
+});
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+![The words Text along a path, curved along a gray arc](images/TextOnPath.svg)
 
 ## Strokes
 
@@ -132,6 +169,58 @@ Assert.HasCount(2 * path.Commands.Count, both.Commands);
 ```
 <!-- endref -->
 
+[GetLength](cref:Meziantou.Framework.VectorGraphics.PathData.GetLength) measures a path, and
+[GetPointAtLength](cref:Meziantou.Framework.VectorGraphics.PathData.GetPointAtLength) gives the point at a distance
+along it, with the direction of the path there, to place a label or an arrow on a curve:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_PathMeasure;format=md-fenced-code-block;dedent=true -->
+```csharp
+var path = new PathBuilder().MoveTo(0, 0).LineTo(30, 40).LineTo(30, 100).Build();
+
+// The length of the path, and a point at a distance along it with the direction of the path there
+Assert.Equal(110, path.GetLength(), 1e-9);
+var point = path.GetPointAtLength(80);
+Assert.Equal(30, point.X, 1e-9);
+Assert.Equal(70, point.Y, 1e-9);
+Assert.Equal(90, point.Angle, 1e-9); // Down: the y axis points down
+```
+<!-- endref -->
+
+## Markers
+
+A [SceneMarker](cref:Meziantou.Framework.VectorGraphics.SceneMarker) is a drawing placed on the vertices of a path or
+a line, such as an arrowhead: [MarkerStart](cref:Meziantou.Framework.VectorGraphics.ScenePath.MarkerStart) on the
+first vertex, [MarkerEnd](cref:Meziantou.Framework.VectorGraphics.ScenePath.MarkerEnd) on the last one, and
+[MarkerMid](cref:Meziantou.Framework.VectorGraphics.ScenePath.MarkerMid) on the others. Its point
+([RefX](cref:Meziantou.Framework.VectorGraphics.SceneMarker.RefX), [RefY](cref:Meziantou.Framework.VectorGraphics.SceneMarker.RefY))
+is on the vertex, it is turned to the direction of the path, and it is scaled by the width of the stroke unless its
+[Units](cref:Meziantou.Framework.VectorGraphics.SceneMarker.Units) are the coordinates of the shape:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_Markers;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+// An arrowhead whose tip, at (10, 5), is on the vertex: it follows the direction of the path, scaled by the stroke width
+var arrow = new SceneMarker { RefX = 10, RefY = 5 };
+arrow.Content.Add(new ScenePath(new PathBuilder().AddPolygon((0, 0), (10, 5), (0, 10)).Build()) { Fill = (SceneColor)"#0369a1" });
+
+// A dot on every vertex between the ends, in the coordinates of the path
+var dot = new SceneMarker { Units = SceneMarkerUnits.UserSpace };
+dot.Content.Add(new SceneCircle(0, 0, 3) { Fill = (SceneColor)"#0369a1" });
+
+var path = new PathBuilder().MoveTo(10, 80).LineTo(60, 20).LineTo(110, 80).LineTo(170, 30).Build();
+scene.Root.Add(new ScenePath(path) { Stroke = (SceneColor)"#0369a1", StrokeWidth = 2, MarkerMid = dot, MarkerEnd = arrow });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+![A blue zigzag line with dots on its corners and an arrowhead at its end](images/Markers.svg)
+
+[Orientation](cref:Meziantou.Framework.VectorGraphics.SceneMarker.Orientation) turns the marker at the start of the
+path back (an arrowhead that points out of both ends), or by a fixed angle.
+[GetVertices](cref:Meziantou.Framework.VectorGraphics.PathData.GetVertices) gives the vertices and their directions.
+
 ## Images, clipping and radial gradients
 
 A [SceneImage](cref:Meziantou.Framework.VectorGraphics.SceneImage) draws a PNG, JPEG, GIF or WebP image, stretched to
@@ -164,6 +253,33 @@ A gradient ([SceneGradientPaint](cref:Meziantou.Framework.VectorGraphics.SceneGr
 beyond its ends by default; [Spread](cref:Meziantou.Framework.VectorGraphics.SceneGradientPaint.Spread) repeats it or
 reflects it instead, and [Transform](cref:Meziantou.Framework.VectorGraphics.SceneGradientPaint.Transform) rotates,
 skews or stretches it, as the `gradientTransform` of SVG.
+
+## Patterns
+
+A [PatternPaint](cref:Meziantou.Framework.VectorGraphics.PatternPaint) paints a shape with a tile of drawing repeated
+side by side, as an SVG `pattern`: its [Content](cref:Meziantou.Framework.VectorGraphics.PatternPaint.Content) is drawn
+in the [Tile](cref:Meziantou.Framework.VectorGraphics.PatternPaint.Tile), in the coordinates of the shape, and its
+[Transform](cref:Meziantou.Framework.VectorGraphics.PatternPaint.Transform) rotates or scales the pattern:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_Patterns;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+// A tile of 10 by 10 pixels with a dot, repeated over the shapes it paints
+var dots = new PatternPaint(new SceneBounds(0, 0, 10, 10));
+dots.Content.Add(new SceneCircle(5, 5, 2) { Fill = (SceneColor)"#0369a1" });
+scene.Root.Add(new SceneRectangle(10, 10, 80, 80) { Fill = dots, Stroke = SceneColor.Black });
+
+// Hatches: a line in a tile, turned by the transform of the pattern
+var hatches = new PatternPaint(new SceneBounds(0, 0, 8, 8)) { Transform = SceneTransform.Rotate(45) };
+hatches.Content.Add(new SceneLine(0, 4, 8, 4) { Stroke = (SceneColor)"#b91c1c", StrokeWidth = 2 });
+scene.Root.Add(new SceneCircle(150, 50, 40) { Fill = hatches, Stroke = SceneColor.Black });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+![A square filled with blue dots, and a circle filled with red diagonal hatches](images/Patterns.svg)
 
 ## Effects
 
@@ -210,9 +326,33 @@ PDF has no filters, not even the color matrices: the PDF renderer throws for a s
 
 ## Groups
 
-A [SceneGroup](cref:Meziantou.Framework.VectorGraphics.SceneGroup) applies a transform, a clip rectangle and an opacity
-to its children. Its [Hyperlink](cref:Meziantou.Framework.VectorGraphics.SceneGroup.Hyperlink) makes the group a link in
-the SVG; the address is written as is, so only set addresses you trust. Every element has a
+A [SceneGroup](cref:Meziantou.Framework.VectorGraphics.SceneGroup) applies a clip rectangle or path, and its transform,
+opacity and effects, to its children. Every element has a
+[Transform](cref:Meziantou.Framework.VectorGraphics.SceneElement.Transform) and a
+[Hyperlink](cref:Meziantou.Framework.VectorGraphics.SceneElement.Hyperlink), which makes it a link in the SVG and in the
+PDF; the address is written as is, so only set addresses you trust. An element is drawn as if it were the only child of
+a group with them: its mask and its filter are in the coordinates of its parent.
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_ElementTransformAndLink;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+// Any element has a transform and a hyperlink, without a group around it
+scene.Root.Add(new SceneRectangle(0, 0, 40, 20)
+{
+    Fill = (SceneColor)"#0369a1",
+    Transform = SceneTransform.Rotate(30).Then(SceneTransform.Translate(20, 10)),
+    Hyperlink = "https://example.com/",
+});
+
+// The rotation of a text applies before its transform
+scene.Root.Add(new SceneText(0, 0, "Moved", new SceneFont(12), SceneColor.Black) { Rotation = -90, Transform = SceneTransform.Translate(150, 90) });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+Every element has an [Id](cref:Meziantou.Framework.VectorGraphics.SceneElement.Id), its `id` attribute in the SVG, a
 [CssClass](cref:Meziantou.Framework.VectorGraphics.SceneElement.CssClass), a
 [Tooltip](cref:Meziantou.Framework.VectorGraphics.SceneElement.Tooltip) and `data-*` attributes
 ([SetDataAttribute](cref:Meziantou.Framework.VectorGraphics.SceneElement.SetDataAttribute)) for the scripts of a web
@@ -230,8 +370,71 @@ Assert.Equal(new SceneTransform(2, 0, 0, 2, 10, 20), transform);
 ```
 <!-- endref -->
 
+### Identifiers and reuse
+
+The identifiers of the elements must be different: the SVG renderer throws when two elements have the same one, and
+the identifiers it generates avoid them:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_Ids;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 100, height: 50, fontFamily: "sans-serif");
+
+// The identifier of an element is its id attribute: a script or a style sheet finds the element with it
+scene.Root.Add(new SceneRectangle(10, 10, 30, 30) { Id = "north", Fill = SceneColor.Black });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+A [SceneUse](cref:Meziantou.Framework.VectorGraphics.SceneUse) draws an element again, with its own transform and
+effects. The SVG writes the element once and refers to it with a `use` element; when the element is not in the scene,
+the SVG writes it in its definitions. The image and PDF renderers draw it again:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_Reuse;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 200, height: 60, fontFamily: "sans-serif");
+
+// A star that is not in the scene: the SVG writes it once in its definitions, and each use refers to it
+var star = new ScenePath(new PathBuilder().AddPolygon((0, -20), (6, -6), (20, -6), (9, 3), (13, 18), (0, 9), (-13, 18), (-9, 3), (-20, -6), (-6, -6)).Build()) { Fill = (SceneColor)"#eab308" };
+for (var i = 0; i < 3; i++)
+{
+    scene.Root.Add(new SceneUse(star) { Transform = SceneTransform.Translate(30 + (i * 50), 30) });
+}
+
+// An element of the scene drawn again, smaller
+var circle = scene.Root.Add(new SceneCircle(0, 0, 10) { Id = "dot", Fill = (SceneColor)"#0369a1", Transform = SceneTransform.Translate(180, 15) });
+scene.Root.Add(new SceneUse(circle) { Transform = SceneTransform.Scale(0.5, 0.5, 180, 45) });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+![Three yellow stars in a row, a blue dot, and a smaller blue dot below it](images/Reuse.svg)
+
+### View boxes
+
+A group with a [ViewBox](cref:Meziantou.Framework.VectorGraphics.SceneGroup.ViewBox) maps a rectangle of the
+coordinates of its children to a viewport, which cuts what is outside of it, as a nested SVG `svg` element. The box
+keeps its proportions as [Alignment](cref:Meziantou.Framework.VectorGraphics.SceneViewBox.Alignment) and
+[Slice](cref:Meziantou.Framework.VectorGraphics.SceneViewBox.Slice) say, as the `preserveAspectRatio` of SVG:
+
+<!-- ref:../../tests/Meziantou.Framework.VectorGraphics.Tests/SvgSceneRendererTests.cs;region=VectorGraphics_ViewBox;format=md-fenced-code-block;dedent=true -->
+```csharp
+var scene = new Scene(width: 200, height: 100, fontFamily: "sans-serif");
+
+// A drawing of 100 by 100 units, fitted in a viewport of 200 by 80 pixels: scaled by 0.8 and centered
+var chart = scene.Root.Add(new SceneGroup { ViewBox = new SceneViewBox(new SceneBounds(0, 0, 100, 100), new SceneBounds(0, 10, 200, 80)) });
+chart.Add(new SceneRectangle(0, 0, 100, 100) { Fill = (SceneColor)"#e0f2fe", Stroke = (SceneColor)"#0369a1" });
+chart.Add(new SceneCircle(50, 50, 40) { Fill = (SceneColor)"#0369a1" });
+
+var svg = SvgSceneRenderer.Render(scene);
+```
+<!-- endref -->
+
+![A light blue square with a blue circle, scaled and centered in a wider area](images/ViewBox.svg)
+
 ## SVG options
 
 [SvgRenderOptions](cref:Meziantou.Framework.VectorGraphics.SvgRenderOptions) sets the number of decimals, whether the
-`xmlns` attribute is written (turn it off for SVG inlined in HTML), and the prefix of the identifiers of the gradients
-and clip paths: give each drawing of an HTML page its own prefix, so the identifiers do not collide.
+`xmlns` attribute is written (turn it off for SVG inlined in HTML), and the prefix of the identifiers of the gradients,
+clip paths, patterns and markers: give each drawing of an HTML page its own prefix, so the identifiers do not collide.

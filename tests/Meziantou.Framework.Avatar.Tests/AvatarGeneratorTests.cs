@@ -1,5 +1,9 @@
 using System.Xml;
+using Meziantou.Framework.Imaging;
+using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.VectorGraphics;
 using Meziantou.Framework.SnapshotTesting;
+using Meziantou.Framework.VectorGraphics;
 using Meziantou.Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -143,6 +147,39 @@ public class AvatarGeneratorTests
         var document = new XmlDocument();
         document.LoadXml(svg);
         Assert.Equal("<Ada> & Lovelace", document.DocumentElement!.GetAttribute("aria-label"));
+        #endregion
+    }
+
+    [Fact]
+    public void ReadmeExample_CreatePng()
+    {
+        #region AvatarGenerator_CreatePng
+        // Lay the avatar out with the fonts that draw the image, so the initials are centered
+        var measurer = SceneImageRenderer.CreateMeasurer();
+        var scene = AvatarGenerator.CreateScene("John Doe", new AvatarOptions { Size = 128 }, measurer);
+
+        using var image = scene.ToImage();
+        Assert.Equal((128, 128), (image.Width, image.Height));
+
+        // Save to a file (image.Save("avatar.png")) or to a stream, in any format
+        using var png = new MemoryStream();
+        image.Save(png, new PngEncoder());
+        #endregion
+
+        AssertDocumentationPng("JohnDoe", image);
+    }
+
+    [Fact]
+    public void Documentation_CreateScene()
+    {
+        #region AvatarGenerator_CreateScene
+        // The scene holds the shape and the initials: add elements, or write it as SVG
+        var scene = AvatarGenerator.CreateScene("Ada Lovelace", new AvatarOptions { Shape = AvatarShape.RoundedSquare });
+        var initials = scene.Root.Children.OfType<SceneText>().Single();
+        Assert.Equal("AL", initials.Text);
+
+        var svg = SvgSceneRenderer.Render(scene);
+        Assert.StartsWith("<svg ", svg);
         #endregion
     }
 
@@ -711,6 +748,204 @@ public class AvatarGeneratorTests
         Assert.Equal(GetBackgroundFill(composed), GetBackgroundFill(decomposed));
     }
 
+    [Fact]
+    public void CreateScene_UsesDefaultOptionsWhenNoneProvided()
+    {
+        var scene = AvatarGenerator.CreateScene("John Doe");
+
+        Assert.Equal((64d, 64d), (scene.Width, scene.Height));
+        Assert.Equal(AfmTextMeasurer.Default.FontFamily, scene.FontFamily);
+        Assert.Equal("JD", scene.Title);
+        Assert.Null(scene.Background);
+        var circle = Assert.IsType<SceneCircle>(scene.Root.Children[0]);
+        Assert.Equal((32d, 32d, 32d), (circle.CenterX, circle.CenterY, circle.Radius));
+    }
+
+    [Theory]
+    [InlineData("John Doe")]
+    [InlineData("Ada Lovelace")]
+    [InlineData("山田太郎")]
+    [InlineData("Jean-Pierre")]
+    [InlineData("\u200B")]
+    [InlineData("<Ada> & Lovelace")]
+    public void CreateScene_UsesTheBigramAndTheColorsOfCreateSvg(string name)
+    {
+        var svg = AvatarGenerator.CreateSvg(name);
+        var scene = AvatarGenerator.CreateScene(name);
+
+        var document = new XmlDocument();
+        document.LoadXml(svg);
+        var text = GetText(scene);
+        Assert.Equal(document.DocumentElement!.LastChild!.InnerText, text.Text);
+        Assert.Equal(SceneColor.Parse(GetBackgroundFill(svg)), Assert.IsType<SolidPaint>(GetBackground(scene).Fill).Color);
+        Assert.Equal(SceneColor.Parse(document.DocumentElement.LastChild.Attributes!["fill"]!.Value), text.Color);
+    }
+
+    [Fact]
+    public void CreateScene_RendersSquareShapes()
+    {
+        var square = Assert.IsType<SceneRectangle>(GetBackground(AvatarGenerator.CreateScene("John Doe", new AvatarOptions { Shape = AvatarShape.Square, Size = 50 })));
+        Assert.Equal((0d, 0d, 50d, 50d, 0d), (square.X, square.Y, square.Width, square.Height, square.CornerRadius));
+
+        var rounded = Assert.IsType<SceneRectangle>(GetBackground(AvatarGenerator.CreateScene("John Doe", new AvatarOptions { Shape = AvatarShape.RoundedSquare, Size = 50 })));
+        Assert.Equal((0d, 0d, 50d, 50d, 12.5d), (rounded.X, rounded.Y, rounded.Width, rounded.Height, rounded.CornerRadius));
+    }
+
+    [Fact]
+    public void CreateScene_CentersTheCapitalLettersOfHelvetica()
+    {
+        var scene = AvatarGenerator.CreateScene("John Doe", new AvatarOptions { Size = 100 });
+        var text = GetText(scene);
+        var metrics = AfmTextMeasurer.Default.Measure("JD", text.Font);
+
+        Assert.Equal(SceneTextAnchor.Middle, text.Anchor);
+        Assert.Equal(50, text.X);
+        Assert.Equal(new SceneFont(50, Weight: SceneFont.BoldWeight), text.Font);
+        Assert.Equal(metrics.Width, text.MeasuredWidth);
+        Assert.Null(scene.Fonts);
+
+        // The ascender of the AFM metrics is the height of the capital letters: they span the middle of the avatar
+        Assert.Equal(0.718 * 50, metrics.Ascent, 1e-9);
+        Assert.Equal(50, text.Y - (metrics.Ascent / 2), 1e-9);
+    }
+
+    [Fact]
+    public void CreateScene_CentersTheLineBoxOfAFontFile()
+    {
+        var measurer = SceneImageRenderer.CreateMeasurer();
+        var text = GetText(AvatarGenerator.CreateScene("John Doe", new AvatarOptions { Size = 100 }, measurer));
+        var metrics = measurer.Measure("JD", text.Font);
+
+        Assert.Equal(50, text.Y - metrics.Ascent + (metrics.Height / 2), 1e-9);
+    }
+
+    [Fact]
+    public void CreateScene_ShrinksInitialsWiderThanTheShape()
+    {
+        var text = GetText(AvatarGenerator.CreateScene("Wolfgang Mozart", new AvatarOptions { Size = 100 }));
+
+        Assert.Equal("WM", text.Text);
+        Assert.True(text.Font.Size < 50);
+        Assert.Equal(80, text.MeasuredWidth, 1e-9);
+    }
+
+    [Fact]
+    public void CreateScene_UsesTheFontFamilyOfTheMeasurer()
+    {
+        var measurer = SceneImageRenderer.CreateMeasurer();
+        var scene = AvatarGenerator.CreateScene("John Doe", new AvatarOptions(), measurer);
+
+        Assert.Equal(measurer.FontFamily, scene.FontFamily);
+        Assert.Equal(measurer.Measure("JD", GetText(scene).Font).Width, GetText(scene).MeasuredWidth);
+    }
+
+    [Fact]
+    public void CreateScene_DrawsWithTheFontsOfTheMeasurer()
+    {
+        var fonts = new SceneFontCollection(LoadFontFace("LiberationSans-Bold.woff2"), LoadFontFace("NotoSansCJKjp-Regular.subset.otf"));
+        var measurer = SceneImageRenderer.CreateMeasurer(new SceneImageOptions { Fonts = fonts });
+        var options = new AvatarOptions { Size = 128 };
+        options.Palette.Clear();
+        options.Palette.Add(new AvatarColorPair("#000000", "#ffffff"));
+
+        var scene = AvatarGenerator.CreateScene("\u65E5\u672C", options, measurer);
+        Assert.Same(fonts, scene.Fonts);
+        Assert.Equal(fonts.FontFamily, scene.FontFamily);
+
+        // Liberation Sans has no Japanese characters: the fallback font draws them
+        using var image = scene.ToImage();
+        var (left, top, right, bottom) = GetInkBounds(image);
+        Assert.True(right - left > 40, $"The initials span {left}..{right} horizontally");
+        Assert.True(Math.Abs(((top + bottom) / 2d) - 63.5) <= 6, $"The initials span {top}..{bottom} vertically");
+    }
+
+    [Fact]
+    public void CreateScene_EmbedsTheFontsOfTheMeasurerInTheSvg()
+    {
+        var fonts = new SceneFontCollection(LoadFontFace("LiberationSans-Bold.woff2"));
+        var scene = AvatarGenerator.CreateScene("John Doe", new AvatarOptions(), SceneImageRenderer.CreateMeasurer(new SceneImageOptions { Fonts = fonts }));
+
+        var svg = SvgSceneRenderer.Render(scene, new SvgRenderOptions { EmbedFonts = true });
+        Assert.Contains("@font-face", svg);
+    }
+
+    [Fact]
+    public void CreateScene_UsesTheAccessibleLabelAsTitle()
+    {
+        Assert.Equal("Ada Lovelace", AvatarGenerator.CreateScene("Ada Lovelace", new AvatarOptions { AccessibleLabel = "Ada\u0007 Lovelace" }).Title);
+        Assert.Null(AvatarGenerator.CreateScene("Ada Lovelace", new AvatarOptions { AccessibleLabel = "Ada Lovelace", IsDecorative = true }).Title);
+    }
+
+    [Theory]
+    [InlineData("var(--accent)")]
+    [InlineData("currentColor")]
+    public void CreateScene_ThrowsWhenAPaletteColorIsNotSupported(string color)
+    {
+        var options = new AvatarOptions();
+        options.Palette.Add(new AvatarColorPair("#ffffff", color));
+
+        var exception = Assert.Throws<ArgumentException>(() => AvatarGenerator.CreateScene("John Doe", options));
+        Assert.Equal("options", exception.ParamName);
+        Assert.Contains("index 11", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CreateScene_ValidatesItsArguments()
+    {
+        Assert.Throws<ArgumentNullException>("options", () => AvatarGenerator.CreateScene("John Doe", null!));
+        Assert.Throws<ArgumentException>("name", () => AvatarGenerator.CreateScene(" "));
+        Assert.Throws<ArgumentOutOfRangeException>("options.Size", () => AvatarGenerator.CreateScene("John Doe", new AvatarOptions { Size = 0 }));
+        Assert.Throws<ArgumentOutOfRangeException>("options", () => AvatarGenerator.CreateScene("John Doe", new AvatarOptions { Shape = (AvatarShape)42 }));
+
+        var options = new AvatarOptions();
+        options.Palette.Clear();
+        Assert.Throws<ArgumentException>("options", () => AvatarGenerator.CreateScene("John Doe", options));
+    }
+
+    [Theory]
+    [InlineData(AvatarShape.Round)]
+    [InlineData(AvatarShape.Square)]
+    [InlineData(AvatarShape.RoundedSquare)]
+    public void CreateScene_DrawsTheInitialsInTheMiddleOfTheImage(AvatarShape shape)
+    {
+        var options = new AvatarOptions { Shape = shape, Size = 128 };
+        options.Palette.Clear();
+        options.Palette.Add(new AvatarColorPair("#000000", "#ffffff"));
+        using var image = AvatarGenerator.CreateScene("Hugo Hill", options, SceneImageRenderer.CreateMeasurer()).ToImage();
+
+        var (left, top, right, bottom) = GetInkBounds(image);
+
+        // "HH" has no descender: the capitals are centered within a few pixels
+        Assert.True(Math.Abs(((left + right) / 2d) - 63.5) <= 2, $"The initials span {left}..{right} horizontally");
+        Assert.True(Math.Abs(((top + bottom) / 2d) - 63.5) <= 4, $"The initials span {top}..{bottom} vertically");
+    }
+
+    /// <summary>Gets the bounds of the light pixels: the initials, drawn in white on black.</summary>
+    private static (int Left, int Top, int Right, int Bottom) GetInkBounds(Image<Rgba32> image)
+    {
+        var pixels = new byte[image.Width * image.Height * 4];
+        image.Frames[0].CopyPixelBytesTo(pixels);
+        var (left, top, right, bottom) = (int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                var offset = ((y * image.Width) + x) * 4;
+                if (pixels[offset] > 127 && pixels[offset + 3] > 127)
+                {
+                    (left, top, right, bottom) = (Math.Min(left, x), Math.Min(top, y), Math.Max(right, x), Math.Max(bottom, y));
+                }
+            }
+        }
+
+        return (left, top, right, bottom);
+    }
+
+    private static SceneFontFace LoadFontFace(string fileName) => SceneFontFace.Load(Path.Combine(AppContext.BaseDirectory, "TestData", fileName))[0];
+
+    private static SceneShape GetBackground(Scene scene) => Assert.IsAssignableTo<SceneShape>(scene.Root.Children[0]);
+
+    private static SceneText GetText(Scene scene) => Assert.IsType<SceneText>(scene.Root.Children[1]);
 
     private static string GetBackgroundFill(string svg)
     {
@@ -789,6 +1024,45 @@ public class AvatarGeneratorTests
         var temporaryPath = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         File.WriteAllText(temporaryPath, svg);
         File.Move(temporaryPath, path, overwrite: true);
+    }
+
+    /// <summary>
+    /// Compares the pixels of an avatar with the PNG of the documentation (docs/Avatar/images). With the environment
+    /// variable <see cref="UpdateDocumentationImagesVariable"/> set to 1, a missing or different image is written instead.
+    /// </summary>
+    private static void AssertDocumentationPng(string name, Image<Rgba32> image)
+    {
+        var path = Path.Combine(GetRepositoryRoot(), "docs", "Avatar", "images", name + ".png");
+        if (File.Exists(path) && HasSamePixels(path, image))
+            return;
+
+        if (Environment.GetEnvironmentVariable(UpdateDocumentationImagesVariable) is not "1")
+        {
+            Assert.Fail($"docs/Avatar/images/{name}.png is missing or different. Run the test with the environment variable {UpdateDocumentationImagesVariable}=1 to write the image, look at it, and commit it.");
+        }
+
+        // The test runs for each target framework at the same time: publish the file with a rename
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var temporaryPath = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        using (var stream = File.Create(temporaryPath))
+        {
+            image.Save(stream, new PngEncoder { Optimization = PngOptimization.MinimumSize });
+        }
+
+        File.Move(temporaryPath, path, overwrite: true);
+    }
+
+    private static bool HasSamePixels(string expectedPath, Image<Rgba32> actual)
+    {
+        using var expected = Image.Load<Rgba32>(expectedPath);
+        if (expected.Size != actual.Size)
+            return false;
+
+        var expectedBytes = new byte[expected.Width * expected.Height * 4];
+        var actualBytes = new byte[expectedBytes.Length];
+        expected.Frames[0].CopyPixelBytesTo(expectedBytes);
+        actual.Frames[0].CopyPixelBytesTo(actualBytes);
+        return expectedBytes.AsSpan().SequenceEqual(actualBytes);
     }
 
     // The deterministic builds of CI map the source paths to /_/, so the root is found from the test assembly

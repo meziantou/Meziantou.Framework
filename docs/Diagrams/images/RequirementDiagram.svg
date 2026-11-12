@@ -42,9 +42,7 @@
 <text x="247.51" y="265.69" text-anchor="middle" font-size="16" font-weight="bold" fill="#131300">payment</text>
 <line x1="112.74" y1="281.2" x2="382.29" y2="281.2" stroke="#9370db"/>
 <text x="247.51" y="303.18" text-anchor="middle" font-size="14" fill="#131300">ID: 1.1</text>
-<text x="132.74" y="319.98" font-size="14" fill="#131300">Text: Card payments are </text>
-<text x="287.47" y="319.98" font-size="14" font-weight="bold" fill="#131300">authorized</text>
-<text x="358.39" y="319.98" font-size="14" fill="#131300">.</text>
+<text x="247.51" y="319.98" text-anchor="middle" font-size="14" fill="#131300">Text: Card payments are <tspan font-weight="bold">authorized</tspan>.</text>
 <text x="247.51" y="336.78" text-anchor="middle" font-size="14" fill="#131300">Risk: Medium</text>
 <text x="247.51" y="353.58" text-anchor="middle" font-size="14" fill="#131300">Verification: Demonstration</text>
 </g>

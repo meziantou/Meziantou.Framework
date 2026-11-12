@@ -1,4 +1,4 @@
 title: Avatar
-description: Generate deterministic SVG avatars with initials from a name.
+description: Generate deterministic SVG or PNG avatars with initials from a name.
 packageIds:
 - Meziantou.Framework.Avatar

@@ -455,15 +455,34 @@ public sealed class HostDeviceApisTests : IDisposable
     [Fact]
     public async Task GetCurrentPosition_SlowProvider_TimesOut()
     {
+        var clock = new FakeTimeProvider();
         var provider = new SlowGeolocationProvider();
-        var document = Load("<script>" + GeolocationScript + "</script>", new BrowsingContextOptions { Geolocation = provider, Permissions = GrantedPermissions("geolocation") });
+        var document = Load("<script>" + GeolocationScript + "</script>", new BrowsingContextOptions { Geolocation = provider, Permissions = GrantedPermissions("geolocation"), TimeProvider = clock });
 
-        await RunAsync(document, "navigator.geolocation.getCurrentPosition(onPosition, onError, { timeout: 50 })");
+        Run(document, "navigator.geolocation.getCurrentPosition(onPosition, onError, { timeout: 50 })");
+        Assert.Equal("", Run(document, "done()"));
+
+        clock.Advance(TimeSpan.FromMilliseconds(50));
+        await RunAsync(document);
 
         Assert.Equal("error 3 TIMEOUT", Run(document, "done()"));
 
         // The provider observes the cancellation on another thread, possibly after the error callback
         await provider.Canceled.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GetCurrentPosition_ProviderCanceledByTheTimeoutBeforeItStarts_TimesOut(bool throwSynchronously)
+    {
+        var clock = new FakeTimeProvider();
+        var provider = new LateGeolocationProvider(clock, throwSynchronously);
+        var document = Load("<script>" + GeolocationScript + "</script>", new BrowsingContextOptions { Geolocation = provider, Permissions = GrantedPermissions("geolocation"), TimeProvider = clock });
+
+        Run(document, "navigator.geolocation.getCurrentPosition(onPosition, onError, { timeout: 50 })");
+
+        Assert.Equal("error 3 TIMEOUT", Run(document, "done()"));
     }
 
     [Fact]
@@ -529,6 +548,21 @@ public sealed class HostDeviceApisTests : IDisposable
             }
 
             return null;
+        }
+    }
+
+    /// <summary>A provider that is called once the timeout elapsed, as on a busy machine, and observes the cancellation.</summary>
+    private sealed class LateGeolocationProvider(FakeTimeProvider clock, bool throwSynchronously) : GeolocationProvider
+    {
+        public override ValueTask<GeolocationReading?> GetPositionAsync(GeolocationRequest request, CancellationToken cancellationToken)
+        {
+            clock.Advance(TimeSpan.FromMilliseconds(50));
+            if (throwSynchronously)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            return ValueTask.FromCanceled<GeolocationReading?>(cancellationToken);
         }
     }
 

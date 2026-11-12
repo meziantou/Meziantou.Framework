@@ -81,6 +81,9 @@ internal sealed partial class TextExtractor
 
     private void RunPage(PdfPage page)
     {
+        // The fonts a document that is being built embeds are written when it is saved: their ToUnicode CMaps are written now
+        page.Document.WriteEmbeddedFonts();
+
         // The content streams of a page are one content: an operator and its operands may be in two streams (7.8.2).
         // One stream is read in place; several are copied once, with a line feed between them.
         var streams = new List<byte[]>();

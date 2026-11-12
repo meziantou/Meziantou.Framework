@@ -38,8 +38,7 @@
 <g class="kanban-item" data-id="renderer">
 <rect x="312.5" y="29.2" width="185" height="61" rx="5" fill="#ffffff" stroke="#9370db"/>
 <line x1="314.5" y1="31.2" x2="314.5" y2="88.2" stroke="#ff0000" stroke-width="4" class="priority"/>
-<text x="322.5" y="52.89" font-size="16" fill="#333333">Draw the </text>
-<text x="390.48" y="52.89" font-size="16" font-weight="bold" fill="#333333">cards</text>
+<text x="322.5" y="52.89" font-size="16" fill="#333333">Draw the <tspan font-weight="bold">cards</tspan></text>
 <text x="472.33" y="75.38" text-anchor="middle" font-size="14" fill="#333333">Alice</text>
 </g>
 </g>

@@ -59,6 +59,7 @@ on:
           - uri
           - vector-graphics
           - versioning
+          - webplatform-devtools
           - webplatform
           - yaml
       duration_seconds:
@@ -144,6 +145,7 @@ env:
       { "project": "Meziantou.Framework.Uri.Fuzz",                 "component": "uri",                   "day": 4 },
       { "project": "Meziantou.Framework.VectorGraphics.Fuzz",      "component": "vector-graphics",       "day": 3 },
       { "project": "Meziantou.Framework.Versioning.Fuzz",          "component": "versioning",            "day": 4 },
+      { "project": "Meziantou.Framework.WebPlatform.DevTools.Fuzz", "component": "webplatform-devtools",  "day": 3 },
       { "project": "Meziantou.Framework.WebPlatform.Fuzz",         "component": "webplatform",           "day": 5 },
       { "project": "Meziantou.Framework.Yaml.Fuzz",                "component": "yaml",                  "day": 6 }
     ]

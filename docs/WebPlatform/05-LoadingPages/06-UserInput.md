@@ -106,5 +106,5 @@ always get false.
 [HtmlElement.Click()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.Click), [Focus()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.Focus) and [DispatchEvent()](cref:Meziantou.Framework.WebPlatform.Dom.EventTarget.DispatchEvent) act on an element directly, as the same methods of a script: the
 events they fire are not trusted, and no hit testing is done. Use them when you do not need to simulate a user.
 
-To automate pages with a higher-level API (locators, auto-waiting, assertions), drive the engine with Playwright: see
-[Playwright](../08-Playwright/01-Overview.md).
+To automate pages with a higher-level API (locators, auto-waiting, assertions), drive the engine with Playwright over the
+Chrome DevTools Protocol: see [DevTools protocol](../08-DevTools/01-Overview.md).

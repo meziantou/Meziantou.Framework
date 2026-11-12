@@ -605,6 +605,8 @@ public partial class Document
                 MarkDomContentLoadedEventEnd();
             }
 
+            BrowsingContext?.Options.LifecycleEventFired?.Invoke(this, "DOMContentLoaded");
+
             // https://drafts.csswg.org/css-sizing-4/#responsive-iframes: "The internal layout intrinsic size is first set by
             // the results of the embedded document's first layout after it fires its DOMContentLoaded event"
             UpdateInternalLayoutIntrinsicSize();
@@ -845,6 +847,8 @@ public partial class Document
             {
                 MarkLoadEventEnd();
             }
+
+            BrowsingContext?.Options.LifecycleEventFired?.Invoke(this, "load");
 
             // https://drafts.csswg.org/css-sizing-4/#responsive-iframes: "and again when the load event is fired at the Window"
             UpdateInternalLayoutIntrinsicSize();

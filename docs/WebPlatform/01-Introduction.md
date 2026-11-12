@@ -6,7 +6,7 @@ description: "A browser engine for .NET, in managed code: HTML, CSS, the DOM, la
 `Meziantou.Framework.WebPlatform` implements the web platform in .NET. It parses HTML, XML, SVG, MathML and CSS exactly
 as a browser does, and exposes the DOM API that the scripts of a page use, with .NET naming. A layout engine computes the
 geometry of the pages, and the companion packages run their scripts, take screenshots, print them to PDF and automate them
-with Playwright.
+with Playwright and the other Chrome DevTools Protocol clients.
 
 ## What you can do with it
 
@@ -23,8 +23,9 @@ with Playwright.
   [Scripting](06-Scripting/01-Overview.md).
 - **Render pages**: take screenshots of pages and elements, print them to images or PDF, draw on canvases. See
   [Rendering](07-Rendering/01-Overview.md).
-- **Automate pages with Playwright**: the Playwright clients for .NET, Node.js, Python and Java drive the engine as they
-  drive Chromium. See [Playwright](08-Playwright/01-Overview.md).
+- **Automate pages with Playwright and the Chrome DevTools Protocol**: Playwright (`connectOverCDP`, from .NET, Node.js,
+  Python and Java), Puppeteer and the other CDP clients drive the engine as a headless Chromium. See
+  [DevTools protocol](08-DevTools/01-Overview.md).
 
 ## Packages
 
@@ -37,8 +38,8 @@ The library is split into packages, so that an application only references what 
 | `Meziantou.Framework.WebPlatform.Wasmtime` | A WebAssembly runtime for the scripts, based on [Wasmtime](https://wasmtime.dev/) (a native library) |
 | `Meziantou.Framework.WebPlatform.Imaging` | A rendering backend: screenshots, pages printed as images, 2D canvases and image decoding, with Meziantou.Framework.Imaging |
 | `Meziantou.Framework.WebPlatform.PdfRendering` | Printing to PDF, with Meziantou.Framework.Pdf |
-| `Meziantou.Framework.WebPlatform.Playwright` | A Playwright server whose browser is this engine |
-| `Meziantou.Framework.WebPlatform.Playwright.Tool` | A .NET tool that runs the Playwright server from the command line |
+| `Meziantou.Framework.WebPlatform.DevTools` | A Chrome DevTools Protocol server whose browser is this engine, for Playwright and the other CDP clients |
+| `Meziantou.Framework.WebPlatform.DevTools.Tool` | A .NET tool that runs the DevTools protocol server from the command line |
 
 ## Principles
 
@@ -67,7 +68,7 @@ The library is split into packages, so that an application only references what 
 | [Meziantou.Framework.WebPlatform.JavaScript](cref:Meziantou.Framework.WebPlatform.JavaScript) | The JavaScript script engine |
 | [Meziantou.Framework.WebPlatform.Imaging](cref:Meziantou.Framework.WebPlatform.Imaging) | The rendering backend, the screenshots and the printing to images |
 | [Meziantou.Framework.WebPlatform.PdfRendering](cref:Meziantou.Framework.WebPlatform.PdfRendering) | The printing to PDF |
-| [Meziantou.Framework.WebPlatform.Playwright](cref:Meziantou.Framework.WebPlatform.Playwright) | The Playwright server |
+| [Meziantou.Framework.WebPlatform.DevTools](cref:Meziantou.Framework.WebPlatform.DevTools) | The Chrome DevTools Protocol server |
 
 ## Next steps
 

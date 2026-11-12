@@ -50,6 +50,7 @@ internal static class FuzzProjects
         ("Meziantou.Framework.Uri.Fuzz", UriFuzz.UriFuzzTargets.All),
         ("Meziantou.Framework.VectorGraphics.Fuzz", VectorGraphics.Fuzz.VectorGraphicsFuzzTargets.All),
         ("Meziantou.Framework.Versioning.Fuzz", Versioning.Fuzz.VersioningFuzzTargets.All),
+        ("Meziantou.Framework.WebPlatform.DevTools.Fuzz", WebPlatform.DevTools.Fuzz.DevToolsFuzzTargets.All),
         ("Meziantou.Framework.WebPlatform.Fuzz", WebPlatform.Fuzz.WebPlatformFuzzTargets.All),
         ("Meziantou.Framework.Yaml.Fuzz", Yaml.Fuzz.YamlFuzzTargets.All),
     ];

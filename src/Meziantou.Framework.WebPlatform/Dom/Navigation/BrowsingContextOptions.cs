@@ -486,6 +486,17 @@ public sealed partial class BrowsingContextOptions
     /// </remarks>
     internal Css.Fonts.InstalledFontCollection? InstalledFonts { get; init; }
 
+    /// <summary>
+    /// Gets or sets the callback invoked once the <c>DOMContentLoaded</c> event of a document of the browsing contexts was fired
+    /// (<c>"DOMContentLoaded"</c>), and once its <c>load</c> event was fired at its window (<c>"load"</c>), each time they are
+    /// fired (a document opened again by <c>document.open()</c> fires them again).
+    /// </summary>
+    /// <remarks>
+    /// Internal: it is used by the DevTools protocol server, whose lifecycle events must survive <c>document.open()</c> (which
+    /// removes the event listeners of the document and of its window).
+    /// </remarks>
+    internal Action<Document, string>? LifecycleEventFired { get; init; }
+
     /// <summary>The system clipboard of the browsing contexts: <see cref="Clipboard"/>, or the in-memory clipboard of the options.</summary>
     internal SystemClipboard EffectiveClipboard => Clipboard ?? LazyInitializer.EnsureInitialized(ref _defaultClipboard);
 

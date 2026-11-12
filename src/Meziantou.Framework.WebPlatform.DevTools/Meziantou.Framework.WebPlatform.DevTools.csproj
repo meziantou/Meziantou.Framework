@@ -1,0 +1,21 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.WebPlatform.DevTools</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsAotCompatible>true</IsAotCompatible>
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+    <Description>A Chrome DevTools Protocol (CDP) server for Meziantou.Framework.WebPlatform: Playwright (connectOverCDP), Puppeteer and the other CDP clients automate the managed browser engine as a Chromium browser.</Description>
+    <PackageTags>devtools;cdp;chrome-devtools-protocol;playwright;puppeteer;browser;automation;testing;headless;html;dom;web-platform</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.WebPlatform.JavaScript\Meziantou.Framework.WebPlatform.JavaScript.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.WebPlatform.Imaging\Meziantou.Framework.WebPlatform.Imaging.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.WebPlatform.PdfRendering\Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.DevTools.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.DevTools.Fuzz" />
+  </ItemGroup>
+</Project>

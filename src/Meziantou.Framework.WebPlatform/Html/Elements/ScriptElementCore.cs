@@ -315,6 +315,7 @@ internal sealed class ScriptElementCore(Element element)
         }
 
         string? url = null;
+        Urls.UrlRecord? parsedUrl = null;
         if (src is not null)
         {
             // External import maps and speculation rules are not supported
@@ -324,13 +325,17 @@ internal sealed class ScriptElementCore(Element element)
                 return;
             }
 
+            // The URL record is fetched, rather than its serialization: the serialization does not keep its flags (e.g. the
+            // potentially dangling markup flag, which blocks the fetch of a URL whose input had a newline and a "<")
             FromExternalFile = true;
-            url = Reflection.EncodingParseAndSerializeUrl(document, src);
-            if (url is null)
+            parsedUrl = Reflection.EncodingParseUrl(document, src);
+            if (parsedUrl is null)
             {
                 QueueErrorEvent();
                 return;
             }
+
+            url = parsedUrl.Serialize();
         }
 
         // https://html.spec.whatwg.org/multipage/scripting.html#prepare-the-script-element, step 32: the result of an inline
@@ -397,7 +402,7 @@ internal sealed class ScriptElementCore(Element element)
         {
             // A script that is not run by the parser is marked as ready by a task (see below)
             var markedAsReadyByTheParser = parserDocument is not null && !Element.HasAttributeWithLocalName("async") && !ForceAsync && parserDocument.ActiveParser is not Html.Parsing.ScriptingParser { IsScriptCreated: true };
-            completedSynchronously = Scripting.ScriptFetching.FetchClassicScript(Element, browsingContext, window, url!, MarkAsReady, out fetchedScript, reportTimingFromTask: !markedAsReadyByTheParser);
+            completedSynchronously = Scripting.ScriptFetching.FetchClassicScript(Element, browsingContext, window, parsedUrl!, MarkAsReady, out fetchedScript, reportTimingFromTask: !markedAsReadyByTheParser);
         }
 
         bool executedByTheParser;
@@ -453,7 +458,7 @@ internal sealed class ScriptElementCore(Element element)
         // The module scripts are fetched once they are scheduled: the result is ready from a task or a microtask
         if (ScriptType == ScriptElementType.Module)
         {
-            FetchModuleScriptGraph(engine, window, url, sourceText);
+            FetchModuleScriptGraph(engine, window, parsedUrl, sourceText);
             return;
         }
 
@@ -481,7 +486,7 @@ internal sealed class ScriptElementCore(Element element)
     /// the root of an external script (with its module map), and loads the descendants. The result is null when a module of
     /// the graph cannot be fetched.
     /// </summary>
-    private void FetchModuleScriptGraph(Scripting.ScriptEngine engine, Window window, string? url, string sourceText)
+    private void FetchModuleScriptGraph(Scripting.ScriptEngine engine, Window window, Urls.UrlRecord? url, string sourceText)
     {
         var document = Element.NodeDocument;
         var options = CreateModuleFetchOptions();
@@ -498,7 +503,7 @@ internal sealed class ScriptElementCore(Element element)
             }
             else
             {
-                engine.FetchModuleScriptGraph(window, url, options, Element, script => window.QueueGlobalTask(() => MarkAsReady(script)));
+                engine.FetchModuleScriptGraph(window, url.Serialize(), options.WithRootUrl(url), Element, script => window.QueueGlobalTask(() => MarkAsReady(script)));
             }
         }
 #pragma warning disable CA1031 // An exception thrown by the engine is a failure of the graph

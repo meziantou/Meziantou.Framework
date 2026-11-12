@@ -14,17 +14,22 @@ internal static class ScriptFetching
     /// the script (null for a network error). Otherwise, <paramref name="onComplete"/> is called with the script from a
     /// task of the event loop.
     /// </summary>
+    /// <param name="parsedUrl">
+    /// The URL of the script, as parsed from the <c>src</c> attribute: its flags that its serialization does not keep (the
+    /// potentially dangling markup flag) apply to the request.
+    /// </param>
     /// <param name="reportTimingFromTask">
     /// Whether the resource timing of a fetch that completes synchronously is reported by a task (the script is run by a task):
     /// a script that the parser runs at once has its entry in the performance timeline when it runs.
     /// </param>
-    public static bool FetchClassicScript(Element element, BrowsingContext browsingContext, Window window, string url, Action<ClassicScript?> onComplete, out ClassicScript? result, bool reportTimingFromTask = false)
+    public static bool FetchClassicScript(Element element, BrowsingContext browsingContext, Window window, UrlRecord parsedUrl, Action<ClassicScript?> onComplete, out ClassicScript? result, bool reportTimingFromTask = false)
     {
         var document = element.NodeDocument;
+        var url = parsedUrl.Serialize();
 
         // The encoding of the charset attribute, else of the document (https://html.spec.whatwg.org/multipage/scripting.html#script-processing-encoding)
         var fallbackEncoding = element is HtmlScriptElement && element.GetAttributeValue("charset") is { } charset && WebEncodingRegistry.TryGetEncoding(charset, out var charsetEncoding) ? charsetEncoding : document.Encoding;
-        if (UrlParser.Parse(url, baseUrl: null) is not { } parsedUrl || (browsingContext.Options.DocumentLoader is null && parsedUrl.Scheme is not ("data" or "blob")))
+        if (browsingContext.Options.DocumentLoader is null && parsedUrl.Scheme is not ("data" or "blob"))
         {
             result = null;
             return true;

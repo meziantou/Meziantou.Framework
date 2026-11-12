@@ -431,6 +431,20 @@ public sealed class TextTrackTests : IDisposable
     }
 
     [Fact]
+    public void DanglingMarkup_TheTrackIsNotRequested()
+    {
+        // The URL of the first track has a newline and a "<" (the markup that follows an attribute whose quote is not closed)
+        var document = Load("""
+            <video><track kind=metadata default src="/captions.vtt?x=
+            <secret>"><track kind=metadata default src="/captions.vtt?allowed=<"></video>
+            """);
+        var video = (HtmlVideoElement)document.QuerySelector("video")!;
+
+        Assert.Equal(["Track SameOrigin https://example.com/captions.vtt?allowed=%3C"], _requests);
+        Assert.Equal([TextTrackReadinessState.FailedToLoad, TextTrackReadinessState.Loaded], video.TextTracks.Select(track => track.ReadinessState));
+    }
+
+    [Fact]
     public void TextTracksEnabled_DisablesTheLoadingOfTheTracks()
     {
         var document = Load("<video><track default src='/captions.vtt'></video>", new WebPlatformFeatures { TextTracksEnabled = false });

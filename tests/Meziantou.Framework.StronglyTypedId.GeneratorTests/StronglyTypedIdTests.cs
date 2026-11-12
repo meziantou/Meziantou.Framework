@@ -469,6 +469,46 @@ public sealed partial class StronglyTypedIdTests
     }
 
     [Fact]
+    public void Toml_DateTimeOutOfTheLocalRange_Throws()
+    {
+        // The local time of an instant near DateTime.MinValue or MaxValue is out of range in some time zones. There is
+        // nothing to check in a time zone whose offset is zero at both ends.
+        var minOffset = TimeZoneInfo.Local.GetUtcOffset(DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Utc));
+        if (minOffset < TimeSpan.Zero)
+        {
+            Assert.Throws<Meziantou.Framework.Toml.TomlException>(() => Meziantou.Framework.Toml.TomlSerializer.Deserialize<TomlIdContainer>("DateTime = 0001-01-01T00:00:00+00:00"));
+        }
+
+        var maxOffset = TimeZoneInfo.Local.GetUtcOffset(DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc));
+        if (maxOffset > TimeSpan.Zero)
+        {
+            Assert.Throws<Meziantou.Framework.Toml.TomlException>(() => Meziantou.Framework.Toml.TomlSerializer.Deserialize<TomlIdContainer>("DateTime = 9999-12-31T23:59:59+00:00"));
+        }
+
+        var localMax = DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Local);
+        if (TimeZoneInfo.Local.GetUtcOffset(localMax) < TimeSpan.Zero)
+        {
+            Assert.Throws<Meziantou.Framework.Toml.TomlException>(() => Meziantou.Framework.Toml.TomlSerializer.Serialize(new TomlIdContainer { DateTime = IdDateTime.FromDateTime(localMax) }));
+        }
+
+        var localMin = DateTime.SpecifyKind(DateTime.MinValue, DateTimeKind.Local);
+        if (TimeZoneInfo.Local.GetUtcOffset(localMin) > TimeSpan.Zero)
+        {
+            Assert.Throws<Meziantou.Framework.Toml.TomlException>(() => Meziantou.Framework.Toml.TomlSerializer.Serialize(new TomlIdContainer { DateTime = IdDateTime.FromDateTime(localMin) }));
+        }
+    }
+
+    [Fact]
+    public void Toml_LocalDateTime_RoundTrips()
+    {
+        var local = new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Local);
+        var toml = Meziantou.Framework.Toml.TomlSerializer.Serialize(new TomlIdContainer { DateTime = IdDateTime.FromDateTime(local) });
+        var deserialized = Meziantou.Framework.Toml.TomlSerializer.Deserialize<TomlIdContainer>(toml)!;
+        Assert.Equal(DateTimeKind.Local, deserialized.DateTime.Value.Kind);
+        Assert.Equal(local, deserialized.DateTime.Value);
+    }
+
+    [Fact]
     public void Toml_DecimalKeepsItsDigits()
     {
         var value = new TomlIdContainer { Decimal = IdDecimal.FromDecimal(0.1234567890123456789012345678m) };

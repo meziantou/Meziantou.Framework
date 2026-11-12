@@ -39,6 +39,23 @@ public partial class StronglyTypedIdSourceGenerator
                 WriteWrite();
             }
 
+            if (idType is IdType.System_DateTime)
+            {
+                // DateTimeOffset.LocalDateTime clamps a value whose local time is out of range, which changes the instant
+                writer.WriteLine();
+                using (writer.BeginBlock($"private static global::System.DateTime ToLocalDateTime({TomlSerializationNamespace}.TomlReader reader, global::System.DateTimeOffset value)"))
+                {
+                    writer.WriteLine("var utc = value.UtcDateTime;");
+                    writer.WriteLine("var localTicks = utc.Ticks + global::System.TimeZoneInfo.Local.GetUtcOffset(utc).Ticks;");
+                    using (writer.BeginBlock("if (localTicks < global::System.DateTime.MinValue.Ticks || localTicks > global::System.DateTime.MaxValue.Ticks)"))
+                    {
+                        writer.WriteLine("throw reader.CreateException(\"The date-time \" + value.ToString(\"O\", global::System.Globalization.CultureInfo.InvariantCulture) + \" cannot be represented as a local DateTime in the time zone of the machine.\");");
+                    }
+
+                    writer.WriteLine("return value.LocalDateTime;");
+                }
+            }
+
             if (idType is IdType.System_DateTime or IdType.System_DateTimeOffset)
             {
                 // Same precision as the built-in converters: the number of significant digits of the fraction of a second
@@ -156,7 +173,7 @@ public partial class StronglyTypedIdSourceGenerator
                     writer.WriteLine("var dateTime = reader.GetTomlDateTime();");
                     WriteSwitchExpression("var value = dateTime.Kind switch",
                         $"{TomlNamespace}.TomlDateTimeKind.OffsetDateTimeByZ => dateTime.DateTime.UtcDateTime,",
-                        $"{TomlNamespace}.TomlDateTimeKind.OffsetDateTimeByNumber => dateTime.DateTime.LocalDateTime,",
+                        $"{TomlNamespace}.TomlDateTimeKind.OffsetDateTimeByNumber => ToLocalDateTime(reader, dateTime.DateTime),",
                         $"{TomlNamespace}.TomlDateTimeKind.LocalDateTime or {TomlNamespace}.TomlDateTimeKind.LocalDate => dateTime.DateTime.DateTime,",
                         "_ => throw reader.CreateException(\"TOML \" + dateTime.Kind.ToString() + \" cannot be converted to DateTime.\"),");
 
@@ -260,6 +277,14 @@ public partial class StronglyTypedIdSourceGenerator
                         $"_ => {TomlNamespace}.TomlDateTimeKind.LocalDateTime,");
 
                     writer.WriteLine("var offset = dateTime.Kind == global::System.DateTimeKind.Local ? global::System.TimeZoneInfo.Local.GetUtcOffset(dateTime) : global::System.TimeSpan.Zero;");
+
+                    // Near MinValue or MaxValue, the offset of the machine can move the UTC instant out of range
+                    writer.WriteLine("var utcTicks = dateTime.Ticks - offset.Ticks;");
+                    using (writer.BeginBlock("if (utcTicks < global::System.DateTime.MinValue.Ticks || utcTicks > global::System.DateTime.MaxValue.Ticks)"))
+                    {
+                        writer.WriteLine($"throw new {TomlNamespace}.TomlException(\"The local date-time \" + dateTime.ToString(\"O\", global::System.Globalization.CultureInfo.InvariantCulture) + \" cannot be written as an offset date-time because its UTC offset \" + offset.ToString() + \" moves it out of range.\");");
+                    }
+
                     writer.WriteLine("var dateTimeOffset = new global::System.DateTimeOffset(global::System.DateTime.SpecifyKind(dateTime, global::System.DateTimeKind.Unspecified), offset);");
                     writer.WriteLine($"writer.WriteDateTimeValue(new {TomlNamespace}.TomlDateTime(dateTimeOffset, GetSecondPrecision(dateTime.Ticks), kind));");
                     break;

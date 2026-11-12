@@ -698,6 +698,16 @@ public class YamlSerializerContextGeneratorDiagnosticTests
             {
                 [YamlSerializable(typeof(Item))]
                 internal sealed partial class @class : YamlSerializerContext;
+
+                [YamlSerializable(typeof(Item))]
+                internal sealed partial class AppContext : YamlSerializerContext;
+            }
+
+            // Names that would collide with the contexts above if the punctuation of the type names were replaced
+            public partial class GenericOuter_T_
+            {
+                [YamlSerializable(typeof(Item))]
+                internal sealed partial class AppContext : YamlSerializerContext;
             }
             """;
 
@@ -708,6 +718,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         Assert.Contains("partial class Outer", result.GeneratedSource, StringComparison.Ordinal);
         Assert.Contains("partial struct Inner", result.GeneratedSource, StringComparison.Ordinal);
         Assert.Contains("partial class GenericOuter<T>", result.GeneratedSource, StringComparison.Ordinal);
+        Assert.Contains("partial class GenericOuter_T_", result.GeneratedSource, StringComparison.Ordinal);
     }
 
     [Fact]

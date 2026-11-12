@@ -271,17 +271,37 @@ public sealed partial class YamlSerializerContextGenerator
         };
     }
 
-    // Two contexts can have the same name in different namespaces or containing types
+    // Two contexts can have the same name in different namespaces or containing types. The name is the metadata name of
+    // the context, which keeps the arity of the generic types (Outer`1) and separates the containing types with '+', so
+    // that two different contexts never get the same name.
     private static string GetHintName(INamedTypeSymbol contextSymbol)
     {
-        var name = contextSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "", StringComparison.Ordinal);
-        var builder = new StringBuilder(name.Length + 5);
-        foreach (var c in name)
+        var builder = new StringBuilder();
+        AppendNamespace(builder, contextSymbol.ContainingNamespace);
+        AppendTypeName(builder, contextSymbol);
+        return builder.Append(".g.cs").ToString();
+
+        static void AppendNamespace(StringBuilder builder, INamespaceSymbol? symbol)
         {
-            builder.Append(char.IsLetterOrDigit(c) || c is '.' or '_' ? c : '_');
+            if (symbol is null || symbol.IsGlobalNamespace)
+            {
+                return;
+            }
+
+            AppendNamespace(builder, symbol.ContainingNamespace);
+            builder.Append(symbol.MetadataName).Append('.');
         }
 
-        return builder.Append(".g.cs").ToString();
+        static void AppendTypeName(StringBuilder builder, INamedTypeSymbol symbol)
+        {
+            if (symbol.ContainingType is { } containingType)
+            {
+                AppendTypeName(builder, containingType);
+                builder.Append('+');
+            }
+
+            builder.Append(symbol.MetadataName);
+        }
     }
 
     /// <summary>Gets the metadata type exposed for <paramref name="type"/>.</summary>

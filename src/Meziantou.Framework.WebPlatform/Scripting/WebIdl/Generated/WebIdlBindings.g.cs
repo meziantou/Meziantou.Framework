@@ -2117,6 +2117,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_WebCodecs_PlaneLayout__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_WebCodecs_PlaneLayout__, static (r, v) => r.FromSequence(v, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_PlaneLayout(r, dictionaryValue) : r.Adapter.Null)));
+                return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, bool>>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_System_Collections_Generic_KeyValuePair_string__bool___:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_System_Collections_Generic_KeyValuePair_string__bool___, static (r, v) => r.FromSequence(v, static (r, e) => r.ToJs((object?)e)));
                 return true;

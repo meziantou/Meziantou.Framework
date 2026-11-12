@@ -675,16 +675,49 @@ public partial class Document
     internal static string GetPreloadKey(FetchRequest request) => string.Join(' ', request.Destination, request.Mode, request.CredentialsMode, request.Url.Serialize());
 
     /// <summary>
-    /// The style sheets fetched by the link elements of the document, by preload key: as in the browsers (memory cache), a
-    /// link element whose style sheet was already fetched does not fetch it again, and its style sheet applies synchronously.
+    /// The style sheets fetched by the link elements of the document, by preload key, with the time they were received: as in
+    /// the browsers (memory cache), a link element whose style sheet was already fetched does not fetch it again, and its
+    /// style sheet applies synchronously.
     /// </summary>
-    private Dictionary<string, DocumentResource>? _cachedStyleSheets;
+    private Dictionary<string, (DocumentResource Response, DateTimeOffset Time)>? _cachedStyleSheets;
 
-    internal void AddCachedStyleSheet(string key, DocumentResource response) => (_cachedStyleSheets ??= new(StringComparer.Ordinal))[key] = response;
+    internal void AddCachedStyleSheet(string key, DocumentResource response) => (_cachedStyleSheets ??= new(StringComparer.Ordinal))[key] = (response, GetMemoryCacheTime());
 
+    /// <summary>
+    /// The style sheet of a preload key in the memory cache. As in the browsers, once the document is loaded, a style sheet
+    /// whose response must not be reused without validation (<c>no-store</c>, <c>no-cache</c>, or an explicit freshness that
+    /// expired, see <see cref="HttpCache"/>) is fetched again: it goes through the HTTP cache.
+    /// </summary>
     internal bool TryGetCachedStyleSheet(string key, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out DocumentResource? response)
     {
         response = null;
-        return _cachedStyleSheets is not null && _cachedStyleSheets.TryGetValue(key, out response);
+        if (_cachedStyleSheets is null || !_cachedStyleSheets.TryGetValue(key, out var entry))
+            return false;
+
+        if (CompletelyLoaded && MustRevalidate(entry.Response, entry.Time))
+        {
+            _cachedStyleSheets.Remove(key);
+            return false;
+        }
+
+        response = entry.Response;
+        return true;
     }
+
+    private bool MustRevalidate(DocumentResource response, DateTimeOffset time)
+    {
+        var headers = response.Headers;
+        var directives = HttpCache.ParseCacheControl(headers);
+        if (directives.ContainsKey("no-store") || directives.ContainsKey("no-cache"))
+            return true;
+
+        // A response without explicit freshness is reused while the document lives
+        if (!directives.ContainsKey("max-age") && HeaderList.Get(headers, "Expires") is null)
+            return false;
+
+        var entry = new HttpCacheEntry(IncludeCredentials: false, [], response.StatusCode, "", headers, [], time, time);
+        return !HttpCache.IsFresh(entry, [], GetMemoryCacheTime());
+    }
+
+    private DateTimeOffset GetMemoryCacheTime() => (BrowsingContext?.EventLoop.TimeProvider ?? TimeProvider.System).GetUtcNow();
 }

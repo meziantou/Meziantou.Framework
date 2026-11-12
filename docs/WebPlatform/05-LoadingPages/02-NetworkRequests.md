@@ -140,6 +140,9 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   200-299 range is a network error.
 - The library reads the headers that change the document: `Content-Security-Policy`, `Referrer-Policy`, `Refresh`,
   `Link` (preloads), `X-Frame-Options`, `Content-Language`, `Document-Policy`... The other headers are ignored.
+- The responses are stored in an HTTP cache shared by the browsing contexts of the loader, as in a browser: a fresh
+  response is used without a request, a stale one is revalidated with `If-None-Match` and `If-Modified-Since`, and a stale
+  response within its `stale-while-revalidate` window is used while a request revalidates it in the background.
 - [Document Policy](https://wicg.github.io/document-policy/) is applied as in Chromium: `Document-Policy: sync-xhr=?0`
   makes the synchronous `XMLHttpRequest` requests fail, and `Document-Policy-Report-Only` reports them
   (`document-policy-violation` reports). A page requires a policy from the pages of its frames with the

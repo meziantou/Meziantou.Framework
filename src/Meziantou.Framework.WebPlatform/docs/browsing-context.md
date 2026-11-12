@@ -1357,9 +1357,16 @@ response with `Pragma: no-cache` is validated unless it is `immutable`, as in th
 with `If-None-Match` and `If-Modified-Since`, and a `304` response updates its headers. `Vary` selects the stored
 response, and a successful response to an unsafe method invalidates the URL and its `Location` and `Content-Location`. The
 `cache` option of `fetch()` sets the cache mode (`default`, `no-store`, `reload`, `no-cache`, `force-cache`,
-`only-if-cached`). A body read as it arrives is stored once it is fully read. The partial responses (`206`), the
-`stale-while-revalidate` and `No-Vary-Search` headers are not supported. The requests are handled by the service workers
-(see [Service workers](#service-workers)), and checked by the `connect-src` directive of the content security policies (see [Content security policy](#content-security-policy)).
+`only-if-cached`). A body read as it arrives is stored once it is fully read. A stale response within its
+`stale-while-revalidate` window ([RFC 5861](https://httpwg.org/specs/rfc5861.html)) is used, and a copy of the request
+revalidates it in the background (one at a time per request), unless the response must be revalidated or the request
+sets a maximum age (e.g. the `no-cache` mode): as in the browsers, the revalidation is not handled by the service workers,
+is not checked by the content security policies and has no resource timing entry. The partial responses (`206`) and the
+`No-Vary-Search` header are not supported. As in the browsers (memory cache), a style sheet already fetched by a `link`
+element of the document is not fetched again; once the document is loaded, a style sheet whose response has
+`no-store`, `no-cache` or an explicit freshness that expired goes through the HTTP cache again. The requests are handled
+by the service workers (see [Service workers](#service-workers)), and checked by the `connect-src` directive of the
+content security policies (see [Content security policy](#content-security-policy)).
 
 The fetches of a document are aborted when it is aborted (`window.stop()`) or destroyed, except the `keepalive` requests
 (https://fetch.spec.whatwg.org/#request-keepalive-flag), which are still sent by the loader of the browsing context after

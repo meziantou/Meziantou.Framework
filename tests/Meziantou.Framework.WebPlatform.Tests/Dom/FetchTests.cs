@@ -520,6 +520,36 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public async Task HttpCache_StaleWhileRevalidate_UsesTheStaleResponseAndRevalidatesItInTheBackground()
+    {
+        var count = 0;
+        _loader.Handler = request => request.Url == "https://example.com/swr"
+            ? new DocumentResource(Interlocked.Increment(ref count).ToString(System.Globalization.CultureInfo.InvariantCulture)) { Headers = [new("Cache-Control", "max-age=0, stale-while-revalidate=60")] }
+            : null;
+        var document = Load("""
+            <script>
+              (async () => {
+                const results = [];
+                for (let i = 0; i < 2; i++) {
+                  results.push(await (await fetch('swr')).text());
+                }
+
+                document.title = results.join('|');
+              })();
+            </script>
+            """);
+
+        // The second fetch gets the stale response, and the response is revalidated in the background
+        await WaitUntilAsync(() => document.Title.Length > 0 && Volatile.Read(ref count) == 2, () => document.Title + " " + count);
+        Assert.Equal("1|1", document.Title);
+
+        // The revalidated response is used by the next fetch, and a request that sets a maximum age waits for the validation
+        TestScriptEngines.Evaluate(_engine, document.DefaultView!, "(async () => { document.title = await (await fetch('swr')).text() + '|' + await (await fetch('swr', { cache: 'no-cache' })).text(); })()");
+        await WaitUntilAsync(() => document.Title.Split('|').Length == 2 && Volatile.Read(ref count) >= 4, () => document.Title + " " + count);
+        Assert.Equal("2|4", document.Title);
+    }
+
+    [Fact]
     public void HttpCache_CacheModes()
     {
         var count = 0;

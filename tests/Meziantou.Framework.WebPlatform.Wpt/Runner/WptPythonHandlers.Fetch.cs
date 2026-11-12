@@ -7,7 +7,7 @@ using Meziantou.Framework.WebPlatform.Urls;
 
 namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
 
-/// <summary>The handlers of the <c>xhr</c> and <c>fetch/api</c> tests.</summary>
+/// <summary>The handlers of the <c>xhr</c>, <c>fetch/api</c> and <c>fetch/stale-while-revalidate</c> tests.</summary>
 internal static partial class WptPythonHandlers
 {
     private static readonly Dictionary<string, Handler> FetchHandlers = new(StringComparer.Ordinal)
@@ -285,7 +285,70 @@ internal static partial class WptPythonHandlers
         },
         ["/fetch/api/resources/preflight-unterminated-body.py"] = PreflightUnterminatedBody,
         ["/fetch/api/resources/bad-chunk-encoding.py"] = FetchBadChunkEncoding,
+        ["/fetch/stale-while-revalidate/resources/stale-script.py"] = (request, response, stash) =>
+        {
+            if (CountStaleRequests(request, response, stash, "/fetch/stale-while-revalidate/resources/stale-script.py") is null)
+                return;
+
+            var uniqueId = Guid.NewGuid().ToString("N");
+            response.Add("Content-Type", "text/javascript");
+            response.Add("Cache-Control", "private, max-age=0, stale-while-revalidate=60");
+            response.Add("Unique-Id", uniqueId);
+            response.Content = "report('" + uniqueId + "')";
+        },
+        ["/fetch/stale-while-revalidate/resources/stale-css.py"] = (request, response, stash) =>
+        {
+            if (CountStaleRequests(request, response, stash, "/fetch/stale-while-revalidate/resources/stale-css.py") is not { } count)
+                return;
+
+            response.Add("Content-Type", "text/css");
+            response.Add("Cache-Control", "private, max-age=0, stale-while-revalidate=60");
+            response.Content = count > 1 ? "body { background: rgb(255, 0, 0); }" : "body { background: rgb(0, 128, 0); }";
+        },
+        ["/fetch/stale-while-revalidate/resources/stale-image.py"] = (request, response, stash) =>
+        {
+            if (CountStaleRequests(request, response, stash, "/fetch/stale-while-revalidate/resources/stale-image.py") is not { } count)
+                return;
+
+            response.Add("Cache-Control", "private, max-age=0, stale-while-revalidate=60");
+            Respond(response, "image/png", File.ReadAllBytes(Path.Combine(WptPaths.Wpt, "images", count > 1 ? "green-256x256.png" : "green-16x16.png")));
+        },
     };
+
+    /// <summary>
+    /// The counter of the requests of a token of <c>fetch/stale-while-revalidate/resources/stale-*.py</c>: a request with the
+    /// <c>query</c> parameter gets the number of requests in its <c>Count</c> header (and the response is complete, null is
+    /// returned), the other requests increment it and return it.
+    /// </summary>
+    private static int? CountStaleRequests(WptHandlerRequest request, WptHandlerResponse response, WptStash stash, string path)
+    {
+        var token = request.Get("token") ?? "";
+        var isQuery = request.Has("query");
+        int count;
+        lock (stash)
+        {
+            count = stash.TakeValue(token, path) is int value ? value : 0;
+            if (isQuery)
+            {
+                if (count < 2)
+                {
+                    stash.Put(token, count, path);
+                }
+            }
+            else
+            {
+                count++;
+                stash.Put(token, count, path);
+            }
+        }
+
+        if (!isQuery)
+            return count;
+
+        response.Add("Count", count.ToString(CultureInfo.InvariantCulture));
+        response.Content = "";
+        return null;
+    }
 
     // xhr/resources/content.py
     private static void Content(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)

@@ -918,8 +918,17 @@ internal static class Fetching
             storedResponse = cache.Select(cacheKey!, includeCredentials, headers);
             if (storedResponse is not null)
             {
-                if (cacheMode is "force-cache" or "only-if-cached" || HttpCache.IsFresh(storedResponse, headers, now))
+                var freshness = cacheMode is "force-cache" or "only-if-cached" ? HttpCacheFreshness.Fresh : HttpCache.GetFreshness(storedResponse, headers, now);
+                if (freshness == HttpCacheFreshness.Fresh)
                     return CreateCachedResponse(request, storedResponse, includeCredentials);
+
+                // https://httpwg.org/specs/rfc5861.html#n-the-stale-while-revalidate-cache-control-extension: the stale
+                // response is used, and it is revalidated in the background
+                if (freshness == HttpCacheFreshness.StaleWhileRevalidate && cacheMode == "default" && !requestDirectives.ContainsKey("only-if-cached"))
+                {
+                    RevalidateInBackground(request, cache, cacheKey!, storedResponse, headers, includeCredentials);
+                    return CreateCachedResponse(request, storedResponse, includeCredentials);
+                }
 
                 // A stale response is validated with its validators (https://httpwg.org/specs/rfc9111.html#validation.sent);
                 // a response without validator is fetched again. A request whose Cache-Control has only-if-cached does not
@@ -1004,6 +1013,60 @@ internal static class Fetching
         }
 
         return response;
+    }
+
+    /// <summary>
+    /// The background revalidation of a stored response used within its <c>stale-while-revalidate</c> window
+    /// (https://httpwg.org/specs/rfc5861.html#n-the-stale-while-revalidate-cache-control-extension): a copy of the request is
+    /// sent to the network with the validators of the stored response, and its response updates the HTTP cache. As in the
+    /// browsers, the revalidation is not handled by the service workers, is not checked by the content security policies and
+    /// has no resource timing; a single revalidation of a request is in progress at a time.
+    /// </summary>
+    private static void RevalidateInBackground(FetchRequest request, HttpCache cache, string key, HttpCacheEntry storedResponse, List<KeyValuePair<string, string>> requestHeaders, bool includeCredentials)
+    {
+        if (!cache.TryBeginRevalidation(key, includeCredentials))
+            return;
+
+        var revalidationRequest = request.Clone();
+        revalidationRequest.Synchronous = false;
+        revalidationRequest.StreamsBody = false;
+        revalidationRequest.ProcessEarlyHintsResponse = null;
+        _ = RevalidateAsync(revalidationRequest, cache, key, storedResponse, requestHeaders, includeCredentials);
+
+        static async Task RevalidateAsync(FetchRequest request, HttpCache cache, string key, HttpCacheEntry storedResponse, List<KeyValuePair<string, string>> requestHeaders, bool includeCredentials)
+        {
+            try
+            {
+                var headers = new List<KeyValuePair<string, string>>(requestHeaders);
+                var etag = HeaderList.Get(storedResponse.Headers, "ETag");
+                var lastModified = HeaderList.Get(storedResponse.Headers, "Last-Modified");
+                if (etag is not null)
+                {
+                    headers.Add(new("If-None-Match", etag));
+                }
+
+                if (lastModified is not null)
+                {
+                    headers.Add(new("If-Modified-Since", lastModified));
+                }
+
+                var requestTime = GetHttpCacheTime(request);
+                var response = await NetworkFetchAsync(request, headers, includeCredentials, CancellationToken.None).ConfigureAwait(false);
+                if (!response.IsNetworkError)
+                {
+                    UpdateHttpCache(request, response, cache, key, requestHeaders, includeCredentials, etag is not null || lastModified is not null ? storedResponse : null, requestTime, GetHttpCacheTime(request));
+                }
+            }
+#pragma warning disable CA1031 // A failure of the revalidation keeps the stored response
+            catch (Exception)
+#pragma warning restore CA1031
+            {
+            }
+            finally
+            {
+                cache.EndRevalidation(key, includeCredentials);
+            }
+        }
     }
 
     /// <summary>

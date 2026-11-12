@@ -105,6 +105,22 @@ public sealed class JsExportGeneratorTests
                 }
             }
 
+            namespace Sample.HintNames
+            {
+                // Their files have distinct names
+                [JsExport]
+                public partial class @checked { }
+
+                [JsExport]
+                public partial class _checked { }
+
+                [JsExport]
+                public partial class Casing { }
+
+                [JsExport]
+                public partial class casing { }
+            }
+
             namespace Sample.Bindings
             {
                 public partial struct Container
@@ -192,7 +208,7 @@ public sealed class JsExportGeneratorTests
 
         Assert.Empty(result.GeneratorDiagnostics);
         Assert.Empty(result.OutputDiagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
-        Assert.HasCount(8, result.GeneratedSources);
+        Assert.HasCount(12, result.GeneratedSources);
         var tools = Assert.Single(result.GeneratedSources, source => source.Contains("class @Tools", StringComparison.Ordinal));
         Assert.Contains("static partial class @Tools", tools, StringComparison.Ordinal);
         Assert.DoesNotContain("IJsExportable", tools, StringComparison.Ordinal);

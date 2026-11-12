@@ -1043,6 +1043,14 @@ public sealed class JsEngineEmbeddingTests
 
         Assert.Equal("undefined|base", realm.Execute("const hiding = new ExportedHiding(); [typeof hiding.hidden, hiding.shadowed()].join('|')").AsString());
 
+        // An override with [JsName] names the member of a base class that is not exported, not its overloads
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("ExportedRenaming", realm.GetClass(ExportedRenaming.JsClass));
+        }
+
+        Assert.Equal("undefined|derived|x:derived", realm.Execute("const renaming = new ExportedRenaming(); [typeof renaming.describe, renaming.renamed(), renaming.describeWith('x')].join('|')").AsString());
+
         // new returns the object that the .NET constructor created for itself, with the prototype of new.target
         Assert.Equal("true,true,true,true", realm.Execute("""
             const published = new ExportedSelfPublishing();
@@ -1343,6 +1351,21 @@ public sealed partial class ExportedHiding : ExportedHidingBase
     public new string Hidden() => "derived";
 
     internal new string Shadowed() => "derived";
+}
+
+public class ExportedRenamingBase
+{
+    public virtual string Describe() => "base";
+
+    [JsName("describeWith")]
+    public string Describe(string prefix) => prefix + ":" + Describe();
+}
+
+[JsExport]
+public sealed partial class ExportedRenaming : ExportedRenamingBase
+{
+    [JsName("renamed")]
+    public override string Describe() => "derived";
 }
 
 [JsExport]

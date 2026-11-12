@@ -197,7 +197,7 @@ The `Name` of the attribute is the name of the class, or the `Symbol.toStringTag
 A class derived from an exported class can be exported too. Its constructor and its prototype inherit from the ones of
 the base class, so `instanceof` works, and the methods of the base class are defined once, on the base prototype: an
 override runs when a script calls the method of the base class. The public members of the base classes that are not
-exported are members of the derived class.
+exported are members of the derived class: an override with `[JsName]` gives such a member its JavaScript name.
 
 ### Build errors
 

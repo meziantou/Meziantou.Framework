@@ -266,6 +266,9 @@ public sealed class JsExportGenerator : IIncrementalGenerator
 
         // A member of a derived class hides the members of its base classes that have the same name
         var hiddenNames = new HashSet<string>(StringComparer.Ordinal);
+
+        // The virtual members of the walked base classes that an override with [JsName] defines under its own name
+        var renamedMembers = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
         foreach (var walkedType in walkedTypes)
         {
             var declaredNames = new HashSet<string>(StringComparer.Ordinal);
@@ -288,16 +291,40 @@ public sealed class JsExportGenerator : IIncrementalGenerator
                     continue;
                 }
 
+                if (renamedMembers.Contains(member))
+                {
+                    declaredNames.Add(member.Name);
+                    continue;
+                }
+
                 var hasNameAttribute = knownTypes.TryGetJsName(member, out var jsName);
                 if (member.IsOverride)
                 {
-                    // An override is defined by the base class that declares the member, except the members of System.Object
+                    // An override is defined by the base class that declares the member. An override with [JsName] defines it
+                    // under its name when the member is declared by System.Object or by a base class of this binding.
                     var original = GetOriginalDefinition(member);
-                    if (original.ContainingType.SpecialType != SpecialType.System_Object || !hasNameAttribute)
+                    if (!hasNameAttribute || renamedMembers.Contains(original))
                         continue;
+
+                    if (original.ContainingType.SpecialType == SpecialType.System_Object)
+                    {
+                        declaredNames.Add(member.Name);
+                    }
+                    else if (walkedTypes.Contains(original.ContainingType, SymbolEqualityComparer.Default))
+                    {
+                        // Only this member is renamed: the overloads of the base classes keep their names
+                        renamedMembers.Add(original);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    declaredNames.Add(member.Name);
                 }
 
-                declaredNames.Add(member.Name);
                 var location = member.Locations.FirstOrDefault();
                 if (hasNameAttribute && string.IsNullOrWhiteSpace(jsName))
                 {
@@ -593,21 +620,38 @@ public sealed class JsExportGenerator : IIncrementalGenerator
 
     private static string FormatType(ITypeSymbol type) => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
+    // Replacing the characters of the name is not injective (@class and _class), and the compiler compares the hint names
+    // ignoring case: the hash of the name keeps the names of distinct classes distinct
     private static string GetHintName(INamedTypeSymbol type)
     {
-        var name = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        if (name.StartsWith("global::", StringComparison.Ordinal))
-        {
-            name = name.Substring("global::".Length);
-        }
+        var format = SymbolDisplayFormat.FullyQualifiedFormat
+            .WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted)
+            .RemoveMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers);
+        var name = type.ToDisplayString(format);
 
-        var builder = new StringBuilder(name.Length + 16);
+        var builder = new StringBuilder(name.Length + 24);
         foreach (var c in name)
         {
             builder.Append(char.IsLetterOrDigit(c) || c is '.' or '_' ? c : '_');
         }
 
-        return builder.Append(".JsExport.g.cs").ToString();
+        return builder.Append('.').Append(GetStableHash(name).ToString("x8", CultureInfo.InvariantCulture)).Append(".JsExport.g.cs").ToString();
+    }
+
+    // FNV-1a: string.GetHashCode is randomized per process, so the names of the files would change between builds
+    private static uint GetStableHash(string value)
+    {
+        unchecked
+        {
+            var hash = 2166136261;
+            foreach (var c in value)
+            {
+                hash ^= c;
+                hash *= 16777619;
+            }
+
+            return hash;
+        }
     }
 
     private static string Emit(TypeModel model)

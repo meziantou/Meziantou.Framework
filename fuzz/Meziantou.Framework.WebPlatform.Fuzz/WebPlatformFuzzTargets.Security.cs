@@ -1,11 +1,12 @@
 using System.Security.Cryptography;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Urls;
 
 namespace Meziantou.Framework.WebPlatform.Fuzz;
 
 // The parsers of the security features of the fetches: the integrity metadata of Subresource Integrity, the
-// Unencoded-Digest header and the Integrity-Policy header
+// Unencoded-Digest header, the Integrity-Policy header, and the dangling markup flag of the URL parser
 public static partial class WebPlatformFuzzTargets
 {
     private static readonly byte[] IntegrityBody = "window.ran = true;"u8.ToArray();
@@ -23,7 +24,8 @@ public static partial class WebPlatformFuzzTargets
     /// <summary>
     /// Parses integrity metadata, an <c>Unencoded-Digest</c> header and an <c>Integrity-Policy</c> header, and checks the
     /// properties of their results: the metadata without hash matches any body, the metadata of the digest of a body
-    /// matches it, and the policy only has the defined sources and destinations.
+    /// matches it, the policy only has the defined sources and destinations, and the URL parser flags the dangling markup
+    /// of its input.
     /// </summary>
     public static void Integrity(string input)
     {
@@ -58,6 +60,16 @@ public static partial class WebPlatformFuzzTargets
         if (policy.Applies(RequestDestination.Script))
         {
             FuzzAssert.True(policy.Sources.Contains("inline") && policy.BlockedDestinations.Contains(RequestDestination.Script), $"The integrity policy {FuzzAssert.Format(input)} applies to the scripts without blocking them");
+        }
+
+        // The dangling markup flag of a URL is the one of its input
+        foreach (var baseUrl in new[] { "https://example.com/a/b", "data:text/plain,a" })
+        {
+            if (UrlParser.Parse(input, UrlParser.Parse(baseUrl, baseUrl: null)) is { } url)
+            {
+                FuzzAssert.Equal(UrlParser.IsPotentiallyDanglingMarkup(input), url.PotentiallyDanglingMarkup, $"The dangling markup flag of the URL {FuzzAssert.Format(input)}");
+                FuzzAssert.Equal(url.PotentiallyDanglingMarkup, url.Clone().PotentiallyDanglingMarkup, $"The dangling markup flag of the clone of the URL {FuzzAssert.Format(input)}");
+            }
         }
     }
 

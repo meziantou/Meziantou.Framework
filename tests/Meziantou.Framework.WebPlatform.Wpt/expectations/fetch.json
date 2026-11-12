@@ -3641,25 +3641,10 @@
     }
   },
   "fetch/security/dangling-markup/dangling-markup-mitigation.tentative.html": {
-    "total": 31,
-    "failures": {
-      "<img id=\"dangling\" src=\"/images/green-1x1.png?img=&#10;&lt;b\">": "FAIL",
-      "<img id=\"dangling\" src=\"/images/green-1x1.png?img=&lt;&#10;b\">": "FAIL",
-      "Fetch: /images/gre\\nen-1x1.png?img=<": "FAIL",
-      "Fetch: /images/gre\\ren-1x1.png?img=<": "FAIL",
-      "Fetch: /images/gre\\ten-1x1.png?img=<": "FAIL",
-      "Fetch: /images/green-1x1.png?<\\n=block": "FAIL",
-      "Fetch: /images/green-1x1.png?<\\r=block": "FAIL",
-      "Fetch: /images/green-1x1.png?<\\t=block": "FAIL",
-      "\\n      <img id=\"dangling\" src=\"/images/green-1x1.png?img=\\n        &lt;\\n        &#10;b\\n      \">\\n    ": "FAIL"
-    }
+    "total": 31
   },
   "fetch/security/dangling-markup/media.html": {
-    "total": 4,
-    "failures": {
-      "Should not load audio with dangling markup in URL": "FAIL",
-      "Should not load video with dangling markup in URL": "FAIL"
-    }
+    "total": 4
   },
   "fetch/security/dangling-markup/option.html": {
     "total": 6,

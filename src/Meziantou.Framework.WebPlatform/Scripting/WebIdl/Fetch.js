@@ -513,6 +513,9 @@
     request.blob = null;
     request.destination = '';
 
+    // Whether the URL of the request is potentially dangling markup (the URL record keeps it, its serialization does not)
+    request.danglingMarkup = false;
+
     // The request of a fetch event (a navigation): the URLs of its redirects, and the data of the navigation kept by the host
     request.redirectChain = [];
     request.navigation = null;
@@ -558,6 +561,7 @@
         if (parsedUrl.includesCredentials) throw new TypeError_(`Failed to construct 'Request': The URL '${input}' includes credentials`);
         request = createRequest(parsedUrl.href);
         request.blob = hooks.resolveBlobUrl(parsedUrl.href);
+        request.danglingMarkup = parsedUrl.danglingMarkup;
         fallbackMode = 'cors';
       } else {
         request = inputRecord.request;
@@ -587,6 +591,7 @@
       newRequest.historyNavigation = request.historyNavigation;
       newRequest.useCorsPreflight = request.useCorsPreflight;
       newRequest.blob = request.blob;
+      newRequest.danglingMarkup = request.danglingMarkup;
       newRequest.redirectChain = request.redirectChain;
       newRequest.navigation = request.navigation;
       request = newRequest;
@@ -970,6 +975,7 @@
     serialized.keepalive = request.keepalive;
     serialized.integrity = request.integrity;
     serialized.blob = request.blob;
+    serialized.danglingMarkup = request.danglingMarkup;
     serialized.destination = request.destination;
     serialized.origin = request.origin;
     serialized.redirectChain = request.redirectChain;

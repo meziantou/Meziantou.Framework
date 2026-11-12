@@ -185,6 +185,26 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public void Fetch_DanglingMarkup_IsANetworkError()
+    {
+        _loader.Responses["https://example.com/data?%3C"] = new DocumentResource("brace");
+        _loader.Responses["https://example.com/data"] = new DocumentResource("newline");
+        var document = Load("""
+            <script>
+              Promise.all([
+                fetch('data?<').then(r => r.text()),
+                fetch('da\nta').then(r => r.text()),
+                fetch(' \n data \n ').then(r => r.text()),
+                fetch('data?\n<').then(() => 'resolved', e => e.name),
+                fetch('data?<\tx').then(() => 'resolved', e => e.name),
+                fetch(new Request('data?\r<')).then(() => 'resolved', e => e.name),
+              ]).then(results => { document.title = results.join('|'); });
+            </script>
+            """);
+        Assert.Equal("brace|newline|newline|TypeError|TypeError|TypeError", document.Title);
+    }
+
+    [Fact]
     public void Fetch_Abort_RejectsWithTheReason()
     {
         _loader.Responses["https://example.com/data"] = new DocumentResource("data");

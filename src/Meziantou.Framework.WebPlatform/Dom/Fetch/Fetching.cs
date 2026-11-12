@@ -445,6 +445,11 @@ internal static class Fetching
             if (BadPorts.Contains(url.Port >= 0 ? url.Port : url.Scheme == "https" ? 443 : 80))
                 return true;
 
+            // The dangling markup mitigation (https://github.com/whatwg/fetch/pull/519): a URL whose input had a tab or a
+            // newline and a "<" is likely made of the markup that follows an attribute whose quote is not closed
+            if (url.PotentiallyDanglingMarkup)
+                return true;
+
             if (request.Client is { } mixedContentClient && !(request.Mode == RequestMode.Navigate && request.Destination == RequestDestination.Document) && MixedContent.ShouldBlockFetch(mixedContentClient, url))
                 return true;
         }

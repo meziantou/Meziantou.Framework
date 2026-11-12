@@ -133,6 +133,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 SetMember(result, "href", Adapter.FromString(url.Serialize()));
                 SetMember(result, "origin", Adapter.FromString(url.SerializeOrigin()));
                 SetMember(result, "includesCredentials", Adapter.FromBoolean(url.IncludesCredentials));
+                SetMember(result, "danglingMarkup", Adapter.FromBoolean(url.PotentiallyDanglingMarkup));
                 return result;
             });
             // https://url.spec.whatwg.org/#concept-url-blob-entry: the blob of a blob: URL, resolved when the URL is parsed
@@ -234,6 +235,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         foreach (var item in ToList(Adapter.Get(serialized, Key("urlList"))))
         {
             urlList.Add(UrlParser.Parse(Adapter.ToString(item), baseUrl: null)!);
+        }
+
+        // The flag of the URL record that the serialization of the URL does not keep (https://github.com/whatwg/fetch/pull/519)
+        if (Adapter.ToBoolean(Adapter.Get(serialized, Key("danglingMarkup"))))
+        {
+            urlList[0].PotentiallyDanglingMarkup = true;
         }
 
         var body = Adapter.Get(serialized, Key("body"));

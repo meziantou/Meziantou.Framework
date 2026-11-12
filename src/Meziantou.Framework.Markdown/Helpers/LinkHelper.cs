@@ -37,7 +37,7 @@ public static class LinkHelper
     // never keeps them, so they are removed first.
     private static string NormalizeFormD(ReadOnlySpan<char> text)
     {
-        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
         while (!text.IsEmpty)
         {
             var status = Rune.DecodeFromUtf16(text, out var rune, out var length);
@@ -59,7 +59,7 @@ public static class LinkHelper
     /// </summary>
     public static string Urilize(ReadOnlySpan<char> headingText, bool allowOnlyAscii, bool keepOpeningDigits = false)
     {
-        var headingBuffer = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var headingBuffer = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
         bool hasLetter = keepOpeningDigits && headingText.Length > 0 && char.IsLetterOrDigit(headingText[0]);
         bool previousIsSpace = false;
 
@@ -211,7 +211,7 @@ public static class LinkHelper
     public static string UrilizeAsGfm(ReadOnlySpan<char> headingText)
     {
         // Following https://github.com/jch/html-pipeline/blob/master/lib/html/pipeline/toc_filter.rb
-        var headingBuffer = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var headingBuffer = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
         for (int i = 0; i < headingText.Length; i++)
         {
             var c = headingText[i];
@@ -283,7 +283,7 @@ public static class LinkHelper
             }
         }
 
-        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
 
         // ****************************
         // 1. Scan scheme or user email
@@ -721,7 +721,7 @@ public static class LinkHelper
     /// </summary>
     public static bool TryParseTitle<T>(ref T text, out string? title, out char enclosingCharacter) where T : ICharIterator
     {
-        var buffer = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var buffer = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
         enclosingCharacter = '\0';
 
         // a sequence of zero or more characters between straight double-quote characters ("), including a " character only if it is backslash-escaped, or
@@ -803,7 +803,7 @@ public static class LinkHelper
     /// </summary>
     public static bool TryParseTitleTrivia<T>(ref T text, out string? title, out char enclosingCharacter) where T : ICharIterator
     {
-        var buffer = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var buffer = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
         enclosingCharacter = '\0';
 
         // a sequence of zero or more characters between straight double-quote characters ("), including a " character only if it is backslash-escaped, or
@@ -903,7 +903,7 @@ public static class LinkHelper
     {
         bool isValid = false;
         hasPointyBrackets = false;
-        var buffer = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var buffer = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
 
         var c = text.CurrentChar;
 
@@ -1058,7 +1058,7 @@ public static class LinkHelper
     {
         bool isValid = false;
         hasPointyBrackets = false;
-        var buffer = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var buffer = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
 
         var c = text.CurrentChar;
 
@@ -1634,7 +1634,7 @@ public static class LinkHelper
     /// </summary>
     internal static string NormalizeLabel(ReadOnlySpan<char> text)
     {
-        var label = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var label = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
         var previousWhitespace = true;
         for (var i = 0; i < text.Length; i++)
         {
@@ -1677,7 +1677,7 @@ public static class LinkHelper
         {
             return false;
         }
-        var buffer = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var buffer = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
 
         var startLabel = -1;
         var endLabel = -1;
@@ -1797,7 +1797,7 @@ public static class LinkHelper
         {
             return false;
         }
-        var buffer = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var buffer = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
 
         var startLabel = -1;
         var endLabel = -1;

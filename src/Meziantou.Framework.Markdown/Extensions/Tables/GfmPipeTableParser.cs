@@ -331,7 +331,7 @@ internal sealed class GfmPipeTableParser : BlockParser
     internal static int[]? UnescapePipes(ref StringSlice text)
     {
         if (text.AsSpan().IndexOf("\\|".AsSpan()) < 0) return null;
-        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
         var offsets = new int[text.Length + 1];
         for (int i = text.Start; i <= text.End; i++)
         {

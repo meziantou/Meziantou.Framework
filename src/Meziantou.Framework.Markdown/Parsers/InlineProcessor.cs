@@ -765,7 +765,7 @@ public class InlineProcessor
                     return _openContainers.GetDeepestContainer();
                 }
 
-                container = unsafe(Unsafe.As<ContainerInline>(lastChild));
+                container = (ContainerInline)lastChild;
             }
             else
             {

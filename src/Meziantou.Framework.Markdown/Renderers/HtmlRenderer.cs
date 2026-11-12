@@ -350,11 +350,11 @@ public class HtmlRenderer : TextRendererBase<HtmlRenderer>
                 chars = stackalloc char[] { c };
             }
 
-            Span<byte> utf8Buffer = unsafe(stackalloc byte[4]);
+            Span<byte> utf8Buffer = stackalloc byte[4];
             int utf8Length = Encoding.UTF8.GetBytes(chars, utf8Buffer);
             utf8Buffer = utf8Buffer.Slice(0, utf8Length);
 
-            Span<char> escapedBuffer = unsafe(stackalloc char[3]);
+            Span<char> escapedBuffer = stackalloc char[3];
             escapedBuffer[0] = '%';
 
             foreach (byte b in utf8Buffer)

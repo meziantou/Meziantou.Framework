@@ -782,7 +782,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
 
             foreach (var pseudoElement in (ReadOnlySpan<string>)["before", "after"])
             {
-                if (!engine.MayHavePseudoElementRules(element, pseudoElement))
+                if (!engine.MayHaveGeneratedContent(element, pseudoElement))
                     continue;
 
                 var pseudoStyle = engine.GetStyle(element, pseudoElement);

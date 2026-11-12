@@ -490,6 +490,46 @@ internal sealed partial class StyleEngine
     }
 
     /// <summary>
+    /// Returns whether a pseudo-element of an element may have a content, and so generate a box: like
+    /// <see cref="MayHavePseudoElementRules(Element, string)"/>, but for <c>::before</c> and <c>::after</c>, only the candidate rules
+    /// that declare <c>content</c> are checked (see <see cref="CascadeRuleSet.DeclaresContent"/>): a rule such as
+    /// <c>*::before { box-sizing: border-box }</c> would otherwise compute the style of the pseudo-elements of every element.
+    /// </summary>
+    public bool MayHaveGeneratedContent(Element element, string pseudoElement)
+    {
+        if (pseudoElement is not ("before" or "after"))
+            return MayHavePseudoElementRules(element, pseudoElement);
+
+        EnsureUpToDate();
+        if (_styles.ContainsKey((element, pseudoElement)) || _document.AnimationsOrNull?.GetElementAnimations(element)?.Get(pseudoElement) is not null)
+            return true;
+
+        if (element.GetRoot() is not Dom.Document || element.AttachedShadowRoot is not null || element.Slottable?.AssignedSlot is not null)
+            return true;
+
+        return MayHaveContentRules(GetUserAgentRuleSet(_document, _environment!), element, pseudoElement) || MayHaveContentRules(GetTreeStyles(_document).Rules, element, pseudoElement);
+    }
+
+    private bool MayHaveContentRules(CascadeRuleSet ruleSet, Element element, string pseudoElement)
+    {
+        if (!ruleSet.HasContentPseudoElementRules)
+            return false;
+
+        foreach (var rules in ruleSet.GetCandidates(element))
+        {
+            foreach (var rule in rules)
+            {
+                // (the selectors are not matched: the boxes of an element whose pseudo-elements have no style are not rebuilt
+                // when only the style of an ancestor or the state of the element changes, so the result must not depend on them)
+                if (string.Equals(rule.PseudoElement, pseudoElement, StringComparison.Ordinal) && ruleSet.DeclaresContent(rule))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Returns whether an author style rule may apply to a pseudo-element of an element (by the name of the pseudo-element of
     /// the rules, e.g. <c>scroll-button</c>), like <see cref="MayHavePseudoElementRules(Element, string)"/> without the rules of
     /// the user agent: for the pseudo-elements that the user agent style sheet styles for every element but that only exist when
@@ -2298,7 +2338,11 @@ internal sealed partial class StyleEngine
         var elementAnimations = _document.AnimationsOrNull?.GetElementAnimations(element);
         foreach (var pseudoElement in pseudoElements)
         {
-            if (elementAnimations?.Get(pseudoElement) is not null || MayHaveAnimatedPseudoElementRules(element, pseudoElement))
+            // A ::before or ::after pseudo-element that no rule gives a content does not exist: it has no transition or animation
+            // (e.g. the rules of a reduced motion reset, *, ::before, ::after { transition-duration: 0s }, do not compute the
+            // styles of the pseudo-elements of all the elements)
+            if (elementAnimations?.Get(pseudoElement) is not null
+                || (MayHaveAnimatedPseudoElementRules(element, pseudoElement) && (pseudoElement is not ("before" or "after") || MayHaveGeneratedContent(element, pseudoElement))))
             {
                 _ = GetStyleCore(element, pseudoElement);
             }

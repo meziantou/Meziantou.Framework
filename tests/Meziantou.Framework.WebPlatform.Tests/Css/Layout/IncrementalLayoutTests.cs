@@ -88,6 +88,18 @@ public sealed class IncrementalLayoutTests : IDisposable
     }
 
     [Fact]
+    public void GeneratedContent_FollowsTheChangesOfTheAncestorsAndOfTheAttributes()
+    {
+        // (only the candidate rules of the ::before and ::after pseudo-elements that declare content compute their styles: the
+        // rules whose ancestors or attributes do not match yet must still be found by the patch)
+        var document = Parse("<style>*, ::before, ::after { box-sizing: border-box } .open li::before { content: '-' } [data-x]::after { content: 'x' }</style><ul id=list><li>a<li>b</ul><p id=p>c</p>");
+        AssertIncremental(document, () => Find(document, "#list").ClassList.Add("open"), patched: null);
+        AssertIncremental(document, () => Find(document, "#p").SetAttribute("data-x", ""), patched: null);
+        AssertIncremental(document, () => Find(document, "#list").ClassList.Remove("open"), patched: null);
+        AssertIncremental(document, () => Find(document, "#p").RemoveAttribute("data-x"), patched: null);
+    }
+
+    [Fact]
     public void InsertedAndRemovedChildren_PatchTheBoxesOfTheParent()
     {
         var document = Parse("<div id=a>a<span>b</span></div><table><tbody id=body><tr><td>1</td></tr></tbody></table><p id=p>c</p>");

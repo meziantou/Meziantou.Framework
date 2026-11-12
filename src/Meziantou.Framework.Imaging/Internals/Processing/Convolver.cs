@@ -45,8 +45,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal static class Convolver
 {
-    // The largest number of taps whose positions, weights and rows are kept on the stack (16 KB) to be summed a block at a time
-    private const int MaxBlockedTaps = 1024;
+    // The largest number of taps whose positions, weights and rows are listed in the scratch of a worker (16 KB) to be summed a block at a time
+    internal const int MaxBlockedTaps = 1024;
 
     // The largest number of rows that the taps summed in one pass over the accumulator read
     private const int MaxRowsPerPass = 4;

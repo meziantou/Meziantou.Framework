@@ -82,6 +82,14 @@ public static class FontsFuzzTargets
     ];
 
     // The tags of the tables shaping reads, and of the features of the target
+    // The characters that change the runs of a text: the bidirectional controls, letters of scripts of both directions,
+    // digits, punctuation and spaces, which take the script and the direction around them, a mark and a character outside the BMP
+    private static readonly string[] SplitRunsTokens =
+    [
+        "\u202A", "\u202B", "\u202C", "\u202D", "\u202E", "\u2066", "\u2067", "\u2068", "\u2069", "\u200E", "\u200F", "\u061C",
+        "a", "\u05D0", "\u0627", "\u0661", "\u0915", "\u4E00", "\u0410", "1", " ", "(", ")", ".", "\u0301", "\U0001F600", "\n",
+    ];
+
     private static readonly string[] ShapingTokens =
     [
         "cmap", "GSUB", "GPOS", "GDEF", "morx", "mort", "kerx", "kern", "feat", "trak", "ankr", "hmtx", "vmtx", "VORG", "maxp",
@@ -95,6 +103,7 @@ public static class FontsFuzzTargets
         new("fonts-hinting-bytecode", HintingBytecode) { Seeds = GetBytecodeSeeds },
         new("fonts-subset", Subset) { Seeds = () => GetFontSeeds().Select((seed, index) => seed with { Data = (byte[])[(byte)index, (byte)(index * 13), .. seed.Data.Span] }) },
         new("fonts-shaping", Shaping) { Seeds = GetShapingSeeds, Dictionary = ShapingTokens },
+        new("fonts-split-runs", SplitRuns) { Seeds = GetSplitRunsSeeds, Dictionary = SplitRunsTokens },
     ];
 
     /// <summary>Hints the glyphs of a font file: option bytes give the hinting mode and the size.</summary>
@@ -247,8 +256,70 @@ public static class FontsFuzzTargets
 
         foreach (var face in faces.Take(2))
         {
+            CheckLineMetrics(face);
             ShapeFace(face, characters, settings, compareWithCache: (flags & 0x08) != 0);
         }
+    }
+
+    /// <summary>
+    /// Splits a text into the runs of the shaper: an option byte gives the direction of the paragraph, then comes the
+    /// text. The runs, in the order of the text, must cover it without overlap, have one level and one script, and
+    /// their order must be the one of the Unicode Bidirectional Algorithm.
+    /// </summary>
+    private static void SplitRuns(ReadOnlySpan<byte> data)
+    {
+        var direction = (UnicodeBidiDirection)(FuzzInput.ReadByte(ref data) % 3);
+        var text = FuzzText.Decode(data);
+        var runs = TextShaper.SplitRuns(text, direction);
+
+        var levels = new byte[text.Length];
+        UnicodeBidi.ResolveLevels(text, direction, levels);
+        var logical = runs.OrderBy(run => run.Index).ToArray();
+        var position = 0;
+        foreach (var run in logical)
+        {
+            FuzzAssert.Equal(position, run.Index, "The runs cover the text without overlap");
+            FuzzAssert.True(run.Length > 0, "A run is not empty");
+            for (var i = run.Index; i < run.Index + run.Length; i++)
+            {
+                FuzzAssert.Equal(run.BidiLevel, levels[i], "A run has one level");
+            }
+
+            position += run.Length;
+        }
+
+        FuzzAssert.Equal(text.Length, position, "The runs cover the text");
+
+        var scripts = new List<UnicodeScriptRun>();
+        foreach (var scriptRun in Unicode.EnumerateScriptRuns(text))
+        {
+            scripts.Add(scriptRun);
+        }
+
+        foreach (var run in logical)
+        {
+            FuzzAssert.True(scripts.Exists(scriptRun => scriptRun.Index <= run.Index && run.Index + run.Length <= scriptRun.Index + scriptRun.Length && scriptRun.Script == run.Script), "A run is in one script run, and has its script");
+        }
+
+        // The runs are displayed in the order the algorithm gives to their levels
+        var order = new int[logical.Length];
+        UnicodeBidi.GetVisualOrder(logical.Select(run => run.BidiLevel).ToArray(), order);
+        for (var i = 0; i < order.Length; i++)
+        {
+            FuzzAssert.Equal(logical[order[i]], runs[i], "The runs are in the order they are displayed");
+        }
+    }
+
+    // The metrics of a line are the ones of one of the tables that declare them, in the order of precedence
+    private static void CheckLineMetrics(FontFace face)
+    {
+        var metrics = face.GetLineMetrics();
+        var expected = (face.HasOs2 && face.UseTypoMetrics) || ((face.HorizontalAscender, face.HorizontalDescender) == (0, 0) && face.HasOs2 && (face.TypoAscender, face.TypoDescender) != (0, 0))
+            ? new FontLineMetrics(face.TypoAscender, face.TypoDescender, face.TypoLineGap)
+            : (face.HorizontalAscender, face.HorizontalDescender) != (0, 0)
+                ? new FontLineMetrics(face.HorizontalAscender, face.HorizontalDescender, face.HorizontalLineGap)
+                : new FontLineMetrics(face.WinAscent, -face.WinDescent, 0);
+        FuzzAssert.Equal(expected, metrics, "The metrics of a line come from the table the font designates");
     }
 
     private static void ShapeFace(FontFace face, ReadOnlySpan<byte> characters, ShapingSettings settings, bool compareWithCache)
@@ -950,6 +1021,29 @@ public static class FontsFuzzTargets
             }
 
             index++;
+        }
+    }
+
+    // The seeds of the split target: the texts of the unit tests, in each direction
+    private static IEnumerable<FuzzSeed> GetSplitRunsSeeds()
+    {
+        string[] texts =
+        [
+            "",
+            "abc",
+            "Hi \u05E9\u05DC\u05D5\u05DD 42",
+            "\u05D0\u05D1 cd \u05D2",
+            "ab \u0627\u0644 \U0001F600",
+            "\u0627\u0644\u0639\u0631\u0628\u064A\u0629 (\u0661\u0662\u0663) abc \u202Edef\u202C \u2067\u05D0 1\u2069.",
+            "\u0915\u093F\u0924\u093E\u092C \u4E2D\u6587 \u0420\u0443\u0441",
+        ];
+
+        for (var i = 0; i < texts.Length; i++)
+        {
+            for (byte direction = 0; direction < 3; direction++)
+            {
+                yield return FuzzSeed.FromText($"{i}-{direction}", [direction], texts[i]);
+            }
         }
     }
 

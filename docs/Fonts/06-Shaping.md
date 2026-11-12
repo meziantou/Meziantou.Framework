@@ -116,11 +116,33 @@ The glyphs of a right-to-left run are given in the order they are drawn, from th
 
 ## Runs
 
-A run has one font, one script, one language and one direction. Split a text into runs before shaping it:
+A run has one font, one script, one language and one direction. [TextShaper.SplitRuns](cref:Meziantou.Framework.Fonts.TextShaper.SplitRuns) splits a line of text into
+[ShapingRun](cref:Meziantou.Framework.Fonts.ShapingRun) values of one script and one level of the bidirectional algorithm, in the order they are displayed from left to right:
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/TextShaperTests.cs;region=Fonts_SplitRuns;format=md-fenced-code-block;dedent=true -->
+```csharp
+// English, then Hebrew with a number: the runs are given from left to right
+var text = "Hi \u05E9\u05DC\u05D5\u05DD 42";
+var runs = TextShaper.SplitRuns(text);
+
+Assert.Equal(
+[
+    new ShapingRun(Index: 0, Length: 3, UnicodeScript.Latin, BidiLevel: 0),
+    new ShapingRun(Index: 8, Length: 2, UnicodeScript.Hebrew, BidiLevel: 2),
+    new ShapingRun(Index: 3, Length: 5, UnicodeScript.Hebrew, BidiLevel: 1),
+], runs);
+
+// Each run is shaped on its own, with its script and its direction
+Assert.True(runs[2].IsRightToLeft);
+```
+<!-- endref -->
+
+It combines:
 
 - the script runs of [Unicode.EnumerateScriptRuns](cref:Meziantou.Framework.Unicode.EnumerateScriptRuns) (see [Scripts](../Unicode/04-Scripts.md#split-a-text-into-runs-of-one-script));
-- the levels of [UnicodeBidi](cref:Meziantou.Framework.UnicodeBidi), a run having one level (see [Bidirectional text](../Unicode/11-BidirectionalText.md));
-- the characters the font has: give the others to another font.
+- the levels of [UnicodeBidi](cref:Meziantou.Framework.UnicodeBidi), a run having one level (see [Bidirectional text](../Unicode/11-BidirectionalText.md)).
+
+Split the runs further by the characters the font has: give the others to another font.
 
 | Parameter of [Shape](cref:Meziantou.Framework.Fonts.TextShaper.Shape) | Description |
 | --- | --- |

@@ -52,40 +52,17 @@ internal static class TextClusterLayout
         if (text.Length is 0)
             return (clusters, 0);
 
-        var levels = new byte[text.Length];
-        UnicodeBidi.ResolveLevels(text, rightToLeft ? UnicodeBidiDirection.RightToLeft : UnicodeBidiDirection.Auto, levels);
-        var runs = new List<(int Start, int Length, UnicodeScript Script)>();
-        var runLevels = new List<byte>();
-        foreach (var scriptRun in Unicode.EnumerateScriptRuns(text))
-        {
-            var end = scriptRun.Index + scriptRun.Length;
-            var start = scriptRun.Index;
-            while (start < end)
-            {
-                var next = start + 1;
-                while (next < end && levels[next] == levels[start])
-                {
-                    next++;
-                }
-
-                runs.Add((start, next - start, scriptRun.Script));
-                runLevels.Add(levels[start]);
-                start = next;
-            }
-        }
-
-        var order = new int[runs.Count];
-        UnicodeBidi.GetVisualOrder(runLevels.ToArray(), order);
+        var runs = TextShaper.SplitRuns(text, rightToLeft ? UnicodeBidiDirection.RightToLeft : UnicodeBidiDirection.Auto);
         var scale = size / face.UnitsPerEm;
         var features = letterSpacing is 0 ? [] : NoLigatures;
         var x = 0.0;
         lock (ShapingLock)
         {
             var buffer = new GlyphBuffer(face.Data.Environment.Limits);
-            foreach (var index in order)
+            foreach (var run in runs)
             {
-                var (start, length, script) = runs[index];
-                var isRightToLeft = (runLevels[index] & 1) != 0;
+                var (start, length, script, _) = run;
+                var isRightToLeft = run.IsRightToLeft;
                 buffer.Clear();
                 TextShaper.AddText(buffer, text.AsSpan(start, length), start);
                 TextShaper.Shape(buffer, face, script, [], isRightToLeft, features);

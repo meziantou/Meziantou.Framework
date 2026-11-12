@@ -242,12 +242,14 @@ public sealed class FontTests
         // The horizontal header by default.
         var metrics = FontTestSupport.Load(Create()).Metrics;
         Assert.Equal((900, 300, 10), (metrics.Ascent, metrics.Descent, metrics.LineGap));
+        Assert.Equal(new FontLineMetrics(900, -300, 10), FontTestSupport.Load(Create()).Face.GetLineMetrics());
 
         // The typographic values when the font asks for them.
         var typographic = Create();
         typographic.UseTypoMetrics = true;
         metrics = FontTestSupport.Load(typographic).Metrics;
         Assert.Equal((700, 100, 20), (metrics.Ascent, metrics.Descent, metrics.LineGap));
+        Assert.Equal(new FontLineMetrics(700, -100, 20), FontTestSupport.Load(typographic).Face.GetLineMetrics());
 
         // The typographic values when the horizontal header is empty.
         var withoutHeader = Create();
@@ -255,6 +257,7 @@ public sealed class FontTests
         withoutHeader.Descender = 0;
         metrics = FontTestSupport.Load(withoutHeader).Metrics;
         Assert.Equal((700, 100, 20), (metrics.Ascent, metrics.Descent, metrics.LineGap));
+        Assert.Equal(new FontLineMetrics(700, -100, 20), FontTestSupport.Load(withoutHeader).Face.GetLineMetrics());
 
         // The Windows values when nothing else is declared.
         var windowsOnly = Create();
@@ -264,6 +267,7 @@ public sealed class FontTests
         windowsOnly.TypoDescender = 0;
         metrics = FontTestSupport.Load(windowsOnly).Metrics;
         Assert.Equal((1000, 400, 0), (metrics.Ascent, metrics.Descent, metrics.LineGap));
+        Assert.Equal(new FontLineMetrics(1000, -400, 0), FontTestSupport.Load(windowsOnly).Face.GetLineMetrics());
     }
 
     [Fact]

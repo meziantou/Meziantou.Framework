@@ -55,6 +55,7 @@ internal sealed class LsbBitWriter : IDisposable
     /// <summary>Pads the last byte with zero bits.</summary>
     public void Finish()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         if (_countOnly)
         {
             _length += (_bitCount + 7) / 8;
@@ -76,6 +77,7 @@ internal sealed class LsbBitWriter : IDisposable
     /// <exception cref="InvalidOperationException">The stream is not at a byte boundary.</exception>
     public void WriteAlignedBytes(ReadOnlySpan<byte> bytes)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         if (_bitCount != 0)
             throw new InvalidOperationException("The bit stream is not at a byte boundary.");
 
@@ -120,12 +122,17 @@ internal sealed class LsbBitWriter : IDisposable
     public void Dispose()
     {
         _disposed = true;
+
+        // WriteBits checks nothing but the number of pending bits: with 32 of them, its next call flushes, and Flush32
+        // throws. The writes of every size and of the counting writers are rejected without a check in the inlined path
+        _bitCount = 32;
         _buffer?.Dispose();
         _buffer = null;
     }
 
     private void Flush32()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         if (_countOnly)
         {
             _length += 4;

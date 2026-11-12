@@ -67,11 +67,16 @@ internal sealed class PooledPayloadWriter : IDisposable
     }
 
     /// <summary>Forgets the written bytes and keeps the buffer.</summary>
-    public void Reset() => Length = 0;
+    public void Reset()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        Length = 0;
+    }
 
     /// <summary>Forgets the bytes written from <paramref name="length"/>.</summary>
     public void Truncate(int length)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentOutOfRangeException.ThrowIfNegative(length);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(length, Length);
         Length = length;
@@ -80,6 +85,7 @@ internal sealed class PooledPayloadWriter : IDisposable
     /// <summary>Increments the byte at <paramref name="index"/> with carry propagation toward the start (boolean encoder carries).</summary>
     public void PropagateCarry(int index)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         var data = _buffer!.RawBuffer;
         while (index >= 0 && data[index] == byte.MaxValue)
         {

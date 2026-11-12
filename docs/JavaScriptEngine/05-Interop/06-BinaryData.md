@@ -70,7 +70,10 @@ A `SharedArrayBuffer` is the memory that several engines, each on its own thread
 `Atomics` to synchronize them. [JsBinaryData.GetSharedDataBlock](cref:Meziantou.Framework.JavaScriptEngine.JsBinaryData.GetSharedDataBlock) returns the memory of a `SharedArrayBuffer` as a
 [JsSharedDataBlock](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock), and `realm.CreateSharedArrayBuffer(block)` creates a `SharedArrayBuffer` on the same memory in
 another engine. [JsSharedDataBlock.TryCreate](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.TryCreate) creates a block from .NET, and [GetSpan](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.GetSpan) and [GetMemory](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.GetMemory) read and write
-it from .NET.
+it from .NET. [GetReference](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.GetReference), given a byte
+index and a byte count, returns a reference to that range of bytes, to access a value with `Interlocked` or `Volatile`
+as `Atomics` does: it checks that the whole range is in the block, and the first byte of the block is 16-byte aligned, so a value at an
+index that is a multiple of its size is aligned.
 
 `realm.CreateSharedArrayBuffer(block, byteLength)` creates a fixed-length `SharedArrayBuffer` on the first bytes of a
 growable block: it keeps its length when the block grows. [CreateGrowableSharedArrayBuffer](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateGrowableSharedArrayBuffer) creates a growable

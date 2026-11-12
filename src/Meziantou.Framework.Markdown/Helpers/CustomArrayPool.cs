@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Diagnostics;
 using System.Threading;
 
 namespace Meziantou.Framework.Markdown.Helpers;
@@ -46,6 +47,8 @@ internal sealed class CustomArrayPool<T>
                 int index = _index - 1;
                 if ((uint)index < (uint)buffers.Length)
                 {
+                    // A copy of a StringLineGroup shares its array: returning the array twice would give it to two renters
+                    Debug.Assert(Array.IndexOf(buffers, array, index + 1) < 0, "The array is already in the pool");
                     buffers[index] = array;
                     _index = index;
                 }

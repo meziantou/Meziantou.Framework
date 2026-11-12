@@ -133,7 +133,10 @@ public sealed class SecurityProvidersSnapshot
         {
             if (value != default)
             {
-                Marshal.FreeBSTR(value);
+                unsafe
+                {
+                    Marshal.FreeBSTR(value);
+                }
             }
         }
     }

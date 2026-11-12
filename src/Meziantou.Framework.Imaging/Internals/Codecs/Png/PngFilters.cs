@@ -592,6 +592,9 @@ internal static class PngFilters
     private static int UnfilterPixels<TSize>(byte filterType, Span<byte> row, ReadOnlySpan<byte> previous)
         where TSize : struct, IPixelSize
     {
+        // Unfilter only calls this method for rows of at least one vector: "last" would wrap for a shorter row
+        Debug.Assert(row.Length >= Vector128<byte>.Count);
+        Debug.Assert(previous.Length >= row.Length);
         ref var current = ref unsafe(MemoryMarshal.GetReference(row));
         ref var above = ref unsafe(MemoryMarshal.GetReference(previous));
         var step = (nuint)TSize.Value;

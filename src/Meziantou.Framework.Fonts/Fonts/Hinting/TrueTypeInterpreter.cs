@@ -146,7 +146,12 @@ internal sealed partial class TrueTypeInterpreter : IDisposable
         {
             var capacity = Math.Max(pointCount, _glyphCapacity * 2);
             var buffer = _allocator.Rent<HintPoint>(capacity);
-            _glyphBuffer?.Dispose();
+            if (_glyphBuffer is not null)
+            {
+                FontBufferDebug.PoisonMovedStorage(_glyphBuffer);
+                _glyphBuffer.Dispose();
+            }
+
             _glyphBuffer = buffer;
             _glyphCapacity = capacity;
         }
@@ -155,7 +160,12 @@ internal sealed partial class TrueTypeInterpreter : IDisposable
         {
             var capacity = Math.Max(contourCount, _contourCapacity * 2);
             var buffer = _allocator.Rent<int>(capacity);
-            _contourBuffer?.Dispose();
+            if (_contourBuffer is not null)
+            {
+                FontBufferDebug.PoisonMovedStorage(_contourBuffer);
+                _contourBuffer.Dispose();
+            }
+
             _contourBuffer = buffer;
             _contourCapacity = capacity;
         }

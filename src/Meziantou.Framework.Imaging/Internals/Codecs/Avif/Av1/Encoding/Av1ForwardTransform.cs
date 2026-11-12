@@ -17,7 +17,12 @@ internal static class Av1ForwardTransform
     // 2^n points multiply the magnitudes by at most 2^n
     private const int ColumnBits = 22;
 
-    private static readonly int[] SquaredGains = MeasureSquaredGains();
+    // The squared gains of the transform sizes, measured on the transform of a fixed sequence of samples: the measurement is
+    // in Av1ForwardTransformTests.TheSquaredGainsAreMeasuredOnTheTransformOfAResidual, which checks this table
+    private static ReadOnlySpan<int> SquaredGains =>
+    [
+        16378, 16381, 16379, 4094, 244, 16375, 16378, 16382, 16382, 4095, 4095, 527, 483, 16377, 16374, 16378, 16380, 2121, 1927,
+    ];
 
     /// <summary>The one-dimensional operations of the transforms, on the samples of a line or on 4 lines at once.</summary>
     /// <typeparam name="T">A sample, or a vector of the samples of 4 lines.</typeparam>
@@ -1350,40 +1355,6 @@ internal static class Av1ForwardTransform
                 _ => TLanes.ShiftLeft(t[i], 2),
             };
         }
-    }
-
-    // The gains are measured on the transform of a residual, here a fixed sequence of samples
-    private static int[] MeasureSquaredGains()
-    {
-        var gains = new int[Av1Constants.TxSizesAll];
-        Span<int> residual = stackalloc int[64 * 64];
-        Span<int> coefficients = stackalloc int[32 * 32];
-        for (var txSz = 0; txSz < gains.Length; txSz++)
-        {
-            int w = Av1Tables.TxWidth[txSz];
-            int h = Av1Tables.TxHeight[txSz];
-            var state = 12345u;
-            long samples = 0;
-            for (var i = 0; i < w * h; i++)
-            {
-                // A linear congruential generator: the same samples on every platform
-                state = (state * 1664525) + 1013904223;
-                residual[i] = (int)(state >> 24) - 128;
-                samples += (long)residual[i] * residual[i];
-            }
-
-            var count = Math.Min(32, w) * Math.Min(32, h);
-            Forward(residual[..(w * h)], coefficients[..count], txSz, Av1Constants.DctDct);
-            long energy = 0;
-            foreach (var coefficient in coefficients[..count])
-            {
-                energy += (long)coefficient * coefficient;
-            }
-
-            gains[txSz] = (int)Math.Max(1, ((energy << 8) + (samples / 2)) / samples);
-        }
-
-        return gains;
     }
 
     /// <summary>The shifts and the kernels of a transform size and type.</summary>

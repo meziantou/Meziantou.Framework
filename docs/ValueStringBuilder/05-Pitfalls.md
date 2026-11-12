@@ -56,7 +56,6 @@ The rented arrays come from `ArrayPool<char>.Shared`, which every part of the ap
 
 - [RawChars](cref:Meziantou.Framework.ValueStringBuilder.RawChars) returns the whole buffer, not only the content. Everything past [Length](cref:Meziantou.Framework.ValueStringBuilder.Length) is uninitialized pooled memory,
   which may contain text left by a previous user of the array. Use [AsSpan](cref:Meziantou.Framework.ValueStringBuilder.AsSpan) to read the content.
-- Increasing [Length](cref:Meziantou.Framework.ValueStringBuilder.Length) exposes those characters as part of the content.
 - [Clear](cref:Meziantou.Framework.ValueStringBuilder.Clear) and [Dispose](cref:Meziantou.Framework.ValueStringBuilder.Dispose) do not erase the content, and neither does growing the buffer, which returns the previous array
   to the pool with the text it holds: the next code that rents the array can read it. Do not build secrets, such as
   passwords or tokens, in a [ValueStringBuilder](cref:Meziantou.Framework.ValueStringBuilder).

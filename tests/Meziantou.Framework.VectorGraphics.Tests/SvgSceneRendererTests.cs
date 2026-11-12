@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Meziantou.Framework.VectorGraphics.Tests;
 
 public sealed class SvgSceneRendererTests
@@ -40,6 +42,41 @@ public sealed class SvgSceneRendererTests
         Assert.Equal("M0,0 L1,1 C1,2 3,4 5,6 Q7,8 9,10 A5,5 30 1,0 11,12 Z", path.ToString());
         Assert.Equal(6, path.Commands.Count);
         Assert.Equal("M0,0 L1,0 L1,1 L0,1 Z", new PathBuilder().AddRectangle(0, 0, 1, 1).Build().ToString());
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(6)]
+    [InlineData(9)]
+    [InlineData(12)]
+    [InlineData(15)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void SvgNumbers_FastFormatMatchesCustomFormat(int precision)
+    {
+        // The numbers are written without the custom format of .NET when they have 15 significant digits at most
+        double[] values =
+        [
+            0, -0.0, 0.5, -0.5, 1.005, 1.125, 2.675, 369.825, 0.1 + 0.2, 1e-7, -1e-7, 5e-7, 123456.789, 99999.995, 0.000123456,
+            999_999_999_999.9, 1e14, 99_999_999_999_999, 999_999_999_999_999, 1e15, 1e16, 1e22, 1e300, -1e300, double.Epsilon,
+            double.MaxValue, double.MinValue, double.NaN, double.PositiveInfinity, double.NegativeInfinity,
+        ];
+        var random = new Random(precision);
+        var generated = Enumerable.Range(0, 20_000).Select(i => (i % 4) switch
+        {
+            0 => (random.NextDouble() - 0.5) * 2000,
+            1 => Math.Round((random.NextDouble() - 0.5) * 2000, random.Next(0, 8), MidpointRounding.ToEven) + ((random.NextDouble() - 0.5) * 1e-9),
+            2 => (random.NextDouble() - 0.5) * Math.Pow(10, random.Next(-10, 18)),
+            _ => BitConverter.Int64BitsToDouble(random.NextInt64()),
+        });
+
+        foreach (var value in values.Concat(generated))
+        {
+            Assert.Equal(SvgNumber.FormatSlow(value, precision), SvgNumber.Format(value, precision));
+        }
     }
 
     [Fact]

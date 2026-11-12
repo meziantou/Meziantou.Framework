@@ -1078,8 +1078,12 @@ internal static partial class TextShaper
     /// <summary>The word-separator characters (https://drafts.csswg.org/css-text-4/#word-separator).</summary>
     internal static bool IsWordSeparator(int codePoint) => codePoint is 0x20 or 0xA0 or 0x1361 or 0x10100 or 0x10101 or 0x1039F or 0x1091F;
 
-    /// <summary>The glyphs, the font runs and the ligature carets written by the shaping, in arrays rented from the shared pool.</summary>
-    private struct GlyphWriter : IDisposable
+    /// <summary>
+    /// The glyphs, the font runs and the ligature carets written by the shaping, in arrays rented from the shared pool. A ref
+    /// struct, so it cannot be boxed, stored on the heap or captured, and cannot outlive the shaping. It can still be copied:
+    /// a copy shares the rented arrays, so the shaping passes it by reference and disposes only the writer it created.
+    /// </summary>
+    private ref struct GlyphWriter : IDisposable
     {
         private ShapedGlyph[] _glyphs;
         private int _count;

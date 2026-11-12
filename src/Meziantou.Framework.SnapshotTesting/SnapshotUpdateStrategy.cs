@@ -331,7 +331,7 @@ public abstract class SnapshotUpdateStrategy
         if (expectedLength < 0 || expectedLength > Array.MaxLength)
             return CopyToEnd(stream, prefix: []);
 
-        var buffer = expectedLength is 0 ? [] : GC.AllocateUninitializedArray<byte>((int)expectedLength);
+        var buffer = expectedLength is 0 ? [] : unsafe(GC.AllocateUninitializedArray<byte>((int)expectedLength));
         var length = stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false);
         if (length < buffer.Length)
             return buffer.AsSpan(0, length).ToArray();

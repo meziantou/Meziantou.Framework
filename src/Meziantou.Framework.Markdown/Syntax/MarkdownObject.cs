@@ -146,14 +146,14 @@ public abstract class MarkdownObject : IMarkdownObject
     private protected T? GetTrivia<T>() where T : class
     {
         object? trivia = _attachedDatas?.Trivia;
-        return unsafe(Unsafe.As<T>(trivia));
+        return (T?)trivia;
     }
 
     private protected T GetOrSetTrivia<T>() where T : class, new()
     {
         var storage = _attachedDatas ??= new DataEntriesAndTrivia();
         storage.Trivia ??= new T();
-        return unsafe(Unsafe.As<T>(storage.Trivia));
+        return (T)storage.Trivia;
     }
 
     private sealed class DataEntriesAndTrivia

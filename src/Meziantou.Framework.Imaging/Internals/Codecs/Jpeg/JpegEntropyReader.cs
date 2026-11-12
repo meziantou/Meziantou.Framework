@@ -245,6 +245,9 @@ internal sealed class JpegEntropyReader : IDisposable
     internal ref struct UncheckedCursor
     {
         private readonly ref byte _data;
+#if DEBUG
+        private readonly int _end;
+#endif
         private int _position;
         private ulong _bits;
         private int _count;
@@ -253,7 +256,11 @@ internal sealed class JpegEntropyReader : IDisposable
         public UncheckedCursor(JpegEntropyReader reader)
         {
             Debug.Assert(!reader._endOfSegment && reader._paddingBits == 0);
+            Debug.Assert(reader._end <= reader._data.Length);
             _data = ref unsafe(MemoryMarshal.GetArrayDataReference(reader._data));
+#if DEBUG
+            _end = reader._end;
+#endif
             _position = reader._start;
             _bits = reader._bits;
             _count = reader._bitCount;
@@ -280,6 +287,10 @@ internal sealed class JpegEntropyReader : IDisposable
         {
             if (_count < 32)
             {
+#if DEBUG
+                // The caller guarantees that the bytes it consumes are buffered, with 16 more (see the remarks of the type)
+                Debug.Assert(_position >= 0 && _position + sizeof(ulong) <= _end);
+#endif
                 _bits |= BinaryPrimitives.ReverseEndianness(unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref _data, _position)))) >> _count;
                 _position += (63 - _count) >> 3;
 

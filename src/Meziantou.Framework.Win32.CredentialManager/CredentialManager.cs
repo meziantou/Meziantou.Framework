@@ -605,6 +605,9 @@ public static class CredentialManager
         if (ptr == IntPtr.Zero)
             return;
 
-        Marshal.FreeCoTaskMem(ptr);
+        unsafe
+        {
+            Marshal.FreeCoTaskMem(ptr);
+        }
     }
 }

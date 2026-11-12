@@ -14,7 +14,8 @@ namespace Meziantou.Framework.VectorGraphics.Fuzz;
 /// combining transforms agrees with moving or transforming the points; converting a path to cubic curves keeps its ends
 /// and its shape. A font file loads or throws a
 /// <see cref="Fonts.FontException"/>; the fonts of a scene resolve every family to one of their faces, measure a text
-/// as the sum of its runs, and give a well-formed SVG whatever the families hold.
+/// as the sum of its runs, and give a well-formed SVG whatever the families hold. The numbers of the SVG are written as
+/// the custom format of .NET writes them.
 /// </summary>
 public static partial class VectorGraphicsFuzzTargets
 {
@@ -46,6 +47,7 @@ public static partial class VectorGraphicsFuzzTargets
         new("vectorgraphics-svg-features", SvgFeaturesTarget) { Seeds = GetSvgFeaturesSeeds, Dictionary = FeatureTokens },
         new("vectorgraphics-path-measure", PathMeasureTarget) { Seeds = GetPathMeasureSeeds },
         new("vectorgraphics-filter-graph", FilterGraphTarget) { Seeds = GetFilterGraphSeeds, Dictionary = FilterTokens },
+        new("vectorgraphics-number", NumberTarget) { Seeds = GetNumberSeeds },
     ];
 
     /// <summary>
@@ -116,6 +118,10 @@ public static partial class VectorGraphicsFuzzTargets
         var font = new SceneFont(1 + (flags & 0x1F), Weight: (flags & 0x20) != 0 ? SceneFont.BoldWeight : SceneFont.NormalWeight, Italic: (flags & 0x40) != 0);
         var text = FuzzText.Decode(data);
         var measurer = AfmTextMeasurer.Default;
+
+        // An ASCII text is measured without enumerating its grapheme clusters. A leading U+0085, a control without width
+        // that is a cluster of its own, makes the measurer enumerate them: the widths are the same, to the last bit.
+        FuzzAssert.Equal(measurer.Measure("\u0085" + text, font).Width, measurer.Measure(text, font).Width, $"Measure({FuzzAssert.Format(text)}) depends on the path that enumerates the characters");
 
         var lines = TextFitting.Wrap(measurer, text, font, width);
         FuzzAssert.True(lines.Count > 0, "Wrap returned no line");
@@ -544,6 +550,42 @@ public static partial class VectorGraphicsFuzzTargets
         for (var i = 0; i < seeds.Length; i++)
         {
             yield return new FuzzSeed("svg-" + i.ToString(CultureInfo.InvariantCulture), seeds[i]);
+        }
+    }
+
+    /// <summary>
+    /// A number of the SVG (a double, then the number of decimals) is written as the custom format of .NET writes it,
+    /// without allocating when it has 15 significant digits at most.
+    /// </summary>
+    private static void NumberTarget(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < 9)
+            return;
+
+        var value = BitConverter.ToDouble(data[..8]);
+        var precision = data[8] % 16;
+        var expected = SvgNumber.FormatSlow(value, precision);
+        FuzzAssert.Equal(expected, SvgNumber.Format(value, precision), $"Format({value:R}, {precision}) differs from the custom format");
+
+        Span<char> buffer = stackalloc char[SvgNumber.MaxFastLength];
+        if (SvgNumber.TryFormat(value, precision, buffer, out var written))
+        {
+            FuzzAssert.Equal(expected, buffer[..written].ToString(), $"TryFormat({value:R}, {precision}) differs from the custom format");
+        }
+        else
+        {
+            FuzzAssert.True(expected.Length > SvgNumber.MaxFastLength, $"TryFormat({value:R}, {precision}) failed for {FuzzAssert.Format(expected)}");
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetNumberSeeds()
+    {
+        // The values of the unit tests: midpoints, binary approximations, 15 and 16 significant digits, and the limits
+        double[] values = [0, -0.0, 0.5, -1.5, 1.005, 1.125, 2.675, 369.825, 0.1 + 0.2, 1e-7, 99999.995, 999_999_999_999_999, 1e15, 1e22, double.MaxValue, double.Epsilon, double.NaN];
+        byte[] precisions = [0, 2, 3, 6, 15];
+        for (var i = 0; i < values.Length; i++)
+        {
+            yield return new FuzzSeed("number-" + i.ToString(CultureInfo.InvariantCulture), (byte[])[.. BitConverter.GetBytes(values[i]), precisions[i % precisions.Length]]);
         }
     }
 

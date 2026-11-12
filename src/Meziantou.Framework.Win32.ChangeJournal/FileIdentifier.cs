@@ -30,7 +30,7 @@ public readonly struct FileIdentifier : IEquatable<FileIdentifier>
     }
 
     internal FileIdentifier(FILE_ID_128 parentFileReferenceNumber)
-        : this(Unsafe.BitCast<FILE_ID_128, UInt128>(parentFileReferenceNumber))
+        : this(unsafe(Unsafe.BitCast<FILE_ID_128, UInt128>(parentFileReferenceNumber)))
     {
     }
 

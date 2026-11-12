@@ -325,4 +325,46 @@ public sealed class Av1ForwardTransformTests
             Assert.Equal(0, coefficients[i]);
         }
     }
+
+    [Fact]
+    public void TheSquaredGainsAreMeasuredOnTheTransformOfAResidual()
+    {
+        // The gain of a size is the ratio between the energy of the coefficients of a residual, here a fixed sequence of
+        // samples, and the energy of its samples, with 8 fractional bits
+        var residual = new int[64 * 64];
+        var coefficients = new int[32 * 32];
+        var measured = new int[Av1Constants.TxSizesAll];
+        for (var txSz = 0; txSz < measured.Length; txSz++)
+        {
+            int w = Av1Tables.TxWidth[txSz];
+            int h = Av1Tables.TxHeight[txSz];
+            var state = 12345u;
+            long samples = 0;
+            for (var i = 0; i < w * h; i++)
+            {
+                // A linear congruential generator: the same samples on every platform
+                state = (state * 1664525) + 1013904223;
+                residual[i] = (int)(state >> 24) - 128;
+                samples += (long)residual[i] * residual[i];
+            }
+
+            var count = Math.Min(32, w) * Math.Min(32, h);
+            Av1ForwardTransform.Forward(residual.AsSpan(0, w * h), coefficients.AsSpan(0, count), txSz, Av1Constants.DctDct);
+            long energy = 0;
+            foreach (var coefficient in coefficients.AsSpan(0, count))
+            {
+                energy += (long)coefficient * coefficient;
+            }
+
+            measured[txSz] = (int)Math.Max(1, ((energy << 8) + (samples / 2)) / samples);
+        }
+
+        var gains = new int[Av1Constants.TxSizesAll];
+        for (var txSz = 0; txSz < gains.Length; txSz++)
+        {
+            gains[txSz] = Av1ForwardTransform.GetSquaredGain(txSz);
+        }
+
+        Assert.Equal(measured, gains);
+    }
 }

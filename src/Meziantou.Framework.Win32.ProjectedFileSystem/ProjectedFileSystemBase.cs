@@ -724,7 +724,10 @@ public abstract class ProjectedFileSystemBase : IDisposable
                     return HResult.ERROR_HANDLE_EOF;
                 }
 
-                Marshal.Copy(data, 0, writeBuffer, read);
+                unsafe
+                {
+                    Marshal.Copy(data, 0, writeBuffer, read);
+                }
 
                 // Write the data to the file in the local file system.
                 var hr = NativeMethods.PrjWriteFileData(safeHandle,

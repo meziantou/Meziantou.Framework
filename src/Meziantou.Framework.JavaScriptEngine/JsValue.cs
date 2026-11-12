@@ -172,8 +172,7 @@ public readonly struct JsValue : IEquatable<JsValue>
     {
         if (ReferenceEquals(slot.Cell, value.Cell))
         {
-            ref var layout = ref unsafe(Unsafe.As<JsValue, ValueLayout>(ref slot));
-            layout.Number = value._number;
+            SetNumber(ref slot, value._number);
         }
         else
         {
@@ -187,8 +186,7 @@ public readonly struct JsValue : IEquatable<JsValue>
     {
         if (ReferenceEquals(slot.Cell, NumberCell.Instance))
         {
-            ref var layout = ref unsafe(Unsafe.As<JsValue, ValueLayout>(ref slot));
-            layout.Number = value;
+            SetNumber(ref slot, value);
         }
         else
         {
@@ -196,14 +194,12 @@ public readonly struct JsValue : IEquatable<JsValue>
         }
     }
 
-    /// <summary>The fields of <see cref="JsValue"/> (same types, same order) with a writable number.</summary>
-    private struct ValueLayout
-    {
-#pragma warning disable CS0649 // Only the number is written
-        public JsCell? Cell;
-#pragma warning restore CS0649
-        public double Number;
-    }
+    /// <summary>
+    /// Writes the number of the value of a slot in place: the fields of a <see cref="JsValue"/> are readonly, but the slot
+    /// that holds it is writable, so writing the field through a reference to it is writing a new value to the slot.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void SetNumber(ref JsValue slot, double value) => unsafe(Unsafe.AsRef(in slot._number)) = value;
 
     /// <summary>Gets the boolean of a boolean value.</summary>
     /// <exception cref="InvalidOperationException">The value is not a boolean (use <see cref="TryGetBoolean"/>, or <see cref="JsEngine.ToBoolean"/> to convert it).</exception>

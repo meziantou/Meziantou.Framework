@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -103,11 +104,7 @@ internal sealed class Vp8LDecoder : IDisposable
         if (data[0] != Signature)
             throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The WebP lossless (VP8L) signature is 0x{data[0]:X2}, not 0x2F."));
 
-        var bits = unsafe(MemoryMarshal.Read<uint>(data[1..]));
-        if (!BitConverter.IsLittleEndian)
-        {
-            bits = System.Buffers.Binary.BinaryPrimitives.ReverseEndianness(bits);
-        }
+        var bits = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(data[1..]);
 
         var width = (int)(bits & 0x3FFF) + 1;
         var height = (int)((bits >> 14) & 0x3FFF) + 1;
@@ -473,7 +470,10 @@ internal sealed class Vp8LDecoder : IDisposable
         where TCacheMode : struct, ICacheMode
     {
         // The bit reader state is held in locals (registers) and stored back on exit. Pixels and cache entries are addressed
-        // by reference: position < total, hashes and keys < cache size; prefix-code tables are addressed by their built offsets
+        // by reference: position < total, hashes and keys < cache size; prefix-code tables are addressed by their built offsets.
+        // A group is GroupSize codes (GetGroup), whose codes 1 to 4 are read after the first one
+        Debug.Assert(groups.Length >= GroupSize && groups.Length % GroupSize == 0);
+        Debug.Assert(cache.Length is 0 || cache.Length == 1 << cacheBits);
         var reader = _reader;
         reader.Load(out var value, out var bits, out var bytePosition);
         ref var data = ref unsafe(MemoryMarshal.GetArrayDataReference(reader.Data));
@@ -515,6 +515,7 @@ internal sealed class Vp8LDecoder : IDisposable
                     argb = ((uint)alpha << 24) | ((uint)red << 16) | ((uint)code << 8) | (uint)blue;
                 }
 
+                Debug.Assert(cacheSize is 0 || ColorCacheHash(argb, cacheBits) < (uint)cacheSize);
                 unsafe
                 {
                     Unsafe.Add(ref output, position++) = argb;
@@ -583,6 +584,7 @@ internal sealed class Vp8LDecoder : IDisposable
                 // Every pixel goes into the cache, this one included (as libwebp does): this only changes the cache when the
                 // key reads an entry that was never written, whose zero value belongs to slot 0
                 var argb = Unsafe.Add(ref cacheEntries, key);
+                Debug.Assert(ColorCacheHash(argb, cacheBits) < (uint)cacheSize);
                 Unsafe.Add(ref output, position++) = argb;
                 Unsafe.Add(ref cacheEntries, (int)ColorCacheHash(argb, cacheBits)) = argb;
             }

@@ -30,8 +30,10 @@ internal static class WordBoundaries
         var count = CountCodePoints(text);
         int[]? rentedIndexes = null;
         byte[]? rentedProperties = null;
-        var indexes = count <= 256 ? stackalloc int[count * 3] : (rentedIndexes = ArrayPool<int>.Shared.Rent(count * 3));
-        var properties = count <= 256 ? stackalloc byte[count] : (rentedProperties = ArrayPool<byte>.Shared.Rent(count));
+        // Short texts on the stack (up to 1 KB), the others in rented arrays
+        const int MaxStackCount = 80;
+        var indexes = count <= MaxStackCount ? stackalloc int[count * 3] : (rentedIndexes = ArrayPool<int>.Shared.Rent(count * 3));
+        var properties = count <= MaxStackCount ? stackalloc byte[count] : (rentedProperties = ArrayPool<byte>.Shared.Rent(count));
         try
         {
             var starts = indexes[..count];

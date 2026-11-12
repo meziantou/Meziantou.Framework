@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -278,6 +279,10 @@ internal static class HevcInverseTransform
     /// <param name="pairs">A scratch of 16 vectors.</param>
     private static void ColumnTransform(ReadOnlySpan<short> source, int stride, int column, int log2Size, int last, Span<Vector128<int>> sums, Span<Vector128<short>> pairs)
     {
+        // The loops below read sums, pairs and OddWeights without bounds checks
+        Debug.Assert(log2Size is >= 3 and <= 5);
+        Debug.Assert(sums.Length >= 2 << log2Size);
+        Debug.Assert(pairs.Length >= 1 << (log2Size - 1));
         // The transform of 2 samples: the coefficients 0 and nTbS / 2 of the column (the rows 0 and 16 of transMatrix)
         var half = 1 << (log2Size - 1);
         var (first0, first1) = Vector128.Widen(Vector128.Create(source[column..]));
@@ -288,8 +293,10 @@ internal static class HevcInverseTransform
         sums[3] = (first1 - second1) << 6;
 
         // The transforms of 4 to nTbS samples: the odd part of the transform of n samples has the coefficients
-        // ( 2 * m + 1 ) * nTbS / n of the column, whose products are summed by pairs
+        // ( 2 * m + 1 ) * nTbS / n of the column, whose products are summed by pairs. The weights are indexed from the start
+        // of the array: after the last group of a 32-sample transform, a moving reference would point past its end
         ref var weights = ref unsafe(MemoryMarshal.GetArrayDataReference(OddWeights));
+        var weightIndex = 0;
         for (var log2n = 2; log2n <= log2Size; log2n++)
         {
             var n = 1 << log2n;
@@ -313,7 +320,8 @@ internal static class HevcInverseTransform
                 var low1 = Vector128<int>.Zero;
                 var high1 = Vector128<int>.Zero;
                 ref var pair = ref unsafe(MemoryMarshal.GetReference(pairs));
-                ref var weight = ref weights;
+                Debug.Assert(weightIndex + (n / 2) <= OddWeights.Length);
+                ref var weight = ref unsafe(Unsafe.Add(ref weights, weightIndex));
                 for (var p = 0; p < pairCount; p++)
                 {
                     var first = pair;
@@ -324,7 +332,7 @@ internal static class HevcInverseTransform
                     weight = ref unsafe(Unsafe.Add(ref weight, 1));
                 }
 
-                weights = ref unsafe(Unsafe.Add(ref weights, n / 2));
+                weightIndex += n / 2;
                 Combine(ref unsafe(Unsafe.Add(ref sum, 2 * k)), ref unsafe(Unsafe.Add(ref sum, 2 * (n - 1 - k))), low0, high0);
                 Combine(ref unsafe(Unsafe.Add(ref sum, 2 * (k + 1))), ref unsafe(Unsafe.Add(ref sum, 2 * (n - 2 - k))), low1, high1);
             }
@@ -468,6 +476,10 @@ internal static class HevcInverseTransform
     /// </summary>
     private static void ColumnTransformWide(ReadOnlySpan<short> source, int stride, int column, int log2Size, int last, Span<Vector256<int>> sums, Span<Vector256<short>> pairs)
     {
+        // The loops below read sums, pairs and OddWeights without bounds checks
+        Debug.Assert(log2Size is >= 3 and <= 5);
+        Debug.Assert(sums.Length >= 2 << log2Size);
+        Debug.Assert(pairs.Length >= 1 << (log2Size - 1));
         // The transform of 2 samples: the pairs of the coefficients 0 and nTbS / 2 by ( 64, 64 ) and ( 64, -64 )
         var half = 1 << (log2Size - 1);
         var first = Vector256.Create(source[column..]);
@@ -481,7 +493,9 @@ internal static class HevcInverseTransform
         sums[2] = Avx2.MultiplyAddAdjacent(low, difference);
         sums[3] = Avx2.MultiplyAddAdjacent(high, difference);
 
+        // The weights are indexed from the start of the array, as in ColumnTransform
         ref var weights = ref unsafe(MemoryMarshal.GetArrayDataReference(OddWeights));
+        var weightIndex = 0;
         for (var log2n = 2; log2n <= log2Size; log2n++)
         {
             var n = 1 << log2n;
@@ -505,7 +519,8 @@ internal static class HevcInverseTransform
                 var low1 = Vector256<int>.Zero;
                 var high1 = Vector256<int>.Zero;
                 ref var pair = ref unsafe(MemoryMarshal.GetReference(pairs));
-                ref var weight = ref weights;
+                Debug.Assert(weightIndex + (n / 2) <= OddWeights.Length);
+                ref var weight = ref unsafe(Unsafe.Add(ref weights, weightIndex));
                 for (var p = 0; p < pairCount; p++)
                 {
                     var a = pair;
@@ -520,7 +535,7 @@ internal static class HevcInverseTransform
                     weight = ref unsafe(Unsafe.Add(ref weight, 1));
                 }
 
-                weights = ref unsafe(Unsafe.Add(ref weights, n / 2));
+                weightIndex += n / 2;
                 Combine(ref unsafe(Unsafe.Add(ref output, 2 * k)), ref unsafe(Unsafe.Add(ref output, 2 * (n - 1 - k))), low0, high0);
                 Combine(ref unsafe(Unsafe.Add(ref output, 2 * (k + 1))), ref unsafe(Unsafe.Add(ref output, 2 * (n - 2 - k))), low1, high1);
             }

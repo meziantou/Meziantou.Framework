@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -1319,6 +1320,13 @@ internal sealed class Vp8Encoder : IDisposable
     /// </remarks>
     private double TokenBits(ReadOnlySpan<short> levels, int first, int type, int context)
     {
+        // The offsets of the type, the bands (below 8) and the contexts (below 3) stay inside the table of the 4 types, and
+        // a probability (0 to 255) inside the 257 costs
+        Debug.Assert(type is >= 0 and < 4);
+        Debug.Assert(first is 0 or 1);
+        Debug.Assert(context is >= 0 and < 3);
+        Debug.Assert(_probabilities.Length >= 4 * 8 * 3 * Vp8Tables.TokenNodes);
+        Debug.Assert(BitCosts.Length == 257);
         levels = levels[..16];
         ref var probabilities = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_probabilities), type * 8 * 3 * Vp8Tables.TokenNodes));
         ref var costs = ref unsafe(MemoryMarshal.GetArrayDataReference(BitCosts));

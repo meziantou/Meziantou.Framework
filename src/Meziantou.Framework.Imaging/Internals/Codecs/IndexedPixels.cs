@@ -93,8 +93,10 @@ internal static class IndexedPixels
 
         var bytesPerPixel = rgba ? 4 : 3;
         ArgumentOutOfRangeException.ThrowIfLessThan(palette.Length, 1 << bitsPerIndex, nameof(palette));
-        ArgumentOutOfRangeException.ThrowIfLessThan(packed.Length, ((width * bitsPerIndex) + 7) / 8, nameof(packed));
-        ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, width * bytesPerPixel, nameof(destination));
+
+        // In 64 bits: the products of a large width would wrap around in 32 bits and pass the checks
+        ArgumentOutOfRangeException.ThrowIfLessThan(packed.Length, (((long)width * bitsPerIndex) + 7) / 8, nameof(packed));
+        ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, (long)width * bytesPerPixel, nameof(destination));
 
         // Every index is below 2^bitsPerIndex and every color is written with one 4-byte store: the colors of a 3-byte
         // destination overlap by one byte, which the next color overwrites, and the last one is written byte by byte

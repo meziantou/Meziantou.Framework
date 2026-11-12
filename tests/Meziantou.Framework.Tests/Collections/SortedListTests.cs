@@ -484,6 +484,22 @@ public sealed class SortedListTests
     }
 
     [Fact]
+    public void AddRange_CollectionCopyingFewerItemsThanCount()
+    {
+        // Leave recognizable values in the shared pool: a pooled buffer of the same size would expose them
+        var pooled = System.Buffers.ArrayPool<int>.Shared.Rent(3);
+        pooled.AsSpan().Fill(42);
+        System.Buffers.ArrayPool<int>.Shared.Return(pooled);
+
+        var list = new SortedList<int> { 1 };
+
+        list.AddRange(new CollectionCopyingFewerItemsThanCount(count: 3, writtenItem: 5));
+
+        Assert.Equal([0, 0, 1, 5], list);
+        Assert.DoesNotContain(42, list);
+    }
+
+    [Fact]
     public void AddRange_CustomComparer()
     {
         var list = new SortedList<string>(StringComparer.OrdinalIgnoreCase) { "b", "D" };
@@ -526,5 +542,29 @@ public sealed class SortedListTests
 
         list.Clear();
         Assert.Empty(list);
+    }
+
+    private sealed class CollectionCopyingFewerItemsThanCount(int count, int writtenItem) : ICollection<int>
+    {
+        public int Count => count;
+
+        public bool IsReadOnly => true;
+
+        public void CopyTo(int[] array, int arrayIndex) => array[arrayIndex] = writtenItem;
+
+        public IEnumerator<int> GetEnumerator()
+        {
+            yield return writtenItem;
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public void Add(int item) => throw new NotSupportedException();
+
+        public void Clear() => throw new NotSupportedException();
+
+        public bool Contains(int item) => item == writtenItem;
+
+        public bool Remove(int item) => throw new NotSupportedException();
     }
 }

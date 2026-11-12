@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -97,6 +98,7 @@ internal readonly ref struct JpegXlMaTreeTable
 
         // The leaves of each subtree, numbered from left to right: the leaves under each node are counted from the last
         // node (the children follow their parent), then each node gives its first leaf to its children
+        Debug.Assert(nodes.Length <= MaxNodeCount);
         Span<int> leafCounts = stackalloc int[nodes.Length];
         Span<int> firstLeaves = stackalloc int[nodes.Length];
         for (var i = nodes.Length - 1; i >= 0; i--)

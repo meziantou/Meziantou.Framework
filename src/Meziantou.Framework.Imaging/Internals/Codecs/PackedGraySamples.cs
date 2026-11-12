@@ -29,7 +29,8 @@ internal static class PackedGraySamples
         if (width <= 0)
             return;
 
-        ArgumentOutOfRangeException.ThrowIfLessThan(packed.Length, ((width * bits) + 7) / 8, nameof(packed));
+        // In 64 bits: the product of a large width would wrap around in 32 bits and pass the check
+        ArgumentOutOfRangeException.ThrowIfLessThan(packed.Length, (((long)width * bits) + 7) / 8, nameof(packed));
         ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, width, nameof(destination));
 
         var samplesPerByte = 8 / bits;

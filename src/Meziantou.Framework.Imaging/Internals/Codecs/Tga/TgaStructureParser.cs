@@ -217,8 +217,13 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
             _storedRow = null;
             _sourceRow?.Dispose();
             _sourceRow = null;
-            _colorMap?.Dispose();
-            _colorMap = null;
+            if (_colorMap is not null)
+            {
+                // The layout outlives the parser (the decoder keeps it): it must not keep a view of the returned buffer
+                Layout.ReleaseColorMapStorage();
+                _colorMap.Dispose();
+                _colorMap = null;
+            }
         }
 
         base.Dispose(disposing);

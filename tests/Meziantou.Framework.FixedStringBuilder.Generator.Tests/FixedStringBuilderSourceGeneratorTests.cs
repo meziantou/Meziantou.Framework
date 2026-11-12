@@ -117,7 +117,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
 
         var generatedCode = string.Join('\n', runResult.Results[0].GeneratedSources.Select(static source => source.SourceText.ToString()));
         Assert.Contains("global::Meziantou.Framework.FixedStringBuilder.IFixedString<global::FixedStringBuilder4>", generatedCode);
-        Assert.Contains("global::Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => AsUnsafeFullSpan();", generatedCode);
+        Assert.Contains("global::Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan() => MemoryMarshal.CreateSpan(", generatedCode);
 
         using var peStream = new MemoryStream();
         var emitResult = compilation.Emit(peStream);
@@ -175,7 +175,7 @@ public sealed class FixedStringBuilderSourceGeneratorTests
 
         var generatedCode = string.Join('\n', runResult.Results[0].GeneratedSources.Select(static source => source.SourceText.ToString()));
         Assert.Contains("public void Clear(bool zeroBuffer)", generatedCode);
-        Assert.Contains("AsUnsafeFullSpan().Clear();", generatedCode);
+        Assert.Contains("AsFullSpan().Clear();", generatedCode);
 
         using var peStream = new MemoryStream();
         var emitResult = compilation.Emit(peStream);
@@ -486,7 +486,11 @@ public sealed class FixedStringBuilderSourceGeneratorTests
         Assert.True(emitResult.Success, diagnostics);
 
         var generatedCode = string.Join('\n', runResult.Results[0].GeneratedSources.Select(static source => source.SourceText.ToString()));
-        Assert.Equal(updatedMemorySafetyRules, generatedCode.Contains("AsUnsafeFullSpan() => unsafe(", StringComparison.Ordinal));
+        Assert.Equal(updatedMemorySafetyRules, generatedCode.Contains("IFixedString.GetUnsafeFullSpan() => unsafe(", StringComparison.Ordinal));
+
+        // The generated code only launders the ref of the storage for the explicit IFixedString implementation
+        Assert.Equal(generatedCode.IndexOf("MemoryMarshal.CreateSpan(", StringComparison.Ordinal), generatedCode.LastIndexOf("MemoryMarshal.CreateSpan(", StringComparison.Ordinal));
+        Assert.Contains("private Span<char> AsFullSpan() => _storage;", generatedCode);
     }
 
     [Fact]

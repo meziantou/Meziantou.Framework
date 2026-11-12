@@ -127,7 +127,7 @@ internal static class NativeMethods
         using var context = new SafeHandleValue(namespaceVirtualizationContext);
         ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS? parameters = extendedParameters == IntPtr.Zero
             ? null
-            : Marshal.PtrToStructure<ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS>(extendedParameters);
+            : unsafe(Marshal.PtrToStructure<ProjFs.PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS>(extendedParameters));
         return ToHResult(PInvoke.PrjCompleteCommand(ToContext(context), commandId, ToHRESULT(completionResult), parameters));
     }
 

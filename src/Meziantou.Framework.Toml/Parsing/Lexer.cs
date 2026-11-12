@@ -1395,11 +1395,10 @@ internal sealed class Lexer
         }
 
         // Scan once until the closing quote, validating that the string has no escapes/newlines/control chars.
-        ref var startRef = ref unsafe(MemoryMarshal.GetReference(remaining));
         var index = 0;
         while ((uint)index < (uint)remaining.Length)
         {
-            var ch = unsafe(Unsafe.Add(ref startRef, index));
+            var ch = remaining[index];
             if (ch == '\"')
             {
                 break;
@@ -1852,6 +1851,7 @@ internal sealed class Lexer
     {
         isInvalidSurrogate = false;
         var span = _text.Span;
+        Debug.Assert((uint)position < (uint)_textLength && _textLength <= span.Length);
         ref var start = ref unsafe(MemoryMarshal.GetReference(span));
         var c1 = unsafe(Unsafe.Add(ref start, position));
         position++;

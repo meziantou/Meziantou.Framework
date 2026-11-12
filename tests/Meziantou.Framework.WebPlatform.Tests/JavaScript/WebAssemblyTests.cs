@@ -32,11 +32,19 @@ public sealed class WebAssemblyTests : IDisposable
         TestScriptEngines.Dispose(_engine);
     }
 
+    // The shared memories can only be cloned by a cross-origin isolated global
+    private static readonly KeyValuePair<string, string>[] CrossOriginIsolationHeaders =
+    [
+        new("Content-Type", "text/html"),
+        new("Cross-Origin-Opener-Policy", "same-origin"),
+        new("Cross-Origin-Embedder-Policy", "require-corp"),
+    ];
+
     /// <summary>The bytes of a module in the text format, as a JavaScript array literal.</summary>
     private static string Wasm(string text) => "new Uint8Array([" + string.Join(',', WasmtimeRuntime.WatToWasm(text)) + "])";
 
     // Runs a script whose promise sets the title of the document
-    private async Task<string> RunAsync(string script, WebPlatformFeatures? features = null, bool withRuntime = true)
+    private async Task<string> RunAsync(string script, WebPlatformFeatures? features = null, bool withRuntime = true, bool crossOriginIsolated = false)
     {
         var context = _contexts.Create(new BrowsingContextOptions
         {
@@ -46,7 +54,10 @@ public sealed class WebAssemblyTests : IDisposable
             UnhandledScriptError = (_, error) => _errors.Add(error),
         });
 
-        var document = context.Navigate("https://example.com/", _ => $"<script>({script})().then(r => document.title = String(r), e => document.title = 'error: ' + e);</script>");
+        var html = $"<script>({script})().then(r => document.title = String(r), e => document.title = 'error: ' + e);</script>";
+        var document = crossOriginIsolated
+            ? context.Navigate("https://example.com/", _ => new DocumentResource(html) { Headers = CrossOriginIsolationHeaders })
+            : context.Navigate("https://example.com/", _ => html);
 
         // The modules are compiled on the thread pool
         await _contexts.EventLoop.RunUntilIdleAsync(TestContext.Current.CancellationToken);
@@ -265,6 +276,27 @@ public sealed class WebAssemblyTests : IDisposable
             """);
 
         Assert.Equal("true,true,262144,true,true|196608,196608,5,true|RangeError,RangeError|65536,false,false,true,true,131072|true|false|196608", result);
+    }
+
+    [Fact]
+    public async Task SharedMemory_ClonesShareTheGrowth()
+    {
+        var result = await RunAsync("""
+            async () => {
+              const memory = new WebAssembly.Memory({ initial: 1, maximum: 4, shared: true });
+              const buffer = memory.buffer;
+              const copy = structuredClone(memory);
+              const copyBuffer = copy.buffer;
+              const grown = [copy.grow(1), memory.grow(1)].join();
+              const copyRefreshed = [copyBuffer.byteLength, copy.buffer === copyBuffer, copy.buffer.byteLength, copy.buffer === copy.buffer, copy.toFixedLengthBuffer() === copy.buffer].join();
+              const memoryBuffer = memory.buffer;
+              new Uint8Array(copy.buffer)[2 * 65536] = 7;
+              const memoryRefreshed = [buffer.byteLength, memoryBuffer === buffer, memoryBuffer.byteLength, new Uint8Array(memoryBuffer)[2 * 65536], copy.grow(0)].join();
+              return [grown, copyRefreshed, memoryRefreshed].join('|');
+            }
+            """, crossOriginIsolated: true);
+
+        Assert.Equal("1,2|65536,false,196608,true,true|65536,false,196608,7,3", result);
     }
 
     [Fact]

@@ -615,13 +615,34 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     internal TValue CreateWasmSharedMemoryBuffer(WebAssemblyMemoryObject memoryObject, bool resizable)
     {
         var dataBlock = memoryObject.SharedDataBlock!;
+        var byteLength = Adapter.GetSharedDataBlockByteLength(dataBlock);
         var buffer = Adapter.RunInRealm(EngineRealm, () => resizable
             ? Adapter.CreateGrowableSharedArrayBuffer(dataBlock, (_, newByteLength) => ResizeWasmMemoryBuffer(memoryObject, newByteLength))
-            : Adapter.CreateFixedLengthSharedArrayBuffer(dataBlock, Adapter.GetSharedDataBlockByteLength(dataBlock)))
+            : Adapter.CreateFixedLengthSharedArrayBuffer(dataBlock, byteLength))
             ?? throw CreateTypeError("The script engine cannot create a SharedArrayBuffer of the bytes of a memory");
         _wasmObjectFreeze ??= EvaluateBuiltIn("Object.freeze");
         Adapter.Call(_wasmObjectFreeze, Adapter.Undefined, [buffer]);
+        if (!resizable)
+        {
+            memoryObject.SharedBufferByteLength = byteLength;
+        }
+
         return buffer;
+    }
+
+    /// <summary>
+    /// https://webassembly.github.io/threads/js-api/#dom-memory-buffer: the buffer of a shared memory reflects the current
+    /// size of its data block, which another <c>WebAssembly.Memory</c> object of the block (e.g. a structured clone, possibly
+    /// in another agent) may have grown: the fixed-length buffer is refreshed when the block has grown since it was created.
+    /// </summary>
+    internal TValue GetWasmMemoryBuffer(WebAssemblyMemoryObject memoryObject)
+    {
+        if (memoryObject is { SharedDataBlock: { } dataBlock, IsBufferResizable: false } && Adapter.GetSharedDataBlockByteLength(dataBlock) != memoryObject.SharedBufferByteLength)
+        {
+            RefreshWasmMemoryBuffer(memoryObject);
+        }
+
+        return (TValue)memoryObject.BufferObject!;
     }
 
     /// <summary>The maximum byte length of the resizable buffer of a memory: the maximum size of the memory.</summary>
@@ -721,7 +742,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     internal TValue ToWasmFixedLengthMemoryBuffer(WebAssemblyMemoryObject memoryObject)
     {
         if (!memoryObject.IsBufferResizable)
-            return (TValue)memoryObject.BufferObject!;
+            return GetWasmMemoryBuffer(memoryObject);
 
         if (memoryObject.IsShared)
         {

@@ -183,7 +183,7 @@ internal static class WebAssemblyBindings<TAdapter, TValue>
             });
             r.DefineOperation(instanceTarget, "toFixedLengthBuffer", 0, static (r, t, _) => r.ToWasmFixedLengthMemoryBuffer(r.This<WebAssemblyMemoryObject>(t, Memory!)));
             r.DefineOperation(instanceTarget, "toResizableBuffer", 0, static (r, t, _) => r.ToWasmResizableMemoryBuffer(r.This<WebAssemblyMemoryObject>(t, Memory!)));
-            r.DefineAttribute(instanceTarget, "buffer", static (r, t) => (TValue)r.This<WebAssemblyMemoryObject>(t, Memory!).BufferObject!, setter: null);
+            r.DefineAttribute(instanceTarget, "buffer", static (r, t) => r.GetWasmMemoryBuffer(r.This<WebAssemblyMemoryObject>(t, Memory!)), setter: null);
         },
     };
 

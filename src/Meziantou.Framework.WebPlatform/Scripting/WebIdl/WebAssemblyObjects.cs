@@ -71,6 +71,12 @@ internal sealed class WebAssemblyMemoryObject
     /// <summary>Whether <see cref="BufferObject"/> is a resizable <c>ArrayBuffer</c> (or a growable <c>SharedArrayBuffer</c>), created by <c>toResizableBuffer()</c>.</summary>
     public bool IsBufferResizable { get; set; }
 
+    /// <summary>
+    /// The byte length of the fixed-length <c>SharedArrayBuffer</c> of a shared memory: the buffer is replaced when the
+    /// memory grows, possibly by another <c>WebAssembly.Memory</c> object of its data block (of another agent).
+    /// </summary>
+    public int SharedBufferByteLength { get; set; }
+
     /// <summary>The realm in which the buffers are created (the realm of the object).</summary>
     public object? Realm { get; set; }
 }

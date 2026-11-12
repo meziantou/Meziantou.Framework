@@ -1030,7 +1030,11 @@ internal sealed partial class HtmlTreeBuilder
             // The fragment parser inserts the children of the root (e.g. the foster-parented elements) in the fragment, which has
             // no registry: the intended parent of the specification is the root
             var registryParent = !IsStreaming && RootInsertionTarget is not null && ReferenceEquals(intendedParent, RootInsertionTarget) ? _openElements[0] : intendedParent;
-            registry = CustomElementRegistry.LookUp(registryParent);
+
+            // An element parsed with the customelementregistry attribute has the null registry, and so have its descendants (the
+            // registry of their intended parent), as in the browsers (the attribute is not specified yet). Setting the attribute
+            // later has no effect.
+            registry = token.HasAttribute("customelementregistry") ? null : CustomElementRegistry.LookUp(registryParent);
         }
 
 

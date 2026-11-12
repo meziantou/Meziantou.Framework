@@ -160,6 +160,7 @@ internal sealed class XmlTreeBuilder
 
         // https://html.spec.whatwg.org/multipage/parsing.html#create-an-element-for-the-token
         string? isValue = null;
+        var nullRegistry = false;
         var attributes = new List<(string LocalName, string? Namespace, string? Prefix, string Value)>();
         if (reader.MoveToFirstAttribute())
         {
@@ -172,6 +173,10 @@ internal sealed class XmlTreeBuilder
                 {
                     isValue = reader.Value;
                 }
+                else if (attributeNamespace is null && reader.LocalName == "customelementregistry")
+                {
+                    nullRegistry = true;
+                }
             }
             while (reader.MoveToNextAttribute());
 
@@ -179,7 +184,8 @@ internal sealed class XmlTreeBuilder
         }
 
         // Custom element constructors run synchronously, except for fragments
-        var registry = CustomElementRegistry.LookUp(_current);
+        // An element with the customelementregistry attribute has the null registry, and so have its descendants (see HtmlTreeBuilder.CreateElementForToken)
+        var registry = nullRegistry ? null : CustomElementRegistry.LookUp(_current);
         var willExecuteScript = !_fragment && CustomElementRegistry.LookUpDefinition(registry, ns, localName, isValue) is not null;
         var scope = default(Html.CEReactionsScope);
         if (willExecuteScript)

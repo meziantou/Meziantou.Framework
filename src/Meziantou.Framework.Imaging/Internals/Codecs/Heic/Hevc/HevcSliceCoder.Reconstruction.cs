@@ -314,6 +314,10 @@ internal ref partial struct HevcSliceCoder
     /// Predicts a block from its neighbouring samples (clause 8.4.4.2.1 "General intra sample prediction"), into the plane
     /// of its colour component.
     /// </summary>
+    /// <remarks>
+    /// The scratch is not zeroed: that costs 0.6% of the instructions of a HEIC decode (HeicBenchmarks.DecodeStill420,
+    /// 2026-11-11), and every sample is written before it is read.
+    /// </remarks>
     [SkipLocalsInit]
     private void PredictIntra(Av1Plane plane, int cIdx, int xTb, int yTb, int xTbY, int yTbY, int nTbS, int predModeIntra)
     {

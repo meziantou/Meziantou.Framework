@@ -144,7 +144,7 @@ internal static class ValueMatcher
 
     private static IEnumerable<(int End, CapturePath? Path)> MatchNode(GrammarNode node, MatchContext context, int position, int depth, bool root = false, CapturePath? path = null)
     {
-        if (depth > MaxDepth)
+        if (depth > MaxDepth || !System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())
             return [];
 
         // A component without multiplier matches once: its results are the ones of the component (most components of the
@@ -158,8 +158,9 @@ internal static class ValueMatcher
 
     private static IEnumerable<(int End, CapturePath? Path)> MatchRepeated(GrammarNode node, MatchContext context, int position, int depth, int count, CapturePath? path, bool root)
     {
-        // Greedy: try one more repetition first
-        if (count < node.Max)
+        // Greedy: try one more repetition first. Each repetition nests the enumerators: a value with too many repetitions for
+        // the stack (e.g. 100,000 tracks) does not match
+        if (count < node.Max && System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack())
         {
             var start = position;
             if (count > 0 && node.CommaSeparated)

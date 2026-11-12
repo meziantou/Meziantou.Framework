@@ -131,10 +131,11 @@ internal static class ClearSiteData
             return types.HasFlag(DataTypes.Cache);
 
         // The storage of the storage key of the origin in the partition of the request: the first-party storage, or the
-        // storage of the origin partitioned by the top-level site (https://privacycg.github.io/storage-partitioning/)
-        if (types.HasFlag(DataTypes.Storage) && (firstParty || partitionSite is not null))
+        // storage of the origin partitioned by the top-level site (https://privacycg.github.io/storage-partitioning/), with
+        // the cross-site ancestor bit of an origin embedded by its own site through a cross-site frame (A → B → A)
+        if (types.HasFlag(DataTypes.Storage))
         {
-            ClearStorage(browsingContext, new StorageKey(serializedOrigin, PartitionNonce: null, firstParty ? null : partitionSite));
+            ClearStorage(browsingContext, StorageKey.ForRequest(origin, request));
         }
 
         // The reloaded documents are the ones of the tree of the request, which is its partition

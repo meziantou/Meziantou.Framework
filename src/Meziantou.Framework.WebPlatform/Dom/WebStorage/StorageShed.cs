@@ -274,6 +274,42 @@ internal readonly record struct StorageKey(string Origin, Guid? PartitionNonce, 
     }
 
     /// <summary>
+    /// The storage key of the data of an origin in the partition of a request (the data that the <c>Clear-Site-Data</c> header
+    /// of its response clears): the key of an environment of the origin created by a navigation request in its navigable, else
+    /// the key of an environment of the origin nested in the client of the request (e.g. a frame of a third-party script
+    /// whose closest ancestor is the document that fetches it), whose ancestors are the client and its ancestors.
+    /// </summary>
+    public static StorageKey ForRequest(OriginRecord origin, FetchRequest request)
+    {
+        BrowsingContext? parent;
+        Guid? nonce;
+        if (request.Mode == RequestMode.Navigate)
+        {
+            if (request.Navigable is not { } navigable)
+                return new StorageKey(origin.Serialize(), PartitionNonce: null);
+
+            parent = navigable.Parent;
+            nonce = navigable.IsCredentiallessNavigable && navigable.Top.Window is { } topLevelWindow ? topLevelWindow.PageCredentiallessNonce : null;
+        }
+        else
+        {
+            if (request.Client is not { } client)
+                return new StorageKey(origin.Serialize(), PartitionNonce: null);
+
+            // A service worker has the partition of its registration
+            var root = client.EnvironmentRootDocument;
+            if (root.WorkerGlobal is ServiceWorkerGlobalScope serviceWorker && serviceWorker.Agent.ServiceWorker is { } record)
+                return record.Registration.StorageKey with { Origin = origin.Serialize() };
+
+            parent = root.BrowsingContext;
+            nonce = Obtain(client)?.PartitionNonce;
+        }
+
+        var (topLevelSite, hasCrossSiteAncestor) = GetPartition(origin, parent);
+        return new StorageKey(origin.Serialize(), nonce, topLevelSite, hasCrossSiteAncestor);
+    }
+
+    /// <summary>
     /// The partition of an origin whose closest ancestor navigable is <paramref name="parent"/>: no top-level site for a
     /// first-party environment, else the site of the top-level document and whether one of the documents of the ancestors
     /// is cross-site with it (only for an origin that is same site with it). The environments of a top-level document whose

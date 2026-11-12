@@ -115,7 +115,8 @@ honored on the responses of the secure URLs (`https`, and `http://localhost`), w
 The cookies that the response sets are cleared too. As in the browsers, a response loaded by a page of another site
 (a third-party resource or frame) only clears the data of that page's partition: the partitioned cookies, the caches,
 and the stores of the origin [partitioned](#storage-partitioning) by the site of that page. The stores of the origin as a
-top-level page are kept. Some data is always kept:
+top-level page are kept. So are they for a response loaded by a frame of the top-level site whose parent frame is of
+another site: it clears the stores of that frame's partition. Some data is always kept:
 
 - An IndexedDB database that a page still has open.
 - The origin private file system.

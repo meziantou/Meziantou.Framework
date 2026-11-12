@@ -891,6 +891,16 @@ public sealed class BoxTreeTests : IDisposable
         """);
 
     [Fact]
+    public void Ruby_InlinifiedBlockRubyIsAnInlineRuby() => AssertBody("<ruby><rt><span id=b style='display: block ruby'>a</span></rt></ruby>", """
+        block <body> inline-children
+          ruby <ruby>
+            ruby-text <rt>
+              ruby <span#b>
+                ruby-base anonymous
+                  text "a"
+        """);
+
+    [Fact]
     public void Ruby_BlockRuby() => AssertBody("<ruby style='display: block ruby'><rb>a</rb><rt>x</rt></ruby>", """
         block <body> block-children
           block <ruby> inline-children

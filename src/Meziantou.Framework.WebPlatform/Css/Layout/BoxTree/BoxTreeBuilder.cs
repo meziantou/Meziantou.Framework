@@ -2925,6 +2925,21 @@ internal sealed partial class BoxTreeBuilder
             if (child is not ContainerBox container || container.IsOutOfFlow)
                 continue;
 
+            if (container.Display is { Outside: DisplayOutside.Block, Inside: DisplayInside.Flow, Internal: DisplayInternal.None } && container.Style.Layout.Display.Inside == DisplayInside.Ruby
+                && container.FirstChild is ContainerBox { Kind: ContainerBoxKind.Anonymous, Display.Inside: DisplayInside.Ruby, NextSibling: null } rubyContainer)
+            {
+                // A block-level ruby container (see WrapBlockRubyContents) is inlinified to an inline-level ruby container ("display:
+                // block ruby" becomes "display: ruby"): its principal box is the ruby container (WPT css/css-ruby/block-ruby-005.html)
+                container.Display = container.Display with { Outside = DisplayOutside.Inline, Inside = DisplayInside.Ruby };
+                container.RemoveChild(rubyContainer);
+                foreach (var rubyChild in rubyContainer.DetachChildren())
+                {
+                    container.AppendChild(rubyChild);
+                }
+
+                continue;
+            }
+
             if (container.Display.Outside == DisplayOutside.Block && container.Display.Internal == DisplayInternal.None)
             {
                 container.Display = container.Display with { Outside = DisplayOutside.Inline, Inside = container.Display.Inside == DisplayInside.Flow ? DisplayInside.FlowRoot : container.Display.Inside };

@@ -52,6 +52,10 @@ internal static class TextPlacement
     /// <summary>Places the parts of a text.</summary>
     /// <param name="text">The text.</param>
     /// <param name="items">The parts, in the order of the text.</param>
+    /// <param name="spaceLastCluster">
+    /// Whether the last cluster of the text gets the spacing of the length too: the difference is then spread over all the
+    /// clusters, for a renderer that cannot leave the space out after the last one.
+    /// </param>
     /// <returns>The positions of the parts.</returns>
     /// <remarks>
     /// The current position starts at the anchor of the text (at <see cref="SceneText.PathStartOffset"/> on a path). The
@@ -61,7 +65,7 @@ internal static class TextPlacement
     /// so that its anchor (its start, its middle or its end, from the extent of its parts) is at the position of its first
     /// part, as SVG 2 does.
     /// </remarks>
-    public static Result Place(SceneText text, IReadOnlyList<Item> items)
+    public static Result Place(SceneText text, IReadOnlyList<Item> items, bool spaceLastCluster = false)
     {
         var result = new Result(items.Count);
         var natural = 0.0;
@@ -84,6 +88,11 @@ internal static class TextPlacement
                 {
                     result.Scale = Math.Min(length / natural, MaxSpacing);
                 }
+            }
+            else if (spaceLastCluster && clusters > 0)
+            {
+                result.GapSpacing = Math.Clamp((length - natural) / clusters, -MaxSpacing, MaxSpacing);
+                result.LastItem = -1;
             }
             else if (clusters > 1)
             {

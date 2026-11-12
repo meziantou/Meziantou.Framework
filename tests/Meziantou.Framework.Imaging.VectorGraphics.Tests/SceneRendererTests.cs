@@ -1062,6 +1062,40 @@ public sealed class SceneRendererTests
     }
 
     [Fact]
+    public void FittedTextsKeepTheOrderOfTheirRuns()
+    {
+        // An Arabic word followed by Latin letters is a right-to-left paragraph: the Latin letters are at its left. Fitted to
+        // its own width, it is drawn as it is; fitted to a longer one, its ink stays in that length.
+        var fonts = new SceneFontCollection(LoadFace("LiberationSans-Regular.woff2"), LoadFace("NotoNaskhArabic-Regular.subset.ttf"));
+        var measurer = SceneImageRenderer.CreateMeasurer(new SceneImageOptions { Fonts = fonts });
+        var font = new SceneFont(20);
+        const string Value = "\u0645\u0631\u062D\u0628\u0627abc";
+        var natural = measurer.Measure(Value, font).Width;
+        Assert.InRange(natural, 30, 100);
+        using var plain = Draw(null);
+        using var fitted = Draw(natural);
+        for (var y = 0; y < 40; y++)
+        {
+            for (var x = 0; x < 160; x++)
+            {
+                Assert.Equal(plain.Frames[0][x, y], fitted.Frames[0][x, y]);
+            }
+        }
+
+        using var longer = Draw(120);
+        var (left, _, right, _) = GetInkBounds(longer, 0, 0, 160, 40);
+        Assert.InRange(left, 19, 25);
+        Assert.InRange(right, 120, 141);
+
+        Image<Rgba32> Draw(double? length)
+        {
+            var scene = new Scene(160, 40, measurer.FontFamily) { Fonts = fonts };
+            scene.Root.Add(new SceneText(20, 30, Value, font, SceneColor.Black) { TextLength = length });
+            return scene.ToImage();
+        }
+    }
+
+    [Fact]
     public void TextsOfClippingPathsHaveNoLines()
     {
         // The underline of a text of a clipping path does not show the clipped element

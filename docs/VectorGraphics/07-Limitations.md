@@ -39,6 +39,10 @@ The SVG, image and PDF renderers draw the same scene the same way, except in the
 
 - The hyperlinks, the tooltips, the CSS classes, the identifiers and the data attributes are not drawn.
 - A text longer than a closed path goes around it again, where SVG does not draw the characters beyond its end.
+- A text fitted to its [TextLength](cref:Meziantou.Framework.VectorGraphics.SceneText.TextLength) by its spacing, whose
+  last span mixes directions in the other direction than the text (Latin letters at the end of an Arabic word, in a text
+  from left to right), spreads the difference over all its characters, the last one included, to keep the order of its
+  letters: PDF leaves the space out after the last character.
 - The values of the primitives of a filter graph beyond the limits of the canvas are brought within them: the
   coordinates within 16777216, the standard deviations within 10000, the specular exponents of the spot lights within
   128. The weights of a convolution matrix are one pixel of the image apart, whatever its scale.

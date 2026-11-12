@@ -109,8 +109,9 @@ internal static class SceneTree
 
         // An element reached several times is enumerated each time; with rootOnce, the start is not entered again. The
         // contents of the clipping paths, the children of their groups and the contents of their uses, are their geometry:
-        // they are not drawn as elements, and their uses are written inline. Their other contents (the patterns of their
-        // texts) are drawn.
+        // they are not drawn as elements, and their uses are written inline. Of their other contents, only what the
+        // clipping paths write is followed: the clipping paths of their shapes and texts, and the patterns of their texts;
+        // not their masks, markers and the patterns of their shapes, which the clipping paths ignore.
         void Visit(SceneElement start, bool rootOnce = false)
         {
             var stack = new Stack<(SceneElement Element, bool IsClip)>();
@@ -142,14 +143,23 @@ internal static class SceneTree
                 }
 
                 var contents = new List<(SceneElement Element, bool IsClip)>();
-                foreach (var clipContent in GetClipContents(element, shared))
+                if (!isClip || element is SceneRectangle or SceneCircle or ScenePath or SceneText)
                 {
-                    contents.Add((clipContent, true));
+                    foreach (var clipContent in GetClipContents(element, shared))
+                    {
+                        contents.Add((clipContent, true));
+                    }
                 }
 
-                foreach (var content in GetContents(element, shared, includeClipPaths: false, includeChildren: false))
+                if (!isClip || element is SceneText)
                 {
-                    contents.Add((content, false));
+                    foreach (var content in GetContents(element, shared, includeClipPaths: false, includeChildren: false))
+                    {
+                        if (!isClip || !ReferenceEquals(content, element.Mask?.Content))
+                        {
+                            contents.Add((content, false));
+                        }
+                    }
                 }
 
                 if (element is SceneGroup group)

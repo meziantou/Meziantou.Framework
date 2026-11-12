@@ -1621,6 +1621,20 @@ public sealed class SvgSceneRendererTests
         Assert.Contains("@font-face{font-family:&quot;Liberation Mono&quot;", embedded, StringComparison.Ordinal);
         Assert.Contains("<clipPath id=\"scene-clip0\">\n<text x=\"0\" y=\"15\"", embedded, StringComparison.Ordinal);
 
+        // A masked shape drawn by the scene and reused in a clipping path: the clipping path ignores its mask, which is
+        // written once, with the identifiers of its content
+        var mask = new SceneMask();
+        mask.Content.Add(new SceneRectangle(0, 0, 20, 20) { Id = "mask-content", Fill = SceneColor.White });
+        var masked = new SceneCircle(10, 10, 5) { Fill = SceneColor.Black, Mask = mask };
+        var maskedScene = new Scene(20, 20, "sans-serif");
+        maskedScene.Root.Add(masked);
+        var reuse = new SceneClipPath();
+        reuse.Content.Add(new SceneUse(masked));
+        maskedScene.Root.Add(new SceneRectangle(0, 0, 20, 20) { Fill = SceneColor.Black, ClippingPath = reuse });
+        var maskedSvg = SvgSceneRenderer.Render(maskedScene);
+        Assert.Equal(1, CountOccurrences(maskedSvg, "id=\"mask-content\""));
+        Assert.Contains("<clipPath id=\"scene-clip0\">\n<circle cx=\"10\" cy=\"10\" r=\"5\"/>\n</clipPath>", maskedSvg, StringComparison.Ordinal);
+
         // The bounds of a clipping path are the ones of its geometry, whatever the opacity of its content
         var transparent = new SceneClipPath();
         transparent.Content.Add(new SceneRectangle(0, 0, 10, 10) { Opacity = 0 });

@@ -75,6 +75,7 @@ internal sealed partial class PageTarget
 
         frame.Document = document;
         frame.Url = document.Url;
+        frame.IsInitialEmptyDocument = isInitialBinding && Opener is not null && document.IsInitialAboutBlank;
         frame.Name = frame.BrowsingContext?.Name ?? "";
         frame.MimeType = document.ContentType;
         if (!isInitialBinding)
@@ -112,6 +113,29 @@ internal sealed partial class PageTarget
         }
     }
 
+    /// <summary>
+    /// A popup that does not navigate (window.open() without URL, or a navigation that ends without a document) keeps its
+    /// initial empty document: as Chromium, it is committed as <c>about:blank</c>, so that the clients that wait for the first
+    /// navigation of the popup report it.
+    /// </summary>
+    internal async Task CommitInitialPopupDocumentAsync()
+    {
+        // The navigation of window.open(url) starts in the task that created the popup
+        await Task.Yield();
+        while (!_closed && !HasCommittedNavigation && (BrowsingContext!.IsNavigating || MainFrame.PendingLoaderId is not null))
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(10)).ConfigureAwait(true);
+        }
+
+        if (_closed || HasCommittedNavigation || !MainFrame.IsInitialEmptyDocument)
+            return;
+
+        MainFrame.IsInitialEmptyDocument = false;
+        HasCommittedNavigation = true;
+        Broadcast(session => session.PageEnabled, "Page.frameNavigated", new JsonObject { ["frame"] = MainFrame.ToPayload(), ["type"] = "Navigation" });
+        Browser.OnTargetInfoChanged(this);
+    }
+
     /// <summary>The URL of the document changed without a new document (a fragment navigation, <c>history.pushState()</c>).</summary>
     internal void OnSameDocumentNavigated(FrameState frame)
     {
@@ -122,6 +146,9 @@ internal sealed partial class PageTarget
         frame.Url = document.Url;
         var navigationType = StripFragment(previousUrl) == StripFragment(frame.Url) ? "fragment" : "historyApi";
         Broadcast(session => session.PageEnabled, "Page.navigatedWithinDocument", new JsonObject { ["frameId"] = frame.FrameId, ["url"] = frame.Url, ["navigationType"] = navigationType });
+
+        // A navigation of the client (Page.navigate) to a fragment ends here: the next navigations are the ones of the page
+        frame.IsClientNavigation = false;
         frame.CompleteNavigation(new NavigationResult(LoaderId: null, ErrorText: null));
         if (frame.ParentFrame is null)
         {

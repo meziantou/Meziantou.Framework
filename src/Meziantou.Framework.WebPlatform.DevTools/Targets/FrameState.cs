@@ -26,6 +26,12 @@ internal sealed class FrameState(PageTarget target, string frameId, FrameState? 
 
     public string Url { get; set; } = "about:blank";
 
+    /// <summary>
+    /// Gets or sets whether the document is the initial empty document of a popup: as Chromium, its URL is reported as an
+    /// empty string, and the clients wait for the first navigation of the popup.
+    /// </summary>
+    public bool IsInitialEmptyDocument { get; set; }
+
     public string Name { get; set; } = "";
 
     public string MimeType { get; set; } = "text/html";
@@ -83,7 +89,7 @@ internal sealed class FrameState(PageTarget target, string frameId, FrameState? 
     /// <summary>The <c>Frame</c> of the protocol.</summary>
     public JsonObject ToPayload()
     {
-        var url = Url;
+        var url = IsInitialEmptyDocument ? "" : Url;
         string? fragment = null;
         var hash = url.IndexOf('#', StringComparison.Ordinal);
         if (hash >= 0)

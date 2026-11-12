@@ -17,6 +17,7 @@ internal sealed partial class PageTarget
 {
     private readonly List<PageSession> _sessions = [];
     private readonly Dictionary<string, FrameState> _frames = new(StringComparer.Ordinal);
+    private readonly TaskCompletionSource _resumed = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private string? _pendingUrl;
     private bool _closed;
 
@@ -56,6 +57,16 @@ internal sealed partial class PageTarget
     public bool IsClosed => _closed;
 
     public bool IsLive => BrowsingContext is not null;
+
+    /// <summary>
+    /// Gets whether the page waits for the client to let it run (<c>Runtime.runIfWaitingForDebugger</c>): a command can
+    /// create its browsing context meanwhile (e.g. an evaluation), but it does not navigate to its URL, and the requests of a
+    /// popup wait.
+    /// </summary>
+    public bool IsPaused => !_resumed.Task.IsCompleted;
+
+    /// <summary>Gets a task completed when the client lets the page run, or when the page is closed.</summary>
+    public Task Resumed => _resumed.Task;
 
     /// <summary>Gets or sets whether the target was attached by the auto-attachment of the browser session.</summary>
     public bool IsAutoAttached { get; set; }
@@ -207,10 +218,17 @@ internal sealed partial class PageTarget
     /// <summary>Lets the page run (<c>Runtime.runIfWaitingForDebugger</c>): the browsing context is created, then the page navigates to its URL.</summary>
     public void Resume()
     {
-        if (IsLive || _closed)
+        // A command can create the browsing context before the page is resumed: the page navigates to its URL once only
+        if (_closed || !_resumed.TrySetResult())
             return;
 
         EnsureLive();
+        if (Opener is not null)
+        {
+            // The wait runs as posted work: its continuations run on the thread of the context
+            Context.Engine.Post(_ => _ = CommitInitialPopupDocumentAsync(), state: null);
+        }
+
         var url = _pendingUrl;
         _pendingUrl = null;
         if (url is not null && url != "about:blank")
@@ -316,6 +334,7 @@ internal sealed partial class PageTarget
             return;
 
         _closed = true;
+        _resumed.TrySetResult();
         CancelDialog();
         foreach (var frame in GetFrames())
         {

@@ -35,6 +35,9 @@ internal sealed class RemoteObjectRegistry
         return false;
     }
 
+    /// <summary>Returns the group of an object, or null.</summary>
+    public string? GetGroup(string objectId) => _objects.TryGetValue(objectId, out var entry) ? entry.Group : null;
+
     public (ScriptContext Context, JsValue Value) Get(string objectId)
     {
         if (!TryGet(objectId, out var context, out var value))

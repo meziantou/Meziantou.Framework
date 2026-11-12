@@ -28,6 +28,18 @@ internal static class ReadmeExamples
         Console.WriteLine($"Screenshot saved to {Path.GetFullPath("example.png")}");
     }
 
+    public static async Task ConnectToTheCommandLineTool()
+    {
+        #region DevToolsTool_Connect
+        // The server runs in another process: Meziantou.Framework.WebPlatform.DevTools.Tool --allow-network
+        using var playwright = await Microsoft.Playwright.Playwright.CreateAsync();
+        await using var browser = await playwright.Chromium.ConnectOverCDPAsync("http://127.0.0.1:9222/");
+        var context = await browser.NewContextAsync();
+        var page = await context.NewPageAsync();
+        await page.GotoAsync("https://example.com/");
+        #endregion
+    }
+
     public static async Task HostInAspNetCore(string[] args)
     {
         #region DevToolsServer_AspNetCore

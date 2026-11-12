@@ -155,14 +155,24 @@ internal sealed class ScriptContext
             return JsValue.Undefined;
         });
         Call("(promise, resolve, reject) => { promise.then(resolve, reject); }", value, resolve, reject);
-        var winner = await Task.WhenAny(completion.Task, _destroyed.Task, Task.Delay(Timeout.Infinite, cancellationToken)).ConfigureAwait(true);
-        if (winner == completion.Task)
-            return await completion.Task.ConfigureAwait(true);
 
-        if (winner == _destroyed.Task)
-            throw new ProtocolException("Execution context was destroyed.");
+        // The delay is canceled once the wait ends: the token lasts as long as the connection
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        try
+        {
+            var winner = await Task.WhenAny(completion.Task, _destroyed.Task, Task.Delay(Timeout.Infinite, cancellation.Token)).ConfigureAwait(true);
+            if (winner == completion.Task)
+                return await completion.Task.ConfigureAwait(true);
 
-        throw new OperationCanceledException(cancellationToken);
+            if (winner == _destroyed.Task)
+                throw new ProtocolException("Execution context was destroyed.");
+
+            throw new OperationCanceledException(cancellationToken);
+        }
+        finally
+        {
+            await cancellation.CancelAsync().ConfigureAwait(true);
+        }
     }
 
     public JsValue ParseJson(string json) => Call("(json) => JSON.parse(json)", json);

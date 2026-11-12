@@ -30,28 +30,13 @@ internal sealed partial class BrowserContextHost
             AddPage(page);
             opener?.Target.OnWindowOpen(page);
 
-            // The wait runs as posted work: its continuations run on the thread of the context
-            Engine.Post(_ => _ = AddPopupAsync(page), state: null);
-        }
-    }
-
-    // As Chromium, a popup is reported once its initial navigation commits (window.open(url) creates the popup, then
-    // navigates it): its URL is the one of the navigation, and its lifecycle events are the ones of its document. The popups
-    // that do not navigate (window.open() without URL), or whose navigation ends without a document, are reported when they
-    // have no ongoing navigation.
-    private async Task AddPopupAsync(PageTarget page)
-    {
-        // The navigation starts after the browsing context is created (in the task that created it)
-        await Task.Yield();
-        while (!page.IsClosed && !page.HasCommittedNavigation && page.BrowsingContext!.IsNavigating)
-        {
-            await Task.Delay(TimeSpan.FromMilliseconds(10)).ConfigureAwait(true);
-        }
-
-        if (!page.IsClosed && !_closed)
-        {
-            // A popup is not paused: it already runs
-            Browser.AddTarget(page);
+            // As Chromium, the popup is attached at once. When the client waits for the new targets, the popup waits for it
+            // (its requests wait, see ContextLoader), so that the scripts and the interception it sets up apply to the first
+            // document of the popup.
+            if (!Browser.AddTarget(page))
+            {
+                page.Resume();
+            }
         }
     }
 

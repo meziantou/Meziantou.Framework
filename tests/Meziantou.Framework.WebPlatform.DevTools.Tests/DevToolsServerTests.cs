@@ -474,6 +474,33 @@ public sealed class DevToolsServerTests(DevToolsServerFixture fixture) : IClassF
     }
 
     [Fact]
+    public async Task Popups_TheScriptsAndTheRoutesOfTheContextApplyToTheFirstDocument()
+    {
+        var (context, page) = await fixture.NewPageAsync();
+        await using var _ = context;
+        await context.AddInitScriptAsync("window.fromInitScript = 42;");
+        await context.RouteAsync("**/routed-popup", route => route.FulfillAsync(new() { Body = "<script>document.title = String(window.fromInitScript);</script>", ContentType = "text/html" }));
+        await page.SetContentAsync("<a href='https://test.local/routed-popup' target=_blank>open</a>");
+
+        var popup = await page.RunAndWaitForPopupAsync(() => page.ClickAsync("a"));
+        await popup.WaitForLoadStateAsync();
+
+        Assert.Equal("42", await popup.TitleAsync());
+    }
+
+    [Fact]
+    public async Task Popups_WithoutUrl()
+    {
+        var (context, page) = await fixture.NewPageAsync();
+        await using var _ = context;
+
+        var popup = await page.RunAndWaitForPopupAsync(() => page.EvaluateAsync("() => { window.open(); }"));
+
+        Assert.Equal("about:blank", popup.Url);
+        Assert.Equal(2, await popup.EvaluateAsync<int>("() => 1 + 1"));
+    }
+
+    [Fact]
     public async Task Frames()
     {
         var (context, page) = await fixture.NewPageAsync();
@@ -685,6 +712,75 @@ public sealed class DevToolsServerTests(DevToolsServerFixture fixture) : IClassF
     }
 
     [Fact]
+    public async Task Protocol_PausedTargetNavigatesOnceResumed()
+    {
+        // A command can create the browsing context of a paused target: the target still navigates to its URL when it is resumed
+        var url = fixture.AddPage("paused.html", "<title>Paused</title>");
+        using var client = await CdpClient.ConnectAsync(fixture.Server.WebSocketEndpoint);
+        await client.SendAsync("""{"id":1,"method":"Target.setAutoAttach","params":{"autoAttach":true,"waitForDebuggerOnStart":true,"flatten":true}}""");
+
+        await client.SendAsync("{\"id\":2,\"method\":\"Target.createTarget\",\"params\":{\"url\":\"" + url + "\"}}");
+        var attached = client.Events.Single(e => e.GetProperty("method").GetString() == "Target.attachedToTarget").GetProperty("params");
+        var sessionId = attached.GetProperty("sessionId").GetString();
+        await client.SendAsync("{\"id\":3,\"method\":\"Runtime.evaluate\",\"params\":{\"expression\":\"1\"},\"sessionId\":\"" + sessionId + "\"}");
+        await client.SendAsync("{\"id\":4,\"method\":\"Runtime.runIfWaitingForDebugger\",\"sessionId\":\"" + sessionId + "\"}");
+
+        string? title = null;
+        for (var i = 0; i < 100 && title != "Paused"; i++)
+        {
+            await Task.Delay(50, TestContext.Current.CancellationToken);
+            var evaluated = await client.SendAsync("{\"id\":5,\"method\":\"Runtime.evaluate\",\"params\":{\"expression\":\"document.title\",\"returnByValue\":true},\"sessionId\":\"" + sessionId + "\"}");
+            title = evaluated.GetProperty("result").GetProperty("result").TryGetProperty("value", out var value) ? value.GetString() : null;
+        }
+
+        Assert.Equal("Paused", title);
+        Assert.True(attached.GetProperty("waitingForDebugger").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Protocol_PropertiesAreReleasedWithTheirGroup()
+    {
+        using var client = await CdpClient.ConnectAsync(fixture.Server.WebSocketEndpoint);
+        var created = await client.SendAsync("""{"id":1,"method":"Target.createTarget","params":{"url":"about:blank"}}""");
+        var targetId = created.GetProperty("result").GetProperty("targetId").GetString();
+        var sessionId = (await client.SendAsync("{\"id\":2,\"method\":\"Target.attachToTarget\",\"params\":{\"targetId\":\"" + targetId + "\",\"flatten\":true}}")).GetProperty("result").GetProperty("sessionId").GetString();
+
+        var evaluated = await client.SendAsync("{\"id\":3,\"method\":\"Runtime.evaluate\",\"params\":{\"expression\":\"({ inner: { a: 1 } })\",\"objectGroup\":\"inspection\"},\"sessionId\":\"" + sessionId + "\"}");
+        var objectId = evaluated.GetProperty("result").GetProperty("result").GetProperty("objectId").GetString();
+        var properties = await client.SendAsync("{\"id\":4,\"method\":\"Runtime.getProperties\",\"params\":{\"objectId\":\"" + objectId + "\",\"ownProperties\":true},\"sessionId\":\"" + sessionId + "\"}");
+        var innerId = properties.GetProperty("result").GetProperty("result").EnumerateArray().Single(p => p.GetProperty("name").GetString() == "inner").GetProperty("value").GetProperty("objectId").GetString();
+        await client.SendAsync("{\"id\":5,\"method\":\"Runtime.releaseObjectGroup\",\"params\":{\"objectGroup\":\"inspection\"},\"sessionId\":\"" + sessionId + "\"}");
+        var released = await client.SendAsync("{\"id\":6,\"method\":\"Runtime.getProperties\",\"params\":{\"objectId\":\"" + innerId + "\"},\"sessionId\":\"" + sessionId + "\"}");
+
+        Assert.Equal("Could not find object with given id", released.GetProperty("error").GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task Protocol_NavigationOfThePageAfterAFragmentNavigationIsReported()
+    {
+        var url = fixture.AddPage("fragment.html", "<p>fragment</p>");
+        var next = fixture.AddPage("fragment-next.html", "<p>next</p>");
+        using var client = await CdpClient.ConnectAsync(fixture.Server.WebSocketEndpoint);
+        var created = await client.SendAsync("""{"id":1,"method":"Target.createTarget","params":{"url":"about:blank"}}""");
+        var targetId = created.GetProperty("result").GetProperty("targetId").GetString();
+        var sessionId = (await client.SendAsync("{\"id\":2,\"method\":\"Target.attachToTarget\",\"params\":{\"targetId\":\"" + targetId + "\",\"flatten\":true}}")).GetProperty("result").GetProperty("sessionId").GetString();
+        await client.SendAsync("{\"id\":3,\"method\":\"Page.enable\",\"sessionId\":\"" + sessionId + "\"}");
+
+        await client.SendAsync("{\"id\":4,\"method\":\"Page.navigate\",\"params\":{\"url\":\"" + url + "\"},\"sessionId\":\"" + sessionId + "\"}");
+        await client.SendAsync("{\"id\":5,\"method\":\"Page.navigate\",\"params\":{\"url\":\"" + url + "#section\"},\"sessionId\":\"" + sessionId + "\"}");
+        await client.SendAsync("{\"id\":6,\"method\":\"Runtime.evaluate\",\"params\":{\"expression\":\"location.href = '" + next + "'\"},\"sessionId\":\"" + sessionId + "\"}");
+        for (var i = 0; i < 100 && !client.Events.Exists(IsRequested); i++)
+        {
+            await Task.Delay(50, TestContext.Current.CancellationToken);
+            await client.SendAsync("{\"id\":7,\"method\":\"Runtime.evaluate\",\"params\":{\"expression\":\"1\"},\"sessionId\":\"" + sessionId + "\"}");
+        }
+
+        Assert.Contains(client.Events, IsRequested);
+
+        bool IsRequested(System.Text.Json.JsonElement e) => e.GetProperty("method").GetString() == "Page.frameRequestedNavigation" && e.GetProperty("params").GetProperty("url").GetString() == next;
+    }
+
+    [Fact]
     public async Task ConnectOverCDP_WebSocketEndpoint()
     {
         using var playwright = await Microsoft.Playwright.Playwright.CreateAsync();
@@ -842,6 +938,9 @@ public sealed class DevToolsServerTests(DevToolsServerFixture fixture) : IClassF
     {
         private readonly ClientWebSocket _webSocket = new();
 
+        /// <summary>Gets the events received so far.</summary>
+        public List<System.Text.Json.JsonElement> Events { get; } = [];
+
         public static async Task<CdpClient> ConnectAsync(Uri endpoint)
         {
             var client = new CdpClient();
@@ -870,7 +969,10 @@ public sealed class DevToolsServerTests(DevToolsServerFixture fixture) : IClassF
                 var root = response.RootElement;
                 var responseId = root.TryGetProperty("id", out var responseIdElement) ? responseIdElement.GetInt32() : (int?)null;
                 if (root.TryGetProperty("method", out _))
+                {
+                    Events.Add(root.Clone());
                     continue;
+                }
 
                 if (responseId == id)
                     return root.Clone();

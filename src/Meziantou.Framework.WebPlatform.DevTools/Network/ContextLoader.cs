@@ -53,9 +53,27 @@ internal sealed class ContextLoader(BrowserContextHost context, DocumentLoader? 
         }
     }
 
-    public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken) => LoadCoreAsync(request, isWebSocket: false, cancellationToken);
+    public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken) => Load(request, isWebSocket: false, cancellationToken);
 
-    public override ValueTask<DocumentResource?> ConnectWebSocketAsync(DocumentRequest request, CancellationToken cancellationToken) => LoadCoreAsync(request, isWebSocket: true, cancellationToken);
+    public override ValueTask<DocumentResource?> ConnectWebSocketAsync(DocumentRequest request, CancellationToken cancellationToken) => Load(request, isWebSocket: true, cancellationToken);
+
+    private ValueTask<DocumentResource?> Load(DocumentRequest request, bool isWebSocket, CancellationToken cancellationToken)
+    {
+        // The requests of a page that waits for the client (a popup the client has not set up yet) wait until it runs. A
+        // synchronous request blocks the thread of the context: it does not wait.
+        if (!request.IsSynchronous && context.FindFrame(request.BrowsingContext)?.Target is { IsPaused: true } target)
+            return LoadAfterResumeAsync(target, request, isWebSocket, cancellationToken);
+
+        return LoadCoreAsync(request, isWebSocket, cancellationToken);
+    }
+
+    private async ValueTask<DocumentResource?> LoadAfterResumeAsync(PageTarget target, DocumentRequest request, bool isWebSocket, CancellationToken cancellationToken)
+    {
+        await target.Resumed.WaitAsync(cancellationToken).ConfigureAwait(false);
+
+        // The request starts on the thread of the context, as the other requests
+        return await context.Engine.InvokeAsync(() => LoadCoreAsync(request, isWebSocket, cancellationToken).AsTask()).ConfigureAwait(false);
+    }
 
     private async ValueTask<DocumentResource?> LoadCoreAsync(DocumentRequest request, bool isWebSocket, CancellationToken cancellationToken)
     {

@@ -228,7 +228,11 @@ internal sealed partial class PageSession
 
     private JsonObject GetProperties(JsonElement parameters)
     {
-        var (context, value) = Objects.Get(parameters.GetRequiredString("objectId"));
+        var objectId = parameters.GetRequiredString("objectId");
+        var (context, value) = Objects.Get(objectId);
+
+        // The objects of the properties are released with the inspected object (Runtime.releaseObjectGroup)
+        var group = Objects.GetGroup(objectId);
         var result = new JsonArray();
         if (!value.IsObject)
             return new JsonObject { ["result"] = result };
@@ -259,19 +263,19 @@ internal sealed partial class PageSession
             };
             if (property.GetProperty("hasValue").AsBoolean())
             {
-                descriptor["value"] = RemoteObjects.Create(context, property.GetProperty("value"), Objects, group: null, returnByValue: false);
+                descriptor["value"] = RemoteObjects.Create(context, property.GetProperty("value"), Objects, group, returnByValue: false);
                 descriptor["writable"] = property.GetProperty("writable").AsBoolean();
             }
             else
             {
                 if (property.GetProperty("get") is { IsUndefined: false } getter)
                 {
-                    descriptor["get"] = RemoteObjects.Create(context, getter, Objects, group: null, returnByValue: false);
+                    descriptor["get"] = RemoteObjects.Create(context, getter, Objects, group, returnByValue: false);
                 }
 
                 if (property.GetProperty("set") is { IsUndefined: false } setter)
                 {
-                    descriptor["set"] = RemoteObjects.Create(context, setter, Objects, group: null, returnByValue: false);
+                    descriptor["set"] = RemoteObjects.Create(context, setter, Objects, group, returnByValue: false);
                 }
             }
 

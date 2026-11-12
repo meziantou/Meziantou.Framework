@@ -23,13 +23,16 @@ Meziantou.Framework.WebPlatform.DevTools.Tool --allow-network
 The server prints its WebSocket endpoint (`DevTools listening on ws://127.0.0.1:9222/devtools/browser/<id>`), and runs until
 Ctrl+C. Connect to it from a Playwright client with the HTTP endpoint, which serves `/json/version`:
 
+<!-- ref:../../samples/Meziantou.Framework.WebPlatform.DevTools.Samples/ReadmeExamples.cs;region=DevToolsTool_Connect;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var playwright = await Playwright.CreateAsync();
+// The server runs in another process: Meziantou.Framework.WebPlatform.DevTools.Tool --allow-network
+using var playwright = await Microsoft.Playwright.Playwright.CreateAsync();
 await using var browser = await playwright.Chromium.ConnectOverCDPAsync("http://127.0.0.1:9222/");
 var context = await browser.NewContextAsync();
 var page = await context.NewPageAsync();
 await page.GotoAsync("https://example.com/");
 ```
+<!-- endref -->
 
 Without `--allow-network`, the pages can only use the content they are given (e.g. `page.setContent()`) and the responses of
 the intercepted requests (`page.route()`). The scripts of the pages run in the process of the server: only connect trusted

@@ -110,7 +110,6 @@ internal static class HevcForwardTransform
     /// The transform of <see cref="Forward"/> as two direct products by the bases, one value at a time: the reference of the
     /// vector path, which gives the same coefficients.
     /// </summary>
-    [SkipLocalsInit]
     internal static void ForwardScalar(ReadOnlySpan<int> residual, Span<int> coefficients, int log2TrafoSize, int trType, int bitDepth)
     {
         var nTbS = 1 << log2TrafoSize;
@@ -119,7 +118,7 @@ internal static class HevcForwardTransform
         var rowShift = GetRowShift(log2TrafoSize, bitDepth);
 
         // The rows: the horizontal coefficient k of each row of the residual. Every value is written before it is read
-        Span<int> intermediate = unsafe(stackalloc int[nTbS * nTbS]);
+        Span<int> intermediate = stackalloc int[nTbS * nTbS];
         for (var y = 0; y < nTbS; y++)
         {
             var row = residual.Slice(y * nTbS, nTbS);

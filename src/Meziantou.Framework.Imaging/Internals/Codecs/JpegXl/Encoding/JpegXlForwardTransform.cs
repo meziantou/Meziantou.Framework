@@ -143,11 +143,10 @@ internal static class JpegXlForwardTransform
     }
 
     /// <summary>The scalar reference of <see cref="ForwardDct(ReadOnlySpan{float}, int, int, int, Span{float}, Span{float})"/>.</summary>
-    [System.Runtime.CompilerServices.SkipLocalsInit]
     public static void ForwardDctScalar(ReadOnlySpan<float> samples, int stride, int rows, int columns, Span<float> coefficients, Span<float> scratch)
     {
-        Span<float> line = unsafe(stackalloc float[MaxSize]);
-        Span<float> work = unsafe(stackalloc float[MaxSize]);
+        Span<float> line = stackalloc float[MaxSize];
+        Span<float> work = stackalloc float[MaxSize];
 
         // The horizontal frequencies of each row of samples
         var horizontal = scratch[..(rows * columns)];

@@ -1635,6 +1635,17 @@ public sealed class SvgSceneRendererTests
         Assert.Equal(1, CountOccurrences(maskedSvg, "id=\"mask-content\""));
         Assert.Contains("<clipPath id=\"scene-clip0\">\n<circle cx=\"10\" cy=\"10\" r=\"5\"/>\n</clipPath>", maskedSvg, StringComparison.Ordinal);
 
+        // The clipping path of a group of a clipping path does not apply: its content, and the patterns of its texts, are not written
+        var ignored = new SceneClipPath();
+        var tile = new PatternPaint(new SceneBounds(0, 0, 4, 4));
+        tile.Content.Add(new SceneUse(new SceneCircle(2, 2, 2) { Fill = SceneColor.Black }));
+        ignored.Content.Add(new SceneText(0, 10, "a", new SceneFont(10), SceneColor.Black) { Fill = tile });
+        var outerWithGroup = new SceneClipPath();
+        outerWithGroup.Content.Add(new SceneGroup { ClippingPath = ignored }).Add(new SceneRectangle(0, 0, 10, 10));
+        var ignoredSvg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 20, 20) { Fill = SceneColor.Black, ClippingPath = outerWithGroup }));
+        Assert.Equal(1, CountOccurrences(ignoredSvg, "<clipPath "));
+        Assert.DoesNotContain("<pattern", ignoredSvg, StringComparison.Ordinal);
+
         // The bounds of a clipping path are the ones of its geometry, whatever the opacity of its content
         var transparent = new SceneClipPath();
         transparent.Content.Add(new SceneRectangle(0, 0, 10, 10) { Opacity = 0 });

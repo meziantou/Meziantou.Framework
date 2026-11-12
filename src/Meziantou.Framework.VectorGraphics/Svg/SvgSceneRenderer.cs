@@ -440,7 +440,9 @@ public static class SvgSceneRenderer
                         break;
                 }
 
-                if (element.ClippingPath is { } clippingPath)
+                // Only the clipping paths of the shapes and the texts apply in a clipping path: the ones of its groups and its uses
+                // are not written
+                if (element is SceneRectangle or SceneCircle or ScenePath or SceneText && element.ClippingPath is { } clippingPath)
                 {
                     VisitClipPath(clippingPath);
                 }

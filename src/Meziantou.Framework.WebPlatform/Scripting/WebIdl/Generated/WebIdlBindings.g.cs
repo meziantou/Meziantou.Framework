@@ -349,6 +349,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["ImageBitmap"] = Binding_ImageBitmap<TAdapter, TValue>.Binding,
             ["ImageBitmapRenderingContext"] = Binding_ImageBitmapRenderingContext<TAdapter, TValue>.Binding,
             ["ImageData"] = Binding_ImageData<TAdapter, TValue>.Binding,
+            ["ImageDecoder"] = Binding_ImageDecoder<TAdapter, TValue>.Binding,
+            ["ImageTrack"] = Binding_ImageTrack<TAdapter, TValue>.Binding,
+            ["ImageTrackList"] = Binding_ImageTrackList<TAdapter, TValue>.Binding,
             ["Ink"] = Binding_Ink<TAdapter, TValue>.Binding,
             ["InputEvent"] = Binding_InputEvent<TAdapter, TValue>.Binding,
             ["InstallEvent"] = Binding_InstallEvent<TAdapter, TValue>.Binding,
@@ -633,6 +636,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["VTTCue"] = Binding_VTTCue<TAdapter, TValue>.Binding,
             ["VTTRegion"] = Binding_VTTRegion<TAdapter, TValue>.Binding,
             ["ValidityState"] = Binding_ValidityState<TAdapter, TValue>.Binding,
+            ["VideoColorSpace"] = Binding_VideoColorSpace<TAdapter, TValue>.Binding,
+            ["VideoFrame"] = Binding_VideoFrame<TAdapter, TValue>.Binding,
             ["VideoPlaybackQuality"] = Binding_VideoPlaybackQuality<TAdapter, TValue>.Binding,
             ["VideoTrack"] = Binding_VideoTrack<TAdapter, TValue>.Binding,
             ["VideoTrackList"] = Binding_VideoTrackList<TAdapter, TValue>.Binding,
@@ -1465,6 +1470,27 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.WebAudio.PeriodicWaveConstraints dictionaryWebAudio_PeriodicWaveConstraints:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_PeriodicWaveConstraints(r, dictionaryWebAudio_PeriodicWaveConstraints);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecodeOptions dictionaryWebCodecs_ImageDecodeOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_ImageDecodeOptions(r, dictionaryWebCodecs_ImageDecodeOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecodeResult dictionaryWebCodecs_ImageDecodeResult:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_ImageDecodeResult(r, dictionaryWebCodecs_ImageDecodeResult);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecoderInit dictionaryWebCodecs_ImageDecoderInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_ImageDecoderInit(r, dictionaryWebCodecs_ImageDecoderInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout dictionaryWebCodecs_PlaneLayout:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_PlaneLayout(r, dictionaryWebCodecs_PlaneLayout);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorSpaceInit dictionaryWebCodecs_VideoColorSpaceInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoColorSpaceInit(r, dictionaryWebCodecs_VideoColorSpaceInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameCopyToOptions dictionaryWebCodecs_VideoFrameCopyToOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoFrameCopyToOptions(r, dictionaryWebCodecs_VideoFrameCopyToOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameMetadata dictionaryWebCodecs_VideoFrameMetadata:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoFrameMetadata(r, dictionaryWebCodecs_VideoFrameMetadata);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Animations.AnimationPlayState enumAnimations_AnimationPlayState:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Animations_AnimationPlayState(enumAnimations_AnimationPlayState));
                 return true;
@@ -1828,6 +1854,18 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.WebAudio.PanningModelType enumWebAudio_PanningModelType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_PanningModelType(enumWebAudio_PanningModelType));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries enumWebCodecs_VideoColorPrimaries:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_VideoColorPrimaries(enumWebCodecs_VideoColorPrimaries));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients enumWebCodecs_VideoMatrixCoefficients:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_VideoMatrixCoefficients(enumWebCodecs_VideoMatrixCoefficients));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat enumWebCodecs_VideoPixelFormat:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_VideoPixelFormat(enumWebCodecs_VideoPixelFormat));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics enumWebCodecs_VideoTransferCharacteristics:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_VideoTransferCharacteristics(enumWebCodecs_VideoTransferCharacteristics));
+                return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Animations.Animation> taskSystem_Threading_Tasks_Task_Animations_Animation_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Animations_Animation_, static (r, v) => r.Wrap(v));
                 return true;
@@ -1921,6 +1959,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer> taskSystem_Threading_Tasks_Task_WebAudio_AudioBuffer_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_WebAudio_AudioBuffer_, static (r, v) => r.Wrap(v));
                 return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecodeResult> taskSystem_Threading_Tasks_Task_WebCodecs_ImageDecodeResult_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_WebCodecs_ImageDecodeResult_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_ImageDecodeResult(r, dictionaryValue) : r.Adapter.Null));
+                return true;
             case global::System.Threading.Tasks.Task<bool> taskSystem_Threading_Tasks_Task_bool_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_bool_, static (r, v) => r.FromBoolean(v));
                 return true;
@@ -1956,6 +1997,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.Tool>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_Tool__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_Tool__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));
+                return true;
+            case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_WebCodecs_PlaneLayout__:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_WebCodecs_PlaneLayout__, static (r, v) => r.FromSequence(v, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_PlaneLayout(r, dictionaryValue) : r.Adapter.Null)));
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<string>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_string__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_string__, static (r, v) => r.FromSequence(v, static (r, e) => r.FromString(e)));

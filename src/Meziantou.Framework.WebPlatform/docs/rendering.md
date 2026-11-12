@@ -401,12 +401,23 @@ or Display P3: `BitmapPixels.ColorSpace`), processed by the library:
   (`SvgImage.Rasterize`) at the output size (its natural size scaled by the resize options and the source rectangle; an
   image without natural dimensions needs `resizeWidth` and `resizeHeight`), so the resize options scale the vector image
   and not its pixels. The bitmap of a `video` is the frame its media player gives (`MediaPlayer.GetVideoFrame()`, see
-  [Media elements](browsing-context.md#media-elements)); a video without frame is an `InvalidStateError`. `VideoFrame` sources are not supported. The bitmap keeps
+  [Media elements](browsing-context.md#media-elements)); a video without frame is an `InvalidStateError`. The bitmap of a `VideoFrame` is its rendered pixels (rotated and flipped, at its display size); a closed frame is an `InvalidStateError`. The bitmap keeps
   the color space of a canvas or of an `ImageData` (the linear color spaces are converted to sRGB or Display P3), and the
   colors of a decoded image outside of the gamut of sRGB (in half floats).
 - `ImageBitmap` (`close()`, serializable and transferable when it is origin-clean) and `ImageBitmapRenderingContext`
   (`canvas.getContext("bitmaprenderer")`, `transferFromImageBitmap()`): the canvas paints its output bitmap (over black
   with `alpha: false`). The 2D contexts are described in [Canvas](#canvas).
+- The image decoding of WebCodecs (https://w3c.github.io/webcodecs/#image-decoding, `WebCodecs/`): `ImageDecoder` decodes
+  the frames of an image with `RenderingBackend.CreateImageDecoder` (the decoders of the `img` elements), in tasks of the
+  event loop of its global object, in the order of the `decode()` calls. Its data is a buffer (copied) or a
+  `ReadableStream` of the scripts (`JsReadableStream`: the chunks are read through the realm, `IJsReadableStreamSource`):
+  the backend decoder is opened again when a chunk arrives, its frame count is the one of the tracks (the GIF and WebP
+  frames are counted when their data is complete), and a request waits for its frame
+  (`RenderingImageDecoder.IsLastFrameIncomplete` tells an incomplete frame). An image has one track; the frames are
+  `VideoFrame`s of RGBA pixels (`BitmapPixels`) whose rotation and flip are the EXIF orientation of the image and whose
+  timestamps are the sums of the durations of the previous frames. `VideoFrame` implements the members the decoded frames
+  need (`copyTo()` and `allocationSize()` in the RGB formats, `clone()`, `close()`, the rectangles and the color space);
+  its constructors, the YUV formats and the audio and video codecs are not implemented.
 
 ## Canvas
 
@@ -463,7 +474,7 @@ operations (see [Paint worklet images](#paint-worklet-images)).
   concrete object size (its natural size, or the size of the canvas as the default object size) mapped from the source
   rectangle to the destination rectangle; a pattern rasterizes it at that size. A `video` draws the frame of its media player
   (`MediaPlayer.GetVideoFrame()`) at the natural size of the video, and nothing while its ready state is `HAVE_NOTHING` or
-  `HAVE_METADATA` or when the player gives no frame. An image of another origin (also through a redirect) taints the canvas:
+  `HAVE_METADATA` or when the player gives no frame. A `VideoFrame` (of an `ImageDecoder`) draws its pixels rotated and flipped, at its display size; a closed frame throws an `InvalidStateError`. An image of another origin (also through a redirect) taints the canvas:
   `getImageData()`, `toDataURL()`, `toBlob()` and `convertToBlob()` then throw a `SecurityError`.
 - **Pixels**: `getImageData()`, `putImageData()` (not composited, not clipped, not transformed) and `createImageData()`,
   with the conversion between the color space of the canvas and the one of the image data (`srgb`, `display-p3` and their

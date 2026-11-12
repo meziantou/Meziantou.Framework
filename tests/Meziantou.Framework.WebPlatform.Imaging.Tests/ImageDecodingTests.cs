@@ -66,6 +66,73 @@ public sealed class ImageDecodingTests : IDisposable
     }
 
     [Fact]
+    public async Task ImageDecoder_DecodesTheFramesOfAnAnimation()
+    {
+        #region WebPlatformImaging_ImageDecoder
+        using var context = new BrowsingContext(new BrowsingContextOptions { RenderingBackend = new ImagingRenderingBackend() });
+        context.Navigate("https://example.com/", _ => "<p>Animation</p>");
+        context.EventLoop.RunUntilIdle();
+
+        // A 2x2 GIF of 3 frames that plays once: red (200 ms), transparent (200 ms), green
+        var gif = Convert.FromBase64String("R0lGODlhAgACAPEAAAAAAP8AAAD/AAAA/yH5BAkUAAAALAAAAAACAAIAAAIDjKMAACH5BAkUAAIALAAAAAACAAIAAAIDlKUAACwAAAAAAgACAAACA5SlAAA7");
+        var decoder = new WebCodecs.ImageDecoder(context.Window, new WebCodecs.ImageDecoderInit { Type = "image/gif", Data = gif });
+
+        // The decoder works in the tasks of the event loop of the window
+        var decoding = decoder.Decode(new WebCodecs.ImageDecodeOptions { FrameIndex = 1 });
+        context.EventLoop.RunUntilIdle();
+
+        var track = decoder.Tracks.SelectedTrack!;
+        Assert.True(track.Animated);
+        Assert.Equal(3u, track.FrameCount);
+        Assert.Equal(0f, track.RepetitionCount);
+
+        // The frame: its timestamp and duration are in microseconds, its pixels are RGBA
+        var frame = (await decoding).Image;
+        Assert.Equal(200_000L, frame.Timestamp);
+        Assert.Equal(200_000UL, frame.Duration);
+        Assert.Equal(WebCodecs.VideoPixelFormat.RGBA, frame.Format);
+
+        var pixels = new byte[frame.AllocationSize()];
+        var copy = frame.CopyTo(pixels);
+        context.EventLoop.RunUntilIdle();
+        await copy;
+        Assert.Equal([0, 0, 0, 0], pixels[..4]);
+        frame.Close();
+        decoder.Close();
+        #endregion
+
+        Assert.Equal(16, pixels.Length);
+        Assert.Equal(0u, frame.DisplayWidth);
+    }
+
+    [Fact]
+    public async Task ImageDecoder_RejectsTheFramesTheImageDoesNotHave()
+    {
+        using var context = new BrowsingContext(new BrowsingContextOptions { RenderingBackend = new ImagingRenderingBackend() });
+        context.Navigate("https://example.com/", _ => "<p>Image</p>");
+        context.EventLoop.RunUntilIdle();
+
+        var decoder = new WebCodecs.ImageDecoder(context.Window, new WebCodecs.ImageDecoderInit { Type = "image/gif", Data = ResetGifOfWpt.AsMemory() });
+        var outOfRange = decoder.Decode(new WebCodecs.ImageDecodeOptions { FrameIndex = 3 });
+        var aborted = decoder.Decode(new WebCodecs.ImageDecodeOptions { FrameIndex = 0 });
+        decoder.Reset();
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal("AbortError", (await Assert.ThrowsAsync<DomException>(() => outOfRange)).Name);
+        Assert.Equal("AbortError", (await Assert.ThrowsAsync<DomException>(() => aborted)).Name);
+
+        outOfRange = decoder.Decode(new WebCodecs.ImageDecodeOptions { FrameIndex = 3 });
+        context.EventLoop.RunUntilIdle();
+        await Assert.ThrowsAsync<RangeErrorException>(() => outOfRange);
+
+        // A truncated image whose data is complete cannot be decoded: the decoder is closed
+        var truncated = new WebCodecs.ImageDecoder(context.Window, new WebCodecs.ImageDecoderInit { Type = "image/gif", Data = ResetGifOfWpt[..40] });
+        var first = truncated.Decode();
+        context.EventLoop.RunUntilIdle();
+        Assert.Equal("EncodingError", (await Assert.ThrowsAsync<DomException>(() => first)).Name);
+        Assert.Throws<TypeErrorException>(() => new WebCodecs.ImageDecoder(context.Window, new WebCodecs.ImageDecoderInit { Type = "text/plain", Data = ResetGifOfWpt }));
+    }
+
+    [Fact]
     public void Gif_AnimationFollowsTheClockOfTheEventLoop()
     {
         _pages.Resources["/a.gif"] = (ResetGifOfWpt, "image/gif");

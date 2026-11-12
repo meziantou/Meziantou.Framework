@@ -584,9 +584,9 @@ internal sealed partial class WebIdlBindingsGenerator
 
         code.Append("    if (r.Adapter.IsObject(value))\n    {\n");
 
-        // The streams are implemented in JavaScript (Streams.js): a .NET member only knows that its argument is a stream
+        // The streams are implemented in JavaScript (Streams.js): a .NET member reads them through the realm (JsReadableStream)
         if (types.Exists(t => t.Name == "ReadableStream" && GetInterfaceClrType(t) is null))
-            code.Append("        if (r.IsReadableStream(value)) return global::Meziantou.Framework.WebPlatform.Scripting.JsReadableStream.Instance;\n");
+            code.Append("        if (r.IsReadableStream(value)) return r.ToJsReadableStream(value);\n");
 
         if (types.Exists(IsBufferIdlType))
         {

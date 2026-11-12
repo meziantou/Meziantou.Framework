@@ -37,7 +37,7 @@ Give an [ImagingRenderingBackend](cref:Meziantou.Framework.WebPlatform.Imaging.I
 - the screenshots of the pages and of the elements, and the pages printed as images;
 - the 2D canvases (`canvas.getContext("2d")`, [OffscreenCanvas](cref:Meziantou.Framework.WebPlatform.Dom.OffscreenCanvas)) and the images of the paint worklets;
 - the decoding of the images of the pages: PNG (and animated PNG), JPEG, GIF, WebP, AVIF, JPEG XL, BMP and ICO, with their
-  EXIF orientation and their color profile;
+  EXIF orientation and their color profile, also for the `ImageDecoder` of WebCodecs;
 - the encoding of the canvases as JPEG and WebP (`toDataURL()`, `toBlob()`).
 
 Without a backend, the layout and the geometry work the same, but the images are not decoded (only their size is read),
@@ -51,3 +51,4 @@ several browsing contexts.
 - [PDF output](04-PdfOutput.md): print a document to a PDF with selectable text, links and bookmarks.
 - [Canvas](05-Canvas.md): draw on the canvases of a page from .NET or from its scripts.
 - [Fonts](06-Fonts.md): the bundled fonts, the web fonts and the fonts of the machine.
+- [Image decoding](07-ImageDecoding.md): decode the frames of still and animated images with the `ImageDecoder` of WebCodecs.

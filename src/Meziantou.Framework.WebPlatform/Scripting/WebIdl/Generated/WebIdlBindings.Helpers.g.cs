@@ -217,6 +217,10 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.WebAudio.WaveShaperOptions Defaults_WebAudio_WaveShaperOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecoderInit Defaults_WebCodecs_ImageDecoderInit = new() { Type = default!, Data = default! };
+
+    private static readonly global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameCopyToOptions Defaults_WebCodecs_VideoFrameCopyToOptions = new();
+
     internal static readonly string[] Enum_AccelerometerLocalCoordinateSystem_Values = new[] { "device", "screen" };
 
     internal static readonly string[] Enum_AlignSetting_Values = new[] { "start", "center", "end", "left", "right" };
@@ -404,6 +408,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_TouchType_Values = new[] { "direct", "stylus" };
 
     internal static readonly string[] Enum_URLPatternComponent_Values = new[] { "protocol", "username", "password", "hostname", "port", "pathname", "search", "hash" };
+
+    internal static readonly string[] Enum_VideoColorPrimaries_Values = new[] { "bt709", "bt470bg", "smpte170m", "bt2020", "smpte432" };
+
+    internal static readonly string[] Enum_VideoMatrixCoefficients_Values = new[] { "rgb", "bt709", "bt470bg", "smpte170m", "bt2020-ncl" };
+
+    internal static readonly string[] Enum_VideoPixelFormat_Values = new[] { "I420", "I420P10", "I420P12", "I420A", "I420AP10", "I420AP12", "I422", "I422P10", "I422P12", "I422A", "I422AP10", "I422AP12", "I444", "I444P10", "I444P12", "I444A", "I444AP10", "I444AP12", "NV12", "RGBA", "RGBX", "BGRA", "BGRX" };
+
+    internal static readonly string[] Enum_VideoTransferCharacteristics_Values = new[] { "bt709", "smpte170m", "iec61966-2-1", "linear", "pq", "hlg" };
 
     internal static readonly string[] Enum_WakeLockType_Values = new[] { "screen" };
 
@@ -3182,6 +3194,68 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_WebCodecs_ImageDecodeOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecodeOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "completeFramesOnly", r.FromBoolean(value.CompleteFramesOnly));
+        r.SetMember(result, "frameIndex", r.FromNumber((double)value.FrameIndex));
+        return result;
+    }
+
+    internal static TValue FromDictionary_WebCodecs_ImageDecodeResult(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecodeResult value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "complete", r.FromBoolean(value.Complete));
+        r.SetMember(result, "image", r.Wrap(value.Image));
+        return result;
+    }
+
+    internal static TValue FromDictionary_WebCodecs_ImageDecoderInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecoderInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "colorSpaceConversion", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ColorSpaceConversion(value.ColorSpaceConversion)));
+        r.SetMember(result, "data", r.ToJs((object?)value.Data));
+        if (value.DesiredHeight is not null) r.SetMember(result, "desiredHeight", (value.DesiredHeight.HasValue ? r.FromNumber((double)value.DesiredHeight.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.DesiredWidth is not null) r.SetMember(result, "desiredWidth", (value.DesiredWidth.HasValue ? r.FromNumber((double)value.DesiredWidth.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.PreferAnimation is not null) r.SetMember(result, "preferAnimation", r.FromBoolean(value.PreferAnimation));
+        r.SetMember(result, "type", r.FromString(value.Type));
+        return result;
+    }
+
+    internal static TValue FromDictionary_WebCodecs_PlaneLayout(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "offset", r.FromNumber((double)value.Offset));
+        r.SetMember(result, "stride", r.FromNumber((double)value.Stride));
+        return result;
+    }
+
+    internal static TValue FromDictionary_WebCodecs_VideoColorSpaceInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorSpaceInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "fullRange", r.FromBoolean(value.FullRange));
+        r.SetMember(result, "matrix", (value.Matrix.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_VideoMatrixCoefficients(value.Matrix.GetValueOrDefault())) : r.Adapter.Null));
+        r.SetMember(result, "primaries", (value.Primaries.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_VideoColorPrimaries(value.Primaries.GetValueOrDefault())) : r.Adapter.Null));
+        r.SetMember(result, "transfer", (value.Transfer.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_VideoTransferCharacteristics(value.Transfer.GetValueOrDefault())) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_WebCodecs_VideoFrameCopyToOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameCopyToOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.ColorSpace is not null) r.SetMember(result, "colorSpace", (value.ColorSpace.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_PredefinedColorSpace(value.ColorSpace.GetValueOrDefault())) : r.Adapter.Null));
+        if (value.Format is not null) r.SetMember(result, "format", (value.Format.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_VideoPixelFormat(value.Format.GetValueOrDefault())) : r.Adapter.Null));
+        if (value.Layout is not null) r.SetMember(result, "layout", r.FromSequence(value.Layout, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_PlaneLayout(r, dictionaryValue) : r.Adapter.Null)));
+        if (value.Rect is not null) r.SetMember(result, "rect", (value.Rect is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DomRectInit(r, dictionaryValue2) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_WebCodecs_VideoFrameMetadata(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameMetadata value)
+    {
+        var result = r.CreateObject();
+        return result;
+    }
+
     internal static string FromEnum_Animations_AnimationPlayState(global::Meziantou.Framework.WebPlatform.Animations.AnimationPlayState value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Animations.AnimationPlayState.Idle => "idle",
@@ -4197,6 +4271,65 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         global::Meziantou.Framework.WebPlatform.WebAudio.PanningModelType.EqualPower => "equalpower",
         global::Meziantou.Framework.WebPlatform.WebAudio.PanningModelType.Hrtf => "HRTF",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_WebCodecs_VideoColorPrimaries(global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries.Bt709 => "bt709",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries.Bt470bg => "bt470bg",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries.Smpte170m => "smpte170m",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries.Bt2020 => "bt2020",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries.Smpte432 => "smpte432",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_WebCodecs_VideoMatrixCoefficients(global::Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients.Rgb => "rgb",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients.Bt709 => "bt709",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients.Bt470bg => "bt470bg",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients.Smpte170m => "smpte170m",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients.Bt2020Ncl => "bt2020-ncl",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_WebCodecs_VideoPixelFormat(global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I420 => "I420",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I420P10 => "I420P10",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I420P12 => "I420P12",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I420A => "I420A",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I420AP10 => "I420AP10",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I420AP12 => "I420AP12",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I422 => "I422",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I422P10 => "I422P10",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I422P12 => "I422P12",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I422A => "I422A",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I422AP10 => "I422AP10",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I422AP12 => "I422AP12",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I444 => "I444",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I444P10 => "I444P10",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I444P12 => "I444P12",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I444A => "I444A",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I444AP10 => "I444AP10",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I444AP12 => "I444AP12",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.NV12 => "NV12",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.RGBA => "RGBA",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.RGBX => "RGBX",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.BGRA => "BGRA",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.BGRX => "BGRX",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_WebCodecs_VideoTransferCharacteristics(global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics.Bt709 => "bt709",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics.Smpte170m => "smpte170m",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics.Iec6196621 => "iec61966-2-1",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics.Linear => "linear",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics.Pq => "pq",
+        global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics.Hlg => "hlg",
         _ => value.ToString(),
     };
 
@@ -9596,6 +9729,111 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecodeOptions ToDictionary_WebCodecs_ImageDecodeOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ImageDecodeOptions");
+        var m0_value = r.GetDictionaryMember(value, "completeFramesOnly");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)true : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "frameIndex");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (uint)(uint)(0d) : r.ToUnsignedLong(m1_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+        return new global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecodeOptions
+        {
+            CompleteFramesOnly = m0,
+            FrameIndex = m1,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecoderInit ToDictionary_WebCodecs_ImageDecoderInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ImageDecoderInit");
+        var m0_value = r.GetDictionaryMember(value, "colorSpaceConversion");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (string)"default" : r.ToEnumerationValue(m0_value, "ColorSpaceConversion", WebIdlHelpers<TAdapter, TValue>.Enum_ColorSpaceConversion_Values);
+        var m1_value = r.GetDictionaryMember(value, "data");
+        if (r.Adapter.IsUndefined(m1_value)) throw r.MissingRequiredDictionaryMember("ImageDecoderInit", "data");
+        var m1 = WebIdlHelpers<TAdapter, TValue>.ToUnion_5e043c6d(r, m1_value);
+        var m2_value = r.GetDictionaryMember(value, "desiredHeight");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (uint?)r.ToUnsignedLong(m2_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange) : default;
+        var m3_value = r.GetDictionaryMember(value, "desiredWidth");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (uint?)r.ToUnsignedLong(m3_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange) : default;
+        var m4_value = r.GetDictionaryMember(value, "preferAnimation");
+        var m4_present = !r.Adapter.IsUndefined(m4_value);
+        var m4 = m4_present ? (bool?)r.ToBoolean(m4_value) : default;
+        var m5_value = r.GetDictionaryMember(value, "type");
+        if (r.Adapter.IsUndefined(m5_value)) throw r.MissingRequiredDictionaryMember("ImageDecoderInit", "type");
+        var m5 = r.ToDomString(m5_value);
+        return new global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecoderInit
+        {
+            ColorSpaceConversion = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_ColorSpaceConversion(m0),
+            Data = m1,
+            DesiredHeight = m2_present ? m2 : Defaults_WebCodecs_ImageDecoderInit.DesiredHeight,
+            DesiredWidth = m3_present ? m3 : Defaults_WebCodecs_ImageDecoderInit.DesiredWidth,
+            PreferAnimation = m4_present ? m4 : Defaults_WebCodecs_ImageDecoderInit.PreferAnimation,
+            Type = m5,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout ToDictionary_WebCodecs_PlaneLayout(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "PlaneLayout");
+        var m0_value = r.GetDictionaryMember(value, "offset");
+        if (r.Adapter.IsUndefined(m0_value)) throw r.MissingRequiredDictionaryMember("PlaneLayout", "offset");
+        var m0 = r.ToUnsignedLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+        var m1_value = r.GetDictionaryMember(value, "stride");
+        if (r.Adapter.IsUndefined(m1_value)) throw r.MissingRequiredDictionaryMember("PlaneLayout", "stride");
+        var m1 = r.ToUnsignedLong(m1_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+        return new global::Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout
+        {
+            Offset = m0,
+            Stride = m1,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorSpaceInit ToDictionary_WebCodecs_VideoColorSpaceInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "VideoColorSpaceInit");
+        var m0_value = r.GetDictionaryMember(value, "fullRange");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool?)(bool?)null : (r.IsNullOrUndefined(m0_value) ? (bool?)null : r.ToBoolean(m0_value));
+        var m1_value = r.GetDictionaryMember(value, "matrix");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (string?)(string?)null : (r.IsNullOrUndefined(m1_value) ? (string?)null : r.ToEnumerationValue(m1_value, "VideoMatrixCoefficients", WebIdlHelpers<TAdapter, TValue>.Enum_VideoMatrixCoefficients_Values));
+        var m2_value = r.GetDictionaryMember(value, "primaries");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (string?)(string?)null : (r.IsNullOrUndefined(m2_value) ? (string?)null : r.ToEnumerationValue(m2_value, "VideoColorPrimaries", WebIdlHelpers<TAdapter, TValue>.Enum_VideoColorPrimaries_Values));
+        var m3_value = r.GetDictionaryMember(value, "transfer");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (string?)(string?)null : (r.IsNullOrUndefined(m3_value) ? (string?)null : r.ToEnumerationValue(m3_value, "VideoTransferCharacteristics", WebIdlHelpers<TAdapter, TValue>.Enum_VideoTransferCharacteristics_Values));
+        return new global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorSpaceInit
+        {
+            FullRange = m0,
+            Matrix = (m1 is { } enumValue_m1 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_WebCodecs_VideoMatrixCoefficients(enumValue_m1) : (global::Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients?)null),
+            Primaries = (m2 is { } enumValue_m2 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_WebCodecs_VideoColorPrimaries(enumValue_m2) : (global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries?)null),
+            Transfer = (m3 is { } enumValue_m3 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_WebCodecs_VideoTransferCharacteristics(enumValue_m3) : (global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics?)null),
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameCopyToOptions ToDictionary_WebCodecs_VideoFrameCopyToOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "VideoFrameCopyToOptions");
+        var m0_value = r.GetDictionaryMember(value, "colorSpace");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (string?)r.ToEnumerationValue(m0_value, "PredefinedColorSpace", WebIdlHelpers<TAdapter, TValue>.Enum_PredefinedColorSpace_Values) : default;
+        var m1_value = r.GetDictionaryMember(value, "format");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (string?)r.ToEnumerationValue(m1_value, "VideoPixelFormat", WebIdlHelpers<TAdapter, TValue>.Enum_VideoPixelFormat_Values) : default;
+        var m2_value = r.GetDictionaryMember(value, "layout");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout>?)r.ToSequence<global::Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout>(m2_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_WebCodecs_PlaneLayout(r, e)) : default;
+        var m3_value = r.GetDictionaryMember(value, "rect");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (global::Meziantou.Framework.WebPlatform.Dom.DomRectInit?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_DomRectInit(r, m3_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameCopyToOptions
+        {
+            ColorSpace = m0_present ? (m0 is { } enumValue_m0 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_PredefinedColorSpace(enumValue_m0) : (global::Meziantou.Framework.WebPlatform.Dom.PredefinedColorSpace?)null) : Defaults_WebCodecs_VideoFrameCopyToOptions.ColorSpace,
+            Format = m1_present ? (m1 is { } enumValue_m1 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_WebCodecs_VideoPixelFormat(enumValue_m1) : (global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat?)null) : Defaults_WebCodecs_VideoFrameCopyToOptions.Format,
+            Layout = m2_present ? m2 : Defaults_WebCodecs_VideoFrameCopyToOptions.Layout,
+            Rect = m3_present ? m3 : Defaults_WebCodecs_VideoFrameCopyToOptions.Rect,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Animations.CompositeOperation ToEnum_Animations_CompositeOperation(string value) => value switch
     {
         "replace" => global::Meziantou.Framework.WebPlatform.Animations.CompositeOperation.Replace,
@@ -10343,6 +10581,65 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
+    internal static global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries ToEnum_WebCodecs_VideoColorPrimaries(string value) => value switch
+    {
+        "bt709" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries.Bt709,
+        "bt470bg" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries.Bt470bg,
+        "smpte170m" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries.Smpte170m,
+        "bt2020" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries.Bt2020,
+        "smpte432" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries.Smpte432,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients ToEnum_WebCodecs_VideoMatrixCoefficients(string value) => value switch
+    {
+        "rgb" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients.Rgb,
+        "bt709" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients.Bt709,
+        "bt470bg" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients.Bt470bg,
+        "smpte170m" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients.Smpte170m,
+        "bt2020-ncl" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients.Bt2020Ncl,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat ToEnum_WebCodecs_VideoPixelFormat(string value) => value switch
+    {
+        "I420" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I420,
+        "I420P10" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I420P10,
+        "I420P12" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I420P12,
+        "I420A" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I420A,
+        "I420AP10" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I420AP10,
+        "I420AP12" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I420AP12,
+        "I422" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I422,
+        "I422P10" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I422P10,
+        "I422P12" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I422P12,
+        "I422A" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I422A,
+        "I422AP10" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I422AP10,
+        "I422AP12" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I422AP12,
+        "I444" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I444,
+        "I444P10" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I444P10,
+        "I444P12" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I444P12,
+        "I444A" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I444A,
+        "I444AP10" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I444AP10,
+        "I444AP12" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.I444AP12,
+        "NV12" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.NV12,
+        "RGBA" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.RGBA,
+        "RGBX" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.RGBX,
+        "BGRA" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.BGRA,
+        "BGRX" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoPixelFormat.BGRX,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics ToEnum_WebCodecs_VideoTransferCharacteristics(string value) => value switch
+    {
+        "bt709" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics.Bt709,
+        "smpte170m" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics.Smpte170m,
+        "iec61966-2-1" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics.Iec6196621,
+        "linear" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics.Linear,
+        "pq" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics.Pq,
+        "hlg" => global::Meziantou.Framework.WebPlatform.WebCodecs.VideoTransferCharacteristics.Hlg,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
     internal static global::Meziantou.Framework.WebPlatform.Animations.EffectDuration ToUnionStruct_Animations_EffectDuration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, object? value) => value switch
     {
         double v => v,
@@ -10707,6 +11004,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement) return platformObject;
             if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.ImageBitmap) return platformObject;
             if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.OffscreenCanvas) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrame) return platformObject;
             if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssImageValue) return platformObject;
             if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.FileApi.Blob) return platformObject;
             if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.ImageData) return platformObject;
@@ -10872,7 +11170,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         if (r.Adapter.IsObject(value))
         {
-            if (r.IsReadableStream(value)) return global::Meziantou.Framework.WebPlatform.Scripting.JsReadableStream.Instance;
+            if (r.IsReadableStream(value)) return r.ToJsReadableStream(value);
         }
         return r.ToDomString(value);
     }
@@ -11107,6 +11405,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return r.ToEnumerationValue(value, "SanitizerPresets", WebIdlHelpers<TAdapter, TValue>.Enum_SanitizerPresets_Values);
     }
 
+    /// <summary>((ArrayBuffer or SharedArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView)) or ReadableStream)</summary>
+    internal static object? ToUnion_5e043c6d(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.IsReadableStream(value)) return r.ToJsReadableStream(value);
+            if (r.TryToBufferSource(value, 32767u, true) is { } buffer) return buffer;
+        }
+        throw r.CreateTypeError("The value cannot be converted to ((ArrayBuffer or SharedArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView)) or ReadableStream)");
+    }
+
     /// <summary>(SetHTMLUnsafeOptions or TrustedHTMLParserOptions)</summary>
     internal static object? ToUnion_6113ec85(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
@@ -11246,7 +11555,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         }
         if (r.Adapter.IsObject(value))
         {
-            if (r.IsReadableStream(value)) return global::Meziantou.Framework.WebPlatform.Scripting.JsReadableStream.Instance;
+            if (r.IsReadableStream(value)) return r.ToJsReadableStream(value);
             if (r.TryToBufferSource(value, 32765u, false) is { } buffer) return buffer;
         }
         return r.ToUsvString(value);
@@ -11384,6 +11693,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement) return platformObject;
             if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.ImageBitmap) return platformObject;
             if (platformObject is global::Meziantou.Framework.WebPlatform.Dom.OffscreenCanvas) return platformObject;
+            if (platformObject is global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrame) return platformObject;
             if (platformObject is global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssImageValue) return platformObject;
         }
         if (r.Adapter.IsObject(value))

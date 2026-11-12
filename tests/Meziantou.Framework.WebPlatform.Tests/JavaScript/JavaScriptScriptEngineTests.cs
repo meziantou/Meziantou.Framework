@@ -668,6 +668,35 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void Hyperlink_JavaScriptUrlThatNavigates_KeepsTheDocumentUntilTheNavigationCommits()
+    {
+        var loader = new RecordingLoader();
+        loader.Resources["https://example.com/next.html"] = new DocumentResource("<title>next</title>") { Headers = [new("Content-Type", "text/html")] };
+        var messages = new List<string>();
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            DocumentLoader = loader,
+            TimeProvider = _clock,
+            UnhandledScriptError = (_, error) => _errors.Add(error),
+            ConsoleMessage = (_, message) => messages.Add(message.Text),
+        });
+
+        context.Navigate("https://example.com/", _ => """
+            <a href="javascript:postMessage('m', '*'); location.href = 'next.html'; 'result'">x</a>
+            <script>
+              addEventListener('message', e => console.log('message ' + e.data));
+              document.querySelector('a').click();
+            </script>
+            """);
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(["message m"], messages);
+        Assert.Equal("https://example.com/next.html", context.Document.Url);
+        Assert.Equal("next", context.Document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void Scripts_ModifyTheDocument()
     {
         var document = Load("""

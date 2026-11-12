@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of html/browsers, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 697 | 748 | 0 | 93% |
+| [Stable](#stable-tests) | 698 | 748 | 0 | 93% |
 | [Tentative](#tentative-tests) | 11 | 17 | 0 | 65% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **712** | **769** | **0** | **93%** |
+| **All** | **713** | **769** | **0** | **93%** |
 
 ## Failure reasons
 
@@ -23,7 +23,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **NOT IMPLEMENTED**: 7
 - **REQUIRES**: 5
   - `layout`: 5
-- **TEST RUNNER**: 9
+- **TEST RUNNER**: 8
 - **OUT OF SCOPE**: 1
 
 ## Stable tests
@@ -144,7 +144,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`browsing-the-web/navigating-across-documents/form-submit-and-window-stop.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/form-submit-and-window-stop.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/navigating-across-documents/fragment-replace.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/fragment-replace.html) | Pass | 1 / 1 |  |  |
 | [`browsing-the-web/navigating-across-documents/grandparent_location_aboutsrcdoc.sub.window.js`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/grandparent_location_aboutsrcdoc.sub.window.js) | Timeout | 0 / 6 | TEST RUNNER | the `.window.html` wrapper of `resources/child_with_srcdoc_subframe.window.js` is not generated (404); the expected SecurityError message is also Blink's exact text |
-| [`browsing-the-web/navigating-across-documents/grandparent_session_aboutsrcdoc.sub.window.js`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/grandparent_session_aboutsrcdoc.sub.window.js) | Timeout | 0 / 4 | TEST RUNNER | the `.window.html` wrapper of `resources/child_with_srcdoc_subframe.window.js` is not generated (404), so the child frame never reports |
+| [`browsing-the-web/navigating-across-documents/grandparent_session_aboutsrcdoc.sub.window.js`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/grandparent_session_aboutsrcdoc.sub.window.js) | Pass | 4 / 4 |  |  |
 | [`browsing-the-web/navigating-across-documents/initial-empty-document/iframe-nosrc.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/iframe-nosrc.html) | Pass | 7 / 7 |  |  |
 | [`browsing-the-web/navigating-across-documents/initial-empty-document/iframe-src-204-fragment.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/iframe-src-204-fragment.html) | Pass | 5 / 5 |  |  |
 | [`browsing-the-web/navigating-across-documents/initial-empty-document/iframe-src-204-pushState-replaceState.html`](https://wpt.fyi/results/html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/iframe-src-204-pushState-replaceState.html) | Pass | 2 / 2 |  |  |

@@ -37,7 +37,7 @@ public class JiraLinkOptions : LinkOptions
     /// </summary>
     public virtual string GetUrl()
     {
-        var url = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var url = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
         url.Append(BaseUrl.AsSpan().TrimEnd('/'));
         url.Append('/');
         url.Append(BasePath.AsSpan().Trim('/'));

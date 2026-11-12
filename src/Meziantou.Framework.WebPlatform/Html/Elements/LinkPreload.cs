@@ -107,10 +107,10 @@ internal static class LinkPreload
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/links.html#preload: fetches a request and adds its entry to the map of preloaded
     /// resources of the document. <paramref name="processResponse"/> is called with the response from a task of the event
-    /// loop, after the fetch that consumed the entry (if any). Returns false when nothing is fetched (see
-    /// <see cref="SubresourceFetching.FetchResponse"/>).
+    /// loop, after the fetch that consumed the entry (if any). <paramref name="initiatorType"/> is the initiator type of its
+    /// resource timing entry. Returns false when nothing is fetched (see <see cref="SubresourceFetching.FetchResponse"/>).
     /// </summary>
-    public static bool Preload(Document document, FetchRequest request, Action<FetchResponse>? processResponse)
+    public static bool Preload(Document document, FetchRequest request, Action<FetchResponse>? processResponse, string initiatorType = "link")
     {
         var entry = new PreloadEntry(request.Integrity);
         var key = Document.GetPreloadKey(request);
@@ -122,7 +122,7 @@ internal static class LinkPreload
                 entry.SetResponse(response);
                 processResponse?.Invoke(response);
             },
-            initiatorType: "link");
+            initiatorType);
         if (!fetched)
             return false;
 
@@ -135,9 +135,10 @@ internal static class LinkPreload
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/semantics.html#process-link-headers: processes the <c>Link</c> headers of the
     /// response of a document, once the document is created. The <c>preload</c> links are preloaded; as in the browsers, the
-    /// <c>modulepreload</c> links are fetched into the module map (the specification makes them do nothing). The other
-    /// link types are ignored, and the media of the links are evaluated at once (the specification processes the links that
-    /// have a <c>media</c> attribute once the viewport meta element is known).
+    /// <c>modulepreload</c> links are fetched into the module map (the specification makes them do nothing). As in Firefox,
+    /// the <c>prefetch</c> links are prefetched, and the <c>stylesheet</c> and <c>icon</c> links are fetched (the library
+    /// does not use their responses). The other link types are ignored, and the media of the links are evaluated at once
+    /// (the specification processes the links that have a <c>media</c> attribute once the viewport meta element is known).
     /// </summary>
     public static void ProcessLinkHeaders(Document document, IReadOnlyList<KeyValuePair<string, string>> headers)
     {
@@ -151,22 +152,85 @@ internal static class LinkPreload
 
             foreach (var link in LinkHeaderParser.Parse(value))
             {
-                ProcessLinkHeader(document, link);
+                ProcessLinkHeader(document, link, document.UrlRecord, subresource: false);
             }
         }
     }
 
-    private static void ProcessLinkHeader(Document document, LinkHeaderValue link)
+    /// <summary>
+    /// Processes the <c>Link</c> headers of the response of a subresource of a document (a style sheet, an image, a
+    /// script, a font or a track), as Chromium and WebKit do (the specification only processes the ones of the documents):
+    /// the <c>preload</c> links are preloaded into the map of preloaded resources of the document, from a task of its event
+    /// loop. Their URLs are resolved against the URL of the response, and, as in Chromium, the requests have no referrer
+    /// (the <c>referrerpolicy</c> parameter is ignored, so that a cross-origin subresource cannot leak the URL of the
+    /// document). The <c>Link</c> headers of a preloaded response, of the response of a preload created by a <c>Link</c>
+    /// header of a subresource, and of a speculative fetch are not processed.
+    /// </summary>
+    public static void ProcessSubresourceLinkHeaders(FetchRequest request, FetchResponse internalResponse)
     {
-        var isPreload = false;
-        var isModulePreload = false;
-        foreach (var token in (link.GetParameter("rel") ?? "").Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries))
+        if (request.IsSpeculative || request.ConsumedPreload || request.IsFromSubresourceLinkHeader || request.Mode == RequestMode.Navigate
+            || request.Destination is not (RequestDestination.Font or RequestDestination.Image or RequestDestination.Script or RequestDestination.Style or RequestDestination.Track)
+            || request.Client is not { WorkerGlobal: null, BrowsingContext: { } browsingContext } document
+            || HeaderList.Get(internalResponse.HeaderList, "Link") is null)
         {
-            isPreload |= InfraAscii.EqualsIgnoreAsciiCase(token, "preload");
-            isModulePreload |= InfraAscii.EqualsIgnoreAsciiCase(token, "modulepreload");
+            return;
         }
 
-        if (!isPreload && !isModulePreload)
+        var baseUrl = internalResponse.UrlList.Count > 0 ? internalResponse.UrlList[^1] : request.CurrentUrl;
+        var headers = internalResponse.HeaderList.ToArray();
+        browsingContext.EventLoop.QueueTask(() =>
+        {
+            if (document.BrowsingContext is null)
+                return;
+
+            foreach (var (name, value) in headers)
+            {
+                if (!InfraAscii.EqualsIgnoreAsciiCase(name, "Link"))
+                    continue;
+
+                foreach (var link in LinkHeaderParser.Parse(value))
+                {
+                    ProcessLinkHeader(document, link, baseUrl, subresource: true);
+                }
+            }
+        });
+    }
+
+    /// <summary>Whether the relation types of a link (its <c>rel</c> parameter) contain <c>preload</c> and <c>modulepreload</c>.</summary>
+    public static (bool IsPreload, bool IsModulePreload) GetPreloadRelations(LinkHeaderValue link)
+    {
+        var relations = GetRelations(link);
+        return (relations.HasFlag(LinkHeaderRelations.Preload), relations.HasFlag(LinkHeaderRelations.ModulePreload));
+    }
+
+    private static LinkHeaderRelations GetRelations(LinkHeaderValue link)
+    {
+        var relations = LinkHeaderRelations.None;
+        foreach (var token in (link.GetParameter("rel") ?? "").Split([' ', '\t', '\n', '\f', '\r'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            relations |= InfraAscii.ToAsciiLowercase(token) switch
+            {
+                "preload" => LinkHeaderRelations.Preload,
+                "modulepreload" => LinkHeaderRelations.ModulePreload,
+                "prefetch" => LinkHeaderRelations.Prefetch,
+                "stylesheet" => LinkHeaderRelations.StyleSheet,
+                "icon" => LinkHeaderRelations.Icon,
+                _ => LinkHeaderRelations.None,
+            };
+        }
+
+        return relations;
+    }
+
+    private static void ProcessLinkHeader(Document document, LinkHeaderValue link, UrlRecord baseUrl, bool subresource)
+    {
+        var relations = GetRelations(link);
+        if (subresource)
+        {
+            relations &= LinkHeaderRelations.Preload;
+        }
+
+        if (relations == LinkHeaderRelations.None)
             return;
 
         // https://html.spec.whatwg.org/multipage/semantics.html#create-link-options-from-element (from the attributes of the header)
@@ -176,13 +240,13 @@ internal static class LinkPreload
         var href = link.Target;
         var crossOrigin = link.GetParameter("crossorigin");
         var useCredentials = crossOrigin is not null && InfraAscii.EqualsIgnoreAsciiCase(crossOrigin, "use-credentials");
-        var referrerPolicy = InfraAscii.ToAsciiLowercase(link.GetParameter("referrerpolicy") ?? "");
+        var referrerPolicy = subresource ? "no-referrer" : InfraAscii.ToAsciiLowercase(link.GetParameter("referrerpolicy") ?? "");
         if (!ReferrerPolicies.IsValid(referrerPolicy))
         {
             referrerPolicy = "";
         }
 
-        if (isPreload)
+        if (relations.HasFlag(LinkHeaderRelations.Preload))
         {
             if (TranslatePreloadDestination(link.GetParameter("as")) is not { } destination || !TypeMatchesDestination(link.GetParameter("type") ?? "", destination))
                 return;
@@ -192,27 +256,62 @@ internal static class LinkPreload
                 href = source;
             }
 
-            if (href.Length == 0 || UrlParser.Parse(href, document.UrlRecord) is not { } url)
+            if (href.Length == 0 || UrlParser.Parse(href, baseUrl) is not { } url)
                 return;
 
             var request = SubresourceFetching.CreateRequest(document, url, destination, cors: crossOrigin is not null, referrerPolicy, initiator: null, useCredentials: useCredentials, integrity: link.GetParameter("integrity") ?? "");
             request.Nonce = link.GetParameter("nonce") ?? "";
+            request.IsFromSubresourceLinkHeader = subresource;
             Preload(document, request, processResponse: null);
             return;
         }
 
-        if (href.Length == 0 || UrlParser.Parse(href, document.UrlRecord) is not { } moduleUrl)
+        if (href.Length == 0 || UrlParser.Parse(href, baseUrl) is not { } linkUrl)
             return;
 
-        if (document.BrowsingContext?.Options is not { ScriptingEnabled: true, ScriptEngine: { SupportsModuleScripts: true } engine } || document.DefaultView is not { } window || !ReferenceEquals(window.Document, document))
-            return;
+        if (relations.HasFlag(LinkHeaderRelations.ModulePreload))
+        {
+            if (document.BrowsingContext?.Options is not { ScriptingEnabled: true, ScriptEngine: { SupportsModuleScripts: true } engine } || document.DefaultView is not { } window || !ReferenceEquals(window.Document, document))
+                return;
 
-        var (moduleDestination, moduleType) = TranslateModulePreloadDestination(link.GetParameter("as"));
-        if (moduleType is null)
-            return;
+            var (moduleDestination, moduleType) = TranslateModulePreloadDestination(link.GetParameter("as"));
+            if (moduleType is null)
+                return;
 
-        var options = new ModuleFetchOptions { IncludeCredentials = useCredentials, ReferrerPolicy = referrerPolicy, Nonce = link.GetParameter("nonce") ?? "" };
-        engine.PreloadModuleScript(window, moduleUrl.Serialize(), moduleType.Value, moduleDestination, options, element: null, static _ => { });
+            var options = new ModuleFetchOptions { IncludeCredentials = useCredentials, ReferrerPolicy = referrerPolicy, Nonce = link.GetParameter("nonce") ?? "" };
+            engine.PreloadModuleScript(window, linkUrl.Serialize(), moduleType.Value, moduleDestination, options, element: null, static _ => { });
+            return;
+        }
+
+        // https://html.spec.whatwg.org/multipage/links.html#link-type-prefetch: the response is used by the next requests of
+        // the URL through the HTTP cache
+        if (relations.HasFlag(LinkHeaderRelations.Prefetch))
+        {
+            var prefetch = SubresourceFetching.CreateRequest(document, linkUrl, RequestDestination.Empty, cors: crossOrigin is not null, referrerPolicy, initiator: null, useCredentials: useCredentials);
+            prefetch.IsPrefetch = true;
+            SubresourceFetching.FetchResponse(document, prefetch, onComplete: null, initiatorType: "link");
+            return;
+        }
+
+        // As in Firefox, the style sheet (destination "style") and the icon (whose destination is the empty string, as the
+        // icons of the browsers) are fetched in no-cors mode. The library does not apply the style sheets of the Link
+        // headers and does not render the icons: their responses are not used, and the icons are not reported to the
+        // performance timeline (as in the browsers, which fetch them outside of the page).
+        var isStyleSheet = relations.HasFlag(LinkHeaderRelations.StyleSheet);
+        var resource = SubresourceFetching.CreateRequest(document, linkUrl, isStyleSheet ? RequestDestination.Style : RequestDestination.Empty, cors: isStyleSheet && crossOrigin is not null, referrerPolicy, initiator: null, useCredentials: useCredentials);
+        SubresourceFetching.FetchResponse(document, resource, onComplete: null, initiatorType: "link", reportTiming: isStyleSheet);
+    }
+
+    /// <summary>The relation types of a link of a <c>Link</c> header that are processed.</summary>
+    [Flags]
+    private enum LinkHeaderRelations
+    {
+        None = 0,
+        Preload = 1,
+        ModulePreload = 2,
+        Prefetch = 4,
+        StyleSheet = 8,
+        Icon = 16,
     }
 }
 

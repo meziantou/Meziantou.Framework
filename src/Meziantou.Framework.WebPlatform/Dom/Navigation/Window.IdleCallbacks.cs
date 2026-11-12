@@ -132,9 +132,14 @@ public partial class Window
         var eventLoop = EventLoop;
         var continuationState = eventLoop.CurrentContinuationState;
         eventLoop.CurrentContinuationState = SchedulerContinuationState.Create(Scheduler, new SchedulingState(AbortSource: null, TaskSignal.CreateFixedPriorityUnabortableSignal(TaskPriority.Background)));
+
+        // The callback runs in the long animation frame of the window, whatever the realm of its function
+        var callbackOwner = eventLoop.CallbackOwnerWindow;
+        eventLoop.CallbackOwnerWindow = this;
         try
         {
             callback(deadline);
+            eventLoop.CallbackOwnerWindow = callbackOwner;
             eventLoop.PerformMicrotaskCheckpoint();
         }
 #pragma warning disable CA1031 // The exceptions of the callbacks are reported
@@ -145,6 +150,7 @@ public partial class Window
         }
         finally
         {
+            eventLoop.CallbackOwnerWindow = callbackOwner;
             eventLoop.CurrentContinuationState = continuationState;
         }
     }

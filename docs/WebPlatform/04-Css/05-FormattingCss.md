@@ -49,6 +49,12 @@ A value left open at the end of the style sheet (`div { width: var(--x`) is seri
 the default formatter writes `div { width: var(--x; }`. [CssMinifyFormatter](cref:Meziantou.Framework.WebPlatform.Formatting.CssMinifyFormatter) and [CssPrettyFormatter](cref:Meziantou.Framework.WebPlatform.Formatting.CssPrettyFormatter) close it
 (`var(--x)`), so that their output is valid CSS.
 
+The same goes for a shorthand whose value contains `var()` when one of its longhands is overridden
+(`border: var(--w) solid; border-right-color: red`): its longhands have no value until the variable is substituted, so the
+default formatter writes them with an empty value (`border-top-width: ;`), as the browsers. [CssMinifyFormatter](cref:Meziantou.Framework.WebPlatform.Formatting.CssMinifyFormatter) and
+[CssPrettyFormatter](cref:Meziantou.Framework.WebPlatform.Formatting.CssPrettyFormatter) write the shorthand instead, followed by the declarations that override its longhands
+(`border:var(--w) solid;border-right-color:red`).
+
 ## Minify
 
 [CssMinifyFormatter](cref:Meziantou.Framework.WebPlatform.Formatting.CssMinifyFormatter) removes the whitespace that is not needed and the last semicolon of each block. Its options, all

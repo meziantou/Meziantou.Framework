@@ -186,6 +186,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         DefineConsoleGlobal();
         DefineWebAssemblyGlobal();
+        CaptureJsonFunctions();
         if (Window is null)
         {
             // The global object of a worker implements the interface of its kind (e.g. DedicatedWorkerGlobalScope)
@@ -1828,6 +1829,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         // The library completes the task synchronously on the thread of the event loop (e.g. when the element is defined)
         _ = task.ContinueWith(completed =>
         {
+            // https://w3c.github.io/long-animation-frames/#record-timing-info-for-promise-resolver
+            if (GlobalScope.EventLoop is { HasPendingScriptEntryPoint: false } eventLoop && GlobalScope is Window)
+            {
+                eventLoop.RecordPromiseResolverScript(GlobalScope, rejected: !completed.IsCompletedSuccessfully);
+            }
+
             if (completed.IsFaulted)
             {
                 // A promise marked as handled after its conversion (e.g. the ready promise of a canceled animation) does not report its rejection

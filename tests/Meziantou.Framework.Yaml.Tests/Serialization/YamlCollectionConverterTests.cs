@@ -492,6 +492,40 @@ public sealed class YamlCollectionConverterTests
         Assert.Throws<NotSupportedException>(() => YamlSerializer.Deserialize<Dictionary<CollectionConverterModel, int>>("a: 1\n"));
     }
 
+    [Fact]
+    public void DictionaryKey_WithConverterAttribute_IsWrittenByTheConverter()
+    {
+        var value = new Dictionary<ConverterKey, int>
+        {
+            [new ConverterKey("a")] = 1,
+            [new ConverterKey("b: c")] = 2, // Needs quotes
+            [new ConverterKey("42")] = 3, // Would be read as a number without quotes
+        };
+
+        var yaml = YamlSerializer.Serialize(value);
+        Assert.Equal("key-a: 1\n\"key-b: c\": 2\nkey-42: 3\n", yaml);
+        Assert.Equal(value, YamlSerializer.Deserialize<Dictionary<ConverterKey, int>>(yaml));
+    }
+
+    [Fact]
+    public void DictionaryKey_WithConverterInOptions_IsWrittenByTheConverter()
+    {
+        var options = new YamlSerializerOptions { Converters = [new OptionsKeyConverter()] };
+        var value = new Dictionary<OptionsKey, int> { [new OptionsKey(42)] = 1, [new OptionsKey(-1)] = 2 };
+
+        var yaml = YamlSerializer.Serialize(value, options);
+        Assert.Equal("\"42\": 1\n\"-1\": 2\n", yaml);
+        Assert.Equal(value, YamlSerializer.Deserialize<Dictionary<OptionsKey, int>>(yaml, options));
+    }
+
+    [Fact]
+    public void DictionaryKey_ConverterThatWritesAMapping_Throws()
+    {
+        var options = new YamlSerializerOptions { Converters = [new MappingKeyConverter()] };
+        var exception = Assert.Throws<YamlException>(() => YamlSerializer.Serialize(new Dictionary<OptionsKey, int> { [new OptionsKey(1)] = 1 }, options));
+        Assert.Contains("must write a scalar", exception.Message, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -867,4 +901,47 @@ internal sealed partial class CollectionConverterYamlContext : YamlSerializerCon
 [YamlSerializable(typeof(ScalarFormattingModel))]
 internal sealed partial class QuotedStringsYamlContext : YamlSerializerContext
 {
+}
+
+[YamlConverter(typeof(ConverterKeyConverter))]
+internal readonly record struct ConverterKey(string Value);
+
+internal sealed class ConverterKeyConverter : YamlConverter<ConverterKey>
+{
+    public override ConverterKey Read(YamlReader reader)
+    {
+        var value = reader.GetScalarValue();
+        reader.Read();
+        return new ConverterKey(value["key-".Length..]);
+    }
+
+    public override void Write(YamlWriter writer, ConverterKey value) => writer.WriteString("key-" + value.Value);
+}
+
+internal readonly record struct OptionsKey(int Value);
+
+// Writes the number as a string, so the key is quoted
+internal sealed class OptionsKeyConverter : YamlConverter<OptionsKey>
+{
+    public override OptionsKey Read(YamlReader reader)
+    {
+        var value = int.Parse(reader.GetScalarValue(), CultureInfo.InvariantCulture);
+        reader.Read();
+        return new OptionsKey(value);
+    }
+
+    public override void Write(YamlWriter writer, OptionsKey value) => writer.WriteString(value.Value.ToString(CultureInfo.InvariantCulture));
+}
+
+internal sealed class MappingKeyConverter : YamlConverter<OptionsKey>
+{
+    public override OptionsKey Read(YamlReader reader) => throw new NotSupportedException();
+
+    public override void Write(YamlWriter writer, OptionsKey value)
+    {
+        writer.WriteStartMapping();
+        writer.WritePropertyName("Value");
+        writer.WriteScalar(value.Value);
+        writer.WriteEndMapping();
+    }
 }

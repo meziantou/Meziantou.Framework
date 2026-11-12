@@ -37,11 +37,13 @@ public abstract partial class GlobalScope
     /// the <c>test</c> reports of the Generate Test Report command, the <c>csp-violation</c> reports
     /// (https://w3c.github.io/webappsec-csp/#reporting) and the <c>coep</c> reports
     /// (https://html.spec.whatwg.org/multipage/browsers.html#coep-report-type), and the <c>permissions-policy-violation</c>
-    /// and <c>potential-permissions-policy-violation</c> reports (https://w3c.github.io/webappsec-permissions-policy/#reporting).
-    /// The <c>csp-hash</c> reports are not.
+    /// and <c>potential-permissions-policy-violation</c> reports (https://w3c.github.io/webappsec-permissions-policy/#reporting),
+    /// the <c>coop-access-violation</c> reports (the accesses of a window whose opener policy reports them, see
+    /// <see cref="OpenerPolicyReporting"/>), and the <c>integrity-violation</c> reports
+    /// (https://w3c.github.io/webappsec-subresource-integrity/#report-violation). The <c>csp-hash</c> reports are not.
     /// </summary>
     internal static bool IsReportTypeVisibleToReportingObservers(string type)
-        => type is "test" or "csp-violation" or "coep" or "permissions-policy-violation" or "potential-permissions-policy-violation" or "document-policy-violation";
+        => type is "test" or "csp-violation" or "coep" or "permissions-policy-violation" or "potential-permissions-policy-violation" or "document-policy-violation" or "coop-access-violation" or "integrity-violation";
 
     /// <summary>Appends an observer to the registered reporting observer list (https://w3c.github.io/reporting/#dom-reportingobserver-observe, step 2).</summary>
     internal void RegisterReportingObserver(ReportingObserver observer)
@@ -68,7 +70,17 @@ public abstract partial class GlobalScope
     /// <paramref name="destination"/> (the reports of a task are sent together, from a task queued on the event loop of the
     /// global object, which runs even if the document is no longer active).
     /// </summary>
-    internal void GenerateAndQueueReport(ReportBody? body, string type, string destination)
+    /// <param name="body">The body of the report.</param>
+    /// <param name="type">The type of the report.</param>
+    /// <param name="destination">The name of the endpoint.</param>
+    internal void GenerateAndQueueReport(ReportBody? body, string type, string destination) => GenerateAndQueueReport(body, type, destination, observedType: type);
+
+    /// <summary>
+    /// Generates and queues a report (<see cref="GenerateAndQueueReport(ReportBody?, string, string)"/>) whose reporting
+    /// observers receive it with another type, or do not receive it when <paramref name="observedType"/> is null: as in
+    /// Chromium, the <c>coop</c> reports of the accesses between windows are observed as <c>coop-access-violation</c> reports.
+    /// </summary>
+    internal void GenerateAndQueueReport(ReportBody? body, string type, string destination, string? observedType)
     {
         // https://w3c.github.io/reporting/#generate-a-report
         var report = new QueuedReport
@@ -82,7 +94,22 @@ public abstract partial class GlobalScope
         };
 
         // https://w3c.github.io/reporting/#queue-report, step 3
-        NotifyReportingObservers(report);
+        if (observedType == type)
+        {
+            NotifyReportingObservers(report);
+        }
+        else if (observedType is not null)
+        {
+            NotifyReportingObservers(new QueuedReport
+            {
+                Body = body,
+                Url = report.Url,
+                UserAgent = report.UserAgent,
+                Destination = destination,
+                Type = observedType,
+                Timestamp = report.Timestamp,
+            });
+        }
 
         // Step 4: the reports whose destination is not an endpoint are discarded by the delivery
         if (ReportingEndpoints is null || !ReportingEndpoints.Exists(endpoint => endpoint.Name == destination))
@@ -99,7 +126,7 @@ public abstract partial class GlobalScope
     }
 
     /// <summary>
-    /// Generates and queues a report (<see cref="GenerateAndQueueReport"/>) from a task of the event loop of the global object:
+    /// Generates and queues a report (<see cref="GenerateAndQueueReport(ReportBody?, string, string)"/>) from a task of the event loop of the global object:
     /// the algorithms that may run on another thread (e.g. a fetch, or a worker for its owner) use it.
     /// </summary>
     /// <param name="body">The body of the report.</param>

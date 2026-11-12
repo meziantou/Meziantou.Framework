@@ -154,7 +154,10 @@ internal sealed partial class WptTestRunner
         _test = test;
         _renderingBackend = renderingBackend;
         _reftestWait = reftest ? new ReftestWait(this) : null;
-        _cookieJar = new CookieJar(_clock);
+        // Origin-bound cookies are an option of the jar (the browsers do not enable them by default): the tests of the
+        // feature enable it, the other tests share the cookies of a host between its schemes and ports (e.g. the cookies
+        // of the WebSocket tests, whose server listens on another port)
+        _cookieJar = new CookieJar(_clock) { OriginBound = test.Id.StartsWith("cookies/origin-bound-cookies/", StringComparison.Ordinal) };
         _webSocketServer = new WptWebSocketServer(this);
     }
 
@@ -448,7 +451,7 @@ internal sealed partial class WptTestRunner
 
             // The images and the fonts are bytes
             if (request.Destination is RequestDestination.Image or RequestDestination.Font)
-                return Trickle(parsed, () => runner.GetResponse(url, GetRequestHeaders(parsed, request)) is var (body, headers, responseUrl) ? new DocumentResource(body) { Headers = headers, StatusCode = WptPipes.GetStatus(WptPipes.Get(responseUrl)) ?? 200 } : null);
+                return TrickleBody(parsed, runner.GetResponse(url, GetRequestHeaders(parsed, request)) is var (body, headers, responseUrl) ? new DocumentResource(body) { Headers = headers, StatusCode = WptPipes.GetStatus(WptPipes.Get(responseUrl)) ?? 200 } : null);
 
             // The media resources and the text tracks are bytes, with the status of the status pipe (a media element fails for an HTTP error)
             if (request.Destination is RequestDestination.Audio or RequestDestination.Video or RequestDestination.Track)
@@ -457,22 +460,29 @@ internal sealed partial class WptTestRunner
             if (request.Destination is not (RequestDestination.Script or RequestDestination.PaintWorklet or RequestDestination.Json or RequestDestination.Text or RequestDestination.Style or RequestDestination.Worker or RequestDestination.SharedWorker or RequestDestination.ServiceWorker))
                 return ValueTask.FromResult(runner.Trickle(parsed, request, runner.LoadDocument(url, request)));
 
-            return Trickle(parsed, () =>
+            // The cookies of the response of a script are stored too (e.g. the Set-Cookie header of the .headers file of the script of a worker)
+            var resource = runner.LoadScript(url, request.Destination);
+            if (resource is not null)
             {
-                // The cookies of the response of a script are stored too (e.g. the Set-Cookie header of the .headers file of the script of a worker)
-                var resource = runner.LoadScript(url, request.Destination);
-                if (resource is not null)
-                {
-                    StoreCookies(parsed, request, resource.Headers);
-                }
+                StoreCookies(parsed, request, resource.Headers);
+            }
 
-                return resource;
-            });
+            return TrickleBody(parsed, resource);
         }
 
         /// <summary>
-        /// The response of a file, delayed by the trickle pipe of the WPT server (https://web-platform-tests.org/writing-tests/server-pipes.html#trickle)
-        /// with the virtual clock.
+        /// The response of a file whose body is sent as the <c>trickle()</c> pipe sends it (see <see cref="WptTestRunner.TrickleBody"/>):
+        /// a resource created from its decoded content (an ASCII script) is sent at once after the delays.
+        /// </summary>
+        private ValueTask<DocumentResource?> TrickleBody(Url url, DocumentResource? resource)
+        {
+            var trickled = runner.TrickleBody(url, resource);
+            return trickled is { Content: not null } ? Trickle(url, () => trickled) : ValueTask.FromResult(trickled);
+        }
+
+        /// <summary>
+        /// The response of a media file, delayed by the trickle pipe of the WPT server (https://web-platform-tests.org/writing-tests/server-pipes.html#trickle)
+        /// with the virtual clock: the media elements get the whole response after the delays.
         /// </summary>
         private ValueTask<DocumentResource?> Trickle(Url url, Func<DocumentResource?> load)
         {
@@ -491,16 +501,13 @@ internal sealed partial class WptTestRunner
         /// </summary>
         private async ValueTask<DocumentResource?> LoadHandler(Url url, DocumentRequest request, int redirectCount)
         {
-            var (resource, delay, retryAfter) = runner.RunHandler(url, request, isFetch: false);
+            var (resource, delay, retryAfter, handlerResponse) = runner.RunHandler(url, request, isFetch: false);
             if (retryAfter is { } retry)
             {
-                (resource, delay) = await runner.RunPollingHandlerAsync(url, request, isFetch: false, retry).ConfigureAwait(false);
+                (resource, delay, handlerResponse) = await runner.RunPollingHandlerAsync(url, request, isFetch: false, retry).ConfigureAwait(false);
             }
 
-            if (delay > TimeSpan.Zero)
-            {
-                await runner.DelayAsync(delay).ConfigureAwait(false);
-            }
+            await runner.WaitForHeadersAsync(request, handlerResponse, delay).ConfigureAwait(false);
 
             if (request.FollowRedirects && resource is { StatusCode: 301 or 302 or 303 or 307 or 308 } && resource.Headers.FirstOrDefault(header => header.Key.Equals("Location", StringComparison.OrdinalIgnoreCase)).Value is { } location)
             {
@@ -581,16 +588,57 @@ internal sealed partial class WptTestRunner
     /// the body as wptserve sends them (see <see cref="WptPipes.GetTrickleChunks"/>), so the document is parsed as they arrive.
     /// </summary>
     private DocumentResource? Trickle(Url url, DocumentRequest request, DocumentResource? resource)
+        => request.Destination is RequestDestination.Document or RequestDestination.Iframe or RequestDestination.Frame ? TrickleBody(url, resource) : resource;
+
+    /// <summary>
+    /// The response of a file whose URL has a <c>trickle()</c> pipe: the headers are received at once, and the parts of the
+    /// body as wptserve sends them (see <see cref="WptPipes.GetTrickleChunks"/>), after their delays.
+    /// </summary>
+    private DocumentResource? TrickleBody(Url url, DocumentResource? resource)
     {
-        if (resource is not { ContentBytes: { } content, RemainingContentBytes: null } || request.Destination is not (RequestDestination.Document or RequestDestination.Iframe or RequestDestination.Frame)
-            || WptPipes.GetTrickleChunks(content.ToArray(), WptPipes.Get(url)) is not var (first, chunks))
-        {
+        if (resource is not { ContentBytes: { } content, RemainingContentBytes: null } || WptPipes.GetTrickleChunks(content.ToArray(), WptPipes.Get(url)) is not var (first, chunks))
             return resource;
-        }
 
         var response = new WptHandlerResponse();
         response.Chunks.AddRange(chunks);
         return new DocumentResource(first) { Headers = resource.Headers, StatusCode = resource.StatusCode, StatusText = resource.StatusText, Url = resource.Url, RedirectUrls = resource.RedirectUrls, RemainingContentBytes = GetChunksAsync(response, repeatAfter: null) };
+    }
+
+    /// <summary>
+    /// Waits for the headers of the response of a handler: its interim responses are reported after their delays (see
+    /// <see cref="WptHandlerResponse.InterimResponses"/>), then the headers wait for <see cref="WptHandlerResponse.HeadersCondition"/>
+    /// and <paramref name="delay"/>. A synchronous request of a window blocks the thread that advances the clock: it does not wait.
+    /// </summary>
+    private async Task WaitForHeadersAsync(DocumentRequest request, WptHandlerResponse? response, TimeSpan delay)
+    {
+        var wait = !IsSynchronousWindowRequest(request);
+        if (response is not null)
+        {
+            foreach (var (interimDelay, status, headers) in response.InterimResponses)
+            {
+                if (wait && interimDelay > TimeSpan.Zero)
+                {
+                    await DelayAsync(interimDelay).ConfigureAwait(false);
+                }
+
+                request.ReportInterimResponse(status, headers);
+            }
+
+            // A handler that waits for another request (a loop that polls the stash) gives up after a minute
+            if (wait && response.HeadersCondition is { } condition)
+            {
+                var interval = TimeSpan.FromMilliseconds(100);
+                for (var elapsed = TimeSpan.Zero; !condition() && elapsed < TimeSpan.FromMinutes(1); elapsed += interval)
+                {
+                    await DelayAsync(interval).ConfigureAwait(false);
+                }
+            }
+        }
+
+        if (wait && delay > TimeSpan.Zero)
+        {
+            await DelayAsync(delay).ConfigureAwait(false);
+        }
     }
 
     /// <summary>
@@ -844,7 +892,7 @@ internal sealed partial class WptTestRunner
     /// <param name="request">The request.</param>
     /// <param name="isFetch">Whether the request is a request of <c>fetch()</c> or <c>XMLHttpRequest</c>: the response has a status message and a <c>Content-Length</c>.</param>
     /// <param name="pollingElapsed">The time elapsed since the request was received, when a handler that polls the stash runs again.</param>
-    private (DocumentResource? Resource, TimeSpan Delay, TimeSpan? RetryAfter) RunHandler(Url url, DocumentRequest request, bool isFetch, TimeSpan pollingElapsed = default, CancellationToken cancellationToken = default)
+    private (DocumentResource? Resource, TimeSpan Delay, TimeSpan? RetryAfter, WptHandlerResponse? Response) RunHandler(Url url, DocumentRequest request, bool isFetch, TimeSpan pollingElapsed = default, CancellationToken cancellationToken = default)
     {
         var path = Uri.UnescapeDataString(url.Pathname);
         WptHandlerResponse? response;
@@ -852,7 +900,7 @@ internal sealed partial class WptTestRunner
         {
             response = WptPythonHandlers.Handle(new WptHandlerRequest(url, request, GetRequestHeaders(url, request)) { PollingElapsed = pollingElapsed, Now = Now }, _stash);
             if (response?.RetryAfter is { } retryAfter)
-                return (null, TimeSpan.Zero, retryAfter);
+                return (null, TimeSpan.Zero, retryAfter, null);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
@@ -867,10 +915,10 @@ internal sealed partial class WptTestRunner
             var handlerExists = File.Exists(Path.Combine(WptPaths.Wpt, path.TrimStart('/').Replace('/', Path.DirectorySeparatorChar)));
             Log((handlerExists ? "Handler not emulated: " : "Handler not found: ") + path);
             if (!isFetch && handlerExists)
-                return (null, TimeSpan.Zero, null);
+                return (null, TimeSpan.Zero, null, null);
 
             var notFound = "404 Not Found"u8.ToArray();
-            return (new DocumentResource(notFound) { StatusCode = 404, StatusText = "Not Found", Headers = [new("Content-Type", "text/plain"), new("Content-Length", "13")] }, TimeSpan.Zero, null);
+            return (new DocumentResource(notFound) { StatusCode = 404, StatusText = "Not Found", Headers = [new("Content-Type", "text/plain"), new("Content-Length", "13")] }, TimeSpan.Zero, null, null);
         }
 
         // https://web-platform-tests.org/writing-tests/server-pipes.html: the pipes apply to the responses of the handlers too
@@ -886,7 +934,7 @@ internal sealed partial class WptTestRunner
 
         // A response that never completes is aborted by the test
         if (response.Pending)
-            return (null, TimeSpan.FromHours(1), null);
+            return (null, TimeSpan.FromHours(1), null, null);
 
         // The document of a navigation is parsed as the parts of a trickle() pipe arrive; the other responses are delayed
         var isNavigation = request.Destination is RequestDestination.Document or RequestDestination.Iframe or RequestDestination.Frame;
@@ -901,7 +949,7 @@ internal sealed partial class WptTestRunner
             delay += WptPipes.GetTrickleDelay(pipes) ?? TimeSpan.Zero;
         }
         if (response.NetworkError)
-            return (null, delay, null);
+            return (null, delay, null, response);
 
         // The document of a navigation is parsed as its chunks arrive, a media resource is processed as they arrive, the
         // content of a template with a src attribute is parsed as it arrives, and an event stream is interpreted as its chunks
@@ -911,10 +959,10 @@ internal sealed partial class WptTestRunner
         // that a client that stops reading it (e.g. a blocked download) is seen.
         var isContainerNavigation = request.Destination is RequestDestination.Object or RequestDestination.Embed && response.Completed is not null;
         if (response.Chunks.Count > 0 && (isNavigation || isContainerNavigation || request.Destination is RequestDestination.Audio or RequestDestination.Video || request.Initiator is HtmlTemplateElement))
-            return (new DocumentResource(body) { Headers = headers, StatusCode = status, RemainingContentBytes = GetChunksAsync(response, repeatAfter: null, CancellationToken.None) }, delay, null);
+            return (new DocumentResource(body) { Headers = headers, StatusCode = status, RemainingContentBytes = GetChunksAsync(response, repeatAfter: null, CancellationToken.None) }, delay, null, response);
 
         if (response.Chunks.Count > 0 && !request.IsSynchronous && HeaderList.ExtractMimeType(headers)?.Essence == "text/event-stream")
-            return (new DocumentResource(body) { Headers = headers, StatusCode = status, StatusText = GetStatusText(url, status, response.StatusText), RemainingContentBytes = GetChunksAsync(response, response.ChunksRepeatAfter, CancellationToken.None) }, delay, null);
+            return (new DocumentResource(body) { Headers = headers, StatusCode = status, StatusText = GetStatusText(url, status, response.StatusText), RemainingContentBytes = GetChunksAsync(response, response.ChunksRepeatAfter, CancellationToken.None) }, delay, null, response);
 
         // The body of fetch() is read as its chunks arrive. The connection is closed once, at the end of the body or when the
         // request is canceled (e.g. an aborted fetch whose body is not read)
@@ -941,7 +989,21 @@ internal sealed partial class WptTestRunner
                 StatusText = response.StatusText ?? WptReasonPhrase(status),
                 Headers = response.Streamed ? headers : AddContentLength(headers, body.Length + response.Chunks.Sum(chunk => chunk.Data.Length)),
                 RemainingContentBytes = GetChunksAsync(response, response.ChunksRepeatAfter, CancellationToken.None),
-            }, delay, null);
+            }, delay, null, response);
+        }
+
+        // The other bodies arrive over time too, so that the time of the headers is observable (the library waits for the end
+        // of the body), except the bodies that wait for another request or are sent again, and the ones of a synchronous request
+        // of a window, which blocks the thread that advances the clock
+        if (response.Chunks.Count > 0 && response.ChunksCondition is null && response.ChunksRepeatAfter is null && !IsSynchronousWindowRequest(request))
+        {
+            return (new DocumentResource(body)
+            {
+                StatusCode = status,
+                StatusText = isFetch ? GetStatusText(url, status, response.StatusText) : null,
+                Headers = !isFetch || response.Streamed ? headers : AddContentLength(headers, body.Length + response.Chunks.Sum(chunk => chunk.Data.Length)),
+                RemainingContentBytes = GetChunksAsync(response, repeatAfter: null, CancellationToken.None),
+            }, delay, null, response);
         }
 
         foreach (var (chunkDelay, chunk) in response.Chunks)
@@ -951,19 +1013,19 @@ internal sealed partial class WptTestRunner
         }
 
         if (response.ChunksError)
-            return (null, delay, null);
+            return (null, delay, null, response);
 
         response.Completed?.Invoke();
 
         if (!isFetch)
-            return (new DocumentResource(body) { Headers = headers, StatusCode = status }, delay, null);
+            return (new DocumentResource(body) { Headers = headers, StatusCode = status }, delay, null, response);
 
         return (new DocumentResource(body)
         {
             StatusCode = status,
             StatusText = GetStatusText(url, status, response.StatusText),
             Headers = response.Streamed ? headers : AddContentLength(headers, body.Length),
-        }, delay, null);
+        }, delay, null, response);
     }
 
     /// <summary>
@@ -983,9 +1045,13 @@ internal sealed partial class WptTestRunner
         var delay = TimeSpan.Zero;
         if (WptPythonHandlers.IsHandler(url))
         {
-            (resource, delay, var retryAfter) = RunHandler(url, request, isFetch: true, cancellationToken: cancellationToken);
+            (resource, delay, var retryAfter, var handlerResponse) = RunHandler(url, request, isFetch: true, cancellationToken: cancellationToken);
             if (retryAfter is { } retry)
                 return LoadPollingFetchResourceAsync(url, request, retry);
+
+            // A response with interim responses, or whose headers wait for another request
+            if (handlerResponse is { InterimResponses.Count: > 0 } or { HeadersCondition: not null })
+                return LoadAfterInterimResponsesAsync(request, handlerResponse, resource, delay);
         }
         else
         {
@@ -1017,7 +1083,16 @@ internal sealed partial class WptTestRunner
                 bytes = fileResource.ContentBytes?.ToArray() ?? bytes;
                 resource = new DocumentResource(bytes) { StatusCode = fileResource.StatusCode, StatusText = GetStatusText(url, fileResource.StatusCode), Headers = AddContentLength(fileResource.Headers, bytes.Length) };
                 StoreCookies(url, request, resource.Headers);
-                delay = WptPipes.GetTrickleDelay(WptPipes.Get(url)) ?? TimeSpan.Zero;
+
+                // The body of a trickle() pipe arrives over time, except for a synchronous request of a window
+                if (IsSynchronousWindowRequest(request))
+                {
+                    delay = WptPipes.GetTrickleDelay(WptPipes.Get(url)) ?? TimeSpan.Zero;
+                }
+                else
+                {
+                    resource = TrickleBody(url, resource);
+                }
             }
             else if (GetWorkerWrapper(path, url) is { } wrapper)
             {
@@ -1055,12 +1130,15 @@ internal sealed partial class WptTestRunner
     /// <summary>The response of a handler of a request of fetch() or XMLHttpRequest that polls the stash (see <see cref="RunPollingHandlerAsync"/>).</summary>
     private async ValueTask<DocumentResource?> LoadPollingFetchResourceAsync(Url url, DocumentRequest request, TimeSpan retryAfter)
     {
-        var (resource, delay) = await RunPollingHandlerAsync(url, request, isFetch: true, retryAfter).ConfigureAwait(false);
-        if (delay > TimeSpan.Zero && !IsSynchronousWindowRequest(request))
-        {
-            await DelayAsync(delay).ConfigureAwait(false);
-        }
+        var (resource, delay, handlerResponse) = await RunPollingHandlerAsync(url, request, isFetch: true, retryAfter).ConfigureAwait(false);
+        await WaitForHeadersAsync(request, handlerResponse, delay).ConfigureAwait(false);
+        return resource;
+    }
 
+    /// <summary>The response of a handler of a request of fetch() or XMLHttpRequest that has interim responses, or whose headers wait for another request.</summary>
+    private async ValueTask<DocumentResource?> LoadAfterInterimResponsesAsync(DocumentRequest request, WptHandlerResponse handlerResponse, DocumentResource? resource, TimeSpan delay)
+    {
+        await WaitForHeadersAsync(request, handlerResponse, delay).ConfigureAwait(false);
         return resource;
     }
 
@@ -1069,7 +1147,7 @@ internal sealed partial class WptTestRunner
     /// measured by the virtual clock, until it responds. A synchronous request of a window blocks the thread that advances the
     /// clock: the handler runs again at once.
     /// </summary>
-    private async ValueTask<(DocumentResource? Resource, TimeSpan Delay)> RunPollingHandlerAsync(Url url, DocumentRequest request, bool isFetch, TimeSpan retryAfter)
+    private async ValueTask<(DocumentResource? Resource, TimeSpan Delay, WptHandlerResponse? Response)> RunPollingHandlerAsync(Url url, DocumentRequest request, bool isFetch, TimeSpan retryAfter)
     {
         var elapsed = TimeSpan.Zero;
         while (true)
@@ -1080,9 +1158,9 @@ internal sealed partial class WptTestRunner
             }
 
             elapsed += retryAfter;
-            var (resource, delay, next) = RunHandler(url, request, isFetch, elapsed);
+            var (resource, delay, next, response) = RunHandler(url, request, isFetch, elapsed);
             if (next is not { } nextRetry)
-                return (resource, delay);
+                return (resource, delay, response);
 
             retryAfter = nextRetry;
         }

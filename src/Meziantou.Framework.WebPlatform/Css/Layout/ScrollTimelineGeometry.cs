@@ -294,15 +294,40 @@ internal static class ScrollTimelineGeometry
         List<BoxFragment>? result = null;
         for (var fragment = subject; fragment is not null && !ReferenceEquals(fragment, state.Fragment); fragment = fragment.Parent)
         {
-            if (fragment is BoxFragment { StickyConstraints: { } constraints } box
-                && (horizontal ? constraints.HorizontalScrollContainer : constraints.VerticalScrollContainer) is var container
+            if (fragment is BoxFragment { StickyConstraints: { } constraints } box)
+            {
+                Add(box, constraints);
+            }
+            else if (fragment is BoxFragment { Box: { SplitInlineParent: not null, IsBlockLevel: true, IsInFlow: true } block })
+            {
+                // A block split out of sticky positioned inline boxes moves with them (see StickyPosition.Apply): the fragments of the
+                // inline boxes are not its ancestors
+                for (var inline = block.SplitInlineParent; inline is { IsInlineBox: true }; inline = inline.Parent)
+                {
+                    var first = inline;
+                    while (first.PreviousContinuation is { } previous)
+                    {
+                        first = previous;
+                    }
+
+                    if (first.FirstFragment is BoxFragment { StickyConstraints: { } inlineConstraints } inlineFragment)
+                    {
+                        Add(inlineFragment, inlineConstraints);
+                    }
+                }
+            }
+        }
+
+        return result;
+
+        void Add(BoxFragment box, StickyPositionConstraints constraints)
+        {
+            if ((horizontal ? constraints.HorizontalScrollContainer : constraints.VerticalScrollContainer) is var container
                 && (state.IsViewport ? container is null : ReferenceEquals(container, state.Fragment)))
             {
                 (result ??= []).Add(box);
             }
         }
-
-        return result;
     }
 
     /// <summary>

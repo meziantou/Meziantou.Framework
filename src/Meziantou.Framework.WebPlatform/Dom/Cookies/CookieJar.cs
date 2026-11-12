@@ -86,6 +86,15 @@ public sealed class CookieJar
     /// <summary>Gets the persistent storage of the cookies, or null when they are kept in memory only.</summary>
     public CookiePersistence? Persistence { get; }
 
+    /// <summary>
+    /// Gets whether the cookies are bound to the origin that set them (origin-bound cookies,
+    /// https://github.com/explainers-by-googlers/origin-bound-cookies): a cookie is only sent to the URLs of the scheme that
+    /// set it (secure or not), a cookie without <c>Domain</c> attribute only to the URLs of the port that set it, and the
+    /// cookies of the same name set by another scheme or another port do not replace each other. The default value is false:
+    /// as in the browsers that do not enable origin-bound cookies, the cookies of a host are shared by its schemes and ports.
+    /// </summary>
+    public bool OriginBound { get; init; }
+
     /// <summary>The cookie stores notified (outside of the lock of the jar) when cookies are created, changed or removed (https://cookiestore.spec.whatwg.org/#process-changes).</summary>
     private readonly List<WeakReference<ICookieChangeListener>> _listeners = [];
 
@@ -142,9 +151,9 @@ public sealed class CookieJar
     }
 
     /// <summary>
-    /// Copies the cookies of another jar into this one, replacing the cookies with the same name, domain, path and partition:
-    /// the cookies of the isolated partition of a cross-site navigational prefetch, when a navigation uses its response
-    /// (https://wicg.github.io/nav-speculation/prefetch.html#copy-prefetch-cookies).
+    /// Copies the cookies of another jar into this one, replacing the cookies with the same identity (name, domain, path,
+    /// partition and origin binding): the cookies of the isolated partition of a cross-site navigational prefetch, when a
+    /// navigation uses its response (https://wicg.github.io/nav-speculation/prefetch.html#copy-prefetch-cookies).
     /// </summary>
     internal void CopyFrom(CookieJar source)
     {
@@ -157,7 +166,7 @@ public sealed class CookieJar
             {
                 var cookie = CookieEntry.FromStoredCookie(stored);
                 cookie.ExpiryTime = stored.Expires is { } expiry ? LimitExpiryTime(expiry) : null;
-                var oldIndex = _cookies.FindIndex(existing => existing.Name == cookie.Name && existing.Domain == cookie.Domain && existing.HostOnly == cookie.HostOnly && existing.Path == cookie.Path && existing.PartitionKey == cookie.PartitionKey);
+                var oldIndex = _cookies.FindIndex(existing => IsSameIdentity(existing, cookie, OriginBound));
                 if (oldIndex >= 0)
                 {
                     _cookies.RemoveAt(oldIndex);
@@ -175,7 +184,7 @@ public sealed class CookieJar
         RaiseChanged(changes);
     }
 
-    /// <summary>Removes a cookie (with the same name, domain, path and partition). Returns false when the jar does not contain it.</summary>
+    /// <summary>Removes a cookie (with the same name, domain, path, partition and origin binding). Returns false when the jar does not contain it.</summary>
     public bool Remove(StoredCookie cookie)
     {
         ArgumentNullException.ThrowIfNull(cookie);
@@ -183,7 +192,8 @@ public sealed class CookieJar
         var removed = false;
         lock (_lock)
         {
-            var index = _cookies.FindIndex(entry => entry.Name == cookie.Name && entry.Domain == cookie.Domain && entry.Path == cookie.Path && entry.HostOnly == cookie.HostOnly && entry.PartitionKey == cookie.PartitionKey);
+            var removedCookie = CookieEntry.FromStoredCookie(cookie);
+            var index = _cookies.FindIndex(entry => IsSameIdentity(entry, removedCookie, OriginBound));
             if (index >= 0)
             {
                 (changes ??= []).Add(new CookieChange(_cookies[index], Deleted: true));
@@ -290,7 +300,7 @@ public sealed class CookieJar
             var partitionKey = GetPartitionKey(context);
             foreach (var cookie in _cookies)
             {
-                if (IsInScope(cookie, context, host, partitionKey))
+                if (IsInScope(cookie, context, host, partitionKey, OriginBound))
                 {
                     result.Add(cookie);
                 }
@@ -319,12 +329,15 @@ public sealed class CookieJar
     }
 
     /// <summary>Whether a cookie meets the requirements of step 3 of the retrieval algorithm (the observable cookies of a URL).</summary>
-    internal static bool IsInScope(CookieEntry cookie, CookieRequestContext context, UrlHost host, CookiePartitionKey? partitionKey)
+    internal static bool IsInScope(CookieEntry cookie, CookieRequestContext context, UrlHost host, CookiePartitionKey? partitionKey, bool originBound)
     {
         if (cookie.HostOnly ? cookie.Domain != host.Serialized : !DomainMatches(host, cookie.Domain))
             return false;
 
         if (cookie.PartitionKey is not null && cookie.PartitionKey != partitionKey)
+            return false;
+
+        if (originBound && !IsInOriginBoundScope(cookie, context.Url))
             return false;
 
         if (!PathMatches(context.Url.SerializePath(), cookie.Path))
@@ -340,6 +353,44 @@ public sealed class CookieJar
             return false;
 
         return true;
+    }
+
+    /// <summary>
+    /// Origin-bound cookies (see <see cref="OriginBound"/>): a cookie is only sent to the URLs of the scheme that set it (a
+    /// secure scheme, or a non-secure one), and a host-only cookie only to the URLs of the port that set it. The cookies
+    /// without source scheme or port (e.g. loaded from a persistence that does not store them) are not bound.
+    /// </summary>
+    private static bool IsInOriginBoundScope(CookieEntry cookie, UrlRecord url)
+    {
+        if (cookie.SourceScheme is { } sourceScheme && sourceScheme != GetSourceScheme(url))
+            return false;
+
+        return !cookie.HostOnly || cookie.SourcePort < 0 || cookie.SourcePort == GetSourcePort(url);
+    }
+
+    /// <summary>The source scheme of the cookies set by a URL: whether it is secure (see <see cref="CookieSourceScheme"/>).</summary>
+    internal static CookieSourceScheme GetSourceScheme(UrlRecord url) => IsSecure(url) ? CookieSourceScheme.Secure : CookieSourceScheme.NonSecure;
+
+    /// <summary>The source port of the cookies set by a URL: its port, or the default port of its scheme (80 for ws:, 443 for wss:).</summary>
+    internal static int GetSourcePort(UrlRecord url) => url.Port >= 0 ? url.Port : UrlSchemes.GetDefaultPort(url.Scheme);
+
+    /// <summary>
+    /// Whether two cookies have the same identity (step 23 of the storage model): the same name, domain, path and partition,
+    /// and with origin-bound cookies, the same source scheme and the same source port for a host-only cookie (a cookie that
+    /// is not bound replaces a bound cookie and the reverse).
+    /// </summary>
+    private static bool IsSameIdentity(CookieEntry a, CookieEntry b, bool originBound)
+    {
+        if (a.Name != b.Name || a.Domain != b.Domain || a.HostOnly != b.HostOnly || a.Path != b.Path || a.PartitionKey != b.PartitionKey)
+            return false;
+
+        if (!originBound)
+            return true;
+
+        if (a.SourceScheme is { } schemeA && b.SourceScheme is { } schemeB && schemeA != schemeB)
+            return false;
+
+        return !a.HostOnly || a.SourcePort < 0 || b.SourcePort < 0 || a.SourcePort == b.SourcePort;
     }
 
     /// <summary>The SameSite enforcement of the retrieval (https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html#name-retrieval-algorithm, step 3).</summary>
@@ -435,6 +486,11 @@ public sealed class CookieJar
         // Step 11
         cookie.Path = attributes.Path ?? GetDefaultPath(url);
 
+        // Origin-bound cookies: the scheme and the port of the URL that set the cookie (recorded even when the jar does not
+        // bind the cookies)
+        cookie.SourceScheme = GetSourceScheme(url);
+        cookie.SourcePort = GetSourcePort(url);
+
         // Steps 12-13
         cookie.SecureOnly = attributes.Secure;
         var isSecure = IsSecure(url);
@@ -498,7 +554,7 @@ public sealed class CookieJar
         }
 
         // Step 23
-        var oldIndex = _cookies.FindIndex(existing => existing.Name == cookie.Name && existing.Domain == cookie.Domain && existing.HostOnly == cookie.HostOnly && existing.Path == cookie.Path && existing.PartitionKey == cookie.PartitionKey);
+        var oldIndex = _cookies.FindIndex(existing => IsSameIdentity(existing, cookie, OriginBound));
         CookieEntry? oldCookie = null;
         if (oldIndex >= 0)
         {
@@ -1171,6 +1227,20 @@ public sealed class StoredCookie
     public CookiePartitionKey? PartitionKey { get; init; }
 
     /// <summary>
+    /// Gets the scheme of the URL that set the cookie: with origin-bound cookies (<see cref="CookieJar.OriginBound"/>), the
+    /// cookie is only sent to the URLs of the same scheme, secure or not. Null when the cookie is not bound to a scheme (e.g.
+    /// a cookie persisted without it).
+    /// </summary>
+    public CookieSourceScheme? SourceScheme { get; init; }
+
+    /// <summary>
+    /// Gets the port of the URL that set the cookie: with origin-bound cookies (<see cref="CookieJar.OriginBound"/>), a
+    /// host-only cookie is only sent to the URLs of the same port. -1 when the cookie is not bound to a port (e.g. a cookie
+    /// persisted without it).
+    /// </summary>
+    public int SourcePort { get; init; } = -1;
+
+    /// <summary>
     /// Gets the last time the cookie was sent (or created), which orders the eviction of the excess cookies. The jar updates
     /// the persisted access time at most once a minute. The default value is the creation time.
     /// </summary>
@@ -1207,6 +1277,12 @@ internal sealed class CookieEntry
 
     public CookiePartitionKey? PartitionKey { get; set; }
 
+    /// <summary>The scheme of the URL that set the cookie, or null when the cookie is not bound to a scheme.</summary>
+    public CookieSourceScheme? SourceScheme { get; set; }
+
+    /// <summary>The port of the URL that set the cookie, or -1 when the cookie is not bound to a port.</summary>
+    public int SourcePort { get; set; } = -1;
+
     /// <summary>Whether the cookie is stored by the persistence of the jar (it was loaded, or its last change was persisted).</summary>
     public bool IsPersisted { get; set; }
 
@@ -1229,6 +1305,8 @@ internal sealed class CookieEntry
         HttpOnly = HttpOnly,
         SameSite = SameSite,
         PartitionKey = PartitionKey,
+        SourceScheme = SourceScheme,
+        SourcePort = SourcePort,
         LastAccessTime = LastAccessTime,
     };
 
@@ -1246,7 +1324,19 @@ internal sealed class CookieEntry
         HttpOnly = cookie.HttpOnly,
         SameSite = cookie.SameSite,
         PartitionKey = cookie.PartitionKey,
+        SourceScheme = cookie.SourceScheme,
+        SourcePort = cookie.SourcePort,
     };
+}
+
+/// <summary>The scheme of the URL that set a cookie (see <see cref="CookieJar.OriginBound"/>): an origin-bound cookie is only sent to the URLs of the same kind of scheme.</summary>
+public enum CookieSourceScheme
+{
+    /// <summary>A URL that is not potentially trustworthy (e.g. <c>http:</c>).</summary>
+    NonSecure,
+
+    /// <summary>A potentially trustworthy URL (e.g. <c>https:</c>, or <c>http://localhost</c>).</summary>
+    Secure,
 }
 
 /// <summary>The processed attributes of a cookie (the cookie-attribute-list, the last attribute of each name wins).</summary>

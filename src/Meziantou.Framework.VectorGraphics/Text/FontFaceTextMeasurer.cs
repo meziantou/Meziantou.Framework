@@ -15,6 +15,12 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
     private readonly FontFace _boldItalic;
     private readonly Lock _lock = new();
 
+    // The buffer of the shaping, reused under the lock for the texts of MaxReusedBufferLength characters at most, so it
+    // stays small; and the limits it was created with
+    private const int MaxReusedBufferLength = 1024;
+    private GlyphBuffer? _buffer;
+    private FontResourceLimits? _bufferLimits;
+
     /// <summary>Initializes a new instance of the <see cref="FontFaceTextMeasurer"/> class.</summary>
     /// <param name="regular">The face of the regular text, loaded with <see cref="FontLoader"/>.</param>
     /// <param name="bold">The face of the bold text, or <see langword="null"/> to measure bold text with <paramref name="regular"/>.</param>
@@ -88,7 +94,7 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
             _ => _regular,
         };
         var scale = font.Size / face.UnitsPerEm;
-        var (ascender, descender) = GetVerticalMetrics(face);
+        var (ascender, descender, _) = face.GetLineMetrics();
         var width = text.Length is 0 ? 0 : Shape(face, text, scale, spacing);
         return new TextMetrics(width, ascender * scale, -descender * scale);
     }
@@ -96,7 +102,7 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
     private TextMetrics MeasureWithFallback(string text, SceneFont font, IReadOnlyList<SceneFontFace> stack, (double Letter, double Word) spacing)
     {
         var primary = stack[0].Face;
-        var (ascender, descender) = GetVerticalMetrics(primary);
+        var (ascender, descender, _) = primary.GetLineMetrics();
         var primaryScale = font.Size / primary.UnitsPerEm;
         var width = 0.0;
         foreach (var run in SceneFontCollection.SplitRuns(text, stack))
@@ -107,11 +113,6 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
         return new TextMetrics(width, ascender * primaryScale, -descender * primaryScale);
     }
 
-    private static (int Ascender, int Descender) GetVerticalMetrics(FontFace face)
-    {
-        return face.UseTypoMetrics ? (face.TypoAscender, face.TypoDescender) : (face.HorizontalAscender, face.HorizontalDescender);
-    }
-
     // The width of the shaped text: the sum of the advances, scaled to pixels, and the spacing after each cluster of
     // glyphs: the letter spacing, and the word spacing for a space
     private double Shape(FontFace face, string text, double scale, (double Letter, double Word) spacing)
@@ -120,13 +121,29 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
         var spacingWidth = 0.0;
         lock (_lock)
         {
-            var buffer = new GlyphBuffer(face.Data.Limits);
-            foreach (var run in Unicode.EnumerateScriptRuns(text))
+            GlyphBuffer buffer;
+            if (text.Length > MaxReusedBufferLength)
+            {
+                // A long text gets a buffer of its own: the measurer does not keep its arrays
+                buffer = new GlyphBuffer(face.Data.Limits);
+            }
+            else
+            {
+                if (_buffer is null || !ReferenceEquals(_bufferLimits, face.Data.Limits))
+                {
+                    _buffer = new GlyphBuffer(face.Data.Limits);
+                    _bufferLimits = face.Data.Limits;
+                }
+
+                buffer = _buffer;
+            }
+
+            foreach (var run in TextShaper.SplitRuns(text))
             {
                 var span = text.AsSpan(run.Index, run.Length);
                 buffer.Clear();
                 TextShaper.AddText(buffer, span);
-                TextShaper.Shape(buffer, face, run.Script, languages: [], IsRightToLeft(span), features: spacing.Letter is 0 ? [] : NoLigatures);
+                TextShaper.Shape(buffer, face, run.Script, languages: [], run.IsRightToLeft, features: spacing.Letter is 0 ? [] : NoLigatures);
                 var info = buffer.Info;
                 for (var i = 0; i < buffer.Length; i++)
                 {
@@ -140,21 +157,5 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
         }
 
         return (units * scale) + spacingWidth;
-    }
-
-    private static bool IsRightToLeft(ReadOnlySpan<char> text)
-    {
-        foreach (var rune in text.EnumerateRunes())
-        {
-            switch (UnicodeProperties.GetBidiClass(rune.Value))
-            {
-                case UnicodeBidirectionalCategory.LeftToRight:
-                    return false;
-                case UnicodeBidirectionalCategory.RightToLeft or UnicodeBidirectionalCategory.RightToLeftArabic:
-                    return true;
-            }
-        }
-
-        return false;
     }
 }

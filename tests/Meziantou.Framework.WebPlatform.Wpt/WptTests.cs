@@ -226,6 +226,8 @@ public sealed class WptTests
 
     public static TheoryData<string> WebShareTests => GetTests("web-share");
 
+    public static TheoryData<string> WebMcpTests => GetTests("webmcp");
+
     public static TheoryData<string> BadgingTests => GetTests("badging");
 
     public static TheoryData<string> BatteryStatusTests => GetTests("battery-status");
@@ -261,6 +263,8 @@ public sealed class WptTests
     public static TheoryData<string> GpcTests => GetTests("gpc");
 
     public static TheoryData<string> ClearSiteDataTests => GetTests("clear-site-data");
+
+    public static TheoryData<string> SubresourceIntegrityTests => GetTests("subresource-integrity");
 
     public static TheoryData<string> KeyboardMapTests => GetTests("keyboard-map");
 
@@ -349,6 +353,8 @@ public sealed class WptTests
     public static TheoryData<string> UserTimingTests => GetTests("user-timing");
 
     public static TheoryData<string> LongTaskTimingTests => GetTests("longtask-timing");
+
+    public static TheoryData<string> LongAnimationFrameTests => GetTests("long-animation-frame");
 
     public static TheoryData<string> IsInputPendingTests => GetTests("is-input-pending");
 
@@ -1170,6 +1176,10 @@ public sealed class WptTests
     public void WebShare(string test) => Run("web-share", test);
 
     [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebMcpTests))]
+    public void WebMcp(string test) => Run("webmcp", test);
+
+    [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(BadgingTests))]
     public void Badging(string test) => Run("badging", test);
 
@@ -1240,6 +1250,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ClearSiteDataTests))]
     public void ClearSiteData(string test) => Run("clear-site-data", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(SubresourceIntegrityTests))]
+    public void SubresourceIntegrity(string test) => Run("subresource-integrity", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(KeyboardMapTests))]
@@ -1416,6 +1430,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(LongTaskTimingTests))]
     public void LongTaskTiming(string test) => Run("longtask-timing", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(LongAnimationFrameTests))]
+    public void LongAnimationFrame(string test) => Run("long-animation-frame", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(IsInputPendingTests))]

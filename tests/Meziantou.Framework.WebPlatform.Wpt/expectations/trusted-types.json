@@ -278,10 +278,7 @@
     "total": 10
   },
   "trusted-types/block-text-node-insertion-into-svg-script-element.html": {
-    "total": 9,
-    "failures": {
-      "Test that default policy applies with module script. svg:script": "FAIL"
-    }
+    "total": 9
   },
   "trusted-types/cjk-string-assignment-to-paragraph.html": {
     "reftest": "PASS"
@@ -449,32 +446,19 @@
     "total": 4
   },
   "trusted-types/script-enforcement-007.html": {
-    "total": 4,
-    "failures": {
-      "Untrusted SVGScriptElement of importmap type uses the source text returned by the default policy.": "FAIL",
-      "Untrusted SVGScriptElement of module type uses the source text returned by the default policy.": "FAIL",
-      "Untrusted SVGScriptElement of two importmap type use the source text returned by the default policy.": "FAIL"
-    }
+    "total": 4
   },
   "trusted-types/script-enforcement-008.https.html": {
     "total": 5
   },
   "trusted-types/script-enforcement-009.https.html": {
-    "total": 5,
-    "failures": {
-      "Untrusted SVGScriptElement of 2 importmap types use the source text returned by the default policy for inline CSP check.": "FAIL",
-      "Untrusted SVGScriptElement of importmap type uses the source text returned by the default policy for inline CSP check.": "FAIL",
-      "Untrusted SVGScriptElement of module type uses the source text returned by the default policy for inline CSP check.": "FAIL"
-    }
+    "total": 5
   },
   "trusted-types/script-enforcement-010.html": {
     "total": 2
   },
   "trusted-types/script-enforcement-011.html": {
-    "total": 2,
-    "failures": {
-      "Changing script's type from module to classic in the default policy works.": "FAIL"
-    }
+    "total": 2
   },
   "trusted-types/script-enforcement-012.html": {
     "total": 1
@@ -620,79 +604,28 @@
     }
   },
   "trusted-types/trusted-types-navigation.html?01-05": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Navigate a frame via anchor with javascript:-urls in enforcing mode.": "NOTRUN",
-      "Navigate a window via anchor with javascript:-urls in report-only mode.": "TIMEOUT",
-      "Navigate a window via anchor with javascript:-urls w/ default policy in report-only mode.": "NOTRUN"
-    }
+    "total": 5
   },
   "trusted-types/trusted-types-navigation.html?06-10": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Navigate a frame via anchor with javascript:-urls in report-only mode.": "TIMEOUT",
-      "Navigate a frame via anchor with javascript:-urls w/ default policy in report-only mode.": "NOTRUN",
-      "Navigate a window via anchor with javascript:-urls w/ a default policy throwing an exception in enforcing mode.": "NOTRUN",
-      "Navigate a window via anchor with javascript:-urls w/ a default policy throwing an exception in report-only mode.": "NOTRUN"
-    }
+    "total": 5
   },
   "trusted-types/trusted-types-navigation.html?11-15": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Navigate a window via anchor with javascript:-urls w/ a default policy making the URL invalid in report-only mode.": "TIMEOUT",
-      "Navigate a window via area with javascript:-urls in enforcing mode.": "NOTRUN",
-      "Navigate a window via area with javascript:-urls in report-only mode.": "NOTRUN",
-      "Navigate a window via area with javascript:-urls w/ default policy in enforcing mode.": "NOTRUN"
-    }
+    "total": 5
   },
   "trusted-types/trusted-types-navigation.html?16-20": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Navigate a frame via area with javascript:-urls in report-only mode.": "TIMEOUT",
-      "Navigate a frame via area with javascript:-urls w/ default policy in report-only mode.": "NOTRUN"
-    }
+    "total": 5
   },
   "trusted-types/trusted-types-navigation.html?21-25": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Navigate a window via area with javascript:-urls w/ a default policy making the URL invalid in enforcing mode.": "NOTRUN",
-      "Navigate a window via area with javascript:-urls w/ a default policy making the URL invalid in report-only mode.": "NOTRUN",
-      "Navigate a window via area with javascript:-urls w/ a default policy throwing an exception in report-only mode.": "TIMEOUT",
-      "Navigate a window via form-submission with javascript:-urls in enforcing mode.": "NOTRUN"
-    }
+    "total": 5
   },
   "trusted-types/trusted-types-navigation.html?26-30": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Navigate a frame via form-submission with javascript:-urls in enforcing mode.": "NOTRUN",
-      "Navigate a frame via form-submission with javascript:-urls w/ default policy in enforcing mode.": "NOTRUN",
-      "Navigate a window via form-submission with javascript:-urls in report-only mode.": "TIMEOUT",
-      "Navigate a window via form-submission with javascript:-urls w/ default policy in report-only mode.": "NOTRUN"
-    }
+    "total": 5
   },
   "trusted-types/trusted-types-navigation.html?31-35": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Navigate a frame via form-submission with javascript:-urls in report-only mode.": "TIMEOUT",
-      "Navigate a frame via form-submission with javascript:-urls w/ default policy in report-only mode.": "NOTRUN",
-      "Navigate a window via form-submission with javascript:-urls w/ a default policy making the URL invalid in enforcing mode.": "NOTRUN",
-      "Navigate a window via form-submission with javascript:-urls w/ a default policy throwing an exception in enforcing mode.": "NOTRUN",
-      "Navigate a window via form-submission with javascript:-urls w/ a default policy throwing an exception in report-only mode.": "NOTRUN"
-    }
+    "total": 5
   },
   "trusted-types/trusted-types-navigation.html?36-last": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Navigate a window via form-submission with javascript:-urls w/ a default policy making the URL invalid in report-only mode.": "TIMEOUT"
-    }
+    "total": 1
   },
   "trusted-types/trusted-types-report-only.html": {
     "total": 5

@@ -111,6 +111,11 @@ internal static partial class CssParser
             return;
         }
 
+        // The component values are collected in a list that the blocks and functions of the same depth reuse, then copied to a
+        // list of their final size: a list that grows by doubling its capacity allocates about as much again in discarded arrays
+        var scratchLists = s_scratchLists ??= new List<CssComponentValue>?[MaxNestingDepth + 1];
+        var scratch = scratchLists[depth] ??= [];
+        scratch.Clear();
         while (true)
         {
             var next = tokenizer.ConsumeToken();
@@ -119,12 +124,29 @@ internal static partial class CssParser
                 // EOF is a parse error; the block/function is closed anyway
                 owner.End = next.End;
                 owner.Unterminated = next.Type == CssTokenType.EndOfFile;
-                return;
+                break;
             }
 
-            values.Add(ConsumeComponentValue(tokenizer, next, depth));
+            scratch.Add(ConsumeComponentValue(tokenizer, next, depth));
+        }
+
+        values.Capacity = values.Count + scratch.Count;
+        values.AddRange(scratch);
+        scratch.Clear();
+
+        // The large lists are not kept: the memory of a thread does not depend on the largest block it parsed
+        if (scratch.Capacity > MaxScratchListCapacity)
+        {
+            scratchLists[depth] = null;
         }
     }
+
+    /// <summary>The capacity above which a list of <see cref="s_scratchLists"/> is not kept.</summary>
+    private const int MaxScratchListCapacity = 1024;
+
+    /// <summary>The lists that <see cref="ConsumeUntil"/> collects the component values of the blocks and functions in, by depth.</summary>
+    [ThreadStatic]
+    private static List<CssComponentValue>?[]? s_scratchLists;
 
     /// <summary>Consumes the content of a block or a function without creating its component values, with the same block matching as <see cref="ConsumeUntil"/>.</summary>
     private static void SkipUntil(CssTokenizer tokenizer, CssTokenType ending, CssComponentValue owner)

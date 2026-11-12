@@ -248,7 +248,8 @@ internal sealed class ImageInputBuffer : IDisposable, IAsyncDisposable
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(minimum);
         if (_buffer is null)
         {
-            _buffer = _context.Scope.Rent(Math.Max(minimum, (int)Math.Min(Array.MaxLength, LimitCapacity(InitialCapacity))), AllocationKind.DecoderState, clear: false);
+            // The free part of the buffer is handed to the stream, which is caller code: it must not see stale pool bytes
+            _buffer = _context.Scope.Rent(Math.Max(minimum, (int)Math.Min(Array.MaxLength, LimitCapacity(InitialCapacity))), AllocationKind.DecoderState, clear: true);
             return;
         }
 
@@ -267,6 +268,7 @@ internal sealed class ImageInputBuffer : IDisposable, IAsyncDisposable
             var capacity = (int)Math.Min(Array.MaxLength, Math.Max(minimum, LimitCapacity((long)_buffer.Length * 2)));
             var larger = _context.Scope.Rent(capacity, AllocationKind.DecoderState, clear: false);
             _buffer.Span[_start.._end].CopyTo(larger.Span);
+            larger.Span[(_end - _start)..].Clear();
             _buffer.Dispose();
             _buffer = larger;
         }

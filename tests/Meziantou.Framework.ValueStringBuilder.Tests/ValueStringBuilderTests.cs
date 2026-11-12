@@ -542,6 +542,26 @@ public class ValueStringBuilderTests
     }
 
     [Fact]
+    public void IncreasingLengthPadsWithNullCharacters()
+    {
+        var sb = new ValueStringBuilder(stackalloc char[16]);
+        try
+        {
+            sb.RawChars.Fill('x');
+            sb.Append("abc");
+            sb.Length = 1;
+            sb.Length = 5;
+
+            Assert.Equal("a\0\0\0\0", sb.AsSpan());
+            Assert.Equal('x', sb.RawChars[5]);
+        }
+        finally
+        {
+            sb.Dispose();
+        }
+    }
+
+    [Fact]
     public void EnsureCapacityRejectsNegativeValues()
     {
         Assert.True(ThrowsArgumentOutOfRange(() => { using var b = new ValueStringBuilder(initialCapacity: 16); b.EnsureCapacity(-1); }));

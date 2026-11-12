@@ -1075,6 +1075,7 @@ namespace Meziantou.Framework.Toml.Serialization
         public TomlWriter(System.IO.TextWriter writer, Meziantou.Framework.Toml.TomlSerializerOptions? options = null) { }
         public void WriteBooleanValue(bool value) { }
         public void WriteDateTimeValue(Meziantou.Framework.Toml.TomlDateTime value) { }
+        public void WriteDecimalValue(decimal value) { }
         public void WriteEndArray() { }
         public void WriteEndDocument() { }
         public void WriteEndInlineTable() { }

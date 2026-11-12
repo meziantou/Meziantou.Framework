@@ -39,7 +39,37 @@ internal static class UrlParser
     public static UrlRecord? Parse(string input, UrlRecord? baseUrl, WebEncodingId encoding = WebEncodingId.Utf8)
     {
         var url = new UrlRecord();
-        return BasicParse(input, baseUrl, encoding, url, UrlParserState.None) == ParseResult.Failure ? null : url;
+        if (BasicParse(input, baseUrl, encoding, url, UrlParserState.None) == ParseResult.Failure)
+            return null;
+
+        url.PotentiallyDanglingMarkup = IsPotentiallyDanglingMarkup(input);
+        return url;
+    }
+
+    /// <summary>
+    /// Whether an input contains an ASCII tab or newline and a <c>&lt;</c>, once its leading and trailing C0 controls and
+    /// spaces are trimmed (see <see cref="UrlRecord.PotentiallyDanglingMarkup"/>).
+    /// </summary>
+    internal static bool IsPotentiallyDanglingMarkup(string input)
+    {
+        var span = input.AsSpan();
+        if (span.IndexOfAny('\t', '\n', '\r') < 0 || !span.Contains('<'))
+            return false;
+
+        var start = 0;
+        var end = span.Length;
+        while (start < end && span[start] <= 0x20)
+        {
+            start++;
+        }
+
+        while (end > start && span[end - 1] <= 0x20)
+        {
+            end--;
+        }
+
+        span = span[start..end];
+        return span.IndexOfAny('\t', '\n', '\r') >= 0 && span.Contains('<');
     }
 
     /// <summary>Runs the basic URL parser with a URL and a state override (used by the setters of the API).</summary>

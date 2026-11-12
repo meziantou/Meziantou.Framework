@@ -220,13 +220,9 @@ internal static partial class WptPythonHandlers
         ["/html/semantics/scripting-1/the-script-element/css-module/resources/load-error-events.py"] = LoadErrorEvents,
         ["/html/semantics/scripting-1/the-script-element/text-module/load-error-events.py"] = LoadErrorEvents,
 
-        // the-script-element/log.py: a script logging the id parameter, delayed by sec seconds
-        ["/html/semantics/scripting-1/the-script-element/log.py"] = (request, response, _) =>
-        {
-            response.Add("Content-Type", "text/javascript");
-            response.Delay = TimeSpan.FromSeconds(ParseInt(request.Get("sec"), 0));
-            response.Content = "log('" + ParseInt(request.Get("id"), 0).ToString(CultureInfo.InvariantCulture) + "')";
-        },
+        // the-script-element/log.py and svg/interact/scripted/log.py: a script logging the id parameter, delayed by sec seconds
+        ["/html/semantics/scripting-1/the-script-element/log.py"] = DelayedLogScript,
+        ["/svg/interact/scripted/log.py"] = DelayedLogScript,
 
         // The referrer-checker.py handlers of the module tests: a module (JavaScript, CSS or JSON) containing the Referer
         // header of the request
@@ -1095,6 +1091,13 @@ internal static partial class WptPythonHandlers
 
             return false;
         }
+    }
+
+    private static void DelayedLogScript(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
+    {
+        response.Add("Content-Type", "text/javascript");
+        response.Delay = TimeSpan.FromSeconds(ParseInt(request.Get("sec"), 0));
+        response.Content = "log('" + ParseInt(request.Get("id"), 0).ToString(CultureInfo.InvariantCulture) + "')";
     }
 
     private static void LoadErrorEvents(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)

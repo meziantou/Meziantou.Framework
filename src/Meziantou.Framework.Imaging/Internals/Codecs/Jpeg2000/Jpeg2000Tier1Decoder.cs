@@ -183,6 +183,7 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
         var width = _width;
         var height = _height;
         var stripeStride = _stripeStride;
+        Jpeg2000Tier1Tables.AssertPassBuffers(flags.Length, samples.Length, width, height, _contexts.Length, zeroCoding.Length);
         ref var flagStart = ref unsafe(MemoryMarshal.GetReference(flags));
         ref var sampleStart = ref unsafe(MemoryMarshal.GetReference(samples));
         ref var contexts = ref unsafe(MemoryMarshal.GetArrayDataReference(_contexts));
@@ -195,6 +196,7 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
             {
                 // A column without an insignificant coefficient that has a significant neighbor is not coded: coding a
                 // coefficient of the column only changes the neighbors of the others
+                Jpeg2000Tier1Tables.AssertColumnWithinBorder(flags.Length, stripeStride, first + (x * 4));
                 ref var column = ref unsafe(Unsafe.Add(ref flagStart, first + (x * 4)));
                 if (!Jpeg2000Tier1Tables.HasSignificanceCandidate(ref column))
                     continue;
@@ -227,6 +229,7 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
         var width = _width;
         var height = _height;
         var stripeStride = _stripeStride;
+        Jpeg2000Tier1Tables.AssertPassBuffers(flags.Length, samples.Length, width, height, _contexts.Length, 256);
         ref var flagStart = ref unsafe(MemoryMarshal.GetReference(flags));
         ref var sampleStart = ref unsafe(MemoryMarshal.GetReference(samples));
         for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
@@ -234,6 +237,7 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
             var rows = Math.Min(4, height - stripe);
             for (var x = 0; x < width; x++)
             {
+                Jpeg2000Tier1Tables.AssertColumnWithinBorder(flags.Length, stripeStride, first + (x * 4));
                 ref var column = ref unsafe(Unsafe.Add(ref flagStart, first + (x * 4)));
                 if (!Jpeg2000Tier1Tables.HasSignificanceCandidate(ref column))
                     continue;
@@ -261,6 +265,7 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
         var height = _height;
         var stripeStride = _stripeStride;
         var step = 1 << plane;
+        Jpeg2000Tier1Tables.AssertPassBuffers(flags.Length, samples.Length, width, height, _contexts.Length, 256);
         ref var flagStart = ref unsafe(MemoryMarshal.GetReference(flags));
         ref var sampleStart = ref unsafe(MemoryMarshal.GetReference(samples));
         ref var contexts = ref unsafe(MemoryMarshal.GetArrayDataReference(_contexts));
@@ -270,6 +275,7 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
             var rows = Math.Min(4, height - stripe);
             for (var x = 0; x < width; x++)
             {
+                Jpeg2000Tier1Tables.AssertColumnWithinBorder(flags.Length, stripeStride, first + (x * 4));
                 ref var column = ref unsafe(Unsafe.Add(ref flagStart, first + (x * 4)));
                 if (!Jpeg2000Tier1Tables.HasRefinementCandidate(ref column))
                     continue;
@@ -301,6 +307,7 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
         var height = _height;
         var stripeStride = _stripeStride;
         var step = 1 << plane;
+        Jpeg2000Tier1Tables.AssertPassBuffers(flags.Length, samples.Length, width, height, _contexts.Length, 256);
         ref var flagStart = ref unsafe(MemoryMarshal.GetReference(flags));
         ref var sampleStart = ref unsafe(MemoryMarshal.GetReference(samples));
         for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
@@ -308,6 +315,7 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
             var rows = Math.Min(4, height - stripe);
             for (var x = 0; x < width; x++)
             {
+                Jpeg2000Tier1Tables.AssertColumnWithinBorder(flags.Length, stripeStride, first + (x * 4));
                 ref var column = ref unsafe(Unsafe.Add(ref flagStart, first + (x * 4)));
                 if (!Jpeg2000Tier1Tables.HasRefinementCandidate(ref column))
                     continue;
@@ -331,6 +339,7 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
         var width = _width;
         var height = _height;
         var stripeStride = _stripeStride;
+        Jpeg2000Tier1Tables.AssertPassBuffers(flags.Length, samples.Length, width, height, _contexts.Length, zeroCoding.Length);
         ref var flagStart = ref unsafe(MemoryMarshal.GetReference(flags));
         ref var sampleStart = ref unsafe(MemoryMarshal.GetReference(samples));
         ref var contexts = ref unsafe(MemoryMarshal.GetArrayDataReference(_contexts));
@@ -341,6 +350,7 @@ internal sealed class Jpeg2000Tier1Decoder : IDisposable
             var rows = Math.Min(4, height - stripe);
             for (var x = 0; x < width; x++)
             {
+                Jpeg2000Tier1Tables.AssertColumnWithinBorder(flags.Length, stripeStride, first + (x * 4));
                 ref var column = ref unsafe(Unsafe.Add(ref flagStart, first + (x * 4)));
                 var row = 0;
                 if (rows == 4 && Jpeg2000Tier1Tables.IsRunLengthColumn(ref column))

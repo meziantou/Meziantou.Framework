@@ -601,6 +601,7 @@ internal sealed class ContextLoader(BrowserContextHost context, DocumentLoader? 
         FollowRedirects = request.FollowRedirects,
         IsSynchronous = request.IsSynchronous,
         Integrity = request.Integrity,
+        InterimResponseHandler = request.ReportInterimResponse,
     };
 
     private static void SetHeader(List<KeyValuePair<string, string>> headers, string name, string value)

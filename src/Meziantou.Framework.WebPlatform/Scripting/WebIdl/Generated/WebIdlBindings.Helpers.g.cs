@@ -103,6 +103,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaPositionState Defaults_Dom_MediaPositionState = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions Defaults_Dom_ModelContextExecuteToolOptions = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.ModelContextGetToolOptions Defaults_Dom_ModelContextGetToolOptions = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.ModelContextRegisterToolOptions Defaults_Dom_ModelContextRegisterToolOptions = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.ModelContextTool Defaults_Dom_ModelContextTool = new() { Name = default!, Description = default!, Execute = default! };
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MouseEventInit Defaults_Dom_MouseEventInit = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MutationObserverInit Defaults_Dom_MutationObserverInit = new();
@@ -259,6 +267,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_ClientType_Values = new[] { "window", "worker", "sharedworker", "all" };
 
+    internal static readonly string[] Enum_ColorInterpolationMethod_Values = new[] { "srgb", "hsl", "hwb", "srgb-linear", "display-p3", "display-p3-linear", "a98-rgb", "prophoto-rgb", "rec2020", "lab", "oklab", "lch", "oklch", "xyz", "xyz-d50", "xyz-d65" };
+
     internal static readonly string[] Enum_ColorSpaceConversion_Values = new[] { "none", "default" };
 
     internal static readonly string[] Enum_CompositeOperation_Values = new[] { "replace", "add", "accumulate" };
@@ -284,6 +294,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_GyroscopeLocalCoordinateSystem_Values = new[] { "device", "screen" };
 
     internal static readonly string[] Enum_HighlightType_Values = new[] { "highlight", "spelling-error", "grammar-error" };
+
+    internal static readonly string[] Enum_HueInterpolationMethod_Values = new[] { "shorter", "longer", "increasing", "decreasing" };
 
     internal static readonly string[] Enum_IDBCursorDirection_Values = new[] { "next", "nextunique", "prev", "prevunique" };
 
@@ -1750,6 +1762,41 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_ModelContextExecuteToolOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.Signal is not null) r.SetMember(result, "signal", r.Wrap(value.Signal));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ModelContextGetToolOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ModelContextGetToolOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.FromOrigins is not null) r.SetMember(result, "fromOrigins", r.FromSequence(value.FromOrigins, static (r, e) => r.FromString(e)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ModelContextRegisterToolOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ModelContextRegisterToolOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.ExposedTo is not null) r.SetMember(result, "exposedTo", r.FromSequence(value.ExposedTo, static (r, e) => r.FromString(e)));
+        if (value.Signal is not null) r.SetMember(result, "signal", r.Wrap(value.Signal));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ModelContextTool(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ModelContextTool value)
+    {
+        var result = r.CreateObject();
+        if (value.Annotations is not null) r.SetMember(result, "annotations", (value.Annotations is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ToolAnnotations(r, dictionaryValue) : r.Adapter.Null));
+        r.SetMember(result, "description", r.FromString(value.Description));
+        r.SetMember(result, "execute", r.GetDelegateFunction(value.Execute));
+        if (value.InputSchema is not null) r.SetMember(result, "inputSchema", r.ToJs((object?)value.InputSchema));
+        r.SetMember(result, "name", r.FromString(value.Name));
+        if (value.OutputSchema is not null) r.SetMember(result, "outputSchema", r.ToJs((object?)value.OutputSchema));
+        if (value.Title is not null) r.SetMember(result, "title", r.FromString(value.Title));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_MouseEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MouseEventInit value)
     {
         var result = r.CreateObject();
@@ -2532,6 +2579,43 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var result = r.CreateObject();
         if (value.Source is not null) r.SetMember(result, "source", r.Wrap(value.Source));
         if (value.Force is not null) r.SetMember(result, "force", r.FromBoolean(value.Force));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ToolActivatedEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ToolActivatedEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "toolName", r.FromString(value.ToolName));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ToolAnnotations(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ToolAnnotations value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "consequentialHint", r.FromBoolean(value.ConsequentialHint));
+        r.SetMember(result, "debugging", r.FromBoolean(value.Debugging));
+        r.SetMember(result, "readOnlyHint", r.FromBoolean(value.ReadOnlyHint));
+        r.SetMember(result, "untrustedContentHint", r.FromBoolean(value.UntrustedContentHint));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ToolCancelEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ToolCancelEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "toolName", r.FromString(value.ToolName));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ToolExecuteCallbackOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ToolExecuteCallbackOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "signal", r.Wrap(value.Signal));
         return result;
     }
 
@@ -3824,6 +3908,27 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_ScriptInvokerType(global::Meziantou.Framework.WebPlatform.Dom.ScriptInvokerType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.ScriptInvokerType.ClassicScript => "classic-script",
+        global::Meziantou.Framework.WebPlatform.Dom.ScriptInvokerType.ModuleScript => "module-script",
+        global::Meziantou.Framework.WebPlatform.Dom.ScriptInvokerType.EventListener => "event-listener",
+        global::Meziantou.Framework.WebPlatform.Dom.ScriptInvokerType.UserCallback => "user-callback",
+        global::Meziantou.Framework.WebPlatform.Dom.ScriptInvokerType.ResolvePromise => "resolve-promise",
+        global::Meziantou.Framework.WebPlatform.Dom.ScriptInvokerType.RejectPromise => "reject-promise",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_ScriptWindowAttribution(global::Meziantou.Framework.WebPlatform.Dom.ScriptWindowAttribution value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.ScriptWindowAttribution.Self => "self",
+        global::Meziantou.Framework.WebPlatform.Dom.ScriptWindowAttribution.Descendant => "descendant",
+        global::Meziantou.Framework.WebPlatform.Dom.ScriptWindowAttribution.Ancestor => "ancestor",
+        global::Meziantou.Framework.WebPlatform.Dom.ScriptWindowAttribution.SamePage => "same-page",
+        global::Meziantou.Framework.WebPlatform.Dom.ScriptWindowAttribution.Other => "other",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_ScrollBehavior(global::Meziantou.Framework.WebPlatform.Dom.ScrollBehavior value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.ScrollBehavior.Auto => "auto",
@@ -4064,59 +4169,61 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.BlobCallback ToDelegate_Dom_BlobCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.BlobCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.BlobCallback ToDelegate_Dom_BlobCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.BlobCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions, "BlobCallback"); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.CreateHtmlCallback ToDelegate_Dom_CreateHtmlCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.CreateHtmlCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromString(p0)); foreach (var item in p1) { arguments.Add(r.ToJs(item)); } var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); return (r.IsNullOrUndefined(result) ? (string?)null : r.ToDomString(result)); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.CreateHtmlCallback ToDelegate_Dom_CreateHtmlCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.CreateHtmlCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromString(p0)); foreach (var item in p1) { arguments.Add(r.ToJs(item)); } var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "CreateHTMLCallback"); return (r.IsNullOrUndefined(result) ? (string?)null : r.ToDomString(result)); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.CreateParserOptionsCallback ToDelegate_Dom_CreateParserOptionsCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.CreateParserOptionsCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add((p0 is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SetHtmlUnsafeOptions(r, dictionaryValue) : r.Adapter.Null)); foreach (var item in p1) { arguments.Add(r.ToJs(item)); } var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); return (r.IsNullOrUndefined(result) ? (global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SetHtmlUnsafeOptions(r, result)); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.CreateParserOptionsCallback ToDelegate_Dom_CreateParserOptionsCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.CreateParserOptionsCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add((p0 is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SetHtmlUnsafeOptions(r, dictionaryValue) : r.Adapter.Null)); foreach (var item in p1) { arguments.Add(r.ToJs(item)); } var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "CreateParserOptionsCallback"); return (r.IsNullOrUndefined(result) ? (global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptions?)null : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SetHtmlUnsafeOptions(r, result)); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.CreateScriptCallback ToDelegate_Dom_CreateScriptCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.CreateScriptCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromString(p0)); foreach (var item in p1) { arguments.Add(r.ToJs(item)); } var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); return (r.IsNullOrUndefined(result) ? (string?)null : r.ToDomString(result)); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.CreateScriptCallback ToDelegate_Dom_CreateScriptCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.CreateScriptCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromString(p0)); foreach (var item in p1) { arguments.Add(r.ToJs(item)); } var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "CreateScriptCallback"); return (r.IsNullOrUndefined(result) ? (string?)null : r.ToDomString(result)); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.CreateScriptUrlCallback ToDelegate_Dom_CreateScriptUrlCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.CreateScriptUrlCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromString(p0)); foreach (var item in p1) { arguments.Add(r.ToJs(item)); } var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); return (r.IsNullOrUndefined(result) ? (string?)null : r.ToUsvString(result)); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.CreateScriptUrlCallback ToDelegate_Dom_CreateScriptUrlCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.CreateScriptUrlCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromString(p0)); foreach (var item in p1) { arguments.Add(r.ToJs(item)); } var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "CreateScriptURLCallback"); return (r.IsNullOrUndefined(result) ? (string?)null : r.ToUsvString(result)); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.FrameRequestCallback ToDelegate_Dom_FrameRequestCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.FrameRequestCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromNumber((double)p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.FrameRequestCallback ToDelegate_Dom_FrameRequestCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.FrameRequestCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromNumber((double)p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions, "FrameRequestCallback"); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.FunctionCallback ToDelegate_Dom_FunctionCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.FunctionCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); foreach (var item in p0) { arguments.Add(r.ToJs(item)); } var result = r.InvokeCallback(function, r.ToJs(r.GlobalScope), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions); return result; }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.FunctionCallback ToDelegate_Dom_FunctionCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.FunctionCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); foreach (var item in p0) { arguments.Add(r.ToJs(item)); } var result = r.InvokeCallback(function, r.ToJs(r.GlobalScope), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions, "Function"); return result; }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.FunctionStringCallback ToDelegate_Dom_FunctionStringCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.FunctionStringCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromString(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.FunctionStringCallback ToDelegate_Dom_FunctionStringCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.FunctionStringCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromString(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "FunctionStringCallback"); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.IdleRequestCallback ToDelegate_Dom_IdleRequestCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.IdleRequestCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.IdleRequestCallback ToDelegate_Dom_IdleRequestCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.IdleRequestCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "IdleRequestCallback"); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.IntersectionObserverCallback ToDelegate_Dom_IntersectionObserverCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.IntersectionObserverCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => r.Wrap(e))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.IntersectionObserverCallback ToDelegate_Dom_IntersectionObserverCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.IntersectionObserverCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => r.Wrap(e))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions, "IntersectionObserverCallback"); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.LockGrantedCallback ToDelegate_Dom_LockGrantedCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.LockGrantedCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); return r.ToTask<object?>(result!, static (r, v) => r.ToAny(v)); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.LockGrantedCallback ToDelegate_Dom_LockGrantedCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.LockGrantedCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "LockGrantedCallback"); return r.ToTask<object?>(result!, static (r, v) => r.ToAny(v)); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaSessionActionHandler ToDelegate_Dom_MediaSessionActionHandler(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.MediaSessionActionHandler((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add((p0 is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaSessionActionDetails(r, dictionaryValue) : r.Adapter.Null)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaSessionActionHandler ToDelegate_Dom_MediaSessionActionHandler(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.MediaSessionActionHandler((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add((p0 is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaSessionActionDetails(r, dictionaryValue) : r.Adapter.Null)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "MediaSessionActionHandler"); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.MutationCallback ToDelegate_Dom_MutationCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.MutationCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => r.Wrap(e))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MutationCallback ToDelegate_Dom_MutationCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.MutationCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => r.Wrap(e))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions, "MutationCallback"); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.NavigationInterceptHandler ToDelegate_Dom_NavigationInterceptHandler(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.NavigationInterceptHandler(() => { var arguments = new global::System.Collections.Generic.List<TValue>(); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); return result; }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.NavigationInterceptHandler ToDelegate_Dom_NavigationInterceptHandler(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.NavigationInterceptHandler(() => { var arguments = new global::System.Collections.Generic.List<TValue>(); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "NavigationInterceptHandler"); return result; }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.NavigationPrecommitHandler ToDelegate_Dom_NavigationPrecommitHandler(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.NavigationPrecommitHandler((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); return result; }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.NavigationPrecommitHandler ToDelegate_Dom_NavigationPrecommitHandler(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.NavigationPrecommitHandler((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "NavigationPrecommitHandler"); return result; }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.NotificationPermissionCallback ToDelegate_Dom_NotificationPermissionCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.NotificationPermissionCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_NotificationPermission(p0))); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.NotificationPermissionCallback ToDelegate_Dom_NotificationPermissionCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.NotificationPermissionCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_NotificationPermission(p0))); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "NotificationPermissionCallback"); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.PerformanceObserverCallback ToDelegate_Dom_PerformanceObserverCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.PerformanceObserverCallback((p0, p1, p2) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); arguments.Add(r.Wrap(p1)); arguments.Add((p2 is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PerformanceObserverCallbackOptions(r, dictionaryValue) : r.Adapter.Null)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.PerformanceObserverCallback ToDelegate_Dom_PerformanceObserverCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.PerformanceObserverCallback((p0, p1, p2) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); arguments.Add(r.Wrap(p1)); arguments.Add((p2 is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PerformanceObserverCallbackOptions(r, dictionaryValue) : r.Adapter.Null)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "PerformanceObserverCallback"); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.PositionCallback ToDelegate_Dom_PositionCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.PositionCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.PositionCallback ToDelegate_Dom_PositionCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.PositionCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "PositionCallback"); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.PositionErrorCallback ToDelegate_Dom_PositionErrorCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.PositionErrorCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.PositionErrorCallback ToDelegate_Dom_PositionErrorCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.PositionErrorCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "PositionErrorCallback"); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.PressureUpdateCallback ToDelegate_Dom_PressureUpdateCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.PressureUpdateCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => r.Wrap(e))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.PressureUpdateCallback ToDelegate_Dom_PressureUpdateCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.PressureUpdateCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => r.Wrap(e))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "PressureUpdateCallback"); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.ReportingObserverCallback ToDelegate_Dom_ReportingObserverCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.ReportingObserverCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_Report(r, dictionaryValue) : r.Adapter.Null))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ReportingObserverCallback ToDelegate_Dom_ReportingObserverCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.ReportingObserverCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_Report(r, dictionaryValue) : r.Adapter.Null))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "ReportingObserverCallback"); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.ResizeObserverCallback ToDelegate_Dom_ResizeObserverCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.ResizeObserverCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => r.Wrap(e))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions); }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ResizeObserverCallback ToDelegate_Dom_ResizeObserverCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.ResizeObserverCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => r.Wrap(e))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions, "ResizeObserverCallback"); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.Dom.SchedulerPostTaskCallback ToDelegate_Dom_SchedulerPostTaskCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.SchedulerPostTaskCallback(() => { var arguments = new global::System.Collections.Generic.List<TValue>(); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); return result; }));
+    internal static global::Meziantou.Framework.WebPlatform.Dom.SchedulerPostTaskCallback ToDelegate_Dom_SchedulerPostTaskCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.SchedulerPostTaskCallback(() => { var arguments = new global::System.Collections.Generic.List<TValue>(); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "SchedulerPostTaskCallback"); return result; }));
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ToolExecuteCallback ToDelegate_Dom_ToolExecuteCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.ToolExecuteCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.ToJs((object?)p0)); arguments.Add((p1 is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ToolExecuteCallbackOptions(r, dictionaryValue) : r.Adapter.Null)); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "ToolExecuteCallback"); return r.ToTask<object?>(result!, static (r, v) => r.ToAny(v)); }));
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.ViewTransitionUpdateCallback ToDelegate_Dom_ViewTransitionUpdateCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.ViewTransitionUpdateCallback(() => { var arguments = new global::System.Collections.Generic.List<TValue>(); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.AbortWhenInactive); return result; }));
 
     internal static global::System.Action ToDelegate_System_Action(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::System.Action(() => { var arguments = new global::System.Collections.Generic.List<TValue>(); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.WebAudio.DecodeErrorCallback ToDelegate_WebAudio_DecodeErrorCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.WebAudio.DecodeErrorCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.DecodeErrorCallback ToDelegate_WebAudio_DecodeErrorCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.WebAudio.DecodeErrorCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "DecodeErrorCallback"); }));
 
-    internal static global::Meziantou.Framework.WebPlatform.WebAudio.DecodeSuccessCallback ToDelegate_WebAudio_DecodeSuccessCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.WebAudio.DecodeSuccessCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); }));
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.DecodeSuccessCallback ToDelegate_WebAudio_DecodeSuccessCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.WebAudio.DecodeSuccessCallback((p0) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.Wrap(p0)); r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None, "DecodeSuccessCallback"); }));
 
     internal static global::Meziantou.Framework.WebPlatform.Animations.AnimationEventInit ToDictionary_Animations_AnimationEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
@@ -6611,6 +6718,82 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions ToDictionary_Dom_ModelContextExecuteToolOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ModelContextExecuteToolOptions");
+        var m0_value = r.GetDictionaryMember(value, "signal");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.Dom.AbortSignal?)r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.AbortSignal>(m0_value, "AbortSignal") : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions
+        {
+            Signal = m0_present ? m0 : Defaults_Dom_ModelContextExecuteToolOptions.Signal,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ModelContextGetToolOptions ToDictionary_Dom_ModelContextGetToolOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ModelContextGetToolOptions");
+        var m0_value = r.GetDictionaryMember(value, "fromOrigins");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::System.Collections.Generic.List<string>?)r.ToSequence<string>(m0_value, static (r, e) => r.ToUsvString(e)) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.ModelContextGetToolOptions
+        {
+            FromOrigins = m0_present ? m0 : Defaults_Dom_ModelContextGetToolOptions.FromOrigins,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ModelContextRegisterToolOptions ToDictionary_Dom_ModelContextRegisterToolOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ModelContextRegisterToolOptions");
+        var m0_value = r.GetDictionaryMember(value, "exposedTo");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::System.Collections.Generic.List<string>?)r.ToSequence<string>(m0_value, static (r, e) => r.ToUsvString(e)) : default;
+        var m1_value = r.GetDictionaryMember(value, "signal");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (global::Meziantou.Framework.WebPlatform.Dom.AbortSignal?)r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.AbortSignal>(m1_value, "AbortSignal") : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.ModelContextRegisterToolOptions
+        {
+            ExposedTo = m0_present ? m0 : Defaults_Dom_ModelContextRegisterToolOptions.ExposedTo,
+            Signal = m1_present ? m1 : Defaults_Dom_ModelContextRegisterToolOptions.Signal,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ModelContextTool ToDictionary_Dom_ModelContextTool(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ModelContextTool");
+        var m0_value = r.GetDictionaryMember(value, "annotations");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.Dom.ToolAnnotations?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ToolAnnotations(r, m0_value) : default;
+        var m1_value = r.GetDictionaryMember(value, "description");
+        if (r.Adapter.IsUndefined(m1_value)) throw r.MissingRequiredDictionaryMember("ModelContextTool", "description");
+        var m1 = r.ToDomString(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "execute");
+        if (r.Adapter.IsUndefined(m2_value)) throw r.MissingRequiredDictionaryMember("ModelContextTool", "execute");
+        var m2 = r.ToCallbackFunction(m2_value, "ToolExecuteCallback", false)!;
+        var m3_value = r.GetDictionaryMember(value, "inputSchema");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (TValue?)r.ToObject(m3_value) : default;
+        var m4_value = r.GetDictionaryMember(value, "name");
+        if (r.Adapter.IsUndefined(m4_value)) throw r.MissingRequiredDictionaryMember("ModelContextTool", "name");
+        var m4 = r.ToDomString(m4_value);
+        var m5_value = r.GetDictionaryMember(value, "outputSchema");
+        var m5_present = !r.Adapter.IsUndefined(m5_value);
+        var m5 = m5_present ? (TValue?)r.ToObject(m5_value) : default;
+        var m6_value = r.GetDictionaryMember(value, "title");
+        var m6_present = !r.Adapter.IsUndefined(m6_value);
+        var m6 = m6_present ? (string?)r.ToUsvString(m6_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.ModelContextTool
+        {
+            Annotations = m0_present ? m0 : Defaults_Dom_ModelContextTool.Annotations,
+            Description = m1,
+            Execute = WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_ToolExecuteCallback(r, m2),
+            InputSchema = m3_present ? m3 : Defaults_Dom_ModelContextTool.InputSchema,
+            Name = m4,
+            OutputSchema = m5_present ? m5 : Defaults_Dom_ModelContextTool.OutputSchema,
+            Title = m6_present ? m6 : Defaults_Dom_ModelContextTool.Title,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.MouseEventInit ToDictionary_Dom_MouseEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "MouseEventInit");
@@ -8173,6 +8356,66 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         {
             Source = m0_present ? m0 : Defaults_Dom_TogglePopoverOptions.Source,
             Force = m1_present ? m1 : Defaults_Dom_TogglePopoverOptions.Force,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ToolActivatedEventInit ToDictionary_Dom_ToolActivatedEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ToolActivatedEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "toolName");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (string)"" : r.ToDomString(m3_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.ToolActivatedEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            ToolName = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ToolAnnotations ToDictionary_Dom_ToolAnnotations(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ToolAnnotations");
+        var m0_value = r.GetDictionaryMember(value, "consequentialHint");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "debugging");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "readOnlyHint");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "untrustedContentHint");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (bool)false : r.ToBoolean(m3_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.ToolAnnotations
+        {
+            ConsequentialHint = m0,
+            Debugging = m1,
+            ReadOnlyHint = m2,
+            UntrustedContentHint = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ToolCancelEventInit ToDictionary_Dom_ToolCancelEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ToolCancelEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "toolName");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (string)"" : r.ToDomString(m3_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.ToolCancelEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            ToolName = m3,
         };
     }
 

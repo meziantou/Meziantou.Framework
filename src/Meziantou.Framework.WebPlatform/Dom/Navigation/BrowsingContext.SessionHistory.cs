@@ -37,7 +37,7 @@ internal sealed class SessionHistoryEntry(UrlRecord url, DocumentState documentS
     public string NavigationApiKey { get; set; } = Guid.NewGuid().ToString("D");
 
     /// <summary>https://html.spec.whatwg.org/multipage/browsing-the-web.html#she-navigation-api-id</summary>
-    public string NavigationApiId { get; } = Guid.NewGuid().ToString("D");
+    public string NavigationApiId { get; set; } = Guid.NewGuid().ToString("D");
 
     public ScrollRestoration ScrollRestoration { get; set; }
 

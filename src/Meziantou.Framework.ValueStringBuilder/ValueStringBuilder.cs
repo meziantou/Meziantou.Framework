@@ -41,8 +41,8 @@ ref partial struct ValueStringBuilder
     }
 
     /// <summary>
-    /// Gets or sets the number of characters written so far. Setting it truncates the content, or exposes
-    /// characters already present in the buffer when it is increased.
+    /// Gets or sets the number of characters written so far. Setting it truncates the content, or pads the
+    /// content with <c>'\0'</c> characters when it is increased, like <see cref="System.Text.StringBuilder.Length" />.
     /// </summary>
     public int Length
     {
@@ -51,6 +51,13 @@ ref partial struct ValueStringBuilder
         {
             ArgumentOutOfRangeException.ThrowIfNegative(value);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(value, _chars.Length);
+
+            // The part of the buffer after the content may hold stale pooled data: never expose it as content
+            if (value > _pos)
+            {
+                _chars[_pos..value].Clear();
+            }
+
             _pos = value;
         }
     }

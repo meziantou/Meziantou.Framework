@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -527,6 +528,7 @@ internal static class JpegXlTreeLearner
 
             // The tokens that occur, for each selected predictor
             var rowLength = _rowLength;
+            Debug.Assert(rowLength <= JpegXlMaTree.PredictorCount * TokenCount);
             Span<int> present = stackalloc int[rowLength];
             Span<int> presentCounts = stackalloc int[selected.Length];
             for (var j = 0; j < selected.Length; j++)

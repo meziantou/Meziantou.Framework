@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Meziantou.Framework;
 using Meziantou.Framework.WebPlatform.Css.Layout;
+using Meziantou.Framework.WebPlatform.Css.Om;
 using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Css.Layout;
@@ -238,6 +239,42 @@ public sealed class BoxTreeTests : IDisposable
     public void PseudoElements_NoneContent_NotGenerated() => AssertBody("<style>#p::before { color: red } #p::after { content: none }</style><p id=p>t</p>", """
         block <body> block-children
           block <p#p> inline-children
+            text "t"
+        """);
+
+    [Fact]
+    public void PseudoElements_UniversalRuleWithoutContent_OnlyTheRulesWithContentGenerateBoxes() => AssertBody("<style>*, ::before, ::after { box-sizing: border-box } .x::before { content: 'a' } p::after { color: red }</style><p id=x class=x>t</p><p>u</p><ol><li>v</ol>", """
+        block <body> block-children
+          block <p#x> inline-children
+            inline <p#x>::before
+              generated-text "a"
+            text "t"
+          block <p> inline-children
+            text "u"
+          block <ol> block-children
+            block list-item <li> inline-children
+              inline-block <li>::marker inline-children outside
+                generated-text "1. "
+              text "v"
+        """);
+
+    [Fact]
+    public void PseudoElements_ContentAddedToAUniversalRule_GeneratesBoxes()
+    {
+        var document = Parse("<!DOCTYPE html><style>*::before { box-sizing: border-box }</style><p id=p>t</p>");
+        Assert.DoesNotContain("<p#p>::before", BoxTree.Build(document).Dump(), StringComparison.Ordinal);
+
+        var sheet = ((HtmlStyleElement)document.QuerySelector("style")!).Sheet!;
+        ((CssStyleRule)sheet.CssRules[0]).Style.SetProperty("content", "'c'");
+        Assert.Contains("<p#p>::before", BoxTree.Build(document).Dump(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PseudoElements_ContentOfAnAllDeclaration_GeneratesBoxes() => AssertBody("<style>#p { content: 'z' } #p::before { all: inherit; display: inline }</style><p id=p>t</p>", """
+        block <body> block-children
+          block <p#p> inline-children
+            inline <p#p>::before
+              generated-text "z"
             text "t"
         """);
 
@@ -540,6 +577,20 @@ public sealed class BoxTreeTests : IDisposable
               text "b"
             block <div> inline-children absolute
               text "c"
+        """);
+
+    [Fact]
+    public void Grid_GeneratedEmptyOrWhiteSpaceTextIsAnItem() => AssertBody("<style>#a::after { content: ''; display: grid } #b::before { content: ' '; display: contents }</style><div id=a></div><div id=b style='display: flex'><i>x</i></div>", """
+        block <body> block-children
+          block <div#a> block-children
+            grid <div#a>::after
+              block anonymous inline-children
+                generated-text "" ::after
+          flex <div#b>
+            block anonymous inline-children
+              generated-text " " ::before
+            block <i> inline-children
+              text "x"
         """);
 
     [Fact]
@@ -874,6 +925,16 @@ public sealed class BoxTreeTests : IDisposable
                 text "b"
             ruby-text <rt>
               text "x"
+        """);
+
+    [Fact]
+    public void Ruby_InlinifiedBlockRubyIsAnInlineRuby() => AssertBody("<ruby><rt><span id=b style='display: block ruby'>a</span></rt></ruby>", """
+        block <body> inline-children
+          ruby <ruby>
+            ruby-text <rt>
+              ruby <span#b>
+                ruby-base anonymous
+                  text "a"
         """);
 
     [Fact]

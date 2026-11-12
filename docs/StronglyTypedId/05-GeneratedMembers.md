@@ -23,7 +23,8 @@ depend on the underlying type, such as `FromInt32`, follow the table of [underly
 | `CompareTo`, `<`, `<=`, `>`, `>=` | Only when the type declares `IComparable` or `IComparable<T>`. See [Implement IComparable](03-DeclaringIds.md#implement-icomparable-to-sort-ids). |
 
 The generator also adds a private `_value` field that stores the value, and public nested classes for the converters:
-`ProjectIdTypeConverter`, `ProjectIdJsonConverter`, `ProjectIdNewtonsoftJsonConverter` and `ProjectIdBsonConverter`.
+`ProjectIdTypeConverter`, `ProjectIdJsonConverter`, `ProjectIdNewtonsoftJsonConverter`, `ProjectIdBsonConverter`,
+`ProjectIdYamlConverter` and `ProjectIdTomlConverter`.
 Attributes on the type register them, so most libraries use them without configuration, and you can also reference them
 yourself. See [Integrations](09-Integrations/01-Overview.md#use-a-converter-directly).
 

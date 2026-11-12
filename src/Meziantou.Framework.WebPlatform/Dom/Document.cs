@@ -807,6 +807,7 @@ public partial class Document : Node
 
             // The registry of the old document is not the registry of the new document: the element stores its registry
             var registry = hasRegistries && inclusiveDescendant is Element element ? element.CustomElementRegistry : null;
+            var hasDocumentRegistry = hasRegistries && inclusiveDescendant is Element { HasDocumentRegistry: true };
             inclusiveDescendant.NodeDocument = this;
             if (!hasRegistries)
                 continue;
@@ -822,11 +823,21 @@ public partial class Document : Node
             {
                 if (registry is null || !registry.IsScoped)
                 {
+                    // An element whose registry is the global registry of its document (also while it is in a document without
+                    // registry, e.g. a template contents owner document) gets the effective global registry of this document;
+                    // an element whose registry is null gets the one of its parent, as in the browsers
+                    // (custom-elements/registries/scoped-registry-append.html)
                     var parent = adoptedElement.ParentNode;
-                    var newRegistry = registry is not null || parent is null or (DocumentFragment and not ShadowRoot)
+                    var isGlobal = registry is not null || hasDocumentRegistry;
+                    var newRegistry = isGlobal || parent is null or (DocumentFragment and not ShadowRoot)
                         ? CustomElementRegistryStorage
                         : CustomElementRegistry.LookUp(parent);
                     registry = CustomElementRegistry.GetEffectiveGlobal(newRegistry);
+                    if (isGlobal && CustomElementRegistryStorage is null)
+                    {
+                        adoptedElement.UseDocumentRegistry();
+                        continue;
+                    }
                 }
 
                 adoptedElement.CustomElementRegistry = registry;

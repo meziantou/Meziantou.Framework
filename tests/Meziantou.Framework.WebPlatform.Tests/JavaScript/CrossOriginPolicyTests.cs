@@ -78,6 +78,61 @@ public sealed class CrossOriginPolicyTests : IDisposable
     }
 
     [Fact]
+    public void OpenerPolicySwitch_IsReportedToTheEndpointOfTheOpener()
+    {
+        _loader.Resources["https://example.com/popup.html"] = new DocumentResource("");
+        _loader.Resources["https://example.com/report"] = new DocumentResource("");
+        Load(
+            "<script>window.open('popup.html');</script>",
+            new("Cross-Origin-Opener-Policy", "same-origin; report-to=\"coop\""),
+            new("Reporting-Endpoints", "coop=\"https://example.com/report\""));
+
+        // The report is delivered by a task of the event loop, through the loader
+        DocumentRequest[] reports = [];
+        for (var i = 0; i < 500 && reports.Length == 0; i++)
+        {
+            _contexts.EventLoop.RunUntilIdle();
+            lock (_loader.Requests)
+            {
+                reports = [.. _loader.Requests.Where(request => request.Url == "https://example.com/report")];
+            }
+
+            Thread.Sleep(10);
+        }
+
+        var report = Assert.Single(reports);
+
+        Assert.Equal("POST", report.Method);
+        var body = System.Text.Encoding.UTF8.GetString(report.Body!.Value.Span);
+        Assert.Contains("\"type\":\"coop\"", body, StringComparison.Ordinal);
+        Assert.Contains("\"type\":\"navigation-from-response\"", body, StringComparison.Ordinal);
+        Assert.Contains("\"effectivePolicy\":\"same-origin\"", body, StringComparison.Ordinal);
+        Assert.Contains("\"nextResponseURL\":\"https://example.com/popup.html\"", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ReportOnlyOpenerPolicy_ReportsTheAccessesToThePopup()
+    {
+        _loader.Resources["https://example.com/popup.html"] = new DocumentResource("");
+        var document = Load(
+            """
+            <script>
+              const popup = window.open('popup.html');
+              window.onload = () => setTimeout(() => {
+                const observer = new ReportingObserver(() => {});
+                observer.observe();
+                popup.blur();
+                const reports = observer.takeRecords();
+                document.title = reports.map(report => report.type + ',' + report.body.type + ',' + report.body.property + ',' + report.body.effectivePolicy).join(';');
+              }, 0);
+            </script>
+            """,
+            new KeyValuePair<string, string>("Cross-Origin-Opener-Policy-Report-Only", "same-origin; report-to=\"coop\""));
+
+        Assert.Equal("coop-access-violation,access-from-coop-page-to-openee,blur,same-origin", document.Title);
+    }
+
+    [Fact]
     public void OpenerPolicyAndEmbedderPolicy_CrossOriginIsolated()
     {
         var document = Load(

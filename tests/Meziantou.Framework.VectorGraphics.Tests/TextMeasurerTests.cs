@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Fonts;
 
 namespace Meziantou.Framework.VectorGraphics.Tests;
@@ -5,6 +6,46 @@ namespace Meziantou.Framework.VectorGraphics.Tests;
 public sealed class TextMeasurerTests
 {
     private static readonly AfmTextMeasurer Afm = AfmTextMeasurer.Default;
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void Afm_AsciiTextsMeasureAsTheirGraphemeClusters()
+    {
+        // An ASCII text is measured without enumerating its grapheme clusters. A leading U+0085, a control without width
+        // that is a cluster of its own, makes the measurer enumerate them: the widths must be the same, to the last bit.
+        var printable = Enumerable.Range(0x20, 0x5F).Select(c => (char)c).ToArray();
+        var random = new Random(42);
+        var texts = printable.SelectMany(first => printable.Select(second => string.Concat(first, second)))
+            .Concat(Enumerable.Range(0, 1000).Select(i => new string([.. Enumerable.Range(0, random.Next(0, 40)).Select(_ => i % 3 is 0 ? (char)random.Next(0, 0x80) : printable[random.Next(printable.Length)])])))
+            .Concat(["A\r\nV", "AV\tAV", "\u007FA", "Revenue (k)", string.Empty]);
+        foreach (var font in new SceneFont[] { new(12), new(12, Weight: SceneFont.BoldWeight), new(12, Italic: true), new(12, Weight: SceneFont.BoldWeight, Italic: true) })
+        {
+            foreach (var text in texts)
+            {
+                Assert.Equal(Afm.Measure("\u0085" + text, font).Width, Afm.Measure(text, font).Width);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void TextFitting_AsciiGraphemeClustersAreTheCharactersExceptCrLf()
+    {
+        var random = new Random(42);
+        var texts = Enumerable.Range(0, 1000)
+            .Select(i => new string([.. Enumerable.Range(0, random.Next(0, 30)).Select(_ => i % 2 is 0 ? "\r\n a"[random.Next(4)] : (char)random.Next(0, 0x80))]))
+            .Concat(["\r\n", "\r\r\n\n", "a\r", "\n\r"]);
+        foreach (var text in texts)
+        {
+            var expected = new List<int>();
+            foreach (var range in Unicode.EnumerateGraphemeClusters(text))
+            {
+                expected.Add(range.End.GetOffset(text.Length));
+            }
+
+            Assert.Equal(expected, TextFitting.GetGraphemeClusterEnds(text));
+        }
+    }
 
     [Fact]
     public void Afm_UsesTheWidthsAndTheKerningOfHelvetica()
@@ -49,6 +90,23 @@ public sealed class TextMeasurerTests
         Assert.Equal(Afm.Measure("Diagram", new SceneFont(10)).Width, Afm.Measure("Diagram", new SceneFont(10, Italic: true)).Width, 1e-9);
         Assert.Equal(Afm.Measure("Diagram", new SceneFont(10, Weight: SceneFont.BoldWeight)).Width, Afm.Measure("Diagram", new SceneFont(10, Weight: SceneFont.BoldWeight, Italic: true)).Width, 1e-9);
         Assert.NotEqual(Afm.Measure("Diagram", new SceneFont(10)).Width, Afm.Measure("Diagram", new SceneFont(10, Weight: SceneFont.BoldWeight)).Width);
+    }
+
+    [Fact]
+    public void FontFace_LongAndShortTextsMeasureAsWithANewMeasurer()
+    {
+        // The measurer reuses its shaping buffer for the short texts only: a long text gets a buffer of its own
+        var environment = new PooledFontEnvironment(FontResourceLimits.Default, 64 * 1024 * 1024);
+        var regular = FontLoader.Load(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "LiberationSans-Regular.woff2")), environment)[0];
+        var measurer = new FontFaceTextMeasurer(regular);
+        var longText = string.Concat(Enumerable.Repeat("AV To ffi ", 150));
+        var font = new SceneFont(12);
+
+        var shortWidth = measurer.Measure("Wave", font).Width;
+        var longWidth = measurer.Measure(longText, font).Width;
+        Assert.Equal(new FontFaceTextMeasurer(regular).Measure(longText, font).Width, longWidth);
+        Assert.Equal(shortWidth, measurer.Measure("Wave", font).Width);
+        Assert.Equal(longWidth, measurer.Measure(longText, font).Width);
     }
 
     [Fact]

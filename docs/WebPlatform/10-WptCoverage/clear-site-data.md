@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of clear-site-data, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 10 | 13 | 0 | 77% |
+| [Stable](#stable-tests) | 11 | 13 | 0 | 85% |
 | [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **12** | **15** | **0** | **80%** |
+| **All** | **13** | **15** | **0** | **87%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 2
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -30,7 +30,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`executionContexts.sub.html`](https://wpt.fyi/results/clear-site-data/executionContexts.sub.html) | Pass | 2 / 2 |  |  |
 | [`navigation-insecure.html`](https://wpt.fyi/results/clear-site-data/navigation-insecure.html) | Pass | 4 / 4 |  |  |
 | [`navigation.https.html`](https://wpt.fyi/results/clear-site-data/navigation.https.html) | Pass | 4 / 4 |  |  |
-| [`no-cors-fetch-iframe.https.sub.html`](https://wpt.fyi/results/clear-site-data/no-cors-fetch-iframe.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the storage partitioning by top-level site: the local storage of the cross-site iframe is the unpartitioned storage of its origin, which a response loaded in a third-party context does not clear (as `no-cors-fetch-window.https.sub.html` expects); the browsers clear the partitioned storage of the iframe |
+| [`no-cors-fetch-iframe.https.sub.html`](https://wpt.fyi/results/clear-site-data/no-cors-fetch-iframe.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`no-cors-fetch-window.https.sub.html`](https://wpt.fyi/results/clear-site-data/no-cors-fetch-window.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`resource.html`](https://wpt.fyi/results/clear-site-data/resource.html) | Timeout | 2 / 4 | TEST BUG | the `http resource on a https page` subtest: the https iframe navigates itself to the `http:` URL of `send_report.html`, which is blocked as mixed content (the navigation of a child navigable from a document whose origin is potentially trustworthy, https://w3c.github.io/webappsec-mixed-content/#should-block-fetch), so the report is never posted and the test times out |
 | [`set-cookie-after-clear-all.https.html`](https://wpt.fyi/results/clear-site-data/set-cookie-after-clear-all.https.html) | Pass | 1 / 1 |  |  |

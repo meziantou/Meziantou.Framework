@@ -65,6 +65,19 @@ public class PixelRowBenchmarks
     public void Invert() => ImageWorkloads.InvertRows(_image.Frames[0]);
 
     [Benchmark]
+    [Workload("1920x1080 Rgba32: invert colors, ApplyRowOperation with a struct operation")]
+    public void InvertRowOperation() => _image.ApplyRowOperation<Rgba32, InvertOperation>(default);
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32: clone, then vertical 3-row mean, ApplyNeighborhoodOperation with a struct operation")]
+    public int VerticalMeanNeighborhoodOperation()
+    {
+        using var copy = _image.Clone();
+        copy.ApplyNeighborhoodOperation<Rgba32, VerticalMeanOperation>(default);
+        return copy.Width;
+    }
+
+    [Benchmark]
     [Workload("1920x1080 Rgba32: sum green, static callback with state")]
     public long SumGreen() => ImageWorkloads.SumGreen(_image.Frames[0], _state);
 
@@ -167,11 +180,49 @@ public class PixelRowBenchmarks
     [Workload("1920x1080 Rgba64 in a white frame: automatic crop analysis with content weights")]
     public double AnalyzeAutoCropWeights16() => _framed64.AnalyzeAutoCrop(new AutoCropOptions { AnalyzeWeights = true }).WeightX;
 
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 in a white frame: clone, then automatic crop")]
+    public int AutoCrop()
+    {
+        using var copy = _framed.Clone();
+        copy.AutoCrop();
+        return copy.Width;
+    }
+
     private static int Convert<TSource, TDestination>(Image<TSource> image, PixelConversionOptions? options)
         where TSource : unmanaged
         where TDestination : unmanaged
     {
         using var result = image.CloneAs<TDestination>(options);
         return result.Width;
+    }
+
+    private readonly struct InvertOperation : IPixelRowOperation<Rgba32>
+    {
+        public void Invoke(int y, Span<Rgba32> row)
+        {
+            foreach (ref var pixel in row)
+            {
+                pixel = new Rgba32((byte)~pixel.R, (byte)~pixel.G, (byte)~pixel.B, pixel.A);
+            }
+        }
+    }
+
+    private readonly struct VerticalMeanOperation : IPixelNeighborhoodOperation<Rgba32>
+    {
+        public void Invoke(int y, PixelRowSource<Rgba32> source, Span<Rgba32> destination)
+        {
+            var above = source.GetRowClamped(y - 1);
+            var row = source.GetRowClamped(y);
+            var below = source.GetRowClamped(y + 1);
+            for (var x = 0; x < destination.Length; x++)
+            {
+                destination[x] = new Rgba32(
+                    (byte)((above[x].R + row[x].R + below[x].R) / 3),
+                    (byte)((above[x].G + row[x].G + below[x].G) / 3),
+                    (byte)((above[x].B + row[x].B + below[x].B) / 3),
+                    row[x].A);
+            }
+        }
     }
 }

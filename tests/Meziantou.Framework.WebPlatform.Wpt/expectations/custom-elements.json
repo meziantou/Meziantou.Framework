@@ -494,10 +494,7 @@
     "total": 11
   },
   "custom-elements/registries/Element-innerHTML.html": {
-    "total": 12,
-    "failures": {
-      "createContextualFragment on a range inside a template should use null registry even when the template has a scoped registry": "FAIL"
-    }
+    "total": 12
   },
   "custom-elements/registries/ShadowRoot-init-customElementRegistry.html": {
     "total": 12
@@ -545,40 +542,13 @@
     "total": 3
   },
   "custom-elements/registries/scoped-custom-element-registry-customelementregistry-attribute-in-xhtml.xhtml": {
-    "total": 4,
-    "failures": {
-      "XHTML fragment parser should create a custom element candidate with null registry if customelementregistry is set": "FAIL",
-      "XHTML fragment parser should create a defined custom element with null registry if customelementregistry is set": "FAIL",
-      "XHTML parser should create a custom element candidate with null registry if customelementregistry is set": "FAIL",
-      "XHTML parser should create a defined custom element with null registry if customelementregistry is set": "FAIL"
-    }
+    "total": 4
   },
   "custom-elements/registries/scoped-custom-element-registry-customelementregistry-attribute.html": {
-    "total": 23,
-    "failures": {
-      "Body with customelementregistry attribute during initial parse should have null registry and propagate to children": "FAIL",
-      "Body with customelementregistry in a complete document structure should have null registry": "FAIL",
-      "Cloning a builtin element with null regsitry should create an element with null registry": "FAIL",
-      "Cloning a custom element candidate with null regsitry should create an element with null registry": "FAIL",
-      "Cloning a custom element with null regsitry should create an element with null registry": "FAIL",
-      "Custom element candidate child of body with customelementregistry should have null registry during initial parse": "FAIL",
-      "Descendants of body with customelementregistry should all have null registry during initial parse": "FAIL",
-      "HTML parser should create a builtin element with null registry if customelementregistry is set": "FAIL",
-      "HTML parser should create a custom element candidate with null registry if customelementregistry is set": "FAIL",
-      "HTML parser should create a custom element with null registry if customelementregistry is set": "FAIL",
-      "Initial parse: built-in element with customelementregistry has null registry": "FAIL",
-      "Initial parse: child of element with customelementregistry inherits null registry": "FAIL",
-      "Initial parse: custom element candidate child inherits null registry from parent": "FAIL",
-      "Initial parse: custom element candidate with customelementregistry has null registry": "FAIL",
-      "Initial parse: deeply nested descendant inherits null registry": "FAIL",
-      "Initial parse: global registry define only upgrades elements without customelementregistry": "FAIL"
-    }
+    "total": 23
   },
   "custom-elements/registries/scoped-registry-append.html": {
-    "total": 16,
-    "failures": {
-      "Global registry element should gain effective global registry of scoped registry from its parent upon adoption.": "FAIL"
-    }
+    "total": 16
   },
   "custom-elements/registries/scoped-registry-define-upgrade-criteria.html": {
     "total": 14

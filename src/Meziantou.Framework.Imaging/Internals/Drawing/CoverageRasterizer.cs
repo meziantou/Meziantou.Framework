@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Drawing;
 
@@ -83,6 +84,14 @@ internal sealed class CoverageRasterizer : IDisposable
     private PooledBuffer? _sweep;
     private int _sweepCapacity;
 
+    // The arrays of the buffers, read without going through PooledBuffer.Span: the sweep reaches them for every event.
+    // They are emptied on disposal, so that nothing reads a buffer that went back to the pool.
+    private byte[] _accumulationBytes;
+    private byte[] _coverageBytes;
+    private byte[] _rowsBytes;
+    private byte[] _orderBytes = [];
+    private byte[] _sweepBytes = [];
+
     private EdgeBuilder? _edges;
     private bool _evenOdd;
     private bool _isAliased;
@@ -125,6 +134,9 @@ internal sealed class CoverageRasterizer : IDisposable
 
         _accumulation = accumulation;
         _coverage = coverage;
+        _accumulationBytes = accumulation.RawBuffer;
+        _coverageBytes = coverage.RawBuffer;
+        _rowsBytes = _rows.RawBuffer;
         _firstRow = height;
         ResetDirtyRange();
     }
@@ -147,19 +159,43 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <summary>Gets the coverage of the pixels of the current run, from 0 to <see cref="FullCoverage"/>.</summary>
     public ReadOnlySpan<uint> Coverage => CoverageRow.Slice(X, Count);
 
-    private Span<double> Accumulation => unsafe(MemoryMarshal.Cast<byte, double>(_accumulation.Span));
+    private Span<double> Accumulation
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => unsafe(MemoryMarshal.Cast<byte, double>(_accumulationBytes.AsSpan(0, _accumulation.Length)));
+    }
 
-    private Span<uint> CoverageRow => unsafe(MemoryMarshal.Cast<byte, uint>(_coverage.Span));
+    private Span<uint> CoverageRow
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => unsafe(MemoryMarshal.Cast<byte, uint>(_coverageBytes.AsSpan(0, _coverage.Length)));
+    }
 
     /// <summary>The number of edges whose first row is each row, then the edges that become or stop being active at each row.</summary>
-    private Span<int> Rows => unsafe(MemoryMarshal.Cast<byte, int>(_rows.Span));
+    private Span<int> Rows
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => unsafe(MemoryMarshal.Cast<byte, int>(_rowsBytes.AsSpan(0, _rows.Length)));
+    }
 
     /// <summary>The edges sorted by first row.</summary>
-    private Span<int> Order => unsafe(MemoryMarshal.Cast<byte, int>(_order!.Span));
+    private Span<int> Order
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => unsafe(MemoryMarshal.Cast<byte, int>(_orderBytes.AsSpan(0, _orderCapacity * sizeof(int))));
+    }
 
-    private Span<double> SweepDoubles => unsafe(MemoryMarshal.Cast<byte, double>(_sweep!.Span[..(SweepDoublesPerEdge * sizeof(double) * _sweepCapacity)]));
+    private Span<double> SweepDoubles
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => unsafe(MemoryMarshal.Cast<byte, double>(_sweepBytes.AsSpan(0, SweepDoublesPerEdge * sizeof(double) * _sweepCapacity)));
+    }
 
-    private Span<int> SweepIntegers => unsafe(MemoryMarshal.Cast<byte, int>(_sweep!.Span[(SweepDoublesPerEdge * sizeof(double) * _sweepCapacity)..]));
+    private Span<int> SweepIntegers
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => unsafe(MemoryMarshal.Cast<byte, int>(_sweepBytes.AsSpan(SweepDoublesPerEdge * sizeof(double) * _sweepCapacity, SweepIntegersPerEdge * sizeof(int) * _sweepCapacity)));
+    }
 
     // Each edge of the sweep line has a slot, which it keeps until it ends. By slot:
 
@@ -284,8 +320,8 @@ internal sealed class CoverageRasterizer : IDisposable
             offset += count;
         }
 
-        EnsureCapacity(ref _order, ref _orderCapacity, _edgeCount, sizeof(int));
-        EnsureCapacity(ref _sweep, ref _sweepCapacity, maxActive, SweepBytesPerEdge);
+        EnsureCapacity(ref _order, ref _orderBytes, ref _orderCapacity, _edgeCount, sizeof(int));
+        EnsureCapacity(ref _sweep, ref _sweepBytes, ref _sweepCapacity, maxActive, SweepBytesPerEdge);
         var order = Order;
         for (var i = 0; i < list.Length; i++)
         {
@@ -326,6 +362,11 @@ internal sealed class CoverageRasterizer : IDisposable
 
     public void Dispose()
     {
+        _accumulationBytes = [];
+        _coverageBytes = [];
+        _rowsBytes = [];
+        _orderBytes = [];
+        _sweepBytes = [];
         _accumulation.Dispose();
         _coverage.Dispose();
         _rows.Dispose();
@@ -333,17 +374,19 @@ internal sealed class CoverageRasterizer : IDisposable
         _sweep?.Dispose();
     }
 
-    private void EnsureCapacity(ref PooledBuffer? buffer, ref int capacity, int required, int elementSize)
+    private void EnsureCapacity(ref PooledBuffer? buffer, ref byte[] bytes, ref int capacity, int required, int elementSize)
     {
         if (required <= capacity)
             return;
 
         // The previous buffer is released first: its content is not needed
+        bytes = [];
         buffer?.Dispose();
         buffer = null;
         capacity = 0;
         var grown = Math.Max(required, 16);
         buffer = ResampleWeights.Rent<byte>(_scope, (long)grown * elementSize);
+        bytes = buffer.RawBuffer;
         capacity = grown;
     }
 

@@ -1343,16 +1343,18 @@ internal sealed class BoxFragment : Fragment
     }
 
     /// <summary>
-    /// Returns the union of two overflow rectangles. As in Blink, a box with a zero size in one axis contributes its extent in the
-    /// other axis (WPT scrollable-overflow-zero-one-axis.html), unlike the "border boxes with zero area do not affect the
-    /// scrollable overflow area" of the specification; a box without size does not.
+    /// Returns the union of two overflow rectangles: "border boxes with zero area do not affect the scrollable overflow area", as
+    /// in Blink, which ignores the rectangles with a zero size in one axis (a block of width 0 at the inline-start margin of its
+    /// parent does not overflow a narrower viewport: WPT quirks/percentage-height-calculation.html). The in-flow children of a
+    /// scroll container with a zero size in one axis still contribute their extent in the other axis, through its in-flow
+    /// contents (see <see cref="InFlowBounds"/>, WPT scrollable-overflow-zero-one-axis.html).
     /// </summary>
     private static PhysicalRect Unite(PhysicalRect a, PhysicalRect b)
     {
-        if (b.Width <= 0 && b.Height <= 0)
+        if (b.Width <= 0 || b.Height <= 0)
             return a;
 
-        if (a.Width <= 0 && a.Height <= 0)
+        if (a.Width <= 0 || a.Height <= 0)
             return b;
 
         return UnionWithEmpty(a, b);

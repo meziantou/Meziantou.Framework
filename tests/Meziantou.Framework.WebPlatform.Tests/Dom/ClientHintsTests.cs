@@ -479,6 +479,27 @@ public sealed class ClientHintsTests : IDisposable
     }
 
     [Fact]
+    public void ClearSiteData_FrameOfTheTopLevelSiteInACrossSiteFrame_ClearsItsPartition()
+    {
+        var shed = new StorageShed();
+        var context = CreateContext(new BrowsingContextOptions { LocalStorage = shed });
+        var partitionedKey = new StorageKey("https://example.com", PartitionNonce: null, "https://example.com", HasCrossSiteAncestor: true);
+        shed.SetItem("https://example.com", "key", "value");
+        shed.ObtainArea(partitionedKey).Set("key", "value", out _);
+
+        // A → B → A: the inner frame stores its data with the cross-site ancestor bit, which is the partition its response clears
+        AddPage(PageUrl, "<iframe src='https://other.example/frame.html'></iframe>");
+        AddPage("https://other.example/frame.html", "<iframe src='https://example.com/inner.html'></iframe>");
+        AddPage("https://example.com/inner.html", "<img src='clear.png'>");
+        _resources["https://example.com/clear.png"] = new DocumentResource("") { Headers = [new("Clear-Site-Data", "\"storage\"")] };
+        Load(context);
+
+        Assert.Single(_requests, request => request.Url == "https://example.com/clear.png");
+        Assert.Equal(0, shed.ObtainArea(partitionedKey).Count);
+        Assert.Single(shed.GetItems("https://example.com"));
+    }
+
+    [Fact]
     public void ClearSiteData_ClearsTheHttpCacheOfTheOrigin()
     {
         AddPage(PageUrl, "<img src='image.png'>");

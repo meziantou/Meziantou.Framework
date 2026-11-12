@@ -115,6 +115,81 @@ public static class TextShaper
         }
     }
 
+    /// <summary>
+    /// Splits a line of text into the runs <see cref="Shape"/> takes: the parts of one script (Unicode Standard Annex
+    /// #24) and one embedding level of the Unicode Bidirectional Algorithm (Unicode Standard Annex #9), in the order
+    /// they are displayed from left to right.
+    /// </summary>
+    /// <param name="text">The text of the line: one paragraph, without its line terminator.</param>
+    /// <param name="direction">The direction of the paragraph; <see cref="UnicodeBidiDirection.Auto"/> takes the one of its first strong character.</param>
+    /// <returns>The runs, from left to right; none for an empty text. The characters of a right-to-left run are in the order of the text: shape it with <c>isRightToLeft</c> set to <see cref="ShapingRun.IsRightToLeft"/>.</returns>
+    /// <remarks>
+    /// The text is one line: its trailing white space, and the white space before its segment separators, have the
+    /// level of the paragraph (rule L1), so that they are displayed at the end of the line in its direction.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="direction"/> is not a defined value.</exception>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Imaging.Tests/TextShaperTests.cs" ref:region="Fonts_SplitRuns" ref:dedent="true">
+    /// // English, then Hebrew with a number: the runs are given from left to right
+    /// var text = "Hi \u05E9\u05DC\u05D5\u05DD 42";
+    /// var runs = TextShaper.SplitRuns(text);
+    ///
+    /// Assert.Equal(
+    /// [
+    ///     new ShapingRun(Index: 0, Length: 3, UnicodeScript.Latin, BidiLevel: 0),
+    ///     new ShapingRun(Index: 8, Length: 2, UnicodeScript.Hebrew, BidiLevel: 2),
+    ///     new ShapingRun(Index: 3, Length: 5, UnicodeScript.Hebrew, BidiLevel: 1),
+    /// ], runs);
+    ///
+    /// // Each run is shaped on its own, with its script and its direction
+    /// Assert.True(runs[2].IsRightToLeft);
+    /// </code>
+    /// </example>
+    public static ShapingRun[] SplitRuns(ReadOnlySpan<char> text, UnicodeBidiDirection direction = UnicodeBidiDirection.Auto)
+    {
+        var levels = new byte[text.Length];
+        var paragraphLevel = UnicodeBidi.ResolveLevels(text, direction, levels);
+
+        // The white space at the end of the line follows the direction of the paragraph (rule L1)
+        UnicodeBidi.ResetLineLevels(text, paragraphLevel, levels);
+        if (text.IsEmpty)
+            return [];
+
+        var runs = new List<ShapingRun>();
+        foreach (var scriptRun in Unicode.EnumerateScriptRuns(text))
+        {
+            var end = scriptRun.Index + scriptRun.Length;
+            var start = scriptRun.Index;
+            while (start < end)
+            {
+                var next = start + 1;
+                while (next < end && levels[next] == levels[start])
+                {
+                    next++;
+                }
+
+                runs.Add(new ShapingRun(start, next - start, scriptRun.Script, levels[start]));
+                start = next;
+            }
+        }
+
+        var runLevels = new byte[runs.Count];
+        for (var i = 0; i < runs.Count; i++)
+        {
+            runLevels[i] = runs[i].BidiLevel;
+        }
+
+        var order = new int[runs.Count];
+        UnicodeBidi.GetVisualOrder(runLevels, order);
+        var result = new ShapingRun[runs.Count];
+        for (var i = 0; i < order.Length; i++)
+        {
+            result[i] = runs[order[i]];
+        }
+
+        return result;
+    }
+
     /// <summary>Shapes the characters of a buffer.</summary>
     /// <param name="buffer">The characters of the run; it receives the glyphs and their positions.</param>
     /// <param name="face">The font.</param>

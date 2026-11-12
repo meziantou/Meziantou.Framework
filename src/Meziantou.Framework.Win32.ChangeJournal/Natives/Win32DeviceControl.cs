@@ -23,7 +23,7 @@ internal static class Win32DeviceControl
     [SupportedOSPlatform("windows5.1.2600")]
     internal static unsafe Span<byte> ControlWithInput<TStructure>(SafeFileHandle handle, Win32ControlCode code, ref TStructure structure, int initialBufferLength) where TStructure : unmanaged
     {
-        var structureLength = (uint)Marshal.SizeOf<TStructure>();
+        var structureLength = (uint)sizeof(TStructure);
         byte[] buffer = initialBufferLength is 0 ? [] : new byte[initialBufferLength];
 
         fixed (void* structurePointer = &structure)
@@ -55,7 +55,7 @@ internal static class Win32DeviceControl
     [SupportedOSPlatform("windows5.1.2600")]
     internal static unsafe void ControlWithOutput<TStructure>(SafeFileHandle handle, Win32ControlCode code, ref TStructure structure) where TStructure : unmanaged
     {
-        var structureLength = (uint)Marshal.SizeOf<TStructure>();
+        var structureLength = (uint)sizeof(TStructure);
         fixed (void* pStructure = &structure)
         {
             uint returnedSize = 0;

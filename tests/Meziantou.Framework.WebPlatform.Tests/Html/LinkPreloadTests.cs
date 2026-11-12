@@ -65,6 +65,8 @@ public sealed class LinkPreloadTests : IDisposable
     {
         _ when name.StartsWith("missing", StringComparison.Ordinal) => null,
         _ when name.StartsWith("notfound", StringComparison.Ordinal) => new DocumentResource("") { StatusCode = 404, Headers = [new("Content-Type", "text/plain")] },
+        "linked.css" => new DocumentResource("p { color: rgb(0, 128, 0) }") { Headers = [new("Content-Type", "text/css"), new("Link", "<font.woff2>; rel=preload; as=font; crossorigin; referrerpolicy=unsafe-url, <image.png>; rel=preload; as=image, <a.txt>; rel=prefetch")] },
+        "image.png" => new DocumentResource(Png) { Headers = [new("Content-Type", "image/png"), new("Link", "<other.png>; rel=preload; as=image")] },
         _ when name.Contains(".css", StringComparison.Ordinal) => DocumentResource.Create("p { color: rgb(0, 128, 0) }", "text/css"),
         _ when name.Contains(".png", StringComparison.Ordinal) => DocumentResource.Create(Png, "image/png"),
         _ when name.Contains(".mjs", StringComparison.Ordinal) => DocumentResource.Create("window.log = (window.log || '') + 'module,';", "text/javascript"),
@@ -237,13 +239,50 @@ public sealed class LinkPreloadTests : IDisposable
                 new("Link", "<a.js>; rel=preload; as=script, </dir/b.png>;rel=\"preload\";as=image;crossorigin=\"anonymous\""),
                 new("Link", "<c.css>; rel=preload; as=style; media=print"),
                 new("Link", "<d.png>; rel=preload; as=image; imagesrcset=\"e.png 2x, f.png 3x\"; referrerpolicy=no-referrer"),
-                new("Link", "<g.txt>; rel=stylesheet, <h.txt>; rel=preload"),
+                new("Link", "<g.txt>; rel=canonical, <h.txt>; rel=preload"),
             ]);
 
         Assert.Equal("script,", document.Title);
         Assert.Equal(["Script NoCors a.js", "Image Cors b.png", "Image NoCors d.png"], Requests);
         Assert.Null(_requests.Single(r => r.Url.EndsWith("d.png", StringComparison.Ordinal)).Referrer);
         Assert.Equal("a.js,b.png,d.png", EntryNames(document));
+    }
+
+    [Fact]
+    public void LinkHeaders_PrefetchAndFetchTheStyleSheetsAndTheIcons()
+    {
+        var document = Load("<!doctype html><p>text</p>", [new("Link", "<a.txt>; rel=prefetch, <b.css>; rel=stylesheet, <c.png>; rel=icon, <d.txt>; rel=canonical")]);
+
+        // As in Firefox, the style sheet and the icon are fetched, but the style sheet does not apply
+        Assert.Equal(["Empty NoCors a.txt", "Style NoCors b.css", "Empty NoCors c.png"], Requests);
+        Assert.Equal("prefetch", HeaderList.Get(_requests[0].Headers, "Sec-Purpose"));
+        Assert.Equal("rgb(0, 0, 0)", document.DefaultView!.GetComputedStyle(document.QuerySelector("p")!).Color);
+        Assert.Empty(document.StyleSheets);
+        Assert.Equal(["a.txt", "b.css"], EntryNames(document).Split(',').Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void LinkHeaders_OfTheSubresources_PreloadTheirResources()
+    {
+        var document = Load("""
+            <!doctype html>
+            <link rel=stylesheet href=sub/linked.css>
+            <script>
+              addEventListener('load', () => {
+                const image = new Image();
+                image.onload = () => document.title = 'loaded';
+                image.src = 'sub/image.png';
+              });
+            </script>
+            """);
+
+        // The URL is resolved against the URL of the style sheet, and the request has no referrer
+        Assert.Equal(["Style NoCors sub/linked.css", "Font Cors sub/font.woff2", "Image NoCors sub/image.png"], Requests);
+        Assert.All(_requests.Skip(1), request => Assert.Null(request.Referrer));
+
+        // The Link headers of the preloaded responses are not processed, and the preload is consumed by the next fetch
+        Assert.Equal("loaded", document.Title);
+        Assert.Equal(3, Requests.Count);
     }
 
     [Theory]

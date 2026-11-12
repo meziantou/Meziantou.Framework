@@ -10,15 +10,15 @@ description: "The results of the web-platform-tests of webmessaging, and why the
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 131 | 131 | 0 | 100% |
-| [Tentative](#tentative-tests) | 0 | 7 | 0 | 0% |
+| [Tentative](#tentative-tests) | 1 | 7 | 0 | 14% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **131** | **138** | **0** | **95%** |
+| **All** | **132** | **138** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 4
+- **NOT IMPLEMENTED**: 3
 - **REQUIRES**: 1
   - `workers`: 1
 - **TEST RUNNER**: 2
@@ -163,7 +163,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`broadcastchannel/cross-partition.https.tentative.html`](https://wpt.fyi/results/webmessaging/broadcastchannel/cross-partition.https.tentative.html) | Fail | 0 / 5 | NOT IMPLEMENTED | partitioning `BroadcastChannel` by storage key (a cross-site iframe receives the messages) |
+| [`broadcastchannel/cross-partition.https.tentative.html`](https://wpt.fyi/results/webmessaging/broadcastchannel/cross-partition.https.tentative.html) | Pass | 5 / 5 |  |  |
 | [`message-channels/close-event/document-destroyed.tentative.window.js`](https://wpt.fyi/results/webmessaging/message-channels/close-event/document-destroyed.tentative.window.js) | Error | 0 / 3 | TEST RUNNER | the `window.postMessage()` stand-in does not transfer, so `event.ports` is empty (the helper then calls an undefined `reject`) |
 | [`message-channels/close-event/entangled-after-back-forward-cache-restore.https.tentative.window.js`](https://wpt.fyi/results/webmessaging/message-channels/close-event/entangled-after-back-forward-cache-restore.https.tentative.window.js) | Fail | 0 / 1 | REQUIRES(workers) | service workers (`navigator.serviceWorker` is undefined) |
 | [`message-channels/close-event/explicitly-closed.tentative.window.js`](https://wpt.fyi/results/webmessaging/message-channels/close-event/explicitly-closed.tentative.window.js) | Error | 2 / 4 | TEST RUNNER | the `window.postMessage()` stand-in does not transfer, so `event.ports` is empty (the helper then calls an undefined `reject`) |

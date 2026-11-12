@@ -314,6 +314,10 @@ internal ref partial struct HevcSliceCoder
     /// Predicts a block from its neighbouring samples (clause 8.4.4.2.1 "General intra sample prediction"), into the plane
     /// of its colour component.
     /// </summary>
+    /// <remarks>
+    /// The scratch is not zeroed: that costs 0.6% of the instructions of a HEIC decode (HeicBenchmarks.DecodeStill420,
+    /// 2026-11-11), and every sample is written before it is read.
+    /// </remarks>
     [SkipLocalsInit]
     private void PredictIntra(Av1Plane plane, int cIdx, int xTb, int yTb, int xTbY, int yTbY, int nTbS, int predModeIntra)
     {
@@ -337,7 +341,6 @@ internal ref partial struct HevcSliceCoder
     }
 
     // The neighbouring samples of a block (clause 8.4.4.2.1), after the reference sample substitution process
-    [SkipLocalsInit]
     private void GetIntraReferences(Av1Plane plane, int cIdx, int xTb, int yTb, int xTbY, int yTbY, int nTbS, scoped Span<ushort> p)
     {
         var subWidth = cIdx is 0 ? 1 : _sps.SubWidthC;
@@ -355,10 +358,9 @@ internal ref partial struct HevcSliceCoder
             return;
         }
 
-        // The samples that are not available are substituted before they are read: only the availability is cleared
-        Span<bool> availableBuffer = unsafe(stackalloc bool[HevcIntraPredictor.MaxNeighbourCount]);
+        // The samples that are not available are substituted before they are read: only the availability starts cleared
+        Span<bool> availableBuffer = stackalloc bool[HevcIntraPredictor.MaxNeighbourCount];
         var available = availableBuffer[..p.Length];
-        available.Clear();
         var constrainedIntraPred = _pps.ConstrainedIntraPredFlag;
         var zCurr = GetZScanIndexInCtb(xTbY, yTbY);
 

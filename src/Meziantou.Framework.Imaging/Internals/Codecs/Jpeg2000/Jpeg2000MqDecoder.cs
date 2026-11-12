@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -55,6 +56,8 @@ internal struct Jpeg2000MqDecoder
     public int Decode(ref byte context)
     {
         var current = context;
+        // The table has an entry for every byte value (Jpeg2000MqTables.ContextTransitions)
+        Debug.Assert(_transitions.Length > byte.MaxValue);
         var transitions = unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_transitions), current));
         var probability = transitions & 0xFFFF;
         var moreProbable = current & 1;

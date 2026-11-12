@@ -79,7 +79,7 @@ public class AutoLinkParser : InlineParser
         var startPosition = slice.Start;
 
         // We don't bother disposing the builder as it'll realistically never grow beyond the initial stack size.
-        var pendingEmphasis = new ValueStringBuilder(unsafe(stackalloc char[32]));
+        var pendingEmphasis = new ValueStringBuilder(stackalloc char[32]);
 
         // Check that an autolink is possible in the current context
         if (!IsAutoLinkValidInCurrentContext(processor, ref pendingEmphasis))

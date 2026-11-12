@@ -240,6 +240,25 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         public Exception CreateSecurityError() => Caller.CrossOriginSecurityError();
 
+        public bool ShouldReportAccess() => Accessor is { } accessor && OpenerPolicyReporting.ShouldCheckAccess(accessor, instance);
+
+        public bool IsNamedProperty(string name)
+        {
+            var activeWindow = ActiveWindow;
+            return IsSameOrigin() ? activeWindow.GetNamedItem(name) is not null : activeWindow.GetFirstNamedChildNavigable(name, out _) is not null;
+        }
+
+        public void ReportAccess(string propertyName)
+        {
+            if (Accessor is { } accessor)
+            {
+                OpenerPolicyReporting.CheckAccess(accessor, instance, propertyName);
+            }
+        }
+
+        /// <summary>The browsing context of the current global object (the accessor of https://html.spec.whatwg.org/multipage/browsers.html#coop-check-access-report).</summary>
+        private BrowsingContext? Accessor => (agent.CurrentRealm?.GlobalScope as Window)?.BrowsingContext;
+
         /// <summary>The realm of the code that uses the WindowProxy.</summary>
         private WebIdlRealm<TAdapter, TValue> Caller => agent.CurrentRealm ?? agent.GetRealm(ActiveWindow);
     }

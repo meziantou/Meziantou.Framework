@@ -11,6 +11,12 @@ public partial class Document
     /// <summary>The timing of the navigation that created the document and of its loading, or null for a document without browsing context.</summary>
     internal DocumentLoadTimingInfo? LoadTimingInfo { get; set; }
 
+    /// <summary>
+    /// The steps run with the size of the body at the end of the body of the response of the navigation that arrives after the
+    /// document is created (the resource timing of the <c>iframe</c> element of the navigable), or null.
+    /// </summary>
+    internal Action<ulong>? ProcessNavigationResponseEndOfBody { get; set; }
+
     /// <summary>The navigation timing entry of the document, in the performance timeline of its window.</summary>
     internal PerformanceNavigationTiming? NavigationTimingEntry { get; set; }
 
@@ -84,6 +90,12 @@ public partial class Document
     /// </summary>
     internal void MarkNavigationResponseEnd()
     {
+        if (ProcessNavigationResponseEndOfBody is { } processResponseEndOfBody)
+        {
+            ProcessNavigationResponseEndOfBody = null;
+            processResponseEndOfBody(_navigationResponseBodySize);
+        }
+
         if (LoadTimingInfo is not { ResponseEnd: 0 } timing || GetLoadTimingTimestamp() is not { } now)
             return;
 

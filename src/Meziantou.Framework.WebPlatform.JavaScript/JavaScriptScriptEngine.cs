@@ -403,6 +403,28 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
         return new ScriptLocation(url, location.Line, location.Column);
     }
 
+    /// <inheritdoc/>
+    internal override ScriptCallbackLocation? GetCallbackSourceLocation(object callback)
+    {
+        var function = callback switch
+        {
+            JsObject obj => obj,
+            Delegate @delegate when Agent.DelegateFunctions.TryGetValue(@delegate, out var value) => value as JsObject,
+            JsCallbackInterface<JavaScriptAdapter, object> callbackInterface => callbackInterface.Object as JsObject,
+            JsEventHandlerCallback<JavaScriptAdapter, object> eventHandler => eventHandler.Function as JsObject,
+            _ => null,
+        };
+
+        if (function is not { IsCallable: true } || function.GetFunctionSourceLocation() is not { } location)
+            return null;
+
+        var mutedErrors = location.ScriptOrModule is JsScript { MutedErrors: true } || location.ScriptOrModule?.HostDefined is ScriptHostDefined { MutedErrors: true };
+        return new ScriptCallbackLocation(location.ScriptOrModule?.Url ?? location.Url, location.Name, location.Position, location.Line, location.Column, mutedErrors);
+    }
+
+    /// <inheritdoc/>
+    internal override string? GetInterfaceName(object platformObject) => WebIdlBindings<JavaScriptAdapter, object>.GetInterface(platformObject.GetType())?.Name;
+
     // ----------------------------------------------------------------------------------------------------------------
     // Event handlers
     // ----------------------------------------------------------------------------------------------------------------
@@ -479,6 +501,10 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
     internal override IIndexedDBValueOperations? GetIndexedDBValueOperations(GlobalScope global) => Agent.GetRealm(global);
 
     internal override IServiceWorkerFetchOperations? GetServiceWorkerFetchOperations(GlobalScope global) => Agent.GetRealm(global);
+
+    internal override string? SerializeJson(GlobalScope global, object? value) => Agent.GetRealm(global).SerializeJson(value);
+
+    internal override object? ParseJson(GlobalScope global, string json, out bool isObject) => Agent.GetRealm(global).ParseJson(json, out isObject);
 
     /// <inheritdoc/>
     protected internal override void WaitForAll(GlobalScope global, IReadOnlyList<object?> values, Action successSteps, Action<object?> failureSteps) => Agent.GetRealm(global).WaitForAll(values, successSteps, failureSteps);

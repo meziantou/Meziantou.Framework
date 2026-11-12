@@ -50,8 +50,26 @@ public static class JsBinaryData
         _ => false,
     };
 
-    /// <summary>Gets the Shared Data Block of a SharedArrayBuffer, which <see cref="JsRealm.CreateSharedArrayBuffer"/> can share with a buffer of another engine (on another thread); null for the other values.</summary>
+    /// <summary>Gets the Shared Data Block of a SharedArrayBuffer, which <see cref="JsRealm.CreateSharedArrayBuffer(JsSharedDataBlock)"/> can share with a buffer of another engine (on another thread); null for the other values.</summary>
     public static JsSharedDataBlock? GetSharedDataBlock(JsValue value) => value.Cell is JsArrayBuffer { SharedBlock: { } block } ? block : null;
+
+    /// <summary>
+    /// Replaces the data block of an ArrayBuffer over external memory (<see cref="JsRealm.CreateArrayBuffer(Memory{byte}, JsValue)"/>
+    /// or <see cref="JsRealm.CreateResizableArrayBuffer"/>): its byte length becomes the length of <paramref name="memory"/>,
+    /// which cannot exceed the maximum byte length of a resizable buffer.
+    /// </summary>
+    /// <exception cref="ArgumentException">The value is not an ArrayBuffer over external memory, or it is detached.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The memory is longer than the maximum byte length of the buffer.</exception>
+    public static void SetArrayBufferMemory(JsValue arrayBuffer, Memory<byte> memory)
+    {
+        if (arrayBuffer.Cell is not JsArrayBuffer { IsShared: false, IsExternal: true, IsDetached: false } buffer)
+            throw new ArgumentException("The value is not an ArrayBuffer over external memory", nameof(arrayBuffer));
+
+        if (buffer.MaxByteLength is { } maxByteLength && memory.Length > maxByteLength)
+            throw new ArgumentOutOfRangeException(nameof(memory), "The memory is longer than the maximum byte length of the ArrayBuffer");
+
+        buffer.SetExternalMemory(memory);
+    }
 
     /// <summary>Detaches an ArrayBuffer (DetachArrayBuffer(buffer, key)); the key is its [[ArrayBufferDetachKey]].</summary>
     /// <exception cref="ArgumentException">The value is not an ArrayBuffer.</exception>

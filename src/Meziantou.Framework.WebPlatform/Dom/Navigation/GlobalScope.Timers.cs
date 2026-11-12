@@ -208,7 +208,7 @@ public abstract partial class GlobalScope
             eventLoop.CurrentTimerNestingLevel = nestingLevel + 1;
             try
             {
-                RunTimerHandler(handler, arguments, baseUrl, fetchOptions);
+                RunTimerHandler(handler, arguments, baseUrl, fetchOptions, repeat);
             }
             finally
             {
@@ -276,14 +276,24 @@ public abstract partial class GlobalScope
                 }
             }
 
-            QueueGlobalTask(task);
+            // The task of the timer is queued when the timer elapses (the event loop moves the due timers to the task queue
+            // after each task): the handler runs in this task, so a 0 ms timer runs before the tasks queued by the tasks
+            // that precede it
+            RunGlobalTask(task);
         }
 
         eventLoop.QueueTimer(timeout, OnTimeout);
     }
 
-    private void RunTimerHandler(TimerHandler handler, object?[] arguments, string baseUrl, ModuleFetchOptions? fetchOptions)
+    private void RunTimerHandler(TimerHandler handler, object?[] arguments, string baseUrl, ModuleFetchOptions? fetchOptions, bool repeat)
     {
+        // https://w3c.github.io/long-animation-frames/#record-timing-info-for-timer-handler: a function, or a string compiled
+        // as a classic script, runs as a user callback
+        if (this is Window window && handler.Value is not Action)
+        {
+            EventLoop.RecordScriptEntryPoint(window, window, ScriptInvokerType.UserCallback, repeat ? "TimerHandler:setInterval" : "TimerHandler:setTimeout", handler.Value as FunctionCallback);
+        }
+
         switch (handler.Value)
         {
             case FunctionCallback function:

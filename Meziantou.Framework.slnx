@@ -11,6 +11,7 @@
     <Project Path="benchmarks/Meziantou.Framework.JsonPath.Benchmarks/Meziantou.Framework.JsonPath.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.SnapshotTesting.Benchmarks/Meziantou.Framework.SnapshotTesting.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Threading.Benchmarks/Meziantou.Framework.Threading.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.VectorGraphics.Benchmarks/Meziantou.Framework.VectorGraphics.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.WebPlatform.Benchmarks/Meziantou.Framework.WebPlatform.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Yaml.Benchmarks/Meziantou.Framework.Yaml.Benchmarks.csproj" />
   </Folder>

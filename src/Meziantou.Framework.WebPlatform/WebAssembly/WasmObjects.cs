@@ -24,6 +24,17 @@ internal abstract class WasmModule
 
     /// <summary>The sections of the module that the runtime does not expose (the custom sections, the function indices of the exports).</summary>
     internal WasmModuleSections Sections => _sections ??= WasmModuleSections.Read(Bytes);
+
+    /// <summary>
+    /// Whether a parameter of a function type of the imports of the module is <c>(ref null (array (mut i16)))</c>: a nullable
+    /// reference to the array type of the char codes of the JS String Builtins
+    /// (https://webassembly.github.io/spec/js-api/#js-string-builtin-functions), a final mutable i16 array type
+    /// without supertype in a recursion group of its own. A concrete heap type is not described by <see cref="WasmValueType"/>:
+    /// the runtime checks the type. The default implementation returns false.
+    /// </summary>
+    /// <param name="functionType">A function type of an import of the module.</param>
+    /// <param name="parameterIndex">The index of the parameter.</param>
+    public virtual bool IsCharCodeArrayParameter(WasmFunctionType functionType, int parameterIndex) => false;
 }
 
 /// <summary>An instance of a module (a module instance).</summary>
@@ -163,6 +174,18 @@ internal abstract class WasmStore : IDisposable
 
     /// <summary>Creates an exception (exn_alloc).</summary>
     public abstract WasmExceptionReference CreateException(WasmTag tag, ReadOnlySpan<WasmValue> payload);
+
+    /// <summary>The number of elements of an array (array.len).</summary>
+    /// <exception cref="WasmTrapException">The object is not an array of the store.</exception>
+    public abstract int GetArrayLength(WasmGcObject array);
+
+    /// <summary>Reads an element of an array (array.get; a packed element is zero-extended).</summary>
+    /// <exception cref="WasmTrapException">The index is out of bounds, or the object is not an array of the store.</exception>
+    public abstract WasmValue GetArrayElement(WasmGcObject array, int index);
+
+    /// <summary>Writes an element of an array (array.set) whose storage type is <paramref name="type"/> (<c>i32</c> for a packed element).</summary>
+    /// <exception cref="WasmTrapException">The index is out of bounds, the array is immutable, or the object is not an array of the store.</exception>
+    public abstract void SetArrayElement(WasmGcObject array, int index, WasmValue value, WasmValueType type);
 
     /// <summary>The JavaScript exception tag of the agent (https://webassembly.github.io/spec/js-api/#get-the-javascript-exception-tag), allocated on first use.</summary>
     public abstract WasmTag JavaScriptExceptionTag { get; }

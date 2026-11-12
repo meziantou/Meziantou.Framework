@@ -31,8 +31,8 @@ Assert.Equal("Done", sb.ToString());
   index must be between 0 and [Length](cref:Meziantou.Framework.ValueStringBuilder.Length).
 - The indexer returns a reference to a character of the content: read it, or assign it to replace the character. The
   index must be less than [Length](cref:Meziantou.Framework.ValueStringBuilder.Length).
-- Setting [Length](cref:Meziantou.Framework.ValueStringBuilder.Length) to a smaller value truncates the content. Setting it to a larger value exposes the characters already
-  present in the buffer, which may be anything: see [Pitfalls](05-Pitfalls.md#the-buffer-is-not-cleared).
+- Setting [Length](cref:Meziantou.Framework.ValueStringBuilder.Length) to a smaller value truncates the content. Setting it to a larger value pads the content with
+  `'\0'` characters, like `StringBuilder.Length`. Truncating then increasing [Length](cref:Meziantou.Framework.ValueStringBuilder.Length) does not bring the removed characters back.
 - [Clear](cref:Meziantou.Framework.ValueStringBuilder.Clear) sets [Length](cref:Meziantou.Framework.ValueStringBuilder.Length) to 0 and keeps the buffer, so the builder can be reused without growing again.
 
 The builder in this example is not declared with `using`: a `using` declaration makes the variable read-only, so

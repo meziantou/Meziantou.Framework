@@ -57,6 +57,24 @@ public sealed class TimerTests : IDisposable
     }
 
     [Fact]
+    public void ElapsedTimer_RunsBeforeTheTasksQueuedByTheTasksThatPrecedeIt()
+    {
+        var window = CreateWindow();
+        var eventLoop = _contexts.EventLoop;
+        eventLoop.QueueTask(() =>
+        {
+            eventLoop.QueueTask(() =>
+            {
+                _log.Add("task");
+                eventLoop.QueueTask(() => _log.Add("queued by task"));
+            });
+            window.SetTimeout(() => _log.Add("timer"), 0);
+        });
+        RunUntilIdle();
+        Assert.Equal(["task", "timer", "queued by task"], _log);
+    }
+
+    [Fact]
     public void ClearTimeout_CancelsTheTimer()
     {
         var window = CreateWindow();

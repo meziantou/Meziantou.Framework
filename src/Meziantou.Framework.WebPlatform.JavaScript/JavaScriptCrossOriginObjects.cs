@@ -81,6 +81,11 @@ internal sealed class JavaScriptWindowProxy(JsEngine engine, IJsWindowProxyHandl
     // https://html.spec.whatwg.org/multipage/nav-history-apis.html#windowproxy-get
     protected override JsValue GetCore(JsPropertyKey key, JsValue receiver)
     {
+        if (handler.ShouldReportAccess())
+        {
+            ReportAccess(key, isSet: false);
+        }
+
         if (!handler.IsSameOrigin())
             return CrossOriginGet(key, receiver);
 
@@ -94,6 +99,11 @@ internal sealed class JavaScriptWindowProxy(JsEngine engine, IJsWindowProxyHandl
     // https://html.spec.whatwg.org/multipage/nav-history-apis.html#windowproxy-set
     protected override bool SetCore(JsPropertyKey key, JsValue value, JsValue receiver)
     {
+        if (handler.ShouldReportAccess())
+        {
+            ReportAccess(key, isSet: true);
+        }
+
         if (!handler.IsSameOrigin())
             return CrossOriginSet(key, value, receiver);
 
@@ -126,6 +136,41 @@ internal sealed class JavaScriptWindowProxy(JsEngine engine, IJsWindowProxyHandl
         result.AddRange(keys);
         return result;
     }
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/browsers.html#coop-check-access-report: the access to a cross-origin accessible
+    /// window property name. As in Chromium, the accesses to a child navigable (<c>indexed</c>) and to a named property
+    /// (<c>named</c>) are reported too, and the only reported assignment is the one of <c>location</c>.
+    /// </summary>
+    private void ReportAccess(JsPropertyKey key, bool isSet)
+    {
+        if (key.IsSymbol)
+            return;
+
+        string? property;
+        if (key.TryGetArrayIndex(out var index))
+        {
+            property = !isSet && index < (uint)handler.ChildCount ? "indexed" : null;
+        }
+        else
+        {
+            var name = key.AsString();
+            property = name switch
+            {
+                "location" => name,
+                "window" or "self" or "close" or "closed" or "focus" or "blur" or "frames" or "length" or "top" or "opener" or "parent" or "postMessage" => isSet ? null : name,
+                _ => !isSet && IsNamedProperty(key, name) ? "named" : null,
+            };
+        }
+
+        if (property is not null)
+        {
+            handler.ReportAccess(property);
+        }
+    }
+
+    // A named property of the window that is not shadowed by a property of the global object
+    private bool IsNamedProperty(JsPropertyKey key, string name) => handler.IsNamedProperty(name) && !(handler.IsSameOrigin() && Window.TryGetOwnProperty(key, out _));
 
     private JsValue? GetChild(uint index) => index < (uint)handler.ChildCount && handler.GetChild((int)index) is { } child ? ToJs(child) : (JsValue?)null;
 

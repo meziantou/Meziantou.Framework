@@ -118,11 +118,57 @@ public sealed partial class JsRealm
     /// </summary>
     public JsObject CreateArrayBuffer(Memory<byte> memory, JsValue detachKey) => JsArrayBuffer.CreateExternal(this, memory, detachKey);
 
+    /// <summary>
+    /// Creates a resizable ArrayBuffer whose data block is <paramref name="memory"/> (the bytes are shared, not copied), whose
+    /// [[ArrayBufferMaxByteLength]] is <paramref name="maxByteLength"/>, and whose <c>resize()</c> calls
+    /// <paramref name="resize"/> with the buffer and the new byte length (HostResizeArrayBuffer): the callback resizes the
+    /// data (see <see cref="JsBinaryData.SetArrayBufferMemory"/>) or throws. The detach key is the one of
+    /// <see cref="CreateArrayBuffer(Memory{byte}, JsValue)"/>.
+    /// </summary>
+    public JsObject CreateResizableArrayBuffer(Memory<byte> memory, int maxByteLength, JsValue detachKey, Action<JsObject, int> resize)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxByteLength, memory.Length);
+        ArgumentNullException.ThrowIfNull(resize);
+        var buffer = JsArrayBuffer.CreateExternal(this, memory, detachKey, maxByteLength);
+        buffer.HostResize = resize;
+        return buffer;
+    }
+
     /// <summary>Creates a SharedArrayBuffer whose data is a Shared Data Block (e.g. the block of a SharedArrayBuffer of another engine).</summary>
     public JsObject CreateSharedArrayBuffer(JsSharedDataBlock block)
     {
         ArgumentNullException.ThrowIfNull(block);
         return JsArrayBuffer.CreateShared(this, block);
+    }
+
+    /// <summary>
+    /// Creates a fixed-length SharedArrayBuffer whose data is the first <paramref name="byteLength"/> bytes of a Shared Data
+    /// Block: the buffer keeps its byte length when a growable block grows.
+    /// </summary>
+    public JsObject CreateSharedArrayBuffer(JsSharedDataBlock block, int byteLength)
+    {
+        ArgumentNullException.ThrowIfNull(block);
+        ArgumentOutOfRangeException.ThrowIfNegative(byteLength);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(byteLength, block.ByteLength);
+        return JsArrayBuffer.CreateFixedLengthShared(this, block, byteLength);
+    }
+
+    /// <summary>
+    /// Creates a growable SharedArrayBuffer whose data is a growable Shared Data Block, and whose <c>grow()</c> calls
+    /// <paramref name="grow"/> with the buffer and the new byte length (HostGrowSharedArrayBuffer): the callback grows the
+    /// block or throws.
+    /// </summary>
+    /// <exception cref="ArgumentException">The block is not growable.</exception>
+    public JsObject CreateGrowableSharedArrayBuffer(JsSharedDataBlock block, Action<JsObject, int> grow)
+    {
+        ArgumentNullException.ThrowIfNull(block);
+        ArgumentNullException.ThrowIfNull(grow);
+        if (!block.IsGrowable)
+            throw new ArgumentException("The Shared Data Block is not growable", nameof(block));
+
+        var buffer = JsArrayBuffer.CreateShared(this, block);
+        buffer.HostResize = grow;
+        return buffer;
     }
 
     /// <summary>Creates a typed array or a DataView viewing <paramref name="buffer"/>.</summary>

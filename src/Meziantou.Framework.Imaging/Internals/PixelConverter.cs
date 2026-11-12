@@ -821,6 +821,7 @@ internal static partial class PixelConverter
         if (IsScalarOnly<TSource>() || IsScalarOnly<TDestination>())
             return 0;
 
+        Debug.Assert(destination.Length >= source.Length);
         ref var input = ref unsafe(Unsafe.As<TSource, byte>(ref MemoryMarshal.GetReference(source)));
         ref var output = ref unsafe(Unsafe.As<TDestination, byte>(ref MemoryMarshal.GetReference(destination)));
         var length = source.Length;
@@ -1396,6 +1397,9 @@ internal static partial class PixelConverter
         where TSource : unmanaged
         where TDestination : unmanaged
     {
+        // The loop writes through a reference: the slice throws for a destination shorter than the source
+        destination = destination[..source.Length];
+
         // All the "typeof" tests below are JIT-time constants for each (value type) instantiation
         var sourceMax = Is16Bit<TSource>() ? Max16 : Max8;
         uint bgR = 0, bgG = 0, bgB = 0;
@@ -1499,12 +1503,12 @@ internal static partial class PixelConverter
         }
         else if (typeof(TPixel) == typeof(Gray8))
         {
-            uint v = unsafe(Unsafe.As<TPixel, Gray8>(ref pixel)).Value;
+            uint v = unsafe(Unsafe.BitCast<TPixel, Gray8>(pixel)).Value;
             (r, g, b, a) = (v, v, v, Max8);
         }
         else if (typeof(TPixel) == typeof(Gray16))
         {
-            uint v = unsafe(Unsafe.As<TPixel, Gray16>(ref pixel)).Value;
+            uint v = unsafe(Unsafe.BitCast<TPixel, Gray16>(pixel)).Value;
             (r, g, b, a) = (v, v, v, Max16);
         }
         else if (typeof(TPixel) == typeof(La16))
@@ -1525,7 +1529,7 @@ internal static partial class PixelConverter
         else if (typeof(TPixel) == typeof(A8))
         {
             // No color: black with the alpha
-            (r, g, b, a) = (0, 0, 0, unsafe(Unsafe.As<TPixel, A8>(ref pixel)).A);
+            (r, g, b, a) = (0, 0, 0, unsafe(Unsafe.BitCast<TPixel, A8>(pixel)).A);
         }
         else if (typeof(TPixel) == typeof(Argb32))
         {
@@ -1539,12 +1543,12 @@ internal static partial class PixelConverter
         }
         else if (typeof(TPixel) == typeof(Bgr565))
         {
-            uint v = unsafe(Unsafe.As<TPixel, Bgr565>(ref pixel)).PackedValue;
+            uint v = unsafe(Unsafe.BitCast<TPixel, Bgr565>(pixel)).PackedValue;
             (r, g, b, a) = (Expand(v >> 11, 31), Expand((v >> 5) & 63, 63), Expand(v & 31, 31), Max16);
         }
         else if (typeof(TPixel) == typeof(Rgba1010102))
         {
-            var v = unsafe(Unsafe.As<TPixel, Rgba1010102>(ref pixel)).PackedValue;
+            var v = unsafe(Unsafe.BitCast<TPixel, Rgba1010102>(pixel)).PackedValue;
             (r, g, b, a) = (Expand(v & 1023, 1023), Expand((v >> 10) & 1023, 1023), Expand((v >> 20) & 1023, 1023), Expand(v >> 30, 3));
         }
         else
@@ -1574,10 +1578,14 @@ internal static partial class PixelConverter
                 ref var p = ref unsafe(Unsafe.As<TDestination, La16>(ref pixel));
                 (p.L, p.A) = Is16Bit<TSource>() ? (To8Bit(y), To8Bit(a)) : ((byte)y, (byte)a);
             }
-            else
+            else if (typeof(TDestination) == typeof(La32))
             {
                 ref var p = ref unsafe(Unsafe.As<TDestination, La32>(ref pixel));
                 (p.L, p.A) = Is16Bit<TSource>() ? ((ushort)y, (ushort)a) : (To16Bit(y), To16Bit(a));
+            }
+            else
+            {
+                throw UnsupportedType.Create<TDestination>();
             }
         }
         else if (typeof(TDestination) == typeof(A8))
@@ -1604,7 +1612,7 @@ internal static partial class PixelConverter
                 (p.R, p.G, p.B) = (To16Bit(r), To16Bit(g), To16Bit(b));
             }
         }
-        else if (Is16Bit<TDestination>())
+        else if (typeof(TDestination) == typeof(Rgba64))
         {
             ref var p = ref unsafe(Unsafe.As<TDestination, Rgba64>(ref pixel));
             if (Is16Bit<TSource>())
@@ -1648,10 +1656,14 @@ internal static partial class PixelConverter
                 ref var p = ref unsafe(Unsafe.As<TDestination, Abgr32>(ref pixel));
                 (p.A, p.B, p.G, p.R) = (a8, b8, g8, r8);
             }
-            else
+            else if (typeof(TDestination) == typeof(Rgb24))
             {
                 ref var p = ref unsafe(Unsafe.As<TDestination, Rgb24>(ref pixel));
                 (p.R, p.G, p.B) = (r8, g8, b8);
+            }
+            else
+            {
+                throw UnsupportedType.Create<TDestination>();
             }
         }
     }

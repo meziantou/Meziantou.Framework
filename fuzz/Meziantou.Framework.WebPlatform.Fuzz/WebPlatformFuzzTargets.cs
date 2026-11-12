@@ -72,6 +72,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-xml", data => Xml(FuzzText.Decode(data))) { Seeds = () => GetSeeds("xml") },
         new("webplatform-css", data => Css(FuzzText.Decode(data))) { Seeds = () => GetSeeds("css") },
         new("webplatform-selectors", data => Selectors(FuzzText.Decode(data))) { Seeds = () => GetSeeds("selectors") },
+        new("webplatform-style", data => Style(FuzzText.Decode(data.Length > StyleMaxLength ? data[..StyleMaxLength] : data))) { Seeds = () => GetSeeds("style"), Dictionary = StyleTokens },
         new("webplatform-xpath", data => XPath(FuzzText.Decode(data.Length > XPathMaxLength ? data[..XPathMaxLength] : data))) { Seeds = () => GetSeeds("xpath") },
         new("webplatform-url", data => Url(FuzzText.Decode(data))) { Seeds = () => GetSeeds("url") },
         new("webplatform-urlpattern", data => UrlPattern(FuzzText.Decode(data))) { Seeds = () => GetSeeds("url") },
@@ -87,6 +88,8 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-event-stream", EventStream) { Seeds = GetEventStreamSeeds },
         new("webplatform-mime", data => Mime(FuzzText.Decode(data))) { Seeds = GetMimeSeeds },
         new("webplatform-canvas-state", CanvasState) { Seeds = GetCanvasSeeds, Dictionary = CanvasTokens },
+        new("webplatform-integrity", data => Integrity(FuzzText.Decode(data))) { Seeds = GetIntegritySeeds, Dictionary = IntegrityTokens },
+        new("webplatform-http-cache", data => CacheFreshness(FuzzText.Decode(data))) { Seeds = () => GetSeeds("http-cache"), Dictionary = HttpCacheTokens },
     ];
 
     /// <summary>

@@ -643,6 +643,85 @@ public class YamlSerializerContextGeneratorDiagnosticTests
     }
 
     [Fact]
+    public void AnalyzerReportsErrorForContextNestedInNonPartialType()
+    {
+        const string Source = """
+            using Meziantou.Framework.Yaml.Serialization;
+
+            public class Outer
+            {
+                [YamlSerializable(typeof(string))]
+                internal partial class TestContext : YamlSerializerContext
+                {
+                }
+            }
+            """;
+
+        var diagnostic = Assert.Single(RunAnalyzer(Source), diagnostic => diagnostic.Id == "MFY001");
+        Assert.Contains("Outer.TestContext", diagnostic.GetMessage());
+
+        var result = RunGenerator(Source);
+        Assert.Empty(result.GeneratorDiagnostics);
+        Assert.Empty(result.GeneratedSource);
+    }
+
+    [Fact]
+    public void GeneratorSupportsNestedContexts()
+    {
+        // The helpers shared by the contexts use the implicit usings of the project
+        const string Source = """
+            global using System;
+            global using System.Collections.Generic;
+            using Meziantou.Framework.Yaml.Serialization;
+
+            namespace Sample;
+
+            public sealed class Item
+            {
+                public int Value { get; set; }
+            }
+
+            public static partial class Outer
+            {
+                // Same name as the context below: the generated files must not collide
+                [YamlSerializable(typeof(Item))]
+                internal sealed partial class AppContext : YamlSerializerContext;
+
+                internal partial struct Inner
+                {
+                    [YamlSerializable(typeof(Item))]
+                    internal sealed partial class AppContext : YamlSerializerContext;
+                }
+            }
+
+            public partial class GenericOuter<T>
+            {
+                [YamlSerializable(typeof(Item))]
+                internal sealed partial class @class : YamlSerializerContext;
+
+                [YamlSerializable(typeof(Item))]
+                internal sealed partial class AppContext : YamlSerializerContext;
+            }
+
+            // Names that would collide with the contexts above if the punctuation of the type names were replaced
+            public partial class GenericOuter_T_
+            {
+                [YamlSerializable(typeof(Item))]
+                internal sealed partial class AppContext : YamlSerializerContext;
+            }
+            """;
+
+        var result = RunGenerator(Source);
+
+        // Two contexts with the same hint name would be reported as a generator warning
+        Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Severity >= DiagnosticSeverity.Warning);
+        Assert.Contains("partial class Outer", result.GeneratedSource, StringComparison.Ordinal);
+        Assert.Contains("partial struct Inner", result.GeneratedSource, StringComparison.Ordinal);
+        Assert.Contains("partial class GenericOuter<T>", result.GeneratedSource, StringComparison.Ordinal);
+        Assert.Contains("partial class GenericOuter_T_", result.GeneratedSource, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void AnalyzerReportsErrorForUnsupportedExtensionDataMember()
     {
         const string Source = """
@@ -1757,7 +1836,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
             }
             """;
 
-        var generatedSource = GenerateSourceFor(Source, "StaticAttributeContext.g.cs");
+        var generatedSource = GenerateSourceFor(Source, "Meziantou.Framework.Yaml.GeneratedSourceProbe.StaticAttributeContext.g.cs");
 
         AssertGeneratedSourceDoesNotContain(generatedSource, "__ignoreCondition");
         AssertGeneratedSourceDoesNotContain(generatedSource, "options.DefaultIgnoreCondition");

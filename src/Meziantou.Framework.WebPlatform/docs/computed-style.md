@@ -614,9 +614,9 @@ like the imported style sheets (`DocumentRequest.Initiator` is null), when the d
   `box-shadow` (a longhand, as in the browsers: the color first, four lengths, then `inset`), `box-shadow-offset` (two
   equal offsets are one length), the `corner-*-shape` keywords (the equivalent `superellipse()`: `round` is
   `superellipse(1)`, `bevel` is `superellipse(0)`...), the corner shorthands (`corner`, `corner-top`, `corner-top-left` and
-  the logical ones: the grammar of the browsers and of WPT, newer than webref: the corners are separated by slashes and
-  each one is `normal` or a radius and a shape, e.g. `corner: 10px bevel / normal`; a corner without radius whose shape is
-  round is serialized as `normal`), `border-shape` (the default reference boxes are omitted:
+  the logical ones: the radii of `border-radius` and the shapes of `corner-shape` in any order, e.g. `corner: 10px 20px bevel`;
+  the omitted component is reset; the shapes are serialized first and omitted when every corner is round, the radii are
+  omitted when they are `0px` and a corner is not round), `border-shape` (the default reference boxes are omitted:
   `half-border-box` for a single shape, `border-box` for the outer shape and `padding-box` for the inner one; two
   identical shapes are one shape; the radii of `circle()` and `ellipse()` can be `closest-corner` and `farthest-corner`
   in all the properties that take a basic shape: for one radius of an ellipse, the distance to the corner, as in Blink), the side shorthands of `border-radius` (`border-top-radius`,

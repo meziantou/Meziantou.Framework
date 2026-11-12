@@ -9,22 +9,22 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 333 | 408 | 1 | 82% |
-| [Tentative](#tentative-tests) | 14 | 78 | 1 | 18% |
+| [Stable](#stable-tests) | 342 | 408 | 1 | 84% |
+| [Tentative](#tentative-tests) | 16 | 78 | 1 | 21% |
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
-| **All** | **356** | **497** | **2** | **72%** |
+| **All** | **367** | **497** | **2** | **74%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **TEST BUG**: 23
-- **NOT IMPLEMENTED**: 91
+- **TEST BUG**: 26
+- **NOT IMPLEMENTED**: 78
 - **REQUIRES**: 3
   - `layout`: 2
   - `workers`: 1
-- **TEST RUNNER**: 80
+- **TEST RUNNER**: 74
 - **FLAKY**: 1
 
 ## Stable tests
@@ -363,8 +363,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`metadata/generated/fetch.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/fetch.sub.html) | Pass | 18 / 18 |  |  |
 | [`metadata/generated/form-submission.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/form-submission.https.sub.html) | Pass | 42 / 42 |  |  |
 | [`metadata/generated/form-submission.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/form-submission.sub.html) | Pass | 36 / 36 |  |  |
-| [`metadata/generated/header-link.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/header-link.https.sub.html) | Fail | 0 / 37 | NOT IMPLEMENTED | the `Link` response header (`rel=preload`, `prefetch`, `icon`, `stylesheet`... are not fetched) |
-| [`metadata/generated/header-link.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/header-link.sub.html) | Fail | 0 / 36 | NOT IMPLEMENTED | the `Link` response header (`rel=preload`, `prefetch`, `icon`, `stylesheet`... are not fetched) |
+| [`metadata/generated/header-link.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/header-link.https.sub.html) | Fail | 35 / 37 | NOT IMPLEMENTED | the `Sec-Fetch-Storage-Access` request header (Storage Access API) |
+| [`metadata/generated/header-link.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/header-link.sub.html) | Pass | 36 / 36 |  |  |
 | [`metadata/generated/header-refresh.https.optional.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/header-refresh.https.optional.sub.html) | Pass | 20 / 20 |  |  |
 | [`metadata/generated/header-refresh.optional.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/header-refresh.optional.sub.html) | Pass | 18 / 18 |  |  |
 | [`metadata/generated/script-json-module-import-static.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/script-json-module-import-static.https.sub.html) | Pass | 17 / 17 |  |  |
@@ -425,20 +425,20 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`redirect-navigate/preserve-fragment.html`](https://wpt.fyi/results/fetch/redirect-navigate/preserve-fragment.html) | Pass | 120 / 120 |  |  |
 | [`redirects/data.window.js`](https://wpt.fyi/results/fetch/redirects/data.window.js) | Pass | 3 / 3 |  |  |
 | [`redirects/subresource-fragments.html`](https://wpt.fyi/results/fetch/redirects/subresource-fragments.html) | Pass | 4 / 4 |  |  |
-| [`security/1xx-response.any.js`](https://wpt.fyi/results/fetch/security/1xx-response.any.js) | Fail | 2 / 8 | TEST RUNNER | the `pipe=status(100)`/`103`/`199` responses are delivered as final responses (an HTTP client treats 1xx as interim and then fails) |
+| [`security/1xx-response.any.js`](https://wpt.fyi/results/fetch/security/1xx-response.any.js) | Pass | 8 / 8 |  |  |
 | [`security/canvas-tainted-serviceworker-passthrough-redirect.https.html`](https://wpt.fyi/results/fetch/security/canvas-tainted-serviceworker-passthrough-redirect.https.html) | Pass | 1 / 1 |  |  |
 | [`security/dangling-markup/dangling-markup-mitigation-allowed-apis.https.html`](https://wpt.fyi/results/fetch/security/dangling-markup/dangling-markup-mitigation-allowed-apis.https.html) | Timeout | 0 / 0 | REQUIRES(workers) | the requests are recorded by a service worker (`navigator.serviceWorker`) |
-| [`security/dangling-markup/media.html`](https://wpt.fyi/results/fetch/security/dangling-markup/media.html) | Fail | 2 / 4 | NOT IMPLEMENTED | the dangling markup mitigation (URLs containing both `\n` and `<` are not blocked: the audio and the video load), which only Chromium implements for the media resources |
-| [`security/dangling-markup/option.html`](https://wpt.fyi/results/fetch/security/dangling-markup/option.html) | Fail | 0 / 6 | NOT IMPLEMENTED | the dangling markup mitigation (a form `action`/navigation URL containing `\n` and `<` is not blocked) |
-| [`security/dangling-markup/textarea.html`](https://wpt.fyi/results/fetch/security/dangling-markup/textarea.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the dangling markup mitigation (a form `action`/navigation URL containing `\n` and `<` is not blocked) |
+| [`security/dangling-markup/media.html`](https://wpt.fyi/results/fetch/security/dangling-markup/media.html) | Pass | 4 / 4 |  |  |
+| [`security/dangling-markup/option.html`](https://wpt.fyi/results/fetch/security/dangling-markup/option.html) | Fail | 0 / 6 | TEST BUG | the test waits for an `error` event at the form after the click on the submit button, which no specification defines: the form fires `submit` (the URL of the form is not dangling markup, the text of the dangling element is the data of the form) |
+| [`security/dangling-markup/textarea.html`](https://wpt.fyi/results/fetch/security/dangling-markup/textarea.html) | Fail | 0 / 3 | TEST BUG | the test waits for an `error` event at the form after the click on the submit button, which no specification defines: the form fires `submit` (the URL of the form is not dangling markup, the text of the dangling element is the data of the form) |
 | [`security/redirect-to-url-with-credentials.https.html`](https://wpt.fyi/results/fetch/security/redirect-to-url-with-credentials.https.html) | Pass | 7 / 7 |  |  |
 | [`security/stylesheet-cssrules-serviceworker-passthrough-redirect.https.html`](https://wpt.fyi/results/fetch/security/stylesheet-cssrules-serviceworker-passthrough-redirect.https.html) | Pass | 1 / 1 |  |  |
-| [`stale-while-revalidate/fetch-sw.https.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/fetch-sw.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the `stale-while-revalidate` directive of the HTTP cache (a stale response is validated before it is used) |
-| [`stale-while-revalidate/fetch.any.js`](https://wpt.fyi/results/fetch/stale-while-revalidate/fetch.any.js) | Timeout | 0 / 3 | NOT IMPLEMENTED, TEST RUNNER | the `stale-while-revalidate` directive of the HTTP cache (a stale response is validated before it is used); the `stale-*.py` handlers are not emulated |
-| [`stale-while-revalidate/revalidate-not-blocked-by-csp.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/revalidate-not-blocked-by-csp.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the `stale-while-revalidate` directive of the HTTP cache (a stale response is validated before it is used); the `fetch/stale-while-revalidate/resources/stale-image.py` handler is not emulated |
-| [`stale-while-revalidate/stale-css.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/stale-css.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the `stale-while-revalidate` directive of the HTTP cache (a stale response is validated before it is used); the `stale-*.py` handlers are not emulated |
-| [`stale-while-revalidate/stale-image.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/stale-image.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the `stale-while-revalidate` directive of the HTTP cache (a stale response is validated before it is used); the `stale-*.py` handlers are not emulated |
-| [`stale-while-revalidate/stale-script.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/stale-script.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, TEST RUNNER | the `stale-while-revalidate` directive of the HTTP cache (a stale response is validated before it is used); the `stale-*.py` handlers are not emulated |
+| [`stale-while-revalidate/fetch-sw.https.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/fetch-sw.https.html) | Pass | 1 / 1 |  |  |
+| [`stale-while-revalidate/fetch.any.js`](https://wpt.fyi/results/fetch/stale-while-revalidate/fetch.any.js) | Pass | 3 / 3 |  |  |
+| [`stale-while-revalidate/revalidate-not-blocked-by-csp.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/revalidate-not-blocked-by-csp.html) | Pass | 1 / 1 |  |  |
+| [`stale-while-revalidate/stale-css.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/stale-css.html) | Pass | 1 / 1 |  |  |
+| [`stale-while-revalidate/stale-image.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/stale-image.html) | Pass | 1 / 1 |  |  |
+| [`stale-while-revalidate/stale-script.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/stale-script.html) | Pass | 1 / 1 |  |  |
 
 ## Tentative tests
 
@@ -504,7 +504,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`metadata/generated/css-font-face.sub.tentative.html`](https://wpt.fyi/results/fetch/metadata/generated/css-font-face.sub.tentative.html) | Pass | 18 / 18 |  |  |
 | [`metadata/generated/css-images.https.sub.tentative.html`](https://wpt.fyi/results/fetch/metadata/generated/css-images.https.sub.tentative.html) | Timeout | 74 / 100 | TEST BUG, NOT IMPLEMENTED | the HTTPS downgrade-upgrade subtests redirect the request through an `http:` URL, which is mixed content in an `https:` document: they fail in every browser; the `background-image` subtests compare the array of the header values with a string, and their rejection handler `(error) => t.unreached_func()` never ends the test: they time out in every browser; the `Sec-Fetch-Storage-Access` request header (Storage Access API) |
 | [`metadata/generated/css-images.sub.tentative.html`](https://wpt.fyi/results/fetch/metadata/generated/css-images.sub.tentative.html) | Timeout | 88 / 90 | TEST BUG | the `background-image` subtests compare the array of the header values with a string, and their rejection handler `(error) => t.unreached_func()` never ends the test: they time out in every browser |
-| [`metadata/generated/header-link.https.sub.tentative.html`](https://wpt.fyi/results/fetch/metadata/generated/header-link.https.sub.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `Link` response header (`rel=stylesheet` is not fetched) |
+| [`metadata/generated/header-link.https.sub.tentative.html`](https://wpt.fyi/results/fetch/metadata/generated/header-link.https.sub.tentative.html) | Pass | 1 / 1 |  |  |
 | [`orb/tentative/compressed-image-sniffing.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/compressed-image-sniffing.sub.html) | Pass | 1 / 1 |  |  |
 | [`orb/tentative/content-range.sub.any.js`](https://wpt.fyi/results/fetch/orb/tentative/content-range.sub.any.js) | Fail | 2 / 4 | NOT IMPLEMENTED | Opaque Response Blocking (ORB) of no-cors responses (a no-cors range response not starting at 0 is not blocked) |
 | [`orb/tentative/hls.html`](https://wpt.fyi/results/fetch/orb/tentative/hls.html) | Precondition failed | 0 / 0 | NOT IMPLEMENTED | HTTP Live Streaming: the media backend of the tests does not play `application/vnd.apple.mpegurl` (the precondition of the test fails) |
@@ -518,9 +518,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`orb/tentative/status.sub.any.js`](https://wpt.fyi/results/fetch/orb/tentative/status.sub.any.js) | Error | 7 / 12 | NOT IMPLEMENTED | Opaque Response Blocking (ORB) of no-cors responses |
 | [`orb/tentative/status.sub.html`](https://wpt.fyi/results/fetch/orb/tentative/status.sub.html) | Pass | 1 / 1 |  |  |
 | [`orb/tentative/unknown-mime-type.sub.any.js`](https://wpt.fyi/results/fetch/orb/tentative/unknown-mime-type.sub.any.js) | Pass | 12 / 12 |  |  |
-| [`security/dangling-markup/dangling-markup-mitigation-data-url.tentative.sub.html`](https://wpt.fyi/results/fetch/security/dangling-markup/dangling-markup-mitigation-data-url.tentative.sub.html) | Fail | 8 / 14 | NOT IMPLEMENTED | the dangling markup mitigation (URLs containing both `\n` and `<` are not blocked) |
-| [`security/dangling-markup/dangling-markup-mitigation.tentative.html`](https://wpt.fyi/results/fetch/security/dangling-markup/dangling-markup-mitigation.tentative.html) | Fail | 22 / 31 | NOT IMPLEMENTED | the dangling markup mitigation (URLs containing both `\n` and `<` are not blocked) |
-| [`security/dangling-markup/dangling-markup-mitigation.tentative.https.html`](https://wpt.fyi/results/fetch/security/dangling-markup/dangling-markup-mitigation.tentative.https.html) | Disabled | – | FLAKY | the dangling markup mitigation is not implemented: the requests of the URLs that contain a newline and `<` are not blocked, so the service worker of the test records them too, and the test reads the recorded requests as soon as there are as many as its resources (11): depending on the timing, the requests of the `meta` refresh and of the `iframe` are not recorded yet (ERROR) or they are (PASS) |
+| [`security/dangling-markup/dangling-markup-mitigation-data-url.tentative.sub.html`](https://wpt.fyi/results/fetch/security/dangling-markup/dangling-markup-mitigation-data-url.tentative.sub.html) | Fail | 8 / 14 | TEST BUG | the nested subtests expect the newlines of a `data:` URL to be kept (as in Chromium, whose URL parser does not remove the tabs and newlines of the URLs that start with `data:`), so that the `img` of the `data:` document has a URL with a newline and a `<`; the URL Standard removes them, and the URL of the `img` loads |
+| [`security/dangling-markup/dangling-markup-mitigation.tentative.html`](https://wpt.fyi/results/fetch/security/dangling-markup/dangling-markup-mitigation.tentative.html) | Pass | 31 / 31 |  |  |
+| [`security/dangling-markup/dangling-markup-mitigation.tentative.https.html`](https://wpt.fyi/results/fetch/security/dangling-markup/dangling-markup-mitigation.tentative.https.html) | Disabled | – | FLAKY | the requests are recorded by the service worker of the test, which reads them as soon as there are as many as its resources (11): depending on the timing, the request of the `meta` refresh of the frame without dangling markup is not recorded yet (ERROR) or it is (PASS) |
 | [`security/embedded-credentials.tentative.sub.html`](https://wpt.fyi/results/fetch/security/embedded-credentials.tentative.sub.html) | Fail | 2 / 6 | NOT IMPLEMENTED | treating subresource and frame URLs with embedded credentials (`user:pass@`) as network errors |
 
 ## Reftests

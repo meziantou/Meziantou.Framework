@@ -180,6 +180,88 @@ public sealed class BenchmarkWorkloadTests
         AssertMatchesEncoderModel(output.ToArray(), ImageSnapshots.CaptureFrame(resized.Frames[0]), "service request");
     }
 
+    [Fact]
+    public void TheJpegVariantInputsDecodeToTheSyntheticSources()
+    {
+        Assert.Equal(ImageFormat.Jpeg, Image.DetectFormat(BenchmarkInputs.ArithmeticJpeg));
+        WorkloadChecks.RequirePsnr(BenchmarkInputs.ArithmeticJpeg, BenchmarkInputs.LargeRgb24Source, minimum: 35);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.LosslessJpeg, BenchmarkInputs.LargeRgb24Source);
+        WorkloadChecks.RequireLossless(BenchmarkInputs.BmpRunLength8, BenchmarkInputs.IndexedRgb24Source);
+
+        // The 12-bit input keeps the 16-bit source to 12 bits of precision, minus the loss of quality 85
+        var info = Image.Identify(BenchmarkInputs.Jpeg12Bit);
+        Assert.Equal(12, info.BitsPerComponent);
+        using var image = Image.Load<Rgb48>(BenchmarkInputs.Jpeg12Bit);
+        Assert.Equal(new Size(BenchmarkInputs.Large16Width, BenchmarkInputs.Large16Height), image.Size);
+        var source = BenchmarkInputs.Rgb16Pixels;
+        var error = 0L;
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                var row = pixels.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    var expected = source[(y * pixels.Width) + x];
+                    error += Math.Abs(row[x].R - expected.R) + Math.Abs(row[x].G - expected.G) + Math.Abs(row[x].B - expected.B);
+                }
+            }
+        });
+        var meanError = error / (3.0 * source.Length);
+        Assert.True(meanError < 1024, $"Mean error of the 12-bit input: {meanError}");
+    }
+
+    [Fact]
+    public void ThePhonePhotoWorkloadWritesAnUprightSrgbThumbnail()
+    {
+        var info = Image.Identify(BenchmarkInputs.PhonePhotoJpeg);
+        Assert.Equal(Metadata.ExifOrientation.RightTop, info.Metadata.Orientation);
+        Assert.NotNull(info.Metadata.IccProfile);
+
+        using var output = new MemoryStream();
+        ImageWorkloads.JpegPhotoToSrgbThumbnail(BenchmarkInputs.PhonePhotoJpeg, new Size(1024, 1024), output);
+
+        // Expected encoder input: the decoded photo turned upright, converted to sRGB and resized (each step has its own suite)
+        using var expected = Image.Load<Rgb24>(BenchmarkInputs.PhonePhotoJpeg);
+        expected.AutoOrient(Ct);
+        expected.ConvertColorProfile(Metadata.IccProfile.Srgb, cancellationToken: Ct);
+        expected.Resize(new ResizeOptions(1024, 1024) { Mode = ResizeMode.Contain }, Ct);
+        Assert.Equal(new Size(768, 1024), expected.Size);
+        AssertMatchesEncoderModel(output.ToArray(), ImageSnapshots.CaptureFrame(expected.Frames[0]), "phone photo");
+
+        var thumbnail = Image.Identify(output.ToArray());
+        Assert.Equal(new Size(768, 1024), thumbnail.Size);
+        Assert.Equal(Metadata.ExifOrientation.TopLeft, thumbnail.Metadata.Orientation);
+    }
+
+    [Fact]
+    public void TheUltraHdrInputHoldsTheGainMapOfTheWorkloads()
+    {
+        var images = AuxiliaryImageCollection.Load(BenchmarkInputs.UltraHdrJpeg);
+        var metadata = images.GainMapImage?.GainMapMetadata;
+        Assert.NotNull(metadata);
+        Assert.Equal(BenchmarkInputs.UltraHdrGainMapMetadata.AlternateHdrHeadroom, metadata.AlternateHdrHeadroom, 3);
+
+        using var map = BenchmarkInputs.CreateGainMap();
+        Assert.Equal(new Size(BenchmarkInputs.LargeWidth / 4, BenchmarkInputs.LargeHeight / 4), map.Size);
+
+        // At full headroom the highlights are brighter than the white of standard dynamic range
+        using var hdr = images.DecodeHdr(hdrHeadroom: 2, cancellationToken: Ct);
+        Assert.Equal(new Size(BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight), hdr.Size);
+        var maximum = 0f;
+        hdr.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                foreach (var pixel in pixels.GetRowSpan(y))
+                {
+                    maximum = Math.Max(maximum, pixel.R);
+                }
+            }
+        });
+        Assert.True(maximum > 1.5f, $"Brightest red sample: {maximum}");
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]

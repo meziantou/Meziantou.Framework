@@ -1693,8 +1693,7 @@ public sealed partial class TomlParser
                 return false;
             }
 
-            ref var start = ref unsafe(MemoryMarshal.GetReference(span));
-            var c1 = unsafe(Unsafe.Add(ref start, position++));
+            var c1 = span[position++];
 
             // Fast surrogate checks (avoid char.IsHighSurrogate/IsLowSurrogate)
             if (((uint)c1 & 0xFC00u) == 0xD800u)
@@ -1702,7 +1701,7 @@ public sealed partial class TomlParser
                 // High surrogate; requires a following low surrogate.
                 if ((uint)position < (uint)span.Length)
                 {
-                    var c2 = unsafe(Unsafe.Add(ref start, position));
+                    var c2 = span[position];
                     if (((uint)c2 & 0xFC00u) == 0xDC00u)
                     {
                         position++;

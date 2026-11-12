@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of selection, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 89 | 97 | 0 | 92% |
+| [Stable](#stable-tests) | 92 | 97 | 0 | 95% |
 | [Tentative](#tentative-tests) | 26 | 33 | 0 | 79% |
 | [Reftests](#reftests) | 19 | 19 | 0 | 100% |
-| **All** | **134** | **149** | **0** | **90%** |
+| **All** | **137** | **149** | **0** | **92%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
+- **BUG**: 1
 - **TEST BUG**: 9
-- **NOT IMPLEMENTED**: 4
+- **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
@@ -62,7 +62,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`collapse.htm`](https://wpt.fyi/results/selection/collapse.htm) | Pass | 1 / 1 |  |  |
 | [`collapseToStartEnd.html`](https://wpt.fyi/results/selection/collapseToStartEnd.html) | Pass | 57 / 57 |  |  |
 | [`contenteditable/cefalse-on-boundaries.html`](https://wpt.fyi/results/selection/contenteditable/cefalse-on-boundaries.html) | Pass | 4 / 4 |  |  |
-| [`contenteditable/collapse.html`](https://wpt.fyi/results/selection/contenteditable/collapse.html) | Fail | 0 / 3 | NOT IMPLEMENTED | `Selection.collapse()` into an editing host does not move the focus to it (`document.activeElement` stays the button): the Selection API does not say that the selection changes the focus; Chrome and Firefox focus the editing host for sibling hosts (1 subtest), only Firefox for a host nested in content that is not editable (2 subtests); Safari fails the three. |
+| [`contenteditable/collapse.html`](https://wpt.fyi/results/selection/contenteditable/collapse.html) | Pass | 3 / 3 |  |  |
 | [`contenteditable/initial-selection-during-focus-event-propagation.html`](https://wpt.fyi/results/selection/contenteditable/initial-selection-during-focus-event-propagation.html) | Pass | 3 / 3 |  |  |
 | [`contenteditable/modify-around-non-editable-span.html`](https://wpt.fyi/results/selection/contenteditable/modify-around-non-editable-span.html) | Pass | 16 / 16 |  |  |
 | [`deleteFromDocument-HTMLDetails.html`](https://wpt.fyi/results/selection/deleteFromDocument-HTMLDetails.html) | Pass | 30 / 30 |  |  |
@@ -90,7 +90,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`move-by-word-korean.html`](https://wpt.fyi/results/selection/move-by-word-korean.html) | Pass | 4 / 4 |  |  |
 | [`move-by-word-with-symbol.html`](https://wpt.fyi/results/selection/move-by-word-with-symbol.html) | Pass | 6 / 6 |  |  |
 | [`onselectionchange-on-distinct-text-controls.html`](https://wpt.fyi/results/selection/onselectionchange-on-distinct-text-controls.html) | Pass | 2 / 2 |  |  |
-| [`onselectionchange-on-document.html`](https://wpt.fyi/results/selection/onselectionchange-on-document.html) | Fail | 3 / 4 | BUG | the `selectionchange` task queued by a `selectionchange` listener runs before the `setTimeout(0)` task scheduled earlier (timer task ordering: a timer that elapses is queued again by the task that promotes it; queuing its handler directly lets a 0 ms timer run between the navigate event and the commit of a same-document traversal, which breaks navigation-api/navigation-methods/traverseTo-target-made-current-by-earlier-traversal.html) |
+| [`onselectionchange-on-document.html`](https://wpt.fyi/results/selection/onselectionchange-on-document.html) | Pass | 4 / 4 |  |  |
 | [`onselectstart-on-key-in-contenteditable.html`](https://wpt.fyi/results/selection/onselectstart-on-key-in-contenteditable.html) | Pass | 60 / 60 |  |  |
 | [`removeAllRanges.html`](https://wpt.fyi/results/selection/removeAllRanges.html) | Pass | 116 / 116 |  |  |
 | [`removeRange.html`](https://wpt.fyi/results/selection/removeRange.html) | Pass | 29 / 29 |  |  |
@@ -120,7 +120,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`textcontrols/selectionchange-on-shadow-dom.html`](https://wpt.fyi/results/selection/textcontrols/selectionchange-on-shadow-dom.html) | Pass | 1 / 1 |  |  |
 | [`textcontrols/selectionchange.html`](https://wpt.fyi/results/selection/textcontrols/selectionchange.html) | Pass | 60 / 60 |  |  |
 | [`toString-ff-bug-001.html`](https://wpt.fyi/results/selection/toString-ff-bug-001.html) | Pass | 1 / 1 |  |  |
-| [`toString-user-select-none.html`](https://wpt.fyi/results/selection/toString-user-select-none.html) | Fail | 0 / 3 | NOT IMPLEMENTED | `Selection.toString()` does not exclude the content with `user-select: none` |
+| [`toString-user-select-none.html`](https://wpt.fyi/results/selection/toString-user-select-none.html) | Pass | 3 / 3 |  |  |
 | [`type.html`](https://wpt.fyi/results/selection/type.html) | Pass | 29 / 29 |  |  |
 | [`user-select-on-input-and-contenteditable.html`](https://wpt.fyi/results/selection/user-select-on-input-and-contenteditable.html) | Pass | 5 / 5 |  |  |
 

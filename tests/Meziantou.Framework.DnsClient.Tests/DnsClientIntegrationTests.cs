@@ -1281,11 +1281,13 @@ public sealed class DnsClientIntegrationTests
 
         public static async Task<LocalDnsServer> StartAsync()
         {
-            const int MaxAttempts = 5;
+            const int MaxAttempts = 10;
             for (var attempt = 1; ; attempt++)
             {
                 // The UDP and TCP listeners share a port, which is probed then released: another process can take it
-                // in between, so the server is started again on another port when that happens.
+                // in between, so the server is started again on another port when that happens. The port is probed
+                // over UDP, so it can also be unusable over TCP: Windows reports a port of a TCP excluded port range,
+                // or one bound with SO_EXCLUSIVEADDRUSE, as an access denied error.
                 int port;
                 using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
                 {
@@ -1371,7 +1373,7 @@ public sealed class DnsClientIntegrationTests
 
         private static bool IsAddressAlreadyInUse(Exception exception)
         {
-            if (exception is SocketException { SocketErrorCode: SocketError.AddressAlreadyInUse })
+            if (exception is SocketException { SocketErrorCode: SocketError.AddressAlreadyInUse or SocketError.AccessDenied })
                 return true;
 
             if (exception.Message.Contains("address already in use", StringComparison.OrdinalIgnoreCase))

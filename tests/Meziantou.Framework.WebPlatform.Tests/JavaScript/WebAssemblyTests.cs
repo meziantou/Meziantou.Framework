@@ -32,11 +32,19 @@ public sealed class WebAssemblyTests : IDisposable
         TestScriptEngines.Dispose(_engine);
     }
 
+    // The shared memories can only be cloned by a cross-origin isolated global
+    private static readonly KeyValuePair<string, string>[] CrossOriginIsolationHeaders =
+    [
+        new("Content-Type", "text/html"),
+        new("Cross-Origin-Opener-Policy", "same-origin"),
+        new("Cross-Origin-Embedder-Policy", "require-corp"),
+    ];
+
     /// <summary>The bytes of a module in the text format, as a JavaScript array literal.</summary>
     private static string Wasm(string text) => "new Uint8Array([" + string.Join(',', WasmtimeRuntime.WatToWasm(text)) + "])";
 
     // Runs a script whose promise sets the title of the document
-    private async Task<string> RunAsync(string script, WebPlatformFeatures? features = null, bool withRuntime = true)
+    private async Task<string> RunAsync(string script, WebPlatformFeatures? features = null, bool withRuntime = true, bool crossOriginIsolated = false)
     {
         var context = _contexts.Create(new BrowsingContextOptions
         {
@@ -46,7 +54,10 @@ public sealed class WebAssemblyTests : IDisposable
             UnhandledScriptError = (_, error) => _errors.Add(error),
         });
 
-        var document = context.Navigate("https://example.com/", _ => $"<script>({script})().then(r => document.title = String(r), e => document.title = 'error: ' + e);</script>");
+        var html = $"<script>({script})().then(r => document.title = String(r), e => document.title = 'error: ' + e);</script>";
+        var document = crossOriginIsolated
+            ? context.Navigate("https://example.com/", _ => new DocumentResource(html) { Headers = CrossOriginIsolationHeaders })
+            : context.Navigate("https://example.com/", _ => html);
 
         // The modules are compiled on the thread pool
         await _contexts.EventLoop.RunUntilIdleAsync(TestContext.Current.CancellationToken);
@@ -162,6 +173,84 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
+    public async Task JsStringBuiltins_AreProvidedByTheHost()
+    {
+        var bytes = Wasm("""
+            (module
+              (type $chars (array (mut i16)))
+              (import "wasm:js-string" "length" (func $length (param externref) (result i32)))
+              (import "wasm:js-string" "concat" (func $concat (param externref externref) (result (ref extern))))
+              (import "wasm:js-string" "fromCharCodeArray" (func $fromCharCodeArray (param (ref null $chars) i32 i32) (result (ref extern))))
+              (import "wasm:js-string" "intoCharCodeArray" (func $intoCharCodeArray (param externref (ref null $chars) i32) (result i32)))
+              (import "strings" "Hello, " (global $hello (ref extern)))
+              (func (export "greet") (param $name externref) (result externref)
+                (call $concat (global.get $hello) (local.get $name)))
+              (func (export "length") (param externref) (result i32) (call $length (local.get 0)))
+              (func (export "copy") (param $s externref) (result externref)
+                (local $array (ref null $chars))
+                (local.set $array (array.new_default $chars (call $length (local.get $s))))
+                (drop (call $intoCharCodeArray (local.get $s) (local.get $array) (i32.const 0)))
+                (call $fromCharCodeArray (local.get $array) (i32.const 1) (array.len (local.get $array)))))
+            """);
+        var result = await RunAsync($$"""
+            async () => {
+              const options = { builtins: ['js-string'], importedStringConstants: 'strings' };
+              const module = new WebAssembly.Module({{bytes}}, options);
+              const { exports } = new WebAssembly.Instance(module, {});
+              let error;
+              try { exports.length(42); } catch (e) { error = e; }
+              return [WebAssembly.Module.imports(module).length, exports.greet('World'), exports.length('abc'), exports.copy('☺bc'),
+                error instanceof WebAssembly.RuntimeError, WebAssembly.validate({{bytes}}, options), WebAssembly.validate({{bytes}}, { builtins: [] })].join('|');
+            }
+            """);
+
+        Assert.Equal("0|Hello, World|3|bc|true|true|true", result);
+    }
+
+    [Theory]
+    [InlineData("(array (mut i8))", "fromCharCodeArray", "(param (ref null $chars) i32 i32) (result (ref extern))")]
+    [InlineData("(array (mut i32))", "fromCharCodeArray", "(param (ref null $chars) i32 i32) (result (ref extern))")]
+    [InlineData("(array i16)", "fromCharCodeArray", "(param (ref null $chars) i32 i32) (result (ref extern))")]
+    [InlineData("(sub (array (mut i16)))", "fromCharCodeArray", "(param (ref null $chars) i32 i32) (result (ref extern))")]
+    [InlineData("(array (mut i8))", "intoCharCodeArray", "(param externref (ref null $chars) i32) (result i32)")]
+    [InlineData("(array i16)", "intoCharCodeArray", "(param externref (ref null $chars) i32) (result i32)")]
+    public async Task JsStringBuiltins_RejectAnArrayThatIsNotAMutableI16Array(string arrayType, string name, string signature)
+    {
+        var bytes = Wasm($$"""
+            (module
+              (type $chars {{arrayType}})
+              (import "wasm:js-string" "{{name}}" (func {{signature}})))
+            """);
+        var result = await RunAsync($$"""
+            async () => {
+              const options = { builtins: ['js-string'] };
+              let error;
+              try { new WebAssembly.Module({{bytes}}, options); } catch (e) { error = e.name; }
+              let asyncError;
+              try { await WebAssembly.compile({{bytes}}, options); } catch (e) { asyncError = e.name; }
+              return [error, asyncError, WebAssembly.validate({{bytes}}, options), WebAssembly.validate({{bytes}}), new WebAssembly.Module({{bytes}}) instanceof WebAssembly.Module].join();
+            }
+            """);
+
+        Assert.Equal("CompileError,CompileError,false,true,true", result);
+    }
+
+    [Fact]
+    public async Task JsStringBuiltins_RejectAnArrayOfAnotherRecursionGroup()
+    {
+        var bytes = Wasm("""
+            (module
+              (rec (type $chars (array (mut i16))) (type (struct)))
+              (import "wasm:js-string" "fromCharCodeArray" (func (param (ref null $chars) i32 i32) (result (ref extern)))))
+            """);
+        var result = await RunAsync($$"""
+            async () => WebAssembly.validate({{bytes}}, { builtins: ['js-string'] })
+            """);
+
+        Assert.Equal("false", result);
+    }
+
+    [Fact]
     public async Task Memory_SharesItsBytesWithTheArrayBuffer()
     {
         var bytes = Wasm("""
@@ -191,6 +280,111 @@ public sealed class WebAssemblyTests : IDisposable
             """);
 
         Assert.Equal("65536,42,7,true|1,0,131072,42|2,0,196608,-1|TypeError", result);
+    }
+
+    [Fact]
+    public async Task Memory_ResizableBuffer_GrowsWithTheMemory()
+    {
+        var bytes = Wasm("""
+            (module
+              (memory (export "memory") 1 4)
+              (func (export "load") (param i32) (result i32) (i32.load8_u (local.get 0)))
+              (func (export "grow") (param i32) (result i32) (memory.grow (local.get 0))))
+            """);
+        var result = await RunAsync($$"""
+            async () => {
+              const { instance } = await WebAssembly.instantiate({{bytes}});
+              const { memory, load, grow } = instance.exports;
+              const fixed = memory.buffer;
+              const buffer = memory.toResizableBuffer();
+              const view = new Uint8Array(buffer);
+              const created = [fixed.detached, buffer.resizable, buffer.maxByteLength, memory.buffer === buffer, memory.toResizableBuffer() === buffer].join();
+              buffer.resize(2 * 65536);
+              new Uint8Array(buffer)[65536] = 5;
+              grow(1);
+              const grown = [buffer.byteLength, view.length, load(65536), memory.buffer === buffer].join();
+              const errors = [];
+              for (const length of [3 * 65536 + 1, 65536]) {
+                try { buffer.resize(length); } catch (e) { errors.push(e.name); }
+              }
+
+              const shared = new WebAssembly.Memory({ initial: 1, maximum: 2, shared: true });
+              const sharedBuffer = shared.buffer;
+              shared.grow(1);
+              const growable = shared.toResizableBuffer();
+              const sharedResult = [sharedBuffer.byteLength, shared.buffer === sharedBuffer, sharedBuffer.growable, Object.isFrozen(sharedBuffer), growable.growable, growable.byteLength].join();
+              const fixedAgain = memory.toFixedLengthBuffer();
+              return [created, grown, errors.join(), sharedResult, buffer.detached, fixedAgain.resizable, fixedAgain.byteLength].join('|');
+            }
+            """);
+
+        Assert.Equal("true,true,262144,true,true|196608,196608,5,true|RangeError,RangeError|65536,false,false,true,true,131072|true|false|196608", result);
+    }
+
+    [Fact]
+    public async Task SharedMemory_ClonesShareTheGrowth()
+    {
+        var result = await RunAsync("""
+            async () => {
+              const memory = new WebAssembly.Memory({ initial: 1, maximum: 4, shared: true });
+              const buffer = memory.buffer;
+              const copy = structuredClone(memory);
+              const copyBuffer = copy.buffer;
+              const grown = [copy.grow(1), memory.grow(1)].join();
+              const copyRefreshed = [copyBuffer.byteLength, copy.buffer === copyBuffer, copy.buffer.byteLength, copy.buffer === copy.buffer, copy.toFixedLengthBuffer() === copy.buffer].join();
+              const memoryBuffer = memory.buffer;
+              new Uint8Array(copy.buffer)[2 * 65536] = 7;
+              const memoryRefreshed = [buffer.byteLength, memoryBuffer === buffer, memoryBuffer.byteLength, new Uint8Array(memoryBuffer)[2 * 65536], copy.grow(0)].join();
+              return [grown, copyRefreshed, memoryRefreshed].join('|');
+            }
+            """, crossOriginIsolated: true);
+
+        Assert.Equal("1,2|65536,false,196608,true,true|65536,false,196608,7,3", result);
+    }
+
+    [Fact]
+    public async Task SharedMemory_ClonedBufferKeepsItsLength()
+    {
+        var result = await RunAsync("""
+            async () => {
+              const memory = new WebAssembly.Memory({ initial: 1, maximum: 4, shared: true });
+              const clone = structuredClone(memory.buffer);
+              memory.grow(1);
+              new Uint8Array(memory.buffer)[1] = 9;
+              let growError;
+              try { clone.grow(2 * 65536); } catch (e) { growError = e.name; }
+              const fixed = [clone.growable, clone.byteLength, clone.maxByteLength, new Uint8Array(clone)[1], growError].join();
+              const growable = structuredClone(memory.toResizableBuffer());
+              const resizable = [growable.growable, growable.byteLength, growable.maxByteLength].join();
+              const plain = structuredClone(new SharedArrayBuffer(8, { maxByteLength: 16 }));
+              return [fixed, resizable, plain.growable, plain.maxByteLength].join('|');
+            }
+            """, crossOriginIsolated: true);
+
+        Assert.Equal("false,65536,65536,9,TypeError|true,131072,262144|true|16", result);
+    }
+
+    [Fact]
+    public async Task SharedMemory_ResizableBuffer_GrowsToTheRequestedLength()
+    {
+        var result = await RunAsync("""
+            async () => {
+              const memory = new WebAssembly.Memory({ initial: 1, maximum: 2, shared: true });
+              const copy = structuredClone(memory);
+              const buffer = memory.toResizableBuffer();
+              const copyBuffer = copy.toResizableBuffer();
+              buffer.grow(2 * 65536);
+              copyBuffer.grow(2 * 65536);
+              const errors = [];
+              for (const length of [65536, 2 * 65536 + 1, 3 * 65536]) {
+                try { copyBuffer.grow(length); } catch (e) { errors.push(e.name); }
+              }
+
+              return [buffer.byteLength, copyBuffer.byteLength, memory.grow(0), copy.buffer.byteLength, errors.join()].join('|');
+            }
+            """, crossOriginIsolated: true);
+
+        Assert.Equal("131072|131072|2|131072|RangeError,RangeError,RangeError", result);
     }
 
     [Fact]

@@ -87,7 +87,9 @@ public abstract partial class Image
                             continue;
                         }
 
+                        // The rented row holds stale pool bytes: the operation receives the current pixels instead, like a row of the image
                         var row = rowBuffer.Value.Span;
+                        copy.GetRowSpanCore(y).CopyTo(row);
                         operation.Invoke(y, rows, unsafe(MemoryMarshal.Cast<byte, TPixel>(row)));
                         StoreWorkingRow(working, row, format, bytes);
                     }

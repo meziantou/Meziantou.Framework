@@ -14,7 +14,7 @@ namespace Meziantou.Framework.WebPlatform.Html.Parsing;
 internal abstract class ScriptingParser
 {
     private readonly bool _runTheEnd;
-    private HtmlScriptElement? _parsingBlockingScript;
+    private ScriptElementCore? _parsingBlockingScript;
     private bool _stopped;
     private bool _running;
     private TaskCompletionSource? _completion;
@@ -50,13 +50,13 @@ internal abstract class ScriptingParser
     /// <returns>True when the input is consumed (the parser stopped).</returns>
     protected abstract bool RunTreeConstruction();
 
-    /// <summary>Called when the parser starts waiting for the pending parsing-blocking script to be fetched.</summary>
+    /// <summary>Called when the parser starts waiting for the pending parsing-blocking script to be fetched, or for the style sheets that block it.</summary>
     protected virtual void OnWaitingForParsingBlockingScript()
     {
     }
 
     /// <summary>Executes the pending parsing-blocking script, with the script nesting level of the parser incremented.</summary>
-    protected virtual void ExecuteParsingBlockingScript(HtmlScriptElement script) => script.Execute();
+    protected virtual void ExecuteParsingBlockingScript(ScriptElementCore script) => script.Execute();
 
     /// <summary>Starts the parser. It returns when the document is parsed, or when the parser waits for a script.</summary>
     public void Start()
@@ -165,6 +165,10 @@ internal abstract class ScriptingParser
                         {
                             HasPaused = true;
                             Document.NoStyleSheetBlockingScriptsCallback = Continue;
+
+                            // As in the browsers (preload scanner), the rest of the input is parsed speculatively while the
+                            // script waits for the style sheets that block it
+                            OnWaitingForParsingBlockingScript();
                             return;
                         }
 
@@ -289,7 +293,7 @@ internal sealed class HtmlScriptingParser(Document document, HtmlTreeBuilder bui
     public void AppendSpeculativeInput(string text, bool endOfFile) => _speculativeParser?.Append(text, endOfFile);
 
     /// <summary>https://html.spec.whatwg.org/multipage/parsing.html#scriptEndTag (the steps for the pending parsing-blocking script)</summary>
-    protected override void ExecuteParsingBlockingScript(HtmlScriptElement script)
+    protected override void ExecuteParsingBlockingScript(ScriptElementCore script)
     {
         // https://html.spec.whatwg.org/multipage/parsing.html#stop-the-speculative-html-parser
         _speculativeParser = null;
@@ -303,7 +307,6 @@ internal sealed class HtmlScriptingParser(Document document, HtmlTreeBuilder bui
         if (TreeBuilder.ScriptNestingLevel == 0)
         {
             TreeBuilder.ParserPauseFlag = false;
-            TreeBuilder.RunPendingSvgScripts();
         }
     }
 }

@@ -124,6 +124,17 @@ public sealed class EffectsPaintingTests : IDisposable
     }
 
     [Fact]
+    public void Mask_OfAnInlineBoxAppliesToTheBlocksSplitOutOfIt()
+    {
+        // The block in the inline box is painted in the layer of the inline box, and the mask is positioned in its border box
+        var document = Parse("<span id=a style='mask-image: linear-gradient(black, black)'><div style='width: 30px; height: 20px; background: rgb(0, 128, 0)'></div></span>");
+        var dump = Dump(document);
+        Assert.Contains("save-layer blend=destinationin  [span#a]", dump, StringComparison.Ordinal);
+        Assert.Contains("draw-rect (0, 0, 30x20) fill linear-gradient  [span#a]", dump, StringComparison.Ordinal);
+        Assert.True(dump.IndexOf("#008000", StringComparison.Ordinal) < dump.IndexOf("blend=destinationin", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void MaskBorder_IsPaintedAsABorderImageInTheMask()
     {
         var document = Parse("<div id=a style='mask-border: linear-gradient(black, black) 10; width: 100px; height: 100px'></div>");

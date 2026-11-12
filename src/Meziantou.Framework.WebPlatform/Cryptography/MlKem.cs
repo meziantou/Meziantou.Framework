@@ -223,8 +223,11 @@ internal static class MlKem
         var rho = rhoSigma[..32];
         var sigma = rhoSigma[32..];
 
-        Span<int> s = stackalloc int[k * N];
-        Span<int> t = stackalloc int[k * N];
+        // The vectors are up to 4 KB each (k = 4): they are on the heap, the polynomials (1 KB) on the stack. The secret
+        // vector is cleared at the end.
+        var vectors = new int[2 * k * N];
+        var s = vectors.AsSpan(0, k * N);
+        var t = vectors.AsSpan(k * N, k * N);
         Span<int> entry = stackalloc int[N];
         byte nonce = 0;
         for (var i = 0; i < k; i++)
@@ -263,14 +266,17 @@ internal static class MlKem
     private static void Encrypt(Parameters parameters, ReadOnlySpan<byte> encryptionKey, ReadOnlySpan<byte> message, ReadOnlySpan<byte> randomness, Span<byte> ciphertext)
     {
         var k = parameters.K;
-        Span<int> tHat = stackalloc int[k * N];
+        // The vectors are up to 4 KB each (k = 4): they are on the heap, the polynomials (1 KB) on the stack. The secret
+        // vector is cleared at the end.
+        var vectors = new int[2 * k * N];
+        var tHat = vectors.AsSpan(0, k * N);
         for (var i = 0; i < k; i++)
         {
             ByteDecode(12, encryptionKey.Slice(i * EncodedPolynomialLength, EncodedPolynomialLength), tHat.Slice(i * N, N));
         }
 
         var rho = encryptionKey.Slice(k * EncodedPolynomialLength, 32);
-        Span<int> y = stackalloc int[k * N];
+        var y = vectors.AsSpan(k * N, k * N);
         Span<int> entry = stackalloc int[N];
         Span<int> accumulator = stackalloc int[N];
         Span<int> error = stackalloc int[N];

@@ -3,7 +3,6 @@
 // See the license.txt file in the project root for more information.
 
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Syntax;
 using Meziantou.Framework.Markdown.Syntax.Inlines;
@@ -212,7 +211,7 @@ public abstract class RendererBase : IMarkdownRenderer
         IMarkdownObjectRenderer? renderer = null;
         IntPtr key = GetKeyForType(obj);
 
-        RendererEntry[] renderers = unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_renderersPerType), SubTableIndex(key)));
+        RendererEntry[] renderers = _renderersPerType[SubTableIndex(key)];
 
         foreach (RendererEntry entry in renderers)
         {
@@ -232,11 +231,11 @@ public abstract class RendererBase : IMarkdownRenderer
         }
         else if (obj.IsContainerInline)
         {
-            WriteChildren(unsafe(Unsafe.As<ContainerInline>(obj)));
+            WriteChildren((ContainerInline)obj);
         }
         else if (obj.IsContainerBlock)
         {
-            WriteChildren(unsafe(Unsafe.As<ContainerBlock>(obj)));
+            WriteChildren((ContainerBlock)obj);
         }
 
         // Calls after writing an object

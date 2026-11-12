@@ -194,9 +194,9 @@ public abstract class Inline : MarkdownObject, IInline
 
         if (copyChildren && IsContainerInline)
         {
-            var container = unsafe(Unsafe.As<ContainerInline>(this));
+            var container = (ContainerInline)this;
             ContainerInline? newContainer = inline.IsContainerInline && !inline.IsClosed
-                ? unsafe(Unsafe.As<ContainerInline>(inline))
+                ? (ContainerInline)inline
                 : null;
 
             var child = container.FirstChild;

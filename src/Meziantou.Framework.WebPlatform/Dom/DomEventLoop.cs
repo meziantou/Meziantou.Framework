@@ -120,7 +120,7 @@ public sealed partial class DomEventLoop
 
         // https://wicg.github.io/soft-navigations/#sec-interaction-context-intro: the timer runs in the interaction context of the code that queued it
         callback = InteractionContext.Wrap(callback);
-        var due = TimeProvider.GetTimestamp() + (long)(delay.TotalSeconds * TimeProvider.TimestampFrequency);
+        var due = ObserveClock(TimeProvider.GetTimestamp()) + (long)(delay.TotalSeconds * TimeProvider.TimestampFrequency);
         lock (_timersLock)
         {
             _timers.Enqueue(callback, (due, _nextTimerSequence++));
@@ -171,7 +171,7 @@ public sealed partial class DomEventLoop
 
             // The due timers are queued while the timers are locked: another thread (e.g. a host that advances a fake clock
             // while a worker promotes its timers) sees either the timer or its task
-            var now = TimeProvider.GetTimestamp();
+            var now = ObserveClock(TimeProvider.GetTimestamp());
             while (_timers.TryPeek(out var callback, out var priority) && priority.Due <= now)
             {
                 _timers.Dequeue();
@@ -530,7 +530,7 @@ public sealed partial class DomEventLoop
 
         // The frames are aligned on a fixed rate from the first frame
         _renderingScheduled = true;
-        var now = TimeProvider.GetTimestamp();
+        var now = ObserveClock(TimeProvider.GetTimestamp());
         _frameEpoch ??= now;
         var frameTicks = (long)(FrameDuration.TotalSeconds * TimeProvider.TimestampFrequency);
         var elapsed = now - _frameEpoch.Value;
@@ -623,6 +623,7 @@ public sealed partial class DomEventLoop
         // The time of the frame, shared by the animations and the animation frame callbacks
         var frameTimestamp = TimeProvider.GetTimestamp();
         LastFrameTimestamp = frameTimestamp;
+        StartRenderingUpdateFrames(frameTimestamp);
         // https://html.spec.whatwg.org/multipage/webappapis.html#update-the-rendering: "Reveal": the documents that were not
         // revealed yet fire pagereveal. A render-blocked document (e.g. a document that is still parsed without body element, or
         // that waits for a render-blocking script) is revealed by a later rendering update
@@ -825,6 +826,9 @@ public sealed partial class DomEventLoop
                 frameAnimations.RecordFrameReadyTimes();
             }
         }
+
+        // https://w3c.github.io/long-animation-frames/#record-rendering-time: the styles and the layout are updated next
+        RecordRenderingTime();
 
         // The styles are updated after the animation frame callbacks: the CSS animations and transitions are created, updated
         // and canceled, then the resources used by the styles are fetched
@@ -1225,6 +1229,12 @@ public sealed partial class DomEventLoop
             _performingMicrotaskCheckpoint = false;
             CurrentTimerNestingLevel = timerNestingLevel;
         }
+
+        // https://w3c.github.io/long-animation-frames/#record-timing-info-for-microtask-checkpoint
+        if (_pendingScript is not null)
+        {
+            OnMicrotaskCheckpointCompleted();
+        }
     }
 
     /// <summary>
@@ -1417,6 +1427,9 @@ public sealed partial class DomEventLoop
         _windowsWithAnimationFrameCallbacks.Clear();
         ClearIdleCallbacks();
         _windowsWithEventTimingEntries.Clear();
+        _framesAwaitingRendering = null;
+        _taskFrames = null;
+        _pendingScript = null;
         _documentsWithCssResources.Clear();
         _documentsWithAnimations.Clear();
         _documentsWithAnimationStyles.Clear();

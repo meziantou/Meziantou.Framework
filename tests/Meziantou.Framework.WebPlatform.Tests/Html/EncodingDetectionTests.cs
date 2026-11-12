@@ -351,7 +351,7 @@ public sealed class EncodingDetectionTests : IDisposable
     [Fact]
     public async Task Navigate_StreamedResponse_WaitsForTheBytesThatDetermineTheEncoding()
     {
-        var context = _contexts.Create();
+        var context = _contexts.Create(new BrowsingContextOptions { TimeProvider = new FakeTimeProvider() });
         var chunks = Channel.CreateUnbounded<ReadOnlyMemory<byte>>();
         var document = context.Navigate("https://example.com/", _ => new DocumentResource(Encode("<p id=a>" + Russian + "</p>", "windows-1251"))
         {
@@ -376,7 +376,7 @@ public sealed class EncodingDetectionTests : IDisposable
     [Fact]
     public async Task Navigate_StreamedResponse_MetaElementOfALaterChunk()
     {
-        var context = _contexts.Create();
+        var context = _contexts.Create(new BrowsingContextOptions { TimeProvider = new FakeTimeProvider() });
         var chunks = Channel.CreateUnbounded<ReadOnlyMemory<byte>>();
         var document = context.Navigate("https://example.com/", _ => new DocumentResource("<!DOCTYPE html><title>a</title>"u8.ToArray())
         {

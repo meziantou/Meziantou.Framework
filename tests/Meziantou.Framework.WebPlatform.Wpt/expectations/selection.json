@@ -139,12 +139,7 @@
     "total": 4
   },
   "selection/contenteditable/collapse.html": {
-    "total": 3,
-    "failures": {
-      "Selection.collapse() must succeed across siblings": "FAIL",
-      "Selection.collapse() must succeed for the ancestor": "FAIL",
-      "Selection.collapse() must succeed for the descendant": "FAIL"
-    }
+    "total": 3
   },
   "selection/contenteditable/initial-selection-during-focus-event-propagation.html": {
     "total": 3
@@ -279,10 +274,7 @@
     "total": 2
   },
   "selection/onselectionchange-on-document.html": {
-    "total": 4,
-    "failures": {
-      "has scheduled selectionchange event is set to false at the beginning of a task to fire selectionchange event": "FAIL"
-    }
+    "total": 4
   },
   "selection/onselectstart-on-key-in-contenteditable.html?preventDefault=no": {
     "total": 30
@@ -652,12 +644,7 @@
     "total": 1
   },
   "selection/toString-user-select-none.html": {
-    "total": 3,
-    "failures": {
-      "Selection.toString() excludes basic user-select: none content": "FAIL",
-      "Selection.toString() excludes nested user-select: none content": "FAIL",
-      "Selection.toString() includes selectable children in unselectable container": "FAIL"
-    }
+    "total": 3
   },
   "selection/type.html": {
     "total": 29

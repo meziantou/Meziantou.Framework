@@ -22,6 +22,12 @@ internal sealed class RenderedText
     /// <summary>The range whose text is collected (the nodes outside of it are ignored), or null to collect all the text.</summary>
     private readonly Dom.Range? _range;
 
+    /// <summary>
+    /// Whether the used value of <c>user-select</c> of the element whose children are collected is <c>none</c>: its text cannot
+    /// be selected, so it is not in the text of a range (see <see cref="IsUserSelectNone"/>).
+    /// </summary>
+    private bool _userSelectNone;
+
     private RenderedText(StyleEngine engine, Dom.Range? range = null)
     {
         _engine = engine;
@@ -45,9 +51,35 @@ internal sealed class RenderedText
 
         var collector = new RenderedText(element.NodeDocument.GetStyleEngine(), range);
         var style = collector._engine.GetStyle(element);
+        collector._userSelectNone = collector.IsUserSelectNone(element);
         collector._lines.Push(collector.CreateLineState(element, style));
         collector.CollectChildren(element, style, GetChildrenMode(element, ChildrenMode.Normal));
         return collector.GetResult();
+    }
+
+    /// <summary>
+    /// Whether the used value of <c>user-select</c> of an element is <c>none</c> (https://drafts.csswg.org/css-ui-4/#content-selection):
+    /// its computed value, or for <c>auto</c> the used value of its parent (an editable element is <c>contain</c>).
+    /// </summary>
+    private bool IsUserSelectNone(Element element)
+    {
+        for (var current = element; current is not null; current = StyleEngine.GetInheritanceParent(current))
+        {
+            if (GetUserSelectNone(current, _engine.GetStyle(current)) is { } result)
+                return result;
+        }
+
+        return false;
+    }
+
+    /// <summary>Whether the used value of <c>user-select</c> of an element is <c>none</c>, or null when it is the one of its parent (<c>auto</c>).</summary>
+    private static bool? GetUserSelectNone(Element element, ComputedStyle style)
+    {
+        if (Editing.IsEditingHost(element) || element is IEditableTextControl { IsTextEditor: true })
+            return false;
+
+        var value = style.GetComputedValue("user-select");
+        return value is "auto" or "" ? null : value == "none";
     }
 
     /// <summary>Returns the innerText of the element, or null when the element is not being rendered (its descendant text content is used).</summary>
@@ -245,6 +277,28 @@ internal sealed class RenderedText
         if (!IsInFlatTree(element))
             return;
 
+        if (_range is null)
+        {
+            CollectElementCore(element, parentMode);
+            return;
+        }
+
+        // The text of the elements whose used value of user-select is none is not in the text of a range, but their
+        // descendants can be selected (user-select: text)
+        var parentUserSelectNone = _userSelectNone;
+        _userSelectNone = GetUserSelectNone(element, _engine.GetStyle(element)) ?? parentUserSelectNone;
+        try
+        {
+            CollectElementCore(element, parentMode);
+        }
+        finally
+        {
+            _userSelectNone = parentUserSelectNone;
+        }
+    }
+
+    private void CollectElementCore(Element element, ChildrenMode parentMode)
+    {
         var style = _engine.GetStyle(element);
         var layout = style.Layout;
         var display = layout.Display;
@@ -432,6 +486,9 @@ internal sealed class RenderedText
         /// <summary>Whether a collapsible space is waiting for the next content of the line.</summary>
         public bool PendingSpace { get; set; }
 
+        /// <summary>Whether the pending collapsible space is in text that is not in the text of the range (user-select: none).</summary>
+        public bool PendingSpaceExcluded { get; set; }
+
         /// <summary>Whether the previous character is a letter or a digit (for text-transform: capitalize).</summary>
         public bool InWord { get; set; }
 
@@ -493,7 +550,11 @@ internal sealed class RenderedText
     {
         if (Line.PendingSpace)
         {
-            Append(" ");
+            if (!Line.PendingSpaceExcluded)
+            {
+                Append(" ");
+            }
+
             Line.PendingSpace = false;
         }
     }
@@ -521,6 +582,9 @@ internal sealed class RenderedText
         if (data.Length == 0)
             return;
 
+        // The text that cannot be selected is processed (its collapsible spaces collapse with the ones around it), but it is
+        // not collected
+        var excluded = _range is not null && _userSelectNone;
         var collapse = layout.WhiteSpaceCollapse;
         var transform = TextTransformer.ResolveMathAuto(layout.TextTransform, text.Data);
         CaseLanguage? language = null;
@@ -541,7 +605,11 @@ internal sealed class RenderedText
         // the range (e.g. the word and the space that are selected before another word)
         if (line.PendingSpace && _range is not null && ReferenceEquals(_range.EndContainer, text) && IsFollowedByContentOnLine(text, (int)Math.Min(_range.EndOffset, (uint)text.Data.Length)))
         {
-            builder.Append(' ');
+            if (!line.PendingSpaceExcluded)
+            {
+                builder.Append(' ');
+            }
+
             line.PendingSpace = false;
         }
 
@@ -558,7 +626,11 @@ internal sealed class RenderedText
             var consumed = 1;
             if (line.PendingSpace)
             {
-                builder.Append(' ');
+                if (!line.PendingSpaceExcluded)
+                {
+                    builder.Append(' ');
+                }
+
                 line.PendingSpace = false;
             }
 
@@ -580,7 +652,11 @@ internal sealed class RenderedText
 
             if (charTransform == TextTransform.None)
             {
-                builder.Append(c);
+                if (!excluded)
+                {
+                    builder.Append(c);
+                }
+
                 line.InWord = TextTransformer.IsWordCharacter(c);
             }
             else
@@ -588,7 +664,11 @@ internal sealed class RenderedText
                 language ??= TextTransformer.GetCaseLanguage(text.ParentElement);
                 Span<char> buffer = stackalloc char[TextTransformer.MaxLength];
                 var count = TextTransformer.Transform(source, index, charTransform, language.Value, wordStart: !line.InWord, buffer, out consumed);
-                builder.Append(buffer[..count]);
+                if (!excluded)
+                {
+                    builder.Append(buffer[..count]);
+                }
+
                 line.InWord = TextTransformer.IsWordCharacter(source, index);
             }
 
@@ -599,7 +679,11 @@ internal sealed class RenderedText
         void Newline()
         {
             line.PendingSpace = false;
-            builder.Append('\n');
+            if (!excluded)
+            {
+                builder.Append('\n');
+            }
+
             line.FirstLine = false;
             line.AtLineStart = true;
             line.InWord = false;
@@ -648,9 +732,10 @@ internal sealed class RenderedText
                             if (collapse == WhiteSpaceCollapse.Discard)
                                 continue;
 
-                            if (!line.AtLineStart)
+                            if (!line.AtLineStart && !line.PendingSpace)
                             {
                                 line.PendingSpace = true;
+                                line.PendingSpaceExcluded = excluded;
                             }
 
                             line.InWord = false;

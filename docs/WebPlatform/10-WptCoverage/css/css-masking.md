@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-masking, and why 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 64 | 65 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 490 | 500 | 1 | 98% |
-| **All** | **554** | **565** | **1** | **98%** |
+| [Reftests](#reftests) | 492 | 500 | 1 | 99% |
+| **All** | **556** | **565** | **1** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 4
+- **BUG**: 2
 - **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 3
 - **FLAKY**: 1
@@ -515,8 +515,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`mask-image/mask-image-cors-001.sub.html`](https://wpt.fyi/results/css/css-masking/mask-image/mask-image-cors-001.sub.html) | Pass | 1 / 1 |  |  |
 | [`mask-image/mask-image-cross-site-iframe-offset.sub.html`](https://wpt.fyi/results/css/css-masking/mask-image/mask-image-cross-site-iframe-offset.sub.html) | Pass | 1 / 1 |  |  |
 | [`mask-image/mask-image-data-url-image.html`](https://wpt.fyi/results/css/css-masking/mask-image/mask-image-data-url-image.html) | Pass | 1 / 1 |  |  |
-| [`mask-image/mask-image-ib-split-2.html`](https://wpt.fyi/results/css/css-masking/mask-image/mask-image-ib-split-2.html) | Fail | 0 / 1 | BUG | `mask-image` on an inline box that contains a block (block-in-inline split) in a multi-column container: the mask is only positioned and painted in the (empty) inline fragments: the fragment of the block child in the first column is masked away and its continuation in the second column is painted without mask (plain grey bars instead of the circles of the mask image) |
-| [`mask-image/mask-image-ib-split.html`](https://wpt.fyi/results/css/css-masking/mask-image/mask-image-ib-split.html) | Fail | 0 / 1 | BUG | `mask-image` on an inline box that contains a block (block-in-inline split) in a multi-column container: the mask is only positioned and painted in the (empty) inline fragments, so the block child (a 3px bottom border) is masked away entirely instead of being masked by the image; 126 pixels differ |
+| [`mask-image/mask-image-ib-split-2.html`](https://wpt.fyi/results/css/css-masking/mask-image/mask-image-ib-split-2.html) | Pass | 1 / 1 |  |  |
+| [`mask-image/mask-image-ib-split.html`](https://wpt.fyi/results/css/css-masking/mask-image/mask-image-ib-split.html) | Pass | 1 / 1 |  |  |
 | [`mask-image/mask-image-inline-sliced-1.html`](https://wpt.fyi/results/css/css-masking/mask-image/mask-image-inline-sliced-1.html) | Pass | 1 / 1 |  |  |
 | [`mask-image/mask-image-multi-layer-while-loading.tentative.html`](https://wpt.fyi/results/css/css-masking/mask-image/mask-image-multi-layer-while-loading.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | an element with several `mask-image` layers is expected to be entirely masked while one of the mask images is still loading (`url(...?pipe=trickle(d1000))`), a behavior that CSS Masking does not specify (tentative test); the library ignores the pending layer and paints the element with the other layer (`linear-gradient(black, black)`), so it is fully visible; only Chrome passes |
 | [`mask-image/mask-image-svg-child-will-change.html`](https://wpt.fyi/results/css/css-masking/mask-image/mask-image-svg-child-will-change.html) | Pass | 1 / 1 |  |  |

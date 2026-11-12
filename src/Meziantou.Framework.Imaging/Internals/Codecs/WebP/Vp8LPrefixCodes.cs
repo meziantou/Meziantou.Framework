@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -254,13 +255,17 @@ internal sealed class Vp8LPrefixCodes : IDisposable
         var rootBits = code.RootBits;
         var peek = (uint)value;
 
-        // The root table has 2^rootBits entries and each second-level table 2^subBits (Build)
+        // The root table has 2^rootBits entries and each second-level table 2^subBits (Build): a length never exceeds
+        // MaxCodeLength, so the indexes stay inside the tables that Build sized for the code
+        Debug.Assert(rootBits is >= 0 and <= MaxCodeLength);
+        Debug.Assert(code.Offset >= 0);
         ref var table = ref unsafe(Unsafe.Add(ref entries, code.Offset));
         var entry = unsafe(Unsafe.Add(ref table, (int)(peek & ((1u << rootBits) - 1))));
         var length = (int)(entry >> 16);
         if (length > rootBits)
         {
             var subBits = length - rootBits;
+            Debug.Assert(length <= MaxCodeLength);
             entry = unsafe(Unsafe.Add(ref table, (int)(entry & 0xFFFF) + (int)((peek >> rootBits) & ((1u << subBits) - 1))));
             length = rootBits + (int)(entry >> 16);
         }

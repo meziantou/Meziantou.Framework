@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace Meziantou.Framework.VectorGraphics;
 
 /// <summary>Fits texts in the space a layout gives them: truncation with an ellipsis, and wrapping on several lines.</summary>
@@ -135,8 +137,25 @@ public static class TextFitting
         return span.TrimEnd(" \t\r\n\u000B\u000C\u0085\u2028\u2029").ToString();
     }
 
-    private static List<int> GetGraphemeClusterEnds(string text)
+    internal static List<int> GetGraphemeClusterEnds(string text)
     {
+        // In ASCII, each character is a grapheme cluster, except CR LF
+        if (Ascii.IsValid(text))
+        {
+            var asciiBoundaries = new List<int>(text.Length);
+            for (var i = 0; i < text.Length; i++)
+            {
+                if (text[i] is '\r' && i + 1 < text.Length && text[i + 1] is '\n')
+                {
+                    i++;
+                }
+
+                asciiBoundaries.Add(i + 1);
+            }
+
+            return asciiBoundaries;
+        }
+
         var boundaries = new List<int>();
         foreach (var range in Unicode.EnumerateGraphemeClusters(text))
         {

@@ -1365,10 +1365,10 @@
     "reftest": "PASS"
   },
   "css/css-masking/mask-image/mask-image-ib-split-2.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-masking/mask-image/mask-image-ib-split.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-masking/mask-image/mask-image-inline-sliced-1.html": {
     "reftest": "PASS"

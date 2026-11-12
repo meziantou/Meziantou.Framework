@@ -351,9 +351,16 @@ public sealed partial class UserInput
         {
             if (pointer.PreviousTarget is { } previous && IsInEventPathOf(node, previous))
             {
+                if (!node.IsShadowIncludingInclusiveAncestorOf(previous))
+                {
+                    pointer.DetachedPreviousTarget = previous;
+                }
+
                 pointer.PreviousTarget = parent;
                 pointer.NeedsOverEvent = true;
             }
+
+            pointer.EnteredAncestors?.RemoveAll(node.IsShadowIncludingInclusiveAncestorOf);
 
             // The capture is lost when the capture target is removed, even when it is inserted again before the next event
             if (pointer.CaptureTarget is { } capture && node.IsShadowIncludingInclusiveAncestorOf(capture))
@@ -380,9 +387,16 @@ public sealed partial class UserInput
 
         if (_mouseOverTarget is { } mouseOver && IsInEventPathOf(node, mouseOver))
         {
+            if (!node.IsShadowIncludingInclusiveAncestorOf(mouseOver))
+            {
+                _mouseDetachedTarget = mouseOver;
+            }
+
             _mouseOverTarget = parent;
             _mouseNeedsOverEvent = true;
         }
+
+        _mouseEnteredAncestors?.RemoveAll(node.IsShadowIncludingInclusiveAncestorOf);
 
         // As in the browsers, the element designated by the pointer (:hover) is then its nearest ancestor that stays connected
         // (a pointer that hovers designates the element under it again after the layout, a touch pointer does not: WPT
@@ -514,6 +528,19 @@ public sealed class PointerInput
 
     /// <summary>The needsOverEvent flag: the previous target was removed, a pointerover event is needed even if the target is the same.</summary>
     internal bool NeedsOverEvent { get; set; }
+
+    /// <summary>
+    /// The previous target that left the flat tree but stays connected (a slot of its event path was removed): the previous
+    /// target is the parent of the slot, and the pointer leaves this node at the next boundary events.
+    /// </summary>
+    internal Node? DetachedPreviousTarget { get; set; }
+
+    /// <summary>
+    /// The elements the pointer entered (the inclusive ancestors of the previous target in the flat tree when it became the
+    /// previous target, without the ones that were removed since), or null: the pointer does not enter them again when the
+    /// flat tree changed (e.g. the previous target left it).
+    /// </summary>
+    internal List<Node>? EnteredAncestors { get; set; }
 
     /// <summary>The PREVENT MOUSE EVENT flag (https://w3c.github.io/pointerevents/#compatibility-mapping-with-mouse-events): pointerdown was canceled.</summary>
     internal bool PreventMouseEvent { get; set; }

@@ -82,17 +82,8 @@ public sealed partial class Window
     }
 
     /// <summary>
-    /// https://storage.spec.whatwg.org/#obtain-a-storage-key: the origin of the document, or null (failure) when it is
-    /// opaque. The documents of the credentialless iframes are partitioned by the page credentialless nonce of the top-level
-    /// window (https://wicg.github.io/anonymous-iframe/#spec-storage-key).
+    /// https://storage.spec.whatwg.org/#obtain-a-storage-key: the storage key of the document (see <see cref="StorageKey.Obtain"/>),
+    /// or null (failure) when its origin is opaque.
     /// </summary>
-    internal static StorageKey? GetStorageKey(Document document)
-    {
-        var origin = document.Origin;
-        if (origin.IsOpaque)
-            return null;
-
-        var nonce = document.IsCredentialless && document.BrowsingContext?.Top.Window is { } topLevelWindow ? topLevelWindow.PageCredentiallessNonce : (Guid?)null;
-        return new StorageKey(origin.Serialize(), nonce);
-    }
+    internal static StorageKey? GetStorageKey(Document document) => StorageKey.Obtain(document);
 }

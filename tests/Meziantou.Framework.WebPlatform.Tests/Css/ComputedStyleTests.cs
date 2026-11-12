@@ -52,6 +52,12 @@ public sealed class ComputedStyleTests : IDisposable
     [InlineData("<style>.A #B span { color: green }</style><div class=a><p id=b><span id=target></span></p></div>", "rgb(0, 128, 0)")] // quirks mode
     [InlineData("<!DOCTYPE html><style>SECTION span { color: green }</style><section><span id=target></span></section>", "rgb(0, 128, 0)")]
     [InlineData("<!DOCTYPE html><style>.a span::before { content: 'x'; color: green }</style><div class=a><span id=target></span></div>", "rgb(0, 128, 0)", "::before")]
+    [InlineData("<!DOCTYPE html><style>[data-x] { color: green } [data-y] { color: red }</style><div id=target data-x></div>", "rgb(0, 128, 0)")]
+    [InlineData("<!DOCTYPE html><style>[DATA-X='a' i] { color: green }</style><div id=target data-x=A></div>", "rgb(0, 128, 0)")]
+    [InlineData("<!DOCTYPE html><style>[viewBox] { color: green }</style><svg id=target viewBox='0 0 1 1'></svg>", "rgb(0, 128, 0)")]
+    [InlineData("<!DOCTYPE html><style>[VIEWBOX] { color: red }</style><svg id=target viewBox='0 0 1 1'></svg>", "rgb(0, 0, 0)")]
+    [InlineData("<!DOCTYPE html><style>@namespace xlink url(http://www.w3.org/1999/xlink); [xlink|href] { color: green } [href] { color: red }</style><svg><a id=target xlink:href=x></a></svg>", "rgb(0, 128, 0)")]
+    [InlineData("<!DOCTYPE html><style>[title]::before { content: 'x'; color: green }</style><div id=target title=t></div>", "rgb(0, 128, 0)", "::before")]
     public void Cascade_CandidateRules(string html, string expected, string? pseudoElement = null) => Assert.Equal(expected, Get(html, "color", pseudoElement: pseudoElement));
 
     [Fact]

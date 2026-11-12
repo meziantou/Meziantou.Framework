@@ -29,6 +29,13 @@ Assert.Equal(["lang", "session", "theme"], names);
 - The jar follows the rules of the browsers ([RFC 6265bis](https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html)):
   `Expires` and `Max-Age`, `Domain` and `Path`, `Secure`, `HttpOnly`, `SameSite` (`Lax` by default), `Partitioned`,
   the cookie prefixes and the public suffixes. Third-party cookies are not blocked.
+- As in the browsers, the cookies of a host are shared by its schemes and its ports. Set
+  [OriginBound](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.OriginBound) (`new CookieJar { OriginBound = true }`) to bind them to the origin that set them
+  ([origin-bound cookies](https://github.com/explainers-by-googlers/origin-bound-cookies)): a cookie set by an `https`
+  page is not sent to the `http` pages of the same host, and the reverse, and a cookie without `Domain` attribute is only
+  sent to the port that set it. The cookies of the same name set by another scheme or another port do not replace each
+  other. [StoredCookie.SourceScheme](cref:Meziantou.Framework.WebPlatform.Dom.StoredCookie.SourceScheme) and [SourcePort](cref:Meziantou.Framework.WebPlatform.Dom.StoredCookie.SourcePort) give the origin that set a cookie: persist them with the
+  cookie, a cookie loaded without them is sent to every scheme and port.
 - Several browsing contexts can share a jar, as the tabs of a browser share their cookies.
 - `SetCookie(url, header)` adds a cookie as a `Set-Cookie` header does (to sign a session in before loading a page);
   `GetCookies(url)` and [GetCookies()](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.GetCookies) list them, [Remove](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.Remove) and [Clear](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.Clear) delete them.
@@ -62,6 +69,22 @@ Assert.Equal([new("theme", "dark")], storage.GetItems("https://example.com"));
   `new StorageShed(persistence)`.
 - `window.sessionStorage` belongs to the top-level browsing context, and is always kept in memory.
 
+## Storage partitioning
+
+As in the browsers, the storage of a page embedded by another site is partitioned by the site of the top-level page
+([storage partitioning](https://privacycg.github.io/storage-partitioning/)): an `https://embed.example` frame in a page
+of `https://top.example` does not see the local storage, the session storage, the IndexedDB databases, the caches, the
+origin private file system, the `BroadcastChannel` messages and the service workers of `https://embed.example` when it is
+the top-level page, nor the ones of the frames of `https://embed.example` in the pages of another site. The storage of a
+frame of the top-level site whose parent frame is of another site is partitioned too.
+
+- [StorageShed.GetItems](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed.GetItems), [SetItem](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed.SetItem) and [GetOrigins](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed.GetOrigins) only give the items of the top-level pages (the first-party storage).
+- The partitioned items of the local storage, and the partitioned service worker registrations, are kept in memory: they
+  are not given to the persistence.
+- The backends of the other stores receive the storage key of a partition in place of the origin: the origin, the site
+  of the top-level page and whether a parent frame is of another site, separated by `^`
+  (`https://embed.example^https://top.example^0`).
+
 ## The other stores
 
 The other storage APIs of the browsers keep their data in backends that you can replace, to share or persist them:
@@ -89,9 +112,14 @@ honored on the responses of the secure URLs (`https`, and `http://localhost`), w
 | `"clientHints"` | The client hints it opted into (also cleared by `"cache"` and `"cookies"`) |
 | `"*"` | All of the above |
 
+The header is also honored on the responses of the background revalidations of the HTTP cache (the responses used
+within their `stale-while-revalidate` window), and a response that clears the cache is not stored in it.
+
 The cookies that the response sets are cleared too. As in the browsers, a response loaded by a page of another site
-(a third-party resource or frame) only clears the data of that page's partition: the partitioned cookies and the
-caches. Its local storage, IndexedDB databases and other stores are kept. Some data is always kept:
+(a third-party resource or frame) only clears the data of that page's partition: the partitioned cookies, the caches,
+and the stores of the origin [partitioned](#storage-partitioning) by the site of that page. The stores of the origin as a
+top-level page are kept. So are they for a response loaded by a frame of the top-level site whose parent frame is of
+another site: it clears the stores of that frame's partition. Some data is always kept:
 
 - An IndexedDB database that a page still has open.
 - The origin private file system.

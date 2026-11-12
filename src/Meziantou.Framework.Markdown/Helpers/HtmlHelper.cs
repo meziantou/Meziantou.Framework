@@ -54,7 +54,7 @@ public static class HtmlHelper
     internal static bool TryParseHtmlTag(ref StringSlice text, [NotNullWhen(true)] out string? htmlTag, InlineHtmlScanCache? scanCache)
     {
         scanCache?.SetText(text);
-        var builder = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var builder = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
         if (TryParseHtmlTag(ref text, ref builder, scanCache))
         {
             htmlTag = builder.ToString();
@@ -511,7 +511,7 @@ public static class HtmlHelper
         int lastPos = 0;
         char c = '\0';
         char[] search = removeBackSlash ? SearchBackAndAmp : SearchAmp;
-        var sb = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var sb = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
 
         while ((searchPos = text.IndexOfAny(search, searchPos)) != -1)
         {

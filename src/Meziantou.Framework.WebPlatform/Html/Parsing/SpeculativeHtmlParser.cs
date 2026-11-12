@@ -1,3 +1,5 @@
+using Meziantou.Framework.WebPlatform.Css.Cascade;
+using Meziantou.Framework.WebPlatform.Css.Om;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Encodings;
 using Meziantou.Framework.WebPlatform.Infra;
@@ -36,6 +38,9 @@ internal sealed class SpeculativeHtmlParser
     // The tree builder of the speculative parser
     private HtmlTreeBuilder? _parser;
 
+    // The last style element inserted by the speculative parser, whose @import rules are fetched once its content is parsed
+    private HtmlStyleElement? _pendingStyle;
+
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/parsing.html#start-the-speculative-html-parser: parses the rest of the input
     /// of <paramref name="parser"/> speculatively, when the browsing context enables it (<see cref="BrowsingContextOptions.SpeculativeParsing"/>).
@@ -60,7 +65,7 @@ internal sealed class SpeculativeHtmlParser
 
         var speculativeParser = new SpeculativeHtmlParser(document, speculativeDocument, browsingContext);
         speculativeParser._parser = parser.CreateSpeculativeParser(speculativeDocument, speculativeParser.OnElementInserted);
-        speculativeParser._parser.Run();
+        speculativeParser.Run();
         return speculativeParser;
     }
 
@@ -81,7 +86,18 @@ internal sealed class SpeculativeHtmlParser
             tokenizer.Insert(positionFromEnd: 0, text);
         }
 
-        _parser.Run();
+        Run();
+    }
+
+    private void Run()
+    {
+        _parser!.Run();
+
+        // The content of the last style element is complete at the end of the file
+        if (_parser.Tokenizer.EofInserted)
+        {
+            PreloadPendingStyleImports();
+        }
     }
 
     /// <summary>Whether a <c>Document-Policy</c> header (a structured field dictionary) enables <c>expect-no-linked-resources</c> (https://github.com/WICG/document-policy/blob/main/document-policy-explainer.md).</summary>
@@ -112,6 +128,9 @@ internal sealed class SpeculativeHtmlParser
     /// </summary>
     private void OnElementInserted(Element element)
     {
+        // The content of a style element (raw text) is complete when the next element is inserted
+        PreloadPendingStyleImports();
+
         Node root = element.GetRoot();
         while (root is ShadowRoot shadowRoot)
         {
@@ -128,17 +147,17 @@ internal sealed class SpeculativeHtmlParser
                 _contentSecurityPolicies.Add(ContentSecurityPolicy.Parse(content, reportOnly: false, fromMeta: true));
                 break;
 
+            case HtmlStyleElement style:
+                _pendingStyle = style;
+                break;
+
             case HtmlScriptElement script:
                 FetchScript(script, script.GetAttributeValue("src"), script.GetScriptTypeFromAttributes(), script.HasAttribute("nomodule"), script.ReferrerPolicy);
                 break;
 
             case SvgScriptElement svgScript:
-            {
-                var type = svgScript.GetAttributeValue("type");
-                var isJavaScript = type is not { Length: > 0 } || HtmlScriptElement.IsJavaScriptMimeTypeEssenceMatch(InfraAscii.StripLeadingAndTrailingAsciiWhitespace(type).ToString());
-                FetchScript(svgScript, svgScript.GetAttributeValue("href") ?? svgScript.GetAttributeValue(Namespaces.XLink, "href"), isJavaScript ? ScriptElementType.Classic : null, noModule: false, referrerPolicy: "");
+                FetchScript(svgScript, svgScript.Core.Source, svgScript.Core.GetScriptTypeFromAttributes(), noModule: false, svgScript.ReferrerPolicy);
                 break;
-            }
 
             case HtmlImageElement image:
             {
@@ -166,6 +185,48 @@ internal sealed class SpeculativeHtmlParser
             case SvgImageElement svgImage when (svgImage.GetAttributeValue("href") ?? svgImage.GetAttributeValue(Namespaces.XLink, "href")) is { Length: > 0 } href:
                 Fetch(svgImage, Reflection.EncodingParseUrl(_speculativeDocument, href), RequestDestination.Image, svgImage.HasAttribute("crossorigin"), referrerPolicy: "");
                 break;
+        }
+    }
+
+    /// <summary>
+    /// The style sheets of the <c>@import</c> rules of a style element parsed speculatively. As in the browsers (preload
+    /// scanner), they are preloaded: the requests are sent and reported to the performance timeline at once, and the
+    /// <c>@import</c> rules consume their responses (the map of preloaded resources) when the parser reaches the element.
+    /// </summary>
+    private void PreloadPendingStyleImports()
+    {
+        if (_pendingStyle is not { } style)
+            return;
+
+        _pendingStyle = null;
+        var type = style.GetAttributeValue("type");
+        if (type is { Length: > 0 } && !InfraAscii.EqualsIgnoreAsciiCase(type, "text/css"))
+            return;
+
+        var environment = StyleEngine.CreateEnvironment(_document);
+        if (style.GetAttributeValue("media") is { } media && !MediaQueryEvaluator.Matches(media, environment))
+            return;
+
+        foreach (var rule in new CssRuleParser(sheet: null) { Quirks = _document.Mode == DocumentMode.Quirks }.ParseStylesheet(style.TextContent ?? ""))
+        {
+            // The @import rules precede the other rules, except the @layer statements
+            if (rule is CssLayerStatementRule)
+                continue;
+
+            if (rule is not CssImportRule importRule)
+                break;
+
+            if (!importRule.SupportsMatches || !MediaQueryEvaluator.Matches(importRule.Media, environment) || importRule.Href.Length == 0 || UrlParser.Parse(importRule.Href, _speculativeDocument.DocumentBaseUrl) is not { } url)
+                continue;
+
+            if (url.Scheme is "data" or "blob" || _document.SpeculativeFetchUrls.Contains(url.Serialize()) || ContentSecurityPolicy.ShouldBlockRequest(_contentSecurityPolicies, _document.ContentSecurityPolicySelfOrigin, url, RequestDestination.Style, style, parserInserted: false))
+                continue;
+
+            _document.SpeculativeFetchUrls.Add(url.Serialize());
+            var modifiers = importRule.RequestModifiers;
+            var request = SubresourceFetching.CreateRequest(_document, url, RequestDestination.Style, modifiers.IsCors(defaultCors: false), modifiers.ReferrerPolicy, initiator: null, _speculativeDocument, useCredentials: modifiers.UsesCredentials, integrity: modifiers.IntegrityMetadata);
+            request.Nonce = "";
+            LinkPreload.Preload(_document, request, processResponse: null, initiatorType: "css");
         }
     }
 

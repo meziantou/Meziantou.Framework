@@ -743,6 +743,29 @@ public sealed class FontFace
         return true;
     }
 
+    /// <summary>Gets the ascender, the descender and the line gap of a line of horizontal text, in font units.</summary>
+    /// <returns>The metrics of the line.</returns>
+    /// <remarks>
+    /// The metrics are the first of: the typographic metrics of the OS/2 table when the font asks for them
+    /// (<see cref="UseTypoMetrics"/>), the metrics of the <c>hhea</c> table when they are not both 0, the typographic
+    /// metrics when they are not both 0, and the Windows metrics of the OS/2 table without line gap. In an instance of a
+    /// variable font, they include the deltas of the <c>MVAR</c> table.
+    /// </remarks>
+    public FontLineMetrics GetLineMetrics()
+    {
+        if (HasOs2 && UseTypoMetrics)
+            return new FontLineMetrics(TypoAscender, TypoDescender, TypoLineGap);
+
+        if (HorizontalAscender != 0 || HorizontalDescender != 0)
+            return new FontLineMetrics(HorizontalAscender, HorizontalDescender, HorizontalLineGap);
+
+        if (HasOs2 && (TypoAscender != 0 || TypoDescender != 0))
+            return new FontLineMetrics(TypoAscender, TypoDescender, TypoLineGap);
+
+        // The Windows descent is a distance, the others are coordinates
+        return new FontLineMetrics(WinAscent, -WinDescent, 0);
+    }
+
     /// <summary>
     /// Gets the ascender and the descender a line of horizontal text has, as two heights from the baseline: those of
     /// the OS/2 table when it asks for them, those of the hhea table otherwise.

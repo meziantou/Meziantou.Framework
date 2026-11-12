@@ -45,8 +45,9 @@ A stack is written from its top and read back in the same order.
 
 A dictionary key is written as a scalar, so its type must be `string`, `object`, an enum, or one of the scalar types of
 the table. Another key type throws a `NotSupportedException`, unless a [custom converter](07-CustomConverters.md)
-handles it. A custom converter registered for a supported key type converts the values of the dictionary, not its
-keys.
+handles it: the converter then writes and reads the keys, and must write a scalar. A source-generated context does not
+support these key types. A custom converter registered for a supported key type converts the values of the dictionary,
+not its keys.
 
 The other collections of .NET, such as `ArrayList`, `Hashtable` or `ReadOnlyCollection<>`, and the types that cannot
 be serialized, such as `Type`, delegates and `IAsyncEnumerable<>`, throw a `NotSupportedException` instead of being

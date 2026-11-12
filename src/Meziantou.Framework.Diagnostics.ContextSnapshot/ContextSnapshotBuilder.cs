@@ -282,31 +282,35 @@ public sealed class ContextSnapshotBuilder
     }
 
     /// <summary>Adds all AppContext data and switches using reflection to access internal stores.</summary>
+    /// <remarks>
+    /// <see cref="AppContext"/> has no public API to enumerate its data and switches, so this method reads its private
+    /// fields. It is best-effort: when the fields are not found, or no longer have the expected type, it adds nothing.
+    /// </remarks>
     public ContextSnapshotBuilder AddAppContextData()
     {
-        if (typeof(AppContext).GetField("s_dataStore", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)?.GetValue(null) is Dictionary<string, object?> data)
+        foreach (var (name, value) in GetPrivateStoreEntries<object?>("s_dataStore"))
         {
-            lock (data)
-            {
-                foreach (var kvp in data)
-                {
-                    AddValue("AppContext." + kvp.Key, kvp.Value);
-                }
-            }
+            AddValue("AppContext." + name, value);
         }
 
-        if (typeof(AppContext).GetField("s_switches", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)?.GetValue(null) is Dictionary<string, bool> switches)
+        foreach (var (name, value) in GetPrivateStoreEntries<bool>("s_switches"))
         {
-            lock (switches)
-            {
-                foreach (var kvp in switches)
-                {
-                    AddValue("AppContext." + kvp.Key, kvp.Value);
-                }
-            }
+            AddValue("AppContext." + name, value);
         }
 
         return this;
+
+        static KeyValuePair<string, T>[] GetPrivateStoreEntries<T>(string fieldName)
+        {
+            if (typeof(AppContext).GetField(fieldName, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)?.GetValue(null) is not Dictionary<string, T> store)
+                return [];
+
+            // AppContext synchronizes the accesses to its stores by locking them: hold the lock only to copy the entries
+            lock (store)
+            {
+                return [.. store];
+            }
+        }
     }
 
     /// <summary>The value substituted for environment variables whose name looks like it holds a secret.</summary>

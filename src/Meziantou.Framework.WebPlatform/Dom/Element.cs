@@ -178,6 +178,25 @@ public partial class Element : Node
         }
     }
 
+    /// <summary>
+    /// Whether the registry of the element is the global registry of its node document, whatever it is: the element was
+    /// created with the registry of its document, or adopted with the effective global registry of its document (see
+    /// <see cref="Document.Adopt"/>). The registry is null while the document has no registry (e.g. an inert template contents
+    /// owner document), but the element gets the global registry of the document it is adopted into, unlike an element
+    /// whose registry is null.
+    /// </summary>
+    internal bool HasDocumentRegistry => RegistryKind == ElementRegistryKind.Document;
+
+    /// <summary>Makes the registry of the element the global registry of its node document (see <see cref="HasDocumentRegistry"/>).</summary>
+    internal void UseDocumentRegistry()
+    {
+        RegistryKind = ElementRegistryKind.Document;
+        if (RareDataOrNull is ElementRareData { CustomElementRegistry: not null } rareData)
+        {
+            rareData.CustomElementRegistry = null;
+        }
+    }
+
     /// <summary>https://dom.spec.whatwg.org/#concept-element-custom-element-definition</summary>
     internal CustomElementDefinition? CustomElementDefinition
     {

@@ -269,7 +269,18 @@ internal static partial class CssParser
 
         input.Discard();
         input.DiscardWhitespace();
+
+        // The values are counted first, so that the list is allocated once with its final size
+        var start = input.Mark();
         while (input.Next is not null && !input.NextIs(CssTokenType.Semicolon) && !(nested && input.NextIs(CssTokenType.RightCurlyBracket)))
+        {
+            input.Discard();
+        }
+
+        var end = input.Mark();
+        input.Restore(start);
+        declaration.Value.Capacity = end - start;
+        while (input.Mark() < end)
         {
             declaration.Value.Add(input.Consume());
         }

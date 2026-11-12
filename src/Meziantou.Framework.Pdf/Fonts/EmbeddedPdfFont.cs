@@ -50,8 +50,7 @@ internal sealed class EmbeddedPdfFont : PdfFont
         Face = face;
         _scale = 1000d / face.UnitsPerEm;
         PostScriptName = CreatePostScriptName(face);
-        var ascent = face.UseTypoMetrics ? face.TypoAscender : face.HorizontalAscender;
-        var descent = face.UseTypoMetrics ? face.TypoDescender : face.HorizontalDescender;
+        var (ascent, descent, _) = face.GetLineMetrics();
         Ascent = ascent * _scale;
         Descent = Math.Min(0, descent * _scale);
         CapHeight = (face.CapHeight > 0 ? face.CapHeight : ascent) * _scale;
@@ -181,38 +180,14 @@ internal sealed class EmbeddedPdfFont : PdfFont
         if (text.Length == 0)
             return new ShapedText([], 0, [], NeedsActualText: false);
 
-        var levels = new byte[text.Length];
-        UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.Auto, levels);
-        var runs = new List<(int Start, int Length, UnicodeScript Script)>();
-        var runLevels = new List<byte>();
-        foreach (var scriptRun in Unicode.EnumerateScriptRuns(text))
-        {
-            var end = scriptRun.Index + scriptRun.Length;
-            var start = scriptRun.Index;
-            while (start < end)
-            {
-                var next = start + 1;
-                while (next < end && levels[next] == levels[start])
-                {
-                    next++;
-                }
-
-                runs.Add((start, next - start, scriptRun.Script));
-                runLevels.Add(levels[start]);
-                start = next;
-            }
-        }
-
-        var order = new int[runs.Count];
-        UnicodeBidi.GetVisualOrder(runLevels.ToArray(), order);
         var needsActualText = false;
         var buffer = new GlyphBuffer(Face.Data.Environment.Limits);
         var pen = 0d;
         var previousEnd = 0d;
-        foreach (var index in order)
+        foreach (var run in TextShaper.SplitRuns(text))
         {
-            var (start, length, script) = runs[index];
-            var isRightToLeft = (runLevels[index] & 1) != 0;
+            var (start, length, script, _) = run;
+            var isRightToLeft = run.IsRightToLeft;
             needsActualText |= isRightToLeft;
             buffer.Clear();
             TextShaper.AddText(buffer, text.AsSpan(start, length), start);

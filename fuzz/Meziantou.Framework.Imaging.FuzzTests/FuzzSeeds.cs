@@ -60,6 +60,7 @@ internal static class FuzzSeeds
                 new FuzzSeed("jxl/embedded-integer-24-bit", Tests.JpegXlTestFiles.Integer24Bit),
                 new FuzzSeed("jxl/embedded-integer-25-bit", Tests.JpegXlTestFiles.Integer25Bit),
                 new FuzzSeed("jxl/embedded-cmyk-alpha", Tests.JpegXlTestFiles.CmykWithAlpha),
+                new FuzzSeed("jxl/embedded-many-extra-channels", Tests.JpegXlTestFiles.ManyExtraChannels),
             ]);
         }
         else if (group is "jxl-lossy")

@@ -420,14 +420,7 @@
     }
   },
   "html/browsers/browsing-the-web/navigating-across-documents/grandparent_session_aboutsrcdoc.sub.window.js": {
-    "harness": "TIMEOUT",
-    "total": 4,
-    "failures": {
-      "Grandparent with cross-origin sandboxed srdoc grandchild session": "NOTRUN",
-      "Grandparent with cross-origin srdoc grandchild session": "TIMEOUT",
-      "Grandparent with same-origin sandboxed srdoc grandchild session": "NOTRUN",
-      "Grandparent with same-origin srdoc grandchild session": "NOTRUN"
-    }
+    "total": 4
   },
   "html/browsers/browsing-the-web/navigating-across-documents/initial-empty-document/iframe-nosrc.html": {
     "total": 7

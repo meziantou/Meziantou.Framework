@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -188,6 +189,7 @@ public static class MarkdownParser
                 var block = container[item.Index];
                 if (block.IsLeafBlock)
                 {
+                    Debug.Assert(block is LeafBlock);
                     LeafBlock leafBlock = unsafe(Unsafe.As<LeafBlock>(block));
                     leafBlock.OnProcessInlinesBegin(inlineProcessor);
                     if (leafBlock.ProcessInlines)
@@ -266,6 +268,7 @@ public static class MarkdownParser
                         ThrowHelper.CheckDepthLimit(blockCount + 1, maximumNestingDepth);
                         Array.Resize(ref blocks, blockCount * 2);
                     }
+                    Debug.Assert(block is ContainerBlock);
                     blocks[blockCount++] = new ContainerItem(unsafe(Unsafe.As<ContainerBlock>(block)));
                     block.OnProcessInlinesBegin(inlineProcessor);
                     goto process_new_block;

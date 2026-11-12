@@ -31,8 +31,8 @@ public partial struct CustomerId { } // New() uses Guid.NewGuid()
 
 `StronglyTypedIdDefaults` has a property for each [option](07-Options.md), with the same name in PascalCase:
 `GenerateSystemTextJsonConverter`, `GenerateNewtonsoftJsonConverter`, `GenerateSystemComponentModelTypeConverter`,
-`GenerateMongoDBBsonSerialization`, `AddCodeGeneratedAttribute`, `StringComparison`, `GenerateToStringAsRecord` and
-`GuidGenerationStrategy`. A property you do not set keeps the default value of the option.
+`GenerateMongoDBBsonSerialization`, `GenerateYamlConverter`, `GenerateTomlConverter`, `AddCodeGeneratedAttribute`,
+`StringComparison`, `GenerateToStringAsRecord` and `GuidGenerationStrategy`. A property you do not set keeps the default value of the option.
 
 ## Override a default on a type
 

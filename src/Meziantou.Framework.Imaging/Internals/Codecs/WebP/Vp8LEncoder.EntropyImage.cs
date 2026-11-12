@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -595,6 +596,7 @@ internal sealed partial class Vp8LEncoder
     private PooledBuffer RentSpan<T>(long count, out Span<T> items)
         where T : unmanaged
     {
+        Debug.Assert(IsNumber<T>());
         var bytes = count * unsafe(sizeof(T));
         if (bytes > CheckedSizes.MaxBufferLength)
             throw CheckedSizes.CreateOverflowException(_scope.Limits);
@@ -603,6 +605,14 @@ internal sealed partial class Vp8LEncoder
         items = unsafe(MemoryMarshal.Cast<byte, T>(buffer.RawBuffer.AsSpan()))[..(int)count];
         return buffer;
     }
+
+    /// <summary>
+    /// Whether the pooled bytes can be viewed as items of <typeparamref name="T"/>: a number of at most 8 bytes, whose every
+    /// bit pattern is a value and which has no padding (a struct or a <see langword="bool"/> could read garbage).
+    /// </summary>
+    private static bool IsNumber<T>()
+        => typeof(T) == typeof(byte) || typeof(T) == typeof(ushort) || typeof(T) == typeof(int) || typeof(T) == typeof(uint)
+        || typeof(T) == typeof(long) || typeof(T) == typeof(ulong) || typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
     /// <summary>Cuts spans of several types from one buffer, each aligned on 8 bytes.</summary>
     private ref struct SpanCarver(Span<byte> bytes)
@@ -617,6 +627,7 @@ internal sealed partial class Vp8LEncoder
         public Span<T> Take<T>(int count)
             where T : unmanaged
         {
+            Debug.Assert(IsNumber<T>());
             _offset = (_offset + 7) & ~7;
             var length = count * unsafe(sizeof(T));
             var span = unsafe(MemoryMarshal.Cast<byte, T>(_bytes.Slice(_offset, length)));

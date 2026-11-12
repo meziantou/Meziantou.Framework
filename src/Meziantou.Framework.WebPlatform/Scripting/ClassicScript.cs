@@ -51,6 +51,12 @@ public sealed class ClassicScript
     /// </summary>
     public bool MutedErrors { get; init; }
 
+    /// <summary>
+    /// Gets the URL requested for an external script, before the redirects (https://w3c.github.io/long-animation-frames/#classic-script-original-source-url),
+    /// or null for an inline script: the source URL of the script in the long animation frames.
+    /// </summary>
+    internal string? OriginalSourceUrl { get; init; }
+
     /// <summary>Gets the script element whose script this is, or null (e.g. a <c>javascript:</c> URL).</summary>
     public Element? Element { get; init; }
 
@@ -71,8 +77,8 @@ public sealed class ClassicScript
     /// </summary>
     public ModuleFetchOptions FetchOptions
     {
-        get => field ??= Element is HtmlScriptElement script
-            ? new ModuleFetchOptions { IncludeCredentials = Infra.InfraAscii.EqualsIgnoreAsciiCase(script.GetAttributeValue("crossorigin") ?? "", "use-credentials"), ReferrerPolicy = script.ReferrerPolicy, Nonce = ContentSecurityPolicy.GetNonceMetadata(script), ParserInserted = script.IsParserInserted }
+        get => field ??= Element is not null && Html.Parsing.HtmlTreeBuilder.GetScriptCore(Element) is { } script
+            ? script.CreateModuleFetchOptions(renderBlocking: false)
             : new ModuleFetchOptions();
         init;
     }

@@ -88,14 +88,16 @@ public partial class Document
     /// <summary>
     /// Sets the policies of the document to the ones of an inherited policy container (a clone of the policy container of the
     /// initiator, the parent or the creator of the document, https://html.spec.whatwg.org/multipage/browsers.html#determining-navigation-params-policy-container):
-    /// its CSP list, the self-origin of its CSP list and its Trusted Types directives. The policies of the <c>meta</c>
-    /// elements of the document are added to them.
+    /// its CSP list, the self-origin of its CSP list, its Trusted Types directives and its integrity policies. The policies of
+    /// the <c>meta</c> elements of the document are added to them.
     /// </summary>
     internal void SetPolicyContainer(PolicyContainer policyContainer)
     {
         ContentSecurityPoliciesOrNull = policyContainer.ContentSecurityPolicies is { } policies ? [.. policies] : null;
         _trustedTypesDirectives = policyContainer.TrustedTypesDirectives is { } directives ? [.. directives] : null;
         RequiredContentSecurityPolicy = policyContainer.RequiredContentSecurityPolicy;
+        IntegrityPolicy = policyContainer.IntegrityPolicy;
+        ReportOnlyIntegrityPolicy = policyContainer.ReportOnlyIntegrityPolicy;
         if (policyContainer.ContentSecurityPolicySelfOrigin is { } selfOrigin)
         {
             ContentSecurityPolicySelfOrigin = selfOrigin;

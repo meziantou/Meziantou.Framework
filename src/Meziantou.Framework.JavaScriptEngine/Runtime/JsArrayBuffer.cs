@@ -12,6 +12,7 @@ internal sealed class JsArrayBuffer : JsObject
     private byte[]? _array;
     private Memory<byte> _external;
     private int _byteLength;
+    private int? _sharedFixedByteLength;
     private bool _isDetached;
 
     private JsArrayBuffer(JsObject? prototype, ObjectClass objectClass)
@@ -40,11 +41,18 @@ internal sealed class JsArrayBuffer : JsObject
     /// <summary>Gets the [[ArrayBufferDetachKey]].</summary>
     public JsValue DetachKey { get; set; }
 
+    /// <summary>
+    /// Gets or sets the steps of HostResizeArrayBuffer (https://tc39.es/ecma262/#sec-hostresizearraybuffer) of a resizable
+    /// ArrayBuffer, or of HostGrowSharedArrayBuffer (https://tc39.es/ecma262/#sec-hostgrowsharedarraybuffer) of a growable
+    /// SharedArrayBuffer: when it is set, the embedding resizes the buffer (or throws) instead of the engine.
+    /// </summary>
+    public Action<JsObject, int>? HostResize { get; set; }
+
     /// <summary>Gets whether the buffer is detached (IsDetachedBuffer).</summary>
     public bool IsDetached => _isDetached;
 
     /// <summary>Gets the byte length (ArrayBufferByteLength): 0 when the buffer is detached; the byte length of a growable SharedArrayBuffer is read atomically.</summary>
-    public int ByteLength => SharedBlock is { } block ? block.ByteLength : _byteLength;
+    public int ByteLength => SharedBlock is { } block ? _sharedFixedByteLength ?? block.ByteLength : _byteLength;
 
     /// <summary>Creates an ArrayBuffer with a zeroed data block (AllocateArrayBuffer once the prototype is known), or throws a RangeError when it cannot be allocated.</summary>
     public static JsArrayBuffer Create(JsObject? prototype, double byteLength, double? maxByteLength = null)
@@ -91,7 +99,7 @@ internal sealed class JsArrayBuffer : JsObject
     /// Creates an ArrayBuffer of the realm over external memory (the embedding owns the memory: the buffer reads and
     /// writes it directly). A detach key prevents the scripts from detaching or transferring the buffer.
     /// </summary>
-    public static JsArrayBuffer CreateExternal(JsRealm realm, Memory<byte> memory, JsValue detachKey = default)
+    public static JsArrayBuffer CreateExternal(JsRealm realm, Memory<byte> memory, JsValue detachKey = default, int? maxByteLength = null)
     {
         return new JsArrayBuffer(realm.Intrinsics.ArrayBufferPrototype, ObjectClass.ArrayBuffer)
         {
@@ -99,7 +107,15 @@ internal sealed class JsArrayBuffer : JsObject
             _byteLength = memory.Length,
             IsExternal = true,
             DetachKey = detachKey,
+            MaxByteLength = maxByteLength,
         };
+    }
+
+    /// <summary>Replaces the external memory of an ArrayBuffer created by <see cref="CreateExternal"/>: its byte length becomes the length of <paramref name="memory"/>.</summary>
+    public void SetExternalMemory(Memory<byte> memory)
+    {
+        _external = memory;
+        _byteLength = memory.Length;
     }
 
     /// <summary>Creates a SharedArrayBuffer over a new Shared Data Block (AllocateSharedArrayBuffer once the prototype is known), or throws a RangeError.</summary>
@@ -128,6 +144,19 @@ internal sealed class JsArrayBuffer : JsObject
     /// <summary>Creates a SharedArrayBuffer of the realm whose data is an existing Shared Data Block.</summary>
     public static JsArrayBuffer CreateShared(JsRealm realm, JsSharedDataBlock block) => CreateShared(realm.Intrinsics.SharedArrayBufferPrototype, block);
 
+    /// <summary>
+    /// Creates a fixed-length SharedArrayBuffer of the realm whose data is the first <paramref name="byteLength"/> bytes of
+    /// a Shared Data Block (e.g. the buffer of a shared <c>WebAssembly.Memory</c>, whose block grows with the memory).
+    /// </summary>
+    public static JsArrayBuffer CreateFixedLengthShared(JsRealm realm, JsSharedDataBlock block, int byteLength)
+    {
+        return new JsArrayBuffer(realm.Intrinsics.SharedArrayBufferPrototype, ObjectClass.SharedArrayBuffer)
+        {
+            SharedBlock = block,
+            _sharedFixedByteLength = byteLength,
+        };
+    }
+
     /// <summary>Gets the bytes of the buffer ([[ArrayBufferData]] up to the byte length); empty when the buffer is detached. It does not run JavaScript code.</summary>
     public Span<byte> GetSpan()
     {
@@ -135,7 +164,7 @@ internal sealed class JsArrayBuffer : JsObject
             return array.AsSpan(0, _byteLength);
 
         if (SharedBlock is { } block)
-            return block.GetSpan();
+            return _sharedFixedByteLength is { } fixedLength ? block.GetSpan()[..fixedLength] : block.GetSpan();
 
         return _external.Span[.._byteLength];
     }
@@ -147,7 +176,7 @@ internal sealed class JsArrayBuffer : JsObject
             return array.AsMemory(0, _byteLength);
 
         if (SharedBlock is { } block)
-            return block.GetMemory();
+            return _sharedFixedByteLength is { } fixedLength ? block.GetMemory()[..fixedLength] : block.GetMemory();
 
         return _external[.._byteLength];
     }
@@ -199,7 +228,12 @@ internal sealed class JsArrayBuffer : JsObject
     /// </summary>
     public void Resize(int newByteLength)
     {
-        var array = _array!;
+        if (_array is not { } array)
+        {
+            ThrowHelper.ThrowTypeError("The external memory of the ArrayBuffer cannot be resized");
+            return;
+        }
+
         if (newByteLength <= array.Length)
         {
             if (newByteLength < _byteLength)

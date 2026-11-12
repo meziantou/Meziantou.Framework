@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Benchmarks.Workloads;
 
@@ -56,6 +57,12 @@ internal static class BenchmarkInputs
     private static readonly Lazy<byte[]> TiffRgb16Data = new(() => TiffPredictorInput.Encode(Rgb16Samples(LargeRgba64Source, bigEndian: !BitConverter.IsLittleEndian), Large16Width, Large16Height, samplesPerPixel: 3, bitsPerSample: 16, bigEndian: false, predictor: false));
     private static readonly Lazy<byte[]> TgaUncompressedData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new TgaEncoder { Compression = TgaCompression.None }));
     private static readonly Lazy<byte[]> PngBilevelData = new(() => PngLayoutInput.Encode(PackBits(LargeBilevelBytes.Value), LargeWidth, LargeHeight, colorType: 0, bitDepth: 1));
+    private static readonly Lazy<byte[]> ArithmeticJpegData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new JpegEncoder { Quality = JpegQuality, ChromaSubsampling = JpegChromaSubsampling.Ratio420, EntropyCoding = JpegEntropyCoding.Arithmetic }));
+    private static readonly Lazy<byte[]> LosslessJpegData = new(() => EncodeRgb24(LargeRgb24Source, LargeWidth, LargeHeight, new JpegEncoder { Process = JpegEncodingProcess.Lossless }));
+    private static readonly Lazy<byte[]> Jpeg12BitData = new(() => EncodeRgb48(Rgb16Pixels, Large16Width, Large16Height, new JpegEncoder { Quality = JpegQuality, ChromaSubsampling = JpegChromaSubsampling.Ratio420, BitDepth = 12 }));
+    private static readonly Lazy<byte[]> PhonePhotoJpegData = new(() => EncodePhonePhoto());
+    private static readonly Lazy<byte[]> UltraHdrJpegData = new(() => EncodeUltraHdr());
+    private static readonly Lazy<byte[]> BmpRunLength8Data = new(() => EncodeRgb24(IndexedRgb24Source, LargeWidth, LargeHeight, new BmpEncoder { PixelLayout = BmpPixelLayout.Indexed8, Compression = BmpCompression.RunLength }));
 
     public static int LargeWidth => 2048;
 
@@ -255,6 +262,53 @@ internal static class BenchmarkInputs
     /// <summary>Gets the 2048x1536 black-and-white text page encoded as a 1-bit grayscale PNG.</summary>
     public static byte[] PngBilevel => PngBilevelData.Value;
 
+    /// <summary>Gets the 2048x1536 RGB source encoded as a sequential JPEG q85 4:2:0 with arithmetic coding instead of Huffman coding.</summary>
+    public static byte[] ArithmeticJpeg => ArithmeticJpegData.Value;
+
+    /// <summary>Gets the 2048x1536 RGB source encoded as a lossless JPEG (predictive process, 8-bit RGB components).</summary>
+    public static byte[] LosslessJpeg => LosslessJpegData.Value;
+
+    /// <summary>Gets the RGB samples of the 1024x768 16-bit source encoded as a 12-bit sequential JPEG q85 4:2:0.</summary>
+    public static byte[] Jpeg12Bit => Jpeg12BitData.Value;
+
+    /// <summary>
+    /// Gets the 2048x1536 RGB source as a camera writes a portrait photo: baseline JPEG q85 4:2:0 whose pixels are stored
+    /// sideways (EXIF orientation 6) and labeled with the Display P3 ICC profile.
+    /// </summary>
+    public static byte[] PhonePhotoJpeg => PhonePhotoJpegData.Value;
+
+    /// <summary>
+    /// Gets the 2048x1536 RGB source as an Ultra HDR JPEG: a baseline q85 4:2:0 base image followed by a 512x384 grayscale
+    /// gain map of up to 2 stops (<see cref="UltraHdrGainMapMetadata"/>).
+    /// </summary>
+    public static byte[] UltraHdrJpeg => UltraHdrJpegData.Value;
+
+    /// <summary>Gets the parameters of the gain map of <see cref="UltraHdrJpeg"/>: from 0 to 2 stops of gain, linear encoding.</summary>
+    public static GainMapMetadata UltraHdrGainMapMetadata { get; } = new(baseHdrHeadroom: 0, alternateHdrHeadroom: 2, [new GainMapChannel(gainMapMin: 0, gainMapMax: 2, gamma: 1, baseOffset: 1 / 64d, alternateOffset: 1 / 64d)]);
+
+    /// <summary>Gets the reduced 2048x1536 source of <see cref="IndexedRgb24Source"/> encoded as an 8-bit run-length BMP.</summary>
+    public static byte[] BmpRunLength8 => BmpRunLength8Data.Value;
+
+    /// <summary>Creates the 512x384 gain map of <see cref="UltraHdrJpeg"/>: the luminance of the source, so that the highlights gain the most.</summary>
+    public static Image<Gray8> CreateGainMap()
+    {
+        const int Factor = 4;
+        var source = LargeRgb24Bytes.Value;
+        var width = LargeWidth / Factor;
+        var height = LargeHeight / Factor;
+        var samples = new byte[width * height];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var offset = ((y * Factor * LargeWidth) + (x * Factor)) * 3;
+                samples[(y * width) + x] = (byte)((source[offset] + (2 * source[offset + 1]) + source[offset + 2]) / 4);
+            }
+        }
+
+        return Image.ImportPixelBytes<Gray8>(samples, width, height);
+    }
+
     /// <summary>Creates the source animation of <see cref="Gif"/> and <see cref="Apng"/>.</summary>
     public static Image<Rgba32> CreateAnimation()
     {
@@ -389,6 +443,28 @@ internal static class BenchmarkInputs
     private static byte[] EncodeRgb24(byte[] pixels, int width, int height, ImageEncoder encoder)
     {
         using var image = Image.ImportPixelBytes<Rgb24>(pixels, width, height);
+        return Save(image, encoder);
+    }
+
+    private static byte[] EncodePhonePhoto()
+    {
+        using var image = Image.ImportPixelData<Rgb24>(LargeRgb24Source, LargeWidth, LargeHeight);
+        image.Metadata.Orientation = ExifOrientation.RightTop;
+        image.Metadata.IccProfile = IccProfile.DisplayP3;
+        return Save(image, JpegEncoder);
+    }
+
+    private static byte[] EncodeUltraHdr()
+    {
+        using var image = Image.ImportPixelData<Rgb24>(LargeRgb24Source, LargeWidth, LargeHeight);
+        using var gainMap = CreateGainMap();
+        return Save(image, new JpegEncoder { Quality = JpegQuality, ChromaSubsampling = JpegChromaSubsampling.Ratio420, GainMap = new GainMap(gainMap, UltraHdrGainMapMetadata) });
+    }
+
+    private static byte[] EncodeRgb48(Rgba64[] pixels, int width, int height, ImageEncoder encoder)
+    {
+        using var source = Image.ImportPixelData<Rgba64>(pixels, width, height);
+        using var image = source.CloneAs<Rgb48>();
         return Save(image, encoder);
     }
 

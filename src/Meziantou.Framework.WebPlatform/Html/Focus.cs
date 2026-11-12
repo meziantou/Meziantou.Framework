@@ -918,12 +918,13 @@ internal static class FocusModel
         {
             if (element.ParentNode is { } parent && element.NodeDocument.GetSelection() is { } selection)
             {
-                selection.Collapse(parent, (uint)element.GetIndex());
+                selection.CollapseCore(parent, (uint)element.GetIndex());
             }
         }
         else if (IsEditingHost(element) && element.NodeDocument.GetSelection() is { } selection)
         {
-            if (selection.RangeCount > 0 && selection.GetRangeAt(0) is { } range && element.IsShadowIncludingInclusiveAncestorOf(range.StartContainer))
+            // The range of the selection may be in a shadow tree of the editing host (it is not in the document tree)
+            if (selection.RangeOrNull is { } range && element.IsShadowIncludingInclusiveAncestorOf(range.StartContainer))
                 return;
 
             Node caret = element;
@@ -936,7 +937,7 @@ internal static class FocusModel
                 }
             }
 
-            selection.Collapse(caret, 0);
+            selection.CollapseCore(caret, 0);
         }
     }
 

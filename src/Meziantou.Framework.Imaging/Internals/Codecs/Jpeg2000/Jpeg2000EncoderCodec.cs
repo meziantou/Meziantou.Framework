@@ -159,7 +159,8 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         private const int BytesPerCall = 64 * 1024;
         private const int LosslessGuardBits = 2;
         private const int StepTableCount = 2;
-        private const int ColorPieceLength = 256;
+        // The pieces of the three colors are on the stack of each worker, for each row: 64 samples keep them at 768 bytes
+        private const int ColorPieceLength = 64;
         private const int SourceHead = 0;
         private const int SourcePacketHeaders = 1;
         private const int SourceFirstComponent = 2;

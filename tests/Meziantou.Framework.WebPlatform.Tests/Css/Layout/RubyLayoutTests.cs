@@ -145,6 +145,16 @@ public sealed class RubyLayoutTests : IDisposable
     }
 
     [Fact]
+    public void LineBreaking_BeforeTheRubyContainer_MovesItsStartEdgesToTheNextLine()
+    {
+        // The last opportunity that fits is the one before the first column: the line ends before the ruby container, which starts
+        // the next line with its padding (it has no fragment on the first line)
+        var document = Parse("<div id=d style='width: 70px'>XX <ruby id=r style='padding-left: 10px'><rb>XX</rb><rb>XX</rb></ruby></div>");
+        var fragment = Assert.Single(document.GetLayoutEngine().GetFragments(document.GetElementById("r")!));
+        Assert.Equal(new PhysicalRect(0, 20, 90, 20), fragment.GetRectInRoot());
+    }
+
+    [Fact]
     public void LineBreaking_NotInsideAColumn()
     {
         var document = Parse("<div id=d style='width: 10px'><ruby>X X<rt>A</rt></ruby></div>");

@@ -3477,6 +3477,26 @@ public sealed class ProcessingTests
         Assert.Throws<ImageResourceLimitException>(() => limited.ApplyNeighborhoodOperation<RgbaFloat, ShiftDown<RgbaFloat>>(default));
     }
 
+    [Fact]
+    public void NeighborhoodOperationsReceiveTheRowBeforeTheOperation()
+    {
+        using var image = new Image<Gray8>(3, 2);
+        image.Frames[0].ProcessPixelRows(static pixels =>
+        {
+            for (var y = 0; y < pixels.Height; y++)
+            {
+                pixels.GetRowSpan(y).Fill(new Gray8((byte)(10 * (y + 1))));
+            }
+        });
+
+        // The operation writes the first pixel only: the others keep the pixels of the row, in place and through a working format
+        image.ApplyNeighborhoodOperation<Gray8, WriteFirstPixel<Gray8>>(new WriteFirstPixel<Gray8>(new Gray8(1)));
+        Assert.Equal([1, 10, 10, 1, 20, 20], ReadGray(image.Frames[0]));
+
+        image.ApplyNeighborhoodOperation<Rgba64, WriteFirstPixel<Rgba64>>(new WriteFirstPixel<Rgba64>(new Rgba64(0x0202, 0x0202, 0x0202, ushort.MaxValue)));
+        Assert.Equal([2, 10, 10, 2, 20, 20], ReadGray(image.Frames[0]));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -3588,6 +3608,20 @@ public sealed class ProcessingTests
         {
             Assert.Equal(destination.Length, source.Width);
             source.GetRowClamped(y - 1).CopyTo(destination);
+        }
+    }
+
+    private readonly struct WriteFirstPixel<TPixel>(TPixel value) : IPixelNeighborhoodOperation<TPixel>
+        where TPixel : unmanaged
+    {
+        public void Invoke(int y, PixelRowSource<TPixel> source, Span<TPixel> destination)
+        {
+            var row = source.GetRow(y);
+            for (var x = 0; x < destination.Length; x++)
+            {
+                Assert.Equal(row[x], destination[x]);
+            }
+            destination[0] = value;
         }
     }
 

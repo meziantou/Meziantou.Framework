@@ -115,30 +115,30 @@ internal static class DrawingKernels
         PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in opaque), new Span<TPixel>(ref pixel));
         if (typeof(TPixel) == typeof(Rgba64))
         {
-            var value = unsafe(Unsafe.As<TPixel, Rgba64>(ref pixel));
+            var value = unsafe(Unsafe.BitCast<TPixel, Rgba64>(pixel));
             return new DrawingColor(value.R, value.G, value.B, color.A);
         }
 
         if (typeof(TPixel) == typeof(Rgb48))
         {
-            var value = unsafe(Unsafe.As<TPixel, Rgb48>(ref pixel));
+            var value = unsafe(Unsafe.BitCast<TPixel, Rgb48>(pixel));
             return new DrawingColor(value.R, value.G, value.B, color.A);
         }
 
         if (typeof(TPixel) == typeof(Gray16))
-            return new DrawingColor(unsafe(Unsafe.As<TPixel, Gray16>(ref pixel)).Value, 0, 0, color.A);
+            return new DrawingColor(unsafe(Unsafe.BitCast<TPixel, Gray16>(pixel)).Value, 0, 0, color.A);
 
         // The formats composited as RGBA (CompositeBridged) get their gray level in the three colors
         if (typeof(TPixel) == typeof(La32))
         {
-            var level = unsafe(Unsafe.As<TPixel, La32>(ref pixel)).L;
+            var level = unsafe(Unsafe.BitCast<TPixel, La32>(pixel)).L;
             return new DrawingColor(level, level, level, color.A);
         }
 
         var alpha = PixelConverter.To8Bit(color.A);
         if (typeof(TPixel) == typeof(La16))
         {
-            var level = unsafe(Unsafe.As<TPixel, La16>(ref pixel)).L;
+            var level = unsafe(Unsafe.BitCast<TPixel, La16>(pixel)).L;
             return new DrawingColor(level, level, level, alpha);
         }
 
@@ -147,24 +147,24 @@ internal static class DrawingKernels
 
         if (typeof(TPixel) == typeof(Rgba32))
         {
-            var value = unsafe(Unsafe.As<TPixel, Rgba32>(ref pixel));
+            var value = unsafe(Unsafe.BitCast<TPixel, Rgba32>(pixel));
             return new DrawingColor(value.R, value.G, value.B, alpha);
         }
 
         if (typeof(TPixel) == typeof(Bgra32))
         {
-            var value = unsafe(Unsafe.As<TPixel, Bgra32>(ref pixel));
+            var value = unsafe(Unsafe.BitCast<TPixel, Bgra32>(pixel));
             return new DrawingColor(value.B, value.G, value.R, alpha);
         }
 
         if (typeof(TPixel) == typeof(Rgb24))
         {
-            var value = unsafe(Unsafe.As<TPixel, Rgb24>(ref pixel));
+            var value = unsafe(Unsafe.BitCast<TPixel, Rgb24>(pixel));
             return new DrawingColor(value.R, value.G, value.B, alpha);
         }
 
         if (typeof(TPixel) == typeof(Gray8))
-            return new DrawingColor(unsafe(Unsafe.As<TPixel, Gray8>(ref pixel)).Value, 0, 0, alpha);
+            return new DrawingColor(unsafe(Unsafe.BitCast<TPixel, Gray8>(pixel)).Value, 0, 0, alpha);
 
         throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
     }
@@ -914,6 +914,8 @@ internal static class DrawingKernels
     private static void FillPixels<TSample>(Span<TSample> run, ReadOnlySpan<TSample> pixel)
         where TSample : unmanaged
     {
+        // The packed paths fill whole pixels only: a partial pixel at the end of the run would be left as it was
+        Debug.Assert(run.Length % pixel.Length == 0);
         if (pixel.Length == 1)
         {
             run.Fill(pixel[0]);
@@ -1535,6 +1537,14 @@ internal static class DrawingKernels
         // Where red is among the color samples of a pixel, and where blue is
         var red = isBlueFirst ? 2 : 0;
         var blue = 2 - red;
+
+        // The color of a single paint, computed once
+        var isSingle = colors.IsEmpty;
+        if (isSingle)
+        {
+            SetSourceColor(s, paint, colorChannels, red, blue, max);
+        }
+
         for (var start = 0; start < coverage.Length; start += ChunkSize)
         {
             var count = Math.Min(ChunkSize, coverage.Length - start);
@@ -1544,7 +1554,7 @@ internal static class DrawingKernels
                 if (coverage[i] == 0)
                     continue;
 
-                if (!colors.IsEmpty)
+                if (!isSingle)
                 {
                     colors.Slice(i * 4, 4).CopyTo(paint);
                 }
@@ -1555,16 +1565,17 @@ internal static class DrawingKernels
                 var backdrop = channels == 4 ? double.CreateTruncating(pixel[3]) / max : 1;
                 if (paint[3] != 0 && backdrop != 0)
                 {
+                    if (!isSingle)
+                    {
+                        SetSourceColor(s, paint, colorChannels, red, blue, max);
+                    }
+
                     if (colorChannels == 1)
                     {
-                        s[0] = s[1] = s[2] = paint[0] / max;
                         d[0] = d[1] = d[2] = double.CreateTruncating(pixel[0]) / max;
                     }
                     else
                     {
-                        s[0] = paint[red] / max;
-                        s[1] = paint[1] / max;
-                        s[2] = paint[blue] / max;
                         d[0] = double.CreateTruncating(pixel[red]) / max;
                         d[1] = double.CreateTruncating(pixel[1]) / max;
                         d[2] = double.CreateTruncating(pixel[blue]) / max;
@@ -1593,6 +1604,21 @@ internal static class DrawingKernels
         {
             var rounded = Math.Floor((value * max) + 0.5 + (1.0 / 1048576));
             return rounded >= max ? (ushort)max : rounded > 0 ? (ushort)rounded : (ushort)0;
+        }
+
+        // The color of a paint, from 0 to 1: gray in the three components
+        static void SetSourceColor(Span<double> s, ReadOnlySpan<ushort> paint, int colorChannels, int red, int blue, double max)
+        {
+            if (colorChannels == 1)
+            {
+                s[0] = s[1] = s[2] = paint[0] / max;
+            }
+            else
+            {
+                s[0] = paint[red] / max;
+                s[1] = paint[1] / max;
+                s[2] = paint[blue] / max;
+            }
         }
     }
 

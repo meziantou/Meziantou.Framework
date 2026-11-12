@@ -3,6 +3,10 @@
     <Project Path="../src/Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj" />
     <Project Path="../src/Meziantou.Framework.StronglyTypedId.Interfaces/Meziantou.Framework.StronglyTypedId.Interfaces.csproj" />
     <Project Path="../src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj" />
+    <Project Path="../src/Meziantou.Framework.Toml.SourceGenerator/Meziantou.Framework.Toml.SourceGenerator.csproj" />
+    <Project Path="../src/Meziantou.Framework.Toml/Meziantou.Framework.Toml.csproj" />
+    <Project Path="../src/Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj" />
+    <Project Path="../src/Meziantou.Framework.Yaml/Meziantou.Framework.Yaml.csproj" />
   </Folder>
   <Folder Name="/tests/SourceGenerators/">
     <Project Path="../tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/Meziantou.Framework.StronglyTypedId.GeneratorTests.csproj" />

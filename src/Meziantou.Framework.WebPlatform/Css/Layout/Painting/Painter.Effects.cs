@@ -797,6 +797,7 @@ internal sealed partial class Painter
         // https://drafts.fxtf.org/css-masking/#typedef-geometry-box: the view-box of a foreignObject element is its nearest SVG
         // viewport (see BasicShapePaths.GetReferenceBox)
         var viewBox = SvgForeignObjectLayout.GetViewportRect(fragment)?.Translate(offset);
+        var splitBlocks = PaintOrder.GetSplitBlocksMaskedByInline(fragment);
         var bottom = true;
         for (var i = layers.Length - 1; i >= 0; i--)
         {
@@ -835,6 +836,19 @@ internal sealed partial class Painter
                 else
                 {
                     PaintBackgroundLayer(fragment, style, mask.Layer, borderBox, fragment.Border, fragment.Padding, paintingArea, blends: false);
+                }
+
+                // The blocks split out of an inline box are masked by it (see PaintOrder.GetSplitBlocksMaskedByInline): the layer
+                // is positioned in the border box of each block, as in a fragment of the inline box that contains the block
+                // (stitched to the other fragments of the block), without borders and paddings
+                if (splitBlocks is not null)
+                {
+                    foreach (var block in splitBlocks)
+                    {
+                        var blockBorderBox = GetSnappedBorderBox(block, offset + (block.GetOffsetInRoot() - fragment.GetOffsetInRoot()));
+                        var blockArea = mask.NoClip ? paintingArea : new RoundedRect(blockBorderBox, default);
+                        PaintBackgroundLayer(block, style, mask.Layer with { Origin = BackgroundBox.BorderBox }, blockBorderBox, default, default, blockArea, blends: false);
+                    }
                 }
             }
 

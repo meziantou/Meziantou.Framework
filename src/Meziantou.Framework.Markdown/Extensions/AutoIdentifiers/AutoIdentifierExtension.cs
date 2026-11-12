@@ -144,7 +144,7 @@ public class AutoIdentifierExtension : IMarkdownExtension
             return line.ToString();
         }
 
-        var label = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+        var label = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
         var copyStart = line.Start;
         var index = line.Start;
         while (index <= line.End)
@@ -288,7 +288,7 @@ public class AutoIdentifierExtension : IMarkdownExtension
             // after it instead of trying them all again, which is quadratic when many headings have the same text
             identifiers.LastSuffixes.TryGetValue(baseHeadingId, out uint index);
 
-            var headingBuffer = new ValueStringBuilder(unsafe(stackalloc char[ValueStringBuilder.StackallocThreshold]));
+            var headingBuffer = new ValueStringBuilder(stackalloc char[ValueStringBuilder.StackallocThreshold]);
             headingBuffer.Append(baseHeadingId);
             headingBuffer.Append('-');
             do

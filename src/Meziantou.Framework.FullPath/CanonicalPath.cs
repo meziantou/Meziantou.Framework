@@ -87,7 +87,7 @@ internal static partial class CanonicalPath
 
             try
             {
-                canonicalPath = Marshal.PtrToStringUTF8(pointer);
+                canonicalPath = unsafe(Marshal.PtrToStringUTF8(pointer));
                 return canonicalPath is not null;
             }
             finally

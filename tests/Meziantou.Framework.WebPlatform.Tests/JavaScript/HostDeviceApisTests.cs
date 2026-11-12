@@ -1797,7 +1797,8 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Equal("freeze", Run(document, "done()"));
 
         document.BrowsingContext.IsFrozen = false;
-        Assert.Equal("freeze,resume,message", Run(document, "setTimeout(done, 0)"));
+        Run(document);
+        Assert.Equal("freeze,resume,message", Run(document, "done()"));
     }
 
     [Fact]

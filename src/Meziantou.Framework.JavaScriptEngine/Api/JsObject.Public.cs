@@ -338,6 +338,27 @@ public partial class JsObject
     [MethodImpl(MethodImplOptions.NoInlining)]
     internal static void ThrowForeignObject() => throw new InvalidOperationException("The object belongs to another engine: the objects of an engine cannot be used by another engine (the primitive values can)");
 
+    /// <summary>
+    /// Gets where a function was defined: the name of the function, its script or module, and the position of its source
+    /// text. The target function of a bound function is used. Returns null when the object is not a function defined by
+    /// source code (e.g. a built-in function).
+    /// </summary>
+    public JsFunctionSourceLocation? GetFunctionSourceLocation()
+    {
+        var target = this;
+        while (target is IBoundFunction bound)
+        {
+            target = bound.BoundTargetFunction;
+        }
+
+        if (target is not Interpreter.JsClosure closure)
+            return null;
+
+        var template = closure.Template;
+        var (line, column) = template.Source.GetLineAndColumn(template.SourceStart);
+        return new JsFunctionSourceLocation(closure.InitialName ?? "", closure.Script as JsScriptOrModule, template.Source.Url, template.SourceStart, line, column);
+    }
+
     /// <summary>Gets the state of a promise ([[PromiseState]], [[PromiseResult]] and [[PromiseIsHandled]]); returns false when the object is not a promise.</summary>
     public bool TryGetPromiseState(out JsPromiseState state, out JsValue result, out bool isHandled)
     {

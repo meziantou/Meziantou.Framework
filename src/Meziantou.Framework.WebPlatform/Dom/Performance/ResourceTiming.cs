@@ -19,6 +19,9 @@ internal sealed class FetchTimingInfo
 
     public double FinalNetworkRequestStartTime { get; init; }
 
+    /// <summary>https://fetch.spec.whatwg.org/#fetch-timing-info-first-interim-network-response-start-time, or 0 when the response had no interim response.</summary>
+    public double FirstInterimNetworkResponseStartTime { get; init; }
+
     public double FinalNetworkResponseStartTime { get; init; }
 
     /// <summary>https://fetch.spec.whatwg.org/#fetch-timing-info-final-service-worker-start-time, or 0 when no fetch event was dispatched for the request.</summary>
@@ -62,8 +65,8 @@ internal readonly record struct ResponseBodyInfo(ulong EncodedSize, ulong Decode
 /// Reports the timing of a fetch started by a global object to its performance timeline when the fetch completes
 /// (https://fetch.spec.whatwg.org/#finalize-and-report-timing, https://w3c.github.io/resource-timing/#dfn-mark-resource-timing).
 /// The times are recorded by the fetch algorithm (<see cref="FetchRequest.Timing"/>). The loader does not expose the timing
-/// of the connection: the connection is established when the request is sent to the loader, and the response is received
-/// when the loader completes.
+/// of the connection: the connection is established when the request is sent to the loader, the headers of the response are
+/// received when the loader returns it (after its interim responses), and the response ends with its body.
 /// </summary>
 internal sealed class ResourceTiming
 {
@@ -132,7 +135,8 @@ internal sealed class ResourceTiming
         _global.QueueGlobalTask(() => Report(response, endTimestamp));
     }
 
-    private void Report(FetchResponse response, long endTimestamp)
+    /// <summary>Reports the timing of the fetch, once, with the time its response ended (e.g. a preload of the early hints of a navigation, reported to the new document).</summary>
+    public void Report(FetchResponse response, long endTimestamp)
     {
         // The timing of a preloaded response was reported by its preload
         if (_reported || _request.ConsumedPreload)
@@ -166,6 +170,7 @@ internal sealed class ResourceTiming
                 RedirectEndTime = ToRelativeTime(timing.RedirectEnd),
                 PostRedirectStartTime = postRedirectStartTime,
                 FinalNetworkRequestStartTime = requestStartTime,
+                FirstInterimNetworkResponseStartTime = timing.FirstInterimNetworkResponseStart == 0 ? 0 : Math.Min(endTime, Math.Max(requestStartTime, ToRelativeTime(timing.FirstInterimNetworkResponseStart))),
                 FinalNetworkResponseStartTime = timing.FinalNetworkResponseStart == 0 ? endTime : Math.Min(endTime, ToRelativeTime(timing.FinalNetworkResponseStart)),
                 FinalServiceWorkerStartTime = workerStartTime,
                 WorkerRouterEvaluationStartTime = timing.ServiceWorkerRouterEvaluationStart == 0 ? 0 : Math.Min(endTime, Math.Max(startTime, ToRelativeTime(timing.ServiceWorkerRouterEvaluationStart))),

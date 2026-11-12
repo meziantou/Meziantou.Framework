@@ -224,10 +224,7 @@
     "total": 12
   },
   "IndexedDB/idb-partitioned-basic.sub.html": {
-    "total": 1,
-    "failures": {
-      "Simple test for partitioned IndexedDB": "FAIL"
-    }
+    "total": 1
   },
   "IndexedDB/idb-partitioned-coverage.sub.html": {
     "total": 31

@@ -196,9 +196,6 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         return (builtinSets, importedStringModule);
     }
 
-    /// <summary>https://webassembly.github.io/spec/js-api/#validate-builtin-set-names: the builtin sets of the JS String Builtins are not implemented.</summary>
-    internal static bool AreValidBuiltinSetNames(string[] builtinSets) => builtinSets.Distinct(StringComparer.Ordinal).Count() == builtinSets.Length;
-
     /// <summary>https://webassembly.github.io/spec/js-api/#dom-webassembly-validate</summary>
     private TValue WasmValidate(ReadOnlySpan<TValue> arguments)
     {
@@ -206,8 +203,25 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             throw NotEnoughArguments("validate", 1, arguments.Length);
 
         var bytes = ToWasmBytes(arguments[0]);
-        var (builtinSets, _) = ToWasmCompileOptions(arguments, 1);
-        return Adapter.FromBoolean(WebAssemblyRuntime!.Validate(bytes) && AreValidBuiltinSetNames(builtinSets));
+        var (builtinSets, importedStringModule) = ToWasmCompileOptions(arguments, 1);
+        if (!WebAssemblyRuntime!.Validate(bytes))
+            return Adapter.FromBoolean(false);
+
+        // The imports of the module are validated against the builtin sets and the imported string constants
+        if (builtinSets.Length == 0 && importedStringModule is null)
+            return Adapter.FromBoolean(true);
+
+        WasmModule module;
+        try
+        {
+            module = WebAssemblyRuntime.Compile(bytes);
+        }
+        catch (WasmCompileException)
+        {
+            return Adapter.FromBoolean(false);
+        }
+
+        return Adapter.FromBoolean(ValidateWasmBuiltinsAndImportedStrings(module, builtinSets, importedStringModule));
     }
 
     /// <summary>https://webassembly.github.io/spec/js-api/#dom-webassembly-compile</summary>
@@ -257,9 +271,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             {
                 onError(ToJsError(CreateWasmError("CompileError", exception.Message)));
             }
-            else if (!AreValidBuiltinSetNames(options.BuiltinSets))
+            else if (!ValidateWasmBuiltinsAndImportedStrings(module!, options.BuiltinSets, options.ImportedStringModule))
             {
-                onError(ToJsError(CreateWasmError("CompileError", "The builtin set names are not valid")));
+                onError(ToJsError(CreateWasmError("CompileError", "The builtins or the imported string constants of the module are not valid")));
             }
             else
             {
@@ -372,6 +386,18 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         var functionIndex = 0;
         foreach (var import in moduleImports)
         {
+            // The builtins and the imported string constants are provided by the host
+            if (IsWasmBuiltinOrStringImport(import, moduleObject.BuiltinSets, moduleObject.ImportedStringModule))
+            {
+                imports.Add(ReadWasmBuiltinOrStringImport(moduleObject, import));
+                if (import.Type is WasmFunctionType)
+                {
+                    functionIndex++;
+                }
+
+                continue;
+            }
+
             var o = Adapter.Get(importObject!, Key(import.Module));
             if (!Adapter.IsObject(o))
                 throw CreateTypeError($"The import object has no object for the module '{import.Module}'");
@@ -568,9 +594,94 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             ?? throw new NotSupportedException("The script engine cannot create an ArrayBuffer of the bytes of a memory");
     }
 
-    /// <summary>https://webassembly.github.io/spec/js-api/#refresh-the-memory-buffer: the buffer is detached and replaced.</summary>
+    /// <summary>
+    /// https://webassembly.github.io/spec/js-api/#create-a-resizable-memory-buffer: its maximum byte length is the maximum
+    /// size of the memory, and its <c>resize()</c> grows the memory (HostResizeArrayBuffer).
+    /// </summary>
+    private TValue CreateWasmResizableMemoryBuffer(WebAssemblyMemoryObject memoryObject)
+    {
+        var memory = memoryObject.Memory!;
+        var maxByteLength = GetWasmMemoryMaxByteLength(memoryObject);
+        return Adapter.RunInRealm(EngineRealm, () => Adapter.CreateResizableArrayBufferWithData(memory.Data, maxByteLength, MemoryDetachKey, (_, newByteLength) => ResizeWasmMemoryBuffer(memoryObject, newByteLength)))
+            ?? throw CreateTypeError("The script engine cannot create a resizable ArrayBuffer of the bytes of a memory");
+    }
+
+    /// <summary>
+    /// The buffer of a shared memory (https://webassembly.github.io/spec/js-api/#create-a-fixed-length-memory-buffer and
+    /// https://webassembly.github.io/spec/js-api/#create-a-resizable-memory-buffer): a frozen <c>SharedArrayBuffer</c> of the
+    /// data block of the memory, fixed-length (of the current size of the memory) or growable (its <c>grow()</c> grows the
+    /// memory, HostGrowSharedArrayBuffer).
+    /// </summary>
+    internal TValue CreateWasmSharedMemoryBuffer(WebAssemblyMemoryObject memoryObject, bool resizable)
+    {
+        var dataBlock = memoryObject.SharedDataBlock!;
+        var byteLength = Adapter.GetSharedDataBlockByteLength(dataBlock);
+        var buffer = Adapter.RunInRealm(EngineRealm, () => resizable
+            ? Adapter.CreateGrowableSharedArrayBuffer(dataBlock, (_, newByteLength) => ResizeWasmMemoryBuffer(memoryObject, newByteLength))
+            : Adapter.CreateFixedLengthSharedArrayBuffer(dataBlock, byteLength))
+            ?? throw CreateTypeError("The script engine cannot create a SharedArrayBuffer of the bytes of a memory");
+        _wasmObjectFreeze ??= EvaluateBuiltIn("Object.freeze");
+        Adapter.Call(_wasmObjectFreeze, Adapter.Undefined, [buffer]);
+        if (!resizable)
+        {
+            memoryObject.SharedBufferByteLength = byteLength;
+        }
+
+        return buffer;
+    }
+
+    /// <summary>
+    /// https://webassembly.github.io/threads/js-api/#dom-memory-buffer: the buffer of a shared memory reflects the current
+    /// size of its data block, which another <c>WebAssembly.Memory</c> object of the block (e.g. a structured clone, possibly
+    /// in another agent) may have grown: the fixed-length buffer is refreshed when the block has grown since it was created.
+    /// </summary>
+    internal TValue GetWasmMemoryBuffer(WebAssemblyMemoryObject memoryObject)
+    {
+        if (memoryObject is { SharedDataBlock: { } dataBlock, IsBufferResizable: false } && Adapter.GetSharedDataBlockByteLength(dataBlock) != memoryObject.SharedBufferByteLength)
+        {
+            RefreshWasmMemoryBuffer(memoryObject);
+        }
+
+        return (TValue)memoryObject.BufferObject!;
+    }
+
+    /// <summary>The maximum byte length of the resizable buffer of a memory: the maximum size of the memory.</summary>
+    private int GetWasmMemoryMaxByteLength(WebAssemblyMemoryObject memoryObject)
+    {
+        if (memoryObject.Maximum is not { } maximum)
+            throw CreateTypeError("The memory has no maximum");
+
+        if (maximum > (ulong)Array.MaxLength / WasmPageSize)
+            throw CreateRangeError("The maximum size of the memory is too large for a resizable buffer");
+
+        return (int)(maximum * WasmPageSize);
+    }
+
+    private const ulong WasmPageSize = 65536;
+
+    /// <summary>
+    /// https://webassembly.github.io/spec/js-api/#refresh-the-memory-buffer: a fixed-length buffer is replaced (the
+    /// <c>ArrayBuffer</c> is detached), a resizable one gets the new bytes of the memory.
+    /// </summary>
     internal void RefreshWasmMemoryBuffer(WebAssemblyMemoryObject memoryObject)
     {
+        if (memoryObject.IsShared)
+        {
+            // The growable SharedArrayBuffer tracks the size of the data block
+            if (!memoryObject.IsBufferResizable)
+            {
+                memoryObject.BufferObject = CreateWasmSharedMemoryBuffer(memoryObject, resizable: false);
+            }
+
+            return;
+        }
+
+        if (memoryObject.IsBufferResizable && memoryObject.BufferObject is TValue resizableBuffer)
+        {
+            Adapter.SetArrayBufferData(resizableBuffer, memoryObject.Memory!.Data);
+            return;
+        }
+
         if (memoryObject.BufferObject is TValue buffer)
         {
             Adapter.DetachArrayBuffer(buffer);
@@ -578,6 +689,113 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         memoryObject.BufferObject = CreateWasmMemoryBuffer(memoryObject.Memory!.Data);
     }
+
+    /// <summary>https://webassembly.github.io/spec/js-api/#dom-memory-grow: grows the memory and returns its previous size in pages.</summary>
+    internal ulong GrowWasmMemory(WebAssemblyMemoryObject memoryObject, ulong delta)
+    {
+        if (memoryObject.Memory is { } memory)
+        {
+            var previousBuffer = memoryObject.BufferObject;
+            var previousSize = WasmCall(() => memory.Grow(delta));
+
+            // https://webassembly.github.io/spec/js-api/#grow-the-memory-buffer: the buffer is refreshed, even when the memory did not move
+            if (ReferenceEquals(previousBuffer, memoryObject.BufferObject))
+            {
+                RefreshWasmMemoryBuffer(memoryObject);
+            }
+
+            return previousSize;
+        }
+
+        // The agents that share the memory can grow it concurrently: the block grows by the delta and returns its previous
+        // size atomically (mem_grow on a shared memory is atomic), so that no requested page is lost
+        var dataBlock = memoryObject.SharedDataBlock!;
+        var maxByteLength = memoryObject.Maximum!.Value * WasmPageSize;
+        if (delta > maxByteLength / WasmPageSize || !Adapter.GrowSharedDataBlock(dataBlock, (int)(delta * WasmPageSize), out var previousByteLength))
+            throw CreateRangeError("The memory cannot grow");
+
+        RefreshWasmMemoryBuffer(memoryObject);
+        return (ulong)previousByteLength / WasmPageSize;
+    }
+
+    /// <summary>
+    /// HostResizeArrayBuffer and HostGrowSharedArrayBuffer for the resizable buffer of a memory
+    /// (https://webassembly.github.io/spec/js-api/#sec-hostresizearraybuffer): the memory grows by whole pages, and never shrinks.
+    /// </summary>
+    private void ResizeWasmMemoryBuffer(WebAssemblyMemoryObject memoryObject, int newByteLength)
+    {
+        if ((ulong)newByteLength % WasmPageSize != 0)
+            throw CreateRangeError("The buffer of a memory can only grow by a multiple of the page size");
+
+        if (memoryObject.SharedDataBlock is { } dataBlock)
+        {
+            // https://webassembly.github.io/threads/js-api/#sec-hostgrowsharedarraybuffer: the agents that share the memory can
+            // grow it concurrently, so the block grows to the new length atomically (a delta computed from a length read
+            // before would grow it twice). As for SharedArrayBuffer.prototype.grow, a racing grow to the same length succeeds,
+            // and a grow to a smaller length throws (https://tc39.es/ecma262/#sec-hostgrowsharedarraybuffer).
+            if (!Adapter.GrowSharedDataBlockTo(dataBlock, newByteLength))
+                throw CreateRangeError("The memory cannot grow");
+
+            RefreshWasmMemoryBuffer(memoryObject);
+            return;
+        }
+
+        var byteLength = (ulong)memoryObject.Memory!.Data.Length;
+        if ((ulong)newByteLength < byteLength)
+            throw CreateRangeError("The buffer of a memory can only grow by a multiple of the page size");
+
+        try
+        {
+            GrowWasmMemory(memoryObject, ((ulong)newByteLength - byteLength) / WasmPageSize);
+        }
+        catch (Exception ex) when (ex is WasmAllocationException)
+        {
+            throw CreateRangeError("The memory cannot grow");
+        }
+    }
+
+    /// <summary>https://webassembly.github.io/spec/js-api/#dom-memory-tofixedlengthbuffer</summary>
+    internal TValue ToWasmFixedLengthMemoryBuffer(WebAssemblyMemoryObject memoryObject)
+    {
+        if (!memoryObject.IsBufferResizable)
+            return GetWasmMemoryBuffer(memoryObject);
+
+        if (memoryObject.IsShared)
+        {
+            memoryObject.BufferObject = CreateWasmSharedMemoryBuffer(memoryObject, resizable: false);
+        }
+        else
+        {
+            Adapter.DetachArrayBuffer((TValue)memoryObject.BufferObject!);
+            memoryObject.BufferObject = CreateWasmMemoryBuffer(memoryObject.Memory!.Data);
+        }
+
+        memoryObject.IsBufferResizable = false;
+        return (TValue)memoryObject.BufferObject;
+    }
+
+    /// <summary>https://webassembly.github.io/spec/js-api/#dom-memory-toresizablebuffer: the memory must have a maximum.</summary>
+    internal TValue ToWasmResizableMemoryBuffer(WebAssemblyMemoryObject memoryObject)
+    {
+        if (memoryObject.IsBufferResizable)
+            return (TValue)memoryObject.BufferObject!;
+
+        if (memoryObject.IsShared)
+        {
+            GetWasmMemoryMaxByteLength(memoryObject);
+            memoryObject.BufferObject = CreateWasmSharedMemoryBuffer(memoryObject, resizable: true);
+        }
+        else
+        {
+            var buffer = CreateWasmResizableMemoryBuffer(memoryObject);
+            Adapter.DetachArrayBuffer((TValue)memoryObject.BufferObject!);
+            memoryObject.BufferObject = buffer;
+        }
+
+        memoryObject.IsBufferResizable = true;
+        return (TValue)memoryObject.BufferObject;
+    }
+
 
     // ----------------------------------------------------------------------------------------------------------------
     // Exported Functions and host functions

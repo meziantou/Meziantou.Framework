@@ -26,12 +26,18 @@ public sealed partial class DomEventLoop
             _taskScriptEvaluationWindows = [window];
             if (ReferenceEquals(TimeProvider, TimeProvider.System))
             {
-                ObserveTimestamp(TimeProvider.GetTimestamp());
+                ObserveTimestamp(ObserveClock(TimeProvider.GetTimestamp()));
             }
         }
         else if (!_taskScriptEvaluationWindows.Contains(window))
         {
             _taskScriptEvaluationWindows.Add(window);
+        }
+
+        // The scripts of the window run in its long animation frame
+        if (window.CurrentFrameTimingInfo is not { InCurrentTask: true })
+        {
+            RecordFrameTask(window);
         }
     }
 
@@ -41,7 +47,7 @@ public sealed partial class DomEventLoop
     /// </summary>
     internal long GetTimestamp()
     {
-        var timestamp = TimeProvider.GetTimestamp();
+        var timestamp = ObserveClock(TimeProvider.GetTimestamp());
         if (_taskScriptEvaluationWindows is not null)
         {
             ObserveTimestamp(timestamp);
@@ -80,6 +86,11 @@ public sealed partial class DomEventLoop
     /// </summary>
     internal TaskScope EnterTask()
     {
+        if (_taskDepth == 0)
+        {
+            StartFrameTask();
+        }
+
         _taskDepth++;
         return new TaskScope(this);
     }
@@ -87,13 +98,19 @@ public sealed partial class DomEventLoop
     private void ExitTask()
     {
         _taskDepth--;
-        if (_taskDepth > 0 || _taskScriptEvaluationWindows is not { } windows)
+        if (_taskDepth > 0)
             return;
 
-        if (ReferenceEquals(TimeProvider, TimeProvider.System))
+        var windows = _taskScriptEvaluationWindows;
+        if (windows is not null && ReferenceEquals(TimeProvider, TimeProvider.System))
         {
-            ObserveTimestamp(TimeProvider.GetTimestamp());
+            ObserveTimestamp(ObserveClock(TimeProvider.GetTimestamp()));
         }
+
+        // The long animation frames are timed from the same reads of the clock
+        OnFrameTaskEnded();
+        if (windows is null)
+            return;
 
         _taskScriptEvaluationWindows = null;
         var timed = _taskTimed;

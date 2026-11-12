@@ -1413,7 +1413,7 @@ internal sealed partial class BoxTreeBuilder
     /// <summary>Appends the box of a ::before or ::after pseudo-element, generated when its content is not none (https://drafts.csswg.org/css-pseudo-4/#generated-content).</summary>
     private void BuildPseudoElement(Element element, string pseudoElement, ContainerBox parent)
     {
-        if (_engine.MayHavePseudoElementRules(element, pseudoElement))
+        if (_engine.MayHaveGeneratedContent(element, pseudoElement))
         {
             BuildPseudoElementBox(element, pseudoElement, parent);
         }
@@ -1567,6 +1567,7 @@ internal sealed partial class BoxTreeBuilder
         _text.Clear();
         var values = CssParser.ParseListOfComponentValues(content, out var input);
         var soleImage = GetReplacementImage(style) is not null;
+        var hasString = false;
         foreach (var value in values)
         {
             switch (value)
@@ -1576,6 +1577,7 @@ internal sealed partial class BoxTreeBuilder
 
                 case CssPreservedToken { Type: CssTokenType.String } text:
                     _text.Append(text.Token.Value);
+                    hasString = true;
                     break;
 
                 case CssPreservedToken slash when slash.Token.IsDelim('/'):
@@ -1598,6 +1600,15 @@ internal sealed partial class BoxTreeBuilder
                     parent.AppendChild(new ContainerBox(ContainerBoxKind.Replaced, soleImage && !HasNaturalDimensions(image) ? GetGeneratedImageStyle(style) : GetAnonymousStyle(style), Display.Inline, element, pseudoElement) { GeneratedImage = image });
                     break;
             }
+        }
+
+        // As in Blink, an empty string is a text in a flex or grid container: it is wrapped in an anonymous item (see
+        // FixupFlexOrGridContainer), e.g. the item that a ::after { content: '' } grid container places in its first track
+        // (WPT scroll-animations/responsive/repaint-after-finished.html)
+        if (_text.Length == 0 && hasString && parent.Kind != ContainerBoxKind.TableGrid && (parent.Display.IsFlexContainer || parent.Display.IsGridContainer))
+        {
+            parent.AppendChild(new TextRun(style, element, pseudoElement, TextRunKind.Generated, node: null, string.Empty, 0, 0));
+            return;
         }
 
         FlushContentText(parent, style, element, pseudoElement);
@@ -2653,7 +2664,7 @@ internal sealed partial class BoxTreeBuilder
     /// https://drafts.csswg.org/css-flexbox-1/#flex-items, https://drafts.csswg.org/css-grid-2/#grid-items: each in-flow child
     /// is an item (the children are blockified by the computed display), and each sequence of text runs (and of other
     /// inline-level boxes, e.g. the images of the generated content) is wrapped in an anonymous block item, unless it
-    /// contains only white space.
+    /// contains only white space (that is not generated content).
     /// </summary>
     private void FixupFlexOrGridContainer(ContainerBox box)
     {
@@ -2679,7 +2690,8 @@ internal sealed partial class BoxTreeBuilder
         if (run.Count == 0)
             return;
 
-        if (run.Exists(item => item is not TextRun text || !TextRun.IsWhiteSpace(text.Text)))
+        // (as in Blink, a generated text is an item even when it is empty or only contains white space)
+        if (run.Exists(item => item is not TextRun text || text.Kind == TextRunKind.Generated || !TextRun.IsWhiteSpace(text.Text)))
         {
             var anonymous = CreateAnonymousBox(box, Display.Block);
             anonymous.ChildrenAreInline = true;
@@ -2912,6 +2924,21 @@ internal sealed partial class BoxTreeBuilder
         {
             if (child is not ContainerBox container || container.IsOutOfFlow)
                 continue;
+
+            if (container.Display is { Outside: DisplayOutside.Block, Inside: DisplayInside.Flow, Internal: DisplayInternal.None } && container.Style.Layout.Display.Inside == DisplayInside.Ruby
+                && container.FirstChild is ContainerBox { Kind: ContainerBoxKind.Anonymous, Display.Inside: DisplayInside.Ruby, NextSibling: null } rubyContainer)
+            {
+                // A block-level ruby container (see WrapBlockRubyContents) is inlinified to an inline-level ruby container ("display:
+                // block ruby" becomes "display: ruby"): its principal box is the ruby container (WPT css/css-ruby/block-ruby-005.html)
+                container.Display = container.Display with { Outside = DisplayOutside.Inline, Inside = DisplayInside.Ruby };
+                container.RemoveChild(rubyContainer);
+                foreach (var rubyChild in rubyContainer.DetachChildren())
+                {
+                    container.AppendChild(rubyChild);
+                }
+
+                continue;
+            }
 
             if (container.Display.Outside == DisplayOutside.Block && container.Display.Internal == DisplayInternal.None)
             {

@@ -469,26 +469,7 @@ public sealed class Font
 
     private static FontMetrics CreateMetrics(FontFace face)
     {
-        int ascender;
-        int descender;
-        int lineGap;
-        if (face.HasOs2 && face.UseTypoMetrics)
-        {
-            (ascender, descender, lineGap) = (face.TypoAscender, face.TypoDescender, face.TypoLineGap);
-        }
-        else if (face.HorizontalAscender != 0 || face.HorizontalDescender != 0)
-        {
-            (ascender, descender, lineGap) = (face.HorizontalAscender, face.HorizontalDescender, face.HorizontalLineGap);
-        }
-        else if (face.HasOs2 && (face.TypoAscender != 0 || face.TypoDescender != 0))
-        {
-            (ascender, descender, lineGap) = (face.TypoAscender, face.TypoDescender, face.TypoLineGap);
-        }
-        else
-        {
-            // The Windows descent is a distance, the others are coordinates.
-            (ascender, descender, lineGap) = (face.WinAscent, -face.WinDescent, 0);
-        }
+        var (ascender, descender, lineGap) = face.GetLineMetrics();
 
         // The defaults of the lines a font does not declare are fractions of the em.
         double unitsPerEm = face.UnitsPerEm;

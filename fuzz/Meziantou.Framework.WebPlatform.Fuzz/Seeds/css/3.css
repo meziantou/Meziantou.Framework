@@ -1,0 +1,3 @@
+a { corner: 10px bevel; corner-top: 10px 20px / 5px bevel scoop; corner-top-left: 10px / 5px notch; corner-block-start: round 10% / 2rem; }
+b { corner: square bevel bevel square 10px / 50%; corner-shape: bevel; corner: 0% bevel; corner-inline-end: superellipse(-0.5) 4px 2%; }
+c { corner: 10px round / 20px bevel; corner-top-left: 10px 5px / 3px; corner: round 10px round; corner-top: bevel scoop round; }

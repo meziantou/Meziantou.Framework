@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Metadata;
@@ -439,6 +440,13 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
     {
         var width = Width;
         var limit = buffer.Length - QoiFormat.MaxChunkLength;
+
+        // A chunk starts at most at "limit" and is at most MaxChunkLength bytes long; an index tag and a hash are below 64;
+        // the pixels are written from "column" to the end of the row
+        Debug.Assert(index.Length == QoiFormat.IndexLength);
+        Debug.Assert(row.Length >= width * (typeof(TChannels) == typeof(RgbaRow) ? 4 : 3));
+        Debug.Assert(column >= 0 && column <= width);
+        Debug.Assert(position >= 0);
         ref var source = ref unsafe(MemoryMarshal.GetReference(buffer));
         ref var entries = ref unsafe(MemoryMarshal.GetReference(index));
         ref var destination = ref unsafe(MemoryMarshal.GetReference(row));
@@ -613,7 +621,8 @@ internal sealed class QoiStructureParser : ImageParser<ImageInfo>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Write(ref byte row, int x, uint value)
         {
-            unsafe { Unsafe.Add(ref Unsafe.As<byte, uint>(ref row), x) = value; }
+            // The row is a byte buffer: nothing guarantees the alignment of a 32-bit store
+            unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref row, x * 4), value); }
         }
     }
 }

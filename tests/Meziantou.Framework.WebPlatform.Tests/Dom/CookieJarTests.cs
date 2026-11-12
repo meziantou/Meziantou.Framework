@@ -200,6 +200,46 @@ public sealed class CookieJarTests
     }
 
     [Fact]
+    public void OriginBoundCookies_AreBoundToTheSchemeAndThePortThatSetThem()
+    {
+        var jar = new CookieJar { OriginBound = true };
+        Assert.True(jar.SetCookie("https://example.com/", "a=secure"));
+        Assert.True(jar.SetCookie("http://example.com/", "a=non-secure"));
+        Assert.True(jar.SetCookie("http://example.com:8080/", "a=port-8080"));
+        Assert.True(jar.SetCookie("http://example.com:8080/", "domain=1; Domain=example.com"));
+
+        // The cookies of the same name set by another scheme or another port do not replace each other
+        Assert.Equal(4, jar.GetCookies().Count);
+        Assert.Equal("a=secure", GetCookieHeader(jar, "https://example.com/"));
+        Assert.Equal("a=non-secure; domain=1", GetCookieHeader(jar, "http://example.com/"));
+        Assert.Equal("a=port-8080; domain=1", GetCookieHeader(jar, "http://example.com:8080/"));
+
+        // A cookie with a Domain attribute is not bound to the port, but it is bound to the scheme
+        Assert.Equal("domain=1", GetCookieHeader(jar, "http://www.example.com:8081/"));
+        Assert.Null(GetCookieHeader(jar, "https://www.example.com/"));
+
+        var cookie = jar.GetCookies().First(cookie => cookie.Value == "port-8080");
+        Assert.Equal(CookieSourceScheme.NonSecure, cookie.SourceScheme);
+        Assert.Equal(8080, cookie.SourcePort);
+        Assert.True(jar.Remove(cookie));
+        Assert.Equal("a=non-secure; domain=1", GetCookieHeader(jar, "http://example.com/"));
+        Assert.Equal("domain=1", GetCookieHeader(jar, "http://example.com:8080/"));
+    }
+
+    [Fact]
+    public void OriginBoundCookies_AreDisabledByDefault()
+    {
+        var jar = new CookieJar();
+        Assert.True(jar.SetCookie("https://example.com/", "a=secure"));
+        Assert.True(jar.SetCookie("http://example.com:8080/", "a=port-8080"));
+
+        var cookie = Assert.Single(jar.GetCookies());
+        Assert.Equal("port-8080", cookie.Value);
+        Assert.Equal(CookieSourceScheme.NonSecure, cookie.SourceScheme);
+        Assert.Equal("a=port-8080", GetCookieHeader(jar, "https://example.com/"));
+    }
+
+    [Fact]
     public void Remove_And_Clear_RemoveTheCookies()
     {
         var jar = new CookieJar();

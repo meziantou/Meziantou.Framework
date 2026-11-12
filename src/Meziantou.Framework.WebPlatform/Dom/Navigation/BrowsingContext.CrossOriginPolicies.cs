@@ -18,6 +18,8 @@ internal sealed record ReplacedBrowsingContext(BrowsingContextInstance Instance,
 /// </summary>
 internal sealed class BrowsingContextInstance
 {
+    private static long s_lastVirtualGroupId;
+
     private BrowsingContext _navigable;
     private Window? _discardedWindow;
 
@@ -25,6 +27,25 @@ internal sealed class BrowsingContextInstance
     {
         _navigable = navigable;
     }
+
+    /// <summary>The navigable of the browsing context.</summary>
+    public BrowsingContext Navigable => _navigable;
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/document-sequences.html#virtual-browsing-context-group-id: the browsing context
+    /// group the browsing context would be in if the report-only opener policies were enforced. The accesses between windows
+    /// of different virtual groups are reported (<see cref="OpenerPolicyReporting"/>).
+    /// </summary>
+    public long VirtualGroupId { get; set; } = CreateVirtualGroupId();
+
+    /// <summary>https://html.spec.whatwg.org/multipage/document-sequences.html#browsing-context-initial-url: the URL of the first response navigated to from the initial about:blank document, or null.</summary>
+    public UrlRecord? InitialUrl { get; set; }
+
+    /// <summary>https://html.spec.whatwg.org/multipage/document-sequences.html#opener-origin-at-creation: the origin of the document of the opener when the auxiliary browsing context was created, or null.</summary>
+    public OriginRecord? OpenerOriginAtCreation { get; set; }
+
+    /// <summary>Returns a new unique virtual browsing context group ID.</summary>
+    public static long CreateVirtualGroupId() => Interlocked.Increment(ref s_lastVirtualGroupId);
 
     /// <summary>Whether a browsing context group switch replaced this browsing context.</summary>
     public bool IsDiscarded { get; private set; }
@@ -106,6 +127,52 @@ public sealed partial class BrowsingContext
         }
     }
 
+    /// <summary>Whether the browsing context group of the top-level browsing context has other top-level browsing contexts (https://html.spec.whatwg.org/multipage/browsers.html#coop-enforce, the size of the browsing context set).</summary>
+    internal bool HasOtherBrowsingContextsInGroup()
+    {
+        var top = Top;
+        var group = top.Group;
+        foreach (var topLevel in top.GetGroupTopLevelBrowsingContexts())
+        {
+            if (!ReferenceEquals(topLevel, top) && !topLevel.IsDestroyed && ReferenceEquals(topLevel.Group, group))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Queues a <c>coop</c> report of a navigation of the navigable (https://html.spec.whatwg.org/multipage/browsers.html#coop-violation-navigation-to
+    /// and https://html.spec.whatwg.org/multipage/browsers.html#coop-violation-navigation-from) for the endpoint named
+    /// <paramref name="endpointName"/> of a response or of a document, with its URL: no document holds the endpoints of a
+    /// response that is not loaded yet (or of a redirect), so the report is delivered directly, from a task of the event loop
+    /// of the navigable whose document is the client of the request. The report is not given to the reporting observers.
+    /// </summary>
+    internal void QueueOpenerPolicyNavigationReport(UrlRecord url, List<ReportingEndpoint>? endpoints, string? endpointName, OpenerPolicyReportBody body)
+    {
+        if (endpointName is null || endpoints?.Find(endpoint => endpoint.Name == endpointName) is not { } endpoint)
+            return;
+
+        var report = new QueuedReport
+        {
+            Body = body,
+            Url = ContentSecurityPolicyViolation.StripUrlForUseInReports(url),
+            UserAgent = Options.EffectiveUserAgent,
+            Destination = endpointName,
+            Type = "coop",
+            Timestamp = EventLoop.TimeProvider.GetUtcNow(),
+        };
+
+        var origin = OriginRecord.FromUrl(url).Serialize();
+        QueueTask(() =>
+        {
+            if (!IsDestroyed)
+            {
+                GlobalScope.DeliverReports(Document, this, endpoint, origin, [report], processResponse: null);
+            }
+        });
+    }
+
     /// <summary>
     /// Whether the navigable belongs to another browsing context group than this one, and cannot be found by its name
     /// (https://html.spec.whatwg.org/multipage/document-sequences.html#find-a-navigable-by-target-name).
@@ -140,6 +207,7 @@ public sealed partial class BrowsingContext
         if (sourceDocument?.BrowsingContext is { } sourceNavigable && OriginRecord.IsSameOrigin(sourceDocument.Origin, sourceDocument.TopLevelOrigin))
         {
             parameters.OpenerPolicy = sourceNavigable.Top.Document.OpenerPolicy;
+            parameters.OpenerPolicyReportingDocument = sourceNavigable.Top.Document.OpenerPolicyReportingDocument ?? sourceNavigable.Top.Document;
         }
     }
 
@@ -150,7 +218,7 @@ public sealed partial class BrowsingContext
     /// browsing context group. Returns false when the response is a network error: a sandboxed document cannot have an
     /// opener policy.
     /// </summary>
-    private bool ApplyOpenerPolicy(UrlRecord url, DocumentParameters parameters, IReadOnlyList<KeyValuePair<string, string>> headers)
+    private bool ApplyOpenerPolicy(UrlRecord url, DocumentParameters parameters, IReadOnlyList<KeyValuePair<string, string>> headers, string? referrer = null)
     {
         if (Parent is not null)
             return true;
@@ -167,11 +235,26 @@ public sealed partial class BrowsingContext
         }
 
         // The policy is enforced for each response of a navigation, including the redirects
+        // The first result is the one of the active document, whose reports have the URL and the endpoints of the document
+        // whose opener policy it inherited (e.g. the opener of a popup), and it is the navigation source when that document
+        // initiated the navigation
         var activeDocument = Document;
         var responseCoop = parameters.OpenerPolicy ?? OpenerPolicy.Obtain(headers, ReferrerPolicies.IsPotentiallyTrustworthy(url));
-        var enforcementResult = parameters.OpenerPolicyEnforcementResult ?? new OpenerPolicyEnforcementResult(activeDocument.UrlRecord, activeDocument.Origin, activeDocument.OpenerPolicy);
+        var enforcementResult = parameters.OpenerPolicyEnforcementResult;
+        if (enforcementResult is null)
+        {
+            var reportingDocument = activeDocument.OpenerPolicyReportingDocument ?? activeDocument;
+            enforcementResult = new OpenerPolicyEnforcementResult(
+                reportingDocument.UrlRecord,
+                activeDocument.Origin,
+                activeDocument.OpenerPolicy,
+                CurrentContextIsNavigationSource: parameters.SourceDocument is { } sourceDocument && (ReferenceEquals(sourceDocument, activeDocument) || ReferenceEquals(sourceDocument, reportingDocument)),
+                ReportingEndpoints: reportingDocument.RelevantWindow?.ReportingEndpoints);
+        }
+
+        var responseEndpoints = responseCoop.ReportingEndpoint is null && responseCoop.ReportOnlyReportingEndpoint is null ? null : ReportingEndpoint.Process(headers, url);
         parameters.OpenerPolicy = responseCoop;
-        parameters.OpenerPolicyEnforcementResult = enforcementResult.Enforce(activeDocument.IsInitialAboutBlank, url, responseOrigin, responseCoop);
+        parameters.OpenerPolicyEnforcementResult = enforcementResult.Enforce(this, activeDocument.IsInitialAboutBlank, url, responseOrigin, responseCoop, responseEndpoints, referrer ?? parameters.Referrer);
 
         // The sandboxing flags of the navigable (e.g. inherited from a sandboxed opener) and an opener policy cannot be
         // combined. The browsers do not apply the check to the flags of the CSP of the response, whose document has an

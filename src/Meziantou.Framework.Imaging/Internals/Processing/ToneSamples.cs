@@ -55,6 +55,19 @@ internal static class ToneSamples
     public const int PartialCountLength = 4 * 512;
 
     /// <summary>
+    /// Rents the cleared partial counters of <paramref name="planes"/> planes (8 KB per plane, too much for the stack of a
+    /// worker thread).
+    /// </summary>
+    /// <param name="scope">The scope charged for the counters.</param>
+    /// <param name="planes">The number of planes.</param>
+    /// <returns>The counters, read with <see cref="GetPartialCounts"/>.</returns>
+    public static PooledBuffer RentPartialCounts(AllocationScope scope, int planes)
+        => scope.Rent(planes * PartialCountLength * sizeof(uint), AllocationKind.Temporary, clear: true);
+
+    /// <summary>Gets the partial counters of <paramref name="planes"/> planes rented by <see cref="RentPartialCounts"/>.</summary>
+    public static Span<uint> GetPartialCounts(PooledBuffer buffer, int planes) => unsafe(MemoryMarshal.Cast<byte, uint>(buffer.Span))[..(planes * PartialCountLength)];
+
+    /// <summary>
     /// Counts levels from 0 to 511 in four partial histograms of 512 counters used in turn, so that consecutive equal
     /// levels do not wait for each other; <see cref="FlushPartialCounts"/> adds up the counters of the levels 0 to 255, the
     /// others count the values set aside by <see cref="MarkTransparent"/>.

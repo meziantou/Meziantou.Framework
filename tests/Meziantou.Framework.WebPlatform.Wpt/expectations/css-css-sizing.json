@@ -633,7 +633,7 @@
     "reftest": "PASS"
   },
   "css/css-sizing/aspect-ratio/grid-aspect-ratio-027.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/aspect-ratio/grid-aspect-ratio-028.html": {
     "reftest": "PASS"
@@ -1890,7 +1890,7 @@
     "reftest": "PASS"
   },
   "css/css-sizing/range-percent-intrinsic-size-1.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/range-percent-intrinsic-size-2.html": {
     "reftest": "PASS"

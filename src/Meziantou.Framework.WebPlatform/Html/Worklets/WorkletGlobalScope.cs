@@ -57,13 +57,15 @@ public abstract class WorkletGlobalScope : GlobalScope
         if (IsTerminated)
             return;
 
-        EventLoop.QueueTask(() =>
+        EventLoop.QueueTask(() => RunGlobalTask(task));
+    }
+
+    internal override void RunGlobalTask(Action task)
+    {
+        if (CanRunScript)
         {
-            if (CanRunScript)
-            {
-                task();
-            }
-        });
+            task();
+        }
     }
 
     /// <inheritdoc/>

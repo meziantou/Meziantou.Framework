@@ -73,10 +73,7 @@
     "total": 5
   },
   "cookies/origin-bound-cookies/port-bound-cookies.html": {
-    "total": 1,
-    "failures": {
-      "Cookies should be bound to their origin's port.": "FAIL"
-    }
+    "total": 1
   },
   "cookies/origin-bound-cookies/scheme-bound-cookies.https.html": {
     "total": 2,

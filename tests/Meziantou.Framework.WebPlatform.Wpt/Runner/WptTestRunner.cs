@@ -154,7 +154,10 @@ internal sealed partial class WptTestRunner
         _test = test;
         _renderingBackend = renderingBackend;
         _reftestWait = reftest ? new ReftestWait(this) : null;
-        _cookieJar = new CookieJar(_clock);
+        // Origin-bound cookies are an option of the jar (the browsers do not enable them by default): the tests of the
+        // feature enable it, the other tests share the cookies of a host between its schemes and ports (e.g. the cookies
+        // of the WebSocket tests, whose server listens on another port)
+        _cookieJar = new CookieJar(_clock) { OriginBound = test.Id.StartsWith("cookies/origin-bound-cookies/", StringComparison.Ordinal) };
         _webSocketServer = new WptWebSocketServer(this);
     }
 

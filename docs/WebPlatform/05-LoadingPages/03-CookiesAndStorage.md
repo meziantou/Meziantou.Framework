@@ -29,6 +29,13 @@ Assert.Equal(["lang", "session", "theme"], names);
 - The jar follows the rules of the browsers ([RFC 6265bis](https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html)):
   `Expires` and `Max-Age`, `Domain` and `Path`, `Secure`, `HttpOnly`, `SameSite` (`Lax` by default), `Partitioned`,
   the cookie prefixes and the public suffixes. Third-party cookies are not blocked.
+- As in the browsers, the cookies of a host are shared by its schemes and its ports. Set
+  [OriginBound](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.OriginBound) (`new CookieJar { OriginBound = true }`) to bind them to the origin that set them
+  ([origin-bound cookies](https://github.com/explainers-by-googlers/origin-bound-cookies)): a cookie set by an `https`
+  page is not sent to the `http` pages of the same host, and the reverse, and a cookie without `Domain` attribute is only
+  sent to the port that set it. The cookies of the same name set by another scheme or another port do not replace each
+  other. [StoredCookie.SourceScheme](cref:Meziantou.Framework.WebPlatform.Dom.StoredCookie.SourceScheme) and [SourcePort](cref:Meziantou.Framework.WebPlatform.Dom.StoredCookie.SourcePort) give the origin that set a cookie: persist them with the
+  cookie, a cookie loaded without them is sent to every scheme and port.
 - Several browsing contexts can share a jar, as the tabs of a browser share their cookies.
 - `SetCookie(url, header)` adds a cookie as a `Set-Cookie` header does (to sign a session in before loading a page);
   `GetCookies(url)` and [GetCookies()](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.GetCookies) list them, [Remove](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.Remove) and [Clear](cref:Meziantou.Framework.WebPlatform.Dom.CookieJar.Clear) delete them.

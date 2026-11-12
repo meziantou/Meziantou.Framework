@@ -229,6 +229,40 @@ public sealed class ModelContextTests : IDisposable
     }
 
     [Fact]
+    public async Task Host_ExecuteTool_PageReplacingJsonFunctions_DoesNotChangeTheArgumentsAndTheResult()
+    {
+        var context = Load(AddTool + """
+            <script>
+            JSON.parse = () => ({ a: 100, b: 100 });
+            JSON.stringify = () => '"replaced"';
+            </script>
+            """);
+        var add = context.GetModelContextTools().Single(tool => tool.Name == "add");
+
+        var execution = context.ExecuteModelContextToolAsync(add, """{"a":1,"b":2}""");
+        Run(context);
+        Assert.Equal("""{"sum":3}""", await execution);
+    }
+
+    [Fact]
+    public void Script_ExecuteTool_CallerDetachedBySerialization_IsRejectedWithInvalidStateError()
+    {
+        var context = Load("""
+            <iframe></iframe>
+            <script>
+            document.modelContext.registerTool({ name: 'tool', description: 'Tool', execute: () => 'ok' });
+            const frame = document.querySelector('iframe');
+            const frameModelContext = frame.contentDocument.modelContext;
+            document.modelContext.getTools().then(([tool]) => {
+              frameModelContext.executeTool(tool, { toJSON() { frame.remove(); return {}; } }).then(() => document.title = 'resolved', e => document.title = e.name);
+            });
+            </script>
+            """);
+
+        Assert.Equal("InvalidStateError", Run(context));
+    }
+
+    [Fact]
     public void Script_RegisterTool_ValidatesTheTool()
     {
         var context = Load("""

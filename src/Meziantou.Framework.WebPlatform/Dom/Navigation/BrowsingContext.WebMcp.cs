@@ -22,7 +22,7 @@ public sealed partial class BrowsingContext
 
             foreach (var definition in modelContext.Tools)
             {
-                tools.Add(new Tool(definition, window, document.Origin));
+                tools.Add(new Tool(definition, document, window, document.Origin));
             }
         }
 

@@ -173,7 +173,7 @@ public sealed class ModelContext : EventTarget
             }
         }
 
-        var discoveredTools = new List<(ModelContextToolDefinition Definition, Window Window, OriginRecord Origin)>();
+        var discoveredTools = new List<(ModelContextToolDefinition Definition, Document Document, Window Window, OriginRecord Origin)>();
         var callerOrigin = _document.Origin;
         foreach (var navigable in _document.BrowsingContext!.Top.GetInclusiveDescendantNavigables())
         {
@@ -192,7 +192,7 @@ public sealed class ModelContext : EventTarget
             {
                 if (IsToolExposedToOrigin(targetOrigin, definition.ExposedOrigins, callerOrigin))
                 {
-                    discoveredTools.Add((definition, targetWindow, targetOrigin));
+                    discoveredTools.Add((definition, targetDocument, targetWindow, targetOrigin));
                 }
             }
         }
@@ -200,7 +200,7 @@ public sealed class ModelContext : EventTarget
         var promise = new TaskCompletionSource<IReadOnlyList<Tool>>();
         global.QueueGlobalTask(() =>
         {
-            var tools = discoveredTools.ConvertAll(tool => new Tool(tool.Definition, tool.Window, tool.Origin));
+            var tools = discoveredTools.ConvertAll(tool => new Tool(tool.Definition, tool.Document, tool.Window, tool.Origin));
             tools.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
             promise.TrySetResult(tools);
         });
@@ -248,6 +248,10 @@ public sealed class ModelContext : EventTarget
             return Task.FromException<string>(ex);
         }
 
+        // The serialization can run script (toJSON() methods), which can detach the document
+        if (!callerDocument.IsFullyActive || callerDocument.BrowsingContext is not { } callerNavigable)
+            return Task.FromException<string>(InvalidState("The document is not fully active"));
+
         var targetWindow = tool.TargetWindow;
         var targetDocument = targetWindow.Document;
         if (targetDocument.BrowsingContext is not { } targetNavigable)
@@ -269,7 +273,7 @@ public sealed class ModelContext : EventTarget
         }
 
         // https://github.com/webmachinelearning/webmcp/issues/227: the tools of another frame tree cannot be executed
-        if (!ReferenceEquals(targetNavigable.Top, callerDocument.BrowsingContext!.Top))
+        if (!ReferenceEquals(targetNavigable.Top, callerNavigable.Top))
         {
             global.QueueGlobalTask(() => promise.TrySetException(InvalidState("The tool belongs to another frame tree")));
             return promise.Task;
@@ -343,11 +347,14 @@ public sealed class ModelContext : EventTarget
             return;
         }
 
+        // The task can be completed on another thread (e.g. a task of the application): the state of the model context is
+        // updated by a task of the event loop
         _pendingReadinessPromises.Add(promise);
+        var document = _document;
         _ = promise.ContinueWith(settled =>
         {
             _ = settled.Exception;
-            _pendingReadinessPromises.Remove(settled);
+            document.QueueGlobalTask(() => _pendingReadinessPromises.Remove(settled));
         }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     }
 
@@ -612,11 +619,12 @@ public sealed class ModelContext : EventTarget
             toolPromise = Task.FromException<object?>(ex);
         }
 
-        // The reactions to the promise run in a microtask, after the toolactivated event
+        // The reactions to the promise run after the toolactivated event. The task of a callback of the application can be
+        // completed on another thread: the state of the executions is only used by the tasks of the event loop.
         var settledSynchronously = toolPromise.IsCompleted;
         if (!settledSynchronously)
         {
-            _ = toolPromise.ContinueWith(settled => OnToolPromiseSettled(settled, window, completionSteps, uuid), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            _ = toolPromise.ContinueWith(settled => targetDocument.QueueGlobalTask(() => OnToolPromiseSettled(settled, window, completionSteps, uuid)), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
         }
 
         // The callback can detach the document: the event is not fired at a document that is not fully active

@@ -230,8 +230,9 @@ public sealed class Tool
     private Scripting.JsonText? _outputSchemaValue;
     private Scripting.JsonText? _annotationsValue;
 
-    internal Tool(ModelContextToolDefinition definition, Window window, OriginRecord origin)
+    internal Tool(ModelContextToolDefinition definition, Document document, Window window, OriginRecord origin)
     {
+        TargetDocument = document;
         Id = definition.Id;
         Name = definition.Name;
         Title = definition.Title ?? "";
@@ -248,6 +249,9 @@ public sealed class Tool
 
     /// <summary>The window of the document that registered the tool, even when its browsing context was destroyed.</summary>
     internal Window TargetWindow => _window;
+
+    /// <summary>The document that registered the tool (a window can be reused by the document that replaces its initial about:blank document).</summary>
+    internal Document TargetDocument { get; }
 
     internal OriginRecord OriginRecord { get; }
 
@@ -317,7 +321,7 @@ public sealed class Tool
 
     /// <summary>Gets the document that registered the tool.</summary>
     [NotInIdl]
-    public Document Document => _window.Document;
+    public Document Document => TargetDocument;
 
     /// <inheritdoc/>
     public override string ToString() => Name;

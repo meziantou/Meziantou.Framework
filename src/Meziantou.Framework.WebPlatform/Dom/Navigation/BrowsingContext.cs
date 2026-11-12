@@ -3030,8 +3030,9 @@ public sealed partial class BrowsingContext : IDisposable
     /// its entry is added to the session history (<see cref="AddSessionHistoryEntry"/>), or it becomes the document of the
     /// entry that a traversal or a reload loads again.
     /// </summary>
-    private void Activate(Document document, Window window, NavigationHistoryBehavior historyHandling, string? srcdoc, SessionHistoryEntry? traversalEntry = null, string requestReferrerPolicy = "", DocumentParameters? parameters = null, bool prerenderActivation = false)
+    private void Activate(Document document, Window window, NavigationHistoryBehavior historyHandling, string? srcdoc, SessionHistoryEntry? traversalEntry = null, string requestReferrerPolicy = "", DocumentParameters? parameters = null, SessionHistoryEntry? prerenderedEntry = null)
     {
+        var prerenderActivation = prerenderedEntry is not null;
         var oldDocument = Document;
 
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#finalize-a-cross-document-navigation, step 4 (and the
@@ -3106,7 +3107,15 @@ public sealed partial class BrowsingContext : IDisposable
         }
         else
         {
+            // The entry of a prerendered document that is activated keeps the navigation API id and key of its entry in the
+            // prerendering traversable, as it is moved to this session history (https://wicg.github.io/nav-speculation/prerendering.html#activate-a-prerendering-traversable)
             entry = new SessionHistoryEntry(document.UrlRecord, new DocumentState(document) { SrcdocResource = srcdoc, PostResource = parameters?.PostResource });
+            if (prerenderedEntry is not null)
+            {
+                entry.NavigationApiId = prerenderedEntry.NavigationApiId;
+                entry.NavigationApiKey = prerenderedEntry.NavigationApiKey;
+            }
+
             AddSessionHistoryEntry(entry, historyHandling);
         }
 
@@ -3201,11 +3210,19 @@ public sealed partial class BrowsingContext : IDisposable
         if (!document.IsInitialAboutBlank)
         {
             var navigation = window.Navigation;
-            navigation.InitializeEntriesForNewDocument(GetSessionHistoryEntriesForNavigationApi(entry), entry);
+            if (prerenderedEntry is not null)
+            {
+                navigation.UpdateEntriesForPrerenderActivation(GetSessionHistoryEntriesForNavigationApi(entry), entry, prerenderedEntry);
+            }
+            else
+            {
+                navigation.InitializeEntriesForNewDocument(GetSessionHistoryEntriesForNavigationApi(entry), entry);
+            }
+
             var navigationType = traversalEntry is null
                 ? (historyHandling == NavigationHistoryBehavior.Push ? NavigationType.Push : NavigationType.Replace)
                 : (ReferenceEquals(traversalEntry, previousEntry) ? NavigationType.Reload : NavigationType.Traverse);
-            navigation.UpdateActivation(previousEntry, navigationType, document);
+            navigation.UpdateActivation(previousEntry, navigationType, document, prerenderActivation);
         }
 
         if (oldDocument is not null)

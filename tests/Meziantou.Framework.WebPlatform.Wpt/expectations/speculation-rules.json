@@ -933,28 +933,16 @@
     "total": 1
   },
   "speculation-rules/prerender/navigation-api-location-replace.https.html": {
-    "total": 1,
-    "failures": {
-      "navigation.entries() and navigation.activation should be updated on activation and handle replacing correctly": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/navigation-api-multiple-entries.https.html": {
-    "total": 1,
-    "failures": {
-      "navigation.entries() and navigation.activation should be updated on activation - multiple entries": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/navigation-api-redirect.https.html": {
-    "total": 1,
-    "failures": {
-      "NavigationPrecommitHandler.redirect() converting a navigation to push during prerender": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/navigation-api.https.html": {
-    "total": 1,
-    "failures": {
-      "navigation.entries() and navigation.activation should be updated on activation": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/navigation-intercepted-by-service-worker.https.html": {
     "total": 1

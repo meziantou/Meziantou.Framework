@@ -492,6 +492,43 @@ public sealed class Navigation : EventTarget
     }
 
     /// <summary>
+    /// The entries of a prerendered document that is activated (https://wicg.github.io/nav-speculation/prerendering.html#activate-a-prerendering-traversable:
+    /// its entry is moved to the session history of the navigable that activates it). As in Chromium (the specifications do not
+    /// say how the navigation API is updated), the entries of the navigable are added around the current entry, which keeps
+    /// its <see cref="NavigationHistoryEntry"/> object: <paramref name="activatedEntry"/> is the new session history entry of
+    /// <paramref name="prerenderedEntry"/>. The entry of the initiator that <see cref="NavigationActivation.From"/> exposed
+    /// before the activation is kept too.
+    /// </summary>
+    internal void UpdateEntriesForPrerenderActivation(IReadOnlyList<SessionHistoryEntry> newEntries, SessionHistoryEntry activatedEntry, SessionHistoryEntry prerenderedEntry)
+    {
+        if (HasEntriesAndEventsDisabled)
+            return;
+
+        var currentIndex = GetEntryIndex(prerenderedEntry);
+        var current = currentIndex >= 0 ? _entryList[currentIndex] : null;
+        var from = Activation?.From;
+        _entryList.Clear();
+        foreach (var sessionHistoryEntry in newEntries)
+        {
+            if (ReferenceEquals(sessionHistoryEntry, activatedEntry) && current is not null)
+            {
+                current.SessionHistoryEntry = activatedEntry;
+                _entryList.Add(current);
+            }
+            else if (from is not null && ReferenceEquals(from.SessionHistoryEntry, sessionHistoryEntry))
+            {
+                _entryList.Add(from);
+            }
+            else
+            {
+                _entryList.Add(new NavigationHistoryEntry(this, sessionHistoryEntry));
+            }
+        }
+
+        _currentEntryIndex = GetEntryIndex(activatedEntry);
+    }
+
+    /// <summary>
     /// https://html.spec.whatwg.org/multipage/nav-history-apis.html#update-the-navigation-api-entries-for-a-same-document-navigation:
     /// fires currententrychange and the dispose events, and runs the handlers of the intercepted navigation.
     /// </summary>
@@ -596,9 +633,9 @@ public sealed class Navigation : EventTarget
 
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/browsing-the-web.html#update-document-for-history-step-application, step 6: the
-    /// activation of a document by a cross-document navigation.
+    /// activation of a document by a cross-document navigation, or of a prerendered document (<paramref name="prerenderActivation"/>).
     /// </summary>
-    internal void UpdateActivation(SessionHistoryEntry? previousEntry, NavigationType navigationType, Document document)
+    internal void UpdateActivation(SessionHistoryEntry? previousEntry, NavigationType navigationType, Document document, bool prerenderActivation = false)
     {
         if (previousEntry is null || (navigationType != NavigationType.Reload && ReferenceEquals(previousEntry.Document, document)))
             return;
@@ -606,11 +643,27 @@ public sealed class Navigation : EventTarget
         // The activation of a document restored from the back/forward cache is updated: its previous entry is cleared when
         // the entry it comes from is not in the entry list (e.g. a cross-origin entry), as in the browsers
         var activation = Activation ??= new NavigationActivation();
+        var previousFrom = activation.From;
         activation.From = null;
         var previousEntryIndex = GetEntryIndex(previousEntry);
-        if (previousEntryIndex >= 0)
+        if (document.BrowsingContext is { Parent: null, IsPrerendering: true, PrerenderInitiator: { } initiator } && previousEntry.DocumentState.IsInitialAboutBlank
+            && initiator.BrowsingContext?.ActiveEntry is { } initiatorEntry && ReferenceEquals(initiatorEntry.Document, initiator))
+        {
+            // The activation of a prerendered document is the one it will have when the initiator activates it, as in Chromium
+            // (the specifications do not say it): a push navigation from the current entry of the initiator, which is not in
+            // the entry list
+            activation.From = new NavigationHistoryEntry(this, initiatorEntry);
+            navigationType = NavigationType.Push;
+        }
+        else if (previousEntryIndex >= 0)
         {
             activation.From = _entryList[previousEntryIndex];
+        }
+        else if (prerenderActivation && previousFrom is not null && ReferenceEquals(previousFrom.SessionHistoryEntry, previousEntry))
+        {
+            // The activation of a prerendered document by a navigation that replaces the current entry of the initiator keeps
+            // the entry it exposed before
+            activation.From = previousFrom;
         }
         else if (navigationType == NavigationType.Replace && previousEntry.DocumentState.Origin is { } origin && OriginRecord.IsSameOrigin(origin, document.Origin) && !previousEntry.DocumentState.IsInitialAboutBlank)
         {
@@ -1175,7 +1228,8 @@ public sealed class NavigationHistoryEntry : EventTarget
         SessionHistoryEntry = sessionHistoryEntry;
     }
 
-    internal SessionHistoryEntry SessionHistoryEntry { get; }
+    /// <summary>The session history entry (it changes when the entry of a prerendered document is moved to the session history of the navigable that activates it).</summary>
+    internal SessionHistoryEntry SessionHistoryEntry { get; set; }
 
     internal override Window? RelevantGlobal => _navigation.Window;
 
@@ -1395,6 +1449,12 @@ public sealed class NavigationPrecommitController
         var destinationUrl = UrlParser.Parse(url, document.DocumentBaseUrl) ?? throw new DomException($"'{url}' is not a valid URL", "SyntaxError");
         if (!History.CanHaveUrlRewritten(document.UrlRecord, destinationUrl))
             throw new DomException("The URL of the document cannot be rewritten to this URL", "SecurityError");
+
+        // The navigations of a prerendering navigable replace the current entry (https://wicg.github.io/nav-speculation/prerendering.html#navigate-activation),
+        // as the navigations of an initial about:blank document (https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigation-must-be-a-replace):
+        // as in Chromium, such a navigation cannot be converted to a push (the specifications do not say it)
+        if (options.History == NavigationHistoryBehavior.Push && (document.IsInitialAboutBlank || document.BrowsingContext is { Top.IsPrerendering: true }))
+            throw new DomException("The navigation must be a replace", "InvalidStateError");
 
         if (options.History is NavigationHistoryBehavior.Push or NavigationHistoryBehavior.Replace)
         {

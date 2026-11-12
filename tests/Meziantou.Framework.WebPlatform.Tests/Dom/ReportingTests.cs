@@ -79,6 +79,24 @@ public sealed class ReportingTests : IDisposable
     }
 
     [Fact]
+    public void IntegrityPolicy_IsInheritedWithThePolicyContainer()
+    {
+        var hash = "sha256-" + Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData("document.title += ' b'"u8));
+        Load($$"""
+            <iframe srcdoc="<script src='/a.js'></script><script src='/b.js' integrity='{{hash}}' crossorigin='anonymous'></script>"></iframe>
+            <iframe id="blank"></iframe>
+            <script>
+            const script = blank.contentDocument.createElement('script');
+            script.src = '/c.js';
+            blank.contentDocument.body.appendChild(script);
+            </script>
+            """, [new("Integrity-Policy", "blocked-destinations=(script)")]);
+
+        // The srcdoc document and the initial about:blank document inherit the integrity policy of their parent
+        Assert.Equal(["https://example.com/b.js"], _requests.Where(request => request.Url.EndsWith(".js", StringComparison.Ordinal)).Select(request => request.Url));
+    }
+
+    [Fact]
     public void Endpoints_ReportingEndpointsHeader()
     {
         var endpoints = ReportingEndpoint.Process(

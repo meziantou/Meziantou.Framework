@@ -2958,8 +2958,8 @@ public sealed partial class BrowsingContext : IDisposable
         }
 
         // https://w3c.github.io/webappsec-subresource-integrity/#parse-integrity-policy-headers: the integrity policies of the
-        // policy container of the document
-        if (!parameters.IsNetworkError)
+        // policy container of the document (the ones of an inherited policy container are set above)
+        if (parameters.PolicyContainer is null && !parameters.IsNetworkError)
         {
             document.IntegrityPolicy = IntegrityPolicy.FromHeaders(parameters.Headers, "Integrity-Policy");
             document.ReportOnlyIntegrityPolicy = IntegrityPolicy.FromHeaders(parameters.Headers, "Integrity-Policy-Report-Only");

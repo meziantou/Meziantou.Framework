@@ -63,7 +63,8 @@ fails.
 
 ## Scripting
 
-- WebAssembly threads are not supported.
+- WebAssembly threads are not supported: a shared `WebAssembly.Memory` can be created, grown and posted to the workers of
+  the agent cluster, but a module cannot import it nor declare a shared memory, and there are no atomic instructions.
 - The time spent on the styles and the layout is not measured: the long animation frames report a `styleDuration`, a
   `layoutDuration` and forced style and layout durations of 0, and no `presentationTime`.
 - The scripts run in your process: read [Running untrusted pages](06-Scripting/04-RunningUntrustedPages.md) before you

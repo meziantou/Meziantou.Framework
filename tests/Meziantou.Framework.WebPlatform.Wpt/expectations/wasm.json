@@ -1641,34 +1641,19 @@
     "total": 5
   },
   "wasm/serialization/memory/messageport-via-sharedworker-success.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Shared WebAssembly.Memory cloned through a MessagePort that round-tripped via a SharedWorker": "FAIL"
-    }
+    "total": 1
   },
   "wasm/serialization/memory/no-transferring.tentative.html": {
     "total": 6
   },
   "wasm/serialization/memory/window-nested-dedicated-worker-failure.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Shared WebAssembly.Memory sent to a dedicated worker in a SharedWorker's agent cluster fires messageerror": "FAIL"
-    }
+    "total": 1
   },
   "wasm/serialization/memory/window-sharedworker-failure.tentative.https.html": {
-    "total": 3,
-    "failures": {
-      "Shared WebAssembly.Memory from SharedWorker to window fires messageerror on the window": "FAIL",
-      "Shared WebAssembly.Memory from window to SharedWorker fires messageerror on the SharedWorker": "FAIL"
-    }
+    "total": 3
   },
   "wasm/serialization/memory/window-success.tentative.https.html": {
-    "total": 3,
-    "failures": {
-      "Cloning a shared WebAssembly.Memory through a MessageChannel": "FAIL",
-      "postMessaging a shared WebAssembly.Memory to a dedicated worker": "FAIL",
-      "postMessaging a shared WebAssembly.Memory to a same-origin iframe": "FAIL"
-    }
+    "total": 3
   },
   "wasm/serialization/module/broadcastchannel-success-and-failure.html": {
     "total": 1

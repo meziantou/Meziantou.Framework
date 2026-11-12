@@ -109,6 +109,21 @@ internal sealed class WebAssemblyExceptionObject(WasmExceptionReference exceptio
     public string? Stack { get; set; }
 }
 
+/// <summary>
+/// The serialized form of a shared <c>WebAssembly.Memory</c> (https://webassembly.github.io/threads/web-api/#serialization):
+/// the shared data block of its buffer, which can only be deserialized in the realms of the agent cluster.
+/// </summary>
+internal sealed class SerializedWasmSharedMemory(object dataBlock, ulong maximum, bool is64, object? agentCluster)
+{
+    public object DataBlock { get; } = dataBlock;
+
+    public ulong Maximum { get; } = maximum;
+
+    public bool Is64 { get; } = is64;
+
+    public object? AgentCluster { get; } = agentCluster;
+}
+
 /// <summary>The serialized form of a <c>WebAssembly.Module</c> (https://webassembly.github.io/spec/web-api/#serialization).</summary>
 internal sealed class SerializedWasmModule(WebAssemblyModuleObject module, object? agentCluster)
 {

@@ -4602,6 +4602,33 @@ public sealed class TdsQueryEngineTests
     }
 
     [Fact]
+    public async Task QueryEngine_Like_LargePattern_MatchesPattern()
+    {
+        var handler = TdsQueryEngine.CreateQueryHandler(CreateQueryEngineOptions());
+        foreach (var (pattern, expectedIds) in new (string Pattern, int[] ExpectedIds)[]
+        {
+            (new string('%', 20_000) + "_li" + new string('%', 20_000), [1]),
+            (string.Concat(Enumerable.Repeat("%[^x]", 5_000)), []),
+            ("%" + string.Concat(Enumerable.Repeat("_%", 4)), [1, 4]),
+        })
+        {
+            var result = await handler(
+                new TdsQueryContext
+                {
+                    RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, 1433),
+                    RequestType = TdsQueryRequestType.SqlBatch,
+                    CommandText = "SELECT Id FROM customers WHERE Name LIKE '" + pattern + "'",
+                    HasCompleteParameters = true,
+                },
+                CancellationToken.None);
+
+            Assert.Null(result.Error?.Message);
+            var resultSet = Assert.Single(result.ResultSets);
+            Assert.Equal(expectedIds, [.. resultSet.Rows.Select(row => Assert.IsType<int>(row[0]))]);
+        }
+    }
+
+    [Fact]
     public async Task SqlClient_QueryEngine_ScalarSubquery_CountInSelect_ReturnsCorrelatedValues()
     {
         var queryEngineOptions = CreateQueryEngineOptions();

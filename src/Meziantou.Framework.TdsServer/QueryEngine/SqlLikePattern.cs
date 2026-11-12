@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.Tds.QueryEngine;
 
@@ -11,9 +10,6 @@ namespace Meziantou.Framework.Tds.QueryEngine;
 /// </remarks>
 internal static class SqlLikePattern
 {
-    // NonBacktracking matches in linear time, so a pattern sent by a client cannot make the match exponential
-    private const RegexOptions PatternRegexOptions = RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.NonBacktracking;
-
     /// <summary>Returns whether <paramref name="value"/> matches <paramref name="pattern"/>, or <see langword="null"/> when either is NULL.</summary>
     public static bool? Like(string? value, string? pattern, string? escape)
     {
@@ -34,8 +30,7 @@ internal static class SqlLikePattern
             };
         }
 
-        // Regex keeps a cache of the patterns it parsed, so a constant pattern is not parsed for every row
-        return Regex.IsMatch(value, ToRegexPattern(pattern, escapeCharacter), PatternRegexOptions);
+        return IsMatch(value, pattern, escapeCharacter);
     }
 
     /// <summary>Gets the escape character of an <c>ESCAPE</c> clause.</summary>
@@ -104,11 +99,61 @@ internal static class SqlLikePattern
         return true;
     }
 
-    /// <summary>Converts a <c>LIKE</c> pattern to an anchored regular expression.</summary>
-    public static string ToRegexPattern(string pattern, char? escape)
+    /// <summary>Returns whether <paramref name="value"/> matches the whole <paramref name="pattern"/>.</summary>
+    /// <remarks>
+    /// Every element of a pattern but <c>%</c> matches exactly one character, so the matcher only has to remember the
+    /// last <c>%</c>: when the rest of the pattern fails, that <c>%</c> takes one more character. The match takes at most
+    /// O(value length × pattern length) steps, whatever the pattern, so a pattern sent by a client cannot make it explode.
+    /// </remarks>
+    public static bool IsMatch(string value, string pattern, char? escape)
     {
-        var builder = new StringBuilder(pattern.Length + 8);
-        builder.Append(@"\A");
+        if (!TryParse(pattern, escape, out var elements))
+        {
+            return false;
+        }
+
+        var elementIndex = 0;
+        var valueIndex = 0;
+        var wildcardIndex = -1;
+        var wildcardValueIndex = 0;
+        while (valueIndex < value.Length)
+        {
+            if (elementIndex < elements.Count && elements[elementIndex].Kind is LikeElementKind.AnyString)
+            {
+                // Try to match the rest of the pattern with an empty string first
+                wildcardIndex = elementIndex;
+                wildcardValueIndex = valueIndex;
+                elementIndex++;
+            }
+            else if (elementIndex < elements.Count && elements[elementIndex].Matches(value[valueIndex]))
+            {
+                elementIndex++;
+                valueIndex++;
+            }
+            else if (wildcardIndex >= 0)
+            {
+                elementIndex = wildcardIndex + 1;
+                wildcardValueIndex++;
+                valueIndex = wildcardValueIndex;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        while (elementIndex < elements.Count && elements[elementIndex].Kind is LikeElementKind.AnyString)
+        {
+            elementIndex++;
+        }
+
+        return elementIndex == elements.Count;
+    }
+
+    /// <summary>Splits a pattern into elements, or returns <see langword="false"/> when it matches no value.</summary>
+    private static bool TryParse(string pattern, char? escape, out List<LikeElement> elements)
+    {
+        elements = new List<LikeElement>(pattern.Length);
         for (var i = 0; i < pattern.Length; i++)
         {
             var current = pattern[i];
@@ -117,38 +162,43 @@ internal static class SqlLikePattern
                 if (i + 1 >= pattern.Length)
                 {
                     // SQL Server matches no value when the pattern ends with the escape character
-                    return "[^\\s\\S]";
+                    return false;
                 }
 
-                AppendLiteral(builder, pattern[++i]);
+                elements.Add(LikeElement.Literal(pattern[++i]));
                 continue;
             }
 
             switch (current)
             {
                 case '%':
-                    builder.Append(".*");
+                    // Consecutive '%' are equivalent to a single one
+                    if (elements is not [.., { Kind: LikeElementKind.AnyString }])
+                    {
+                        elements.Add(new LikeElement(LikeElementKind.AnyString, default, Ranges: null));
+                    }
+
                     break;
 
                 case '_':
-                    builder.Append('.');
+                    elements.Add(new LikeElement(LikeElementKind.AnyCharacter, default, Ranges: null));
                     break;
 
-                case '[' when TryAppendCharacterSet(builder, pattern, i, escape, out var endIndex):
+                case '[' when TryParseCharacterSet(pattern, i, escape, out var set, out var endIndex):
+                    elements.Add(set);
                     i = endIndex;
                     break;
 
                 default:
-                    AppendLiteral(builder, current);
+                    elements.Add(LikeElement.Literal(current));
                     break;
             }
         }
 
-        builder.Append(@"\z");
-        return builder.ToString();
+        return true;
     }
 
-    private static bool TryAppendCharacterSet(StringBuilder builder, string pattern, int startIndex, char? escape, out int endIndex)
+    private static bool TryParseCharacterSet(string pattern, int startIndex, char? escape, out LikeElement element, out int endIndex)
     {
         var index = startIndex + 1;
         var negated = index < pattern.Length && pattern[index] == '^';
@@ -157,7 +207,7 @@ internal static class SqlLikePattern
             index++;
         }
 
-        var characters = new List<(char Start, char End)>();
+        var ranges = new List<(char Start, char End)>();
         while (index < pattern.Length && pattern[index] != ']')
         {
             var start = pattern[index];
@@ -176,11 +226,11 @@ internal static class SqlLikePattern
                     end = pattern[++index];
                 }
 
-                characters.Add(start <= end ? (start, end) : (end, start));
+                ranges.Add(start <= end ? (start, end) : (end, start));
             }
             else
             {
-                characters.Add((start, start));
+                ranges.Add((start, start));
             }
 
             index++;
@@ -189,41 +239,54 @@ internal static class SqlLikePattern
         if (index >= pattern.Length)
         {
             // No closing bracket: the '[' is a literal
+            element = default;
             endIndex = startIndex;
             return false;
         }
 
+        // "[]" matches no character, and "[^]" any character
+        element = new LikeElement(negated ? LikeElementKind.NegatedSet : LikeElementKind.Set, default, [.. ranges]);
         endIndex = index;
-        if (characters.Count == 0)
-        {
-            // "[]" matches no character, and "[^]" any character
-            builder.Append(negated ? "[\\s\\S]" : "[^\\s\\S]");
-            return true;
-        }
-
-        builder.Append(negated ? "[^" : "[");
-        foreach (var (start, end) in characters)
-        {
-            AppendClassCharacter(builder, start);
-            if (end != start)
-            {
-                builder.Append('-');
-                AppendClassCharacter(builder, end);
-            }
-        }
-
-        builder.Append(']');
         return true;
     }
 
-    private static void AppendLiteral(StringBuilder builder, char value)
+    private enum LikeElementKind
     {
-        builder.Append(Regex.Escape(value.ToString()));
+        Literal,
+        AnyCharacter,
+        AnyString,
+        Set,
+        NegatedSet,
     }
 
-    private static void AppendClassCharacter(StringBuilder builder, char value)
+    private readonly record struct LikeElement(LikeElementKind Kind, char Value, (char Start, char End)[]? Ranges)
     {
-        builder.Append(@"\u").Append(((int)value).ToString("X4", CultureInfo.InvariantCulture));
+        public static LikeElement Literal(char value) => new(LikeElementKind.Literal, value, Ranges: null);
+
+        public bool Matches(char c)
+        {
+            return Kind switch
+            {
+                LikeElementKind.Literal => c == Value,
+                LikeElementKind.AnyCharacter => true,
+                LikeElementKind.Set => IsInRanges(c),
+                LikeElementKind.NegatedSet => !IsInRanges(c),
+                _ => false,
+            };
+        }
+
+        private bool IsInRanges(char c)
+        {
+            foreach (var (start, end) in Ranges!)
+            {
+                if (c >= start && c <= end)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     internal enum SimplePatternKind

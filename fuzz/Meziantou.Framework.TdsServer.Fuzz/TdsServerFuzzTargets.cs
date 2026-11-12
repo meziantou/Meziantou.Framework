@@ -52,6 +52,7 @@ public static partial class TdsServerFuzzTargets
         "S\u0000E\u0000L\u0000E\u0000C\u0000T\u0000 \u0000", "@\u0000p\u0000", "\u0002@\u0000p\u0000", "\u000A\u0000", "\u000D\u0000", "\u0000\u0000", "\u0000\u0000\u0000\u0000", "\u0001\u0000\u0000\u0000",
         "&\u0001\u0001", "&\u0002\u0002", "&\u0004\u0004", "&\u0008\u0008", "&\u0004\u0000", "h\u0001\u0001", "m\u0004\u0004", "m\u0008\u0008", "$\u0010\u0010", "j\u0011&\u0002\u0011\u0001", "l\u0011&\u0000\u0005\u0000",
         "n\u0004\u0004", "n\u0008\u0008", "o\u0004\u0004", "o\u0008\u0008", "(\u0003", ")\u0007\u0005", ")\u0000\u0003", "*\u0007\u0008", "*\u0003\u0006", "+\u0007\u000A", "+\u0000\u0005", "\u0009\u0004\u0000\u0000\u0034", "\u0000\u0000\u0000\u0004\u0000",
+        "\u000E", "\u0005\u0000", "\u0007\u0000", "\u0008\u0000", "\u0009\u0000",
     ];
 
     private static readonly string[] LoginTokens =
@@ -91,6 +92,10 @@ public static partial class TdsServerFuzzTargets
         .. ((string[])["FUZZ_TEXT(", "FUZZ_COALESCE(", "SELECT ", " FROM ", "customers", "orders", " WHERE ", "Id", "Name", " = @id", "@name"]).Select(text => string.Concat(text.Select(c => $"{c}\0"))),
     ];
 
+    private static readonly char?[] LikeEscapeCharacters = [null, '!', '%', '_', '[', '\\'];
+
+    private static readonly string[] LikePatternTokens = ["%", "_", "[", "]", "[^", "-", "!", "\n", "[a-z]", "[^a-z]", "[]", "[^]", "%_%", "\u00E9", "\U0001F600"];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("tds-session", Session) { Seeds = GetSessionSeeds, Dictionary = [.. MessageTokens, .. LoginTokens] },
@@ -99,6 +104,7 @@ public static partial class TdsServerFuzzTargets
         new("tds-login", Login) { Seeds = GetLoginSeeds, Dictionary = LoginTokens },
         new("tds-prelogin", PreLogin) { Seeds = GetPreLoginSeeds, Dictionary = LoginTokens },
         new("tds-query-engine", QueryEngine) { Seeds = GetQueryEngineSeeds, Dictionary = SqlTokens },
+        new("tds-like-pattern", LikePattern) { Seeds = GetLikePatternSeeds, Dictionary = LikePatternTokens },
         new("tds-query-engine-rpc", QueryEngineRpc) { Seeds = GetQueryEngineRpcSeeds, Dictionary = [.. MessageTokens, .. QueryEngineRpcTokens] },
         new("tds-response-serializer", ResponseSerializer) { Seeds = GetResponseSerializerSeeds },
     ];
@@ -187,6 +193,11 @@ public static partial class TdsServerFuzzTargets
                 case TdsWire.SqlBatch or TdsWire.Rpc:
                     // The echo handler cannot fail, so an error token means that the request parser or the serializer threw
                     FuzzAssert.False(IsError(response), "A request got an error response");
+                    break;
+
+                case TdsWire.TransactionManager:
+                    // Whether a request succeeds depends on the transaction state, but a client must read every response
+                    _ = TdsWire.ReadTabularResult(response);
                     break;
 
                 default:
@@ -304,6 +315,44 @@ public static partial class TdsServerFuzzTargets
 
         // The engine builds the result sets from the query, so the serializer must accept them
         _ = TdsWire.ReadTabularResult(TdsResponseSerializer.CreateQueryResponse(result, PayloadSizePerPacket), PayloadSizePerPacket);
+    }
+
+    /// <summary>
+    /// The first byte selects the escape character, then the pattern and the value of a <c>LIKE</c> are separated by a NUL byte.
+    /// </summary>
+    private static void LikePattern(ReadOnlySpan<byte> data)
+    {
+        var escape = FuzzInput.Pick(LikeEscapeCharacters, FuzzInput.ReadByte(ref data));
+        var pattern = FuzzText.Decode(FuzzInput.ReadUntil(ref data, 0));
+        var value = FuzzText.Decode(data);
+        var isMatch = SqlLikePattern.IsMatch(value, pattern, escape);
+
+        // The LINQ provider runs the simple patterns as string methods: both must agree
+        if (SqlLikePattern.TryGetSimplePattern(pattern, escape, out var kind, out var text))
+        {
+            var expected = kind switch
+            {
+                SqlLikePattern.SimplePatternKind.Equals => string.Equals(value, text, StringComparison.Ordinal),
+                SqlLikePattern.SimplePatternKind.StartsWith => value.StartsWith(text, StringComparison.Ordinal),
+                SqlLikePattern.SimplePatternKind.EndsWith => value.EndsWith(text, StringComparison.Ordinal),
+                _ => value.Contains(text, StringComparison.Ordinal),
+            };
+            FuzzAssert.Equal(expected, isMatch, $"The {kind} pattern {FuzzAssert.Format(pattern)} disagrees with the matcher on {FuzzAssert.Format(value)}");
+        }
+
+        // A value whose characters are all escaped matches itself only
+        var escapedValue = string.Concat(value.Select(c => $"!{c}"));
+        FuzzAssert.True(SqlLikePattern.IsMatch(value, escapedValue, '!'), $"The escaped value {FuzzAssert.Format(value)} must match itself");
+        FuzzAssert.False(SqlLikePattern.IsMatch(value + "x", escapedValue, '!'), $"The escaped value {FuzzAssert.Format(value)} must not match a longer value");
+
+        // Surrounding the pattern with '%' finds it anywhere (unless '%' is the escape character), and a '_' per
+        // character matches any value of that length
+        if (isMatch && escape is not '%')
+        {
+            FuzzAssert.True(SqlLikePattern.IsMatch("ab" + value + "cd", "%" + pattern + "%", escape), $"The pattern {FuzzAssert.Format(pattern)} matches {FuzzAssert.Format(value)} but not inside a longer value");
+        }
+
+        FuzzAssert.True(SqlLikePattern.IsMatch(value, new string('_', value.Length), escape: null), "A '_' per character must match the value");
     }
 
     /// <summary>
@@ -890,6 +939,7 @@ public static partial class TdsServerFuzzTargets
         yield return Seed("all-types", CreateMessagesInput(6, (0x01, CreateAllTypesPayload())));
         yield return Seed("long-text", CreateMessagesInput(0, (0x00, TdsWire.SqlBatchPayload(new string('x', 300) + "\u00E9\U0001F600"))));
         yield return Seed("mixed", CreateMessagesInput(3, (0x02, []), (0x03, [0x01]), (0x40, TdsWire.SqlBatchPayload("SELECT 2")), (0x01, TdsWire.RpcPayload(13))));
+        yield return Seed("transaction", CreateMessagesInput(3, (0x03, [.. TdsWire.AllHeaders(), 0x05, 0x00, 0x02, 0x02, 0x74, 0x00]), (0x03, [.. TdsWire.AllHeaders(), 0x09, 0x00, 0x02, 0x73, 0x00]), (0x03, [.. TdsWire.AllHeaders(), 0x08, 0x00, 0x02, 0x73, 0x00, 0x00]), (0x03, [.. TdsWire.AllHeaders(), 0x07, 0x00, 0x00, 0x01, 0x00, 0x00]), (0x03, [.. TdsWire.AllHeaders(), 0x05, 0x00, 0x00, 0x00])));
     }
 
     private static FuzzSeed Seed(string name, byte[] data) => new(name, data);
@@ -902,8 +952,8 @@ public static partial class TdsServerFuzzTargets
             result.Add(header);
             if ((header & 0x03) == 3)
             {
-                // A raw packet type: an unsupported one
-                result.Add(0x0E);
+                // A raw packet type: the transaction manager
+                result.Add(TdsWire.TransactionManager);
             }
 
             result.Add((byte)payload.Length);
@@ -953,6 +1003,26 @@ public static partial class TdsServerFuzzTargets
     }
 
     /// <summary>The SQL texts of the query engine tests.</summary>
+    private static IEnumerable<FuzzSeed> GetLikePatternSeeds()
+    {
+        // The patterns of the LIKE tests of the query engine, against the names of the customers
+        (string Pattern, char? Escape)[] patterns =
+        [
+            ("A%", null), ("%i%", null), ("[A-C]_%", null), ("_li%", null), ("B%!_!%", '!'), ("%e", null), ("Bob", null), ("_ob", null), ("A%e", null), ("D_v%", null), ("%", null), ("", null),
+            ("_____", null), ("%_%_%_%_%_%", null), ("[AB]%", null), ("[^AB]%", null), ("[C-A]%", null), ("%[dD]", null), ("[-B]%", null), ("[B-]%", null), ("[]%", null), ("[^]%", null),
+            ("[A", null), ("%[A", null), ("Bob.*", null), ("Bo!b", '!'), ("Bob!", '!'), ("%!%", '!'), ("%![x]", '!'), ("%[!x]", '!'), ("Bob%%", '%'), ("%__", '_'),
+        ];
+        var index = 0;
+        foreach (var (pattern, escape) in patterns)
+        {
+            foreach (var value in (string[])["Alice", "Bob", "David", ""])
+            {
+                var selector = (byte)Array.IndexOf(LikeEscapeCharacters, escape);
+                yield return new FuzzSeed(string.Create(CultureInfo.InvariantCulture, $"like-{index++}"), (byte[])[selector, .. FuzzText.Encode(pattern), 0, .. FuzzText.Encode(value)]);
+            }
+        }
+    }
+
     private static IEnumerable<FuzzSeed> GetQueryEngineSeeds()
     {
         var index = 0;

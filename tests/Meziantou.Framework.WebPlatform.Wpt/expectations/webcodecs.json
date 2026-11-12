@@ -1,0 +1,79 @@
+{
+  "webcodecs/image-decoder-animated-zero-delay.https.any.js": {
+    "total": 2
+  },
+  "webcodecs/image-decoder-animated-zero-delay.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "webcodecs/image-decoder-image-orientation-none.https.html": {
+    "total": 16,
+    "failures": {
+      "Test 4:2:0 JPEG w/ EXIF orientation bottom-left on canvas w/o orientation.": "FAIL",
+      "Test 4:2:0 JPEG w/ EXIF orientation bottom-right on canvas w/o orientation.": "FAIL",
+      "Test 4:2:0 JPEG w/ EXIF orientation left-bottom on canvas w/o orientation.": "FAIL",
+      "Test 4:2:0 JPEG w/ EXIF orientation left-top on canvas w/o orientation.": "FAIL",
+      "Test 4:2:0 JPEG w/ EXIF orientation right-bottom on canvas w/o orientation.": "FAIL",
+      "Test 4:2:0 JPEG w/ EXIF orientation right-top on canvas w/o orientation.": "FAIL",
+      "Test 4:2:0 JPEG w/ EXIF orientation top-right on canvas w/o orientation.": "FAIL",
+      "Test JPEG w/ EXIF orientation bottom-left on canvas w/o orientation.": "FAIL",
+      "Test JPEG w/ EXIF orientation bottom-right on canvas w/o orientation.": "FAIL",
+      "Test JPEG w/ EXIF orientation left-bottom on canvas w/o orientation.": "FAIL",
+      "Test JPEG w/ EXIF orientation left-top on canvas w/o orientation.": "FAIL",
+      "Test JPEG w/ EXIF orientation right-bottom on canvas w/o orientation.": "FAIL",
+      "Test JPEG w/ EXIF orientation right-top on canvas w/o orientation.": "FAIL",
+      "Test JPEG w/ EXIF orientation top-right on canvas w/o orientation.": "FAIL"
+    }
+  },
+  "webcodecs/image-decoder.crossOriginIsolated.https.any.js": {
+    "total": 2
+  },
+  "webcodecs/image-decoder.crossOriginIsolated.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "webcodecs/image-decoder.https.any.js": {
+    "harness": "ERROR",
+    "total": 47,
+    "failures": {
+      "Test AVIF image HDR YUV 10-bit 4:2:0 decoding.": "FAIL",
+      "Test AVIF image HDR YUV 10-bit 4:2:2 decoding.": "FAIL",
+      "Test AVIF image HDR YUV 10-bit 4:4:4 decoding.": "FAIL",
+      "Test AVIF image HDR YUV 12-bit 4:2:0 decoding.": "FAIL",
+      "Test AVIF image HDR YUV 12-bit 4:2:2 decoding.": "FAIL",
+      "Test AVIF image HDR YUV 12-bit 4:4:4 decoding.": "FAIL",
+      "Test AVIF image YUV 4:2:0 decoding.": "FAIL",
+      "Test AVIF image YUV 4:2:2 decoding.": "FAIL",
+      "Test AVIF image YUV 4:4:4 decoding.": "FAIL",
+      "Test JPEG image YUV 4:2:0 decoding.": "FAIL",
+      "Test ReadableStream of gif": "FAIL",
+      "Test WEBP image YUV 4:2:0 decoding.": "FAIL",
+      "Test invalid mime type rejects decode() requests": "FAIL",
+      "Test invalid mime type rejects decodeMetadata() requests": "FAIL",
+      "Test multi-track AVIF image decoding w/ preferAnimation=false.": "FAIL",
+      "Test multi-track AVIF image decoding w/ preferAnimation=true.": "FAIL",
+      "Test track selection in multi track image.": "FAIL"
+    }
+  },
+  "webcodecs/image-decoder.https.any.js#dedicatedworker": {
+    "harness": "ERROR",
+    "total": 47,
+    "failures": {
+      "Test AVIF image HDR YUV 10-bit 4:2:0 decoding.": "FAIL",
+      "Test AVIF image HDR YUV 10-bit 4:2:2 decoding.": "FAIL",
+      "Test AVIF image HDR YUV 10-bit 4:4:4 decoding.": "FAIL",
+      "Test AVIF image HDR YUV 12-bit 4:2:0 decoding.": "FAIL",
+      "Test AVIF image HDR YUV 12-bit 4:2:2 decoding.": "FAIL",
+      "Test AVIF image HDR YUV 12-bit 4:4:4 decoding.": "FAIL",
+      "Test AVIF image YUV 4:2:0 decoding.": "FAIL",
+      "Test AVIF image YUV 4:2:2 decoding.": "FAIL",
+      "Test AVIF image YUV 4:4:4 decoding.": "FAIL",
+      "Test JPEG image YUV 4:2:0 decoding.": "FAIL",
+      "Test ReadableStream of gif": "FAIL",
+      "Test WEBP image YUV 4:2:0 decoding.": "FAIL",
+      "Test invalid mime type rejects decode() requests": "FAIL",
+      "Test invalid mime type rejects decodeMetadata() requests": "FAIL",
+      "Test multi-track AVIF image decoding w/ preferAnimation=false.": "FAIL",
+      "Test multi-track AVIF image decoding w/ preferAnimation=true.": "FAIL",
+      "Test track selection in multi track image.": "FAIL"
+    }
+  }
+}

@@ -1355,9 +1355,10 @@ internal static class Av1ForwardTransform
     // The gains are measured on the transform of a residual, here a fixed sequence of samples
     private static int[] MeasureSquaredGains()
     {
+        // Run once: the 20 KB of buffers are not worth the stack
         var gains = new int[Av1Constants.TxSizesAll];
-        Span<int> residual = stackalloc int[64 * 64];
-        Span<int> coefficients = stackalloc int[32 * 32];
+        Span<int> residual = new int[64 * 64];
+        Span<int> coefficients = new int[32 * 32];
         for (var txSz = 0; txSz < gains.Length; txSz++)
         {
             int w = Av1Tables.TxWidth[txSz];

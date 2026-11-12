@@ -42,6 +42,8 @@ public sealed partial class CssMinifyFormatter : CssFormatter
         /// <summary>Whether the semicolon that ends the last declaration is not written yet: it is not needed before the end of a block.</summary>
         private bool _pendingSemicolon;
 
+        internal override bool WritePendingLonghandsAsShorthand => true;
+
         protected override bool ShouldWrite(CssRule rule) => !_formatter.RemoveEmptyRules || !IsEmpty(rule);
 
         protected override void WritePrelude(CssRule rule, string prelude)

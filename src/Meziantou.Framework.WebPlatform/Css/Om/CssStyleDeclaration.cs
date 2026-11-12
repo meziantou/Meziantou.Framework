@@ -58,9 +58,11 @@ internal sealed class CssDeclarationEntry(CssLonghandValue value, bool important
 /// <summary>
 /// A declaration as written by https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block: <paramref name="Name"/> is
 /// the serialized property name (a shorthand when the longhands are serialized together), <paramref name="Value"/> its
-/// serialized value.
+/// serialized value, empty for a longhand whose value is only known through the shorthand that set it: <paramref name="PendingShorthandName"/>
+/// and <paramref name="PendingShorthandValue"/> are then the name and the serialized value of that shorthand (a
+/// pending-substitution value, https://drafts.csswg.org/css-variables/#variables-in-shorthands, or a system font).
 /// </summary>
-internal readonly record struct CssSerializedDeclaration(string Name, string Value, bool Important);
+internal readonly record struct CssSerializedDeclaration(string Name, string Value, bool Important, string? PendingShorthandName = null, string? PendingShorthandValue = null);
 
 /// <summary>https://drafts.csswg.org/cssom/#the-cssstyledeclaration-interface</summary>
 /// <seealso href="https://drafts.csswg.org/cssom/#cssstyledeclaration"/>
@@ -1330,7 +1332,10 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             if (serialized)
                 continue;
 
-            result.Add(new CssSerializedDeclaration(CssPropertyRegistry.IsCustomProperty(property) ? CssSerializer.SerializeIdentifier(property) : property, declaration.Value.Value, declaration.Important));
+            var longhandValue = declaration.Value;
+            result.Add(longhandValue is { Value.Length: 0, ShorthandName: { } pendingShorthandName, ShorthandValue: { } pendingShorthandValue }
+                ? new CssSerializedDeclaration(property, "", declaration.Important, pendingShorthandName, pendingShorthandValue)
+                : new CssSerializedDeclaration(CssPropertyRegistry.IsCustomProperty(property) ? CssSerializer.SerializeIdentifier(property) : property, longhandValue.Value, declaration.Important));
             alreadySerialized.Add(property);
         }
 

@@ -209,12 +209,8 @@
   "pointerevents/pointerevent_after_target_removed_from_slot.html?mouse": {
     "total": 6,
     "failures": {
-      "mouse events with change-slotname at pointerdown": "FAIL",
-      "mouse events with change-slotname at pointerup": "FAIL",
       "mouse events with remove-filler at pointerdown": "FAIL",
-      "mouse events with remove-filler at pointerup": "FAIL",
-      "mouse events with remove-slot at pointerdown": "FAIL",
-      "mouse events with remove-slot at pointerup": "FAIL"
+      "mouse events with remove-filler at pointerup": "FAIL"
     }
   },
   "pointerevents/pointerevent_after_target_removed_interleaved.tentative.html?mouse": {

@@ -700,6 +700,11 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             if (serialized.AgentCluster is null || !ReferenceEquals(serialized.AgentCluster, GlobalScope.AgentClusterKey))
                 throw adapter.CreateException(ToJsError(new DomException("A SharedArrayBuffer cannot be deserialized in another agent cluster", "DataCloneError")));
 
+            // A fixed-length buffer keeps its byte length (e.g. the buffer of a shared WebAssembly.Memory, a fixed-length
+            // view of a growable data block): [[ArrayBufferByteLength]] is the one of the serialized buffer
+            if (serialized.DataBlock is { } fixedLengthDataBlock && adapter.IsUndefined(args[2]) && adapter.CreateFixedLengthSharedArrayBuffer(fixedLengthDataBlock, (int)adapter.ToNumber(args[1])) is { } fixedLengthBuffer)
+                return fixedLengthBuffer;
+
             if (serialized.DataBlock is { } sharedDataBlock && adapter.CreateSharedArrayBuffer(sharedDataBlock) is { } sharedBuffer)
                 return sharedBuffer;
 

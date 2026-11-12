@@ -300,6 +300,28 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
+    public async Task SharedMemory_ClonedBufferKeepsItsLength()
+    {
+        var result = await RunAsync("""
+            async () => {
+              const memory = new WebAssembly.Memory({ initial: 1, maximum: 4, shared: true });
+              const clone = structuredClone(memory.buffer);
+              memory.grow(1);
+              new Uint8Array(memory.buffer)[1] = 9;
+              let growError;
+              try { clone.grow(2 * 65536); } catch (e) { growError = e.name; }
+              const fixed = [clone.growable, clone.byteLength, clone.maxByteLength, new Uint8Array(clone)[1], growError].join();
+              const growable = structuredClone(memory.toResizableBuffer());
+              const resizable = [growable.growable, growable.byteLength, growable.maxByteLength].join();
+              const plain = structuredClone(new SharedArrayBuffer(8, { maxByteLength: 16 }));
+              return [fixed, resizable, plain.growable, plain.maxByteLength].join('|');
+            }
+            """, crossOriginIsolated: true);
+
+        Assert.Equal("false,65536,65536,9,TypeError|true,131072,262144|true|16", result);
+    }
+
+    [Fact]
     public async Task Memory_CanBeImported()
     {
         var bytes = Wasm("""(module (import "env" "memory" (memory 1)) (func (export "load") (param i32) (result i32) (i32.load (local.get 0))))""");

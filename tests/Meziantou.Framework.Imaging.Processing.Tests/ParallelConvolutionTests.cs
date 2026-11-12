@@ -575,8 +575,9 @@ public sealed class ParallelConvolutionTests
         Assert.Equal(20, layout.RingSize);
         Assert.Equal(haloRows, layout.Halo.RowCount);
 
-        // Ring and halo rows (300 pixels of 4 samples, no padding for one column) and the accumulator
-        var expected = scope.GetChargedSize(((1200L * (20 + haloRows)) + 1200) * sizeof(double));
+        // Ring and halo rows (300 pixels of 4 samples, no padding for one column), the accumulator and the tap list of the
+        // 81 taps (two doubles per tap)
+        var expected = scope.GetChargedSize(((1200L * (20 + haloRows)) + 1200 + 162) * sizeof(double));
         Assert.Equal(expected, plan.GetScratchBytes(scope, workers: 1));
         plan.Prepare(scope);
         Assert.Equal(expected, plan.ScratchBytes);
@@ -596,7 +597,8 @@ public sealed class ParallelConvolutionTests
         Assert.Equal(haloRows, layouts.Select(layout => layout.Halo.RowCount));
 
         Assert.True(plan.IsSeparable);
-        var expected = haloRows.Sum(rows => scope.GetChargedSize(((1200L * (3 + rows)) + 1200 + 1208) * sizeof(double)));
+        // The tap lists of the column kernel (3 taps) and of the row weights (3 taps) take two doubles per tap
+        var expected = haloRows.Sum(rows => scope.GetChargedSize(((1200L * (3 + rows)) + 1200 + 1208 + 12) * sizeof(double)));
         Assert.Equal(expected, plan.GetScratchBytes(scope, workers: 4));
         plan.Prepare(scope);
         Assert.Equal(4, plan.Workers);

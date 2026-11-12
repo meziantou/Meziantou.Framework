@@ -61,7 +61,8 @@ internal static class PerceptualHasher
     public static ulong ComputeHash(PixelSource source, bool perceptual, CancellationToken cancellationToken)
     {
         var (thumbnailWidth, thumbnailHeight) = GetThumbnailSize(perceptual);
-        Span<long> thumbnail = stackalloc long[thumbnailWidth * thumbnailHeight];
+        // The buffers are arrays, not stack memory: a pHash needs about 27 KB of them, once per frame
+        var thumbnail = new long[thumbnailWidth * thumbnailHeight];
         ComputeThumbnail(source, whiteBackground: false, thumbnailWidth, thumbnailHeight, thumbnail, cancellationToken);
         return perceptual
             ? ComputePHash(thumbnail, source.Width, source.Height)
@@ -73,8 +74,8 @@ internal static class PerceptualHasher
     public static int ComputeDistance(PixelSource expected, PixelSource actual, bool perceptual, CancellationToken cancellationToken)
     {
         var (thumbnailWidth, thumbnailHeight) = GetThumbnailSize(perceptual);
-        Span<long> expectedThumbnail = stackalloc long[thumbnailWidth * thumbnailHeight];
-        Span<long> actualThumbnail = stackalloc long[thumbnailWidth * thumbnailHeight];
+        var expectedThumbnail = new long[thumbnailWidth * thumbnailHeight];
+        var actualThumbnail = new long[thumbnailWidth * thumbnailHeight];
 
         // Compositing an opaque image over any background leaves it unchanged
         var backgroundCount = expected.IsOpaque(cancellationToken) && actual.IsOpaque(cancellationToken) ? 1 : 2;
@@ -149,13 +150,13 @@ internal static class PerceptualHasher
         // Each cell receives a total weight of width × height, so this brings the cells back to luminance levels from 0 to
         // 255, the scale PHashCoefficientTolerance is expressed in.
         var luminanceScale = (double)width * height * LuminanceLevel;
-        Span<double> luminance = stackalloc double[PHashSize * PHashSize];
+        Span<double> luminance = new double[PHashSize * PHashSize];
         for (var i = 0; i < luminance.Length; i++)
         {
             luminance[i] = thumbnail[i] / luminanceScale;
         }
 
-        Span<double> horizontalCoefficients = stackalloc double[PHashLowFrequencySize * PHashSize];
+        Span<double> horizontalCoefficients = new double[PHashLowFrequencySize * PHashSize];
         for (var u = 0; u < PHashLowFrequencySize; u++)
         {
             var cosine = CosineTable[u];

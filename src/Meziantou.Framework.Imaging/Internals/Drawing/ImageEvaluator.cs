@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -1452,6 +1453,9 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         var tag = ((ulong)_segmentGeneration << 32) | (uint)key;
 
         // The slot is below the number of slots: the key is below the number of segments, or the hash below MaxSegments
+        Debug.Assert((uint)x < (uint)_regionWidth);
+        Debug.Assert((uint)slot < (uint)(_segmentKeyBytes!.Length / sizeof(ulong)));
+        Debug.Assert(((long)slot + 1) << SegmentShift <= _segmentColorBytes!.Length / Unsafe.SizeOf<Rgba64>());
         ref var keyEntry = ref unsafe(Unsafe.Add(ref Unsafe.As<byte, ulong>(ref MemoryMarshal.GetArrayDataReference(_segmentKeyBytes!)), slot));
         ref var colors = ref unsafe(Unsafe.Add(ref Unsafe.As<byte, Rgba64>(ref MemoryMarshal.GetArrayDataReference(_segmentColorBytes!)), slot << SegmentShift));
         if (keyEntry != tag)

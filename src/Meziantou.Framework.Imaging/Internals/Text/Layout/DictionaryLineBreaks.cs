@@ -1,4 +1,3 @@
-using System.Buffers;
 using System.Text;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -16,9 +15,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// does not cross an opportunity of the algorithm: a combining mark that follows another character, such as a hyphen,
 /// belongs to that character (rule LB9), and the run starts after it.
 /// </para>
-/// <para>An instance reuses its buffer: it is not thread-safe.</para>
+/// <para>
+/// An instance reuses its buffer: it is not thread-safe. The buffer is a plain array, not a pooled one: an instance lives
+/// as long as the layout of a text, and a pooled array kept in a field could be returned twice or used after it is returned.
+/// </para>
 /// </remarks>
-internal sealed class DictionaryLineBreaks : IDisposable
+internal sealed class DictionaryLineBreaks
 {
     private int[]? _buffer;
 
@@ -52,12 +54,7 @@ internal sealed class DictionaryLineBreaks : IDisposable
 
             if (_buffer is null || _buffer.Length < runLength)
             {
-                if (_buffer is not null)
-                {
-                    ArrayPool<int>.Shared.Return(_buffer);
-                }
-
-                _buffer = ArrayPool<int>.Shared.Rent(runLength);
+                _buffer = new int[Math.Max(runLength, Math.Min(Array.MaxLength, (_buffer?.Length ?? 8) * 2))];
             }
 
             var count = engine.FindBreaks(text.Slice(runStart, runLength), _buffer);
@@ -65,15 +62,6 @@ internal sealed class DictionaryLineBreaks : IDisposable
             {
                 breaks.Add(runStart + position);
             }
-        }
-    }
-
-    public void Dispose()
-    {
-        if (_buffer is not null)
-        {
-            ArrayPool<int>.Shared.Return(_buffer);
-            _buffer = null;
         }
     }
 

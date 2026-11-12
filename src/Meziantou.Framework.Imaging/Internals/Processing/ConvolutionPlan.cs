@@ -280,7 +280,7 @@ internal sealed class ConvolutionPlan : IDisposable
         for (var worker = 0; worker < workers; worker++)
         {
             var (ringSize, halo) = layouts[worker];
-            _scratch[worker] = ConvolutionScratch.Create(scope, PaddedLength, RowLength, ringSize, halo, InputLength, KernelCount);
+            _scratch[worker] = ConvolutionScratch.Create(scope, PaddedLength, RowLength, ringSize, halo, InputLength, KernelCount, KernelTaps, RowTaps);
         }
 
         ScratchBytes = scope.LiveBytes - before;
@@ -317,7 +317,7 @@ internal sealed class ConvolutionPlan : IDisposable
         var total = 0L;
         foreach (var (ringSize, halo) in layouts)
         {
-            var length = ConvolutionScratch.GetLength(PaddedLength, RowLength, ringSize, halo.RowCount, InputLength, KernelCount);
+            var length = ConvolutionScratch.GetLength(PaddedLength, RowLength, ringSize, halo.RowCount, InputLength, KernelCount, KernelTaps, RowTaps);
             if (length < 0 || !CheckedSizes.TryMultiply(Math.Max(length, 1), sizeof(double), out var bytes) || bytes > CheckedSizes.MaxBufferLength || !CheckedSizes.TryAdd(total, scope.GetChargedSize(bytes), out total))
                 return -1;
         }
@@ -333,6 +333,12 @@ internal sealed class ConvolutionPlan : IDisposable
 
     /// <summary>Gets the number of doubles of the working row that a separable plan loads padded for its row weights, then filters into a ring or halo row (0 otherwise).</summary>
     private long InputLength => _rowWeights is null ? 0 : ((long)Size.Width + _rowWeights.Length - 1) * Channels;
+
+    /// <summary>Gets the capacity of the tap list of a kernel in the scratch: its taps when the convolver can sum them by blocks (<see cref="Convolver.MaxBlockedTaps"/>), else 0.</summary>
+    private int KernelTaps => KernelWidth * KernelHeight is var taps and <= Convolver.MaxBlockedTaps ? taps : 0;
+
+    /// <summary>Gets the capacity of the tap list of the row weights of a separable plan in the scratch, or 0.</summary>
+    private int RowTaps => _rowWeights is { Length: <= Convolver.MaxBlockedTaps } weights ? weights.Length : 0;
 
     /// <summary>Gets the row buffers of a worker, between 0 and <see cref="Workers"/> - 1.</summary>
     public ConvolutionScratch GetScratch(int worker) => _scratch[worker]!;

@@ -131,6 +131,8 @@ internal sealed class PixelStorage
 
     internal Span<byte> GetRowSpanCore(int y)
     {
+        // A storage is never disposed while a lease is active, and the rows are only reachable through a lease
+        System.Diagnostics.Debug.Assert(!_disposed, "The rows of a disposed storage were read: its slabs are back in the pool.");
         if ((uint)y >= (uint)Layout.Height)
             ThrowRowOutOfRange(y);
 

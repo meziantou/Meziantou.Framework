@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -65,9 +64,6 @@ internal sealed class IccClutStage : IccStage
         }
     }
 
-    // Every element of the stack buffers is written before it is read: the fraction of each input, the order of the inputs
-    // (read by the simplex interpolation only, which sorts them), the weights and offsets of the interpolated vertices
-    [SkipLocalsInit]
     public override void Apply(Span<double> values)
     {
         Span<double> fractions = unsafe(stackalloc double[IccPipeline.MaxChannels]);

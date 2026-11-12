@@ -6,6 +6,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// A non-horizontal segment of the outline being rasterized, stored from top (<see cref="Y0"/>) to bottom
 /// (<see cref="Y1"/>, greater than <see cref="Y0"/>) and clipped to the rows of the frame.
 /// </summary>
+/// <remarks>
+/// The edges live in pooled bytes (<see cref="EdgeBuilder"/>): every field is written when an edge is added, and the 4 bytes
+/// of padding after <see cref="Direction"/> keep whatever the pool held. Nothing reads them: the edges are never compared or
+/// hashed as bytes, and never leave the builder.
+/// </remarks>
 [StructLayout(LayoutKind.Sequential)]
 internal struct DrawingEdge
 {

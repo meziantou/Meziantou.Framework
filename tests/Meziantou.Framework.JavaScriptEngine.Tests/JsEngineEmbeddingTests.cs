@@ -1051,6 +1051,9 @@ public sealed class JsEngineEmbeddingTests
 
         Assert.Equal("undefined|derived|x:derived", realm.Execute("const renaming = new ExportedRenaming(); [typeof renaming.describe, renaming.renamed(), renaming.describeWith('x')].join('|')").AsString());
 
+        // A renamed property keeps the accessor that its override inherits
+        Assert.Equal("undefined|3|4", realm.Execute("renaming.renamedValue = 3; renaming.renamedStored = 2; [typeof renaming.value, renaming.renamedValue, renaming.renamedStored].join('|')").AsString());
+
         // new returns the object that the .NET constructor created for itself, with the prototype of new.target
         Assert.Equal("true,true,true,true", realm.Execute("""
             const published = new ExportedSelfPublishing();
@@ -1359,6 +1362,10 @@ public class ExportedRenamingBase
 
     [JsName("describeWith")]
     public string Describe(string prefix) => prefix + ":" + Describe();
+
+    public virtual int Value { get; set; }
+
+    public virtual int Stored { get; set; }
 }
 
 [JsExport]
@@ -1366,6 +1373,12 @@ public sealed partial class ExportedRenaming : ExportedRenamingBase
 {
     [JsName("renamed")]
     public override string Describe() => "derived";
+
+    [JsName("renamedValue")]
+    public override int Value => base.Value;
+
+    [JsName("renamedStored")]
+    public override int Stored { set => base.Stored = value * 2; }
 }
 
 [JsExport]

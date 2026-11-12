@@ -398,8 +398,8 @@ public sealed class JsExportGenerator : IIncrementalGenerator
                 if (property.ReturnsByRef || property.ReturnsByRefReadonly)
                     return ReportUnsupported(member, location, "it returns a reference", diagnostics);
 
-                var hasGetter = property.GetMethod is { DeclaredAccessibility: Accessibility.Public };
-                var hasSetter = property.SetMethod is { DeclaredAccessibility: Accessibility.Public, IsInitOnly: false };
+                var hasGetter = GetOwnOrInheritedAccessor(property, getter: true) is { DeclaredAccessibility: Accessibility.Public };
+                var hasSetter = GetOwnOrInheritedAccessor(property, getter: false) is { DeclaredAccessibility: Accessibility.Public, IsInitOnly: false };
                 return CreateAccessor(member, property.Type, jsName, hasGetter, hasSetter, location, knownTypes, diagnostics);
             }
 
@@ -409,6 +409,19 @@ public sealed class JsExportGenerator : IIncrementalGenerator
             default:
                 return null;
         }
+    }
+
+    // An override that declares one accessor inherits the other one, which is called through the override
+    private static IMethodSymbol? GetOwnOrInheritedAccessor(IPropertySymbol property, bool getter)
+    {
+        for (var current = property; current is not null; current = current.OverriddenProperty)
+        {
+            var accessor = getter ? current.GetMethod : current.SetMethod;
+            if (accessor is not null)
+                return accessor;
+        }
+
+        return null;
     }
 
     private static MemberModel? CreateAccessor(ISymbol member, ITypeSymbol type, string jsName, bool hasGetter, bool hasSetter, Location? location, KnownTypes knownTypes, List<DiagnosticInfo> diagnostics)

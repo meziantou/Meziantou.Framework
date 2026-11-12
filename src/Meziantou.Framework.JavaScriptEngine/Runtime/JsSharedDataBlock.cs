@@ -78,9 +78,19 @@ public sealed class JsSharedDataBlock
     public Span<byte> GetSpan() => _data.AsSpan(_offset, ByteLength);
 
     /// <summary>Gets a reference to a byte of the block (for the atomic operations); the index is less than the byte length.</summary>
-    public ref byte GetReference(int byteIndex)
+    public ref byte GetReference(int byteIndex) => ref GetReference(byteIndex, byteCount: 1);
+
+    /// <summary>
+    /// Gets a reference to the first byte of a range of the block, for an access of <paramref name="byteCount"/> bytes (e.g. an
+    /// atomic operation on a 64-bit value); the range is within the byte length. The first byte of the block is 16-byte
+    /// aligned, so the alignment of the reference is the alignment of <paramref name="byteIndex"/>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="byteCount"/> is not positive, or the range is outside the block.</exception>
+    public ref byte GetReference(int byteIndex, int byteCount)
     {
-        if ((uint)byteIndex >= (uint)ByteLength)
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(byteCount);
+        var byteLength = ByteLength;
+        if ((uint)byteIndex > (uint)byteLength || byteCount > byteLength - byteIndex)
             throw new ArgumentOutOfRangeException(nameof(byteIndex));
 
         return ref _data[_offset + byteIndex];

@@ -72,6 +72,7 @@ public sealed class GlyphScratch : IDisposable
             if (_work is not null)
             {
                 _work.Span.CopyTo(buffer.Span);
+                FontBufferDebug.PoisonMovedStorage(_work);
                 _work.Dispose();
             }
 
@@ -107,6 +108,7 @@ public sealed class GlyphScratch : IDisposable
         if (_buffer is not null)
         {
             _buffer.Span.CopyTo(buffer.Span);
+            FontBufferDebug.PoisonMovedStorage(_buffer);
             _buffer.Dispose();
         }
 

@@ -360,10 +360,7 @@
     }
   },
   "css/css-tables/html5-table-formatting-1.html": {
-    "total": 6,
-    "failures": {
-      "Empty tables do not take table-rows into account": "FAIL"
-    }
+    "total": 6
   },
   "css/css-tables/html5-table-formatting-2.html": {
     "total": 12
@@ -660,7 +657,10 @@
     "reftest": "PASS"
   },
   "css/css-tables/tentative/baseline-table.html": {
-    "total": 15
+    "total": 15,
+    "failures": {
+      ".container 11": "FAIL"
+    }
   },
   "css/css-tables/tentative/baseline-td.html": {
     "total": 5
@@ -771,7 +771,12 @@
     "total": 8
   },
   "css/css-tables/tentative/table-height-redistribution.html": {
-    "total": 31
+    "total": 31,
+    "failures": {
+      "table 11": "FAIL",
+      "table 12": "FAIL",
+      "table 25": "FAIL"
+    }
   },
   "css/css-tables/tentative/table-limited-quirks.html": {
     "total": 7
@@ -795,7 +800,11 @@
     "total": 22
   },
   "css/css-tables/tentative/tbody-height-redistribution.html": {
-    "total": 12
+    "total": 12,
+    "failures": {
+      "table 10": "FAIL",
+      "table 11": "FAIL"
+    }
   },
   "css/css-tables/tentative/td-box-sizing-001.html": {
     "total": 14

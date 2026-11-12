@@ -4798,34 +4798,34 @@
     "reftest": "FAIL"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-004.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-005.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-006.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-007.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-008.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-009.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-subgrid-with-different-borders-padding-and-gaps-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-subgrid-with-row-standalone-axis-size-001.html": {
     "reftest": "PASS"
@@ -4843,28 +4843,28 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-004.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-005.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-006.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-007.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-auto-placed-subgrid-standalone-columns-008.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-001.html": {
     "reftest": "PASS"
@@ -4873,7 +4873,7 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-different-borders-padding-and-gaps-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-margin-001.html": {
     "reftest": "PASS"

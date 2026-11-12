@@ -360,20 +360,10 @@
     "total": 7
   },
   "css/css-display/reading-flow/reading-flow-grid-lanes-computed.tentative.html": {
-    "total": 3,
-    "failures": {
-      "Property reading-flow value 'grid-lanes-flow'": "FAIL",
-      "Property reading-flow value 'grid-lanes-order'": "FAIL",
-      "Property reading-flow value 'grid-lanes-track'": "FAIL"
-    }
+    "total": 3
   },
   "css/css-display/reading-flow/reading-flow-grid-lanes-valid.tentative.html": {
-    "total": 3,
-    "failures": {
-      "e.style['reading-flow'] = \"grid-lanes-flow\" should set the property value": "FAIL",
-      "e.style['reading-flow'] = \"grid-lanes-order\" should set the property value": "FAIL",
-      "e.style['reading-flow'] = \"grid-lanes-track\" should set the property value": "FAIL"
-    }
+    "total": 3
   },
   "css/css-display/reading-flow/reading-flow-invalid.html": {
     "total": 9

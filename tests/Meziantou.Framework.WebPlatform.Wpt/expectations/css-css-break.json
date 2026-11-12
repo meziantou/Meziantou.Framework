@@ -1800,31 +1800,31 @@
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-003.html": {
     "reftest": "FAIL"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-004.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-005.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-006.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-007.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-008.html": {
     "reftest": "FAIL"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-009.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-010.html": {
     "reftest": "PASS"

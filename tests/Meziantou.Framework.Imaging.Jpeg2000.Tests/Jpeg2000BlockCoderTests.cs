@@ -104,6 +104,25 @@ public sealed class Jpeg2000BlockCoderTests
         Assert.Equal(9, Jpeg2000Tier1Tables.GetSignContext(opposite) & 0x7F);
     }
 
+    [Fact]
+    public void PooledPayloadWriterRejectsUseAfterDispose()
+    {
+        var scope = new AllocationScope(new ImageResourceLimits());
+        using var writer = new PooledPayloadWriter(scope);
+        writer.Write((byte)1);
+        writer.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => writer.Write((byte)2));
+        Assert.Throws<ObjectDisposedException>(() => writer.Write([3, 4]));
+        Assert.Throws<ObjectDisposedException>(() => writer.WriteZeros(1));
+        Assert.Throws<ObjectDisposedException>(() => writer.Reset());
+        Assert.Throws<ObjectDisposedException>(() => writer.Truncate(0));
+        Assert.Throws<ObjectDisposedException>(() => writer.PropagateCarry(0));
+        Assert.Throws<ObjectDisposedException>(() => { _ = writer.WrittenSpan; });
+        Assert.Throws<ObjectDisposedException>(() => { _ = writer.WrittenMemory; });
+        Assert.Equal(0L, scope.LiveBytes);
+    }
+
     [Theory]
     [InlineData(1, 1, 1)]
     [InlineData(4, 4, 8)]

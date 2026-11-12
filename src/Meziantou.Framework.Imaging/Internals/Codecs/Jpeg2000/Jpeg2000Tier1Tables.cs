@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -102,6 +103,42 @@ internal static class Jpeg2000Tier1Tables
     /// <param name="height">The height of the code-block.</param>
     public static int GetStripeFlagCount(int width, int height) => (((height + 3) / 4) + 2) * GetStripeStride(width);
 
+    /// <summary>
+    /// Checks the invariants of the unchecked accesses of a coding pass (debug builds only): the flags, the coefficients
+    /// and the contexts hold the code-block and its border.
+    /// </summary>
+    /// <param name="flagCount">The number of flags passed to the pass.</param>
+    /// <param name="sampleCount">The number of coefficients passed to the pass.</param>
+    /// <param name="width">The width of the code-block.</param>
+    /// <param name="height">The height of the code-block.</param>
+    /// <param name="contextCount">The number of contexts.</param>
+    /// <param name="zeroCodingCount">The number of entries of the significance contexts of the sub-band, or 256 when the pass does not use them.</param>
+    [Conditional("DEBUG")]
+    public static void AssertPassBuffers(int flagCount, int sampleCount, int width, int height, int contextCount, int zeroCodingCount)
+    {
+        Debug.Assert(width >= 0 && height >= 0 && width * height <= MaxSamples);
+        Debug.Assert(flagCount >= GetStripeFlagCount(width, height));
+        Debug.Assert(sampleCount >= width * height);
+        Debug.Assert(contextCount == ContextCount);
+        Debug.Assert(zeroCodingCount == 256);
+    }
+
+    /// <summary>
+    /// Checks that the words a pass reads and <see cref="SetSignificant"/> writes around a column of a stripe are within the
+    /// flags (debug builds only): the column is in the code-block, so the border columns and stripes hold its neighbors.
+    /// </summary>
+    /// <param name="flagCount">The number of flags of the code-block (<see cref="GetStripeFlagCount"/>).</param>
+    /// <param name="stripeStride">The number of words of a stripe (<see cref="GetStripeStride"/>).</param>
+    /// <param name="column">The index of the flags of the first row of the column.</param>
+    [Conditional("DEBUG")]
+    public static void AssertColumnWithinBorder(int flagCount, int stripeStride, int column)
+    {
+        // The north-west neighbor of the first row is the furthest word before the column, the south-east neighbor of the
+        // last row the furthest one after it
+        Debug.Assert(column - stripeStride - 1 >= 0);
+        Debug.Assert(column + stripeStride + 4 < flagCount);
+    }
+
     /// <summary>Determines whether a column of a stripe has an insignificant coefficient with a significant neighbor: a coefficient that the significance propagation pass codes.</summary>
     /// <param name="column">The flags of the first row of the column, in the flags of the code-block stored stripe by stripe.</param>
     /// <remarks>The rows of a last stripe of fewer than four rows are tested too: they may be reported as candidates, never hide one.</remarks>
@@ -175,9 +212,15 @@ internal static class Jpeg2000Tier1Tables
     /// <see langword="false"/> for a coefficient of the first row of a stripe when the contexts are vertically causal (D.7):
     /// the coefficients of the stripe above ignore it.
     /// </param>
+    /// <remarks>
+    /// The neighbors are addressed relative to <paramref name="flag"/>, up to <paramref name="stripeStride"/> + 1 words before
+    /// it and <paramref name="stripeStride"/> + 4 words after it: the caller checks that the column of the coefficient is in
+    /// the code-block (<see cref="AssertColumnWithinBorder"/>), whose border columns and stripes hold every neighbor.
+    /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void SetSignificant(ref uint flag, int row, int stripeStride, bool negative, bool updateNorth)
     {
+        Debug.Assert((uint)row < 4);
         var sign = negative ? 1u : 0u;
         ref var west = ref unsafe(Unsafe.Add(ref flag, -4));
         ref var east = ref unsafe(Unsafe.Add(ref flag, 4));

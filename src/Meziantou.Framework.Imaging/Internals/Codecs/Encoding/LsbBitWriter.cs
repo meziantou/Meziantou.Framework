@@ -14,6 +14,7 @@ internal sealed class LsbBitWriter : IDisposable
     private readonly AllocationScope _scope;
     private readonly bool _countOnly;
     private PooledBuffer? _buffer;
+    private bool _disposed;
     private int _length;
     private ulong _bits;
     private int _bitCount;
@@ -54,6 +55,7 @@ internal sealed class LsbBitWriter : IDisposable
     /// <summary>Pads the last byte with zero bits.</summary>
     public void Finish()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         if (_countOnly)
         {
             _length += (_bitCount + 7) / 8;
@@ -75,6 +77,7 @@ internal sealed class LsbBitWriter : IDisposable
     /// <exception cref="InvalidOperationException">The stream is not at a byte boundary.</exception>
     public void WriteAlignedBytes(ReadOnlySpan<byte> bytes)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         if (_bitCount != 0)
             throw new InvalidOperationException("The bit stream is not at a byte boundary.");
 
@@ -92,20 +95,44 @@ internal sealed class LsbBitWriter : IDisposable
         _length += bytes.Length;
     }
 
-    /// <summary>Gets the written bytes (call <see cref="Finish"/> first).</summary>
-    public ReadOnlySpan<byte> WrittenSpan => _buffer is null ? default : _buffer.RawBuffer.AsSpan(0, _length);
+    /// <summary>Gets the written bytes (call <see cref="Finish"/> first); valid until the writer is disposed or written to.</summary>
+    public ReadOnlySpan<byte> WrittenSpan
+    {
+        get
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return _buffer is null ? default : _buffer.RawBuffer.AsSpan(0, _length);
+        }
+    }
 
-    /// <summary>Gets the written bytes (call <see cref="Finish"/> first); valid until the writer is disposed.</summary>
-    public ReadOnlyMemory<byte> WrittenMemory => _buffer is null ? default : _buffer.RawBuffer.AsMemory(0, _length);
+    /// <summary>Gets the written bytes (call <see cref="Finish"/> first).</summary>
+    /// <remarks>
+    /// The memory is a view of a pooled buffer: it is valid until the writer is disposed or written to (a write can move the
+    /// bytes to a larger buffer and return the previous one). Copy the bytes to keep them longer.
+    /// </remarks>
+    public ReadOnlyMemory<byte> WrittenMemory
+    {
+        get
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return _buffer is null ? default : _buffer.RawBuffer.AsMemory(0, _length);
+        }
+    }
 
     public void Dispose()
     {
+        _disposed = true;
+
+        // WriteBits checks nothing but the number of pending bits: with 32 of them, its next call flushes, and Flush32
+        // throws. The writes of every size and of the counting writers are rejected without a check in the inlined path
+        _bitCount = 32;
         _buffer?.Dispose();
         _buffer = null;
     }
 
     private void Flush32()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         if (_countOnly)
         {
             _length += 4;
@@ -129,6 +156,9 @@ internal sealed class LsbBitWriter : IDisposable
     {
         if (_buffer is not null && _buffer.Capacity - _length >= count)
             return;
+
+        // A write after Dispose would rent a buffer that nothing returns
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         var required = (long)_length + count;
         var capacity = Math.Max(required, Math.Max(InitialCapacity, (long)(_buffer?.Capacity ?? 0) * 2));

@@ -6,6 +6,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// What one packet adds to one code-block: the bytes of consecutive coding passes that belong to one codeword segment.
 /// The contributions of a code-block form a list, in the order of the packets.
 /// </summary>
+/// <remarks>
+/// The packet reader stores the contributions in pooled memory rented without clearing: it assigns every element as a
+/// whole before reading it (<c>AddContribution</c>), so that <see cref="IsSkipped"/> never holds a byte of the pool that
+/// is neither 0 nor 1.
+/// </remarks>
 [StructLayout(LayoutKind.Sequential)]
 internal struct Jpeg2000Contribution
 {

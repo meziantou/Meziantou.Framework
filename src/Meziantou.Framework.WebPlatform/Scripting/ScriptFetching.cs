@@ -77,7 +77,7 @@ internal static class ScriptFetching
             // script whose errors are muted have the URL of the request: the URL of the response after the redirects is not
             // exposed (https://w3c.github.io/webappsec-csp/#security-violation-reports)
             var mutedErrors = !resource.IsCorsSameOrigin;
-            return new ClassicScript(window, sourceText, responseUrl) { Url = mutedErrors ? request.Url.Serialize() : responseUrl, MutedErrors = mutedErrors, Element = element };
+            return new ClassicScript(window, sourceText, responseUrl) { Url = mutedErrors ? request.Url.Serialize() : responseUrl, MutedErrors = mutedErrors, Element = element, OriginalSourceUrl = request.Url.Serialize() };
         }
     }
 

@@ -34,6 +34,7 @@ public sealed class Performance : EventTarget
     private List<PerformanceEntry>? _interactionContentfulPaintBuffer;
     private List<PerformanceEntry>? _softNavigationBuffer;
     private List<PerformanceEntry>? _longTaskBuffer;
+    private List<PerformanceEntry>? _longAnimationFrameBuffer;
     private EventCounts? _eventCounts;
     private ulong _paintDroppedEntriesCount;
     private ulong _largestContentfulPaintDroppedEntriesCount;
@@ -44,6 +45,7 @@ public sealed class Performance : EventTarget
     private ulong _interactionContentfulPaintDroppedEntriesCount;
     private ulong _softNavigationDroppedEntriesCount;
     private ulong _longTaskDroppedEntriesCount;
+    private ulong _longAnimationFrameDroppedEntriesCount;
     private IReadOnlyList<string>? _supportedEntryTypes;
     private ulong _lastEntryId = (ulong)System.Security.Cryptography.RandomNumberGenerator.GetInt32(1, 10_000);
     private int _resourceTimingBufferSizeLimit = DefaultResourceTimingBufferSize;
@@ -62,7 +64,7 @@ public sealed class Performance : EventTarget
     /// in alphabetical order: for a window, <c>container</c> (see <see cref="WebPlatformFeatures.ContainerTimingEnabled"/>), <c>element</c> (see <see cref="WebPlatformFeatures.ElementTimingEnabled"/>),
     /// <c>event</c> and <c>first-input</c> (see <see cref="WebPlatformFeatures.EventTimingEnabled"/>), <c>interaction-contentful-paint</c>
     /// and <c>soft-navigation</c> (see <see cref="WebPlatformFeatures.SoftNavigationsEnabled"/>), <c>largest-contentful-paint</c> (see <see cref="WebPlatformFeatures.LargestContentfulPaintEnabled"/>), <c>layout-shift</c>
-    /// (see <see cref="WebPlatformFeatures.LayoutInstabilityEnabled"/>), <c>longtask</c> (see <see cref="WebPlatformFeatures.LongTasksEnabled"/>), <c>navigation</c> (see <see cref="WebPlatformFeatures.NavigationTimingEnabled"/>)
+    /// (see <see cref="WebPlatformFeatures.LayoutInstabilityEnabled"/>), <c>long-animation-frame</c> (see <see cref="WebPlatformFeatures.LongAnimationFramesEnabled"/>), <c>longtask</c> (see <see cref="WebPlatformFeatures.LongTasksEnabled"/>), <c>navigation</c> (see <see cref="WebPlatformFeatures.NavigationTimingEnabled"/>)
     /// <c>paint</c> (see <see cref="WebPlatformFeatures.PaintTimingEnabled"/>) and <c>visibility-state</c> (see
     /// <see cref="WebPlatformFeatures.VisibilityStateEntryEnabled"/>); <c>mark</c> and <c>measure</c> (see
     /// <see cref="WebPlatformFeatures.UserTimingEnabled"/>); and <c>resource</c>.
@@ -103,6 +105,11 @@ public sealed class Performance : EventTarget
         if (isWindow && features.LayoutInstabilityEnabled)
         {
             types.Add(LayoutShift.LayoutShiftEntryType);
+        }
+
+        if (isWindow && features.LongAnimationFramesEnabled)
+        {
+            types.Add(PerformanceLongAnimationFrameTiming.LongAnimationFrameEntryType);
         }
 
         if (isWindow && features.LongTasksEnabled)
@@ -470,6 +477,7 @@ public sealed class Performance : EventTarget
         InteractionContentfulPaint.InteractionContentfulPaintEntryType => _interactionContentfulPaintBuffer ?? [],
         PerformanceSoftNavigation.SoftNavigationEntryType => _softNavigationBuffer ?? [],
         PerformanceLongTaskTiming.LongTaskEntryType => _longTaskBuffer ?? [],
+        PerformanceLongAnimationFrameTiming.LongAnimationFrameEntryType => _longAnimationFrameBuffer ?? [],
         _ => [],
     };
 
@@ -487,6 +495,7 @@ public sealed class Performance : EventTarget
         InteractionContentfulPaint.InteractionContentfulPaintEntryType => _interactionContentfulPaintDroppedEntriesCount,
         PerformanceSoftNavigation.SoftNavigationEntryType => _softNavigationDroppedEntriesCount,
         PerformanceLongTaskTiming.LongTaskEntryType => _longTaskDroppedEntriesCount,
+        PerformanceLongAnimationFrameTiming.LongAnimationFrameEntryType => _longAnimationFrameDroppedEntriesCount,
         _ => 0,
     };
 
@@ -526,8 +535,8 @@ public sealed class Performance : EventTarget
     private List<PerformanceEntry> FilterBufferMap(string? name, string? type)
     {
         // The buffers of the performance entry buffer map whose entries are available from the timeline: the navigation timing,
-        // the resource timing, the marks, the measures, the paint timing, the first input, the visibility states and, as in the browsers, the
-        // soft navigations (the layout shifts, the largest contentful paints, the element timings, the event timings and the interaction
+        // the resource timing, the marks, the measures, the paint timing, the first input, the visibility states, the long animation frames and,
+        // as in the browsers, the soft navigations (the layout shifts, the largest contentful paints, the element timings, the event timings and the interaction
         // contentful paints are not: https://w3c.github.io/timing-entrytypes-registry/#registry)
         var result = new List<PerformanceEntry>();
         AddBuffer(NavigationBuffer, PerformanceNavigationTiming.NavigationEntryType);
@@ -552,6 +561,11 @@ public sealed class Performance : EventTarget
         if (_softNavigationBuffer is not null)
         {
             AddBuffer(_softNavigationBuffer, PerformanceSoftNavigation.SoftNavigationEntryType);
+        }
+
+        if (_longAnimationFrameBuffer is not null)
+        {
+            AddBuffer(_longAnimationFrameBuffer, PerformanceLongAnimationFrameTiming.LongAnimationFrameEntryType);
         }
 
         SortByStartTime(result);
@@ -682,6 +696,13 @@ public sealed class Performance : EventTarget
     /// timeline (<see cref="GetEntries"/>).
     /// </summary>
     internal void QueueLongTaskEntry(PerformanceLongTaskTiming entry) => QueueBufferedEntry(entry, ref _longTaskBuffer, PerformanceLongTaskTiming.MaxBufferSize, ref _longTaskDroppedEntriesCount);
+
+    /// <summary>
+    /// A long animation frame entry (https://w3c.github.io/long-animation-frames/#queue-a-long-animation-frame-entry): queued
+    /// to the observers and added to the buffer of the <c>long-animation-frame</c> type, which is available from the
+    /// performance timeline.
+    /// </summary>
+    internal void QueueLongAnimationFrameEntry(PerformanceLongAnimationFrameTiming entry) => QueueBufferedEntry(entry, ref _longAnimationFrameBuffer, PerformanceLongAnimationFrameTiming.MaxBufferSize, ref _longAnimationFrameDroppedEntriesCount);
 
     /// <summary>An element timing entry: queued to the observers and added to the buffer of the <c>element</c> type.</summary>
     internal void QueueElementTimingEntry(PerformanceElementTiming entry) => QueueBufferedEntry(entry, ref _elementTimingBuffer, PerformanceElementTiming.MaxBufferSize, ref _elementTimingDroppedEntriesCount);

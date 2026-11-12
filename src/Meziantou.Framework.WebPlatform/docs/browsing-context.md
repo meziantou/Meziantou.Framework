@@ -914,7 +914,7 @@ Each window and each worker has a performance timeline ([Performance Timeline](h
 the performance observers of the windows (see [Layout shifts](layout.md#layout-shifts-csslayoutlayoutshifttrackercs)), and
 `paint`, `largest-contentful-paint`, `element`, `container`, `soft-navigation` and `interaction-contentful-paint` (see
 [Paint timing](rendering.md#paint-timing)), the entry types of the user input of the windows, `event` and `first-input`,
-and the `longtask` entries of the windows, described below. The `navigationId` of the entries is the one of the document, or of its last soft navigation. The times are measured
+and the `longtask` and `long-animation-frame` entries of the windows, described below. The `navigationId` of the entries is the one of the document, or of its last soft navigation. The times are measured
 with the `TimeProvider` of the event loop, relative to the time origin of the global object, and coarsened to 100 µs.
 
 **[Resource Timing](https://w3c.github.io/resource-timing/)**: the requests sent to the loader for the subresources (the
@@ -1064,6 +1064,26 @@ same-origin culprit browsing context, as the table of the draft and the browsers
 reports the cross-origin descendants), or `window`. The durations are whole milliseconds. Not done: the rendering updates
 and the work of the user agent outside of the tasks are not reported; a synchronous `XMLHttpRequest` lasts as long as the
 `DocumentLoader` takes.
+
+**[Long Animation Frames](https://w3c.github.io/long-animation-frames/)** (a draft that Chromium implements): the tasks of
+a window that run scripts, until the rendering update when one is scheduled (the frame then ends with the rendering update,
+whose `renderStart` and `styleAndLayoutStart`, the time after the animation frame callbacks, are set), that last 50 ms or
+more, are reported as a `PerformanceLongAnimationFrameTiming` entry to the window (buffer of 200 entries, also in
+`getEntries()`). The frames are per window: a frame of an iframe is reported to the iframe, and the scripts that a
+same-origin descendant runs in the rendering update are also in the frame of its topmost same-origin ancestor. `scripts`
+lists the script entry points that lasted more than 5 ms, until the microtask checkpoint that follows them (the scripts
+that they run, e.g. the listeners of an event dispatched synchronously, are in them): the classic and module script blocks
+(their URL, before the redirects for a classic script), the event listeners (`IMG#id.onload`, `XMLHttpRequest.onload`...),
+the callback functions (the name of their IDL callback, e.g. `FrameRequestCallback`, `TimerHandler:setTimeout`) and the
+settled promises of the platform (`Promise.then`, `Promise.catch`; `import.then` for `import()`), with the window of the
+script, its attribution (`self`, `descendant`, `ancestor`, `same-page`, `other`) and the name, URL and position of the
+function of a callback (hidden for a script whose errors are muted). `blockingDuration` sums the time of the tasks beyond
+50 ms (the rendering update is added to the longest task), and `firstUIEventTimestamp` is the time stamp of the first UI
+event of the frame. The frames are timed like the long tasks: a fake clock is never read for them, the times are the last
+times the event loop read the clock. Not done: `styleDuration`, `layoutDuration` and the forced style and layout durations
+of the scripts are 0, `presentationTime` is null, the promises have no creation-time attribution, and the evaluation of a
+module imported by `import()` is reported in the `import.then` script. As in the specification, the frames of a hidden
+document are not reported.
 
 ### Speculative parsing
 
@@ -4249,6 +4269,7 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 | `UserTimingEnabled` | `PerformanceMark`, `PerformanceMeasure`, `performance.mark()`, `measure()`, `clearMarks()`, `clearMeasures()` and the `mark` and `measure` entry types |
 | `NavigationTimingEnabled` | `PerformanceNavigationTiming`, `PerformanceTiming`, `PerformanceNavigation`, `performance.timing`, `performance.navigation` and the `navigation` entry type |
 | `LongTasksEnabled` | `PerformanceLongTaskTiming`, `TaskAttributionTiming` and the `longtask` entry type: no task is reported |
+| `LongAnimationFramesEnabled` | `PerformanceLongAnimationFrameTiming`, `PerformanceScriptTiming` and the `long-animation-frame` entry type: no frame is reported |
 | `ScrollDrivenAnimationsEnabled` | `ScrollTimeline`, `ViewTimeline`, `Animation.rangeStart` and `Animation.rangeEnd`; the scroll and view timelines of `animation-timeline` are then no timeline |
 | `SvgAnimationsEnabled` | The SVG animations (SMIL): the `animate`, `set`, `animateMotion` and `animateTransform` elements have no effect and fire no event, and `TimeEvent` is hidden |
 | `MediaSourceEnabled` | The [Media Source Extensions](#media-source-extensions): `MediaSource`, `MediaSourceHandle`, `SourceBuffer`, `SourceBufferList`, `ManagedMediaSource`, `ManagedSourceBuffer`, `BufferedChangeEvent` and the `sourceBuffer` attribute of the tracks |

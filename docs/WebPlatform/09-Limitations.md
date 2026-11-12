@@ -61,6 +61,8 @@ fails.
 ## Scripting
 
 - WebAssembly threads are not supported.
+- The time spent on the styles and the layout is not measured: the long animation frames report a `styleDuration`, a
+  `layoutDuration` and forced style and layout durations of 0, and no `presentationTime`.
 - The scripts run in your process: read [Running untrusted pages](06-Scripting/04-RunningUntrustedPages.md) before you
   load pages you do not control.
 

@@ -65,6 +65,7 @@ public sealed class WebPlatformFeaturesTests : IDisposable
           SoftNavigationsEnabled: typeof PerformanceSoftNavigation + typeof InteractionContentfulPaint + PerformanceObserver.supportedEntryTypes.includes('soft-navigation') + PerformanceObserver.supportedEntryTypes.includes('interaction-contentful-paint'),
           UserTimingEnabled: typeof PerformanceMark + typeof PerformanceMeasure + typeof performance.mark + typeof performance.measure + PerformanceObserver.supportedEntryTypes.includes('mark'),
           LongTasksEnabled: typeof PerformanceLongTaskTiming + typeof TaskAttributionTiming + PerformanceObserver.supportedEntryTypes.includes('longtask'),
+          LongAnimationFramesEnabled: typeof PerformanceLongAnimationFrameTiming + typeof PerformanceScriptTiming + PerformanceObserver.supportedEntryTypes.includes('long-animation-frame'),
           InputPendingEnabled: typeof navigator.scheduling + typeof Scheduling + ('scheduling' in navigator),
           NavigationTimingEnabled: typeof PerformanceNavigationTiming + typeof PerformanceTiming + typeof PerformanceNavigation + typeof performance.timing + PerformanceObserver.supportedEntryTypes.includes('navigation') + ('navigation' in Performance.prototype),
           ScrollDrivenAnimationsEnabled: typeof ScrollTimeline + typeof ViewTimeline + ('rangeStart' in Animation.prototype),

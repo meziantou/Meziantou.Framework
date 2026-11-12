@@ -358,6 +358,10 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         _fetchController = controller;
         FetchResponse response;
         var timing = environment is not null && RelevantGlobal is { } relevantGlobal ? ResourceTiming.Start(relevantGlobal, request, "xmlhttprequest") : null;
+
+        // https://w3c.github.io/long-animation-frames/#record-pause-duration: the running script is paused while the request is waited for
+        var pausedEventLoop = RelevantWindow?.EventLoop;
+        var pauseStart = pausedEventLoop?.GetPauseStartTimestamp() ?? 0;
         try
         {
             response = environment is null ? FetchResponse.NetworkError() : Fetching.FetchAsync(request, controller.Token).GetAwaiter().GetResult();
@@ -366,6 +370,8 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         {
             response = FetchResponse.NetworkError();
         }
+
+        pausedEventLoop?.RecordPauseDuration(pauseStart);
 
         _fetchController = null;
         if (fetchId != _fetchId)

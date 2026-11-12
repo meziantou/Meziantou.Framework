@@ -140,6 +140,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         ["PerformanceNavigation"] = static features => features.NavigationTimingEnabled,
         ["PerformanceLongTaskTiming"] = static features => features.LongTasksEnabled,
         ["TaskAttributionTiming"] = static features => features.LongTasksEnabled,
+        ["PerformanceLongAnimationFrameTiming"] = static features => features.LongAnimationFramesEnabled,
+        ["PerformanceScriptTiming"] = static features => features.LongAnimationFramesEnabled,
         ["Scheduling"] = static features => features.InputPendingEnabled,
         ["ScrollTimeline"] = static features => features.ScrollDrivenAnimationsEnabled,
         ["ViewTimeline"] = static features => features.ScrollDrivenAnimationsEnabled,

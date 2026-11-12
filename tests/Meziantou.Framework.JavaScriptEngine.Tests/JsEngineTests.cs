@@ -2961,6 +2961,34 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void Documentation_FunctionSourceLocation()
+    {
+        #region JavaScriptEngine_FunctionSourceLocation
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("""
+            // Handlers
+            function onSave() {}
+            globalThis.handler = onSave.bind(null);
+            """, url: "https://example.com/app.js");
+
+        using (engine.Enter())
+        {
+            // The target function of a bound function, its script, and the position of its source text
+            var location = realm.GlobalObject.GetProperty("handler").AsObject().GetFunctionSourceLocation()!.Value;
+            Assert.Equal("onSave", location.Name);
+            Assert.Equal("https://example.com/app.js", location.Url);
+            Assert.Equal(12, location.Position);
+            Assert.Equal(2, location.Line);
+            Assert.Equal(1, location.Column);
+
+            // A built-in function has no source location
+            Assert.Null(realm.GlobalObject.GetProperty("parseInt").AsObject().GetFunctionSourceLocation());
+        }
+        #endregion
+    }
+
+    [Fact]
     public void Documentation_ExposeDotNetClass()
     {
         #region JavaScriptEngine_ExposeClass

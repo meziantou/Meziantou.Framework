@@ -545,6 +545,7 @@
       "resource-timing",
       "performance-timeline",
       "longtask-timing",
+      "long-animation-frame",
       "is-input-pending",
       "server-timing",
       "timing-entrytypes-registry",

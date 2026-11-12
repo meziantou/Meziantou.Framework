@@ -1,0 +1,214 @@
+{
+  "long-animation-frame/conditional-measure-iframe-time-origin.tentative.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "long-animation-frame/conditional-measure-time-resolve.tentative.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "long-animation-frame/conditional-user-timing-basic.tentative.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "long-animation-frame/conditional-user-timing-buffer-limit.tentative.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "long-animation-frame/conditional-user-timing-cross-origin-measure.tentative.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "long-animation-frame/conditional-user-timing-cross-origin.tentative.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "long-animation-frame/conditional-user-timing-detached-window.tentative.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "long-animation-frame/conditional-user-timing-same-origin.tentative.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "long-animation-frame/loaf-basic.html": {
+    "total": 5
+  },
+  "long-animation-frame/loaf-blocking-duration.html": {
+    "total": 4
+  },
+  "long-animation-frame/loaf-bound-function-opaque-sanitization.html": {
+    "total": 1
+  },
+  "long-animation-frame/loaf-buffered.html": {
+    "total": 2
+  },
+  "long-animation-frame/loaf-congested-moment-worker.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 5,
+    "failures": {
+      "A flood of short worker tasks is coalesced into one congested-moment entry": "NOTRUN",
+      "A long flood is reported as a single congested-moment entry": "NOTRUN",
+      "A long worker task that backlogs the queue reports a congested-moment LoAF entry": "TIMEOUT",
+      "Steady async iteration is not reported as a congested moment": "NOTRUN",
+      "Two idle-gap-separated floods are reported as two non-overlapping entries": "NOTRUN"
+    }
+  },
+  "long-animation-frame/loaf-container-queries.html": {
+    "total": 6
+  },
+  "long-animation-frame/loaf-cross-origin-isolated.https.html": {
+    "total": 1
+  },
+  "long-animation-frame/loaf-duration-clamping.html": {
+    "total": 1
+  },
+  "long-animation-frame/loaf-event-blocking-duration.html": {
+    "total": 1
+  },
+  "long-animation-frame/loaf-event-listener.html": {
+    "total": 5
+  },
+  "long-animation-frame/loaf-first-ui-event.html": {
+    "total": 5,
+    "failures": {
+      "LoAF should expose firstUIEventTimestamp for keydown events": "FAIL"
+    }
+  },
+  "long-animation-frame/loaf-forced-layout-duration.html": {
+    "total": 6,
+    "failures": {
+      "forcedLayoutDuration and forcedStyleAndLayoutDuration are strictly positive after heavy forced layout work": "FAIL"
+    }
+  },
+  "long-animation-frame/loaf-forced-style-duration.html": {
+    "total": 5,
+    "failures": {
+      "forcedStyleDuration and forcedStyleAndLayoutDuration are strictly positive after heavy forced style work": "FAIL"
+    }
+  },
+  "long-animation-frame/loaf-idle.html": {
+    "total": 1
+  },
+  "long-animation-frame/loaf-iframe-crossorigin.html": {
+    "total": 2
+  },
+  "long-animation-frame/loaf-iframe-same-origin.html": {
+    "total": 2
+  },
+  "long-animation-frame/loaf-iframe-self.html": {
+    "total": 3
+  },
+  "long-animation-frame/loaf-layout-duration.html": {
+    "total": 8,
+    "failures": {
+      "Heavy render-phase layout produces strictly positive layoutDuration": "FAIL"
+    }
+  },
+  "long-animation-frame/loaf-onmessage.html": {
+    "total": 6
+  },
+  "long-animation-frame/loaf-paint-mixin.html": {
+    "total": 1,
+    "failures": {
+      "A LoAF that generates a frame should have paintTime/presentationTime": "FAIL"
+    }
+  },
+  "long-animation-frame/loaf-pause-duration.html": {
+    "total": 2,
+    "failures": {
+      "Synchronous XHR should be counted as pauseDuration": "FAIL"
+    }
+  },
+  "long-animation-frame/loaf-pointer-without-render-iframe.html": {
+    "total": 1
+  },
+  "long-animation-frame/loaf-pointer-without-render.html": {
+    "total": 1
+  },
+  "long-animation-frame/loaf-popup.html": {
+    "total": 1
+  },
+  "long-animation-frame/loaf-promise-import.tentative.html": {
+    "total": 1
+  },
+  "long-animation-frame/loaf-promise-scheduled-render.html": {
+    "total": 1
+  },
+  "long-animation-frame/loaf-promise.html": {
+    "total": 5
+  },
+  "long-animation-frame/loaf-script-block.html": {
+    "total": 10,
+    "failures": {
+      "LoAF script: http://web-platform.test:8000/long-animation-frame/resources/busy.js?import module-script,": "FAIL"
+    }
+  },
+  "long-animation-frame/loaf-script-count.tentative.html": {
+    "total": 2,
+    "failures": {
+      "A long animation frame reports scriptCount (>= scripts.length)": "FAIL",
+      "scriptCount counts short entry points that are absent from scripts": "FAIL"
+    }
+  },
+  "long-animation-frame/loaf-script-detached-window.html": {
+    "total": 1
+  },
+  "long-animation-frame/loaf-script-nested-callback.html": {
+    "total": 2
+  },
+  "long-animation-frame/loaf-script-window-attribution.html": {
+    "total": 7
+  },
+  "long-animation-frame/loaf-source-location-redirect.html": {
+    "total": 12
+  },
+  "long-animation-frame/loaf-source-location.html": {
+    "total": 5
+  },
+  "long-animation-frame/loaf-stream-source-location.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Source location should be extracted for stream promises": "FAIL"
+    }
+  },
+  "long-animation-frame/loaf-stream.html": {
+    "total": 3
+  },
+  "long-animation-frame/loaf-style-and-layout-duration-bounds.html": {
+    "total": 3
+  },
+  "long-animation-frame/loaf-style-duration.html": {
+    "total": 10,
+    "failures": {
+      "Heavy render-phase style recalculation produces strictly positive styleDuration": "FAIL"
+    }
+  },
+  "long-animation-frame/loaf-supportedEntryTypes.html": {
+    "total": 1
+  },
+  "long-animation-frame/loaf-timeline.html": {
+    "total": 1
+  },
+  "long-animation-frame/loaf-toJSON.html": {
+    "total": 1
+  },
+  "long-animation-frame/loaf-ui-event-render-start.html": {
+    "total": 1
+  },
+  "long-animation-frame/loaf-user-callback.html": {
+    "total": 10
+  },
+  "long-animation-frame/loaf-visibility.html": {
+    "total": 2
+  },
+  "long-animation-frame/performance-bind.tentative.html": {
+    "total": 4,
+    "failures": {
+      "LoAF script: internal_func user-entry-point, A user-defined entry point should appear in the list of scripts": "FAIL",
+      "LoAF script: internal_func user-entry-point, A user-defined entry point should bind additional args": "FAIL",
+      "LoAF script: internal_func user-entry-point, A user-defined entry point should bind thisArg": "FAIL",
+      "LoAF script: internal_func user-entry-point, A user-defined entry point should forward args": "FAIL"
+    }
+  }
+}

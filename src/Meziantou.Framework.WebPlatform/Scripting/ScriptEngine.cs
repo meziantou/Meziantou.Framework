@@ -468,7 +468,27 @@ public abstract class ScriptEngine
     /// the service workers then cannot answer the requests.
     /// </summary>
     internal virtual IServiceWorkerFetchOperations? GetServiceWorkerFetchOperations(GlobalScope global) => null;
+
+    /// <summary>
+    /// Returns where a callback was defined (https://w3c.github.io/long-animation-frames/#apply-source-location): the
+    /// script, the name and the position of its function (the target function of a bound function), or null when the
+    /// callback is not a function defined in a script. <paramref name="callback"/> is a function of the engine, a delegate
+    /// created for a function, or the event listener or the event handler of a function.
+    /// </summary>
+    internal virtual ScriptCallbackLocation? GetCallbackSourceLocation(object callback) => null;
+
+    /// <summary>Returns the name of the IDL interface of a platform object (e.g. <c>XMLHttpRequest</c>), or null.</summary>
+    internal virtual string? GetInterfaceName(object platformObject) => null;
 }
+
+/// <summary>Where a callback was defined (see <see cref="ScriptEngine.GetCallbackSourceLocation"/>).</summary>
+/// <param name="Url">The URL of the script that defines the function, or null.</param>
+/// <param name="FunctionName">The name of the function, or the empty string.</param>
+/// <param name="CharPosition">The position (0-based) of the function in the source text of its script.</param>
+/// <param name="Line">The line (1-based) of the function.</param>
+/// <param name="Column">The column (1-based) of the function.</param>
+/// <param name="MutedErrors">Whether the script is a classic script whose errors are muted: the function name and its position are not exposed.</param>
+internal readonly record struct ScriptCallbackLocation(string? Url, string FunctionName, long CharPosition, long Line, long Column, bool MutedErrors);
 
 /// <summary>The value undefined, returned by the members whose type is <c>any</c> and whose .NET null value is null.</summary>
 public sealed class UndefinedValue

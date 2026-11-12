@@ -350,6 +350,8 @@ public sealed class WptTests
 
     public static TheoryData<string> LongTaskTimingTests => GetTests("longtask-timing");
 
+    public static TheoryData<string> LongAnimationFrameTests => GetTests("long-animation-frame");
+
     public static TheoryData<string> IsInputPendingTests => GetTests("is-input-pending");
 
     public static TheoryData<string> ServerTimingTests => GetTests("server-timing");
@@ -1416,6 +1418,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(LongTaskTimingTests))]
     public void LongTaskTiming(string test) => Run("longtask-timing", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(LongAnimationFrameTests))]
+    public void LongAnimationFrame(string test) => Run("long-animation-frame", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(IsInputPendingTests))]

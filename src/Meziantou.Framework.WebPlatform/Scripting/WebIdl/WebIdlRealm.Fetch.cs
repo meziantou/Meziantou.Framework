@@ -141,7 +141,13 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             Define("queueTask", 1, (_, args) =>
             {
                 var callback = args[0];
-                GlobalScope.QueueGlobalTask(() => adapter.Call(callback, adapter.Undefined, []));
+                GlobalScope.QueueGlobalTask(() =>
+                {
+                    // https://w3c.github.io/long-animation-frames/#record-timing-info-for-promise-resolver: the tasks of Fetch.js
+                    // settle the promises of the bodies (text(), json()...)
+                    GlobalScope.EventLoop.RecordPromiseResolverScript(GlobalScope, rejected: false);
+                    adapter.Call(callback, adapter.Undefined, []);
+                });
                 return adapter.Undefined;
             });
 
@@ -350,6 +356,11 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             }
 
             var reader = bodyReader is null ? null : CreateBodyReader(bodyReader, document, () => controller.IsCancellationRequested, Finish, controller.Cancel);
+
+            // https://w3c.github.io/long-animation-frames/#record-timing-info-for-promise-resolver: the promise of fetch() is settled.
+            // Its invoker is "Promise" (the promise has no creation-time attribution): the reactions of the promises of the body
+            // read from the response (text(), json()...) may run in the same microtask checkpoint
+            GlobalScope.EventLoop.RecordPromiseResolverScript(GlobalScope, rejected: response.IsNetworkError);
             adapter.Call(callback, adapter.Undefined, [isOpaque ? FromFetchResponse(response, internalBodyReader: reader) : FromFetchResponse(response, reader)]);
         }
 
@@ -455,6 +466,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 {
                     document.QueueGlobalTask(() =>
                     {
+                        // https://w3c.github.io/long-animation-frames/#record-timing-info-for-promise-resolver: the promises of the
+                        // body (the reads of its stream, text(), json()...) are settled by Fetch.js when the chunk is given
+                        GlobalScope.EventLoop.RecordPromiseResolverScript(GlobalScope, rejected: !completed.IsCompletedSuccessfully);
                         if (completed.IsCompletedSuccessfully && completed.Result is { } chunk)
                         {
                             adapter.Call(callback, adapter.Undefined, [FromBuffer(JsBufferKind.Uint8Array, chunk.ToArray())]);

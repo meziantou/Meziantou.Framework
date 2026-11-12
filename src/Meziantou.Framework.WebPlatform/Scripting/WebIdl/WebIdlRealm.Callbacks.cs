@@ -43,9 +43,11 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
     /// <summary>
     /// Invokes a JavaScript function passed as an IDL callback function (https://webidl.spec.whatwg.org/#invoke-a-callback-function).
-    /// Returns undefined when the function is not callable ([LegacyTreatNonObjectAsNull]).
+    /// Returns undefined when the function is not callable ([LegacyTreatNonObjectAsNull]). <paramref name="callbackName"/> is the
+    /// identifier of the IDL callback function (e.g. <c>FrameRequestCallback</c>), the invoker of the script in the long
+    /// animation frames, or null when the invocation is not reported.
     /// </summary>
-    internal TValue InvokeCallback(TValue function, TValue thisValue, ReadOnlySpan<TValue> arguments, CallbackBehavior behavior)
+    internal TValue InvokeCallback(TValue function, TValue thisValue, ReadOnlySpan<TValue> arguments, CallbackBehavior behavior, string? callbackName = null)
     {
         if (!Adapter.IsCallable(function))
             return Adapter.Undefined;
@@ -65,7 +67,15 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         var callbackRealm = Agent.GetAssociatedRealm(function) ?? this;
 
         using var authorCode = Html.AuthorCodeScope.Enter();
-        callbackRealm.GlobalScope.EventLoop.RecordScriptEvaluation(callbackRealm.GlobalScope);
+        var callbackEventLoop = callbackRealm.GlobalScope.EventLoop;
+        callbackEventLoop.RecordScriptEvaluation(callbackRealm.GlobalScope);
+
+        // https://w3c.github.io/long-animation-frames/#record-timing-info-for-user-callback
+        if (callbackName is not null && !callbackEventLoop.HasPendingScriptEntryPoint)
+        {
+            callbackEventLoop.RecordUserCallbackScript(callbackRealm.GlobalScope, callbackName, function);
+        }
+
         Agent.Host.OnCallbackInvoking();
 
         // https://webidl.spec.whatwg.org/#prepare-to-run-a-callback: the realm of the callback is the entry realm

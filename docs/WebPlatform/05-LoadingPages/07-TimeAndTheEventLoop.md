@@ -145,6 +145,40 @@ the first to the last time its scripts read the time (`performance.now()`, the t
 that waits on `performance.now()` for 60 ms makes a long task. The tasks that run no script are not reported, and the
 parsing of the document of `Navigate()` counts as one task.
 
+## Long animation frames
+
+A long animation frame ([Long Animation Frames API](https://w3c.github.io/long-animation-frames/)) is a task after which
+the rendering is not updated, or the tasks that run until the rendering is updated, when it lasts 50 ms or more. It is
+reported as a [PerformanceLongAnimationFrameTiming](cref:Meziantou.Framework.WebPlatform.Dom.PerformanceLongAnimationFrameTiming) to the `long-animation-frame` performance observers of the
+window whose scripts ran, and is available from its performance timeline. Its
+[Scripts](cref:Meziantou.Framework.WebPlatform.Dom.PerformanceLongAnimationFrameTiming.Scripts) tell which scripts ran 5 ms or more: a script block, an event listener (e.g.
+`IMG#logo.onload`), a callback (`FrameRequestCallback`, `TimerHandler:setTimeout`...) or the reactions of a promise of
+the platform (`Window.fetch.then`), with the function and the script that define it:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/PerformanceTimelineScriptTests.cs;region=WebPlatform_LongAnimationFrames;format=md-fenced-code-block;dedent=true -->
+```csharp
+var window = document.DefaultView!;
+var frames = new List<string>();
+var observer = new PerformanceObserver(window, (entries, _, _) =>
+{
+    foreach (var entry in entries.GetEntriesByType("long-animation-frame").Cast<PerformanceLongAnimationFrameTiming>())
+    {
+        // e.g. "60 ms: TimerHandler:setTimeout (busy)", "busy" being the name of the function
+        var scripts = entry.Scripts.Select(script => $"{script.Invoker} ({script.SourceFunctionName})");
+        frames.Add($"{entry.Duration} ms: {string.Join(", ", scripts)}");
+    }
+});
+observer.Observe(new PerformanceObserverInit { Type = "long-animation-frame", Buffered = true });
+```
+<!-- endref -->
+
+A script lasts until the microtasks it queued ran. `renderStart` and `styleAndLayoutStart` are set when the frame ends with
+a rendering update: the animation frame callbacks run after `renderStart`, the resize observers after
+`styleAndLayoutStart`. The frames are timed like the long tasks: a fake clock is never read for them, the times are the
+last times the event loop read the clock (`performance.now()`, the timers). The library does not measure the time it
+spends on the styles and the layout: `styleDuration`, `layoutDuration` and the `forced*Duration` of the scripts are 0, and
+the frames have no `presentationTime`.
+
 ## Run the event loop on your own thread
 
 A host that runs a page on its own thread (as the Playwright server does) sets `EventLoop.WorkSignal`: the callback is

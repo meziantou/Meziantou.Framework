@@ -54,51 +54,51 @@ public class GeometryBenchmarks
 
     [Benchmark]
     [Workload("1920x1080 Rgba32 horizontal flip")]
-    public int FlipHorizontal() => Apply(_rgba32, static image => image.Flip(FlipMode.Horizontal));
+    public int FlipHorizontal() => Apply(_rgba32, image => image.Flip(FlipMode.Horizontal));
 
     [Benchmark]
     [Workload("1920x1080 Rgba32 vertical flip")]
-    public int FlipVertical() => Apply(_rgba32, static image => image.Flip(FlipMode.Vertical));
+    public int FlipVertical() => Apply(_rgba32, image => image.Flip(FlipMode.Vertical));
 
     [Benchmark]
     [Workload("1920x1080 Rgba32 crop to the centered 1280x720 area")]
-    public int Crop() => Apply(_rgba32, static image => image.Crop(new Rectangle(320, 180, 1280, 720)));
+    public int Crop() => Apply(_rgba32, image => image.Crop(new Rectangle(320, 180, 1280, 720)));
 
     [Benchmark]
     [Workload("1920x1080 Rgba32 padding of 64 white pixels on each side")]
-    public int Pad() => Apply(_rgba32, static image => image.Pad(64, 64, 64, 64, White));
+    public int Pad() => Apply(_rgba32, image => image.Pad(64, 64, 64, 64, White));
 
     [Benchmark]
     [Workload("1920x1080 Rgba32 canvas extended to 1920x1920 (letterbox), centered")]
-    public int ExtendCanvas() => Apply(_rgba32, static image => image.ExtendCanvas(new Size(1920, 1920)));
+    public int ExtendCanvas() => Apply(_rgba32, image => image.ExtendCanvas(new Size(1920, 1920)));
 
     [Benchmark]
     [Workload("1920x1080 Rgba32 EXIF orientation 6 (quarter turn) applied")]
-    public int AutoOrientRotate() => Apply(_rotatedPhoto, static image => image.AutoOrient());
+    public int AutoOrientRotate() => Apply(_rotatedPhoto, image => image.AutoOrient());
 
     [Benchmark]
     [Workload("1920x1080 Rgba32 EXIF orientation 5 (transpose) applied")]
-    public int AutoOrientTranspose() => Apply(_transposedPhoto, static image => image.AutoOrient());
+    public int AutoOrientTranspose() => Apply(_transposedPhoto, image => image.AutoOrient());
 
     [Benchmark]
     [Workload("1920x1080 Rgba32 rotation by 3 degrees, bilinear, expanded canvas")]
-    public int RotateBilinear() => Apply(_rgba32, static image => image.Rotate(3, new TransformOptions { Filter = ResamplingFilter.Bilinear }));
+    public int RotateBilinear() => Apply(_rgba32, image => image.Rotate(3, new TransformOptions { Filter = ResamplingFilter.Bilinear }));
 
     [Benchmark]
     [Workload("1920x1080 Rgba32 rotation by 3 degrees, bicubic, expanded canvas")]
-    public int RotateBicubic() => Apply(_rgba32, static image => image.Rotate(3, new TransformOptions { Filter = ResamplingFilter.Bicubic }));
+    public int RotateBicubic() => Apply(_rgba32, image => image.Rotate(3, new TransformOptions { Filter = ResamplingFilter.Bicubic }));
 
     [Benchmark]
     [Workload("1920x1080 Rgba32 rotation by 30 degrees, bicubic, canvas kept")]
-    public int RotateKeepCanvas() => Apply(_rgba32, static image => image.Rotate(30, new TransformOptions { Filter = ResamplingFilter.Bicubic, CanvasMode = TransformCanvasMode.Keep }));
+    public int RotateKeepCanvas() => Apply(_rgba32, image => image.Rotate(30, new TransformOptions { Filter = ResamplingFilter.Bicubic, CanvasMode = TransformCanvasMode.Keep }));
 
     [Benchmark]
     [Workload("1920x1080 Rgba32 skew by 10 degrees horizontally, bicubic")]
-    public int Skew() => Apply(_rgba32, static image => image.Skew(10, 0));
+    public int Skew() => Apply(_rgba32, image => image.Skew(10, 0));
 
     [Benchmark]
     [Workload("1920x1080 Rgba32 perspective correction of a quadrilateral to 1600x900, bicubic")]
-    public int CorrectPerspective() => Apply(_rgba32, static image => image.CorrectPerspective(new PointD(180, 120), new PointD(1760, 60), new PointD(1840, 1020), new PointD(90, 960), new Size(1600, 900)));
+    public int CorrectPerspective() => Apply(_rgba32, image => image.CorrectPerspective(new PointD(180, 120), new PointD(1760, 60), new PointD(1840, 1020), new PointD(90, 960), new Size(1600, 900)));
 
     private static int Apply(Image source, Action<Image> operation)
     {

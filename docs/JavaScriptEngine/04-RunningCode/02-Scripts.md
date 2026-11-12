@@ -143,8 +143,10 @@ Assert.Equal(7, error.Column);
 
 The engine compiles the source to bytecode, which an interpreter runs. A function that runs often, 1,000 calls or loop
 iterations by default, is then compiled to .NET code, which the .NET JIT compiles to machine code. The compiled
-code runs the same instructions without the dispatch of the interpreter: a loop on numbers runs about three times
-faster, and code that mostly calls the built-ins runs at their speed either way.
+code runs the same instructions without the dispatch of the interpreter. The code that gains the most spends its time
+in JavaScript itself: loops, arithmetic, local variables and property accesses. The code that spends its time in the
+built-ins (JSON, regular expressions, Intl...) runs at their speed either way, and a call from a JavaScript function to
+another one costs the same.
 
 - The compilation changes nothing a script can observe: the results, the errors and their locations, the stack traces
   and the [limits](../07-LimitsAndSandboxing.md) are the same as with the interpreter.

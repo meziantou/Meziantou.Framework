@@ -47,9 +47,10 @@ them with this engine.
 - **No optimizing compiler.** The code is compiled to bytecode and interpreted; the functions that run often are
   compiled to .NET code, which the .NET JIT compiles to machine code (see
   [How the code runs](04-RunningCode/02-Scripts.md#how-the-code-runs)). This compilation removes the dispatch of the
-  interpreter, but it does not specialize the code for the types of the values as V8 or SpiderMonkey do, so CPU-heavy
-  scripts stay slower than in these engines. With Native AOT, the code is only interpreted. Compile the scripts that run
-  many times once, with [JsPreparedScript](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript).
+  interpreter, but it does not specialize the code for the types of the values: each operation still checks the types of
+  its operands. With Native AOT, the code is only interpreted. Move the CPU-heavy work that does not need JavaScript to
+  .NET functions (see [Functions](05-Interop/04-Functions.md)), and compile the scripts that run many times once, with
+  [JsPreparedScript](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript).
 - **One thread at a time per engine.** Use one engine per thread to run scripts in parallel. Engines share memory only
   through `SharedArrayBuffer`.
 - **No debugging protocol.** Chrome DevTools and Visual Studio Code cannot attach to the engine. Your application can

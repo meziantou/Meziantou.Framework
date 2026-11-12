@@ -943,7 +943,7 @@ internal sealed class JitCompiler
 
     private void EmitCall(string helper)
     {
-        var method = Helpers.GetOrAdd(helper, static name => typeof(JsInterpreter).GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic) ?? throw new InvalidOperationException("Unknown helper " + name));
+        var method = Helpers.GetOrAdd(helper, name => typeof(JsInterpreter).GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic) ?? throw new InvalidOperationException("Unknown helper " + name));
         _il.Emit(EmitOpCodes.Call, method);
     }
 }

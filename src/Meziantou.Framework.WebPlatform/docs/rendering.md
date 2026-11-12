@@ -375,7 +375,15 @@ rectangles and the image shaders, which are in natural pixels, to the decoded pi
 - the animated images (GIF, APNG, WebP) are played from the time they became available, on the clock of the event loop
   (the virtual clock of a `FakeTimeProvider` in the tests): the display list shows the frame of the time it is painted and is
   painted again after the next frame (a screenshot shows the current frame). The images of the same URL in the list of
-  available images share their animation, as in the browsers. `image-animation` is not implemented.
+  available images share their animation, as in the browsers (`image-animation: normal`). The other values of
+  `image-animation` (https://drafts.csswg.org/css-image-animation-1/) are implemented by `Rendering/ImageAnimationTimelines.cs`:
+  the style engine records the changes of the value of each element (and its `display: none`, which resets its animations)
+  on the clock of the event loop when its style is computed, and the painter replays them for each image of the element from
+  the time the image became available (`running`: a timeline of the element, continuing from the displayed frame; `paused`:
+  the frame displayed when the value changed, the first one when the image was not playing; `stopped`: the first frame). The
+  background propagated from the body element follows the value of the root element. `:animated-image` matches the `img`
+  elements, the image buttons and the `video` elements showing their poster frame whose image has several frames
+  (`ImageMetadata.IsAnimated`, read from the encoded bytes: GIF, APNG, animated WebP, AVIF image sequences).
 
 The bitmaps (`Html/Canvas/`) are pixels in the format of `ImageData` (RGBA bytes or half floats, not premultiplied, sRGB
 or Display P3: `BitmapPixels.ColorSpace`), processed by the library:

@@ -396,7 +396,7 @@ need what the library does not have stay in the expectations as failures, with t
 run (see the disabled tests of [the WPT coverage](../../../docs/WebPlatform/10-WptCoverage/01-Overview.md) and their reasons):
 
 - The specifications that are not implemented: `css-layout-api`, `css-paint-api`,
-  `css-navigation`, `css-image-animation`, `css-exclusions`, `css-device-adapt`.
+  `css-navigation`, `css-exclusions`, `css-device-adapt`.
 
 ## Forced colors mode
 

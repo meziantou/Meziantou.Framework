@@ -273,6 +273,166 @@ internal static class ImageMetadata
         return null;
     }
 
+    /// <summary>
+    /// Returns whether an encoded image is an animated image (https://drafts.csswg.org/css-image-animation-1/#selectordef-animated-image:
+    /// "not only be in a format that is capable of animation, but must also be an actually animated image"): a GIF image with
+    /// several image descriptors, an APNG image whose <c>acTL</c> chunk (before the image data) declares several frames, a WebP
+    /// image with the animation flag of its <c>VP8X</c> chunk and several <c>ANMF</c> chunks, or an AVIF image sequence (the
+    /// <c>avis</c> brand of its <c>ftyp</c> box). The other formats are never animated.
+    /// </summary>
+    public static bool IsAnimated(ReadOnlySpan<byte> bytes)
+    {
+        if (bytes.StartsWith("GIF87a"u8) || bytes.StartsWith("GIF89a"u8))
+            return CountGifFrames(bytes, limit: 2) >= 2;
+
+        if (bytes.StartsWith(PngSignature))
+            return GetApngFrameCount(bytes) > 1;
+
+        if (bytes.Length >= 16 && bytes.StartsWith("RIFF"u8) && bytes[8..].StartsWith("WEBP"u8))
+            return IsAnimatedWebP(bytes);
+
+        return IsAvifSequence(bytes);
+    }
+
+    /// <summary>Returns the number of image descriptors of a GIF image, counted up to a limit (the frames of its animation).</summary>
+    private static int CountGifFrames(ReadOnlySpan<byte> bytes, int limit)
+    {
+        if (bytes.Length < 13)
+            return 0;
+
+        var offset = 13;
+        if ((bytes[10] & 0x80) != 0)
+        {
+            offset += 3 * (1 << ((bytes[10] & 0x07) + 1));
+        }
+
+        var count = 0;
+        while (offset < bytes.Length && count < limit)
+        {
+            switch (bytes[offset])
+            {
+                case 0x21 when offset + 2 < bytes.Length:
+                    offset = SkipGifSubBlocks(bytes, offset + 2);
+                    break;
+
+                case 0x2C when offset + 10 <= bytes.Length:
+                {
+                    var packed = bytes[offset + 9];
+                    offset += 10;
+                    if ((packed & 0x80) != 0)
+                    {
+                        offset += 3 * (1 << ((packed & 0x07) + 1));
+                    }
+
+                    // The LZW minimum code size, then the image data (a truncated image is not a frame)
+                    if (offset >= bytes.Length)
+                        return count;
+
+                    offset = SkipGifSubBlocks(bytes, offset + 1);
+                    count++;
+                    break;
+                }
+
+                default:
+                    return count;
+            }
+        }
+
+        return count;
+    }
+
+    /// <summary>Skips the data sub-blocks of a GIF image (each prefixed by its length, up to the empty block terminator).</summary>
+    private static int SkipGifSubBlocks(ReadOnlySpan<byte> bytes, int offset)
+    {
+        while (offset < bytes.Length && bytes[offset] != 0)
+        {
+            offset += bytes[offset] + 1;
+        }
+
+        return offset + 1;
+    }
+
+    /// <summary>
+    /// Returns the number of frames of an APNG image (https://w3c.github.io/png/#acTL-chunk: the <c>acTL</c> chunk, which must
+    /// precede the first <c>IDAT</c> chunk; a later one is ignored, as the decoders do), or 0 for a PNG image without animation.
+    /// </summary>
+    private static uint GetApngFrameCount(ReadOnlySpan<byte> bytes)
+    {
+        var offset = PngSignature.Length;
+        while (offset + 8 <= bytes.Length)
+        {
+            var length = BinaryPrimitives.ReadUInt32BigEndian(bytes[offset..]);
+            var type = bytes.Slice(offset + 4, 4);
+            if (type.SequenceEqual("IDAT"u8) || length > int.MaxValue - 12 || offset + 8 + (long)length > bytes.Length)
+                return 0;
+
+            if (type.SequenceEqual("acTL"u8))
+                return length >= 8 ? BinaryPrimitives.ReadUInt32BigEndian(bytes[(offset + 8)..]) : 0;
+
+            offset += 12 + (int)length;
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Returns whether a WebP image is animated (https://developers.google.com/speed/webp/docs/riff_container#extended_file_format):
+    /// the animation flag of its <c>VP8X</c> chunk is set and it has several <c>ANMF</c> chunks.
+    /// </summary>
+    private static bool IsAnimatedWebP(ReadOnlySpan<byte> bytes)
+    {
+        var offset = 12;
+        var frames = 0;
+        while (offset + 8 <= bytes.Length)
+        {
+            var type = bytes.Slice(offset, 4);
+            var length = BinaryPrimitives.ReadUInt32LittleEndian(bytes[(offset + 4)..]);
+            if (offset == 12)
+            {
+                if (!type.SequenceEqual("VP8X"u8) || length < 1 || offset + 9 > bytes.Length || (bytes[offset + 8] & 0x02) == 0)
+                    return false;
+            }
+            else if (type.SequenceEqual("ANMF"u8) && ++frames >= 2)
+            {
+                return true;
+            }
+
+            if (length > int.MaxValue - 9)
+                break;
+
+            offset += 8 + (int)length + (int)(length & 1);
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Returns whether an image is an AVIF image sequence (https://aomediacodec.github.io/av1-avif/#image-sequence-brand): the
+    /// major brand or a compatible brand of its <c>ftyp</c> box (the first box of the file) is <c>avis</c>.
+    /// </summary>
+    private static bool IsAvifSequence(ReadOnlySpan<byte> bytes)
+    {
+        if (bytes.Length < 16 || !bytes[4..].StartsWith("ftyp"u8))
+            return false;
+
+        var size = BinaryPrimitives.ReadUInt32BigEndian(bytes);
+        if (size < 16 || size > bytes.Length)
+            return false;
+
+        // The major brand, the minor version, then the compatible brands
+        var box = bytes[..(int)size];
+        if (box.Slice(8, 4).SequenceEqual("avis"u8))
+            return true;
+
+        for (var offset = 16; offset + 4 <= box.Length; offset += 4)
+        {
+            if (box.Slice(offset, 4).SequenceEqual("avis"u8))
+                return true;
+        }
+
+        return false;
+    }
+
     /// <summary>The repetition count of a GIF image (https://www.w3.org/Graphics/GIF/spec-gif89a.txt, the NETSCAPE2.0 looping extension).</summary>
     private static int GetGifRepetitionCount(ReadOnlySpan<byte> bytes)
     {

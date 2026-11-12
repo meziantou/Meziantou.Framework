@@ -207,6 +207,9 @@ public partial class HtmlInputElement
         FireImageButtonEvent("load");
     }
 
+    /// <summary>Whether the element matched <c>:animated-image</c> when its image last changed (see <see cref="InvalidateImageButtonRendering"/>).</summary>
+    private bool _matchesAnimatedImage;
+
     private void FireImageButtonEvent(string type)
     {
         InvalidateImageButtonRendering();
@@ -222,6 +225,15 @@ public partial class HtmlInputElement
     private void InvalidateImageButtonRendering(bool altTextChanged = false)
     {
         var document = NodeDocument;
+
+        // :animated-image matches the element while its image is an animated image
+        var matchesAnimatedImage = GetImageButtonPaintImage() is { IsAnimated: true };
+        if (matchesAnimatedImage != _matchesAnimatedImage)
+        {
+            _matchesAnimatedImage = matchesAnimatedImage;
+            document.IncrementElementStateVersion();
+        }
+
         if (document.LayoutEngineOrNull is null)
             return;
 

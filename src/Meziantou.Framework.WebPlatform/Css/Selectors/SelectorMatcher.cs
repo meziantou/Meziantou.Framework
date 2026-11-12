@@ -934,6 +934,17 @@ internal static class SelectorMatcher
             case PseudoClass.Muted:
                 return element is HtmlMediaElement { IsMuted: true };
 
+            // https://drafts.csswg.org/css-image-animation-1/#selectordef-animated-image: "elements representing a declarative image
+            // where a animated image has been loaded"
+            case PseudoClass.AnimatedImage:
+                return element switch
+                {
+                    HtmlImageElement image => image.GetPaintImage() is { IsAnimated: true },
+                    HtmlInputElement input => input.GetImageButtonPaintImage() is { IsAnimated: true },
+                    HtmlVideoElement video => video.RepresentsPosterFrame && video.PosterImage is { IsAnimated: true },
+                    _ => false,
+                };
+
             // https://w3c.github.io/webvtt/#the-past-and-future-pseudo-classes: the WebVTT node objects of the cues that are
             // rendered, relative to the current playback position of their media element
             case PseudoClass.Past:

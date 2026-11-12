@@ -19,7 +19,6 @@
     "credential-management/*": [{ "kind": "NOT IMPLEMENTED", "description": "Credential Management API" }],
     "css/css-exclusions/*": [{ "kind": "NOT IMPLEMENTED", "description": "CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout" }],
     "css/css-exclusions/inheritance.html": [{ "kind": "TEST RUNNER", "description": "`css/css-exclusions` is not fetched (CSS Exclusions are not implemented and most tests need layout)" }],
-    "css/css-image-animation/*": [{ "kind": "NOT IMPLEMENTED", "description": "the `image-animation` property (the animated images always play)" }],
     "css/css-navigation/*": [{ "kind": "NOT IMPLEMENTED", "description": "CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules)" }],
     "device-bound-session-credentials/*": [{ "kind": "NOT IMPLEMENTED", "description": "Device Bound Session Credentials" }],
     "digital-credentials/*": [{ "kind": "NOT IMPLEMENTED", "description": "Digital Credentials API" }],

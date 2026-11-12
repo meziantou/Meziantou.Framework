@@ -1216,6 +1216,13 @@ internal sealed partial class StyleEngine
         // The CSS transitions and animations of the element are created or updated from its style (by the style engine of the
         // document only): the transitions compare the style with the style before the change
         _beforeChangeStyles.Remove((element, pseudoElement), out var beforeChange);
+
+        // The changes of image-animation start the segments of the timelines of the animated images of the element
+        if (_environmentOverride is null)
+        {
+            _document.OnImageAnimationStyleComputed(style, beforeChange);
+        }
+
         if (beforeChange is not null)
         {
             // Kept for this generation: the style is computed again, with the same before-change style, when the size of its

@@ -627,6 +627,8 @@ public sealed class WptTests
 
     public static TheoryData<string> CssImagesTests => GetTests("css/css-images", "css/css-images/parsing");
 
+    public static TheoryData<string> CssImageAnimationTests => GetTests("css/css-image-animation");
+
     public static TheoryData<string> CssInlineTests => GetTests("css/css-inline", "css/css-inline/parsing");
 
     public static TheoryData<string> CssLinkParamsTests => GetTests("css/css-link-params", "css/css-link-params/parsing");
@@ -1978,6 +1980,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(CssImagesTests))]
     public void CssImages(string test) => Run("css/css-images", test, "css/css-images/parsing");
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(CssImageAnimationTests))]
+    public void CssImageAnimation(string test) => Run("css/css-image-animation", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(CssInlineTests))]

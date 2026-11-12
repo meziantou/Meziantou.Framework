@@ -89,6 +89,103 @@ public sealed class ImageDecodingTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData("gif", true)]
+    [InlineData("apng", true)]
+    [InlineData("webp", true)]
+    [InlineData("avif", true)]
+    [InlineData("jxl", false)]
+    public void ImageMetadata_IsAnimated(string format, bool expected)
+    {
+        Assert.Equal(expected, ImageMetadata.IsAnimated(CreateAnimation(format, totalPlays: null)));
+    }
+
+    [Theory]
+    [InlineData("png")]
+    [InlineData("gif")]
+    [InlineData("webp")]
+    [InlineData("avif")]
+    [InlineData("jpeg")]
+    public void ImageMetadata_IsAnimated_StillImage(string format)
+    {
+        Assert.False(ImageMetadata.IsAnimated(CreateTestImage(format)));
+    }
+
+    [Fact]
+    public void ImageAnimation_Stopped()
+    {
+        _pages.Resources["/a.gif"] = (CreateAnimation("gif", totalPlays: null), "image/gif");
+        var context = _pages.Load("<img src='/a.gif' style='width: 20px; height: 20px; image-rendering: pixelated; image-animation: stopped'><div style='width: 20px; height: 20px; background: url(/a.gif) 0 0 / 20px 20px; image-animation: stopped'></div>");
+        _pages.Clock.Advance(TimeSpan.FromMilliseconds(150));
+        using var screenshot = context.TakeScreenshot();
+        Assert.Equal(Colors.Red, screenshot.GetPixel(5, 5));
+        Assert.Equal(Colors.Red, screenshot.GetPixel(5, 35));
+    }
+
+    [Fact]
+    public void ImageAnimation_PausedRunningAndStopped()
+    {
+        // The animation (red for 100ms, blue for 200ms, lime for 30ms) is not playing while paused: it starts from its first frame
+        _pages.Resources["/a.gif"] = (CreateAnimation("gif", totalPlays: null), "image/gif");
+        var context = _pages.Load("<img src='/a.gif' style='width: 20px; height: 20px; image-rendering: pixelated; image-animation: paused'>");
+        var image = context.Document.QuerySelector("img")!;
+        _pages.Clock.Advance(TimeSpan.FromMilliseconds(150));
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.Red, screenshot.GetPixel(5, 5));
+        }
+
+        // running continues from the displayed frame
+        image.SetAttribute("style", "width: 20px; height: 20px; image-rendering: pixelated; image-animation: running");
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.Red, screenshot.GetPixel(5, 5));
+        }
+
+        _pages.Clock.Advance(TimeSpan.FromMilliseconds(150));
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.Blue, screenshot.GetPixel(5, 5));
+        }
+
+        // paused keeps the displayed frame
+        image.SetAttribute("style", "width: 20px; height: 20px; image-rendering: pixelated; image-animation: paused");
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.Blue, screenshot.GetPixel(5, 5));
+        }
+
+        _pages.Clock.Advance(TimeSpan.FromMilliseconds(1000));
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.Blue, screenshot.GetPixel(5, 5));
+        }
+
+        // stopped shows the first frame, and running starts again from it
+        image.SetAttribute("style", "width: 20px; height: 20px; image-rendering: pixelated; image-animation: stopped");
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.Red, screenshot.GetPixel(5, 5));
+        }
+
+        image.SetAttribute("style", "width: 20px; height: 20px; image-rendering: pixelated; image-animation: running");
+        _pages.Clock.Advance(TimeSpan.FromMilliseconds(50));
+        using (var screenshot = context.TakeScreenshot())
+        {
+            Assert.Equal(Colors.Red, screenshot.GetPixel(5, 5));
+        }
+    }
+
+    [Fact]
+    public void ImageAnimation_AnimatedImagePseudoClass()
+    {
+        _pages.Resources["/a.gif"] = (CreateAnimation("gif", totalPlays: null), "image/gif");
+        _pages.Resources["/b.gif"] = (CreateTestImage("gif"), "image/gif");
+        var context = _pages.Load("<img id=a src='/a.gif'><img id=b src='/b.gif'>");
+        Assert.True(context.Document.GetElementById("a")!.Matches(":animated-image"));
+        Assert.False(context.Document.GetElementById("b")!.Matches(":animated-image"));
+    }
+
     [Fact]
     public void Apng_FramesAreCompositedWithTheirDisposalAndBlending()
     {

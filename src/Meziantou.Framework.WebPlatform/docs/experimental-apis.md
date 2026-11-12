@@ -180,3 +180,12 @@ the [proposal](https://github.com/whatwg/html/pull/9537) (see the
 [explainer](https://github.com/fserb/canvas2D/blob/master/spec/layers.md)), as tested by the tentative web-platform-tests
 of `html/canvas/element/layers`. Chromium implements them behind a flag. Their API and behavior may change while the
 proposal is under discussion.
+
+<a id="WEBPLATEXP0018"></a>
+
+## WEBPLATEXP0018: readiness of the WebMCP tools
+
+`ModelContext.WaitForToolsUntil()` and `ModelContext.ToolsReady` implement the readiness of the tools of the
+[proposal](https://github.com/webmachinelearning/webmcp/pull/373) of WebMCP: a page tells the agents to wait until it has
+registered its tools. `BrowsingContext.ModelContextToolsReady` reads the state of a frame tree. Chromium implements them,
+and the web-platform-tests of `webmcp` test them. Their API and behavior may change while the proposal is under discussion.

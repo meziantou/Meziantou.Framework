@@ -100,6 +100,7 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
     private static void Set_onprerenderingchange(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "prerenderingchange", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Get_fragmentDirective(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.FragmentDirective); }
     private static TValue Get_timeline(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.Timeline); }
+    private static TValue Get_modelContext(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.ModelContext); }
     private static TValue Get_fonts(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.Fonts); }
     private static TValue Get_customElementRegistry(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.CustomElementRegistry); }
     private static TValue Get_styleSheets(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.StyleSheets); }
@@ -795,6 +796,7 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
         r.DefineAttribute(instanceTarget, "onprerenderingchange", Get_onprerenderingchange, Set_onprerenderingchange);
         r.DefineAttribute(instanceTarget, "fragmentDirective", Get_fragmentDirective, null);
         r.DefineAttribute(instanceTarget, "timeline", Get_timeline, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "modelContext", Get_modelContext, null);
         r.DefineAttribute(instanceTarget, "fonts", Get_fonts, null);
         r.DefineAttribute(instanceTarget, "customElementRegistry", Get_customElementRegistry, null);
         r.DefineAttribute(instanceTarget, "styleSheets", Get_styleSheets, null);

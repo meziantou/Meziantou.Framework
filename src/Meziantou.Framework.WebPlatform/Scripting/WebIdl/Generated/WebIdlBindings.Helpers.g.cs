@@ -103,6 +103,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaPositionState Defaults_Dom_MediaPositionState = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions Defaults_Dom_ModelContextExecuteToolOptions = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.ModelContextGetToolOptions Defaults_Dom_ModelContextGetToolOptions = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.ModelContextRegisterToolOptions Defaults_Dom_ModelContextRegisterToolOptions = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.ModelContextTool Defaults_Dom_ModelContextTool = new() { Name = default!, Description = default!, Execute = default! };
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MouseEventInit Defaults_Dom_MouseEventInit = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MutationObserverInit Defaults_Dom_MutationObserverInit = new();
@@ -1750,6 +1758,41 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_ModelContextExecuteToolOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.Signal is not null) r.SetMember(result, "signal", r.Wrap(value.Signal));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ModelContextGetToolOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ModelContextGetToolOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.FromOrigins is not null) r.SetMember(result, "fromOrigins", r.FromSequence(value.FromOrigins, static (r, e) => r.FromString(e)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ModelContextRegisterToolOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ModelContextRegisterToolOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.ExposedTo is not null) r.SetMember(result, "exposedTo", r.FromSequence(value.ExposedTo, static (r, e) => r.FromString(e)));
+        if (value.Signal is not null) r.SetMember(result, "signal", r.Wrap(value.Signal));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ModelContextTool(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ModelContextTool value)
+    {
+        var result = r.CreateObject();
+        if (value.Annotations is not null) r.SetMember(result, "annotations", (value.Annotations is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ToolAnnotations(r, dictionaryValue) : r.Adapter.Null));
+        r.SetMember(result, "description", r.FromString(value.Description));
+        r.SetMember(result, "execute", r.GetDelegateFunction(value.Execute));
+        if (value.InputSchema is not null) r.SetMember(result, "inputSchema", r.ToJs((object?)value.InputSchema));
+        r.SetMember(result, "name", r.FromString(value.Name));
+        if (value.OutputSchema is not null) r.SetMember(result, "outputSchema", r.ToJs((object?)value.OutputSchema));
+        if (value.Title is not null) r.SetMember(result, "title", r.FromString(value.Title));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_MouseEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MouseEventInit value)
     {
         var result = r.CreateObject();
@@ -2532,6 +2575,43 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var result = r.CreateObject();
         if (value.Source is not null) r.SetMember(result, "source", r.Wrap(value.Source));
         if (value.Force is not null) r.SetMember(result, "force", r.FromBoolean(value.Force));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ToolActivatedEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ToolActivatedEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "toolName", r.FromString(value.ToolName));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ToolAnnotations(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ToolAnnotations value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "consequentialHint", r.FromBoolean(value.ConsequentialHint));
+        r.SetMember(result, "debugging", r.FromBoolean(value.Debugging));
+        r.SetMember(result, "readOnlyHint", r.FromBoolean(value.ReadOnlyHint));
+        r.SetMember(result, "untrustedContentHint", r.FromBoolean(value.UntrustedContentHint));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ToolCancelEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ToolCancelEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "toolName", r.FromString(value.ToolName));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ToolExecuteCallbackOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ToolExecuteCallbackOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "signal", r.Wrap(value.Signal));
         return result;
     }
 
@@ -4109,6 +4189,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static global::Meziantou.Framework.WebPlatform.Dom.ResizeObserverCallback ToDelegate_Dom_ResizeObserverCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.ResizeObserverCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.FromSequence(p0, static (r, e) => r.Wrap(e))); arguments.Add(r.Wrap(p1)); r.InvokeCallback(function, r.ToJs(p1), global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.ReportExceptions); }));
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.SchedulerPostTaskCallback ToDelegate_Dom_SchedulerPostTaskCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.SchedulerPostTaskCallback(() => { var arguments = new global::System.Collections.Generic.List<TValue>(); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); return result; }));
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ToolExecuteCallback ToDelegate_Dom_ToolExecuteCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.ToolExecuteCallback((p0, p1) => { var arguments = new global::System.Collections.Generic.List<TValue>(); arguments.Add(r.ToJs((object?)p0)); arguments.Add((p1 is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ToolExecuteCallbackOptions(r, dictionaryValue) : r.Adapter.Null)); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.None); return r.ToTask<object?>(result!, static (r, v) => r.ToAny(v)); }));
 
     internal static global::Meziantou.Framework.WebPlatform.Dom.ViewTransitionUpdateCallback ToDelegate_Dom_ViewTransitionUpdateCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue function) => r.GetDelegate(function, static (r, function) => new global::Meziantou.Framework.WebPlatform.Dom.ViewTransitionUpdateCallback(() => { var arguments = new global::System.Collections.Generic.List<TValue>(); var result = r.InvokeCallback(function, r.Adapter.Undefined, global::System.Runtime.InteropServices.CollectionsMarshal.AsSpan(arguments), global::Meziantou.Framework.WebPlatform.Scripting.CallbackBehavior.AbortWhenInactive); return result; }));
 
@@ -6611,6 +6693,82 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions ToDictionary_Dom_ModelContextExecuteToolOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ModelContextExecuteToolOptions");
+        var m0_value = r.GetDictionaryMember(value, "signal");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.Dom.AbortSignal?)r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.AbortSignal>(m0_value, "AbortSignal") : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions
+        {
+            Signal = m0_present ? m0 : Defaults_Dom_ModelContextExecuteToolOptions.Signal,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ModelContextGetToolOptions ToDictionary_Dom_ModelContextGetToolOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ModelContextGetToolOptions");
+        var m0_value = r.GetDictionaryMember(value, "fromOrigins");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::System.Collections.Generic.List<string>?)r.ToSequence<string>(m0_value, static (r, e) => r.ToUsvString(e)) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.ModelContextGetToolOptions
+        {
+            FromOrigins = m0_present ? m0 : Defaults_Dom_ModelContextGetToolOptions.FromOrigins,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ModelContextRegisterToolOptions ToDictionary_Dom_ModelContextRegisterToolOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ModelContextRegisterToolOptions");
+        var m0_value = r.GetDictionaryMember(value, "exposedTo");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::System.Collections.Generic.List<string>?)r.ToSequence<string>(m0_value, static (r, e) => r.ToUsvString(e)) : default;
+        var m1_value = r.GetDictionaryMember(value, "signal");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (global::Meziantou.Framework.WebPlatform.Dom.AbortSignal?)r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.AbortSignal>(m1_value, "AbortSignal") : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.ModelContextRegisterToolOptions
+        {
+            ExposedTo = m0_present ? m0 : Defaults_Dom_ModelContextRegisterToolOptions.ExposedTo,
+            Signal = m1_present ? m1 : Defaults_Dom_ModelContextRegisterToolOptions.Signal,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ModelContextTool ToDictionary_Dom_ModelContextTool(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ModelContextTool");
+        var m0_value = r.GetDictionaryMember(value, "annotations");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.Dom.ToolAnnotations?)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ToolAnnotations(r, m0_value) : default;
+        var m1_value = r.GetDictionaryMember(value, "description");
+        if (r.Adapter.IsUndefined(m1_value)) throw r.MissingRequiredDictionaryMember("ModelContextTool", "description");
+        var m1 = r.ToDomString(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "execute");
+        if (r.Adapter.IsUndefined(m2_value)) throw r.MissingRequiredDictionaryMember("ModelContextTool", "execute");
+        var m2 = r.ToCallbackFunction(m2_value, "ToolExecuteCallback", false)!;
+        var m3_value = r.GetDictionaryMember(value, "inputSchema");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (TValue?)r.ToObject(m3_value) : default;
+        var m4_value = r.GetDictionaryMember(value, "name");
+        if (r.Adapter.IsUndefined(m4_value)) throw r.MissingRequiredDictionaryMember("ModelContextTool", "name");
+        var m4 = r.ToDomString(m4_value);
+        var m5_value = r.GetDictionaryMember(value, "outputSchema");
+        var m5_present = !r.Adapter.IsUndefined(m5_value);
+        var m5 = m5_present ? (TValue?)r.ToObject(m5_value) : default;
+        var m6_value = r.GetDictionaryMember(value, "title");
+        var m6_present = !r.Adapter.IsUndefined(m6_value);
+        var m6 = m6_present ? (string?)r.ToUsvString(m6_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.ModelContextTool
+        {
+            Annotations = m0_present ? m0 : Defaults_Dom_ModelContextTool.Annotations,
+            Description = m1,
+            Execute = WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_ToolExecuteCallback(r, m2),
+            InputSchema = m3_present ? m3 : Defaults_Dom_ModelContextTool.InputSchema,
+            Name = m4,
+            OutputSchema = m5_present ? m5 : Defaults_Dom_ModelContextTool.OutputSchema,
+            Title = m6_present ? m6 : Defaults_Dom_ModelContextTool.Title,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.MouseEventInit ToDictionary_Dom_MouseEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "MouseEventInit");
@@ -8173,6 +8331,66 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         {
             Source = m0_present ? m0 : Defaults_Dom_TogglePopoverOptions.Source,
             Force = m1_present ? m1 : Defaults_Dom_TogglePopoverOptions.Force,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ToolActivatedEventInit ToDictionary_Dom_ToolActivatedEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ToolActivatedEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "toolName");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (string)"" : r.ToDomString(m3_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.ToolActivatedEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            ToolName = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ToolAnnotations ToDictionary_Dom_ToolAnnotations(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ToolAnnotations");
+        var m0_value = r.GetDictionaryMember(value, "consequentialHint");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "debugging");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "readOnlyHint");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "untrustedContentHint");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (bool)false : r.ToBoolean(m3_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.ToolAnnotations
+        {
+            ConsequentialHint = m0,
+            Debugging = m1,
+            ReadOnlyHint = m2,
+            UntrustedContentHint = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ToolCancelEventInit ToDictionary_Dom_ToolCancelEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ToolCancelEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "toolName");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (string)"" : r.ToDomString(m3_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.ToolCancelEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            ToolName = m3,
         };
     }
 

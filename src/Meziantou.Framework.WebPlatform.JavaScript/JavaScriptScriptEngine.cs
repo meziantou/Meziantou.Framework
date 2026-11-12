@@ -480,6 +480,10 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
 
     internal override IServiceWorkerFetchOperations? GetServiceWorkerFetchOperations(GlobalScope global) => Agent.GetRealm(global);
 
+    internal override string? SerializeJson(GlobalScope global, object? value) => Agent.GetRealm(global).SerializeJson(value);
+
+    internal override object? ParseJson(GlobalScope global, string json, out bool isObject) => Agent.GetRealm(global).ParseJson(json, out isObject);
+
     /// <inheritdoc/>
     protected internal override void WaitForAll(GlobalScope global, IReadOnlyList<object?> values, Action successSteps, Action<object?> failureSteps) => Agent.GetRealm(global).WaitForAll(values, successSteps, failureSteps);
 

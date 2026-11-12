@@ -492,11 +492,12 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
             // https://cookiestore.spec.whatwg.org/#observable-changes
             var context = GetContext(url);
             var partitionKey = CookieJar.GetPartitionKey(context);
+            var unpartitionedBlocked = cookieJar.IsUnpartitionedCookieAccessBlocked(context);
             var changed = new List<CookieListItem>();
             var deleted = new List<CookieListItem>();
             foreach (var change in changes)
             {
-                if (!CookieJar.IsInScope(change.Cookie, context, host, partitionKey, cookieJar.OriginBound))
+                if ((unpartitionedBlocked && change.Cookie.PartitionKey is null) || !CookieJar.IsInScope(change.Cookie, context, host, partitionKey, cookieJar.OriginBound))
                     continue;
 
                 // https://cookiestore.spec.whatwg.org/#prepare-lists: the value of a deleted cookie is undefined

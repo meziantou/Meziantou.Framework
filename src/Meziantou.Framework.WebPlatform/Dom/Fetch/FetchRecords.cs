@@ -150,7 +150,7 @@ internal sealed partial class FetchRequest
     /// <summary>
     /// The destination of the navigation whose request is fetched again by a service worker, or null: the destination of
     /// the request of the service worker is the empty string, but its cookies are the ones of the navigation (a top-level
-    /// navigation sends the Lax cookies, see <see cref="CookieContexts.ForRequest"/>).
+    /// navigation sends the Lax cookies, see <see cref="CookieContexts.ForRequest(DocumentRequest, UrlRecord, IReadOnlyList{UrlRecord})"/>).
     /// </summary>
     public RequestDestination? NavigationDestination { get; set; }
 
@@ -244,6 +244,12 @@ internal sealed partial class FetchRequest
     /// <summary>https://fetch.spec.whatwg.org/#concept-request-cache-mode</summary>
     public string CacheMode { get; set; } = "default";
 
+    /// <summary>
+    /// https://privacycg.github.io/storage-access-headers/#request-single-hop-cache-mode: the cache mode of the next HTTP
+    /// request only (a retry with the unpartitioned cookies), or null for <see cref="CacheMode"/>.
+    /// </summary>
+    public string? SingleHopCacheMode { get; set; }
+
     /// <summary>https://fetch.spec.whatwg.org/#request-service-workers-mode</summary>
     public ServiceWorkersMode ServiceWorkersMode { get; set; }
 
@@ -300,6 +306,15 @@ internal sealed partial class FetchRequest
 
     /// <summary>The cookies of the request, when they are not the ones of the client (a navigation), or null.</summary>
     public FetchCookieContext? CookieContext { get; set; }
+
+    /// <summary>https://privacycg.github.io/storage-access/#request-eligible-for-storage-access, determined when the fetch starts.</summary>
+    public StorageAccessEligibility StorageAccessEligibility { get; set; }
+
+    /// <summary>
+    /// https://privacycg.github.io/storage-access-headers/#request-storage-access-status: the status sent in the
+    /// <c>Sec-Fetch-Storage-Access</c> header of the last request sent by the fetch, or null when the header was not sent.
+    /// </summary>
+    internal StorageAccessStatus? StorageAccessStatus { get; set; }
 
     /// <summary>
     /// The element that initiated the request (e.g. the <c>script</c> element), or null: its nonce is the cryptographic nonce

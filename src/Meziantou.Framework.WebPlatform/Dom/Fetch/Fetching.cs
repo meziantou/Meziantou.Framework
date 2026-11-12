@@ -83,6 +83,9 @@ internal static class Fetching
             timing.Start = timing.PostRedirectStart = now;
         }
 
+        // https://privacycg.github.io/storage-access/#fetching: whether the request can use the storage access of its client
+        request.StorageAccessEligibility = StorageAccess.DetermineInitialEligibility(request);
+
         return MainFetchAsync(request, recursive: false, cancellationToken);
     }
 
@@ -643,8 +646,14 @@ internal static class Fetching
 
         // Step 6.3
         var response = await HttpNetworkOrCacheFetchAsync(request, isAuthenticationFetch: false, cancellationToken).ConfigureAwait(false);
+        request.SingleHopCacheMode = null;
         if (response.IsNetworkError)
             return response;
+
+        // https://privacycg.github.io/storage-access-headers/#http-fetch: the response asks to retry the request with the
+        // unpartitioned cookies (Activate-Storage-Access: retry), which the storage-access permission allows
+        if (StorageAccess.PerformRetryCheck(request, request.StorageAccessStatus, response.Internal.HeaderList))
+            return await HttpStorageAccessRetryFetchAsync(request, cancellationToken).ConfigureAwait(false);
 
         // Step 4.4: the CORS check
         if (request.ResponseTainting == FetchResponseTainting.Cors && !CorsCheck(request, response))
@@ -664,6 +673,19 @@ internal static class Fetching
         }
 
         return await ProcessRedirectAsync(request, response, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>https://privacycg.github.io/storage-access-headers/#http-storage-access-retry-fetch</summary>
+    private static async Task<FetchResponse> HttpStorageAccessRetryFetchAsync(FetchRequest request, CancellationToken cancellationToken)
+    {
+        if (request.RedirectCount == MaxRedirects)
+            return FetchResponse.NetworkError();
+
+        request.RedirectCount++;
+        request.UrlList.Add(request.CurrentUrl);
+        request.SingleHopCacheMode = "reload";
+        request.StorageAccessEligibility = StorageAccessEligibility.Eligible;
+        return await MainFetchAsync(request, recursive: true, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>https://fetch.spec.whatwg.org/#cross-origin-resource-policy-check of a response of the request of a client.</summary>
@@ -755,6 +777,9 @@ internal static class Fetching
             }
         }
 
+        // https://privacycg.github.io/storage-access/#http-redirect-fetch: a redirect to another origin is not eligible for storage access
+        StorageAccess.ProcessRedirect(request, locationUrl);
+
         request.UrlList.Add(locationUrl);
 
         // Step 19: the Referrer-Policy header of the redirect
@@ -802,6 +827,10 @@ internal static class Fetching
             headers.Add(new("Referer", referrer));
         }
 
+        // https://privacycg.github.io/storage-access-headers/#set-storage-access: the storage access status of the request
+        // (the Sec-Fetch-Storage-Access header is appended with the Fetch Metadata headers)
+        request.StorageAccessStatus = GetStorageAccessStatus(request);
+
         // Step 8.12: Origin (https://fetch.spec.whatwg.org/#append-a-request-origin-header)
         // https://fetch.spec.whatwg.org/#serializing-a-request-origin: "null" when the request has a redirect-tainted origin
         // (e.g. a POST navigation redirected through another origin)
@@ -810,7 +839,7 @@ internal static class Fetching
         {
             headers.Add(new("Origin", serializedOrigin));
         }
-        else if (request.Method is not ("GET" or "HEAD"))
+        else if (request.Method is not ("GET" or "HEAD") || request.StorageAccessStatus == StorageAccessStatus.Inactive)
         {
             headers.Add(new("Origin", request.Mode == RequestMode.Cors ? serializedOrigin : GetNoCorsOriginHeader(serializedOrigin, request.Origin, request.ReferrerPolicy, request.CurrentUrl)));
         }
@@ -819,6 +848,11 @@ internal static class Fetching
         var metadataOrigin = GetLoaderOrigin(request);
         var metadataOriginRecord = metadataOrigin is not null && request.Client?.Origin is { } clientOrigin && clientOrigin.Serialize() == metadataOrigin ? clientOrigin : null;
         FetchMetadata.AppendHeaders(headers, request.Destination, request.Mode, metadataOrigin, request.UserActivation, request.RedirectChain, metadataOriginRecord);
+        if (request.StorageAccessStatus is { } storageAccessStatus)
+        {
+            FetchHeaders.Delete(headers, "Sec-Fetch-Storage-Access");
+            headers.Add(new("Sec-Fetch-Storage-Access", StorageAccess.Serialize(storageAccessStatus)));
+        }
 
         // Step 8.15: the default User-Agent value, when the browsing contexts have one (BrowsingContextOptions.UserAgent; the
         // loader may add its own otherwise)
@@ -836,7 +870,7 @@ internal static class Fetching
         }
 
         // Steps 8.16 to 8.18: the cache mode
-        var cacheMode = request.CacheMode;
+        var cacheMode = request.SingleHopCacheMode ?? request.CacheMode;
         if (cacheMode == "default" && (FetchHeaders.Contains(headers, "If-Modified-Since") || FetchHeaders.Contains(headers, "If-None-Match") || FetchHeaders.Contains(headers, "If-Unmodified-Since") || FetchHeaders.Contains(headers, "If-Match") || FetchHeaders.Contains(headers, "If-Range")))
         {
             cacheMode = "no-store";
@@ -1257,6 +1291,8 @@ internal static class Fetching
             RedirectUrls = request.RedirectChain is { Count: > 1 } redirectChain ? [.. redirectChain.Take(redirectChain.Count - 1).Select(url => url.Serialize())] : [],
             Destination = request.Destination,
             NavigationDestination = request.NavigationDestination,
+            StorageAccessEligibility = request.StorageAccessEligibility,
+            StorageAccessPermissions = GetStorageAccessPermissions(request),
             Mode = request.Mode,
             Initiator = request.Initiator,
             BrowsingContext = request.Navigable ?? request.Client?.BrowsingContext ?? request.KeepaliveBrowsingContext,
@@ -1499,6 +1535,31 @@ internal static class Fetching
     /// that is not initiated by a document (e.g. <see cref="BrowsingContext.Navigate(string)"/>), whose <c>Sec-Fetch-Site</c> is <c>none</c>.
     /// </summary>
     private static string? GetLoaderOrigin(FetchRequest request) => request.Client is null && request.Mode == RequestMode.Navigate ? null : request.Origin;
+
+    /// <summary>The permission store of the <c>storage-access</c> permission of a request: the one of its client, or of its navigable.</summary>
+    private static PermissionStore? GetStorageAccessPermissions(FetchRequest request)
+        => (request.Client?.EnvironmentOptions ?? request.Navigable?.Options ?? request.KeepaliveBrowsingContext?.Options)?.EffectivePermissions;
+
+    /// <summary>
+    /// https://privacycg.github.io/storage-access-headers/#request-storage-access-status: the storage access status of a
+    /// request whose credentials mode is "include" and whose current URL is potentially trustworthy, or null when the
+    /// <c>Sec-Fetch-Storage-Access</c> header is not sent.
+    /// </summary>
+    private static StorageAccessStatus? GetStorageAccessStatus(FetchRequest request)
+    {
+        if (request.CredentialsMode != FetchCredentialsMode.Include || !ReferrerPolicies.IsPotentiallyTrustworthy(request.CurrentUrl) || request.IsSpeculative || request.UseIsolatedCredentials)
+            return null;
+
+        var cookieContext = request.CookieContext;
+        var siteForCookies = cookieContext is null ? request.Client?.SiteForCookies : cookieContext.SiteForCookies;
+        var topLevelOrigin = cookieContext is null ? request.Client?.TopLevelOriginForCookies : cookieContext.TopLevelOrigin;
+        var cookieJar = cookieContext is null ? request.Client?.CookieJar : cookieContext.CookieJar;
+        var origin = GetLoaderOrigin(request);
+        var previousUrls = request.RedirectChain is { Count: > 1 } redirectChain ? redirectChain.Take(redirectChain.Count - 1).ToArray() : [];
+        var permissions = GetStorageAccessPermissions(request);
+        var context = CookieContexts.ForRequest(request.NavigationDestination ?? request.Destination, origin is not null && request.TaintedOrigin ? "null" : origin, siteForCookies, topLevelOrigin, request.Method, request.StorageAccessEligibility, permissions, request.CurrentUrl, previousUrls);
+        return StorageAccess.GetStatus(request, siteForCookies is null ? null : context, cookieJar, permissions);
+    }
 
     /// <summary>Disposes the connection of a response that is not used (e.g. the fetch was aborted).</summary>
     private static void DisposeConnection(DocumentResource? resource)

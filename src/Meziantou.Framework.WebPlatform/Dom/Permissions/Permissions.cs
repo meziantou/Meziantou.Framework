@@ -86,7 +86,18 @@ public sealed class Permissions
         if (global is Window window && PolicyControlledFeature.Get(name) is { } feature && !PermissionsPolicyAlgorithms.IsAllowedToUse(window.Document, feature))
             return PermissionState.Denied;
 
-        return global.Options.EffectivePermissions.GetState(name, global.EnvironmentDocument.TopLevelOrigin.Serialize());
+        return global.Options.EffectivePermissions.GetState(name, GetPermissionKey(global, name));
+    }
+
+    /// <summary>
+    /// The permission key of a feature for a global object, serialized as the key of the <see cref="PermissionStore"/>: the
+    /// top-level origin, or for the <c>storage-access</c> feature, the sites of the top-level origin and of the origin of the
+    /// global object (https://privacycg.github.io/storage-access/#permissions-integration).
+    /// </summary>
+    internal static string GetPermissionKey(GlobalScope global, string name)
+    {
+        var document = global.EnvironmentDocument;
+        return name == StorageAccess.FeatureName ? StorageAccess.GetPermissionKey(document.TopLevelOrigin, document.Origin) : document.TopLevelOrigin.Serialize();
     }
 
     /// <summary>
@@ -108,7 +119,7 @@ public sealed class Permissions
         if (answer is PermissionState.Prompt)
             return PermissionState.Denied;
 
-        global.Options.EffectivePermissions.SetState(name, global.EnvironmentDocument.TopLevelOrigin.Serialize(), answer);
+        global.Options.EffectivePermissions.SetState(name, GetPermissionKey(global, name), answer);
         return answer;
     }
 
@@ -180,7 +191,15 @@ public sealed class PermissionStatus : EventTarget
         set => SetEventHandler("change", value);
     }
 
-    private PermissionState ComputeState() => Permissions.GetPermissionState(_global, Name);
+    /// <summary>
+    /// The state of the permission. The permission query algorithm of the <c>storage-access</c> feature reveals a denied
+    /// permission as <see cref="PermissionState.Prompt"/> (https://privacycg.github.io/storage-access/#permissions-integration).
+    /// </summary>
+    private PermissionState ComputeState()
+    {
+        var state = Permissions.GetPermissionState(_global, Name);
+        return state == PermissionState.Denied && Name == StorageAccess.FeatureName ? PermissionState.Prompt : state;
+    }
 
     /// <summary>
     /// https://w3c.github.io/permissions/#dfn-permissionstatus-update-steps: the state of the permission may have changed.

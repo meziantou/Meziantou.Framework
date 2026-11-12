@@ -85,6 +85,12 @@ internal sealed partial class PolicyControlledFeature
 
     public static PolicyControlledFeature SpeakerSelection { get; } = new("speaker-selection", isAllowedForAllByDefault: false);
 
+    /// <summary>
+    /// https://privacycg.github.io/storage-access/#permissions-policy-integration: the feature that lets a document request
+    /// storage access (<c>document.requestStorageAccess()</c>). Its default allowlist is <c>*</c>.
+    /// </summary>
+    public static PolicyControlledFeature StorageAccess { get; } = new("storage-access", isAllowedForAllByDefault: true);
+
     public static PolicyControlledFeature SyncXhr { get; } = new("sync-xhr", isAllowedForAllByDefault: true);
 
     /// <summary>https://webmachinelearning.github.io/webmcp/#permissions-policy: its default allowlist is 'self'.</summary>
@@ -138,6 +144,7 @@ internal sealed partial class PolicyControlledFeature
         ScreenWakeLock,
         new("serial", isAllowedForAllByDefault: false),
         SpeakerSelection,
+        StorageAccess,
         SyncXhr,
         Tools,
         Unload,

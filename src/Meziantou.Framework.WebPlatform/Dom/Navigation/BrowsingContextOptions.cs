@@ -800,6 +800,16 @@ public sealed class DocumentRequest
     public string? TopLevelOrigin { get; init; }
 
     /// <summary>
+    /// https://privacycg.github.io/storage-access/#request-eligible-for-storage-access: whether the request can use the
+    /// storage access of its client (its unpartitioned cookies are then sent and stored when the <c>storage-access</c>
+    /// permission is granted, see <see cref="StorageAccessPermissions"/>).
+    /// </summary>
+    internal StorageAccessEligibility StorageAccessEligibility { get; init; }
+
+    /// <summary>The permission store of the <c>storage-access</c> permission of the client of the request, or null.</summary>
+    internal PermissionStore? StorageAccessPermissions { get; init; }
+
+    /// <summary>
     /// The destination of the navigation whose request is fetched again by a service worker (see <see cref="FetchRequest.NavigationDestination"/>),
     /// or null: it determines the context of the cookies instead of <see cref="Destination"/>.
     /// </summary>

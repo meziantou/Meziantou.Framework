@@ -54,7 +54,10 @@ fails.
   [script engine](06-Scripting/01-Overview.md): the scripts are not fetched and the event handler attributes have no
   effect. A document parsed with [HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser) has no browsing context: no window, no computed style and no
   event loop, so the mutation observer callbacks are not invoked.
-- **No downloads**, and the third-party cookies are not blocked.
+- **No downloads**, and the third-party cookies are not blocked unless you
+  [block them](05-LoadingPages/03-CookiesAndStorage.md#third-party-cookies-and-storage-access). The Storage Access API
+  only gives access to the cookies: `requestStorageAccess(types)` and its `StorageAccessHandle` (the unpartitioned
+  local storage, IndexedDB, caches... of a third-party frame) are not supported.
 - **Reporting API.** Content Security Policy reports its violations, but the Reporting API generates only the CSP, COEP,
   COOP, Permissions Policy, Document Policy, integrity policy and test reports: there are no deprecation or intervention
   reports.

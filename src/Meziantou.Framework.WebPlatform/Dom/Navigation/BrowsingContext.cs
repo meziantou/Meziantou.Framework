@@ -1910,6 +1910,10 @@ public sealed partial class BrowsingContext : IDisposable
             InitiatorOrigin = storedInitiatorOrigin ?? sourceDocument?.Origin,
             InitiatorTopLevelOrigin = sourceDocument?.TopLevelOrigin,
             SourceDocument = sourceDocument,
+
+            // https://privacycg.github.io/storage-access/#navigation: the storage access of the active document of the
+            // navigable, when it initiates the navigation (the environment id of the source snapshot params)
+            SourceHasStorageAccess = sourceDocument is { EnvironmentHasStorageAccess: true } && ReferenceEquals(sourceDocument, Document),
             TextDirectiveUserActivation = textDirectiveUserActivation,
             IsPostNavigation = postResource is not null,
             PostResource = postResource,
@@ -2300,6 +2304,13 @@ public sealed partial class BrowsingContext : IDisposable
             timing.HasCrossOriginRedirects = Fetching.HasRedirectTaintedOrigin(request);
             timing.HasNoReferrer = request.Client is not null && request.Referrer == "no-referrer";
         }
+
+        // https://privacycg.github.io/storage-access-headers/#navigation-integration: the environment of the document has
+        // storage access when the response activates it (Activate-Storage-Access: load), or when the document that had storage
+        // access navigated its own navigable to its origin without cross-origin redirect (e.g. a reload)
+        parameters.HasStorageAccess = !response.IsNetworkError
+            && (StorageAccess.PerformLoadCheck(request.StorageAccessStatus, response.Internal.HeaderList)
+                || (parameters is { SourceHasStorageAccess: true, SourceDocument: { } storageAccessSource } && request.RedirectChain.All(redirectUrl => OriginRecord.IsSameOrigin(OriginRecord.FromUrl(redirectUrl), storageAccessSource.Origin))));
 
         var resource = response.ToDocumentResource();
 
@@ -2986,6 +2997,7 @@ public sealed partial class BrowsingContext : IDisposable
         document.ReadyState = DocumentReadyState.Loading;
         document.StartRenderBlockingPeriod();
         InitializeServiceWorkerClient(document, parameters.ReservedClient);
+        document.EnvironmentHasStorageAccess = parameters.HasStorageAccess;
 
         // The window of an initial about:blank document is reused by a same origin-domain document, unless the credentialless
         // attribute of the iframe changed since the initial document was created (https://wicg.github.io/anonymous-iframe/#spec-window-reuse)
@@ -4230,6 +4242,12 @@ public sealed partial class BrowsingContext : IDisposable
 
         /// <summary>The document that initiated the navigation, or null (the navigation source of the opener policy enforcement).</summary>
         public Document? SourceDocument { get; init; }
+
+        /// <summary>Whether the navigation is initiated by the active document of the navigable, and its environment has storage access (https://privacycg.github.io/storage-access/#navigation).</summary>
+        public bool SourceHasStorageAccess { get; init; }
+
+        /// <summary>Whether the environment of the new document has storage access (https://privacycg.github.io/storage-access-headers/#navigation-integration).</summary>
+        public bool HasStorageAccess { get; set; }
 
         /// <summary>The result of the enforcement of the opener policy of the response, which tells whether the navigation switches browsing context group.</summary>
         public OpenerPolicyEnforcementResult? OpenerPolicyEnforcementResult { get; set; }

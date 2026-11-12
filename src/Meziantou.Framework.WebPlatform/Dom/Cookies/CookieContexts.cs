@@ -60,12 +60,14 @@ internal static class CookieContexts
     /// <summary>
     /// The context of a "non-HTTP" API of a document (https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html#name-non-http-apis),
     /// for <paramref name="url"/>: it is same-site when the site for cookies of the document is same-site with the
-    /// top-level origin (it is not opaque).
+    /// top-level origin (it is not opaque). The unpartitioned cookies of a third-party context are the ones of the Storage
+    /// Access API when the document has storage access (https://privacycg.github.io/storage-access/#cookies).
     /// </summary>
     public static CookieRequestContext ForScript(Document document, UrlRecord url)
     {
         var crossSite = GetSiteForCookies(document).IsOpaque;
-        return new CookieRequestContext(url, IsHttp: false, crossSite ? CookieSameSiteStatus.CrossSite : CookieSameSiteStatus.Strict, GetTopLevelOrigin(document), CrossSiteAncestor: crossSite);
+        return new CookieRequestContext(url, IsHttp: false, crossSite ? CookieSameSiteStatus.CrossSite : CookieSameSiteStatus.Strict, GetTopLevelOrigin(document), CrossSiteAncestor: crossSite,
+            HasStorageAccess: crossSite && StorageAccess.HasUnpartitionedCookieAccess(document));
     }
 
     /// <summary>
@@ -73,7 +75,7 @@ internal static class CookieContexts
     /// cookies of its URL, including the HttpOnly and the SameSite cookies, and the partitioned cookies of its partition.
     /// </summary>
     public static CookieRequestContext ForWebDriver(Document document)
-        => new(document.GetCookieUrl(creationUrl: false), IsHttp: true, CookieSameSiteStatus.Strict, GetTopLevelOrigin(document), CrossSiteAncestor: GetSiteForCookies(document).IsOpaque);
+        => new(document.GetCookieUrl(creationUrl: false), IsHttp: true, CookieSameSiteStatus.Strict, GetTopLevelOrigin(document), CrossSiteAncestor: GetSiteForCookies(document).IsOpaque, HasStorageAccess: true);
 
     /// <summary>
     /// The context of an HTTP request (https://httpwg.org/http-extensions/draft-ietf-httpbis-rfc6265bis.html#name-same-site-and-cross-site-requ)
@@ -90,15 +92,28 @@ internal static class CookieContexts
     /// The lax requests with an unsafe method (e.g. <c>POST</c>) do not send the Lax cookies.
     /// </summary>
     public static CookieRequestContext ForRequest(DocumentRequest request, UrlRecord url, IReadOnlyList<UrlRecord> previousUrls)
+        => ForRequest(request.NavigationDestination ?? request.Destination, request.Origin, request.SiteForCookies, request.TopLevelOrigin, request.Method, request.StorageAccessEligibility, request.StorageAccessPermissions, url, previousUrls);
+
+    /// <inheritdoc cref="ForRequest(DocumentRequest, UrlRecord, IReadOnlyList{UrlRecord})"/>
+    /// <param name="destination">The destination of the request (the destination of the navigation of a request that a service worker fetches again).</param>
+    /// <param name="origin">The serialized origin of the request, or null when it has no client.</param>
+    /// <param name="serializedSiteForCookies">The serialized site for cookies of the client, or null when the request has no client.</param>
+    /// <param name="serializedTopLevelOrigin">The serialized top-level origin of the client, or null.</param>
+    /// <param name="method">The method of the request.</param>
+    /// <param name="eligibility">Whether the request is eligible for storage access.</param>
+    /// <param name="permissions">The permission store of the <c>storage-access</c> permission, or null.</param>
+    /// <param name="url">The URL of the request.</param>
+    /// <param name="previousUrls">The URLs of the redirects that led to <paramref name="url"/>.</param>
+    public static CookieRequestContext ForRequest(RequestDestination destination, string? origin, string? serializedSiteForCookies, string? serializedTopLevelOrigin, string method, StorageAccessEligibility eligibility, PermissionStore? permissions, UrlRecord url, IReadOnlyList<UrlRecord> previousUrls)
     {
         var urlOrigin = OriginRecord.FromUrl(url);
+
         // The request of a navigation that a service worker fetches again is a request of the navigation
-        var destination = request.NavigationDestination ?? request.Destination;
         var isTopLevelNavigation = destination == RequestDestination.Document;
         var isNestedNavigation = destination is RequestDestination.Iframe or RequestDestination.Frame or RequestDestination.Embed or RequestDestination.Object;
-        var initiator = request.Origin is { } origin ? ParseOrigin(origin) : null;
-        var siteForCookies = isTopLevelNavigation ? urlOrigin : request.SiteForCookies is { } site ? ParseOrigin(site) : null;
-        var topLevelOrigin = isTopLevelNavigation ? urlOrigin : request.TopLevelOrigin is { } topLevel ? ParseOrigin(topLevel) : null;
+        var initiator = origin is not null ? ParseOrigin(origin) : null;
+        var siteForCookies = isTopLevelNavigation ? urlOrigin : serializedSiteForCookies is { } site ? ParseOrigin(site) : null;
+        var topLevelOrigin = isTopLevelNavigation ? urlOrigin : serializedTopLevelOrigin is { } topLevel ? ParseOrigin(topLevel) : null;
         if (siteForCookies is null)
             return new CookieRequestContext(url, IsHttp: true, CookieSameSiteStatus.Strict, topLevelOrigin, isTopLevelNavigation);
 
@@ -109,7 +124,7 @@ internal static class CookieContexts
         if (isTopLevelNavigation)
         {
             status = sameSiteUrls && sameSiteInitiator ? CookieSameSiteStatus.Strict
-                : request.Method is "GET" or "HEAD" or "OPTIONS" or "TRACE" ? CookieSameSiteStatus.Lax : CookieSameSiteStatus.LaxUnsafe;
+                : method is "GET" or "HEAD" or "OPTIONS" or "TRACE" ? CookieSameSiteStatus.Lax : CookieSameSiteStatus.LaxUnsafe;
         }
         else
         {
@@ -118,8 +133,12 @@ internal static class CookieContexts
             status = sameSiteUrls && (!isNestedNavigation || sameSiteInitiator) ? CookieSameSiteStatus.Strict : CookieSameSiteStatus.CrossSite;
         }
 
-        // The partitioned cookies of a cross-site request are keyed by the cross-site ancestor bit (CHIPS)
-        return new CookieRequestContext(url, IsHttp: true, status, topLevelOrigin, isTopLevelNavigation, CrossSiteAncestor: !isTopLevelNavigation && !isSameSiteUrl);
+        // The partitioned cookies of a cross-site request are keyed by the cross-site ancestor bit (CHIPS), and its
+        // unpartitioned cookies are the ones of the Storage Access API when it is eligible for storage access
+        // (https://privacycg.github.io/storage-access/#cookies)
+        var crossSiteAncestor = !isTopLevelNavigation && !isSameSiteUrl;
+        var hasStorageAccess = crossSiteAncestor && StorageAccess.HasStorageAccess(eligibility, permissions, topLevelOrigin, url);
+        return new CookieRequestContext(url, IsHttp: true, status, topLevelOrigin, isTopLevelNavigation, CrossSiteAncestor: crossSiteAncestor, HasStorageAccess: hasStorageAccess);
     }
 
     /// <summary>Parses a serialized origin (<c>null</c> is an opaque origin).</summary>

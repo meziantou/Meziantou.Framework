@@ -16,7 +16,9 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <c>HttpOnly</c>, <c>SameSite</c> and <c>Partitioned</c> attributes, the <c>__Secure-</c>, <c>__Host-</c>,
 /// <c>__Http-</c> and <c>__Host-Http-</c> prefixes, the public suffixes and the size limits) and the retrieval model (the
 /// "same-site" and "cross-site" requests, schemefully). The cookies with the <c>Partitioned</c> attribute are keyed by the
-/// site of the top-level document (CHIPS); the other cookies are not partitioned, and the third-party cookies are not blocked.
+/// site of the top-level document (CHIPS); the other cookies are not partitioned. By default, the third-party cookies are not
+/// blocked: <see cref="BlockThirdPartyCookies"/> and <see cref="SetThirdPartyCookieAccess"/> block the unpartitioned cookies
+/// in the third-party contexts, which the Storage Access API (<see cref="Document.RequestStorageAccess"/>) can then unblock.
 /// </para>
 /// <para>
 /// The names and the values of the cookies are byte sequences, represented as strings whose characters are the bytes
@@ -94,6 +96,140 @@ public sealed class CookieJar
     /// as in the browsers that do not enable origin-bound cookies, the cookies of a host are shared by its schemes and ports.
     /// </summary>
     public bool OriginBound { get; init; }
+
+    /// <summary>
+    /// The rules of <see cref="SetThirdPartyCookieAccess"/>: whether the unpartitioned cookies of a site (or of any site, <c>*</c>)
+    /// are blocked in the third-party contexts of a top-level site (or of any top-level site, <c>*</c>).
+    /// </summary>
+    private readonly Dictionary<(string TopLevelSite, string EmbeddedSite), bool> _thirdPartyCookieRules = [];
+
+    /// <summary>
+    /// Gets or sets whether the unpartitioned cookies are blocked in the third-party contexts (third-party cookie blocking):
+    /// the documents and the requests whose site is not the site of their top-level document, or that have a cross-site
+    /// ancestor, neither send nor store the cookies without the <c>Partitioned</c> attribute, unless they have storage access
+    /// (https://privacycg.github.io/storage-access/, see <see cref="Document.RequestStorageAccess"/>). The rules of
+    /// <see cref="SetThirdPartyCookieAccess"/> take precedence. The default value is false: as in the browsers that do not
+    /// block the third-party cookies, the unpartitioned cookies are available in every context, so every document has
+    /// storage access (<see cref="Document.HasStorageAccess"/>), and the cross-site requests have the <c>active</c> storage
+    /// access status (the <c>Sec-Fetch-Storage-Access</c> header).
+    /// </summary>
+    public bool BlockThirdPartyCookies
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return field;
+            }
+        }
+        set
+        {
+            lock (_lock)
+            {
+                field = value;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Blocks or allows the unpartitioned cookies of a site in the third-party contexts of a top-level site (the settings of
+    /// the user, and the Set Storage Access command of WebDriver, https://privacycg.github.io/storage-access/#set-storage-access-command).
+    /// The rules override <see cref="BlockThirdPartyCookies"/>. The documents of a site whose cookies are allowed have storage
+    /// access (<see cref="Document.HasStorageAccess"/>); the documents of a site whose cookies are blocked can request it
+    /// (<see cref="Document.RequestStorageAccess"/>).
+    /// </summary>
+    /// <param name="topLevelUrl">A URL of the top-level site (e.g. <c>https://example.com/</c>), or null for every top-level site.</param>
+    /// <param name="embeddedUrl">A URL of the embedded site, or null for every site.</param>
+    /// <param name="blocked">Whether the unpartitioned cookies are blocked.</param>
+    /// <remarks>
+    /// The rule of a specific pair of sites takes precedence over the rule of every embedded site, which takes precedence over
+    /// the rules of every top-level site. A rule for every embedded site removes the rules of the specific embedded sites of
+    /// its top-level sites.
+    /// </remarks>
+    public void SetThirdPartyCookieAccess(string? topLevelUrl, string? embeddedUrl, bool blocked)
+    {
+        var topLevelSite = topLevelUrl is null ? "*" : ParseSite(topLevelUrl, nameof(topLevelUrl));
+        var embeddedSite = embeddedUrl is null ? "*" : ParseSite(embeddedUrl, nameof(embeddedUrl));
+        lock (_lock)
+        {
+            if (embeddedUrl is null)
+            {
+                foreach (var key in _thirdPartyCookieRules.Keys.Where(key => topLevelUrl is null || key.TopLevelSite == topLevelSite).ToArray())
+                {
+                    _thirdPartyCookieRules.Remove(key);
+                }
+            }
+
+            _thirdPartyCookieRules[(topLevelSite, embeddedSite)] = blocked;
+        }
+
+        static string ParseSite(string url, string paramName)
+        {
+            if (UrlParser.Parse(url, baseUrl: null) is not { } parsed)
+                throw new ArgumentException($"'{url}' is not a valid URL", paramName);
+
+            var origin = OriginRecord.FromUrl(parsed);
+            if (origin.IsOpaque)
+                throw new ArgumentException($"The origin of '{url}' is opaque", paramName);
+
+            return origin.SerializeSite();
+        }
+    }
+
+    /// <summary>
+    /// https://privacycg.github.io/storage-access/#determine-whether-the-user-agent-explicitly-allows-unpartitioned-cookie-access:
+    /// whether the settings allow the unpartitioned cookies of the embedded site in the third-party contexts of the top-level
+    /// site, i.e. they are not blocked (by a rule of <see cref="SetThirdPartyCookieAccess"/>, or by
+    /// <see cref="BlockThirdPartyCookies"/>). A blocked site has no explicit setting: its documents can still request
+    /// storage access.
+    /// </summary>
+    internal bool ExplicitlyAllowsUnpartitionedCookieAccess(OriginRecord topLevel, OriginRecord embedded)
+        => !topLevel.IsOpaque && !embedded.IsOpaque && !IsUnpartitionedCookieAccessBlocked(topLevel, embedded);
+
+    /// <summary>Whether the unpartitioned cookies of the embedded origin are blocked in the third-party contexts of the top-level origin.</summary>
+    internal bool IsUnpartitionedCookieAccessBlocked(OriginRecord topLevel, OriginRecord embedded)
+    {
+        if (GetThirdPartyCookieRule(topLevel, embedded) is { } blocked)
+            return blocked;
+
+        return BlockThirdPartyCookies;
+    }
+
+    private bool? GetThirdPartyCookieRule(OriginRecord topLevel, OriginRecord embedded)
+    {
+        if (topLevel.IsOpaque || embedded.IsOpaque)
+            return null;
+
+        var topLevelSite = topLevel.SerializeSite();
+        var embeddedSite = embedded.SerializeSite();
+        lock (_lock)
+        {
+            if (_thirdPartyCookieRules.Count == 0)
+                return null;
+
+            if (_thirdPartyCookieRules.TryGetValue((topLevelSite, embeddedSite), out var blocked)
+                || _thirdPartyCookieRules.TryGetValue((topLevelSite, "*"), out blocked)
+                || _thirdPartyCookieRules.TryGetValue(("*", embeddedSite), out blocked)
+                || _thirdPartyCookieRules.TryGetValue(("*", "*"), out blocked))
+            {
+                return blocked;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Whether the unpartitioned cookies are not available to a context: a third-party context (see
+    /// <see cref="CookieRequestContext.CrossSiteAncestor"/>) without storage access whose cookies are blocked.
+    /// </summary>
+    internal bool IsUnpartitionedCookieAccessBlocked(CookieRequestContext context)
+    {
+        if (!context.CrossSiteAncestor || context.HasStorageAccess || context.TopLevelOrigin is not { } topLevel)
+            return false;
+
+        return IsUnpartitionedCookieAccessBlocked(topLevel, OriginRecord.FromUrl(context.Url));
+    }
 
     /// <summary>The cookie stores notified (outside of the lock of the jar) when cookies are created, changed or removed (https://cookiestore.spec.whatwg.org/#process-changes).</summary>
     private readonly List<WeakReference<ICookieChangeListener>> _listeners = [];
@@ -294,13 +430,14 @@ public sealed class CookieJar
         if (context.Url.Host is not { } host || host.Kind == UrlHostKind.Empty)
             return result;
 
+        var unpartitionedBlocked = IsUnpartitionedCookieAccessBlocked(context);
         lock (_lock)
         {
             EvictExpiredCookies(ref changes);
             var partitionKey = GetPartitionKey(context);
             foreach (var cookie in _cookies)
             {
-                if (IsInScope(cookie, context, host, partitionKey, OriginBound))
+                if ((!unpartitionedBlocked || cookie.PartitionKey is not null) && IsInScope(cookie, context, host, partitionKey, OriginBound))
                 {
                     result.Add(cookie);
                 }
@@ -520,6 +657,11 @@ public sealed class CookieJar
                 return false;
 
             cookie.PartitionKey = GetPartitionKey(context);
+        }
+        else if (IsUnpartitionedCookieAccessBlocked(context))
+        {
+            // A third-party context whose unpartitioned cookies are blocked cannot set them
+            return false;
         }
 
         // Steps 20-22: the prefixes, matched case-insensitively
@@ -1382,5 +1524,7 @@ internal enum CookieSameSiteStatus
 /// same-site status, whether it is a top-level navigation, and the top-level origin (the partition key of the partitioned cookies).
 /// </summary>
 /// The partitioned cookies are keyed by the site of the top-level origin and whether the context has a cross-site ancestor
-/// (or is a cross-site request).
-internal readonly record struct CookieRequestContext(UrlRecord Url, bool IsHttp, CookieSameSiteStatus SameSite, OriginRecord? TopLevelOrigin, bool IsTopLevelNavigation = false, bool CrossSiteAncestor = false);
+/// (or is a cross-site request): a third-party context. The unpartitioned cookies of a third-party context are blocked when
+/// the jar blocks them (<see cref="CookieJar.BlockThirdPartyCookies"/>) and the context does not have storage access
+/// (https://privacycg.github.io/storage-access/).
+internal readonly record struct CookieRequestContext(UrlRecord Url, bool IsHttp, CookieSameSiteStatus SameSite, OriginRecord? TopLevelOrigin, bool IsTopLevelNavigation = false, bool CrossSiteAncestor = false, bool HasStorageAccess = false);

@@ -47,7 +47,10 @@ internal static class SupportedTokens
     /// </summary>
     public static readonly FrozenSet<string> HyperlinkRel = FrozenSet.Create(StringComparer.Ordinal, "noopener", "noreferrer", "opener");
 
-    /// <summary>https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-sandbox</summary>
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/iframe-embed-object.html#dom-iframe-sandbox, and the keyword of the Storage Access
+    /// API (https://privacycg.github.io/storage-access/#sandboxing-storage-access).
+    /// </summary>
     public static readonly FrozenSet<string> Sandbox = FrozenSet.Create(
         StringComparer.Ordinal,
         "allow-downloads",
@@ -60,6 +63,7 @@ internal static class SupportedTokens
         "allow-presentation",
         "allow-same-origin",
         "allow-scripts",
+        "allow-storage-access-by-user-activation",
         "allow-top-navigation",
         "allow-top-navigation-by-user-activation",
         "allow-top-navigation-to-custom-protocols");

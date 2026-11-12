@@ -34,8 +34,9 @@
 - The runner plays the network layer of a browser (`Runner/WptHttpMessage.cs`): the responses get the `Server` and `Date`
   headers that wptserve adds, a missing image, font, media or subresource file is a `404` response (not a network
   error), the body of a file ends at the `Content-Length` of its `.headers` file, a line break in a header value ends the
-  header unless it is an obsolete line folding (then it is a space), and the bodies sent with the `gzip`, `deflate` or `br`
-  content codings are decoded (a body that cannot be decoded fails after the headers; `zstd` is not decoded). The handlers
+  header unless it is an obsolete line folding (then it is a space), and the bodies sent with the `gzip`, `deflate`, `br` or
+  `zstd` content codings are decoded (a body that cannot be decoded fails after the headers; the window limit of `zstd` is
+  not enforced). The handlers
   that write a whole HTTP/1.1 message themselves (`response.writer.write()`, e.g. `fetch/h1-parsing/resources/status-code.py`)
   set `WptHandlerResponse.RawMessage`: the message is parsed as RFC 9112 requires (a bare CR, a NUL byte, an invalid
   status line or field line is a network error), and its body is framed by its `Content-Length` (values that differ are a

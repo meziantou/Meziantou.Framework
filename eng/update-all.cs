@@ -1236,15 +1236,19 @@ void RunValidateDocumentationPackageIdsStep(FullPath rootPath)
         for (var current = folder; current != docsRootPath; current = current.Parent)
         {
             var folderFile = current / FolderFileName;
+            var relativePath = folderFile.MakePathRelativeTo(rootPath).Replace('\\', '/');
             var lines = File.Exists(folderFile) ? File.ReadAllLines(folderFile) : [];
-            segments.Add(ReadYamlScalar(lines, "slug") ?? SlugifyDocumentationTitle(ReadYamlScalar(lines, "title") ?? Regex.Replace(current.Name, "^[0-9]+[-_.\\s]+", "", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan)));
+            segments.Add(ReadYamlScalar(relativePath, lines, "slug") ?? SlugifyDocumentationTitle(ReadYamlScalar(relativePath, lines, "title") ?? Regex.Replace(current.Name, "^[0-9]+[-_.\\s]+", "", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan)));
         }
 
         segments.Reverse();
         return string.Concat(segments.Select(segment => segment + "/"));
     }
 
-    static string? ReadYamlScalar(string[] lines, string key)
+    // Reads a one-line value of a _folder.yml file without a YAML parser. The values it cannot read exactly, such as an
+    // inline comment, an escape sequence or a block scalar, are reported: the URL computed from them would differ from
+    // the URL of the site.
+    string? ReadYamlScalar(string relativePath, string[] lines, string key)
     {
         var prefix = key + ":";
         var line = lines.FirstOrDefault(line => line.StartsWith(prefix, StringComparison.Ordinal));
@@ -1252,12 +1256,21 @@ void RunValidateDocumentationPackageIdsStep(FullPath rootPath)
             return null;
 
         var value = line[prefix.Length..].Trim();
-        if (value.Length >= 2 && ((value[0] is '"' && value[^1] is '"') || (value[0] is '\'' && value[^1] is '\'')))
+        var isSupported = value switch
         {
-            value = value[1..^1];
+            "" => false,
+            ['"', .. var content, '"'] => !content.Contains('"', StringComparison.Ordinal) && !content.Contains('\\', StringComparison.Ordinal),
+            ['\'', .. var content, '\''] => !content.Contains('\'', StringComparison.Ordinal),
+            _ => !"\"'[]{}&*!|>%@`#,?:-".Contains(value[0], StringComparison.Ordinal) && !value.Contains(" #", StringComparison.Ordinal) && !value.Contains(": ", StringComparison.Ordinal),
+        };
+
+        if (!isSupported)
+        {
+            ReportError(relativePath, $"write '{key}' as a plain or quoted value on one line, without a comment or an escape sequence: the project URLs of the packages are computed from it");
+            return null;
         }
 
-        return value.Length is 0 ? null : value;
+        return value[0] is '"' or '\'' ? value[1..^1] : value;
     }
 
     // Same rules as Meziantou.DocumentationGenerator: accents are removed, ASCII letters and digits are lowercased, and

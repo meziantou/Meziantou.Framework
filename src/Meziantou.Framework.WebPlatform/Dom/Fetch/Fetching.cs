@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Meziantou.Framework.WebPlatform.Compression;
 using Meziantou.Framework.WebPlatform.Infra;
 using Meziantou.Framework.WebPlatform.Urls;
 
@@ -554,7 +555,7 @@ internal static class Fetching
             // The file: URLs are left to the implementation: the loader gets the resources of the documents (but not the ones
             // of fetch() and XMLHttpRequest), without the HTTP semantics (no credentials, no redirect)
             case "file" when request.Destination != RequestDestination.Empty:
-                return await NetworkFetchAsync(request, [.. request.HeaderList], includeCredentials: false, cancellationToken).ConfigureAwait(false);
+                return await NetworkFetchAsync(request, [.. request.HeaderList], includeCredentials: false, dictionary: null, cancellationToken).ConfigureAwait(false);
 
             default:
                 return FetchResponse.NetworkError();
@@ -1013,19 +1014,38 @@ internal static class Fetching
             return gatewayTimeout;
         }
 
-        var response = await NetworkFetchAsync(request, headers, includeCredentials, cancellationToken).ConfigureAwait(false);
+        // https://www.rfc-editor.org/rfc/rfc9842#section-2.2: the best compression dictionary of the request is announced to
+        // the server. As in the browsers, the headers are added below the HTTP cache: they are not the headers of the stored
+        // request (a response whose Vary header has Available-Dictionary is used whatever the dictionaries).
+        var cachePartition = (cacheKey ?? GetHttpCacheKey(request)) is { } partitionKey ? HttpCache.GetPartition(partitionKey) : null;
+        var dictionary = FindCompressionDictionary(request, cachePartition, headers, now);
+        var networkHeaders = headers;
+        if (dictionary is not null)
+        {
+            networkHeaders = [.. headers, new("Accept-Encoding", CompressionDictionaries.AcceptEncoding), new("Available-Dictionary", CompressionDictionaries.GetAvailableDictionaryValue(dictionary))];
+            if (dictionary.Options.Id.Length > 0)
+            {
+                networkHeaders.Add(new("Dictionary-ID", CompressionDictionaries.GetDictionaryIdValue(dictionary.Options.Id)));
+            }
+        }
+
+        var response = await NetworkFetchAsync(request, networkHeaders, includeCredentials, dictionary, cancellationToken).ConfigureAwait(false);
         if (response.IsNetworkError)
             return response;
 
         // https://w3c.github.io/webappsec-clear-site-data/#fetch-integration: the Clear-Site-Data header clears the data of
         // the origin once the cookies of the response are stored, before the response is stored in the HTTP cache
         // (as in the browsers, the response that clears the cache is not stored either)
-        var clearedCache = ClearSiteData.ProcessResponse(request, response, includeCredentials, (cacheKey ?? GetHttpCacheKey(request)) is { } partitionKey ? HttpCache.GetPartition(partitionKey) : null);
+        var clearedCache = ClearSiteData.ProcessResponse(request, response, includeCredentials, cachePartition);
 
+        var responseTime = GetHttpCacheTime(request);
         if (cache is not null && (!clearedCache || response.Status == 304))
         {
-            response = UpdateHttpCache(request, response, cache, cacheKey!, requestHeaders, includeCredentials, revalidating ? storedResponse : null, now, GetHttpCacheTime(request));
+            response = UpdateHttpCache(request, response, cache, cacheKey!, requestHeaders, includeCredentials, revalidating ? storedResponse : null, now, responseTime);
         }
+
+        // https://www.rfc-editor.org/rfc/rfc9842#section-2.1: the response registers a compression dictionary
+        response = RegisterCompressionDictionary(request, response, cachePartition, now, responseTime);
 
         // https://w3c.github.io/webappsec-clear-site-data/#fetch-integration: the Clear-Site-Data header clears the client hints
         ClientHints.ProcessResponse(request, response);
@@ -1092,7 +1112,7 @@ internal static class Fetching
                 }
 
                 var requestTime = GetHttpCacheTime(request);
-                var response = await NetworkFetchAsync(request, headers, includeCredentials, CancellationToken.None).ConfigureAwait(false);
+                var response = await NetworkFetchAsync(request, headers, includeCredentials, dictionary: null, CancellationToken.None).ConfigureAwait(false);
                 if (!response.IsNetworkError)
                 {
                     // As the response of the network of HttpNetworkOrCacheFetchAsync (the loader stored its cookies, and the
@@ -1257,7 +1277,7 @@ internal static class Fetching
     /// The opening handshake of a WebSocket (<see cref="RequestMode.WebSocket"/>) is sent by <see cref="DocumentLoader.ConnectWebSocketAsync"/>:
     /// the connection of its response is <see cref="FetchResponse.Connection"/>.
     /// </summary>
-    private static async Task<FetchResponse> NetworkFetchAsync(FetchRequest request, List<KeyValuePair<string, string>> headers, bool includeCredentials, CancellationToken cancellationToken)
+    private static async Task<FetchResponse> NetworkFetchAsync(FetchRequest request, List<KeyValuePair<string, string>> headers, bool includeCredentials, CompressionDictionary? dictionary, CancellationToken cancellationToken)
     {
         // The navigable of a navigation, else the environment of the client (a browsing context or a worker), else the
         // browsing context of a keepalive request whose document was unloaded
@@ -1328,6 +1348,14 @@ internal static class Fetching
         if (request.Timing.IsRecorded)
         {
             request.Timing.FinalNetworkResponseStart = eventLoop.TimeProvider.GetTimestamp();
+        }
+
+        // https://www.rfc-editor.org/rfc/rfc9842#section-4: the body of a response compressed with a dictionary is decoded with
+        // the dictionary announced by the request, as the loader decodes the other content codings (the headers are kept: the
+        // Content-Length is the length of the encoded body). A body that cannot be decoded is an error of the body.
+        if (resource is not null && !isWebSocket && CanHaveBody(request, resource.StatusCode) && GetDictionaryContentCoding(resource.Headers) is { } dictionaryCoding)
+        {
+            resource = DecodeDictionaryCompressedResource(resource, dictionaryCoding, dictionary);
         }
 
         // A body that arrives over time is interpreted as its bytes arrive by the HTML document of a navigation, by an event
@@ -1466,6 +1494,118 @@ internal static class Fetching
     /// Whether the response of a request can have a body that is read as it arrives: not a redirect, not a null body status
     /// and not the response of a HEAD or CONNECT request (https://fetch.spec.whatwg.org/#main-fetch, step 19).
     /// </summary>
+    /// <summary>
+    /// https://www.rfc-editor.org/rfc/rfc9842#section-2.2: the compression dictionary announced by a request, or null: the
+    /// best dictionary of the partition of the request (see <see cref="CompressionDictionaries.FindBestMatch"/>). A request
+    /// to a URL that is not potentially trustworthy, a cross-origin <c>no-cors</c> request (whose response is opaque), a
+    /// WebSocket handshake and a request whose <c>Accept-Encoding</c> is set (a range request) have no dictionary.
+    /// </summary>
+    private static CompressionDictionary? FindCompressionDictionary(FetchRequest request, string? partition, List<KeyValuePair<string, string>> headers, DateTimeOffset now)
+    {
+        if (partition is null || request.Mode == RequestMode.WebSocket || request.ResponseTainting == FetchResponseTainting.Opaque || FetchHeaders.Contains(headers, "Accept-Encoding")
+            || request.CurrentUrl.Scheme is not ("http" or "https") || !ReferrerPolicies.IsPotentiallyTrustworthy(request.CurrentUrl) || GetDocumentLoader(request) is not { } loader)
+        {
+            return null;
+        }
+
+        var destination = FetchMetadata.GetDestinationName(request.Destination);
+        return CompressionDictionaries.Get(loader).FindBestMatch(partition, request.CurrentUrl, destination == "empty" ? "" : destination, now);
+    }
+
+    /// <summary>
+    /// https://www.rfc-editor.org/rfc/rfc9842#section-2.1: registers the dictionary of a response whose
+    /// <c>Use-As-Dictionary</c> header is valid, once its body is received: the response of a request to a potentially
+    /// trustworthy URL, which is not opaque (a cross-origin <c>no-cors</c> request), with an ok status.
+    /// </summary>
+    private static FetchResponse RegisterCompressionDictionary(FetchRequest request, FetchResponse response, string? partition, DateTimeOffset requestTime, DateTimeOffset responseTime)
+    {
+        if (partition is null || response.Status is < 200 or > 299 || request.ResponseTainting == FetchResponseTainting.Opaque || request.Mode == RequestMode.WebSocket
+            || request.CurrentUrl.Scheme is not ("http" or "https") || !ReferrerPolicies.IsPotentiallyTrustworthy(request.CurrentUrl)
+            || HeaderList.Get(response.HeaderList, "Use-As-Dictionary") is not { } value || GetDocumentLoader(request) is not { } loader
+            || CompressionDictionaries.ParseUseAsDictionary(value, request.CurrentUrl) is not { } options)
+        {
+            return response;
+        }
+
+        var dictionaries = CompressionDictionaries.Get(loader);
+        var url = request.CurrentUrl;
+        var status = response.Status;
+        var headers = response.HeaderList.ToArray();
+        void Register(byte[] content) => dictionaries.Register(partition, url, options, content, status, headers, requestTime, responseTime);
+        if (response.Resource is { RemainingContentBytes: { } remaining } resource)
+        {
+            // The body that arrives over time is registered once it is fully received
+            var first = resource.ContentBytes ?? ReadOnlyMemory<byte>.Empty;
+            var registeredResource = new DocumentResource(first)
+            {
+                StatusCode = resource.StatusCode,
+                StatusText = resource.StatusText,
+                Headers = resource.Headers,
+                Url = resource.Url,
+                RedirectUrls = resource.RedirectUrls,
+                RemainingContentBytes = new HttpCacheBody(first, remaining, Register),
+            };
+            var streamedResponse = FetchResponse.Create(response.Status, response.StatusMessage, response.HeaderList, registeredResource);
+            streamedResponse.UrlList = response.UrlList;
+            return streamedResponse;
+        }
+
+        Register(response.Resource is { } completeResource ? completeResource.ContentBytes?.ToArray() ?? Encoding.UTF8.GetBytes(completeResource.Content ?? "") : response.Body ?? []);
+        return response;
+    }
+
+    /// <summary>The content coding of a response when it is a dictionary content coding (<c>dcb</c> or <c>dcz</c>, https://www.rfc-editor.org/rfc/rfc9842#section-4), else null.</summary>
+    private static string? GetDictionaryContentCoding(IReadOnlyList<KeyValuePair<string, string>> headers)
+    {
+        if (HeaderList.GetDecodeAndSplit(headers, "Content-Encoding") is not [var coding])
+            return null;
+
+        coding = InfraAscii.ToAsciiLowercase(coding.Trim(' ', '\t'));
+        return DictionaryDecompressor.IsDictionaryCoding(coding) ? coding : null;
+    }
+
+    /// <summary>
+    /// The resource whose body is the decoded body of a resource compressed with a dictionary. The body is decoded once it
+    /// is received: it arrives over time, and an error of the decoder is an error of the body.
+    /// </summary>
+    private static DocumentResource DecodeDictionaryCompressedResource(DocumentResource resource, string coding, CompressionDictionary? dictionary)
+    {
+        return new DocumentResource(ReadOnlyMemory<byte>.Empty)
+        {
+            StatusCode = resource.StatusCode,
+            StatusText = resource.StatusText,
+            Headers = resource.Headers,
+            Url = resource.Url,
+            RedirectUrls = resource.RedirectUrls,
+            RemainingContentBytes = DecodeAsync(resource, coding, dictionary),
+        };
+
+        static async IAsyncEnumerable<ReadOnlyMemory<byte>> DecodeAsync(DocumentResource resource, string coding, CompressionDictionary? dictionary, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var body = new ArrayBufferWriter<byte>();
+            body.Write(resource.ContentBytes is { } bytes ? bytes.Span : Encoding.UTF8.GetBytes(resource.Content ?? ""));
+            if (resource.RemainingContentBytes is { } remaining)
+            {
+                await foreach (var chunk in remaining.WithCancellation(cancellationToken).ConfigureAwait(false))
+                {
+                    body.Write(chunk.Span);
+                }
+            }
+
+            byte[] decoded;
+            try
+            {
+                decoded = CompressionDictionaries.Decode(coding, body.WrittenSpan, dictionary);
+            }
+            catch (InvalidDataException ex)
+            {
+                throw new IOException(ex.Message, ex);
+            }
+
+            yield return decoded;
+        }
+    }
+
     private static bool CanHaveBody(FetchRequest request, int status) => status is not (101 or 103 or 204 or 205 or 304 or 301 or 302 or 303 or 307 or 308) && request.Method is not ("HEAD" or "CONNECT");
 
     private static bool HasDuplicateNames(List<KeyValuePair<string, string>> headers)

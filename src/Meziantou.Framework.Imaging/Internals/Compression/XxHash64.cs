@@ -1,10 +1,12 @@
 using System.Buffers.Binary;
 using System.Numerics;
 
-// Compiled into Meziantou.Framework.Imaging and Meziantou.Framework.Geo.GeoParquet, internal to each, in the namespace of
-// each library.
+// Compiled into Meziantou.Framework.Imaging, Meziantou.Framework.Geo.GeoParquet and Meziantou.Framework.WebPlatform, internal
+// to each, in the namespace of each library.
 #if MEZIANTOU_FRAMEWORK_IMAGING
 namespace Meziantou.Framework.Imaging.Internals;
+#elif MEZIANTOU_FRAMEWORK_WEBPLATFORM
+namespace Meziantou.Framework.WebPlatform.Compression;
 #else
 namespace Meziantou.Framework.Geo.Internals;
 #endif

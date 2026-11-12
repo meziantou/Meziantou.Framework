@@ -833,6 +833,15 @@ internal sealed partial class WptTestRunner
             AddHeader("Connection", "keep-alive");
             AddHeader("User-Agent", UserAgent);
             AddHeader("Accept-Language", "en-US,en");
+
+            // The content codings of the compression dictionaries (Accept-Encoding: dcb, dcz) are added to the ones of the
+            // network layer
+            var acceptEncodingIndex = headers.FindIndex(header => header.Key.Equals("Accept-Encoding", StringComparison.OrdinalIgnoreCase));
+            if (acceptEncodingIndex >= 0 && headers[acceptEncodingIndex].Value is var acceptEncoding && acceptEncoding.Contains("dcb", StringComparison.Ordinal))
+            {
+                headers[acceptEncodingIndex] = new(headers[acceptEncodingIndex].Key, "gzip, deflate, " + acceptEncoding);
+            }
+
             AddHeader("Accept-Encoding", "gzip, deflate");
         }
         else
@@ -873,8 +882,15 @@ internal sealed partial class WptTestRunner
                 headers.AddRange(request.Headers.Where(header => !header.Key.Equals("Origin", StringComparison.OrdinalIgnoreCase)));
             }
 
-            headers.Add(new("Accept-Encoding", "gzip, deflate"));
+            // The headers of the compression dictionaries (https://www.rfc-editor.org/rfc/rfc9842#section-2.2)
+            var hasDictionary = HeaderList.Get(request.Headers, "Available-Dictionary") is not null;
+            headers.Add(new("Accept-Encoding", hasDictionary ? "gzip, deflate, dcb, dcz" : "gzip, deflate"));
             headers.Add(new("Accept-Language", "en-US,en"));
+            if (hasDictionary)
+            {
+                headers.AddRange(request.Headers.Where(header => header.Key.Equals("Available-Dictionary", StringComparison.OrdinalIgnoreCase) || header.Key.Equals("Dictionary-ID", StringComparison.OrdinalIgnoreCase)));
+            }
+
             if (request.Body is { } body)
             {
                 if (request.BodyContentType is { } contentType)

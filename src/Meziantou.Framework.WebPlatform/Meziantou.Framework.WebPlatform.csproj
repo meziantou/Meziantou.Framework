@@ -60,6 +60,14 @@
     <!-- The word lists and the dictionary break engines of ICU (the lexical word breaking of the Southeast Asian scripts) -->
     <ProjectReference Include="..\Meziantou.Framework.Unicode.Dictionaries\Meziantou.Framework.Unicode.Dictionaries.csproj" />
   </ItemGroup>
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_WEBPLATFORM</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The Zstandard decoder of Meziantou.Framework.Imaging (the "dcz" content coding of the compression dictionaries) -->
+    <Compile Include="../Meziantou.Framework.Imaging/Internals/Compression/ZstdDecoder.cs" Link="Compression/Shared/ZstdDecoder.cs" />
+    <Compile Include="../Meziantou.Framework.Imaging/Internals/Compression/XxHash64.cs" Link="Compression/Shared/XxHash64.cs" />
+  </ItemGroup>
   <ItemGroup>
     <!-- Adler32 is only available from 11.0 -->
     <PackageReference Include="System.IO.Hashing" Version="11.0.0" />

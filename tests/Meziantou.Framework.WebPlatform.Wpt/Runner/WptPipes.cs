@@ -163,11 +163,23 @@ internal static class WptPipes
     }
 
     /// <summary>Whether the network layer decodes a content coding (<see cref="Decode"/>): the codings of the <c>Accept-Encoding</c> header of the requests.</summary>
-    public static bool IsDecodedContentCoding(string contentEncoding) => contentEncoding.Trim().ToLowerInvariant() is "gzip" or "deflate" or "br";
+    public static bool IsDecodedContentCoding(string contentEncoding) => contentEncoding.Trim().ToLowerInvariant() is "gzip" or "deflate" or "br" or "zstd";
 
-    /// <summary>Decodes a body whose content coding is <c>gzip</c>, <c>deflate</c> or <c>br</c>, or returns null (another coding, or invalid data).</summary>
+    /// <summary>Decodes a body whose content coding is <c>gzip</c>, <c>deflate</c>, <c>br</c> or <c>zstd</c>, or returns null (another coding, or invalid data).</summary>
     public static byte[]? Decode(ReadOnlySpan<byte> body, string contentEncoding)
     {
+        if (contentEncoding.Trim().Equals("zstd", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                return new Compression.ZstdDecoder().DecompressWithRawDictionary(body, [], 64 * 1024 * 1024);
+            }
+            catch (InvalidDataException)
+            {
+                return null;
+            }
+        }
+
         using var input = new MemoryStream(body.ToArray());
         using Stream? stream = contentEncoding.Trim().ToLowerInvariant() switch
         {

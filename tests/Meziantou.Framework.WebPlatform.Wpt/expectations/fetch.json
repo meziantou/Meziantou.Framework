@@ -1400,267 +1400,102 @@
     "total": 6
   },
   "fetch/compression-dictionary/compressed-large-resources-001.tentative.https.html": {
-    "total": 6,
-    "failures": {
-      "Loading self-compressed-image-001.png.dcb using image-001.png as a dictionary works": "FAIL",
-      "Loading self-compressed-image-001.png.dcz using image-001.png as a dictionary works": "FAIL",
-      "Loading self-compressed-script-001.js.dcb using script-001.js as a dictionary works": "FAIL",
-      "Loading self-compressed-script-001.js.dcz using script-001.js as a dictionary works": "FAIL",
-      "Loading self-compressed-style-001.css.dcb using style-001.css as a dictionary works": "FAIL",
-      "Loading self-compressed-style-001.css.dcz using style-001.css as a dictionary works": "FAIL"
-    }
+    "total": 6
   },
   "fetch/compression-dictionary/compressed-large-resources-002.tentative.https.html": {
-    "total": 6,
-    "failures": {
-      "Loading self-compressed-subframe-001.html.dcb using subframe-001.html as a dictionary works": "FAIL",
-      "Loading self-compressed-subframe-001.html.dcz using subframe-001.html as a dictionary works": "FAIL",
-      "Loading subframe-001-compressed-by-script-001.html.dcb using script-001.js as a dictionary works": "FAIL",
-      "Loading subframe-001-compressed-by-script-001.html.dcz using script-001.js as a dictionary works": "FAIL",
-      "Loading subframe-001-compressed-by-style-001.html.dcb using style-001.css as a dictionary works": "FAIL",
-      "Loading subframe-001-compressed-by-style-001.html.dcz using style-001.css as a dictionary works": "FAIL"
-    }
+    "total": 6
   },
   "fetch/compression-dictionary/compressed-large-resources-dictionary-hashes.tentative.https.html": {
-    "total": 4,
-    "failures": {
-      "Available-Dictionary header properly set when fetching a resource matching image-001.png as a dictionary.": "FAIL",
-      "Available-Dictionary header properly set when fetching a resource matching script-001.js as a dictionary.": "FAIL",
-      "Available-Dictionary header properly set when fetching a resource matching style-001.css as a dictionary.": "FAIL",
-      "Available-Dictionary header properly set when fetching a resource matching subframe-001.html as a dictionary.": "FAIL"
-    }
+    "total": 4
   },
   "fetch/compression-dictionary/dictionary-clear-site-data-cache.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Clear-Site-Data with \"cache\" directive must unregister dictionary": "FAIL"
-    }
+    "total": 1
   },
   "fetch/compression-dictionary/dictionary-clear-site-data-cookies.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Clear-Site-Data with \"cookies\" directive must unregister dictionary": "FAIL"
-    }
+    "total": 1
   },
   "fetch/compression-dictionary/dictionary-clear-site-data-storage.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Clear-Site-Data with \"storage\" directive must not unregister dictionary": "FAIL"
-    }
+    "total": 1
   },
   "fetch/compression-dictionary/dictionary-compressed-fetch-with-link-match-dest.tentative.https.html": {
     "total": 3,
     "failures": {
-      "Dictionary loaded via <link rel=\"compression-dictionary\"> and compressed with another dictionary with \"asdf\" match-dest should be not be registered.": "FAIL",
-      "Dictionary loaded via <link rel=\"compression-dictionary\"> and compressed with another dictionary with \"compression-dictionary\" match-dest should be be registered and usable.": "FAIL",
-      "Dictionary loaded via <link rel=\"compression-dictionary\"> and compressed with another dictionary with \"script\" match-dest should be not be registered.": "FAIL"
+      "Dictionary loaded via <link rel=\"compression-dictionary\"> and compressed with another dictionary with \"compression-dictionary\" match-dest should be be registered and usable.": "FAIL"
     }
   },
   "fetch/compression-dictionary/dictionary-compressed.tentative.https.html": {
-    "total": 5,
-    "failures": {
-      "A dcb dictionary-compressed dictionary can be used as a dictionary for future requests.": "FAIL",
-      "A dcz dictionary-compressed dictionary can be used as a dictionary for future requests.": "FAIL",
-      "Decompression using Brotli-encoded dictionary works as expected": "FAIL",
-      "Decompression using Zstandard-encoded dictionary works as expected": "FAIL",
-      "Decompression using gzip-encoded dictionary works as expected": "FAIL"
-    }
+    "total": 5
   },
   "fetch/compression-dictionary/dictionary-decompression.tentative.https.h2.html": {
-    "total": 4,
-    "failures": {
-      "Decompression using Brotli with the dictionary works as expected (HTTP/2)": "FAIL",
-      "Decompression using Brotli with the dictionary works as expected (HTTP/2, chunked compressed data)": "FAIL",
-      "Decompression using Zstandard with the dictionary works as expected (HTTP/2)": "FAIL",
-      "Decompression using Zstandard with the dictionary works as expected (HTTP/2, chunked compressed data)": "FAIL"
-    }
+    "total": 4
   },
   "fetch/compression-dictionary/dictionary-decompression.tentative.https.html": {
-    "total": 5,
-    "failures": {
-      "Decompression of a cross origin resource works as expected": "FAIL",
-      "Decompression using Brotli fails when dictionary hash mismatches": "FAIL",
-      "Decompression using Brotli with the dictionary works as expected": "FAIL",
-      "Decompression using Zstandard fails when dictionary hash mismatches": "FAIL",
-      "Decompression using Zstandard with the dictionary works as expected": "FAIL"
-    }
+    "total": 5
   },
   "fetch/compression-dictionary/dictionary-fetch-no-cors.tentative.https.html": {
-    "total": 3,
-    "failures": {
-      "Fetch cross-origin no-cors request does not include Available-Dictionary header": "FAIL",
-      "Fetch same-origin no-cors request includes Available-Dictionary header": "FAIL",
-      "Opaque responses resulting from cross-origin redirects in no-cors mode do not register dictionary": "FAIL"
-    }
+    "total": 3
   },
   "fetch/compression-dictionary/dictionary-fetch-timing-001.tentative.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Timing of compression dictionary fetches for <link> element and Link header.": "TIMEOUT"
-    }
+    "total": 1
   },
   "fetch/compression-dictionary/dictionary-fetch-timing-002.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "<link rel=compression-dictionary> are fetched after DOM operations.": "FAIL"
-    }
+    "total": 1
   },
   "fetch/compression-dictionary/dictionary-fetch-with-imagesrcset.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "imagesrcset is not supported on <link rel=compression-dictionary>": "FAIL"
-    }
+    "total": 1
   },
   "fetch/compression-dictionary/dictionary-fetch-with-link-connect-src-nonce.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "All <link rel=compression-dictionary> are blocked via CSP rule connect-src 'nonce-abc', even when they have a matching cryptographic nonce.": "FAIL"
-    }
+    "total": 1
   },
   "fetch/compression-dictionary/dictionary-fetch-with-link-connect-src.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "link rel=compression-dictionary can be blocked via connect-src.": "FAIL"
-    }
+    "total": 1
   },
   "fetch/compression-dictionary/dictionary-fetch-with-link-element-baseURL.tentative.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "<link rel=compression-dictionary> uses the base URL to trigger a fetch.": "TIMEOUT"
-    }
+    "total": 1
   },
   "fetch/compression-dictionary/dictionary-fetch-with-link-element-crossorigin.tentative.https.html": {
-    "harness": "TIMEOUT",
-    "total": 4,
-    "failures": {
-      "HTMLLinkElement rel=compression-dictionary": "TIMEOUT",
-      "HTMLLinkElement rel=compression-dictionary crossorigin=anonymous": "NOTRUN",
-      "HTMLLinkElement rel=compression-dictionary crossorigin=use-credentials": "NOTRUN"
-    }
+    "total": 4
   },
   "fetch/compression-dictionary/dictionary-fetch-with-link-element-events.tentative.https.html": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "Error event is dispatched on link with rel=compression-dictionary returning a network error.": "NOTRUN",
-      "Load event is dispatched on link with rel=compression-dictionary.": "TIMEOUT"
-    }
+    "total": 2
   },
   "fetch/compression-dictionary/dictionary-fetch-with-link-element-in-body.tentative.https.html": {
-    "total": 2,
-    "failures": {
-      "A <link rel=\"compression-dictionary\"> in body is loaded.": "FAIL"
-    }
+    "total": 2
   },
   "fetch/compression-dictionary/dictionary-fetch-with-link-element-invalid-url.tentative.https.html": {
     "total": 1
   },
   "fetch/compression-dictionary/dictionary-fetch-with-link-element.tentative.https.html": {
-    "total": 3,
-    "failures": {
-      "Browser supports link element with compression-dictionary rel.": "FAIL",
-      "Fetch cross origin dictionary using link element": "FAIL",
-      "Fetch same origin dictionary using link element": "FAIL"
-    }
+    "total": 3
   },
   "fetch/compression-dictionary/dictionary-fetch-with-link-header-in-subresources.tentative.https.html": {
-    "total": 4,
-    "failures": {
-      "Link rel=compression-dictionary headers on <img> subresource do not trigger any fetch request.": "FAIL",
-      "Link rel=compression-dictionary headers on <link rel=\"stylesheet\"> subresource do not trigger any fetch request.": "FAIL",
-      "Link rel=compression-dictionary headers on <script> subresource do not trigger any fetch request.": "FAIL",
-      "Link rel=compression-dictionary headers on FontFace subresource do not trigger any fetch request.": "FAIL"
-    }
+    "total": 4
   },
   "fetch/compression-dictionary/dictionary-fetch-with-link-header.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "Fetch same origin dictionary using link header": "FAIL"
-    }
+    "total": 1
   },
   "fetch/compression-dictionary/dictionary-fetch-with-link-integrity.tentative.https.html": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "HTMLLinkElement rel=compression-dictionary, integrity attribute is ignored.": "TIMEOUT"
-    }
+    "total": 2
   },
   "fetch/compression-dictionary/dictionary-fetch-with-link-referrer-and-referrerpolicy.tentative.https.html": {
-    "harness": "TIMEOUT",
-    "total": 12,
-    "failures": {
-      "HTMLLinkElement rel=compression-dictionary (no referrerpolicy attribute)": "TIMEOUT",
-      "HTMLLinkElement rel=compression-dictionary (referrerpolicy='')": "NOTRUN",
-      "HTMLLinkElement rel=compression-dictionary (referrerpolicy='invalid')": "NOTRUN",
-      "HTMLLinkElement rel=compression-dictionary (referrerpolicy='no-referrer')": "NOTRUN",
-      "HTMLLinkElement rel=compression-dictionary (referrerpolicy='no-referrer-when-downgrade')": "NOTRUN",
-      "HTMLLinkElement rel=compression-dictionary (referrerpolicy='origin')": "NOTRUN",
-      "HTMLLinkElement rel=compression-dictionary (referrerpolicy='origin-when-cross-origin')": "NOTRUN",
-      "HTMLLinkElement rel=compression-dictionary (referrerpolicy='same-origin')": "NOTRUN",
-      "HTMLLinkElement rel=compression-dictionary (referrerpolicy='strict-origin')": "NOTRUN",
-      "HTMLLinkElement rel=compression-dictionary (referrerpolicy='strict-origin-when-cross-origin')": "NOTRUN",
-      "HTMLLinkElement rel=compression-dictionary (referrerpolicy='unsafe-url')": "NOTRUN"
-    }
+    "total": 12
   },
   "fetch/compression-dictionary/dictionary-fetch-with-type-attribute.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "<link rel=compression-dictionary> are fetched independently of the type.": "FAIL"
-    }
+    "total": 1
   },
   "fetch/compression-dictionary/dictionary-insecure-context.tentative.http.html": {
-    "total": 1,
-    "failures": {
-      "Dictionaries must not be registered in insecure contexts": "FAIL"
-    }
+    "total": 1
   },
   "fetch/compression-dictionary/dictionary-match.tentative.https.html": {
-    "total": 8,
-    "failures": {
-      "Best match algorithm prioritizes dictionaries with longer match patterns": "FAIL",
-      "Dictionary registration with empty match-dest list acts as wildcard": "FAIL",
-      "Dictionary registration with matching fetch destination": "FAIL",
-      "Dictionary registration with unknown match-dest and empty string matches fetch destination": "FAIL",
-      "Dictionary with non-matching match-dest is not used": "FAIL",
-      "Dictionary with unknown match-dest is not used for fetch() API": "FAIL",
-      "Most recently fetched dictionary takes priority when match lengths are equal": "FAIL",
-      "match-dest presence takes priority over longer match patterns": "FAIL"
-    }
+    "total": 8
   },
   "fetch/compression-dictionary/dictionary-registration.tentative.https.html": {
-    "total": 22,
-    "failures": {
-      "Available-Dictionary header is added when target of redirect matches dictionary": "FAIL",
-      "Dictionary past its stale-while-revalidate window is not used": "FAIL",
-      "Dictionary registration does not invalidate cache entry": "FAIL",
-      "Dictionary registration with 1024 character dictionary ID": "FAIL",
-      "Dictionary registration with dictionary ID": "FAIL",
-      "Dictionary registration with dictionary ID (valid characters and backslash escaping)": "FAIL",
-      "Dictionary registration with unknown extra options succeeds": "FAIL",
-      "Dictionary with 1025 character dictionary ID is not registered": "FAIL",
-      "Dictionary with invalid character in dictionary ID is not registered": "FAIL",
-      "Dictionary with invalid match string is not registered": "FAIL",
-      "Dictionary with malformed structured header is not registered": "FAIL",
-      "Dictionary with match string for a different origin is not registered": "FAIL",
-      "Dictionary with max-age=0 is not registered": "FAIL",
-      "Dictionary with no-cache is not used": "FAIL",
-      "Dictionary with no-store is not registered": "FAIL",
-      "Dictionary with unsupported type is not registered": "FAIL",
-      "Expired dictionary is not used": "FAIL",
-      "Fresh dictionary with must-revalidate is used": "FAIL",
-      "New dictionary registration overrides the existing one": "FAIL",
-      "Simple dictionary registration and unregistration": "FAIL",
-      "Stale dictionary with must-revalidate is not used": "FAIL",
-      "Stale dictionary within its stale-while-revalidate window is used": "FAIL"
-    }
+    "total": 22
   },
   "fetch/compression-dictionary/fetch-destination.tentative.https.html": {
-    "harness": "TIMEOUT",
     "total": 2,
     "failures": {
-      "HTMLLinkElement with rel=compression-dictionary fetches with a \"compression-dictionary\" string Request.destination": "TIMEOUT"
+      "HTMLLinkElement with rel=compression-dictionary fetches with a \"compression-dictionary\" string Request.destination": "FAIL"
     }
   },
   "fetch/connection-pool/network-partition-key.html": {

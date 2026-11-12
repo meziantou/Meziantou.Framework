@@ -369,7 +369,7 @@ internal sealed class CascadeRuleSet
         if (rule.PseudoElement is { } pseudoElement)
         {
             _pseudoElements.Add(pseudoElement);
-            if (pseudoElement is "before" or "after" && rule.Declarations.Exists(static declaration => declaration.Name == "content"))
+            if (pseudoElement is "before" or "after" && rule.Declarations.Exists(declaration => declaration.Name == "content"))
             {
                 _contentPseudoElementRules.Add(rule);
             }

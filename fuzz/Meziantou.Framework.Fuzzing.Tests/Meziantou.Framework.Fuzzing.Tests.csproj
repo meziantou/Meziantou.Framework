@@ -11,6 +11,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.AtlassianDataFormat.Fuzz\Meziantou.Framework.AtlassianDataFormat.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Avatar.Fuzz\Meziantou.Framework.Avatar.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Barcodes.Fuzz\Meziantou.Framework.Barcodes.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Bencode.Fuzz\Meziantou.Framework.Bencode.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.BloomFilters.Fuzz\Meziantou.Framework.BloomFilters.Fuzz.csproj" />

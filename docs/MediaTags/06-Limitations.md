@@ -12,6 +12,11 @@ description: What the library does not do, so you can plan around it.
   but are neither [native fields](03-ReadingTags.md#native-fields) nor properties.
 - **ID3v2.2 frames are dropped.** The frames of an ID3v2.2 tag that no property represents have no general ID3v2.4
   identifier: they are not native fields, and writing removes them.
+- **Some ID3v2 frames cannot be decoded.** A frame that is encrypted, or compressed with data that zlib cannot
+  inflate (corrupt, or that needs a preset dictionary), sets no property, and the other frames are still read. In an
+  ID3v2.4 tag, such a frame is a [native field](03-ReadingTags.md#native-fields) with its data as stored and its
+  flags. It is not, and writing removes it, when a property represents its identifier, when it is a `COMM` or `USLT`
+  frame, when it has the tag alter preservation flag (0x4000), or when the tag is ID3v2.3.
 - **APE tags of MP3 files are converted.** The APEv2 tag of an MP3 file is read, but writing replaces it with the ID3v2
   tag, without its binary items.
 - **Writing replaces.** There is no merge: read the tags before writing them; see

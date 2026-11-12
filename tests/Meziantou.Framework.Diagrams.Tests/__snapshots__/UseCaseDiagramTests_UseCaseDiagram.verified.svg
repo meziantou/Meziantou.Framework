@@ -68,8 +68,7 @@
 </g>
 <g class="note">
 <rect x="0" y="210.23" width="141.49" height="35.2" fill="#fff5ad" stroke="#aaaa33"/>
-<text x="8" y="231.91" font-size="16" fill="#000000">Validates the </text>
-<text x="103.82" y="231.91" font-size="16" font-weight="bold" fill="#000000">cart</text>
+<text x="70.74" y="231.91" text-anchor="middle" font-size="16" fill="#000000">Validates the <tspan font-weight="bold">cart</tspan></text>
 </g>
 </g>
 </g>

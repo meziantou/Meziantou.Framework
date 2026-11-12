@@ -62,6 +62,10 @@ internal static class FuzzSeeds
                 new FuzzSeed("jxl/embedded-cmyk-alpha", Tests.JpegXlTestFiles.CmykWithAlpha),
             ]);
         }
+        else if (group is "jxl-lossy")
+        {
+            seeds.AddRange(FuzzGeneratedSeeds.GetSmoothedRecompressedJpegSeeds());
+        }
         else if (group is "heic-sequence")
         {
             seeds.AddRange(

@@ -1,6 +1,6 @@
 # Meziantou.Framework.Avatar
 
-Generate deterministic avatar SVG strings from a name.
+Generate deterministic avatars from a name, as SVG strings or as vector scenes to draw as PNG images.
 
 ## Usage
 
@@ -34,6 +34,28 @@ Assert.Contains("width=\"128\" height=\"128\"", svg);
 Assert.Contains("<circle cx=\"64\" cy=\"64\" r=\"64\" fill=\"#CFDADE\"/>", svg);
 ```
 <!-- endref -->
+
+## Render as PNG
+
+`AvatarGenerator.CreateScene` returns the avatar as a `Scene` of [Meziantou.Framework.VectorGraphics](https://www.nuget.org/packages/Meziantou.Framework.VectorGraphics).
+[Meziantou.Framework.Imaging.VectorGraphics](https://www.nuget.org/packages/Meziantou.Framework.Imaging.VectorGraphics) draws it as an image:
+
+<!-- ref:../../tests/Meziantou.Framework.Avatar.Tests/AvatarGeneratorTests.cs;region=AvatarGenerator_CreatePng;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Lay the avatar out with the fonts that draw the image, so the initials are centered
+var measurer = SceneImageRenderer.CreateMeasurer();
+var scene = AvatarGenerator.CreateScene("John Doe", new AvatarOptions { Size = 128 }, measurer);
+
+using var image = scene.ToImage();
+Assert.Equal((128, 128), (image.Width, image.Height));
+
+// Save to a file (image.Save("avatar.png")) or to a stream, in any format
+using var png = new MemoryStream();
+image.Save(png, new PngEncoder());
+```
+<!-- endref -->
+
+The initials are centered with the metrics of the measurer, so lay the scene out with the measurer of the fonts that draw it. The embedded fonts only cover the Latin characters: for other scripts, pass a `SceneFontCollection` with fallback fonts in `SceneImageOptions.Fonts` to `CreateMeasurer`. The scene keeps the fonts of the measurer (`Scene.Fonts`), so `ToImage` draws the initials with them, and `SvgRenderOptions.EmbedFonts` embeds them in its SVG. A scene only supports the colors that `SceneColor.Parse` accepts (`#rrggbb`, `rgb()`, `hsl()`, CSS color names), not `var(--x)` or `currentColor`.
 
 ## How the bigram is chosen
 

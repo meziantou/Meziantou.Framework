@@ -223,6 +223,29 @@ public sealed partial class PdfDocument
     /// <summary>Gets the embedded fonts the content of the document uses, whose objects are written when it is saved.</summary>
     internal Dictionary<EmbeddedPdfFont, EmbeddedFontUsage> EmbeddedFonts { get; } = [];
 
+    // Pages of a document being built can be rendered or read on several threads at once
+    private readonly Lock _embeddedFontsLock = new();
+
+    /// <summary>
+    /// Writes the objects of the embedded fonts whose glyphs changed since they were written (the subset of the
+    /// program, the widths, the <c>ToUnicode</c> CMap). The document writes them when it is saved, and the renderer and the
+    /// text extraction before they read the fonts of a page, so a document that is being built is drawn and read as it
+    /// will be saved.
+    /// </summary>
+    internal void WriteEmbeddedFonts()
+    {
+        if (EmbeddedFonts.Count is 0)
+            return;
+
+        lock (_embeddedFontsLock)
+        {
+            foreach (var font in EmbeddedFonts.Values)
+            {
+                font.Write(this);
+            }
+        }
+    }
+
     /// <summary>Gets the decoders of the fonts the text extraction read, shared by the pages of the document.</summary>
     internal Text.TextDecoderCache TextDecoders => field ??= new();
 
@@ -490,10 +513,7 @@ public sealed partial class PdfDocument
     private void PrepareForSave()
     {
         _outlines?.WriteTo(this);
-        foreach (var font in EmbeddedFonts.Values)
-        {
-            font.Write(this);
-        }
+        WriteEmbeddedFonts();
 
         if (Reader is not null && Version > Reader.HeaderVersion)
         {

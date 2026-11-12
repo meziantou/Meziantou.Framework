@@ -37,8 +37,13 @@ internal static class JpegXlJpegRecompressor
     /// <param name="jpeg">The whole JPEG file.</param>
     /// <param name="effort">The compression effort, from 0 to 9.</param>
     /// <param name="context">The context of the operation.</param>
+    /// <param name="smoothLf">
+    /// <see langword="true"/> to let decoders smooth the LF image of the frame when they compute its pixels (what libjxl
+    /// 0.13 does by default for a file whose chroma is not subsampled, and with <c>--jpeg_reconstruction_lfs=1</c> for the
+    /// others); <see langword="false"/> for pixels that are the ones of the JPEG file. The tests write such files.
+    /// </param>
     /// <returns>The JPEG XL file.</returns>
-    public static byte[] Recompress(ReadOnlySpan<byte> jpeg, int effort, ImageCodecContext context)
+    public static byte[] Recompress(ReadOnlySpan<byte> jpeg, int effort, ImageCodecContext context, bool smoothLf = false)
     {
         ArgumentNullException.ThrowIfNull(context);
         var scope = context.Scope;
@@ -58,7 +63,7 @@ internal static class JpegXlJpegRecompressor
                     throw new UnsupportedImageFeatureException("The JPEG file cannot be recompressed: its entropy-coded data are not coded as a JPEG XL file can describe them.", ImageFormat.Jpeg, "JPEG recompression: entropy coding that cannot be rebuilt");
             }
 
-            var result = Write(model, coefficients, info, effort, context);
+            var result = Write(model, coefficients, info, effort, smoothLf, context);
 
             // What was written gives back the file
             var verification = new ImageCodecContext(context.Configuration, "JpegXlTranscoder", cancellationToken);
@@ -71,7 +76,7 @@ internal static class JpegXlJpegRecompressor
         }
     }
 
-    private static byte[] Write(JpegBitstreamModel model, JpegCoefficientStore coefficients, ImageInfo info, int effort, ImageCodecContext context)
+    private static byte[] Write(JpegBitstreamModel model, JpegCoefficientStore coefficients, ImageInfo info, int effort, bool smoothLf, ImageCodecContext context)
     {
         var scope = context.Scope;
         var componentCount = model.Components.Count;
@@ -118,7 +123,7 @@ internal static class JpegXlJpegRecompressor
         // The codestream: the image header, the profile, then the frame
         var settings = new JpegXlFrameSettings
         {
-            Flags = JpegXlFrameHeader.FlagSkipAdaptiveLfSmoothing,
+            Flags = smoothLf ? 0 : JpegXlFrameHeader.FlagSkipAdaptiveLfSmoothing,
             IsYCbCr = isYCbCr,
             ChromaSubsampling = (modes[0], modes[1], modes[2]),
         };

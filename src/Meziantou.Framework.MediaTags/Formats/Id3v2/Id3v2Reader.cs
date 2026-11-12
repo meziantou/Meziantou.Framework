@@ -276,6 +276,12 @@ internal static class Id3v2Reader
         {
             return null;
         }
+        catch (IOException)
+        {
+            // The source is in memory: an IOException is the BCL's ZLibException for zlib error codes that are not data
+            // errors, for example a preset dictionary (FDICT), which ID3v2 does not define
+            return null;
+        }
     }
 
     private static void ApplyFrames(List<Id3v2Frame> frames, byte majorVersion, MediaTagInfo tags)

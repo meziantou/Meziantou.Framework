@@ -256,6 +256,75 @@ public sealed class JpegXlTranscoderTests
     }
 
     /// <summary>
+    /// A file that lets decoders smooth its LF image, which cjxl 0.13 writes by default when the chroma is not subsampled
+    /// and with <c>--jpeg_reconstruction_lfs=1</c> otherwise, is decoded (each subsampled channel is smoothed alone), and
+    /// still gives back the JPEG file. The smoothing moves the pixels a little, except where no channel is wider and higher
+    /// than two blocks: 16x16 pixels at 4:2:0 have two blocks of luma and one of chroma in each direction; 24x24 pixels
+    /// smooth the luma only. The interop job compares the pixels with the reference decoders.
+    /// </summary>
+    [Theory]
+    [InlineData(JpegChromaSubsampling.Ratio444, 64, 48, true)]
+    [InlineData(JpegChromaSubsampling.Ratio422, 64, 48, true)]
+    [InlineData(JpegChromaSubsampling.Ratio420, 64, 48, true)]
+    [InlineData(JpegChromaSubsampling.Ratio420, 40, 33, true)]
+    [InlineData(JpegChromaSubsampling.Ratio420, 24, 24, true)]
+    [InlineData(JpegChromaSubsampling.Ratio420, 16, 16, false)]
+    public void ASmoothedLfImageIsDecodedAndTheJpegFileRebuilt(JpegChromaSubsampling subsampling, int width, int height, bool changesPixels)
+    {
+        var pixels = new byte[width * height * 3];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var offset = ((y * width) + x) * 3;
+                pixels[offset] = (byte)((x * x / 20) + y);
+                pixels[offset + 1] = (byte)(128 + x - y);
+                pixels[offset + 2] = (byte)Math.Min(255, x * y / 12);
+            }
+        }
+
+        byte[] jpeg;
+        using (var image = Image.ImportPixelBytes<Rgb24>(pixels, width, height))
+        using (var output = new MemoryStream())
+        {
+            image.Save(output, new JpegEncoder { Quality = 20, ChromaSubsampling = subsampling });
+            jpeg = output.ToArray();
+        }
+
+        var context = new ImageCodecContext(ImageConfiguration.Default, nameof(ASmoothedLfImageIsDecodedAndTheJpegFileRebuilt), TestContext.Current.CancellationToken);
+        var smoothed = JpegXlJpegRecompressor.Recompress(jpeg, effort: 7, context, smoothLf: true);
+        var plain = JpegXlJpegRecompressor.Recompress(jpeg, effort: 7, context);
+        Assert.False(plain.AsSpan().SequenceEqual(smoothed));
+        using (var rebuilt = new MemoryStream())
+        {
+            Assert.True(JpegXlTranscoder.TryReconstructJpeg(new MemoryStream(smoothed), rebuilt));
+            Assert.True(jpeg.AsSpan().SequenceEqual(rebuilt.ToArray()));
+        }
+
+        using var smoothedImage = Image.Load<Rgb24>(smoothed);
+        using var plainImage = Image.Load<Rgb24>(plain);
+        var smoothedPixels = new byte[pixels.Length];
+        var plainPixels = new byte[pixels.Length];
+        smoothedImage.Frames[0].CopyPixelBytesTo(smoothedPixels);
+        plainImage.Frames[0].CopyPixelBytesTo(plainPixels);
+        var total = 0L;
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            total += Math.Abs(smoothedPixels[i] - plainPixels[i]);
+        }
+
+        var meanDifference = (double)total / pixels.Length;
+        if (changesPixels)
+        {
+            Assert.True(meanDifference is > 0 and < 2, $"The smoothing moves the samples by {meanDifference:F3} on average.");
+        }
+        else
+        {
+            Assert.Equal(0L, total);
+        }
+    }
+
+    /// <summary>
     /// The files of the JPEG encoder of the library, with the options that change their structure: the computed Huffman
     /// tables of a baseline file and restart intervals of one MCU, of a few MCUs and longer than the scan, in baseline and
     /// progressive files, gray or with subsampled chroma, of sizes with partial MCUs.

@@ -26,19 +26,56 @@ public static class TextMeasurerExtensions
         return new FamilyTextMeasurer(measurer is FamilyTextMeasurer family ? family.Inner : measurer, fontFamily);
     }
 
+    /// <summary>
+    /// Measures a line of text with a letter spacing and a word spacing (<see cref="SceneText.LetterSpacing"/>,
+    /// <see cref="SceneText.WordSpacing"/>), as the renderers draw it: see
+    /// <see cref="ITextMeasurer.Measure(string, SceneFont, double, double)"/>.
+    /// </summary>
+    /// <param name="measurer">The measurer.</param>
+    /// <param name="text">The text, on one line.</param>
+    /// <param name="font">The font.</param>
+    /// <param name="letterSpacing">The space added after each grapheme cluster, in pixels.</param>
+    /// <param name="wordSpacing">The space added to each space (U+0020 and U+00A0), in pixels.</param>
+    /// <returns>The dimensions of the text: its width includes the spacing.</returns>
+    public static TextMetrics Measure(this ITextMeasurer measurer, string text, SceneFont font, double letterSpacing, double wordSpacing)
+    {
+        ArgumentNullException.ThrowIfNull(measurer);
+        return measurer.Measure(text, font, letterSpacing, wordSpacing);
+    }
+
     /// <summary>Measures a text made of spans: the spans one after the other, on the same baseline.</summary>
     /// <param name="measurer">The measurer.</param>
     /// <param name="spans">The spans.</param>
     /// <param name="font">The font of the spans that set none.</param>
-    /// <returns>The sum of the widths of the spans, and the largest ascent and descent.</returns>
+    /// <returns>The sum of the widths of the spans, with their spacing, and the largest ascent and descent.</returns>
+    /// <remarks>A span without spacing (<see cref="SceneTextSpan.LetterSpacing"/>, <see cref="SceneTextSpan.WordSpacing"/>) has none: measure a <see cref="SceneText"/> to apply its spacing.</remarks>
     public static TextMetrics Measure(this ITextMeasurer measurer, IEnumerable<SceneTextSpan> spans, SceneFont font)
     {
         ArgumentNullException.ThrowIfNull(measurer);
         ArgumentNullException.ThrowIfNull(spans);
+        return MeasureSpans(measurer, spans, font, 0, 0);
+    }
+
+    /// <summary>Measures a text as the renderers draw it: its spans one after the other, with their fonts and their spacing.</summary>
+    /// <param name="measurer">The measurer.</param>
+    /// <param name="text">The text.</param>
+    /// <returns>The sum of the widths of the spans, with their spacing, and the largest ascent and descent.</returns>
+    public static TextMetrics Measure(this ITextMeasurer measurer, SceneText text)
+    {
+        ArgumentNullException.ThrowIfNull(measurer);
+        ArgumentNullException.ThrowIfNull(text);
+        if (text.Spans.Count is 0)
+            return measurer.Measure(text.Text, text.Font, text.LetterSpacing, text.WordSpacing);
+
+        return MeasureSpans(measurer, text.Spans, text.Font, text.LetterSpacing, text.WordSpacing);
+    }
+
+    private static TextMetrics MeasureSpans(ITextMeasurer measurer, IEnumerable<SceneTextSpan> spans, SceneFont font, double letterSpacing, double wordSpacing)
+    {
         var (width, ascent, descent) = (0.0, 0.0, 0.0);
         foreach (var span in spans)
         {
-            var metrics = measurer.Measure(span.Text, span.Font ?? font);
+            var metrics = measurer.Measure(span.Text, span.Font ?? font, span.LetterSpacing ?? letterSpacing, span.WordSpacing ?? wordSpacing);
             width += metrics.Width;
             ascent = Math.Max(ascent, metrics.Ascent);
             descent = Math.Max(descent, metrics.Descent);
@@ -56,5 +93,7 @@ public static class TextMeasurerExtensions
         public SceneFontCollection? Fonts => Inner.Fonts;
 
         public TextMetrics Measure(string text, SceneFont font) => Inner.Measure(text, font.Family is null ? font with { Family = FontFamily } : font);
+
+        public TextMetrics Measure(string text, SceneFont font, double letterSpacing, double wordSpacing) => Inner.Measure(text, font.Family is null ? font with { Family = FontFamily } : font, letterSpacing, wordSpacing);
     }
 }

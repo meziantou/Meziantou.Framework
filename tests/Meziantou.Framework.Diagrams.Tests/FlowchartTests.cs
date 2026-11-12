@@ -194,8 +194,12 @@ public sealed class FlowchartTests
         flowchart.AddEdge(node, plain);
         var document = XDocument.Parse(flowchart.ToSvg());
         var texts = document.Descendants().Where(element => element.Name.LocalName == "text").ToList();
-        Assert.Contains(texts, text => text.Value == "bold" && (string?)text.Attribute("font-weight") == "bold");
-        Assert.Contains(texts, text => text.Value == "italic" && (string?)text.Attribute("font-style") == "italic");
+
+        // A line of several styles is one text, whose spans have the styles
+        var spans = document.Descendants().Where(element => element.Name.LocalName == "tspan").ToList();
+        Assert.Contains(spans, span => span.Value == "bold" && (string?)span.Attribute("font-weight") == "bold");
+        Assert.Contains(spans, span => span.Value == "italic" && (string?)span.Attribute("font-style") == "italic");
+        Assert.Contains(texts, text => text.Value.StartsWith("A bold", StringComparison.Ordinal) && text.Elements().Any(element => element.Name.LocalName == "tspan"));
         Assert.Contains(texts, text => text.Value == "first line");
         Assert.Contains(texts, text => text.Value == "second line");
 

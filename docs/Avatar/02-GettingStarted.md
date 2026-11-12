@@ -42,6 +42,9 @@ The SVG string can be used in several ways:
 - **As a data URI**, in an `img` element or in CSS: encode the string, for instance with
   `"data:image/svg+xml;base64," + Convert.ToBase64String(Encoding.UTF8.GetBytes(svg))`.
 
+Where SVG is not supported, such as in most email clients, draw the avatar as a PNG image instead: see
+[Image rendering](07-ImageRendering.md).
+
 ## Names typed by users
 
 You can pass a display name typed by a user as it is. The markup characters are escaped, and the characters that XML

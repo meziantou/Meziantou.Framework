@@ -238,7 +238,7 @@ public static partial class WebPlatformFuzzTargets
     }
 
     /// <summary>The tokens of the image metadata target: the signatures, the chunks and the blocks of the formats (ASCII only: the tokens are encoded in UTF-8).</summary>
-    private static readonly string[] ImageMetadataTokens =
+    private static string[] ImageMetadataTokens =>
     [
         "GIF89a", "GIF87a", "\u000BNETSCAPE2.0", "!", ",", ";",
         "PNG\r\n\u001A\n", "IHDR", "acTL", "fcTL", "fdAT", "IDAT", "IEND", "eXIf",

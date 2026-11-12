@@ -1015,4 +1015,39 @@ public sealed class SceneRendererTests
         Assert.InRange(red, 50, 1000);
         Assert.Equal(Colors.White, pixels[45, 95]);
     }
+
+    [Fact]
+    public void TextsFittedByTheirSpacingAreShapedWhole()
+    {
+        // A text fitted to its own width is drawn as the text alone: its last letters are shaped with the others
+        var measurer = SceneImageRenderer.CreateMeasurer();
+        var font = new SceneFont(30);
+        var width = measurer.Measure("AVAV", font).Width;
+        var plain = new Scene(120, 40, measurer.FontFamily) { Background = SceneColor.White };
+        plain.Root.Add(new SceneText(5, 30, "AVAV", font, SceneColor.Black));
+        var fitted = new Scene(120, 40, measurer.FontFamily) { Background = SceneColor.White };
+        fitted.Root.Add(new SceneText(5, 30, "AVAV", font, SceneColor.Black) { TextLength = width });
+        using var plainImage = plain.ToImage();
+        using var fittedImage = fitted.ToImage();
+        for (var y = 0; y < 40; y++)
+        {
+            for (var x = 0; x < 120; x++)
+            {
+                Assert.Equal(plainImage.Frames[0][x, y], fittedImage.Frames[0][x, y]);
+            }
+        }
+    }
+
+    [Fact]
+    public void TextsOfClippingPathsHaveNoLines()
+    {
+        // The underline of a text of a clipping path does not show the clipped element
+        var scene = new Scene(100, 60, "sans-serif") { Background = SceneColor.White };
+        var letters = new SceneClipPath();
+        letters.Content.Add(new SceneText(5, 30, "__", new SceneFont(30), SceneColor.Black) { Decorations = SceneTextDecorations.Underline | SceneTextDecorations.Overline | SceneTextDecorations.Strikethrough, Stroke = SceneColor.Black, StrokeWidth = 10 });
+        scene.Root.Add(new SceneRectangle(0, 0, 100, 60) { Fill = (SceneColor)"#ff0000", ClippingPath = letters });
+        using var image = scene.ToImage();
+        Assert.Equal(Colors.White, image.Frames[0][20, 21]);
+        Assert.Equal(Colors.White, image.Frames[0][20, 10]);
+    }
 }

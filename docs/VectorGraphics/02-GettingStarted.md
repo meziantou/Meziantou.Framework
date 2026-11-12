@@ -534,8 +534,8 @@ var svg = SvgSceneRenderer.Render(scene);
 ![A blue rounded rectangle with a light blue glow, and a red disk with a rough edge](images/FilterGraph.svg)
 
 An [image primitive](cref:Meziantou.Framework.VectorGraphics.SceneImagePrimitive) draws an element, which does not need
-to be in the scene otherwise: an image without effects is written in the SVG filter itself, another element in the
-definitions of the SVG, by its identifier.
+to be in the scene otherwise: an image without effects whose primitive has the rectangle of the image as its
+subregion is written in the SVG filter itself, another element in the definitions of the SVG, by its identifier.
 
 PDF has no filters, not even the color matrices: the PDF renderer throws for a scene that has one. See the
 [limitations](07-Limitations.md).

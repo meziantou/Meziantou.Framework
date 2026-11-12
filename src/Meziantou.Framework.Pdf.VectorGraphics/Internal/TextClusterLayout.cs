@@ -39,7 +39,7 @@ internal static class TextClusterLayout
             var cluster = text[range];
             var spacing = GetSpacing(cluster[0], letterSpacing, wordSpacing);
             var advance = font.GetTextWidth(cluster, size) + spacing;
-            clusters.Add(new TextCluster(cluster, x, advance, spacing, Glyphs: null));
+            clusters.Add(new TextCluster(cluster, x, advance, spacing, Glyphs: null) { Start = range.Start.GetOffset(text.Length) });
             x += advance;
         }
 
@@ -132,7 +132,7 @@ internal static class TextClusterLayout
                     }
 
                     var advance = pen + spacing;
-                    clusters.Add(new TextCluster(text[cluster..clusterEnd], x, advance, spacing, [.. glyphs]));
+                    clusters.Add(new TextCluster(text[cluster..clusterEnd], x, advance, spacing, [.. glyphs]) { Start = cluster, IsRightToLeft = isRightToLeft });
                     x += advance;
                     i = end;
                 }
@@ -140,6 +140,44 @@ internal static class TextClusterLayout
         }
 
         return (clusters, x);
+    }
+
+    /// <summary>
+    /// Removes a space from the cluster that is last in logical order: its advance loses it, the glyphs of a right-to-left
+    /// cluster (which have it before them) move back, and the clusters at its right move left.
+    /// </summary>
+    /// <param name="clusters">The clusters, from left to right.</param>
+    /// <param name="space">The space to remove.</param>
+    /// <returns>The clusters without the space.</returns>
+    public static List<TextCluster> RemoveLastGap(List<TextCluster> clusters, double space)
+    {
+        var last = 0;
+        for (var i = 1; i < clusters.Count; i++)
+        {
+            if (clusters[i].Start > clusters[last].Start)
+            {
+                last = i;
+            }
+        }
+
+        var result = new List<TextCluster>(clusters.Count);
+        for (var i = 0; i < clusters.Count; i++)
+        {
+            var cluster = clusters[i];
+            if (i == last)
+            {
+                var glyphs = cluster.IsRightToLeft && cluster.Glyphs is { } shifted ? [.. shifted.Select(glyph => glyph with { X = glyph.X - space })] : cluster.Glyphs;
+                cluster = cluster with { Advance = cluster.Advance - space, Spacing = cluster.Spacing - space, Glyphs = glyphs };
+            }
+            else if (i > last)
+            {
+                cluster = cluster with { X = cluster.X - space };
+            }
+
+            result.Add(cluster);
+        }
+
+        return result;
     }
 
     // The first start greater than a cluster, by binary search

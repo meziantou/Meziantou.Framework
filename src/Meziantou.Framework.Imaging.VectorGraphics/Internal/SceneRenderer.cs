@@ -800,12 +800,20 @@ internal static class SceneRenderer
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct TextPiece(int Span, string Text, SceneFont Font, SceneTextDecorations Decorations, Spacing Spacing, Brush Fill, Brush? DecorationFill, Pen? Stroke, double Rotation);
 
+    // Whether the last character of a text is in a run written from right to left
+    private static bool EndsRightToLeft(string text, TextDirection direction)
+    {
+        var levels = new byte[text.Length];
+        UnicodeBidi.ResolveLevels(text, direction is TextDirection.RightToLeft ? UnicodeBidiDirection.RightToLeft : UnicodeBidiDirection.Auto, levels);
+        return levels.Length > 0 && (levels[^1] & 1) != 0;
+    }
+
     private static readonly TextLayoutOptions RightToLeftOptions = new() { Direction = TextDirection.RightToLeft };
 
     /// <summary>
     /// Lays out a text: one layout per span, each with its own style, so that no kerning crosses the spans; one per
-    /// grapheme cluster of a span whose characters are turned; the last cluster of a text fitted to its length by its
-    /// spacing on its own, as it gets no spacing.
+    /// grapheme cluster of a span whose characters are turned. A text fitted to its length by its spacing gets no spacing
+    /// after its last character.
     /// </summary>
     private static TextPlan? CreateTextPlan(SceneText text, DrawContext context)
     {
@@ -833,13 +841,6 @@ internal static class SceneRenderer
         if (pieces.Count is 0)
             return null;
 
-        if (TextPlacement.IsFittedBySpacing(text) && TextPlacement.GetClusters(pieces[^1].Text) is { Count: > 1 } lastClusters)
-        {
-            var last = pieces[^1];
-            pieces[^1] = last with { Text = last.Text[..^lastClusters[^1].Length] };
-            pieces.Add(last with { Text = lastClusters[^1] });
-        }
-
         var direction = text.Direction is SceneTextDirection.RightToLeft ? TextDirection.RightToLeft : TextDirection.Auto;
         var layouts = new TextLayout[pieces.Count];
         var items = new TextPlacement.Item[pieces.Count];
@@ -856,16 +857,28 @@ internal static class SceneRenderer
         for (var i = 0; i < pieces.Count; i++)
         {
             var piece = pieces[i];
-            var layout = placement.GapSpacing != 0 && i != placement.LastItem ? CreateLayout(piece, placement.GapSpacing, direction, context) : layouts[i];
+            var layout = placement.GapSpacing != 0 ? CreateLayout(piece, placement.GapSpacing, direction, context) : layouts[i];
             parts.Add(new TextPart(layout, piece.Fill, piece.Stroke, piece.Rotation));
+        }
+
+        // The last span is shaped whole, so its letters keep their joins: the gap after its last character is beyond its
+        // width when that character is written from left to right, and before it, at its left, from right to left
+        if (placement.GapSpacing != 0 && placement.LastItem >= 0 && EndsRightToLeft(pieces[placement.LastItem].Text, direction))
+        {
+            placement.X[placement.LastItem] -= placement.GapSpacing;
         }
 
         return new TextPlan(parts, placement);
 
         void AddPieces(int index, SceneTextSpan? span, string value, SceneFont font, SceneTextDecorations decorations, Spacing spacing)
         {
-            // In the silhouette of a clipping path, the glyphs are opaque, and the text is not stroked
+            // In the silhouette of a clipping path, the glyphs are opaque, without their outline and their lines
             var silhouette = context.SilhouetteDepth > 0;
+            if (silhouette)
+            {
+                decorations = SceneTextDecorations.None;
+            }
+
             var (fillPaint, fillColor) = TextPlacement.GetFill(text, span);
             var fill = silhouette ? Opaque : fillPaint is null ? ToBrush(fillColor) : context.GetBrush(fillPaint);
             var (decorationPaint, decorationColor) = TextPlacement.GetDecorationFill(text, span);

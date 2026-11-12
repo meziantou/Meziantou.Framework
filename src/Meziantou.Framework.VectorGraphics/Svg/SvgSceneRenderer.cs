@@ -597,10 +597,6 @@ public static class SvgSceneRenderer
                 {
                     AppendRegion("", subregion);
                 }
-                else if (primitive is SceneImagePrimitive { IsInlineImage: true, Content: SceneImage inlineImage })
-                {
-                    AppendRegion("", new SceneBounds(inlineImage.X, inlineImage.Y, inlineImage.Width, inlineImage.Height));
-                }
 
                 if (primitive.ColorSpace is SceneFilterColorSpace.Srgb)
                 {
@@ -1876,15 +1872,17 @@ public static class SvgSceneRenderer
             return id;
         }
 
-        // A clipping path that cuts itself leaves nothing visible: it is written empty
+        // A clipping path cut by a chain of clipping paths that loops (back to itself, or to one of the chain) leaves
+        // nothing visible: it is written empty
         private void WriteClipPathDefinition(string id, SceneClipPath clipPath, SceneTransform? transform)
         {
             output.Write("<clipPath");
             Attribute("id", id);
             var isCircular = false;
-            for (var outer = clipPath.ClippingPath; outer is not null; outer = outer.ClippingPath)
+            var chain = new HashSet<SceneClipPath>(ReferenceEqualityComparer.Instance);
+            for (var current = clipPath; current is not null; current = current.ClippingPath)
             {
-                if (ReferenceEquals(outer, clipPath))
+                if (!chain.Add(current))
                 {
                     isCircular = true;
                     break;
@@ -1906,7 +1904,7 @@ public static class SvgSceneRenderer
             _inClipPath = true;
             try
             {
-                WriteClipContent(clipPath.Content, transform, writeIds: transform is null, new HashSet<SceneUse>(ReferenceEqualityComparer.Instance));
+                WriteClipContent(clipPath.Content, transform, new HashSet<SceneUse>(ReferenceEqualityComparer.Instance));
             }
             finally
             {
@@ -1919,7 +1917,7 @@ public static class SvgSceneRenderer
         // The content of a clipping path is made of shapes and texts: the groups and the uses are flattened, their
         // transforms on the shapes. The clipping path of a shape is in the coordinates of its parent, outside of its
         // transform: it is written for the space of the shape.
-        private void WriteClipContent(SceneElement element, SceneTransform? parentTransform, bool writeIds, HashSet<SceneUse> uses)
+        private void WriteClipContent(SceneElement element, SceneTransform? parentTransform, HashSet<SceneUse> uses)
         {
             var transform = element.Transform is { } own ? (parentTransform is { } parent ? own.Then(parent) : own) : parentTransform;
             switch (element)
@@ -1927,13 +1925,13 @@ public static class SvgSceneRenderer
                 case SceneGroup group:
                     foreach (var child in group.Children)
                     {
-                        WriteClipContent(child, transform, writeIds, uses);
+                        WriteClipContent(child, transform, uses);
                     }
 
                     return;
 
                 case SceneUse use when !use.IsCircular() && uses.Add(use):
-                    WriteClipContent(use.Content, transform, writeIds, uses);
+                    WriteClipContent(use.Content, transform, uses);
                     uses.Remove(use);
                     return;
 
@@ -1954,7 +1952,8 @@ public static class SvgSceneRenderer
                 clipPathId = GetClipPathId(clippingPath, inverse);
             }
 
-            _pendingId = writeIds ? element.Id ?? _contentIds.GetValueOrDefault(element) : null;
+            // The identifiers are written by the definitions of the elements: the content of a clipping path is its geometry
+            _pendingId = null;
             switch (element)
             {
                 case SceneRectangle rectangle:

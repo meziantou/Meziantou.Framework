@@ -27,4 +27,23 @@ public sealed class SceneClipPath
     /// SVG <c>clipPath</c> that has a <c>clip-path</c>. A clipping path that cuts itself leaves nothing visible.
     /// </summary>
     public SceneClipPath? ClippingPath { get; set; }
+
+    /// <summary>
+    /// Gets a rectangle that contains the geometry of the clipping path, cut by the clipping paths that cut it, in the
+    /// coordinates of its content, or <see langword="null"/> when it leaves nothing visible.
+    /// </summary>
+    /// <param name="measureText">
+    /// Gives the rectangle of a text before its rotation, in the coordinates of its parent, or <see langword="null"/> when
+    /// it draws nothing, as for <see cref="SceneElement.GetBounds"/>.
+    /// </param>
+    /// <returns>The rectangle, or <see langword="null"/>.</returns>
+    /// <remarks>
+    /// The rectangle of a shape is its interior, without its stroke; the other properties of the content that do not
+    /// change its geometry (opacities, the clips and the view boxes of the groups) do not apply.
+    /// </remarks>
+    public SceneBounds? GetBounds(Func<SceneText, SceneBounds?> measureText)
+    {
+        ArgumentNullException.ThrowIfNull(measureText);
+        return SceneGeometry.GetClipBounds(this, measureText);
+    }
 }

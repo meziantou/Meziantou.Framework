@@ -767,7 +767,7 @@ public sealed class SvgSceneRendererTests
             new SceneColorMatrixPrimitive(SceneColorMatrixFilter.Invert()),
             SceneColorMatrixPrimitive.LuminanceToAlpha,
             new SceneDropShadowPrimitive(1, 2, 3, 3, (SceneColor)"#000000"),
-            new SceneImagePrimitive(new SceneImage(0, 0, 4, 4, png)),
+            new SceneImagePrimitive(new SceneImage(0, 0, 4, 4, png)) { Subregion = new SceneBounds(0, 0, 4, 4) },
         ]);
         var svg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 10, 10) { Fill = SceneColor.Black, Filter = graph }));
 
@@ -1583,5 +1583,55 @@ public sealed class SvgSceneRendererTests
         var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC");
         var svg = SvgSceneRenderer.Render(Single(new SceneImage(0, 0, 40, 20, png) { Alignment = alignment, Slice = slice }));
         Assert.Contains("preserveAspectRatio=\"" + expected + "\"", svg, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ClippingPathChainsThatLoopAndReusedClipContents()
+    {
+        // A chain that loops after its first clipping path leaves nothing visible, and is written
+        var first = new SceneClipPath();
+        first.Content.Add(new SceneRectangle(0, 0, 5, 5));
+        var looping = new SceneClipPath();
+        looping.Content.Add(new SceneRectangle(0, 0, 5, 5));
+        looping.ClippingPath = looping;
+        first.ClippingPath = looping;
+        var svg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 50, 50) { ClippingPath = first }));
+        Assert.Contains("<clipPath id=\"scene-clip0\"/>", svg, StringComparison.Ordinal);
+        Assert.Null(new SceneRectangle(0, 0, 50, 50) { ClippingPath = first }.GetBounds(_ => null));
+
+        // A use of the content of a clipping path refers to a definition of its own: the clipping path writes its geometry
+        var reused = new SceneClipPath();
+        reused.Content.Add(new SceneCircle(5, 5, 5) { Fill = SceneColor.Black });
+        var scene = new Scene(20, 20, "sans-serif");
+        scene.Root.Add(new SceneRectangle(0, 0, 20, 20) { Fill = SceneColor.Black, ClippingPath = reused });
+        scene.Root.Add(new SceneUse(reused.Content) { Transform = SceneTransform.Translate(10, 10) });
+        var reusedSvg = SvgSceneRenderer.Render(scene);
+        Assert.Contains("<g id=\"scene-element0\">\n<circle cx=\"5\" cy=\"5\" r=\"5\" fill=\"#000000\"/>\n</g>", reusedSvg, StringComparison.Ordinal);
+        Assert.Contains("<clipPath id=\"scene-clip0\">\n<circle cx=\"5\" cy=\"5\" r=\"5\"/>\n</clipPath>", reusedSvg, StringComparison.Ordinal);
+        Assert.Contains("<use href=\"#scene-element0\" transform=\"translate(10 10)\"/>", reusedSvg, StringComparison.Ordinal);
+
+        // The bounds of a clipping path are the ones of its geometry, whatever the opacity of its content
+        var transparent = new SceneClipPath();
+        transparent.Content.Add(new SceneRectangle(0, 0, 10, 10) { Opacity = 0 });
+        transparent.Content.Add(new SceneRectangle(20, 0, 10, 10) { Opacity = 0 });
+        Assert.Equal(new SceneBounds(0, 0, 30, 10), transparent.GetBounds(_ => null));
+    }
+
+    [Fact]
+    public void ImagePrimitivesAreInlineOnlyInTheRectangleOfTheirImage()
+    {
+        var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4zwAE/0Ho////AB/uBftt3M6tAAAAAElFTkSuQmCC");
+
+        // Without a subregion, the image is cut to the region of the filter: the tile that follows repeats the region
+        var image = new SceneImage(0, 0, 2, 2, png);
+        var svg = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 20, 20) { Filter = new SceneFilterGraph([new SceneImagePrimitive(image), new SceneTilePrimitive()]) { Region = new SceneBounds(0, 0, 20, 20) } }));
+        Assert.Contains("<feImage href=\"#scene-element0\"/><feTile/>", svg, StringComparison.Ordinal);
+        Assert.DoesNotContain("data:image/png", svg.Split("<filter", StringSplitOptions.None)[1].Split("</filter>", StringSplitOptions.None)[0], StringComparison.Ordinal);
+        Assert.Contains("<image id=\"scene-element0\"", svg, StringComparison.Ordinal);
+
+        // With the rectangle of the image as its subregion, the image is written in the filter, with its aspect ratio
+        var fitted = new SceneImage(0, 0, 2, 2, png) { Alignment = SceneAspectRatio.XMinYMin };
+        var inline = SvgSceneRenderer.Render(Single(new SceneRectangle(0, 0, 20, 20) { Filter = new SceneFilterGraph([new SceneImagePrimitive(fitted) { Subregion = new SceneBounds(0, 0, 2, 2) }]) }));
+        Assert.Contains("<feImage x=\"0\" y=\"0\" width=\"2\" height=\"2\" preserveAspectRatio=\"xMinYMin\" href=\"data:image/png;base64,", inline, StringComparison.Ordinal);
     }
 }

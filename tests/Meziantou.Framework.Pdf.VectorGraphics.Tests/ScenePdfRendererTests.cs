@@ -867,6 +867,41 @@ public sealed class ScenePdfRendererTests
         Assert.InRange(red, 50, 1000);
     }
 
+    [Fact]
+    public void ClippingPathsOfTransparentShapesAndOfChildren()
+    {
+        static bool IsRed(Rgba32 color) => color.R > 200 && color.G < 80 && color.B < 80;
+        static bool IsWhite(Rgba32 color) => color.R > 230 && color.G > 230 && color.B > 230;
+        var scene = new Scene(100, 100, "sans-serif") { Background = SceneColor.White };
+
+        // The opacity of the content of a clipping path does not change its geometry
+        var transparent = new SceneClipPath();
+        transparent.Content.Add(new SceneRectangle(0, 0, 10, 10) { Opacity = 0 });
+        transparent.Content.Add(new SceneRectangle(20, 0, 10, 10) { Opacity = 0 });
+        scene.Root.Add(new SceneRectangle(0, 0, 40, 10) { Fill = (SceneColor)"#ff0000", ClippingPath = transparent });
+
+        // A child with a mask and a clipping path of its own stays inside the clipping path of its group
+        var outer = new SceneClipPath();
+        outer.Content.Add(new SceneRectangle(0, 50, 20, 50));
+        outer.Content.Add(new SceneRectangle(30, 50, 20, 50));
+        var group = scene.Root.Add(new SceneGroup { ClippingPath = outer });
+        var inner = new SceneClipPath();
+        inner.Content.Add(new SceneRectangle(0, 50, 100, 20));
+        inner.Content.Add(new SceneRectangle(0, 80, 100, 20));
+        var mask = new SceneMask();
+        mask.Content.Add(new SceneRectangle(0, 0, 100, 100) { Fill = SceneColor.White });
+        group.Add(new SceneRectangle(0, 50, 100, 50) { Fill = (SceneColor)"#ff0000", ClippingPath = inner, Mask = mask });
+        using var image = Render(scene);
+        var pixels = image.Frames[0];
+        Assert.True(IsRed(pixels[5, 5]), "first transparent shape");
+        Assert.True(IsWhite(pixels[15, 5]), "between the shapes");
+        Assert.True(IsRed(pixels[25, 5]), "second transparent shape");
+        Assert.True(IsRed(pixels[10, 60]), "inside both clipping paths");
+        Assert.True(IsWhite(pixels[25, 60]), "between the shapes of the outer clipping path");
+        Assert.True(IsWhite(pixels[70, 60]), "outside of the outer clipping path");
+        Assert.True(IsWhite(pixels[10, 75]), "between the shapes of the inner clipping path");
+    }
+
     private static string Uncompressed(PdfDocument document) => System.Text.Encoding.Latin1.GetString(document.ToByteArray(new PdfSaveOptions { CompressStreams = false, UseObjectStreams = false }));
 
     private static Image<Rgba32> Render(Scene scene) => scene.ToPdf().Pages[0].Render(new PdfRenderOptions { Dpi = 96 });

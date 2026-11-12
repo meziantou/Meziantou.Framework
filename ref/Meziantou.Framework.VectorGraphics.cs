@@ -256,6 +256,7 @@ namespace Meziantou.Framework.VectorGraphics
     {
         public Meziantou.Framework.VectorGraphics.SceneClipPath? ClippingPath { get => throw null; set { } }
         public Meziantou.Framework.VectorGraphics.SceneGroup Content { get => throw null; }
+        public Meziantou.Framework.VectorGraphics.SceneBounds? GetBounds(System.Func<Meziantou.Framework.VectorGraphics.SceneText, Meziantou.Framework.VectorGraphics.SceneBounds?> measureText) => throw null;
     }
 
     public readonly struct SceneColor : System.IEquatable<Meziantou.Framework.VectorGraphics.SceneColor>

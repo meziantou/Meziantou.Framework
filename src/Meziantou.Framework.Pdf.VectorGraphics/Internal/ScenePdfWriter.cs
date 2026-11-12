@@ -165,15 +165,16 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         if (!(opacity > 0))
             return;
 
-        // The clipping path is set in the graphics state, outside of the element: a clipping path that needs a soft mask
-        // draws an element that has a mask of its own in a group, which has the mask
+        // The clipping path is set in the graphics state, outside of the element. A clipping path that needs a soft mask
+        // draws the element in a transparency group: the soft masks set inside (the masks and the clipping paths of the
+        // element and of its children) start from none in the group, rather than replacing the one of the clip (11.6.4.3)
         if (element.ClippingPath is { } clippingPath && _clippedElements.Add(element))
         {
             try
             {
                 Save();
                 var clip = SetClipPath(clippingPath);
-                if (clip is ClipKind.SoftMask && element.Mask is not null)
+                if (clip is ClipKind.SoftMask)
                 {
                     DrawTransparencyGroup([element], 1);
                 }
@@ -629,7 +630,8 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
                 }
             }
 
-            if (clipPath.Content.GetBounds(text => GetTextBounds(text)) is not { } bounds)
+            // The box of the geometry of the clipping path, whatever the opacities, the clips and the view boxes of its content
+            if (clipPath.GetBounds(text => GetTextBounds(text)) is not { } bounds)
                 return ClipKind.Empty;
 
             var box = new Bounds(bounds.X, bounds.Y, bounds.Right, bounds.Bottom);
@@ -1451,7 +1453,8 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     // The lines of a part are rectangles of its paint, at the position and of the thickness the face of its span gives
     private void DrawDecorations(SceneText text, TextPart part, double x, double baseline, double width, PdfMatrix rotation, double opacity)
     {
-        if ((part.Decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough | SceneTextDecorations.Overline)) is SceneTextDecorations.None || !(width > 0))
+        // The silhouette of a text in a clipping path is its glyphs, without their lines
+        if ((part.Decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Strikethrough | SceneTextDecorations.Overline)) is SceneTextDecorations.None || !(width > 0) || _silhouetteDepth > 0)
             return;
 
         Save();
@@ -1533,8 +1536,8 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
 
     /// <summary>
     /// Splits a text into the parts that one font draws (its spans, and the characters of a span that each face draws;
-    /// each grapheme cluster of a span whose characters are turned; the last cluster of a text fitted to its length by its
-    /// spacing, which gets no spacing) and places them (<see cref="TextPlacement"/>).
+    /// each grapheme cluster of a span whose characters are turned) and places them. A text fitted to its length by its
+    /// spacing gets no spacing after its last character (<see cref="TextPlacement"/>).
     /// </summary>
     internal (List<TextPart> Parts, TextPlacement.Result Placement) GetTextLayout(SceneText text, bool layoutClusters = false)
     {
@@ -1554,13 +1557,6 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
             }
         }
 
-        if (pieces.Count > 0 && TextPlacement.IsFittedBySpacing(text) && TextPlacement.GetClusters(pieces[^1].Part.Text) is { Count: > 1 } lastClusters)
-        {
-            var last = pieces[^1];
-            pieces[^1] = last with { Part = last.Part with { Text = last.Part.Text[..^lastClusters[^1].Length] } };
-            pieces.Add(last with { Part = last.Part with { Text = lastClusters[^1] } });
-        }
-
         var parts = new List<TextPart>(pieces.Count);
         var items = new TextPlacement.Item[pieces.Count];
         for (var i = 0; i < pieces.Count; i++)
@@ -1575,10 +1571,13 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
         {
             for (var i = 0; i < pieces.Count; i++)
             {
-                if (i != placement.LastItem)
-                {
-                    parts[i] = Layout(pieces[i], placement.GapSpacing);
-                }
+                parts[i] = Layout(pieces[i], placement.GapSpacing);
+            }
+
+            // The last part is shaped whole, so its letters keep their joins; the gap after its last character is removed
+            if (placement.LastItem >= 0 && parts[placement.LastItem].Clusters is { Count: > 0 } clusters)
+            {
+                parts[placement.LastItem] = parts[placement.LastItem] with { Clusters = TextClusterLayout.RemoveLastGap(clusters, placement.GapSpacing), Width = parts[placement.LastItem].Width - placement.GapSpacing };
             }
         }
 

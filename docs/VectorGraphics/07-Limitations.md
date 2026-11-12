@@ -19,9 +19,7 @@ The SVG, image and PDF renderers draw the same scene the same way, except in the
   circle is padded instead of repeated, and a repeated radial gradient has its first color inside the circle of its
   [FocalRadius](cref:Meziantou.Framework.VectorGraphics.RadialGradientPaint.FocalRadius).
 - **Clipping paths.** A clipping path of one shape is a clipping path of PDF. The others (several shapes, a text, a
-  clipping path cut by another one) are soft masks, which the viewers draw with the antialiasing of the transparency;
-  an element that also has a mask is drawn in a transparency group, where its blend mode does not reach the drawing
-  under it.
+  clipping path cut by another one) are soft masks, which the viewers draw with the antialiasing of the transparency.
 - **The opacity and the mask of a shape** apply to its fill and to its stroke separately: where they overlap, the shape
   is a little more opaque than in SVG. A group is drawn as a whole.
 - **Fonts.** Without the fonts of the scene, the texts are drawn with the standard Helvetica fonts, which are not
@@ -65,7 +63,8 @@ The SVG, image and PDF renderers draw the same scene the same way, except in the
 - The markers turned back at the start of a path (`orient="auto-start-reverse"`) are a feature of SVG 2: some older
   viewers draw them turned as the other markers.
 - **Filter graphs.** An [image primitive](cref:Meziantou.Framework.VectorGraphics.SceneImagePrimitive) whose element is
-  not an image without effects is an `feImage` that refers to the element: Firefox does not draw it. The edge modes of
+  not an image without effects, or whose subregion is not the rectangle of its image, is an `feImage` that refers to the
+  element: Firefox does not draw it. The edge modes of
   the blurs (`edgeMode` of `feGaussianBlur`), the `lighter` composite and the `mirror` edge mode are features of
   "Filter Effects Module Level 1" that some viewers do not draw. The region of a graph without
   [Region](cref:Meziantou.Framework.VectorGraphics.SceneFilterGraph.Region) on a text, or on a group that has a text, is

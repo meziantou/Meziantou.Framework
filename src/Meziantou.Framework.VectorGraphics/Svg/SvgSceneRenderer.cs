@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Globalization;
 using System.Text;
 
 namespace Meziantou.Framework.VectorGraphics;
@@ -33,6 +35,28 @@ public static class SvgSceneRenderer
         new Writer(writer, options ?? new SvgRenderOptions()).Write(scene);
     }
 
+    // The characters Escape replaces or removes, and the surrogates, which it checks: the other characters are copied
+    private static readonly SearchValues<char> CharactersToEscape = SearchValues.Create(GetCharactersToEscape());
+
+    private static string GetCharactersToEscape()
+    {
+        var builder = new StringBuilder("&<>\"\uFFFE\uFFFF");
+        for (var c = '\0'; c < ' '; c++)
+        {
+            if (c is not ('\t' or '\n' or '\r'))
+            {
+                builder.Append(c);
+            }
+        }
+
+        for (var c = '\uD800'; c <= '\uDFFF'; c++)
+        {
+            builder.Append(c);
+        }
+
+        return builder.ToString();
+    }
+
     private sealed class Writer(TextWriter output, SvgRenderOptions options)
     {
         private readonly Dictionary<object, string> _ids = new(ReferenceEqualityComparer.Instance);
@@ -61,6 +85,7 @@ public static class SvgSceneRenderer
         private List<SceneElement> _roots = [];
         private readonly HashSet<SceneElement> _useTargets = new(ReferenceEqualityComparer.Instance);
         private readonly int _precision = options.Precision;
+        private readonly char[] _buffer = new char[SvgNumber.MaxFastLength];
         private Scene _scene = null!;
 
         // The identifier of the element being written, for the first tag it writes; the element whose effects are on
@@ -1097,7 +1122,7 @@ public static class SvgSceneRenderer
 
                 case ScenePath path:
                     StartTag("path");
-                    Attribute("d", SvgNumber.FormatPath(path.Data, _precision));
+                    PathAttribute(path.Data);
                     if (path.FillRule is SceneFillRule.EvenOdd)
                     {
                         Attribute("fill-rule", "evenodd");
@@ -1198,7 +1223,7 @@ public static class SvgSceneRenderer
             CommonAttributes(group);
             if (group.Transform is { } transform)
             {
-                Attribute("transform", Transform(transform));
+                TransformAttribute(transform);
             }
             else if (layers.Count > 0)
             {
@@ -1369,14 +1394,32 @@ public static class SvgSceneRenderer
 
             // The rotation applies before the transform: it is on its right. In a clipping path, the transform has the
             // transforms of the groups of its content.
-            var rotation = text.Rotation != 0 && textPathId is null ? "rotate(" + Number(text.Rotation) + " " + Number(text.X) + " " + Number(text.Y) + ")" : null;
-            if ((_inClipPath ? _clipTextTransform : text.Transform) is { } textTransform)
+            var hasRotation = text.Rotation != 0 && textPathId is null;
+            var textTransform = _inClipPath ? _clipTextTransform : text.Transform;
+            if (textTransform is not null || hasRotation)
             {
-                Attribute("transform", rotation is null ? Transform(textTransform) : Transform(textTransform) + " " + rotation);
-            }
-            else if (rotation is not null)
-            {
-                Attribute("transform", rotation);
+                StartAttribute("transform");
+                if (textTransform is { } transformValue)
+                {
+                    WriteTransform(transformValue);
+                    if (hasRotation)
+                    {
+                        output.Write(' ');
+                    }
+                }
+
+                if (hasRotation)
+                {
+                    output.Write("rotate(");
+                    WriteNumber(text.Rotation, _precision);
+                    output.Write(' ');
+                    WriteNumber(text.X, _precision);
+                    output.Write(' ');
+                    WriteNumber(text.Y, _precision);
+                    output.Write(')');
+                }
+
+                output.Write('"');
             }
 
             CommonAttributes(text);
@@ -1660,6 +1703,9 @@ public static class SvgSceneRenderer
 
         private static string? DecorationValue(SceneTextDecorations decorations)
         {
+            if ((decorations & (SceneTextDecorations.Underline | SceneTextDecorations.Overline | SceneTextDecorations.Strikethrough)) is SceneTextDecorations.None)
+                return null;
+
             var values = new List<string>(3);
             if (decorations.HasFlag(SceneTextDecorations.Underline))
             {
@@ -1759,7 +1805,7 @@ public static class SvgSceneRenderer
             // The transform of a group is written by WriteGroupContent, the one of a text with its rotation
             if (element is not (SceneGroup or SceneText) && element.Transform is { } transform)
             {
-                Attribute("transform", Transform(transform));
+                TransformAttribute(transform);
             }
 
             // The layers of a group are written by WriteGroupContent
@@ -1767,7 +1813,7 @@ public static class SvgSceneRenderer
             {
                 if (element.Opacity < 1 && !HasOuterOpacity(element))
                 {
-                    Attribute("opacity", SvgNumber.Format(Math.Max(0, element.Opacity), 3));
+                    Attribute("opacity", Math.Max(0, element.Opacity), 3);
                 }
             }
             else if (element != _effectsOnWrapper && !_inClipPath)
@@ -1780,11 +1826,21 @@ public static class SvgSceneRenderer
                 Attribute("class", element.CssClass);
             }
 
-            if (element.DataAttributes.Count > 0)
+            var dataAttributes = element.DataAttributes;
+            if (dataAttributes.Count is 1)
             {
-                foreach (var (name, value) in element.DataAttributes.OrderBy(item => item.Key, StringComparer.Ordinal))
+                foreach (var (name, value) in dataAttributes)
                 {
-                    Attribute("data-" + name, value);
+                    DataAttribute(name, value);
+                }
+            }
+            else if (dataAttributes.Count > 1)
+            {
+                var sorted = dataAttributes.ToArray();
+                Array.Sort(sorted, (x, y) => string.CompareOrdinal(x.Key, y.Key));
+                foreach (var (name, value) in sorted)
+                {
+                    DataAttribute(name, value);
                 }
             }
         }
@@ -1837,7 +1893,7 @@ public static class SvgSceneRenderer
         {
             if (element.Opacity < 1)
             {
-                Attribute("opacity", SvgNumber.Format(Math.Max(0, element.Opacity), 3));
+                Attribute("opacity", Math.Max(0, element.Opacity), 3);
             }
 
             if (_filterIds.TryGetValue(element, out var filterId))
@@ -1980,7 +2036,7 @@ public static class SvgSceneRenderer
 
                 case ScenePath path:
                     StartTag("path");
-                    Attribute("d", SvgNumber.FormatPath(path.Data, _precision));
+                    PathAttribute(path.Data);
                     if (path.FillRule is SceneFillRule.EvenOdd)
                     {
                         Attribute("clip-rule", "evenodd");
@@ -2004,7 +2060,7 @@ public static class SvgSceneRenderer
 
             if (transform is { } shapeTransform)
             {
-                Attribute("transform", Transform(shapeTransform));
+                TransformAttribute(shapeTransform);
             }
 
             if (clipPathId is not null)
@@ -2081,10 +2137,21 @@ public static class SvgSceneRenderer
 
         private void Paint(string name, SceneColor color)
         {
-            Attribute(name, color.ToHexRgb());
+            StartAttribute(name);
+            var buffer = _buffer.AsSpan();
+            buffer[0] = '#';
+            _ = color.R.TryFormat(buffer[1..], out _, "x2", CultureInfo.InvariantCulture);
+            _ = color.G.TryFormat(buffer[3..], out _, "x2", CultureInfo.InvariantCulture);
+            _ = color.B.TryFormat(buffer[5..], out _, "x2", CultureInfo.InvariantCulture);
+            buffer[7] = '"';
+            output.Write(buffer[..8]);
             if (!color.IsOpaque)
             {
-                Attribute(name + "-opacity", SvgNumber.Format(color.Opacity, 3));
+                output.Write(' ');
+                output.Write(name);
+                output.Write("-opacity=\"");
+                WriteNumber(color.Opacity, 3);
+                output.Write('"');
             }
         }
 
@@ -2114,6 +2181,42 @@ public static class SvgSceneRenderer
                 return "translate(" + Number(transform.E) + " " + Number(transform.F) + ")";
 
             return "matrix(" + string.Join(' ', new[] { transform.A, transform.B, transform.C, transform.D, transform.E, transform.F }.Select(value => SvgNumber.Format(value, Math.Max(_precision, 6)))) + ")";
+        }
+
+        private void TransformAttribute(SceneTransform transform)
+        {
+            StartAttribute("transform");
+            WriteTransform(transform);
+            output.Write('"');
+        }
+
+        // Writes the value of Transform: the characters never need to be escaped
+        private void WriteTransform(SceneTransform transform)
+        {
+            if (transform.IsTranslation)
+            {
+                output.Write("translate(");
+                WriteNumber(transform.E, _precision);
+                output.Write(' ');
+                WriteNumber(transform.F, _precision);
+                output.Write(')');
+                return;
+            }
+
+            var precision = Math.Max(_precision, 6);
+            output.Write("matrix(");
+            WriteNumber(transform.A, precision);
+            output.Write(' ');
+            WriteNumber(transform.B, precision);
+            output.Write(' ');
+            WriteNumber(transform.C, precision);
+            output.Write(' ');
+            WriteNumber(transform.D, precision);
+            output.Write(' ');
+            WriteNumber(transform.E, precision);
+            output.Write(' ');
+            WriteNumber(transform.F, precision);
+            output.Write(')');
         }
 
         // With fonts, the other families of the collection follow the requested ones, so a viewer looks for the
@@ -2219,23 +2322,60 @@ public static class SvgSceneRenderer
             return builder.Append('"').ToString();
         }
 
-        private void Attribute(string name, double value) => Attribute(name, Number(value));
+        private void Attribute(string name, double value) => Attribute(name, value, _precision);
+
+        // A number never needs to be escaped
+        private void Attribute(string name, double value, int precision)
+        {
+            StartAttribute(name);
+            WriteNumber(value, precision);
+            output.Write('"');
+        }
 
         private void Attribute(string name, string value)
         {
-            output.Write(' ');
+            StartAttribute(name);
+            output.Write(Escape(value));
+            output.Write('"');
+        }
+
+        // The data of a path is made of numbers, letters, commas and spaces, which never need to be escaped
+        private void PathAttribute(PathData path)
+        {
+            StartAttribute("d");
+            SvgNumber.WritePath(output, path, _precision);
+            output.Write('"');
+        }
+
+        private void DataAttribute(string name, string value)
+        {
+            output.Write(" data-");
             output.Write(name);
             output.Write("=\"");
             output.Write(Escape(value));
             output.Write('"');
         }
 
+        private void StartAttribute(string name)
+        {
+            output.Write(' ');
+            output.Write(name);
+            output.Write("=\"");
+        }
+
+        private void WriteNumber(double value, int precision) => SvgNumber.Write(output, value, precision, _buffer);
+
         private string Number(double value) => SvgNumber.Format(value, _precision);
 
         private static string Escape(string value)
         {
+            // Most values have no character to escape or to remove
+            var start = value.AsSpan().IndexOfAny(CharactersToEscape);
+            if (start < 0)
+                return value;
+
             StringBuilder? builder = null;
-            for (var i = 0; i < value.Length; i++)
+            for (var i = start; i < value.Length; i++)
             {
                 var c = value[i];
                 string? replacement = c switch

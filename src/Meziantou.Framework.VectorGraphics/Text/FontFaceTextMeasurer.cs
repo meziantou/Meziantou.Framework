@@ -15,6 +15,10 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
     private readonly FontFace _boldItalic;
     private readonly Lock _lock = new();
 
+    // The buffer of the shaping, reused under the lock, and the limits it was created with
+    private GlyphBuffer? _buffer;
+    private FontResourceLimits? _bufferLimits;
+
     /// <summary>Initializes a new instance of the <see cref="FontFaceTextMeasurer"/> class.</summary>
     /// <param name="regular">The face of the regular text, loaded with <see cref="FontLoader"/>.</param>
     /// <param name="bold">The face of the bold text, or <see langword="null"/> to measure bold text with <paramref name="regular"/>.</param>
@@ -120,7 +124,13 @@ public sealed class FontFaceTextMeasurer : ITextMeasurer
         var spacingWidth = 0.0;
         lock (_lock)
         {
-            var buffer = new GlyphBuffer(face.Data.Limits);
+            if (_buffer is null || !ReferenceEquals(_bufferLimits, face.Data.Limits))
+            {
+                _buffer = new GlyphBuffer(face.Data.Limits);
+                _bufferLimits = face.Data.Limits;
+            }
+
+            var buffer = _buffer;
             foreach (var run in Unicode.EnumerateScriptRuns(text))
             {
                 var span = text.AsSpan(run.Index, run.Length);

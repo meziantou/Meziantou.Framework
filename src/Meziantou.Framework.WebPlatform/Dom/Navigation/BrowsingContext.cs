@@ -3530,6 +3530,7 @@ public sealed partial class BrowsingContext : IDisposable
             FullscreenModel.FullyExit(document);
             PointerLockModel.OnDocumentUnloaded(document);
             ReleaseDeviceLocks(document);
+            ModelContext.RunUnloadingDocumentCleanupSteps(document);
             if (persisted)
                 return;
 
@@ -3573,6 +3574,9 @@ public sealed partial class BrowsingContext : IDisposable
     /// <summary>https://html.spec.whatwg.org/multipage/document-lifecycle.html#destroy-a-document-and-its-descendants</summary>
     private static void DestroyDocument(Document document)
     {
+        // https://webmachinelearning.github.io/webmcp/#unloading-document-cleanup-steps (the documents that are destroyed without being unloaded, e.g. an initial about:blank document)
+        ModelContext.RunUnloadingDocumentCleanupSteps(document);
+
         // The pointer lock of an element of the document is exited (https://w3c.github.io/pointerlock/#requirements), and
         // the locks of its window are released (https://w3c.github.io/web-locks/#lock-termination)
         PointerLockModel.OnDocumentUnloaded(document);

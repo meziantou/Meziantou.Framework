@@ -3,7 +3,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Rendering;
 
 #pragma warning disable WEBPLATEXP0017 // The target exercises the canvas layers, a proposal
-#pragma warning disable WEBPLATEXP0018 // The target exercises the interpolation methods of the canvas gradients, a proposal
+#pragma warning disable WEBPLATEXP0019 // The target exercises the interpolation methods of the canvas gradients, a proposal
 
 namespace Meziantou.Framework.WebPlatform.Fuzz;
 

@@ -92,6 +92,7 @@ public sealed class WebPlatformFeaturesTests : IDisposable
           FileSystemEnabled: typeof FileSystemHandle + typeof FileSystemFileHandle + typeof FileSystemDirectoryHandle + typeof FileSystemWritableFileStream + String(typeof StorageManager !== 'undefined' && 'getDirectory' in StorageManager.prototype),
           VisibilityStateEntryEnabled: typeof VisibilityStateEntry + PerformanceObserver.supportedEntryTypes.includes('visibility-state'),
           CssParserApiEnabled: typeof CSS.parseStylesheet + typeof CSS.parseRuleList + typeof CSS.parseRule + typeof CSS.parseDeclarationList + typeof CSS.parseDeclaration + typeof CSS.parseValue + typeof CSS.parseValueList + typeof CSS.parseCommaValueList + ('parseValue' in CSS) + typeof CSSParserRule + typeof CSSParserAtRule + typeof CSSParserQualifiedRule + typeof CSSParserDeclaration + typeof CSSParserValue + typeof CSSParserBlock + typeof CSSParserFunction,
+          WebMcpEnabled: typeof document.modelContext + typeof ModelContext + typeof Tool + typeof ToolActivatedEvent + typeof ToolCancelEvent + ('modelContext' in document),
           CanvasEnabled: typeof CanvasRenderingContext2D + typeof CanvasGradient + typeof CanvasPattern + typeof TextMetrics + typeof Path2D + typeof OffscreenCanvas + typeof OffscreenCanvasRenderingContext2D + ('transferControlToOffscreen' in HTMLCanvasElement.prototype),
         };
         document.title = JSON.stringify(probes);

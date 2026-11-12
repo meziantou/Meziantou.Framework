@@ -115,30 +115,30 @@ internal static class DrawingKernels
         PixelConverter.ConvertRow(new ReadOnlySpan<Rgba64>(in opaque), new Span<TPixel>(ref pixel));
         if (typeof(TPixel) == typeof(Rgba64))
         {
-            var value = unsafe(Unsafe.As<TPixel, Rgba64>(ref pixel));
+            var value = unsafe(Unsafe.BitCast<TPixel, Rgba64>(pixel));
             return new DrawingColor(value.R, value.G, value.B, color.A);
         }
 
         if (typeof(TPixel) == typeof(Rgb48))
         {
-            var value = unsafe(Unsafe.As<TPixel, Rgb48>(ref pixel));
+            var value = unsafe(Unsafe.BitCast<TPixel, Rgb48>(pixel));
             return new DrawingColor(value.R, value.G, value.B, color.A);
         }
 
         if (typeof(TPixel) == typeof(Gray16))
-            return new DrawingColor(unsafe(Unsafe.As<TPixel, Gray16>(ref pixel)).Value, 0, 0, color.A);
+            return new DrawingColor(unsafe(Unsafe.BitCast<TPixel, Gray16>(pixel)).Value, 0, 0, color.A);
 
         // The formats composited as RGBA (CompositeBridged) get their gray level in the three colors
         if (typeof(TPixel) == typeof(La32))
         {
-            var level = unsafe(Unsafe.As<TPixel, La32>(ref pixel)).L;
+            var level = unsafe(Unsafe.BitCast<TPixel, La32>(pixel)).L;
             return new DrawingColor(level, level, level, color.A);
         }
 
         var alpha = PixelConverter.To8Bit(color.A);
         if (typeof(TPixel) == typeof(La16))
         {
-            var level = unsafe(Unsafe.As<TPixel, La16>(ref pixel)).L;
+            var level = unsafe(Unsafe.BitCast<TPixel, La16>(pixel)).L;
             return new DrawingColor(level, level, level, alpha);
         }
 
@@ -147,24 +147,24 @@ internal static class DrawingKernels
 
         if (typeof(TPixel) == typeof(Rgba32))
         {
-            var value = unsafe(Unsafe.As<TPixel, Rgba32>(ref pixel));
+            var value = unsafe(Unsafe.BitCast<TPixel, Rgba32>(pixel));
             return new DrawingColor(value.R, value.G, value.B, alpha);
         }
 
         if (typeof(TPixel) == typeof(Bgra32))
         {
-            var value = unsafe(Unsafe.As<TPixel, Bgra32>(ref pixel));
+            var value = unsafe(Unsafe.BitCast<TPixel, Bgra32>(pixel));
             return new DrawingColor(value.B, value.G, value.R, alpha);
         }
 
         if (typeof(TPixel) == typeof(Rgb24))
         {
-            var value = unsafe(Unsafe.As<TPixel, Rgb24>(ref pixel));
+            var value = unsafe(Unsafe.BitCast<TPixel, Rgb24>(pixel));
             return new DrawingColor(value.R, value.G, value.B, alpha);
         }
 
         if (typeof(TPixel) == typeof(Gray8))
-            return new DrawingColor(unsafe(Unsafe.As<TPixel, Gray8>(ref pixel)).Value, 0, 0, alpha);
+            return new DrawingColor(unsafe(Unsafe.BitCast<TPixel, Gray8>(pixel)).Value, 0, 0, alpha);
 
         throw new NotSupportedException($"The pixel type '{typeof(TPixel).Name}' is not supported.");
     }
@@ -914,6 +914,8 @@ internal static class DrawingKernels
     private static void FillPixels<TSample>(Span<TSample> run, ReadOnlySpan<TSample> pixel)
         where TSample : unmanaged
     {
+        // The packed paths fill whole pixels only: a partial pixel at the end of the run would be left as it was
+        Debug.Assert(run.Length % pixel.Length == 0);
         if (pixel.Length == 1)
         {
             run.Fill(pixel[0]);

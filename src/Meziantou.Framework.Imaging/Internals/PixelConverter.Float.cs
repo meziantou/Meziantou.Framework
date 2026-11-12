@@ -70,13 +70,13 @@ internal static partial class PixelConverter
     {
         if (typeof(TPixel) == typeof(Bgr565))
         {
-            uint v = unsafe(Unsafe.As<TPixel, Bgr565>(ref pixel)).PackedValue;
+            uint v = unsafe(Unsafe.BitCast<TPixel, Bgr565>(pixel)).PackedValue;
             (r, g, b, a) = (v >> 11, (v >> 5) & 63, v & 31, 1);
             (maxR, maxG, maxB, maxA) = (31, 63, 31, 1);
         }
         else if (typeof(TPixel) == typeof(Rgba1010102))
         {
-            var v = unsafe(Unsafe.As<TPixel, Rgba1010102>(ref pixel)).PackedValue;
+            var v = unsafe(Unsafe.BitCast<TPixel, Rgba1010102>(pixel)).PackedValue;
             (r, g, b, a) = (v & 1023, (v >> 10) & 1023, (v >> 20) & 1023, v >> 30);
             (maxR, maxG, maxB, maxA) = (1023, 1023, 1023, 3);
         }
@@ -135,6 +135,8 @@ internal static partial class PixelConverter
         where TSource : unmanaged
         where TDestination : unmanaged
     {
+        // The loops write through references: the slice throws for a destination shorter than the source
+        destination = destination[..source.Length];
         if (!IsFloat<TSource>())
         {
             // Integer samples are fractions of [0, 1]: nothing to check, nothing to flatten (the destination has alpha)
@@ -305,6 +307,7 @@ internal static partial class PixelConverter
         where TSource : unmanaged
         where TDestination : unmanaged
     {
+        Debug.Assert(destination.Length >= source.Length);
         ref var src = ref unsafe(MemoryMarshal.GetReference(source));
         ref var dst = ref unsafe(MemoryMarshal.GetReference(destination));
         var max = Is16Bit<TSource>() ? Max16 : Max8;
@@ -327,9 +330,13 @@ internal static partial class PixelConverter
                 // One correctly rounded division: the integers are exact in single precision
                 unsafe { Unsafe.As<TDestination, RgbaFloat>(ref Unsafe.Add(ref dst, i)) = new RgbaFloat(r / (float)maxR, g / (float)maxG, b / (float)maxB, a / (float)maxA); }
             }
-            else
+            else if (typeof(TDestination) == typeof(RgbaHalf))
             {
                 unsafe { Unsafe.As<TDestination, RgbaHalf>(ref Unsafe.Add(ref dst, i)) = new RgbaHalf((Half)(r / (double)maxR), (Half)(g / (double)maxG), (Half)(b / (double)maxB), (Half)(a / (double)maxA)); }
+            }
+            else
+            {
+                throw UnsupportedType.Create<TDestination>();
             }
         }
     }
@@ -434,6 +441,8 @@ internal static partial class PixelConverter
         if (typeof(TSource) != typeof(RgbaFloat) || typeof(TDestination) != typeof(RgbaHalf))
             return count;
 
+        Debug.Assert(destination.Length >= source.Length);
+
         ref var samples = ref unsafe(Unsafe.As<TSource, float>(ref MemoryMarshal.GetReference(source)));
         ref var output = ref unsafe(Unsafe.As<TDestination, ushort>(ref MemoryMarshal.GetReference(destination)));
         var high = Vector128.Create(BitConverter.Int32BitsToSingle(BitConverter.SingleToInt32Bits(HalfOverflow) - 1));
@@ -469,6 +478,10 @@ internal static partial class PixelConverter
         where TSource : unmanaged
         where TDestination : unmanaged
     {
+        if ((typeof(TSource) != typeof(RgbaFloat) && typeof(TSource) != typeof(RgbaHalf)) || (typeof(TDestination) != typeof(Rgba32) && typeof(TDestination) != typeof(Rgba64)))
+            throw UnsupportedType.Create<TDestination>();
+
+        Debug.Assert(destination.Length >= source.Length);
         var count = 0;
         var max = Vector128.Create(typeof(TDestination) == typeof(Rgba32) ? (double)Max8 : Max16);
         var low = Vector128<float>.Zero;
@@ -629,10 +642,14 @@ internal static partial class PixelConverter
                 ref var p = ref unsafe(Unsafe.As<TPixel, La16>(ref pixel));
                 (p.L, p.A) = ((byte)ToIntegerSample(y, Max8), (byte)ToIntegerSample(a, Max8));
             }
-            else
+            else if (typeof(TPixel) == typeof(La32))
             {
                 ref var p = ref unsafe(Unsafe.As<TPixel, La32>(ref pixel));
                 (p.L, p.A) = ((ushort)ToIntegerSample(y, Max16), (ushort)ToIntegerSample(a, Max16));
+            }
+            else
+            {
+                throw UnsupportedType.Create<TPixel>();
             }
         }
         else if (typeof(TPixel) == typeof(A8))
@@ -680,10 +697,14 @@ internal static partial class PixelConverter
                 ref var p = ref unsafe(Unsafe.As<TPixel, Abgr32>(ref pixel));
                 (p.A, p.B, p.G, p.R) = (a8, b8, g8, r8);
             }
-            else
+            else if (typeof(TPixel) == typeof(Rgb24))
             {
                 ref var p = ref unsafe(Unsafe.As<TPixel, Rgb24>(ref pixel));
                 (p.R, p.G, p.B) = (r8, g8, b8);
+            }
+            else
+            {
+                throw UnsupportedType.Create<TPixel>();
             }
         }
     }
@@ -696,9 +717,13 @@ internal static partial class PixelConverter
         {
             unsafe { Unsafe.As<TPixel, RgbaFloat>(ref pixel) = new RgbaFloat((float)r, (float)g, (float)b, (float)a); }
         }
-        else
+        else if (typeof(TPixel) == typeof(RgbaHalf))
         {
             unsafe { Unsafe.As<TPixel, RgbaHalf>(ref pixel) = new RgbaHalf((Half)r, (Half)g, (Half)b, (Half)a); }
+        }
+        else
+        {
+            throw UnsupportedType.Create<TPixel>();
         }
     }
 

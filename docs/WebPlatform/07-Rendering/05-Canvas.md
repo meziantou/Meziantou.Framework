@@ -63,7 +63,7 @@ sets the color space of the interpolation (`srgb`, `srgb-linear`, `display-p3`, 
 `hwb`, `lch` and `oklch`...), and [HueInterpolationMethod](cref:Meziantou.Framework.WebPlatform.Dom.CanvasGradient.HueInterpolationMethod)
 how the hues of the polar color spaces are interpolated (`shorter`, `longer`, `increasing` or `decreasing`), as the
 `in <color-space> <hue> hue` of the CSS gradients. These two properties implement a
-[proposal](https://github.com/whatwg/html/pull/10986) (`WEBPLATEXP0018`, see
+[proposal](https://github.com/whatwg/html/pull/10986) (`WEBPLATEXP0019`, see
 [Experimental APIs](../09-Limitations.md#experimental-apis)). As in the browsers, the colors of the canvas gradients are
 interpolated without premultiplying the alpha.
 

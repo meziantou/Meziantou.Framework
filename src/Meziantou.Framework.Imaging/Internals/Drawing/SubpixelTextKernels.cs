@@ -149,7 +149,9 @@ internal static class SubpixelTextKernels
 
     private static uint Read<T>(T value)
         where T : unmanaged
-        => typeof(T) == typeof(byte) ? unsafe(Unsafe.As<T, byte>(ref value)) : unsafe(Unsafe.As<T, ushort>(ref value));
+        => typeof(T) == typeof(byte) ? unsafe(Unsafe.BitCast<T, byte>(value))
+            : typeof(T) == typeof(ushort) ? unsafe(Unsafe.BitCast<T, ushort>(value))
+            : UnsupportedType.Throw<T, uint>();
 
     private static T Write<T>(uint value)
         where T : unmanaged
@@ -157,10 +159,15 @@ internal static class SubpixelTextKernels
         if (typeof(T) == typeof(byte))
         {
             var sample = (byte)value;
-            return unsafe(Unsafe.As<byte, T>(ref sample));
+            return unsafe(Unsafe.BitCast<byte, T>(sample));
         }
 
-        var wide = (ushort)value;
-        return unsafe(Unsafe.As<ushort, T>(ref wide));
+        if (typeof(T) == typeof(ushort))
+        {
+            var wide = (ushort)value;
+            return unsafe(Unsafe.BitCast<ushort, T>(wide));
+        }
+
+        return UnsupportedType.Throw<T, T>();
     }
 }

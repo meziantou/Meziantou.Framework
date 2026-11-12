@@ -18,14 +18,14 @@ internal static class Binding_CanvasGradient<TAdapter, TValue> where TAdapter : 
         DefineMembers = DefineMembers,
     };
 
-    #pragma warning disable WEBPLATEXP0018 // The binding exposes the experimental Web IDL member
+    #pragma warning disable WEBPLATEXP0019 // The binding exposes the experimental Web IDL member
     private static TValue Get_colorInterpolationMethod(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasGradient>(t, Binding); return r.FromString(o.ColorInterpolationMethod); }
     private static void Set_colorInterpolationMethod(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasGradient>(t, Binding); var s = r.ToDomString(v); if (global::System.Array.IndexOf(WebIdlHelpers<TAdapter, TValue>.Enum_ColorInterpolationMethod_Values, s) < 0) return; v = r.Adapter.FromString(s); var x = r.ToEnumerationValueOrNull(v, WebIdlHelpers<TAdapter, TValue>.Enum_ColorInterpolationMethod_Values); if (x is null) return; o.ColorInterpolationMethod = x; }
-    #pragma warning restore WEBPLATEXP0018
-    #pragma warning disable WEBPLATEXP0018 // The binding exposes the experimental Web IDL member
+    #pragma warning restore WEBPLATEXP0019
+    #pragma warning disable WEBPLATEXP0019 // The binding exposes the experimental Web IDL member
     private static TValue Get_hueInterpolationMethod(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasGradient>(t, Binding); return r.FromString(o.HueInterpolationMethod); }
     private static void Set_hueInterpolationMethod(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasGradient>(t, Binding); var s = r.ToDomString(v); if (global::System.Array.IndexOf(WebIdlHelpers<TAdapter, TValue>.Enum_HueInterpolationMethod_Values, s) < 0) return; v = r.Adapter.FromString(s); var x = r.ToEnumerationValueOrNull(v, WebIdlHelpers<TAdapter, TValue>.Enum_HueInterpolationMethod_Values); if (x is null) return; o.HueInterpolationMethod = x; }
-    #pragma warning restore WEBPLATEXP0018
+    #pragma warning restore WEBPLATEXP0019
     private static TValue Op_addColorStop(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CanvasGradient>(t, Binding);

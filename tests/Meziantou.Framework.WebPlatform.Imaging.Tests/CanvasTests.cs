@@ -629,7 +629,7 @@ public sealed class CanvasTests : IDisposable
         Assert.Equal([0, 0, 0, 0], GetPixel(context2D, 5, 5));
     }
 
-#pragma warning disable WEBPLATEXP0018 // The interpolation methods of the gradients are a proposal
+#pragma warning disable WEBPLATEXP0019 // The interpolation methods of the gradients are a proposal
     [Fact]
     public void Gradients_AreInterpolatedInTheColorInterpolationMethod()
     {
@@ -673,7 +673,7 @@ public sealed class CanvasTests : IDisposable
         context.FillRect(0, 0, 100, 50);
         Assert.Equal([0, 0, 255, 255], GetPixel(context, 50, 25).Select(value => (byte)(value >= 245 ? 255 : value <= 10 ? 0 : value)).ToArray());
     }
-#pragma warning restore WEBPLATEXP0018
+#pragma warning restore WEBPLATEXP0019
 
 #pragma warning disable WEBPLATEXP0017 // The canvas layers are a proposal
     [Fact]

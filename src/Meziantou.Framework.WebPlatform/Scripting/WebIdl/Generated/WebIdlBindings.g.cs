@@ -388,6 +388,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["MessagePort"] = Binding_MessagePort<TAdapter, TValue>.Binding,
             ["MimeType"] = Binding_MimeType<TAdapter, TValue>.Binding,
             ["MimeTypeArray"] = Binding_MimeTypeArray<TAdapter, TValue>.Binding,
+            ["ModelContext"] = Binding_ModelContext<TAdapter, TValue>.Binding,
             ["MouseEvent"] = Binding_MouseEvent<TAdapter, TValue>.Binding,
             ["MutationObserver"] = Binding_MutationObserver<TAdapter, TValue>.Binding,
             ["MutationRecord"] = Binding_MutationRecord<TAdapter, TValue>.Binding,
@@ -605,6 +606,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["TimeEvent"] = Binding_TimeEvent<TAdapter, TValue>.Binding,
             ["TimeRanges"] = Binding_TimeRanges<TAdapter, TValue>.Binding,
             ["ToggleEvent"] = Binding_ToggleEvent<TAdapter, TValue>.Binding,
+            ["Tool"] = Binding_Tool<TAdapter, TValue>.Binding,
+            ["ToolActivatedEvent"] = Binding_ToolActivatedEvent<TAdapter, TValue>.Binding,
+            ["ToolCancelEvent"] = Binding_ToolCancelEvent<TAdapter, TValue>.Binding,
             ["Touch"] = Binding_Touch<TAdapter, TValue>.Binding,
             ["TouchEvent"] = Binding_TouchEvent<TAdapter, TValue>.Binding,
             ["TouchList"] = Binding_TouchList<TAdapter, TValue>.Binding,
@@ -899,6 +903,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.TogglePopoverOptions dictionaryDom_TogglePopoverOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_TogglePopoverOptions(r, dictionaryDom_TogglePopoverOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ToolActivatedEventInit dictionaryDom_ToolActivatedEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ToolActivatedEventInit(r, dictionaryDom_ToolActivatedEventInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ToolCancelEventInit dictionaryDom_ToolCancelEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ToolCancelEventInit(r, dictionaryDom_ToolCancelEventInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.TrackEventInit dictionaryDom_TrackEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_TrackEventInit(r, dictionaryDom_TrackEventInit);
@@ -1215,6 +1225,18 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.MediaSessionActionDetails dictionaryDom_MediaSessionActionDetails:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaSessionActionDetails(r, dictionaryDom_MediaSessionActionDetails);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions dictionaryDom_ModelContextExecuteToolOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ModelContextExecuteToolOptions(r, dictionaryDom_ModelContextExecuteToolOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ModelContextGetToolOptions dictionaryDom_ModelContextGetToolOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ModelContextGetToolOptions(r, dictionaryDom_ModelContextGetToolOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ModelContextRegisterToolOptions dictionaryDom_ModelContextRegisterToolOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ModelContextRegisterToolOptions(r, dictionaryDom_ModelContextRegisterToolOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ModelContextTool dictionaryDom_ModelContextTool:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ModelContextTool(r, dictionaryDom_ModelContextTool);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MutationObserverInit dictionaryDom_MutationObserverInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MutationObserverInit(r, dictionaryDom_MutationObserverInit);
                 return true;
@@ -1361,6 +1383,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.TextDecoderOptions dictionaryDom_TextDecoderOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_TextDecoderOptions(r, dictionaryDom_TextDecoderOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ToolAnnotations dictionaryDom_ToolAnnotations:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ToolAnnotations(r, dictionaryDom_ToolAnnotations);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ToolExecuteCallbackOptions dictionaryDom_ToolExecuteCallbackOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ToolExecuteCallbackOptions(r, dictionaryDom_ToolExecuteCallbackOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.TouchInit dictionaryDom_TouchInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_TouchInit(r, dictionaryDom_TouchInit);
@@ -1907,6 +1935,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_ServiceWorkerRegistration__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_ServiceWorkerRegistration__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));
+                return true;
+            case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.Tool>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_Tool__:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_Tool__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<string>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_string__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_string__, static (r, v) => r.FromSequence(v, static (r, e) => r.FromString(e)));

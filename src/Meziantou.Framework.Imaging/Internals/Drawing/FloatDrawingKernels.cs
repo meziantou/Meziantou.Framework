@@ -252,13 +252,17 @@ internal static class FloatDrawingKernels
     {
         if (typeof(TPixel) == typeof(RgbaFloat))
         {
-            ref var p = ref unsafe(Unsafe.As<TPixel, RgbaFloat>(ref pixel));
+            var p = unsafe(Unsafe.BitCast<TPixel, RgbaFloat>(pixel));
             (r, g, b, a) = (p.R, p.G, p.B, p.A);
+        }
+        else if (typeof(TPixel) == typeof(RgbaHalf))
+        {
+            var p = unsafe(Unsafe.BitCast<TPixel, RgbaHalf>(pixel));
+            (r, g, b, a) = ((double)p.R, (double)p.G, (double)p.B, (double)p.A);
         }
         else
         {
-            ref var p = ref unsafe(Unsafe.As<TPixel, RgbaHalf>(ref pixel));
-            (r, g, b, a) = ((double)p.R, (double)p.G, (double)p.B, (double)p.A);
+            throw UnsupportedType.Create<TPixel>();
         }
     }
 
@@ -267,11 +271,15 @@ internal static class FloatDrawingKernels
     {
         if (typeof(TPixel) == typeof(RgbaFloat))
         {
-            unsafe { Unsafe.As<TPixel, RgbaFloat>(ref pixel) = new RgbaFloat((float)r, (float)g, (float)b, (float)a); }
+            pixel = unsafe(Unsafe.BitCast<RgbaFloat, TPixel>(new RgbaFloat((float)r, (float)g, (float)b, (float)a)));
+        }
+        else if (typeof(TPixel) == typeof(RgbaHalf))
+        {
+            pixel = unsafe(Unsafe.BitCast<RgbaHalf, TPixel>(new RgbaHalf((Half)r, (Half)g, (Half)b, (Half)a)));
         }
         else
         {
-            unsafe { Unsafe.As<TPixel, RgbaHalf>(ref pixel) = new RgbaHalf((Half)r, (Half)g, (Half)b, (Half)a); }
+            throw UnsupportedType.Create<TPixel>();
         }
     }
 }

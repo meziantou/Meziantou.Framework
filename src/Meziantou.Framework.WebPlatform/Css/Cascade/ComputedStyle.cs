@@ -2177,13 +2177,20 @@ internal sealed partial class ComputedStyle
     {
         private const int OwnValueFlag = 1 << 15;
 
+        /// <summary>The number of words of <see cref="_present"/>.</summary>
+        private static readonly int WordCount = (CssPropertyRegistry.PropertyNameCount + 63) / 64;
+
         private readonly ComputedValueTable _table = table;
 
         /// <summary>The bit of the index of each property that has a value.</summary>
-        private readonly ulong[] _present = new ulong[(CssPropertyRegistry.PropertyNameCount + 63) / 64];
+        private readonly ulong[] _present = new ulong[WordCount];
 
-        /// <summary>The indexes of the values of the properties of <see cref="_present"/>, in the order of the property indexes.</summary>
-        private ushort[] _indexes = new ushort[16];
+        /// <summary>
+        /// For each word of <see cref="_present"/>, the number of values of the properties of the previous words (the position of a
+        /// value is known without counting the bits of all the previous words), then, from <see cref="WordCount"/>, the indexes of
+        /// the values of the properties of <see cref="_present"/>, in the order of the property indexes.
+        /// </summary>
+        private ushort[] _indexes = new ushort[WordCount + 16];
         private int _count;
 
         /// <summary>The values that are not in <see cref="_table"/>.</summary>
@@ -2234,15 +2241,19 @@ internal sealed partial class ComputedStyle
                 return value;
             }
 
-            if (_count == _indexes.Length)
+            if (WordCount + _count == _indexes.Length)
             {
                 // The arrays grow by half of their length, as the number of computed values is usually far from the number of properties
-                Array.Resize(ref _indexes, Math.Min(CssPropertyRegistry.PropertyNameCount, _count + (_count / 2)));
+                Array.Resize(ref _indexes, WordCount + Math.Min(CssPropertyRegistry.PropertyNameCount, _count + (_count / 2)));
             }
 
-            Array.Copy(_indexes, position, _indexes, position + 1, _count - position);
+            Array.Copy(_indexes, position, _indexes, position + 1, WordCount + _count - position);
             _present[index >> 6] |= 1UL << index;
             _count++;
+            for (var word = (index >> 6) + 1; word < WordCount; word++)
+            {
+                _indexes[word]++;
+            }
             if (_table.TryGetIndex(value, out var valueIndex))
             {
                 _indexes[position] = valueIndex;
@@ -2267,18 +2278,11 @@ internal sealed partial class ComputedStyle
 
         private bool IsPresent(int index) => (_present[index >> 6] & (1UL << index)) != 0;
 
-        /// <summary>The position of the value of the property in <see cref="_indexes"/>: the number of present properties whose index is lower.</summary>
+        /// <summary>The position of the value of the property in <see cref="_indexes"/>: after the counts of the words, the number of present properties whose index is lower.</summary>
         private int GetPosition(int index)
         {
-            var present = _present;
             var word = index >> 6;
-            var position = System.Numerics.BitOperations.PopCount(present[word] & ((1UL << index) - 1));
-            for (var i = 0; i < word; i++)
-            {
-                position += System.Numerics.BitOperations.PopCount(present[i]);
-            }
-
-            return position;
+            return WordCount + _indexes[word] + System.Numerics.BitOperations.PopCount(_present[word] & ((1UL << index) - 1));
         }
     }
 }

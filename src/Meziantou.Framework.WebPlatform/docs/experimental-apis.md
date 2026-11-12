@@ -183,7 +183,16 @@ proposal is under discussion.
 
 <a id="WEBPLATEXP0018"></a>
 
-## WEBPLATEXP0018: canvas gradient interpolation methods
+## WEBPLATEXP0018: readiness of the WebMCP tools
+
+`ModelContext.WaitForToolsUntil()` and `ModelContext.ToolsReady` implement the readiness of the tools of the
+[proposal](https://github.com/webmachinelearning/webmcp/pull/373) of WebMCP: a page tells the agents to wait until it has
+registered its tools. `BrowsingContext.ModelContextToolsReady` reads the state of a frame tree. Chromium implements them,
+and the web-platform-tests of `webmcp` test them. Their API and behavior may change while the proposal is under discussion.
+
+<a id="WEBPLATEXP0019"></a>
+
+## WEBPLATEXP0019: canvas gradient interpolation methods
 
 `CanvasGradient.ColorInterpolationMethod` and `CanvasGradient.HueInterpolationMethod` implement the
 `colorInterpolationMethod` and `hueInterpolationMethod` attributes of the
@@ -193,9 +202,9 @@ of the polar color spaces are interpolated. When `colorInterpolationMethod` is n
 the CSS gradients and in the browsers: in sRGB when all the stops are legacy sRGB colors, else in Oklab. Their API and
 behavior may change while the proposal is under discussion.
 
-<a id="WEBPLATEXP0019"></a>
+<a id="WEBPLATEXP0020"></a>
 
-## WEBPLATEXP0019: async attribute of the SVG script elements
+## WEBPLATEXP0020: async attribute of the SVG script elements
 
 `SvgScriptElement.Async` implements an `async` IDL attribute on the SVG `script` elements, as the one of the HTML `script`
 elements, as tested by the web-platform-tests of `svg/interact/scripted`: it reflects the `async` content attribute, and is

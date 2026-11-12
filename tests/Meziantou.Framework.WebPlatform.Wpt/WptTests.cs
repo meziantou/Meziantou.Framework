@@ -226,6 +226,8 @@ public sealed class WptTests
 
     public static TheoryData<string> WebShareTests => GetTests("web-share");
 
+    public static TheoryData<string> WebMcpTests => GetTests("webmcp");
+
     public static TheoryData<string> BadgingTests => GetTests("badging");
 
     public static TheoryData<string> BatteryStatusTests => GetTests("battery-status");
@@ -1172,6 +1174,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(WebShareTests))]
     public void WebShare(string test) => Run("web-share", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebMcpTests))]
+    public void WebMcp(string test) => Run("webmcp", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(BadgingTests))]

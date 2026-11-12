@@ -200,7 +200,7 @@ internal sealed partial class TextLayoutEngine
         // Without a dictionary of its own, a layout breaks Thai, Lao, Khmer and Burmese between the words ICU finds in
         // the text between two opportunities of the algorithm. The lines already break between any two characters with
         // break-all and anywhere.
-        using var dictionaryBreaks = _options.LineBreakDictionary is null && wordBreak is not UnicodeWordBreakBehavior.BreakAll && strictness is not UnicodeLineBreakStrictness.Anywhere
+        var dictionaryBreaks = _options.LineBreakDictionary is null && wordBreak is not UnicodeWordBreakBehavior.BreakAll && strictness is not UnicodeLineBreakStrictness.Anywhere
             ? new DictionaryLineBreaks()
             : null;
         var previousBreak = 0;

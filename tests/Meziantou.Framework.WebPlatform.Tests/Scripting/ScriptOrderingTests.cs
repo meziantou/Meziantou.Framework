@@ -115,12 +115,12 @@ public sealed class ScriptOrderingTests : IDisposable
         Assert.Equal(["c loading", "a loading", "inline loading", "b interactive", "DOMContentLoaded", "load"], _log);
 
         var scripts = document.GetElementsByTagName("script").Cast<SvgScriptElement>().ToArray();
-#pragma warning disable WEBPLATEXP0019 // The async IDL attribute of the SVG scripts is not defined by SVG 2
+#pragma warning disable WEBPLATEXP0020 // The async IDL attribute of the SVG scripts is not defined by SVG 2
         Assert.False(scripts[1].Async);
         Assert.True(scripts[0].Async);
         scripts[0].RemoveAttribute("async");
         Assert.False(scripts[0].Async);
-#pragma warning restore WEBPLATEXP0019
+#pragma warning restore WEBPLATEXP0020
     }
 
     [Fact]

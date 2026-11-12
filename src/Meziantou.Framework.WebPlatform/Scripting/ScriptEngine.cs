@@ -479,6 +479,21 @@ public abstract class ScriptEngine
 
     /// <summary>Returns the name of the IDL interface of a platform object (e.g. <c>XMLHttpRequest</c>), or null.</summary>
     internal virtual string? GetInterfaceName(object platformObject) => null;
+
+    /// <summary>
+    /// Serializes a value to a JSON string in the realm of <paramref name="global"/>
+    /// (https://infra.spec.whatwg.org/#serialize-a-javascript-value-to-a-json-string): returns null when <c>JSON.stringify()</c>
+    /// returns <c>undefined</c>, and lets the exceptions of <c>JSON.stringify()</c> propagate (e.g. a circular reference).
+    /// The default implementation serializes the .NET primitive values and the <see cref="System.Text.Json.Nodes.JsonNode"/> values.
+    /// </summary>
+    internal virtual string? SerializeJson(GlobalScope global, object? value) => DotNetJson.Serialize(value);
+
+    /// <summary>
+    /// Parses a JSON string to a value of the realm of <paramref name="global"/> (https://infra.spec.whatwg.org/#parse-a-json-string-to-a-javascript-value),
+    /// and tells whether the value is an object (an object or an array). The exceptions of <c>JSON.parse()</c> propagate.
+    /// The default implementation returns a <see cref="System.Text.Json.Nodes.JsonNode"/>.
+    /// </summary>
+    internal virtual object? ParseJson(GlobalScope global, string json, out bool isObject) => DotNetJson.Parse(json, out isObject);
 }
 
 /// <summary>Where a callback was defined (see <see cref="ScriptEngine.GetCallbackSourceLocation"/>).</summary>

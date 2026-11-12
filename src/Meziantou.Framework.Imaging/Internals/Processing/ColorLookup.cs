@@ -263,10 +263,15 @@ internal abstract class ColorLookup
         if (typeof(TSample) == typeof(float))
         {
             var f = (float)value;
-            return unsafe(Unsafe.As<float, TSample>(ref f));
+            return unsafe(Unsafe.BitCast<float, TSample>(f));
         }
 
-        var h = (Half)value;
-        return unsafe(Unsafe.As<Half, TSample>(ref h));
+        if (typeof(TSample) == typeof(Half))
+        {
+            var h = (Half)value;
+            return unsafe(Unsafe.BitCast<Half, TSample>(h));
+        }
+
+        throw UnsupportedType.Create<TSample>();
     }
 }

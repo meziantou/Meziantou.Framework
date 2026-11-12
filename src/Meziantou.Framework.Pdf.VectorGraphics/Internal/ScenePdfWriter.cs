@@ -1659,29 +1659,10 @@ internal sealed class ScenePdfWriter(PdfPage page, PdfContentBuilder content, Sc
     // The x-height of Helvetica (Helvetica.afm), in em
     private const double HelveticaXHeight = 0.523;
 
-    // The ascent and the descent of a face, as the image renderer reads them: the typographic metrics when the face asks
-    // for them, else the metrics of the horizontal header, else the typographic metrics, else the Windows metrics
+    // The ascent and the descent of a face, as the image renderer reads them
     private static double GetBaselineOffset(SceneTextBaseline baseline, FontFace face, double size)
     {
-        int ascender;
-        int descender;
-        if (face.HasOs2 && face.UseTypoMetrics)
-        {
-            (ascender, descender) = (face.TypoAscender, face.TypoDescender);
-        }
-        else if (face.HorizontalAscender != 0 || face.HorizontalDescender != 0)
-        {
-            (ascender, descender) = (face.HorizontalAscender, face.HorizontalDescender);
-        }
-        else if (face.HasOs2 && (face.TypoAscender != 0 || face.TypoDescender != 0))
-        {
-            (ascender, descender) = (face.TypoAscender, face.TypoDescender);
-        }
-        else
-        {
-            (ascender, descender) = (face.WinAscent, -face.WinDescent);
-        }
-
+        var (ascender, descender, _) = face.GetLineMetrics();
         var scale = size / face.UnitsPerEm;
         return TextPlacement.GetBaselineOffset(baseline, ascender * scale, -descender * scale, face.XHeight * scale);
     }

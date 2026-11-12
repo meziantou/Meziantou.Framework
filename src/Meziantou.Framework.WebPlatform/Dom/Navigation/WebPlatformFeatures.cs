@@ -591,4 +591,12 @@ public sealed record WebPlatformFeatures
     /// default is true.
     /// </summary>
     public bool CssParserApiEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Gets or sets whether WebMCP is exposed (https://webmachinelearning.github.io/webmcp/): <c>document.modelContext</c> and
+    /// the <c>ModelContext</c>, <c>Tool</c>, <c>ToolActivatedEvent</c> and <c>ToolCancelEvent</c> interfaces, in the secure
+    /// windows. The application reads the tools with <see cref="BrowsingContext.GetModelContextTools"/> either way. The
+    /// default is true.
+    /// </summary>
+    public bool WebMcpEnabled { get; init; } = true;
 }

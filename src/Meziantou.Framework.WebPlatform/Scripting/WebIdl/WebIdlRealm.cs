@@ -186,6 +186,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         DefineConsoleGlobal();
         DefineWebAssemblyGlobal();
+        CaptureJsonFunctions();
         if (Window is null)
         {
             // The global object of a worker implements the interface of its kind (e.g. DedicatedWorkerGlobalScope)

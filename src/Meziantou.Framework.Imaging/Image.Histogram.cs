@@ -31,8 +31,8 @@ public abstract partial class Image
         };
 
         // 8-bit levels are counted in partial counters, added up before they can overflow
-        Span<uint> partial = levels == 256 ? stackalloc uint[ToneSamples.PartialCountLength] : default;
-        partial.Clear();
+        using var partialCounts = levels == 256 ? ToneSamples.RentPartialCounts(Owner.Scope, planes: 1) : null;
+        var partial = partialCounts is null ? default : ToneSamples.GetPartialCounts(partialCounts, planes: 1);
         var pending = 0L;
         foreach (var frame in frames)
         {

@@ -307,6 +307,8 @@ internal sealed class Thresholder : IDisposable
     /// <summary>Stores the colors of the first pixels of a row with vectors; returns the number of pixels stored.</summary>
     private int StoreColorsVector(ReadOnlySpan<ushort> mask, Span<byte> row)
     {
+        // The stores go through a reference: the slice throws for a row shorter than the pixels of the mask
+        row = row[..(mask.Length * _bytesPerPixel)];
         ref var input = ref unsafe(MemoryMarshal.GetReference(mask));
         ref var output = ref unsafe(MemoryMarshal.GetReference(row));
         var x = 0;
@@ -519,7 +521,7 @@ internal sealed class Thresholder : IDisposable
             for (; x < interiorEnd; x++)
             {
                 var threshold = (sum / area) - offset;
-                mask[x] = (ushort)-unsafe(Unsafe.BitCast<bool, byte>(lumaRow[x] > threshold));
+                mask[x] = lumaRow[x] > threshold ? (ushort)0xFFFF : (ushort)0;
                 sum += sums[x + radius + 1] - sums[x - radius];
             }
         }
@@ -559,7 +561,7 @@ internal sealed class Thresholder : IDisposable
             threshold = mean - window.Offset;
         }
 
-        return (ushort)-unsafe(Unsafe.BitCast<bool, byte>(luma > threshold));
+        return luma > threshold ? (ushort)0xFFFF : (ushort)0;
     }
 
     /// <summary>Moves the window of the pixel <paramref name="x"/> one column to the right, mapping the columns outside the frame.</summary>

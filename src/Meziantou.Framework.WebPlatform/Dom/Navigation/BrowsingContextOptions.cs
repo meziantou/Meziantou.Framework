@@ -644,6 +644,13 @@ public sealed partial class BrowsingContextOptions
     public DevicePostureOptions? DevicePosture { get; init; }
 
     /// <summary>
+    /// Gets or sets the host hooks of the Web Authentication API (https://w3c.github.io/webauthn/, <c>navigator.credentials</c>
+    /// and <c>PublicKeyCredential</c>): <see cref="WebAuthenticationOptions.Authenticators"/> are the virtual authenticators
+    /// available to the documents. The default is null: no authenticator is available.
+    /// </summary>
+    public WebAuthenticationOptions? WebAuthentication { get; init; }
+
+    /// <summary>
     /// Gets or sets the host hooks of the Screen Orientation API (https://w3c.github.io/screen-orientation/,
     /// <c>screen.orientation</c>): <see cref="ScreenOrientationOptions.Provider"/> is the screen of the device, its orientation
     /// and its locks. The default is null: a desktop screen, whose orientation cannot be locked.

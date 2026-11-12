@@ -78,6 +78,12 @@ internal sealed partial class PolicyControlledFeature
 
     public static PolicyControlledFeature MediaPlaybackWhileNotVisible { get; } = new("media-playback-while-not-visible", isAllowedForAllByDefault: true);
 
+    /// <summary>https://w3c.github.io/webauthn/#sctn-permissions-policy: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature PublicKeyCredentialsCreate { get; } = new("publickey-credentials-create", isAllowedForAllByDefault: false);
+
+    /// <summary>https://w3c.github.io/webauthn/#sctn-permissions-policy: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature PublicKeyCredentialsGet { get; } = new("publickey-credentials-get", isAllowedForAllByDefault: false);
+
     /// <summary>https://w3c.github.io/proximity/#permissions-policy-integration: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature ProximitySensor { get; } = new("proximity-sensor", isAllowedForAllByDefault: false);
 
@@ -141,6 +147,8 @@ internal sealed partial class PolicyControlledFeature
         new("private-state-token-issuance", isAllowedForAllByDefault: false),
         new("private-state-token-redemption", isAllowedForAllByDefault: false),
         ProximitySensor,
+        PublicKeyCredentialsCreate,
+        PublicKeyCredentialsGet,
         ScreenWakeLock,
         new("serial", isAllowedForAllByDefault: false),
         SpeakerSelection,

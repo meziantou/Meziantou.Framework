@@ -49,6 +49,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["AudioWorkletGlobalScope"] = Binding_AudioWorkletGlobalScope<TAdapter, TValue>.Binding,
             ["AudioWorkletNode"] = Binding_AudioWorkletNode<TAdapter, TValue>.Binding,
             ["AudioWorkletProcessor"] = Binding_AudioWorkletProcessor<TAdapter, TValue>.Binding,
+            ["AuthenticatorAssertionResponse"] = Binding_AuthenticatorAssertionResponse<TAdapter, TValue>.Binding,
+            ["AuthenticatorAttestationResponse"] = Binding_AuthenticatorAttestationResponse<TAdapter, TValue>.Binding,
+            ["AuthenticatorResponse"] = Binding_AuthenticatorResponse<TAdapter, TValue>.Binding,
             ["BarProp"] = Binding_BarProp<TAdapter, TValue>.Binding,
             ["BaseAudioContext"] = Binding_BaseAudioContext<TAdapter, TValue>.Binding,
             ["BatteryManager"] = Binding_BatteryManager<TAdapter, TValue>.Binding,
@@ -176,6 +179,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["CookieChangeEvent"] = Binding_CookieChangeEvent<TAdapter, TValue>.Binding,
             ["CookieStore"] = Binding_CookieStore<TAdapter, TValue>.Binding,
             ["CookieStoreManager"] = Binding_CookieStoreManager<TAdapter, TValue>.Binding,
+            ["Credential"] = Binding_Credential<TAdapter, TValue>.Binding,
+            ["CredentialsContainer"] = Binding_CredentialsContainer<TAdapter, TValue>.Binding,
             ["CustomElementRegistry"] = Binding_CustomElementRegistry<TAdapter, TValue>.Binding,
             ["CustomEvent"] = Binding_CustomEvent<TAdapter, TValue>.Binding,
             ["CustomStateSet"] = Binding_CustomStateSet<TAdapter, TValue>.Binding,
@@ -463,6 +468,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["ProgressEvent"] = Binding_ProgressEvent<TAdapter, TValue>.Binding,
             ["PromiseRejectionEvent"] = Binding_PromiseRejectionEvent<TAdapter, TValue>.Binding,
             ["ProximitySensor"] = Binding_ProximitySensor<TAdapter, TValue>.Binding,
+            ["PublicKeyCredential"] = Binding_PublicKeyCredential<TAdapter, TValue>.Binding,
             ["QuotaExceededError"] = Binding_QuotaExceededError<TAdapter, TValue>.Binding,
             ["RadioNodeList"] = Binding_RadioNodeList<TAdapter, TValue>.Binding,
             ["Range"] = Binding_Range<TAdapter, TValue>.Binding,
@@ -879,6 +885,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.PromiseRejectionEventInit dictionaryDom_PromiseRejectionEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PromiseRejectionEventInit(r, dictionaryDom_PromiseRejectionEventInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialRpEntity dictionaryDom_PublicKeyCredentialRpEntity:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PublicKeyCredentialRpEntity(r, dictionaryDom_PublicKeyCredentialRpEntity);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialUserEntity dictionaryDom_PublicKeyCredentialUserEntity:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PublicKeyCredentialUserEntity(r, dictionaryDom_PublicKeyCredentialUserEntity);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.SanitizerElementNamespaceWithAttributes dictionaryDom_SanitizerElementNamespaceWithAttributes:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SanitizerElementNamespaceWithAttributes(r, dictionaryDom_SanitizerElementNamespaceWithAttributes);
                 return true;
@@ -1035,8 +1047,65 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssNumericType dictionaryCss_TypedOm_CssNumericType:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Css_TypedOm_CssNumericType(r, dictionaryCss_TypedOm_CssNumericType);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AllAcceptedCredentialsOptions dictionaryDom_AllAcceptedCredentialsOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AllAcceptedCredentialsOptions(r, dictionaryDom_AllAcceptedCredentialsOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.AssignedNodesOptions dictionaryDom_AssignedNodesOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AssignedNodesOptions(r, dictionaryDom_AssignedNodesOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientInputs dictionaryDom_AuthenticationExtensionsClientInputs:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsClientInputs(r, dictionaryDom_AuthenticationExtensionsClientInputs);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientInputsJson dictionaryDom_AuthenticationExtensionsClientInputsJson:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsClientInputsJson(r, dictionaryDom_AuthenticationExtensionsClientInputsJson);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientOutputs dictionaryDom_AuthenticationExtensionsClientOutputs:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsClientOutputs(r, dictionaryDom_AuthenticationExtensionsClientOutputs);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientOutputsJson dictionaryDom_AuthenticationExtensionsClientOutputsJson:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsClientOutputsJson(r, dictionaryDom_AuthenticationExtensionsClientOutputsJson);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsLargeBlobInputs dictionaryDom_AuthenticationExtensionsLargeBlobInputs:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsLargeBlobInputs(r, dictionaryDom_AuthenticationExtensionsLargeBlobInputs);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsLargeBlobInputsJson dictionaryDom_AuthenticationExtensionsLargeBlobInputsJson:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsLargeBlobInputsJson(r, dictionaryDom_AuthenticationExtensionsLargeBlobInputsJson);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsLargeBlobOutputs dictionaryDom_AuthenticationExtensionsLargeBlobOutputs:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsLargeBlobOutputs(r, dictionaryDom_AuthenticationExtensionsLargeBlobOutputs);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsLargeBlobOutputsJson dictionaryDom_AuthenticationExtensionsLargeBlobOutputsJson:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsLargeBlobOutputsJson(r, dictionaryDom_AuthenticationExtensionsLargeBlobOutputsJson);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfInputs dictionaryDom_AuthenticationExtensionsPrfInputs:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsPrfInputs(r, dictionaryDom_AuthenticationExtensionsPrfInputs);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfInputsJson dictionaryDom_AuthenticationExtensionsPrfInputsJson:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsPrfInputsJson(r, dictionaryDom_AuthenticationExtensionsPrfInputsJson);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfOutputs dictionaryDom_AuthenticationExtensionsPrfOutputs:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsPrfOutputs(r, dictionaryDom_AuthenticationExtensionsPrfOutputs);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfOutputsJson dictionaryDom_AuthenticationExtensionsPrfOutputsJson:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsPrfOutputsJson(r, dictionaryDom_AuthenticationExtensionsPrfOutputsJson);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfValues dictionaryDom_AuthenticationExtensionsPrfValues:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsPrfValues(r, dictionaryDom_AuthenticationExtensionsPrfValues);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsPrfValuesJson dictionaryDom_AuthenticationExtensionsPrfValuesJson:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsPrfValuesJson(r, dictionaryDom_AuthenticationExtensionsPrfValuesJson);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationResponseJson dictionaryDom_AuthenticationResponseJson:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationResponseJson(r, dictionaryDom_AuthenticationResponseJson);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticatorAssertionResponseJson dictionaryDom_AuthenticatorAssertionResponseJson:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticatorAssertionResponseJson(r, dictionaryDom_AuthenticatorAssertionResponseJson);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticatorAttestationResponseJson dictionaryDom_AuthenticatorAttestationResponseJson:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticatorAttestationResponseJson(r, dictionaryDom_AuthenticatorAttestationResponseJson);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AuthenticatorSelectionCriteria dictionaryDom_AuthenticatorSelectionCriteria:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticatorSelectionCriteria(r, dictionaryDom_AuthenticatorSelectionCriteria);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.BeginLayerOptions dictionaryDom_BeginLayerOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BeginLayerOptions(r, dictionaryDom_BeginLayerOptions);
@@ -1085,6 +1154,18 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.CookieStoreGetOptions dictionaryDom_CookieStoreGetOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CookieStoreGetOptions(r, dictionaryDom_CookieStoreGetOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.CredentialCreationOptions dictionaryDom_CredentialCreationOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CredentialCreationOptions(r, dictionaryDom_CredentialCreationOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.CredentialPropertiesOutput dictionaryDom_CredentialPropertiesOutput:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CredentialPropertiesOutput(r, dictionaryDom_CredentialPropertiesOutput);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.CredentialRequestOptions dictionaryDom_CredentialRequestOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CredentialRequestOptions(r, dictionaryDom_CredentialRequestOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.CurrentUserDetailsOptions dictionaryDom_CurrentUserDetailsOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CurrentUserDetailsOptions(r, dictionaryDom_CurrentUserDetailsOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.DeviceMotionEventAccelerationInit dictionaryDom_DeviceMotionEventAccelerationInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_DeviceMotionEventAccelerationInit(r, dictionaryDom_DeviceMotionEventAccelerationInit);
@@ -1308,11 +1389,38 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.PressureObserverOptions dictionaryDom_PressureObserverOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PressureObserverOptions(r, dictionaryDom_PressureObserverOptions);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialCreationOptions dictionaryDom_PublicKeyCredentialCreationOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PublicKeyCredentialCreationOptions(r, dictionaryDom_PublicKeyCredentialCreationOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialCreationOptionsJson dictionaryDom_PublicKeyCredentialCreationOptionsJson:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PublicKeyCredentialCreationOptionsJson(r, dictionaryDom_PublicKeyCredentialCreationOptionsJson);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialDescriptor dictionaryDom_PublicKeyCredentialDescriptor:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PublicKeyCredentialDescriptor(r, dictionaryDom_PublicKeyCredentialDescriptor);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialDescriptorJson dictionaryDom_PublicKeyCredentialDescriptorJson:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PublicKeyCredentialDescriptorJson(r, dictionaryDom_PublicKeyCredentialDescriptorJson);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialParameters dictionaryDom_PublicKeyCredentialParameters:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PublicKeyCredentialParameters(r, dictionaryDom_PublicKeyCredentialParameters);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialRequestOptions dictionaryDom_PublicKeyCredentialRequestOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PublicKeyCredentialRequestOptions(r, dictionaryDom_PublicKeyCredentialRequestOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialRequestOptionsJson dictionaryDom_PublicKeyCredentialRequestOptionsJson:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PublicKeyCredentialRequestOptionsJson(r, dictionaryDom_PublicKeyCredentialRequestOptionsJson);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PublicKeyCredentialUserEntityJson dictionaryDom_PublicKeyCredentialUserEntityJson:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PublicKeyCredentialUserEntityJson(r, dictionaryDom_PublicKeyCredentialUserEntityJson);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.QuotaExceededErrorOptions dictionaryDom_QuotaExceededErrorOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_QuotaExceededErrorOptions(r, dictionaryDom_QuotaExceededErrorOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.RegistrationOptions dictionaryDom_RegistrationOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_RegistrationOptions(r, dictionaryDom_RegistrationOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.RegistrationResponseJson dictionaryDom_RegistrationResponseJson:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_RegistrationResponseJson(r, dictionaryDom_RegistrationResponseJson);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.Report dictionaryDom_Report:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_Report(r, dictionaryDom_Report);
@@ -1418,6 +1526,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.UALowEntropyJson dictionaryDom_UALowEntropyJson:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UALowEntropyJson(r, dictionaryDom_UALowEntropyJson);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.UnknownCredentialOptions dictionaryDom_UnknownCredentialOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UnknownCredentialOptions(r, dictionaryDom_UnknownCredentialOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.UrlPatternComponentResult dictionaryDom_UrlPatternComponentResult:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UrlPatternComponentResult(r, dictionaryDom_UrlPatternComponentResult);
@@ -1601,6 +1712,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.CookieSameSite enumDom_CookieSameSite:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_CookieSameSite(enumDom_CookieSameSite));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.CredentialMediationRequirement enumDom_CredentialMediationRequirement:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_CredentialMediationRequirement(enumDom_CredentialMediationRequirement));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.CssBoxType enumDom_CssBoxType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_CssBoxType(enumDom_CssBoxType));
@@ -1890,6 +2004,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.CookieListItem> taskSystem_Threading_Tasks_Task_Dom_CookieListItem_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_CookieListItem_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CookieListItem(r, dictionaryValue) : r.Adapter.Null));
                 return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.Credential> taskSystem_Threading_Tasks_Task_Dom_Credential_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_Credential_, static (r, v) => r.Wrap(v));
+                return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.CustomElementConstructor> taskSystem_Threading_Tasks_Task_Dom_CustomElementConstructor_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_CustomElementConstructor_, static (r, v) => r.FromCustomElementConstructor(v));
                 return true;
@@ -2000,6 +2117,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_WebCodecs_PlaneLayout__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_WebCodecs_PlaneLayout__, static (r, v) => r.FromSequence(v, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_PlaneLayout(r, dictionaryValue) : r.Adapter.Null)));
+            case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, bool>>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_System_Collections_Generic_KeyValuePair_string__bool___:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_System_Collections_Generic_KeyValuePair_string__bool___, static (r, v) => r.FromSequence(v, static (r, e) => r.ToJs((object?)e)));
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<string>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_string__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_string__, static (r, v) => r.FromSequence(v, static (r, e) => r.FromString(e)));

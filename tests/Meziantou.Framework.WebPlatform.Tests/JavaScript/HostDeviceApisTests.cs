@@ -57,6 +57,7 @@ public sealed class HostDeviceApisTests : IDisposable
             ComputePressure = options.ComputePressure,
             IdleDetection = options.IdleDetection,
             DevicePosture = options.DevicePosture,
+            WebAuthentication = options.WebAuthentication,
             Sensors = options.Sensors,
             ScreenOrientation = options.ScreenOrientation,
             VirtualKeyboard = options.VirtualKeyboard,
@@ -1401,6 +1402,117 @@ public sealed class HostDeviceApisTests : IDisposable
         document.BrowsingContext.IsVisible = true;
         Run(document);
         Assert.Equal("folded", Run(document, "document.title = log.join('|')"));
+    }
+
+    // Web Authentication
+
+    private const string WebAuthnScript = """
+        window.create = (publicKey) => navigator.credentials.create({ publicKey: Object.assign({
+          rp: { name: 'Example' },
+          user: { id: new Uint8Array([1, 2, 3]), name: 'john', displayName: 'John' },
+          challenge: new Uint8Array([0xff]),
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+        }, publicKey) });
+        """;
+
+    [Fact]
+    public void WebAuthentication_CreateAndGet()
+    {
+        #region WebPlatform_WebAuthentication
+        var authenticators = new VirtualAuthenticatorEnvironment();
+        var authenticator = authenticators.AddAuthenticator(new VirtualAuthenticatorOptions
+        {
+            Protocol = VirtualAuthenticatorProtocol.Ctap21,
+            Transport = "internal",
+            HasResidentKey = true,
+            HasUserVerification = true,
+            IsUserVerified = true,
+        });
+
+        var options = new BrowsingContextOptions
+        {
+            WebAuthentication = new WebAuthenticationOptions { Authenticators = authenticators },
+        };
+        #endregion
+
+        var document = Load("<script>" + WebAuthnScript + "</script>", options);
+        Assert.Equal("public-key|platform|webauthn.create|true", Run(document, """
+            create({ authenticatorSelection: { residentKey: 'required' }, extensions: { credProps: true } }).then(c => {
+              window.credential = c;
+              const clientData = JSON.parse(new TextDecoder().decode(c.response.clientDataJSON));
+              document.title = [c.type, c.authenticatorAttachment, clientData.type, c.getClientExtensionResults().credProps.rk].join('|');
+            }, e => document.title = e.name)
+            """));
+
+        var credentials = authenticator.GetCredentials();
+        var stored = Assert.Single(credentials);
+        Assert.Equal("example.com", stored.RpId);
+        Assert.True(stored.IsResidentCredential);
+        Assert.Equal([1, 2, 3], stored.UserHandle!.Value.ToArray());
+
+        // A discoverable credential is found without allowCredentials, and its user handle is returned
+        Assert.Equal("true|1,2,3|true", Run(document, """
+            navigator.credentials.get({ publicKey: { challenge: new Uint8Array([1]) } }).then(a => {
+              document.title = [a.id === credential.id, new Uint8Array(a.response.userHandle).join(','), a.response.signature.byteLength > 0].join('|');
+            }, e => document.title = e.name)
+            """));
+        Assert.Equal(1u, authenticator.GetCredentials()[0].SignCount);
+    }
+
+    [Fact]
+    public void WebAuthentication_WithoutAuthenticator_IsNotAllowed()
+    {
+        var document = Load("<script>" + WebAuthnScript + "</script>");
+
+        Assert.Equal("NotAllowedError", Run(document, "create({}).then(() => document.title = 'created', e => document.title = e.name)"));
+    }
+
+    [Fact]
+    public void WebAuthentication_ClientDataJson_IsTheSpecifiedSerialization()
+    {
+        var authenticators = new VirtualAuthenticatorEnvironment();
+        authenticators.AddAuthenticator(new VirtualAuthenticatorOptions());
+        var document = Load("<script>" + WebAuthnScript + "</script>", new BrowsingContextOptions { WebAuthentication = new WebAuthenticationOptions { Authenticators = authenticators } });
+
+        Assert.Equal("""{"type":"webauthn.create","challenge":"_w","origin":"https://example.com","crossOrigin":false}""", Run(document, "create({}).then(c => document.title = new TextDecoder().decode(c.response.clientDataJSON), e => document.title = e.name)"));
+    }
+
+    [Fact]
+    public void WebAuthentication_AddCredential_SignsTheAssertions()
+    {
+        using var key = System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP256);
+        var authenticators = new VirtualAuthenticatorEnvironment();
+        var authenticator = authenticators.AddAuthenticator(new VirtualAuthenticatorOptions { Protocol = VirtualAuthenticatorProtocol.Ctap1U2f });
+        authenticator.AddCredential(new VirtualCredential
+        {
+            CredentialId = new byte[] { 7, 8, 9 },
+            RpId = "example.com",
+            PrivateKey = key.ExportPkcs8PrivateKey(),
+            SignCount = 41,
+        });
+
+        var document = Load("<script>window.log = [];</script>", new BrowsingContextOptions { WebAuthentication = new WebAuthenticationOptions { Authenticators = authenticators } });
+        Run(document, """
+            navigator.credentials.get({ publicKey: { challenge: new Uint8Array([1]), allowCredentials: [{ type: 'public-key', id: new Uint8Array([7, 8, 9]) }] } }).then(a => {
+              window.assertion = a;
+              document.title = a.id;
+            }, e => document.title = e.name)
+            """);
+
+        Assert.Equal("BwgJ", document.Title);
+        Assert.Equal(42u, authenticator.GetCredentials()[0].SignCount);
+    }
+
+    [Fact]
+    public void WebAuthentication_ParseCreationOptionsFromJson_RejectsInvalidBase64Url()
+    {
+        var document = Load("<script></script>");
+
+        Assert.Equal("EncodingError|4", Run(document, """
+            const json = { rp: { name: 'Example' }, user: { id: 'dGVzdA', name: 'a', displayName: 'A' }, challenge: 'dGVzdA', pubKeyCredParams: [] };
+            const options = PublicKeyCredential.parseCreationOptionsFromJSON(json);
+            try { PublicKeyCredential.parseCreationOptionsFromJSON(Object.assign({}, json, { challenge: 'dGVzdA=' })); } catch (e) { document.title = e.name + '|' + options.challenge.byteLength; }
+            """));
     }
 
     // Screen Orientation

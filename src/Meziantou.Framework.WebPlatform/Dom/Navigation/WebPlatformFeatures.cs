@@ -312,6 +312,14 @@ public sealed record WebPlatformFeatures
     public bool DevicePostureEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets whether the Credential Management and Web Authentication APIs are exposed
+    /// (https://w3c.github.io/webauthn/): <c>navigator.credentials</c>, and the <c>Credential</c>, <c>CredentialsContainer</c>,
+    /// <c>PublicKeyCredential</c> and <c>AuthenticatorResponse</c> interfaces (see <see cref="BrowsingContextOptions.WebAuthentication"/>).
+    /// The default is true.
+    /// </summary>
+    public bool WebAuthenticationEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets or sets whether the Screen Orientation API is exposed (https://w3c.github.io/screen-orientation/):
     /// <c>screen.orientation</c> and the <c>ScreenOrientation</c> interface (see <see cref="BrowsingContextOptions.ScreenOrientation"/>).
     /// The default is true.

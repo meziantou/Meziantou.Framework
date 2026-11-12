@@ -1014,19 +1014,36 @@ internal sealed class CssGradient
             i = runEnd;
         }
 
-        // The colors in the interpolation space, and the sampling of the segments
+        var stopColors = new CssColorComponents?[count];
+        for (var i = 0; i < count; i++)
+        {
+            stopColors[i] = _stops[i].Color;
+        }
+
+        return InterpolateStops(stopColors, positions, _space, _hueMethod, extent);
+    }
+
+    /// <summary>
+    /// Returns the offsets and the colors of the stops of a gradient whose colors are interpolated in a color space
+    /// (https://drafts.csswg.org/css-color-4/#interpolation): the segments that are not interpolated in sRGB or that have a
+    /// transition hint are sampled into more stops, which the shaders interpolate in sRGB. A null color is a transition hint.
+    /// <paramref name="extent"/> is the length in px the positions (fractions of the gradient line) are painted over, which
+    /// gives the number of samples of a segment. The colors are interpolated with premultiplied alpha unless
+    /// <paramref name="premultiplied"/> is false, and are CSS gamut mapped to <paramref name="gamut"/>.
+    /// </summary>
+    internal static (List<double> Offsets, List<DisplayColor> Colors) InterpolateStops(IReadOnlyList<CssColorComponents?> stopColors, IReadOnlyList<double?> positions, string space, CssColorMix.HueMethod hueMethod, double extent, RenderingColorSpace gamut = RenderingColorSpace.Srgb, bool premultiplied = true)
+    {
+        var count = stopColors.Count;
         var offsets = new List<double>(count * 2);
         var colors = new List<DisplayColor>(count * 2);
-        var space = _space;
         var sample = space != "srgb";
         CssColorComponents? previous = null;
         double previousPosition = 0;
         double? hint = null;
         for (var i = 0; i < count; i++)
         {
-            var stop = _stops[i];
             var position = positions[i] ?? previousPosition;
-            if (stop.Color is not { } color)
+            if (stopColors[i] is not { } color)
             {
                 // A hint without color stop on both sides is ignored
                 if (previous is not null)
@@ -1041,12 +1058,12 @@ internal sealed class CssGradient
 
             // https://drafts.csswg.org/css-color-4/#interpolation-missing: a missing component of a color stop takes the value
             // of the component of the other stop of the segment, so the stop has a color on each of its sides
-            var stopColor = ToDisplayColor(converted);
-            var segmentStartColor = previous is { } start ? ToDisplayColor(start) : stopColor;
+            var stopColor = ToDisplayColor(converted, gamut);
+            var segmentStartColor = previous is { } start ? ToDisplayColor(start, gamut) : stopColor;
             if (previous is { } before && (HasMissingComponent(before) || HasMissingComponent(converted)))
             {
-                segmentStartColor = ToDisplayColor(CssColorMix.Interpolate(before, converted, 0, _hueMethod));
-                stopColor = ToDisplayColor(CssColorMix.Interpolate(before, converted, 1, _hueMethod));
+                segmentStartColor = ToDisplayColor(CssColorMix.Interpolate(before, converted, 0, hueMethod, premultiplied), gamut);
+                stopColor = ToDisplayColor(CssColorMix.Interpolate(before, converted, 1, hueMethod, premultiplied), gamut);
                 if (colors.Count == 1)
                 {
                     // The first stop: the color before the gradient line
@@ -1078,7 +1095,6 @@ internal sealed class CssGradient
                 var segmentExtent = (position - previousPosition) * extent;
                 var segmentStart = previousPosition;
                 var segmentLength = position - previousPosition;
-                var hueMethod = _hueMethod;
                 var startColor = segmentStartColor;
                 for (var k = 1; k <= SegmentSamples; k++)
                 {
@@ -1097,7 +1113,7 @@ internal sealed class CssGradient
                 DisplayColor Sample(double t)
                 {
                     var weight = hintFraction <= 0 ? 1 : hintFraction >= 1 ? 0 : Math.Pow(t, exponent);
-                    return ToDisplayColor(CssColorMix.Interpolate(from, converted, weight, hueMethod));
+                    return ToDisplayColor(CssColorMix.Interpolate(from, converted, weight, hueMethod, premultiplied), gamut);
                 }
 
                 // Adds the stops between two samples where the interpolation in sRGB is not close enough to the gradient
@@ -1134,5 +1150,5 @@ internal sealed class CssGradient
     private static bool HasMissingComponent(CssColorComponents color) => color.Alpha is null || Array.IndexOf(color.Channels, null) >= 0;
 
     // The interpolated colors are CSS gamut mapped (https://drafts.csswg.org/css-color-4/#css-gamut-mapping)
-    private static DisplayColor ToDisplayColor(CssColorComponents color) => DisplayColor.FromCss(color, RenderingColorSpace.Srgb, defaultAlpha: 1);
+    private static DisplayColor ToDisplayColor(CssColorComponents color, RenderingColorSpace gamut = RenderingColorSpace.Srgb) => DisplayColor.FromCss(color, gamut, defaultAlpha: 1);
 }

@@ -180,3 +180,15 @@ the [proposal](https://github.com/whatwg/html/pull/9537) (see the
 [explainer](https://github.com/fserb/canvas2D/blob/master/spec/layers.md)), as tested by the tentative web-platform-tests
 of `html/canvas/element/layers`. Chromium implements them behind a flag. Their API and behavior may change while the
 proposal is under discussion.
+
+<a id="WEBPLATEXP0018"></a>
+
+## WEBPLATEXP0018: canvas gradient interpolation methods
+
+`CanvasGradient.ColorInterpolationMethod` and `CanvasGradient.HueInterpolationMethod` implement the
+`colorInterpolationMethod` and `hueInterpolationMethod` attributes of the
+[proposal](https://github.com/whatwg/html/pull/10986), as tested by the web-platform-tests of
+`html/canvas/element/fill-and-stroke-styles`: the color space the colors of a gradient are interpolated in, and how the hues
+of the polar color spaces are interpolated. When `colorInterpolationMethod` is not set, the colors are interpolated as in
+the CSS gradients and in the browsers: in sRGB when all the stops are legacy sRGB colors, else in Oklab. Their API and
+behavior may change while the proposal is under discussion.

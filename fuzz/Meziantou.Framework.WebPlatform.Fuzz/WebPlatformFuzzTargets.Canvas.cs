@@ -3,6 +3,7 @@ using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Rendering;
 
 #pragma warning disable WEBPLATEXP0017 // The target exercises the canvas layers, a proposal
+#pragma warning disable WEBPLATEXP0018 // The target exercises the interpolation methods of the canvas gradients, a proposal
 
 namespace Meziantou.Framework.WebPlatform.Fuzz;
 
@@ -32,6 +33,12 @@ public static partial class WebPlatformFuzzTargets
 
     /// <summary>The filters of the layers: valid and invalid CSS filters.</summary>
     private static readonly string[] CanvasLayerFilters = ["blur(2px)", "drop-shadow(1px 1px 0 red)", "none", "not a filter", "", "url(#missing)", "blur(-1px)", "grayscale(1) blur(1px)", "drop-shadow(-20px 0 2px blue) opacity(0.5)"];
+
+    /// <summary>The colors of the stops of the gradients: legacy sRGB colors, colors of other color spaces, with missing components.</summary>
+    private static readonly string[] CanvasGradientColors = ["red", "rgb(0 0 255 / 0.5)", "transparent", "color(srgb 0 1 0)", "oklch(0.7 0.2 none)", "hsl(none 100% 50%)", "lab(50 none 20 / 0.3)", "color-mix(in srgb, #0f0, #00f)"];
+
+    /// <summary>The interpolation methods of the gradients: valid and invalid values.</summary>
+    private static readonly string[] CanvasInterpolationMethods = ["srgb", "hsl", "hwb", "srgb-linear", "display-p3-linear", "oklab", "lch", "oklch", "xyz", "longer", "decreasing", "shorter", "increasing", "", "OKLAB", "not a method"];
 
     private static readonly string[] CanvasCompositeOperations = ["source-over", "copy", "xor", "destination-out", "multiply", "screen", "source-in", "lighter"];
 
@@ -107,7 +114,27 @@ public static partial class WebPlatformFuzzTargets
                 }
 
                 case CanvasFillRect:
-                    context.FillStyle = (Next(data) % 3) switch { 0 => "red", 1 => "rgb(0 0 255 / 0.5)", _ => "transparent" };
+                    var style = Next(data) % 4;
+                    if (style == 3)
+                    {
+                        // A gradient interpolated in a color space: the invalid interpolation methods are ignored
+                        var gradient = context.CreateLinearGradient(0, 0, Next(data) % CanvasSize, Next(data) % CanvasSize);
+                        gradient.AddColorStop(Next(data) / 255.0, CanvasGradientColors[Next(data) % CanvasGradientColors.Length]);
+                        gradient.AddColorStop(Next(data) / 255.0, CanvasGradientColors[Next(data) % CanvasGradientColors.Length]);
+                        var colorMethod = gradient.ColorInterpolationMethod;
+                        var hueMethod = gradient.HueInterpolationMethod;
+                        var method = CanvasInterpolationMethods[Next(data) % CanvasInterpolationMethods.Length];
+                        gradient.ColorInterpolationMethod = method;
+                        gradient.HueInterpolationMethod = method;
+                        FuzzAssert.True(gradient.ColorInterpolationMethod == method || gradient.ColorInterpolationMethod == colorMethod, "colorInterpolationMethod is the value set, or unchanged by an invalid value");
+                        FuzzAssert.True(gradient.HueInterpolationMethod == method || gradient.HueInterpolationMethod == hueMethod, "hueInterpolationMethod is the value set, or unchanged by an invalid value");
+                        context.FillStyle = gradient;
+                    }
+                    else
+                    {
+                        context.FillStyle = style switch { 0 => "red", 1 => "rgb(0 0 255 / 0.5)", _ => "transparent" };
+                    }
+
                     context.FillRect(Next(data) - 128, Next(data) - 128, Next(data) - 64, Next(data) - 64);
                     break;
 
@@ -218,6 +245,10 @@ public static partial class WebPlatformFuzzTargets
 
             // Nested layers, a layer opened with a non-invertible matrix, and unclosed layers
             [CanvasBeginLayerWithFilter, 1, CanvasTransform, 1, 80, CanvasBeginLayer, CanvasFillRect, 1, 120, 120, 74, 74, CanvasEndLayer, CanvasTransform, 0, 0, 64, CanvasBeginLayer, CanvasTransform, 3, CanvasFillRect, 0, 128, 128, 74, 74, CanvasEndLayer, CanvasEndLayer, CanvasBeginLayer, CanvasSave, CanvasBeginLayer],
+
+            // Gradients interpolated in Oklab (a stop that is not a legacy sRGB color) and in other color spaces, with an
+            // invalid interpolation method, in a layer with a filter
+            [CanvasFillRect, 3, 16, 0, 0, 0, 255, 4, 7, 128, 128, 74, 74, CanvasBeginLayerWithFilter, 0, CanvasFillRect, 3, 16, 16, 0, 3, 255, 6, 1, 128, 128, 74, 74, CanvasFillRect, 3, 0, 16, 64, 5, 192, 1, 15, 128, 128, 74, 74, CanvasEndLayer],
         ];
 
         for (var i = 0; i < scenarios.Length; i++)

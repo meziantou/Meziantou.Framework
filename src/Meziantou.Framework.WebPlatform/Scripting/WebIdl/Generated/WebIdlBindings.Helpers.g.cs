@@ -259,6 +259,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_ClientType_Values = new[] { "window", "worker", "sharedworker", "all" };
 
+    internal static readonly string[] Enum_ColorInterpolationMethod_Values = new[] { "srgb", "hsl", "hwb", "srgb-linear", "display-p3", "display-p3-linear", "a98-rgb", "prophoto-rgb", "rec2020", "lab", "oklab", "lch", "oklch", "xyz", "xyz-d50", "xyz-d65" };
+
     internal static readonly string[] Enum_ColorSpaceConversion_Values = new[] { "none", "default" };
 
     internal static readonly string[] Enum_CompositeOperation_Values = new[] { "replace", "add", "accumulate" };
@@ -284,6 +286,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_GyroscopeLocalCoordinateSystem_Values = new[] { "device", "screen" };
 
     internal static readonly string[] Enum_HighlightType_Values = new[] { "highlight", "spelling-error", "grammar-error" };
+
+    internal static readonly string[] Enum_HueInterpolationMethod_Values = new[] { "shorter", "longer", "increasing", "decreasing" };
 
     internal static readonly string[] Enum_IDBCursorDirection_Values = new[] { "next", "nextunique", "prev", "prevunique" };
 

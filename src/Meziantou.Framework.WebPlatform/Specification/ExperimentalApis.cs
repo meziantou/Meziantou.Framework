@@ -62,4 +62,7 @@ internal static class ExperimentalApis
 
     /// <summary>The canvas layers (https://github.com/whatwg/html/pull/9537): <c>beginLayer()</c> and <c>endLayer()</c> of the 2D contexts.</summary>
     public const string CanvasLayers = "WEBPLATEXP0017";
+
+    /// <summary>The interpolation methods of the canvas gradients (https://github.com/whatwg/html/pull/10986): <c>colorInterpolationMethod</c> and <c>hueInterpolationMethod</c>.</summary>
+    public const string CanvasGradientInterpolation = "WEBPLATEXP0018";
 }

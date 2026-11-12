@@ -629,6 +629,52 @@ public sealed class CanvasTests : IDisposable
         Assert.Equal([0, 0, 0, 0], GetPixel(context2D, 5, 5));
     }
 
+#pragma warning disable WEBPLATEXP0018 // The interpolation methods of the gradients are a proposal
+    [Fact]
+    public void Gradients_AreInterpolatedInTheColorInterpolationMethod()
+    {
+        var (_, _, context) = Create();
+
+        // The stops that are not legacy sRGB colors are interpolated in Oklab by default, as in the CSS gradients
+        var gradient = context.CreateLinearGradient(0, 0, 100, 0);
+        gradient.AddColorStop(0, "#f00");
+        gradient.AddColorStop(1, "color-mix(in srgb, #0f0, #00f)");
+        Assert.Equal("srgb", gradient.ColorInterpolationMethod);
+        context.FillStyle = gradient;
+        context.FillRect(0, 0, 100, 50);
+        var pixel = GetPixel(context, 25, 25);
+        Assert.InRange(pixel[0], 209, 215);
+        Assert.InRange(pixel[1], 78, 84);
+        Assert.InRange(pixel[2], 58, 64);
+
+        // Set explicitly, sRGB is used
+        gradient.ColorInterpolationMethod = "srgb";
+        gradient.ColorInterpolationMethod = "not a color space";
+        Assert.Equal("srgb", gradient.ColorInterpolationMethod);
+        context.FillRect(0, 0, 100, 50);
+        pixel = GetPixel(context, 25, 25);
+        Assert.InRange(pixel[0], 187, 193);
+        Assert.InRange(pixel[1], 30, 36);
+        Assert.InRange(pixel[2], 30, 36);
+
+        // The hues of the polar color spaces: red to lime through yellow (shorter) or through blue (longer)
+        gradient = context.CreateLinearGradient(0, 0, 100, 0);
+        gradient.AddColorStop(0, "color(srgb 1 0 0)");
+        gradient.AddColorStop(1, "color(srgb 0 1 0)");
+        gradient.ColorInterpolationMethod = "hsl";
+        Assert.Equal("shorter", gradient.HueInterpolationMethod);
+        context.FillStyle = gradient;
+        context.FillRect(0, 0, 100, 50);
+        Assert.Equal([255, 255, 0, 255], GetPixel(context, 50, 25).Select(value => (byte)(value >= 245 ? 255 : value <= 10 ? 0 : value)).ToArray());
+
+        gradient.HueInterpolationMethod = "longer";
+        gradient.HueInterpolationMethod = "not a method";
+        Assert.Equal("longer", gradient.HueInterpolationMethod);
+        context.FillRect(0, 0, 100, 50);
+        Assert.Equal([0, 0, 255, 255], GetPixel(context, 50, 25).Select(value => (byte)(value >= 245 ? 255 : value <= 10 ? 0 : value)).ToArray());
+    }
+#pragma warning restore WEBPLATEXP0018
+
 #pragma warning disable WEBPLATEXP0017 // The canvas layers are a proposal
     [Fact]
     public void Layers_AreDrawnAsOneImageWithTheStateOfBeginLayer()

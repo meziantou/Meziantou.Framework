@@ -44,7 +44,7 @@ public sealed class Credential
         ApplicationName = applicationName;
         UserName = userName;
         Password = password;
-        Secret = password is null ? default : MemoryMarshal.AsBytes(password.AsSpan()).ToArray();
+        Secret = password is null ? default : unsafe(MemoryMarshal.AsBytes(password.AsSpan())).ToArray();
         CredentialType = credentialType;
         Comment = comment;
     }
@@ -62,7 +62,7 @@ public sealed class Credential
         Secret = secret;
 
         // The blob does not have to contain a whole number of UTF-16 code units, so ignore a trailing odd byte.
-        Password = MemoryMarshal.Cast<byte, char>(secret.Span[..(secret.Length - (secret.Length % 2))]).ToString();
+        Password = unsafe(MemoryMarshal.Cast<byte, char>(secret.Span[..(secret.Length - (secret.Length % 2))])).ToString();
         CredentialType = credentialType;
         Comment = comment;
     }

@@ -91,7 +91,7 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
             throw new InvalidDataException($"The change journal returned a record of length {header.RecordLength} holding a file name of {fileNameLength} bytes at offset {fileNameOffset}");
 
         // Names in a USN record are always UTF-16, which is what the length in bytes is converted with.
-        var name = Marshal.PtrToStringUni(bufferPointer + fileNameOffset, fileNameLength / sizeof(char));
+        var name = unsafe(Marshal.PtrToStringUni(bufferPointer + fileNameOffset, fileNameLength / sizeof(char)));
         Debug.Assert(name is not null);
         return name;
     }

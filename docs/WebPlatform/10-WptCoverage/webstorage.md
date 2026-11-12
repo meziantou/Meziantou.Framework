@@ -9,16 +9,10 @@ description: "The results of the web-platform-tests of webstorage, and why the t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 51 | 54 | 0 | 94% |
+| [Stable](#stable-tests) | 54 | 54 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **51** | **54** | **0** | **94%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 3
+| **All** | **54** | **54** | **0** | **100%** |
 
 ## Stable tests
 
@@ -47,12 +41,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`event_session_url.html`](https://wpt.fyi/results/webstorage/event_session_url.html) | Pass | 1 / 1 |  |  |
 | [`event_session_window_open_scope.html`](https://wpt.fyi/results/webstorage/event_session_window_open_scope.html) | Pass | 1 / 1 |  |  |
 | [`event_setattribute.html`](https://wpt.fyi/results/webstorage/event_setattribute.html) | Pass | 2 / 2 |  |  |
-| [`localstorage-about-blank-3P-iframe-opens-3P-window.partitioned.html`](https://wpt.fyi/results/webstorage/localstorage-about-blank-3P-iframe-opens-3P-window.partitioned.html) | Fail | 0 / 1 | NOT IMPLEMENTED | storage partitioning (https://privacycg.github.io/storage-partitioning/): the storage key of the Storage Standard is the origin |
-| [`localstorage-basic-partitioned.sub.html`](https://wpt.fyi/results/webstorage/localstorage-basic-partitioned.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | storage partitioning (https://privacycg.github.io/storage-partitioning/): the storage key of the Storage Standard is the origin, so a third-party iframe shares the storage of its origin |
+| [`localstorage-about-blank-3P-iframe-opens-3P-window.partitioned.html`](https://wpt.fyi/results/webstorage/localstorage-about-blank-3P-iframe-opens-3P-window.partitioned.html) | Pass | 1 / 1 |  |  |
+| [`localstorage-basic-partitioned.sub.html`](https://wpt.fyi/results/webstorage/localstorage-basic-partitioned.sub.html) | Pass | 1 / 1 |  |  |
 | [`localstorage-cross-origin-iframe.https.window.js`](https://wpt.fyi/results/webstorage/localstorage-cross-origin-iframe.https.window.js) | Pass | 1 / 1 |  |  |
 | [`localstorage-share-data-unrelated-origins.html`](https://wpt.fyi/results/webstorage/localstorage-share-data-unrelated-origins.html) | Pass | 1 / 1 |  |  |
 | [`missing_arguments.window.js`](https://wpt.fyi/results/webstorage/missing_arguments.window.js) | Pass | 10 / 10 |  |  |
-| [`sessionStorage-basic-partitioned.sub.html`](https://wpt.fyi/results/webstorage/sessionStorage-basic-partitioned.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | storage partitioning (https://privacycg.github.io/storage-partitioning/): the storage key of the Storage Standard is the origin, so a third-party iframe shares the storage of its origin |
+| [`sessionStorage-basic-partitioned.sub.html`](https://wpt.fyi/results/webstorage/sessionStorage-basic-partitioned.sub.html) | Pass | 1 / 1 |  |  |
 | [`set.window.js`](https://wpt.fyi/results/webstorage/set.window.js) | Pass | 20 / 20 |  |  |
 | [`storage_builtins.window.js`](https://wpt.fyi/results/webstorage/storage_builtins.window.js) | Pass | 2 / 2 |  |  |
 | [`storage_clear.window.js`](https://wpt.fyi/results/webstorage/storage_clear.window.js) | Pass | 2 / 2 |  |  |

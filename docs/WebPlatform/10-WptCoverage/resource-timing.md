@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of resource-timing, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 108 | 119 | 0 | 91% |
+| [Stable](#stable-tests) | 111 | 119 | 0 | 93% |
 | [Tentative](#tentative-tests) | 1 | 33 | 0 | 3% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **109** | **152** | **0** | **72%** |
+| **All** | **112** | **152** | **0** | **74%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 2
-- **NOT IMPLEMENTED**: 41
+- **NOT IMPLEMENTED**: 38
 
 ## Stable tests
 
@@ -89,8 +89,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`initiator-type/video.html`](https://wpt.fyi/results/resource-timing/initiator-type/video.html) | Pass | 5 / 5 |  |  |
 | [`initiator-type/workers.html`](https://wpt.fyi/results/resource-timing/initiator-type/workers.html) | Pass | 2 / 2 |  |  |
 | [`input-sequence-of-events.html`](https://wpt.fyi/results/resource-timing/input-sequence-of-events.html) | Pass | 1 / 1 |  |  |
-| [`interim-response-times.h2.html`](https://wpt.fyi/results/resource-timing/interim-response-times.h2.html) | Fail | 6 / 12 | NOT IMPLEMENTED | the document loader does not expose the interim responses (`1xx`): `firstInterimResponseStart` is 0 and `responseStart` is the time of the final response; the subtests without interim response pass |
-| [`interim-response-times.html`](https://wpt.fyi/results/resource-timing/interim-response-times.html) | Fail | 6 / 12 | NOT IMPLEMENTED | the document loader does not expose the interim responses (`1xx`): `firstInterimResponseStart` is 0 and `responseStart` is the time of the final response; the subtests without interim response pass |
+| [`interim-response-times.h2.html`](https://wpt.fyi/results/resource-timing/interim-response-times.h2.html) | Pass | 12 / 12 |  |  |
+| [`interim-response-times.html`](https://wpt.fyi/results/resource-timing/interim-response-times.html) | Pass | 12 / 12 |  |  |
 | [`internal-resources-not-counted.html`](https://wpt.fyi/results/resource-timing/internal-resources-not-counted.html) | Pass | 1 / 1 |  |  |
 | [`link-sequence-of-events.html`](https://wpt.fyi/results/resource-timing/link-sequence-of-events.html) | Pass | 1 / 1 |  |  |
 | [`load-from-mem-cache-transfer-size.html`](https://wpt.fyi/results/resource-timing/load-from-mem-cache-transfer-size.html) | Pass | 1 / 1 |  |  |
@@ -114,7 +114,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`resource-ignore-data-url.html`](https://wpt.fyi/results/resource-timing/resource-ignore-data-url.html) | Pass | 1 / 1 |  |  |
 | [`resource-reload-TAO.html`](https://wpt.fyi/results/resource-timing/resource-reload-TAO.html) | Pass | 1 / 1 |  |  |
 | [`resource-timing-failed-fetch.html`](https://wpt.fyi/results/resource-timing/resource-timing-failed-fetch.html) | Pass | 1 / 1 |  |  |
-| [`resource-timing-level1.sub.html`](https://wpt.fyi/results/resource-timing/resource-timing-level1.sub.html) | Fail | 13 / 21 | NOT IMPLEMENTED | the document loader returns a response at once: the time of the first byte is the time the response is complete, so the delays between the status, the headers and the body of a response are not observable (`responseStart` is `responseEnd`); the other subtests pass |
+| [`resource-timing-level1.sub.html`](https://wpt.fyi/results/resource-timing/resource-timing-level1.sub.html) | Pass | 21 / 21 |  |  |
 | [`resource_connection_reuse_mixed_content.html`](https://wpt.fyi/results/resource-timing/resource_connection_reuse_mixed_content.html) | Pass | 8 / 8 |  |  |
 | [`resource_connection_reuse_mixed_content_redirect.html`](https://wpt.fyi/results/resource-timing/resource_connection_reuse_mixed_content_redirect.html) | Pass | 8 / 8 |  |  |
 | [`resource_dedicated_worker.html`](https://wpt.fyi/results/resource-timing/resource_dedicated_worker.html) | Pass | 1 / 1 |  |  |

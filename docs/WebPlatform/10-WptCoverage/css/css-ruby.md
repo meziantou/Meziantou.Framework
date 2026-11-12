@@ -11,14 +11,14 @@ description: "The results of the web-platform-tests of css/css-ruby, and why the
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 20 | 20 | 0 | 100% |
 | [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
-| [Reftests](#reftests) | 123 | 143 | 0 | 86% |
-| **All** | **143** | **164** | **0** | **87%** |
+| [Reftests](#reftests) | 125 | 143 | 0 | 87% |
+| **All** | **145** | **164** | **0** | **88%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 7
+- **BUG**: 5
 - **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 7
 - **TEST RUNNER**: 4
@@ -65,7 +65,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`block-ruby-002.html`](https://wpt.fyi/results/css/css-ruby/block-ruby-002.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the inlinification of the computed `display` of the block-level ruby containers in a ruby container (`block ruby` instead of `ruby`): the boxes are inlinified, not the computed values |
 | [`block-ruby-003.html`](https://wpt.fyi/results/css/css-ruby/block-ruby-003.html) | Pass | 1 / 1 |  |  |
 | [`block-ruby-004.html`](https://wpt.fyi/results/css/css-ruby/block-ruby-004.html) | Pass | 1 / 1 |  |  |
-| [`block-ruby-005.html`](https://wpt.fyi/results/css/css-ruby/block-ruby-005.html) | Fail | 0 / 1 | BUG | the inlinified block-level ruby containers (`display: block ruby`) in an annotation or in a base container are not laid out as in the reference |
+| [`block-ruby-005.html`](https://wpt.fyi/results/css/css-ruby/block-ruby-005.html) | Pass | 1 / 1 |  |  |
 | [`break-within-bases/basic.html`](https://wpt.fyi/results/css/css-ruby/break-within-bases/basic.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the line breaks inside the ruby bases (https://drafts.csswg.org/css-ruby-1/#break-within): a ruby column is a unit of the line breaking (its items are the items of its bases followed by the items of its annotations), so breaking it needs the bases and the annotations to be broken at different positions on each line; Chrome only |
 | [`break-within-bases/no-break-opportunity-at-end.html`](https://wpt.fyi/results/css/css-ruby/break-within-bases/no-break-opportunity-at-end.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the line breaks inside the ruby bases (https://drafts.csswg.org/css-ruby-1/#break-within): a ruby column is a unit of the line breaking (its items are the items of its bases followed by the items of its annotations), so breaking it needs the bases and the annotations to be broken at different positions on each line; Chrome only |
 | [`break-within-bases/nowrap.html`](https://wpt.fyi/results/css/css-ruby/break-within-bases/nowrap.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the line breaks inside the ruby bases (https://drafts.csswg.org/css-ruby-1/#break-within): a ruby column is a unit of the line breaking (its items are the items of its bases followed by the items of its annotations), so breaking it needs the bases and the annotations to be broken at different positions on each line; Chrome only |
@@ -77,7 +77,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`improperly-contained-annotation-001.html`](https://wpt.fyi/results/css/css-ruby/improperly-contained-annotation-001.html) | Pass | 1 / 1 |  |  |
 | [`interlinear-block-margin-box.html`](https://wpt.fyi/results/css/css-ruby/interlinear-block-margin-box.html) | Pass | 1 / 1 |  |  |
 | [`intra-base-white-space-001.html`](https://wpt.fyi/results/css/css-ruby/intra-base-white-space-001.html) | Pass | 1 / 1 |  |  |
-| [`nested-ruby-pairing-001.html`](https://wpt.fyi/results/css/css-ruby/nested-ruby-pairing-001.html) | Fail | 0 / 1 | BUG | a ruby nested in a ruby base is 2px wider than the equivalent ruby with two annotation levels: the slots of the inner ruby columns are not widened by the annotation of the outer ruby |
+| [`nested-ruby-pairing-001.html`](https://wpt.fyi/results/css/css-ruby/nested-ruby-pairing-001.html) | Fail | 0 / 1 | BUG | rounding: the reference (`rb` and `rtc` elements) is 0.5px wider than the ruby nested in a ruby base: its second column is 16.5px wide where its base `南` and its annotation `なん` are 16px wide (the annotation of the outer ruby, 31.1px, is narrower than the 32px of the bases and widens nothing), so its base is 0.5px to the right; not worth fixing |
 | [`pseudo-first-letter.html`](https://wpt.fyi/results/css/css-ruby/pseudo-first-letter.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-first-line.html`](https://wpt.fyi/results/css/css-ruby/pseudo-first-line.html) | Pass | 1 / 1 |  |  |
 | [`rb-display-001.html`](https://wpt.fyi/results/css/css-ruby/rb-display-001.html) | Pass | 1 / 1 |  |  |
@@ -102,7 +102,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`ruby-base-different-size.html`](https://wpt.fyi/results/css/css-ruby/ruby-base-different-size.html) | Pass | 1 / 1 |  |  |
 | [`ruby-bidi-001.html`](https://wpt.fyi/results/css/css-ruby/ruby-bidi-001.html) | Pass | 1 / 1 |  |  |
 | [`ruby-bidi-002.html`](https://wpt.fyi/results/css/css-ruby/ruby-bidi-002.html) | Pass | 1 / 1 |  |  |
-| [`ruby-bidi-003.html`](https://wpt.fyi/results/css/css-ruby/ruby-bidi-003.html) | Fail | 0 / 1 | BUG | the annotation container of the test (text in the `rt`) is as tall as the content area of its text, the one of the reference (an inlinified `div`, an inline-block with `line-height: 1`) as tall as its margin box: the annotation is 4px taller in the test and its base 2px lower; the Hebrew characters have no glyph in the fonts of the runner |
+| [`ruby-bidi-003.html`](https://wpt.fyi/results/css/css-ruby/ruby-bidi-003.html) | Fail | 0 / 1 | BUG | the extent of an annotation is the content area of its text (the ascent and descent of its font), but the margin box of an atomic inline: the block of the reference, inlinified to an inline-block, is as tall as the `line-height: 1` of the `rt`, so the annotation of the test is 4px taller and its base 2px lower; the Hebrew characters have no glyph in the fonts of the runner |
 | [`ruby-bidi-004.html`](https://wpt.fyi/results/css/css-ruby/ruby-bidi-004.html) | Pass | 1 / 1 |  |  |
 | [`ruby-box-generation-001.html`](https://wpt.fyi/results/css/css-ruby/ruby-box-generation-001.html) | Pass | 1 / 1 |  |  |
 | [`ruby-box-generation-002.html`](https://wpt.fyi/results/css/css-ruby/ruby-box-generation-002.html) | Fail | 0 / 1 | TEST BUG | the reference assumes that the annotations do not overhang (`ruby-overhang: auto`: they "may overhang adjacent content"): the annotations wider than their base overhang the inter-segment white space before and after their column (`ruby-overhang: auto`, as Blink), where the reference (made for Gecko, which does not overhang) puts that white space in a ruby base of its own segment, which is not overhung: the columns `l` (002) and `t` (005) are 0.9px narrower than in the reference (passes in Firefox only) |
@@ -124,13 +124,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`ruby-inlinize-blocks-003.html`](https://wpt.fyi/results/css/css-ruby/ruby-inlinize-blocks-003.html) | Pass | 1 / 1 |  |  |
 | [`ruby-inlinize-blocks-004.html`](https://wpt.fyi/results/css/css-ruby/ruby-inlinize-blocks-004.html) | Pass | 1 / 1 |  |  |
 | [`ruby-inlinize-blocks-005.html`](https://wpt.fyi/results/css/css-ruby/ruby-inlinize-blocks-005.html) | Pass | 1 / 1 |  |  |
-| [`ruby-inlinize-recursive-simple.html`](https://wpt.fyi/results/css/css-ruby/ruby-inlinize-recursive-simple.html) | Fail | 0 / 1 | BUG | the inlinified list item (`li`) in the ruby container and in the annotation is laid out 1px apart from the reference |
+| [`ruby-inlinize-recursive-simple.html`](https://wpt.fyi/results/css/css-ruby/ruby-inlinize-recursive-simple.html) | Fail | 0 / 1 | BUG | the extent of an annotation is the content area of its text (9px), but the margin box of an atomic inline (8px, the `line-height: 1` of the `rt`): the inlinified blocks of the test are inline-blocks (`display: block` becomes `inline flow-root`, https://drafts.csswg.org/css-display-3/#inlinify), so the annotation that only contains them is 1px shorter than the one of the reference, whose text is in an inline box |
 | [`ruby-intra-level-whitespace-001.html`](https://wpt.fyi/results/css/css-ruby/ruby-intra-level-whitespace-001.html) | Pass | 1 / 1 |  |  |
 | [`ruby-intra-level-whitespace-002.html`](https://wpt.fyi/results/css/css-ruby/ruby-intra-level-whitespace-002.html) | Pass | 1 / 1 |  |  |
 | [`ruby-intra-level-whitespace-003.html`](https://wpt.fyi/results/css/css-ruby/ruby-intra-level-whitespace-003.html) | Pass | 1 / 1 |  |  |
 | [`ruby-intrinsic-isize-001.html`](https://wpt.fyi/results/css/css-ruby/ruby-intrinsic-isize-001.html) | Pass | 1 / 1 |  |  |
 | [`ruby-intrinsic-isize-002.html`](https://wpt.fyi/results/css/css-ruby/ruby-intrinsic-isize-002.html) | Fail | 0 / 1 | BUG | the texts of the bases are shaped separately: no kerning between them, unlike the single text of the reference |
-| [`ruby-intrinsic-isize-003.html`](https://wpt.fyi/results/css/css-ruby/ruby-intrinsic-isize-003.html) | Fail | 0 / 1 | BUG | a glyph of the bases next to the margins, borders and paddings of the ruby container is a fraction of a pixel off |
+| [`ruby-intrinsic-isize-003.html`](https://wpt.fyi/results/css/css-ruby/ruby-intrinsic-isize-003.html) | Pass | 1 / 1 |  |  |
 | [`ruby-justification-001.html`](https://wpt.fyi/results/css/css-ruby/ruby-justification-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the expansion of the ruby columns by the justification of their line (`text-align: justify`): they are not expanded, and the annotation (an inline-block of 100px in an `rtc`) spans the two bases, which are centered in its column; the reference has no annotation and the bases at the start of the line. Chromium 152 matches the reference because it lays out `rtc` as an inline box (it does not implement `ruby-text-container`): the extra space of the justified line goes to the space before it |
 | [`ruby-justification-002.html`](https://wpt.fyi/results/css/css-ruby/ruby-justification-002.html) | Pass | 1 / 1 |  |  |
 | [`ruby-lang-specific-style-001.html`](https://wpt.fyi/results/css/css-ruby/ruby-lang-specific-style-001.html) | Pass | 1 / 1 |  |  |

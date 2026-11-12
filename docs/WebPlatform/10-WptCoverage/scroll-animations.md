@@ -9,16 +9,15 @@ description: "The results of the web-platform-tests of scroll-animations, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 141 | 149 | 0 | 95% |
+| [Stable](#stable-tests) | 142 | 149 | 0 | 95% |
 | [Tentative](#tentative-tests) | 41 | 79 | 0 | 52% |
-| [Reftests](#reftests) | 31 | 37 | 0 | 84% |
-| **All** | **213** | **265** | **0** | **80%** |
+| [Reftests](#reftests) | 32 | 37 | 0 | 86% |
+| **All** | **215** | **265** | **0** | **81%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 2
 - **TEST BUG**: 3
 - **NOT IMPLEMENTED**: 46
 - **OUT OF SCOPE**: 1
@@ -172,7 +171,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`view-timelines/view-timeline-source-single-axis-inner.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-source-single-axis-inner.html) | Pass | 1 / 1 |  |  |
 | [`view-timelines/view-timeline-source-single-axis-outer.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-source-single-axis-outer.html) | Pass | 1 / 1 |  |  |
 | [`view-timelines/view-timeline-sticky-block.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-sticky-block.html) | Pass | 1 / 1 |  |  |
-| [`view-timelines/view-timeline-sticky-inline-ancestor.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-sticky-inline-ancestor.html) | Fail | 0 / 3 | BUG | the view progress timeline of a subject in a block-level box inside a sticky positioned inline box (`<span class=wrapper>`): the sticky inline box is not on the fragment chain of the subject (the block-level box is in an anonymous block box beside the fragments of the inline box), so its sticky offsets are ignored and the ranges are the ones of the static position (53.3%, 66.7% and 80% instead of 17.8%, 22.2% and 26.7% at `scrollTop` 280, 300 and 320, the progress of a subject in a sticky block box) |
+| [`view-timelines/view-timeline-sticky-inline-ancestor.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-sticky-inline-ancestor.html) | Pass | 3 / 3 |  |  |
 | [`view-timelines/view-timeline-sticky-inline.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-sticky-inline.html) | Pass | 1 / 1 |  |  |
 | [`view-timelines/view-timeline-sticky-subpixel-adjustment.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-sticky-subpixel-adjustment.html) | Pass | 2 / 2 |  |  |
 | [`view-timelines/view-timeline-subject-size-changes.html`](https://wpt.fyi/results/scroll-animations/view-timelines/view-timeline-subject-size-changes.html) | Pass | 1 / 1 |  |  |
@@ -289,7 +288,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/view-timeline-range-update-reversed-animation.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-range-update-reversed-animation.html) | Pass | 1 / 1 |  |  |
 | [`css/view-timeline-range-update.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-range-update.html) | Pass | 1 / 1 |  |  |
 | [`css/view-timeline-subject-bounds-update.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-subject-bounds-update.html) | Pass | 1 / 1 |  |  |
-| [`responsive/repaint-after-finished.html`](https://wpt.fyi/results/scroll-animations/responsive/repaint-after-finished.html) | Timeout | 0 / 1 | BUG | the page never removes the `reftest-wait` class of its root element: the `scroll(x)` timeline of `#t2::after` is inactive, so its play-pending animation is never ready, because the 200px column track of the `::after` grid container (without items) is not in the scrollable overflow of its scroll container `#t2`; including the grid of a grid container that is not a scroll container in the scrollable overflow of its ancestors makes it scrollable, but the browsers do not (it breaks css-grid/grid-items/grid-item-margin-box-overflowing-grid-area-paint-001.html and grid-lanes/item-placement/row-auto-placement-002.html) |
+| [`responsive/repaint-after-finished.html`](https://wpt.fyi/results/scroll-animations/responsive/repaint-after-finished.html) | Pass | 1 / 1 |  |  |
 | [`scroll-timelines/animation-with-animatable-interface.html`](https://wpt.fyi/results/scroll-animations/scroll-timelines/animation-with-animatable-interface.html) | Pass | 1 / 1 |  |  |
 | [`scroll-timelines/animation-with-display-none.html`](https://wpt.fyi/results/scroll-animations/scroll-timelines/animation-with-display-none.html) | Pass | 1 / 1 |  |  |
 | [`scroll-timelines/animation-with-overflow-hidden.html`](https://wpt.fyi/results/scroll-animations/scroll-timelines/animation-with-overflow-hidden.html) | Pass | 1 / 1 |  |  |

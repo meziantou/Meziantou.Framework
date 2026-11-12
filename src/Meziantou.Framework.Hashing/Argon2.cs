@@ -253,7 +253,8 @@ public static class Argon2
             r.CopyTo(z);
         }
 
-        // Unsafe.Add avoids the bounds checks of the 128 words of the block
+        // Unsafe.Add avoids the bounds checks of the 128 words of the block: this one check covers them all
+        _ = r[QWordsInBlock - 1];
         unsafe
         {
             ref var v = ref MemoryMarshal.GetReference(r);

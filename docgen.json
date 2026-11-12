@@ -4,6 +4,8 @@
   "site": {
     "title": "Meziantou.Framework",
     "description": "Documentation of the Meziantou.Framework libraries.",
+    "url": "https://meziantou.github.io",
+    "basePath": "/Meziantou.Framework/",
     "homeTitle": "Introduction",
     "logo": "docs/logo.svg",
     "favicon": "docs/logo.svg",

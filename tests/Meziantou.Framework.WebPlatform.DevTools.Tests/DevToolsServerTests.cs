@@ -216,7 +216,9 @@ public sealed class DevToolsServerTests(DevToolsServerFixture fixture) : IClassF
         await using var _ = context;
         await page.SetContentAsync("<button>A</button><button>B</button>");
 
-        var exception = await Assert.ThrowsAsync<PlaywrightException>(() => page.GetByRole(AriaRole.Button).ClickAsync(new() { Timeout = 2000 }));
+        // The violation is reported as soon as the locator resolves: no short timeout (the first evaluation of a process parses
+        // the injected scripts of Playwright, which takes seconds on a loaded CI machine)
+        var exception = await Assert.ThrowsAsync<PlaywrightException>(() => page.GetByRole(AriaRole.Button).ClickAsync());
 
         Assert.Contains("strict mode violation", exception.Message, StringComparison.Ordinal);
     }

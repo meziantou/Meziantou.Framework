@@ -68,6 +68,8 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     private bool _uploadListener;
     private bool _timedOut;
     private FetchResponse _response = FetchResponse.NetworkError();
+    // The received bytes (https://xhr.spec.whatwg.org/#received-bytes): read with ReceivedBytes, which copies the bytes of a
+    // body read as it arrives from _receivedBuffer
     private byte[] _receivedBytes = [];
     private XmlHttpRequestResponseType _responseType;
     private object? _responseObject;
@@ -534,8 +536,8 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
             if (fetchId != _fetchId)
                 return;
 
-            FireProgressEvent("progress", _receivedBytes.Length, length);
-            _lastProgressLoaded = _receivedBytes.Length;
+            FireProgressEvent("progress", body.Length, length);
+            _lastProgressLoaded = body.Length;
             QueueFetchTask(fetchId, HandleResponseEndOfBody);
         });
     }
@@ -582,7 +584,6 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
         if (!read.IsCompletedSuccessfully || read.Result is not { } chunk)
         {
             _bodyReader = null;
-            _receivedBytes = buffer.WrittenSpan.ToArray();
             var bodyTiming = _bodyTiming;
             _bodyTiming = null;
             if (!read.IsCompletedSuccessfully)
@@ -595,13 +596,13 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
             return;
         }
 
+        // The bytes are received (responseText has them), even when the events are not fired
         buffer.Write(chunk.Span);
         var clock = RelevantGlobal?.EventLoop.TimeProvider ?? TimeProvider.System;
         var now = clock.GetTimestamp();
         if (_lastChunkEventsTimestamp == 0 || clock.GetElapsedTime(_lastChunkEventsTimestamp, now) >= TimeSpan.FromMilliseconds(50))
         {
             _lastChunkEventsTimestamp = now;
-            _receivedBytes = buffer.WrittenSpan.ToArray();
             if (ReadyState == HeadersReceived)
             {
                 ReadyState = Loading;
@@ -611,14 +612,32 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
             if (fetchId != _fetchId)
                 return;
 
-            FireProgressEvent("progress", _receivedBytes.Length, length);
+            var loaded = buffer.WrittenCount;
+            FireProgressEvent("progress", loaded, length);
             if (fetchId != _fetchId)
                 return;
 
-            _lastProgressLoaded = _receivedBytes.Length;
+            _lastProgressLoaded = loaded;
         }
 
         ReadBodyChunk(fetchId, reader, length);
+    }
+
+    /// <summary>
+    /// The received bytes (https://xhr.spec.whatwg.org/#received-bytes): the bytes of a body read as it arrives are the ones of
+    /// all its chunks received so far, including the chunks whose events were not fired (they are fired at most every 50 ms).
+    /// </summary>
+    private byte[] ReceivedBytes
+    {
+        get
+        {
+            if (_receivedBuffer is { } buffer && _receivedBytes.Length != buffer.WrittenCount)
+            {
+                _receivedBytes = buffer.WrittenSpan.ToArray();
+            }
+
+            return _receivedBytes;
+        }
     }
 
     /// <summary>https://xhr.spec.whatwg.org/#handle-response-end-of-body</summary>
@@ -629,8 +648,12 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
             return;
 
         // The bytes of a body read as it arrived were received by its chunks
-        _receivedBytes = _receivedBuffer is { } receivedBuffer ? receivedBuffer.WrittenSpan.ToArray() : _response.Body ?? [];
-        var transmitted = _receivedBytes.Length;
+        if (_receivedBuffer is null)
+        {
+            _receivedBytes = _response.Body ?? [];
+        }
+
+        var transmitted = ReceivedBytes.Length;
         var length = GetContentLength(_response.HeaderList);
 
         // The body is received at once: the progress event of its chunk was already fired
@@ -808,11 +831,11 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
             switch (_responseType)
             {
                 case XmlHttpRequestResponseType.ArrayBuffer:
-                    _responseObject = _receivedBytes.ToArray();
+                    _responseObject = ReceivedBytes.ToArray();
                     break;
                 case XmlHttpRequestResponseType.Blob:
                     // https://xhr.spec.whatwg.org/#blob-response: the type is the serialized final MIME type (not normalized as by the Blob constructor)
-                    _responseObject = Blob.Create(_receivedBytes.ToArray(), GetFinalMimeType().ToString());
+                    _responseObject = Blob.Create(ReceivedBytes.ToArray(), GetFinalMimeType().ToString());
                     break;
                 case XmlHttpRequestResponseType.Document:
                     SetDocumentResponse();
@@ -821,7 +844,7 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
                     if (_response.Body is null)
                         return null;
 
-                    _responseObject = new Scripting.JsonText(DecodeUtf8WithoutBom(_receivedBytes));
+                    _responseObject = new Scripting.JsonText(DecodeUtf8WithoutBom(ReceivedBytes));
                     break;
             }
 
@@ -883,16 +906,16 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
     /// <summary>https://xhr.spec.whatwg.org/#text-response</summary>
     private string GetTextResponse()
     {
-        if (_response.Body is null || _receivedBytes.Length == 0)
+        if (_response.Body is null || ReceivedBytes.Length == 0)
             return "";
 
         WebEncodingId? encoding = GetFinalCharset() is { } charset && WebEncodingRegistry.TryGetEncoding(charset, out var charsetEncoding) ? charsetEncoding : null;
         if (_responseType == XmlHttpRequestResponseType.Default && encoding is null && GetFinalMimeType().IsXml)
         {
-            encoding = GetXmlEncoding(_receivedBytes);
+            encoding = GetXmlEncoding(ReceivedBytes);
         }
 
-        return Decode(_receivedBytes, encoding ?? WebEncodingId.Utf8);
+        return Decode(ReceivedBytes, encoding ?? WebEncodingId.Utf8);
     }
 
     /// <summary>https://xhr.spec.whatwg.org/#document-response</summary>
@@ -924,14 +947,14 @@ public sealed class XmlHttpRequest : XmlHttpRequestEventTarget
             // The final charset, else the prescan, else UTF-8. The encoding is tentative, as for a navigation (a meta element of
             // the head after the first 1024 bytes changes it), as in the browsers (tested by WPT html/syntax/charset/xhr.html).
             // The encoding is not detected from the content (https://xhr.spec.whatwg.org/#document-response).
-            document = new HtmlDocumentParser(new HtmlParserOptions { Url = url, TransportEncoding = charset, DefaultEncoding = "UTF-8", EncodingDetector = null, AllowDeclarativeShadowRoots = false, OriginDocument = environment }).Parse(_receivedBytes);
+            document = new HtmlDocumentParser(new HtmlParserOptions { Url = url, TransportEncoding = charset, DefaultEncoding = "UTF-8", EncodingDetector = null, AllowDeclarativeShadowRoots = false, OriginDocument = environment }).Parse(ReceivedBytes);
         }
         else
         {
-            var encoding = charset is not null && WebEncodingRegistry.TryGetEncoding(charset, out var charsetEncoding) ? charsetEncoding : GetXmlEncoding(_receivedBytes) ?? WebEncodingId.Utf8;
+            var encoding = charset is not null && WebEncodingRegistry.TryGetEncoding(charset, out var charsetEncoding) ? charsetEncoding : GetXmlEncoding(ReceivedBytes) ?? WebEncodingId.Utf8;
             try
             {
-                document = XmlDocumentParser.ParseDocument(Decode(_receivedBytes, encoding), new XmlParserOptions { Url = url, ContentType = finalMimeType.Essence });
+                document = XmlDocumentParser.ParseDocument(Decode(ReceivedBytes, encoding), new XmlParserOptions { Url = url, ContentType = finalMimeType.Essence });
             }
             catch (System.Xml.XmlException)
             {

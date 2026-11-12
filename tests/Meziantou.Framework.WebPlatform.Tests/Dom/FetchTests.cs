@@ -704,6 +704,45 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public async Task XmlHttpRequest_ResponseTextHasTheChunksWhoseEventsAreNotFired()
+    {
+        var chunks = Channel.CreateUnbounded<ReadOnlyMemory<byte>>();
+        _loader.Responses["https://example.com/stream"] = new DocumentResource("a"u8.ToArray()) { Headers = [new("Content-Type", "text/plain")], RemainingContentBytes = chunks.Reader.ReadAllAsync() };
+
+        // The clock does not advance: the events of the chunks that follow the first one are not fired (they would be fired
+        // less than 50 ms after the events of the previous chunk)
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            DocumentLoader = _loader,
+            ScriptEngine = _engine,
+            TimeProvider = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(),
+            UnhandledScriptError = (_, error) => _errors.Add(error),
+        });
+        var document = context.Navigate("https://example.com/", _ => """
+            <script>
+              const xhr = new XMLHttpRequest();
+              let progress = 0;
+              xhr.onprogress = () => progress++;
+              document.addEventListener('read', () => { document.title = progress + ':' + xhr.responseText; });
+              xhr.open('GET', 'stream');
+              xhr.send();
+            </script>
+            """);
+
+        string Read()
+        {
+            document.DispatchEvent(new Event("read"));
+            return document.Title;
+        }
+
+        await WaitUntilAsync(() => Read() == "1:a", () => document.Title);
+        chunks.Writer.TryWrite("b"u8.ToArray());
+        await WaitUntilAsync(() => Read() == "1:ab", () => document.Title);
+        chunks.Writer.TryComplete();
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public async Task XmlHttpRequest_BodyFailingAfterTheResponse_IsANetworkError()
     {
         var chunks = Channel.CreateUnbounded<ReadOnlyMemory<byte>>();

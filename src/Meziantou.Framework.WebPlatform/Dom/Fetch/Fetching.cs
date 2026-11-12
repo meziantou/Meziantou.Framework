@@ -402,6 +402,15 @@ internal static class Fetching
         if (!response.IsNetworkError && request.Integrity.Length > 0 && !SubresourceIntegrity.Matches(response.Body ?? [], response.Type is FetchResponseType.Opaque or FetchResponseType.OpaqueRedirect, request.Integrity))
             return FetchResponse.NetworkError();
 
+        // The digests of the Unencoded-Digest header of the response (https://wicg.github.io/signature-based-sri/#verify-unencoded-digest-assertions):
+        // a response whose body arrives over time is not checked (the body of the resource of the loader is only read when
+        // the response has the header)
+        if (!response.IsNetworkError && HeaderList.Get(internalResponse.HeaderList, "Unencoded-Digest") is not null && internalResponse.Resource?.RemainingContentBytes is null
+            && !SubresourceIntegrity.MatchesUnencodedDigest(internalResponse.HeaderList, internalResponse.Body ?? []))
+        {
+            return FetchResponse.NetworkError();
+        }
+
         // Step 19: a null body status, or a HEAD or CONNECT request, has no body
         if (!response.IsNetworkError && (internalResponse.Status is 101 or 103 or 204 or 205 or 304 || request.Method is "HEAD" or "CONNECT"))
         {
@@ -418,13 +427,18 @@ internal static class Fetching
     /// the navigations of the top-level navigables are not mixed content, the navigations of the child navigables are) or
     /// the enforced content security policies of the client, whose violations are reported (https://w3c.github.io/webappsec-csp/#should-block-request;
     /// the report-only policies are checked before the URL is upgraded, step 4; the policies of a speculative fetch are
-    /// checked by the speculative parser, without reporting).
+    /// checked by the speculative parser, without reporting), and the integrity policies of the client.
     /// </summary>
     private static bool IsBlocked(FetchRequest request)
     {
         // The three checks run: the violations of the content security policies are also reported for a request that is
         // blocked as mixed content (e.g. a ws: WebSocket of a secure context whose policy has connect-src 'none'), as in the browsers
         var blocked = !request.IsSpeculative && ContentSecurityPolicy.ShouldBlockRequest(request);
+
+        // https://w3c.github.io/webappsec-subresource-integrity/#should-request-be-blocked-by-integrity-policy: the violations
+        // are reported (a speculative fetch is checked when its response is used)
+        blocked |= !request.IsSpeculative && IntegrityPolicy.ShouldBlockRequest(request);
+
         var url = request.CurrentUrl;
         if (url.Scheme is "http" or "https")
         {

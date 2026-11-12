@@ -34,6 +34,23 @@ internal static partial class WptPythonHandlers
             Subresource(request, response, stash, "audio/wav", _ => "", body: () => ReadWptFile("webaudio/resources/sin_440Hz_-6dBFS_1s.wav")),
         ["/common/security-features/subresource/video.py"] = (request, response, stash) =>
             Subresource(request, response, stash, "video/webm", _ => "", body: () => ReadWptFile("media/movie_5.webm")),
+        // unencoded-digest/tentative/resource.py: a response with the Unencoded-Digest header of the digest parameter, which
+        // is CORS when the cors parameter is set, with the content type and the body of the parameters
+        ["/subresource-integrity/unencoded-digest/tentative/resource.py"] = (request, response, _) =>
+        {
+            if (request.Get("digest") is { Length: > 0 } digest)
+            {
+                response.Add("Unencoded-Digest", digest);
+            }
+
+            if (request.Get("cors") is { Length: > 0 })
+            {
+                response.Add("Access-Control-Allow-Origin", "*");
+            }
+
+            response.Add("Content-Type", request.Get("type") ?? "text/plain");
+            response.Content = request.Get("body") ?? "";
+        },
         ["/common/security-features/subresource/referrer.py"] = (request, response, _) =>
         {
             response.Set("Content-Type", "text/javascript");

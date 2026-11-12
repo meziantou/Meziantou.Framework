@@ -2943,6 +2943,14 @@ public sealed partial class BrowsingContext : IDisposable
             document.RequiredContentSecurityPolicy = requiredPolicy;
         }
 
+        // https://w3c.github.io/webappsec-subresource-integrity/#parse-integrity-policy-headers: the integrity policies of the
+        // policy container of the document
+        if (!parameters.IsNetworkError)
+        {
+            document.IntegrityPolicy = IntegrityPolicy.FromHeaders(parameters.Headers, "Integrity-Policy");
+            document.ReportOnlyIntegrityPolicy = IntegrityPolicy.FromHeaders(parameters.Headers, "Integrity-Policy-Report-Only");
+        }
+
         // https://wicg.github.io/document-policy/#integration-with-html: the policies of the document, and the required
         // policy of the documents of its child navigables
         if (Options.EffectiveFeatures.DocumentPolicyEnabled && !parameters.IsNetworkError)

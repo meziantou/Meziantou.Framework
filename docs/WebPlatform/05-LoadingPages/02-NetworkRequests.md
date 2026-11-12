@@ -154,6 +154,14 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   accesses between two windows that a report-only policy would separate (`access-from-coop-page-to-openee` and the other
   `access-*` reports, with the name of the property). The `ReportingObserver`s of the page that performs the access
   receive its report as a `coop-access-violation` report.
+- The scripts, the style sheets and the preloads check the hashes of their `integrity` attribute
+  ([Subresource Integrity](https://w3c.github.io/webappsec-subresource-integrity/)): a resource whose body does not match
+  is a network error (the element fires `error`, the script does not run, the style sheet does not apply), and so is a
+  cross-origin resource with hashes fetched without CORS. A response whose `Unencoded-Digest` header (`sha-256`,
+  `sha-512`) does not match its body is a network error too, except the responses that `fetch()` streams. The
+  `Integrity-Policy` header of a page blocks its scripts and style sheets (`blocked-destinations=(script style)`) that have
+  no hash or are not CORS requests; `Integrity-Policy-Report-Only` only reports them (`integrity-violation` reports, sent to
+  the `endpoints` of the policy).
 - The `Content-DPR` header of an image gives its density: its natural size is divided by it (`Content-DPR: 2` displays a
   100x100 image at 50x50 CSS pixels), in the `img` elements (where it replaces the density of the `srcset` candidate), the
   CSS images, the SVG `image` elements, the video posters and the image buttons.

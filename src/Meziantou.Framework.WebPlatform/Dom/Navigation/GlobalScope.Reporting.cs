@@ -38,11 +38,12 @@ public abstract partial class GlobalScope
     /// (https://w3c.github.io/webappsec-csp/#reporting) and the <c>coep</c> reports
     /// (https://html.spec.whatwg.org/multipage/browsers.html#coep-report-type), and the <c>permissions-policy-violation</c>
     /// and <c>potential-permissions-policy-violation</c> reports (https://w3c.github.io/webappsec-permissions-policy/#reporting),
-    /// and the <c>coop-access-violation</c> reports (the accesses of a window whose opener policy reports them, see
-    /// <see cref="OpenerPolicyReporting"/>). The <c>csp-hash</c> reports are not.
+    /// the <c>coop-access-violation</c> reports (the accesses of a window whose opener policy reports them, see
+    /// <see cref="OpenerPolicyReporting"/>), and the <c>integrity-violation</c> reports
+    /// (https://w3c.github.io/webappsec-subresource-integrity/#report-violation). The <c>csp-hash</c> reports are not.
     /// </summary>
     internal static bool IsReportTypeVisibleToReportingObservers(string type)
-        => type is "test" or "csp-violation" or "coep" or "permissions-policy-violation" or "potential-permissions-policy-violation" or "document-policy-violation" or "coop-access-violation";
+        => type is "test" or "csp-violation" or "coep" or "permissions-policy-violation" or "potential-permissions-policy-violation" or "document-policy-violation" or "coop-access-violation" or "integrity-violation";
 
     /// <summary>Appends an observer to the registered reporting observer list (https://w3c.github.io/reporting/#dom-reportingobserver-observe, step 2).</summary>
     internal void RegisterReportingObserver(ReportingObserver observer)

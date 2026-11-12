@@ -87,6 +87,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-event-stream", EventStream) { Seeds = GetEventStreamSeeds },
         new("webplatform-mime", data => Mime(FuzzText.Decode(data))) { Seeds = GetMimeSeeds },
         new("webplatform-canvas-state", CanvasState) { Seeds = GetCanvasSeeds, Dictionary = CanvasTokens },
+        new("webplatform-integrity", data => Integrity(FuzzText.Decode(data))) { Seeds = GetIntegritySeeds, Dictionary = IntegrityTokens },
     ];
 
     /// <summary>

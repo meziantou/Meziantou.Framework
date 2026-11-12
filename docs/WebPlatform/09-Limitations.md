@@ -56,7 +56,10 @@ fails.
   event loop, so the mutation observer callbacks are not invoked.
 - **No downloads**, and the third-party cookies are not blocked.
 - **Reporting API.** Content Security Policy reports its violations, but the Reporting API generates only the CSP, COEP,
-  COOP, Permissions Policy, Document Policy and test reports: there are no deprecation or intervention reports.
+  COOP, Permissions Policy, Document Policy, integrity policy and test reports: there are no deprecation or intervention
+  reports.
+- **Signature-based Subresource Integrity** (the `ed25519-` integrity metadata, checked with the `Signature` and
+  `Signature-Input` headers) is not supported.
 
 ## Scripting
 

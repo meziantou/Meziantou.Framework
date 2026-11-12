@@ -262,6 +262,8 @@ public sealed class WptTests
 
     public static TheoryData<string> ClearSiteDataTests => GetTests("clear-site-data");
 
+    public static TheoryData<string> SubresourceIntegrityTests => GetTests("subresource-integrity");
+
     public static TheoryData<string> KeyboardMapTests => GetTests("keyboard-map");
 
     public static TheoryData<string> MediaSessionTests => GetTests("mediasession");
@@ -1242,6 +1244,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ClearSiteDataTests))]
     public void ClearSiteData(string test) => Run("clear-site-data", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(SubresourceIntegrityTests))]
+    public void SubresourceIntegrity(string test) => Run("subresource-integrity", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(KeyboardMapTests))]

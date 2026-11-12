@@ -38,6 +38,46 @@ public sealed class ReportingTests : IDisposable
         Assert.Null(StructuredFields.ParseDictionary("A=1"));
     }
 
+    [Theory]
+    [InlineData("blocked-destinations=(script)", "inline", "Script", "")]
+    [InlineData("blocked-destinations=(script style), sources=(inline), endpoints=(a b)", "inline", "Script Style", "a b")]
+    [InlineData("blocked-destinations=script", "inline", "", "")]
+    [InlineData("blocked-destinations=(\"script\")", "inline", "", "")]
+    [InlineData("blocked-destinations=(script", "inline", "", "")]
+    [InlineData("blocked-destinations=(script), sources=(telepathy)", "", "Script", "")]
+    [InlineData("", "inline", "", "")]
+    public void IntegrityPolicy_Parse(string value, string sources, string blockedDestinations, string endpoints)
+    {
+        var policy = IntegrityPolicy.Parse(value);
+
+        Assert.Equal(sources, string.Join(' ', policy.Sources));
+        Assert.Equal(blockedDestinations, string.Join(' ', policy.BlockedDestinations));
+        Assert.Equal(endpoints, string.Join(' ', policy.Endpoints));
+        Assert.Equal(sources.Length > 0 && blockedDestinations.Contains("Script", StringComparison.Ordinal), policy.Applies(RequestDestination.Script));
+    }
+
+    [Fact]
+    public void IntegrityPolicy_BlocksTheScriptsWithoutIntegrityMetadataAndReportsThem()
+    {
+        var hash = "sha256-" + Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData("document.title += ' b'"u8));
+        var document = Load($$"""
+            <script>
+            document.title = 'start';
+            new ReportingObserver(reports => {
+              for (const report of reports)
+                document.body.dataset.reports = (document.body.dataset.reports ?? '') + report.type + ' ' + report.body.blockedURL + ' ' + report.body.destination + ' ' + report.body.reportOnly + ';';
+            }).observe();
+            </script>
+            <script src="/a.js"></script>
+            <script src="/b.js" integrity="{{hash}}" crossorigin="anonymous"></script>
+            <script src="/c.js" integrity="{{hash}}"></script>
+            """, [new("Integrity-Policy", "blocked-destinations=(script), endpoints=(integrity)"), new("Integrity-Policy-Report-Only", "blocked-destinations=(style), endpoints=(integrity)"), new("Reporting-Endpoints", "integrity=\"/reports\"")]);
+
+        // The scripts without integrity metadata, or that are not CORS requests, are blocked
+        Assert.Equal("start b", document.Title);
+        Assert.Equal("integrity-violation https://example.com/a.js script false;integrity-violation https://example.com/c.js script false;", document.Body!.GetAttribute("data-reports"));
+    }
+
     [Fact]
     public void Endpoints_ReportingEndpointsHeader()
     {

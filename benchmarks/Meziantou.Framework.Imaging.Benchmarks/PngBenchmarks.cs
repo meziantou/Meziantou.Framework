@@ -13,6 +13,7 @@ public class PngBenchmarks : IDisposable
     private Image<Rgba32> _small = null!;
     private Image<Rgb24> _large8 = null!;
     private Image<Rgba64> _large16 = null!;
+    private Image<Rgb24> _fewColors = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -20,6 +21,7 @@ public class PngBenchmarks : IDisposable
         _small = Image.ImportPixelData<Rgba32>(BenchmarkInputs.SmallPngSource, 64, 64);
         _large8 = Image.ImportPixelData<Rgb24>(BenchmarkInputs.LargeRgb24Source, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight);
         _large16 = Image.ImportPixelData<Rgba64>(BenchmarkInputs.LargeRgba64Source, BenchmarkInputs.Large16Width, BenchmarkInputs.Large16Height);
+        _fewColors = Image.ImportPixelData<Rgb24>(BenchmarkInputs.IndexedRgb24Source, BenchmarkInputs.LargeWidth, BenchmarkInputs.LargeHeight);
 
         // Untimed correctness gate: PNG is lossless, so decoding must give back the independent synthetic source exactly
         WorkloadChecks.RequireLossless(BenchmarkInputs.SmallPng, BenchmarkInputs.SmallPngSource);
@@ -37,6 +39,7 @@ public class PngBenchmarks : IDisposable
         _small?.Dispose();
         _large8?.Dispose();
         _large16?.Dispose();
+        _fewColors?.Dispose();
     }
 
     [Benchmark]
@@ -66,6 +69,14 @@ public class PngBenchmarks : IDisposable
     [Benchmark]
     [Workload("2048x1536 Rgb24 -> PNG (adaptive filters, fastest zlib)", ReturnsOutputBytes = true)]
     public long SaveLarge8Fastest() => ImageWorkloads.Encode(_large8, new PngEncoder { CompressionLevel = System.IO.Compression.CompressionLevel.Fastest }, _output);
+
+    [Benchmark]
+    [Workload("2048x1536 Rgb24 -> PNG, smallest of every layout, filter and zlib level (PngOptimization.MinimumSize)", ReturnsOutputBytes = true)]
+    public long SaveLarge8MinimumSize() => ImageWorkloads.Encode(_large8, new PngEncoder { Optimization = PngOptimization.MinimumSize }, _output);
+
+    [Benchmark]
+    [Workload("2048x1536 Rgb24 of 256 colors -> PNG in the narrowest exact layout (palette found, PngOptimization.Layout)", ReturnsOutputBytes = true)]
+    public long SaveFewColorsLayout() => ImageWorkloads.Encode(_fewColors, new PngEncoder { Optimization = PngOptimization.Layout }, _output);
 
     [Benchmark]
     [Workload("2048x1536 RGB8 Adam7-interlaced PNG -> Rgb24")]

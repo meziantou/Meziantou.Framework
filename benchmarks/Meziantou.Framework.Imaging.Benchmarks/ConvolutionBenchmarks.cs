@@ -186,6 +186,34 @@ public class ConvolutionBenchmarks
     public int TopHat5() => Filter(_rgba32, image => image.TopHat(StructuringElement.CreateRectangle(5, 5)));
 
     [Benchmark]
+    [Workload("1920x1080 Rgba32 black-hat, 11x11 rectangle")]
+    public int BlackHat5() => Filter(_rgba32, image => image.BlackHat(StructuringElement.CreateRectangle(5, 5)));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 closing, 11x11 ellipse")]
+    public int CloseDisk5() => Filter(_rgba32, image => image.MorphologicalClose(StructuringElement.CreateEllipse(5, 5)));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 Sobel edges, grayscale")]
+    public int EdgesSobel() => Filter(_rgba32, image => image.DetectEdges(EdgeDetector.Sobel));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 Sobel edges, per channel")]
+    public int EdgesSobelColor() => Filter(_rgba32, image => image.DetectEdges(EdgeDetector.Sobel, grayscale: false));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 Kirsch edges (8 compass kernels), grayscale")]
+    public int EdgesKirsch() => Filter(_rgba32, image => image.DetectEdges(EdgeDetector.Kirsch));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 Laplacian of Gaussian edges, grayscale")]
+    public int EdgesLaplacianOfGaussian() => Filter(_rgba32, image => image.DetectEdges(EdgeDetector.LaplacianOfGaussian));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 Canny edges, default options")]
+    public int EdgesCanny() => Filter(_rgba32, image => image.DetectCannyEdges());
+
+    [Benchmark]
     [Workload("1920x1080 Rgba32 25th percentile, radius 5 (11x11)")]
     public int Percentile5() => Filter(_rgba32, image => image.PercentileFilter(5, 25));
 

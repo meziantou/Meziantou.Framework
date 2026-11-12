@@ -25,8 +25,8 @@ internal static class SceneTree
     /// the contents that are written inside a pattern, a marker or a mask of their own content.
     /// </param>
     /// <param name="ClipElements">
-    /// The elements of the contents of the clipping paths, and of their groups: they give their geometry, but are not
-    /// drawn as elements. A use that draws one of them refers to a definition of its own (<see cref="Detached"/>).
+    /// The elements of the contents of the clipping paths, of their groups and of their uses: they give their geometry,
+    /// but are not drawn as elements. A use that draws one of them refers to a definition of its own (<see cref="Detached"/>).
     /// </param>
     public sealed record WalkResult(List<SceneElement> Elements, List<SceneElement> Detached, List<SceneElement> Roots, List<SceneElement> ClipElements);
 
@@ -39,6 +39,7 @@ internal static class SceneTree
     {
         var elements = new List<SceneElement>();
         var clipElements = new List<SceneElement>();
+        var clipUses = new HashSet<SceneUse>(ReferenceEqualityComparer.Instance);
         var seen = new HashSet<SceneElement>(ReferenceEqualityComparer.Instance);
         var uses = new List<SceneElement>();
         var shared = new HashSet<object>(ReferenceEqualityComparer.Instance);
@@ -107,8 +108,9 @@ internal static class SceneTree
         return new WalkResult(elements, detached, roots, clipElements);
 
         // An element reached several times is enumerated each time; with rootOnce, the start is not entered again. The
-        // contents of the clipping paths, and the children of their groups, are their geometry: they are not drawn as
-        // elements, and their uses are written inline. Their other contents (the patterns of their texts) are drawn.
+        // contents of the clipping paths, the children of their groups and the contents of their uses, are their geometry:
+        // they are not drawn as elements, and their uses are written inline. Their other contents (the patterns of their
+        // texts) are drawn.
         void Visit(SceneElement start, bool rootOnce = false)
         {
             var stack = new Stack<(SceneElement Element, bool IsClip)>();
@@ -156,6 +158,13 @@ internal static class SceneTree
                     {
                         contents.Add((child, isClip));
                     }
+                }
+
+                // A use of a clipping path is written inline: its content is geometry too (its texts need their fonts).
+                // Each one is followed once, so a use in its own content stops.
+                if (isClip && element is SceneUse clipUse && !clipUse.IsCircular() && clipUses.Add(clipUse))
+                {
+                    contents.Add((clipUse.Content, true));
                 }
 
                 for (var i = contents.Count - 1; i >= 0; i--)

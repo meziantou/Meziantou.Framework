@@ -800,12 +800,22 @@ internal static class SceneRenderer
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct TextPiece(int Span, string Text, SceneFont Font, SceneTextDecorations Decorations, Spacing Spacing, Brush Fill, Brush? DecorationFill, Pen? Stroke, double Rotation);
 
-    // Whether the last character of a text is in a run written from right to left
-    private static bool EndsRightToLeft(string text, TextDirection direction)
+    // The start of the last run of one direction of a text (Unicode Bidirectional Algorithm), and whether that run is
+    // written from right to left
+    private static (int Start, bool IsRightToLeft) GetLastRun(string text, TextDirection direction)
     {
+        if (text.Length is 0)
+            return (0, false);
+
         var levels = new byte[text.Length];
         UnicodeBidi.ResolveLevels(text, direction is TextDirection.RightToLeft ? UnicodeBidiDirection.RightToLeft : UnicodeBidiDirection.Auto, levels);
-        return levels.Length > 0 && (levels[^1] & 1) != 0;
+        var start = levels.Length - 1;
+        while (start > 0 && levels[start - 1] == levels[^1])
+        {
+            start--;
+        }
+
+        return (start, (levels[^1] & 1) != 0);
     }
 
     private static readonly TextLayoutOptions RightToLeftOptions = new() { Direction = TextDirection.RightToLeft };
@@ -842,6 +852,22 @@ internal static class SceneRenderer
             return null;
 
         var direction = text.Direction is SceneTextDirection.RightToLeft ? TextDirection.RightToLeft : TextDirection.Auto;
+
+        // A text fitted to its length by its spacing gets no spacing after its last character. Its last span is shaped
+        // whole, so its letters keep their joins, except at the start of its last run of one direction, where shaping
+        // stops anyway: the gap is then beyond the width of that run from left to right, and at its left from right to left.
+        var endsRightToLeft = false;
+        if (TextPlacement.IsFittedBySpacing(text))
+        {
+            var last = pieces[^1];
+            var (runStart, isRightToLeft) = GetLastRun(last.Text, direction);
+            endsRightToLeft = isRightToLeft;
+            if (runStart > 0)
+            {
+                pieces[^1] = last with { Text = last.Text[..runStart] };
+                pieces.Add(last with { Text = last.Text[runStart..] });
+            }
+        }
         var layouts = new TextLayout[pieces.Count];
         var items = new TextPlacement.Item[pieces.Count];
         for (var i = 0; i < pieces.Count; i++)
@@ -861,9 +887,7 @@ internal static class SceneRenderer
             parts.Add(new TextPart(layout, piece.Fill, piece.Stroke, piece.Rotation));
         }
 
-        // The last span is shaped whole, so its letters keep their joins: the gap after its last character is beyond its
-        // width when that character is written from left to right, and before it, at its left, from right to left
-        if (placement.GapSpacing != 0 && placement.LastItem >= 0 && EndsRightToLeft(pieces[placement.LastItem].Text, direction))
+        if (placement.GapSpacing != 0 && placement.LastItem == pieces.Count - 1 && endsRightToLeft)
         {
             placement.X[placement.LastItem] -= placement.GapSpacing;
         }

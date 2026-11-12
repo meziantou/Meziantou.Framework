@@ -1039,6 +1039,29 @@ public sealed class SceneRendererTests
     }
 
     [Fact]
+    public void FittedTextsThatEndInAnotherDirectionStayInTheirLength()
+    {
+        // Latin letters followed by Arabic ones, spread over 120 pixels: the Latin letters stay at the anchor, and the ink
+        // ends where the length does
+        var fonts = new SceneFontCollection(LoadFace("LiberationSans-Regular.woff2"), LoadFace("NotoNaskhArabic-Regular.subset.ttf"));
+        var measurer = new FontFaceTextMeasurer(fonts);
+        var font = new SceneFont(20);
+        const string Value = "AB\u0645\u0631\u062D\u0628\u0627";
+        var natural = measurer.Measure(Value, font).Width;
+        Assert.InRange(natural, 30, 100);
+        var scene = new Scene(160, 40, measurer.FontFamily) { Fonts = fonts };
+        scene.Root.Add(new SceneText(20, 30, Value, font, SceneColor.Black) { TextLength = 120 });
+        var plain = new Scene(160, 40, measurer.FontFamily) { Fonts = fonts };
+        plain.Root.Add(new SceneText(20, 30, Value, font, SceneColor.Black));
+        using var image = scene.ToImage();
+        using var plainImage = plain.ToImage();
+        var (plainLeft, _, plainRight, _) = GetInkBounds(plainImage, 0, 0, 160, 40);
+        var (left, _, right, _) = GetInkBounds(image, 0, 0, 160, 40);
+        Assert.Equal(plainLeft, left);
+        Assert.InRange(right, plainRight + 120 - natural - 2, plainRight + 120 - natural + 2);
+    }
+
+    [Fact]
     public void TextsOfClippingPathsHaveNoLines()
     {
         // The underline of a text of a clipping path does not show the clipped element

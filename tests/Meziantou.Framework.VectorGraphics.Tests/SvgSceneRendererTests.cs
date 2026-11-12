@@ -1610,6 +1610,17 @@ public sealed class SvgSceneRendererTests
         Assert.Contains("<clipPath id=\"scene-clip0\">\n<circle cx=\"5\" cy=\"5\" r=\"5\"/>\n</clipPath>", reusedSvg, StringComparison.Ordinal);
         Assert.Contains("<use href=\"#scene-element0\" transform=\"translate(10 10)\"/>", reusedSvg, StringComparison.Ordinal);
 
+        // The text a use of a clipping path draws has its font embedded, as the other texts
+        var testData = Path.Combine(AppContext.BaseDirectory, "TestData");
+        var fonts = SceneFontCollection.Load(Path.Combine(testData, "LiberationSans-Regular.woff2"), Path.Combine(testData, "LiberationMono-Regular.woff2"));
+        var withFonts = new Scene(20, 20, "Liberation Sans") { Fonts = fonts };
+        var lettering = new SceneClipPath();
+        lettering.Content.Add(new SceneUse(new SceneText(0, 15, "x", new SceneFont(12, Family: "Liberation Mono"), SceneColor.Black)));
+        withFonts.Root.Add(new SceneRectangle(0, 0, 20, 20) { Fill = SceneColor.Black, ClippingPath = lettering });
+        var embedded = SvgSceneRenderer.Render(withFonts, new SvgRenderOptions { EmbedFonts = true });
+        Assert.Contains("@font-face{font-family:&quot;Liberation Mono&quot;", embedded, StringComparison.Ordinal);
+        Assert.Contains("<clipPath id=\"scene-clip0\">\n<text x=\"0\" y=\"15\"", embedded, StringComparison.Ordinal);
+
         // The bounds of a clipping path are the ones of its geometry, whatever the opacity of its content
         var transparent = new SceneClipPath();
         transparent.Content.Add(new SceneRectangle(0, 0, 10, 10) { Opacity = 0 });

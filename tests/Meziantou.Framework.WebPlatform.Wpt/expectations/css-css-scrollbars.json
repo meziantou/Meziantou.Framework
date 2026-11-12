@@ -5,6 +5,9 @@
   "css/css-scrollbars/input-scrollbar-color.html": {
     "reftest": "PASS"
   },
+  "css/css-scrollbars/invalid-needs-layout-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-scrollbars/scrollbar-after-remove-resize.html": {
     "reftest": "PASS"
   },

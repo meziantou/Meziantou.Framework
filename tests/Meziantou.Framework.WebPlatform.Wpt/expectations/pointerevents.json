@@ -101,6 +101,9 @@
   "pointerevents/compat/pointerevent_touch_target_after_pointerdown_target_removed.tentative.html": {
     "total": 18
   },
+  "pointerevents/crashtests/longpress-crash.html": {
+    "crashtest": "PASS"
+  },
   "pointerevents/idlharness.https.window.js": {
     "total": 203
   },

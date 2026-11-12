@@ -23,6 +23,9 @@
   "html/interaction/focus/focus-02.html": {
     "total": 3
   },
+  "html/interaction/focus/focus-after-attach-shadow-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/interaction/focus/focus-file-input.html": {
     "total": 1
   },
@@ -43,6 +46,9 @@
   },
   "html/interaction/focus/focus-selection.html": {
     "total": 2
+  },
+  "html/interaction/focus/focused-element-move-documents-crash.html": {
+    "crashtest": "PASS"
   },
   "html/interaction/focus/focusreset/focusreset-basic.tentative.html": {
     "total": 9,

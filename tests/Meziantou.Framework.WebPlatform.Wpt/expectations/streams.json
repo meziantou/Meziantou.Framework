@@ -35,6 +35,15 @@
   "streams/piping/close-propagation-forward.any.js#sharedworker": {
     "total": 30
   },
+  "streams/piping/crashtests/cross-piping.html": {
+    "crashtest": "PASS"
+  },
+  "streams/piping/crashtests/cross-piping2.https.html": {
+    "crashtest": "PASS"
+  },
+  "streams/piping/crashtests/shutdown.html": {
+    "crashtest": "PASS"
+  },
   "streams/piping/error-propagation-backward.any.js": {
     "total": 36
   },
@@ -154,6 +163,24 @@
   },
   "streams/readable-byte-streams/construct-byob-request.any.js#sharedworker": {
     "total": 16
+  },
+  "streams/readable-byte-streams/crashtests/from-cross-realm-error.html": {
+    "crashtest": "PASS"
+  },
+  "streams/readable-byte-streams/crashtests/from-cross-realm.html": {
+    "crashtest": "PASS"
+  },
+  "streams/readable-byte-streams/crashtests/tee-from-scroll-crash.html": {
+    "crashtest": "PASS"
+  },
+  "streams/readable-byte-streams/crashtests/tee-locked-stream.any.js": {
+    "total": 1
+  },
+  "streams/readable-byte-streams/crashtests/tee-locked-stream.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "streams/readable-byte-streams/crashtests/tee-locked-stream.any.js#sharedworker": {
+    "total": 1
   },
   "streams/readable-byte-streams/enqueue-with-detached-buffer.any.js": {
     "total": 1
@@ -280,6 +307,27 @@
   },
   "streams/readable-streams/count-queuing-strategy-integration.any.js#sharedworker": {
     "total": 4
+  },
+  "streams/readable-streams/crashtests/exception-during-size-while-pulling.html": {
+    "crashtest": "PASS"
+  },
+  "streams/readable-streams/crashtests/from-cross-realm.https.html": {
+    "crashtest": "PASS"
+  },
+  "streams/readable-streams/crashtests/garbage-collection.any.js": {
+    "total": 3
+  },
+  "streams/readable-streams/crashtests/garbage-collection.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "streams/readable-streams/crashtests/garbage-collection.any.js#sharedworker": {
+    "total": 3
+  },
+  "streams/readable-streams/crashtests/strategy-worker-terminate.html": {
+    "crashtest": "PASS"
+  },
+  "streams/readable-streams/cross-realm-crash.window.js": {
+    "total": 1
   },
   "streams/readable-streams/default-reader.any.js": {
     "total": 29
@@ -431,6 +479,9 @@
   "streams/readable-streams/reentrant-strategies.any.js#sharedworker": {
     "total": 10
   },
+  "streams/readable-streams/tee-detached-context-crash.html": {
+    "crashtest": "PASS"
+  },
   "streams/readable-streams/tee.any.js": {
     "total": 26
   },
@@ -454,6 +505,9 @@
   },
   "streams/transferable/deserialize-error.window.js": {
     "total": 2
+  },
+  "streams/transferable/gc-crash.html": {
+    "crashtest": "PASS"
   },
   "streams/transferable/readable-stream.html": {
     "total": 16
@@ -652,6 +706,15 @@
   },
   "streams/writable-streams/count-queuing-strategy.any.js#sharedworker": {
     "total": 3
+  },
+  "streams/writable-streams/crashtests/garbage-collection.any.js": {
+    "total": 6
+  },
+  "streams/writable-streams/crashtests/garbage-collection.any.js#dedicatedworker": {
+    "total": 6
+  },
+  "streams/writable-streams/crashtests/garbage-collection.any.js#sharedworker": {
+    "total": 6
   },
   "streams/writable-streams/error.any.js": {
     "total": 5

@@ -26,6 +26,18 @@
   "css/css-content/content-none-select-1.html": {
     "reftest": "PASS"
   },
+  "css/css-content/crashtests/content-disallowed-url.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-content/crashtests/generated-counter.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-content/crashtests/generated-quote.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-content/crashtests/generated-text.html": {
+    "crashtest": "PASS"
+  },
   "css/css-content/element-replacement-alt.html": {
     "reftest": "PASS"
   },
@@ -40,6 +52,12 @@
   },
   "css/css-content/element-replacement-dynamic.html": {
     "reftest": "PASS"
+  },
+  "css/css-content/element-replacement-gradient-details-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-content/element-replacement-gradient-scale-root-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-content/element-replacement-gradient.html": {
     "reftest": "PASS"

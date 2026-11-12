@@ -8,6 +8,9 @@
   "notifications/constructor-non-secure.html": {
     "total": 1
   },
+  "notifications/crashtests/show-and-close.https.html": {
+    "crashtest": "PASS"
+  },
   "notifications/cross-origin-nested.tentative.https.sub.html": {
     "total": 4
   },
@@ -28,6 +31,9 @@
   },
   "notifications/getnotifications-across-processes.https.window.js": {
     "total": 3
+  },
+  "notifications/global-teardown-crash.html": {
+    "crashtest": "PASS"
   },
   "notifications/historical.any.js": {
     "total": 2

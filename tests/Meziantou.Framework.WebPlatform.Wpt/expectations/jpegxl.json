@@ -71,6 +71,9 @@
   "jpegxl/css-list-style-image.html": {
     "reftest": "FAIL"
   },
+  "jpegxl/custom-primaries-icc-overflow-crash.html": {
+    "crashtest": "PASS"
+  },
   "jpegxl/gray-decode-reftest.html": {
     "reftest": "PASS"
   },
@@ -112,6 +115,9 @@
   },
   "jpegxl/imagedecoder.https.html": {
     "total": 1
+  },
+  "jpegxl/incomplete-codestream-trailing-box-crash.html": {
+    "crashtest": "PASS"
   },
   "jpegxl/jxl-art-basic-reftest.html": {
     "reftest": "PASS"

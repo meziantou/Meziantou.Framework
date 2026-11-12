@@ -2,6 +2,9 @@
   "html/canvas/canvas-css-random.html": {
     "total": 1
   },
+  "html/canvas/canvas-sibling-index-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/canvas/color.window.js": {
     "total": 15
   },
@@ -2326,6 +2329,9 @@
   "html/canvas/element/manual/draw-element-image/css-transform-on-div.tentative.html": {
     "reftest": "FAIL"
   },
+  "html/canvas/element/manual/draw-element-image/date-input-slot-assignment-crash.tentative.html": {
+    "crashtest": "PASS"
+  },
   "html/canvas/element/manual/draw-element-image/descendant-filter.tentative.html": {
     "reftest": "PASS"
   },
@@ -2438,6 +2444,12 @@
   },
   "html/canvas/element/manual/draw-element-image/fullscreen-canvas.tentative.html": {
     "reftest": "FAIL"
+  },
+  "html/canvas/element/manual/draw-element-image/fullscreen-child-crash.tentative.html": {
+    "crashtest": "PASS"
+  },
+  "html/canvas/element/manual/draw-element-image/fullscreen-crash.tentative.html": {
+    "crashtest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/get-element-transform.tentative.html": {
     "total": 12,
@@ -2734,6 +2746,12 @@
       "onpaint should fire after iframe changes.": "FAIL"
     }
   },
+  "html/canvas/element/manual/draw-element-image/onpaint-invalidation-crash.tentative.html": {
+    "crashtest": "PASS"
+  },
+  "html/canvas/element/manual/draw-element-image/onpaint-outside-invalidation-crash.tentative.html": {
+    "crashtest": "PASS"
+  },
   "html/canvas/element/manual/draw-element-image/onpaint-post-tree-order-shadow-dom.tentative.html": {
     "total": 1,
     "failures": {
@@ -2771,6 +2789,9 @@
       "onpaint should fire when a non-drawable inline child of a drawable element is removed": "FAIL"
     }
   },
+  "html/canvas/element/manual/draw-element-image/onpaint-scroll-crash.tentative.html": {
+    "crashtest": "PASS"
+  },
   "html/canvas/element/manual/draw-element-image/onpaint-zindex.tentative.html": {
     "total": 1
   },
@@ -2796,6 +2817,9 @@
   },
   "html/canvas/element/manual/draw-element-image/percent-sizing.tentative.html": {
     "reftest": "FAIL"
+  },
+  "html/canvas/element/manual/draw-element-image/position-anchor-crash.tentative.html": {
+    "crashtest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/privacy/backdrop-filter-png-images-ignored.tentative.https.sub.html": {
     "total": 1,
@@ -3412,8 +3436,14 @@
       "requestPaint should cause onpaint to fire without changes, with two canvases": "FAIL"
     }
   },
+  "html/canvas/element/manual/draw-element-image/ruby-canvas-crash.tentative.html": {
+    "crashtest": "PASS"
+  },
   "html/canvas/element/manual/draw-element-image/scale.tentative.html": {
     "reftest": "FAIL"
+  },
+  "html/canvas/element/manual/draw-element-image/scroller-crash.tentative.html": {
+    "crashtest": "PASS"
   },
   "html/canvas/element/manual/draw-element-image/shadow-basic.tentative.html": {
     "reftest": "FAIL"
@@ -3531,6 +3561,9 @@
   "html/canvas/element/manual/drawing-paths-to-the-canvas/drawFocusIfNeeded_005.html": {
     "total": 1
   },
+  "html/canvas/element/manual/drawing-paths-to-the-canvas/fill-path-with-uninvertible-transform-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/canvas/element/manual/drawing-text-to-the-canvas/canvas.2d.disconnected-font-size-math.html": {
     "reftest": "PASS"
   },
@@ -3605,6 +3638,9 @@
     "failures": {
       "Tainting check for visited link in SVG drop shadowfilter": "FAIL"
     }
+  },
+  "html/canvas/element/manual/filters/svg-filter-crash.html": {
+    "crashtest": "PASS"
   },
   "html/canvas/element/manual/filters/svg-filter-feImage-cross-origin-taint.https.sub.html": {
     "total": 1,
@@ -4057,6 +4093,9 @@
       "toDataURL image/webp toneMapping=extended": "FAIL",
       "toDataURL image/webp toneMapping=standard": "FAIL"
     }
+  },
+  "html/canvas/element/manual/wide-gamut-canvas/imagedata-no-color-settings-crash.html": {
+    "crashtest": "PASS"
   },
   "html/canvas/element/path-objects/2d.path.arc.angle.1.html": {
     "total": 1
@@ -6198,6 +6237,9 @@
   },
   "html/canvas/offscreen/canvas-context/2d.getContext.options.any.js#dedicatedworker": {
     "total": 1
+  },
+  "html/canvas/offscreen/canvas-context/chrome-567611695-crash.html": {
+    "crashtest": "PASS"
   },
   "html/canvas/offscreen/canvas-host/2d.canvas.host.initial.color.html": {
     "total": 1
@@ -10016,6 +10058,9 @@
   "html/canvas/offscreen/manual/text/canvas.2d.offscreen.worker.lang.inherit.html": {
     "reftest": "PASS"
   },
+  "html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas-worker-font-load-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.constructor.html": {
     "total": 3
   },
@@ -10066,6 +10111,9 @@
     "failures": {
       "Test that transferToImageBitmap returns an ImageBitmap with correct width and height in a worker": "FAIL"
     }
+  },
+  "html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.transfercontrol.to.offscreen-crash.html": {
+    "crashtest": "PASS"
   },
   "html/canvas/offscreen/manual/the-offscreen-canvas/offscreencanvas.transfercontrol.to.offscreen.html": {
     "total": 3
@@ -11939,6 +11987,9 @@
   "html/canvas/offscreen/reset/2d.reset.state.word_spacing.worker.js": {
     "total": 1
   },
+  "html/canvas/offscreen/set-proprietary-font-names-001-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/canvas/offscreen/shadows/2d.shadow.alpha.1.html": {
     "total": 1
   },
@@ -13786,5 +13837,8 @@
   },
   "html/canvas/offscreen/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.png.linear.float.html": {
     "total": 2
+  },
+  "html/canvas/text-metrics-for-unpaintable-crash.html": {
+    "crashtest": "PASS"
   }
 }

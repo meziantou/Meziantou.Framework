@@ -104,6 +104,36 @@
   "css/css-transitions/changing-while-transition-004.html": {
     "total": 1
   },
+  "css/css-transitions/crashtests/clear-duration-in-transitionend.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transitions/crashtests/delete-image-set.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transitions/crashtests/firefox-bug-1941855.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transitions/crashtests/size-container-transition-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transitions/crashtests/transition-asan.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transitions/crashtests/transition-during-style-attr-mutation.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transitions/crashtests/transition-large-word-spacing-001.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transitions/crashtests/transition-shape-outside-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transitions/crashtests/transition-transform-translate-calculated-length-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-transitions/crashtests/transition-var-gradient-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-transitions/currentcolor-animation-001.html": {
     "total": 1
   },
@@ -164,6 +194,9 @@
   },
   "css/css-transitions/inert-while-transitioning-to-display-none.html": {
     "total": 1
+  },
+  "css/css-transitions/infinite-duration-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-transitions/inherit-background-color-transition.html": {
     "reftest": "PASS"
@@ -352,6 +385,9 @@
   "css/css-transitions/starting-style-cascade.html": {
     "total": 6
   },
+  "css/css-transitions/starting-style-first-letter-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-transitions/starting-style-name-defining-rules.html": {
     "total": 2
   },
@@ -369,6 +405,9 @@
   },
   "css/css-transitions/starting-style-size-container.html": {
     "total": 2
+  },
+  "css/css-transitions/top-layer-image-transition-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-transitions/transition-001.html": {
     "total": 13

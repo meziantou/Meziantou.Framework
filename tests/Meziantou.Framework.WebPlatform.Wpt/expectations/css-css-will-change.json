@@ -23,6 +23,9 @@
   "css/css-will-change/will-change-abspos-cb-dynamic-001.html": {
     "reftest": "PASS"
   },
+  "css/css-will-change/will-change-contents-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-will-change/will-change-fixedpos-cb-001.html": {
     "reftest": "PASS"
   },

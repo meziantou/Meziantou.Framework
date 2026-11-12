@@ -69,6 +69,87 @@
   "shadow-dom/capturing-and-bubbling-event-listeners-across-shadow-trees.html": {
     "total": 5
   },
+  "shadow-dom/crashtests/add-host-child-element-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/add-host-child-text-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/character-data-set-data-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/cross-shadow-slot-assign.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/css-focus-recalc.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/cyclic-detach-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/cyclic-detach-crash2.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/detach-node-call-recalc-assignment-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/editing-shadow-overflow-scroll-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/highlight-api-orphan-node-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/highlight-api-remove-node-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/imperative-slot-api-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/li-layout-after-attachshadow-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/list-item-delete-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/manual-assignment-beforeattrmodified.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/modify-sibling-of-shadowroot-after-attach.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/modify-style-element-in-disconnected-shadow-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/move-to-new-tree-1343016.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/scrollbar-pseudo-attach-shadow-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/slot-dir-attribute-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/slot-dir-auto-unbound.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/slot-nested-reattach-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/slots-in-document-tree-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/slots-in-v0-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/crashtests/slots-nested-in-document-tree-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/cross-shadow-boundary-selection-remove-splittext-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/cross-shadow-boundary-selection-splittext-crash.html": {
+    "crashtest": "PASS"
+  },
   "shadow-dom/declarative/declarative-after-attachshadow.html": {
     "total": 1
   },
@@ -246,6 +327,9 @@
       "document.importNode resolves shadowrootadoptedstylesheets against the destination document.": "FAIL"
     }
   },
+  "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-document-parse-crash.html": {
+    "crashtest": "PASS"
+  },
   "shadow-dom/declarative/tentative/shadowrootadoptedstylesheets/shadowrootadoptedstylesheets-fetched-module.html": {
     "total": 1,
     "failures": {
@@ -362,6 +446,9 @@
   "shadow-dom/directionality-002.tentative.html": {
     "reftest": "PASS"
   },
+  "shadow-dom/directionality-003-crash.html": {
+    "crashtest": "PASS"
+  },
   "shadow-dom/dragenter-related-target.html": {
     "total": 1
   },
@@ -388,6 +475,9 @@
   },
   "shadow-dom/event-inside-slotted-node.html": {
     "total": 20
+  },
+  "shadow-dom/event-on-pseudo-element-crash.html": {
+    "crashtest": "PASS"
   },
   "shadow-dom/event-post-dispatch-listenerless.html": {
     "total": 3
@@ -955,6 +1045,9 @@
   "shadow-dom/host-with-namespace.xhtml": {
     "total": 2
   },
+  "shadow-dom/imperative-slot-api-crash.html": {
+    "crashtest": "PASS"
+  },
   "shadow-dom/imperative-slot-api-cross-shadow-root.html": {
     "total": 2,
     "failures": {
@@ -969,6 +1062,9 @@
   },
   "shadow-dom/imperative-slot-api.html": {
     "total": 16
+  },
+  "shadow-dom/imperative-slot-assign-not-slotable-crash.html": {
+    "crashtest": "PASS"
   },
   "shadow-dom/imperative-slot-fallback-clear.html": {
     "total": 2
@@ -990,6 +1086,9 @@
   },
   "shadow-dom/inserting-fragment-under-shadow-host.html": {
     "total": 1
+  },
+  "shadow-dom/invalidate-shadow-dom-crash.html": {
+    "crashtest": "PASS"
   },
   "shadow-dom/invalidate-sibling-different-slots.html": {
     "reftest": "PASS"
@@ -1023,6 +1122,9 @@
   },
   "shadow-dom/nested-hover-pseudo-class-removal.html": {
     "reftest": "PASS"
+  },
+  "shadow-dom/nested-slot-remove-crash.html": {
+    "crashtest": "PASS"
   },
   "shadow-dom/offsetParent-across-shadow-boundaries.html": {
     "total": 22
@@ -1237,17 +1339,38 @@
       "shadowRootReferenceTarget is present on HTMLTemplateElement": "FAIL"
     }
   },
+  "shadow-dom/restyle-on-disconnected-child-after-attach-crash.html": {
+    "crashtest": "PASS"
+  },
   "shadow-dom/scroll-restore-shadow.html": {
     "total": 1
   },
   "shadow-dom/scroll-to-the-fragment-in-shadow-tree.html": {
     "total": 10
   },
+  "shadow-dom/shadow-host-child-restyle-crash.html": {
+    "crashtest": "PASS"
+  },
   "shadow-dom/shadow-root-clonable.html": {
     "total": 6
   },
   "shadow-dom/shadow-style-invalidation-vw-units.html": {
     "reftest": "PASS"
+  },
+  "shadow-dom/slot-dir-attach-child-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/slot-dir-attach-child-details-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/slot-dir-attach-child-meter-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/slot-dir-attach-child-progress-crash.html": {
+    "crashtest": "PASS"
+  },
+  "shadow-dom/slot-dir-attach-child-textarea-crash.html": {
+    "crashtest": "PASS"
   },
   "shadow-dom/slot-display-contents-display-toggle.html": {
     "reftest": "PASS"
@@ -1278,6 +1401,9 @@
   },
   "shadow-dom/slot-reconciliation-at-node-removal.html": {
     "total": 1
+  },
+  "shadow-dom/slot-with-slottable-slot-in-display-none-subtree-crash.html": {
+    "crashtest": "PASS"
   },
   "shadow-dom/slotchange-customelements.html": {
     "total": 1
@@ -1485,6 +1611,9 @@
     "failures": {
       "A_07_01_02_T01": "FAIL"
     }
+  },
+  "shadow-dom/user-agent-shadow-root-crash.html": {
+    "crashtest": "PASS"
   },
   "shadow-dom/wheel-event-related-target.html": {
     "total": 1,

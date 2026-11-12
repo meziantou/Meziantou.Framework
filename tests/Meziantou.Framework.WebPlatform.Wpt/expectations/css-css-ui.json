@@ -2763,6 +2763,18 @@
   "css/css-ui/compute-kind-widget-no-fallback-props-001.html": {
     "reftest": "FAIL"
   },
+  "css/css-ui/crashtests/chrome-bug-467732064.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-ui/crashtests/cursor-light-dark-generated-image-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-ui/crashtests/input-range-content-url.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-ui/crashtests/outline-scrollIntoView-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-ui/cursor-calc-hotspot.html": {
     "total": 4
   },
@@ -2809,6 +2821,9 @@
   },
   "css/css-ui/native-appearance-disabled-for-value-unset.html": {
     "reftest": "PASS"
+  },
+  "css/css-ui/neg-outline-offset-border-radius-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-ui/negative-outline-offset.html": {
     "reftest": "PASS"
@@ -2974,6 +2989,9 @@
   },
   "css/css-ui/outline-width-rounding.tentative.html": {
     "total": 12
+  },
+  "css/css-ui/outline-with-001-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-ui/outline-with-padding-001.html": {
     "reftest": "PASS"

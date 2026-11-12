@@ -14,6 +14,9 @@
   "css/css-display/display-change-object-iframe.html": {
     "reftest": "PASS"
   },
+  "css/css-display/display-contents-001-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-display/display-contents-alignment-001.html": {
     "reftest": "PASS"
   },
@@ -212,6 +215,9 @@
   "css/css-display/display-contents-svg-elements.html": {
     "reftest": "PASS"
   },
+  "css/css-display/display-contents-svg-pseudo-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-display/display-contents-svg-switch-child.html": {
     "total": 1
   },
@@ -316,6 +322,9 @@
   },
   "css/css-display/display-none-inline-img.html": {
     "reftest": "PASS"
+  },
+  "css/css-display/display-none-root-hit-test-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-display/display-on-svg-text-content-element.html": {
     "reftest": "PASS"

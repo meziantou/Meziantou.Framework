@@ -110,22 +110,13 @@
     "total": 3
   },
   "fetch/api/basic/http-response-code.any.js": {
-    "total": 1,
-    "failures": {
-      "Fetch on 425 response should not be retried for non TLS early data.": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/basic/http-response-code.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "Fetch on 425 response should not be retried for non TLS early data.": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/basic/http-response-code.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "Fetch on 425 response should not be retried for non TLS early data.": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/basic/integrity.sub.any.js": {
     "total": 18
@@ -250,7 +241,6 @@
     "failures": {
       "Feature detect for POST with ReadableStream": "TIMEOUT",
       "Feature detect for POST with ReadableStream, using request object": "NOTRUN",
-      "Fetch with POST with ReadableStream on 421 response should return the response and not retry.": "FAIL",
       "ReadbleStream should be closed on signal.abort": "NOTRUN",
       "Streaming upload should fail on a 401 response": "NOTRUN",
       "Streaming upload with body containing a String": "NOTRUN",
@@ -265,7 +255,6 @@
     "failures": {
       "Feature detect for POST with ReadableStream": "TIMEOUT",
       "Feature detect for POST with ReadableStream, using request object": "NOTRUN",
-      "Fetch with POST with ReadableStream on 421 response should return the response and not retry.": "FAIL",
       "ReadbleStream should be closed on signal.abort": "NOTRUN",
       "Streaming upload should fail on a 401 response": "NOTRUN",
       "Streaming upload with body containing a String": "NOTRUN",
@@ -280,7 +269,6 @@
     "failures": {
       "Feature detect for POST with ReadableStream": "TIMEOUT",
       "Feature detect for POST with ReadableStream, using request object": "NOTRUN",
-      "Fetch with POST with ReadableStream on 421 response should return the response and not retry.": "FAIL",
       "ReadbleStream should be closed on signal.abort": "NOTRUN",
       "Streaming upload should fail on a 401 response": "NOTRUN",
       "Streaming upload with body containing a String": "NOTRUN",
@@ -338,24 +326,10 @@
     "total": 16
   },
   "fetch/api/basic/split-byte-order-mark.any.js": {
-    "total": 5,
-    "failures": {
-      "json() strips a UTF-8 byte order mark split across chunks": "FAIL",
-      "text() decodes a UTF-8 sequence split across chunks": "FAIL",
-      "text() does not strip a UTF-8 byte order mark in a later chunk": "FAIL",
-      "text() does not use a UTF-16LE byte order mark split across chunks": "FAIL",
-      "text() strips a UTF-8 byte order mark split across chunks": "FAIL"
-    }
+    "total": 5
   },
   "fetch/api/basic/split-byte-order-mark.any.js#dedicatedworker": {
-    "total": 5,
-    "failures": {
-      "json() strips a UTF-8 byte order mark split across chunks": "FAIL",
-      "text() decodes a UTF-8 sequence split across chunks": "FAIL",
-      "text() does not strip a UTF-8 byte order mark in a later chunk": "FAIL",
-      "text() does not use a UTF-16LE byte order mark split across chunks": "FAIL",
-      "text() strips a UTF-8 byte order mark split across chunks": "FAIL"
-    }
+    "total": 5
   },
   "fetch/api/basic/status.h2.any.js": {
     "total": 7
@@ -481,16 +455,10 @@
     "total": 2
   },
   "fetch/api/cors/cors-preflight-cache.any.js": {
-    "total": 3,
-    "failures": {
-      "CORS preflight cache entries are cleared when request has network error": "FAIL"
-    }
+    "total": 3
   },
   "fetch/api/cors/cors-preflight-cache.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "CORS preflight cache entries are cleared when request has network error": "FAIL"
-    }
+    "total": 3
   },
   "fetch/api/cors/cors-preflight-not-cors-safelisted.any.js": {
     "total": 12
@@ -573,6 +541,24 @@
   "fetch/api/cors/sandboxed-iframe.html": {
     "total": 1
   },
+  "fetch/api/crashtests/aborted-fetch-response.https.html": {
+    "crashtest": "PASS"
+  },
+  "fetch/api/crashtests/body-window-destroy.html": {
+    "crashtest": "PASS"
+  },
+  "fetch/api/crashtests/huge-fetch.any.js": {
+    "total": 1
+  },
+  "fetch/api/crashtests/huge-fetch.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "fetch/api/crashtests/huge-fetch.any.js#sharedworker": {
+    "total": 1
+  },
+  "fetch/api/crashtests/request.html": {
+    "crashtest": "PASS"
+  },
   "fetch/api/credentials/authentication-basic.any.js": {
     "total": 4
   },
@@ -610,22 +596,13 @@
     "total": 24
   },
   "fetch/api/headers/header-values-last-event-id.any.js": {
-    "total": 1,
-    "failures": {
-      "fetch() sends the bytes of a non-ASCII Last-Event-ID header value unchanged": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/headers/header-values-last-event-id.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "fetch() sends the bytes of a non-ASCII Last-Event-ID header value unchanged": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/headers/header-values-last-event-id.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "fetch() sends the bytes of a non-ASCII Last-Event-ID header value unchanged": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/headers/header-values-normalize.any.js": {
     "total": 62
@@ -1178,6 +1155,9 @@
   "fetch/api/response/json.any.js#dedicatedworker": {
     "total": 2
   },
+  "fetch/api/response/many-empty-chunks-crash.html": {
+    "crashtest": "PASS"
+  },
   "fetch/api/response/multi-globals/url-parsing.html": {
     "total": 1
   },
@@ -1684,19 +1664,7 @@
     }
   },
   "fetch/connection-pool/network-partition-key.html": {
-    "harness": "TIMEOUT",
-    "total": 9,
-    "failures": {
-      "CSP sandbox": "NOTRUN",
-      "Cross-site resources with credentials": "NOTRUN",
-      "Cross-site resources without credentials": "NOTRUN",
-      "Iframes": "NOTRUN",
-      "With credentials": "TIMEOUT",
-      "Without credentials": "NOTRUN",
-      "Workers": "NOTRUN",
-      "Workers with cross-site resources": "NOTRUN",
-      "about:blank from opaque origin iframe": "NOTRUN"
-    }
+    "total": 9
   },
   "fetch/content-disposition/multiple-content-disposition.tentative.any.js": {
     "total": 4
@@ -1705,24 +1673,10 @@
     "total": 4
   },
   "fetch/content-disposition/multiple-content-disposition.tentative.h2.window.js": {
-    "total": 4,
-    "failures": {
-      "HTTP/2: differing duplicate Content-Disposition headers are combined": "FAIL",
-      "HTTP/2: differing duplicate Content-Disposition headers are not a network error": "FAIL",
-      "HTTP/2: identical duplicate Content-Disposition headers are combined": "FAIL",
-      "HTTP/2: identical duplicate Content-Disposition headers are not a network error": "FAIL"
-    }
+    "total": 4
   },
   "fetch/content-encoding/br/bad-br-body.https.any.js": {
-    "total": 6,
-    "failures": {
-      "Consuming the body of a resource with bad br content with arrayBuffer() should reject": "FAIL",
-      "Consuming the body of a resource with bad br content with blob() should reject": "FAIL",
-      "Consuming the body of a resource with bad br content with bytes() should reject": "FAIL",
-      "Consuming the body of a resource with bad br content with formData() should reject": "FAIL",
-      "Consuming the body of a resource with bad br content with json() should reject": "FAIL",
-      "Consuming the body of a resource with bad br content with text() should reject": "FAIL"
-    }
+    "total": 6
   },
   "fetch/content-encoding/br/big-br-body.https.any.js": {
     "total": 2
@@ -1746,40 +1700,13 @@
     "total": 1
   },
   "fetch/content-encoding/gzip/bad-gzip-body.any.js": {
-    "total": 7,
-    "failures": {
-      "Consuming the body of a resource with bad gzip content with arrayBuffer() should reject": "FAIL",
-      "Consuming the body of a resource with bad gzip content with blob() should reject": "FAIL",
-      "Consuming the body of a resource with bad gzip content with bytes() should reject": "FAIL",
-      "Consuming the body of a resource with bad gzip content with formData() should reject": "FAIL",
-      "Consuming the body of a resource with bad gzip content with json() should reject": "FAIL",
-      "Consuming the body of a resource with bad gzip content with text() should reject": "FAIL",
-      "Fetching a resource with bad gzip content should still resolve": "FAIL"
-    }
+    "total": 7
   },
   "fetch/content-encoding/gzip/bad-gzip-body.any.js#dedicatedworker": {
-    "total": 7,
-    "failures": {
-      "Consuming the body of a resource with bad gzip content with arrayBuffer() should reject": "FAIL",
-      "Consuming the body of a resource with bad gzip content with blob() should reject": "FAIL",
-      "Consuming the body of a resource with bad gzip content with bytes() should reject": "FAIL",
-      "Consuming the body of a resource with bad gzip content with formData() should reject": "FAIL",
-      "Consuming the body of a resource with bad gzip content with json() should reject": "FAIL",
-      "Consuming the body of a resource with bad gzip content with text() should reject": "FAIL",
-      "Fetching a resource with bad gzip content should still resolve": "FAIL"
-    }
+    "total": 7
   },
   "fetch/content-encoding/gzip/bad-gzip-body.any.js#sharedworker": {
-    "total": 7,
-    "failures": {
-      "Consuming the body of a resource with bad gzip content with arrayBuffer() should reject": "FAIL",
-      "Consuming the body of a resource with bad gzip content with blob() should reject": "FAIL",
-      "Consuming the body of a resource with bad gzip content with bytes() should reject": "FAIL",
-      "Consuming the body of a resource with bad gzip content with formData() should reject": "FAIL",
-      "Consuming the body of a resource with bad gzip content with json() should reject": "FAIL",
-      "Consuming the body of a resource with bad gzip content with text() should reject": "FAIL",
-      "Fetching a resource with bad gzip content should still resolve": "FAIL"
-    }
+    "total": 7
   },
   "fetch/content-encoding/gzip/big-gzip-body.https.any.js": {
     "total": 2
@@ -1808,10 +1735,8 @@
       "Consuming the body of a resource with bad zstd content with arrayBuffer() should reject": "FAIL",
       "Consuming the body of a resource with bad zstd content with blob() should reject": "FAIL",
       "Consuming the body of a resource with bad zstd content with bytes() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with formData() should reject": "FAIL",
       "Consuming the body of a resource with bad zstd content with json() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with text() should reject": "FAIL",
-      "Fetching a resource with bad zstd content should still resolve": "FAIL"
+      "Consuming the body of a resource with bad zstd content with text() should reject": "FAIL"
     }
   },
   "fetch/content-encoding/zstd/bad-zstd-body.https.any.js#dedicatedworker": {
@@ -1820,10 +1745,8 @@
       "Consuming the body of a resource with bad zstd content with arrayBuffer() should reject": "FAIL",
       "Consuming the body of a resource with bad zstd content with blob() should reject": "FAIL",
       "Consuming the body of a resource with bad zstd content with bytes() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with formData() should reject": "FAIL",
       "Consuming the body of a resource with bad zstd content with json() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with text() should reject": "FAIL",
-      "Fetching a resource with bad zstd content should still resolve": "FAIL"
+      "Consuming the body of a resource with bad zstd content with text() should reject": "FAIL"
     }
   },
   "fetch/content-encoding/zstd/bad-zstd-body.https.any.js#sharedworker": {
@@ -1832,10 +1755,8 @@
       "Consuming the body of a resource with bad zstd content with arrayBuffer() should reject": "FAIL",
       "Consuming the body of a resource with bad zstd content with blob() should reject": "FAIL",
       "Consuming the body of a resource with bad zstd content with bytes() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with formData() should reject": "FAIL",
       "Consuming the body of a resource with bad zstd content with json() should reject": "FAIL",
-      "Consuming the body of a resource with bad zstd content with text() should reject": "FAIL",
-      "Fetching a resource with bad zstd content should still resolve": "FAIL"
+      "Consuming the body of a resource with bad zstd content with text() should reject": "FAIL"
     }
   },
   "fetch/content-encoding/zstd/big-window-zstd-body.tentative.https.any.js": {
@@ -1911,56 +1832,13 @@
     "total": 2
   },
   "fetch/content-length/content-length.html": {
-    "total": 1,
-    "failures": {
-      "Content-Length Test": "FAIL"
-    }
+    "total": 1
   },
   "fetch/content-length/parsing.window.js": {
-    "total": 36,
-    "failures": {
-      "Input: \"Content-Length: \". Expected: 42.": "FAIL",
-      "Input: \"Content-Length: ,30\". Expected: network error.": "FAIL",
-      "Input: \"Content-Length: -1\". Expected: 42.": "FAIL",
-      "Input: \"Content-Length: 030\". Expected: 30.": "FAIL",
-      "Input: \"Content-Length: 030, 30\". Expected: network error.": "FAIL",
-      "Input: \"Content-Length: 030\\r\\nContent-Length: 30\". Expected: network error.": "FAIL",
-      "Input: \"Content-Length: 0x20\". Expected: 42.": "FAIL",
-      "Input: \"Content-Length: 30\". Expected: 30.": "FAIL",
-      "Input: \"Content-Length: 30,\". Expected: network error.": "FAIL",
-      "Input: \"Content-Length: 30,30\". Expected: 30.": "FAIL",
-      "Input: \"Content-Length: 30,30,  30  \\r\\nContent-Length: 30  \". Expected: 30.": "FAIL",
-      "Input: \"Content-Length: 30,30\\r\\nContent-Length: 30,30\". Expected: 30.": "FAIL",
-      "Input: \"Content-Length: 30,42\". Expected: network error.": "FAIL",
-      "Input: \"Content-Length: 30,42\\r\\nContent-Length: 30\". Expected: network error.": "FAIL",
-      "Input: \"Content-Length: 30,42\\r\\nContent-Length: 30,42\". Expected: network error.": "FAIL",
-      "Input: \"Content-Length: 30\\r\\nContent-Length: 30\". Expected: 30.": "FAIL",
-      "Input: \"Content-Length: 30\\r\\nContent-Length: 30,30\". Expected: 30.": "FAIL",
-      "Input: \"Content-Length: 30\\r\\nContent-Length: 42\". Expected: network error.": "FAIL",
-      "Input: \"Content-Length: 30\\r\\nContent-Length: \\t\". Expected: network error.": "FAIL",
-      "Input: \"Content-Length: 30s\". Expected: 42.": "FAIL",
-      "Input: \"Content-Length: 42\". Expected: 42.": "FAIL",
-      "Input: \"Content-Length: 42,30\". Expected: network error.": "FAIL",
-      "Input: \"Content-Length: 42,42\". Expected: 42.": "FAIL",
-      "Input: \"Content-Length: 42\\r\\nContent-Length: 30\". Expected: network error.": "FAIL",
-      "Input: \"Content-Length: 42\\r\\nContent-Length: 42\". Expected: 42.": "FAIL",
-      "Input: \"Content-Length: 42\\r\\nContent-Length: 42,42\". Expected: 42.": "FAIL",
-      "Input: \"Content-Length: 42s\". Expected: 42.": "FAIL",
-      "Input: \"Content-Length: \\\"30\\\"\". Expected: 42.": "FAIL",
-      "Input: \"Content-Length: \\r\\nContent-Length: 30\". Expected: network error.": "FAIL",
-      "Input: \"Content-Length: aaaah\". Expected: 42.": "FAIL",
-      "Input: \"Content-Length: aaaah, aaaah\". Expected: 42.": "FAIL",
-      "Input: \"Content-Length: aaaah, nah\". Expected: network error.": "FAIL",
-      "Input: \"Content-Length: aaaah\\r\\nContent-Length: aaaah\". Expected: 42.": "FAIL",
-      "Input: \"Content-Length: aaaah\\r\\nContent-Length: nah\". Expected: network error.": "FAIL",
-      "Input: \"Content-Length:30\\r\\nContent-Length:,\\r\\nContent-Length:30\". Expected: network error.": "FAIL"
-    }
+    "total": 36
   },
   "fetch/content-length/too-long.window.js": {
-    "total": 1,
-    "failures": {
-      "Content-Length header value of network response exceeds response body": "FAIL"
-    }
+    "total": 1
   },
   "fetch/content-type/multipart-malformed.any.js": {
     "total": 1
@@ -2055,7 +1933,33 @@
     "total": 1
   },
   "fetch/corb/script-resource-with-json-parser-breaker.tentative.sub.html": {
-    "total": 27
+    "total": 27,
+    "failures": {
+      "CORB-blocks 'application/javascript' that starts with the following JSON parser breaker: )]}'": "FAIL",
+      "CORB-blocks 'application/javascript' that starts with the following JSON parser breaker: {} &&": "FAIL",
+      "CORB-blocks 'application/javascript' that starts with the following JSON parser breaker: {}&&": "FAIL",
+      "CORB-blocks 'application/pdf' that starts with the following JSON parser breaker: )]}'": "FAIL",
+      "CORB-blocks 'application/pdf' that starts with the following JSON parser breaker: {} &&": "FAIL",
+      "CORB-blocks 'application/pdf' that starts with the following JSON parser breaker: {}&&": "FAIL",
+      "CORB-blocks 'application/zip' that starts with the following JSON parser breaker: )]}'": "FAIL",
+      "CORB-blocks 'application/zip' that starts with the following JSON parser breaker: {} &&": "FAIL",
+      "CORB-blocks 'application/zip' that starts with the following JSON parser breaker: {}&&": "FAIL",
+      "CORB-blocks 'image/svg+xml' that starts with the following JSON parser breaker: )]}'": "FAIL",
+      "CORB-blocks 'image/svg+xml' that starts with the following JSON parser breaker: {} &&": "FAIL",
+      "CORB-blocks 'image/svg+xml' that starts with the following JSON parser breaker: {}&&": "FAIL",
+      "CORB-blocks 'text/html' that starts with the following JSON parser breaker: )]}'": "FAIL",
+      "CORB-blocks 'text/html' that starts with the following JSON parser breaker: {} &&": "FAIL",
+      "CORB-blocks 'text/html' that starts with the following JSON parser breaker: {}&&": "FAIL",
+      "CORB-blocks 'text/json' that starts with the following JSON parser breaker: )]}'": "FAIL",
+      "CORB-blocks 'text/json' that starts with the following JSON parser breaker: {} &&": "FAIL",
+      "CORB-blocks 'text/json' that starts with the following JSON parser breaker: {}&&": "FAIL",
+      "CORB-blocks 'text/plain' that starts with the following JSON parser breaker: )]}'": "FAIL",
+      "CORB-blocks 'text/plain' that starts with the following JSON parser breaker: {} &&": "FAIL",
+      "CORB-blocks 'text/plain' that starts with the following JSON parser breaker: {}&&": "FAIL",
+      "CORB-blocks 'text/xml' that starts with the following JSON parser breaker: )]}'": "FAIL",
+      "CORB-blocks 'text/xml' that starts with the following JSON parser breaker: {} &&": "FAIL",
+      "CORB-blocks 'text/xml' that starts with the following JSON parser breaker: {}&&": "FAIL"
+    }
   },
   "fetch/corb/script-resource-with-nonsniffable-types.tentative.sub.html": {
     "harness": "TIMEOUT",
@@ -2456,16 +2360,7 @@
   "fetch/h1-parsing/lone-cr.window.js": {
     "total": 10,
     "failures": {
-      "Parsing response with a lone CR before message-body (HTTP/1.1\r200 OK\n\nBODY)": "FAIL",
-      "Parsing response with a lone CR before message-body (HTTP/1.1 200\rOK\n\nBODY)": "FAIL",
-      "Parsing response with a lone CR before message-body (HTTP/1.1 200 OK\n\rHeader: Value\n\nBODY)": "FAIL",
-      "Parsing response with a lone CR before message-body (HTTP/1.1 200 OK\nHeader\r: Value\n\nBODY)": "FAIL",
-      "Parsing response with a lone CR before message-body (HTTP/1.1 200 OK\nHeader:\r Value\n\nBODY)": "FAIL",
-      "Parsing response with a lone CR before message-body (HTTP/1.1 200 OK\nHeader: Value\n\r)": "FAIL",
-      "Parsing response with a lone CR before message-body (HTTP/1.1 200 OK\nHeader: Value\n\rBODY)": "FAIL",
-      "Parsing response with a lone CR before message-body (HTTP/1.1 200 OK\nHeader: Value\r\n\nBody)": "FAIL",
-      "Parsing response with a lone CR before message-body (HTTP/1.1 200 OK\nHeader: Value\r\r\nBODY)": "FAIL",
-      "Parsing response with a lone CR before message-body (HTTP/1.1 200 OK\nHeader: Value\rHeader2: Value2\n\nBODY)": "FAIL"
+      "Parsing response with a lone CR before message-body (HTTP/1.1 200 OK\nHeader: Value\r\n\nBody)": "FAIL"
     }
   },
   "fetch/h1-parsing/resources-with-0x00-in-header.window.js": {
@@ -2474,22 +2369,9 @@
   "fetch/h1-parsing/status-code.window.js": {
     "total": 16,
     "failures": {
-      "HTTP/1.1  (network error)": "FAIL",
-      "HTTP/1.1 -200 TEST (network error)": "FAIL",
       "HTTP/1.1 0 OK ": "FAIL",
-      "HTTP/1.1 0200 BOO (network error)": "FAIL",
-      "HTTP/1.1 077 77 ": "FAIL",
-      "HTTP/1.1 099 HELLO ": "FAIL",
-      "HTTP/1.1 0xA (network error)": "FAIL",
       "HTTP/1.1 1 OK ": "FAIL",
-      "HTTP/1.1 1000 BOO (network error)": "FAIL",
-      "HTTP/1.1 131072 HI (network error)": "FAIL",
-      "HTTP/1.1 200 ": "FAIL",
-      "HTTP/1.1 65736 NOT 200 OR SOME SUCH (network error)": "FAIL",
-      "HTTP/1.1 99 NOT OK ": "FAIL",
-      "HTTP/1.1 999 DOES IT MATTER ": "FAIL",
-      "HTTP/1.1 BLAH (network error)": "FAIL",
-      "HTTP/1.1 C8 (network error)": "FAIL"
+      "HTTP/1.1 99 NOT OK ": "FAIL"
     }
   },
   "fetch/http-cache/304-update.any.js": {
@@ -3220,19 +3102,7 @@
     "total": 1
   },
   "fetch/nosniff/parsing-nosniff.window.js": {
-    "total": 16,
-    "failures": {
-      "Content-Type-Options%3A%20nosniff": "FAIL",
-      "X-Content-Type-Options%3A%0D%0AX-Content-Type-Options%3A%20nosniff": "FAIL",
-      "X-Content-Type-Options%3A%20%22nosniFF%22": "FAIL",
-      "X-Content-Type-Options%3A%20%2Cnosniff": "FAIL",
-      "X-Content-Type-Options%3A%20%40%23%24%23%25%25%26%5E%26%5E*()()11!%2Cnosniff": "FAIL",
-      "X-Content-Type-Options%3A%20'NosniFF'": "FAIL",
-      "X-Content-Type-Options%3A%20no%0D%0AX-Content-Type-Options%3A%20nosniff": "FAIL",
-      "X-Content-Type-Options%3A%20nosniff%0B": "FAIL",
-      "X-Content-Type-Options%3A%20nosniff%0B%2Cnosniff": "FAIL",
-      "X-Content-Type-Options%3A%20nosniff%0C": "FAIL"
-    }
+    "total": 16
   },
   "fetch/nosniff/script.html": {
     "total": 10
@@ -3362,13 +3232,7 @@
     }
   },
   "fetch/orb/tentative/ping.optional.html": {
-    "total": 4,
-    "failures": {
-      "Cross-origin ping reaches the server and navigation succeeds with a 200 application/json nosniff response": "FAIL",
-      "Cross-origin ping reaches the server and navigation succeeds with a 200 text/html nosniff response": "FAIL",
-      "Cross-origin ping reaches the server and navigation succeeds with a 200 text/plain nosniff response": "FAIL",
-      "Cross-origin ping reaches the server and navigation succeeds with a 204 text/plain nosniff response": "FAIL"
-    }
+    "total": 4
   },
   "fetch/orb/tentative/script-js-unlabeled-gzipped.sub.html": {
     "total": 1
@@ -3405,53 +3269,7 @@
     "total": 5
   },
   "fetch/origin/assorted.window.js": {
-    "harness": "ERROR",
-    "total": 43,
-    "failures": {
-      "Origin header and 308 redirect": "FAIL",
-      "Origin header and GET cross-origin fetch cors mode with Referrer-Policy no-referrer": "NOTRUN",
-      "Origin header and GET cross-origin fetch cors mode with Referrer-Policy no-referrer-when-downgrade": "NOTRUN",
-      "Origin header and GET cross-origin fetch cors mode with Referrer-Policy origin-when-cross-origin": "NOTRUN",
-      "Origin header and GET cross-origin fetch cors mode with Referrer-Policy same-origin": "NOTRUN",
-      "Origin header and GET cross-origin fetch cors mode with Referrer-Policy unsafe-url": "NOTRUN",
-      "Origin header and GET navigation": "FAIL",
-      "Origin header and GET same-origin fetch cors mode with Referrer-Policy no-referrer": "NOTRUN",
-      "Origin header and GET same-origin fetch cors mode with Referrer-Policy no-referrer-when-downgrade": "NOTRUN",
-      "Origin header and GET same-origin fetch cors mode with Referrer-Policy origin-when-cross-origin": "NOTRUN",
-      "Origin header and GET same-origin fetch cors mode with Referrer-Policy same-origin": "NOTRUN",
-      "Origin header and GET same-origin fetch cors mode with Referrer-Policy unsafe-url": "NOTRUN",
-      "Origin header and POST cross-origin fetch cors mode with Referrer-Policy no-referrer": "NOTRUN",
-      "Origin header and POST cross-origin fetch cors mode with Referrer-Policy no-referrer-when-downgrade": "NOTRUN",
-      "Origin header and POST cross-origin fetch cors mode with Referrer-Policy origin-when-cross-origin": "NOTRUN",
-      "Origin header and POST cross-origin fetch cors mode with Referrer-Policy same-origin": "NOTRUN",
-      "Origin header and POST cross-origin fetch cors mode with Referrer-Policy unsafe-url": "NOTRUN",
-      "Origin header and POST cross-origin fetch no-cors mode with Referrer-Policy no-referrer": "NOTRUN",
-      "Origin header and POST cross-origin fetch no-cors mode with Referrer-Policy no-referrer-when-downgrade": "NOTRUN",
-      "Origin header and POST cross-origin fetch no-cors mode with Referrer-Policy origin-when-cross-origin": "NOTRUN",
-      "Origin header and POST cross-origin fetch no-cors mode with Referrer-Policy same-origin": "NOTRUN",
-      "Origin header and POST cross-origin fetch no-cors mode with Referrer-Policy unsafe-url": "NOTRUN",
-      "Origin header and POST cross-origin navigation with Referrer-Policy no-referrer": "NOTRUN",
-      "Origin header and POST cross-origin navigation with Referrer-Policy no-referrer-when-downgrade": "NOTRUN",
-      "Origin header and POST cross-origin navigation with Referrer-Policy origin-when-cross-origin": "NOTRUN",
-      "Origin header and POST cross-origin navigation with Referrer-Policy same-origin": "NOTRUN",
-      "Origin header and POST cross-origin navigation with Referrer-Policy unsafe-url": "NOTRUN",
-      "Origin header and POST navigation": "TIMEOUT",
-      "Origin header and POST same-origin fetch cors mode with Referrer-Policy no-referrer": "NOTRUN",
-      "Origin header and POST same-origin fetch cors mode with Referrer-Policy no-referrer-when-downgrade": "NOTRUN",
-      "Origin header and POST same-origin fetch cors mode with Referrer-Policy origin-when-cross-origin": "NOTRUN",
-      "Origin header and POST same-origin fetch cors mode with Referrer-Policy same-origin": "NOTRUN",
-      "Origin header and POST same-origin fetch cors mode with Referrer-Policy unsafe-url": "NOTRUN",
-      "Origin header and POST same-origin fetch no-cors mode with Referrer-Policy no-referrer": "NOTRUN",
-      "Origin header and POST same-origin fetch no-cors mode with Referrer-Policy no-referrer-when-downgrade": "NOTRUN",
-      "Origin header and POST same-origin fetch no-cors mode with Referrer-Policy origin-when-cross-origin": "NOTRUN",
-      "Origin header and POST same-origin fetch no-cors mode with Referrer-Policy same-origin": "NOTRUN",
-      "Origin header and POST same-origin fetch no-cors mode with Referrer-Policy unsafe-url": "NOTRUN",
-      "Origin header and POST same-origin navigation with Referrer-Policy no-referrer": "NOTRUN",
-      "Origin header and POST same-origin navigation with Referrer-Policy no-referrer-when-downgrade": "NOTRUN",
-      "Origin header and POST same-origin navigation with Referrer-Policy origin-when-cross-origin": "NOTRUN",
-      "Origin header and POST same-origin navigation with Referrer-Policy same-origin": "NOTRUN",
-      "Origin header and POST same-origin navigation with Referrer-Policy unsafe-url": "NOTRUN"
-    }
+    "total": 43
   },
   "fetch/range/blob.any.js": {
     "total": 35
@@ -3472,33 +3290,16 @@
     "total": 2
   },
   "fetch/range/general.any.js": {
-    "total": 7,
-    "failures": {
-      "Cross Origin Fetch with safe range header": "FAIL",
-      "Fetch with range header will be sent with Accept-Encoding: identity": "FAIL"
-    }
+    "total": 7
   },
   "fetch/range/general.any.js#dedicatedworker": {
-    "total": 7,
-    "failures": {
-      "Cross Origin Fetch with safe range header": "FAIL",
-      "Fetch with range header will be sent with Accept-Encoding: identity": "FAIL"
-    }
+    "total": 7
   },
   "fetch/range/general.any.js#sharedworker": {
-    "total": 7,
-    "failures": {
-      "Cross Origin Fetch with safe range header": "FAIL",
-      "Fetch with range header will be sent with Accept-Encoding: identity": "FAIL"
-    }
+    "total": 7
   },
   "fetch/range/general.window.js": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "Fetch with range header will be sent with Accept-Encoding: identity": "TIMEOUT",
-      "Script executed from partial response": "FAIL"
-    }
+    "total": 2
   },
   "fetch/range/non-matching-range-response.html": {
     "total": 3
@@ -3520,16 +3321,11 @@
     "total": 10,
     "failures": {
       "Cached ranged response not allowed following no-cors ranged request": "FAIL",
-      "Include range header in network request": "FAIL",
-      "Non-opaque ranged response executed": "FAIL",
       "Ranged response not allowed following no-cors ranged request": "FAIL"
     }
   },
   "fetch/redirect-navigate/302-found-post.html": {
-    "total": 1,
-    "failures": {
-      "HTTP 302 Found POST Navigation": "FAIL"
-    }
+    "total": 1
   },
   "fetch/redirect-navigate/preserve-fragment.html": {
     "total": 120

@@ -1,4 +1,7 @@
 {
+  "css/css-text/altering-dom-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-text/animations/hyphen-no-interpolation.html": {
     "total": 168
   },
@@ -87,6 +90,51 @@
   },
   "css/css-text/boundary-shaping/boundary-shaping-010.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/crashtests/eol-spaces-bidi-min-content-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/crashtests/line-break-float-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/crashtests/line-breaker-overflow-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/crashtests/overflow-wrap-anywhere-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/crashtests/overflow-wrap-anywhere-fractional-width-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/crashtests/rendering-rtl-bidi-override-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/crashtests/rendering-table-caption-with-list-item-and-svg-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/crashtests/rendering-table-caption-with-negative-margins-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/crashtests/text-indent-each-line-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/crashtests/text-wrap-balance-float-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/crashtests/text-wrap-balance-nested-blocks-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/crashtests/trailing-space-with-cr-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/crashtests/white-space-pre-wrap-chash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/crashtests/word-spacing-large-value.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/ellisize-rtl-text-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-text/hanging-punctuation/hanging-punctuation-allow-end-001.xht": {
     "reftest": "PASS"
@@ -199,6 +247,9 @@
   "css/css-text/hyphens/hyphens-auto-010.html": {
     "reftest": "PASS"
   },
+  "css/css-text/hyphens/hyphens-auto-and-contenteditable-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-text/hyphens/hyphens-auto-control.html": {
     "reftest": "FAIL"
   },
@@ -210,6 +261,9 @@
   },
   "css/css-text/hyphens/hyphens-auto-min-content.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/hyphens/hyphens-auto-wordbreak-breakall-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-text/hyphens/hyphens-character.html": {
     "reftest": "PASS"
@@ -2219,6 +2273,9 @@
   "css/css-text/line-breaking/segment-break-transformation-unremovable-4.html": {
     "reftest": "PASS"
   },
+  "css/css-text/overflow-wrap/crashtests/overflow-wrap-leading-floats-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-text/overflow-wrap/overflow-wrap-001.html": {
     "reftest": "PASS"
   },
@@ -2321,6 +2378,9 @@
   "css/css-text/overflow-wrap/overflow-wrap-break-word-keep-all-001.html": {
     "total": 2
   },
+  "css/css-text/overflow-wrap/overflow-wrap-break-word-long-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-text/overflow-wrap/overflow-wrap-break-word-nowrap-span-001.html": {
     "total": 3
   },
@@ -2332,6 +2392,9 @@
   },
   "css/css-text/overflow-wrap/overflow-wrap-break-word-white-space-crash-002.html": {
     "total": 1
+  },
+  "css/css-text/overflow-wrap/overflow-wrap-break-word-white-space-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-text/overflow-wrap/overflow-wrap-cluster-001.html": {
     "reftest": "PASS"
@@ -2757,6 +2820,12 @@
   "css/css-text/parsing/word-wrap-valid.html": {
     "total": 3
   },
+  "css/css-text/removing-collapsible-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/removing-collapsible-spaces-before-float-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-text/shaping/monospace-contextual-forms-incremental.html": {
     "reftest": "PASS"
   },
@@ -2888,6 +2957,9 @@
   },
   "css/css-text/shaping/shaping-arabic-diacritics-002.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/shaping/shaping-no-glyphs-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-text/shaping/shaping_lig-000.html": {
     "reftest": "PASS"
@@ -3029,6 +3101,9 @@
   },
   "css/css-text/text-align/text-align-end-last-start.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/text-align/text-align-inline-end-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-text/text-align/text-align-justify-001.html": {
     "reftest": "PASS"
@@ -3237,6 +3312,15 @@
   "css/css-text/text-align/text-align-webkit-match-parent.html": {
     "total": 1
   },
+  "css/css-text/text-autospace/crashtests/text-autospace-ruby-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/text-autospace/crashtests/text-autospace-shape-cache-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-text/text-autospace/crashtests/text-autospace-size-huge-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-text/text-autospace/text-autospace-001.html": {
     "reftest": "PASS"
   },
@@ -3369,6 +3453,9 @@
   "css/css-text/text-fit/columns-consistent.html": {
     "reftest": "PASS"
   },
+  "css/css-text/text-fit/columns-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-text/text-fit/consistent-blank-line.html": {
     "reftest": "PASS"
   },
@@ -3396,6 +3483,9 @@
   "css/css-text/text-fit/selection-highlight-painting.html": {
     "reftest": "PASS"
   },
+  "css/css-text/text-fit/shrink-consistent-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-text/text-fit/shrink-consistent.html": {
     "reftest": "PASS"
   },
@@ -3413,6 +3503,9 @@
   },
   "css/css-text/text-fit/text-autospace.html": {
     "total": 2
+  },
+  "css/css-text/text-fit/text-box-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-text/text-fit/text-box.html": {
     "reftest": "PASS"
@@ -3522,6 +3615,9 @@
   "css/css-text/text-indent/text-indent-list-001.html": {
     "reftest": "PASS"
   },
+  "css/css-text/text-indent/text-indent-long-line-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-text/text-indent/text-indent-min-max-content-001.html": {
     "reftest": "PASS"
   },
@@ -3539,6 +3635,9 @@
   },
   "css/css-text/text-indent/text-indent-percentage-004.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/text-indent/text-indent-ruby-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-text/text-indent/text-indent-tab-positions-001.html": {
     "reftest": "PASS"
@@ -3602,6 +3701,9 @@
   },
   "css/css-text/text-justify/text-justify-word-separators.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/text-spacing-trim/crashtests/text-spacing-trim-end-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-text/text-spacing-trim/text-spacing-trim-001.html?class=chws,htb": {
     "reftest": "PASS"
@@ -3878,6 +3980,9 @@
   },
   "css/css-text/text-stroke-width-subpixel.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/text-transform/crashtests/first-line-text-transform-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-text/text-transform/math/text-transform-math-auto-001.html": {
     "reftest": "PASS"
@@ -4217,6 +4322,9 @@
   },
   "css/css-text/text-transform/text-transform-upperlower-108.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/text-wrap-style/crashtests/text-wrap-style-pretty-block-in-inline-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-text/white-space/append-whitespace-only-node-crash-001.html": {
     "total": 30
@@ -4710,6 +4818,9 @@
   "css/css-text/white-space/lone-cr-001.tentative.html": {
     "reftest": "PASS"
   },
+  "css/css-text/white-space/nowrap-wbr-and-space-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-text/white-space/object-replacement-1.html": {
     "reftest": "PASS"
   },
@@ -4728,11 +4839,17 @@
   "css/css-text/white-space/pre-line-052.html": {
     "reftest": "PASS"
   },
+  "css/css-text/white-space/pre-line-br-with-whitespace-child-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-text/white-space/pre-line-with-space-and-newline.html": {
     "reftest": "PASS"
   },
   "css/css-text/white-space/pre-tab-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/white-space/pre-with-whitespace-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-text/white-space/pre-wrap-001.html": {
     "reftest": "PASS"
@@ -5075,6 +5192,9 @@
   },
   "css/css-text/white-space/text-wrap-balance-line-clamp-007.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/white-space/text-wrap-balance-narrow-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-text/white-space/text-wrap-balance-overflow-001.html": {
     "reftest": "PASS"
@@ -5639,6 +5759,9 @@
   },
   "css/css-text/white-space/ws-break-spaces-applies-to-015.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/whitespace-followed-by-cham-symbol-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-text/word-break/auto-phrase/word-break-auto-phrase-001.html": {
     "reftest": "PASS"

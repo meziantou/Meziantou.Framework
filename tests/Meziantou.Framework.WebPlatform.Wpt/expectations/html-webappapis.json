@@ -393,40 +393,25 @@
     "total": 4
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-refresh-immediate.window.js": {
-    "total": 6,
-    "failures": {
-      "document.open() aborts documents that are queued for navigation through <meta> refresh with timeout 0 (XMLHttpRequest)": "FAIL",
-      "document.open() aborts documents that are queued for navigation through <meta> refresh with timeout 0 (fetch())": "FAIL",
-      "document.open() aborts documents that are queued for navigation through <meta> refresh with timeout 0 (image loading)": "FAIL",
-      "document.open() aborts documents that are queued for navigation through Refresh header with timeout 0 (XMLHttpRequest)": "FAIL",
-      "document.open() aborts documents that are queued for navigation through Refresh header with timeout 0 (fetch())": "FAIL",
-      "document.open() aborts documents that are queued for navigation through Refresh header with timeout 0 (image loading)": "FAIL"
-    }
+    "harness": "TIMEOUT",
+    "total": 0
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-refresh-multisecond-header.window.js": {
-    "total": 3,
-    "failures": {
-      "document.open() does NOT abort documents that are queued for navigation through Refresh header with 1-sec timeout (XMLHttpRequest)": "FAIL",
-      "document.open() does NOT abort documents that are queued for navigation through Refresh header with 1-sec timeout (fetch())": "FAIL",
-      "document.open() does NOT abort documents that are queued for navigation through Refresh header with 4-sec timeout (image loading)": "FAIL"
-    }
+    "total": 3
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-refresh-multisecond-meta.window.js": {
-    "total": 3,
-    "failures": {
-      "document.open() does NOT abort documents that are queued for navigation through <meta> refresh with 1-sec timeout (XMLHttpRequest)": "FAIL",
-      "document.open() does NOT abort documents that are queued for navigation through <meta> refresh with 1-sec timeout (fetch())": "FAIL",
-      "document.open() does NOT abort documents that are queued for navigation through <meta> refresh with 4-sec timeout (image loading)": "FAIL"
-    }
+    "total": 3
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort-while-navigating.window.js": {
-    "total": 9
+    "total": 9,
+    "failures": {
+      "document.open() aborts documents that are navigating through Location (image loading)": "FAIL",
+      "document.open() aborts documents that are navigating through iframe loading (image loading)": "FAIL",
+      "document.open() aborts documents that are queued for navigation through .click() (image loading)": "FAIL"
+    }
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/abort.sub.window.js": {
-    "total": 5,
-    "failures": {
-      "document.open() does not abort documents that are not navigating (image loading)": "FAIL"
-    }
+    "total": 5
   },
   "html/webappapis/dynamic-markup-insertion/opening-the-input-stream/aborted-parser.window.js": {
     "total": 2
@@ -912,6 +897,9 @@
   "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/disallow-crossorigin.html": {
     "total": 3
   },
+  "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-during-parsing-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/webappapis/scripting/processing-model-2/unhandled-promise-rejections/promise-rejection-event-constructor.html": {
     "total": 1
   },
@@ -982,6 +970,9 @@
   "html/webappapis/scripting/reporterror-cross-realm-method.html": {
     "total": 1
   },
+  "html/webappapis/scripting/reporterror-in-detached-window-crash.html": {
+    "crashtest": "PASS"
+  },
   "html/webappapis/scripting/reporterror.any.js": {
     "total": 5
   },
@@ -990,6 +981,9 @@
   },
   "html/webappapis/structured-clone/structured-clone-cross-realm-method.html": {
     "total": 4
+  },
+  "html/webappapis/structured-clone/structured-clone-detached-window-crash.html": {
+    "crashtest": "PASS"
   },
   "html/webappapis/structured-clone/structured-clone.any.js": {
     "total": 152

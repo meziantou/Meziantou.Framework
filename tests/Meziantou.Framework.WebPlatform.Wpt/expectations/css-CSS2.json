@@ -4076,6 +4076,9 @@
   "css/CSS2/floats-clear/adjoining-float-nested-forced-clearance.html": {
     "reftest": "PASS"
   },
+  "css/CSS2/floats-clear/adjoining-float-new-fc-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/CSS2/floats-clear/adjoining-float-new-fc.html": {
     "reftest": "PASS"
   },
@@ -4219,6 +4222,9 @@
   },
   "css/CSS2/floats-clear/clearance-006.xht": {
     "reftest": "PASS"
+  },
+  "css/CSS2/floats-clear/clearance-containing-fragmented-float-crash.html": {
+    "crashtest": "PASS"
   },
   "css/CSS2/floats-clear/float-003.xht": {
     "reftest": "PASS"
@@ -4712,6 +4718,60 @@
   "css/CSS2/floats/computed-float-position-absolute.html": {
     "total": 1
   },
+  "css/CSS2/floats/crashtests/firefox-bug-1904409.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/firefox-bug-1904419.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/firefox-bug-1904421.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/firefox-bug-1904428.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/firefox-bug-1906768.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/float-append-child.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/float-dynamic-change-1.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/float-dynamic-change-2.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/float-dynamic-change-3.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/float-dynamic-change-4.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/float-dynamic-change-5.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/float-dynamic-change-6.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/float-dynamic-change-7.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/float-dynamic-change-8.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/float-rewind-parallel-flow-1-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/float-rewind-parallel-flow-2-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/float-rewind-parallel-flow-3-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/floats/crashtests/huge-width-after-float.html": {
+    "crashtest": "PASS"
+  },
   "css/CSS2/floats/float-after-block-with-collapsed-margin-inside-inline.html": {
     "reftest": "PASS"
   },
@@ -4907,6 +4967,9 @@
   "css/CSS2/floats/floats-rule7-outside-right-001.xht": {
     "reftest": "PASS"
   },
+  "css/CSS2/floats/floats-saturated-position-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/CSS2/floats/floats-wrap-bfc-001-left-overflow.xht": {
     "reftest": "PASS"
   },
@@ -5056,6 +5119,9 @@
   },
   "css/CSS2/floats/intrinsic-size-float-and-line.html": {
     "reftest": "PASS"
+  },
+  "css/CSS2/floats/line-pushed-by-floats-crash.html": {
+    "crashtest": "PASS"
   },
   "css/CSS2/floats/list-item-taller-than-opportunity-001.html": {
     "total": 1
@@ -6323,6 +6389,12 @@
   "css/CSS2/linebox/border-padding-bleed-003.xht": {
     "reftest": "PASS"
   },
+  "css/CSS2/linebox/crashtests/dir-change-simplifed-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/linebox/crashtests/inline-block-baseline-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/CSS2/linebox/empty-inline-001.xht": {
     "reftest": "PASS"
   },
@@ -6650,6 +6722,9 @@
   "css/CSS2/linebox/needs-layout-transform.html": {
     "total": 1
   },
+  "css/CSS2/linebox/soft-wrap-opportunity-after-replaced-content-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/CSS2/linebox/split-inline-borders.html": {
     "reftest": "PASS"
   },
@@ -6895,6 +6970,9 @@
   },
   "css/CSS2/linebox/vertical-align-top-bottom-padding.html": {
     "reftest": "PASS"
+  },
+  "css/CSS2/linebox/video-needs-layout-crash.html": {
+    "crashtest": "PASS"
   },
   "css/CSS2/lists/counter-increment-005.xht": {
     "reftest": "PASS"
@@ -10036,6 +10114,12 @@
   },
   "css/CSS2/normal-flow/containing-block-percent-padding-top.html": {
     "total": 1
+  },
+  "css/CSS2/normal-flow/crashtests/block-in-inline-ax-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/CSS2/normal-flow/crashtests/block-in-inline-remove-crash.html": {
+    "crashtest": "PASS"
   },
   "css/CSS2/normal-flow/cross-domain-iframe-paint-order.sub.html": {
     "reftest": "PASS"
@@ -13652,6 +13736,9 @@
   "css/CSS2/positioning/top-offset-percentage-002.xht": {
     "reftest": "PASS"
   },
+  "css/CSS2/replace-root-with-trailing-comment-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/CSS2/sec5/adjacent-000.xht": {
     "reftest": "PASS"
   },
@@ -17147,6 +17234,9 @@
   "css/CSS2/text/bidi-span-003.html": {
     "reftest": "PASS"
   },
+  "css/CSS2/text/crashtests/bidi-inline-fragment-oof-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/CSS2/text/letter-spacing-004.xht": {
     "reftest": "PASS"
   },
@@ -18608,6 +18698,9 @@
   "css/CSS2/visudet/content-height-005.html": {
     "reftest": "PASS"
   },
+  "css/CSS2/visudet/crashtests/canvas-huge-min-max-sizes.html": {
+    "crashtest": "PASS"
+  },
   "css/CSS2/visudet/height-applies-to-010a.xht": {
     "reftest": "PASS"
   },
@@ -18847,6 +18940,9 @@
   },
   "css/CSS2/visufx/clip-102.xht": {
     "reftest": "PASS"
+  },
+  "css/CSS2/visufx/crashtests/firefox-bug-1996058.html": {
+    "crashtest": "PASS"
   },
   "css/CSS2/visufx/overflow-applies-to-001.xht": {
     "reftest": "PASS"

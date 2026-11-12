@@ -96,7 +96,7 @@ internal sealed record WptTest(string RelativePath, WptTestKind Kind, string Var
 
 internal static partial class WptTestDiscovery
 {
-    private static readonly string[] ExcludedDirectories = ["resources", "support", "crashtests", "tools", "reference", "references"];
+    private static readonly string[] ExcludedDirectories = ["resources", "support", "tools", "reference", "references"];
 
     /// <summary>The patterns of the tests listed in wpt-skip.json (a trailing * matches any suffix). The reasons why they are skipped are only used by the WPT coverage report.</summary>
     private static readonly Lazy<string[]> Skipped = new(() =>
@@ -144,11 +144,17 @@ internal static partial class WptTestDiscovery
             var fileName = segments[^1];
             // Reftest references ('-ref' / '-notref') are excluded by the testharness.js check below: a file that includes
             // testharness.js is a testharness test whatever its name (e.g. custom-state-set-strong-ref.html)
-            if (fileName.Contains("-manual.", StringComparison.Ordinal) || fileName.Contains("-crash.", StringComparison.Ordinal))
+            if (fileName.Contains("-manual.", StringComparison.Ordinal))
                 continue;
 
             var isHtml = fileName.EndsWith(".html", StringComparison.Ordinal) || fileName.EndsWith(".htm", StringComparison.Ordinal);
             var isXml = fileName.EndsWith(".xhtml", StringComparison.Ordinal) || fileName.EndsWith(".xht", StringComparison.Ordinal) || fileName.EndsWith(".svg", StringComparison.Ordinal) || fileName.EndsWith(".xml", StringComparison.Ordinal);
+
+            // The markup files of the crashtests directories and the -crash. files are crash tests (see WptCrashtestDiscovery);
+            // the .any.js, .window.js and .worker.js files are testharness.js tests wherever they are, as for the manifest
+            if ((isHtml || isXml) && WptCrashtestDiscovery.IsCrashtestPath(relativePath))
+                continue;
+
             if (isHtml || isXml)
             {
                 var content = File.ReadAllText(file);

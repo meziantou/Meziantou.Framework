@@ -321,6 +321,9 @@
   "css/css-inline/br-line-height.html": {
     "reftest": "PASS"
   },
+  "css/css-inline/change-inline-change-abspos-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-inline/dominant-baseline/dominant-baseline-alignment-baseline.html?class=alphabetic": {
     "reftest": "PASS"
   },
@@ -405,8 +408,14 @@
   "css/css-inline/empty-text-node-001.html": {
     "reftest": "PASS"
   },
+  "css/css-inline/firefox-bug-1901624-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-inline/firefox-bug-2073465.html": {
     "reftest": "PASS"
+  },
+  "css/css-inline/float-becomes-inflow-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-inline/inheritance.html": {
     "total": 18,
@@ -432,6 +441,9 @@
   },
   "css/css-inline/initial-letter/Initial-letter-breaking.html": {
     "reftest": "PASS"
+  },
+  "css/css-inline/initial-letter/crashtests/initial-letter-dynamic-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-inline/initial-letter/initial-letter-block-position-drop-over-ruby-tall.html": {
     "reftest": "PASS"
@@ -649,6 +661,9 @@
   "css/css-inline/initial-letter/initial-letter-with-tab.html": {
     "reftest": "PASS"
   },
+  "css/css-inline/inline-002-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-inline/inline-block-baseline-with-block-in-inline.html": {
     "reftest": "PASS"
   },
@@ -657,6 +672,9 @@
   },
   "css/css-inline/inline-crash-chrome-001.html": {
     "total": 1
+  },
+  "css/css-inline/inline-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-inline/model/phantom-line-boxes-001.html": {
     "reftest": "PASS"
@@ -1320,5 +1338,8 @@
   },
   "css/css-inline/text-box-trim/text-box-trim-text-emphasis-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-inline/too-big-line-height-crash.html": {
+    "crashtest": "PASS"
   }
 }

@@ -171,6 +171,111 @@
   "selection/contenteditable/selection-outside-focused-editing-host.tentative.html": {
     "total": 3
   },
+  "selection/crashtests/find-soft-hyphen-crash.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/find-whole-word-crash.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/find-with-moving-iframe.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/move-track-from-video-after-selection-setBaseAndExtent-from-outside-video-to-before-track.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selectall-and-find-svg-text-on-selectstart.html": {
+    "crashtest": "TIMEOUT"
+  },
+  "selection/crashtests/selection-add-range-collapsed-in-unassigned-node-and-shadow-has-no-content.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-clip-crash.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-delete-list-item-crash.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-deleteFromDocument-after-audio-control-visible-when-selecting-audio-children.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-deleteFromDocument-after-extend-from-summary-to-outside-details.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-deleteFromDocument-starting-from-details-ends-in-data.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-detached-range-find-crash.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-details-editor-ui.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-extend-into-input-from-inside-button.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-extend-to-area-after-attaching-shadow-to-scrollingElement.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-from-svg-use-to-its-child.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-modify-around-details-not-having-summary.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-modify-around-input.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-modify-around-textarea.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-modify-extend-forward-on-option.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-modify-extend-foward-line-across-video-in-html.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-modify-line-boundary-around-empty-details.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-modify-line-boundary-around-shadow.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-modify-line-from-contenteditable-to-textarea.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-modify-line-from-optgroup-in-video-to-details-without-summary.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-modify-line-into-svg-use.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-modify-line-next-to-input-and-make-it-invisible.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-modify-line-next-to-textarea.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-modify-per-word-in-table-header-group.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-modify-word-left-with-selecting-editable-select.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-setBaseAndExtent-from-end-of-video-to-child-of-video.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-setBaseAndExtent-from-label-to-end-of-audio-and-hide-audio-controls.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-setBaseAndExtent-unassigned-nodes-backward.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/selection-setBaseAndExtent-video-in-shadow-and-another-shadowroot.html": {
+    "crashtest": "PASS"
+  },
+  "selection/crashtests/table.html": {
+    "crashtest": "PASS"
+  },
   "selection/deleteFromDocument-HTMLDetails.html": {
     "total": 30
   },
@@ -281,6 +386,9 @@
   },
   "selection/onselectstart-on-key-in-contenteditable.html?preventDefault=yes": {
     "total": 30
+  },
+  "selection/range-larger-than-u32-crash.html": {
+    "crashtest": "PASS"
   },
   "selection/removeAllRanges.html": {
     "total": 116
@@ -482,6 +590,9 @@
   },
   "selection/selection-range-painting-after-splitText.html?splitAt=8": {
     "reftest": "PASS"
+  },
+  "selection/selection-select-all-move-input-crash.html": {
+    "crashtest": "PASS"
   },
   "selection/selection-shadow-dom-crash-print.html": {
     "reftest": "PASS"

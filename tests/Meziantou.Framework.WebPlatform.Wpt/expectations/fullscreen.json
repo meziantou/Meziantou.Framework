@@ -227,6 +227,21 @@
   "fullscreen/api/shadowroot-fullscreen-element.html": {
     "total": 1
   },
+  "fullscreen/crashtests/backdrop-list-item.html": {
+    "crashtest": "PASS"
+  },
+  "fullscreen/crashtests/chrome-1312699.html": {
+    "crashtest": "PASS"
+  },
+  "fullscreen/crashtests/content-visibility-2-crash.html": {
+    "crashtest": "PASS"
+  },
+  "fullscreen/crashtests/content-visibility-crash.html": {
+    "crashtest": "PASS"
+  },
+  "fullscreen/crashtests/frameset-crash.html": {
+    "crashtest": "PASS"
+  },
   "fullscreen/idlharness.window.js": {
     "total": 42
   },

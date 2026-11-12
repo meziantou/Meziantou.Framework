@@ -10,7 +10,8 @@ namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
 /// <c>main(request, response)</c> function of its file. The handler sees the request as wptserve does (the headers sent by
 /// the browser, see <see cref="WptHandlerRequest"/>), and fills the response; the runner then applies the pipes of the URL
 /// (<see cref="WptPipes"/>), the delays and the cookies. A request of a handler that is not emulated is a <c>404</c>
-/// response. The handlers are grouped by directory: the generic handlers of <c>common</c> (this file), the ones of the
+/// response. The handlers are grouped by directory: the generic handlers of <c>common</c> (this file), the ones that check the
+/// network layer (<c>WptPythonHandlers.Network.cs</c>), the resources of other tests (<c>WptPythonHandlers.Resources.cs</c>), the ones of the
 /// <c>xhr</c> and <c>fetch</c> tests (<c>WptPythonHandlers.Fetch.cs</c>), the ones of
 /// <c>common/security-features</c> (<c>WptPythonHandlers.SecurityFeatures.cs</c>), the ones of the <c>content-security-policy</c>
 /// tests and of the violation reports (<c>WptPythonHandlers.ContentSecurityPolicy.cs</c>), the ones of the <c>beacon</c> tests
@@ -93,7 +94,7 @@ internal static partial class WptPythonHandlers
     // The static field initializers of the partial declarations run before the static constructor
     static WptPythonHandlers()
     {
-        foreach (var handlers in new[] { CommonHandlers, SpeculationRulesHandlers, BeaconHandlers, ClearSiteDataHandlers, ClientHintsHandlers, CorsHandlers, EarlyHintsHandlers, ContentSecurityPolicyHandlers, CookieHandlers, CrossOriginIsolationHandlers, CssHandlers, FetchHandlers, FetchMetadataHandlers, HtmlHandlers, MediaHandlers, PaintTimingHandlers, SecurityFeaturesHandlers, ServiceWorkersHandlers, StorageAccessHandlers, TimingHandlers, WebSocketsHandlers, EventSourceHandlers, PreloadHandlers, WorkletsHandlers, PageApisHandlers })
+        foreach (var handlers in new[] { CommonHandlers, NetworkHandlers, ResourceHandlers, SpeculationRulesHandlers, BeaconHandlers, ClearSiteDataHandlers, ClientHintsHandlers, CorsHandlers, EarlyHintsHandlers, ContentSecurityPolicyHandlers, CookieHandlers, CrossOriginIsolationHandlers, CssHandlers, FetchHandlers, FetchMetadataHandlers, HtmlHandlers, MediaHandlers, PaintTimingHandlers, SecurityFeaturesHandlers, ServiceWorkersHandlers, StorageAccessHandlers, TimingHandlers, WebSocketsHandlers, EventSourceHandlers, PreloadHandlers, WorkletsHandlers, PageApisHandlers })
         {
             foreach (var (path, handler) in handlers)
             {

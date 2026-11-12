@@ -133,11 +133,9 @@ internal static class WptPipes
             var name = pipe.Arguments[0].Trim();
             var value = pipe.Arguments[1].Trim(' ', '\t');
 
-            // wptserve writes the value as it is: a line break ends the header, and the browsers ignore the next line
-            if (value.IndexOfAny(['\r', '\n']) is var lineBreak and >= 0)
-            {
-                value = value[..lineBreak];
-            }
+            // wptserve writes the value as it is: a line break ends the header (the browsers ignore the next line), except an
+            // obsolete line folding
+            value = WptHttpMessage.GetFieldValueOnWire(value);
 
             var append = pipe.Arguments.Count > 2 && pipe.Arguments[2].Trim() is "True" or "true" or "1";
             if (!append)
@@ -164,6 +162,9 @@ internal static class WptPipes
         headers.Add(new("Content-Length", GetGzipLength(body).ToString(CultureInfo.InvariantCulture)));
     }
 
+    /// <summary>Whether the network layer decodes a content coding (<see cref="Decode"/>): the codings of the <c>Accept-Encoding</c> header of the requests.</summary>
+    public static bool IsDecodedContentCoding(string contentEncoding) => contentEncoding.Trim().ToLowerInvariant() is "gzip" or "deflate" or "br";
+
     /// <summary>Decodes a body whose content coding is <c>gzip</c>, <c>deflate</c> or <c>br</c>, or returns null (another coding, or invalid data).</summary>
     public static byte[]? Decode(ReadOnlySpan<byte> body, string contentEncoding)
     {
@@ -184,8 +185,9 @@ internal static class WptPipes
             stream.CopyTo(output);
             return output.ToArray();
         }
-        catch (InvalidDataException)
+        catch (Exception ex) when (ex is InvalidDataException or InvalidOperationException or IOException)
         {
+            // (BrotliStream throws InvalidOperationException for invalid data)
             return null;
         }
     }

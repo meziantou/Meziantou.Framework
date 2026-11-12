@@ -1,4 +1,454 @@
 {
+  "editing/crashtests/blur-from-rtl-editing-host-containing-big-video.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/bold-in-output.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/caret-display-list-002.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/caret-display-list.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/change-from-contenteditable-to-design-mode.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/change-input-type-of-focused-text-control-and-make-it-editing-host.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/collapse-selection-into-textarea-and-createLink.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/contenteditable-will-be-blurred-by-focus-event-listener.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/crash-test.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-after-empty-script-element.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-after-input-setRangeText.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-after-insertparagraph-in-preformatted-paragraph.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-after-justifyleft-in-closed-editable-dialog.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-after-removing-first-child.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-around-orphan-rb.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-at-next-to-svg-display-table-cell.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-at-start-of-first-li-in-ol-in-video.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-at-start-of-head.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-at-text-following-svg.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-before-first-child-of-editing-host.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-content-in-no-data-object.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-from-after-empty-table-header-grouped-element.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-from-ruby-at-start-of-button.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-immediately-after-changing-input-type-from-time.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-in-block-in-progress.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-in-designMode-without-explicitly-setting-focus.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-in-empty-editable-document-element.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-in-empty-editable-list-followed-by-non-editable-listitem.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-in-xml-space-preserve.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-selection-with-null-range.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/delete-to-join-inline-blocks.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/deleteforward-from-before-meta-pre-line-container-containing-audio.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/design-mode-textarea.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/designMode-after-deleting-parent-of-contenteditable.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/designMode-caret-change.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/designMode-document-will-be-blurred-by-focus-event-listener.html": {
+    "crashtest": "TIMEOUT"
+  },
+  "editing/crashtests/designMode-on-of-lazy-loading-iframe.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/designMode-on-when-textarea-gets-focus.html": {
+    "crashtest": "TIMEOUT"
+  },
+  "editing/crashtests/editing-on-newline-should-not-crash.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/empty-editable.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/enableInlineTableEditing-after-updating-selection-range-cross-shadow-dom-boundary.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/execCommand-at-load-with-changing-editing-host.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/execCommand-backcolor-and-hilitecolor-in-empty-iframe-in-designMode.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/execCommand-fontsize-when-size-attr-invalid.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/execCommand-without-selection-ranges.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/first-letter-crossing-engine-boundary.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/format-block-selection-containing-non-editable-list.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/formatblock-when-root-is-editing-host.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/forwarddelete-after-editable-slot-element-outside-body.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/forwarddelete-at-empty-text-node-in-body.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/forwarddelete-delete-after-justifyleft-indent.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/forwarddelete-in-editable-h1-starts-with-hidden-select.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/forwarddelete-in-text-in-span-in-editable-documentElement.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/indent-in-inline-editing-host-outside-body.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/indent-in-textarea-in-designMode-during-outdent.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insert-image-with-joining-header-element-and-body.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insert-nodes-into-meta-element.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insert-rich-content-in-comment.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insert-rich-content-in-processing-instruction.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insertAdjacentElement-beforeBegin-first-br-in-video.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insertAdjacentElement-with-DOMSubtreeModified.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insertHTML-after-subscript-canvas-containing-textarea.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insertHTML-before-comment-at-end-of-editing-host.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insertText-at-end-of-text-in-body.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthorizontalrule-in-fieldset-and-everything-styled-white-space-pre.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthorizontalrule-in-textarea-in-editor-and-undo-on-error-events.html": {
+    "crashtest": "TIMEOUT"
+  },
+  "editing/crashtests/inserthorizontalrule-to-replace-li.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthorizontalrule-to-replace-selection-containing-comment.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthorizontalrule-with-2-selection-ranges-and-one-is-outside-body.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthorizontalrule-with-range-ending-in-collapsible-spaces-before-comment.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthorizontalrule-with-selecting-from-mphantom-to-end-of-line.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthorizontalrule-with-selecting-text-in-document-element.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthtml-after-temporarily-removing-document-element.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthtml-containing-non-editable-before-non-editable.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthtml-in-inline-editing-host-at-load-event.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthtml-in-li-in-option.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthtml-in-text-adopted-to-other-document.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthtml-indent-delete-when-input-element-in-editing-host-has-focus.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthtml-only-non-editable-nodes.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthtml-selecting-across-dialog.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserthtml-to-replace-root-list-element-in-designMode.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insertimage-with-replacing-selection-in-picture-element.html": {
+    "crashtest": "TIMEOUT"
+  },
+  "editing/crashtests/insertlinebreak-around-comment-node.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insertlinebreak-in-map-element-editing-host.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insertorderedlist-in-focused-inline-editing-host.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insertorderedlist-in-text-adopted-to-other-document.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insertparagraph-in-editable-dl-outside-body.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insertparagraph-in-listitem-in-svg-followed-by-collapsible-spaces.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insertparagraph-in-map-element-editing-host.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserttext-after-selectall-from-area-in-dialog.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserttext-at-start-with-different-style.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserttext-to-delete-flex-item-boundary-whose-display-contents.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserttext-with-clearing-subscript.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/inserttext-with-empty-string-to-replace-selection.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insertunorderedlist-in-empty-inline-editing-host.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/insertunorderedlist-in-empty-table-editing-host.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/join-first-li-containing-preformatted-linefeed-and-last-li.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/justifycenter-around-textarea.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/justifyfull-before-textarea-and-non-editable-invisible-br.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/justifyfull-selection-containing-non-editable-div-and-everything-styled-white-space-break-space.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/loading-different-page-in-iframe-while-iframe-sets-spellcheck-attr-from-load.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/make-editable-div-inline-and-set-contenteditable-of-input-to-false.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/make-parent-element-editable-after-making-focused-editing-host-non-editable.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/move-editing-host-to-subdocument-when-textarea-has-focus.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/move-first-element-from-editinghost-to-outside-on-input-of-embolden.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/move-focused-editing-host-and-add-selection-range-to-another-editing-host-behind-dialog.html": {
+    "crashtest": "TIMEOUT"
+  },
+  "editing/crashtests/move-legend-followed-by-textarea-into-orphan-div.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/move-nested-editing-host-to-input.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/mozilla-bug-1851730.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/multiple-execCommand-calls-after-interting-long-text.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/non-root-editable-html-element.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/outdent-across-svg-boundary.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/outdent-editing-host-containing-combining-diacritical-mark.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/outdent-in-empty-body-editing-host.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/outdent-in-meter-indented-by-legend-in-css-mode.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/outdent-indent-inserthorizontalrule-on-selectionchange.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/outdent-with-concurrent-dom-modification.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/queryCommandIndeterm-backcolor-and-hilitecolor-in-empty-iframe-in-designMode.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/queryCommandIndeterm-backcolor-in-empty-iframe-in-designMode-from-load.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/queryCommandState-backcolor-after-removing-html-element-in-designMode-from-load.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/queryCommandValue-backcolor-after-replacing-html-element-with-new-one-in-designMode-from-load.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/remove-all-children-of-documentElement-in-designMode-when-no-body.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/remove-document-element-of-iframe-having-style-content.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/remove-editing-host-which-is-selected.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/remove-iframe-for-designMode.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/remove_body_in_design_mode_during_focus_move.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/removeformat-in-number-input-immediately-after-type-change-and-stepUp.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/remve-documentElement-after-inserthtml-svg-and-td.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/replace-body-after-designMode-off-and-making-editing-host.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/replace-document-root-and-refocus-window.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/replace-document-root-with-object-and-mo.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/selectall-after-enableobjectresizing.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/selectall-and-inerthtml-in-textarea-editing-host.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/selectall-and-move-editable-br-onselectstart.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/selectall-containing-textarea-and-subscript.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/selectall-during-setting-innerHTML-of-documentElement.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/selectall-in-contenteditable-replaced-by-shadowroot.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/selectall-in-head-editing-host-after-body-removed.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/selectall-selection-modify-move-forward-lineboundary-selectall-around-editable-canvas.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/selection-modify-after-body-removed-in-design-mode.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/selection-modify-around-input-in-contenteditable.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/selection-modify-extend-backward-character-to-outside-body-in-designMode.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/set-documentElement-innerHTML-when-embed-in-designMode-has-focus.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/set-input-value-of-editing-host-after-changing-type.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/set-selection-range-after-updating-textarea-default-value.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/textarea-will-be-blurred-by-focus-event-listener.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/unloading-editor-in-subdocument-containing-misspelled-word.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/update-dom-during-undoing-in-textarea.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/updating-selection-offsets-after-insertHorizontalRule.html": {
+    "crashtest": "PASS"
+  },
+  "editing/crashtests/white-space-nowrap-to-pre-line.html": {
+    "crashtest": "PASS"
+  },
   "editing/edit-context/edit-context-attach-after-focus.tentative.html": {
     "total": 1,
     "failures": {
@@ -32,6 +482,9 @@
     "failures": {
       "EditContext: Whitespace in text is not treated as collapsed for computing deletion ranges.": "FAIL"
     }
+  },
+  "editing/edit-context/edit-context-detach-from-contenteditable-crash.html": {
+    "crashtest": "PASS"
   },
   "editing/edit-context/edit-context-execCommand.tentative.https.html": {
     "total": 4,

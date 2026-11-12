@@ -492,6 +492,186 @@
   "css/css-conditional/container-queries/counters-in-container.html": {
     "reftest": "PASS"
   },
+  "css/css-conditional/container-queries/crashtests/br-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/canvas-as-container-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/chrome-bug-1289718-000-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/chrome-bug-1289718-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/chrome-bug-1346969-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/chrome-bug-1362391-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/chrome-bug-1429955-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/chrome-bug-1505250-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/chrome-bug-346264227-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/chrome-bug-372358471-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/chrome-bug-385317081-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/chrome-bug-439886903-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/chrome-bug-491994185-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/chrome-custom-highlight-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/chrome-layout-root-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/chrome-quotes-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/chrome-remove-insert-evaluator-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/columns-in-table-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/columns-in-table-002-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/container-in-canvas-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/container-query-nested-oof-invalidation-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/container-type-change-chrome-legacy-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/dialog-backdrop-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/dialog-backdrop-display-none-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/dirty-rowgroup-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/flex-in-columns-000-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/flex-in-columns-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/flex-in-columns-002-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/flex-in-columns-003-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/focus-inside-content-visibility-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/force-sibling-style-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/grid-in-columns-000-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/grid-in-columns-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/grid-in-columns-002-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/grid-in-columns-003-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/iframe-init-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/inline-multicol-inside-container-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/inline-with-columns-000-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/inline-with-columns-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/input-column-group-container-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/input-placeholder-inline-size-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/marker-gcs-after-disconnect-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/math-block-container-child-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/mathml-container-type-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/orthogonal-replaced-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/pseudo-container-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/remove-dom-child-change-style.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/reversed-ol-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/size-change-during-transition-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/svg-layout-root-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/svg-resource-in-container-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/svg-text-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/table-in-columns-000-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/table-in-columns-001-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/table-in-columns-002-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/table-in-columns-003-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/table-in-columns-004-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/table-in-columns-005-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/top-layer-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-conditional/container-queries/crashtests/top-layer-nested-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-conditional/container-queries/custom-layout-container-001.https.html": {
     "reftest": "PASS"
   },
@@ -645,11 +825,17 @@
   "css/css-conditional/container-queries/no-layout-containment-scroll.html": {
     "total": 1
   },
+  "css/css-conditional/container-queries/no-layout-containment-subgrid-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-conditional/container-queries/orthogonal-wm-container-query.html": {
     "total": 2
   },
   "css/css-conditional/container-queries/percentage-padding-orthogonal.html": {
     "total": 6
+  },
+  "css/css-conditional/container-queries/position-sticky-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-conditional/container-queries/pseudo-elements-001.html": {
     "total": 2
@@ -1067,6 +1253,9 @@
   },
   "css/css-conditional/container-rule-malformed-prelude.html": {
     "total": 1
+  },
+  "css/css-conditional/crashtests/supports-malformed.html": {
+    "crashtest": "PASS"
   },
   "css/css-conditional/css-supports-001.xht": {
     "reftest": "PASS"

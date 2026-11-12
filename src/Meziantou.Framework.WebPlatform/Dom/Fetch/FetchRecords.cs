@@ -378,6 +378,12 @@ internal sealed partial class FetchRequest
     public bool ConsumedPreload { get; set; }
 
     /// <summary>
+    /// Whether the request was created by the <c>Link</c> header of the response of a subresource (see
+    /// <see cref="LinkPreload.ProcessSubresourceLinkHeaders"/>): the <c>Link</c> headers of its own response are not processed.
+    /// </summary>
+    public bool IsFromSubresourceLinkHeader { get; set; }
+
+    /// <summary>
     /// Whether the initiator of the request is "prefetch" (https://fetch.spec.whatwg.org/#concept-request-initiator): the
     /// request has the <c>Sec-Purpose: prefetch</c> header.
     /// </summary>

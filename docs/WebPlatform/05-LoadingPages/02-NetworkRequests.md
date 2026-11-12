@@ -139,7 +139,11 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
 - A document is displayed whatever its status (a 404 page is a page). A script or a style sheet whose status is not in the
   200-299 range is a network error.
 - The library reads the headers that change the document: `Content-Security-Policy`, `Referrer-Policy`, `Refresh`,
-  `Link` (preloads), `X-Frame-Options`, `Content-Language`, `Document-Policy`... The other headers are ignored.
+  `Link`, `X-Frame-Options`, `Content-Language`, `Document-Policy`... The other headers are ignored.
+- The `Link` header of a page preloads (`preload`, `modulepreload`) and prefetches (`prefetch`) its resources. As in
+  Firefox, its `stylesheet` and `icon` links are requested, but the style sheet does not apply and the icon is not
+  rendered. As in Chromium, the `preload` links of the `Link` headers of the style sheets, images, scripts and fonts are
+  preloaded too: their URLs are relative to the resource, and the requests have no `Referer` header.
 - The responses are stored in an HTTP cache shared by the browsing contexts of the loader, as in a browser: a fresh
   response is used without a request, a stale one is revalidated with `If-None-Match` and `If-Modified-Since`, and a stale
   response within its `stale-while-revalidate` window is used while a request revalidates it in the background.

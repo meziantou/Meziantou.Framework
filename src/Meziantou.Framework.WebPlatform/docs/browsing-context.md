@@ -1142,9 +1142,16 @@ response blocked by a check included; a `404` response is not a network error, a
 - **`Link` headers**: the `preload` links of the response of a document are preloaded when the document is created
   (`as`, `crossorigin`, `integrity`, `referrerpolicy`, `nonce`, `type`, `media`, `imagesrcset`, `imagesizes`; the
   target is resolved against the URL of the document). As in the browsers, the `modulepreload` links are fetched too
-  (the specification makes them do nothing). The links that have a `media` attribute are evaluated at once (the
-  specification waits for the viewport `meta` element), and the `Link` headers of the responses of the subresources are not
-  processed (Chromium and WebKit do it; it is not specified).
+  (the specification makes them do nothing). As in Firefox, the `prefetch` links are prefetched, and the `stylesheet`
+  (destination `style`) and `icon` (the empty destination, without resource timing entry) links are fetched in `no-cors`
+  mode, but their responses are not used: the style sheet does not apply and the icon is not rendered. The links that
+  have a `media` attribute are evaluated at once (the specification waits for the viewport `meta` element).
+- **`Link` headers of the subresources**: as in Chromium and WebKit (it is not specified), the `preload` links of the
+  responses of the style sheets, images, scripts, fonts and tracks of a document are preloaded into its map of preloaded
+  resources. The target is resolved against the URL of the response (a cross-origin style sheet preloads from its own
+  origin), and, as in Chromium, the request has no referrer: the `referrerpolicy` parameter is ignored, so that a
+  cross-origin subresource cannot learn the URL of the document. The `Link` headers of the responses of these preloads,
+  of a consumed preload and of a speculative request are not processed.
 - **Early hints** (https://html.spec.whatwg.org/multipage/semantics.html#early-hints): the `preload` and `modulepreload`
   links of the first `103` response that the loader reports (`DocumentRequest.ReportInterimResponse`) for the navigation
   of a top-level browsing context are fetched at once (`EarlyHintPreloads`), with the content security policies and the

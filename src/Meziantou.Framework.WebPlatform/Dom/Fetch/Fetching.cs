@@ -418,6 +418,12 @@ internal static class Fetching
             response.Body = null;
         }
 
+        // As in Chromium and WebKit, the Link headers of the response of a subresource preload their resources
+        if (!response.IsNetworkError)
+        {
+            LinkPreload.ProcessSubresourceLinkHeaders(request, internalResponse);
+        }
+
         return response;
     }
 

@@ -957,11 +957,13 @@ public sealed class DnsServerIntegrationTests
     /// <remarks>
     /// The ports are probed by binding and releasing them, so anything else on the machine can be handed the
     /// same port in between - the tests running in parallel beside this one, or the same test in the other
-    /// target framework's process, which shares the machine's ephemeral port range.
+    /// target framework's process, which shares the machine's ephemeral port range. A port probed over UDP can
+    /// also be unusable over TCP: Windows reports a port of a TCP excluded port range, or one bound with
+    /// SO_EXCLUSIVEADDRUSE, as an access denied error.
     /// </remarks>
     private static async Task<WebApplication> StartServerAsync(Func<WebApplication> factory)
     {
-        const int MaxAttempts = 5;
+        const int MaxAttempts = 10;
 
         for (var attempt = 1; ; attempt++)
         {
@@ -980,7 +982,7 @@ public sealed class DnsServerIntegrationTests
 
     private static bool IsAddressAlreadyInUse(Exception exception)
     {
-        if (exception is SocketException socketException && socketException.SocketErrorCode == SocketError.AddressAlreadyInUse)
+        if (exception is SocketException { SocketErrorCode: SocketError.AddressAlreadyInUse or SocketError.AccessDenied })
         {
             return true;
         }

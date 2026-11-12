@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 342 | 408 | 1 | 84% |
+| [Stable](#stable-tests) | 341 | 408 | 2 | 84% |
 | [Tentative](#tentative-tests) | 16 | 78 | 1 | 21% |
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
-| **All** | **367** | **497** | **2** | **74%** |
+| **All** | **366** | **497** | **3** | **74%** |
 
 ## Failure reasons
 
@@ -25,7 +25,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
   - `layout`: 2
   - `workers`: 1
 - **TEST RUNNER**: 74
-- **FLAKY**: 1
+- **FLAKY**: 2
 
 ## Stable tests
 
@@ -433,7 +433,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`security/dangling-markup/textarea.html`](https://wpt.fyi/results/fetch/security/dangling-markup/textarea.html) | Fail | 0 / 3 | TEST BUG | the test waits for an `error` event at the form after the click on the submit button, which no specification defines: the form fires `submit` (the URL of the form is not dangling markup, the text of the dangling element is the data of the form) |
 | [`security/redirect-to-url-with-credentials.https.html`](https://wpt.fyi/results/fetch/security/redirect-to-url-with-credentials.https.html) | Pass | 7 / 7 |  |  |
 | [`security/stylesheet-cssrules-serviceworker-passthrough-redirect.https.html`](https://wpt.fyi/results/fetch/security/stylesheet-cssrules-serviceworker-passthrough-redirect.https.html) | Pass | 1 / 1 |  |  |
-| [`stale-while-revalidate/fetch-sw.https.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/fetch-sw.https.html) | Pass | 1 / 1 |  |  |
+| [`stale-while-revalidate/fetch-sw.https.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/fetch-sw.https.html) | Disabled | – | FLAKY | the service worker posts its message for each request after an awaited `clients.matchAll()` (`event.waitUntil(broadcast(...))`), concurrently with `respondWith(fetch(...))`: nothing orders the message before the response. When the stale response comes from the cache and the background revalidation completes quickly, the page checks the count before the message of the second request is delivered (the worker runs on its own thread): `assert_equals(service_worker_count, 2)` fails with 1. It passes locally, and failed on the Linux arm64 CI runners |
 | [`stale-while-revalidate/fetch.any.js`](https://wpt.fyi/results/fetch/stale-while-revalidate/fetch.any.js) | Pass | 3 / 3 |  |  |
 | [`stale-while-revalidate/revalidate-not-blocked-by-csp.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/revalidate-not-blocked-by-csp.html) | Pass | 1 / 1 |  |  |
 | [`stale-while-revalidate/stale-css.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/stale-css.html) | Pass | 1 / 1 |  |  |

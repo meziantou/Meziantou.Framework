@@ -48,10 +48,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 26,684 | 29,911 | 2,018 | 96% |
+| [Stable](#stable-tests) | 26,683 | 29,911 | 2,019 | 96% |
 | [Tentative](#tentative-tests) | 1,403 | 3,169 | 667 | 56% |
 | [Reftests](#reftests) | 28,265 | 29,507 | 171 | 96% |
-| **All** | **56,352** | **62,587** | **2,856** | **94%** |
+| **All** | **56,351** | **62,587** | **2,857** | **94%** |
 
 ## Failure reasons
 
@@ -68,7 +68,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
   - `workers`: 3
 - **TEST RUNNER**: 279
 - **OUT OF SCOPE**: 206
-- **FLAKY**: 17
+- **FLAKY**: 18
 - **PERFORMANCE**: 7
 
 ## Stable tests
@@ -220,7 +220,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`eyedropper`](eyedropper.md) | 0 | 1 | 1 | – |
 | [`fedcm`](fedcm.md) | 0 | 68 | 68 | – |
 | [`fenced-frame`](fenced-frame.md) | 0 | 9 | 9 | – |
-| [`fetch`](fetch.md) | 342 | 408 | 1 | 84% |
+| [`fetch`](fetch.md) | 341 | 408 | 2 | 84% |
 | [`file-system-access`](file-system-access.md) | 0 | 5 | 5 | – |
 | [`FileAPI`](FileAPI.md) | 69 | 73 | 0 | 95% |
 | [`focus`](focus.md) | 31 | 39 | 0 | 79% |
@@ -418,7 +418,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 322 | 331 | 0 | 97% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **26,684** | **29,911** | **2,018** | **96%** |
+| **Total (343 sections)** | **26,683** | **29,911** | **2,019** | **96%** |
 
 ## Tentative tests
 

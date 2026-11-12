@@ -78,7 +78,9 @@ public readonly struct EmbossFilter : IPixelNeighborhoodOperation<RgbaFloat>
 
 [GetRowClamped](cref:Meziantou.Framework.Imaging.PixelRowSource{TPixel}.GetRowClamped) repeats the edge rows for the
 rows outside the frame. The source is a copy of the frame, made one frame at a time, which counts toward
-[MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes).
+[MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes). The
+destination row initially holds the pixels of the row before the operation, so an operation that changes only some
+pixels can leave the others as they are.
 
 ## Choose the pixel type of the rows
 

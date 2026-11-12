@@ -3,10 +3,10 @@ title: Exchanging values
 description: Pass values, objects, functions and binary data between .NET and JavaScript.
 ---
 
-The pages of this group cover what crosses the boundary between .NET and JavaScript. Nothing is converted
-automatically: the engine uses no reflection, so a .NET object becomes visible to the scripts only through the
-objects and functions you create for it. Helpers convert the common types, such as collections and JSON: see
-[Converting .NET values](08-DotNetValues.md).
+The pages of this group cover what crosses the boundary between .NET and JavaScript. The engine uses no reflection, so
+a .NET object becomes visible to the scripts only through the objects and functions you create for it, or through the
+JavaScript class that a source generator writes for a class marked with `[JsExport]`. Helpers convert the common types,
+such as collections and JSON: see [Converting .NET values](08-DotNetValues.md).
 
 A few rules hold for all of them:
 
@@ -25,8 +25,9 @@ A few rules hold for all of them:
   read-only and lazy properties, exchange data as JSON.
 - [Functions](04-Functions.md): expose .NET functions, read their arguments, call JavaScript functions and
   constructors from .NET.
-- [Exposing .NET objects](05-ExposingDotNetObjects.md): expose a .NET class with a constructor and a prototype, or
-  implement an object whose properties come from .NET.
+- [Exposing .NET objects](05-ExposingDotNetObjects.md): generate the JavaScript class of a .NET class with
+  `[JsExport]`, expose a class by hand with a constructor and a prototype, or implement an object whose properties come
+  from .NET.
 - [Binary data](06-BinaryData.md): share a .NET buffer with the scripts, read their typed arrays, share memory between
   engines.
 - [Console, timers and other host APIs](07-HostApis.md): give the scripts `console`, `setTimeout`, `queueMicrotask`

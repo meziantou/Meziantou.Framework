@@ -150,6 +150,31 @@ public sealed class JavaScriptEngineAotTests
         Assert.Equal(42, result.AsNumber());
     }
 
+    // The bindings generated for [JsExport] use no reflection
+    [Fact]
+    public async Task ExportedClasses()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromSeconds(10) });
+        var realm = engine.CreateRealm();
+        var account = new AotAccount("A-1");
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("Account", realm.GetClass(AotAccount.JsClass));
+            realm.GlobalObject.SetProperty("existing", realm.FromDotNet(account));
+        }
+
+        Assert.Equal("B-2|15|A-1|true|TypeError", realm.Execute("""
+            const account = new Account('B-2');
+            account.deposit(10);
+            account.deposit(5);
+            class Savings extends Account { }
+            [account.id, account.balance, existing.id, new Savings('C').transfer(existing, 0) === existing, (() => { try { Account(); } catch (e) { return e.name; } })()].join('|')
+            """).AsString());
+        Assert.Equal(7, (await engine.RunUntilSettledAsync(realm.Execute("existing.depositLaterAsync(7)"))).AsNumber());
+        Assert.Equal(7, account.Balance);
+        Assert.Same(account, engine.ToDotNet<AotAccount>(realm.Execute("existing")));
+    }
+
     private sealed class SingleModuleLoader(string specifier, string code) : JsModuleLoader
     {
         protected override void LoadImportedModule(JsModuleLoadRequest request)
@@ -163,5 +188,28 @@ public sealed class JavaScriptEngineAotTests
                 request.Fail("Cannot find the module '" + request.Specifier + "'");
             }
         }
+    }
+}
+
+[JsExport]
+public sealed partial class AotAccount(string id)
+{
+    public string Id { get; } = id;
+
+    public double Balance { get; private set; }
+
+    public double Deposit(double amount) => Balance += amount;
+
+    public AotAccount Transfer(AotAccount target, double amount)
+    {
+        Balance -= amount;
+        target.Deposit(amount);
+        return target;
+    }
+
+    public async Task<double> DepositLaterAsync(double amount)
+    {
+        await Task.Delay(1);
+        return Deposit(amount);
     }
 }

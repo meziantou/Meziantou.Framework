@@ -47,11 +47,12 @@ Assert.Equal("A-12,2024,7,true", realm.Execute("""
 | `DateTimeOffset`, `DateTime` | a `Date` (a `DateTime` whose kind is unspecified is UTC) |
 | `JsonElement`, `JsonNode` | the value that `JSON.parse` would create |
 | A dictionary with string keys | an object with a property for each entry |
+| An object of a class marked with `[JsExport]` | its JavaScript object, always the same one in a realm. See [Exposing .NET objects](05-ExposingDotNetObjects.md#generate-the-class-with-jsexport) |
 | Another `IEnumerable` | an array |
 | [JsValue](cref:Meziantou.Framework.JavaScriptEngine.JsValue), [JsObject](cref:Meziantou.Framework.JavaScriptEngine.JsObject) | unchanged |
 
-- Any other type throws a `NotSupportedException`: a class is not converted property by property. Expose it with
-  [JsHostObject](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject) or with functions. See [Exposing .NET objects](05-ExposingDotNetObjects.md).
+- Any other type throws a `NotSupportedException`: a class is not converted property by property. Mark it with
+  `[JsExport]`, or expose it with [JsHostObject](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject) or with functions. See [Exposing .NET objects](05-ExposingDotNetObjects.md).
 - A value that contains itself throws an `InvalidOperationException`. A value that appears twice is converted twice:
   the scripts get two objects.
 
@@ -82,11 +83,13 @@ Assert.Null(engine.ToDotNet<int?>(JsValue.Undefined));
 
 - Without a type, an object becomes a `Dictionary<string, object?>` of its own enumerable properties whose key is a
   string, and an array becomes a `List<object?>`. The getters run. A function, a symbol, or a value that contains
-  itself cannot be converted.
+  itself cannot be converted. The object of a class marked with `[JsExport]` becomes its .NET object.
 - With a type, the conversion follows the rules of JavaScript (`ToNumber`, `ToString`, `ToBoolean`), then checks the
-  result: an integer type rejects a fraction (a `TypeError`) and a value out of its range (a `RangeError`). `undefined`
-  and `null` convert to `null` for a reference type or a nullable type, to `false` for `bool`, and throw for the other
-  value types.
+  result: an integer type rejects a fraction (a `TypeError`) and a value out of its range (a `RangeError`), as does
+  `decimal`. A `Date` outside the years 1 to 9999 cannot be a `DateTimeOffset` or a `DateTime` (a `RangeError`).
+  `undefined` and `null` convert to `null` for a reference type or a nullable type, to `false` for `bool`, and throw for
+  the other value types. A class marked with `[JsExport]` takes the objects of its JavaScript class, and of the classes
+  derived from it: another value is a `TypeError`.
 
 ## Typed functions
 
@@ -120,6 +123,7 @@ Assert.Equal("TypeError: 1.5 is not an integer", realm.Execute("try { add(1.5, 1
 - A conversion that fails throws a `TypeError` or a `RangeError` to the script, which can catch it.
 - An exception of the delegate is not a JavaScript error, as for the other .NET functions: throw a
   [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException) to throw an error to the script. See [Handling errors](../04-RunningCode/04-HandlingErrors.md).
-- Creating a function whose delegate uses an unsupported type throws a `NotSupportedException` at once.
+- Creating a function whose delegate uses an unsupported type throws a `NotSupportedException` at once. The classes
+  marked with `[JsExport]` are supported.
 - For a function that returns a `Task`, return `realm.CreatePromise(task, ...)`. See
   [Async code and promises](../06-AsyncAndPromises.md#await-a-net-task-from-a-script).

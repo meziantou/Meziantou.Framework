@@ -1,0 +1,18 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);RS1041</NoWarn>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="5.6.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../Meziantou.Framework/Collections/ImmutableEquatableArray.cs" LinkBase="Collections" />
+  </ItemGroup>
+</Project>

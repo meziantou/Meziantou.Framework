@@ -77,6 +77,83 @@ The members of the objects (`JsObject.GetProperty`, `SetProperty`, `JsRealm.Crea
 of the engine (`using var scope = engine.Enter()`); `JsRealm.Execute`, `JsEngine.Call` and `JsEngine.Construct` enter
 it themselves.
 
+## Expose .NET classes
+
+Mark a `partial` class with `[JsExport]`: a source generator, included in the package, writes its JavaScript class at
+build time, so the binding uses no reflection. The public constructor, methods, properties and fields are exposed with
+camelCase names (`[JsName]` renames a member, `[JsIgnore]` hides it), the arguments and the results are converted, and a
+task is a promise.
+
+<!-- ref:../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineEmbeddingTests.cs;region=JavaScriptEngine_ExportClassDeclaration;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The source generator creates the JavaScript class: the class must be partial
+[JsExport]
+public sealed partial class Counter
+{
+    // The constructor of the JavaScript class: "new Counter()" or "new Counter(5)"
+    public Counter(int start = 0) => Value = start;
+
+    // An accessor of the prototype, named in camelCase: "counter.value"
+    public int Value { get; set; }
+
+    // A method of the prototype: "counter.increment(2)"
+    public int Increment(int step = 1) => Value += step;
+
+    // An instance of an exported class is converted to its JavaScript object
+    public Counter Clone() => new(Value);
+
+    [JsName("toString")]
+    public override string ToString() => "Counter(" + Value.ToString(CultureInfo.InvariantCulture) + ")";
+
+    [JsIgnore]
+    public void Reset() => Value = 0;
+
+    // A static member is a property of the constructor: "Counter.parse('5')"
+    public static Counter Parse(string text) => new(int.Parse(text, CultureInfo.InvariantCulture));
+
+    // A task is a promise
+    public async Task<int> IncrementLaterAsync()
+    {
+        await Task.Yield();
+        return Increment();
+    }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineEmbeddingTests.cs;region=JavaScriptEngine_ExportClass;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var engine = new JsEngine();
+var realm = engine.CreateRealm();
+using (engine.Enter())
+{
+    // The constructor of the JavaScript class of Counter, created once per realm
+    realm.GlobalObject.SetProperty("Counter", realm.GetClass(Counter.JsClass));
+}
+
+Assert.Equal(3, realm.Execute("const counter = new Counter(1); counter.increment(); counter.increment(); counter.value").AsNumber());
+Assert.Equal("Counter(13)", realm.Execute("counter.value += 10; `${counter}`").AsString());
+Assert.Equal(5, realm.Execute("Counter.parse('5').value").AsNumber());
+Assert.True(realm.Execute("counter.reset === undefined").AsBoolean());
+
+// The scripts can extend the class
+Assert.Equal(15, realm.Execute("class Double extends Counter { increment() { return super.increment(2); } } new Double(13).increment()").AsNumber());
+
+// An argument that cannot be converted is a TypeError of the script
+Assert.Equal("TypeError: 1.5 is not an integer", realm.Execute("try { counter.increment(1.5); } catch (e) { `${e}` }").AsString());
+
+// The .NET object of a JavaScript object, and the JavaScript object of a .NET object
+var counter = engine.ToDotNet<Counter>(realm.Execute("counter"));
+Assert.Equal(13, counter.Value);
+using (engine.Enter())
+{
+    realm.GlobalObject.SetProperty("sameCounter", realm.FromDotNet(counter));
+}
+
+Assert.True(realm.Execute("sameCounter === counter").AsBoolean());
+```
+<!-- endref -->
+
 ## Modules
 
 The modules are loaded by a `JsModuleLoader`: derive from it and override `LoadImportedModule` to resolve a specifier

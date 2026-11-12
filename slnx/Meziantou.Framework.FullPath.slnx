@@ -86,6 +86,7 @@
     <Project Path="../src/Meziantou.Framework.Http/Meziantou.Framework.Http.csproj" />
     <Project Path="../src/Meziantou.Framework.Imaging.Barcodes/Meziantou.Framework.Imaging.Barcodes.csproj" />
     <Project Path="../src/Meziantou.Framework.Imaging/Meziantou.Framework.Imaging.csproj" />
+    <Project Path="../src/Meziantou.Framework.JavaScriptEngine.SourceGenerator/Meziantou.Framework.JavaScriptEngine.SourceGenerator.csproj" />
     <Project Path="../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
     <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="../src/Meziantou.Framework.Language.Css/Meziantou.Framework.Language.Css.csproj" />

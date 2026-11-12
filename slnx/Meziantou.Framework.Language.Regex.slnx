@@ -5,6 +5,7 @@
     <Project Path="../fuzz/Meziantou.Framework.Language.Fuzz/Meziantou.Framework.Language.Fuzz.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.JavaScriptEngine.SourceGenerator/Meziantou.Framework.JavaScriptEngine.SourceGenerator.csproj" />
     <Project Path="../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
     <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="../src/Meziantou.Framework.Language.Css/Meziantou.Framework.Language.Css.csproj" />

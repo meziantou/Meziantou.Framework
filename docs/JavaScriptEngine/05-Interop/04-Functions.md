@@ -50,7 +50,8 @@ Assert.Equal("TypeError: The amount must be a number", realm.Execute("try { form
 you. See [Typed functions](08-DotNetValues.md#typed-functions).
 
 A function created by [CreateFunction](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateFunction) cannot be called with `new`. To create a constructor, see
-[Exposing .NET objects](05-ExposingDotNetObjects.md).
+[Exposing .NET objects](05-ExposingDotNetObjects.md). To expose the methods of a class without writing a function for
+each, mark the class with `[JsExport]`: see [Generate the class with \[JsExport\]](05-ExposingDotNetObjects.md#generate-the-class-with-jsexport).
 
 ## Call a JavaScript function from .NET
 

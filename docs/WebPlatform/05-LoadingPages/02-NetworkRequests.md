@@ -147,6 +147,13 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   in the `Sec-Required-Document-Policy` header, and a frame whose `Document-Policy` header is less strict is blocked. The
   library supports the `sync-xhr` and `force-load-at-top` features. Disable it with
   [DocumentPolicyEnabled](cref:Meziantou.Framework.WebPlatform.Dom.WebPlatformFeatures.DocumentPolicyEnabled).
+- The `Cross-Origin-Opener-Policy` and `Cross-Origin-Opener-Policy-Report-Only` headers of a page report to the endpoint
+  of their `report-to` parameter (an endpoint of the `Reporting-Endpoints` header, or of the legacy `Report-To` header):
+  the navigations that switch, or would switch, the browsing context group of a page that shares it with other windows
+  (`navigation-to-response` and `navigation-from-response` reports, also for the redirects), and, as in Chromium, the
+  accesses between two windows that a report-only policy would separate (`access-from-coop-page-to-openee` and the other
+  `access-*` reports, with the name of the property). The `ReportingObserver`s of the page that performs the access
+  receive its report as a `coop-access-violation` report.
 - The `Content-DPR` header of an image gives its density: its natural size is divided by it (`Content-DPR: 2` displays a
   100x100 image at 50x50 CSS pixels), in the `img` elements (where it replaces the density of the `srcset` candidate), the
   CSS images, the SVG `image` elements, the video posters and the image buttons.

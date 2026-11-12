@@ -55,8 +55,8 @@ fails.
   effect. A document parsed with [HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser) has no browsing context: no window, no computed style and no
   event loop, so the mutation observer callbacks are not invoked.
 - **No downloads**, and the third-party cookies are not blocked.
-- **Reporting API.** Content Security Policy reports its violations, but the Reporting API generates only the CSP, COEP
-  and test reports: there are no deprecation, intervention, COOP or Document Policy reports.
+- **Reporting API.** Content Security Policy reports its violations, but the Reporting API generates only the CSP, COEP,
+  COOP, Permissions Policy, Document Policy and test reports: there are no deprecation or intervention reports.
 
 ## Scripting
 

@@ -393,6 +393,13 @@ public partial class Document
     /// <summary>https://html.spec.whatwg.org/multipage/dom.html#concept-document-coop</summary>
     internal OpenerPolicy OpenerPolicy { get; set; } = OpenerPolicy.Default;
 
+    /// <summary>
+    /// The document whose opener policy this document inherited (the top-level document of the creator of an initial
+    /// about:blank document, or of the initiator of an about:blank navigation), or null: as in Chromium, the switches of
+    /// browsing context group are reported with its URL and its reporting endpoints.
+    /// </summary>
+    internal Document? OpenerPolicyReportingDocument { get; set; }
+
     /// <summary>The embedder policy of the policy container of the document (https://html.spec.whatwg.org/multipage/browsers.html#policy-container-embedder-policy).</summary>
     internal EmbedderPolicy EmbedderPolicy { get; set; } = EmbedderPolicy.Default;
 

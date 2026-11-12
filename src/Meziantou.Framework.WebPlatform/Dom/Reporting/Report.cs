@@ -361,8 +361,98 @@ internal sealed class EmbedderPolicyReportBody : ReportBody
 }
 
 /// <summary>
+/// The body of the reports of type <c>coop</c> (https://html.spec.whatwg.org/multipage/browsers.html#reporting): a
+/// browsing context group switch required by an opener policy (<c>navigation-to-response</c>, <c>navigation-from-response</c>),
+/// or an access between two windows that a report-only opener policy would have put in different browsing context groups
+/// (<c>access-from-coop-page-to-*</c> and <c>access-to-coop-page-from-*</c>). The members are the ones of the browsers (the
+/// specification names some of them differently, e.g. <c>openedWindowURL</c>): a URL that is not exposed is the empty string.
+/// The specification defines it as an object without IDL.
+/// </summary>
+internal sealed class OpenerPolicyReportBody : ReportBody
+{
+    internal override bool IsIdlDictionary => false;
+
+    /// <summary>The type of the violation (e.g. <c>navigation-to-response</c>, <c>access-from-coop-page-to-openee</c>).</summary>
+    public required string Type { get; init; }
+
+    /// <summary><c>enforce</c>, or <c>reporting</c> for the report-only value of the opener policy.</summary>
+    public required string Disposition { get; init; }
+
+    /// <summary>The value of the opener policy (<see cref="OpenerPolicy.Serialize"/>).</summary>
+    public required string EffectivePolicy { get; init; }
+
+    /// <summary>The name of the property of the access (e.g. <c>blur</c>, <c>indexed</c>, <c>named</c>), or null.</summary>
+    public string? Property { get; init; }
+
+    /// <summary>The URL of the response that replaces the document (<c>navigation-from-response</c>).</summary>
+    public string? NextResponseUrl { get; init; }
+
+    /// <summary>The URL of the document that the response replaces (<c>navigation-to-response</c>).</summary>
+    public string? PreviousResponseUrl { get; init; }
+
+    /// <summary>The referrer of the navigation, or of the document whose opener policy is reported.</summary>
+    public string? Referrer { get; init; }
+
+    /// <summary>The URL of the document of the opener.</summary>
+    public string? OpenerUrl { get; init; }
+
+    /// <summary>The URL of the document of the opened window.</summary>
+    public string? OpeneeUrl { get; init; }
+
+    /// <summary>The URL of the document of a window without opener relationship.</summary>
+    public string? OtherDocumentUrl { get; init; }
+
+    /// <summary>The URL of the first response of the opened window.</summary>
+    public string? InitialPopupUrl { get; init; }
+
+    /// <summary>The URL of the script that performed the access, or null.</summary>
+    public string? SourceFile { get; init; }
+
+    /// <summary>The line of the access in <see cref="SourceFile"/>.</summary>
+    public int? LineNumber { get; init; }
+
+    /// <summary>The column of the access in <see cref="SourceFile"/>.</summary>
+    public int? ColumnNumber { get; init; }
+
+    /// <summary>https://html.spec.whatwg.org/multipage/browsers.html#sanitize-url-report: the URL without its credentials and its fragment.</summary>
+    public static string Sanitize(Urls.UrlRecord url) => EmbedderPolicyReportBody.SerializeResponseUrlForReporting(url);
+
+    internal override void WriteJson(Utf8JsonWriter writer)
+    {
+        writer.WriteStartObject();
+        writer.WriteString("type", Type);
+        writer.WriteString("disposition", Disposition);
+        writer.WriteString("effectivePolicy", EffectivePolicy);
+        WriteOptional("property", Property);
+        WriteOptional("nextResponseURL", NextResponseUrl);
+        WriteOptional("previousResponseURL", PreviousResponseUrl);
+        WriteOptional("referrer", Referrer);
+        WriteOptional("openerURL", OpenerUrl);
+        WriteOptional("openeeURL", OpeneeUrl);
+        WriteOptional("otherDocumentURL", OtherDocumentUrl);
+        WriteOptional("initialPopupURL", InitialPopupUrl);
+        if (SourceFile is not null)
+        {
+            writer.WriteString("sourceFile", SourceFile);
+            writer.WriteNumber("lineNumber", LineNumber ?? 0);
+            writer.WriteNumber("columnNumber", ColumnNumber ?? 0);
+        }
+
+        writer.WriteEndObject();
+
+        void WriteOptional(string name, string? value)
+        {
+            if (value is not null)
+            {
+                writer.WriteString(name, value);
+            }
+        }
+    }
+}
+
+/// <summary>
 /// A report (https://w3c.github.io/reporting/#concept-reports): a report queued by a document or a worker (see
-/// <see cref="GlobalScope.GenerateAndQueueReport"/>), observed by its reporting observers and delivered to the endpoint
+/// <see cref="GlobalScope.GenerateAndQueueReport(ReportBody?, string, string)"/>), observed by its reporting observers and delivered to the endpoint
 /// named by its destination.
 /// </summary>
 internal sealed class QueuedReport

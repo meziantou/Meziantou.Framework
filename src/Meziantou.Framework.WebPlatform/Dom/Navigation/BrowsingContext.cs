@@ -196,6 +196,7 @@ public sealed partial class BrowsingContext : IDisposable
         if (parent is null && creator is not null && OriginRecord.IsSameOrigin(creator.Origin, creator.TopLevelOrigin) && creator.BrowsingContext is { } creatorBrowsingContext)
         {
             document.OpenerPolicy = creatorBrowsingContext.Top.Document.OpenerPolicy;
+            document.OpenerPolicyReportingDocument = creatorBrowsingContext.Top.Document.OpenerPolicyReportingDocument ?? creatorBrowsingContext.Top.Document;
         }
 
         document.Referrer = creator?.Url ?? "";
@@ -605,6 +606,14 @@ public sealed partial class BrowsingContext : IDisposable
         if (opener is not null)
         {
             context._group = Group;
+        }
+
+        // https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-auxiliary-browsing-context: the virtual
+        // browsing context group ID of the top-level browsing context of the opener, and the opener origin at creation
+        if (opener?.BrowsingContext is { } openerBrowsingContext)
+        {
+            context.ActiveBrowsingContext.VirtualGroupId = openerBrowsingContext.Top.ActiveBrowsingContext.VirtualGroupId;
+            context.ActiveBrowsingContext.OpenerOriginAtCreation = opener.Origin;
         }
 
         (owner._auxiliaryBrowsingContexts ??= []).Add(context);
@@ -1783,6 +1792,7 @@ public sealed partial class BrowsingContext : IDisposable
             OriginDocument = initiatorOrigin ?? Document.GetOriginDocument(document),
             AboutBaseUrl = document.AboutBaseUrl,
             OpenerPolicy = document.OpenerPolicy,
+            OpenerPolicyReportingDocument = document.OpenerPolicyReportingDocument,
             EmbedderPolicy = document.EmbedderPolicy,
             DocumentIsolationPolicy = document.DocumentIsolationPolicy,
 
@@ -1892,6 +1902,7 @@ public sealed partial class BrowsingContext : IDisposable
             UserInvolvement = userInvolvement,
             InitiatorOrigin = storedInitiatorOrigin ?? sourceDocument?.Origin,
             InitiatorTopLevelOrigin = sourceDocument?.TopLevelOrigin,
+            SourceDocument = sourceDocument,
             TextDirectiveUserActivation = textDirectiveUserActivation,
             IsPostNavigation = postResource is not null,
             PostResource = postResource,
@@ -2135,7 +2146,8 @@ public sealed partial class BrowsingContext : IDisposable
             var responseUrl = internalResponse.Url ?? request.CurrentUrl;
             Html.NavigationalPrefetch.ProcessClearSiteData(this, responseUrl, internalResponse.HeaderList);
             parameters.OpenerPolicy = null;
-            if (!ApplyOpenerPolicy(responseUrl, parameters, internalResponse.HeaderList))
+            parameters.OpenerPolicyReportingDocument = null;
+            if (!ApplyOpenerPolicy(responseUrl, parameters, internalResponse.HeaderList, referrer: request.Referrer is "no-referrer" or "client" ? "" : request.Referrer))
             {
                 // The opener policy of the response cannot be combined with the sandboxing flags: the error document keeps
                 // the policy, so that a popup is still cut from its opener
@@ -2838,6 +2850,7 @@ public sealed partial class BrowsingContext : IDisposable
         }
         document.InternalAncestorOriginObjects = CreateInternalAncestorOriginObjectsList(document, parameters.IframeElementReferrerPolicy ?? GetIframeElementReferrerPolicy());
         document.OpenerPolicy = Parent is null ? parameters.OpenerPolicy ?? OpenerPolicy.Default : OpenerPolicy.Default;
+        document.OpenerPolicyReportingDocument = Parent is null ? parameters.OpenerPolicyReportingDocument : null;
         document.EmbedderPolicy = parameters.EmbedderPolicy ?? EmbedderPolicy.Obtain(parameters.Headers, IsSecureContext(document));
         document.DocumentIsolationPolicy = parameters.EmbedderPolicy is not null ? parameters.DocumentIsolationPolicy : GetDocumentIsolationPolicy(parameters.Headers, IsSecureContext(document));
         document.IsCredentialless = IsCredentiallessNavigable;
@@ -2855,6 +2868,10 @@ public sealed partial class BrowsingContext : IDisposable
         if (switchesGroup)
         {
             SwitchBrowsingContextGroup(document.OpenerPolicy);
+        }
+        else if (Parent is null && parameters.OpenerPolicyEnforcementResult is { WouldNeedBrowsingContextGroupSwitchDueToReportOnly: true })
+        {
+            ActiveBrowsingContext.VirtualGroupId = BrowsingContextInstance.CreateVirtualGroupId();
         }
         document.LastModifiedTime = parameters.LastModified;
         document.ProtocolLanguage = parameters.ContentLanguage;
@@ -4109,6 +4126,12 @@ public sealed partial class BrowsingContext : IDisposable
 
         /// <summary>The opener policy of the response of a top-level navigation, or null for the default policy.</summary>
         public OpenerPolicy? OpenerPolicy { get; set; }
+
+        /// <summary>The document whose opener policy <see cref="OpenerPolicy"/> is inherited from, or null (see <see cref="Document.OpenerPolicyReportingDocument"/>).</summary>
+        public Document? OpenerPolicyReportingDocument { get; set; }
+
+        /// <summary>The document that initiated the navigation, or null (the navigation source of the opener policy enforcement).</summary>
+        public Document? SourceDocument { get; init; }
 
         /// <summary>The result of the enforcement of the opener policy of the response, which tells whether the navigation switches browsing context group.</summary>
         public OpenerPolicyEnforcementResult? OpenerPolicyEnforcementResult { get; set; }

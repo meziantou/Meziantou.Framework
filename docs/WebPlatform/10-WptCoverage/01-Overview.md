@@ -52,8 +52,8 @@ The features of `REQUIRES`:
 | [Stable](#stable-tests) | 26,843 | 29,904 | 1,914 | 96% |
 | [Tentative](#tentative-tests) | 1,454 | 3,169 | 659 | 58% |
 | [Reftests](#reftests) | 28,313 | 29,507 | 149 | 96% |
-| [Crash tests](#crash-tests) | 2,038 | 2,111 | 60 | 99% |
-| **All** | **58,648** | **64,691** | **2,782** | **95%** |
+| [Crash tests](#crash-tests) | 2,040 | 2,111 | 58 | 99% |
+| **All** | **58,650** | **64,691** | **2,780** | **95%** |
 
 ## Failure reasons
 
@@ -71,7 +71,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **TEST RUNNER**: 191
 - **OUT OF SCOPE**: 210
 - **FLAKY**: 18
-- **PERFORMANCE**: 10
+- **PERFORMANCE**: 8
 
 ## Stable tests
 
@@ -785,7 +785,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-tables`](css/css-tables.md#crash-tests) | 42 | 42 | 0 | 100% |
 | [`css/css-text`](css/css-text.md#crash-tests) | 41 | 41 | 0 | 100% |
 | [`css/css-text-decor`](css/css-text-decor.md#crash-tests) | 9 | 9 | 0 | 100% |
-| [`css/css-transforms`](css/css-transforms.md#crash-tests) | 27 | 28 | 1 | 100% |
+| [`css/css-transforms`](css/css-transforms.md#crash-tests) | 28 | 28 | 0 | 100% |
 | [`css/css-transitions`](css/css-transitions.md#crash-tests) | 13 | 13 | 0 | 100% |
 | [`css/css-typed-om`](css/css-typed-om.md#crash-tests) | 11 | 11 | 0 | 100% |
 | [`css/css-ui`](css/css-ui.md#crash-tests) | 6 | 6 | 0 | 100% |
@@ -799,7 +799,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/CSS2`](css/CSS2.md#crash-tests) | 32 | 32 | 0 | 100% |
 | [`css/cssom`](css/cssom.md#crash-tests) | 19 | 19 | 0 | 100% |
 | [`css/cssom-view`](css/cssom-view.md#crash-tests) | 4 | 4 | 0 | 100% |
-| [`css/filter-effects`](css/filter-effects.md#crash-tests) | 21 | 23 | 2 | 100% |
+| [`css/filter-effects`](css/filter-effects.md#crash-tests) | 22 | 23 | 1 | 100% |
 | [`css/mediaqueries`](css/mediaqueries.md#crash-tests) | 1 | 1 | 0 | 100% |
 | [`css/motion`](css/motion.md#crash-tests) | 4 | 4 | 0 | 100% |
 | [`css/selectors`](css/selectors.md#crash-tests) | 19 | 20 | 0 | 95% |
@@ -856,4 +856,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webmcp`](webmcp.md#crash-tests) | 5 | 5 | 0 | 100% |
 | [`webtransport`](webtransport.md#crash-tests) | 0 | 1 | 1 | – |
 | [`xml`](xml.md#crash-tests) | 0 | 11 | 11 | – |
-| **Total (121 sections)** | **2,038** | **2,111** | **60** | **99%** |
+| **Total (121 sections)** | **2,040** | **2,111** | **58** | **99%** |

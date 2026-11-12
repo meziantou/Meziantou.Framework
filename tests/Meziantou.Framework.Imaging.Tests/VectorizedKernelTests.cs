@@ -3647,13 +3647,32 @@ public sealed class VectorizedKernelTests
                     BlurKernels.BlurValues(values, weights, firstColumn, actual);
                     Assert.Equal(expected, actual);
 
-                    var row = Enumerable.Range(0, count * 4).Select(_ => (float)(random.NextDouble() * 70000)).ToArray();
-                    var expectedSums = Enumerable.Range(0, count * 4).Select(_ => random.NextDouble() * 1000).ToArray();
-                    var actualSums = (double[])expectedSums.Clone();
-                    var weight = weights[round % taps];
-                    BlurKernels.AccumulateScalar(expectedSums, weight, row);
-                    BlurKernels.Accumulate(actualSums, weight, row);
+                    // Rows added in groups to sums that start from zero: what adding them one at a time to cleared sums gives
+                    var sumLength = count * 4;
+                    var rowCount = random.Next(1, (2 * BlurKernels.MaxSummedRows) + 3);
+                    var rows = Enumerable.Range(0, (rowCount + 2) * sumLength).Select(_ => random.Next(5) == 0 ? 0f : (float)(random.NextDouble() * 70000)).ToArray();
+                    var offsets = Enumerable.Range(0, rowCount).Select(_ => random.Next(rowCount + 2) * sumLength).ToArray();
+                    var rowWeights = Enumerable.Range(0, rowCount).Select(_ => weights[random.Next(taps)]).ToArray();
+                    var expectedSums = new double[sumLength];
+                    for (var k = 0; k < rowCount; k++)
+                    {
+                        for (var i = 0; i < sumLength; i++)
+                        {
+                            expectedSums[i] += rowWeights[k] * rows[offsets[k] + i];
+                        }
+                    }
+
+                    var actualSums = Enumerable.Range(0, sumLength).Select(_ => double.NaN).ToArray();
+                    var scalarSums = (double[])actualSums.Clone();
+                    for (var first = 0; first < rowCount; first += BlurKernels.MaxSummedRows)
+                    {
+                        var group = Math.Min(BlurKernels.MaxSummedRows, rowCount - first);
+                        BlurKernels.SumRows(actualSums, rows, offsets.AsSpan(first, group), rowWeights.AsSpan(first, group), isFirst: first == 0);
+                        BlurKernels.SumRowsScalar(scalarSums, rows, offsets.AsSpan(first, group), rowWeights.AsSpan(first, group), isFirst: first == 0);
+                    }
+
                     Assert.Equal(expectedSums, actualSums);
+                    Assert.Equal(expectedSums, scalarSums);
                 }
             }
         }

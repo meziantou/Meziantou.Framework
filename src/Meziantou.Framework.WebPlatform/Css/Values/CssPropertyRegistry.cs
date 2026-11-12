@@ -195,33 +195,7 @@ internal static partial class CssPropertyRegistry
 
         // https://drafts.csswg.org/css-fonts-4/#font-synthesis: oblique-only sets font-synthesis-style (webref does not have it)
         ["font-synthesis"] = "none | [ weight || [ style | oblique-only ] || small-caps || position ]",
-
-        // https://drafts.csswg.org/css-borders-4/#corner-shorthands: the grammar of the corner shorthands of the browsers and of
-        // WPT (css/css-borders/corner-shape/corner-*-valid.html), which is newer than "<'border-radius'> || <'corner-shape'>" of
-        // webref: each corner is normal (no radius, round) or a radius and a shape (both are required), and the corners are
-        // separated by slashes (see CssPropertyRules.ExpandCorner)
-        ["corner-top-left"] = CornerGrammar,
-        ["corner-top-right"] = CornerGrammar,
-        ["corner-bottom-right"] = CornerGrammar,
-        ["corner-bottom-left"] = CornerGrammar,
-        ["corner-start-start"] = CornerGrammar,
-        ["corner-start-end"] = CornerGrammar,
-        ["corner-end-start"] = CornerGrammar,
-        ["corner-end-end"] = CornerGrammar,
-        ["corner-top"] = CornerSideGrammar,
-        ["corner-right"] = CornerSideGrammar,
-        ["corner-bottom"] = CornerSideGrammar,
-        ["corner-left"] = CornerSideGrammar,
-        ["corner-block-start"] = CornerSideGrammar,
-        ["corner-block-end"] = CornerSideGrammar,
-        ["corner-inline-start"] = CornerSideGrammar,
-        ["corner-inline-end"] = CornerSideGrammar,
-        ["corner"] = "[ " + CornerGrammar + " ] [ / [ " + CornerGrammar + " ] ]{0,3}",
     };
-
-    private const string CornerGrammar = "normal | [ <length-percentage [0,∞]>{1,2} && <corner-shape-value> ]";
-
-    private const string CornerSideGrammar = "[ " + CornerGrammar + " ] [ / [ " + CornerGrammar + " ] ]?";
 
     /// <summary>The initial values that do not match webref (see <see cref="OverriddenGrammars"/>).</summary>
     private static readonly Dictionary<string, string> OverriddenInitialValues = new(StringComparer.Ordinal)

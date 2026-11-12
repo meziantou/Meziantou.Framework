@@ -737,8 +737,8 @@ internal static class CssShorthands
             expected = new Dictionary<string, string>(lookup, StringComparer.Ordinal) { [direction.StartsWith("row", StringComparison.Ordinal) ? "grid-template-columns" : "grid-template-rows"] = "none" };
         }
 
-        // The corners without radius whose shape is round are serialized as normal by the corner shorthands (0% round is normal)
-        expected = CssPropertyRules.GetNormalCornerLonghands(shorthand, expected);
+        // The corner shorthands omit the round shapes (superellipse(1) when computed) and the zero radii (0 when specified)
+        expected = CssPropertyRules.GetOmittedCornerLonghands(shorthand, expected);
 
         // The font shorthand represents a font width that is the percentage of a <font-width-css3> keyword with the keyword
         if (CssPropertyRules.GetFontWidthKeywordLonghands(shorthand, expected) is { } fontWidthKeyword)
